@@ -6,4 +6,5 @@
 library;
 
 export 'src/collaborator_confirmation_repository.dart';
+export 'src/collaborator_visibility.dart';
 export 'src/local_state_reader.dart';

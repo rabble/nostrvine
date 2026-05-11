@@ -2,6 +2,7 @@
 // ABOUTME: Creator, Collaborators, Inspired By, and Reposted By sections
 // ABOUTME: using tappable chips that navigate to user profiles.
 
+import 'package:collaborator_repository/collaborator_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -27,7 +28,7 @@ class MetadataCreatorSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MetadataSection(
-      label: context.l10n.metadataCreatorSectionLabel,
+      label: context.l10n.metadataCreatorLabel,
       child: _TappableUserChip(pubkey: pubkey),
     );
   }
@@ -56,16 +57,13 @@ class MetadataCollaboratorsSection extends ConsumerWidget {
     final videoAddress = video.addressableId;
 
     if (repo == null || videoAddress == null || currentUserPubkey.isEmpty) {
-      return _CollaboratorsSectionBody(
-        pubkeys: pubkeys,
-        statusByPubkey: const {},
-        currentUserPubkey: currentUserPubkey,
-        isInviterView: false,
+      return MetadataCollaboratorsSectionBody(
+        visibility: CollaboratorVisibility.fallback(taggedPubkeys: pubkeys),
       );
     }
 
     return BlocProvider<VideoCollaboratorStatusCubit>(
-      key: ValueKey((repo, videoAddress)),
+      key: ValueKey((repo, videoAddress, Object.hashAll(pubkeys))),
       create: (_) => VideoCollaboratorStatusCubit(
         repository: repo,
         videoAddress: videoAddress,
@@ -97,53 +95,38 @@ class _CollaboratorsSectionStatusAware extends StatelessWidget {
     final statusByPubkey = context.select(
       (VideoCollaboratorStatusCubit c) => c.state.statusByPubkey,
     );
-    final isInviterView = currentUserPubkey == video.pubkey;
-    return _CollaboratorsSectionBody(
-      pubkeys: pubkeys,
-      statusByPubkey: statusByPubkey,
-      currentUserPubkey: currentUserPubkey,
-      isInviterView: isInviterView,
+    return MetadataCollaboratorsSectionBody(
+      visibility: CollaboratorVisibility(
+        taggedPubkeys: pubkeys,
+        statusByPubkey: statusByPubkey,
+        currentUserPubkey: currentUserPubkey,
+        creatorPubkey: video.pubkey,
+      ),
     );
   }
 }
 
-class _CollaboratorsSectionBody extends StatelessWidget {
-  const _CollaboratorsSectionBody({
-    required this.pubkeys,
-    required this.statusByPubkey,
-    required this.currentUserPubkey,
-    required this.isInviterView,
+/// Renders the collaborators section from a [CollaboratorVisibility].
+///
+/// Promoted to a top-level class with [visibleForTesting] so widget tests
+/// can exercise every render branch without standing up a Riverpod
+/// container, a `BlocProvider`, or a mock repository.
+@visibleForTesting
+class MetadataCollaboratorsSectionBody extends StatelessWidget {
+  const MetadataCollaboratorsSectionBody({
+    required this.visibility,
+    super.key,
   });
 
-  final List<String> pubkeys;
-  final Map<String, CollaboratorStatus> statusByPubkey;
-  final String currentUserPubkey;
-  final bool isInviterView;
-
-  CollaboratorStatus _statusOf(String pubkey) =>
-      statusByPubkey[pubkey] ?? CollaboratorStatus.pending;
-
-  bool _shouldRender(String pubkey) {
-    if (statusByPubkey.isEmpty) return true;
-    if (pubkey == currentUserPubkey &&
-        _statusOf(pubkey) == CollaboratorStatus.ignored) {
-      return false;
-    }
-    return true;
-  }
-
-  bool _isPendingForInviter(String pubkey) {
-    if (!isInviterView) return false;
-    return _statusOf(pubkey) == CollaboratorStatus.pending;
-  }
+  final CollaboratorVisibility visibility;
 
   @override
   Widget build(BuildContext context) {
-    final visible = pubkeys.where(_shouldRender).toList(growable: false);
+    final visible = visibility.visiblePubkeys;
     if (visible.isEmpty) return const SizedBox.shrink();
 
     return MetadataSection(
-      label: context.l10n.metadataCollaboratorsSectionLabel,
+      label: context.l10n.metadataCollaboratorsLabel,
       child: Wrap(
         spacing: 8,
         runSpacing: 8,
@@ -151,7 +134,7 @@ class _CollaboratorsSectionBody extends StatelessWidget {
           for (final pubkey in visible)
             _TappableUserChip(
               pubkey: pubkey,
-              isPending: _isPendingForInviter(pubkey),
+              isPending: visibility.isPendingForInviter(pubkey),
             ),
         ],
       ),
@@ -173,7 +156,7 @@ class MetadataInspiredBySection extends StatelessWidget {
     if (pubkey == null) return const SizedBox.shrink();
 
     return MetadataSection(
-      label: context.l10n.metadataInspiredBySectionLabel,
+      label: context.l10n.metadataInspiredByLabel,
       child: _TappableUserChip(pubkey: pubkey),
     );
   }
@@ -222,7 +205,7 @@ class _RepostedByContent extends StatelessWidget {
     if (pubkeys.isEmpty) return const SizedBox.shrink();
 
     return MetadataSection(
-      label: context.l10n.metadataRepostedBySectionLabel,
+      label: context.l10n.metadataRepostedByLabel,
       child: Wrap(
         spacing: 8,
         runSpacing: 8,
@@ -289,7 +272,7 @@ class _TappableUserChip extends ConsumerWidget {
 
     return Semantics(
       button: true,
-      label: '$name. Tap to view profile.',
+      label: context.l10n.profileChipTapHint(name),
       child: GestureDetector(
         onTap: () => _navigateToProfile(context),
         child: styled,
@@ -306,9 +289,10 @@ class _TappableUserChip extends ConsumerWidget {
     // sheet (the router is not in the modal's widget tree).
     final hostContext = Navigator.of(context, rootNavigator: true).context;
     Navigator.of(context).pop();
-    // Defer navigation to the next microtask so the pop animation
-    // completes and the modal route is fully removed before pushing.
-    Future<void>.delayed(Duration.zero).then((_) {
+    // Defer to the next frame so the modal route's pop has settled in the
+    // route stack before we push the destination route from the root
+    // navigator's context.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!hostContext.mounted) return;
       hostContext.pushWithVideoPause(OtherProfileScreen.pathForNpub(npub));
     });

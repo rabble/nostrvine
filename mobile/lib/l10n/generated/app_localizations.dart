@@ -2470,29 +2470,11 @@ abstract class AppLocalizations {
   /// **'{label} ({pending} pending)'**
   String videoCollaboratorWithPendingSuffix(String label, int pending);
 
-  /// Section label in the video metadata sheet introducing the author chip.
+  /// Screen reader hint announced when a user-chip in the metadata sheet is focused. {name} is the user's display name.
   ///
   /// In en, this message translates to:
-  /// **'Creator'**
-  String get metadataCreatorSectionLabel;
-
-  /// Section label in the video metadata sheet introducing the collaborator chips.
-  ///
-  /// In en, this message translates to:
-  /// **'Collaborators'**
-  String get metadataCollaboratorsSectionLabel;
-
-  /// Section label in the video metadata sheet introducing the inspired-by attribution chip.
-  ///
-  /// In en, this message translates to:
-  /// **'Inspired by'**
-  String get metadataInspiredBySectionLabel;
-
-  /// Section label in the video metadata sheet introducing the reposter chips.
-  ///
-  /// In en, this message translates to:
-  /// **'Reposted by'**
-  String get metadataRepostedBySectionLabel;
+  /// **'{name}. Tap to view profile.'**
+  String profileChipTapHint(String name);
 
   /// No description provided for @listAttributionFallback.
   ///

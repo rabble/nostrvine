@@ -228,11 +228,11 @@ class CollaboratorConfirmationRepository {
   }) {
     if (event.kind != _kindCollaboratorResponse) return;
 
+    // NIP-33 'a' tag references another addressable event (the video). The
+    // kind-34238 event's own 'd' tag identifies itself, not the video, so
+    // only 'a' is semantically meaningful here.
     final addressMatches = event.tags.any(
-      (tag) =>
-          tag.length >= 2 &&
-          (tag[0] == 'a' || tag[0] == 'd') &&
-          tag[1] == videoAddress,
+      (tag) => tag.length >= 2 && tag[0] == 'a' && tag[1] == videoAddress,
     );
     if (!addressMatches) return;
 

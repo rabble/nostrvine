@@ -165,6 +165,53 @@ void main() {
       repo.release(_videoAddress);
     });
 
+    test(
+      'rejects events whose only address tag is `d` (NIP-33 self-id)',
+      () async {
+        // Defense in depth: even if a relay misbehaves and delivers an event
+        // whose only address-shaped tag is `d` (the event's own addressable
+        // id), we must NOT treat it as an acceptance for the video. Per
+        // NIP-33, `a` is the reference to another addressable event; `d` is
+        // self-identifying. The relay filter `#a` already excludes such
+        // events, but the in-process check is what protects us if the relay
+        // is wrong.
+        final repo = CollaboratorConfirmationRepository(
+          nostrClient: nostrClient,
+          localStateReader: _StaticLocalStateReader(const {}),
+          currentUserPubkey: _creatorPubkey,
+        );
+
+        final emissions = <VideoCollaboratorStatus>[];
+        final sub = repo
+            .watch(
+              _videoAddress,
+              creatorPubkey: _creatorPubkey,
+              taggedPubkeys: const [_collaboratorPubkey],
+            )
+            .listen(emissions.add);
+
+        await Future<void>.delayed(Duration.zero);
+        final beforeCount = emissions.length;
+
+        relayController.add(
+          _acceptanceEvent(
+            pubkey: _collaboratorPubkey,
+            addressTag: 'd',
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(emissions.length, equals(beforeCount));
+        expect(
+          emissions.last.statusFor(_collaboratorPubkey),
+          equals(CollaboratorStatus.pending),
+        );
+
+        await sub.cancel();
+        repo.release(_videoAddress);
+      },
+    );
+
     test('ignores events without status=accepted', () async {
       final repo = CollaboratorConfirmationRepository(
         nostrClient: nostrClient,

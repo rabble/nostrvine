@@ -668,21 +668,14 @@
       }
     }
   },
-  "metadataCreatorSectionLabel": "Creator",
-  "@metadataCreatorSectionLabel": {
-    "description": "Section label in the video metadata sheet introducing the author chip."
-  },
-  "metadataCollaboratorsSectionLabel": "Collaborators",
-  "@metadataCollaboratorsSectionLabel": {
-    "description": "Section label in the video metadata sheet introducing the collaborator chips."
-  },
-  "metadataInspiredBySectionLabel": "Inspired by",
-  "@metadataInspiredBySectionLabel": {
-    "description": "Section label in the video metadata sheet introducing the inspired-by attribution chip."
-  },
-  "metadataRepostedBySectionLabel": "Reposted by",
-  "@metadataRepostedBySectionLabel": {
-    "description": "Section label in the video metadata sheet introducing the reposter chips."
+  "profileChipTapHint": "{name}. Tap to view profile.",
+  "@profileChipTapHint": {
+    "description": "Screen reader hint announced when a user-chip in the metadata sheet is focused. {name} is the user's display name.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "listAttributionFallback": "List",
   "shareVideoLabel": "Share video",

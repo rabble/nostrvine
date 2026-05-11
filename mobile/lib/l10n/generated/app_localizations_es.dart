@@ -1392,16 +1392,9 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get metadataCreatorSectionLabel => 'Creator';
-
-  @override
-  String get metadataCollaboratorsSectionLabel => 'Collaborators';
-
-  @override
-  String get metadataInspiredBySectionLabel => 'Inspired by';
-
-  @override
-  String get metadataRepostedBySectionLabel => 'Reposted by';
+  String profileChipTapHint(String name) {
+    return '$name. Tap to view profile.';
+  }
 
   @override
   String get listAttributionFallback => 'Lista';

@@ -3,6 +3,7 @@
 // ABOUTME: data is absent. Covers badges, title, stats, creator, tags,
 // ABOUTME: collaborators, inspired by, reposted by, and sounds sections.
 
+import 'package:collaborator_repository/collaborator_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -633,7 +634,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final l10n = _l10n(tester);
-      expect(find.text(l10n.metadataCollaboratorsSectionLabel), findsOneWidget);
+      expect(find.text(l10n.metadataCollaboratorsLabel), findsOneWidget);
       expect(find.text('Josh Musick'), findsOneWidget);
       expect(find.text('Dan Spurgin'), findsOneWidget);
     });
@@ -645,8 +646,186 @@ void main() {
       );
 
       final l10n = _l10n(tester);
-      expect(find.text(l10n.metadataCollaboratorsSectionLabel), findsNothing);
+      expect(find.text(l10n.metadataCollaboratorsLabel), findsNothing);
     });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Collaborators section body (status-aware rendering)
+  // ---------------------------------------------------------------------------
+  group(MetadataCollaboratorsSectionBody, () {
+    testWidgets(
+      'fallback mode: renders all chips without Pending decoration',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            providerOverrides: [
+              fetchUserProfileProvider(_collaborator1).overrideWith(
+                (ref) async => _makeProfile(_collaborator1, 'Alice'),
+              ),
+              fetchUserProfileProvider(_collaborator2).overrideWith(
+                (ref) async => _makeProfile(_collaborator2, 'Bob'),
+              ),
+            ],
+            child: const MetadataCollaboratorsSectionBody(
+              visibility: CollaboratorVisibility.fallback(
+                taggedPubkeys: [_collaborator1, _collaborator2],
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = _l10n(tester);
+        expect(
+          find.text(l10n.metadataCollaboratorsLabel),
+          findsOneWidget,
+        );
+        expect(find.text('Alice'), findsOneWidget);
+        expect(find.text('Bob'), findsOneWidget);
+        expect(
+          find.text(l10n.videoCollaboratorPendingDecoration),
+          findsNothing,
+        );
+        expect(find.byType(Opacity), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'inviter view: pending chip shows Pending label and is dimmed',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            providerOverrides: [
+              fetchUserProfileProvider(_collaborator1).overrideWith(
+                (ref) async => _makeProfile(_collaborator1, 'Alice'),
+              ),
+              fetchUserProfileProvider(_collaborator2).overrideWith(
+                (ref) async => _makeProfile(_collaborator2, 'Bob'),
+              ),
+            ],
+            child: const MetadataCollaboratorsSectionBody(
+              visibility: CollaboratorVisibility(
+                taggedPubkeys: [_collaborator1, _collaborator2],
+                statusByPubkey: {
+                  _collaborator1: CollaboratorStatus.pending,
+                  _collaborator2: CollaboratorStatus.confirmed,
+                },
+                currentUserPubkey: _creatorPubkey,
+                creatorPubkey: _creatorPubkey,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = _l10n(tester);
+        // Exactly one chip has the Pending label (Alice).
+        expect(
+          find.text(l10n.videoCollaboratorPendingDecoration),
+          findsOneWidget,
+        );
+        // The pending chip is wrapped in an Opacity.
+        final opacityWidgets = tester.widgetList<Opacity>(
+          find.byType(Opacity),
+        );
+        expect(opacityWidgets, hasLength(1));
+        expect(opacityWidgets.first.opacity, closeTo(0.7, 0.001));
+      },
+    );
+
+    testWidgets(
+      'recipient view (ignored): own chip filtered out',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            providerOverrides: [
+              fetchUserProfileProvider(_collaborator1).overrideWith(
+                (ref) async => _makeProfile(_collaborator1, 'Alice'),
+              ),
+              fetchUserProfileProvider(_collaborator2).overrideWith(
+                (ref) async => _makeProfile(_collaborator2, 'Bob'),
+              ),
+            ],
+            child: const MetadataCollaboratorsSectionBody(
+              visibility: CollaboratorVisibility(
+                taggedPubkeys: [_collaborator1, _collaborator2],
+                statusByPubkey: {
+                  _collaborator1: CollaboratorStatus.ignored,
+                },
+                currentUserPubkey: _collaborator1,
+                creatorPubkey: _creatorPubkey,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Alice (current user, ignored) is hidden; Bob is visible.
+        expect(find.text('Alice'), findsNothing);
+        expect(find.text('Bob'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'recipient view (ignored, sole collaborator): section shrinks',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            child: const MetadataCollaboratorsSectionBody(
+              visibility: CollaboratorVisibility(
+                taggedPubkeys: [_collaborator1],
+                statusByPubkey: {
+                  _collaborator1: CollaboratorStatus.ignored,
+                },
+                currentUserPubkey: _collaborator1,
+                creatorPubkey: _creatorPubkey,
+              ),
+            ),
+          ),
+        );
+
+        final l10n = _l10n(tester);
+        expect(
+          find.text(l10n.metadataCollaboratorsLabel),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'third-party view: no Pending decoration even for pending status',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            providerOverrides: [
+              fetchUserProfileProvider(_collaborator1).overrideWith(
+                (ref) async => _makeProfile(_collaborator1, 'Alice'),
+              ),
+            ],
+            child: const MetadataCollaboratorsSectionBody(
+              visibility: CollaboratorVisibility(
+                taggedPubkeys: [_collaborator1],
+                statusByPubkey: {
+                  _collaborator1: CollaboratorStatus.pending,
+                },
+                currentUserPubkey: _reposterPubkey,
+                creatorPubkey: _creatorPubkey,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = _l10n(tester);
+        expect(find.text('Alice'), findsOneWidget);
+        expect(
+          find.text(l10n.videoCollaboratorPendingDecoration),
+          findsNothing,
+        );
+        expect(find.byType(Opacity), findsNothing);
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------

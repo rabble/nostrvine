@@ -3,6 +3,7 @@
 // ABOUTME: greys pending avatars on the inviter's own video, otherwise
 // ABOUTME: renders raw collaborator p-tags as today.
 
+import 'package:collaborator_repository/collaborator_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -51,16 +52,13 @@ class CollaboratorAvatarRow extends ConsumerWidget {
     // status pipeline is not available (repo gated on isNostrReady, or
     // the video has no addressable id).
     if (repo == null || videoAddress == null || currentUserPubkey.isEmpty) {
-      return _RowBody(
-        pubkeys: pubkeys,
-        statusByPubkey: const {},
-        currentUserPubkey: currentUserPubkey,
-        isInviterView: false,
+      return CollaboratorAvatarRowBody(
+        visibility: CollaboratorVisibility.fallback(taggedPubkeys: pubkeys),
       );
     }
 
     return BlocProvider<VideoCollaboratorStatusCubit>(
-      key: ValueKey((repo, videoAddress)),
+      key: ValueKey((repo, videoAddress, Object.hashAll(pubkeys))),
       create: (_) => VideoCollaboratorStatusCubit(
         repository: repo,
         videoAddress: videoAddress,
@@ -92,56 +90,34 @@ class _StatusAwareRow extends StatelessWidget {
     final statusByPubkey = context.select(
       (VideoCollaboratorStatusCubit c) => c.state.statusByPubkey,
     );
-    final isInviterView = currentUserPubkey == video.pubkey;
-    return _RowBody(
-      pubkeys: pubkeys,
-      statusByPubkey: statusByPubkey,
-      currentUserPubkey: currentUserPubkey,
-      isInviterView: isInviterView,
+    return CollaboratorAvatarRowBody(
+      visibility: CollaboratorVisibility(
+        taggedPubkeys: pubkeys,
+        statusByPubkey: statusByPubkey,
+        currentUserPubkey: currentUserPubkey,
+        creatorPubkey: video.pubkey,
+      ),
     );
   }
 }
 
-class _RowBody extends StatelessWidget {
-  const _RowBody({
-    required this.pubkeys,
-    required this.statusByPubkey,
-    required this.currentUserPubkey,
-    required this.isInviterView,
-  });
+/// Renders the avatar row from a [CollaboratorVisibility].
+///
+/// Promoted to a top-level class with [visibleForTesting] so widget tests
+/// can exercise every render branch without standing up a Riverpod
+/// container, a `BlocProvider`, or a mock repository.
+@visibleForTesting
+class CollaboratorAvatarRowBody extends StatelessWidget {
+  const CollaboratorAvatarRowBody({required this.visibility, super.key});
 
-  final List<String> pubkeys;
-  final Map<String, CollaboratorStatus> statusByPubkey;
-  final String currentUserPubkey;
-  final bool isInviterView;
-
-  CollaboratorStatus _statusOf(String pubkey) =>
-      statusByPubkey[pubkey] ?? CollaboratorStatus.pending;
-
-  bool _shouldRender(String pubkey) {
-    if (statusByPubkey.isEmpty) return true;
-    // Recipient hides their own avatar after tapping Ignore.
-    if (pubkey == currentUserPubkey &&
-        _statusOf(pubkey) == CollaboratorStatus.ignored) {
-      return false;
-    }
-    return true;
-  }
-
-  bool _isPendingForInviter(String pubkey) {
-    if (!isInviterView) return false;
-    final status = _statusOf(pubkey);
-    return status == CollaboratorStatus.pending;
-  }
+  final CollaboratorVisibility visibility;
 
   @override
   Widget build(BuildContext context) {
-    final visible = pubkeys.where(_shouldRender).toList(growable: false);
+    final visible = visibility.visiblePubkeys;
     if (visible.isEmpty) return const SizedBox.shrink();
 
-    final pendingCount = isInviterView
-        ? visible.where(_isPendingForInviter).length
-        : 0;
+    final pendingCount = visibility.pendingCount;
 
     return GestureDetector(
       onTap: () => _navigateToCollaborator(context, visible.first),
@@ -165,7 +141,7 @@ class _RowBody extends StatelessWidget {
                   for (final pubkey in visible.take(3))
                     _AvatarEntry(
                       pubkey: pubkey,
-                      isPending: _isPendingForInviter(pubkey),
+                      isPending: visibility.isPendingForInviter(pubkey),
                     ),
                 ],
               ),
@@ -295,11 +271,8 @@ class _CollaboratorLabel extends ConsumerWidget {
 
     return Text(
       label,
-      style: const TextStyle(
-        color: VineTheme.whiteText,
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-        shadows: [Shadow(blurRadius: 4)],
+      style: VineTheme.labelMediumFont().copyWith(
+        shadows: const [Shadow(blurRadius: 4)],
       ),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
