@@ -127,16 +127,23 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                 borderRadius: BorderRadius.circular(32),
                 child: ColoredBox(
                   color: VineTheme.surfaceContainerHigh,
-                  child: _ConversationContent(
-                    currentPubkey: currentPubkey,
-                    otherPubkey: otherPubkey,
-                    displayName: displayName,
-                    imageUrl: profile?.picture,
-                    nip05: profile?.shortDisplayNip05,
-                    onViewProfile: () {
-                      final npub = NostrKeyUtils.encodePubKey(otherPubkey);
-                      context.push('${OtherProfileScreen.path}/$npub');
-                    },
+                  // Tap anywhere in the messages area to dismiss the
+                  // keyboard. Translucent hit behavior keeps bubble
+                  // long-press and list-scroll gestures intact.
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onTap: () => FocusScope.of(context).unfocus(),
+                    child: _ConversationContent(
+                      currentPubkey: currentPubkey,
+                      otherPubkey: otherPubkey,
+                      displayName: displayName,
+                      imageUrl: profile?.picture,
+                      nip05: profile?.shortDisplayNip05,
+                      onViewProfile: () {
+                        final npub = NostrKeyUtils.encodePubKey(otherPubkey);
+                        context.push('${OtherProfileScreen.path}/$npub');
+                      },
+                    ),
                   ),
                 ),
               ),
