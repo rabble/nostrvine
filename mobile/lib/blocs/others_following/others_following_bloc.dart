@@ -42,9 +42,6 @@ class OthersFollowingBloc
   /// following list when we have blocked the target.
   final String? currentUserPubkey;
 
-  /// Raw unfiltered following pubkeys for re-filtering on blocklist changes.
-  List<String> _rawFollowingPubkeys = [];
-
   /// Filter pubkeys by removing blocked users and hiding current user
   /// from the target's following list when we've blocked the target.
   List<String> _filterPubkeys(List<String> pubkeys) {
@@ -91,9 +88,9 @@ class OthersFollowingBloc
           forceRefresh: event.forceRefresh,
         ),
         onData: (result) {
-          _rawFollowingPubkeys = result.data.pubkeys;
           return state.copyWith(
             status: OthersFollowingStatus.success,
+            rawFollowingPubkeys: result.data.pubkeys,
             followingPubkeys: _filterPubkeys(result.data.pubkeys),
             isRefreshing: result.isStale,
           );
@@ -135,7 +132,9 @@ class OthersFollowingBloc
     if (state.status != OthersFollowingStatus.success) return;
 
     emit(
-      state.copyWith(followingPubkeys: _filterPubkeys(_rawFollowingPubkeys)),
+      state.copyWith(
+        followingPubkeys: _filterPubkeys(state.rawFollowingPubkeys),
+      ),
     );
   }
 }

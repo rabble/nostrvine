@@ -20,6 +20,7 @@ final class OthersFollowingState extends Equatable {
   const OthersFollowingState({
     this.status = OthersFollowingStatus.initial,
     this.followingPubkeys = const [],
+    this.rawFollowingPubkeys = const [],
     this.targetPubkey,
     this.isRefreshing = false,
   });
@@ -27,8 +28,14 @@ final class OthersFollowingState extends Equatable {
   /// The current status of the following list.
   final OthersFollowingStatus status;
 
-  /// List of pubkeys the target user is following.
+  /// List of pubkeys the target user is following (blocklist-filtered).
   final List<String> followingPubkeys;
+
+  /// Unfiltered following pubkeys as received from the repository.
+  ///
+  /// Stored in state so blocklist re-filtering can replay the full list
+  /// without waiting for a new network event.
+  final List<String> rawFollowingPubkeys;
 
   /// The pubkey whose following list is being viewed (for retry).
   final String? targetPubkey;
@@ -40,12 +47,14 @@ final class OthersFollowingState extends Equatable {
   OthersFollowingState copyWith({
     OthersFollowingStatus? status,
     List<String>? followingPubkeys,
+    List<String>? rawFollowingPubkeys,
     String? targetPubkey,
     bool? isRefreshing,
   }) {
     return OthersFollowingState(
       status: status ?? this.status,
       followingPubkeys: followingPubkeys ?? this.followingPubkeys,
+      rawFollowingPubkeys: rawFollowingPubkeys ?? this.rawFollowingPubkeys,
       targetPubkey: targetPubkey ?? this.targetPubkey,
       isRefreshing: isRefreshing ?? this.isRefreshing,
     );
@@ -55,6 +64,7 @@ final class OthersFollowingState extends Equatable {
   List<Object?> get props => [
     status,
     followingPubkeys,
+    rawFollowingPubkeys,
     targetPubkey,
     isRefreshing,
   ];

@@ -36,9 +36,6 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
   final FollowRepository _followRepository;
   final ContentBlocklistRepository _blocklistRepository;
 
-  /// Raw unfiltered following pubkeys for re-filtering on blocklist changes.
-  List<String> _rawFollowingPubkeys = [];
-
   /// Filter pubkeys by removing blocked users.
   List<String> _filterPubkeys(List<String> pubkeys) =>
       pubkeys.where((pk) => !_blocklistRepository.isBlocked(pk)).toList();
@@ -52,9 +49,9 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
       await emit.forEach<CacheResult<FollowingSnapshot>>(
         _followRepository.watchMyFollowingCached(),
         onData: (result) {
-          _rawFollowingPubkeys = result.data.pubkeys;
           return state.copyWith(
             status: MyFollowingStatus.success,
+            rawFollowingPubkeys: result.data.pubkeys,
             followingPubkeys: _filterPubkeys(result.data.pubkeys),
             isRefreshing: result.isStale,
           );
@@ -123,7 +120,9 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
     if (state.status != MyFollowingStatus.success) return;
 
     emit(
-      state.copyWith(followingPubkeys: _filterPubkeys(_rawFollowingPubkeys)),
+      state.copyWith(
+        followingPubkeys: _filterPubkeys(state.rawFollowingPubkeys),
+      ),
     );
   }
 }

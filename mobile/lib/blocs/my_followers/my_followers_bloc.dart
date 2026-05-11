@@ -32,9 +32,6 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
   final FollowRepository _followRepository;
   final ContentBlocklistRepository _blocklistRepository;
 
-  /// Raw unfiltered follower pubkeys for re-filtering on blocklist changes.
-  List<String> _rawFollowersPubkeys = [];
-
   /// Filter pubkeys by removing blocked and follow-severed users.
   List<String> _filterPubkeys(List<String> pubkeys) => pubkeys
       .where(
@@ -64,9 +61,9 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
       await emit.forEach<CacheResult<FollowersSnapshot>>(
         _followRepository.watchMyFollowersCached(),
         onData: (result) {
-          _rawFollowersPubkeys = result.data.pubkeys;
           return state.copyWith(
             status: MyFollowersStatus.success,
+            rawFollowersPubkeys: result.data.pubkeys,
             followersPubkeys: _filterPubkeys(result.data.pubkeys),
             followerCount: result.data.count,
             isRefreshing: result.isStale,
@@ -93,7 +90,9 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
     if (state.status != MyFollowersStatus.success) return;
 
     emit(
-      state.copyWith(followersPubkeys: _filterPubkeys(_rawFollowersPubkeys)),
+      state.copyWith(
+        followersPubkeys: _filterPubkeys(state.rawFollowersPubkeys),
+      ),
     );
   }
 }

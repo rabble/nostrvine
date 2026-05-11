@@ -45,20 +45,17 @@ class OthersFollowersBloc
   final ContentBlocklistRepository _blocklistRepository;
   final String _currentUserPubkey;
 
-  /// Raw unfiltered follower pubkeys for re-filtering on blocklist changes.
-  List<String> _rawFollowersPubkeys = [];
-  bool _isFollowingTarget = false;
-
   /// Filter pubkeys by removing blocked users.
-  List<String> _filterPubkeys(List<String> pubkeys) => pubkeys
+  List<String> _filterPubkeys(
+    List<String> pubkeys, {
+    required bool isFollowingTarget,
+  }) => pubkeys
       .where(
         (pk) =>
             !_blocklistRepository.isBlocked(pk) &&
-            !(_shouldHideCurrentUser() && pk == _currentUserPubkey),
+            !(!isFollowingTarget && pk == _currentUserPubkey),
       )
       .toList();
-
-  bool _shouldHideCurrentUser() => !_isFollowingTarget;
 
   /// Handle request to load another user's followers list.
   ///
@@ -91,16 +88,20 @@ class OthersFollowersBloc
           forceRefresh: event.forceRefresh,
         ),
         onData: (result) {
-          _isFollowingTarget = _followRepository.isFollowing(
+          final isFollowingTarget = _followRepository.isFollowing(
             event.targetPubkey,
           );
-          _rawFollowersPubkeys = result.data.pubkeys;
           return state.copyWith(
             status: .success,
             targetPubkey: event.targetPubkey,
-            followersPubkeys: _filterPubkeys(result.data.pubkeys),
+            rawFollowersPubkeys: result.data.pubkeys,
+            followersPubkeys: _filterPubkeys(
+              result.data.pubkeys,
+              isFollowingTarget: isFollowingTarget,
+            ),
             followerCount: max(result.data.pubkeys.length, result.data.count),
             isRefreshing: result.isStale,
+            isFollowingTarget: isFollowingTarget,
           );
         },
         onError: (error, stackTrace) {
@@ -139,16 +140,18 @@ class OthersFollowersBloc
     OthersFollowersIncrementRequested event,
     Emitter<OthersFollowersState> emit,
   ) {
-    if (_rawFollowersPubkeys.isEmpty && state.followersPubkeys.isNotEmpty) {
-      _rawFollowersPubkeys = [...state.followersPubkeys];
-    }
+    final rawPubkeys = state.rawFollowersPubkeys;
 
     // Only increment if not already in the list
-    if (!_rawFollowersPubkeys.contains(event.followerPubkey)) {
-      _rawFollowersPubkeys = [..._rawFollowersPubkeys, event.followerPubkey];
+    if (!rawPubkeys.contains(event.followerPubkey)) {
+      final newRaw = [...rawPubkeys, event.followerPubkey];
       emit(
         state.copyWith(
-          followersPubkeys: _filterPubkeys(_rawFollowersPubkeys),
+          rawFollowersPubkeys: newRaw,
+          followersPubkeys: _filterPubkeys(
+            newRaw,
+            isFollowingTarget: state.isFollowingTarget,
+          ),
           followerCount: state.followerCount + 1,
         ),
       );
@@ -165,18 +168,20 @@ class OthersFollowersBloc
     OthersFollowersDecrementRequested event,
     Emitter<OthersFollowersState> emit,
   ) {
-    if (_rawFollowersPubkeys.isEmpty && state.followersPubkeys.isNotEmpty) {
-      _rawFollowersPubkeys = [...state.followersPubkeys];
-    }
+    final rawPubkeys = state.rawFollowersPubkeys;
 
     // Only decrement if in the list
-    if (_rawFollowersPubkeys.contains(event.followerPubkey)) {
-      _rawFollowersPubkeys = _rawFollowersPubkeys
+    if (rawPubkeys.contains(event.followerPubkey)) {
+      final newRaw = rawPubkeys
           .where((pubkey) => pubkey != event.followerPubkey)
           .toList();
       emit(
         state.copyWith(
-          followersPubkeys: _filterPubkeys(_rawFollowersPubkeys),
+          rawFollowersPubkeys: newRaw,
+          followersPubkeys: _filterPubkeys(
+            newRaw,
+            isFollowingTarget: state.isFollowingTarget,
+          ),
           followerCount: max(0, state.followerCount - 1),
         ),
       );
@@ -196,7 +201,12 @@ class OthersFollowersBloc
     if (state.status != OthersFollowersStatus.success) return;
 
     emit(
-      state.copyWith(followersPubkeys: _filterPubkeys(_rawFollowersPubkeys)),
+      state.copyWith(
+        followersPubkeys: _filterPubkeys(
+          state.rawFollowersPubkeys,
+          isFollowingTarget: state.isFollowingTarget,
+        ),
+      ),
     );
   }
 }

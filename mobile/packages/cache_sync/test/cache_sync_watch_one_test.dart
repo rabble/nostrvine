@@ -36,11 +36,30 @@ void main() {
       ).toList();
 
       expect(events, hasLength(2));
-      expect(events[0].isLive, isFalse);
-      expect(events[0].data, equals(10));
-      expect(events[1].isLive, isTrue);
-      expect(events[1].data, equals(42));
+      expect(events[0], equals(const CacheResult.cached(10)));
+      expect(events[1], equals(const CacheResult.live(42)));
     });
+
+    // Overlay/isRefreshing contract: a live result MUST be emitted even when
+    // the fetched value is identical to the cached value. Any consumer that
+    // maps isStale → isRefreshing relies on this to dismiss loading overlays.
+    test(
+      'emits both cached and live when live data equals cached data',
+      () async {
+        await dao.write(key: 'same:key', payload: '42');
+
+        final events = await CacheSync.watchOne<int>(
+          key: 'same:key',
+          fetch: () async => 42,
+          fromJson: int.parse,
+          toJson: (v) => r'$v',
+        ).toList();
+
+        expect(events, hasLength(2));
+        expect(events[0], equals(const CacheResult.cached(42)));
+        expect(events[1], equals(const CacheResult.live(42)));
+      },
+    );
 
     test('writes live result to cache', () async {
       await CacheSync.watchOne<int>(

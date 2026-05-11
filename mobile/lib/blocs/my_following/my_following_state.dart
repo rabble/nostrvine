@@ -23,14 +23,21 @@ final class MyFollowingState extends Equatable {
   const MyFollowingState({
     this.status = MyFollowingStatus.initial,
     this.followingPubkeys = const [],
+    this.rawFollowingPubkeys = const [],
     this.isRefreshing = false,
   });
 
   /// The current status of the following list.
   final MyFollowingStatus status;
 
-  /// List of pubkeys the current user is following.
+  /// List of pubkeys the current user is following (blocklist-filtered).
   final List<String> followingPubkeys;
+
+  /// Unfiltered following pubkeys as received from the repository.
+  ///
+  /// Stored in state so blocklist re-filtering can replay the full list
+  /// without waiting for a new network event.
+  final List<String> rawFollowingPubkeys;
 
   /// True while stale cache data is shown and a fresh fetch is in progress.
   final bool isRefreshing;
@@ -42,15 +49,22 @@ final class MyFollowingState extends Equatable {
   MyFollowingState copyWith({
     MyFollowingStatus? status,
     List<String>? followingPubkeys,
+    List<String>? rawFollowingPubkeys,
     bool? isRefreshing,
   }) {
     return MyFollowingState(
       status: status ?? this.status,
       followingPubkeys: followingPubkeys ?? this.followingPubkeys,
+      rawFollowingPubkeys: rawFollowingPubkeys ?? this.rawFollowingPubkeys,
       isRefreshing: isRefreshing ?? this.isRefreshing,
     );
   }
 
   @override
-  List<Object?> get props => [status, followingPubkeys, isRefreshing];
+  List<Object?> get props => [
+    status,
+    followingPubkeys,
+    rawFollowingPubkeys,
+    isRefreshing,
+  ];
 }

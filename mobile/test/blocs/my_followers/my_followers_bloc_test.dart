@@ -73,6 +73,10 @@ void main() {
               validPubkey('follower1'),
               validPubkey('follower2'),
             ],
+            rawFollowersPubkeys: [
+              validPubkey('follower1'),
+              validPubkey('follower2'),
+            ],
             followerCount: 2,
           ),
         ],
@@ -102,11 +106,16 @@ void main() {
           MyFollowersState(
             status: MyFollowersStatus.success,
             followersPubkeys: [validPubkey('old')],
+            rawFollowersPubkeys: [validPubkey('old')],
             followerCount: 1,
           ),
           MyFollowersState(
             status: MyFollowersStatus.success,
             followersPubkeys: [
+              validPubkey('follower1'),
+              validPubkey('follower2'),
+            ],
+            rawFollowersPubkeys: [
               validPubkey('follower1'),
               validPubkey('follower2'),
             ],
@@ -136,6 +145,7 @@ void main() {
           MyFollowersState(
             status: MyFollowersStatus.success,
             followersPubkeys: [validPubkey('follower1')],
+            rawFollowersPubkeys: [validPubkey('follower1')],
             followerCount: 500,
           ),
         ],
@@ -200,6 +210,7 @@ void main() {
           MyFollowersState(
             status: MyFollowersStatus.success,
             followersPubkeys: [validPubkey('cached')],
+            rawFollowersPubkeys: [validPubkey('cached')],
             followerCount: 1,
           ),
         ],
@@ -231,6 +242,7 @@ void main() {
           MyFollowersState(
             status: MyFollowersStatus.success,
             followersPubkeys: [validPubkey('ok')],
+            rawFollowersPubkeys: [validPubkey('blocked'), validPubkey('ok')],
             followerCount: 2,
           ),
         ],
@@ -267,6 +279,7 @@ void main() {
           MyFollowersState(
             status: MyFollowersStatus.success,
             followersPubkeys: [validPubkey('b')],
+            rawFollowersPubkeys: [validPubkey('a'), validPubkey('b')],
             followerCount: 2,
           ),
         ],
@@ -329,6 +342,7 @@ void main() {
       expect(state.props, [
         MyFollowersStatus.success,
         ['pubkey1'],
+        <String>[], // rawFollowersPubkeys
         10,
         false, // isRefreshing
       ]);

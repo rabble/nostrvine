@@ -338,6 +338,7 @@ void main() {
         seed: () => OthersFollowersState(
           status: OthersFollowersStatus.success,
           followersPubkeys: [validPubkey('existing')],
+          rawFollowersPubkeys: [validPubkey('existing')],
           followerCount: 500,
           targetPubkey: validPubkey('target'),
         ),
@@ -347,6 +348,7 @@ void main() {
           OthersFollowersState(
             status: OthersFollowersStatus.success,
             followersPubkeys: [validPubkey('existing'), validPubkey('new')],
+            rawFollowersPubkeys: [validPubkey('existing'), validPubkey('new')],
             followerCount: 501,
             targetPubkey: validPubkey('target'),
           ),
@@ -359,6 +361,7 @@ void main() {
         seed: () => OthersFollowersState(
           status: OthersFollowersStatus.success,
           followersPubkeys: [validPubkey('existing')],
+          rawFollowersPubkeys: [validPubkey('existing')],
           followerCount: 1,
           targetPubkey: validPubkey('target'),
         ),
@@ -381,6 +384,7 @@ void main() {
           OthersFollowersState(
             status: OthersFollowersStatus.success,
             followersPubkeys: [validPubkey('first')],
+            rawFollowersPubkeys: [validPubkey('first')],
             followerCount: 1,
             targetPubkey: validPubkey('target'),
           ),
@@ -398,6 +402,10 @@ void main() {
             validPubkey('follower1'),
             validPubkey('follower2'),
           ],
+          rawFollowersPubkeys: [
+            validPubkey('follower1'),
+            validPubkey('follower2'),
+          ],
           followerCount: 500,
           targetPubkey: validPubkey('target'),
         ),
@@ -408,6 +416,7 @@ void main() {
           OthersFollowersState(
             status: OthersFollowersStatus.success,
             followersPubkeys: [validPubkey('follower2')],
+            rawFollowersPubkeys: [validPubkey('follower2')],
             followerCount: 499,
             targetPubkey: validPubkey('target'),
           ),
@@ -420,6 +429,7 @@ void main() {
         seed: () => OthersFollowersState(
           status: OthersFollowersStatus.success,
           followersPubkeys: [validPubkey('existing')],
+          rawFollowersPubkeys: [validPubkey('existing')],
           followerCount: 1,
           targetPubkey: validPubkey('target'),
         ),
@@ -435,6 +445,7 @@ void main() {
         seed: () => OthersFollowersState(
           status: OthersFollowersStatus.success,
           followersPubkeys: [validPubkey('only')],
+          rawFollowersPubkeys: [validPubkey('only')],
           followerCount: 1,
           targetPubkey: validPubkey('target'),
         ),
@@ -505,9 +516,11 @@ void main() {
       expect(state.props, [
         OthersFollowersStatus.success,
         ['pubkey1'],
+        <String>[], // rawFollowersPubkeys
         10,
         'target',
-        false,
+        false, // isRefreshing
+        false, // isFollowingTarget
       ]);
     });
   });
