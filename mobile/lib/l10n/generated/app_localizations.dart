@@ -12954,6 +12954,12 @@ abstract class AppLocalizations {
   /// **'We could not load your account review status.'**
   String get minorAccountReviewErrorTitle;
 
+  /// No description provided for @minorAccountReviewErrorBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Please try again in a moment.'**
+  String get minorAccountReviewErrorBody;
+
   /// No description provided for @minorAccountReviewTryAgain.
   ///
   /// In en, this message translates to:
@@ -13056,11 +13062,23 @@ abstract class AppLocalizations {
   /// **'Support email'**
   String get minorAccountReviewSupportEmailLabel;
 
+  /// No description provided for @minorAccountReviewCopySupportEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy support email'**
+  String get minorAccountReviewCopySupportEmail;
+
   /// No description provided for @minorAccountReviewSupportEmailCopied.
   ///
   /// In en, this message translates to:
   /// **'Support email copied'**
   String get minorAccountReviewSupportEmailCopied;
+
+  /// No description provided for @minorAccountReviewCopyCaseId.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy case ID'**
+  String get minorAccountReviewCopyCaseId;
 
   /// No description provided for @minorAccountReviewCaseIdCopied.
   ///

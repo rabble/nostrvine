@@ -7461,6 +7461,9 @@ class AppLocalizationsFil extends AppLocalizations {
       'We could not load your account review status.';
 
   @override
+  String get minorAccountReviewErrorBody => 'Please try again in a moment.';
+
+  @override
   String get minorAccountReviewTryAgain => 'Try Again';
 
   @override
@@ -7523,7 +7526,13 @@ class AppLocalizationsFil extends AppLocalizations {
   String get minorAccountReviewSupportEmailLabel => 'Support email';
 
   @override
+  String get minorAccountReviewCopySupportEmail => 'Copy support email';
+
+  @override
   String get minorAccountReviewSupportEmailCopied => 'Support email copied';
+
+  @override
+  String get minorAccountReviewCopyCaseId => 'Copy case ID';
 
   @override
   String get minorAccountReviewCaseIdCopied => 'Case ID copied';

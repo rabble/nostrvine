@@ -120,6 +120,83 @@ void main() {
       });
     });
 
+    group('minor account review endpoints', () {
+      test(
+        'getMinorAccountReviewStatus returns parsed response on success',
+        () async {
+          final mockResponse = MockResponse();
+          when(() => mockResponse.statusCode).thenReturn(200);
+          when(() => mockResponse.body).thenReturn(
+            jsonEncode({
+              'restriction': {'status': 'restricted_minor_review'},
+            }),
+          );
+
+          when(
+            () => mockClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer((_) async => mockResponse);
+
+          final result = await apiService.getMinorAccountReviewStatus();
+
+          expect(result['restriction'], isA<Map<String, dynamic>>());
+        },
+      );
+
+      test(
+        'getMinorAccountReviewStatus throws ApiException on non-200',
+        () async {
+          final mockResponse = MockResponse();
+          when(() => mockResponse.statusCode).thenReturn(503);
+          when(() => mockResponse.body).thenReturn('Unavailable');
+
+          when(
+            () => mockClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer((_) async => mockResponse);
+
+          expect(
+            apiService.getMinorAccountReviewStatus,
+            throwsA(
+              isA<ApiException>().having(
+                (e) => e.statusCode,
+                'statusCode',
+                503,
+              ),
+            ),
+          );
+        },
+      );
+
+      test(
+        'submitMinorAccountReviewParentContact posts email payload',
+        () async {
+          final mockResponse = MockResponse();
+          when(() => mockResponse.statusCode).thenReturn(204);
+          when(() => mockResponse.body).thenReturn('');
+
+          when(
+            () => mockClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer((_) async => mockResponse);
+
+          await apiService.submitMinorAccountReviewParentContact(
+            caseId: 'case-123',
+            email: 'parent@example.com',
+          );
+
+          verify(
+            () => mockClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: jsonEncode({'email': 'parent@example.com'}),
+            ),
+          ).called(1);
+        },
+      );
+    });
+
     group('ApiException', () {
       test('should format error message correctly', () {
         // Act
