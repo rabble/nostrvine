@@ -79,7 +79,7 @@ void main() {
       });
 
       test('not equal to unrelated object', () {
-        expect(snapshot == 'unrelated', isFalse);
+        expect(snapshot == ('unrelated' as Object), isFalse);
       });
     });
 
