@@ -6,6 +6,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
+import 'package:meta/meta.dart';
 import 'package:models/models.dart';
 import 'package:notification_repository/notification_repository.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
@@ -44,10 +45,17 @@ final notificationRealtimeBridgeProvider =
 /// when the underlying repository is being replaced (auth flip, sign-out).
 class NotificationRealtimeBridge {
   /// Creates a bridge and starts listening immediately.
-  NotificationRealtimeBridge({required NotificationRepository repository})
-    : _repository = repository {
-    _subscription = NotificationServiceEnhanced.instance.onNewNotification
-        .listen(_onModel, onError: _onError);
+  ///
+  /// [stream] defaults to `NotificationServiceEnhanced.instance.onNewNotification`
+  /// in production. Tests inject a controlled stream so the bridge can be
+  /// exercised without driving the WS service singleton.
+  NotificationRealtimeBridge({
+    required NotificationRepository repository,
+    Stream<NotificationModel>? stream,
+  }) : _repository = repository {
+    _subscription =
+        (stream ?? NotificationServiceEnhanced.instance.onNewNotification)
+            .listen(_onModel, onError: _onError);
   }
 
   final NotificationRepository _repository;
@@ -55,7 +63,7 @@ class NotificationRealtimeBridge {
 
   Future<void> _onModel(NotificationModel model) async {
     try {
-      await _repository.acceptRealtime(_modelToRelay(model));
+      await _repository.acceptRealtime(modelToRelay(model));
     } catch (e, s) {
       Log.error(
         'NotificationRealtimeBridge: failed to accept realtime: $e',
@@ -90,7 +98,8 @@ class NotificationRealtimeBridge {
   /// Lossy by design — fields the WS path does not carry (server-side
   /// `referenced_video` payload) are populated best-effort from the
   /// model's metadata map.
-  static RelayNotification _modelToRelay(NotificationModel model) {
+  @visibleForTesting
+  static RelayNotification modelToRelay(NotificationModel model) {
     final metadata = model.metadata;
     final sourceEventId = (metadata?['sourceEventId'] as String?) ?? model.id;
     final referencedDTag = metadata?['referencedDTag'] as String?;
@@ -104,13 +113,40 @@ class NotificationRealtimeBridge {
       createdAt: model.timestamp,
       read: model.isRead,
       referencedEventId: model.targetEventId,
-      content: model.message,
+      content: _contentForType(model.type, metadata),
       isReferencedVideo:
           model.targetVideoUrl != null || model.targetVideoThumbnail != null,
       referencedVideoTitle: referencedVideoTitle,
       referencedVideoThumbnail: model.targetVideoThumbnail,
       referencedDTag: referencedDTag,
     );
+  }
+
+  /// Extracts the raw body text for [type] from a [NotificationModel]'s
+  /// metadata.
+  ///
+  /// `NotificationServiceEnhanced` puts the comment body under
+  /// `metadata['comment']` and mention text under `metadata['text']`.
+  /// `notification_model_converter.dart` mirrors those keys on the REST
+  /// side and additionally writes a unified `metadata['content']` —
+  /// accepted here as a fallback. Likes, reposts, follows, and system
+  /// notifications have no raw body, so [content] stays null and rows
+  /// fall back to the presentation message produced by the repository.
+  static String? _contentForType(
+    NotificationType type,
+    Map<String, dynamic>? metadata,
+  ) {
+    if (metadata == null) return null;
+    return switch (type) {
+      NotificationType.comment =>
+        (metadata['comment'] as String?) ?? (metadata['content'] as String?),
+      NotificationType.mention =>
+        (metadata['text'] as String?) ?? (metadata['content'] as String?),
+      NotificationType.like ||
+      NotificationType.repost ||
+      NotificationType.follow ||
+      NotificationType.system => null,
+    };
   }
 
   /// Returns the Nostr kind the WS service uses for the given

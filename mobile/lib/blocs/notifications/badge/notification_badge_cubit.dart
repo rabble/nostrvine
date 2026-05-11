@@ -33,8 +33,8 @@ class NotificationBadgeCubit extends Cubit<int> {
   StreamSubscription<int>? _subscription;
 
   @override
-  Future<void> close() {
-    _subscription?.cancel();
-    return super.close();
+  Future<void> close() async {
+    await _subscription?.cancel();
+    await super.close();
   }
 }

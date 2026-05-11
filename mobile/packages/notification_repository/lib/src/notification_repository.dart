@@ -69,6 +69,18 @@ class NotificationRepository {
   /// Last cursor returned by the API, used for pagination.
   String? _lastCursor;
 
+  /// Nostr event ids the repository has ingested via either path.
+  ///
+  /// Populated from every raw notification's `sourceEventId` as it flows
+  /// through [_enrichAndGroup] — REST-loaded items carry the Nostr event
+  /// id in `sourceEventId` (with the server's UUID in `id`), while
+  /// WS-loaded items carry the Nostr event id in both fields. Querying
+  /// `raw.id` against this set in [acceptRealtime] therefore catches the
+  /// "same logical event arrives via REST then via WS" case the legacy
+  /// `notification_realtime_bridge_provider.dart` covered with its
+  /// `metadata['sourceEventId'] == notification.id` check.
+  final Set<String> _knownSourceEventIds = <String>{};
+
   /// Reactive snapshot of the enriched, grouped notification feed.
   ///
   /// Single source of truth for the feed bloc (list rendering) and the
@@ -169,14 +181,14 @@ class NotificationRepository {
     final before = _snapshot.value;
     _snapshot.add(before.copyWith(items: _flipIsRead(before.items, idSet)));
 
-    final authHeaders = _authHeadersProvider != null
-        ? await _authHeadersProvider(
-            '/api/users/$_userPubkey/notifications/read',
-            'POST',
-          )
-        : <String, String>{};
-
     try {
+      final authHeaders = _authHeadersProvider != null
+          ? await _authHeadersProvider(
+              '/api/users/$_userPubkey/notifications/read',
+              'POST',
+            )
+          : <String, String>{};
+
       await _funnelcakeApiClient.markNotificationsRead(
         pubkey: _userPubkey,
         notificationIds: ids,
@@ -205,14 +217,14 @@ class NotificationRepository {
 
     _snapshot.add(before.copyWith(items: _flipAllRead(before.items)));
 
-    final authHeaders = _authHeadersProvider != null
-        ? await _authHeadersProvider(
-            '/api/users/$_userPubkey/notifications/read',
-            'POST',
-          )
-        : <String, String>{};
-
     try {
+      final authHeaders = _authHeadersProvider != null
+          ? await _authHeadersProvider(
+              '/api/users/$_userPubkey/notifications/read',
+              'POST',
+            )
+          : <String, String>{};
+
       await _funnelcakeApiClient.markNotificationsRead(
         pubkey: _userPubkey,
         authHeaders: authHeaders,
@@ -246,6 +258,14 @@ class NotificationRepository {
   /// `mobile/lib/providers/notification_realtime_bridge_provider.dart`
   /// which wrote into the now-unused Riverpod cache.
   Future<void> acceptRealtime(RelayNotification raw) async {
+    // Cross-path dedupe: REST raws carry the Nostr event id in
+    // `sourceEventId`, WS raws (built by `notification_realtime_bridge.dart`)
+    // carry it in `id`. The legacy bridge checked
+    // `metadata['sourceEventId'] == notification.id` for the same reason —
+    // skip a WS arrival when the same Nostr event was already loaded over
+    // REST.
+    if (raw.id.isNotEmpty && _knownSourceEventIds.contains(raw.id)) return;
+
     final enriched = await _enrichAndGroup([raw]);
     if (enriched.isEmpty) return;
 
@@ -363,6 +383,12 @@ class NotificationRepository {
     List<RelayNotification> raw,
   ) async {
     if (raw.isEmpty) return [];
+
+    for (final n in raw) {
+      if (n.sourceEventId.isNotEmpty) {
+        _knownSourceEventIds.add(n.sourceEventId);
+      }
+    }
 
     final pubkeys = raw.map((n) => n.sourcePubkey).toSet().toList();
     final eventIds = raw

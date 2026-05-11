@@ -1,6 +1,8 @@
 // ABOUTME: Unit tests for NotificationBadgeCubit.
 // ABOUTME: Verifies stream subscription, emission, and cleanup.
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -62,6 +64,21 @@ void main() {
       expect(cubit.state, equals(0));
 
       cubit.close();
+    });
+
+    test('cancels subscription on close', () async {
+      final controller = StreamController<int>();
+      when(
+        () => repository.watchUnreadCount(),
+      ).thenAnswer((_) => controller.stream);
+
+      final cubit = buildCubit();
+      await cubit.close();
+
+      // Adding to the controller after close should not throw — the
+      // subscription was cancelled (and awaited) before super.close().
+      controller.add(5);
+      await controller.close();
     });
   });
 }

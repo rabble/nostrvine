@@ -997,6 +997,59 @@ void main() {
           ),
         );
       });
+
+      test(
+        'rolls back the optimistic snapshot when authHeadersProvider throws',
+        () async {
+          // authHeadersProvider returns headers for GET (initial refresh)
+          // but throws on POST (the mark-read call). The rollback boundary
+          // must cover this failure mode — pre-fix it didn't, so the
+          // optimistic isRead=true flip stayed live with no server write.
+          repository = NotificationRepository(
+            funnelcakeApiClient: funnelcakeApiClient,
+            profileRepository: profileRepository,
+            notificationsDao: notificationsDao,
+            userPubkey: userPubkey,
+            nostrClient: nostrClient,
+            authHeadersProvider: (url, method) async {
+              if (method == 'POST') {
+                throw Exception('signer unavailable');
+              }
+              return {'Authorization': 'Nostr test-token'};
+            },
+          );
+
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+          });
+          stubNotifications([makeNotification()], unreadCount: 1);
+          await repository.refresh();
+
+          final loadedId =
+              (await repository.watchSnapshot().first).items.first.id;
+          expect(await repository.watchUnreadCount().first, equals(1));
+
+          await expectLater(
+            repository.markAsRead([loadedId]),
+            throwsA(isA<Exception>()),
+          );
+
+          expect(
+            await repository.watchUnreadCount().first,
+            equals(1),
+            reason:
+                'Auth-header failure must roll back the optimistic flip — '
+                'the snapshot should return to its pre-call state.',
+          );
+          verifyNever(
+            () => funnelcakeApiClient.markNotificationsRead(
+              pubkey: any(named: 'pubkey'),
+              notificationIds: any(named: 'notificationIds'),
+              authHeaders: any(named: 'authHeaders'),
+            ),
+          );
+        },
+      );
     });
 
     group('markAllAsRead', () {
@@ -1031,6 +1084,52 @@ void main() {
         ).called(1);
         verify(() => notificationsDao.markAllAsRead()).called(1);
       });
+
+      test(
+        'rolls back the optimistic snapshot when authHeadersProvider throws',
+        () async {
+          repository = NotificationRepository(
+            funnelcakeApiClient: funnelcakeApiClient,
+            profileRepository: profileRepository,
+            notificationsDao: notificationsDao,
+            userPubkey: userPubkey,
+            nostrClient: nostrClient,
+            authHeadersProvider: (url, method) async {
+              if (method == 'POST') {
+                throw Exception('signer unavailable');
+              }
+              return {'Authorization': 'Nostr test-token'};
+            },
+          );
+
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+          });
+          stubNotifications([makeNotification()], unreadCount: 1);
+          await repository.refresh();
+
+          expect(await repository.watchUnreadCount().first, equals(1));
+
+          await expectLater(
+            repository.markAllAsRead(),
+            throwsA(isA<Exception>()),
+          );
+
+          expect(
+            await repository.watchUnreadCount().first,
+            equals(1),
+            reason:
+                'Auth-header failure must roll back the optimistic flip — '
+                'the snapshot should return to its pre-call state.',
+          );
+          verifyNever(
+            () => funnelcakeApiClient.markNotificationsRead(
+              pubkey: any(named: 'pubkey'),
+              authHeaders: any(named: 'authHeaders'),
+            ),
+          );
+        },
+      );
     });
 
     group('authHeadersProvider', () {
@@ -1343,7 +1442,7 @@ void main() {
           'pubkey_bob': makeProfile('pubkey_bob', displayName: 'Bob'),
         });
         stubNotifications([
-          makeNotification(id: 'n1', sourcePubkey: 'pubkey_alice'),
+          makeNotification(),
           makeNotification(
             id: 'n2',
             sourcePubkey: 'pubkey_bob',
@@ -1517,6 +1616,55 @@ void main() {
                 'continues to grow.',
           );
           expect(merged.actors.first.pubkey, equals('pubkey_dave'));
+        },
+      );
+
+      test(
+        'acceptRealtime dedupes a WS arrival whose id matches a REST '
+        "item's sourceEventId",
+        () async {
+          // REST raws carry the Nostr event id in `sourceEventId` (server's
+          // UUID lives in `id`). WS raws — built by the realtime bridge —
+          // carry the Nostr event id in `id`. Without the cross-path check
+          // the same logical Nostr event accepted via WS after REST would
+          // inflate the snapshot and the unread count.
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+          });
+          stubNotifications([
+            makeNotification(
+              id: 'server-uuid-1',
+              sourceEventId: 'nostr-evt-1',
+              referencedEventId: 'video_a',
+            ),
+          ], unreadCount: 1);
+          await repository.refresh();
+
+          final beforeItems =
+              (await repository.watchSnapshot().first).items.length;
+          expect(await repository.watchUnreadCount().first, equals(1));
+
+          // Same Nostr event arriving over WS — bridge sets both `id` and
+          // `sourceEventId` to the Nostr event id.
+          await repository.acceptRealtime(
+            makeNotification(
+              id: 'nostr-evt-1',
+              sourceEventId: 'nostr-evt-1',
+              referencedEventId: 'video_a',
+              createdAt: DateTime(2025, 6),
+            ),
+          );
+
+          final afterItems =
+              (await repository.watchSnapshot().first).items.length;
+          expect(afterItems, equals(beforeItems));
+          expect(
+            await repository.watchUnreadCount().first,
+            equals(1),
+            reason:
+                'Cross-path duplicate must not bump the unread count or the '
+                'visible item count.',
+          );
         },
       );
 
