@@ -6,12 +6,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/app_update/app_update.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
+import 'package:openvine/blocs/notifications/badge/notification_badge_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
-import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -22,6 +22,9 @@ class _MockAuthService extends Mock implements AuthService {}
 
 class _MockDmUnreadCountCubit extends MockCubit<int>
     implements DmUnreadCountCubit {}
+
+class _MockNotificationBadgeCubit extends MockCubit<int>
+    implements NotificationBadgeCubit {}
 
 class _MockAppUpdateBloc extends MockBloc<AppUpdateEvent, AppUpdateState>
     implements AppUpdateBloc {}
@@ -35,12 +38,16 @@ Widget _buildSubject({
   final dmCubit = _MockDmUnreadCountCubit();
   when(() => dmCubit.state).thenReturn(dmUnreadCount);
 
+  final notifBadgeCubit = _MockNotificationBadgeCubit();
+  when(() => notifBadgeCubit.state).thenReturn(unreadCount);
+
   final appUpdateBloc = _MockAppUpdateBloc();
   when(() => appUpdateBloc.state).thenReturn(const AppUpdateState());
 
   return MultiBlocProvider(
     providers: [
       BlocProvider<DmUnreadCountCubit>.value(value: dmCubit),
+      BlocProvider<NotificationBadgeCubit>.value(value: notifBadgeCubit),
       BlocProvider<AppUpdateBloc>.value(value: appUpdateBloc),
     ],
     child: ProviderScope(
@@ -59,7 +66,6 @@ Widget _buildSubject({
         currentEnvironmentProvider.overrideWithValue(
           EnvironmentConfig.production,
         ),
-        relayNotificationUnreadCountProvider.overrideWithValue(unreadCount),
       ],
       child: const MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
