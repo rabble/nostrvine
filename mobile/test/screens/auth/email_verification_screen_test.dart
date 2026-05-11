@@ -435,7 +435,6 @@ void main() {
             deviceCode: 'persisted-device-code',
             verifier: 'persisted-verifier',
             email: 'user@example.com',
-            inviteCode: null,
           ),
         ).called(1);
       });
