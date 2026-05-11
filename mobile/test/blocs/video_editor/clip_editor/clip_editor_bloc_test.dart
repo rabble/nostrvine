@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -1141,6 +1142,49 @@ void main() {
               ),
         ],
         errors: () => [isA<AudioExtractionException>()],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'wraps unexpected extraction errors in Reportable with context',
+        build: () {
+          when(() => mockService.extractAudio(any())).thenThrow(
+            StateError('boom'),
+          );
+          return buildBloc(audioExtractionService: mockService);
+        },
+        seed: () => ClipEditorState(
+          clips: [_createClipWithFile()],
+        ),
+        act: (bloc) => bloc.add(
+          const ClipEditorAudioExtractionRequested(clipTitle: 'Test'),
+        ),
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) => s.isExtractingAudio,
+            'isExtractingAudio',
+            isTrue,
+          ),
+          isA<ClipEditorState>()
+              .having(
+                (s) => s.isExtractingAudio,
+                'isExtractingAudio',
+                isFalse,
+              )
+              .having(
+                (s) => s.lastAudioExtraction,
+                'lastAudioExtraction',
+                isA<ClipAudioExtractionFailure>(),
+              ),
+        ],
+        errors: () => [
+          isA<Reportable<Object>>()
+              .having((r) => r.unwrap(), 'unwrap', isA<StateError>())
+              .having(
+                (r) => r.context,
+                'context',
+                '_onAudioExtractionRequested',
+              ),
+        ],
       );
 
       // Regression test for Fix 1: the handler must re-read `state.clips` after
