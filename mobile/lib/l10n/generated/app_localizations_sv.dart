@@ -7818,33 +7818,27 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get minorAccountReviewUnder13PublicTitle => 'Under-13 accounts';
+  String get minorAccountReviewUnder13PublicTitle =>
+      'We\'re sorry — we can\'t give you a Divine account today.';
 
   @override
   String get minorAccountReviewUnder13PublicBody =>
-      'If this account belongs to someone under 13, a parent or guardian should email Divine so our team can review what help is available.';
+      'Divine isn\'t built for people under 13. The rules mean we would have to ask for things from your parents that we are not willing to ask for, so we don\'t host accounts for kids your age.';
 
   @override
-  String get minorAccountReviewUnder13EmailTitle => 'Email Divine support';
+  String get minorAccountReviewUnder13FamilyTitle =>
+      'What your family can do instead';
 
   @override
-  String get minorAccountReviewUnder13ParentTitle =>
-      'What the parent or guardian should include';
+  String get minorAccountReviewUnder13FamilyBody =>
+      'A parent or guardian can hold the account, do the posting, and you can appear in videos with them. Families enjoying Divine together is welcome.';
 
   @override
-  String get minorAccountReviewUnder13ParentBody =>
-      'Tell us the account belongs to someone under 13 and share the details needed for our team to review the situation.';
+  String get minorAccountReviewUnder13ComeBackTitle => 'When you turn 13';
 
   @override
-  String get minorAccountReviewUnder13EmailCta => 'Email Divine support';
-
-  @override
-  String get minorAccountReviewUnder13PublicEmailSubject =>
-      'Under-13 account review help';
-
-  @override
-  String get minorAccountReviewUnder13PublicEmailBody =>
-      'Hi Divine support,\n\nI am the parent or guardian for a child under 13 and I am contacting Divine about account review help.\n\nThanks.';
+  String get minorAccountReviewUnder13ComeBackBody =>
+      'You can come back and create your own account with a quick step where a parent or guardian confirms they know about it.';
 
   @override
   String get minorAccountReviewTeenBody =>
@@ -7857,6 +7851,10 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get minorAccountReviewParentConsentBody =>
       'If parent or guardian contact is not possible or would put someone at risk, email Divine support and let us know.\n\nOtherwise, a parent or guardian should email Divine support with a short private video so our team can review the account and help with next steps.';
+
+  @override
+  String get minorAccountReviewParentConsentPauseNote =>
+      'This is a pause, not a dead end. The account is not active until Divine support reviews the video.';
 
   @override
   String get minorAccountReviewParentConsentChecklist =>

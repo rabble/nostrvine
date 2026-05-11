@@ -96,12 +96,20 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('Under-13 accounts'), findsOneWidget);
-      expect(find.text('Email Divine support'), findsAtLeastNWidgets(1));
       expect(
-        find.text('What the parent or guardian should include'),
+        find.text("We're sorry — we can't give you a Divine account today."),
         findsOneWidget,
       );
+      expect(
+        find.text('What your family can do instead'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('When you turn 13'),
+        findsOneWidget,
+      );
+      expect(find.text('Close', skipOffstage: false), findsOneWidget);
+      expect(find.text('Email Divine support'), findsNothing);
     });
 
     testWidgets('shows the public parent-consent screen copy', (tester) async {
@@ -117,6 +125,12 @@ void main() {
 
       expect(
         find.text('If the account belongs to someone 13 to 15'),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          'This is a pause, not a dead end. The account is not active until Divine support reviews the video.',
+        ),
         findsOneWidget,
       );
       expect(find.text('What the video should show'), findsOneWidget);

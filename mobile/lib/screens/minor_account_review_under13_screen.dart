@@ -1,24 +1,22 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/constants/app_constants.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/services/support_email_composer.dart';
+import 'package:openvine/screens/auth/welcome_screen.dart';
 
-class MinorAccountReviewUnder13Screen extends ConsumerWidget {
+class MinorAccountReviewUnder13Screen extends StatelessWidget {
   static const routeName = 'minor-account-review-under13';
   static const path = '/account-review/under-13';
-
-  static final _supportEmailComposer = SupportEmailComposer();
 
   const MinorAccountReviewUnder13Screen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: DiVineAppBar(
         title: context.l10n.minorAccountReviewTitle,
         showBackButton: true,
+        onBackPressed: () => _close(context),
       ),
       backgroundColor: VineTheme.backgroundColor,
       body: SafeArea(
@@ -39,20 +37,24 @@ class MinorAccountReviewUnder13Screen extends ConsumerWidget {
                   style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
                 ),
                 const SizedBox(height: 24),
-                _DetailCard(
-                  title: context.l10n.minorAccountReviewUnder13EmailTitle,
-                  body: AppConstants.supportEmail,
+                _CalloutCard(
+                  title: context.l10n.minorAccountReviewUnder13FamilyTitle,
+                  body: context.l10n.minorAccountReviewUnder13FamilyBody,
+                  backgroundColor: VineTheme.accentPinkBackground,
+                  borderColor: VineTheme.accentPink,
                 ),
                 const SizedBox(height: 16),
-                _DetailCard(
-                  title: context.l10n.minorAccountReviewUnder13ParentTitle,
-                  body: context.l10n.minorAccountReviewUnder13ParentBody,
+                _CalloutCard(
+                  title: context.l10n.minorAccountReviewUnder13ComeBackTitle,
+                  body: context.l10n.minorAccountReviewUnder13ComeBackBody,
+                  backgroundColor: VineTheme.surfaceContainer,
+                  borderColor: VineTheme.outlineVariant,
                 ),
                 const SizedBox(height: 24),
                 DivineButton(
-                  label: context.l10n.minorAccountReviewUnder13EmailCta,
+                  label: context.l10n.commonClose,
                   expanded: true,
-                  onPressed: () => _emailSupport(context),
+                  onPressed: () => _close(context),
                 ),
               ],
             ),
@@ -62,47 +64,44 @@ class MinorAccountReviewUnder13Screen extends ConsumerWidget {
     );
   }
 
-  Future<void> _emailSupport(BuildContext context) async {
-    try {
-      await _supportEmailComposer.compose(
-        toEmail: AppConstants.supportEmail,
-        subject: context.l10n.minorAccountReviewUnder13PublicEmailSubject,
-        body: context.l10n.minorAccountReviewUnder13PublicEmailBody,
-      );
-    } catch (_) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        DivineSnackbarContainer.snackBar(
-          context.l10n.authCouldNotOpenEmail(AppConstants.supportEmail),
-        ),
-      );
-    }
+  Future<void> _close(BuildContext context) async {
+    final popped = await Navigator.of(context).maybePop();
+    if (!context.mounted || popped) return;
+    context.go(WelcomeScreen.path);
   }
 }
 
-class _DetailCard extends StatelessWidget {
-  const _DetailCard({required this.title, required this.body});
+class _CalloutCard extends StatelessWidget {
+  const _CalloutCard({
+    required this.title,
+    required this.body,
+    required this.backgroundColor,
+    required this.borderColor,
+  });
 
   final String title;
   final String body;
+  final Color backgroundColor;
+  final Color borderColor;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: VineTheme.surfaceContainer,
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderColor.withValues(alpha: .45)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: VineTheme.labelMediumFont(color: VineTheme.secondaryText),
-          ),
+          Text(title, style: VineTheme.titleMediumFont()),
           const SizedBox(height: 8),
-          Text(body, style: VineTheme.bodyMediumFont()),
+          Text(
+            body,
+            style: VineTheme.bodyMediumFont(color: VineTheme.onSurface),
+          ),
         ],
       ),
     );
