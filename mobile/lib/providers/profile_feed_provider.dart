@@ -425,7 +425,6 @@ class ProfileFeed extends _$ProfileFeed {
                 initialLoadPending: _initialLoadPending,
                 videosEmpty: enrichedVideos.isEmpty,
               ),
-              mergeWithCurrent: false,
             );
           },
           callerName: 'ProfileFeedProvider',
