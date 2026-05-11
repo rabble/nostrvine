@@ -12825,7 +12825,7 @@ abstract class AppLocalizations {
   /// No description provided for @minorAccountReviewUnder13FamilyBody.
   ///
   /// In en, this message translates to:
-  /// **'A parent or guardian can hold the account, do the posting, and you can appear in videos with them. Families enjoying Divine together is welcome.'**
+  /// **'A parent or guardian can hold the account, do the posting, and you can appear in videos with them. Families enjoying Divine together are welcome.'**
   String get minorAccountReviewUnder13FamilyBody;
 
   /// No description provided for @minorAccountReviewUnder13ComeBackTitle.
@@ -12849,7 +12849,7 @@ abstract class AppLocalizations {
   /// No description provided for @minorAccountReviewParentConsentTitle.
   ///
   /// In en, this message translates to:
-  /// **'If the account belongs to someone 13 to 15'**
+  /// **'If the account will belong to someone 13 to 15'**
   String get minorAccountReviewParentConsentTitle;
 
   /// No description provided for @minorAccountReviewParentConsentBody.
