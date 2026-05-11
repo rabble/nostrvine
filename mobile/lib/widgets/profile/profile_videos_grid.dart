@@ -56,6 +56,15 @@ typedef _ActiveUpload = ({
   String? thumbnailPath,
 });
 
+/// Debug-only counter incremented at the top of every
+/// [_ProfileVideosGridState.build] call. Used by tests to pin the
+/// rebuild count to 1 across progress-only `BackgroundPublishBloc`
+/// emissions — a regression to identity-based list equality on the
+/// selector would tick this counter higher. The increment is wrapped
+/// in an `assert` so it is tree-shaken out of release builds.
+@visibleForTesting
+int debugProfileVideosGridBuildCount = 0;
+
 /// Equatable wrapper over the list of active uploads consumed by
 /// [_ProfileVideosGridState.build]. Exists because `context.select`
 /// compares its selected value with `==`, and a raw `List<_ActiveUpload>`
@@ -224,6 +233,10 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
 
   @override
   Widget build(BuildContext context) {
+    assert(() {
+      debugProfileVideosGridBuildCount++;
+      return true;
+    }());
     final authService = ref.read(authServiceProvider);
     final isOwnProfile = authService.currentPublicKeyHex == widget.userIdHex;
 

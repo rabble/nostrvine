@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -76,6 +78,7 @@ void main() {
       mockAuth = _MockAuthService();
       mockBloc = _MockBackgroundPublishBloc();
       when(() => mockBloc.state).thenReturn(const BackgroundPublishState());
+      debugProfileVideosGridBuildCount = 0;
     });
 
     Widget buildSubject({
@@ -528,37 +531,104 @@ void main() {
         },
       );
 
-      testWidgets('progress-only state emission updates the per-tile spinner', (
-        tester,
-      ) async {
-        when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+      testWidgets(
+        'progress-only state emission does not rebuild the grid '
+        'while the per-tile spinner still receives the update',
+        (tester) async {
+          when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
 
-        final draft = _createTestDraft();
-        final initial = BackgroundPublishState(
-          uploads: [
-            BackgroundUpload(draft: draft, result: null, progress: 0.1),
-          ],
-        );
-        final tick = BackgroundPublishState(
-          uploads: [
-            BackgroundUpload(draft: draft, result: null, progress: 0.9),
-          ],
-        );
+          final draft = _createTestDraft();
+          final initial = BackgroundPublishState(
+            uploads: [
+              BackgroundUpload(draft: draft, result: null, progress: 0.1),
+            ],
+          );
+          final tick = BackgroundPublishState(
+            uploads: [
+              BackgroundUpload(draft: draft, result: null, progress: 0.9),
+            ],
+          );
 
-        whenListen(mockBloc, Stream.value(tick), initialState: initial);
+          // Use an externally-driven broadcast stream so we can pump the
+          // initial Riverpod async (profileFeedProvider transitions from
+          // AsyncLoading → AsyncData and triggers an orthogonal rebuild
+          // via `ref.watch`) to a steady state before measuring the
+          // bloc-tick's incremental rebuild count.
+          final controller =
+              StreamController<BackgroundPublishState>.broadcast();
+          addTearDown(controller.close);
+          whenListen(mockBloc, controller.stream, initialState: initial);
 
-        await tester.pumpWidget(buildSubject(userIdHex: _ownPubkey));
-        // Flush the queued whenListen emission.
-        await tester.pump();
-        // PartialCircleSpinner.animateTo runs over 200ms — settle the
-        // implicit animation so we read the post-tick value.
-        await tester.pump(const Duration(milliseconds: 250));
+          await tester.pumpWidget(buildSubject(userIdHex: _ownPubkey));
+          // Settle initial async (Riverpod's profileFeedProvider, post-
+          // frame callbacks, etc.) — anything not caused by our tick.
+          await tester.pump();
+          final baselineBuildCount = debugProfileVideosGridBuildCount;
 
-        final spinner = tester.widget<PartialCircleSpinner>(
-          find.byType(PartialCircleSpinner),
-        );
-        expect(spinner.progress, closeTo(0.9, 1e-9));
-      });
+          // Now emit the progress-only update.
+          controller.add(tick);
+          await tester.pump();
+          // PartialCircleSpinner.animateTo runs over 200ms — settle the
+          // implicit animation so we read the post-tick value.
+          await tester.pump(const Duration(milliseconds: 250));
+
+          // (a) Grid did NOT rebuild as a result of the progress-only
+          // emission. A regression to identity-based list equality on
+          // the selector would tick this counter higher.
+          expect(debugProfileVideosGridBuildCount, equals(baselineBuildCount));
+
+          // (b) Per-tile spinner DID receive the updated progress —
+          // the tile's own context.select<...double>(...) projects to
+          // a primitive whose equality compares cleanly.
+          final spinner = tester.widget<PartialCircleSpinner>(
+            find.byType(PartialCircleSpinner),
+          );
+          expect(spinner.progress, closeTo(0.9, 1e-9));
+        },
+      );
+
+      testWidgets(
+        'shape-change state emission does rebuild the grid '
+        '(contrast for the rebuild-count counter)',
+        (tester) async {
+          when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+
+          final draftA = _createTestDraft(title: 'A');
+          final draftB = _createTestDraft(title: 'B');
+          final initial = BackgroundPublishState(
+            uploads: [
+              BackgroundUpload(draft: draftA, result: null, progress: 0.5),
+            ],
+          );
+          final shapeChange = BackgroundPublishState(
+            uploads: [
+              BackgroundUpload(draft: draftA, result: null, progress: 0.5),
+              BackgroundUpload(draft: draftB, result: null, progress: 0.5),
+            ],
+          );
+
+          final controller =
+              StreamController<BackgroundPublishState>.broadcast();
+          addTearDown(controller.close);
+          whenListen(mockBloc, controller.stream, initialState: initial);
+
+          await tester.pumpWidget(buildSubject(userIdHex: _ownPubkey));
+          await tester.pump();
+          final baselineBuildCount = debugProfileVideosGridBuildCount;
+
+          controller.add(shapeChange);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 250));
+
+          // Shape changed (a new upload appeared) → grid must rebuild
+          // so the new tile is added to the SliverGrid.
+          expect(
+            debugProfileVideosGridBuildCount,
+            greaterThan(baselineBuildCount),
+          );
+          expect(find.byType(PartialCircleSpinner), findsNWidgets(2));
+        },
+      );
     });
 
     group('scroll coordination with NestedScrollView', () {
