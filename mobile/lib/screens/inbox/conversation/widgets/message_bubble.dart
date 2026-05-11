@@ -15,6 +15,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/universal_link_resolver.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/video_link_preview_cubit.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
+import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -77,25 +78,32 @@ class MessageBubble extends StatelessWidget {
     final videoMatch = _divineVideoUrlRegex.firstMatch(message);
     final videoStableId = videoMatch?.group(1);
 
-    // Text surrounding the video URL (before / after), if any.
-    final String? textBeforeUrl;
+    // Text following the video URL, if any. Anything BEFORE the URL is
+    // intentionally dropped — the shared-video title from the message
+    // body now lives inside the video card's overlay footer instead.
     final String? textAfterUrl;
     if (videoMatch != null) {
-      final before = message.substring(0, videoMatch.start).trim();
       final after = message.substring(videoMatch.end).trim();
-      textBeforeUrl = before.isEmpty ? null : before;
       textAfterUrl = after.isEmpty ? null : after;
     } else {
-      textBeforeUrl = null;
       textAfterUrl = null;
     }
+
+    // Video shares are always rendered as standalone blocks: the
+    // thumbnail is too prominent to share a tail with an adjacent text
+    // bubble from the same sender. Force first-and-last-in-group so
+    // they get their own timestamp header, the tail corner on the
+    // sender's side, and the full 8 px outer padding above and below.
+    final hasVideo = videoStableId != null;
+    final effectiveIsFirstInGroup = hasVideo || isFirstInGroup;
+    final effectiveIsLastInGroup = hasVideo || isLastInGroup;
 
     return Padding(
       padding: EdgeInsets.only(
         left: 16,
         right: 16,
-        top: isFirstInGroup ? 8 : 2,
-        bottom: isLastInGroup ? 8 : 2,
+        top: effectiveIsFirstInGroup ? 8 : 2,
+        bottom: effectiveIsLastInGroup ? 8 : 2,
       ),
       child: Align(
         alignment: isSent
@@ -115,14 +123,14 @@ class MessageBubble extends StatelessWidget {
                 color: isSent
                     ? VineTheme.primaryAccessible
                     : VineTheme.surfaceContainer,
-                borderRadius: _borderRadius,
+                borderRadius: _borderRadiusFor(effectiveIsLastInGroup),
               ),
               child: Column(
                 crossAxisAlignment: isSent
                     ? CrossAxisAlignment.end
                     : CrossAxisAlignment.start,
                 children: [
-                  if (isFirstInGroup)
+                  if (effectiveIsFirstInGroup)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Text(
@@ -133,19 +141,23 @@ class MessageBubble extends StatelessWidget {
                       ),
                     ),
                   if (videoStableId != null) ...[
-                    if (textBeforeUrl != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: _MessageText(message: textBeforeUrl),
-                      ),
-                    _VideoLinkPreview(videoStableId: videoStableId),
+                    // Title that travels in the share message body is
+                    // suppressed — the video card now renders it inside
+                    // an overlay footer on the thumbnail itself.
+                    _VideoLinkPreview(
+                      videoStableId: videoStableId,
+                      isSent: isSent,
+                    ),
                     if (textAfterUrl != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
-                        child: _MessageText(message: textAfterUrl),
+                        child: _MessageText(
+                          message: textAfterUrl,
+                          isSent: isSent,
+                        ),
                       ),
                   ] else
-                    _MessageText(message: message),
+                    _MessageText(message: message, isSent: isSent),
                 ],
               ),
             ),
@@ -155,8 +167,8 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  BorderRadius get _borderRadius {
-    if (!isLastInGroup) {
+  BorderRadius _borderRadiusFor(bool lastInGroup) {
+    if (!lastInGroup) {
       return BorderRadius.circular(16);
     }
     return BorderRadius.only(
@@ -187,17 +199,22 @@ bool _isTrustedDomain(String host) {
 
 /// Renders message text with clickable URLs and Nostr references.
 class _MessageText extends StatelessWidget {
-  const _MessageText({required this.message});
+  const _MessageText({required this.message, required this.isSent});
 
   final String message;
+  final bool isSent;
 
   @override
   Widget build(BuildContext context) {
     final defaultStyle = VineTheme.bodyMediumFont();
+    // Sent bubbles have a primaryAccessible background → use white for
+    // contrast. Received bubbles use surfaceContainer → primary green
+    // reads cleanly there.
+    final linkColor = isSent ? VineTheme.whiteText : VineTheme.primary;
     final referenceStyle = defaultStyle.copyWith(
-      color: VineTheme.info,
+      color: linkColor,
       decoration: TextDecoration.underline,
-      decorationColor: VineTheme.info,
+      decorationColor: linkColor,
     );
     return ClickableHashtagText(
       text: message,
@@ -275,9 +292,13 @@ class _MessageText extends StatelessWidget {
 /// and renders state via [BlocBuilder]. Falls back to a tappable link when
 /// the video cannot be resolved.
 class _VideoLinkPreview extends ConsumerWidget {
-  const _VideoLinkPreview({required this.videoStableId});
+  const _VideoLinkPreview({
+    required this.videoStableId,
+    required this.isSent,
+  });
 
   final String videoStableId;
+  final bool isSent;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -292,6 +313,7 @@ class _VideoLinkPreview extends ConsumerWidget {
           VideoLinkPreviewLoading() => _buildLoadingPlaceholder(),
           VideoLinkPreviewNotFound() => _MessageText(
             message: 'https://divine.video/video/$videoStableId',
+            isSent: isSent,
           ),
           VideoLinkPreviewResolved(:final video) => _VideoCard(video: video),
         },
@@ -301,10 +323,10 @@ class _VideoLinkPreview extends ConsumerWidget {
 
   static Widget _buildLoadingPlaceholder() {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        height: 180,
-        width: double.infinity,
+        width: 248,
+        height: 350,
         color: VineTheme.cardBackground,
         child: const Center(
           child: SizedBox(
@@ -321,7 +343,9 @@ class _VideoLinkPreview extends ConsumerWidget {
   }
 }
 
-/// Tappable card showing a video thumbnail and title.
+/// Tappable 248×350 card showing a video thumbnail with the title and loop
+/// count rendered inside a gradient overlay footer. Mirrors the
+/// `part/video thumbnail` Figma component used elsewhere in the app.
 class _VideoCard extends StatelessWidget {
   const _VideoCard({required this.video});
 
@@ -329,30 +353,72 @@ class _VideoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final title = video.title;
+    final loops = video.totalLoops;
+    final hasTitle = title != null && title.isNotEmpty;
+    final hasLoops = loops > 0;
     return GestureDetector(
       onTap: () => context.push(VideoDetailScreen.pathForId(video.id)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: SizedBox(
-              height: 180,
-              width: double.infinity,
-              child: VideoThumbnailWidget(video: video),
-            ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: SizedBox(
+          width: 248,
+          height: 350,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              VideoThumbnailWidget(video: video),
+              if (hasTitle || hasLoops)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: DecoratedBox(
+                    // Soft bottom-of-thumbnail fade matching the home
+                    // feed video overlay: transparent → 50 %
+                    // VineTheme.backgroundColor. Top padding is
+                    // intentionally large so the gradient has room to
+                    // ease in over the thumbnail before reaching the
+                    // text — without it the fade would only span the
+                    // single line of label height and look abrupt.
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          VineTheme.backgroundColor.withValues(alpha: 0),
+                          VineTheme.backgroundColor.withValues(alpha: 0.5),
+                        ],
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 48, 12, 12),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (hasTitle)
+                            Text(
+                              title,
+                              style: VineTheme.labelMediumFont(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          if (hasLoops) ...[
+                            if (hasTitle) const SizedBox(height: 4),
+                            Text(
+                              '${StringUtils.formatCompactNumber(loops)} loops',
+                              style: VineTheme.bodySmallFont(),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
-          if (video.title != null && video.title!.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                video.title!,
-                style: VineTheme.labelLargeFont(),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }
