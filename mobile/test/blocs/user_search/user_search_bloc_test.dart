@@ -20,6 +20,13 @@ class _MockFeedPerformanceTracker extends Mock
     implements FeedPerformanceTracker {}
 
 void main() {
+  setUpAll(() {
+    // Required so `any(that: isA<SearchSourceSuccess>())` can be used as a
+    // matcher for the `SearchSourceStatus` parameter of `trackSearchSource`.
+    registerFallbackValue(const SearchSourcePending());
+    registerFallbackValue(SearchSource.localCache);
+  });
+
   group('UserSearchBloc', () {
     late _MockProfileRepository mockProfileRepository;
 
@@ -58,6 +65,24 @@ void main() {
       );
     }
 
+    /// Wraps [profiles] in a `ProgressiveSearchResult` envelope so the
+    /// mocked `searchUsersProgressive` returns the new stream shape.
+    /// Optional [sources] threads source provenance for tests that
+    /// assert on `state.sourceOutcomes`.
+    Stream<ProgressiveSearchResult> progressive(
+      List<UserProfile> profiles, {
+      Map<SearchSource, SearchSourceStatus>? sources,
+      bool isComplete = true,
+    }) {
+      return Stream.value(
+        ProgressiveSearchResult(
+          profiles: profiles,
+          sources: sources ?? const {},
+          isComplete: isComplete,
+        ),
+      );
+    }
+
     test('initial state is correct', () {
       final bloc = createBloc();
       expect(bloc.state.status, UserSearchStatus.initial);
@@ -85,7 +110,7 @@ void main() {
               hasVideos: any(named: 'hasVideos'),
             ),
           ).thenAnswer(
-            (_) => Stream.value([createTestProfile('a' * 64, 'Alice')]),
+            (_) => progressive([createTestProfile('a' * 64, 'Alice')]),
           );
         },
         build: createBloc,
@@ -131,7 +156,7 @@ void main() {
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer((_) => Stream.value(createTestProfiles(50)));
+          ).thenAnswer((_) => progressive(createTestProfiles(50)));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const UserSearchQueryChanged('test')),
@@ -162,7 +187,9 @@ void main() {
               hasVideos: any(named: 'hasVideos'),
             ),
           ).thenAnswer(
-            (_) => Stream<List<UserProfile>>.error(Exception('Network error')),
+            (_) => Stream<ProgressiveSearchResult>.error(
+              Exception('Network error'),
+            ),
           );
         },
         build: createBloc,
@@ -236,7 +263,7 @@ void main() {
               hasVideos: any(named: 'hasVideos'),
             ),
           ).thenAnswer(
-            (_) => Stream.value([createTestProfile('b' * 64, 'Flutter Dev 2')]),
+            (_) => progressive([createTestProfile('b' * 64, 'Flutter Dev 2')]),
           );
         },
         build: createBloc,
@@ -298,7 +325,7 @@ void main() {
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer((_) => Stream.value([]));
+          ).thenAnswer((_) => progressive([]));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const UserSearchQueryChanged('  bob  ')),
@@ -335,7 +362,7 @@ void main() {
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer((_) => Stream.value([]));
+          ).thenAnswer((_) => progressive([]));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const UserSearchQueryChanged('xyz')),
@@ -362,7 +389,7 @@ void main() {
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer((_) => Stream.value([]));
+          ).thenAnswer((_) => progressive([]));
         },
         build: createBloc,
         act: (bloc) {
@@ -443,12 +470,20 @@ void main() {
           ).thenAnswer(
             (_) => Stream.fromIterable([
               // First yield: local cached result
-              [createTestProfile('a' * 64, 'Alice Local')],
+              ProgressiveSearchResult(
+                profiles: [createTestProfile('a' * 64, 'Alice Local')],
+                sources: const {},
+                isComplete: false,
+              ),
               // Second yield: merged with remote
-              [
-                createTestProfile('a' * 64, 'Alice Local'),
-                createTestProfile('b' * 64, 'Alice Remote'),
-              ],
+              ProgressiveSearchResult(
+                profiles: [
+                  createTestProfile('a' * 64, 'Alice Local'),
+                  createTestProfile('b' * 64, 'Alice Remote'),
+                ],
+                sources: const {},
+                isComplete: true,
+              ),
             ]),
           );
         },
@@ -475,7 +510,7 @@ void main() {
       blocTest<UserSearchBloc, UserSearchState>(
         'emits success with partial results when stream times out',
         setUp: () {
-          final controller = StreamController<List<UserProfile>>();
+          final controller = StreamController<ProgressiveSearchResult>();
           when(
             () => mockProfileRepository.searchUsersProgressive(
               query: 'slow',
@@ -485,7 +520,13 @@ void main() {
             ),
           ).thenAnswer((_) {
             // Emit one batch then stall (never close the stream).
-            controller.add([createTestProfile('a' * 64, 'Slow User')]);
+            controller.add(
+              ProgressiveSearchResult(
+                profiles: [createTestProfile('a' * 64, 'Slow User')],
+                sources: const {},
+                isComplete: false,
+              ),
+            );
             return controller.stream;
           });
         },
@@ -501,11 +542,40 @@ void main() {
           isA<UserSearchState>()
               .having((s) => s.status, 'status', UserSearchStatus.loading)
               .having((s) => s.results.length, 'results.length', 1),
-          // Timeout fires → success with accumulated results
+          // Timeout fires → success with accumulated results AND every
+          // pending source marked failed(timeout) so the UI can
+          // distinguish degraded-empty from a true success.
           isA<UserSearchState>()
               .having((s) => s.status, 'status', UserSearchStatus.success)
               .having((s) => s.results.length, 'results.length', 1)
-              .having((s) => s.hasMore, 'hasMore', false),
+              .having((s) => s.hasMore, 'hasMore', false)
+              .having(
+                (s) => s.sourceOutcomes[SearchSource.localCache],
+                'local source outcome',
+                isA<SearchSourceFailed>().having(
+                  (f) => f.reason,
+                  'reason',
+                  SearchSourceFailureReason.timeout,
+                ),
+              )
+              .having(
+                (s) => s.sourceOutcomes[SearchSource.funnelcakeApi],
+                'api source outcome',
+                isA<SearchSourceFailed>().having(
+                  (f) => f.reason,
+                  'reason',
+                  SearchSourceFailureReason.timeout,
+                ),
+              )
+              .having(
+                (s) => s.sourceOutcomes[SearchSource.nip50Relay],
+                'relay source outcome',
+                isA<SearchSourceFailed>().having(
+                  (f) => f.reason,
+                  'reason',
+                  SearchSourceFailureReason.timeout,
+                ),
+              ),
         ],
       );
     });
@@ -521,7 +591,7 @@ void main() {
               offset: 50,
               sortBy: 'followers',
             ),
-          ).thenAnswer((_) => Stream.value(createTestProfiles(10)));
+          ).thenAnswer((_) => progressive(createTestProfiles(10)));
         },
         build: createBloc,
         seed: () => UserSearchState(
@@ -556,7 +626,20 @@ void main() {
               offset: 50,
               sortBy: 'followers',
             ),
-          ).thenAnswer((_) => Stream.fromIterable([partial, full]));
+          ).thenAnswer(
+            (_) => Stream.fromIterable([
+              ProgressiveSearchResult(
+                profiles: partial,
+                sources: const {},
+                isComplete: false,
+              ),
+              ProgressiveSearchResult(
+                profiles: full,
+                sources: const {},
+                isComplete: true,
+              ),
+            ]),
+          );
         },
         build: createBloc,
         seed: () => UserSearchState(
@@ -591,7 +674,7 @@ void main() {
               offset: 50,
               sortBy: 'followers',
             ),
-          ).thenAnswer((_) => Stream.value(createTestProfiles(50)));
+          ).thenAnswer((_) => progressive(createTestProfiles(50)));
         },
         build: createBloc,
         seed: () => UserSearchState(
@@ -662,7 +745,9 @@ void main() {
               sortBy: 'followers',
             ),
           ).thenAnswer(
-            (_) => Stream<List<UserProfile>>.error(Exception('Network error')),
+            (_) => Stream<ProgressiveSearchResult>.error(
+              Exception('Network error'),
+            ),
           );
         },
         build: createBloc,
@@ -729,7 +814,7 @@ void main() {
               hasVideos: any(named: 'hasVideos'),
               boostPubkeys: any(named: 'boostPubkeys'),
             ),
-          ).thenAnswer((_) => Stream.value([profile('01', 'Liz Sweigart')]));
+          ).thenAnswer((_) => progressive([profile('01', 'Liz Sweigart')]));
         },
         build: () {
           final follows = _MockFollowRepository();
@@ -764,7 +849,7 @@ void main() {
               hasVideos: any(named: 'hasVideos'),
               boostPubkeys: any(named: 'boostPubkeys'),
             ),
-          ).thenAnswer((_) => Stream.value([profile('00', 'Zoe')]));
+          ).thenAnswer((_) => progressive([profile('00', 'Zoe')]));
         },
         build: () {
           final follows = _MockFollowRepository();
@@ -802,7 +887,7 @@ void main() {
               hasVideos: any(named: 'hasVideos'),
               boostPubkeys: any(named: 'boostPubkeys'),
             ),
-          ).thenAnswer((_) => Stream.value([liz, zoe, maya]));
+          ).thenAnswer((_) => progressive([liz, zoe, maya]));
         },
         build: () {
           final follows = _MockFollowRepository();
@@ -841,7 +926,7 @@ void main() {
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer((_) => Stream.value([profile('99', 'Liz From Page 2')]));
+          ).thenAnswer((_) => progressive([profile('99', 'Liz From Page 2')]));
         },
         build: () {
           final follows = _MockFollowRepository();
@@ -883,7 +968,7 @@ void main() {
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer((_) => Stream.value([]));
+          ).thenAnswer((_) => progressive([]));
         },
         build: () => UserSearchBloc(
           profileRepository: mockProfileRepository,
@@ -914,7 +999,7 @@ void main() {
               sortBy: 'followers',
               hasVideos: true,
             ),
-          ).thenAnswer((_) => Stream.value(createTestProfiles(10)));
+          ).thenAnswer((_) => progressive(createTestProfiles(10)));
         },
         build: () => UserSearchBloc(
           profileRepository: mockProfileRepository,
@@ -951,7 +1036,7 @@ void main() {
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer((_) => Stream.value([]));
+          ).thenAnswer((_) => progressive([]));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const UserSearchQueryChanged('test')),
@@ -984,7 +1069,7 @@ void main() {
               hasVideos: any(named: 'hasVideos'),
             ),
           ).thenAnswer(
-            (_) => Stream.value([createTestProfile('a' * 64, 'Alice')]),
+            (_) => progressive([createTestProfile('a' * 64, 'Alice')]),
           );
           when(
             () => mockProfileRepository.searchUsersProgressive(
@@ -994,7 +1079,9 @@ void main() {
               hasVideos: any(named: 'hasVideos'),
             ),
           ).thenAnswer(
-            (_) => Stream<List<UserProfile>>.error(Exception('Network error')),
+            (_) => Stream<ProgressiveSearchResult>.error(
+              Exception('Network error'),
+            ),
           );
         },
         build: createBloc,
@@ -1053,7 +1140,7 @@ void main() {
               hasVideos: any(named: 'hasVideos'),
             ),
           ).thenAnswer(
-            (_) => Stream.value([createTestProfile('a' * 64, 'Alice')]),
+            (_) => progressive([createTestProfile('a' * 64, 'Alice')]),
           );
           when(
             () => mockProfileRepository.searchUsersProgressive(
@@ -1063,7 +1150,7 @@ void main() {
               hasVideos: any(named: 'hasVideos'),
             ),
           ).thenAnswer(
-            (_) => Stream.value([
+            (_) => progressive([
               createTestProfile('b' * 64, 'Bob'),
               createTestProfile('c' * 64, 'Bobby'),
             ]),
@@ -1128,7 +1215,7 @@ void main() {
               hasVideos: any(named: 'hasVideos'),
             ),
           ).thenAnswer(
-            (_) => Stream.value([createTestProfile('a' * 64, 'Alice')]),
+            (_) => progressive([createTestProfile('a' * 64, 'Alice')]),
           );
         },
         build: () => UserSearchBloc(profileRepository: mockProfileRepository),
@@ -1210,6 +1297,7 @@ void main() {
           1,
           true,
           false,
+          <SearchSource, SearchSourceStatus>{},
         ]);
       });
     });
@@ -1241,7 +1329,7 @@ void main() {
               hasVideos: any(named: 'hasVideos'),
             ),
           ).thenAnswer(
-            (_) => Stream.value([createTestProfile('a' * 64, 'Alice')]),
+            (_) => progressive([createTestProfile('a' * 64, 'Alice')]),
           );
         },
         build: createBlocWithTracker,
@@ -1269,7 +1357,9 @@ void main() {
               hasVideos: any(named: 'hasVideos'),
             ),
           ).thenAnswer(
-            (_) => Stream<List<UserProfile>>.error(Exception('Network error')),
+            (_) => Stream<ProgressiveSearchResult>.error(
+              Exception('Network error'),
+            ),
           );
         },
         build: createBlocWithTracker,
@@ -1296,6 +1386,224 @@ void main() {
         wait: debounceDuration,
         verify: (_) {
           verifyNever(() => mockTracker.startFeedLoad(any()));
+        },
+      );
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'forwards each terminal source outcome to trackSearchSource',
+        setUp: () {
+          when(
+            () => mockRepo.searchUsersProgressive(
+              query: 'alice',
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.value(
+              ProgressiveSearchResult(
+                profiles: [createTestProfile('a' * 64, 'Alice')],
+                sources: const {
+                  SearchSource.localCache: SearchSourceSuccess(
+                    resultCount: 1,
+                    latencyMs: 1,
+                  ),
+                  SearchSource.funnelcakeApi: SearchSourceFailed(
+                    reason: SearchSourceFailureReason.network,
+                    latencyMs: 200,
+                  ),
+                  SearchSource.nip50Relay: SearchSourceSkipped(),
+                },
+                isComplete: true,
+              ),
+            ),
+          );
+        },
+        build: createBlocWithTracker,
+        act: (bloc) => bloc.add(const UserSearchQueryChanged('alice')),
+        wait: debounceDuration,
+        verify: (_) {
+          verify(
+            () => mockTracker.trackSearchSource(
+              SearchSource.localCache,
+              any(that: isA<SearchSourceSuccess>()),
+            ),
+          ).called(1);
+          verify(
+            () => mockTracker.trackSearchSource(
+              SearchSource.funnelcakeApi,
+              any(that: isA<SearchSourceFailed>()),
+            ),
+          ).called(1);
+          verify(
+            () => mockTracker.trackSearchSource(
+              SearchSource.nip50Relay,
+              any(that: isA<SearchSourceSkipped>()),
+            ),
+          ).called(1);
+        },
+      );
+    });
+
+    group('source provenance', () {
+      const debounceDuration = Duration(milliseconds: 400);
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'round-trips sourceOutcomes from repository envelope into state',
+        setUp: () {
+          when(
+            () => mockProfileRepository.searchUsersProgressive(
+              query: 'alice',
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.value(
+              ProgressiveSearchResult(
+                profiles: [createTestProfile('a' * 64, 'Alice')],
+                sources: const {
+                  SearchSource.localCache: SearchSourceSuccess(
+                    resultCount: 1,
+                    latencyMs: 1,
+                  ),
+                  SearchSource.funnelcakeApi: SearchSourceSuccess(
+                    resultCount: 0,
+                    latencyMs: 50,
+                  ),
+                  SearchSource.nip50Relay: SearchSourceFailed(
+                    reason: SearchSourceFailureReason.timeout,
+                    latencyMs: 5000,
+                  ),
+                },
+                isComplete: true,
+              ),
+            ),
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const UserSearchQueryChanged('alice')),
+        wait: debounceDuration,
+        verify: (bloc) {
+          final relay = bloc.state.sourceOutcomes[SearchSource.nip50Relay];
+          expect(relay, isA<SearchSourceFailed>());
+          expect(
+            (relay! as SearchSourceFailed).reason,
+            SearchSourceFailureReason.timeout,
+          );
+          expect(
+            bloc.state.sourceOutcomes[SearchSource.localCache],
+            isA<SearchSourceSuccess>(),
+          );
+          expect(bloc.state.isDegradedEmpty, isFalse); // results non-empty
+        },
+      );
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'isDegradedEmpty becomes true when outer timeout fires on empty '
+        'accumulated results',
+        setUp: () {
+          // Never-completing stream that emits no envelope at all.
+          final controller = StreamController<ProgressiveSearchResult>();
+          when(
+            () => mockProfileRepository.searchUsersProgressive(
+              query: 'unreachable',
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+        },
+        build: () =>
+            createBloc(searchTimeout: const Duration(milliseconds: 10)),
+        act: (bloc) => bloc.add(const UserSearchQueryChanged('unreachable')),
+        wait: const Duration(milliseconds: 500),
+        verify: (bloc) {
+          expect(bloc.state.status, UserSearchStatus.success);
+          expect(bloc.state.results, isEmpty);
+          expect(bloc.state.isDegradedEmpty, isTrue);
+          for (final source in SearchSource.values) {
+            expect(
+              bloc.state.sourceOutcomes[source],
+              isA<SearchSourceFailed>().having(
+                (f) => f.reason,
+                'reason',
+                SearchSourceFailureReason.timeout,
+              ),
+            );
+          }
+        },
+      );
+
+      test('isDegradedEmpty getter: false on initial state', () {
+        const state = UserSearchState();
+        expect(state.isDegradedEmpty, isFalse);
+      });
+
+      test(
+        'isDegradedEmpty getter: false with non-empty results even when '
+        'a source failed',
+        () {
+          final profile = UserProfile(
+            pubkey: 'a' * 64,
+            displayName: 'Alice',
+            createdAt: DateTime.now(),
+            eventId: 'e1',
+            rawData: const {'display_name': 'Alice'},
+          );
+          final state = UserSearchState(
+            status: UserSearchStatus.success,
+            results: [profile],
+            sourceOutcomes: const {
+              SearchSource.nip50Relay: SearchSourceFailed(
+                reason: SearchSourceFailureReason.timeout,
+                latencyMs: 5000,
+              ),
+            },
+          );
+          expect(state.isDegradedEmpty, isFalse);
+        },
+      );
+
+      test(
+        'isDegradedEmpty getter: true with empty results and a failed '
+        'source',
+        () {
+          const state = UserSearchState(
+            status: UserSearchStatus.success,
+            sourceOutcomes: {
+              SearchSource.nip50Relay: SearchSourceFailed(
+                reason: SearchSourceFailureReason.timeout,
+                latencyMs: 5000,
+              ),
+            },
+          );
+          expect(state.isDegradedEmpty, isTrue);
+        },
+      );
+
+      test(
+        'isDegradedEmpty getter: false with empty results but all sources '
+        'succeeded (true empty)',
+        () {
+          const state = UserSearchState(
+            status: UserSearchStatus.success,
+            sourceOutcomes: {
+              SearchSource.localCache: SearchSourceSuccess(
+                resultCount: 0,
+                latencyMs: 1,
+              ),
+              SearchSource.funnelcakeApi: SearchSourceSuccess(
+                resultCount: 0,
+                latencyMs: 50,
+              ),
+              SearchSource.nip50Relay: SearchSourceSuccess(
+                resultCount: 0,
+                latencyMs: 500,
+              ),
+            },
+          );
+          expect(state.isDegradedEmpty, isFalse);
         },
       );
     });

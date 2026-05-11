@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart';
 import 'package:openvine/constants/search_constants.dart';
+import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:profile_repository/profile_repository.dart';
 
@@ -23,7 +24,7 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
     required ProfileRepository profileRepository,
     FollowRepository? followRepository,
     this.hasVideos = false,
-    this.searchTimeout = const Duration(seconds: 20),
+    this.searchTimeout = userSearchOuterTimeout,
     FeedPerformanceTracker? feedTracker,
   }) : _profileRepository = profileRepository,
        _followRepository = followRepository,
@@ -83,6 +84,10 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
 
     _feedTracker?.startFeedLoad('user_search');
     var trackedFirst = false;
+    // Snapshot of sources whose terminal status has already been
+    // forwarded to feedTracker — prevents duplicate events when a
+    // source's outcome is repeated across yields.
+    final trackedSources = <SearchSource>{};
 
     // Snapshot the follow graph once for this query so every progressive
     // yield uses the same boost set. Boost ordering is applied inside the
@@ -99,22 +104,29 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
         boostPubkeys: followedPubkeys,
       );
 
-      await emit.forEach<List<UserProfile>>(
+      await emit.forEach<ProgressiveSearchResult>(
         searchTimeout == null
             ? searchStream
             : searchStream.timeout(searchTimeout!),
-        onData: (results) {
-          if (!trackedFirst && results.isNotEmpty) {
+        onData: (result) {
+          if (!trackedFirst && result.profiles.isNotEmpty) {
             trackedFirst = true;
             _feedTracker?.markFirstVideosReceived(
               'user_search',
-              results.length,
+              result.profiles.length,
             );
+          }
+          for (final entry in result.sources.entries) {
+            if (entry.value is! SearchSourcePending &&
+                trackedSources.add(entry.key)) {
+              _feedTracker?.trackSearchSource(entry.key, entry.value);
+            }
           }
           return state.copyWith(
             status: UserSearchStatus.loading,
-            results: results,
-            resultCount: results.length,
+            results: result.profiles,
+            resultCount: result.profiles.length,
+            sourceOutcomes: result.sources,
           );
         },
       );
@@ -130,22 +142,49 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
 
       _feedTracker?.markFeedDisplayed('user_search', state.results.length);
     } on TimeoutException {
-      // Stream timed out — emit success with whatever results accumulated
-      // so far rather than leaving the UI stuck in loading.
+      // Outer stream timed out. Promote every source still in pending
+      // (or absent from the latest snapshot) to failed(timeout) so the
+      // UI's isDegradedEmpty getter can distinguish this from a true
+      // empty result.
+      final outerTimeoutMs = searchTimeout!.inMilliseconds;
+      final updatedOutcomes =
+          <SearchSource, SearchSourceStatus>{
+            for (final source in SearchSource.values)
+              source: switch (state.sourceOutcomes[source]) {
+                null || SearchSourcePending() => SearchSourceFailed(
+                  reason: SearchSourceFailureReason.timeout,
+                  latencyMs: outerTimeoutMs,
+                ),
+                final SearchSourceStatus s => s,
+              },
+          }..forEach((source, status) {
+            if (status is SearchSourceFailed &&
+                state.sourceOutcomes[source] is! SearchSourceFailed &&
+                trackedSources.add(source)) {
+              _feedTracker?.trackSearchSource(source, status);
+            }
+          });
+
       emit(
         state.copyWith(
           status: UserSearchStatus.success,
           offset: state.results.length,
           hasMore: false,
           isLoadingMore: false,
+          sourceOutcomes: updatedOutcomes,
         ),
       );
-    } on Exception catch (e) {
+    } on Exception catch (e, stackTrace) {
       _feedTracker?.trackFeedError(
         'user_search',
         errorType: 'search_failed',
         errorMessage: e.toString(),
       );
+      // Wrap with Reportable so unexpected non-network/non-timeout
+      // failures surface in Crashlytics. Per error_handling.md, the
+      // expected network/timeout exceptions are matrix-non-reportable
+      // — those land in the TimeoutException branch above.
+      addError(Reportable(e, context: '_onQueryChanged'), stackTrace);
       emit(state.copyWith(status: UserSearchStatus.failure));
     }
   }
@@ -159,7 +198,7 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
     emit(state.copyWith(isLoadingMore: true));
 
     try {
-      final moreResults = await _profileRepository
+      final result = await _profileRepository
           .searchUsersProgressive(
             query: state.query,
             limit: _pageSize,
@@ -169,13 +208,18 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
           )
           .last; // Stream always emits at least once for non-empty queries.
 
-      final allResults = [...state.results, ...moreResults];
+      // Pagination yields contain only the new page; we observe by
+      // counting the profiles in the terminal envelope (filter+boost
+      // applied) against pagination state. The new page is the slice
+      // that the repository computed for offset > 0.
+      final newPage = result.profiles;
+      final allResults = [...state.results, ...newPage];
 
       emit(
         state.copyWith(
           results: allResults,
           offset: allResults.length,
-          hasMore: moreResults.length == _pageSize,
+          hasMore: newPage.length == _pageSize,
           isLoadingMore: false,
         ),
       );

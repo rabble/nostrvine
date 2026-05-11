@@ -28,6 +28,7 @@ final class UserSearchState extends Equatable {
     this.offset = 0,
     this.hasMore = false,
     this.isLoadingMore = false,
+    this.sourceOutcomes = const {},
   });
 
   /// The current status of the search
@@ -51,6 +52,19 @@ final class UserSearchState extends Equatable {
   /// Whether a "load more" request is in progress
   final bool isLoadingMore;
 
+  /// Per-source outcome map for the current query. Populated as each
+  /// phase of `searchUsersProgressive` reports its terminal status.
+  /// Empty for [UserSearchStatus.initial].
+  final Map<SearchSource, SearchSourceStatus> sourceOutcomes;
+
+  /// `true` when no results are available AND at least one source
+  /// failed. UI surfaces a retry affordance in this state rather than
+  /// the standard "No results found" empty state — distinguishing a
+  /// true miss from a degraded search.
+  bool get isDegradedEmpty =>
+      results.isEmpty &&
+      sourceOutcomes.values.any((s) => s is SearchSourceFailed);
+
   /// Create a copy with updated values
   UserSearchState copyWith({
     UserSearchStatus? status,
@@ -60,6 +74,7 @@ final class UserSearchState extends Equatable {
     int? offset,
     bool? hasMore,
     bool? isLoadingMore,
+    Map<SearchSource, SearchSourceStatus>? sourceOutcomes,
   }) {
     return UserSearchState(
       status: status ?? this.status,
@@ -71,6 +86,7 @@ final class UserSearchState extends Equatable {
       offset: offset ?? this.offset,
       hasMore: hasMore ?? this.hasMore,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      sourceOutcomes: sourceOutcomes ?? this.sourceOutcomes,
     );
   }
 
@@ -83,6 +99,7 @@ final class UserSearchState extends Equatable {
     offset,
     hasMore,
     isLoadingMore,
+    sourceOutcomes,
   ];
 
   static const Object _unset = Object();
