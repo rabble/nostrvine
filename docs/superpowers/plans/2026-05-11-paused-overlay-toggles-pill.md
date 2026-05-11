@@ -12,6 +12,8 @@
 
 **Worktree:** `.worktrees/paused-overlay-toggles-pill` on branch `feat/paused-overlay-toggles-pill`. Run all Flutter commands from `mobile/`.
 
+**Tooling note.** All `flutter`/`dart` invocations in this plan are prefixed with `mise exec --` to use the repo's pinned Flutter version. If `mise` isn't installed on your machine, drop the prefix and use `flutter`/`dart` directly. The CI gate uses the pinned version regardless.
+
 ---
 
 ## File Structure
@@ -67,6 +69,24 @@ to any test file. `video_volume_state.dart` is a `part of 'video_volume_cubit.da
 file (first line of the source); importing a part file directly is a Dart
 compile error. `VideoVolumeState` is exported transitively through
 `import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';`.
+
+**Cubit-mock pattern (mandatory).** A bare `Mock implements VideoVolumeCubit`
+does **not** provide the internal stream-controller / `BlocBase` machinery
+that `context.select`, `BlocBuilder`, etc. introspect. The canonical pattern
+across this codebase (`mobile/test/screens/feed/video_feed_page_test.dart:33-34`,
+`mobile/test/screens/feed/pooled_fullscreen_video_feed_screen_test.dart:46-47`)
+is `MockCubit<VideoVolumeState>` from `package:bloc_test/bloc_test.dart`:
+
+```dart
+import 'package:bloc_test/bloc_test.dart';
+
+class _MockVideoVolumeCubit extends MockCubit<VideoVolumeState>
+    implements VideoVolumeCubit {}
+```
+
+`MockCubit` ships its own working stream/state machine, so the `stream` stub
+is unnecessary. Keep `when(() => volumeCubit.state).thenReturn(...)` —
+that's the standard idiom.
 
 ---
 
@@ -417,6 +437,7 @@ type is fragile. Each toggle has a unique `Semantics(label: …)` wrapper,
 which makes `find.bySemanticsLabel` precise and refactor-resistant.
 
 ```dart
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -432,7 +453,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../helpers/test_provider_overrides.dart';
 
-class _MockVideoVolumeCubit extends Mock implements VideoVolumeCubit {}
+class _MockVideoVolumeCubit extends MockCubit<VideoVolumeState>
+    implements VideoVolumeCubit {}
 
 void main() {
   group(FeedPlaybackTogglesPill, () {
@@ -446,8 +468,6 @@ void main() {
       autoAdvanceCubit = FeedAutoAdvanceCubit();
       volumeCubit = _MockVideoVolumeCubit();
       when(() => volumeCubit.state).thenReturn(const VideoVolumeState());
-      when(() => volumeCubit.stream)
-          .thenAnswer((_) => const Stream<VideoVolumeState>.empty());
       mockPrefs = createMockSharedPreferences();
     });
 
@@ -648,9 +668,14 @@ In `mobile/test/widgets/video_feed_item/paused_video_play_overlay_test.dart`:
 
    import '../../helpers/test_provider_overrides.dart';
    ```
-2. Add a private mock:
+2. Add the `bloc_test` import alongside the other new imports above:
    ```dart
-   class _MockVideoVolumeCubit extends Mock implements VideoVolumeCubit {}
+   import 'package:bloc_test/bloc_test.dart';
+   ```
+   And declare the private mock using `MockCubit` (NOT bare `Mock`):
+   ```dart
+   class _MockVideoVolumeCubit extends MockCubit<VideoVolumeState>
+       implements VideoVolumeCubit {}
    ```
 3. Inside the existing `group('PausedVideoPlayOverlay', …)`, add:
    ```dart
@@ -658,13 +683,16 @@ In `mobile/test/widgets/video_feed_item/paused_video_play_overlay_test.dart`:
    late VideoVolumeCubit volumeCubit;
    late SharedPreferences mockPrefs;
    ```
-   In `setUp`, initialize them:
+   In `setUp`, initialize them — and **also remove the now-dead player
+   volume stubs** (`when(() => mockPlayerState.volume).thenReturn(100.0);`
+   on the existing line ~37, and `when(() => mockPlayerStream.volume)...`
+   on the existing lines ~44–46). After Task 2.2 drops the
+   `StreamBuilder<double>` over `widget.player.stream.volume`, those
+   stubs are dead and `agent_workflow.md` rule 4 forbids leaving them:
    ```dart
    autoAdvanceCubit = FeedAutoAdvanceCubit();
    volumeCubit = _MockVideoVolumeCubit();
    when(() => volumeCubit.state).thenReturn(const VideoVolumeState());
-   when(() => volumeCubit.stream)
-       .thenAnswer((_) => const Stream<VideoVolumeState>.empty());
    mockPrefs = createMockSharedPreferences();
    ```
    In `tearDown`, close the cubit:
@@ -798,9 +826,14 @@ Apply these changes:
    ```dart
    import 'package:openvine/widgets/video_feed_item/feed_playback_toggles_pill.dart';
    ```
-   Remove the now-unused `package:flutter/semantics.dart` import — the
-   only `SemanticsService.sendAnnouncement` call was inside
-   `_PausedAffordance`'s mute toggle, which is being deleted.
+   Remove these imports — both become unused after the
+   `_PausedAffordance` mute-toggle deletion:
+   - `import 'package:flutter/semantics.dart';` (only call was
+     `SemanticsService.sendAnnouncement` inside the deleted mute
+     toggle)
+   - `import 'package:flutter/foundation.dart' show kIsWeb;` (only
+     reference was the deleted `if (!kIsWeb && muteToggle != null)`
+     guard inside `_PausedAffordance.build`)
 2. **Constructor & doc comments.** Remove the `onToggleMuteState` named
    parameter and field (and its associated doc comment, currently
    `paused_video_play_overlay.dart` lines 28–33). Then rewrite the doc
@@ -821,30 +854,41 @@ Apply these changes:
 3. **State.** In `_PausedVideoPlayOverlayState`:
    - Delete the `bool _hasStartedPlayback = false;` field and its doc
      comment.
-   - In `didUpdateWidget`, delete the
-     `_hasStartedPlayback = false;` line. The rest of the player-swap
-     reset logic stays.
-   - In `_subscribeToPlayback`, delete:
-     - The `final initialPlaying = widget.player.state.playing;` line.
-     - The `_hasStartedPlayback = widget.isVisible && initialPlaying;`
-       line.
-     - The whole `if (isPlaying && !_hasStartedPlayback && widget.isVisible) {…}` latch block inside the `.listen` callback.
-     - The `_hasStartedPlayback &&` clause from the unpause-feedback
-       check (line ~129):
-       ```dart
-       } else if (isPlaying &&
-           !wasPlaying &&
-           _hasStartedPlayback &&
-           widget.isVisible) {
-       ```
-       becomes:
-       ```dart
-       } else if (isPlaying && !wasPlaying && widget.isVisible) {
-       ```
-   - Keep `_previouslyPlaying = initialPlaying;` working by sourcing the
-     initial value inline:
+   - In `didUpdateWidget`, delete only the
+     `_hasStartedPlayback = false;` line. Keep
+     `_previouslyPlaying = false;`, `_pausedAt = null;`,
+     `_showUnpauseFeedback = false;`, `_unpauseFeedbackOpacity = 1.0;`,
+     and the surrounding `_subscribeToPlayback()` call.
+   - Rewrite `_subscribeToPlayback` to the body below. This deletes
+     three things relative to current source: the
+     `initialPlaying`/`_hasStartedPlayback` initial latch (current
+     lines 109–111), the inner `if (isPlaying && !_hasStartedPlayback
+     && widget.isVisible) { setState(...); return; }` block — **including
+     its early `return;`** — (current lines 119–124), and the
+     `_hasStartedPlayback &&` clause from the unpause-feedback else-if
+     (current line 130). The result:
      ```dart
-     _previouslyPlaying = widget.player.state.playing;
+     void _subscribeToPlayback() {
+       _previouslyPlaying = widget.player.state.playing;
+       _playingSubscription =
+           widget.player.stream.playing.listen((isPlaying) {
+         if (!mounted) return;
+         final wasPlaying = _previouslyPlaying;
+         _previouslyPlaying = isPlaying;
+
+         if (!isPlaying && wasPlaying) {
+           _pausedAt = clock.now();
+         } else if (isPlaying && !wasPlaying && widget.isVisible) {
+           final pauseDuration = _pausedAt != null
+               ? clock.now().difference(_pausedAt!)
+               : Duration.zero;
+           _pausedAt = null;
+           if (pauseDuration >= _minPauseForFeedback) {
+             _triggerUnpauseFeedback();
+           }
+         }
+       });
+     }
      ```
 4. **`_PlaybackChrome.build`.** Replace:
    ```dart
@@ -998,17 +1042,20 @@ cd mobile && mise exec -- flutter test \
 
 Expected: all passing.
 
-- [ ] **Step 3: Run the full widget+screen test directories that touch this surface, randomised**
+- [ ] **Step 3: Run the affected widget test directory randomised**
 
 ```bash
 cd mobile && mise exec -- flutter test \
   test/widgets/video_feed_item \
-  test/screens/feed \
   --test-randomize-ordering-seed random
 ```
 
-Expected: all green. Order-dependence in this surface is the kind of
-regression random ordering catches.
+Expected: all green. Scoped to `test/widgets/video_feed_item` because
+that's the only directory whose contents this PR touches at the widget
+level — the screen suites are deterministically covered in Step 2.
+Running random ordering against the broader `test/screens/feed` tree
+risks tripping on pre-existing order-sensitive tests that are outside
+this PR's scope.
 
 - [ ] **Step 4: Format**
 
@@ -1062,7 +1109,7 @@ mid-load), pause a video that's still buffering. Verify the pause icon
 **does not** flash during buffer; it appears once buffering completes
 and the player is paused.
 
-- [ ] **Step 5: Smoke test the preload-flicker regression**
+- [ ] **Step 5: Smoke test the preload-flicker regression (recorded)**
 
 The dropped `_hasStartedPlayback` latch was originally introduced to
 prevent a flicker on preloaded videos: during preload a pooled player
@@ -1071,18 +1118,26 @@ brief paused window between `isPlaying=false` and the player resuming
 will render the play icon, then immediately swap to playing through the
 180 ms `AnimatedSwitcher`.
 
-To exercise:
+A naked-eye check cannot reliably distinguish "no flicker" from
+"flicker too fast to see," so this must be a recorded smoke:
 
-1. On the home feed, swipe quickly between 4–5 consecutive videos
-   without lingering. Each swipe lands on a preloaded item.
-2. Watch the center of the screen at the moment a new video appears.
-   Verify the play icon does **not** flash before playback starts.
+1. iOS simulator: **File → Record Screen** (or `xcrun simctl io
+   booted recordVideo flicker.mp4` from a separate terminal). Android
+   emulator: extended controls → **Camera → Record screen**.
+2. With recording active, swipe through 6–8 consecutive videos on the
+   home feed at a natural pace.
+3. Stop recording. Scrub through `flicker.mp4` **frame by frame** (in
+   QuickTime: ← / → arrow keys; in VLC: `E`). Watch the center of the
+   frame as each video first becomes active.
+4. Verify the play icon does **not** appear for any frame before
+   playback starts. Acceptable: the play icon is absent. Not
+   acceptable: a play icon visible for ≥1 frame on any preload swap.
 
-If it does flash, the contingency from the spec applies: introduce a
-short debounce (~100 ms) before showing `_PausedAffordance`. Do NOT
-reintroduce the full `_hasStartedPlayback` latch — that defeats the
-whole change. Log it as a follow-up issue if the flash is borderline,
-or block the PR if it's obvious.
+If a flash is present, the contingency from the spec applies:
+introduce a short debounce (~100 ms) before showing `_PausedAffordance`.
+Do NOT reintroduce the full `_hasStartedPlayback` latch — that defeats
+the whole change. Block the PR if any flash is visible; do not ship
+"borderline."
 
 ### Task 3.3: Rebase, push, open PR
 
