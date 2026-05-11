@@ -3,6 +3,14 @@
 
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:profile_repository/profile_repository.dart'
+    show
+        SearchSource,
+        SearchSourceFailed,
+        SearchSourcePending,
+        SearchSourceSkipped,
+        SearchSourceStatus,
+        SearchSourceSuccess;
 import 'package:unified_logger/unified_logger.dart';
 
 /// Maximum age for a session before it is considered stale and discarded.
@@ -302,6 +310,32 @@ class FeedPerformanceTracker {
   void markVideoSwipeComplete(String videoId) {
     final feedType = 'video_swipe_$videoId';
     markFeedDisplayed(feedType, 1);
+  }
+
+  /// Track terminal outcome of one source in user-profile search.
+  ///
+  /// Called by `UserSearchBloc` once per source per query, when the
+  /// source transitions from pending into a terminal state
+  /// ([SearchSourceSuccess], [SearchSourceFailed], or
+  /// [SearchSourceSkipped]). Pending statuses are intentionally not
+  /// tracked — they would inflate the event count without adding signal.
+  void trackSearchSource(SearchSource source, SearchSourceStatus status) {
+    final parameters = <String, Object>{'source': source.name};
+    switch (status) {
+      case SearchSourcePending():
+        return;
+      case SearchSourceSkipped():
+        parameters['status'] = 'skipped';
+      case SearchSourceSuccess(:final resultCount, :final latencyMs):
+        parameters['status'] = 'success';
+        parameters['result_count'] = resultCount;
+        parameters['latency_ms'] = latencyMs;
+      case SearchSourceFailed(:final reason, :final latencyMs):
+        parameters['status'] = 'failed';
+        parameters['reason'] = reason.name;
+        parameters['latency_ms'] = latencyMs;
+    }
+    _analytics?.logEvent(name: 'user_search_source', parameters: parameters);
   }
 
   /// Track video discovery source

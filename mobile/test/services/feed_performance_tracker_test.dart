@@ -4,6 +4,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
+import 'package:profile_repository/profile_repository.dart';
 
 class _MockFeedPerformanceTracker extends Mock
     implements FeedPerformanceTracker {}
@@ -48,6 +49,40 @@ void main() {
 
         verify(() => tracker.startVideoSwipeTracking(videoId)).called(1);
         verify(() => tracker.markVideoSwipeComplete(videoId)).called(1);
+      });
+    });
+
+    group('trackSearchSource', () {
+      late FeedPerformanceTracker tracker;
+
+      setUp(() {
+        // Real instance with analytics bypassed so the call path is
+        // exercised end-to-end without requiring Firebase init.
+        tracker = FeedPerformanceTracker.testInstance();
+      });
+
+      test('does not throw for any terminal source status', () {
+        // Each branch of the switch is exercised; pending is a no-op.
+        tracker
+          ..trackSearchSource(
+            SearchSource.localCache,
+            const SearchSourcePending(),
+          )
+          ..trackSearchSource(
+            SearchSource.localCache,
+            const SearchSourceSkipped(),
+          )
+          ..trackSearchSource(
+            SearchSource.funnelcakeApi,
+            const SearchSourceSuccess(resultCount: 3, latencyMs: 42),
+          )
+          ..trackSearchSource(
+            SearchSource.nip50Relay,
+            const SearchSourceFailed(
+              reason: SearchSourceFailureReason.timeout,
+              latencyMs: 5000,
+            ),
+          );
       });
     });
   });
