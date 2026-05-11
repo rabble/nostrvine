@@ -5447,6 +5447,21 @@ class AppLocalizationsJa extends AppLocalizations {
   String get bugReportSuccessMessage => 'ありがとう！レポートを受け取ったよ。Divine をよくするのに使うね。';
 
   @override
+  String get bugReportAttachImages => 'Attach images';
+
+  @override
+  String bugReportImagesCount(int count, int max) {
+    return '$count of $max images selected';
+  }
+
+  @override
+  String get bugReportRemoveImage => 'Remove image';
+
+  @override
+  String get bugReportUploadFailed =>
+      'We couldn\'t upload the selected image. Try again or send the report without it.';
+
+  @override
   String get bugReportSendFailed => 'バグレポートの送信に失敗。あとでもう一回試してみて。';
 
   @override

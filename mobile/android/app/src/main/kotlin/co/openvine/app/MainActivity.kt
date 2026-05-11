@@ -561,7 +561,7 @@ class MainActivity : FlutterActivity() {
             val path = paths[index]
             val file = File(path)
             if (!file.exists()) {
-                onComplete(Result.failure(Exception("File not found: $path")))
+                onComplete(Result.failure(Exception("Could not read the selected image")))
                 return
             }
 
@@ -578,7 +578,7 @@ class MainActivity : FlutterActivity() {
                         uploadNext(index + 1)
                     } else {
                         mainHandler.post {
-                            onComplete(Result.failure(Exception("No upload token for $filename")))
+                            onComplete(Result.failure(Exception("Attachment upload did not return a token")))
                         }
                     }
                 }
@@ -586,7 +586,7 @@ class MainActivity : FlutterActivity() {
                 override fun onError(error: ErrorResponse?) {
                     Log.e(ZENDESK_TAG, "Upload failed for $filename: ${error?.reason}")
                     mainHandler.post {
-                        onComplete(Result.failure(Exception("Upload failed for $filename: ${error?.reason}")))
+                        onComplete(Result.failure(Exception("Failed to upload selected image")))
                     }
                 }
             })

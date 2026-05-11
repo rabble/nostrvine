@@ -454,9 +454,7 @@ void main() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (MethodCall call) async {
             if (call.method == 'createTicket') {
-              capturedArgs = Map<String, dynamic>.from(
-                call.arguments as Map,
-              );
+              capturedArgs = Map<String, dynamic>.from(call.arguments as Map);
               return true;
             }
             return null;
@@ -469,10 +467,10 @@ void main() {
       );
 
       expect(capturedArgs, isNotNull);
-      expect(
-        capturedArgs!['attachmentPaths'],
-        ['/tmp/img1.jpg', '/tmp/img2.jpg'],
-      );
+      expect(capturedArgs!['attachmentPaths'], [
+        '/tmp/img1.jpg',
+        '/tmp/img2.jpg',
+      ]);
     });
 
     test('omits attachmentPaths when null', () async {
@@ -480,9 +478,7 @@ void main() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (MethodCall call) async {
             if (call.method == 'createTicket') {
-              capturedArgs = Map<String, dynamic>.from(
-                call.arguments as Map,
-              );
+              capturedArgs = Map<String, dynamic>.from(call.arguments as Map);
               return true;
             }
             return null;
@@ -502,9 +498,7 @@ void main() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (MethodCall call) async {
             if (call.method == 'createTicket') {
-              capturedArgs = Map<String, dynamic>.from(
-                call.arguments as Map,
-              );
+              capturedArgs = Map<String, dynamic>.from(call.arguments as Map);
               return true;
             }
             return null;
@@ -519,6 +513,32 @@ void main() {
       expect(capturedArgs, isNotNull);
       expect(capturedArgs!.containsKey('attachmentPaths'), false);
     });
+
+    test(
+      'throws a sanitized attachment upload exception on upload failure',
+      () async {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (MethodCall call) async {
+              if (call.method == 'createTicket') {
+                throw PlatformException(
+                  code: 'UPLOAD_FAILED',
+                  message:
+                      'File not found: /private/var/mobile/Containers/Data/Application/foo.jpg',
+                );
+              }
+              return null;
+            });
+
+        await expectLater(
+          () => ZendeskSupportService.createTicket(
+            subject: 'Test',
+            description: 'Test desc',
+            attachmentPaths: ['/tmp/img1.jpg'],
+          ),
+          throwsA(isA<ZendeskAttachmentUploadException>()),
+        );
+      },
+    );
   });
 
   group('ZendeskSupportService.createTicket JWT expiry retry', () {

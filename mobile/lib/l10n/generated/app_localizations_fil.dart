@@ -5763,6 +5763,21 @@ class AppLocalizationsFil extends AppLocalizations {
       'Salamat! Natanggap namin ang report mo at gagamitin namin ito para mas gumanda ang Divine.';
 
   @override
+  String get bugReportAttachImages => 'Attach images';
+
+  @override
+  String bugReportImagesCount(int count, int max) {
+    return '$count of $max images selected';
+  }
+
+  @override
+  String get bugReportRemoveImage => 'Remove image';
+
+  @override
+  String get bugReportUploadFailed =>
+      'We couldn\'t upload the selected image. Try again or send the report without it.';
+
+  @override
   String get bugReportSendFailed =>
       'Hindi naipadala ang bug report. Subukan ulit mamaya.';
 

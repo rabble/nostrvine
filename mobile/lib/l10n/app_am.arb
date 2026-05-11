@@ -2856,7 +2856,21 @@
     "bugReportExpectedBehaviorHint": "በምትኩ ምን መሆን ነበረበት?",
     "bugReportDiagnosticsNotice": "የመሳሪያ መረጃ እና ሎጎች በራስ-ሰር ይካተታሉ።",
     "bugReportSuccessMessage": "እናመሰግናለን! ሪፖርትዎን ተቀብለናል፣ Divineን ለማሻሻል እንጠቀምበታለን።",
-    "bugReportSendFailed": "የሳንካ ሪፖርት መላክ አልተሳካም። እባክዎ ቆይተው ይሞክሩ።",
+    "bugReportAttachImages": "Attach images",
+  "bugReportImagesCount": "{count} of {max} images selected",
+  "@bugReportImagesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "bugReportRemoveImage": "Remove image",
+  "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
+  "bugReportSendFailed": "የሳንካ ሪፖርት መላክ አልተሳካም። እባክዎ ቆይተው ይሞክሩ።",
     "bugReportFailedWithError": "የሳንካ ሪፖርት መላክ አልተሳካም፦ {error}",
     "@bugReportFailedWithError": {
         "placeholders": {

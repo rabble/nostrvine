@@ -5768,6 +5768,21 @@ class AppLocalizationsFr extends AppLocalizations {
       'Merci ! On a bien reçu ton rapport et on s\'en servira pour améliorer Divine.';
 
   @override
+  String get bugReportAttachImages => 'Attach images';
+
+  @override
+  String bugReportImagesCount(int count, int max) {
+    return '$count of $max images selected';
+  }
+
+  @override
+  String get bugReportRemoveImage => 'Remove image';
+
+  @override
+  String get bugReportUploadFailed =>
+      'We couldn\'t upload the selected image. Try again or send the report without it.';
+
+  @override
   String get bugReportSendFailed =>
       'Échec de l\'envoi du rapport de bug. Réessaie plus tard.';
 

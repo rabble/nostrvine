@@ -17,6 +17,10 @@ typedef JwtIdentityRefresh =
       required String relayManagerUrl,
     });
 
+class ZendeskAttachmentUploadException implements Exception {
+  const ZendeskAttachmentUploadException();
+}
+
 /// Service for interacting with Zendesk Support SDK
 class ZendeskSupportService {
   static const MethodChannel _channel = MethodChannel(
@@ -625,6 +629,14 @@ class ZendeskSupportService {
         tags: tags,
       );
     } on PlatformException catch (e) {
+      if (e.code == 'UPLOAD_FAILED') {
+        Log.error(
+          'Zendesk attachment upload failed: ${e.message}',
+          category: LogCategory.system,
+        );
+        throw const ZendeskAttachmentUploadException();
+      }
+
       Log.error(
         '❌ Zendesk SDK error: ${e.code} - ${e.message}',
         category: LogCategory.system,

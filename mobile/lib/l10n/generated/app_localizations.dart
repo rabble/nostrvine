@@ -10058,6 +10058,30 @@ abstract class AppLocalizations {
   /// **'Thank you! We\'ve received your report and will use it to make Divine better.'**
   String get bugReportSuccessMessage;
 
+  /// No description provided for @bugReportAttachImages.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach images'**
+  String get bugReportAttachImages;
+
+  /// No description provided for @bugReportImagesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of {max} images selected'**
+  String bugReportImagesCount(int count, int max);
+
+  /// No description provided for @bugReportRemoveImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove image'**
+  String get bugReportRemoveImage;
+
+  /// No description provided for @bugReportUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t upload the selected image. Try again or send the report without it.'**
+  String get bugReportUploadFailed;
+
   /// No description provided for @bugReportSendFailed.
   ///
   /// In en, this message translates to:

@@ -3359,7 +3359,21 @@
     "bugReportExpectedBehaviorHint": "Vad borde ha hänt istället?",
     "bugReportDiagnosticsNotice": "Enhetsinfo och loggar inkluderas automatiskt.",
     "bugReportSuccessMessage": "Tack! Vi har fått din rapport och använder den för att göra Divine bättre.",
-    "bugReportSendFailed": "Kunde inte skicka buggrapporten. Försök igen senare.",
+    "bugReportAttachImages": "Attach images",
+  "bugReportImagesCount": "{count} of {max} images selected",
+  "@bugReportImagesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "bugReportRemoveImage": "Remove image",
+  "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
+  "bugReportSendFailed": "Kunde inte skicka buggrapporten. Försök igen senare.",
     "bugReportFailedWithError": "Buggrapport kunde inte skickas: {error}",
     "@bugReportFailedWithError": {
         "placeholders": {

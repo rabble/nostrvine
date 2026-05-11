@@ -408,7 +408,7 @@ extension FlutterError: @retroactive Error {}
       guard let data = FileManager.default.contents(atPath: path) else {
         completion(.failure(FlutterError(
           code: "UPLOAD_FAILED",
-          message: "Could not read file at \(path)",
+          message: "Could not read the selected image",
           details: nil
         )))
         return
@@ -423,7 +423,7 @@ extension FlutterError: @retroactive Error {}
           NSLog("❌ Zendesk: Upload failed for \(filename) - \(error.localizedDescription)")
           completion(.failure(FlutterError(
             code: "UPLOAD_FAILED",
-            message: "Failed to upload \(filename): \(error.localizedDescription)",
+            message: "Failed to upload selected image",
             details: nil
           )))
           return
@@ -432,7 +432,7 @@ extension FlutterError: @retroactive Error {}
         guard let response = uploadResponse else {
           completion(.failure(FlutterError(
             code: "UPLOAD_FAILED",
-            message: "No upload response for \(filename)",
+            message: "Attachment upload did not return a token",
             details: nil
           )))
           return

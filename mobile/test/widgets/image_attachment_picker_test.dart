@@ -1,3 +1,4 @@
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -46,7 +47,7 @@ void main() {
       try {
         await tester.pumpWidget(buildTestWidget());
         expect(
-          find.byIcon(Icons.add_photo_alternate_outlined),
+          find.bySemanticsLabel(l10n.bugReportAttachImages),
           findsOneWidget,
         );
       } finally {
@@ -58,7 +59,7 @@ void main() {
       debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
       try {
         await tester.pumpWidget(buildTestWidget());
-        expect(find.byIcon(Icons.add_photo_alternate_outlined), findsNothing);
+        expect(find.bySemanticsLabel(l10n.bugReportAttachImages), findsNothing);
       } finally {
         debugDefaultTargetPlatformOverride = null;
       }
@@ -80,7 +81,7 @@ void main() {
           buildTestWidget(onChanged: (files) => result = files),
         );
 
-        await tester.tap(find.byIcon(Icons.add_photo_alternate_outlined));
+        await tester.tap(find.bySemanticsLabel(l10n.bugReportAttachImages));
         await tester.pumpAndSettle();
 
         expect(result, isNotNull);
@@ -109,12 +110,10 @@ void main() {
 
         List<XFile>? result;
         await tester.pumpWidget(
-          buildTestWidget(
-            onChanged: (files) => result = files,
-          ),
+          buildTestWidget(onChanged: (files) => result = files),
         );
 
-        await tester.tap(find.byIcon(Icons.add_photo_alternate_outlined));
+        await tester.tap(find.bySemanticsLabel(l10n.bugReportAttachImages));
         await tester.pumpAndSettle();
 
         expect(result!.length, 3);
@@ -140,10 +139,10 @@ void main() {
 
         await tester.pumpWidget(buildTestWidget());
 
-        await tester.tap(find.byIcon(Icons.add_photo_alternate_outlined));
+        await tester.tap(find.bySemanticsLabel(l10n.bugReportAttachImages));
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.add_photo_alternate_outlined), findsNothing);
+        expect(find.bySemanticsLabel(l10n.bugReportAttachImages), findsNothing);
       } finally {
         debugDefaultTargetPlatformOverride = null;
       }
@@ -165,12 +164,14 @@ void main() {
           buildTestWidget(onChanged: (files) => lastResult = files),
         );
 
-        await tester.tap(find.byIcon(Icons.add_photo_alternate_outlined));
+        await tester.tap(find.bySemanticsLabel(l10n.bugReportAttachImages));
         await tester.pumpAndSettle();
 
         expect(lastResult!.length, 2);
 
-        await tester.tap(find.byIcon(Icons.close).first);
+        await tester.tap(
+          find.bySemanticsLabel(l10n.bugReportRemoveImage).first,
+        );
         await tester.pumpAndSettle();
 
         expect(lastResult!.length, 1);
@@ -186,7 +187,7 @@ void main() {
         await tester.pumpWidget(buildTestWidget());
 
         final semantics = tester.getSemantics(
-          find.byIcon(Icons.add_photo_alternate_outlined),
+          find.bySemanticsLabel(l10n.bugReportAttachImages),
         );
         expect(semantics.label, l10n.bugReportAttachImages);
       } finally {
@@ -194,15 +195,50 @@ void main() {
       }
     });
 
-    testWidgets('disabled state shows grey icon', (tester) async {
+    testWidgets('disabled state uses themed disabled icon color', (
+      tester,
+    ) async {
       debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
       try {
         await tester.pumpWidget(buildTestWidget(enabled: false));
 
-        final icon = tester.widget<Icon>(
-          find.byIcon(Icons.add_photo_alternate_outlined),
+        final icon = tester.widget<DivineIcon>(
+          find.descendant(
+            of: find.bySemanticsLabel(l10n.bugReportAttachImages),
+            matching: find.byType(DivineIcon),
+          ),
         );
-        expect(icon.color, Colors.grey);
+        expect(icon.color, VineTheme.lightText);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+
+    testWidgets('remove button keeps a 48dp hit target', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      try {
+        final pickedFiles = [XFile('/tmp/img1.jpg')];
+        when(
+          () => mockPicker.pickMultiImage(
+            maxWidth: any(named: 'maxWidth'),
+            imageQuality: any(named: 'imageQuality'),
+          ),
+        ).thenAnswer((_) async => pickedFiles);
+
+        await tester.pumpWidget(buildTestWidget());
+
+        await tester.tap(find.bySemanticsLabel(l10n.bugReportAttachImages));
+        await tester.pumpAndSettle();
+
+        final hitTarget = find.descendant(
+          of: find.bySemanticsLabel(l10n.bugReportRemoveImage),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is SizedBox && widget.width == 48 && widget.height == 48,
+          ),
+        );
+
+        expect(hitTarget, findsOneWidget);
       } finally {
         debugDefaultTargetPlatformOverride = null;
       }

@@ -3359,7 +3359,21 @@
     "bugReportExpectedBehaviorHint": "Que devait-il se passer à la place ?",
     "bugReportDiagnosticsNotice": "Les infos de l'appareil et les logs seront inclus automatiquement.",
     "bugReportSuccessMessage": "Merci ! On a bien reçu ton rapport et on s'en servira pour améliorer Divine.",
-    "bugReportSendFailed": "Échec de l'envoi du rapport de bug. Réessaie plus tard.",
+    "bugReportAttachImages": "Attach images",
+  "bugReportImagesCount": "{count} of {max} images selected",
+  "@bugReportImagesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "bugReportRemoveImage": "Remove image",
+  "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
+  "bugReportSendFailed": "Échec de l'envoi du rapport de bug. Réessaie plus tard.",
     "bugReportFailedWithError": "Échec de l'envoi du rapport de bug : {error}",
     "@bugReportFailedWithError": {
         "placeholders": {

@@ -7,6 +7,10 @@ import 'package:flutter/rendering.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:openvine/l10n/l10n.dart';
 
+// ABOUTME: Mobile-only image attachment picker for bug reports.
+// ABOUTME: Limits the selection count, announces changes for accessibility,
+// ABOUTME: and keeps interactions aligned with the Divine design system.
+
 class ImageAttachmentPicker extends StatefulWidget {
   const ImageAttachmentPicker({
     required this.onChanged,
@@ -44,6 +48,7 @@ class _ImageAttachmentPickerState extends State<ImageAttachmentPicker> {
       imageQuality: 80,
     );
 
+    if (!mounted) return;
     if (picked.isEmpty) return;
 
     setState(() {
@@ -56,7 +61,7 @@ class _ImageAttachmentPickerState extends State<ImageAttachmentPicker> {
       SemanticsService.sendAnnouncement(
         View.of(context),
         context.l10n.bugReportImagesCount(_images.length, widget.maxImages),
-        TextDirection.ltr,
+        Directionality.of(context),
       );
     }
   }
@@ -73,7 +78,7 @@ class _ImageAttachmentPickerState extends State<ImageAttachmentPicker> {
       SemanticsService.sendAnnouncement(
         View.of(context),
         context.l10n.bugReportImagesCount(_images.length, widget.maxImages),
-        TextDirection.ltr,
+        Directionality.of(context),
       );
     }
   }
@@ -139,10 +144,9 @@ class _Thumbnail extends StatelessWidget {
                 width: 64,
                 height: 64,
                 color: VineTheme.cardBackground,
-                child: const Icon(
-                  Icons.broken_image_outlined,
+                child: const DivineIcon(
+                  icon: DivineIconName.image,
                   color: VineTheme.lightText,
-                  size: 24,
                 ),
               ),
             ),
@@ -155,19 +159,27 @@ class _Thumbnail extends StatelessWidget {
                 button: true,
                 label: semanticsLabel,
                 child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
                   onTap: onRemove,
-                  child: ExcludeSemantics(
-                    child: Container(
-                      width: 20,
-                      height: 20,
-                      decoration: const BoxDecoration(
-                        color: VineTheme.cardBackground,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.close,
-                        size: 14,
-                        color: VineTheme.whiteText,
+                  child: SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: Align(
+                      alignment: Alignment.topRight,
+                      child: ExcludeSemantics(
+                        child: Container(
+                          width: 20,
+                          height: 20,
+                          decoration: const BoxDecoration(
+                            color: VineTheme.cardBackground,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const DivineIcon(
+                            icon: DivineIconName.x,
+                            size: 14,
+                            color: VineTheme.whiteText,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -204,11 +216,17 @@ class _AddButton extends StatelessWidget {
             height: 64,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey),
+              border: Border.all(
+                color: enabled
+                    ? VineTheme.vineGreen.withValues(alpha: 0.7)
+                    : VineTheme.lightText.withValues(alpha: 0.7),
+              ),
             ),
-            child: Icon(
-              Icons.add_photo_alternate_outlined,
-              color: enabled ? VineTheme.vineGreen : Colors.grey,
+            child: Center(
+              child: DivineIcon(
+                icon: DivineIconName.imagesSquare,
+                color: enabled ? VineTheme.vineGreen : VineTheme.lightText,
+              ),
             ),
           ),
         ),

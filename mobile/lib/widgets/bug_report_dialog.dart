@@ -177,7 +177,9 @@ class _BugReportDialogState extends State<BugReportDialog> {
         setState(() {
           _isSubmitting = false;
           _isSuccess = false;
-          _resultMessage = context.l10n.bugReportFailedWithError('$e');
+          _resultMessage = e is ZendeskAttachmentUploadException
+              ? context.l10n.bugReportUploadFailed
+              : context.l10n.bugReportSendFailed;
         });
       }
     }
@@ -272,7 +274,7 @@ class _BugReportDialogState extends State<BugReportDialog> {
               // Info text
               Text(
                 context.l10n.bugReportDiagnosticsNotice,
-                style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                style: VineTheme.bodySmallFont(color: VineTheme.lightText),
               ),
 
               const SizedBox(height: 16),
