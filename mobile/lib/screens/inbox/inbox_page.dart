@@ -13,6 +13,8 @@ import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart'
 import 'package:openvine/blocs/dm/conversation_mute/conversation_mute_cubit.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
+import 'package:openvine/blocs/notifications/badge/notification_badge_cubit.dart';
+import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/inbox/inbox_view.dart';
@@ -55,6 +57,19 @@ class InboxPage extends ConsumerWidget {
           ),
           BlocProvider(
             create: (_) => DmUnreadCountCubit(dmRepository: dmRepository),
+          ),
+          // Inbox-scope NotificationBadgeCubit feeds the segmented
+          // toggle's notifications count. Mirrors the app-shell-scope
+          // cubit provided in `main.dart` so `inbox_view.dart` can read
+          // via `context.watch<NotificationBadgeCubit>()`. Keyed on the
+          // repository identity for auth-flip safety.
+          BlocProvider(
+            key: ValueKey(
+              identityHashCode(ref.watch(notificationRepositoryProvider)),
+            ),
+            create: (_) => NotificationBadgeCubit(
+              repository: ref.read(notificationRepositoryProvider),
+            ),
           ),
           BlocProvider(
             create: (_) => MyFollowingBloc(

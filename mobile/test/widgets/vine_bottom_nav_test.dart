@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
+import 'package:openvine/blocs/notifications/badge/notification_badge_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/vine_bottom_nav.dart';
 
@@ -13,22 +14,37 @@ import '../helpers/test_provider_overrides.dart';
 class _MockDmUnreadCountCubit extends MockCubit<int>
     implements DmUnreadCountCubit {}
 
+class _MockNotificationBadgeCubit extends MockCubit<int>
+    implements NotificationBadgeCubit {}
+
 void main() {
   group('VineBottomNav interaction targets', () {
     late MockAuthService mockAuth;
     late _MockDmUnreadCountCubit dmUnreadCubit;
+    late _MockNotificationBadgeCubit notifBadgeCubit;
 
     setUp(() {
       mockAuth = createMockAuthService();
       dmUnreadCubit = _MockDmUnreadCountCubit();
+      notifBadgeCubit = _MockNotificationBadgeCubit();
       whenListen(dmUnreadCubit, const Stream<int>.empty(), initialState: 0);
+      whenListen(notifBadgeCubit, const Stream<int>.empty(), initialState: 0);
     });
+
+    Widget withBadgeProviders(Widget child) {
+      return MultiBlocProvider(
+        providers: [
+          BlocProvider<DmUnreadCountCubit>.value(value: dmUnreadCubit),
+          BlocProvider<NotificationBadgeCubit>.value(value: notifBadgeCubit),
+        ],
+        child: child,
+      );
+    }
 
     Future<void> pumpSubject(WidgetTester tester) async {
       await tester.pumpWidget(
-        BlocProvider<DmUnreadCountCubit>.value(
-          value: dmUnreadCubit,
-          child: testProviderScope(
+        withBadgeProviders(
+          testProviderScope(
             mockAuthService: mockAuth,
             child: const MaterialApp(
               localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -46,9 +62,8 @@ void main() {
       MockGoRouter router,
     ) async {
       await tester.pumpWidget(
-        BlocProvider<DmUnreadCountCubit>.value(
-          value: dmUnreadCubit,
-          child: testProviderScope(
+        withBadgeProviders(
+          testProviderScope(
             mockAuthService: mockAuth,
             child: MaterialApp(
               localizationsDelegates: AppLocalizations.localizationsDelegates,

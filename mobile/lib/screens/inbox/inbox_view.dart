@@ -15,11 +15,11 @@ import 'package:openvine/blocs/dm/conversation_actions/conversation_actions_cubi
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
 import 'package:openvine/blocs/dm/conversation_mute/conversation_mute_cubit.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
+import 'package:openvine/blocs/notifications/badge/notification_badge_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/notifications/view/inbox_notifications_page.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/message_requests/message_requests_page.dart';
@@ -63,7 +63,7 @@ class _InboxViewState extends ConsumerState<InboxView> {
     // Watch unread counts for both segments. Without a Messages-side badge
     // users had no signal that a still-lit bottom-nav inbox dot was caused
     // by unread DMs rather than notifications they thought they'd cleared.
-    final notificationCount = ref.watch(relayNotificationUnreadCountProvider);
+    final notificationCount = context.watch<NotificationBadgeCubit>().state;
     final messageCount = context.watch<DmUnreadCountCubit>().state;
     final currentPubkey = ref.read(authServiceProvider).currentPublicKeyHex;
 

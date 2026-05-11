@@ -9,9 +9,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
+import 'package:openvine/blocs/notifications/badge/notification_badge_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
@@ -95,7 +95,7 @@ class VineBottomNav extends ConsumerWidget {
   /// Combined unread count for the inbox tab (DMs + notifications).
   int _inboxUnreadCount(BuildContext context, WidgetRef ref) {
     final dmCount = context.watch<DmUnreadCountCubit>().state;
-    final notifCount = ref.watch(relayNotificationUnreadCountProvider);
+    final notifCount = context.watch<NotificationBadgeCubit>().state;
     return dmCount + notifCount;
   }
 
