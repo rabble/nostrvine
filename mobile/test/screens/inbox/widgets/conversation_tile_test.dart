@@ -211,6 +211,99 @@ void main() {
         },
       );
 
+      testWidgets(
+        'strips divine.video URL and prefixes a camera icon for shared-video DMs',
+        (tester) async {
+          // VideoSharingService composes a share DM as
+          //   [personal message?]
+          //   "title"
+          //   <blank>
+          //   https://divine.video/video/<id>
+          // The conversation preview shouldn't surface the URL; it should
+          // render an inline cameraRetro icon (the same glyph as the
+          // bottom-nav camera button) followed by the title.
+          final testProfile = createTestProfile(displayName: 'Alice');
+          final testConversation = createTestConversation(
+            lastMessageContent:
+                '"#DIVINE #TEAMFB @shutupphia"\n\n'
+                'https://divine.video/video/abc123',
+            lastMessageTimestamp: nowUnix,
+          );
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              additionalOverrides: [
+                fetchUserProfileProvider(
+                  otherPubkey,
+                ).overrideWith((ref) async => testProfile),
+              ],
+              home: Scaffold(
+                body: ConversationTile(
+                  conversation: testConversation,
+                  currentUserPubkey: currentPubkey,
+                  onTap: () {},
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(
+            find.textContaining('"#DIVINE #TEAMFB @shutupphia"'),
+            findsOneWidget,
+          );
+          expect(
+            find.textContaining('https://divine.video'),
+            findsNothing,
+          );
+          final cameraIcon = find.byWidgetPredicate(
+            (widget) =>
+                widget is DivineIcon &&
+                widget.icon == DivineIconName.cameraRetro &&
+                widget.color == VineTheme.whiteText,
+          );
+          expect(cameraIcon, findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'plain-text preview does not include the camera icon',
+        (tester) async {
+          final testProfile = createTestProfile(displayName: 'Alice');
+          final testConversation = createTestConversation(
+            lastMessageContent: 'Hey, how are you?',
+            lastMessageTimestamp: nowUnix,
+          );
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              additionalOverrides: [
+                fetchUserProfileProvider(
+                  otherPubkey,
+                ).overrideWith((ref) async => testProfile),
+              ],
+              home: Scaffold(
+                body: ConversationTile(
+                  conversation: testConversation,
+                  currentUserPubkey: currentPubkey,
+                  onTap: () {},
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is DivineIcon &&
+                  widget.icon == DivineIconName.cameraRetro,
+            ),
+            findsNothing,
+          );
+        },
+      );
+
       testWidgets('renders unread indicator when conversation is unread', (
         tester,
       ) async {
