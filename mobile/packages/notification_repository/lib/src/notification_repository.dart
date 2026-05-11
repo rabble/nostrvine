@@ -13,6 +13,9 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:notification_repository/src/blocked_notification_filter.dart';
 import 'package:notification_repository/src/notification_page.dart';
 import 'package:profile_repository/profile_repository.dart';
+// Hide rxdart's `NotificationKind` (a stream-event enum) to avoid clashing
+// with the domain `NotificationKind` from `models`.
+import 'package:rxdart/rxdart.dart' hide NotificationKind;
 
 /// Maximum length for comment preview text before truncation.
 const _maxCommentLength = 50;
@@ -66,9 +69,45 @@ class NotificationRepository {
   /// Last cursor returned by the API, used for pagination.
   String? _lastCursor;
 
+  /// Reactive snapshot of the enriched, grouped notification feed.
+  ///
+  /// Single source of truth for the feed bloc (list rendering) and the
+  /// badge cubit (badge count). Every mutation — [getNotifications],
+  /// [refresh], [markAsRead], [markAllAsRead], [acceptRealtime] —
+  /// updates this subject so consumers can never diverge.
+  final BehaviorSubject<NotificationPage> _snapshot =
+      BehaviorSubject<NotificationPage>.seeded(NotificationPage.empty);
+
+  /// Stream of the latest [NotificationPage] snapshot.
+  ///
+  /// Use this for screen-level rendering. For badge counts, prefer
+  /// [watchUnreadCount] — it is `.distinct()`-filtered so the badge
+  /// only rebuilds on actual count changes.
+  Stream<NotificationPage> watchSnapshot() => _snapshot.stream;
+
+  /// Stream of the unread badge count derived from the consolidated
+  /// visible list.
+  ///
+  /// Counts items in [NotificationPage.items] where `isRead == false`
+  /// rather than using the server's `unreadCount` directly. The server
+  /// reports one row per Kind 3 republish per follower (tracked at
+  /// funnelcake#234); this method matches the same post-consolidation
+  /// derivation that `NotificationFeedState.unreadBadgeCount` documents.
+  Stream<int> watchUnreadCount() => _snapshot.stream
+      .map((page) => page.items.where((n) => !n.isRead).length)
+      .distinct();
+
+  /// Disposes the internal snapshot subject.
+  ///
+  /// Called when the repository is no longer needed (e.g. on auth flip
+  /// when a new repository instance replaces this one).
+  Future<void> close() => _snapshot.close();
+
   /// Fetches the next page of notifications.
   ///
-  /// Pass [cursor] to override the stored pagination cursor.
+  /// Pass [cursor] to override the stored pagination cursor. On success,
+  /// merges the new items into the snapshot — the first page replaces
+  /// the snapshot's items, subsequent pages append.
   Future<NotificationPage> getNotifications({String? cursor}) async {
     try {
       final effectiveCursor = cursor ?? _lastCursor;
@@ -91,12 +130,14 @@ class NotificationRepository {
 
       final items = await _enrichAndGroup(response.notifications);
 
-      return NotificationPage(
+      final page = NotificationPage(
         items: items,
         unreadCount: response.unreadCount,
         nextCursor: response.nextCursor,
         hasMore: response.hasMore,
       );
+      _emitSnapshotForPage(page, isFirstPage: effectiveCursor == null);
+      return page;
     } on Exception catch (e, s) {
       developer.log(
         'Failed to fetch notifications: $e',
@@ -115,8 +156,18 @@ class NotificationRepository {
   }
 
   /// Marks specific notifications as read on the server and locally.
+  ///
+  /// Optimistically flips matching items in the snapshot to `isRead:
+  /// true`, then writes through to the API and the local DAO. On
+  /// failure, restores the pre-write snapshot so subscribers see the
+  /// authoritative state, and rethrows so callers can surface the
+  /// error.
   Future<void> markAsRead(List<String> ids) async {
     if (ids.isEmpty) return;
+
+    final idSet = ids.toSet();
+    final before = _snapshot.value;
+    _snapshot.add(before.copyWith(items: _flipIsRead(before.items, idSet)));
 
     final authHeaders = _authHeadersProvider != null
         ? await _authHeadersProvider(
@@ -125,19 +176,35 @@ class NotificationRepository {
           )
         : <String, String>{};
 
-    await _funnelcakeApiClient.markNotificationsRead(
-      pubkey: _userPubkey,
-      notificationIds: ids,
-      authHeaders: authHeaders,
-    );
+    try {
+      await _funnelcakeApiClient.markNotificationsRead(
+        pubkey: _userPubkey,
+        notificationIds: ids,
+        authHeaders: authHeaders,
+      );
 
-    for (final id in ids) {
-      await _notificationsDao.markAsRead(id);
+      for (final id in ids) {
+        await _notificationsDao.markAsRead(id);
+      }
+    } catch (_) {
+      _snapshot.add(before);
+      rethrow;
     }
   }
 
   /// Marks all notifications as read on the server and locally.
+  ///
+  /// Optimistically flips every item in the snapshot to `isRead: true`,
+  /// then writes through to the API and the local DAO. On failure,
+  /// restores the pre-write snapshot — preserves the rollback semantics
+  /// introduced by PR #4034 at the repository layer so every consumer
+  /// (badge cubit, feed bloc) recovers consistently.
   Future<void> markAllAsRead() async {
+    final before = _snapshot.value;
+    if (before.items.every((n) => n.isRead)) return;
+
+    _snapshot.add(before.copyWith(items: _flipAllRead(before.items)));
+
     final authHeaders = _authHeadersProvider != null
         ? await _authHeadersProvider(
             '/api/users/$_userPubkey/notifications/read',
@@ -145,12 +212,92 @@ class NotificationRepository {
           )
         : <String, String>{};
 
-    await _funnelcakeApiClient.markNotificationsRead(
-      pubkey: _userPubkey,
-      authHeaders: authHeaders,
-    );
+    try {
+      await _funnelcakeApiClient.markNotificationsRead(
+        pubkey: _userPubkey,
+        authHeaders: authHeaders,
+      );
 
-    await _notificationsDao.markAllAsRead();
+      await _notificationsDao.markAllAsRead();
+    } catch (_) {
+      _snapshot.add(before);
+      rethrow;
+    }
+  }
+
+  /// Accepts a real-time WebSocket notification and merges it into the
+  /// snapshot.
+  ///
+  /// Enriches the raw relay event via [_enrichAndGroup], applies the
+  /// block filter, deduplicates by `id` against the current snapshot,
+  /// and prepends to the items list. Drops the event if all enriched
+  /// actors are blocked.
+  ///
+  /// Replaces the legacy
+  /// `mobile/lib/providers/notification_realtime_bridge_provider.dart`
+  /// which wrote into the now-unused Riverpod cache.
+  Future<void> acceptRealtime(RelayNotification raw) async {
+    final enriched = await _enrichAndGroup([raw]);
+    if (enriched.isEmpty) return;
+
+    final current = _snapshot.value;
+    final newItem = enriched.first;
+    if (current.items.any((n) => n.id == newItem.id)) return;
+
+    _snapshot.add(
+      current.copyWith(
+        items: [newItem, ...current.items],
+      ),
+    );
+  }
+
+  /// Updates [_snapshot] with [page]'s contents.
+  ///
+  /// First-page emissions replace the items list (used by [refresh] and
+  /// the initial [getNotifications] call). Subsequent pages append,
+  /// preserving order and deduplicating by id.
+  void _emitSnapshotForPage(
+    NotificationPage page, {
+    required bool isFirstPage,
+  }) {
+    if (isFirstPage) {
+      _snapshot.add(page);
+      return;
+    }
+    final current = _snapshot.value;
+    final existingIds = current.items.map((n) => n.id).toSet();
+    final appended = [
+      ...current.items,
+      ...page.items.where((n) => !existingIds.contains(n.id)),
+    ];
+    _snapshot.add(
+      page.copyWith(items: appended),
+    );
+  }
+
+  /// Returns [items] with the matching ids flipped to `isRead: true`.
+  static List<NotificationItem> _flipIsRead(
+    List<NotificationItem> items,
+    Set<String> ids,
+  ) {
+    return items.map((n) {
+      if (!ids.contains(n.id) || n.isRead) return n;
+      return switch (n) {
+        VideoNotification() => n.copyWith(isRead: true),
+        ActorNotification() => n.copyWith(isRead: true),
+      };
+    }).toList();
+  }
+
+  /// Returns [items] with every item flipped to `isRead: true`.
+  static List<NotificationItem> _flipAllRead(List<NotificationItem> items) {
+    return items.map((n) {
+      if (n.isRead) return n;
+      return switch (n) {
+        VideoNotification() => n.copyWith(isRead: true),
+        ActorNotification() => n.copyWith(isRead: true),
+      };
+    }).toList();
   }
 
   /// Enriches raw relay notifications with profile + video metadata, then

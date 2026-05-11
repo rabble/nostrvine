@@ -29,6 +29,21 @@ class NotificationPage extends Equatable {
   /// Whether more pages are available.
   final bool hasMore;
 
+  /// Returns a copy of this page with the given fields replaced.
+  NotificationPage copyWith({
+    List<NotificationItem>? items,
+    int? unreadCount,
+    String? nextCursor,
+    bool? hasMore,
+  }) {
+    return NotificationPage(
+      items: items ?? this.items,
+      unreadCount: unreadCount ?? this.unreadCount,
+      nextCursor: nextCursor ?? this.nextCursor,
+      hasMore: hasMore ?? this.hasMore,
+    );
+  }
+
   @override
   List<Object?> get props => [items, unreadCount, nextCursor, hasMore];
 }
