@@ -19,12 +19,12 @@ class _MockNostrClient extends Mock implements NostrClient {}
 class _TestableFollowRepository extends FollowRepository {
   _TestableFollowRepository({
     required super.nostrClient,
-    this.myFollowersResult = const [],
-    this.myFollowerCountResult = 0,
-    Stream<FollowersSnapshot>? myFollowersStream,
     required this.myFollowingStream,
     required this.othersFollowersResult,
     required this.othersFollowingResult,
+    this.myFollowersResult = const [],
+    this.myFollowerCountResult = 0,
+    Stream<FollowersSnapshot>? myFollowersStream,
   }) : _myFollowersStream = myFollowersStream,
        super(indexerRelayUrls: const []);
 
