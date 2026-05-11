@@ -75,10 +75,10 @@ class _PlaybackModeToggle extends StatelessWidget {
     final cubit = _maybeReadFeedAutoAdvanceCubit(context);
     if (cubit == null) return const SizedBox.shrink();
 
-    return BlocBuilder<FeedAutoAdvanceCubit, FeedAutoAdvanceState>(
+    return BlocSelector<FeedAutoAdvanceCubit, FeedAutoAdvanceState, bool>(
       bloc: cubit,
-      builder: (context, state) {
-        final enabled = state.enabled;
+      selector: (state) => state.enabled,
+      builder: (context, enabled) {
         return _PopoverToggle(
           isOn: enabled,
           semanticLabel: enabled
@@ -100,14 +100,6 @@ class _PlaybackModeToggle extends StatelessWidget {
         );
       },
     );
-  }
-}
-
-FeedAutoAdvanceCubit? _maybeReadFeedAutoAdvanceCubit(BuildContext context) {
-  try {
-    return BlocProvider.of<FeedAutoAdvanceCubit>(context);
-  } on ProviderNotFoundException {
-    return null;
   }
 }
 
@@ -212,3 +204,6 @@ class _PopoverToggle extends StatelessWidget {
     );
   }
 }
+
+FeedAutoAdvanceCubit? _maybeReadFeedAutoAdvanceCubit(BuildContext context) =>
+    context.read<FeedAutoAdvanceCubit?>();
