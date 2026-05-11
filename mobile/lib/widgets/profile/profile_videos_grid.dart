@@ -46,16 +46,6 @@ class _GridUploadingVideoEntry extends _GridVideoEntry {
   final String? thumbnailPath;
 }
 
-/// Stable projection of an in-progress [BackgroundUpload] used by the grid
-/// build method. Drops [BackgroundUpload.progress] so that progress ticks
-/// don't trigger a grid rebuild — the spinner subscribes to its own
-/// upload's progress in [_VideoGridUploadingTile].
-typedef _ActiveUpload = ({
-  String draftId,
-  String? title,
-  String? thumbnailPath,
-});
-
 /// Debug-only counter incremented at the top of every
 /// [_ProfileVideosGridState.build] call. Used by tests to pin the
 /// rebuild count to 1 across progress-only `BackgroundPublishBloc`
@@ -67,11 +57,10 @@ int debugProfileVideosGridBuildCount = 0;
 
 /// Equatable wrapper over the list of active uploads consumed by
 /// [_ProfileVideosGridState.build]. Exists because `context.select`
-/// compares its selected value with `==`, and a raw `List<_ActiveUpload>`
-/// — even one of structurally-equal records — falls through to identity
-/// equality and would mark the consumer dirty on every progress tick.
-/// Equatable's deep `iterableEquals` over records gives the selector the
-/// progress-insensitive comparison the optimization needs.
+/// compares its selected value with `==`, and a raw list of records falls
+/// through to identity equality even when the records themselves compare
+/// equal structurally. Equatable's deep `iterableEquals` gives the selector
+/// the progress-insensitive comparison the optimization needs.
 @visibleForTesting
 class ActiveUploadsView extends Equatable {
   @visibleForTesting
@@ -256,7 +245,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
                 (bloc) => ActiveUploadsView.fromState(bloc.state),
               )
               .uploads
-        : const <_ActiveUpload>[];
+        : const <({String draftId, String? title, String? thumbnailPath})>[];
 
     // De-duplicate relay-delivered videos against active uploads.
     //
