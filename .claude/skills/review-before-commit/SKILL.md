@@ -51,6 +51,27 @@ For each changed file, check for:
 - ABOUTME comments that no longer accurately describe the file
 - TODO comments for work that was already completed in this session
 
+#### Brainstorm Docs
+
+Any file under `mobile/docs/brainstorm/` (typically dated like
+`YYYY-MM-DD-issueNNNN-…-brainstorm.md`) is a working artefact, not a
+deliverable. By the time the PR is ready, the rationale belongs in the
+PR description; the file should not ship with the merge commit.
+
+Flag every staged file under that path and ask the user whether the
+brainstorm should be dropped or converted in place:
+
+- **Drop it** (default) — `git rm` the file. Use a separate
+  `docs: drop … brainstorm doc` commit so the deletion is auditable.
+- **Convert it to a decision record** — only when the doc has lasting
+  value beyond the PR (e.g. captures a rejected approach future readers
+  will keep proposing). Rename, move out of `brainstorm/`, and trim to
+  the durable bits. Precedent: `cd723075e docs(notifications): convert
+  badge-desync brainstorm to decision record`.
+
+Precedents for outright deletion: `380bf50c1 docs: drop PR #4229
+brainstorm doc`, and the follow-up to PR #4234 review.
+
 #### CLAUDE.md Rule Violations
 Read and apply ALL rules from `.claude/CLAUDE.md` and `.claude/rules/`. Do not
 hardcode specific rules here — always check the source of truth in those files.
