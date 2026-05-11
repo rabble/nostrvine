@@ -1,6 +1,8 @@
 // ABOUTME: Web-native video feed using Flutter's video_player package
 // ABOUTME: Replaces PooledVideoFeed on web where media_kit is not available
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -203,6 +205,12 @@ class WebVideoFeedState extends State<WebVideoFeed> {
   /// Drops both the controller reference and the GlobalKey so we don't
   /// retain disposed controllers across scroll. If the user scrolls back
   /// to this index, the next [_getPlayerKey] call mints a fresh key.
+  ///
+  /// The notifier mutation is deferred to a microtask: callers reach
+  /// this from `WebVideoPlayerState.dispose()`, which fires during the
+  /// framework's locked unmount tick. Mutating `_controllers.value`
+  /// synchronously would re-enter sibling `ValueListenableBuilder`s and
+  /// trip "setState() called when widget tree was locked".
   void _onPlayerDisposed(int index) {
     _playerKeys.remove(index);
     final current = _controllers.value;
@@ -210,7 +218,10 @@ class WebVideoFeedState extends State<WebVideoFeed> {
     if (controller == null) return;
     _detachCompletionListener(index, controller);
     final next = Map<int, VideoPlayerController>.of(current)..remove(index);
-    _controllers.value = next;
+    scheduleMicrotask(() {
+      if (!mounted) return;
+      _controllers.value = next;
+    });
   }
 
   Future<void> animateToPage(int index) async {
@@ -435,6 +446,13 @@ class _WebVideoFeedItem extends StatelessWidget {
             onRequiresAuth: onRequiresAuth,
           ),
         ),
+        // Single ValueListenableBuilder for both the paused overlay and
+        // the optional itemBuilder. Combining them avoids registering two
+        // listeners on the same notifier, which matters during player
+        // disposal: WebVideoFeedState._onPlayerDisposed mutates the
+        // notifier from inside a tree-locked tear-down, and any rebuild
+        // siblings still subscribed at that moment trip
+        // "setState called when widget tree was locked".
         ValueListenableBuilder<Map<int, VideoPlayerController>>(
           valueListenable: controllersListenable,
           builder: (context, controllers, _) {
@@ -442,32 +460,25 @@ class _WebVideoFeedItem extends StatelessWidget {
             final controller = (tracked != null && tracked.value.isInitialized)
                 ? tracked
                 : null;
-            return WebPausedVideoPlayOverlay(
-              controller: controller,
-              isVisible: isActive,
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                WebPausedVideoPlayOverlay(
+                  controller: controller,
+                  isVisible: isActive,
+                ),
+                if (itemBuilder != null)
+                  itemBuilder!(
+                    context,
+                    video,
+                    index,
+                    isActive: isActive,
+                    controller: controller,
+                  ),
+              ],
             );
           },
         ),
-        if (itemBuilder != null)
-          ValueListenableBuilder<Map<int, VideoPlayerController>>(
-            valueListenable: controllersListenable,
-            builder: (context, controllers, _) {
-              // Only expose the controller once it has initialized so
-              // overlays never receive an uninitialized controller.
-              final tracked = controllers[index];
-              final controller =
-                  (tracked != null && tracked.value.isInitialized)
-                  ? tracked
-                  : null;
-              return itemBuilder!(
-                context,
-                video,
-                index,
-                isActive: isActive,
-                controller: controller,
-              );
-            },
-          ),
       ],
     );
   }
