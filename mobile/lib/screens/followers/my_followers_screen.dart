@@ -11,6 +11,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/profile/follower_count_title.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 
@@ -107,9 +108,12 @@ class _MyFollowersView extends ConsumerWidget {
           builder: (context, state) {
             return switch (state.status) {
               MyFollowersStatus.initial || MyFollowersStatus.loading =>
-                const Center(child: CircularProgressIndicator()),
-              MyFollowersStatus.success => _FollowersListBody(
-                followers: state.followersPubkeys,
+                const Center(child: BrandedLoadingIndicator()),
+              MyFollowersStatus.success => LoadingOverlay(
+                isLoading: state.isRefreshing,
+                child: _FollowersListBody(
+                  followers: state.followersPubkeys,
+                ),
               ),
               MyFollowersStatus.failure => _FollowersErrorBody(
                 onRetry: () {

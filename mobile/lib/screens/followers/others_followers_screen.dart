@@ -11,6 +11,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/profile/follower_count_title.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 
@@ -108,19 +109,25 @@ class _OthersFollowersView extends ConsumerWidget {
 
             return switch (state.status) {
               OthersFollowersStatus.initial => const Center(
-                child: CircularProgressIndicator(),
+                child: BrandedLoadingIndicator(),
               ),
               OthersFollowersStatus.loading when showFollowersList =>
-                _FollowersListBody(
+                LoadingOverlay(
+                  isLoading: state.isRefreshing,
+                  child: _FollowersListBody(
+                    followers: state.followersPubkeys,
+                    targetPubkey: pubkey,
+                  ),
+                ),
+              OthersFollowersStatus.loading => const Center(
+                child: BrandedLoadingIndicator(),
+              ),
+              OthersFollowersStatus.success => LoadingOverlay(
+                isLoading: state.isRefreshing,
+                child: _FollowersListBody(
                   followers: state.followersPubkeys,
                   targetPubkey: pubkey,
                 ),
-              OthersFollowersStatus.loading => const Center(
-                child: CircularProgressIndicator(),
-              ),
-              OthersFollowersStatus.success => _FollowersListBody(
-                followers: state.followersPubkeys,
-                targetPubkey: pubkey,
               ),
               OthersFollowersStatus.failure => _FollowersErrorBody(
                 onRetry: () {

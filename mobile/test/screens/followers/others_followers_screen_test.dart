@@ -1,8 +1,7 @@
 // ABOUTME: Widget tests for OthersFollowersScreen startup behavior
-// ABOUTME: Ensures the followers list renders without waiting for exact count
+// ABOUTME: Ensures the followers list renders correctly with CacheSync integration
 
-import 'dart:async';
-
+import 'package:cache_sync/cache_sync.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -22,6 +21,30 @@ class _MockContentBlocklistRepository extends Mock
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
+class _FakeCacheDao implements CacheDao {
+  @override
+  Future<String?> read(String key) async => null;
+
+  @override
+  Future<void> write({
+    required String key,
+    required String payload,
+    Duration? ttl,
+  }) async {}
+
+  @override
+  Future<void> delete(String key) async {}
+
+  @override
+  Future<void> deleteAll() async {}
+
+  @override
+  Future<int> totalPayloadBytes() async => 0;
+
+  @override
+  Future<void> evictOldest(int bytesToFree) async {}
+}
+
 void main() {
   const targetPubkey =
       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -35,7 +58,9 @@ void main() {
     late _MockContentBlocklistRepository mockBlocklistRepository;
     late _MockNostrClient mockNostrClient;
 
-    setUp(() {
+    setUp(() async {
+      await CacheSync.init(dao: _FakeCacheDao());
+
       mockFollowRepository = _MockFollowRepository();
       mockBlocklistRepository = _MockContentBlocklistRepository();
       mockNostrClient = _MockNostrClient();
@@ -50,16 +75,11 @@ void main() {
     });
 
     testWidgets(
-      'renders follower tiles before the exact count request finishes',
+      'renders follower tiles after followers load',
       (tester) async {
-        final followerCountCompleter = Completer<int>();
-
         when(
           () => mockFollowRepository.getFollowers(targetPubkey),
         ).thenAnswer((_) async => [followerPubkey]);
-        when(
-          () => mockFollowRepository.getFollowerCount(targetPubkey),
-        ).thenAnswer((_) => followerCountCompleter.future);
 
         await tester.pumpWidget(
           testMaterialApp(
@@ -82,8 +102,6 @@ void main() {
 
         expect(find.byType(UserProfileTile), findsOneWidget);
         expect(find.byType(CircularProgressIndicator), findsNothing);
-
-        followerCountCompleter.complete(500);
       },
     );
   });

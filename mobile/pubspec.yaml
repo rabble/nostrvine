@@ -27,6 +27,7 @@ workspace:
   - packages/app_version_client
   - packages/blossom_upload_service
   - packages/blurhash_service
+  - packages/cache_sync
   - packages/categories_repository
   - packages/collaborator_repository
   - packages/comments_repository
@@ -169,6 +170,8 @@ dependencies:
 
   # Blurhash Service - Blurhash generation and decoding for image placeholders
   blurhash_service:
+
+  cache_sync:
 
   # Categories Repository - Video categories from Funnelcake API
   categories_repository:

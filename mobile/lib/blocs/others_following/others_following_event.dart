@@ -10,10 +10,16 @@ sealed class OthersFollowingEvent {
 
 /// Request to load another user's following list.
 final class OthersFollowingListLoadRequested extends OthersFollowingEvent {
-  const OthersFollowingListLoadRequested(this.targetPubkey);
+  const OthersFollowingListLoadRequested(
+    this.targetPubkey, {
+    this.forceRefresh = false,
+  });
 
-  /// The public key of the user whose following list to load
+  /// The public key of the user whose following list to load.
   final String targetPubkey;
+
+  /// When true, bypasses the cache and fetches fresh data from Nostr.
+  final bool forceRefresh;
 }
 
 /// Notification that the blocklist has changed, requiring re-filtering.

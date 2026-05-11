@@ -472,7 +472,7 @@ void main() {
       when(
         mockFollowRepository.watchMyFollowers,
       ).thenAnswer(
-        (_) => const Stream<({List<String> pubkeys, int count})>.empty(),
+        (_) => const Stream<FollowersSnapshot>.empty(),
       );
     });
 
@@ -586,7 +586,7 @@ void main() {
         when(
           mockFollowRepository.watchMyFollowers,
         ).thenAnswer(
-          (_) => const Stream<({List<String> pubkeys, int count})>.empty(),
+          (_) => const Stream<FollowersSnapshot>.empty(),
         );
 
         final list = _buildList(id: 'routed-list', name: 'Routed');

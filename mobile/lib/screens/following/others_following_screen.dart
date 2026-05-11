@@ -12,6 +12,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/profile/follower_count_title.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 
@@ -39,7 +40,7 @@ class OthersFollowingScreen extends ConsumerWidget {
       providers: [
         BlocProvider(
           create: (_) => OthersFollowingBloc(
-            nostrClient: nostrClient,
+            followRepository: followRepository,
             contentBlocklistRepository: blocklistRepository,
             currentUserPubkey: nostrClient.publicKey,
           )..add(OthersFollowingListLoadRequested(pubkey)),
@@ -105,23 +106,16 @@ class _OthersFollowingView extends ConsumerWidget {
         ],
         child: BlocBuilder<OthersFollowingBloc, OthersFollowingState>(
           builder: (context, state) {
-            final showFollowingList = state.followingPubkeys.isNotEmpty;
-
             return switch (state.status) {
               OthersFollowingStatus.initial => const Center(
-                child: CircularProgressIndicator(),
+                child: BrandedLoadingIndicator(),
               ),
-              OthersFollowingStatus.loading when showFollowingList =>
-                _FollowingListBody(
+              OthersFollowingStatus.success => LoadingOverlay(
+                isLoading: state.isRefreshing,
+                child: _FollowingListBody(
                   following: state.followingPubkeys,
                   targetPubkey: pubkey,
                 ),
-              OthersFollowingStatus.loading => const Center(
-                child: CircularProgressIndicator(),
-              ),
-              OthersFollowingStatus.success => _FollowingListBody(
-                following: state.followingPubkeys,
-                targetPubkey: pubkey,
               ),
               OthersFollowingStatus.failure => _FollowingErrorBody(
                 onRetry: () {
@@ -164,7 +158,7 @@ class _FollowingListBody extends StatelessWidget {
       backgroundColor: VineTheme.vineGreen,
       onRefresh: () async {
         context.read<OthersFollowingBloc>().add(
-          OthersFollowingListLoadRequested(targetPubkey),
+          OthersFollowingListLoadRequested(targetPubkey, forceRefresh: true),
         );
       },
       child: ListView.builder(

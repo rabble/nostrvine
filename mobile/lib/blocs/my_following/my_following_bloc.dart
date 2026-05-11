@@ -1,5 +1,5 @@
 // ABOUTME: BLoC for managing current user's following list with reactive updates
-// ABOUTME: Listens to FollowRepository stream for real-time following changes
+// ABOUTME: Delegates stale-while-revalidate to FollowRepository
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
@@ -13,9 +13,9 @@ part 'my_following_state.dart';
 
 /// BLoC for managing the current user's following list.
 ///
-/// Uses [FollowRepository] for reactive updates via emit.forEach.
-/// Initial state is set optimistically with cached repository data
-/// to prevent UI flash.
+/// Uses [FollowRepository.watchMyFollowingCached] for stale-while-revalidate:
+/// cached pubkeys are served immediately ([isRefreshing] = true) while the
+/// live stream catches up.
 ///
 /// Filters out blocked users before emitting state.
 class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
@@ -24,14 +24,7 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
     required ContentBlocklistRepository contentBlocklistRepository,
   }) : _followRepository = followRepository,
        _blocklistRepository = contentBlocklistRepository,
-       super(
-         MyFollowingState(
-           status: MyFollowingStatus.success,
-           followingPubkeys: followRepository.followingPubkeys
-               .where((pk) => !contentBlocklistRepository.isBlocked(pk))
-               .toList(),
-         ),
-       ) {
+       super(const MyFollowingState()) {
     on<MyFollowingListLoadRequested>(_onLoadRequested);
     on<MyFollowingToggleRequested>(
       _onToggleRequested,
@@ -50,19 +43,20 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
   List<String> _filterPubkeys(List<String> pubkeys) =>
       pubkeys.where((pk) => !_blocklistRepository.isBlocked(pk)).toList();
 
-  /// Listen to repository stream for reactive updates
+  /// Listen to repository's cached stream for stale-while-revalidate.
   Future<void> _onLoadRequested(
     MyFollowingListLoadRequested event,
     Emitter<MyFollowingState> emit,
   ) async {
     try {
-      await emit.forEach<List<String>>(
-        _followRepository.followingStream,
-        onData: (followingPubkeys) {
-          _rawFollowingPubkeys = followingPubkeys;
+      await emit.forEach<CacheResult<FollowingSnapshot>>(
+        _followRepository.watchMyFollowingCached(),
+        onData: (result) {
+          _rawFollowingPubkeys = result.data.pubkeys;
           return state.copyWith(
             status: MyFollowingStatus.success,
-            followingPubkeys: _filterPubkeys(followingPubkeys),
+            followingPubkeys: _filterPubkeys(result.data.pubkeys),
+            isRefreshing: result.isStale,
           );
         },
         onError: (error, stackTrace) {
@@ -71,16 +65,26 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
             name: 'MyFollowingBloc',
             category: LogCategory.system,
           );
-          return state.copyWith(status: MyFollowingStatus.failure);
+          addError(error, stackTrace);
+          return state.copyWith(
+            status: MyFollowingStatus.failure,
+            isRefreshing: false,
+          );
         },
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
       Log.error(
         'Failed to listen to following stream: $e',
         name: 'MyFollowingBloc',
         category: LogCategory.system,
       );
-      emit(state.copyWith(status: MyFollowingStatus.failure));
+      addError(e, stackTrace);
+      emit(
+        state.copyWith(
+          status: MyFollowingStatus.failure,
+          isRefreshing: false,
+        ),
+      );
     }
   }
 

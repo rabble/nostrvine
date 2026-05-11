@@ -6,6 +6,7 @@ import 'dart:io'
 import 'package:app_update_repository/app_update_repository.dart';
 import 'package:app_version_client/app_version_client.dart';
 import 'package:audio_session/audio_session.dart';
+import 'package:cache_sync/cache_sync.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart'
     show DivineVideoPlayerController;
@@ -259,6 +260,13 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
         task: _initializeHiveStorage,
       );
     },
+  );
+
+  coordinator.registerService(
+    name: 'CacheSync',
+    phase: StartupPhase.standard,
+    initialize: CacheSync.init,
+    optional: true,
   );
 
   coordinator.registerService(

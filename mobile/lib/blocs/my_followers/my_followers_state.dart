@@ -24,6 +24,7 @@ final class MyFollowersState extends Equatable {
     this.status = MyFollowersStatus.initial,
     this.followersPubkeys = const [],
     this.followerCount = 0,
+    this.isRefreshing = false,
   });
 
   /// The current status of the followers list
@@ -39,19 +40,29 @@ final class MyFollowersState extends Equatable {
   /// the higher of the list length and a COUNT query result.
   final int followerCount;
 
+  /// True while cached data is shown but a fresh network fetch is in progress.
+  final bool isRefreshing;
+
   /// Create a copy with updated values
   MyFollowersState copyWith({
     MyFollowersStatus? status,
     List<String>? followersPubkeys,
     int? followerCount,
+    bool? isRefreshing,
   }) {
     return MyFollowersState(
       status: status ?? this.status,
       followersPubkeys: followersPubkeys ?? this.followersPubkeys,
       followerCount: followerCount ?? this.followerCount,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
     );
   }
 
   @override
-  List<Object?> get props => [status, followersPubkeys, followerCount];
+  List<Object?> get props => [
+    status,
+    followersPubkeys,
+    followerCount,
+    isRefreshing,
+  ];
 }

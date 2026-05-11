@@ -299,7 +299,6 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
           // during the loading window (#4183 review).
           Skeletonizer(
             enabled: showIdentitySkeleton,
-            enableSwitchAnimation: true,
             effect: vineSkeletonEffect,
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -957,7 +956,8 @@ class _ProfileAvatarWithColor extends StatelessWidget {
         avatar,
         Positioned(
           bottom: 0,
-          child: Skeleton.keep(
+          child: Skeleton.replace(
+            replacement: const SizedBox.shrink(),
             child: GestureDetector(
               onTap: onActionTap,
               child: _ProfileActionLabel(

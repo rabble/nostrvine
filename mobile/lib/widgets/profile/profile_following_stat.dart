@@ -45,7 +45,7 @@ class ProfileFollowingStat extends ConsumerWidget {
     } else {
       return BlocProvider(
         create: (_) => OthersFollowingBloc(
-          nostrClient: nostrClient,
+          followRepository: followRepository,
           contentBlocklistRepository: blocklistRepository,
           currentUserPubkey: nostrClient.publicKey,
         )..add(OthersFollowingListLoadRequested(pubkey)),
@@ -110,9 +110,7 @@ class _OthersFollowingStatView extends ConsumerWidget {
 
     return BlocBuilder<OthersFollowingBloc, OthersFollowingState>(
       builder: (context, state) {
-        final isLoading =
-            state.status == OthersFollowingStatus.initial ||
-            state.status == OthersFollowingStatus.loading;
+        final isLoading = state.status == OthersFollowingStatus.initial;
 
         return ProfileStatColumn(
           count: isLoading ? null : state.followingPubkeys.length,

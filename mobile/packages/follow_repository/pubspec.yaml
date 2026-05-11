@@ -8,6 +8,8 @@ environment:
   sdk: ^3.11.0
 
 dependencies:
+  cache_sync:
+    path: ../cache_sync
   db_client:
     path: ../db_client
   funnelcake_api_client:

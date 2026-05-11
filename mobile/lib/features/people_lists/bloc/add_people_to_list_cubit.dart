@@ -43,7 +43,7 @@ class AddPeopleToListCubit extends Cubit<AddPeopleToListState> {
   final Set<String> _existingMembers;
 
   StreamSubscription<List<String>>? _followingSub;
-  StreamSubscription<({List<String> pubkeys, int count})>? _followerSub;
+  StreamSubscription<FollowersSnapshot>? _followerSub;
 
   /// Candidate map keyed by full-hex pubkey. Holds the canonical relationship
   /// flags + resolved profile metadata; `state.candidates` is derived from
@@ -181,7 +181,7 @@ class AddPeopleToListCubit extends Cubit<AddPeopleToListState> {
     );
   }
 
-  void _applyFollowerDelta(({List<String> pubkeys, int count}) result) {
+  void _applyFollowerDelta(FollowersSnapshot result) {
     final followerSet = result.pubkeys.toSet();
     final newlyAdded = <String>[];
 

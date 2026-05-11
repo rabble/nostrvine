@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:cache_sync/cache_sync.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -65,8 +66,8 @@ class MockFollowRepository extends Mock implements FollowRepository {
   bool isFollowing(String pubkey) => false;
 
   @override
-  Stream<({List<String> pubkeys, int count})> watchMyFollowers() {
-    return Stream.value((pubkeys: <String>[], count: 0));
+  Stream<FollowersSnapshot> watchMyFollowers() {
+    return Stream.value(const FollowersSnapshot(pubkeys: <String>[], count: 0));
   }
 
   @override
@@ -92,6 +93,30 @@ class MockNostrClient extends Mock implements NostrClient {
 
   @override
   int get connectedRelayCount => 1;
+}
+
+class _FakeCacheDao implements CacheDao {
+  @override
+  Future<String?> read(String key) async => null;
+
+  @override
+  Future<void> write({
+    required String key,
+    required String payload,
+    Duration? ttl,
+  }) async {}
+
+  @override
+  Future<void> delete(String key) async {}
+
+  @override
+  Future<void> deleteAll() async {}
+
+  @override
+  Future<int> totalPayloadBytes() async => 0;
+
+  @override
+  Future<void> evictOldest(int bytesToFree) async {}
 }
 
 class MockAuthService extends Mock implements AuthService {
@@ -155,9 +180,10 @@ void main() {
       );
     }
 
-    setUp(() {
+    setUp(() async {
       mockFollowRepository = MockFollowRepository();
       mockNostrClient = MockNostrClient();
+      await CacheSync.init(dao: _FakeCacheDao());
     });
 
     setUpAll(() async {
@@ -553,7 +579,7 @@ void main() {
       },
     );
 
-    testWidgets('shows Complete your profile while profile is still loading', (
+    testWidgets('hides action label while profile is still loading', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -566,8 +592,9 @@ void main() {
       // Do not pumpAndSettle — provider never resolves
       await tester.pump();
 
-      // No profile info available yet → prompt should show
-      expect(find.text('Complete your profile'), findsOneWidget);
+      // Action label is replaced with SizedBox.shrink() during the loading
+      // window so the prompt doesn't flicker between states (#4183 review).
+      expect(find.text('Complete your profile'), findsNothing);
     });
 
     testWidgets('hides action label when profile has custom name', (

@@ -1,0 +1,26 @@
+name: cache_sync
+description: Unified low-level stale-while-revalidate cache for divine.
+version: 0.1.0
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.11.0
+  flutter: ^3.41.1
+
+dependencies:
+  drift: ^2.31.0
+  flutter:
+    sdk: flutter
+  meta: ^1.16.0
+  path: ^1.9.1
+  path_provider: ^2.1.5
+
+dev_dependencies:
+  build_runner: ^2.10.5
+  drift_dev: ^2.31.0
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.4
+  sqlite3: ^2.9.4
+  very_good_analysis: ^10.2.0

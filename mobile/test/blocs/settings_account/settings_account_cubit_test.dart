@@ -2,6 +2,7 @@
 // ABOUTME: Covers load, switchToAccount, addNewAccount, and state helpers
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:cache_sync/cache_sync.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/settings_account/settings_account_cubit.dart';
@@ -12,6 +13,25 @@ import 'package:openvine/services/draft_storage_service.dart';
 class _MockAuthService extends Mock implements AuthService {}
 
 class _MockDraftStorageService extends Mock implements DraftStorageService {}
+
+class _FakeCacheDao implements CacheDao {
+  @override
+  Future<String?> read(String key) async => null;
+  @override
+  Future<void> write({
+    required String key,
+    required String payload,
+    Duration? ttl,
+  }) async {}
+  @override
+  Future<void> delete(String key) async {}
+  @override
+  Future<void> deleteAll() async {}
+  @override
+  Future<int> totalPayloadBytes() async => 0;
+  @override
+  Future<void> evictOldest(int bytesToFree) async {}
+}
 
 void main() {
   group(SettingsAccountCubit, () {
@@ -35,7 +55,8 @@ void main() {
       ),
     ];
 
-    setUp(() {
+    setUp(() async {
+      await CacheSync.init(dao: _FakeCacheDao());
       mockAuthService = _MockAuthService();
       mockDraftStorageService = _MockDraftStorageService();
 

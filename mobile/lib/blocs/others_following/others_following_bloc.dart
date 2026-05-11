@@ -1,12 +1,11 @@
 // ABOUTME: BLoC for displaying another user's following list (read-only)
-// ABOUTME: Fetches Kind 3 contact list from Nostr relays for the target user
-// TODO(Oscar): Move Nostr query logic to repository - https://github.com/divinevideo/divine-mobile/issues/571
+// ABOUTME: Delegates stale-while-revalidate to FollowRepository
 
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:nostr_client/nostr_client.dart';
-import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 part 'others_following_event.dart';
@@ -14,25 +13,29 @@ part 'others_following_state.dart';
 
 /// BLoC for displaying another user's following list.
 ///
-/// Fetches Kind 3 (contact list) events from Nostr relays for the target user.
-/// This is a read-only view - no follow/unfollow operations.
+/// Delegates fetching to [FollowRepository.watchOthersFollowingCached] which
+/// uses stale-while-revalidate: cached pubkeys are served immediately
+/// ([isRefreshing] = true) while a fresh fetch runs.
 ///
 /// Filters out blocked users and hides the current user from the target's
 /// following list when the current user has blocked the target.
 class OthersFollowingBloc
     extends Bloc<OthersFollowingEvent, OthersFollowingState> {
   OthersFollowingBloc({
-    required NostrClient nostrClient,
+    required FollowRepository followRepository,
     required ContentBlocklistRepository contentBlocklistRepository,
     this.currentUserPubkey,
-  }) : _nostrClient = nostrClient,
+  }) : _followRepository = followRepository,
        _blocklistRepository = contentBlocklistRepository,
        super(const OthersFollowingState()) {
-    on<OthersFollowingListLoadRequested>(_onLoadRequested);
+    on<OthersFollowingListLoadRequested>(
+      _onLoadRequested,
+      transformer: restartable(),
+    );
     on<OthersFollowingBlocklistChanged>(_onBlocklistChanged);
   }
 
-  final NostrClient _nostrClient;
+  final FollowRepository _followRepository;
   final ContentBlocklistRepository _blocklistRepository;
 
   /// The current user's pubkey, used to hide ourselves from the target's
@@ -60,39 +63,67 @@ class OthersFollowingBloc
         .toList();
   }
 
-  /// Handle request to load another user's following list
+  /// Handle request to load another user's following list.
+  ///
+  /// Delegates to [FollowRepository.watchOthersFollowingCached] for
+  /// stale-while-revalidate: cached pubkeys are served immediately
+  /// ([isRefreshing] = true) while the live fetch runs.
   Future<void> _onLoadRequested(
     OthersFollowingListLoadRequested event,
     Emitter<OthersFollowingState> emit,
   ) async {
-    emit(
-      state.copyWith(
-        status: OthersFollowingStatus.loading,
-        targetPubkey: event.targetPubkey,
-        followingPubkeys: state.targetPubkey == event.targetPubkey
-            ? state.followingPubkeys
-            : const [],
-      ),
-    );
-
-    try {
-      final following = await _fetchFollowingFromNostr(event.targetPubkey);
-      _rawFollowingPubkeys = following;
-      final filtered = _filterPubkeys(following);
-
+    if (state.status != OthersFollowingStatus.success ||
+        state.targetPubkey != event.targetPubkey) {
       emit(
         state.copyWith(
-          status: OthersFollowingStatus.success,
-          followingPubkeys: filtered,
+          targetPubkey: event.targetPubkey,
+          followingPubkeys: state.targetPubkey == event.targetPubkey
+              ? state.followingPubkeys
+              : const [],
         ),
       );
-    } catch (e) {
+    }
+
+    try {
+      await emit.forEach<CacheResult<FollowingSnapshot>>(
+        _followRepository.watchOthersFollowingCached(
+          event.targetPubkey,
+          forceRefresh: event.forceRefresh,
+        ),
+        onData: (result) {
+          _rawFollowingPubkeys = result.data.pubkeys;
+          return state.copyWith(
+            status: OthersFollowingStatus.success,
+            followingPubkeys: _filterPubkeys(result.data.pubkeys),
+            isRefreshing: result.isStale,
+          );
+        },
+        onError: (error, stackTrace) {
+          Log.error(
+            'Failed to load following list for ${event.targetPubkey}: $error',
+            name: 'OthersFollowingBloc',
+            category: LogCategory.system,
+          );
+          addError(error, stackTrace);
+          return state.copyWith(
+            status: OthersFollowingStatus.failure,
+            isRefreshing: false,
+          );
+        },
+      );
+    } catch (e, stackTrace) {
       Log.error(
-        'Failed to load following list for ${event.targetPubkey}: $e',
+        'Unexpected error loading following list for ${event.targetPubkey}: $e',
         name: 'OthersFollowingBloc',
         category: LogCategory.system,
       );
-      emit(state.copyWith(status: OthersFollowingStatus.failure));
+      addError(e, stackTrace);
+      emit(
+        state.copyWith(
+          status: OthersFollowingStatus.failure,
+          isRefreshing: false,
+        ),
+      );
     }
   }
 
@@ -106,31 +137,5 @@ class OthersFollowingBloc
     emit(
       state.copyWith(followingPubkeys: _filterPubkeys(_rawFollowingPubkeys)),
     );
-  }
-
-  /// Fetch following list from Nostr relays
-  Future<List<String>> _fetchFollowingFromNostr(String targetPubkey) async {
-    final events = await _nostrClient.queryEvents([
-      Filter(
-        authors: [targetPubkey],
-        kinds: const [3], // Contact lists
-        limit: 1, // Get most recent only
-      ),
-    ]);
-
-    final following = <String>[];
-    if (events.isNotEmpty) {
-      final event = events.first;
-      for (final tag in event.tags) {
-        if (tag.isNotEmpty && tag[0] == 'p' && tag.length > 1) {
-          final followedPubkey = tag[1];
-          if (!following.contains(followedPubkey)) {
-            following.add(followedPubkey);
-          }
-        }
-      }
-    }
-
-    return following;
   }
 }

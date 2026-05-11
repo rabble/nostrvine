@@ -11,6 +11,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/profile/follower_count_title.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 
@@ -87,13 +88,11 @@ class _MyFollowingView extends ConsumerWidget {
           }
         },
         builder: (context, state) {
-          return switch (state.status) {
+          final body = switch (state.status) {
             MyFollowingStatus.initial => const Center(
-              child: CircularProgressIndicator(),
+              child: BrandedLoadingIndicator(),
             ),
-            MyFollowingStatus.toggleFailure => _FollowingListBody(
-              following: state.followingPubkeys,
-            ),
+            MyFollowingStatus.toggleFailure ||
             MyFollowingStatus.success => _FollowingListBody(
               following: state.followingPubkeys,
             ),
@@ -105,6 +104,7 @@ class _MyFollowingView extends ConsumerWidget {
               },
             ),
           };
+          return LoadingOverlay(isLoading: state.isRefreshing, child: body);
         },
       ),
     );

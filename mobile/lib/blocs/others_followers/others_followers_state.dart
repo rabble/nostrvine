@@ -25,7 +25,7 @@ final class OthersFollowersState extends Equatable {
     this.followersPubkeys = const [],
     this.followerCount = 0,
     this.targetPubkey,
-    this.lastFetchedAt,
+    this.isRefreshing = false,
   });
 
   /// The current status of the followers list
@@ -44,17 +44,11 @@ final class OthersFollowersState extends Equatable {
   /// The pubkey whose followers list is being viewed (for retry)
   final String? targetPubkey;
 
-  /// When the followers list was last fetched from relays
-  final DateTime? lastFetchedAt;
-
-  /// Cache TTL - data older than this is considered stale
-  static const cacheTtl = Duration(seconds: 30);
-
-  /// Check if the cached data is stale and should be re-fetched
-  bool get isStale {
-    if (lastFetchedAt == null) return true;
-    return DateTime.now().difference(lastFetchedAt!) > cacheTtl;
-  }
+  /// Whether a background refresh is in progress (stale-while-revalidate).
+  ///
+  /// When [true], the list is showing cached data while fresh data loads.
+  /// Used by the UI to show a progress indicator via [LoadingOverlay].
+  final bool isRefreshing;
 
   /// Create a copy with updated values
   OthersFollowersState copyWith({
@@ -62,14 +56,14 @@ final class OthersFollowersState extends Equatable {
     List<String>? followersPubkeys,
     int? followerCount,
     String? targetPubkey,
-    DateTime? lastFetchedAt,
+    bool? isRefreshing,
   }) {
     return OthersFollowersState(
       status: status ?? this.status,
       followersPubkeys: followersPubkeys ?? this.followersPubkeys,
       followerCount: followerCount ?? this.followerCount,
       targetPubkey: targetPubkey ?? this.targetPubkey,
-      lastFetchedAt: lastFetchedAt ?? this.lastFetchedAt,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
     );
   }
 
@@ -79,6 +73,6 @@ final class OthersFollowersState extends Equatable {
     followersPubkeys,
     followerCount,
     targetPubkey,
-    lastFetchedAt,
+    isRefreshing,
   ];
 }

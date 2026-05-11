@@ -26,7 +26,7 @@ void main() {
       return hexSuffix.padLeft(64, '0');
     }
 
-    setUp(() {
+    setUp(() async {
       mockFollowRepository = _MockFollowRepository();
       mockBlocklistRepository = _MockContentBlocklistRepository();
 
@@ -52,11 +52,15 @@ void main() {
       blocTest<MyFollowersBloc, MyFollowersState>(
         'emits [loading, success] when no cache exists',
         setUp: () {
-          when(() => mockFollowRepository.watchMyFollowers()).thenAnswer(
-            (_) => Stream.value((
-              pubkeys: [validPubkey('follower1'), validPubkey('follower2')],
-              count: 2,
-            )),
+          when(() => mockFollowRepository.watchMyFollowersCached()).thenAnswer(
+            (_) => Stream.value(
+              CacheResult.live(
+                FollowersSnapshot(
+                  pubkeys: [validPubkey('follower1'), validPubkey('follower2')],
+                  count: 2,
+                ),
+              ),
+            ),
           );
         },
         build: createBloc,
@@ -77,12 +81,16 @@ void main() {
       blocTest<MyFollowersBloc, MyFollowersState>(
         'emits [loading, cached, fresh] when cache yields then fresh data',
         setUp: () {
-          when(() => mockFollowRepository.watchMyFollowers()).thenAnswer(
+          when(() => mockFollowRepository.watchMyFollowersCached()).thenAnswer(
             (_) => Stream.fromIterable([
-              (pubkeys: [validPubkey('old')], count: 1),
-              (
-                pubkeys: [validPubkey('follower1'), validPubkey('follower2')],
-                count: 2,
+              CacheResult.live(
+                FollowersSnapshot(pubkeys: [validPubkey('old')], count: 1),
+              ),
+              CacheResult.live(
+                FollowersSnapshot(
+                  pubkeys: [validPubkey('follower1'), validPubkey('follower2')],
+                  count: 2,
+                ),
               ),
             ]),
           );
@@ -110,9 +118,15 @@ void main() {
       blocTest<MyFollowersBloc, MyFollowersState>(
         'uses higher count from service when list is incomplete',
         setUp: () {
-          when(() => mockFollowRepository.watchMyFollowers()).thenAnswer(
-            (_) =>
-                Stream.value((pubkeys: [validPubkey('follower1')], count: 500)),
+          when(() => mockFollowRepository.watchMyFollowersCached()).thenAnswer(
+            (_) => Stream.value(
+              CacheResult.live(
+                FollowersSnapshot(
+                  pubkeys: [validPubkey('follower1')],
+                  count: 500,
+                ),
+              ),
+            ),
           );
         },
         build: createBloc,
@@ -131,8 +145,14 @@ void main() {
         'emits [loading, success] with empty list when no followers',
         setUp: () {
           when(
-            () => mockFollowRepository.watchMyFollowers(),
-          ).thenAnswer((_) => Stream.value((pubkeys: <String>[], count: 0)));
+            () => mockFollowRepository.watchMyFollowersCached(),
+          ).thenAnswer(
+            (_) => Stream.value(
+              const CacheResult.live(
+                FollowersSnapshot(pubkeys: <String>[], count: 0),
+              ),
+            ),
+          );
         },
         build: createBloc,
         act: (bloc) => bloc.add(const MyFollowersListLoadRequested()),
@@ -146,8 +166,12 @@ void main() {
         'emits [loading, failure] when stream throws and no data',
         setUp: () {
           when(
-            () => mockFollowRepository.watchMyFollowers(),
-          ).thenAnswer((_) => Stream.error(Exception('Network error')));
+            () => mockFollowRepository.watchMyFollowersCached(),
+          ).thenAnswer(
+            (_) => Stream<CacheResult<FollowersSnapshot>>.error(
+              Exception('Network error'),
+            ),
+          );
         },
         build: createBloc,
         act: (bloc) => bloc.add(const MyFollowersListLoadRequested()),
@@ -160,10 +184,12 @@ void main() {
       blocTest<MyFollowersBloc, MyFollowersState>(
         'keeps cached data when stream errors after first yield',
         setUp: () {
-          when(() => mockFollowRepository.watchMyFollowers()).thenAnswer((
+          when(() => mockFollowRepository.watchMyFollowersCached()).thenAnswer((
             _,
           ) async* {
-            yield (pubkeys: [validPubkey('cached')], count: 1);
+            yield CacheResult.live(
+              FollowersSnapshot(pubkeys: [validPubkey('cached')], count: 1),
+            );
             throw Exception('Network error');
           });
         },
@@ -187,9 +213,15 @@ void main() {
             () => mockBlocklistRepository.isBlocked(blocked),
           ).thenReturn(true);
 
-          when(() => mockFollowRepository.watchMyFollowers()).thenAnswer(
-            (_) =>
-                Stream.value((pubkeys: [blocked, validPubkey('ok')], count: 2)),
+          when(() => mockFollowRepository.watchMyFollowersCached()).thenAnswer(
+            (_) => Stream.value(
+              CacheResult.live(
+                FollowersSnapshot(
+                  pubkeys: [blocked, validPubkey('ok')],
+                  count: 2,
+                ),
+              ),
+            ),
           );
         },
         build: createBloc,
@@ -209,11 +241,15 @@ void main() {
       blocTest<MyFollowersBloc, MyFollowersState>(
         're-filters followers when blocklist changes',
         setUp: () {
-          when(() => mockFollowRepository.watchMyFollowers()).thenAnswer(
-            (_) => Stream.value((
-              pubkeys: [validPubkey('a'), validPubkey('b')],
-              count: 2,
-            )),
+          when(() => mockFollowRepository.watchMyFollowersCached()).thenAnswer(
+            (_) => Stream.value(
+              CacheResult.live(
+                FollowersSnapshot(
+                  pubkeys: [validPubkey('a'), validPubkey('b')],
+                  count: 2,
+                ),
+              ),
+            ),
           );
         },
         build: createBloc,
@@ -294,6 +330,7 @@ void main() {
         MyFollowersStatus.success,
         ['pubkey1'],
         10,
+        false, // isRefreshing
       ]);
     });
   });

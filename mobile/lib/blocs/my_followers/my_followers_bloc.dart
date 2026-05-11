@@ -16,6 +16,8 @@ part 'my_followers_state.dart';
 /// in their 'p' tags - these are users who follow the current user.
 ///
 /// Filters out blocked and follow-severed users before emitting state.
+/// Uses [FollowRepository.watchMyFollowersCached] for stale-while-revalidate:
+/// cached pubkeys are served immediately while fresh data loads from relays.
 class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
   MyFollowersBloc({
     required FollowRepository followRepository,
@@ -44,8 +46,10 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
 
   /// Handle request to load current user's followers list.
   ///
-  /// Listens to [FollowRepository.watchMyFollowers] which progressively
-  /// yields cached data (instant) then fresh data from relays.
+  /// Delegates to [FollowRepository.watchMyFollowersCached] for
+  /// stale-while-revalidate: cached data is emitted first (if present and
+  /// not expired), then the relay stream updates the list and refreshes the
+  /// cache.
   Future<void> _onLoadRequested(
     MyFollowersListLoadRequested event,
     Emitter<MyFollowersState> emit,
@@ -57,14 +61,15 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
     }
 
     try {
-      await emit.forEach<({List<String> pubkeys, int count})>(
-        _followRepository.watchMyFollowers(),
+      await emit.forEach<CacheResult<FollowersSnapshot>>(
+        _followRepository.watchMyFollowersCached(),
         onData: (result) {
-          _rawFollowersPubkeys = result.pubkeys;
+          _rawFollowersPubkeys = result.data.pubkeys;
           return state.copyWith(
             status: MyFollowersStatus.success,
-            followersPubkeys: _filterPubkeys(result.pubkeys),
-            followerCount: result.count,
+            followersPubkeys: _filterPubkeys(result.data.pubkeys),
+            followerCount: result.data.count,
+            isRefreshing: result.isStale,
           );
         },
       );

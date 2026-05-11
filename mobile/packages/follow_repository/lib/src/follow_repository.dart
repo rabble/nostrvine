@@ -2,8 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:cache_sync/cache_sync.dart';
 import 'package:db_client/db_client.dart' hide Filter;
 import 'package:follow_repository/src/follower_stats.dart';
+import 'package:follow_repository/src/followers_snapshot.dart';
+import 'package:follow_repository/src/following_snapshot.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -199,10 +202,10 @@ class FollowRepository {
   ///
   /// Follows the same progressive-yield pattern as
   /// `VideosRepository.searchVideos`.
-  Stream<({List<String> pubkeys, int count})> watchMyFollowers() async* {
+  Stream<FollowersSnapshot> watchMyFollowers() async* {
     // Phase 1: Yield cached data immediately (if available)
     if (_hasMyFollowersCache) {
-      yield (
+      yield FollowersSnapshot(
         pubkeys: List<String>.unmodifiable(_cachedMyFollowersPubkeys),
         count: _cachedMyFollowerCount,
       );
@@ -218,7 +221,132 @@ class FollowRepository {
     // merged count so the next watchMyFollowers call yields it.
     _cachedMyFollowerCount = count;
 
-    yield (pubkeys: pubkeys, count: count);
+    yield FollowersSnapshot(pubkeys: pubkeys, count: count);
+  }
+
+  /// Maps the current user's following stream to [FollowingSnapshot] objects.
+  ///
+  /// Used by [CacheSync.watchStream] in MyFollowingBloc to provide
+  /// stale-while-revalidate behaviour backed by the Drift cache.
+  Stream<FollowingSnapshot> watchMyFollowing() {
+    return followingStream.map(
+      (pubkeys) => FollowingSnapshot(pubkeys: pubkeys, count: pubkeys.length),
+    );
+  }
+
+  /// Fetches the following list for any user by querying their Kind 3
+  /// contact list event from Nostr relays.
+  ///
+  /// Returns a [FollowingSnapshot] with the deduplicated list of followed
+  /// pubkeys. Returns an empty snapshot if no event is found.
+  Future<FollowingSnapshot> getOthersFollowing(String pubkey) async {
+    final events = await _nostrClient.queryEvents([
+      Filter(
+        authors: [pubkey],
+        kinds: const [3],
+        limit: 1,
+      ),
+    ]);
+
+    final following = <String>[];
+    if (events.isNotEmpty) {
+      for (final tag in events.first.tags) {
+        if (tag.isNotEmpty && tag[0] == 'p' && tag.length > 1) {
+          final followedPubkey = tag[1];
+          if (!following.contains(followedPubkey)) {
+            following.add(followedPubkey);
+          }
+        }
+      }
+    }
+
+    return FollowingSnapshot(pubkeys: following, count: following.length);
+  }
+
+  // ---- CacheSync-backed stale-while-revalidate watchers --------------------
+  //
+  // These wrap [watchMyFollowers], [watchMyFollowing], [getFollowers], and
+  // [getOthersFollowing] with [CacheSync] so consumers (BLoCs) get
+  // cache-first emissions followed by live data without knowing about
+  // [CacheSync] or cache-key conventions. Cache keys are private to this
+  // repository — changing them invalidates every cached entry on every user's
+  // device.
+
+  static const _kMyFollowersCacheKey = 'my_followers';
+  static const _kMyFollowingCacheKey = 'my_following';
+  static String _othersFollowersCacheKey(String pubkey) =>
+      'others_followers_$pubkey';
+  static String _othersFollowingCacheKey(String pubkey) =>
+      'others_following_$pubkey';
+
+  /// Cache-backed stream of the current user's followers.
+  ///
+  /// Emits cached data immediately when present, then live updates from
+  /// [watchMyFollowers]. See [CacheSync.watchStream].
+  Stream<CacheResult<FollowersSnapshot>> watchMyFollowersCached() {
+    return CacheSync.watchStream<FollowersSnapshot>(
+      key: _kMyFollowersCacheKey,
+      source: watchMyFollowers,
+      fromJson: FollowersSnapshot.fromJson,
+      toJson: (s) => s.toJson(),
+    );
+  }
+
+  /// Cache-backed stream of the current user's following list.
+  ///
+  /// Emits cached data immediately when present, then live updates from
+  /// [watchMyFollowing]. See [CacheSync.watchStream].
+  Stream<CacheResult<FollowingSnapshot>> watchMyFollowingCached() {
+    return CacheSync.watchStream<FollowingSnapshot>(
+      key: _kMyFollowingCacheKey,
+      source: watchMyFollowing,
+      fromJson: FollowingSnapshot.fromJson,
+      toJson: (s) => s.toJson(),
+    );
+  }
+
+  /// Cache-backed stream of another user's followers.
+  ///
+  /// Wraps [getFollowers] in a one-shot fetch under [CacheSync.watchOne].
+  /// When [forceRefresh] is true, bypasses the cache and fetches live.
+  Stream<CacheResult<FollowersSnapshot>> watchOthersFollowersCached(
+    String pubkey, {
+    bool forceRefresh = false,
+  }) {
+    return CacheSync.watchOne<FollowersSnapshot>(
+      key: _othersFollowersCacheKey(pubkey),
+      fetch: () async {
+        final followers = await getFollowers(pubkey);
+        return FollowersSnapshot(
+          pubkeys: followers,
+          count: followers.length,
+        );
+      },
+      fromJson: FollowersSnapshot.fromJson,
+      toJson: (s) => s.toJson(),
+      policy: forceRefresh
+          ? CacheFetchPolicy.networkOnly
+          : CacheFetchPolicy.cacheAndNetwork,
+    );
+  }
+
+  /// Cache-backed stream of another user's following list.
+  ///
+  /// Wraps [getOthersFollowing] in a one-shot fetch under [CacheSync.watchOne].
+  /// When [forceRefresh] is true, bypasses the cache and fetches live.
+  Stream<CacheResult<FollowingSnapshot>> watchOthersFollowingCached(
+    String pubkey, {
+    bool forceRefresh = false,
+  }) {
+    return CacheSync.watchOne<FollowingSnapshot>(
+      key: _othersFollowingCacheKey(pubkey),
+      fetch: () => getOthersFollowing(pubkey),
+      fromJson: FollowingSnapshot.fromJson,
+      toJson: (s) => s.toJson(),
+      policy: forceRefresh
+          ? CacheFetchPolicy.networkOnly
+          : CacheFetchPolicy.cacheAndNetwork,
+    );
   }
 
   /// Get an accurate follower count for any user.

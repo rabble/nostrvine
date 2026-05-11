@@ -1,24 +1,21 @@
 // ABOUTME: Tests for OthersFollowingBloc - another user's following list
-// ABOUTME: Tests loading from Nostr and error handling
-
-import 'dart:async';
+// ABOUTME: Tests loading from repository with CacheResult, error handling, and blocklist filtering
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:nostr_client/nostr_client.dart';
-import 'package:nostr_sdk/nostr_sdk.dart' as nostr_sdk;
 import 'package:openvine/blocs/others_following/others_following_bloc.dart';
 
-class _MockNostrClient extends Mock implements NostrClient {}
+class _MockFollowRepository extends Mock implements FollowRepository {}
 
 class _MockContentBlocklistRepository extends Mock
     implements ContentBlocklistRepository {}
 
 void main() {
-  group('OthersFollowingBloc', () {
-    late _MockNostrClient mockNostrClient;
+  group(OthersFollowingBloc, () {
+    late _MockFollowRepository mockFollowRepository;
     late _MockContentBlocklistRepository mockBlocklistRepository;
 
     // Helper to create valid hex pubkeys (64 hex characters)
@@ -29,11 +26,11 @@ void main() {
       return hexSuffix.padLeft(64, '0');
     }
 
-    setUp(() {
-      mockNostrClient = _MockNostrClient();
+    setUp(() async {
+      mockFollowRepository = _MockFollowRepository();
       mockBlocklistRepository = _MockContentBlocklistRepository();
 
-      // Default: nothing is blocked
+      // Default: nothing is blocked or severed
       when(() => mockBlocklistRepository.isBlocked(any())).thenReturn(false);
       when(
         () => mockBlocklistRepository.isFollowSevered(any()),
@@ -41,7 +38,7 @@ void main() {
     });
 
     OthersFollowingBloc createBloc() => OthersFollowingBloc(
-      nostrClient: mockNostrClient,
+      followRepository: mockFollowRepository,
       contentBlocklistRepository: mockBlocklistRepository,
       currentUserPubkey: validPubkey('currentUser'),
     );
@@ -54,262 +51,361 @@ void main() {
 
     group('OthersFollowingListLoadRequested', () {
       blocTest<OthersFollowingBloc, OthersFollowingState>(
-        'emits [loading, success] with Nostr data',
-        setUp: () {
-          final targetPubkey = validPubkey('other');
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-            (_) async => [
-              nostr_sdk.Event(
-                targetPubkey,
-                3,
-                [
-                  ['p', validPubkey('following1')],
-                  ['p', validPubkey('following2')],
-                ],
-                '',
-                createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-              ),
-            ],
-          );
-        },
-        build: createBloc,
-        act: (bloc) =>
-            bloc.add(OthersFollowingListLoadRequested(validPubkey('other'))),
-        expect: () => [
-          OthersFollowingState(
-            status: OthersFollowingStatus.loading,
-            targetPubkey: validPubkey('other'),
-          ),
-          OthersFollowingState(
-            status: OthersFollowingStatus.success,
-            followingPubkeys: [
-              validPubkey('following1'),
-              validPubkey('following2'),
-            ],
-            targetPubkey: validPubkey('other'),
-          ),
-        ],
-      );
-
-      blocTest<OthersFollowingBloc, OthersFollowingState>(
-        'emits [loading, success] with empty list when no contact list found',
+        'emits success with following pubkeys from repository',
         setUp: () {
           when(
-            () => mockNostrClient.queryEvents(any()),
-          ).thenAnswer((_) async => []);
-        },
-        build: createBloc,
-        act: (bloc) =>
-            bloc.add(OthersFollowingListLoadRequested(validPubkey('other'))),
-        expect: () => [
-          OthersFollowingState(
-            status: OthersFollowingStatus.loading,
-            targetPubkey: validPubkey('other'),
-          ),
-          OthersFollowingState(
-            status: OthersFollowingStatus.success,
-            targetPubkey: validPubkey('other'),
-          ),
-        ],
-      );
-
-      blocTest<OthersFollowingBloc, OthersFollowingState>(
-        'deduplicates pubkeys from contact list',
-        setUp: () {
-          final targetPubkey = validPubkey('other');
-          final duplicatePubkey = validPubkey('following1');
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-            (_) async => [
-              nostr_sdk.Event(
-                targetPubkey,
-                3,
-                [
-                  ['p', duplicatePubkey],
-                  ['p', duplicatePubkey], // Duplicate
-                  ['p', validPubkey('following2')],
-                ],
-                '',
-                createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-              ),
-            ],
-          );
-        },
-        build: createBloc,
-        act: (bloc) =>
-            bloc.add(OthersFollowingListLoadRequested(validPubkey('other'))),
-        expect: () => [
-          OthersFollowingState(
-            status: OthersFollowingStatus.loading,
-            targetPubkey: validPubkey('other'),
-          ),
-          OthersFollowingState(
-            status: OthersFollowingStatus.success,
-            followingPubkeys: [
-              validPubkey('following1'),
-              validPubkey('following2'),
-            ],
-            targetPubkey: validPubkey('other'),
-          ),
-        ],
-      );
-
-      blocTest<OthersFollowingBloc, OthersFollowingState>(
-        'emits [loading, failure] when Nostr query fails',
-        setUp: () {
-          when(
-            () => mockNostrClient.queryEvents(any()),
-          ).thenThrow(Exception('Network error'));
-        },
-        build: createBloc,
-        act: (bloc) =>
-            bloc.add(OthersFollowingListLoadRequested(validPubkey('other'))),
-        expect: () => [
-          OthersFollowingState(
-            status: OthersFollowingStatus.loading,
-            targetPubkey: validPubkey('other'),
-          ),
-          OthersFollowingState(
-            status: OthersFollowingStatus.failure,
-            targetPubkey: validPubkey('other'),
-          ),
-        ],
-      );
-
-      blocTest<OthersFollowingBloc, OthersFollowingState>(
-        'stores targetPubkey in state for retry',
-        setUp: () {
-          when(
-            () => mockNostrClient.queryEvents(any()),
-          ).thenAnswer((_) async => []);
-        },
-        build: createBloc,
-        act: (bloc) =>
-            bloc.add(OthersFollowingListLoadRequested(validPubkey('other'))),
-        verify: (bloc) {
-          expect(bloc.state.targetPubkey, validPubkey('other'));
-        },
-      );
-
-      test(
-        'retains existing following list while a reload is in flight',
-        () async {
-          final reloadCompleter = Completer<List<nostr_sdk.Event>>();
-          var queryCount = 0;
-
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer((_) {
-            queryCount++;
-            if (queryCount == 1) {
-              return Future.value([
-                nostr_sdk.Event(
-                  validPubkey('other'),
-                  3,
-                  [
-                    ['p', validPubkey('following1')],
-                    ['p', validPubkey('following2')],
+            () => mockFollowRepository.watchOthersFollowingCached(
+              any(),
+              forceRefresh: any(named: 'forceRefresh'),
+            ),
+          ).thenAnswer(
+            (_) => Stream<CacheResult<FollowingSnapshot>>.value(
+              CacheResult.live(
+                FollowingSnapshot(
+                  pubkeys: [
+                    validPubkey('following1'),
+                    validPubkey('following2'),
                   ],
-                  '',
-                  createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                  count: 2,
                 ),
-              ]);
-            }
-            return reloadCompleter.future;
-          });
-
-          final bloc = createBloc();
-
-          final initialLoad = expectLater(
-            bloc.stream,
-            emitsThrough(
-              isA<OthersFollowingState>()
-                  .having(
-                    (state) => state.status,
-                    'status',
-                    OthersFollowingStatus.success,
-                  )
-                  .having(
-                    (state) => state.followingPubkeys,
-                    'followingPubkeys',
-                    [validPubkey('following1'), validPubkey('following2')],
-                  ),
+              ),
             ),
           );
-
-          bloc.add(OthersFollowingListLoadRequested(validPubkey('other')));
-          await initialLoad;
-
-          bloc.add(OthersFollowingListLoadRequested(validPubkey('other')));
-          await Future<void>.delayed(Duration.zero);
-
-          expect(bloc.state.status, OthersFollowingStatus.loading);
+        },
+        build: createBloc,
+        act: (bloc) =>
+            bloc.add(OthersFollowingListLoadRequested(validPubkey('target'))),
+        verify: (bloc) {
+          expect(bloc.state.status, OthersFollowingStatus.success);
           expect(bloc.state.followingPubkeys, [
             validPubkey('following1'),
             validPubkey('following2'),
           ]);
+          expect(bloc.state.targetPubkey, validPubkey('target'));
+        },
+      );
 
-          reloadCompleter.complete(const []);
+      blocTest<OthersFollowingBloc, OthersFollowingState>(
+        'emits isRefreshing=false when data is fresh (no cache)',
+        setUp: () {
+          when(
+            () => mockFollowRepository.watchOthersFollowingCached(
+              any(),
+              forceRefresh: any(named: 'forceRefresh'),
+            ),
+          ).thenAnswer(
+            (_) => Stream<CacheResult<FollowingSnapshot>>.value(
+              CacheResult.live(
+                FollowingSnapshot(
+                  pubkeys: [validPubkey('following1')],
+                  count: 1,
+                ),
+              ),
+            ),
+          );
+        },
+        build: createBloc,
+        act: (bloc) =>
+            bloc.add(OthersFollowingListLoadRequested(validPubkey('target'))),
+        verify: (bloc) {
+          expect(bloc.state.isRefreshing, isFalse);
+        },
+      );
+
+      blocTest<OthersFollowingBloc, OthersFollowingState>(
+        'emits success with empty list when following is empty',
+        setUp: () {
+          when(
+            () => mockFollowRepository.watchOthersFollowingCached(
+              any(),
+              forceRefresh: any(named: 'forceRefresh'),
+            ),
+          ).thenAnswer(
+            (_) => Stream<CacheResult<FollowingSnapshot>>.value(
+              const CacheResult.live(
+                FollowingSnapshot(pubkeys: <String>[], count: 0),
+              ),
+            ),
+          );
+        },
+        build: createBloc,
+        act: (bloc) =>
+            bloc.add(OthersFollowingListLoadRequested(validPubkey('target'))),
+        verify: (bloc) {
+          expect(bloc.state.status, OthersFollowingStatus.success);
+          expect(bloc.state.followingPubkeys, isEmpty);
+        },
+      );
+
+      blocTest<OthersFollowingBloc, OthersFollowingState>(
+        'emits failure when repository throws',
+        setUp: () {
+          when(
+            () => mockFollowRepository.watchOthersFollowingCached(
+              any(),
+              forceRefresh: any(named: 'forceRefresh'),
+            ),
+          ).thenThrow(Exception('Network error'));
+        },
+        build: createBloc,
+        act: (bloc) =>
+            bloc.add(OthersFollowingListLoadRequested(validPubkey('target'))),
+        verify: (bloc) {
+          expect(bloc.state.status, OthersFollowingStatus.failure);
+          expect(bloc.state.isRefreshing, isFalse);
+        },
+        errors: () => [isA<Exception>()],
+      );
+
+      blocTest<OthersFollowingBloc, OthersFollowingState>(
+        'stores targetPubkey in state',
+        setUp: () {
+          when(
+            () => mockFollowRepository.watchOthersFollowingCached(
+              any(),
+              forceRefresh: any(named: 'forceRefresh'),
+            ),
+          ).thenAnswer(
+            (_) => Stream<CacheResult<FollowingSnapshot>>.value(
+              const CacheResult.live(
+                FollowingSnapshot(pubkeys: <String>[], count: 0),
+              ),
+            ),
+          );
+        },
+        build: createBloc,
+        act: (bloc) =>
+            bloc.add(OthersFollowingListLoadRequested(validPubkey('target'))),
+        verify: (bloc) {
+          expect(bloc.state.targetPubkey, validPubkey('target'));
+        },
+      );
+
+      blocTest<OthersFollowingBloc, OthersFollowingState>(
+        'forceRefresh still emits success',
+        setUp: () {
+          when(
+            () => mockFollowRepository.watchOthersFollowingCached(
+              any(),
+              forceRefresh: any(named: 'forceRefresh'),
+            ),
+          ).thenAnswer(
+            (_) => Stream<CacheResult<FollowingSnapshot>>.value(
+              CacheResult.live(
+                FollowingSnapshot(
+                  pubkeys: [validPubkey('following1')],
+                  count: 1,
+                ),
+              ),
+            ),
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          OthersFollowingListLoadRequested(
+            validPubkey('target'),
+            forceRefresh: true,
+          ),
+        ),
+        verify: (bloc) {
+          expect(bloc.state.status, OthersFollowingStatus.success);
+          expect(bloc.state.followingPubkeys, [validPubkey('following1')]);
+        },
+      );
+
+      blocTest<OthersFollowingBloc, OthersFollowingState>(
+        'second load for different target updates targetPubkey',
+        setUp: () {
+          when(
+            () => mockFollowRepository.watchOthersFollowingCached(
+              any(),
+              forceRefresh: any(named: 'forceRefresh'),
+            ),
+          ).thenAnswer(
+            (_) => Stream<CacheResult<FollowingSnapshot>>.value(
+              const CacheResult.live(
+                FollowingSnapshot(pubkeys: <String>[], count: 0),
+              ),
+            ),
+          );
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(OthersFollowingListLoadRequested(validPubkey('target1')));
           await Future<void>.delayed(Duration.zero);
-          await bloc.close();
+          bloc.add(OthersFollowingListLoadRequested(validPubkey('target2')));
+        },
+        verify: (bloc) {
+          expect(bloc.state.targetPubkey, validPubkey('target2'));
         },
       );
     });
-  });
 
-  group('OthersFollowingState', () {
-    test('supports value equality', () {
-      const state1 = OthersFollowingState(
-        status: OthersFollowingStatus.success,
-        followingPubkeys: ['pubkey1'],
-        targetPubkey: 'target',
-      );
-      const state2 = OthersFollowingState(
-        status: OthersFollowingStatus.success,
-        followingPubkeys: ['pubkey1'],
-        targetPubkey: 'target',
+    group('blocklist filtering', () {
+      blocTest<OthersFollowingBloc, OthersFollowingState>(
+        'filters blocked users from following list',
+        setUp: () {
+          when(
+            () => mockBlocklistRepository.isBlocked(validPubkey('blocked')),
+          ).thenReturn(true);
+          when(
+            () => mockFollowRepository.watchOthersFollowingCached(
+              any(),
+              forceRefresh: any(named: 'forceRefresh'),
+            ),
+          ).thenAnswer(
+            (_) => Stream<CacheResult<FollowingSnapshot>>.value(
+              CacheResult.live(
+                FollowingSnapshot(
+                  pubkeys: [
+                    validPubkey('following1'),
+                    validPubkey('blocked'),
+                    validPubkey('following2'),
+                  ],
+                  count: 3,
+                ),
+              ),
+            ),
+          );
+        },
+        build: createBloc,
+        act: (bloc) =>
+            bloc.add(OthersFollowingListLoadRequested(validPubkey('target'))),
+        verify: (bloc) {
+          expect(
+            bloc.state.followingPubkeys,
+            containsAll([
+              validPubkey('following1'),
+              validPubkey('following2'),
+            ]),
+          );
+          expect(
+            bloc.state.followingPubkeys,
+            isNot(contains(validPubkey('blocked'))),
+          );
+        },
       );
 
-      expect(state1, equals(state2));
+      blocTest<OthersFollowingBloc, OthersFollowingState>(
+        'hides current user when target is blocked',
+        setUp: () {
+          when(
+            () => mockBlocklistRepository.isBlocked(validPubkey('target')),
+          ).thenReturn(true);
+          when(
+            () => mockFollowRepository.watchOthersFollowingCached(
+              any(),
+              forceRefresh: any(named: 'forceRefresh'),
+            ),
+          ).thenAnswer(
+            (_) => Stream<CacheResult<FollowingSnapshot>>.value(
+              CacheResult.live(
+                FollowingSnapshot(
+                  pubkeys: [
+                    validPubkey('following1'),
+                    validPubkey('currentUser'),
+                  ],
+                  count: 2,
+                ),
+              ),
+            ),
+          );
+        },
+        build: createBloc,
+        act: (bloc) =>
+            bloc.add(OthersFollowingListLoadRequested(validPubkey('target'))),
+        verify: (bloc) {
+          expect(
+            bloc.state.followingPubkeys,
+            isNot(contains(validPubkey('currentUser'))),
+          );
+          expect(
+            bloc.state.followingPubkeys,
+            contains(validPubkey('following1')),
+          );
+        },
+      );
+
+      blocTest<OthersFollowingBloc, OthersFollowingState>(
+        'OthersFollowingBlocklistChanged re-filters cached pubkeys',
+        setUp: () {
+          when(
+            () => mockFollowRepository.watchOthersFollowingCached(
+              any(),
+              forceRefresh: any(named: 'forceRefresh'),
+            ),
+          ).thenAnswer(
+            (_) => Stream<CacheResult<FollowingSnapshot>>.value(
+              CacheResult.live(
+                FollowingSnapshot(
+                  pubkeys: [
+                    validPubkey('following1'),
+                    validPubkey('toBlock'),
+                  ],
+                  count: 2,
+                ),
+              ),
+            ),
+          );
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(OthersFollowingListLoadRequested(validPubkey('target')));
+          await Future<void>.delayed(Duration.zero);
+          when(
+            () => mockBlocklistRepository.isBlocked(validPubkey('toBlock')),
+          ).thenReturn(true);
+          bloc.add(const OthersFollowingBlocklistChanged());
+        },
+        verify: (bloc) {
+          expect(
+            bloc.state.followingPubkeys,
+            isNot(contains(validPubkey('toBlock'))),
+          );
+          expect(
+            bloc.state.followingPubkeys,
+            contains(validPubkey('following1')),
+          );
+        },
+      );
     });
 
-    test('copyWith creates copy with updated values', () {
-      const state = OthersFollowingState(targetPubkey: 'target1');
+    group('OthersFollowingState', () {
+      test('supports value equality', () {
+        const state1 = OthersFollowingState(
+          status: OthersFollowingStatus.success,
+          followingPubkeys: ['pubkey1'],
+          targetPubkey: 'target',
+        );
+        const state2 = OthersFollowingState(
+          status: OthersFollowingStatus.success,
+          followingPubkeys: ['pubkey1'],
+          targetPubkey: 'target',
+        );
 
-      final updated = state.copyWith(
-        status: OthersFollowingStatus.loading,
-        followingPubkeys: ['pubkey1'],
-        targetPubkey: 'target2',
-      );
+        expect(state1, equals(state2));
+      });
 
-      expect(updated.status, OthersFollowingStatus.loading);
-      expect(updated.followingPubkeys, ['pubkey1']);
-      expect(updated.targetPubkey, 'target2');
-    });
+      test('copyWith preserves values when not specified', () {
+        const state = OthersFollowingState(
+          status: OthersFollowingStatus.success,
+          followingPubkeys: ['pubkey1'],
+          targetPubkey: 'target',
+        );
 
-    test('copyWith preserves values when not specified', () {
-      const state = OthersFollowingState(
-        status: OthersFollowingStatus.success,
-        followingPubkeys: ['pubkey1'],
-        targetPubkey: 'target',
-      );
+        final updated = state.copyWith();
 
-      final updated = state.copyWith();
+        expect(updated.status, OthersFollowingStatus.success);
+        expect(updated.followingPubkeys, ['pubkey1']);
+        expect(updated.targetPubkey, 'target');
+      });
 
-      expect(updated.status, OthersFollowingStatus.success);
-      expect(updated.followingPubkeys, ['pubkey1']);
-      expect(updated.targetPubkey, 'target');
-    });
+      test('isRefreshing included in props', () {
+        const state1 = OthersFollowingState(isRefreshing: true);
+        const state2 = OthersFollowingState();
 
-    test('props includes all fields', () {
-      const state = OthersFollowingState(
-        status: OthersFollowingStatus.success,
-        followingPubkeys: ['pubkey1'],
-        targetPubkey: 'target',
-      );
-
-      expect(state.props, [
-        OthersFollowingStatus.success,
-        ['pubkey1'],
-        'target',
-      ]);
+        expect(state1, isNot(equals(state2)));
+      });
     });
   });
 }

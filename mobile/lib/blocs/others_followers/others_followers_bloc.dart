@@ -1,9 +1,9 @@
 // ABOUTME: BLoC for displaying another user's followers list
 // ABOUTME: Fetches Kind 3 events that mention target user in 'p' tags
 
-import 'dart:async';
 import 'dart:math';
 
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -19,6 +19,9 @@ part 'others_followers_state.dart';
 /// in their 'p' tags - these are users who follow the target.
 ///
 /// Filters out blocked users before emitting state.
+/// Uses [FollowRepository.watchOthersFollowersCached] for
+/// stale-while-revalidate: cached pubkeys are served immediately while fresh
+/// data loads from relays.
 class OthersFollowersBloc
     extends Bloc<OthersFollowersEvent, OthersFollowersState> {
   OthersFollowersBloc({
@@ -29,11 +32,13 @@ class OthersFollowersBloc
        _blocklistRepository = contentBlocklistRepository,
        _currentUserPubkey = currentUserPubkey,
        super(const OthersFollowersState()) {
-    on<OthersFollowersListLoadRequested>(_onLoadRequested);
+    on<OthersFollowersListLoadRequested>(
+      _onLoadRequested,
+      transformer: restartable(),
+    );
     on<OthersFollowersIncrementRequested>(_onIncrementRequested);
     on<OthersFollowersDecrementRequested>(_onDecrementRequested);
     on<OthersFollowersBlocklistChanged>(_onBlocklistChanged);
-    on<OthersFollowersCountLoaded>(_onCountLoaded);
   }
 
   final FollowRepository _followRepository;
@@ -55,104 +60,78 @@ class OthersFollowersBloc
 
   bool _shouldHideCurrentUser() => !_isFollowingTarget;
 
-  /// Handle request to load another user's followers list
+  /// Handle request to load another user's followers list.
+  ///
+  /// Delegates to [FollowRepository.watchOthersFollowersCached] for
+  /// stale-while-revalidate: cached pubkeys are served immediately
+  /// ([isRefreshing] = true) while the live fetch runs.
   Future<void> _onLoadRequested(
     OthersFollowersListLoadRequested event,
     Emitter<OthersFollowersState> emit,
   ) async {
-    // Skip fetch if data is fresh and for the same target (unless force refresh)
-    if (!event.forceRefresh &&
-        state.status == OthersFollowersStatus.success &&
-        state.targetPubkey == event.targetPubkey &&
-        !state.isStale) {
-      Log.debug(
-        'Followers list is fresh (${state.lastFetchedAt}), skipping fetch',
-        name: 'OthersFollowersBloc',
-        category: LogCategory.system,
-      );
-      return;
-    }
-
-    emit(
-      state.copyWith(
-        status: OthersFollowersStatus.loading,
-        targetPubkey: event.targetPubkey,
-        followersPubkeys: state.targetPubkey == event.targetPubkey
-            ? state.followersPubkeys
-            : const [],
-        followerCount: state.targetPubkey == event.targetPubkey
-            ? state.followerCount
-            : 0,
-      ),
-    );
-
-    try {
-      // Start the authoritative count immediately, but do not block
-      // the list render on it. The list is enough to leave the loading state.
-      final followerCountFuture = _followRepository.getFollowerCount(
-        event.targetPubkey,
-      );
-      final followers = await _followRepository.getFollowers(
-        event.targetPubkey,
-      );
-
-      _isFollowingTarget = _followRepository.isFollowing(event.targetPubkey);
-      _rawFollowersPubkeys = followers;
-      final filtered = _filterPubkeys(followers);
-      final provisionalCount = max(followers.length, state.followerCount);
-
+    if (state.status != .success || state.targetPubkey != event.targetPubkey) {
       emit(
         state.copyWith(
-          status: OthersFollowersStatus.success,
-          followersPubkeys: filtered,
-          followerCount: provisionalCount,
-          lastFetchedAt: DateTime.now(),
+          status: .loading,
+          targetPubkey: event.targetPubkey,
+          followersPubkeys: state.targetPubkey == event.targetPubkey
+              ? state.followersPubkeys
+              : const [],
+          followerCount: state.targetPubkey == event.targetPubkey
+              ? state.followerCount
+              : 0,
         ),
       );
+    }
 
-      unawaited(
-        followerCountFuture
-            .then((countFromService) {
-              if (isClosed) return;
-              add(
-                OthersFollowersCountLoaded(
-                  event.targetPubkey,
-                  countFromService,
-                ),
-              );
-            })
-            .catchError((Object error, StackTrace stackTrace) {
-              Log.error(
-                'Failed to load follower count for ${event.targetPubkey}: $error',
-                name: 'OthersFollowersBloc',
-                category: LogCategory.system,
-              );
-            }),
+    try {
+      await emit.forEach<CacheResult<FollowersSnapshot>>(
+        _followRepository.watchOthersFollowersCached(
+          event.targetPubkey,
+          forceRefresh: event.forceRefresh,
+        ),
+        onData: (result) {
+          _isFollowingTarget = _followRepository.isFollowing(
+            event.targetPubkey,
+          );
+          _rawFollowersPubkeys = result.data.pubkeys;
+          return state.copyWith(
+            status: .success,
+            targetPubkey: event.targetPubkey,
+            followersPubkeys: _filterPubkeys(result.data.pubkeys),
+            followerCount: max(result.data.pubkeys.length, result.data.count),
+            isRefreshing: result.isStale,
+          );
+        },
+        onError: (error, stackTrace) {
+          Log.error(
+            'Failed to load followers list for ${event.targetPubkey}: $error',
+            name: 'OthersFollowersBloc',
+            category: LogCategory.system,
+          );
+          addError(error, stackTrace);
+          return state.copyWith(
+            status: .failure,
+            isRefreshing: false,
+          );
+        },
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
       Log.error(
-        'Failed to load followers list for ${event.targetPubkey}: $e',
+        'Unexpected error loading followers list for ${event.targetPubkey}: $e',
         name: 'OthersFollowersBloc',
         category: LogCategory.system,
       );
-      emit(state.copyWith(status: OthersFollowersStatus.failure));
+      addError(e, stackTrace);
+      if (state.status != OthersFollowersStatus.success) {
+        emit(
+          state.copyWith(
+            status: .failure,
+            isRefreshing: false,
+          ),
+        );
+      }
     }
-  }
-
-  void _onCountLoaded(
-    OthersFollowersCountLoaded event,
-    Emitter<OthersFollowersState> emit,
-  ) {
-    if (state.targetPubkey != event.targetPubkey ||
-        state.status != OthersFollowersStatus.success) {
-      return;
-    }
-
-    emit(
-      state.copyWith(
-        followerCount: max(state.followerCount, event.followerCount),
-      ),
-    );
   }
 
   /// Optimistically add a follower to the list

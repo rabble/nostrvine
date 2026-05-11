@@ -4,6 +4,7 @@ export 'src/button/button.dart';
 export 'src/checkbox/checkbox.dart';
 export 'src/divine_snackbar_container.dart';
 export 'src/icon/icon.dart';
+export 'src/loading_overlay.dart';
 export 'src/partial_circle_spinner.dart';
 export 'src/search_bar/search_bar.dart';
 export 'src/skeleton/identity_skeletonizer.dart';

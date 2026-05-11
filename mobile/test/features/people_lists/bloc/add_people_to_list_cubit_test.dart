@@ -59,15 +59,13 @@ void main() {
     late _MockFollowRepository followRepository;
     late _MockProfileRepository profileRepository;
     late StreamController<List<String>> followingController;
-    late StreamController<({List<String> pubkeys, int count})>
-    followersController;
+    late StreamController<FollowersSnapshot> followersController;
 
     setUp(() {
       followRepository = _MockFollowRepository();
       profileRepository = _MockProfileRepository();
       followingController = StreamController<List<String>>.broadcast();
-      followersController =
-          StreamController<({List<String> pubkeys, int count})>.broadcast();
+      followersController = StreamController<FollowersSnapshot>.broadcast();
 
       when(() => followRepository.followingPubkeys).thenReturn(const []);
       when(
@@ -142,7 +140,9 @@ void main() {
         () async {
           when(() => followRepository.followingPubkeys).thenReturn(const []);
           when(() => followRepository.watchMyFollowers()).thenAnswer(
-            (_) => Stream.value((pubkeys: [_bobPubkey], count: 1)),
+            (_) => Stream.value(
+              const FollowersSnapshot(pubkeys: [_bobPubkey], count: 1),
+            ),
           );
 
           final cubit = createCubit();
@@ -172,7 +172,10 @@ void main() {
           ).thenReturn([_alicePubkey, _carolPubkey]);
           when(() => followRepository.watchMyFollowers()).thenAnswer(
             (_) => Stream.value(
-              (pubkeys: [_alicePubkey, _bobPubkey], count: 2),
+              const FollowersSnapshot(
+                pubkeys: [_alicePubkey, _bobPubkey],
+                count: 2,
+              ),
             ),
           );
 
