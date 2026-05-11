@@ -151,9 +151,11 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
 ///
 /// Returns the original [videos] immediately. Enrichment runs in the
 /// background; when it finishes, [onEnriched] is called with the
-/// enriched list so the caller can update its state. If enrichment
-/// fails, [onEnriched] is never called and the un-enriched videos
-/// remain visible.
+/// enriched list so the caller can update its state.
+///
+/// [onEnriched] is NOT called when enrichment fails, when all videos
+/// already have full tags (nothing to enrich), or when the relay query
+/// returns no events. Callers must not rely on it firing.
 List<VideoEvent> enrichVideosInBackground(
   List<VideoEvent> videos, {
   required NostrClient nostrService,

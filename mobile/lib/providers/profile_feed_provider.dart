@@ -408,6 +408,12 @@ class ProfileFeed extends _$ProfileFeed {
         );
 
         // Enrich with full Nostr event data in the background.
+        // mergeWithCurrent is intentionally true (default) here: relay
+        // events can update replaceable events (e.g. adding a collaborator
+        // p-tag) during the ~5s enrichment window, and replacing state
+        // would overwrite the newer relay version (#3705). The enriched
+        // list carries the pre-update snapshot, but _mergeVideo selects
+        // by createdAt so the relay version's tags win regardless.
         enrichVideosInBackground(
           authorVideos,
           nostrService: ref.read(nostrServiceProvider),
@@ -1104,9 +1110,10 @@ class ProfileFeed extends _$ProfileFeed {
     }
 
     final merged = byKey.values.toList()..sort(_compareVideos);
-    // Drop any session-tombstoned ids the merge carried forward. The
-    // upstream snapshot is already filtered, but `current` may still
-    // contain a video that was just deleted before the source caught up.
+    // Drop any session-tombstoned ids (NIP-09 client-side deletes) the
+    // merge carried forward. Does not cover server-side deletes that
+    // happened after the initial REST page load -- those clear on next
+    // full refresh.
     return _withoutTombstones(merged);
   }
 
