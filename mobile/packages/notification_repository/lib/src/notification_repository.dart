@@ -229,9 +229,18 @@ class NotificationRepository {
   /// snapshot.
   ///
   /// Enriches the raw relay event via [_enrichAndGroup], applies the
-  /// block filter, deduplicates by `id` against the current snapshot,
-  /// and prepends to the items list. Drops the event if all enriched
-  /// actors are blocked.
+  /// block filter, deduplicates by `id`, and then either:
+  ///
+  /// * merges into an existing matching [VideoNotification] group (same
+  ///   `videoEventId` + `type`) by prepending the new actor, incrementing
+  ///   `totalCount`, flipping `isRead` back to false, and bumping
+  ///   `timestamp` — the merged row stays at its existing position; or
+  /// * prepends the new item when no matching group exists.
+  ///
+  /// The merge step preserves the pre-snapshot bloc-layer behavior
+  /// (deleted in `ead8114f8`) so a second realtime like/comment/repost on
+  /// a video that already has a grouped row updates the existing row's
+  /// count rather than creating a duplicate.
   ///
   /// Replaces the legacy
   /// `mobile/lib/providers/notification_realtime_bridge_provider.dart`
@@ -244,11 +253,59 @@ class NotificationRepository {
     final newItem = enriched.first;
     if (current.items.any((n) => n.id == newItem.id)) return;
 
+    if (newItem is VideoNotification) {
+      final merged = _mergeIntoExistingVideoGroup(current.items, newItem);
+      if (merged != null) {
+        _snapshot.add(current.copyWith(items: merged));
+        return;
+      }
+    }
+
     _snapshot.add(
       current.copyWith(
         items: [newItem, ...current.items],
       ),
     );
+  }
+
+  /// If [items] contains a [VideoNotification] matching [incoming] by
+  /// `videoEventId` and `type`, returns a new list with that row replaced
+  /// by the merged group; otherwise returns null.
+  ///
+  /// Merge semantics (mirror the pre-snapshot bloc handler): prepend the
+  /// new actor onto the existing actors capped at [_maxGroupActors],
+  /// increment `totalCount`, flip `isRead` to false, bump `timestamp` to
+  /// the incoming arrival. The row stays at its existing index — no
+  /// re-sort, so the visible list doesn't jump.
+  static List<NotificationItem>? _mergeIntoExistingVideoGroup(
+    List<NotificationItem> items,
+    VideoNotification incoming,
+  ) {
+    final result = <NotificationItem>[];
+    var merged = false;
+    for (final existing in items) {
+      if (!merged &&
+          existing is VideoNotification &&
+          existing.videoEventId == incoming.videoEventId &&
+          existing.type == incoming.type) {
+        final mergedActors = [
+          incoming.actors.first,
+          ...existing.actors,
+        ].take(_maxGroupActors).toList();
+        result.add(
+          existing.copyWith(
+            actors: mergedActors,
+            totalCount: existing.totalCount + 1,
+            isRead: false,
+            timestamp: incoming.timestamp,
+          ),
+        );
+        merged = true;
+      } else {
+        result.add(existing);
+      }
+    }
+    return merged ? result : null;
   }
 
   /// Updates [_snapshot] with [page]'s contents.

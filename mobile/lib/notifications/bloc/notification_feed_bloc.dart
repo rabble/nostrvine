@@ -105,10 +105,22 @@ class NotificationFeedBloc
     try {
       await _notificationRepository.refresh();
       emit(state.copyWith(status: NotificationFeedStatus.loaded));
-      await _notificationRepository.markAllAsRead();
     } catch (e, s) {
       addError(e, s);
       emit(state.copyWith(status: NotificationFeedStatus.failure));
+      return;
+    }
+
+    // Best-effort auto-mark-read. The repository rolls back the snapshot
+    // on write failure, so the per-row read state and badge stay correct
+    // either way; we just record the throw via addError. Don't flip
+    // status to failure — the list loaded successfully and is still
+    // valid, and showing the error screen here would hide a working
+    // feed behind a Retry button.
+    try {
+      await _notificationRepository.markAllAsRead();
+    } catch (e, s) {
+      addError(e, s);
     }
   }
 

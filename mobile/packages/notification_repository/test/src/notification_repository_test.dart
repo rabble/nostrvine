@@ -1416,6 +1416,142 @@ void main() {
             (await repository.watchSnapshot().first).items.length;
         expect(afterItems, equals(beforeItems));
       });
+
+      test(
+        'acceptRealtime merges a second actor into an existing '
+        '$VideoNotification group (same videoEventId + type)',
+        () async {
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+            'pubkey_bob': makeProfile('pubkey_bob', displayName: 'Bob'),
+          });
+          // Initial fetch: one like from Alice on video_default. Becomes a
+          // VideoNotification with totalCount: 1, actors: [Alice].
+          stubNotifications([
+            makeNotification(id: 'first', createdAt: DateTime(2025, 3)),
+          ], unreadCount: 1);
+          await repository.refresh();
+
+          // Mark as read so we can verify the merge flips isRead back.
+          await repository.markAllAsRead();
+
+          final laterTimestamp = DateTime(2025, 6);
+          // Realtime arrival: a like from Bob on the same video.
+          await repository.acceptRealtime(
+            makeNotification(
+              id: 'second',
+              sourcePubkey: 'pubkey_bob',
+              createdAt: laterTimestamp,
+            ),
+          );
+
+          final page = await repository.watchSnapshot().first;
+          expect(
+            page.items,
+            hasLength(1),
+            reason:
+                'Same (videoEventId, type) should merge into the existing '
+                'row instead of prepending a duplicate.',
+          );
+
+          final merged = page.items.single as VideoNotification;
+          expect(merged.totalCount, equals(2));
+          expect(merged.actors, hasLength(2));
+          expect(
+            merged.actors.first.pubkey,
+            equals('pubkey_bob'),
+            reason: 'New actor is prepended at the front of the stack.',
+          );
+          expect(merged.actors[1].pubkey, equals('pubkey_alice'));
+          expect(merged.isRead, isFalse);
+          expect(merged.timestamp, equals(laterTimestamp));
+
+          // watchUnreadCount reflects the un-read flip.
+          expect(await repository.watchUnreadCount().first, equals(1));
+        },
+      );
+
+      test(
+        'acceptRealtime caps merged actors at the group display limit',
+        () async {
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+            'pubkey_bob': makeProfile('pubkey_bob', displayName: 'Bob'),
+            'pubkey_carol': makeProfile('pubkey_carol', displayName: 'Carol'),
+            'pubkey_dave': makeProfile('pubkey_dave', displayName: 'Dave'),
+          });
+          // Initial fetch: three likes on the same video — fills the actor
+          // stack to the display cap.
+          stubNotifications([
+            makeNotification(id: 'n_alice', createdAt: DateTime(2024, 1, 3)),
+            makeNotification(
+              id: 'n_bob',
+              sourcePubkey: 'pubkey_bob',
+              createdAt: DateTime(2024, 1, 2),
+            ),
+            makeNotification(
+              id: 'n_carol',
+              sourcePubkey: 'pubkey_carol',
+              createdAt: DateTime(2024),
+            ),
+          ], unreadCount: 3);
+          await repository.refresh();
+
+          await repository.acceptRealtime(
+            makeNotification(
+              id: 'n_dave',
+              sourcePubkey: 'pubkey_dave',
+              createdAt: DateTime(2024, 1, 4),
+            ),
+          );
+
+          final merged =
+              (await repository.watchSnapshot().first).items.single
+                  as VideoNotification;
+          expect(merged.totalCount, equals(4));
+          expect(
+            merged.actors,
+            hasLength(3),
+            reason:
+                'Displayed actor stack stays bounded even though totalCount '
+                'continues to grow.',
+          );
+          expect(merged.actors.first.pubkey, equals('pubkey_dave'));
+        },
+      );
+
+      test(
+        'acceptRealtime prepends a $VideoNotification when no existing '
+        'group matches by videoEventId + type',
+        () async {
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+            'pubkey_bob': makeProfile('pubkey_bob', displayName: 'Bob'),
+          });
+          stubNotifications([
+            makeNotification(id: 'first', referencedEventId: 'video_a'),
+          ], unreadCount: 1);
+          await repository.refresh();
+
+          // Different videoEventId — must not merge.
+          await repository.acceptRealtime(
+            makeNotification(
+              id: 'second',
+              sourcePubkey: 'pubkey_bob',
+              referencedEventId: 'video_b',
+              createdAt: DateTime(2025, 6),
+            ),
+          );
+
+          final items = (await repository.watchSnapshot().first).items;
+          expect(items, hasLength(2));
+          expect(
+            (items.first as VideoNotification).videoEventId,
+            equals('video_b'),
+            reason: 'New, non-matching item is prepended.',
+          );
+        },
+      );
     });
   });
 }

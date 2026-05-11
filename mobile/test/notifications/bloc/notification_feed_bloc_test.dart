@@ -212,6 +212,28 @@ void main() {
         ],
         errors: () => [isA<Exception>()],
       );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'stays loaded when refresh succeeds but markAllAsRead throws',
+        setUp: () {
+          when(
+            () => mockNotificationRepo.markAllAsRead(),
+          ).thenThrow(Exception('mark-all-failed'));
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(NotificationFeedStarted()),
+        expect: () => [
+          NotificationFeedState(status: NotificationFeedStatus.loading),
+          NotificationFeedState(status: NotificationFeedStatus.loaded),
+        ],
+        errors: () => [isA<Exception>()],
+        verify: (_) {
+          verifyInOrder([
+            () => mockNotificationRepo.refresh(),
+            () => mockNotificationRepo.markAllAsRead(),
+          ]);
+        },
+      );
     });
 
     group('NotificationFeedLoadMore', () {
