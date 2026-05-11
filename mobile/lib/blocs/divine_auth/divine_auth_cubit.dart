@@ -9,6 +9,7 @@ import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/utils/invite_error_utils.dart';
+import 'package:openvine/utils/sensitive_uri_for_logs.dart';
 import 'package:openvine/utils/validators.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -272,7 +273,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
 
     if (result.verificationRequired && result.deviceCode != null) {
       Log.info(
-        'Email verification required for $email',
+        'Email verification required for ${redactEmailForLogs(email)}',
         name: 'DivineAuthCubit',
         category: LogCategory.auth,
       );
@@ -385,7 +386,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
   /// Send password reset email
   Future<void> sendPasswordResetEmail(String email) async {
     Log.info(
-      'Sending password reset email to $email',
+      'Sending password reset email to ${redactEmailForLogs(email)}',
       name: 'DivineAuthCubit',
       category: LogCategory.auth,
     );

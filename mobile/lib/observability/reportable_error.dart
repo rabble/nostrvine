@@ -56,17 +56,32 @@ final class Reportable<T extends Object> implements ReportableError {
 
 final RegExp _npubPattern = RegExp('npub1[a-z0-9]+');
 final RegExp _nsecPattern = RegExp('nsec1[a-z0-9]+');
+// Conservative email matcher: local-part of common chars then `@`, host with
+// at least one `.`. Intentionally narrower than RFC 5322 — false negatives on
+// exotic addresses are preferable to false positives on non-email strings.
+final RegExp _emailPattern = RegExp(
+  r'[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}',
+);
 
-/// Strips Nostr `npub1…` and `nsec1…` identifiers from [input] before it is
-/// forwarded to a third-party crash reporter.
+/// Strips Nostr `npub1…` / `nsec1…` identifiers and email addresses from
+/// [input] before it is forwarded to a third-party crash reporter.
 ///
-/// Scope is intentionally narrow: only `npub` (public-key bech32) and `nsec`
-/// (private-key bech32). Other Nostr-format references (`note1`, `nevent1`,
-/// `nprofile1`) encode event/profile pointers, not secrets, and removing them
-/// removes triage value. Call sites that need to redact those should do so
-/// explicitly before constructing the error message.
+/// Scope is intentionally narrow:
+/// - Nostr: only `npub` (public-key bech32) and `nsec` (private-key bech32).
+///   Other Nostr-format references (`note1`, `nevent1`, `nprofile1`) encode
+///   event/profile pointers, not secrets, and removing them removes triage
+///   value. Call sites that need to redact those should do so explicitly
+///   before constructing the error message.
+/// - Email: any RFC-5321-ish local@host.tld pattern. Replaced with a
+///   first-char-preserving partial mask so domain-level correlation survives.
 String sanitizeForCrashReport(String input) {
   return input
       .replaceAll(_npubPattern, 'npub1<redacted>')
-      .replaceAll(_nsecPattern, 'nsec1<redacted>');
+      .replaceAll(_nsecPattern, 'nsec1<redacted>')
+      .replaceAllMapped(_emailPattern, (match) {
+        final email = match.group(0)!;
+        final atIndex = email.indexOf('@');
+        // _emailPattern guarantees atIndex > 0 and a domain follows.
+        return '${email.substring(0, 1)}***@${email.substring(atIndex + 1)}';
+      });
 }

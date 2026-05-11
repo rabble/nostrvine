@@ -2,6 +2,7 @@
 // ABOUTME: Enables auto-login when app is cold-started via email verification deep link
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:openvine/utils/sensitive_uri_for_logs.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Data class representing pending email verification credentials
@@ -65,7 +66,7 @@ class PendingVerificationService {
         _storage.write(key: _keyInviteCode, value: inviteCode),
       ]);
       Log.info(
-        'Saved pending verification for $email',
+        'Saved pending verification for ${redactEmailForLogs(email)}',
         name: 'PendingVerificationService',
         category: LogCategory.auth,
       );
@@ -121,7 +122,8 @@ class PendingVerificationService {
       // Check expiration
       if (pending.isExpired) {
         Log.info(
-          'Pending verification for $email has expired, clearing',
+          'Pending verification for ${redactEmailForLogs(email)} has expired, '
+          'clearing',
           name: 'PendingVerificationService',
           category: LogCategory.auth,
         );
@@ -130,7 +132,7 @@ class PendingVerificationService {
       }
 
       Log.info(
-        'Loaded pending verification for $email',
+        'Loaded pending verification for ${redactEmailForLogs(email)}',
         name: 'PendingVerificationService',
         category: LogCategory.auth,
       );

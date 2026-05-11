@@ -122,4 +122,69 @@ void main() {
       expect(out, contains('code=$redactedUriComponentForLogs'));
     });
   });
+
+  /// Issue #4254 — redact email PII from auth-flow logs.
+  group('redactEmailForLogs', () {
+    test('partial-redacts a standard email, preserves domain', () {
+      expect(
+        redactEmailForLogs('user@example.com'),
+        equals('u***@example.com'),
+      );
+    });
+
+    test('partial-redacts a single-character local-part', () {
+      // Even one-char local-parts get the fixed `x***` mask — the original
+      // length must not be leaked.
+      expect(redactEmailForLogs('a@b.co'), equals('a***@b.co'));
+    });
+
+    test('preserves subdomains in the domain part', () {
+      expect(
+        redactEmailForLogs('alice@mail.corp.example.com'),
+        equals('a***@mail.corp.example.com'),
+      );
+    });
+
+    test('hides the full local-part even when it is long', () {
+      final out = redactEmailForLogs('first.last+tag@example.com');
+      expect(out, equals('f***@example.com'));
+      expect(out, isNot(contains('first')));
+      expect(out, isNot(contains('last')));
+      expect(out, isNot(contains('tag')));
+    });
+
+    test('returns the opaque placeholder for empty input', () {
+      expect(redactEmailForLogs(''), equals(redactedSensitiveLogPlaceholder));
+    });
+
+    test('returns the opaque placeholder for input without `@`', () {
+      expect(
+        redactEmailForLogs('not-an-email'),
+        equals(redactedSensitiveLogPlaceholder),
+      );
+    });
+
+    test('returns the opaque placeholder for empty local-part', () {
+      expect(
+        redactEmailForLogs('@example.com'),
+        equals(redactedSensitiveLogPlaceholder),
+      );
+    });
+
+    test('returns the opaque placeholder for a domain without a dot', () {
+      // `a@b` (no TLD) is not a routable host — fail closed.
+      expect(
+        redactEmailForLogs('a@b'),
+        equals(redactedSensitiveLogPlaceholder),
+      );
+    });
+
+    test('returns the opaque placeholder for whitespace-only input', () {
+      // No `@` → treated like any other malformed input.
+      expect(
+        redactEmailForLogs('   '),
+        equals(redactedSensitiveLogPlaceholder),
+      );
+    });
+  });
 }

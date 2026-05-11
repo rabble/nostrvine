@@ -10,6 +10,7 @@ import 'package:invite_api_client/invite_api_client.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/invite_error_utils.dart';
+import 'package:openvine/utils/sensitive_uri_for_logs.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 part 'email_verification_state.dart';
@@ -72,7 +73,7 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
     String? inviteCode,
   }) {
     Log.info(
-      'startPolling called for $email '
+      'startPolling called for ${redactEmailForLogs(email)} '
       '(cubit=$hashCode, authSvc=${_authService.hashCode}, '
       'hasExistingTimer=${_pollTimer != null})',
       name: 'EmailVerificationCubit',
