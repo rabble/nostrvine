@@ -7,5 +7,6 @@ export 'src/exceptions.dart';
 export 'src/identity_claim.dart';
 export 'src/identity_claims_repository.dart';
 export 'src/profile_repository.dart';
+export 'src/progressive_search_result.dart';
 export 'src/username_availability_result.dart';
 export 'src/username_claim_result.dart';

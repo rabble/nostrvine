@@ -13,6 +13,14 @@ const searchDebounceDuration = Duration(milliseconds: 300);
 /// scans plus remote searches on every keystroke.
 const minSearchQueryLength = 2;
 
+/// Outer timeout the user-search bloc applies to the entire progressive
+/// stream. When it fires, the bloc still emits the accumulated results
+/// but marks every source still in [SearchSourcePending] as
+/// [SearchSourceFailed] with reason
+/// [SearchSourceFailureReason.timeout] — driving the UI to surface a
+/// retry affordance instead of a misleading "No results found".
+const userSearchOuterTimeout = Duration(seconds: 20);
+
 /// Event transformer that debounces then restarts on new events.
 ///
 /// Combines [searchDebounceDuration] debounce with a restartable (switchMap)
