@@ -57,12 +57,7 @@ class _MessageInputBarState extends State<MessageInputBar> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: VineTheme.surfaceBackground,
-        border: Border(
-          top: BorderSide(color: VineTheme.outlineDisabled, width: 2),
-        ),
-      ),
+      color: VineTheme.surfaceBackground,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: SafeArea(
         top: false,

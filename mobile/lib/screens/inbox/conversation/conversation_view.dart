@@ -328,7 +328,9 @@ class _MessageList extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView.builder(
       reverse: true,
-      padding: const EdgeInsets.only(top: 8),
+      // bottom: 8 stacks with the newest bubble's own 8 px bottom padding
+      // for a 16 px gap to the scroll-view edge.
+      padding: const EdgeInsets.only(top: 8, bottom: 8),
       itemCount: messages.length,
       itemBuilder: (context, index) {
         final message = messages[index];
