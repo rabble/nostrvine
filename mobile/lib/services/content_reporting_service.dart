@@ -183,25 +183,19 @@ class ContentReportingService {
         targetRelays: [_moderationRelayUrl],
       );
       // Always continue to local save regardless of publish outcome.
-      switch (sentEvent) {
-        case PublishSuccess():
-          Log.info(
-            'Report published to relays',
-            name: 'ContentReportingService',
-            category: LogCategory.system,
-          );
-        case PublishNoRelays():
-          Log.error(
-            'Failed to publish report: no relays connected',
-            name: 'ContentReportingService',
-            category: LogCategory.system,
-          );
-        case PublishFailed():
-          Log.error(
-            'Failed to publish report: send error',
-            name: 'ContentReportingService',
-            category: LogCategory.system,
-          );
+      final failureReason = sentEvent.failureReason;
+      if (failureReason != null) {
+        Log.error(
+          'Failed to publish NIP-56 report: $failureReason',
+          name: 'ContentReportingService',
+          category: LogCategory.system,
+        );
+      } else {
+        Log.info(
+          'Report published to relays',
+          name: 'ContentReportingService',
+          category: LogCategory.system,
+        );
       }
 
       // Create Zendesk ticket silently for moderation tracking

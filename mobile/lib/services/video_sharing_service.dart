@@ -187,27 +187,27 @@ class VideoSharingService {
 
     final sentEvent = await _nostrService.publishEvent(event);
 
-    switch (sentEvent) {
-      case PublishSuccess():
-        _shareHistory[recipientPubkey] = DateTime.now();
-        await _updateRecentlySharedWith(recipientPubkey);
-
-        Log.info(
-          'Video shared via NIP-04: ${event.id}',
-          name: 'VideoSharingService',
-          category: LogCategory.video,
-        );
-
-        return ShareResult.createSuccess(event.id);
-      case PublishNoRelays():
-        return ShareResult.failure(
-          'Failed to publish share message: no relays connected',
-        );
-      case PublishFailed():
-        return ShareResult.failure(
-          'Failed to publish share message: send error',
-        );
+    final failureReason = sentEvent.failureReason;
+    if (failureReason != null) {
+      Log.error(
+        'Failed to publish NIP-04 share message: $failureReason',
+        name: 'VideoSharingService',
+        category: LogCategory.video,
+      );
+      return ShareResult.failure('Failed to publish share message');
     }
+
+    final success = sentEvent as PublishSuccess;
+    _shareHistory[recipientPubkey] = DateTime.now();
+    await _updateRecentlySharedWith(recipientPubkey);
+
+    Log.info(
+      'Video shared via NIP-04: ${event.id}',
+      name: 'VideoSharingService',
+      category: LogCategory.video,
+    );
+
+    return ShareResult.createSuccess(success.event.id);
   }
 
   /// Share video to multiple users at once

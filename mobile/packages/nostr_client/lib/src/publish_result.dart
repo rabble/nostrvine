@@ -40,3 +40,31 @@ final class PublishFailed extends PublishResult {
   /// Creates a send-failed result.
   const PublishFailed();
 }
+
+/// Shared helpers for [PublishResult] call sites.
+extension PublishResultX on PublishResult {
+  /// Whether the publish succeeded.
+  bool get isSuccess => this is PublishSuccess;
+
+  /// Whether the publish failed for any reason.
+  bool get isFailure => this is! PublishSuccess;
+
+  /// A short, reason-specific diagnostic string for logging, or `null` when
+  /// the result is [PublishSuccess].
+  ///
+  /// Call sites use this to emit a distinguished log message without
+  /// duplicating the branch semantics:
+  ///
+  /// ```dart
+  /// final reason = result.failureReason;
+  /// if (reason != null) {
+  ///   Log.error('Failed to publish X: $reason', name: 'MyService', …);
+  ///   return SomeResult.failure('generic user-facing message');
+  /// }
+  /// ```
+  String? get failureReason => switch (this) {
+    PublishSuccess() => null,
+    PublishNoRelays() => 'no relays connected',
+    PublishFailed() => 'send error',
+  };
+}

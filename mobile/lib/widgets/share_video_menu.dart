@@ -1604,17 +1604,16 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
       // Publish the updated event
       final nostrService = ref.read(nostrServiceProvider);
       final publishResult = await nostrService.publishEvent(event);
-      switch (publishResult) {
-        case PublishSuccess():
-          break;
-        case PublishNoRelays():
-          throw Exception(
-            'Failed to publish updated event: no relays connected',
-          );
-        case PublishFailed():
-          throw Exception('Failed to publish updated event: send error');
+      final failureReason = publishResult.failureReason;
+      if (failureReason != null) {
+        Log.error(
+          'Failed to publish video metadata edit: $failureReason',
+          name: 'ShareVideoMenu',
+          category: LogCategory.ui,
+        );
+        throw Exception('Failed to publish updated event');
       }
-      final publishedEvent = publishResult.event;
+      final publishedEvent = (publishResult as PublishSuccess).event;
 
       // Update local cache for immediate UI update
       final personalEventCache = ref.read(personalEventCacheServiceProvider);

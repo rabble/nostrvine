@@ -119,25 +119,19 @@ class PushNotificationService {
     }
 
     final published = await _nostrClient.publishEvent(event);
-    switch (published) {
-      case PublishSuccess():
-        Log.info(
-          'Push notification deregistration published',
-          name: 'PushNotificationService',
-          category: LogCategory.system,
-        );
-      case PublishNoRelays():
-        Log.error(
-          'Failed to publish deregistration event: no relays connected',
-          name: 'PushNotificationService',
-          category: LogCategory.system,
-        );
-      case PublishFailed():
-        Log.error(
-          'Failed to publish deregistration event: send error',
-          name: 'PushNotificationService',
-          category: LogCategory.system,
-        );
+    final failureReason = published.failureReason;
+    if (failureReason != null) {
+      Log.error(
+        'Failed to publish deregistration event: $failureReason',
+        name: 'PushNotificationService',
+        category: LogCategory.system,
+      );
+    } else {
+      Log.info(
+        'Push notification deregistration published',
+        name: 'PushNotificationService',
+        category: LogCategory.system,
+      );
     }
   }
 
@@ -188,25 +182,19 @@ class PushNotificationService {
     }
 
     final published = await _nostrClient.publishEvent(event);
-    switch (published) {
-      case PublishSuccess():
-        Log.info(
-          'Push notification preferences updated',
-          name: 'PushNotificationService',
-          category: LogCategory.system,
-        );
-      case PublishNoRelays():
-        Log.error(
-          'Failed to publish preferences event: no relays connected',
-          name: 'PushNotificationService',
-          category: LogCategory.system,
-        );
-      case PublishFailed():
-        Log.error(
-          'Failed to publish preferences event: send error',
-          name: 'PushNotificationService',
-          category: LogCategory.system,
-        );
+    final failureReason = published.failureReason;
+    if (failureReason != null) {
+      Log.error(
+        'Failed to publish preferences event: $failureReason',
+        name: 'PushNotificationService',
+        category: LogCategory.system,
+      );
+    } else {
+      Log.info(
+        'Push notification preferences updated',
+        name: 'PushNotificationService',
+        category: LogCategory.system,
+      );
     }
   }
 
@@ -289,25 +277,19 @@ class PushNotificationService {
     }
 
     final published = await _nostrClient.publishEvent(event);
-    switch (published) {
-      case PublishSuccess():
-        Log.info(
-          'Push notification registration published',
-          name: 'PushNotificationService',
-          category: LogCategory.system,
-        );
-      case PublishNoRelays():
-        Log.error(
-          'Failed to publish registration event: no relays connected',
-          name: 'PushNotificationService',
-          category: LogCategory.system,
-        );
-      case PublishFailed():
-        Log.error(
-          'Failed to publish registration event: send error',
-          name: 'PushNotificationService',
-          category: LogCategory.system,
-        );
+    final failureReason = published.failureReason;
+    if (failureReason != null) {
+      Log.error(
+        'Failed to publish registration event: $failureReason',
+        name: 'PushNotificationService',
+        category: LogCategory.system,
+      );
+    } else {
+      Log.info(
+        'Push notification registration published',
+        name: 'PushNotificationService',
+        category: LogCategory.system,
+      );
     }
   }
 
