@@ -45,6 +45,9 @@ void main() {
       mockOAuth = _MockKeycastOAuth();
       mockAuthService = _MockAuthService();
       mockInviteApiClient = _MockInviteApiClient();
+      when(
+        () => mockAuthService.clearPendingDivineOAuthSession(),
+      ).thenAnswer((_) async {});
       // Reset static state to ensure test isolation
       EmailVerificationCubit.resetCompletedDeviceCode();
     });
@@ -161,6 +164,7 @@ void main() {
             ),
             () => mockAuthService.signInWithDivineOAuth(any()),
           ]);
+          verifyNever(() => mockAuthService.clearPendingDivineOAuthSession());
 
           cubit.close();
           fake.flushMicrotasks();
@@ -208,6 +212,9 @@ void main() {
           expect(cubit.state.errorCode, EmailVerificationError.inviteUnknown);
           expect(cubit.state.showInviteGateRecovery, isTrue);
           expect(cubit.state.inviteRecoveryCode, 'AB12-EF34');
+          verify(
+            () => mockAuthService.clearPendingDivineOAuthSession(),
+          ).called(1);
           verifyNever(() => mockAuthService.signInWithDivineOAuth(any()));
 
           cubit.close();

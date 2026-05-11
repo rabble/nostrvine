@@ -57,6 +57,9 @@ void main() {
       mockAuthService = _MockAuthService();
       mockPendingVerification = _MockPendingVerificationService();
       mockInviteApiClient = _MockInviteApiClient();
+      when(
+        () => mockAuthService.clearPendingDivineOAuthSession(),
+      ).thenAnswer((_) async {});
       when(() => mockOAuth.config).thenReturn(
         const OAuthConfig(
           serverUrl: 'https://login.divine.video',
@@ -331,6 +334,7 @@ void main() {
             verify(
               () => mockAuthService.signInWithDivineOAuth(any()),
             ).called(1);
+            verifyNever(() => mockAuthService.clearPendingDivineOAuthSession());
           },
         );
 
@@ -466,6 +470,11 @@ void main() {
               inviteRecoveryCode: 'AB12-EF34',
             ),
           ],
+          verify: (_) {
+            verify(
+              () => mockAuthService.clearPendingDivineOAuthSession(),
+            ).called(1);
+          },
         );
 
         blocTest<DivineAuthCubit, DivineAuthState>(

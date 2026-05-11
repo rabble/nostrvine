@@ -385,6 +385,7 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
 
         return; // Success - exit the retry loop
       } on InviteApiException catch (e) {
+        await _authService.clearPendingDivineOAuthSession();
         Log.error(
           'Invite activation failed: '
           '${InviteErrorUtils.activationFailureLogDetails(e)}',

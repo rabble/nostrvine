@@ -333,6 +333,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
 
       emit(const DivineAuthSuccess());
     } on InviteApiException catch (e) {
+      await _authService.clearPendingDivineOAuthSession();
       Log.error(
         'Invite activation failed: '
         '${InviteErrorUtils.activationFailureLogDetails(e)}',
