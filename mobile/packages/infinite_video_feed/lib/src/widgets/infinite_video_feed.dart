@@ -665,6 +665,11 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
 
     bool guardInitOwnership(String step) {
       if (ownsInit()) return true;
+      // coverage:ignore-start
+      // Stale-init cleanup only fires when an in-flight await races a widget
+      // unmount or a rapid re-init for the same index. Both are observable in
+      // production, but not reproducible in package widget tests without
+      // microsecond-precise control over native platform-channel timing.
       _log(
         'Abort stale init at index $index (${video.id}) during $step',
       );
@@ -673,6 +678,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       }
       unawaited(controller.dispose());
       return false;
+      // coverage:ignore-end
     }
 
     try {
@@ -794,8 +800,13 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     // coverage:ignore-end
 
     if (!ownsInit()) {
+      // coverage:ignore-start
+      // Same race as guardInitOwnership: only fires when the try block
+      // completes after the widget was unmounted or the index was re-inited.
+      // Not reproducible in package widget tests.
       guardInitOwnership('rebuild');
       return;
+      // coverage:ignore-end
     }
     _rebuild();
   }
