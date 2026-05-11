@@ -258,16 +258,16 @@ MockFollowRepository createMockFollowRepository({
   ).thenAnswer((_) => Stream.value(followingPubkeys));
   when(() => mock.isFollowing(any())).thenReturn(false);
   when(
-    () => mock.watchMyFollowingCached(),
+    mock.watchMyFollowingCached,
   ).thenAnswer(
-    (_) => Stream<CacheResult<FollowingSnapshot>>.empty(),
+    (_) => const Stream<CacheResult<FollowingSnapshot>>.empty(),
   );
   when(
     () => mock.watchOthersFollowingCached(
       any(),
       forceRefresh: any(named: 'forceRefresh'),
     ),
-  ).thenAnswer((_) => Stream<CacheResult<FollowingSnapshot>>.empty());
+  ).thenAnswer((_) => const Stream<CacheResult<FollowingSnapshot>>.empty());
 
   return mock;
 }
