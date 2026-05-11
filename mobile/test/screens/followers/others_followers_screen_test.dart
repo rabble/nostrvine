@@ -68,18 +68,36 @@ void main() {
       when(() => mockBlocklistRepository.isBlocked(any())).thenReturn(false);
       when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
       when(() => mockFollowRepository.followingPubkeys).thenReturn(const []);
-      when(
-        () => mockFollowRepository.followingStream,
-      ).thenAnswer((_) => Stream<List<String>>.value([]));
       when(() => mockNostrClient.publicKey).thenReturn(currentUserPubkey);
+      when(
+        () => mockFollowRepository.watchMyFollowingCached(),
+      ).thenAnswer(
+        (_) => Stream.value(
+          const CacheResult.live(
+            FollowingSnapshot(pubkeys: <String>[], count: 0),
+          ),
+        ),
+      );
     });
 
     testWidgets(
       'renders follower tiles after followers load',
       (tester) async {
         when(
-          () => mockFollowRepository.getFollowers(targetPubkey),
-        ).thenAnswer((_) async => [followerPubkey]);
+          () => mockFollowRepository.watchOthersFollowersCached(
+            targetPubkey,
+            forceRefresh: any(named: 'forceRefresh'),
+          ),
+        ).thenAnswer(
+          (_) => Stream.value(
+            CacheResult.live(
+              FollowersSnapshot(
+                pubkeys: [followerPubkey],
+                count: 1,
+              ),
+            ),
+          ),
+        );
 
         await tester.pumpWidget(
           testMaterialApp(
