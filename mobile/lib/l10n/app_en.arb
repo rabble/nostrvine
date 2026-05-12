@@ -1232,6 +1232,7 @@
   "notificationSettingsMarkAllAsRead": "Mark All as Read",
   "notificationSettingsMarkAllAsReadSubtitle": "Mark all notifications as read",
   "notificationSettingsAllMarkedAsRead": "All notifications marked as read",
+  "notificationSettingsMarkAllAsReadFailed": "Failed to mark all as read",
   "notificationSettingsResetToDefaults": "Settings reset to defaults",
   "notificationSettingsAbout": "About Notifications",
   "notificationSettingsAboutDescription": "Notifications are powered by the Nostr protocol. Real-time updates depend on your connection to Nostr relays. Some notifications may have delays.",

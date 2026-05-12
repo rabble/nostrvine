@@ -2247,6 +2247,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Alla aviseringar markerade som lästa';
 
   @override
+  String get notificationSettingsMarkAllAsReadFailed =>
+      'Failed to mark all as read';
+
+  @override
   String get notificationSettingsResetToDefaults =>
       'Inställningar återställda till standard';
 

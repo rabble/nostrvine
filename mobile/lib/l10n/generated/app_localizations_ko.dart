@@ -2145,6 +2145,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get notificationSettingsAllMarkedAsRead => '모든 알림을 읽음으로 표시했어요';
 
   @override
+  String get notificationSettingsMarkAllAsReadFailed =>
+      'Failed to mark all as read';
+
+  @override
   String get notificationSettingsResetToDefaults => '설정이 기본값으로 되돌아갔어요';
 
   @override

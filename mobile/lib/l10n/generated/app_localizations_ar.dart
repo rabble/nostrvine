@@ -2227,6 +2227,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'تم وسم جميع الإشعارات كمقروءة';
 
   @override
+  String get notificationSettingsMarkAllAsReadFailed =>
+      'Failed to mark all as read';
+
+  @override
   String get notificationSettingsResetToDefaults =>
       'تمت إعادة الإعدادات إلى الافتراضي';
 

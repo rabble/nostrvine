@@ -2226,6 +2226,10 @@ class AppLocalizationsId extends AppLocalizations {
       'Semua notifikasi ditandai sudah dibaca';
 
   @override
+  String get notificationSettingsMarkAllAsReadFailed =>
+      'Failed to mark all as read';
+
+  @override
   String get notificationSettingsResetToDefaults =>
       'Pengaturan direset ke bawaan';
 

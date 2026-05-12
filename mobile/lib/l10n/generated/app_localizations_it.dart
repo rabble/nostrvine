@@ -2276,6 +2276,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Tutte le notifiche segnate come lette';
 
   @override
+  String get notificationSettingsMarkAllAsReadFailed =>
+      'Failed to mark all as read';
+
+  @override
   String get notificationSettingsResetToDefaults =>
       'Impostazioni ripristinate ai valori predefiniti';
 

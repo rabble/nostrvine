@@ -3998,6 +3998,12 @@ abstract class AppLocalizations {
   /// **'All notifications marked as read'**
   String get notificationSettingsAllMarkedAsRead;
 
+  /// No description provided for @notificationSettingsMarkAllAsReadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to mark all as read'**
+  String get notificationSettingsMarkAllAsReadFailed;
+
   /// No description provided for @notificationSettingsResetToDefaults.
   ///
   /// In en, this message translates to:
