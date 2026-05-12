@@ -300,6 +300,68 @@ void main() {
         expect(snapshot, equals(NotificationPage.empty));
       });
 
+      test('preserves populated snapshot when refresh throws', () async {
+        // First refresh succeeds and populates the snapshot.
+        stubProfiles({
+          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+        });
+        stubNotifications([makeNotification()], unreadCount: 1);
+        await repository.refresh();
+        final populated = await repository.watchSnapshot().first;
+        expect(populated.items, hasLength(1));
+
+        // Second refresh throws — the snapshot must keep the populated
+        // page from the first refresh, not revert to empty. This pins
+        // the design contract that lets the BLoC's failure state coexist
+        // with previously-loaded data (the BehaviorSubject value the
+        // snapshot stream emits to subscribers stays at the populated
+        // page).
+        when(
+          () => funnelcakeApiClient.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            cursor: any(named: 'cursor'),
+            requestUri: any(named: 'requestUri'),
+            authHeaders: any(named: 'authHeaders'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenThrow(const FunnelcakeException('network error'));
+
+        await expectLater(
+          repository.refresh(),
+          throwsA(isA<FunnelcakeException>()),
+        );
+
+        final after = await repository.watchSnapshot().first;
+        expect(after, equals(populated));
+      });
+
+      test('repeated throws keep snapshot stable', () async {
+        when(
+          () => funnelcakeApiClient.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            cursor: any(named: 'cursor'),
+            requestUri: any(named: 'requestUri'),
+            authHeaders: any(named: 'authHeaders'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenThrow(const FunnelcakeException('network error'));
+
+        await expectLater(
+          repository.getNotifications(),
+          throwsA(isA<FunnelcakeException>()),
+        );
+        await expectLater(
+          repository.getNotifications(),
+          throwsA(isA<FunnelcakeException>()),
+        );
+
+        // Two consecutive throws must not corrupt the snapshot or leave
+        // the repository in a degraded state — the seeded empty page
+        // remains the live snapshot value.
+        final snapshot = await repository.watchSnapshot().first;
+        expect(snapshot, equals(NotificationPage.empty));
+      });
+
       test('passes cursor for pagination', () async {
         stubNotifications([], nextCursor: 'cursor_abc', hasMore: true);
         stubProfiles({});

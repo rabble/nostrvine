@@ -2183,7 +2183,8 @@ class FunnelcakeApiClient {
   ///
   /// A `200 OK` response is returned as-is even when its body indicates a
   /// soft failure (`success: false` with an `error` string) — only HTTP
-  /// non-success responses throw.
+  /// non-success responses throw. Callers that need to react to soft
+  /// failures must inspect [MarkReadResponse.success] themselves.
   ///
   /// Throws:
   /// - [FunnelcakeNotConfiguredException] if the API is not configured.
