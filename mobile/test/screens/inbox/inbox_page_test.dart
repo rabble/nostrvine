@@ -33,7 +33,7 @@ class _MockContentBlocklistRepository extends Mock
 class _MockInviteStatusCubit extends MockCubit<InviteStatusState>
     implements InviteStatusCubit {}
 
-/// Minimal mock so NotificationsScreen (default tab) renders without crashing.
+/// Minimal mock so InboxNotificationsPage (default tab) renders without crashing.
 class _MockRelayNotifications extends RelayNotifications {
   @override
   Future<NotificationFeedState> build() async {
