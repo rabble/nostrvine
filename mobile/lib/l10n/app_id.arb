@@ -3600,9 +3600,6 @@
     },
     "bugReportRemoveImage": "Remove image",
     "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
-    "metadataCaptionsLabel": "Teks",
-    "metadataCaptionsEnabledSemantics": "Teks diaktifkan untuk semua video",
-    "metadataCaptionsDisabledSemantics": "Teks dinonaktifkan untuk semua video",
     "@profileSetupUploadFailedGeneric": {
         "placeholders": {
             "error": {
