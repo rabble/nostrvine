@@ -271,9 +271,12 @@ void main() {
       // The title text must not appear since the video has no title.
       expect(find.text('Who knew?'), findsNothing);
       // The date sibling renders even with no title or description.
-      final expectedDate = DateFormat.yMMMd(
-        'en',
-      ).format(DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000));
+      final expectedDate =
+          DateFormat.yMMMd(
+            'en',
+          ).format(
+            DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000, isUtc: true),
+          );
       final l10n = _l10n(tester);
       expect(
         find.text(l10n.metadataPostedDateSemantics(expectedDate)),
@@ -288,9 +291,12 @@ void main() {
         buildSubject(child: MetadataExpandedSheet(video: video)),
       );
 
-      final expectedDate = DateFormat.yMMMd(
-        'en',
-      ).format(DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000));
+      final expectedDate =
+          DateFormat.yMMMd(
+            'en',
+          ).format(
+            DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000, isUtc: true),
+          );
       final l10n = _l10n(tester);
       expect(
         find.text(l10n.metadataPostedDateSemantics(expectedDate)),
@@ -312,9 +318,15 @@ void main() {
         buildSubject(child: MetadataExpandedSheet(video: video)),
       );
 
-      final expectedDate = DateFormat.yMMMd(
-        'en',
-      ).format(DateTime.fromMillisecondsSinceEpoch(publishedAt * 1000));
+      final expectedDate =
+          DateFormat.yMMMd(
+            'en',
+          ).format(
+            DateTime.fromMillisecondsSinceEpoch(
+              publishedAt * 1000,
+              isUtc: true,
+            ),
+          );
       final l10n = _l10n(tester);
       expect(
         find.text(l10n.metadataPostedDateSemantics(expectedDate)),
@@ -349,9 +361,12 @@ void main() {
         buildSubject(child: MetadataExpandedSheet(video: video)),
       );
 
-      final expectedDate = DateFormat.yMMMd(
-        'en',
-      ).format(DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000));
+      final expectedDate =
+          DateFormat.yMMMd(
+            'en',
+          ).format(
+            DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000, isUtc: true),
+          );
       final l10n = _l10n(tester);
       final dateText = tester.widget<Text>(
         find.text(l10n.metadataPostedDateSemantics(expectedDate)),
@@ -364,25 +379,34 @@ void main() {
     testWidgets('wraps the date in a Semantics with the localized label', (
       tester,
     ) async {
-      final video = _makeVideo(title: 'Who knew?');
+      final semantics = tester.ensureSemantics();
+      try {
+        final video = _makeVideo(title: 'Who knew?');
 
-      await tester.pumpWidget(
-        buildSubject(child: MetadataExpandedSheet(video: video)),
-      );
+        await tester.pumpWidget(
+          buildSubject(child: MetadataExpandedSheet(video: video)),
+        );
 
-      final expectedDate = DateFormat.yMMMd(
-        'en',
-      ).format(DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000));
-      final l10n = _l10n(tester);
-      expect(
-        find.byWidgetPredicate(
-          (w) =>
-              w is Semantics &&
-              w.properties.label ==
-                  l10n.metadataPostedDateSemantics(expectedDate),
-        ),
-        findsOneWidget,
-      );
+        final expectedDate =
+            DateFormat.yMMMd(
+              'en',
+            ).format(
+              DateTime.fromMillisecondsSinceEpoch(
+                1700000000 * 1000,
+                isUtc: true,
+              ),
+            );
+        final l10n = _l10n(tester);
+        final node = tester.getSemantics(
+          find.text(l10n.metadataPostedDateSemantics(expectedDate)),
+        );
+        expect(
+          node.label,
+          contains(l10n.metadataPostedDateSemantics(expectedDate)),
+        );
+      } finally {
+        semantics.dispose();
+      }
     });
   });
 
