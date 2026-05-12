@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/locale/locale_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
@@ -148,7 +149,10 @@ void main() {
     ) async {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [authServiceProvider.overrideWithValue(mockAuthService)],
+          overrides: [
+            authServiceProvider.overrideWithValue(mockAuthService),
+            notificationRepositoryProvider.overrideWithValue(null),
+          ],
           child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -171,7 +175,10 @@ void main() {
     ) async {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [authServiceProvider.overrideWithValue(mockAuthService)],
+          overrides: [
+            authServiceProvider.overrideWithValue(mockAuthService),
+            notificationRepositoryProvider.overrideWithValue(null),
+          ],
           child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
