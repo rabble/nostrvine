@@ -823,12 +823,16 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       name: 'ProfileEditorBloc',
     );
 
-    // 1. Claim the divine.video username FIRST when one is requested.
+    // 1. Claim the divine.video username FIRST when a new one is requested.
     //
     // If the claim fails for any reason — taken, reserved, network error,
     // server unreachable — we abort *before* publishing kind 0. This keeps
     // the user's metadata in sync with the registry by construction.
-    if (username != null) {
+    final shouldClaimUsername =
+        username != null &&
+        (state.initialUsername == null ||
+            username.toLowerCase() != state.initialUsername!.toLowerCase());
+    if (shouldClaimUsername) {
       Log.info(
         '📝 Attempting to claim username: $username',
         name: 'ProfileEditorBloc',

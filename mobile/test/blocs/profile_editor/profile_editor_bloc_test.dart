@@ -370,6 +370,63 @@ void main() {
         );
 
         blocTest<ProfileEditorBloc, ProfileEditorState>(
+          'publishes without claiming when username matches initialUsername',
+          setUp: () {
+            when(
+              () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+            ).thenAnswer((_) async => null);
+            when(
+              () => mockProfileRepository.saveProfileEvent(
+                displayName: testDisplayName,
+                about: testAbout,
+                username: testUsername,
+                picture: testPicture,
+              ),
+            ).thenAnswer((_) async => createTestProfile());
+          },
+          seed: () => const ProfileEditorState(
+            initialUsername: testUsername,
+          ),
+          build: createBloc,
+          act: (bloc) => bloc.add(
+            const ProfileSaved(
+              pubkey: testPubkey,
+              displayName: testDisplayName,
+              about: testAbout,
+              picture: testPicture,
+              username: testUsername,
+            ),
+          ),
+          expect: () => [
+            isA<ProfileEditorState>().having(
+              (s) => s.status,
+              'status',
+              ProfileEditorStatus.loading,
+            ),
+            isA<ProfileEditorState>().having(
+              (s) => s.status,
+              'status',
+              ProfileEditorStatus.success,
+            ),
+          ],
+          verify: (_) {
+            verifyNever(
+              () => mockProfileRepository.claimUsername(
+                username: any(named: 'username'),
+              ),
+            );
+            verify(
+              () => mockProfileRepository.saveProfileEvent(
+                displayName: testDisplayName,
+                about: testAbout,
+                username: testUsername,
+                picture: testPicture,
+              ),
+            ).called(1);
+          },
+        );
+
+        blocTest<ProfileEditorBloc, ProfileEditorState>(
           'supports admin-assigned username for current user through '
           'availability check then save/claim success',
           setUp: () {
