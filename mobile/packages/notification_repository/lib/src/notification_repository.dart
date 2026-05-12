@@ -715,9 +715,17 @@ class NotificationRepository {
               kind == NotificationKind.reply)
           ? kind
           : NotificationKind.system;
-      final isCommentTargeted =
-          mapped == NotificationKind.likeComment ||
-          mapped == NotificationKind.reply;
+      // likeComment and reply reference a comment event via referencedEventId;
+      // the resolver walks its E-tags to reach the root video.
+      // mention is anchored to the source event (sourceEventId) — the kind-1
+      // event that mentioned the user. The resolver handles it identically.
+      final targetEventId = switch (mapped) {
+        NotificationKind.likeComment ||
+        NotificationKind.reply => n.referencedEventId,
+        NotificationKind.mention =>
+          n.sourceEventId.isNotEmpty ? n.sourceEventId : null,
+        _ => null,
+      };
       result.add(
         ActorNotification(
           id: n.dedupeKey,
@@ -726,7 +734,7 @@ class NotificationRepository {
           timestamp: n.createdAt,
           isRead: n.read,
           commentText: _truncateComment(n.content, kind),
-          targetEventId: isCommentTargeted ? n.referencedEventId : null,
+          targetEventId: targetEventId,
           sourceEventIds: n.sourceEventId.isNotEmpty
               ? [n.sourceEventId]
               : const [],
@@ -799,9 +807,16 @@ class NotificationRepository {
             kind == NotificationKind.reply)
         ? kind
         : NotificationKind.system;
-    final isCommentTargeted =
-        mapped == NotificationKind.likeComment ||
-        mapped == NotificationKind.reply;
+    // likeComment and reply reference a comment event via referencedEventId;
+    // mention uses sourceEventId (the kind-1 mention event itself).
+    // The resolver handles all three identically — walks E-tags to root video.
+    final targetEventId = switch (mapped) {
+      NotificationKind.likeComment ||
+      NotificationKind.reply => raw.referencedEventId,
+      NotificationKind.mention =>
+        raw.sourceEventId.isNotEmpty ? raw.sourceEventId : null,
+      _ => null,
+    };
     return ActorNotification(
       id: raw.dedupeKey,
       type: mapped,
@@ -809,7 +824,7 @@ class NotificationRepository {
       timestamp: raw.createdAt,
       isRead: raw.read,
       commentText: _truncateComment(raw.content, kind),
-      targetEventId: isCommentTargeted ? raw.referencedEventId : null,
+      targetEventId: targetEventId,
       sourceEventIds: raw.sourceEventId.isNotEmpty
           ? [raw.sourceEventId]
           : const [],

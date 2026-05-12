@@ -856,6 +856,29 @@ void main() {
         expect(item.type, equals(NotificationKind.mention));
       });
 
+      test(
+        'mention carries sourceEventId as targetEventId for resolver',
+        () async {
+          // A mention's referencedEventId is null (no video anchor); the
+          // client resolver uses sourceEventId — the kind-1 event that
+          // mentioned the user — to walk E-tags and find the root video.
+          stubNotifications([
+            makeNotification(
+              notificationType: 'mention',
+              sourceKind: 1,
+              sourceEventId: 'mention_evt_id',
+              referencedEventId: null,
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as ActorNotification;
+          expect(item.type, equals(NotificationKind.mention));
+          expect(item.targetEventId, equals('mention_evt_id'));
+        },
+      );
+
       test('follow maps to follow ($ActorNotification)', () async {
         stubNotifications([
           makeNotification(

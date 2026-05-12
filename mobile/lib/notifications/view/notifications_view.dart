@@ -175,17 +175,22 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
       case ActorNotification(:final actor, :final type, :final targetEventId):
         switch (type) {
           case NotificationKind.follow:
-          case NotificationKind.mention:
             _navigateToProfile(context, actor.pubkey);
+          case NotificationKind.mention:
           case NotificationKind.likeComment:
           case NotificationKind.reply:
-            // targetEventId is the kind 1111 comment; the resolver
-            // walks its E tag to the root video.
+            // mention → targetEventId is the kind-1 mention event; the
+            // resolver walks its E-tags to the root video.
+            // likeComment/reply → targetEventId is the referenced comment
+            // event; same resolver path.
+            // Falls back to the actor's profile when resolution fails.
             if (targetEventId != null && targetEventId.isNotEmpty) {
               await _navigateToVideo(
                 context,
                 targetEventId,
                 notificationKind: type,
+                profileFallbackPubkey:
+                    type == NotificationKind.mention ? actor.pubkey : null,
               );
             } else {
               _navigateToProfile(context, actor.pubkey);
@@ -207,6 +212,10 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
     String videoEventId, {
     String? videoAddressableId,
     NotificationKind? notificationKind,
+    /// When set and the resolver cannot find a root video, navigate to this
+    /// actor's profile instead of showing a "video not found" snackbar.
+    /// Used for mentions, which may reference a plain post with no video.
+    String? profileFallbackPubkey,
   }) async {
     Log.info(
       'Navigating to video from notification: '
@@ -224,7 +233,8 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
     final isComment =
         notificationKind == NotificationKind.comment ||
         notificationKind == NotificationKind.reply ||
-        notificationKind == NotificationKind.likeComment;
+        notificationKind == NotificationKind.likeComment ||
+        notificationKind == NotificationKind.mention;
 
     // Resolve the navigation target.
     String routeId;
@@ -241,12 +251,16 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
       if (!context.mounted) return;
 
       if (resolved == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.notificationsVideoNotFound),
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        if (profileFallbackPubkey != null) {
+          _navigateToProfile(context, profileFallbackPubkey);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(context.l10n.notificationsVideoNotFound),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
         return;
       }
       routeId = resolved;
