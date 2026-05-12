@@ -1480,6 +1480,18 @@ abstract class AppLocalizations {
   /// **'Upload photo'**
   String get profileSetupBannerUploadButton;
 
+  /// Label for the camera option in the action sheet that picks an image source for the banner upload.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get profileSetupBannerSourceCamera;
+
+  /// Label for the photo library / gallery option in the action sheet that picks an image source for the banner upload.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo library'**
+  String get profileSetupBannerSourceGallery;
+
   /// Label on the button that removes the currently selected profile banner image.
   ///
   /// In en, this message translates to:

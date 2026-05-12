@@ -350,6 +350,8 @@
     "profileSetupUploadUnsupportedOnWeb": "Unggah foto profil belum tersedia di web. Pakai aplikasi iOS atau Android, atau tempel URL gambar.",
     "profileSetupBannerSectionTitle": "Banner",
     "profileSetupBannerUploadButton": "Unggah foto",
+    "profileSetupBannerSourceCamera": "Kamera",
+    "profileSetupBannerSourceGallery": "Galeri foto",
     "profileSetupBannerClearButton": "Hapus banner",
     "profileSetupBannerUploadSuccess": "Banner diperbarui",
     "profileSetupUsernameChecking": "Mengecek ketersediaan...",

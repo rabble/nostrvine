@@ -350,6 +350,8 @@
     "profileSetupUploadUnsupportedOnWeb": "Het uploaden van een profielfoto is nog niet beschikbaar op web. Gebruik de iOS- of Android-app, of plak een afbeeldings-URL.",
     "profileSetupBannerSectionTitle": "Banner",
     "profileSetupBannerUploadButton": "Foto uploaden",
+    "profileSetupBannerSourceCamera": "Camera",
+    "profileSetupBannerSourceGallery": "Fotobibliotheek",
     "profileSetupBannerClearButton": "Banner wissen",
     "profileSetupBannerUploadSuccess": "Banner bijgewerkt",
     "profileSetupUsernameChecking": "Beschikbaarheid controleren...",

@@ -350,6 +350,8 @@
     "profileSetupUploadUnsupportedOnWeb": "Uppladdning av profilbild är inte tillgänglig på webben än. Använd iOS- eller Android-appen eller klistra in en bild-URL.",
     "profileSetupBannerSectionTitle": "Banner",
     "profileSetupBannerUploadButton": "Ladda upp foto",
+    "profileSetupBannerSourceCamera": "Kamera",
+    "profileSetupBannerSourceGallery": "Fotobibliotek",
     "profileSetupBannerClearButton": "Rensa banner",
     "profileSetupBannerUploadSuccess": "Banner uppdaterad",
     "profileSetupUsernameChecking": "Kollar tillgänglighet...",

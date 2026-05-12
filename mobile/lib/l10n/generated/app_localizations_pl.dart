@@ -811,6 +811,12 @@ class AppLocalizationsPl extends AppLocalizations {
   String get profileSetupBannerUploadButton => 'Prześlij zdjęcie';
 
   @override
+  String get profileSetupBannerSourceCamera => 'Aparat';
+
+  @override
+  String get profileSetupBannerSourceGallery => 'Biblioteka zdjęć';
+
+  @override
   String get profileSetupBannerClearButton => 'Wyczyść baner';
 
   @override

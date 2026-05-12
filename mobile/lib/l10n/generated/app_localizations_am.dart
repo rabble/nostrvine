@@ -774,6 +774,12 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileSetupBannerUploadButton => 'ፎቶ ስቀል';
 
   @override
+  String get profileSetupBannerSourceCamera => 'ካሜራ';
+
+  @override
+  String get profileSetupBannerSourceGallery => 'የፎቶ ቤተ-መጽሐፍት';
+
+  @override
   String get profileSetupBannerClearButton => 'ባነርን አጥፋ';
 
   @override

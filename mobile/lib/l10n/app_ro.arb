@@ -350,6 +350,8 @@
     "profileSetupUploadUnsupportedOnWeb": "Încărcarea pozei de profil nu este disponibilă încă pe web. Folosește aplicația de iOS sau Android ori lipește URL-ul unei imagini.",
     "profileSetupBannerSectionTitle": "Banner",
     "profileSetupBannerUploadButton": "Încarcă fotografie",
+    "profileSetupBannerSourceCamera": "Cameră",
+    "profileSetupBannerSourceGallery": "Galerie foto",
     "profileSetupBannerClearButton": "Șterge bannerul",
     "profileSetupBannerUploadSuccess": "Banner actualizat",
     "profileSetupUsernameChecking": "Se verifică disponibilitatea...",

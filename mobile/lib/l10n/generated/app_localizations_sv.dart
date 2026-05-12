@@ -785,6 +785,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get profileSetupBannerUploadButton => 'Ladda upp foto';
 
   @override
+  String get profileSetupBannerSourceCamera => 'Kamera';
+
+  @override
+  String get profileSetupBannerSourceGallery => 'Fotobibliotek';
+
+  @override
   String get profileSetupBannerClearButton => 'Rensa banner';
 
   @override

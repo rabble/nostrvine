@@ -190,6 +190,8 @@
     "profileSetupUploadUnsupportedOnWeb": "프로필 사진 업로드는 아직 웹에서 사용할 수 없어요. iOS나 Android 앱을 사용하거나 이미지 URL을 붙여넣어 주세요.",
     "profileSetupBannerSectionTitle": "배너",
     "profileSetupBannerUploadButton": "사진 업로드",
+    "profileSetupBannerSourceCamera": "카메라",
+    "profileSetupBannerSourceGallery": "사진 라이브러리",
     "profileSetupBannerClearButton": "배너 지우기",
     "profileSetupBannerUploadSuccess": "배너가 업데이트되었어요",
     "profileSetupUsernameChecking": "사용 가능 여부 확인 중...",

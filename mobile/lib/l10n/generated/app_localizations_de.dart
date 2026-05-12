@@ -809,6 +809,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileSetupBannerUploadButton => 'Foto hochladen';
 
   @override
+  String get profileSetupBannerSourceCamera => 'Kamera';
+
+  @override
+  String get profileSetupBannerSourceGallery => 'Fotomediathek';
+
+  @override
   String get profileSetupBannerClearButton => 'Banner entfernen';
 
   @override

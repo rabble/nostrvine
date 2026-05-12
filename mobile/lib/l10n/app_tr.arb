@@ -350,6 +350,8 @@
     "profileSetupUploadUnsupportedOnWeb": "Profil resmi yükleme henüz web'de kullanılamıyor. iOS ya da Android uygulamasını kullan veya bir görsel URL'si yapıştır.",
     "profileSetupBannerSectionTitle": "Afiş",
     "profileSetupBannerUploadButton": "Fotoğraf yükle",
+    "profileSetupBannerSourceCamera": "Kamera",
+    "profileSetupBannerSourceGallery": "Fotoğraf kitaplığı",
     "profileSetupBannerClearButton": "Afişi temizle",
     "profileSetupBannerUploadSuccess": "Afiş güncellendi",
     "profileSetupUsernameChecking": "Uygunluk kontrol ediliyor...",

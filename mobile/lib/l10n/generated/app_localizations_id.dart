@@ -784,6 +784,12 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileSetupBannerUploadButton => 'Unggah foto';
 
   @override
+  String get profileSetupBannerSourceCamera => 'Kamera';
+
+  @override
+  String get profileSetupBannerSourceGallery => 'Galeri foto';
+
+  @override
   String get profileSetupBannerClearButton => 'Hapus banner';
 
   @override

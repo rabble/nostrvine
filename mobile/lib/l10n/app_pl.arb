@@ -350,6 +350,8 @@
     "profileSetupUploadUnsupportedOnWeb": "Przesyłanie zdjęcia profilowego nie jest jeszcze dostępne w wersji webowej. Użyj aplikacji na iOS lub Androida albo wklej URL obrazu.",
     "profileSetupBannerSectionTitle": "Baner",
     "profileSetupBannerUploadButton": "Prześlij zdjęcie",
+    "profileSetupBannerSourceCamera": "Aparat",
+    "profileSetupBannerSourceGallery": "Biblioteka zdjęć",
     "profileSetupBannerClearButton": "Wyczyść baner",
     "profileSetupBannerUploadSuccess": "Baner zaktualizowany",
     "profileSetupUsernameChecking": "Sprawdzanie dostępności...",

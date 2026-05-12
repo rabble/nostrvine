@@ -1715,7 +1715,7 @@ class _BannerActionRow extends StatelessWidget {
       children: [
         Expanded(
           child: OutlinedButton(
-            onPressed: isUploading ? null : () => _pickBannerImage(context),
+            onPressed: isUploading ? null : () => _onUploadTapped(context),
             style: OutlinedButton.styleFrom(
               foregroundColor: VineTheme.vineGreen,
               side: const BorderSide(color: VineTheme.outlineMuted, width: 2),
@@ -1756,7 +1756,29 @@ class _BannerActionRow extends StatelessWidget {
     );
   }
 
-  Future<void> _pickBannerImage(BuildContext context) async {
+  Future<void> _onUploadTapped(BuildContext context) async {
+    // On web the system file picker is the only source — skip the sheet.
+    if (kIsWeb) {
+      await _pickBannerImage(context, ImageSource.gallery);
+      return;
+    }
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: VineTheme.surfaceContainer,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => const _BannerImageSourceSheet(),
+    );
+    if (source == null) return;
+    if (!context.mounted) return;
+    await _pickBannerImage(context, source);
+  }
+
+  Future<void> _pickBannerImage(
+    BuildContext context,
+    ImageSource source,
+  ) async {
     final editorBloc = context.read<ProfileEditorBloc>();
     final container = ProviderScope.containerOf(context, listen: false);
     final pk = container.read(authServiceProvider).currentPublicKeyHex;
@@ -1766,7 +1788,7 @@ class _BannerActionRow extends StatelessWidget {
     XFile? picked;
     try {
       picked = await picker.pickImage(
-        source: ImageSource.gallery,
+        source: source,
         maxWidth: _maxBannerImageWidth,
         maxHeight: _maxBannerImageHeight,
         imageQuality: _bannerImageQuality,
@@ -1798,6 +1820,46 @@ class _BannerActionRow extends StatelessWidget {
         ProfileBannerUploadRequested(pubkey: pk, file: File(picked.path)),
       );
     }
+  }
+}
+
+class _BannerImageSourceSheet extends StatelessWidget {
+  const _BannerImageSourceSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            key: const ValueKey('profile_banner_source_camera'),
+            leading: const Icon(
+              Icons.photo_camera_outlined,
+              color: VineTheme.lightText,
+            ),
+            title: Text(
+              l10n.profileSetupBannerSourceCamera,
+              style: VineTheme.titleMediumFont(color: VineTheme.lightText),
+            ),
+            onTap: () => Navigator.of(context).pop(ImageSource.camera),
+          ),
+          ListTile(
+            key: const ValueKey('profile_banner_source_gallery'),
+            leading: const Icon(
+              Icons.photo_library_outlined,
+              color: VineTheme.lightText,
+            ),
+            title: Text(
+              l10n.profileSetupBannerSourceGallery,
+              style: VineTheme.titleMediumFont(color: VineTheme.lightText),
+            ),
+            onTap: () => Navigator.of(context).pop(ImageSource.gallery),
+          ),
+        ],
+      ),
+    );
   }
 }
 

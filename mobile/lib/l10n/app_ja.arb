@@ -350,6 +350,8 @@
     "profileSetupUploadUnsupportedOnWeb": "プロフィール画像のアップロードは、まだWebでは使えないよ。iOSかAndroidのアプリを使うか、画像URLを貼り付けてね。",
     "profileSetupBannerSectionTitle": "バナー",
     "profileSetupBannerUploadButton": "写真をアップロード",
+    "profileSetupBannerSourceCamera": "カメラ",
+    "profileSetupBannerSourceGallery": "フォトライブラリ",
     "profileSetupBannerClearButton": "バナーをクリア",
     "profileSetupBannerUploadSuccess": "バナーを更新したよ",
     "profileSetupUsernameChecking": "使えるか確認中...",

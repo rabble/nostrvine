@@ -743,6 +743,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileSetupBannerUploadButton => '사진 업로드';
 
   @override
+  String get profileSetupBannerSourceCamera => '카메라';
+
+  @override
+  String get profileSetupBannerSourceGallery => '사진 라이브러리';
+
+  @override
   String get profileSetupBannerClearButton => '배너 지우기';
 
   @override

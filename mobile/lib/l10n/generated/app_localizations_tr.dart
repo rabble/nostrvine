@@ -782,6 +782,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileSetupBannerUploadButton => 'Fotoğraf yükle';
 
   @override
+  String get profileSetupBannerSourceCamera => 'Kamera';
+
+  @override
+  String get profileSetupBannerSourceGallery => 'Fotoğraf kitaplığı';
+
+  @override
   String get profileSetupBannerClearButton => 'Afişi temizle';
 
   @override

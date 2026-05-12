@@ -350,6 +350,8 @@
     "profileSetupUploadUnsupportedOnWeb": "Das Hochladen eines Profilbilds ist im Web noch nicht verfügbar. Nutze die iOS- oder Android-App oder füge eine Bild-URL ein.",
     "profileSetupBannerSectionTitle": "Banner",
     "profileSetupBannerUploadButton": "Foto hochladen",
+    "profileSetupBannerSourceCamera": "Kamera",
+    "profileSetupBannerSourceGallery": "Fotomediathek",
     "profileSetupBannerClearButton": "Banner entfernen",
     "profileSetupBannerUploadSuccess": "Banner aktualisiert",
     "profileSetupUsernameChecking": "Verfügbarkeit wird geprüft...",

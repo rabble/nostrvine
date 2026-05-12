@@ -829,6 +829,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileSetupBannerUploadButton => 'Încarcă fotografie';
 
   @override
+  String get profileSetupBannerSourceCamera => 'Cameră';
+
+  @override
+  String get profileSetupBannerSourceGallery => 'Galerie foto';
+
+  @override
   String get profileSetupBannerClearButton => 'Șterge bannerul';
 
   @override

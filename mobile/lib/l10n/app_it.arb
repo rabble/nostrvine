@@ -350,6 +350,8 @@
     "profileSetupUploadUnsupportedOnWeb": "Il caricamento della foto profilo non è ancora disponibile sul web. Usa l'app iOS o Android oppure incolla l'URL di un'immagine.",
     "profileSetupBannerSectionTitle": "Banner",
     "profileSetupBannerUploadButton": "Carica foto",
+    "profileSetupBannerSourceCamera": "Fotocamera",
+    "profileSetupBannerSourceGallery": "Libreria foto",
     "profileSetupBannerClearButton": "Rimuovi banner",
     "profileSetupBannerUploadSuccess": "Banner aggiornato",
     "profileSetupUsernameChecking": "Controllo disponibilità...",

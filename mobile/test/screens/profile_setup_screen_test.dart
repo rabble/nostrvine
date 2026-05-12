@@ -789,52 +789,103 @@ void main() {
         },
       );
 
-      testWidgets('tapping Upload requests a bounded banner image pick', (
-        tester,
-      ) async {
-        const imagePickerChannel = MethodChannel(
-          'plugins.flutter.io/image_picker',
-        );
-        final imagePickerCalls = <MethodCall>[];
-        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-            .setMockMethodCallHandler(imagePickerChannel, (call) async {
-              imagePickerCalls.add(call);
-              return switch (call.method) {
-                'pickImage' => '/tmp/test_banner_image.jpg',
-                'pickMultiImage' => <String>['/tmp/test_picker_image.jpg'],
-                'pickVideo' => '/tmp/test_picker_video.mp4',
-                'pickMedia' => <String>['/tmp/test_picker_image.jpg'],
-                _ => null,
-              };
-            });
+      testWidgets(
+        'tapping Upload then "Photo library" requests a bounded gallery pick',
+        (tester) async {
+          const imagePickerChannel = MethodChannel(
+            'plugins.flutter.io/image_picker',
+          );
+          final imagePickerCalls = <MethodCall>[];
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+              .setMockMethodCallHandler(imagePickerChannel, (call) async {
+                imagePickerCalls.add(call);
+                return switch (call.method) {
+                  'pickImage' => '/tmp/test_banner_image.jpg',
+                  'pickMultiImage' => <String>['/tmp/test_picker_image.jpg'],
+                  'pickVideo' => '/tmp/test_picker_video.mp4',
+                  'pickMedia' => <String>['/tmp/test_picker_image.jpg'],
+                  _ => null,
+                };
+              });
 
-        await pumpScreen(tester);
-        await tester.pumpAndSettle();
+          await pumpScreen(tester);
+          await tester.pumpAndSettle();
 
-        final l10n = lookupAppLocalizations(const Locale('en'));
-        final uploadButton = find.text(l10n.profileSetupBannerUploadButton);
-        await tester.ensureVisible(uploadButton);
-        await tester.tap(uploadButton);
-        await tester.pumpAndSettle();
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          final uploadButton = find.text(l10n.profileSetupBannerUploadButton);
+          await tester.ensureVisible(uploadButton);
+          await tester.tap(uploadButton);
+          await tester.pumpAndSettle();
 
-        final pickImageCall = imagePickerCalls.singleWhere(
-          (call) => call.method == 'pickImage',
-        );
-        final arguments = pickImageCall.arguments as Map<Object?, Object?>;
-        expect(arguments['maxWidth'], equals(1500.0));
-        expect(arguments['maxHeight'], equals(500.0));
-        expect(arguments['imageQuality'], equals(85));
-        expect(arguments['requestFullMetadata'], isFalse);
+          final galleryOption = find.byKey(
+            const ValueKey('profile_banner_source_gallery'),
+          );
+          expect(galleryOption, findsOneWidget);
+          await tester.tap(galleryOption);
+          await tester.pumpAndSettle();
 
-        final captured = verify(
-          () => mockEditorBloc.add(
-            captureAny(that: isA<ProfileBannerUploadRequested>()),
-          ),
-        ).captured;
-        final event = captured.whereType<ProfileBannerUploadRequested>().last;
-        expect(event.pubkey, equals(testPubkeyHex));
-        expect(event.file?.path, equals('/tmp/test_banner_image.jpg'));
-      });
+          final pickImageCall = imagePickerCalls.singleWhere(
+            (call) => call.method == 'pickImage',
+          );
+          final arguments = pickImageCall.arguments as Map<Object?, Object?>;
+          expect(arguments['source'], equals(1));
+          expect(arguments['maxWidth'], equals(1500.0));
+          expect(arguments['maxHeight'], equals(500.0));
+          expect(arguments['imageQuality'], equals(85));
+          expect(arguments['requestFullMetadata'], isFalse);
+
+          final captured = verify(
+            () => mockEditorBloc.add(
+              captureAny(that: isA<ProfileBannerUploadRequested>()),
+            ),
+          ).captured;
+          final event = captured.whereType<ProfileBannerUploadRequested>().last;
+          expect(event.pubkey, equals(testPubkeyHex));
+          expect(event.file?.path, equals('/tmp/test_banner_image.jpg'));
+        },
+      );
+
+      testWidgets(
+        'tapping Upload then "Camera" requests a bounded camera pick',
+        (tester) async {
+          const imagePickerChannel = MethodChannel(
+            'plugins.flutter.io/image_picker',
+          );
+          final imagePickerCalls = <MethodCall>[];
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+              .setMockMethodCallHandler(imagePickerChannel, (call) async {
+                imagePickerCalls.add(call);
+                return switch (call.method) {
+                  'pickImage' => '/tmp/test_banner_camera_image.jpg',
+                  _ => null,
+                };
+              });
+
+          await pumpScreen(tester);
+          await tester.pumpAndSettle();
+
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          await tester.ensureVisible(
+            find.text(l10n.profileSetupBannerUploadButton),
+          );
+          await tester.tap(find.text(l10n.profileSetupBannerUploadButton));
+          await tester.pumpAndSettle();
+
+          final cameraOption = find.byKey(
+            const ValueKey('profile_banner_source_camera'),
+          );
+          expect(cameraOption, findsOneWidget);
+          await tester.tap(cameraOption);
+          await tester.pumpAndSettle();
+
+          final pickImageCall = imagePickerCalls.singleWhere(
+            (call) => call.method == 'pickImage',
+          );
+          final arguments = pickImageCall.arguments as Map<Object?, Object?>;
+          // ImageSource.camera serializes to 0 on the platform channel.
+          expect(arguments['source'], equals(0));
+        },
+      );
 
       testWidgets('tapping Clear when a banner is staged dispatches '
           '$ProfileBannerCleared', (tester) async {

@@ -817,6 +817,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get profileSetupBannerUploadButton => 'Importer une photo';
 
   @override
+  String get profileSetupBannerSourceCamera => 'Appareil photo';
+
+  @override
+  String get profileSetupBannerSourceGallery => 'Photothèque';
+
+  @override
   String get profileSetupBannerClearButton => 'Supprimer la bannière';
 
   @override

@@ -776,6 +776,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get profileSetupBannerUploadButton => 'رفع صورة';
 
   @override
+  String get profileSetupBannerSourceCamera => 'الكاميرا';
+
+  @override
+  String get profileSetupBannerSourceGallery => 'مكتبة الصور';
+
+  @override
   String get profileSetupBannerClearButton => 'مسح الغلاف';
 
   @override

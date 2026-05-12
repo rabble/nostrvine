@@ -810,6 +810,12 @@ class AppLocalizationsBg extends AppLocalizations {
   String get profileSetupBannerUploadButton => 'Качи снимка';
 
   @override
+  String get profileSetupBannerSourceCamera => 'Камера';
+
+  @override
+  String get profileSetupBannerSourceGallery => 'Фотобиблиотека';
+
+  @override
   String get profileSetupBannerClearButton => 'Изчисти банера';
 
   @override

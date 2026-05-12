@@ -812,6 +812,12 @@ class AppLocalizationsFil extends AppLocalizations {
   String get profileSetupBannerUploadButton => 'Mag-upload ng larawan';
 
   @override
+  String get profileSetupBannerSourceCamera => 'Kamera';
+
+  @override
+  String get profileSetupBannerSourceGallery => 'Library ng larawan';
+
+  @override
   String get profileSetupBannerClearButton => 'I-clear ang banner';
 
   @override

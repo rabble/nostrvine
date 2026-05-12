@@ -350,6 +350,8 @@
     "profileSetupUploadUnsupportedOnWeb": "L'envoi d'une photo de profil n'est pas encore disponible sur le web. Utilise l'app iOS ou Android, ou colle l'URL d'une image.",
     "profileSetupBannerSectionTitle": "Bannière",
     "profileSetupBannerUploadButton": "Importer une photo",
+    "profileSetupBannerSourceCamera": "Appareil photo",
+    "profileSetupBannerSourceGallery": "Photothèque",
     "profileSetupBannerClearButton": "Supprimer la bannière",
     "profileSetupBannerUploadSuccess": "Bannière mise à jour",
     "profileSetupUsernameChecking": "Vérification de la disponibilité...",

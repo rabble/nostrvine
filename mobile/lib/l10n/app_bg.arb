@@ -379,6 +379,8 @@
     "profileSetupUploadUnsupportedOnWeb": "Качването на профилна снимка все още не е налично в уеб. Използвай приложението за iOS или Android или постави URL на изображение.",
     "profileSetupBannerSectionTitle": "Банер",
     "profileSetupBannerUploadButton": "Качи снимка",
+    "profileSetupBannerSourceCamera": "Камера",
+    "profileSetupBannerSourceGallery": "Фотобиблиотека",
     "profileSetupBannerClearButton": "Изчисти банера",
     "profileSetupBannerUploadSuccess": "Банерът е обновен",
     "profileSetupUsernameChecking": "Проверява се наличността...",

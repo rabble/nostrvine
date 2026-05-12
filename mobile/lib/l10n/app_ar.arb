@@ -350,6 +350,8 @@
     "profileSetupUploadUnsupportedOnWeb": "رفع صورة الملف الشخصي غير متاح على الويب حتى الآن. استخدم تطبيق iOS أو Android، أو الصق رابط الصورة.",
     "profileSetupBannerSectionTitle": "الغلاف",
     "profileSetupBannerUploadButton": "رفع صورة",
+    "profileSetupBannerSourceCamera": "الكاميرا",
+    "profileSetupBannerSourceGallery": "مكتبة الصور",
     "profileSetupBannerClearButton": "مسح الغلاف",
     "profileSetupBannerUploadSuccess": "تم تحديث الغلاف",
     "profileSetupUsernameChecking": "جاري التحقق من التوفر...",

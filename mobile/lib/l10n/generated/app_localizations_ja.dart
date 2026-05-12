@@ -741,6 +741,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileSetupBannerUploadButton => '写真をアップロード';
 
   @override
+  String get profileSetupBannerSourceCamera => 'カメラ';
+
+  @override
+  String get profileSetupBannerSourceGallery => 'フォトライブラリ';
+
+  @override
   String get profileSetupBannerClearButton => 'バナーをクリア';
 
   @override

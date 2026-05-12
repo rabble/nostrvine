@@ -190,6 +190,8 @@
     "profileSetupUploadUnsupportedOnWeb": "Hindi pa available sa web ang pag-upload ng profile picture. Gamitin ang iOS o Android app, o i-paste ang image URL.",
     "profileSetupBannerSectionTitle": "Banner",
     "profileSetupBannerUploadButton": "Mag-upload ng larawan",
+    "profileSetupBannerSourceCamera": "Kamera",
+    "profileSetupBannerSourceGallery": "Library ng larawan",
     "profileSetupBannerClearButton": "I-clear ang banner",
     "profileSetupBannerUploadSuccess": "Na-update ang banner",
     "profileSetupUsernameChecking": "Tinitingnan ang availability...",

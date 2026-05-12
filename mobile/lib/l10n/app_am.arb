@@ -401,6 +401,8 @@
     "profileSetupUploadUnsupportedOnWeb": "የመገለጫ ስዕል መስቀል በድር ላይ እስካሁን አይገኝም። የiOS ወይም Android መተግበሪያን ተጠቀም፣ ወይም የምስል URL ለጥፍ።",
     "profileSetupBannerSectionTitle": "ባነር",
     "profileSetupBannerUploadButton": "ፎቶ ስቀል",
+    "profileSetupBannerSourceCamera": "ካሜራ",
+    "profileSetupBannerSourceGallery": "የፎቶ ቤተ-መጽሐፍት",
     "profileSetupBannerClearButton": "ባነርን አጥፋ",
     "profileSetupBannerUploadSuccess": "ባነር ተዘመነ",
     "profileSetupUsernameChecking": "ተገኝነትን በማጣራት ላይ...",

@@ -800,6 +800,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileSetupBannerUploadButton => 'Upload photo';
 
   @override
+  String get profileSetupBannerSourceCamera => 'Camera';
+
+  @override
+  String get profileSetupBannerSourceGallery => 'Photo library';
+
+  @override
   String get profileSetupBannerClearButton => 'Clear banner';
 
   @override
