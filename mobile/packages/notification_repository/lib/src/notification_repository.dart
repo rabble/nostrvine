@@ -448,9 +448,13 @@ class NotificationRepository {
   /// - Thumbnail / title / addressable id = existing if non-empty, else
   ///   incoming (parallel to `_groupVideoAnchored`'s
   ///   `_nonEmpty(...) ?? _nonEmpty(...)` pattern).
-  /// - `commentText` for comment-kind rows: prefer incoming non-null
-  ///   (REST page tends to carry the most recent comment text) else
-  ///   keep existing.
+  /// - `commentText` for comment-kind rows: pick from the side with the
+  ///   larger `timestamp`, falling back to the other side only when the
+  ///   newer side has no text. Mirrors `_groupVideoAnchored`'s
+  ///   newest-wins (sort desc by `createdAt`, take `group.first.content`)
+  ///   and the `timestamp = max(...)` rule above, so the bold first-actor
+  ///   quote stays the latest comment even though REST pagination walks
+  ///   backward in time.
   static VideoNotification _mergeAppendedVideoGroup(
     VideoNotification existing,
     VideoNotification incoming,
@@ -465,11 +469,14 @@ class NotificationRepository {
         (a) => !existing.actors.any((e) => e.pubkey == a.pubkey),
       ),
     ].take(_maxGroupActors).toList();
-    final mergedTimestamp = existing.timestamp.isAfter(incoming.timestamp)
+    final existingIsNewer = !existing.timestamp.isBefore(incoming.timestamp);
+    final mergedTimestamp = existingIsNewer
         ? existing.timestamp
         : incoming.timestamp;
     final mergedCommentText = existing.type == NotificationKind.comment
-        ? (incoming.commentText ?? existing.commentText)
+        ? (existingIsNewer
+              ? (existing.commentText ?? incoming.commentText)
+              : (incoming.commentText ?? existing.commentText))
         : null;
     final mergedTotalCount = unionIds.length >= mergedActors.length
         ? unionIds.length

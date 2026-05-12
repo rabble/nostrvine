@@ -2091,6 +2091,136 @@ void main() {
           );
         },
       );
+
+      test(
+        "comment-kind merge keeps the newer side's commentText "
+        '(WS newer than REST page)',
+        () async {
+          // Production ordering: REST pagination walks backward in time,
+          // so an incoming REST page on the same (videoEventId, kind)
+          // is typically OLDER than the WS-built row in the snapshot.
+          // The merged row must therefore keep the WS commentText —
+          // mirrors `_groupVideoAnchored`'s sort-desc + group.first
+          // newest-wins and the surrounding `timestamp = max(...)`.
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+            'pubkey_bob': makeProfile('pubkey_bob', displayName: 'Bob'),
+          });
+          stubNotifications(
+            [],
+            nextCursor: 'cursor_after_first',
+            hasMore: true,
+          );
+          await repository.refresh();
+
+          // WS arrives with the NEWER comment.
+          await repository.acceptRealtime(
+            makeNotification(
+              id: 'nostr-comment-alice',
+              sourceEventId: 'nostr-comment-alice',
+              notificationType: 'comment',
+              sourceKind: 1,
+              referencedEventId: 'video_a',
+              content: 'Newer comment from Alice (WS-arrived)',
+              createdAt: DateTime(2025, 6),
+            ),
+          );
+
+          // REST pagination returns an OLDER comment on the same video.
+          stubNotifications([
+            makeNotification(
+              id: 'server-uuid-comment-bob',
+              sourceEventId: 'nostr-comment-bob',
+              sourcePubkey: 'pubkey_bob',
+              notificationType: 'comment',
+              sourceKind: 1,
+              referencedEventId: 'video_a',
+              content: 'Older comment from Bob (REST-paged)',
+              createdAt: DateTime(2025, 4),
+            ),
+          ]);
+
+          await repository.getNotifications();
+
+          final items = (await repository.watchSnapshot().first).items;
+          expect(items, hasLength(1));
+          final merged = items.single as VideoNotification;
+          expect(merged.type, equals(NotificationKind.comment));
+          expect(
+            merged.commentText,
+            equals('Newer comment from Alice (WS-arrived)'),
+            reason:
+                'Newer side wins to mirror _groupVideoAnchored sort-desc '
+                'semantics and align with timestamp=max(...). Older REST '
+                'commentText must NOT overwrite the displayed newest one.',
+          );
+          expect(
+            merged.timestamp,
+            equals(DateTime(2025, 6)),
+            reason: 'timestamp must be the max of the two sides.',
+          );
+        },
+      );
+
+      test(
+        "comment-kind merge keeps the newer side's commentText "
+        '(REST page newer than WS) — symmetric direction',
+        () async {
+          // Symmetric case: rare in production (REST first page is the
+          // newer boundary), but the rule must be timestamp-driven, not
+          // path-driven. Lock both directions.
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+            'pubkey_bob': makeProfile('pubkey_bob', displayName: 'Bob'),
+          });
+          stubNotifications(
+            [],
+            nextCursor: 'cursor_after_first',
+            hasMore: true,
+          );
+          await repository.refresh();
+
+          await repository.acceptRealtime(
+            makeNotification(
+              id: 'nostr-comment-alice',
+              sourceEventId: 'nostr-comment-alice',
+              notificationType: 'comment',
+              sourceKind: 1,
+              referencedEventId: 'video_a',
+              content: 'Older comment from Alice (WS-arrived)',
+              createdAt: DateTime(2025, 4),
+            ),
+          );
+
+          stubNotifications([
+            makeNotification(
+              id: 'server-uuid-comment-bob',
+              sourceEventId: 'nostr-comment-bob',
+              sourcePubkey: 'pubkey_bob',
+              notificationType: 'comment',
+              sourceKind: 1,
+              referencedEventId: 'video_a',
+              content: 'Newer comment from Bob (REST-paged)',
+              createdAt: DateTime(2025, 6),
+            ),
+          ]);
+
+          await repository.getNotifications();
+
+          final items = (await repository.watchSnapshot().first).items;
+          expect(items, hasLength(1));
+          final merged = items.single as VideoNotification;
+          expect(
+            merged.commentText,
+            equals('Newer comment from Bob (REST-paged)'),
+            reason:
+                'When the REST side carries the newer createdAt, its '
+                'commentText wins — rule is timestamp-driven, not '
+                'path-driven.',
+          );
+          expect(merged.timestamp, equals(DateTime(2025, 6)));
+        },
+      );
     });
   });
 }
