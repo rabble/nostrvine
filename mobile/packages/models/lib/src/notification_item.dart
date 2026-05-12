@@ -39,6 +39,7 @@ sealed class NotificationItem extends Equatable {
     required this.timestamp,
     this.isRead = false,
     this.targetEventId,
+    this.sourceEventIds = const [],
   });
 
   final String id;
@@ -46,4 +47,17 @@ sealed class NotificationItem extends Equatable {
   final DateTime timestamp;
   final bool isRead;
   final String? targetEventId;
+
+  /// Underlying Nostr event ids that this item represents.
+  ///
+  /// REST-loaded items carry the server's UUID in [id] and the Nostr event
+  /// id in [sourceEventIds]; WS-loaded items (built via
+  /// `notification_realtime_bridge.dart`) carry the Nostr event id in both.
+  /// Cross-path snapshot dedupe in
+  /// `NotificationRepository._emitSnapshotForPage` keys on overlap in this
+  /// set rather than [id] equality so a logical event arriving over WS
+  /// first and then over REST resolves to a single row. For grouped video
+  /// notifications this is the union of all underlying likes/comments/
+  /// reposts contributing to the row.
+  final List<String> sourceEventIds;
 }

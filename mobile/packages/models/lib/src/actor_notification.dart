@@ -16,6 +16,7 @@ class ActorNotification extends NotificationItem {
     required super.timestamp,
     super.isRead,
     super.targetEventId,
+    super.sourceEventIds,
     this.commentText,
     this.isFollowingBack = false,
   }) : assert(
@@ -47,6 +48,7 @@ class ActorNotification extends NotificationItem {
     String? commentText,
     bool? isFollowingBack,
     String? targetEventId,
+    List<String>? sourceEventIds,
   }) {
     return ActorNotification(
       id: id ?? this.id,
@@ -57,6 +59,7 @@ class ActorNotification extends NotificationItem {
       commentText: commentText ?? this.commentText,
       isFollowingBack: isFollowingBack ?? this.isFollowingBack,
       targetEventId: targetEventId ?? this.targetEventId,
+      sourceEventIds: sourceEventIds ?? this.sourceEventIds,
     );
   }
 
@@ -70,5 +73,6 @@ class ActorNotification extends NotificationItem {
     commentText,
     isFollowingBack,
     targetEventId,
+    sourceEventIds,
   ];
 }

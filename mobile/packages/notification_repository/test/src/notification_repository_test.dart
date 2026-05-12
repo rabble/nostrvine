@@ -1800,5 +1800,297 @@ void main() {
         },
       );
     });
+
+    group('WS-first dedupe in page-merge (#4264)', () {
+      // WS raws (built by `notification_realtime_bridge.dart`) carry the
+      // Nostr event id in both `id` and `sourceEventId`. REST raws carry
+      // the Nostr event id in `sourceEventId` (with the server's UUID in
+      // `id`). When WS arrives first and a later REST pagination page
+      // returns the same logical event, dedupe must key on the shared
+      // Nostr event id via `NotificationItem.sourceEventIds`, not the
+      // rendered `id` which differs across the two paths.
+
+      test(
+        'standalone $ActorNotification: WS-first then non-first REST page '
+        'with same sourceEventId resolves to a single row',
+        () async {
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+          });
+          // First page seeds the snapshot and advances _lastCursor so the
+          // next getNotifications() emits as a non-first page.
+          stubNotifications(
+            [],
+            nextCursor: 'cursor_after_first',
+            hasMore: true,
+          );
+          await repository.refresh();
+
+          // WS arrives: bridge sets id == sourceEventId == nostr event id.
+          await repository.acceptRealtime(
+            makeNotification(
+              id: 'nostr-follow-evt-1',
+              sourceEventId: 'nostr-follow-evt-1',
+              notificationType: 'follow',
+              sourceKind: 3,
+              referencedEventId: null,
+              isReferencedVideo: false,
+              createdAt: DateTime(2025, 6),
+            ),
+          );
+
+          expect(
+            (await repository.watchSnapshot().first).items,
+            hasLength(1),
+            reason: 'WS arrival adds the follow row.',
+          );
+
+          // Non-first REST page returns the same logical follow event
+          // with the server UUID in id and the Nostr event id in
+          // sourceEventId.
+          stubNotifications([
+            makeNotification(
+              id: 'server-uuid-follow-1',
+              sourceEventId: 'nostr-follow-evt-1',
+              notificationType: 'follow',
+              sourceKind: 3,
+              referencedEventId: null,
+              isReferencedVideo: false,
+              createdAt: DateTime(2025, 6),
+            ),
+          ]);
+
+          await repository.getNotifications();
+
+          final items = (await repository.watchSnapshot().first).items;
+          expect(
+            items,
+            hasLength(1),
+            reason:
+                'REST item with sourceEventId already represented by the '
+                'WS row must not be appended as a duplicate.',
+          );
+          final actor = items.single as ActorNotification;
+          expect(actor.sourceEventIds, contains('nostr-follow-evt-1'));
+        },
+      );
+
+      test(
+        'grouped $VideoNotification: WS-first single-actor row, then '
+        'non-first REST page with multi-actor group on same '
+        '(videoEventId, type) merges richer REST data into the existing '
+        'WS row in place',
+        () async {
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+            'pubkey_bob': makeProfile('pubkey_bob', displayName: 'Bob'),
+            'pubkey_carol': makeProfile('pubkey_carol', displayName: 'Carol'),
+          });
+          stubNotifications(
+            [],
+            nextCursor: 'cursor_after_first',
+            hasMore: true,
+          );
+          await repository.refresh();
+
+          await repository.acceptRealtime(
+            makeNotification(
+              id: 'nostr-like-alice',
+              sourceEventId: 'nostr-like-alice',
+              referencedEventId: 'video_a',
+              createdAt: DateTime(2025, 5),
+            ),
+          );
+
+          stubNotifications([
+            makeNotification(
+              id: 'server-uuid-like-alice',
+              sourceEventId: 'nostr-like-alice',
+              referencedEventId: 'video_a',
+              createdAt: DateTime(2025, 5),
+            ),
+            makeNotification(
+              id: 'server-uuid-like-bob',
+              sourceEventId: 'nostr-like-bob',
+              sourcePubkey: 'pubkey_bob',
+              referencedEventId: 'video_a',
+              createdAt: DateTime(2025, 5, 2),
+            ),
+            makeNotification(
+              id: 'server-uuid-like-carol',
+              sourceEventId: 'nostr-like-carol',
+              sourcePubkey: 'pubkey_carol',
+              referencedEventId: 'video_a',
+              createdAt: DateTime(2025, 5, 3),
+            ),
+          ]);
+
+          await repository.getNotifications();
+
+          final items = (await repository.watchSnapshot().first).items;
+          expect(
+            items,
+            hasLength(1),
+            reason:
+                'REST group on same (videoEventId, type) must merge into '
+                'the existing WS row instead of producing a second row.',
+          );
+          final merged = items.single as VideoNotification;
+          expect(merged.videoEventId, equals('video_a'));
+          expect(merged.type, equals(NotificationKind.like));
+          expect(
+            merged.sourceEventIds,
+            containsAll(<String>[
+              'nostr-like-alice',
+              'nostr-like-bob',
+              'nostr-like-carol',
+            ]),
+          );
+          expect(merged.totalCount, equals(3));
+          expect(
+            merged.actors,
+            hasLength(3),
+            reason: 'Actor stack fills up to _maxGroupActors after merge.',
+          );
+          expect(
+            merged.actors.first.pubkey,
+            equals('pubkey_alice'),
+            reason:
+                'Existing-side actors retain their leading position so '
+                'the row does not visibly jump.',
+          );
+        },
+      );
+
+      test(
+        'unrelated REST event on a different video is appended; no '
+        'false-positive dedupe',
+        () async {
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+            'pubkey_bob': makeProfile('pubkey_bob', displayName: 'Bob'),
+          });
+          stubNotifications(
+            [],
+            nextCursor: 'cursor_after_first',
+            hasMore: true,
+          );
+          await repository.refresh();
+
+          await repository.acceptRealtime(
+            makeNotification(
+              id: 'nostr-like-alice-video-a',
+              sourceEventId: 'nostr-like-alice-video-a',
+              referencedEventId: 'video_a',
+              createdAt: DateTime(2025, 5),
+            ),
+          );
+
+          stubNotifications([
+            makeNotification(
+              id: 'server-uuid-like-bob-video-b',
+              sourceEventId: 'nostr-like-bob-video-b',
+              sourcePubkey: 'pubkey_bob',
+              referencedEventId: 'video_b',
+              createdAt: DateTime(2025, 5, 2),
+            ),
+          ]);
+
+          await repository.getNotifications();
+
+          final items = (await repository.watchSnapshot().first).items;
+          expect(
+            items,
+            hasLength(2),
+            reason:
+                'Disjoint sourceEventIds and disjoint (videoEventId, type) '
+                'must not trigger dedupe — both rows visible.',
+          );
+        },
+      );
+
+      test(
+        'mixed page: same logical event deduped, new events appended',
+        () async {
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+            'pubkey_bob': makeProfile('pubkey_bob', displayName: 'Bob'),
+            'pubkey_carol': makeProfile('pubkey_carol', displayName: 'Carol'),
+          });
+          stubNotifications(
+            [],
+            nextCursor: 'cursor_after_first',
+            hasMore: true,
+          );
+          await repository.refresh();
+
+          // WS arrives for a follow notification.
+          await repository.acceptRealtime(
+            makeNotification(
+              id: 'nostr-follow-alice',
+              sourceEventId: 'nostr-follow-alice',
+              notificationType: 'follow',
+              sourceKind: 3,
+              referencedEventId: null,
+              isReferencedVideo: false,
+              createdAt: DateTime(2025, 5),
+            ),
+          );
+
+          // Non-first REST page includes:
+          //  - the same follow event (must be deduped),
+          //  - a new follow from Bob (must be appended),
+          //  - a new like from Carol on a video (must be appended).
+          stubNotifications([
+            makeNotification(
+              id: 'server-uuid-follow-alice',
+              sourceEventId: 'nostr-follow-alice',
+              notificationType: 'follow',
+              sourceKind: 3,
+              referencedEventId: null,
+              isReferencedVideo: false,
+              createdAt: DateTime(2025, 5),
+            ),
+            makeNotification(
+              id: 'server-uuid-follow-bob',
+              sourceEventId: 'nostr-follow-bob',
+              sourcePubkey: 'pubkey_bob',
+              notificationType: 'follow',
+              sourceKind: 3,
+              referencedEventId: null,
+              isReferencedVideo: false,
+              createdAt: DateTime(2025, 4),
+            ),
+            makeNotification(
+              id: 'server-uuid-like-carol',
+              sourceEventId: 'nostr-like-carol',
+              sourcePubkey: 'pubkey_carol',
+              referencedEventId: 'video_x',
+              createdAt: DateTime(2025, 4, 5),
+            ),
+          ]);
+
+          await repository.getNotifications();
+
+          final items = (await repository.watchSnapshot().first).items;
+          expect(
+            items,
+            hasLength(3),
+            reason:
+                'Duplicate Nostr event is dropped; the two new events '
+                'are appended.',
+          );
+          final allSourceIds = items.expand((n) => n.sourceEventIds).toSet();
+          expect(
+            allSourceIds,
+            containsAll(<String>[
+              'nostr-follow-alice',
+              'nostr-follow-bob',
+              'nostr-like-carol',
+            ]),
+          );
+        },
+      );
+    });
   });
 }

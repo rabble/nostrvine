@@ -135,5 +135,55 @@ void main() {
         expect(updated.targetEventId, equals('c' * 64));
       });
     });
+
+    group('sourceEventIds (#4264)', () {
+      test('defaults to const [] when not provided', () {
+        final notification = ActorNotification(
+          id: 'n1',
+          type: NotificationKind.follow,
+          actor: actor,
+          timestamp: timestamp,
+        );
+
+        expect(notification.sourceEventIds, isEmpty);
+      });
+
+      test('round-trips through copyWith', () {
+        final original = ActorNotification(
+          id: 'n1',
+          type: NotificationKind.follow,
+          actor: actor,
+          timestamp: timestamp,
+        );
+
+        final updated = original.copyWith(
+          sourceEventIds: const ['nostr-follow-evt-1'],
+        );
+
+        expect(
+          updated.sourceEventIds,
+          equals(<String>['nostr-follow-evt-1']),
+        );
+      });
+
+      test('two otherwise-equal items differ by sourceEventIds', () {
+        final a = ActorNotification(
+          id: 'n1',
+          type: NotificationKind.follow,
+          actor: actor,
+          timestamp: timestamp,
+          sourceEventIds: const ['evt-a'],
+        );
+        final b = ActorNotification(
+          id: 'n1',
+          type: NotificationKind.follow,
+          actor: actor,
+          timestamp: timestamp,
+          sourceEventIds: const ['evt-b'],
+        );
+
+        expect(a, isNot(equals(b)));
+      });
+    });
   });
 }

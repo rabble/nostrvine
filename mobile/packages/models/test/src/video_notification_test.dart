@@ -175,5 +175,63 @@ void main() {
         expect(updated.commentText, equals('Original comment'));
       });
     });
+
+    group('sourceEventIds (#4264)', () {
+      test('defaults to const [] when not provided', () {
+        final notification = VideoNotification(
+          id: 'n1',
+          type: NotificationKind.like,
+          videoEventId: 'v1',
+          actors: [actorAlice],
+          totalCount: 1,
+          timestamp: timestamp,
+        );
+
+        expect(notification.sourceEventIds, isEmpty);
+      });
+
+      test('round-trips through copyWith', () {
+        final original = VideoNotification(
+          id: 'n1',
+          type: NotificationKind.like,
+          videoEventId: 'v1',
+          actors: [actorAlice],
+          totalCount: 1,
+          timestamp: timestamp,
+        );
+
+        final updated = original.copyWith(
+          sourceEventIds: const ['nostr-evt-1', 'nostr-evt-2'],
+        );
+
+        expect(
+          updated.sourceEventIds,
+          equals(<String>['nostr-evt-1', 'nostr-evt-2']),
+        );
+      });
+
+      test('two otherwise-equal items differ by sourceEventIds', () {
+        final a = VideoNotification(
+          id: 'n1',
+          type: NotificationKind.like,
+          videoEventId: 'v1',
+          actors: [actorAlice],
+          totalCount: 1,
+          timestamp: timestamp,
+          sourceEventIds: const ['evt-a'],
+        );
+        final b = VideoNotification(
+          id: 'n1',
+          type: NotificationKind.like,
+          videoEventId: 'v1',
+          actors: [actorAlice],
+          totalCount: 1,
+          timestamp: timestamp,
+          sourceEventIds: const ['evt-b'],
+        );
+
+        expect(a, isNot(equals(b)));
+      });
+    });
   });
 }

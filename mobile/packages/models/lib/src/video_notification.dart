@@ -19,6 +19,7 @@ class VideoNotification extends NotificationItem {
     required this.totalCount,
     required super.timestamp,
     super.isRead,
+    super.sourceEventIds,
     this.videoThumbnailUrl,
     this.videoTitle,
     this.videoAddressableId,
@@ -83,6 +84,7 @@ class VideoNotification extends NotificationItem {
     DateTime? timestamp,
     bool? isRead,
     String? commentText,
+    List<String>? sourceEventIds,
   }) {
     return VideoNotification(
       id: id ?? this.id,
@@ -96,6 +98,7 @@ class VideoNotification extends NotificationItem {
       timestamp: timestamp ?? this.timestamp,
       isRead: isRead ?? this.isRead,
       commentText: commentText ?? this.commentText,
+      sourceEventIds: sourceEventIds ?? this.sourceEventIds,
     );
   }
 
@@ -112,5 +115,6 @@ class VideoNotification extends NotificationItem {
     timestamp,
     isRead,
     commentText,
+    sourceEventIds,
   ];
 }
