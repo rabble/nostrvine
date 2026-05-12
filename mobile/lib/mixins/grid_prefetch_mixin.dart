@@ -2,7 +2,8 @@
 // ABOUTME: Pre-caches video files based on grid position and bandwidth
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:infinite_video_feed/infinite_video_feed.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
@@ -17,7 +18,7 @@ import 'package:unified_logger/unified_logger.dart';
 ///
 /// Uses bandwidth-aware prefetching: only prefetches when the connection
 /// quality is medium or high (skips on low/480p connections).
-mixin GridPrefetchMixin<T extends StatefulWidget> on State<T> {
+mixin GridPrefetchMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   static const _logName = 'GridPrefetch';
 
   /// Prefetch the first [AppConstants.gridPrefetchLimit] videos from a list.
@@ -81,5 +82,7 @@ mixin GridPrefetchMixin<T extends StatefulWidget> on State<T> {
   }
 
   bool get _shouldPrefetch =>
-      !kIsWeb && BandwidthTrackerService.instance.shouldUseHighQuality;
+      !kIsWeb &&
+      BandwidthTrackerService.instance.shouldUseHighQuality &&
+      !InfiniteVideoFeed.isSupported;
 }

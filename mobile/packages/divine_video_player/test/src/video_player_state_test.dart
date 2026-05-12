@@ -2,6 +2,119 @@ import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  group(NativePlayerErrorCode, () {
+    group('shouldFailover', () {
+      test('returns true for httpClientError', () {
+        expect(NativePlayerErrorCode.httpClientError.shouldFailover, isTrue);
+      });
+
+      test('returns true for httpServerError', () {
+        expect(NativePlayerErrorCode.httpServerError.shouldFailover, isTrue);
+      });
+
+      test('returns true for parseError', () {
+        expect(NativePlayerErrorCode.parseError.shouldFailover, isTrue);
+      });
+
+      test('returns false for networkError', () {
+        expect(NativePlayerErrorCode.networkError.shouldFailover, isFalse);
+      });
+
+      test('returns false for timeout', () {
+        expect(NativePlayerErrorCode.timeout.shouldFailover, isFalse);
+      });
+
+      test('returns false for decoderError', () {
+        expect(NativePlayerErrorCode.decoderError.shouldFailover, isFalse);
+      });
+
+      test('returns false for unknown', () {
+        expect(NativePlayerErrorCode.unknown.shouldFailover, isFalse);
+      });
+    });
+
+    group('isTransient', () {
+      test('returns true for networkError', () {
+        expect(NativePlayerErrorCode.networkError.isTransient, isTrue);
+      });
+
+      test('returns true for timeout', () {
+        expect(NativePlayerErrorCode.timeout.isTransient, isTrue);
+      });
+
+      test('returns false for httpServerError', () {
+        expect(NativePlayerErrorCode.httpServerError.isTransient, isFalse);
+      });
+
+      test('returns false for httpClientError', () {
+        expect(NativePlayerErrorCode.httpClientError.isTransient, isFalse);
+      });
+
+      test('returns false for parseError', () {
+        expect(NativePlayerErrorCode.parseError.isTransient, isFalse);
+      });
+
+      test('returns false for decoderError', () {
+        expect(NativePlayerErrorCode.decoderError.isTransient, isFalse);
+      });
+
+      test('returns false for unknown', () {
+        expect(NativePlayerErrorCode.unknown.isTransient, isFalse);
+      });
+    });
+
+    group('fromString', () {
+      test('parses http_client_error', () {
+        expect(
+          NativePlayerErrorCode.fromString('http_client_error'),
+          equals(NativePlayerErrorCode.httpClientError),
+        );
+      });
+
+      test('parses http_server_error', () {
+        expect(
+          NativePlayerErrorCode.fromString('http_server_error'),
+          equals(NativePlayerErrorCode.httpServerError),
+        );
+      });
+
+      test('parses network_error', () {
+        expect(
+          NativePlayerErrorCode.fromString('network_error'),
+          equals(NativePlayerErrorCode.networkError),
+        );
+      });
+
+      test('parses timeout', () {
+        expect(
+          NativePlayerErrorCode.fromString('timeout'),
+          equals(NativePlayerErrorCode.timeout),
+        );
+      });
+
+      test('parses parse_error', () {
+        expect(
+          NativePlayerErrorCode.fromString('parse_error'),
+          equals(NativePlayerErrorCode.parseError),
+        );
+      });
+
+      test('parses decoder_error', () {
+        expect(
+          NativePlayerErrorCode.fromString('decoder_error'),
+          equals(NativePlayerErrorCode.decoderError),
+        );
+      });
+
+      test('returns unknown for unrecognised value', () {
+        expect(
+          NativePlayerErrorCode.fromString('some_unknown_code'),
+          equals(NativePlayerErrorCode.unknown),
+        );
+      });
+    });
+  });
+
   group(PlaybackStatus, () {
     test('isIdle returns true only for idle', () {
       expect(PlaybackStatus.idle.isIdle, isTrue);
@@ -64,6 +177,32 @@ void main() {
 
       expect(playing.isPlaying, isTrue);
       expect(paused.isPlaying, isFalse);
+    });
+
+    test('isBuffering delegates to status', () {
+      const buffering = DivineVideoPlayerState(
+        status: PlaybackStatus.buffering,
+      );
+      const playing = DivineVideoPlayerState(status: PlaybackStatus.playing);
+
+      expect(buffering.isBuffering, isTrue);
+      expect(playing.isBuffering, isFalse);
+    });
+
+    test('isPaused delegates to status', () {
+      const paused = DivineVideoPlayerState(status: PlaybackStatus.paused);
+      const playing = DivineVideoPlayerState(status: PlaybackStatus.playing);
+
+      expect(paused.isPaused, isTrue);
+      expect(playing.isPaused, isFalse);
+    });
+
+    test('hasError delegates to status', () {
+      const error = DivineVideoPlayerState(status: PlaybackStatus.error);
+      const playing = DivineVideoPlayerState(status: PlaybackStatus.playing);
+
+      expect(error.hasError, isTrue);
+      expect(playing.hasError, isFalse);
     });
 
     group('aspectRatio', () {
@@ -223,6 +362,37 @@ void main() {
         expect(copy.volume, equals(0.7));
         expect(copy.position, equals(original.position));
       });
+
+      test('clearError: true resets errorMessage and errorCode', () {
+        const original = DivineVideoPlayerState(
+          status: PlaybackStatus.error,
+          errorMessage: 'boom',
+          errorCode: NativePlayerErrorCode.networkError,
+        );
+        final copy = original.copyWith(
+          status: PlaybackStatus.idle,
+          clearError: true,
+        );
+
+        expect(copy.status, equals(PlaybackStatus.idle));
+        expect(copy.errorMessage, isNull);
+        expect(copy.errorCode, isNull);
+      });
+
+      test('without clearError, error fields persist on status change', () {
+        const original = DivineVideoPlayerState(
+          status: PlaybackStatus.error,
+          errorMessage: 'boom',
+          errorCode: NativePlayerErrorCode.networkError,
+        );
+        final copy = original.copyWith(status: PlaybackStatus.idle);
+
+        expect(copy.errorMessage, equals('boom'));
+        expect(
+          copy.errorCode,
+          equals(NativePlayerErrorCode.networkError),
+        );
+      });
     });
 
     group('fromMap', () {
@@ -289,6 +459,30 @@ void main() {
           final state = DivineVideoPlayerState.fromMap({'status': name});
           expect(state.status.name, equals(name));
         }
+      });
+
+      test('parses errorCode string into NativePlayerErrorCode', () {
+        final state = DivineVideoPlayerState.fromMap({
+          'status': 'error',
+          'errorCode': 'http_client_error',
+          'errorMessage': 'HTTP 404',
+        });
+
+        expect(state.errorCode, equals(NativePlayerErrorCode.httpClientError));
+        expect(state.errorMessage, equals('HTTP 404'));
+      });
+
+      test('leaves errorCode null when key is absent', () {
+        final state = DivineVideoPlayerState.fromMap({'status': 'error'});
+        expect(state.errorCode, isNull);
+      });
+
+      test('leaves errorCode null when value is not a string', () {
+        final state = DivineVideoPlayerState.fromMap({
+          'status': 'error',
+          'errorCode': 42,
+        });
+        expect(state.errorCode, isNull);
       });
 
       test('defaults unknown status to idle', () {

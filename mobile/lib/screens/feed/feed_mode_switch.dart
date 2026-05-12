@@ -7,6 +7,8 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/screens/feed/feed_settings_menu.dart';
 
 /// Feed mode picker overlay that displays the current feed mode
 /// and allows users to switch between modes via a bottom sheet.
@@ -20,13 +22,6 @@ class FeedModeSwitch extends StatelessWidget {
   /// When true, displays a static "For You" label without requiring
   /// [VideoFeedBloc] or feature-flag providers in the widget tree.
   final bool isPreviewMode;
-
-  /// Labels for each feed mode displayed in the UI.
-  static const Map<FeedMode, String> feedModeLabels = {
-    FeedMode.forYou: 'For You',
-    FeedMode.latest: 'New',
-    FeedMode.following: 'Following',
-  };
 
   @override
   Widget build(BuildContext context) {
@@ -47,23 +42,24 @@ class FeedModeSwitch extends StatelessWidget {
         child: SafeArea(
           bottom: false,
           child: Padding(
-            padding: const EdgeInsets.only(
-              top: 16,
-              bottom: 16,
-              left: 20,
-              right: 20,
-            ),
+            // Left padding (16) matches the video metadata container's
+            // `start: 16` on the overlay below, so the feed-mode label
+            // lines up with the avatar.
+            // Right padding (12) gives the trailing More popover a hair
+            // more breathing room from the screen edge — matches the
+            // fullscreen app bar and the profile screen's nav-button row.
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 16, 12, 16),
             child: isPreviewMode
                 ? _FeedModeContent(
-                    label:
-                        feedModeLabels[FeedMode.forYou] ?? FeedMode.forYou.name,
+                    label: _labelForMode(FeedMode.forYou, context.l10n),
                   )
                 : BlocBuilder<VideoFeedBloc, VideoFeedState>(
                     buildWhen: (prev, curr) => prev.mode != curr.mode,
                     builder: (context, state) => _FeedModeContent(
                       onTap: () =>
                           _showFeedModeBottomSheet(context, state.mode),
-                      label: feedModeLabels[state.mode] ?? state.mode.name,
+                      label: _labelForMode(state.mode, context.l10n),
+                      trailing: const FeedSettingsMenu(),
                     ),
                   ),
           ),
@@ -76,14 +72,21 @@ class FeedModeSwitch extends StatelessWidget {
     BuildContext context,
     FeedMode currentMode,
   ) async {
+    final l10n = context.l10n;
     final selected = await VineBottomSheetSelectionMenu.show(
       context: context,
       selectedValue: currentMode.name,
-      options: const [
-        VineBottomSheetSelectionOptionData(label: 'For You', value: 'forYou'),
-        VineBottomSheetSelectionOptionData(label: 'New', value: 'latest'),
+      options: [
         VineBottomSheetSelectionOptionData(
-          label: 'Following',
+          label: l10n.feedModeForYou,
+          value: 'forYou',
+        ),
+        VineBottomSheetSelectionOptionData(
+          label: l10n.feedModeNew,
+          value: 'latest',
+        ),
+        VineBottomSheetSelectionOptionData(
+          label: l10n.feedModeFollowing,
           value: 'following',
         ),
       ],
@@ -96,22 +99,34 @@ class FeedModeSwitch extends StatelessWidget {
   }
 }
 
-/// Shared row rendering — label + caret — used for both the live
-/// [BlocBuilder]-driven label and the static preview-mode label.
+String _labelForMode(FeedMode mode, AppLocalizations l10n) => switch (mode) {
+  FeedMode.forYou => l10n.feedModeForYou,
+  FeedMode.latest => l10n.feedModeNew,
+  FeedMode.following => l10n.feedModeFollowing,
+};
+
+/// Shared row rendering — label + caret + optional trailing widget — used
+/// for both the live [BlocBuilder]-driven label and the static preview-mode
+/// label.
+///
+/// [trailing], when provided, is rendered as the right-aligned sibling of
+/// the label, sharing the same vertical center via the parent [Row].
 class _FeedModeContent extends StatelessWidget {
-  const _FeedModeContent({required this.label, this.onTap});
+  const _FeedModeContent({required this.label, this.onTap, this.trailing});
 
   final VoidCallback? onTap;
   final String label;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
         Semantics(
-          label: 'Feed mode: $label',
+          label: context.l10n.feedModeSemanticLabel(label),
           button: true,
           child: GestureDetector(
+            behavior: .opaque,
             onTap: onTap,
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -129,6 +144,7 @@ class _FeedModeContent extends StatelessWidget {
           ),
         ),
         const Spacer(),
+        ?trailing,
       ],
     );
   }

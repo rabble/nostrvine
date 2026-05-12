@@ -14,8 +14,10 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
+import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/screens/feed/feed_video_overlay.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -24,6 +26,7 @@ import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 import '../../helpers/test_provider_overrides.dart';
 import '../../test_data/video_test_data.dart';
@@ -43,9 +46,14 @@ class _MockCuratedListRepository extends Mock
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
 
+class _MockVideosRepository extends Mock implements VideosRepository {}
+
 class _MockMediaAuthInterceptor extends Mock implements MediaAuthInterceptor {}
 
 class _MockVideoFeedController extends Mock implements VideoFeedController {}
+
+class _MockVideoVolumeCubit extends MockCubit<VideoVolumeState>
+    implements VideoVolumeCubit {}
 
 class _FakeBuildContext extends Fake implements BuildContext {}
 
@@ -54,6 +62,12 @@ const _testVideoId =
     'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234';
 const _testPubkey =
     'd4e5f6789012345678901234567890abcdef123456789012345678901234a1b2c3';
+const _parentEventId =
+    '32e8069cb2f468548236bf743563bfd930b96fe2e5731a4b2f58e38d24df82b2';
+const _parentPubkey =
+    'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+const _parentAddressableId =
+    '34236:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:parent-d-tag';
 
 AppLocalizations _l10n(WidgetTester tester) =>
     AppLocalizations.of(tester.element(find.byType(Scaffold).first));
@@ -61,11 +75,14 @@ AppLocalizations _l10n(WidgetTester tester) =>
 void main() {
   group(FeedVideoOverlay, () {
     late VideoInteractionsBloc mockInteractionsBloc;
+    late VideoVolumeCubit mockVolumeCubit;
+    late FeedAutoAdvanceCubit feedAutoAdvanceCubit;
     late Player mockPlayer;
     late PlayerStream mockStream;
     late PlayerState mockPlayerState;
     late CuratedListRepository mockCuratedListRepository;
     late VideoEventService mockVideoEventService;
+    late VideosRepository mockVideosRepository;
     late MockProfileRepository mockProfileRepository;
     late MockNip05VerificationService mockNip05VerificationService;
     late VideoEvent testVideo;
@@ -81,11 +98,15 @@ void main() {
 
     setUp(() {
       mockInteractionsBloc = _MockVideoInteractionsBloc();
+      mockVolumeCubit = _MockVideoVolumeCubit();
+      when(() => mockVolumeCubit.state).thenReturn(const VideoVolumeState());
+      feedAutoAdvanceCubit = FeedAutoAdvanceCubit();
       mockPlayer = _MockPlayer();
       mockStream = _MockPlayerStream();
       mockPlayerState = _MockPlayerState();
       mockCuratedListRepository = _MockCuratedListRepository();
       mockVideoEventService = _MockVideoEventService();
+      mockVideosRepository = _MockVideosRepository();
       mockProfileRepository = createMockProfileRepository();
       mockNip05VerificationService = createMockNip05VerificationService();
       playingController = StreamController<bool>.broadcast();
@@ -113,6 +134,9 @@ void main() {
       when(
         () => mockVideoEventService.getRepostersForVideo(any()),
       ).thenAnswer((_) async => const <String>[]);
+      when(
+        () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
+      ).thenAnswer((_) async => null);
 
       // Stub interactions bloc state
       when(
@@ -132,6 +156,7 @@ void main() {
     tearDown(() async {
       await playingController.close();
       await bufferingController.close();
+      await feedAutoAdvanceCubit.close();
       pagePosition.dispose();
     });
 
@@ -143,9 +168,6 @@ void main() {
       bool includePlayer = true,
       ValueNotifier<double>? pagePositionOverride,
       int index = 0,
-      bool showAutoButton = false,
-      bool isAutoEnabled = false,
-      VoidCallback? onAutoPressed,
       VideoFeedController? feedController,
       List<dynamic>? additionalOverrides,
     }) {
@@ -157,10 +179,6 @@ void main() {
         player: includePlayer ? (player ?? mockPlayer) : null,
         firstFrameFuture: firstFrameFuture,
         listSources: listSources,
-        feedController: feedController,
-        showAutoButton: showAutoButton,
-        isAutoEnabled: isAutoEnabled,
-        onAutoPressed: onAutoPressed,
       );
 
       return testMaterialApp(
@@ -169,6 +187,7 @@ void main() {
             mockCuratedListRepository,
           ),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+          videosRepositoryProvider.overrideWithValue(mockVideosRepository),
           ...?additionalOverrides,
         ],
         mockProfileRepository: mockProfileRepository,
@@ -181,6 +200,10 @@ void main() {
               ),
               BlocProvider<VideoPlaybackStatusCubit>(
                 create: (_) => VideoPlaybackStatusCubit(),
+              ),
+              BlocProvider<VideoVolumeCubit>.value(value: mockVolumeCubit),
+              BlocProvider<FeedAutoAdvanceCubit>.value(
+                value: feedAutoAdvanceCubit,
               ),
             ],
             child: feedController == null
@@ -195,6 +218,44 @@ void main() {
     }
 
     group('list attribution', () {
+      testWidgets('renders fetched parent context for a video reply', (
+        tester,
+      ) async {
+        testVideo = testVideo.copyWith(
+          rawTags: const {
+            'A': _parentAddressableId,
+            'E': _parentEventId,
+            'K': '34236',
+            'a': _parentAddressableId,
+          },
+          inspiredByVideo: const InspiredByInfo(
+            addressableId: _parentAddressableId,
+          ),
+        );
+        final parentVideo = createTestVideoEvent(
+          id: _parentEventId,
+          pubkey: _parentPubkey,
+          title: 'Original cat video',
+        );
+        when(
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            _parentAddressableId,
+          ),
+        ).thenAnswer((_) async => parentVideo);
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('Reply to Original cat video'), findsOneWidget);
+        expect(find.textContaining('Inspired by'), findsNothing);
+        verify(
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            _parentAddressableId,
+          ),
+        ).called(1);
+      });
+
       testWidgets(
         'does not show the content warning overlay for creator labels without warn labels',
         (tester) async {
@@ -369,22 +430,6 @@ void main() {
           findsOneWidget,
         );
         expect(find.text('Likes'), findsOneWidget);
-      });
-
-      testWidgets('renders Auto action when enabled for the current feed', (
-        tester,
-      ) async {
-        await tester.pumpWidget(
-          buildSubject(
-            showAutoButton: true,
-            isAutoEnabled: true,
-            onAutoPressed: () {},
-          ),
-        );
-        await tester.pump();
-
-        expect(find.text('Compilation'), findsOneWidget);
-        expect(find.bySemanticsLabel('Disable auto advance'), findsOneWidget);
       });
     });
 

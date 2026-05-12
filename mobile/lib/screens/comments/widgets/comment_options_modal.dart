@@ -171,6 +171,7 @@ class _OptionTile extends StatelessWidget {
       label: semanticLabel,
       excludeSemantics: true,
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(16),

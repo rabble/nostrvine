@@ -17,6 +17,10 @@ typedef JwtIdentityRefresh =
       required String relayManagerUrl,
     });
 
+class ZendeskAttachmentUploadException implements Exception {
+  const ZendeskAttachmentUploadException();
+}
+
 /// Service for interacting with Zendesk Support SDK
 class ZendeskSupportService {
   static const MethodChannel _channel = MethodChannel(
@@ -562,6 +566,7 @@ class ZendeskSupportService {
     List<String>? tags,
     int? ticketFormId,
     List<Map<String, dynamic>>? customFields,
+    List<String>? attachmentPaths,
   }) async {
     if (!_initialized) {
       Log.warning(
@@ -584,6 +589,8 @@ class ZendeskSupportService {
         'ticketFormId': ?ticketFormId,
         if (customFields != null && customFields.isNotEmpty)
           'customFields': customFields,
+        if (attachmentPaths != null && attachmentPaths.isNotEmpty)
+          'attachmentPaths': attachmentPaths,
       });
 
       if (result == true) {
@@ -622,6 +629,14 @@ class ZendeskSupportService {
         tags: tags,
       );
     } on PlatformException catch (e) {
+      if (e.code == 'UPLOAD_FAILED') {
+        Log.error(
+          'Zendesk attachment upload failed: ${e.message}',
+          category: LogCategory.system,
+        );
+        throw const ZendeskAttachmentUploadException();
+      }
+
       Log.error(
         '❌ Zendesk SDK error: ${e.code} - ${e.message}',
         category: LogCategory.system,
@@ -648,6 +663,8 @@ class ZendeskSupportService {
               'ticketFormId': ?ticketFormId,
               if (customFields != null && customFields.isNotEmpty)
                 'customFields': customFields,
+              if (attachmentPaths != null && attachmentPaths.isNotEmpty)
+                'attachmentPaths': attachmentPaths,
             });
             if (retryResult == true) {
               Log.info(
@@ -843,6 +860,7 @@ class ZendeskSupportService {
     String? userPubkey,
     Map<String, int>? errorCounts,
     String? logsSummary,
+    List<String>? attachmentPaths,
   }) async {
     Log.info(
       'Creating structured Zendesk bug report: $reportId',
@@ -949,6 +967,7 @@ class ZendeskSupportService {
         tags: tags,
         ticketFormId: 14772963437071,
         customFields: customFields,
+        attachmentPaths: attachmentPaths,
       );
     }
 

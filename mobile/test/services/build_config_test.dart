@@ -24,10 +24,9 @@ void main() {
 
       // When FF_NEW_CAMERA_UI is not set, should default to false
       expect(config.getDefault(FeatureFlag.newCameraUI), isFalse);
-      expect(config.getDefault(FeatureFlag.enhancedVideoPlayer), isFalse);
+      expect(config.getDefault(FeatureFlag.accountSwitching), isFalse);
       expect(config.getDefault(FeatureFlag.enhancedAnalytics), isFalse);
       expect(config.getDefault(FeatureFlag.newProfileLayout), isFalse);
-      expect(config.getDefault(FeatureFlag.livestreamingBeta), isFalse);
     });
 
     test('should have debug tools enabled by default in debug builds', () {
@@ -35,6 +34,12 @@ void main() {
 
       // Debug tools should be enabled by default for development
       expect(config.getDefault(FeatureFlag.debugTools), isTrue);
+    });
+
+    test('videoReplies should be enabled by default in debug builds', () {
+      const config = BuildConfiguration();
+
+      expect(config.getDefault(FeatureFlag.videoReplies), isTrue);
     });
 
     test('should provide all flags with defaults', () {
@@ -77,8 +82,8 @@ void main() {
         equals('FF_DEBUG_TOOLS'),
       );
       expect(
-        config.getEnvironmentKey(FeatureFlag.enhancedVideoPlayer),
-        equals('FF_ENHANCED_VIDEO_PLAYER'),
+        config.getEnvironmentKey(FeatureFlag.videoReplies),
+        equals('FF_VIDEO_REPLIES'),
       );
     });
 
@@ -102,6 +107,34 @@ void main() {
         equals('FF_INTEGRATED_APPS'),
       );
     });
+
+    test('nativeFeedPlayer should map to FF_NATIVE_FEED_PLAYER env var', () {
+      const config = BuildConfiguration();
+
+      expect(
+        config.getEnvironmentKey(FeatureFlag.nativeFeedPlayer),
+        equals('FF_NATIVE_FEED_PLAYER'),
+      );
+    });
+
+    test(
+      'nativeFeedPlayer absent env should intentionally default to false',
+      () {
+        const config = BuildConfiguration();
+
+        expect(
+          config.getDefault(FeatureFlag.nativeFeedPlayer),
+          isFalse,
+          reason:
+              'FF_NATIVE_FEED_PLAYER is opt-in and should remain disabled '
+              'when unset.',
+        );
+        expect(
+          config.getDefault(FeatureFlag.nativeFeedPlayer),
+          equals(const bool.fromEnvironment('FF_NATIVE_FEED_PLAYER')),
+        );
+      },
+    );
 
     test('feed auto advance is not feature flagged', () {
       expect(

@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show SemanticsService;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -102,35 +103,94 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
 
     return Scaffold(
       backgroundColor: VineTheme.surfaceBackground,
-      body: Column(
-        children: [
-          ConversationAppBar(
-            displayName: displayName,
-            handle: handle,
-            onBack: () => context.pop(),
-            onTitleTap: otherPubkey.isNotEmpty
-                ? () => context.push(
-                    '${OtherProfileScreen.path}/${NostrKeyUtils.encodePubKey(otherPubkey)}',
-                  )
-                : null,
-            onOptions: () => _onOptions(otherPubkey, displayName),
-          ),
-          Expanded(
-            child: _ConversationContent(
-              currentPubkey: currentPubkey,
-              otherPubkey: otherPubkey,
+      body: BlocListener<ConversationBloc, ConversationState>(
+        listenWhen: (previous, current) =>
+            previous.sendStatus != current.sendStatus &&
+            (current.sendStatus == SendStatus.failed ||
+                current.sendStatus == SendStatus.sentPartial),
+        listener: _onSendOutcome,
+        child: Column(
+          children: [
+            ConversationAppBar(
               displayName: displayName,
-              imageUrl: profile?.picture,
-              nip05: profile?.displayNip05,
-              onViewProfile: () {
-                final npub = NostrKeyUtils.encodePubKey(otherPubkey);
-                context.push('${OtherProfileScreen.path}/$npub');
-              },
+              handle: handle,
+              onBack: () => context.pop(),
+              onTitleTap: otherPubkey.isNotEmpty
+                  ? () => context.push(
+                      '${OtherProfileScreen.path}/${NostrKeyUtils.encodePubKey(otherPubkey)}',
+                    )
+                  : null,
+              onOptions: () => _onOptions(otherPubkey, displayName),
             ),
-          ),
-          _SendBar(participantPubkeys: widget.participantPubkeys),
-        ],
+            Expanded(
+              child: _ConversationContent(
+                currentPubkey: currentPubkey,
+                otherPubkey: otherPubkey,
+                displayName: displayName,
+                imageUrl: profile?.picture,
+                nip05: profile?.shortDisplayNip05,
+                onViewProfile: () {
+                  final npub = NostrKeyUtils.encodePubKey(otherPubkey);
+                  context.push('${OtherProfileScreen.path}/$npub');
+                },
+              ),
+            ),
+            _SendBar(participantPubkeys: widget.participantPubkeys),
+          ],
+        ),
       ),
+    );
+  }
+
+  void _onSendOutcome(BuildContext context, ConversationState state) {
+    final isPartial = state.sendStatus == SendStatus.sentPartial;
+    // Pick the retry payload based on which outcome we're recovering
+    // from: failed → full resend (content + recipients), sentPartial →
+    // self-wrap-only recovery (rumor ids). Either side may be null on
+    // an out-of-band emit; bail out rather than show a SnackBar that
+    // does nothing.
+    final partialSend = state.lastPartialSend;
+    final failedSend = state.lastFailedSend;
+    if (isPartial && partialSend == null) return;
+    if (!isPartial && failedSend == null) return;
+
+    final l10n = context.l10n;
+    final message = isPartial
+        ? l10n.dmSendPartialMessage
+        : l10n.dmSendFailedMessage;
+    final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        action: SnackBarAction(
+          label: l10n.dmSendFailedRetry,
+          onPressed: () {
+            final bloc = context.read<ConversationBloc>();
+            if (isPartial) {
+              bloc.add(
+                ConversationSelfWrapRecoveryRequested(
+                  rumorIds: partialSend!.rumorIds,
+                ),
+              );
+            } else {
+              bloc.add(
+                ConversationMessageSent(
+                  recipientPubkeys: failedSend!.recipientPubkeys,
+                  content: failedSend.content,
+                ),
+              );
+            }
+          },
+        ),
+      ),
+    );
+    // Per `accessibility.md`, async visible state changes must announce
+    // explicitly — relying on Material's default SnackBar semantics is
+    // weaker than the written rule and not guaranteed across platforms.
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      message,
+      Directionality.of(context),
     );
   }
 }
@@ -188,7 +248,8 @@ class _ConversationContent extends StatelessWidget {
       ConversationState,
       ({ConversationStatus status, List<DmMessage> messages})
     >(
-      selector: (state) => (status: state.status, messages: state.messages),
+      selector: (state) =>
+          (status: state.status, messages: state.displayedMessages),
       builder: (context, selected) {
         return switch (selected.status) {
           ConversationStatus.initial ||
@@ -197,7 +258,7 @@ class _ConversationContent extends StatelessWidget {
           ),
           ConversationStatus.error => Center(
             child: Text(
-              'Could not load messages',
+              context.l10n.dmConversationLoadError,
               style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
             ),
           ),

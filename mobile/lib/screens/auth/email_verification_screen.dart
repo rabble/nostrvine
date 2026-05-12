@@ -24,6 +24,7 @@ import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/utils/sensitive_uri_for_logs.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -150,7 +151,8 @@ class _EmailVerificationScreenState
 
     if (pending != null) {
       Log.info(
-        'Found persisted verification data for ${pending.email}, '
+        'Found persisted verification data for '
+        '${redactEmailForLogs(pending.email)}, '
         'attempting auto-login flow',
         name: 'EmailVerificationScreen',
         category: LogCategory.auth,

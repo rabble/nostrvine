@@ -8,16 +8,11 @@ void main() {
   group('FeatureFlag enum', () {
     test('should have display names', () {
       expect(FeatureFlag.newCameraUI.displayName, equals('New Camera UI'));
-      expect(
-        FeatureFlag.enhancedVideoPlayer.displayName,
-        equals('Enhanced Video Player'),
-      );
       expect(FeatureFlag.debugTools.displayName, equals('Debug Tools'));
     });
 
     test('should have descriptions', () {
       expect(FeatureFlag.newCameraUI.description, isNotEmpty);
-      expect(FeatureFlag.enhancedVideoPlayer.description, isNotEmpty);
       expect(FeatureFlag.debugTools.description, isNotEmpty);
     });
 
@@ -33,18 +28,33 @@ void main() {
 
     test('should include expected flags for OpenVine', () {
       expect(FeatureFlag.values, contains(FeatureFlag.newCameraUI));
-      expect(FeatureFlag.values, contains(FeatureFlag.enhancedVideoPlayer));
+      expect(FeatureFlag.values, contains(FeatureFlag.accountSwitching));
       expect(FeatureFlag.values, contains(FeatureFlag.enhancedAnalytics));
       expect(FeatureFlag.values, contains(FeatureFlag.newProfileLayout));
-      expect(FeatureFlag.values, contains(FeatureFlag.livestreamingBeta));
       expect(FeatureFlag.values, contains(FeatureFlag.debugTools));
       expect(FeatureFlag.values, contains(FeatureFlag.integratedApps));
+      expect(FeatureFlag.values, contains(FeatureFlag.videoReplies));
     });
 
     test('integratedApps flag should have correct metadata', () {
       expect(FeatureFlag.integratedApps.displayName, equals('Integrated Apps'));
       expect(FeatureFlag.integratedApps.description, isNotEmpty);
       expect(FeatureFlag.integratedApps.description.length, greaterThan(10));
+    });
+
+    test('nativeFeedPlayer flag should have correct metadata', () {
+      expect(
+        FeatureFlag.nativeFeedPlayer.displayName,
+        equals('Native Feed Player'),
+      );
+      expect(
+        FeatureFlag.nativeFeedPlayer.description,
+        equals(
+          'Use the native platform video player in the feed '
+          '(iOS, Android, macOS). Disable to fall back to the legacy '
+          'pooled player. Has no effect on web.',
+        ),
+      );
     });
 
     test('should provide meaningful descriptions', () {

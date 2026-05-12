@@ -198,6 +198,8 @@ class VideoPublishService {
         language: languagePreferenceService?.contentLanguage,
         contentWarning: draft.contentWarning,
         thumbnailTimestamp: draft.thumbnailTimestamp,
+        replyContext: draft.videoReplyContext,
+        addReplyToFeed: draft.shareReplyToFeed,
       );
 
       if (!published) {

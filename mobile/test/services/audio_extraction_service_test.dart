@@ -138,12 +138,12 @@ void main() {
 
     test('toString includes cause when present', () {
       const exception = AudioExtractionException(
-        'FFmpeg failed',
+        'Audio extraction failed',
         cause: 'Error: No audio stream found',
       );
 
       final str = exception.toString();
-      expect(str, contains('FFmpeg failed'));
+      expect(str, contains('Audio extraction failed'));
       expect(str, contains('caused by:'));
       expect(str, contains('No audio stream found'));
     });
@@ -258,12 +258,12 @@ void main() {
     test('extractAudio returns result when video has audio', () async {
       final result = await service.extractAudio(fakeVideoFile.path);
 
-      expect(result.audioFilePath, endsWith('.aac'));
+      expect(result.audioFilePath, endsWith('.wav'));
       expect(result.duration, equals(6));
       expect(result.fileSize, greaterThan(0));
       expect(result.sha256Hash, isNotEmpty);
       expect(result.sha256Hash.length, equals(64));
-      expect(result.mimeType, equals('audio/m4a'));
+      expect(result.mimeType, equals('audio/wav'));
 
       // Cleanup extraction output
       final outputFile = File(result.audioFilePath);

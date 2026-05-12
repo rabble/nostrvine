@@ -632,7 +632,7 @@ class BookmarkService with NostrListServiceMixin {
 
       if (event != null) {
         final sentEvent = await _nostrService.publishEvent(event);
-        if (sentEvent != null) {
+        if (sentEvent is PublishSuccess) {
           Log.debug(
             'Published global bookmarks to Nostr: ${event.id}',
             name: 'BookmarkService',
@@ -693,7 +693,7 @@ class BookmarkService with NostrListServiceMixin {
 
       if (event != null) {
         final sentEvent = await _nostrService.publishEvent(event);
-        if (sentEvent != null) {
+        if (sentEvent is PublishSuccess) {
           // Update local set with Nostr event ID
           final setIndex = _bookmarkSets.indexWhere((s) => s.id == set.id);
           if (setIndex != -1) {

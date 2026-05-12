@@ -150,6 +150,28 @@ void main() {
       verify(() => mockInviteApiClient.validateCode('AB12-EF34')).called(1);
     });
 
+    testWidgets('typing the fourth invite character shows dash hint', (
+      tester,
+    ) async {
+      when(() => mockInviteApiClient.getClientConfig()).thenAnswer(
+        (_) async => const InviteClientConfig(
+          mode: OnboardingMode.inviteCodeRequired,
+          supportEmail: 'support@divine.video',
+        ),
+      );
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'ab12');
+      await tester.pump();
+
+      final editableText = tester.widget<EditableText>(
+        find.byType(EditableText),
+      );
+      expect(editableText.controller.text, 'AB12-');
+    });
+
     testWidgets('shows initial recovery error from query params', (
       tester,
     ) async {

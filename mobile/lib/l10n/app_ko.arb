@@ -128,8 +128,6 @@
   "profileRepostsOwnEmpty": "리포스트한 영상이 여기에 나타나요",
   "profileRepostsOtherEmpty": "이 사람이 리포스트한 영상이 여기에 나타나요",
   "profileErrorLoadingReposts": "리포스트 영상을 불러오지 못했어요",
-  "profileLoadingTitle": "프로필을 불러오는 중...",
-  "profileLoadingSubtitle": "잠시 걸릴 수 있어요",
   "profileLoadingVideos": "영상을 불러오는 중...",
   "profileNoVideosTitle": "아직 영상 없음",
   "profileNoVideosOwnSubtitle": "첫 영상을 공유하고 여기에서 확인해보세요",
@@ -184,7 +182,7 @@
   "profileSetupImageSelectionFailed": "이미지 선택에 실패했어요. 아래에 이미지 URL을 붙여넣어보세요.",
   "profileSetupCameraAccessFailed": "카메라 접근 실패: {error}",
   "profileSetupGotItButton": "알겠어요",
-  "profileSetupUploadFailedGeneric": "이미지를 올리지 못했어요: {error}",
+  "profileSetupUploadFailedGeneric": "이미지를 올리지 못했어요. 잠시 후 다시 시도해주세요.",
   "profileSetupUploadNetworkError": "네트워크 오류: 인터넷 연결을 확인하고 다시 시도해주세요.",
   "profileSetupUploadAuthError": "인증 오류: 로그아웃 후 다시 로그인해보세요.",
   "profileSetupUploadFileTooLarge": "파일이 너무 커요: 더 작은 이미지를 고르세요 (최대 10MB).",
@@ -198,7 +196,7 @@
   "profileSetupCheckAgain": "다시 확인",
   "profileSetupUsernameBurned": "이 사용자명은 더 이상 사용할 수 없어요",
   "profileSetupUsernameInvalidFormat": "문자, 숫자, 하이픈만 쓸 수 있어요",
-  "profileSetupUsernameInvalidLength": "사용자명은 3~20자 사이여야 해요",
+  "profileSetupUsernameInvalidLength": "사용자명은 3~63자 사이여야 해요",
   "profileSetupUsernameNetworkError": "사용 가능 여부를 확인하지 못했어요. 다시 시도해보세요.",
   "profileSetupUsernameInvalidFormatGeneric": "잘못된 사용자명 형식",
   "profileSetupUsernameCheckFailed": "사용 가능 여부 확인에 실패했어요",
@@ -270,6 +268,7 @@
   "videoPlayerUnmute": "영상 음소거 해제",
   "videoPlayerEditVideo": "영상 편집",
   "videoPlayerEditVideoTooltip": "영상 편집",
+  "videoPlayerTapHint": "탭하여 재생하거나 일시정지하세요. 이중 탭으로 좋아요.",
   "contentWarningLabel": "콘텐츠 경고",
   "contentWarningNudity": "노출",
   "contentWarningSexualContent": "성적 콘텐츠",
@@ -330,6 +329,35 @@
   "videoCollaboratorWithOne": "@{name}님과 함께",
   "videoCollaboratorWithMore": "@{name}님 외 +{count}명과 함께",
   "videoCollaboratorCountLabel": "{count, plural, other{콜라보레이터 {count}명}}. 탭해서 프로필을 보세요.",
+  "videoCollaboratorPendingDecoration": "Pending",
+  "@videoCollaboratorPendingDecoration": {
+    "description": "Small badge next to a collaborator's name or avatar when the creator (viewing their own video) has invited them but they have not yet accepted."
+  },
+  "videoCollaboratorPendingSemanticLabel": "Pending collaborator",
+  "@videoCollaboratorPendingSemanticLabel": {
+    "description": "Screen reader label for a dimmed pending collaborator avatar on the creator's own video."
+  },
+  "videoCollaboratorWithPendingSuffix": "{label} ({pending} pending)",
+  "@videoCollaboratorWithPendingSuffix": {
+    "description": "Appends a pending count to the collaborator label on the creator's own video. {label} is the existing 'with @name' / 'with @name +N' phrase.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "pending": {
+        "type": "int"
+      }
+    }
+  },
+  "profileChipTapHint": "{name}. Tap to view profile.",
+  "@profileChipTapHint": {
+    "description": "Screen reader hint announced when a user-chip in the metadata sheet is focused. {name} is the user's display name.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "listAttributionFallback": "리스트",
   "shareVideoLabel": "영상 공유",
   "sharePostSharedWith": "{recipientName}님과 게시물을 공유했어요",
@@ -355,6 +383,11 @@
   "videoActionMoreOptions": "더 많은 옵션",
   "videoActionHideSubtitles": "자막 숨기기",
   "videoActionShowSubtitles": "자막 표시",
+  "videoEngagementLikersTitle": "좋아요한 사용자",
+  "videoEngagementRepostersTitle": "리포스트한 사용자",
+  "videoEngagementLikersEmpty": "아직 좋아요가 없습니다",
+  "videoEngagementRepostersEmpty": "아직 리포스트가 없습니다",
+  "videoEngagementLoadFailed": "목록을 불러올 수 없습니다",
   "videoDescriptionLoops": "루프 {count}회",
   "metadataBadgeNotDivine": "Divine 아님",
   "metadataBadgeHumanMade": "사람 제작",
@@ -1028,6 +1061,26 @@
   "feedFailedToLoadVideos": "영상을 불러오지 못했어요",
   "feedRetry": "다시 시도",
   "feedNoFollowedUsers": "팔로우한 사용자가 없어요.\n누군가를 팔로우하면 여기에 영상이 표시돼요.",
+  "feedModeForYou": "추천",
+  "feedModeNew": "최신",
+  "feedModeFollowing": "팔로잉",
+  "feedModeSemanticLabel": "피드 모드: {label}",
+  "@feedModeSemanticLabel": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "videoAuthorSemanticLabel": "동영상 작성자: {displayName}",
+  "@videoAuthorSemanticLabel": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "videoAuthorAvatarSemanticLabel": "작성자 프로필 사진",
   "feedForYouEmpty": "추천 피드가 비어 있어요.\n동영상을 탐색하고 크리에이터를 팔로우해 피드를 만들어보세요.",
   "feedFollowingEmpty": "아직 팔로우한 사람들의 동영상이 없어요.\n마음에 드는 크리에이터를 찾아 팔로우해 보세요.",
   "feedLatestEmpty": "아직 새로운 동영상이 없어요.\n잠시 후 다시 확인해 주세요.",
@@ -1145,6 +1198,7 @@
   "routeInvalidCategory": "잘못된 카테고리예요",
   "routeNoVideosToDisplay": "표시할 영상이 없어요",
   "routeInvalidProfileId": "잘못된 프로필 ID예요",
+  "routeUnknownPath": "앱에 없는 화면이에요.",
   "routeDefaultListName": "목록",
   "supportTitle": "지원 센터",
   "supportContactSupport": "지원팀 문의",
@@ -1560,6 +1614,11 @@
       }
     }
   },
+  "inboxCollabInviteCardUntitledVideo": "제목 없는 동영상",
+  "clickableTextViewVideoLink": "동영상 보기",
+  "messageExternalLinkDialogTitle": "외부 링크를 열까요?",
+  "messageExternalLinkDialogBody": "이 링크는 외부 사이트로 이동하며 안전하지 않을 수 있어요:\n\n{url}",
+  "messageExternalLinkDialogOpen": "열기",
   "inboxCollabInviteAcceptButton": "수락",
   "inboxCollabInviteAcceptError": "수락하지 못했어요. 다시 시도해 주세요.",
   "inboxCollabInviteAcceptedStatus": "수락됨",
@@ -1716,8 +1775,12 @@
   "libraryWebUnavailableDescription": "임시 저장과 클립은 기기에 저장됩니다. 관리하려면 휴대폰에서 Divine을 열어 주세요.",
   "libraryWebUnavailableHeadline": "라이브러리는 모바일 앱에서 이용할 수 있어요",
   "notificationFollowBack": "맞팔로우",
-  "profileSetupUploadSuccess": "프로필 사진이 성공적으로 업로드되었어요!",
+  "profileSetupUploadStaged": "업로드됐어요 — 적용하려면 저장을 탭하세요",
   "proofmodeCheckAiGenerated": "AI 생성 여부 확인",
+  "dmSendFailedMessage": "메시지를 보내지 못했어요",
+  "dmSendFailedRetry": "다시 시도",
+  "dmSendPartialMessage": "보냈지만 다른 기기에 동기화되지 않았어요",
+  "dmConversationLoadError": "메시지를 불러오지 못했어요",
   "reportDialogCancel": "취소",
   "reportDialogReport": "신고",
   "routerInvalidCreator": "유효하지 않은 크리에이터",
@@ -1957,7 +2020,7 @@
   "videoEditorAdjustVolumeTitle": "볼륨 조정",
   "videoEditorAudioAddAudio": "오디오 추가",
   "videoEditorAudioFailedToLoadTitle": "사운드 로드 실패",
-  "videoEditorAudioCategoryDivine": "diVine",
+  "videoEditorAudioCategoryDivine": "OG Sounds",
   "videoEditorAudioCategoryCommunity": "커뮤니티",
   "videoEditorAudioLabel": "오디오",
   "videoEditorAudioNoSoundsAvailableSubtitle": "크리에이터가 오디오를 공유하면 여기에 표시됩니다",
@@ -2069,6 +2132,11 @@
     }
   },
   "videoEditorSplitSelectedClipSemanticLabel": "선택한 클립 분할",
+  "videoEditorExtractAudioLabel": "오디오 추출",
+  "videoEditorClipAudioTitle": "클립 오디오",
+  "videoEditorExtractAudioFromClipSemanticLabel": "클립에서 오디오를 추출하고 원본을 음소거",
+  "videoEditorExtractAudioNoLocalFile": "오디오를 추출할 수 없습니다: 클립이 로컬에서 사용할 수 없습니다.",
+  "videoEditorExtractAudioFailed": "오디오를 추출할 수 없었습니다. 다시 시도해 주세요.",
   "videoEditorStickersDivineOriginals": "Divine 오리지널",
   "videoEditorStickerSearchHint": "스티커 검색...",
   "videoEditorTextAlignmentSemanticLabel": "텍스트 정렬",
@@ -2137,10 +2205,10 @@
   },
   "videoMetadataCollaboratorsHelpMessage": "협업자는 이 게시물의 공동 크리에이터로 태그됩니다. 서로 팔로우하는 사람만 추가할 수 있으며, 게시 시 게시물 메타데이터에 표시됩니다.",
   "videoMetadataCollaboratorsHelpTooltip": "협업자 작동 방식",
-  "videoMetadataCollaboratorsLabel": "협업자 추가",
+  "videoMetadataCollaboratorsLabel": "협업자",
   "videoMetadataContentWarningDoneButton": "완료",
-  "videoMetadataContentWarningLabel": "콘텐츠 경고 추가",
-  "videoMetadataContentWarningSelectAllThatApply": "해당하는 것을 모두 선택",
+  "videoMetadataContentWarningLabel": "콘텐츠 경고",
+  "videoMetadataContentWarningSelectAllThatApply": "콘텐츠에 해당하는 것을 모두 선택",
   "videoMetadataCreatorCannotBeReferencedSnackbar": "이 크리에이터는 참조할 수 없습니다.",
   "videoMetadataDeleteTagHint": "태그 {tag} 삭제",
   "@videoMetadataDeleteTagHint": {
@@ -2160,7 +2228,7 @@
   "videoMetadataGotItButton": "알겠어요!",
   "videoMetadataInspiredByHelpMessage": "출처 표시를 위해 사용하세요. 영감 크레딧은 협업자와 다릅니다. 영향을 인정하지만 공동 크리에이터로 태그하지는 않습니다.",
   "videoMetadataInspiredByHelpTooltip": "영감 크레딧 작동 방식",
-  "videoMetadataInspiredByLabel": "영감 출처 추가",
+  "videoMetadataInspiredByLabel": "영감 출처",
   "videoMetadataInspiredByNone": "없음",
   "videoMetadataLimitReachedWarning": "64KB 제한에 도달했습니다. 계속하려면 일부 콘텐츠를 삭제하세요.",
   "videoMetadataMustMutuallyFollowSnackbar": "{name}을(를) 협업자로 추가하려면 서로 팔로우해야 합니다.",
@@ -2245,9 +2313,6 @@
   "videoActionAutoLabel": "자동",
   "videoActionEnableAutoAdvance": "자동 넘기기 활성화",
   "videoActionDisableAutoAdvance": "자동 넘기기 비활성화",
-  "metadataCaptionsLabel": "자막",
-  "metadataCaptionsEnabledSemantics": "모든 동영상에서 자막이 활성화되었습니다",
-  "metadataCaptionsDisabledSemantics": "모든 동영상에서 자막이 비활성화되었습니다",
   "@metadataLoopsLabel": {
     "placeholders": {
       "count": {
@@ -2381,6 +2446,16 @@
   "profileSetupImagesTypeGroup": "이미지",
   "profileSetupExternalNip05InvalidFormat": "잘못된 NIP-05 형식이에요 (예: name@domain.com)",
   "profileSetupExternalNip05DivineDomain": "divine.video는 위의 사용자명 필드를 사용해주세요",
+  "nostrSettingsNip05Address": "NIP-05 address",
+  "nostrSettingsNip05AddressSubtitle": "Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.",
+  "nostrSettingsNip05AddressHint": "you@example.com",
+  "nostrSettingsNip05SaveAction": "Save NIP-05",
+  "nostrSettingsNip05Saved": "NIP-05 saved",
+  "nostrSettingsNip05SaveFailed": "Couldn't save NIP-05. Please try again.",
+  "profileSetupNip05ConfirmTitle": "Use your own NIP-05?",
+  "profileSetupNip05ConfirmBody": "NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it's wrong, people can't find you and your verified handle disappears. Continue only if you've set this up.",
+  "profileSetupNip05ConfirmContinue": "Continue",
+  "profileSetupNip05ConfirmCancel": "Cancel",
   "contentWarningReportContentTooltip": "콘텐츠 신고",
   "contentWarningBlockUserTooltip": "사용자 차단",
   "contentWarningBlockedTitle": "콘텐츠가 차단됐어요",
@@ -2502,6 +2577,30 @@
   "@profileEditPublicKeyLink": {
     "description": "Secondary link on the edit profile screen that navigates to the key management screen where the user's npub lives."
   },
+  "verifiedAccountChipSemanticLabel": "인증된 {platform} 계정: {identity}",
+  "@verifiedAccountChipSemanticLabel": {
+    "description": "Screen reader label for a verified-account chip on a user's profile.",
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      },
+      "identity": {
+        "type": "String"
+      }
+    }
+  },
+  "profileEditVerifiedAccountsTitle": "인증된 계정",
+  "@profileEditVerifiedAccountsTitle": {
+    "description": "Section header on the edit profile screen above the verified-accounts chip row and the Get verified CTA."
+  },
+  "profileEditGetVerifiedCta": "인증 받기",
+  "@profileEditGetVerifiedCta": {
+    "description": "Primary CTA tile on edit profile that opens the verifyer integrated-app sandbox."
+  },
+  "profileEditGetVerifiedSubtitle": "소셜 미디어 계정을 연결해서 진짜 너인 걸 알려줘.",
+  "@profileEditGetVerifiedSubtitle": {
+    "description": "Subtitle under the Get verified tile, harmonized with verifyer.divine.video landing copy."
+  },
   "soundUntitled": "제목 없는 사운드",
   "soundStopPreview": "미리 듣기 중지",
   "soundPreviewSemanticLabel": "{title} 미리 듣기",
@@ -2590,6 +2689,20 @@
   "bugReportExpectedBehaviorHint": "원래 어떻게 됐어야 했나요?",
   "bugReportDiagnosticsNotice": "기기 정보와 로그가 자동으로 함께 보내져요.",
   "bugReportSuccessMessage": "고마워요! 신고를 받았어요. Divine을 더 좋게 만드는 데 쓸게요.",
+  "bugReportAttachImages": "Attach images",
+  "bugReportImagesCount": "{count} of {max} images selected",
+  "@bugReportImagesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "bugReportRemoveImage": "Remove image",
+  "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
   "bugReportSendFailed": "버그 신고를 보내지 못했어요. 잠시 후 다시 시도해주세요.",
   "bugReportFailedWithError": "버그 신고를 보내지 못했어요: {error}",
   "@bugReportFailedWithError": {
@@ -2733,21 +2846,63 @@
   "authNip07ExtensionNotFound": "브라우저 확장 프로그램을 찾을 수 없습니다. Alby, nos2x 또는 다른 NIP-07 호환 확장 프로그램을 설치하세요.",
   "authInfoBrowserExtensionTitle": "브라우저 확장 프로그램",
   "authInfoBrowserExtensionDescription": "Alby 또는 nos2x와 같은 NIP-07 브라우저 확장 프로그램으로 로그인하세요. 키는 확장 프로그램에 그대로 유지되며 Divine은 절대 볼 수 없습니다.",
-  "soundsAlreadySavedToLibrary": "Already in Sounds",
-  "soundsAvailabilityCommunity": "Community",
-  "soundsAvailabilityPrivate": "Private",
-  "soundsRemoveSavedSound": "Remove sound",
-  "soundsRemovedFromLibrary": "Removed from Sounds",
-  "soundsSavedEmptyDescription": "Tap Use Sound on a video to save it here.",
-  "soundsSavedEmptyTitle": "No saved sounds yet",
-  "soundsSavedLibraryTitle": "My Sounds",
-  "soundsSavedToLibrary": "Saved to Sounds",
-  "videoEditorAudioCategoryFeatured": "Featured",
-  "videoEditorAudioCategoryMySounds": "My Sounds",
-  "videoEditorAudioFeaturedEmptySubtitle": "We’ll drop featured sounds here once they’re ready.",
-  "videoEditorAudioFeaturedEmptyTitle": "Featured sounds coming soon",
-  "videoMetadataAudioReuseSubtitle": "Let others save and reuse this video's audio.",
-  "videoMetadataAudioReuseTitle": "Publish this sound",
+  "soundsAlreadySavedToLibrary": "이미 사운드에 있음",
+  "soundsAvailabilityCommunity": "커뮤니티",
+  "soundsAvailabilityPrivate": "비공개",
+  "soundsRemoveSavedSound": "사운드 제거",
+  "soundsRemovedFromLibrary": "사운드에서 제거됨",
+  "soundsSavedEmptyDescription": "동영상에서 사운드 사용을 탭하여 여기에 저장하세요.",
+  "soundsSavedEmptyTitle": "저장된 사운드가 아직 없음",
+  "soundsSavedLibraryTitle": "내 사운드",
+  "soundsSavedToLibrary": "사운드에 저장됨",
+  "videoEditorAudioCategoryFeatured": "추천",
+  "videoEditorAudioCategoryMySounds": "내 사운드",
+  "videoEditorAudioFeaturedEmptySubtitle": "준비되는 대로 여기에 추천 사운드를 게시하겠습니다.",
+  "videoEditorAudioFeaturedEmptyTitle": "추천 사운드 곧 출시",
+  "videoMetadataAudioReuseSubtitle": "다른 사람들이 이 동영상의 오디오를 저장하고 재사용할 수 있도록 합니다.",
+  "videoMetadataAudioReuseTitle": "이 사운드 게시",
+  "videoMetadataShareReplyToFeedTitle": "내 피드에도 공유",
+  "videoMetadataShareReplyToFeedSubtitle": "끔으로 두면 이 동영상은 댓글 스레드에만 남습니다.",
+  "commentsRecordVideoButtonLabel": "영상 댓글 녹화",
+  "commentsOpenVideoLabel": "영상 댓글 열기",
+  "commentsMuteVideoReplyLabel": "영상 답글 음소거",
+  "commentsUnmuteVideoReplyLabel": "영상 답글 음소거 해제",
+  "commentsOpenReplyParentLabel": "답글 대상 영상 열기",
+  "commentsReplyParentSectionTitle": "답글 대상",
+  "commentsReplyParentLabel": "{target}에 답글",
+  "commentsReplyParentFallbackLabel": "영상에 답글",
+  "videoSettingsMenuOpen": "재생 설정 열기",
+  "videoSettingsMenuClose": "재생 설정 닫기",
+  "videoSettingsCaptionsEnable": "자막 사용",
+  "videoSettingsCaptionsDisable": "자막 사용 안 함",
+  "videoActionReportLabel": "신고",
+  "videoActionReport": "동영상 신고",
+  "videoActionEditLabel": "편집",
+  "videoActionEdit": "동영상 편집",
+  "reportReasonSpamSubtitle": "원치 않거나 반복되는 콘텐츠",
+  "reportReasonHarassmentSubtitle": "유해하고 원치 않는 답글 또는 멘션",
+  "reportReasonViolenceSubtitle": "폭력적, 극단적 또는 유해한 콘텐츠",
+  "reportReasonSexualContentSubtitle": "노출, 포르노 또는 노골적인 콘텐츠",
+  "reportReasonCopyrightSubtitle": "지적 재산권의 무단 사용",
+  "reportReasonFalseInfoSubtitle": "오해의 소지가 있거나 허위 주장",
+  "reportReasonCsamSubtitle": "미성년자를 착취하거나 위험에 빠뜨리는 콘텐츠",
+  "reportReasonAiGeneratedSubtitle": "AI 생성으로 의심되는 콘텐츠",
+  "reportReasonOtherSubtitle": "위에 나열되지 않은 위반",
+  "reportLearnMoreAt": "자세한 내용은",
+  "supportLogsSavedTo": "{path}에 로그 저장됨",
+  "supportRevealLogsAction": "폴더에서 보기",
+  "notificationsVideoThumbnailFor": "{title} 동영상 썸네일",
+  "@notificationsVideoThumbnailFor": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsVideoThumbnail": "동영상 썸네일",
+  "metadataCaptionsLabel": "자막",
+  "metadataCaptionsEnabledSemantics": "모든 동영상에서 자막이 활성화되었습니다",
+  "metadataCaptionsDisabledSemantics": "모든 동영상에서 자막이 비활성화되었습니다",
   "videoMetadataEditCoverTitle": "커버 편집",
   "videoMetadataEditCoverCloseSemanticLabel": "커버 편집기 닫기",
   "videoMetadataEditCoverConfirmSemanticLabel": "커버 선택 확인",

@@ -267,8 +267,6 @@
   "profileRepostsOwnEmpty": "Video yang kamu repost akan muncul di sini",
   "profileRepostsOtherEmpty": "Video yang mereka repost akan muncul di sini",
   "profileErrorLoadingReposts": "Gagal memuat video yang di-repost",
-  "profileLoadingTitle": "Memuat profil...",
-  "profileLoadingSubtitle": "Ini mungkin butuh beberapa saat",
   "profileLoadingVideos": "Memuat video...",
   "profileNoVideosTitle": "Belum Ada Video",
   "profileNoVideosOwnSubtitle": "Bagikan video pertamamu untuk melihatnya di sini",
@@ -344,7 +342,7 @@
     }
   },
   "profileSetupGotItButton": "Mengerti",
-  "profileSetupUploadFailedGeneric": "Gagal mengunggah gambar: {error}",
+  "profileSetupUploadFailedGeneric": "Gagal mengunggah gambar. Coba lagi nanti.",
   "profileSetupUploadNetworkError": "Kesalahan jaringan: Silakan cek koneksi internetmu dan coba lagi.",
   "profileSetupUploadAuthError": "Kesalahan autentikasi: Silakan keluar dan masuk kembali.",
   "profileSetupUploadFileTooLarge": "File terlalu besar: Pilih gambar yang lebih kecil (maks 10MB).",
@@ -358,7 +356,7 @@
   "profileSetupCheckAgain": "Cek ulang",
   "profileSetupUsernameBurned": "Username ini tidak tersedia lagi",
   "profileSetupUsernameInvalidFormat": "Hanya huruf, angka, dan tanda hubung yang diperbolehkan",
-  "profileSetupUsernameInvalidLength": "Username harus 3-20 karakter",
+  "profileSetupUsernameInvalidLength": "Username harus 3-63 karakter",
   "profileSetupUsernameNetworkError": "Tidak bisa mengecek ketersediaan. Silakan coba lagi.",
   "profileSetupUsernameInvalidFormatGeneric": "Format username tidak valid",
   "profileSetupUsernameCheckFailed": "Gagal mengecek ketersediaan",
@@ -472,6 +470,7 @@
   "videoPlayerUnmute": "Aktifkan suara video",
   "videoPlayerEditVideo": "Ubah video",
   "videoPlayerEditVideoTooltip": "Ubah video",
+  "videoPlayerTapHint": "Ketuk untuk memutar atau menjeda. Ketuk dua kali untuk menyukai.",
   "contentWarningLabel": "Peringatan Konten",
   "contentWarningNudity": "Ketelanjangan",
   "contentWarningSexualContent": "Konten Seksual",
@@ -563,6 +562,35 @@
       }
     }
   },
+  "videoCollaboratorPendingDecoration": "Pending",
+  "@videoCollaboratorPendingDecoration": {
+    "description": "Small badge next to a collaborator's name or avatar when the creator (viewing their own video) has invited them but they have not yet accepted."
+  },
+  "videoCollaboratorPendingSemanticLabel": "Pending collaborator",
+  "@videoCollaboratorPendingSemanticLabel": {
+    "description": "Screen reader label for a dimmed pending collaborator avatar on the creator's own video."
+  },
+  "videoCollaboratorWithPendingSuffix": "{label} ({pending} pending)",
+  "@videoCollaboratorWithPendingSuffix": {
+    "description": "Appends a pending count to the collaborator label on the creator's own video. {label} is the existing 'with @name' / 'with @name +N' phrase.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "pending": {
+        "type": "int"
+      }
+    }
+  },
+  "profileChipTapHint": "{name}. Tap to view profile.",
+  "@profileChipTapHint": {
+    "description": "Screen reader hint announced when a user-chip in the metadata sheet is focused. {name} is the user's display name.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "listAttributionFallback": "Daftar",
   "shareVideoLabel": "Bagikan video",
   "sharePostSharedWith": "Postingan dibagikan dengan {recipientName}",
@@ -602,6 +630,11 @@
   "videoActionMoreOptions": "Opsi lainnya",
   "videoActionHideSubtitles": "Sembunyikan subtitle",
   "videoActionShowSubtitles": "Tampilkan subtitle",
+  "videoEngagementLikersTitle": "Disukai oleh",
+  "videoEngagementRepostersTitle": "Direpost oleh",
+  "videoEngagementLikersEmpty": "Belum ada suka",
+  "videoEngagementRepostersEmpty": "Belum ada repost",
+  "videoEngagementLoadFailed": "Tidak dapat memuat daftar",
   "videoDescriptionLoops": "{count} loop",
   "@videoDescriptionLoops": {
     "placeholders": {
@@ -1739,6 +1772,26 @@
   "feedFailedToLoadVideos": "Gagal memuat video",
   "feedRetry": "Coba Lagi",
   "feedNoFollowedUsers": "Tidak ada pengguna yang diikuti.\nIkuti seseorang untuk melihat video mereka di sini.",
+  "feedModeForYou": "Untukmu",
+  "feedModeNew": "Baru",
+  "feedModeFollowing": "Mengikuti",
+  "feedModeSemanticLabel": "Mode feed: {label}",
+  "@feedModeSemanticLabel": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "videoAuthorSemanticLabel": "Pembuat video: {displayName}",
+  "@videoAuthorSemanticLabel": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "videoAuthorAvatarSemanticLabel": "Avatar pembuat",
   "feedForYouEmpty": "Feed Untuk Anda kamu kosong.\nJelajahi video dan ikuti kreator untuk membentuknya.",
   "feedFollowingEmpty": "Belum ada video dari orang yang kamu ikuti.\nTemukan kreator yang kamu suka dan ikuti mereka.",
   "feedLatestEmpty": "Belum ada video baru.\nCek lagi sebentar lagi.",
@@ -1856,6 +1909,7 @@
   "routeInvalidCategory": "Kategori tidak valid",
   "routeNoVideosToDisplay": "Tidak ada video untuk ditampilkan",
   "routeInvalidProfileId": "ID profil tidak valid",
+  "routeUnknownPath": "Halaman itu tidak ada di aplikasi.",
   "routeDefaultListName": "Daftar",
   "supportTitle": "Pusat Bantuan",
   "supportContactSupport": "Hubungi Dukungan",
@@ -2271,6 +2325,11 @@
       }
     }
   },
+  "inboxCollabInviteCardUntitledVideo": "Video tanpa judul",
+  "clickableTextViewVideoLink": "Lihat video",
+  "messageExternalLinkDialogTitle": "Buka tautan eksternal?",
+  "messageExternalLinkDialogBody": "Tautan ini menuju situs eksternal dan mungkin tidak aman:\n\n{url}",
+  "messageExternalLinkDialogOpen": "Buka",
   "inboxCollabInviteAcceptButton": "Terima",
   "inboxCollabInviteAcceptError": "Tidak bisa menerima. Coba lagi.",
   "inboxCollabInviteAcceptedStatus": "Diterima",
@@ -2427,8 +2486,12 @@
   "libraryWebUnavailableDescription": "Draf dan klip disimpan di perangkatmu — buka Divine di ponsel untuk mengelolanya.",
   "libraryWebUnavailableHeadline": "Perpustakaan ada di aplikasi seluler",
   "notificationFollowBack": "Ikuti balik",
-  "profileSetupUploadSuccess": "Foto profil berhasil diunggah!",
+  "profileSetupUploadStaged": "Diunggah — ketuk Simpan untuk menerapkan",
   "proofmodeCheckAiGenerated": "Periksa apakah dibuat oleh AI",
+  "dmSendFailedMessage": "Pesan gagal dikirim",
+  "dmSendFailedRetry": "Coba Lagi",
+  "dmSendPartialMessage": "Terkirim, tapi tidak tersinkron ke perangkat lainmu",
+  "dmConversationLoadError": "Pesan tidak dapat dimuat",
   "reportDialogCancel": "Batal",
   "reportDialogReport": "Laporkan",
   "routerInvalidCreator": "Kreator tidak valid",
@@ -2668,7 +2731,7 @@
   "videoEditorAdjustVolumeTitle": "Atur volume",
   "videoEditorAudioAddAudio": "Tambah audio",
   "videoEditorAudioFailedToLoadTitle": "Gagal memuat suara",
-  "videoEditorAudioCategoryDivine": "diVine",
+  "videoEditorAudioCategoryDivine": "OG Sounds",
   "videoEditorAudioCategoryCommunity": "Komunitas",
   "videoEditorAudioLabel": "Audio",
   "videoEditorAudioNoSoundsAvailableSubtitle": "Suara akan muncul di sini saat kreator berbagi audio",
@@ -2780,6 +2843,11 @@
     }
   },
   "videoEditorSplitSelectedClipSemanticLabel": "Bagi klip yang dipilih",
+  "videoEditorExtractAudioLabel": "Ekstrak audio",
+  "videoEditorClipAudioTitle": "Audio klip",
+  "videoEditorExtractAudioFromClipSemanticLabel": "Ekstrak audio dari klip dan bisukan aslinya",
+  "videoEditorExtractAudioNoLocalFile": "Tidak dapat mengekstrak audio: klip tidak tersedia secara lokal.",
+  "videoEditorExtractAudioFailed": "Tidak dapat mengekstrak audio. Silakan coba lagi.",
   "videoEditorStickersDivineOriginals": "Divine Orisinal",
   "videoEditorStickerSearchHint": "Cari stiker...",
   "videoEditorTextAlignmentSemanticLabel": "Perataan teks",
@@ -2848,10 +2916,10 @@
   },
   "videoMetadataCollaboratorsHelpMessage": "Kolaborator ditandai sebagai co-creator pada postingan ini. Kamu hanya dapat menambahkan orang yang saling kamu ikuti, dan mereka muncul dalam metadata postingan saat dipublikasikan.",
   "videoMetadataCollaboratorsHelpTooltip": "Cara kerja kolaborator",
-  "videoMetadataCollaboratorsLabel": "Tambah kolaborator",
+  "videoMetadataCollaboratorsLabel": "Kolaborator",
   "videoMetadataContentWarningDoneButton": "Selesai",
-  "videoMetadataContentWarningLabel": "Tambah peringatan konten",
-  "videoMetadataContentWarningSelectAllThatApply": "Pilih semua yang berlaku",
+  "videoMetadataContentWarningLabel": "Peringatan Konten",
+  "videoMetadataContentWarningSelectAllThatApply": "Pilih semua yang berlaku untuk kontenmu",
   "videoMetadataCreatorCannotBeReferencedSnackbar": "Kreator ini tidak dapat direferensikan.",
   "videoMetadataDeleteTagHint": "Hapus tag {tag}",
   "@videoMetadataDeleteTagHint": {
@@ -2871,7 +2939,7 @@
   "videoMetadataGotItButton": "Mengerti!",
   "videoMetadataInspiredByHelpMessage": "Gunakan ini untuk memberikan atribusi. Kredit terinspirasi berbeda dari kolaborator: ini mengakui pengaruh, tetapi tidak menandai seseorang sebagai co-creator.",
   "videoMetadataInspiredByHelpTooltip": "Cara kerja kredit inspirasi",
-  "videoMetadataInspiredByLabel": "Tambah terinspirasi oleh",
+  "videoMetadataInspiredByLabel": "Terinspirasi oleh",
   "videoMetadataInspiredByNone": "Tidak ada",
   "videoMetadataLimitReachedWarning": "Batas 64KB tercapai. Hapus beberapa konten untuk melanjutkan.",
   "videoMetadataMustMutuallyFollowSnackbar": "Kamu perlu saling mengikuti {name} untuk menambahkannya sebagai kolaborator.",
@@ -2956,9 +3024,6 @@
   "videoActionAutoLabel": "Otomatis",
   "videoActionEnableAutoAdvance": "Aktifkan lanjut otomatis",
   "videoActionDisableAutoAdvance": "Nonaktifkan lanjut otomatis",
-  "metadataCaptionsLabel": "Teks",
-  "metadataCaptionsEnabledSemantics": "Teks diaktifkan untuk semua video",
-  "metadataCaptionsDisabledSemantics": "Teks dinonaktifkan untuk semua video",
   "@metadataLoopsLabel": {
     "placeholders": {
       "count": {
@@ -3092,6 +3157,16 @@
   "profileSetupImagesTypeGroup": "gambar",
   "profileSetupExternalNip05InvalidFormat": "Format NIP-05 tidak valid (contoh: nama@domain.com)",
   "profileSetupExternalNip05DivineDomain": "Pakai kolom username di atas untuk divine.video",
+  "nostrSettingsNip05Address": "NIP-05 address",
+  "nostrSettingsNip05AddressSubtitle": "Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.",
+  "nostrSettingsNip05AddressHint": "you@example.com",
+  "nostrSettingsNip05SaveAction": "Save NIP-05",
+  "nostrSettingsNip05Saved": "NIP-05 saved",
+  "nostrSettingsNip05SaveFailed": "Couldn't save NIP-05. Please try again.",
+  "profileSetupNip05ConfirmTitle": "Use your own NIP-05?",
+  "profileSetupNip05ConfirmBody": "NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it's wrong, people can't find you and your verified handle disappears. Continue only if you've set this up.",
+  "profileSetupNip05ConfirmContinue": "Continue",
+  "profileSetupNip05ConfirmCancel": "Cancel",
   "contentWarningReportContentTooltip": "Laporkan Konten",
   "contentWarningBlockUserTooltip": "Blokir Pengguna",
   "contentWarningBlockedTitle": "Konten Diblokir",
@@ -3206,6 +3281,30 @@
   "@profileEditPublicKeyLink": {
     "description": "Secondary link on the edit profile screen that navigates to the key management screen where the user's npub lives."
   },
+  "verifiedAccountChipSemanticLabel": "Akun {platform} terverifikasi: {identity}",
+  "@verifiedAccountChipSemanticLabel": {
+    "description": "Screen reader label for a verified-account chip on a user's profile.",
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      },
+      "identity": {
+        "type": "String"
+      }
+    }
+  },
+  "profileEditVerifiedAccountsTitle": "Akun terverifikasi",
+  "@profileEditVerifiedAccountsTitle": {
+    "description": "Section header on the edit profile screen above the verified-accounts chip row and the Get verified CTA."
+  },
+  "profileEditGetVerifiedCta": "Verifikasi diri",
+  "@profileEditGetVerifiedCta": {
+    "description": "Primary CTA tile on edit profile that opens the verifyer integrated-app sandbox."
+  },
+  "profileEditGetVerifiedSubtitle": "Hubungkan akun media sosialmu biar orang tahu ini memang kamu.",
+  "@profileEditGetVerifiedSubtitle": {
+    "description": "Subtitle under the Get verified tile, harmonized with verifyer.divine.video landing copy."
+  },
   "soundUntitled": "Suara tanpa judul",
   "soundStopPreview": "Hentikan pratinjau",
   "soundPreviewSemanticLabel": "Pratinjau {title}",
@@ -3294,6 +3393,20 @@
   "bugReportExpectedBehaviorHint": "Apa yang seharusnya terjadi?",
   "bugReportDiagnosticsNotice": "Info perangkat dan log akan disertakan otomatis.",
   "bugReportSuccessMessage": "Terima kasih! Laporanmu sudah kami terima dan akan kami pakai untuk membuat Divine lebih baik.",
+  "bugReportAttachImages": "Attach images",
+  "bugReportImagesCount": "{count} of {max} images selected",
+  "@bugReportImagesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "bugReportRemoveImage": "Remove image",
+  "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
   "bugReportSendFailed": "Gagal mengirim laporan bug. Coba lagi nanti.",
   "bugReportFailedWithError": "Laporan bug gagal terkirim: {error}",
   "@bugReportFailedWithError": {
@@ -3437,21 +3550,63 @@
   "authNip07ExtensionNotFound": "Tidak ditemukan ekstensi peramban. Pasang Alby, nos2x, atau ekstensi lain yang kompatibel dengan NIP-07.",
   "authInfoBrowserExtensionTitle": "Ekstensi Peramban",
   "authInfoBrowserExtensionDescription": "Masuk dengan ekstensi peramban NIP-07 seperti Alby atau nos2x. Kunci Anda tetap di ekstensi — Divine tidak pernah melihatnya.",
-  "soundsAlreadySavedToLibrary": "Already in Sounds",
-  "soundsAvailabilityCommunity": "Community",
-  "soundsAvailabilityPrivate": "Private",
-  "soundsRemoveSavedSound": "Remove sound",
-  "soundsRemovedFromLibrary": "Removed from Sounds",
-  "soundsSavedEmptyDescription": "Tap Use Sound on a video to save it here.",
-  "soundsSavedEmptyTitle": "No saved sounds yet",
-  "soundsSavedLibraryTitle": "My Sounds",
-  "soundsSavedToLibrary": "Saved to Sounds",
-  "videoEditorAudioCategoryFeatured": "Featured",
-  "videoEditorAudioCategoryMySounds": "My Sounds",
-  "videoEditorAudioFeaturedEmptySubtitle": "We’ll drop featured sounds here once they’re ready.",
-  "videoEditorAudioFeaturedEmptyTitle": "Featured sounds coming soon",
-  "videoMetadataAudioReuseSubtitle": "Let others save and reuse this video's audio.",
-  "videoMetadataAudioReuseTitle": "Publish this sound",
+  "soundsAlreadySavedToLibrary": "Sudah ada di Suara",
+  "soundsAvailabilityCommunity": "Komunitas",
+  "soundsAvailabilityPrivate": "Pribadi",
+  "soundsRemoveSavedSound": "Hapus suara",
+  "soundsRemovedFromLibrary": "Dihapus dari Suara",
+  "soundsSavedEmptyDescription": "Ketuk Gunakan Suara pada video untuk menyimpannya di sini.",
+  "soundsSavedEmptyTitle": "Belum ada suara yang tersimpan",
+  "soundsSavedLibraryTitle": "Suara Saya",
+  "soundsSavedToLibrary": "Disimpan ke Suara",
+  "videoEditorAudioCategoryFeatured": "Unggulan",
+  "videoEditorAudioCategoryMySounds": "Suara Saya",
+  "videoEditorAudioFeaturedEmptySubtitle": "Kami akan menambahkan suara unggulan di sini setelah siap.",
+  "videoEditorAudioFeaturedEmptyTitle": "Suara unggulan segera hadir",
+  "videoMetadataAudioReuseSubtitle": "Izinkan orang lain menyimpan dan menggunakan kembali audio video ini.",
+  "videoMetadataAudioReuseTitle": "Publikasikan suara ini",
+  "videoMetadataShareReplyToFeedTitle": "Bagikan juga ke feed saya",
+  "videoMetadataShareReplyToFeedSubtitle": "Jika dimatikan, video ini hanya tetap di utas komentar.",
+  "commentsRecordVideoButtonLabel": "Rekam komentar video",
+  "commentsOpenVideoLabel": "Buka komentar video",
+  "commentsMuteVideoReplyLabel": "Bisukan balasan video",
+  "commentsUnmuteVideoReplyLabel": "Aktifkan suara balasan video",
+  "commentsOpenReplyParentLabel": "Buka video yang dibalas ini",
+  "commentsReplyParentSectionTitle": "Menanggapi",
+  "commentsReplyParentLabel": "Balas {target}",
+  "commentsReplyParentFallbackLabel": "Balas video",
+  "videoSettingsMenuOpen": "Buka pengaturan pemutaran",
+  "videoSettingsMenuClose": "Tutup pengaturan pemutaran",
+  "videoSettingsCaptionsEnable": "Aktifkan teks",
+  "videoSettingsCaptionsDisable": "Nonaktifkan teks",
+  "videoActionReportLabel": "Laporkan",
+  "videoActionReport": "Laporkan video",
+  "videoActionEditLabel": "Edit",
+  "videoActionEdit": "Edit video",
+  "reportReasonSpamSubtitle": "Konten yang tidak diinginkan atau berulang",
+  "reportReasonHarassmentSubtitle": "Balasan atau sebutan berbahaya dan tidak diinginkan",
+  "reportReasonViolenceSubtitle": "Konten kekerasan, ekstremis, atau berbahaya",
+  "reportReasonSexualContentSubtitle": "Ketelanjangan, porno, atau konten eksplisit",
+  "reportReasonCopyrightSubtitle": "Penggunaan kekayaan intelektual tanpa izin",
+  "reportReasonFalseInfoSubtitle": "Klaim menyesatkan atau palsu",
+  "reportReasonCsamSubtitle": "Konten yang mengeksploitasi atau membahayakan anak di bawah umur",
+  "reportReasonAiGeneratedSubtitle": "Konten yang diduga dibuat oleh AI",
+  "reportReasonOtherSubtitle": "Pelanggaran yang tidak tercantum di atas",
+  "reportLearnMoreAt": "Pelajari lebih lanjut di",
+  "supportLogsSavedTo": "Log disimpan ke {path}",
+  "supportRevealLogsAction": "Tampilkan di folder",
+  "notificationsVideoThumbnailFor": "Thumbnail video untuk {title}",
+  "@notificationsVideoThumbnailFor": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsVideoThumbnail": "Thumbnail video",
+  "metadataCaptionsLabel": "Teks",
+  "metadataCaptionsEnabledSemantics": "Teks diaktifkan untuk semua video",
+  "metadataCaptionsDisabledSemantics": "Teks dinonaktifkan untuk semua video",
   "@profileSetupUploadFailedGeneric": {
     "placeholders": {
       "error": {

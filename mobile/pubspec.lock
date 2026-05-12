@@ -361,6 +361,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.2"
+  code_assets:
+    dependency: transitive
+    description:
+      name: code_assets
+      sha256: "83ccdaa064c980b5596c35dd64a8d3ecc68620174ab9b90b6343b753aa721687"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
   code_builder:
     dependency: transitive
     description:
@@ -425,6 +433,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.15.0"
+  cronet_http:
+    dependency: transitive
+    description:
+      name: cronet_http
+      sha256: "8e77bc6f203e0bc9126e6a9092508a3435dbcb04da3b53ed1a358909385c5e0e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.8.0"
   cross_file:
     dependency: transitive
     description:
@@ -464,6 +480,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.2"
+  cupertino_http:
+    dependency: transitive
+    description:
+      name: cupertino_http
+      sha256: "82cbec60c90bf785a047a9525688b6dacac444e177e1d5a5876963d3c50369e8"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.4.0"
   cupertino_icons:
     dependency: "direct main"
     description:
@@ -1150,6 +1174,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.10.0"
+  hooks:
+    dependency: transitive
+    description:
+      name: hooks
+      sha256: "025f060e86d2d4c3c47b56e33caf7f93bf9283340f26d23424ebcfccf34f621e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.3"
   html:
     dependency: transitive
     description:
@@ -1182,6 +1214,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.2"
+  http_profile:
+    dependency: transitive
+    description:
+      name: http_profile
+      sha256: "7e679e355b09aaee2ab5010915c932cce3f2d1c11c3b2dc177891687014ffa78"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.0"
   image:
     dependency: "direct main"
     description:
@@ -1283,6 +1323,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.2+1"
+  jni:
+    dependency: transitive
+    description:
+      name: jni
+      sha256: "8706a77e94c76fe9ec9315e18949cc9479cc03af97085ca9c1077b61323ea12d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.15.2"
   js:
     dependency: transitive
     description:
@@ -1508,6 +1556,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.2"
+  native_toolchain_c:
+    dependency: transitive
+    description:
+      name: native_toolchain_c
+      sha256: "6ba77bb18063eebe9de401f5e6437e95e1438af0a87a3a39084fbd37c90df572"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.17.6"
   nested:
     dependency: transitive
     description:
@@ -1532,6 +1588,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.2"
+  objective_c:
+    dependency: transitive
+    description:
+      name: objective_c
+      sha256: "100a1c87616ab6ed41ec263b083c0ef3261ee6cd1dc3b0f35f8ddfa4f996fe52"
+      url: "https://pub.dev"
+    source: hosted
+    version: "9.3.0"
   octo_image:
     dependency: transitive
     description:
@@ -1808,10 +1872,10 @@ packages:
     dependency: "direct main"
     description:
       name: pro_video_editor
-      sha256: "4c1a92374c443a2599f4a018208e3f0532e92c246912113989c65b60e4b552fe"
+      sha256: "9d914ec472119bc1a71b750d52ed3ce79169a27211f41fd7d6397693ecd4c466"
       url: "https://pub.dev"
     source: hosted
-    version: "1.15.0"
+    version: "1.16.2"
   process:
     dependency: transitive
     description:
@@ -1892,6 +1956,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.0"
+  record_use:
+    dependency: transitive
+    description:
+      name: record_use
+      sha256: "2551bd8eecfe95d14ae75f6021ad0248be5c27f138c2ec12fcb52b500b3ba1ed"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.6.0"
   riverpod:
     dependency: transitive
     description:
@@ -2586,7 +2658,7 @@ packages:
     source: hosted
     version: "1.2.0"
   web:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: web
       sha256: "868d88a33d8a87b18ffc05f9f030ba328ffefba92d6c127917a2ba740f9cfe4a"
@@ -2597,10 +2669,10 @@ packages:
     dependency: transitive
     description:
       name: web_socket
-      sha256: "34d64019aa8e36bf9842ac014bb5d2f5586ca73df5e4d9bf5c936975cae6982c"
+      sha256: "3c12d96c0c9a4eec095246debcea7b86c0324f22df69893d538fcc6f1b8cce83"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.1"
+    version: "0.1.6"
   web_socket_channel:
     dependency: "direct main"
     description:

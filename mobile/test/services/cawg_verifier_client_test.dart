@@ -13,14 +13,14 @@ void main() {
   late CawgVerifierClient client;
 
   setUpAll(() {
-    registerFallbackValue(Uri.parse('https://verifier.divine.video'));
+    registerFallbackValue(Uri.parse('https://verifyer.divine.video'));
   });
 
   setUp(() {
     mockHttpClient = _MockHttpClient();
     client = CawgVerifierClient(
       httpClient: mockHttpClient,
-      baseUri: Uri.parse('https://verifier.divine.video'),
+      baseUri: Uri.parse('https://verifyer.divine.video'),
       timeout: const Duration(milliseconds: 50),
     );
   });
@@ -36,7 +36,7 @@ void main() {
       ).thenAnswer(
         (_) async => http.Response(
           jsonEncode(<String, dynamic>{
-            'issuer': 'verifier.divine.video',
+            'issuer': 'verifyer.divine.video',
             'status': 'verified',
             'verified_claims': <Map<String, String>>[
               <String, String>{
@@ -48,7 +48,7 @@ void main() {
             ],
             'identity_assertion_label': 'cawg.identity',
             'identity_assertion_payload': <String, dynamic>{
-              'issuer': 'verifier.divine.video',
+              'issuer': 'verifyer.divine.video',
             },
           }),
           200,
@@ -66,13 +66,13 @@ void main() {
       final bundle = await client.verifyClaims(request);
 
       expect(bundle, isNotNull);
-      expect(bundle!.issuer, equals('verifier.divine.video'));
+      expect(bundle!.issuer, equals('verifyer.divine.video'));
       expect(bundle.status, equals('verified'));
       expect(bundle.verifiedClaims, hasLength(1));
       expect(bundle.identityAssertionLabel, equals('cawg.identity'));
       expect(
         bundle.identityAssertionPayload,
-        containsPair('issuer', 'verifier.divine.video'),
+        containsPair('issuer', 'verifyer.divine.video'),
       );
     });
 
@@ -88,7 +88,7 @@ void main() {
         ).thenAnswer(
           (_) async => http.Response(
             jsonEncode(<String, dynamic>{
-              'issuer': 'verifier.divine.video',
+              'issuer': 'verifyer.divine.video',
               'status': 'partial_success',
               'verified_claims': <Map<String, String>>[
                 <String, String>{

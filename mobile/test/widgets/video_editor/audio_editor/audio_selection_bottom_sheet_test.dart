@@ -55,11 +55,12 @@ void main() {
     Widget buildWidget({
       AsyncValue<List<AudioEvent>>? trendingSoundsAsync,
       List<AudioEvent> savedSounds = const [],
+      List<VineSound> bundledSounds = const [],
     }) {
       return ProviderScope(
         overrides: [
           soundLibraryServiceProvider.overrideWith(
-            (_) => SoundLibraryService(),
+            (_) async => _FakeSoundLibraryService(bundledSounds),
           ),
           savedSoundsProvider.overrideWith(
             () => _FakeSavedSoundsNotifier(savedSounds),
@@ -125,7 +126,7 @@ void main() {
         await tester.tap(find.text(l10n.videoEditorAudioCategoryFeatured));
         await tester.pumpAndSettle();
 
-        expect(find.text('Wednesday'), findsOneWidget);
+        expect(find.text('Wednesday My Dudes'), findsOneWidget);
       });
 
       testWidgets('filters community sounds on community tab', (tester) async {
@@ -235,7 +236,29 @@ void main() {
         await tester.tap(find.text(l10n.videoEditorAudioCategoryFeatured));
         await tester.pumpAndSettle();
 
-        expect(find.text('Wednesday'), findsOneWidget);
+        expect(find.text('Wednesday My Dudes'), findsOneWidget);
+      });
+
+      testWidgets('renders bundled Wednesday clip on Divine tab', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(
+            trendingSoundsAsync: AsyncValue.data(testSounds),
+            bundledSounds: [
+              VineSound(
+                id: 'wednesday',
+                title: 'Wednesday My Dudes',
+                assetPath: 'assets/sounds/wednesday.mp3',
+                duration: const Duration(milliseconds: 6269),
+                tags: ['meme', 'classic', 'frog'],
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Wednesday My Dudes'), findsOneWidget);
       });
 
       testWidgets('renders saved sounds empty state on My Sounds tab', (
@@ -354,4 +377,25 @@ class _FakeSavedSoundsNotifier extends SavedSoundsNotifier {
 
   @override
   List<AudioEvent> build() => _sounds;
+}
+
+class _FakeSoundLibraryService extends SoundLibraryService {
+  _FakeSoundLibraryService(this._bundledSounds);
+
+  final List<VineSound> _bundledSounds;
+
+  @override
+  List<VineSound> get sounds => List.unmodifiable(_bundledSounds);
+
+  @override
+  List<VineSound> get customSounds => const [];
+
+  @override
+  bool get isLoaded => true;
+
+  @override
+  Future<void> loadSounds() async {}
+
+  @override
+  Future<void> loadCustomSounds() async {}
 }

@@ -159,6 +159,12 @@ class VineBottomSheet extends StatelessWidget {
   /// injecting a single `BlocProvider` / `InheritedWidget` above every
   /// slot (title, trailing, bottomInput, body, buildScrollBody) without
   /// having to re-wrap each slot individually at the call site.
+  ///
+  /// [draggableController] is forwarded to the underlying
+  /// [DraggableScrollableSheet] so callers can programmatically animate
+  /// the sheet between sizes (e.g. expand to [maxChildSize] when a form
+  /// field is revealed). Has no effect in fixed (`scrollable: false`)
+  /// mode.
   static Future<T?> show<T>({
     required BuildContext context,
     List<Widget>? children,
@@ -190,6 +196,7 @@ class VineBottomSheet extends StatelessWidget {
     VoidCallback? onDismiss,
     bool isDismissible = true,
     bool enableDrag = true,
+    DraggableScrollableController? draggableController,
   }) {
     // Call onShow callback before showing modal
     onShow?.call();
@@ -253,6 +260,7 @@ class VineBottomSheet extends StatelessWidget {
           // (`expand: true`, no outer tap-catcher).
           if (!tapOutsideToDismiss) {
             return DraggableScrollableSheet(
+              controller: draggableController,
               initialChildSize: initialChildSize,
               minChildSize: minChildSize,
               maxChildSize: maxChildSize,
@@ -288,6 +296,7 @@ class VineBottomSheet extends StatelessWidget {
             onTap: () => Navigator.of(modalContext).pop(),
             // coverage:ignore-end
             child: DraggableScrollableSheet(
+              controller: draggableController,
               expand: false,
               initialChildSize: initialChildSize,
               minChildSize: minChildSize,

@@ -46,7 +46,7 @@ void main() {
       expect(result, isEmpty);
     });
 
-    test('queries with correct filter parameters', () async {
+    test('queries text comments only by default', () async {
       when(
         () => mockNostrClient.queryEvents(any()),
       ).thenAnswer((_) async => []);
@@ -62,10 +62,29 @@ void main() {
 
       final filters = captured.first as List<Filter>;
       expect(filters, hasLength(1));
-      expect(filters.first.kinds, contains(_commentKind));
+      expect(filters.first.kinds, equals(const [_commentKind]));
       expect(filters.first.authors, contains(testAuthorPubkey));
       expect(filters.first.limit, equals(25));
       expect(filters.first.until, isNull);
+    });
+
+    test('includes video replies when includeVideoReplies is true', () async {
+      when(
+        () => mockNostrClient.queryEvents(any()),
+      ).thenAnswer((_) async => []);
+
+      await repository.loadCommentsByAuthor(
+        authorPubkey: testAuthorPubkey,
+        includeVideoReplies: true,
+      );
+
+      final captured = verify(
+        () => mockNostrClient.queryEvents(captureAny()),
+      ).captured;
+
+      final filters = captured.first as List<Filter>;
+      expect(filters.first.kinds, contains(_commentKind));
+      expect(filters.first.kinds, contains(EventKind.videoVertical));
     });
 
     test('applies pagination cursor via until parameter', () async {
@@ -104,6 +123,7 @@ void main() {
 
       final result = await repository.loadCommentsByAuthor(
         authorPubkey: testAuthorPubkey,
+        includeVideoReplies: true,
       );
 
       expect(result, hasLength(1));
@@ -138,6 +158,7 @@ void main() {
 
       final result = await repository.loadCommentsByAuthor(
         authorPubkey: testAuthorPubkey,
+        includeVideoReplies: true,
       );
 
       expect(result, hasLength(1));
@@ -200,6 +221,7 @@ void main() {
 
         final result = await repository.loadCommentsByAuthor(
           authorPubkey: testAuthorPubkey,
+          includeVideoReplies: true,
         );
 
         expect(result, hasLength(3));

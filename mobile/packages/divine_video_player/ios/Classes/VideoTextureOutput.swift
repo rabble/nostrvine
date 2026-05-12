@@ -1,5 +1,6 @@
 import AVFoundation
 import Flutter
+import os
 import QuartzCore
 
 /// Bridges an `AVPlayer` to Flutter's texture system.
@@ -22,6 +23,13 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
     private weak var player: AVPlayer?
     /// Item the output is currently attached to, so we can detach cleanly.
     private weak var attachedItem: AVPlayerItem?
+    /// One-shot observation that triggers the initial frame pull as soon
+    /// as the freshly attached item reports `.readyToPlay`. Without this,
+    /// the first `copyPixelBuffer(forItemTime:)` can race the decoder
+    /// initialisation on HEVC 10-bit / HDR clips and return `nil`
+    /// indefinitely until something else (e.g. a loop restart) flushes
+    /// the output sequence.
+    private var itemStatusObservation: NSKeyValueObservation?
     /// Exact seek target from the most recent `forceRefresh`; preferred over
     /// `player.currentTime()` because a newer seek may already be in flight.
     private var pendingSeekTime: CMTime = .invalid
@@ -41,6 +49,18 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
     /// `true`, expiry without a frame does NOT fire `onSeekStuck` again,
     /// preventing an infinite retry loop on persistently broken content.
     private var forceWindowIsRetry = false
+
+    /// Consecutive `outputMediaDataWillChange` calls that returned `nil`
+    /// from `copyPixelBuffer`. Reset on flush, forceRefresh, and successful
+    /// frame delivery. Capped to prevent an infinite re-arm loop when a
+    /// seek target is persistently un-decodable.
+    private var mediaDataRearmCount = 0
+    private static let maxMediaDataRearmCount = 10
+
+    /// Serialises access to `latestPixelBuffer`, which is written on the
+    /// display-link callback (main thread) and read on Flutter's render
+    /// thread via `copyPixelBuffer()`.
+    private var pixelBufferLock = os_unfair_lock()
 
     /// Fired when the force window expires without a frame; caller should
     /// retry the seek with tolerance. Suppressed for retry windows.
@@ -69,10 +89,21 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
         if let old = videoOutput, let prev = attachedItem {
             prev.remove(old)
         }
+        itemStatusObservation?.invalidate()
+        itemStatusObservation = nil
 
+        // Request 32BGRA: Flutter's external-texture upload path expects
+        // a BGRA `CVPixelBuffer` and renders garbage / black on YpCbCr
+        // buffers. AVFoundation will color-convert 10-bit / HDR sources
+        // into BGRA for us — at the cost of HDR range, but that's the
+        // same tradeoff the official video_player plugin makes when it
+        // doesn't pass an explicit Metal renderer.
         let attrs: [String: Any] = [
             kCVPixelBufferPixelFormatTypeKey as String:
                 kCVPixelFormatType_32BGRA,
+            // Force IOSurface backing so the buffer can be uploaded to
+            // the GPU as a Flutter texture without an extra copy.
+            kCVPixelBufferIOSurfacePropertiesKey as String: [:],
         ]
         let output = AVPlayerItemVideoOutput(
             pixelBufferAttributes: attrs
@@ -83,6 +114,30 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
         attachedItem = item
         hasDeliveredFirstFrame = false
         pendingSeekTime = .invalid
+        mediaDataRearmCount = 0
+
+        // The first `copyPixelBuffer` attempt right after attach often
+        // races decoder init (especially on HEVC 10-bit / HDR), and
+        // returns `nil` until something flushes the output sequence —
+        // which normally only happens on the next loop or seek. Watch
+        // for `.readyToPlay` and explicitly request a media-data-change
+        // notification so the decoder is forced to hand over the first
+        // frame as soon as it's available.
+        if item.status == .readyToPlay {
+            output.requestNotificationOfMediaDataChange(withAdvanceInterval: 0)
+        } else {
+            itemStatusObservation = item.observe(
+                \.status,
+                options: [.new]
+            ) { [weak self, weak output] item, _ in
+                guard let self, let output, item.status == .readyToPlay else {
+                    return
+                }
+                output.requestNotificationOfMediaDataChange(withAdvanceInterval: 0)
+                self.itemStatusObservation?.invalidate()
+                self.itemStatusObservation = nil
+            }
+        }
     }
 
     /// Attaches the display-link driven polling loop to the player.
@@ -98,6 +153,7 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
     /// Pass `isRetry: true` for a tolerant-seek retry; suppresses
     /// `onSeekStuck` on expiry to break recovery loops.
     func forceRefresh(for seekTime: CMTime, isRetry: Bool = false) {
+        mediaDataRearmCount = 0
         pendingSeekTime = seekTime
         forceRefreshDeadline = CACurrentMediaTime() + 0.6
         forceWindowFailCount = 0
@@ -109,6 +165,7 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
 
     /// Called after a seek flushes the output queue.
     func outputSequenceWasFlushed(_ output: AVPlayerItemOutput) {
+        mediaDataRearmCount = 0
         (output as? AVPlayerItemVideoOutput)?
             .requestNotificationOfMediaDataChange(withAdvanceInterval: 0)
     }
@@ -129,13 +186,18 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
         } else {
             return
         }
-        guard let pixelBuffer = videoOutput.copyPixelBuffer(
+        let pb = videoOutput.copyPixelBuffer(
             forItemTime: targetTime,
             itemTimeForDisplay: nil
-        ) else {
-            videoOutput.requestNotificationOfMediaDataChange(withAdvanceInterval: 0)
+        )
+        guard let pixelBuffer = pb else {
+            mediaDataRearmCount += 1
+            if mediaDataRearmCount < VideoTextureOutput.maxMediaDataRearmCount {
+                videoOutput.requestNotificationOfMediaDataChange(withAdvanceInterval: 0)
+            }
             return
         }
+        mediaDataRearmCount = 0
         pendingSeekTime = .invalid
         forceRefreshDeadline = 0
         forceWindowFailCount = 0
@@ -145,6 +207,8 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
     /// Cleans up display link and unregisters the texture.
     func dispose() {
         stopDisplayLink()
+        itemStatusObservation?.invalidate()
+        itemStatusObservation = nil
         registry.unregisterTexture(textureId)
         videoOutput = nil
         latestPixelBuffer = nil
@@ -154,7 +218,10 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
     // MARK: - FlutterTexture
 
     func copyPixelBuffer() -> Unmanaged<CVPixelBuffer>? {
-        guard let pixelBuffer = latestPixelBuffer else { return nil }
+        os_unfair_lock_lock(&pixelBufferLock)
+        let pixelBuffer = latestPixelBuffer
+        os_unfair_lock_unlock(&pixelBufferLock)
+        guard let pixelBuffer else { return nil }
         return Unmanaged.passRetained(pixelBuffer)
     }
 
@@ -176,7 +243,9 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
     }
 
     private func deliverFrame(_ pixelBuffer: CVPixelBuffer) {
+        os_unfair_lock_lock(&pixelBufferLock)
         latestPixelBuffer = pixelBuffer
+        os_unfair_lock_unlock(&pixelBufferLock)
         registry.textureFrameAvailable(textureId)
         if !hasDeliveredFirstFrame {
             hasDeliveredFirstFrame = true
@@ -217,8 +286,15 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
             }
         }
 
-        guard output.hasNewPixelBuffer(forItemTime: itemTime) else { return }
-
+        // Skip `hasNewPixelBuffer(forItemTime:)` and just attempt the
+        // copy. With an `AVMutableComposition` + `AVVideoComposition`,
+        // the predicate returns `false` indefinitely on some HEVC
+        // sources even while the player is actively decoding — audio
+        // continues, time advances, but the texture stays on the first
+        // frame until a flush (loop restart) clears the deadlock.
+        // `copyPixelBuffer(forItemTime:)` is cheap when no new frame
+        // is ready (returns `nil`), so polling it on every display-link
+        // tick costs only the call itself.
         if let pixelBuffer = output.copyPixelBuffer(
             forItemTime: itemTime,
             itemTimeForDisplay: nil

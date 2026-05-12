@@ -4,35 +4,20 @@
 // ABOUTME: and inline video preview cards for divine.video links.
 
 import 'package:divine_ui/divine_ui.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide AspectRatio, LogCategory;
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/universal_link_resolver.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/video_link_preview_cubit.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
+import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-/// Regex to detect linkifiable text in messages.
-///
-/// Matches (in priority order):
-/// 1. Email addresses like `user@example.com`
-/// 2. Explicit URLs starting with http:// or https://
-/// 3. Bare domains like `google.com` or `sub.example.co.uk/path`
-///
-/// Bare domains must contain a dot followed by a valid TLD (2+ alpha chars).
-/// Matching stops at whitespace or end of string.
-final _linkRegex = RegExp(
-  r'(?:[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})'
-  r'|(?:https?://[^\s]+)'
-  r'|(?:(?<![/@\w])(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}(?:[/][^\s]*)?)',
-  caseSensitive: false,
-);
 
 final _emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
 
@@ -200,111 +185,30 @@ bool _isTrustedDomain(String host) {
   return _trustedDomains.any((d) => lower == d || lower.endsWith('.$d'));
 }
 
-/// Renders message text with clickable URLs and email addresses.
-///
-/// Links matching [_linkRegex] are styled as underlined links. URLs open in
-/// an external browser; email addresses open the default mail client.
-/// External (non-Divine) URLs show a confirmation before opening.
-/// Non-link text is rendered with the default body medium style.
-///
-/// Span building and gesture recognisers are created in [initState] (and
-/// updated in [didUpdateWidget]) so that they are not re-allocated on every
-/// rebuild.
-class _MessageText extends StatefulWidget {
+/// Renders message text with clickable URLs and Nostr references.
+class _MessageText extends StatelessWidget {
   const _MessageText({required this.message});
 
   final String message;
 
   @override
-  State<_MessageText> createState() => _MessageTextState();
-}
-
-class _MessageTextState extends State<_MessageText> {
-  final List<TapGestureRecognizer> _recognizers = [];
-  bool _hasLinks = false;
-  List<TextSpan> _spans = const [];
-
-  @override
-  void initState() {
-    super.initState();
-    _rebuild();
-  }
-
-  @override
-  void didUpdateWidget(covariant _MessageText oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.message != widget.message) {
-      _rebuild();
-    }
-  }
-
-  @override
-  void dispose() {
-    _disposeRecognizers();
-    super.dispose();
-  }
-
-  void _disposeRecognizers() {
-    for (final r in _recognizers) {
-      r.dispose();
-    }
-    _recognizers.clear();
-  }
-
-  void _rebuild() {
-    _disposeRecognizers();
-    _hasLinks = _linkRegex.hasMatch(widget.message);
-    if (_hasLinks) {
-      _spans = _buildSpans();
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    if (!_hasLinks) {
-      return Text(widget.message, style: VineTheme.bodyMediumFont());
-    }
-    return Text.rich(TextSpan(children: _spans));
-  }
-
-  List<TextSpan> _buildSpans() {
-    final spans = <TextSpan>[];
     final defaultStyle = VineTheme.bodyMediumFont();
-    final linkStyle = defaultStyle.copyWith(
+    final referenceStyle = defaultStyle.copyWith(
       color: VineTheme.info,
       decoration: TextDecoration.underline,
       decorationColor: VineTheme.info,
     );
-
-    var lastEnd = 0;
-    for (final match in _linkRegex.allMatches(widget.message)) {
-      if (match.start > lastEnd) {
-        spans.add(
-          TextSpan(
-            text: widget.message.substring(lastEnd, match.start),
-            style: defaultStyle,
-          ),
-        );
-      }
-
-      final link = match.group(0)!;
-      final recognizer = TapGestureRecognizer()..onTap = () => _openLink(link);
-      _recognizers.add(recognizer);
-      spans.add(TextSpan(text: link, style: linkStyle, recognizer: recognizer));
-
-      lastEnd = match.end;
-    }
-
-    if (lastEnd < widget.message.length) {
-      spans.add(
-        TextSpan(text: widget.message.substring(lastEnd), style: defaultStyle),
-      );
-    }
-
-    return spans;
+    return ClickableHashtagText(
+      text: message,
+      style: defaultStyle,
+      hashtagStyle: referenceStyle,
+      mentionStyle: referenceStyle,
+      onUrlTap: (link) => _openLink(context, link),
+    );
   }
 
-  Future<void> _openLink(String link) async {
+  Future<void> _openLink(BuildContext context, String link) async {
     final Uri? uri;
     if (_emailRegex.hasMatch(link)) {
       uri = Uri(scheme: 'mailto', path: link);
@@ -331,26 +235,25 @@ class _MessageTextState extends State<_MessageText> {
         builder: (ctx) => AlertDialog(
           backgroundColor: VineTheme.cardBackground,
           title: Text(
-            'Open external link?',
+            ctx.l10n.messageExternalLinkDialogTitle,
             style: VineTheme.titleMediumFont(),
           ),
           content: Text(
-            'This link goes to an external site and may not be safe:\n\n'
-            '$uri',
+            ctx.l10n.messageExternalLinkDialogBody(uri.toString()),
             style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
               child: Text(
-                'Cancel',
+                ctx.l10n.commonCancel,
                 style: VineTheme.bodyMediumFont(color: VineTheme.onSurface),
               ),
             ),
             TextButton(
               onPressed: () => Navigator.pop(ctx, true),
               child: Text(
-                'Open',
+                ctx.l10n.messageExternalLinkDialogOpen,
                 style: VineTheme.bodyMediumFont(color: VineTheme.primary),
               ),
             ),

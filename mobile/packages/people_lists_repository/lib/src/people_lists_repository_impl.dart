@@ -171,7 +171,7 @@ class PeopleListsRepositoryImpl implements PeopleListsRepository {
 
     try {
       final sent = await _nostrClient.publishEvent(event);
-      if (sent == null) {
+      if (sent is! PublishSuccess) {
         return const PeopleListPublishResult.failed();
       }
       await _cache.markDeleted(
@@ -179,7 +179,7 @@ class PeopleListsRepositoryImpl implements PeopleListsRepository {
         listId: listId,
         deletedAt: DateTime.now().toUtc(),
       );
-      return PeopleListPublishResult.submitted(eventId: sent.id);
+      return PeopleListPublishResult.submitted(eventId: sent.event.id);
     } on Object catch (error, stackTrace) {
       developer.log(
         'Failed to publish people-list deletion for list $listId',
@@ -261,16 +261,16 @@ class PeopleListsRepositoryImpl implements PeopleListsRepository {
 
     try {
       final sent = await _nostrClient.publishEvent(event);
-      if (sent == null) {
+      if (sent is! PublishSuccess) {
         return const PeopleListPublishResult.failed();
       }
-      final persisted = list.copyWith(nostrEventId: sent.id);
+      final persisted = list.copyWith(nostrEventId: sent.event.id);
       await _cache.putList(
         ownerPubkey: ownerPubkey,
         list: persisted,
         receivedAt: DateTime.now().toUtc(),
       );
-      return PeopleListPublishResult.submitted(eventId: sent.id);
+      return PeopleListPublishResult.submitted(eventId: sent.event.id);
     } on Object catch (error, stackTrace) {
       developer.log(
         'Failed to publish people-list replacement for list ${list.id}',

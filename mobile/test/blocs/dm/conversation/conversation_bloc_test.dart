@@ -46,11 +46,13 @@ void main() {
       mockDmRepository = _MockDmRepository();
     });
 
-    ConversationBloc buildBloc() => ConversationBloc(
-      dmRepository: mockDmRepository,
-      conversationId: conversationId,
-      currentUserPubkey: senderPubkey,
-    );
+    ConversationBloc buildBloc({String Function()? pendingIdFactory}) =>
+        ConversationBloc(
+          dmRepository: mockDmRepository,
+          conversationId: conversationId,
+          currentUserPubkey: senderPubkey,
+          pendingIdFactory: pendingIdFactory,
+        );
 
     test('initial state is correct', () {
       when(
@@ -212,28 +214,40 @@ void main() {
           expect: () => [
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
-                .having((s) => s.messages.length, 'messages.length', 1)
                 .having(
-                  (s) => s.messages.first.content,
+                  (s) => s.displayedMessages.length,
+                  'displayedMessages.length',
+                  1,
+                )
+                .having(
+                  (s) => s.displayedMessages.first.content,
                   'optimistic message content',
                   'Hello',
                 )
                 .having(
-                  (s) => s.messages.first.senderPubkey,
+                  (s) => s.displayedMessages.first.senderPubkey,
                   'optimistic message sender',
                   senderPubkey,
+                )
+                .having(
+                  (s) => s.pendingOptimistic.length,
+                  'pendingOptimistic carries the in-flight row',
+                  1,
                 ),
-            isA<ConversationState>().having(
-              (s) => s.sendStatus,
-              'sendStatus',
-              SendStatus.sent,
-            ),
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sent)
+                .having(
+                  (s) => s.pendingOptimistic,
+                  'pendingOptimistic stripped on sent — '
+                  'the watch tick brings the persisted row (#4193)',
+                  isEmpty,
+                ),
           ],
         );
 
         blocTest<ConversationBloc, ConversationState>(
-          'emits [sending with optimistic message, failed] '
-          'on failed sendMessage',
+          'emits [sending with optimistic message, failed without '
+          'optimistic and with lastFailedSend] on failed sendMessage',
           setUp: () {
             when(
               () => mockDmRepository.sendMessage(
@@ -241,7 +255,8 @@ void main() {
                 content: 'Hello',
               ),
             ).thenAnswer(
-              (_) async => NIP17SendResult.failure('Failed to publish message'),
+              (_) async =>
+                  const NIP17SendResult.failure('Failed to publish message'),
             );
           },
           build: buildBloc,
@@ -252,16 +267,315 @@ void main() {
             ),
           ),
           expect: () => [
+            // Sending: optimistic added to the pendingOptimistic slice.
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
-                .having((s) => s.messages.length, 'messages.length', 1),
-            isA<ConversationState>().having(
-              (s) => s.sendStatus,
-              'sendStatus',
-              SendStatus.failed,
-            ),
+                .having(
+                  (s) => s.displayedMessages.length,
+                  'displayedMessages.length',
+                  1,
+                )
+                .having(
+                  (s) => s.pendingOptimistic.length,
+                  'pendingOptimistic.length',
+                  1,
+                )
+                .having(
+                  (s) => s.lastFailedSend,
+                  'lastFailedSend cleared on new attempt',
+                  isNull,
+                ),
+            // Failed: pendingOptimistic stripped, lastFailedSend populated
+            // so the UI can offer a retry. Without the strip, the
+            // optimistic would survive in bloc memory until pop, then
+            // vanish on re-entry — the "looks sent, then disappeared" bug
+            // (#3902 / #3908).
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.failed)
+                .having((s) => s.messages, 'messages untouched', isEmpty)
+                .having(
+                  (s) => s.pendingOptimistic,
+                  'pendingOptimistic stripped',
+                  isEmpty,
+                )
+                .having(
+                  (s) => s.displayedMessages,
+                  'displayedMessages',
+                  isEmpty,
+                )
+                .having(
+                  (s) => s.lastFailedSend,
+                  'lastFailedSend',
+                  equals(
+                    const FailedSend(
+                      content: 'Hello',
+                      recipientPubkeys: [recipientPubkey],
+                    ),
+                  ),
+                ),
           ],
           errors: () => [isA<Exception>()],
+        );
+
+        // Regression for #4193 — sent DM does not appear until app restart.
+        //
+        // Pre-fix the optimistic lived in `state.messages`, which the
+        // `_onStarted.emit.forEach.onData` callback replaces wholesale on
+        // every watchMessages tick. For a freshly-searched conversation
+        // the watch's first tick is `[]`, so the optimistic was wiped the
+        // moment the watch subscription took effect — exactly when the
+        // user looks at the conversation right after tapping send.
+        //
+        // Post-fix the optimistic lives in `state.pendingOptimistic`,
+        // which the watch path never touches. This test drives a real
+        // `StreamController<List<DmMessage>>` so the empty tick happens
+        // mid-send, and pins that the user-visible row (via
+        // `state.displayedMessages`) survives.
+        blocTest<ConversationBloc, ConversationState>(
+          'optimistic survives a watchMessages tick that arrives mid-send '
+          '(regression for #4193)',
+          setUp: () {
+            final controller = StreamController<List<DmMessage>>();
+            when(
+              () => mockDmRepository.markConversationAsRead(conversationId),
+            ).thenAnswer((_) async {});
+            when(
+              () => mockDmRepository.watchMessages(conversationId),
+            ).thenAnswer((_) => controller.stream);
+            when(
+              () => mockDmRepository.sendMessage(
+                recipientPubkey: recipientPubkey,
+                content: 'Hello',
+              ),
+            ).thenAnswer((_) async {
+              // Models the production race: the watch tick's empty list
+              // (a freshly-searched conversation has no rows yet) lands
+              // while sendMessage is still awaiting the relay round-trip,
+              // BEFORE the persistence transaction commits. Pre-#4193
+              // this tick wiped the optimistic from `state.messages`.
+              controller.add(const <DmMessage>[]);
+              await Future<void>.delayed(Duration.zero);
+              return NIP17SendResult.success(
+                rumorEventId: sentEventId,
+                messageEventId: sentEventId,
+                recipientPubkey: recipientPubkey,
+              );
+            });
+          },
+          build: buildBloc,
+          act: (bloc) async {
+            bloc.add(const ConversationStarted());
+            // Yield once so emit.forEach is subscribed before the send
+            // dispatches its optimistic emit. This is the production
+            // ordering when the user opens the page and types fast.
+            await Future<void>.delayed(Duration.zero);
+            bloc.add(
+              const ConversationMessageSent(
+                recipientPubkeys: [recipientPubkey],
+                content: 'Hello',
+              ),
+            );
+          },
+          wait: const Duration(milliseconds: 30),
+          // Pin the state-stream invariant: while the send is in flight
+          // and the watch tick lands empty, `displayedMessages` keeps the
+          // optimistic. Pre-#4193 the in-flight states had
+          // `displayedMessages.isEmpty` — the load-bearing bug.
+          expect: () => [
+            // ConversationStarted: loading. Watch hasn't emitted yet
+            // (the StreamController is open with no buffered values).
+            isA<ConversationState>()
+                .having((s) => s.status, 'status', ConversationStatus.loading)
+                .having(
+                  (s) => s.pendingOptimistic,
+                  'pendingOptimistic',
+                  isEmpty,
+                ),
+            // _onMessageSent fires before the watch emits anything (the
+            // controller is empty). status stays loading; optimistic
+            // lands in pendingOptimistic.
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
+                .having(
+                  (s) => s.displayedMessages.length,
+                  'displayedMessages.length while sending',
+                  1,
+                )
+                .having(
+                  (s) => s.displayedMessages.first.content,
+                  'displayedMessages.first.content while sending',
+                  'Hello',
+                )
+                .having(
+                  (s) => s.pendingOptimistic.length,
+                  'pendingOptimistic carries the in-flight row',
+                  1,
+                ),
+            // Mid-send: the empty watchMessages tick lands. Pre-#4193 the
+            // optimistic lived in `state.messages` and was wiped here —
+            // this state would observe `displayedMessages.isEmpty` while
+            // `sendStatus == sending`. Post-fix the watch tick updates
+            // `messages` only; `pendingOptimistic` and therefore
+            // `displayedMessages` still carry the optimistic.
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
+                .having((s) => s.status, 'status', ConversationStatus.loaded)
+                .having((s) => s.messages, 'messages from watch', isEmpty)
+                .having(
+                  (s) => s.displayedMessages.length,
+                  'displayedMessages survives empty watch tick (#4193)',
+                  1,
+                )
+                .having(
+                  (s) => s.displayedMessages.first.content,
+                  'optimistic content preserved',
+                  'Hello',
+                ),
+            // Sent: status flips, pending stripped. In production a watch
+            // tick with the persisted row arrives microseconds after the
+            // transaction commits — not modelled in this unit test.
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sent)
+                .having(
+                  (s) => s.pendingOptimistic,
+                  'pendingOptimistic',
+                  isEmpty,
+                ),
+          ],
+        );
+
+        blocTest<ConversationBloc, ConversationState>(
+          'retry attempt clears prior lastFailedSend and reinserts '
+          'an optimistic row',
+          seed: () => const ConversationState(
+            sendStatus: SendStatus.failed,
+            lastFailedSend: FailedSend(
+              content: 'Hello',
+              recipientPubkeys: [recipientPubkey],
+            ),
+          ),
+          setUp: () {
+            when(
+              () => mockDmRepository.sendMessage(
+                recipientPubkey: recipientPubkey,
+                content: 'Hello',
+              ),
+            ).thenAnswer(
+              (_) async => NIP17SendResult.success(
+                rumorEventId: sentEventId,
+                messageEventId: sentEventId,
+                recipientPubkey: recipientPubkey,
+              ),
+            );
+          },
+          build: buildBloc,
+          act: (bloc) => bloc.add(
+            const ConversationMessageSent(
+              recipientPubkeys: [recipientPubkey],
+              content: 'Hello',
+            ),
+          ),
+          expect: () => [
+            // New attempt: optimistic added to pendingOptimistic,
+            // lastFailedSend cleared so a stale SnackBar can't refire
+            // from a previous failure.
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
+                .having(
+                  (s) => s.displayedMessages.length,
+                  'displayedMessages.length',
+                  1,
+                )
+                .having(
+                  (s) => s.pendingOptimistic.length,
+                  'pendingOptimistic.length',
+                  1,
+                )
+                .having((s) => s.lastFailedSend, 'lastFailedSend', isNull),
+            // Success: status flips, pending stripped, lastFailedSend
+            // stays null.
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sent)
+                .having(
+                  (s) => s.pendingOptimistic,
+                  'pendingOptimistic stripped on sent',
+                  isEmpty,
+                )
+                .having((s) => s.lastFailedSend, 'lastFailedSend', isNull),
+          ],
+        );
+
+        blocTest<ConversationBloc, ConversationState>(
+          'emits [sending with optimistic, sentPartial with lastPartialSend] '
+          'when sendMessage succeeds but the self-wrap was not published',
+          setUp: () {
+            when(
+              () => mockDmRepository.sendMessage(
+                recipientPubkey: recipientPubkey,
+                content: 'Hello',
+              ),
+            ).thenAnswer(
+              (_) async => NIP17SendResult.success(
+                rumorEventId: sentEventId,
+                messageEventId: sentEventId,
+                recipientPubkey: recipientPubkey,
+                selfWrapPublished: false,
+              ),
+            );
+          },
+          build: buildBloc,
+          act: (bloc) => bloc.add(
+            const ConversationMessageSent(
+              recipientPubkeys: [recipientPubkey],
+              content: 'Hello',
+            ),
+          ),
+          // Partial-delivery: the recipient got the message and the local
+          // DB persist already happened inside DmRepository.sendMessage.
+          // The pendingOptimistic entry is stripped on sentPartial (same
+          // as sent) — the watch tick brings the persisted row, so the
+          // user-visible bubble is sourced from `messages`, not from the
+          // pending. lastPartialSend records the rumor id whose self-wrap
+          // failed, so the SnackBar's Retry can recover via the
+          // self-wrap-only path without redelivering to the recipient
+          // (#4102).
+          expect: () => [
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
+                .having(
+                  (s) => s.displayedMessages.length,
+                  'displayedMessages.length',
+                  1,
+                )
+                .having(
+                  (s) => s.pendingOptimistic.length,
+                  'pendingOptimistic.length',
+                  1,
+                ),
+            isA<ConversationState>()
+                .having(
+                  (s) => s.sendStatus,
+                  'sendStatus',
+                  SendStatus.sentPartial,
+                )
+                .having(
+                  (s) => s.pendingOptimistic,
+                  'pendingOptimistic stripped on sentPartial — '
+                  'the persisted row arrives via watchMessages',
+                  isEmpty,
+                )
+                .having(
+                  (s) => s.lastPartialSend,
+                  'lastPartialSend',
+                  equals(const PartialSend(rumorIds: [sentEventId])),
+                )
+                .having(
+                  (s) => s.lastFailedSend,
+                  'lastFailedSend stays null on partial — it drives '
+                  'a different recovery path',
+                  isNull,
+                ),
+          ],
         );
       });
 
@@ -282,7 +596,7 @@ void main() {
                   messageEventId: sentEventId,
                   recipientPubkey: recipientPubkey,
                 ),
-                NIP17SendResult.failure('Failed for second recipient'),
+                const NIP17SendResult.failure('Failed for second recipient'),
               ],
             );
           },
@@ -297,21 +611,28 @@ void main() {
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
                 .having(
-                  (s) => s.messages.first.content,
+                  (s) => s.displayedMessages.first.content,
                   'optimistic message content',
                   'Group hello',
+                )
+                .having(
+                  (s) => s.pendingOptimistic.length,
+                  'pendingOptimistic.length',
+                  1,
                 ),
-            isA<ConversationState>().having(
-              (s) => s.sendStatus,
-              'sendStatus',
-              SendStatus.sent,
-            ),
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sent)
+                .having(
+                  (s) => s.pendingOptimistic,
+                  'pendingOptimistic stripped on sent',
+                  isEmpty,
+                ),
           ],
         );
 
         blocTest<ConversationBloc, ConversationState>(
-          'emits [sending with optimistic message, failed] '
-          'when all sendGroupMessage fail',
+          'emits [sending with optimistic message, failed without '
+          'optimistic and with lastFailedSend] when all sendGroupMessage fail',
           setUp: () {
             when(
               () => mockDmRepository.sendGroupMessage(
@@ -320,8 +641,8 @@ void main() {
               ),
             ).thenAnswer(
               (_) async => [
-                NIP17SendResult.failure('Relay timeout'),
-                NIP17SendResult.failure('Connection refused'),
+                const NIP17SendResult.failure('Relay timeout'),
+                const NIP17SendResult.failure('Connection refused'),
               ],
             );
           },
@@ -335,20 +656,118 @@ void main() {
           expect: () => [
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
-                .having((s) => s.messages.length, 'messages.length', 1),
+                .having(
+                  (s) => s.displayedMessages.length,
+                  'displayedMessages.length',
+                  1,
+                )
+                .having(
+                  (s) => s.pendingOptimistic.length,
+                  'pendingOptimistic.length',
+                  1,
+                ),
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.failed)
+                .having((s) => s.messages, 'messages untouched', isEmpty)
+                .having(
+                  (s) => s.pendingOptimistic,
+                  'pendingOptimistic stripped',
+                  isEmpty,
+                )
+                .having(
+                  (s) => s.displayedMessages,
+                  'displayedMessages',
+                  isEmpty,
+                )
+                .having(
+                  (s) => s.lastFailedSend,
+                  'lastFailedSend',
+                  equals(
+                    const FailedSend(
+                      content: 'Group hello',
+                      recipientPubkeys: [recipientPubkey, recipientPubkey2],
+                    ),
+                  ),
+                ),
+          ],
+          errors: () => [isA<Exception>()],
+        );
+
+        blocTest<ConversationBloc, ConversationState>(
+          'emits [sending, sentPartial with only the failing rumor id] '
+          'when one per-recipient sendGroupMessage has self-wrap unpublished',
+          setUp: () {
+            // Each per-recipient send produces its own rumor id.
+            // recipient1 fully delivers, recipient2 partial — only the
+            // partial one should land in lastPartialSend.rumorIds, so
+            // the recovery path republishes only that self-wrap.
+            const rumorIdRecipient1 =
+                '7777777777777777777777777777777777777777777777777777777777777777';
+            const rumorIdRecipient2 =
+                '8888888888888888888888888888888888888888888888888888888888888888';
+            when(
+              () => mockDmRepository.sendGroupMessage(
+                recipientPubkeys: [recipientPubkey, recipientPubkey2],
+                content: 'Group hello',
+              ),
+            ).thenAnswer(
+              (_) async => [
+                NIP17SendResult.success(
+                  rumorEventId: rumorIdRecipient1,
+                  messageEventId: rumorIdRecipient1,
+                  recipientPubkey: recipientPubkey,
+                ),
+                NIP17SendResult.success(
+                  rumorEventId: rumorIdRecipient2,
+                  messageEventId: rumorIdRecipient2,
+                  recipientPubkey: recipientPubkey2,
+                  selfWrapPublished: false,
+                ),
+              ],
+            );
+          },
+          build: buildBloc,
+          act: (bloc) => bloc.add(
+            const ConversationMessageSent(
+              recipientPubkeys: [recipientPubkey, recipientPubkey2],
+              content: 'Group hello',
+            ),
+          ),
+          expect: () => [
             isA<ConversationState>().having(
               (s) => s.sendStatus,
               'sendStatus',
-              SendStatus.failed,
+              SendStatus.sending,
             ),
+            isA<ConversationState>()
+                .having(
+                  (s) => s.sendStatus,
+                  'sendStatus',
+                  SendStatus.sentPartial,
+                )
+                .having(
+                  (s) => s.lastPartialSend,
+                  'lastPartialSend',
+                  equals(
+                    const PartialSend(
+                      rumorIds: [
+                        '8888888888888888888888888888888888888888888888888888888888888888',
+                      ],
+                    ),
+                  ),
+                )
+                .having(
+                  (s) => s.lastFailedSend,
+                  'lastFailedSend stays null on partial',
+                  isNull,
+                ),
           ],
-          errors: () => [isA<Exception>()],
         );
       });
 
       group('exception handling', () {
         blocTest<ConversationBloc, ConversationState>(
-          'emits [sending with optimistic message, failed] '
+          'strips optimistic and records lastFailedSend '
           'when sendMessage throws an exception',
           setUp: () {
             when(
@@ -368,18 +787,40 @@ void main() {
           expect: () => [
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
-                .having((s) => s.messages.length, 'messages.length', 1),
-            isA<ConversationState>().having(
-              (s) => s.sendStatus,
-              'sendStatus',
-              SendStatus.failed,
-            ),
+                .having(
+                  (s) => s.displayedMessages.length,
+                  'displayedMessages.length',
+                  1,
+                )
+                .having(
+                  (s) => s.pendingOptimistic.length,
+                  'pendingOptimistic.length',
+                  1,
+                ),
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.failed)
+                .having((s) => s.messages, 'messages untouched', isEmpty)
+                .having(
+                  (s) => s.pendingOptimistic,
+                  'pendingOptimistic stripped',
+                  isEmpty,
+                )
+                .having(
+                  (s) => s.lastFailedSend,
+                  'lastFailedSend',
+                  equals(
+                    const FailedSend(
+                      content: 'Hello',
+                      recipientPubkeys: [recipientPubkey],
+                    ),
+                  ),
+                ),
           ],
           errors: () => [isA<Exception>()],
         );
 
         blocTest<ConversationBloc, ConversationState>(
-          'emits [sending with optimistic message, failed] '
+          'strips optimistic and records lastFailedSend '
           'when sendGroupMessage throws an exception',
           setUp: () {
             when(
@@ -399,12 +840,171 @@ void main() {
           expect: () => [
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
-                .having((s) => s.messages.length, 'messages.length', 1),
-            isA<ConversationState>().having(
-              (s) => s.sendStatus,
-              'sendStatus',
-              SendStatus.failed,
+                .having(
+                  (s) => s.displayedMessages.length,
+                  'displayedMessages.length',
+                  1,
+                )
+                .having(
+                  (s) => s.pendingOptimistic.length,
+                  'pendingOptimistic.length',
+                  1,
+                ),
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.failed)
+                .having((s) => s.messages, 'messages untouched', isEmpty)
+                .having(
+                  (s) => s.pendingOptimistic,
+                  'pendingOptimistic stripped',
+                  isEmpty,
+                )
+                .having(
+                  (s) => s.lastFailedSend,
+                  'lastFailedSend',
+                  equals(
+                    const FailedSend(
+                      content: 'Group hello',
+                      recipientPubkeys: [recipientPubkey, recipientPubkey2],
+                    ),
+                  ),
+                ),
+          ],
+          errors: () => [isA<Exception>()],
+        );
+
+        blocTest<ConversationBloc, ConversationState>(
+          'strips only the optimistic for the failed attempt — '
+          'preserves persisted messages already in state',
+          seed: () => const ConversationState(
+            status: ConversationStatus.loaded,
+            messages: [testMessage],
+          ),
+          setUp: () {
+            when(
+              () => mockDmRepository.sendMessage(
+                recipientPubkey: recipientPubkey,
+                content: 'Hello',
+              ),
+            ).thenThrow(Exception('Network error'));
+          },
+          build: buildBloc,
+          act: (bloc) => bloc.add(
+            const ConversationMessageSent(
+              recipientPubkeys: [recipientPubkey],
+              content: 'Hello',
             ),
+          ),
+          expect: () => [
+            // Sending: optimistic on top of the seeded persisted message.
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
+                .having(
+                  (s) => s.displayedMessages.length,
+                  'displayedMessages.length',
+                  2,
+                )
+                .having(
+                  (s) => s.messages,
+                  'messages slice untouched (still just the seeded row)',
+                  equals(const [testMessage]),
+                ),
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.failed)
+                .having(
+                  (s) => s.messages,
+                  'messages preserves existing testMessage',
+                  equals(const [testMessage]),
+                )
+                .having(
+                  (s) => s.pendingOptimistic,
+                  'pendingOptimistic stripped (failed attempt only)',
+                  isEmpty,
+                )
+                .having(
+                  (s) => s.displayedMessages,
+                  'displayedMessages == messages once pending is gone',
+                  equals(const [testMessage]),
+                ),
+          ],
+          errors: () => [isA<Exception>()],
+        );
+      });
+
+      // Regression for #3908 review feedback. The pendingId-UUID contract
+      // (vs second-resolution timestamps) is what lets the strip target a
+      // single attempt without trampling a sibling. Pre-#4193 the strip
+      // was a list-walk on `state.messages`, so sibling collision was
+      // observable; post-#4193 the optimistic lives in
+      // `state.pendingOptimistic` (a Map keyed by pendingId), so strip is
+      // a `Map.remove(pendingId)` and a UUID still guarantees the two
+      // attempts get distinct keys.
+      group('pendingId uniqueness', () {
+        blocTest<ConversationBloc, ConversationState>(
+          'failure strip removes only the failing pendingId — '
+          'a sibling pending entry from a prior context is preserved',
+          // Seed state with a sibling pending entry to model the contract
+          // directly. With the `sequential()` transformer real production
+          // never has two pendings alive at once, but the strip semantics
+          // (key-based, not list-walk) are what the contract enforces.
+          seed: () => const ConversationState(
+            pendingOptimistic: {
+              'pending-sibling': DmMessage(
+                id: 'pending-sibling',
+                conversationId: conversationId,
+                senderPubkey: senderPubkey,
+                content: 'sibling',
+                createdAt: 1700000000,
+                giftWrapId: 'pending-sibling',
+              ),
+            },
+          ),
+          setUp: () {
+            when(
+              () => mockDmRepository.sendMessage(
+                recipientPubkey: recipientPubkey,
+                content: 'Failing send',
+              ),
+            ).thenThrow(Exception('Relay timeout'));
+          },
+          build: () {
+            return buildBloc(pendingIdFactory: () => 'pending-failing');
+          },
+          act: (bloc) => bloc.add(
+            const ConversationMessageSent(
+              recipientPubkeys: [recipientPubkey],
+              content: 'Failing send',
+            ),
+          ),
+          expect: () => [
+            // Sending: failing attempt's pending is added alongside the
+            // pre-existing sibling.
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
+                .having(
+                  (s) => s.pendingOptimistic.keys.toSet(),
+                  'pendingOptimistic carries both keys',
+                  {'pending-sibling', 'pending-failing'},
+                ),
+            // Failed: only the failing attempt's key is removed; the
+            // sibling pending is untouched. Under the old list-walk
+            // strip an off-by-one or shared id would have removed both.
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.failed)
+                .having(
+                  (s) => s.pendingOptimistic.keys.toSet(),
+                  'sibling pending preserved, failing pending stripped',
+                  {'pending-sibling'},
+                )
+                .having(
+                  (s) => s.lastFailedSend,
+                  'lastFailedSend records the failing attempt only',
+                  equals(
+                    const FailedSend(
+                      content: 'Failing send',
+                      recipientPubkeys: [recipientPubkey],
+                    ),
+                  ),
+                ),
           ],
           errors: () => [isA<Exception>()],
         );
@@ -461,7 +1061,7 @@ void main() {
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
                 .having(
-                  (s) => s.messages.first.content,
+                  (s) => s.displayedMessages.first.content,
                   'content',
                   'First message',
                 ),
@@ -475,7 +1075,7 @@ void main() {
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
                 .having(
-                  (s) => s.messages.first.content,
+                  (s) => s.displayedMessages.first.content,
                   'content',
                   'Second message',
                 ),
@@ -688,6 +1288,191 @@ void main() {
       });
     });
 
+    group(ConversationSelfWrapRecoveryRequested, () {
+      // The principled recovery path for #4102: tapping Retry on a
+      // sentPartial SnackBar must republish only the missing self-wrap
+      // — never the recipient wrap, which would double-deliver.
+      const rumorId1 =
+          '7777777777777777777777777777777777777777777777777777777777777777';
+      const rumorId2 =
+          '8888888888888888888888888888888888888888888888888888888888888888';
+
+      blocTest<ConversationBloc, ConversationState>(
+        'emits [sending, sent] and clears lastPartialSend when every '
+        'recoverSelfWrap returns success',
+        setUp: () {
+          when(
+            () => mockDmRepository.recoverSelfWrap(
+              rumorId: any(named: 'rumorId'),
+            ),
+          ).thenAnswer(
+            (inv) async => NIP17SendResult.success(
+              rumorEventId: inv.namedArguments[#rumorId] as String,
+              messageEventId: inv.namedArguments[#rumorId] as String,
+              recipientPubkey: senderPubkey,
+            ),
+          );
+        },
+        seed: () => const ConversationState(
+          status: ConversationStatus.loaded,
+          sendStatus: SendStatus.sentPartial,
+          lastPartialSend: PartialSend(rumorIds: [rumorId1, rumorId2]),
+        ),
+        build: buildBloc,
+        act: (bloc) => bloc.add(
+          const ConversationSelfWrapRecoveryRequested(
+            rumorIds: [rumorId1, rumorId2],
+          ),
+        ),
+        expect: () => [
+          isA<ConversationState>().having(
+            (s) => s.sendStatus,
+            'sendStatus',
+            SendStatus.sending,
+          ),
+          isA<ConversationState>()
+              .having((s) => s.sendStatus, 'sendStatus', SendStatus.sent)
+              .having(
+                (s) => s.lastPartialSend,
+                'lastPartialSend cleared on full recovery',
+                isNull,
+              ),
+        ],
+        verify: (_) {
+          // Every rumor in the event payload was passed to
+          // recoverSelfWrap (with no recipient publish in sight).
+          verify(
+            () => mockDmRepository.recoverSelfWrap(rumorId: rumorId1),
+          ).called(1);
+          verify(
+            () => mockDmRepository.recoverSelfWrap(rumorId: rumorId2),
+          ).called(1);
+          // Pin the no-duplicate-recipient-publish contract from #4102.
+          verifyNever(
+            () => mockDmRepository.sendMessage(
+              recipientPubkey: any(named: 'recipientPubkey'),
+              content: any(named: 'content'),
+            ),
+          );
+          verifyNever(
+            () => mockDmRepository.sendGroupMessage(
+              recipientPubkeys: any(named: 'recipientPubkeys'),
+              content: any(named: 'content'),
+            ),
+          );
+        },
+      );
+
+      blocTest<ConversationBloc, ConversationState>(
+        'reduces lastPartialSend.rumorIds to the still-failing rumors '
+        'when one of two recoveries fails',
+        setUp: () {
+          when(
+            () => mockDmRepository.recoverSelfWrap(rumorId: rumorId1),
+          ).thenAnswer(
+            (_) async => NIP17SendResult.success(
+              rumorEventId: rumorId1,
+              messageEventId: rumorId1,
+              recipientPubkey: senderPubkey,
+            ),
+          );
+          when(
+            () => mockDmRepository.recoverSelfWrap(rumorId: rumorId2),
+          ).thenAnswer(
+            (_) async => const NIP17SendResult.failure('relay timeout'),
+          );
+        },
+        seed: () => const ConversationState(
+          status: ConversationStatus.loaded,
+          sendStatus: SendStatus.sentPartial,
+          lastPartialSend: PartialSend(rumorIds: [rumorId1, rumorId2]),
+        ),
+        build: buildBloc,
+        act: (bloc) => bloc.add(
+          const ConversationSelfWrapRecoveryRequested(
+            rumorIds: [rumorId1, rumorId2],
+          ),
+        ),
+        expect: () => [
+          isA<ConversationState>().having(
+            (s) => s.sendStatus,
+            'sendStatus',
+            SendStatus.sending,
+          ),
+          isA<ConversationState>()
+              .having(
+                (s) => s.sendStatus,
+                'sendStatus',
+                SendStatus.sentPartial,
+              )
+              .having(
+                (s) => s.lastPartialSend,
+                'lastPartialSend reduced to still-failing ids only',
+                equals(const PartialSend(rumorIds: [rumorId2])),
+              ),
+        ],
+      );
+
+      blocTest<ConversationBloc, ConversationState>(
+        'reports thrown errors via addError and treats the rumor as '
+        'still-failing',
+        setUp: () {
+          when(
+            () => mockDmRepository.recoverSelfWrap(rumorId: rumorId1),
+          ).thenThrow(StateError('queue DAO not wired'));
+        },
+        seed: () => const ConversationState(
+          status: ConversationStatus.loaded,
+          sendStatus: SendStatus.sentPartial,
+          lastPartialSend: PartialSend(rumorIds: [rumorId1]),
+        ),
+        build: buildBloc,
+        act: (bloc) => bloc.add(
+          const ConversationSelfWrapRecoveryRequested(rumorIds: [rumorId1]),
+        ),
+        expect: () => [
+          isA<ConversationState>().having(
+            (s) => s.sendStatus,
+            'sendStatus',
+            SendStatus.sending,
+          ),
+          isA<ConversationState>()
+              .having(
+                (s) => s.sendStatus,
+                'sendStatus',
+                SendStatus.sentPartial,
+              )
+              .having(
+                (s) => s.lastPartialSend?.rumorIds,
+                'still-failing rumor preserved on throw',
+                equals([rumorId1]),
+              ),
+        ],
+        errors: () => [isA<StateError>()],
+      );
+
+      blocTest<ConversationBloc, ConversationState>(
+        'is a no-op when rumorIds is empty',
+        seed: () => const ConversationState(
+          status: ConversationStatus.loaded,
+          sendStatus: SendStatus.sentPartial,
+          lastPartialSend: PartialSend(rumorIds: []),
+        ),
+        build: buildBloc,
+        act: (bloc) => bloc.add(
+          const ConversationSelfWrapRecoveryRequested(rumorIds: []),
+        ),
+        expect: () => const <ConversationState>[],
+        verify: (_) {
+          verifyNever(
+            () => mockDmRepository.recoverSelfWrap(
+              rumorId: any(named: 'rumorId'),
+            ),
+          );
+        },
+      );
+    });
+
     group('ConversationMessageDeleted', () {
       blocTest<ConversationBloc, ConversationState>(
         'calls deleteMessageForEveryone on the repository',
@@ -729,8 +1514,211 @@ void main() {
     test('props are correct', () {
       expect(
         const ConversationState().props,
-        equals([ConversationStatus.initial, <DmMessage>[], SendStatus.idle]),
+        equals([
+          ConversationStatus.initial,
+          <DmMessage>[],
+          SendStatus.idle,
+          null,
+          null,
+          <String, DmMessage>{},
+        ]),
       );
+    });
+
+    test(
+      'pendingOptimistic defaults to empty and participates in equality',
+      () {
+        expect(
+          const ConversationState().pendingOptimistic,
+          equals(<String, DmMessage>{}),
+        );
+        const optimistic = DmMessage(
+          id: 'pending-test',
+          conversationId: conversationId,
+          senderPubkey: senderPubkey,
+          content: 'Hi',
+          createdAt: 1700000000,
+          giftWrapId: 'pending-test',
+        );
+        // Maps with structurally-equal contents compare equal via Equatable.
+        expect(
+          const ConversationState(
+            pendingOptimistic: {'pending-test': optimistic},
+          ),
+          equals(
+            const ConversationState(
+              pendingOptimistic: {'pending-test': optimistic},
+            ),
+          ),
+        );
+        expect(
+          const ConversationState(),
+          isNot(
+            equals(
+              const ConversationState(
+                pendingOptimistic: {'pending-test': optimistic},
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    group('displayedMessages projection', () {
+      const persisted1 = DmMessage(
+        id: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        conversationId: conversationId,
+        senderPubkey: senderPubkey,
+        content: 'persisted-1',
+        // Newer than the optimistic below.
+        createdAt: 1700000010,
+        giftWrapId:
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      );
+      const persisted0 = DmMessage(
+        id: 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+        conversationId: conversationId,
+        senderPubkey: senderPubkey,
+        content: 'persisted-0',
+        // Older than the optimistic below.
+        createdAt: 1699999990,
+        giftWrapId:
+            'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+      );
+      const optimistic = DmMessage(
+        id: 'pending-x',
+        conversationId: conversationId,
+        senderPubkey: senderPubkey,
+        content: 'in-flight',
+        createdAt: 1700000000,
+        giftWrapId: 'pending-x',
+      );
+
+      test('returns messages identity when pendingOptimistic is empty', () {
+        const state = ConversationState(messages: [persisted1, persisted0]);
+        expect(state.displayedMessages, same(state.messages));
+      });
+
+      test('puts in-flight pending above older persisted, below newer', () {
+        const state = ConversationState(
+          messages: [persisted1, persisted0],
+          pendingOptimistic: {'pending-x': optimistic},
+        );
+        // Newest first: persisted1 (1700000010) > optimistic (1700000000)
+        // > persisted0 (1699999990).
+        expect(
+          state.displayedMessages,
+          equals([persisted1, optimistic, persisted0]),
+        );
+      });
+
+      test('drops pending whose id collides with a persisted row', () {
+        // Defensive — production pending ids are `pending-<uuid>` and
+        // persisted ids are 64-char hex, but Equatable compares structurally
+        // and id collision must let the persisted row win.
+        const collidingPersisted = DmMessage(
+          id: 'pending-x',
+          conversationId: conversationId,
+          senderPubkey: senderPubkey,
+          content: 'persisted-version',
+          createdAt: 1700000000,
+          giftWrapId:
+              'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+        );
+        const state = ConversationState(
+          messages: [collidingPersisted],
+          pendingOptimistic: {'pending-x': optimistic},
+        );
+        expect(state.displayedMessages, equals([collidingPersisted]));
+      });
+
+      test('returns an unmodifiable view when merge runs', () {
+        const state = ConversationState(
+          messages: [persisted1],
+          pendingOptimistic: {'pending-x': optimistic},
+        );
+        final view = state.displayedMessages;
+        expect(() => view.add(optimistic), throwsUnsupportedError);
+      });
+    });
+
+    test('states with different lastPartialSend are not equal', () {
+      expect(
+        const ConversationState(),
+        isNot(
+          equals(
+            const ConversationState(
+              lastPartialSend: PartialSend(rumorIds: [messageId]),
+            ),
+          ),
+        ),
+      );
+    });
+
+    test(
+      'copyWith carries lastPartialSend forward when not overridden',
+      () {
+        const partial = PartialSend(rumorIds: [messageId]);
+        const seeded = ConversationState(lastPartialSend: partial);
+
+        expect(
+          seeded.copyWith(sendStatus: SendStatus.sending).lastPartialSend,
+          equals(partial),
+        );
+      },
+    );
+
+    test(
+      'copyWith(clearLastPartialSend: true) wipes lastPartialSend',
+      () {
+        const partial = PartialSend(rumorIds: [messageId]);
+        const seeded = ConversationState(lastPartialSend: partial);
+
+        expect(
+          seeded.copyWith(clearLastPartialSend: true).lastPartialSend,
+          isNull,
+        );
+      },
+    );
+
+    test('states with different lastFailedSend are not equal', () {
+      expect(
+        const ConversationState(),
+        isNot(
+          equals(
+            const ConversationState(
+              lastFailedSend: FailedSend(
+                content: 'Hello',
+                recipientPubkeys: [recipientPubkey],
+              ),
+            ),
+          ),
+        ),
+      );
+    });
+
+    test('copyWith carries lastFailedSend forward when not overridden', () {
+      const failed = FailedSend(
+        content: 'Hello',
+        recipientPubkeys: [recipientPubkey],
+      );
+      const seeded = ConversationState(lastFailedSend: failed);
+
+      // Copying without specifying lastFailedSend keeps the existing value.
+      expect(
+        seeded.copyWith(sendStatus: SendStatus.sending).lastFailedSend,
+        equals(failed),
+      );
+    });
+
+    test('copyWith(clearLastFailedSend: true) wipes lastFailedSend', () {
+      const failed = FailedSend(
+        content: 'Hello',
+        recipientPubkeys: [recipientPubkey],
+      );
+      const seeded = ConversationState(lastFailedSend: failed);
+
+      expect(seeded.copyWith(clearLastFailedSend: true).lastFailedSend, isNull);
     });
 
     test('states with different status are not equal', () {
@@ -885,6 +1873,41 @@ void main() {
         expect(
           const ConversationMessageDeleted(rumorId: messageId).props,
           equals([messageId]),
+        );
+      });
+    });
+
+    group(ConversationSelfWrapRecoveryRequested, () {
+      test('supports value equality', () {
+        expect(
+          const ConversationSelfWrapRecoveryRequested(rumorIds: [messageId]),
+          equals(
+            const ConversationSelfWrapRecoveryRequested(rumorIds: [messageId]),
+          ),
+        );
+      });
+
+      test('events with different rumorIds are not equal', () {
+        expect(
+          const ConversationSelfWrapRecoveryRequested(rumorIds: [messageId]),
+          isNot(
+            equals(
+              const ConversationSelfWrapRecoveryRequested(
+                rumorIds: [giftWrapId],
+              ),
+            ),
+          ),
+        );
+      });
+
+      test('props are correct', () {
+        expect(
+          const ConversationSelfWrapRecoveryRequested(
+            rumorIds: [messageId, giftWrapId],
+          ).props,
+          equals([
+            const [messageId, giftWrapId],
+          ]),
         );
       });
     });

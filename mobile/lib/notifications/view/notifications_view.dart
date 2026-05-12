@@ -7,6 +7,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/notifications/bloc/notification_feed_bloc.dart';
 import 'package:openvine/notifications/widgets/widgets.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -15,7 +17,6 @@ import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/notification_target_resolver.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:time_formatter/time_formatter.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// The notification list UI.
@@ -49,13 +50,10 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-
-    // Mark all notifications as read when the screen is opened.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<NotificationFeedBloc>().add(
-        const NotificationFeedMarkAllRead(),
-      );
-    });
+    // Mark-all-read fires once at the page level from
+    // `NotificationFeedStarted` → repository.markAllAsRead(). The
+    // resulting snapshot emission updates this view's BLoC state and
+    // the badge cubit atomically — no per-view dispatch needed.
   }
 
   @override
@@ -99,7 +97,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: VineTheme.backgroundColor,
+      color: VineTheme.surfaceContainerHigh,
       child: BlocBuilder<NotificationFeedBloc, NotificationFeedState>(
         builder: (context, state) {
           final visible = _applyFilter(state.notifications);
@@ -174,17 +172,28 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
           videoAddressableId: videoAddressableId,
           notificationKind: type,
         );
-      case ActorNotification(:final actor, :final type):
+      case ActorNotification(:final actor, :final type, :final targetEventId):
         switch (type) {
           case NotificationKind.follow:
           case NotificationKind.mention:
             _navigateToProfile(context, actor.pubkey);
+          case NotificationKind.likeComment:
+          case NotificationKind.reply:
+            // targetEventId is the kind 1111 comment; the resolver
+            // walks its E tag to the root video.
+            if (targetEventId != null && targetEventId.isNotEmpty) {
+              await _navigateToVideo(
+                context,
+                targetEventId,
+                notificationKind: type,
+              );
+            } else {
+              _navigateToProfile(context, actor.pubkey);
+            }
           case NotificationKind.system:
             break;
           case NotificationKind.like:
-          case NotificationKind.likeComment:
           case NotificationKind.comment:
-          case NotificationKind.reply:
           case NotificationKind.repost:
             // Not represented as ActorNotification, but pattern-match
             // exhaustivity requires these.
@@ -214,7 +223,8 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
     // (kind:pubkey:d-tag) rather than the mutable event hash.
     final isComment =
         notificationKind == NotificationKind.comment ||
-        notificationKind == NotificationKind.reply;
+        notificationKind == NotificationKind.reply ||
+        notificationKind == NotificationKind.likeComment;
 
     // Resolve the navigation target.
     String routeId;
@@ -232,9 +242,9 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
 
       if (resolved == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Video not found'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(context.l10n.notificationsVideoNotFound),
+            duration: const Duration(seconds: 2),
           ),
         );
         return;
@@ -261,9 +271,9 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
 
     if (video == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Video not found'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(context.l10n.notificationsVideoNotFound),
+          duration: const Duration(seconds: 2),
         ),
       );
       return;
@@ -271,9 +281,9 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
 
     if (videoEventService.shouldHideVideo(video)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Video unavailable'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(context.l10n.notificationsVideoUnavailable),
+          duration: const Duration(seconds: 2),
         ),
       );
       return;
@@ -284,7 +294,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
       extra: PooledFullscreenVideoFeedArgs(
         videosStream: Stream.value([video]),
         initialIndex: 0,
-        contextTitle: 'From Notification',
+        contextTitle: context.l10n.notificationsFromNotification,
         autoOpenComments: isComment,
       ),
     );
@@ -334,18 +344,22 @@ class _FailureBody extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, size: 64, color: VineTheme.lightText),
+          const DivineIcon(
+            icon: DivineIconName.warningCircle,
+            size: 64,
+            color: VineTheme.lightText,
+          ),
           const SizedBox(height: 16),
-          const Text(
-            'Failed to load notifications',
-            style: TextStyle(fontSize: 18, color: VineTheme.secondaryText),
+          Text(
+            context.l10n.notificationsFailedToLoad,
+            style: VineTheme.bodyLargeFont(color: VineTheme.secondaryText),
           ),
           const SizedBox(height: 16),
           TextButton(
             onPressed: onRetry,
-            child: const Text(
-              'Retry',
-              style: TextStyle(color: VineTheme.vineGreen),
+            child: Text(
+              context.l10n.notificationsRetry,
+              style: VineTheme.labelLargeFont(color: VineTheme.vineGreen),
             ),
           ),
         ],
@@ -402,13 +416,13 @@ class _NotificationList extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: Text(
-                  TimeFormatter.formatDateLabel(
+                  LocalizedTimeFormatter.formatDateLabel(
+                    context.l10n,
                     notification.timestamp.millisecondsSinceEpoch ~/ 1000,
+                    locale: Localizations.localeOf(context).toLanguageTag(),
                   ),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: VineTheme.secondaryText,
+                  style: VineTheme.labelLargeFont(
+                    color: VineTheme.onSurfaceMuted,
                   ),
                 ),
               ),
@@ -424,13 +438,6 @@ class _NotificationList extends StatelessWidget {
                 if (pubkey != null) onFollowBack(pubkey);
               },
             ),
-            if (index < notifications.length - 1)
-              const Divider(
-                height: 1,
-                thickness: 0.5,
-                color: VineTheme.onSurfaceMuted,
-                indent: 72,
-              ),
           ],
         );
       },

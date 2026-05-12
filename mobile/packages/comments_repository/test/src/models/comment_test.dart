@@ -183,6 +183,7 @@ void main() {
           videoBlurhash: 'LEHV6nWB2y',
         );
 
+        expect(comment.props, hasLength(14));
         expect(
           comment.props,
           equals([
@@ -192,6 +193,7 @@ void main() {
             DateTime(2024),
             'root',
             'rootAuthor',
+            null,
             'replyTo',
             'replyAuthor',
             'https://example.com/video.mp4',

@@ -76,7 +76,7 @@ void main() {
 
       when(
         () => mockNostrService.publishEvent(any()),
-      ).thenAnswer((_) async => mockEvent);
+      ).thenAnswer((_) async => PublishSuccess(event: mockEvent));
 
       when(
         () => mockAuthService.signOut(deleteKeys: true),
@@ -135,10 +135,10 @@ void main() {
       when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPublicKey);
       when(() => mockNostrService.hasKeys).thenReturn(true);
 
-      // publishEvent returns null on failure
+      // publishEvent returns PublishFailed on send failure
       when(
         () => mockNostrService.publishEvent(any()),
-      ).thenAnswer((_) async => null);
+      ).thenAnswer((_) async => const PublishFailed());
 
       final deletionService = AccountDeletionService(
         nostrService: mockNostrService,

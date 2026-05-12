@@ -54,7 +54,9 @@ void main() {
 
       // Mock successful event publishing
       when(() => mockNostr.publishEvent(any())).thenAnswer((invocation) async {
-        return invocation.positionalArguments[0] as Event;
+        return PublishSuccess(
+          event: invocation.positionalArguments[0] as Event,
+        );
       });
 
       // Mock subscribeToEvents for relay sync

@@ -36,12 +36,14 @@ class VideoInteractionsBloc
     required RepostsRepository repostsRepository,
     String? addressableId,
     int? initialLikeCount,
+    bool includeVideoReplies = false,
   }) : _eventId = eventId,
        _authorPubkey = authorPubkey,
        _likesRepository = likesRepository,
        _commentsRepository = commentsRepository,
        _repostsRepository = repostsRepository,
        _addressableId = addressableId,
+       _includeVideoReplies = includeVideoReplies,
        super(VideoInteractionsState(likeCount: initialLikeCount)) {
     on<VideoInteractionsFetchRequested>(_onFetchRequested);
     // Toggle handlers fire-and-forget the publish (see _onLikeToggled),
@@ -66,6 +68,7 @@ class VideoInteractionsBloc
   final LikesRepository _likesRepository;
   final CommentsRepository _commentsRepository;
   final RepostsRepository _repostsRepository;
+  final bool _includeVideoReplies;
 
   /// Addressable ID for repost operations (format: `kind:pubkey:d-tag`).
   /// Null if the video doesn't have a d-tag (non-addressable event).
@@ -89,9 +92,9 @@ class VideoInteractionsBloc
           if (isLiked == state.isLiked) return state;
 
           // Sync like status only — count is owned by _onLikeToggled.
-          // External sources (cross-device sync via the repo's reaction
-          // subscription) can flip isLiked here, but likeCount is left
-          // alone; cross-device count drift is tracked as a follow-up.
+          // This stream conveys membership of the liked set, not an
+          // authoritative count snapshot, so external flips update
+          // isLiked here without rewriting likeCount.
           return state.copyWith(isLiked: isLiked);
         },
       ),
@@ -152,18 +155,22 @@ class VideoInteractionsBloc
           ? _repostsRepository.getRepostCount(_addressableId)
           : _repostsRepository.getRepostCountByEventId(_eventId);
 
-      final likeCountFuture = state.likeCount != null
-          ? Future.value(state.likeCount)
-          : _likesRepository.getLikeCount(
-              _eventId,
-              addressableId: _addressableId,
-            );
+      // Always fetch a fresh count from relay. When initialLikeCount was
+      // seeded from Funnelcake REST (e.g. notification tap), the cached REST
+      // value may lag behind real-time relay data and show a stale (lower)
+      // count. The initial state already shows the seeded value immediately;
+      // this round-trip updates it to the accurate relay count once it arrives.
+      final likeCountFuture = _likesRepository.getLikeCount(
+        _eventId,
+        addressableId: _addressableId,
+      );
 
       final results = await Future.wait([
         likeCountFuture,
         _commentsRepository.getCommentsCount(
           _eventId,
           rootAddressableId: _addressableId,
+          includeVideoReplies: _includeVideoReplies,
         ),
         repostCountFuture,
       ]);

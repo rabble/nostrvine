@@ -11,6 +11,7 @@ import 'app_localizations_bg.dart';
 import 'app_localizations_de.dart';
 import 'app_localizations_en.dart';
 import 'app_localizations_es.dart';
+import 'app_localizations_fil.dart';
 import 'app_localizations_fr.dart';
 import 'app_localizations_id.dart';
 import 'app_localizations_it.dart';
@@ -115,6 +116,7 @@ abstract class AppLocalizations {
     Locale('bg'),
     Locale('de'),
     Locale('es'),
+    Locale('fil'),
     Locale('fr'),
     Locale('id'),
     Locale('it'),
@@ -1052,18 +1054,6 @@ abstract class AppLocalizations {
   /// **'Error loading reposted videos'**
   String get profileErrorLoadingReposts;
 
-  /// No description provided for @profileLoadingTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading profile...'**
-  String get profileLoadingTitle;
-
-  /// No description provided for @profileLoadingSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'This may take a few moments'**
-  String get profileLoadingSubtitle;
-
   /// No description provided for @profileLoadingVideos.
   ///
   /// In en, this message translates to:
@@ -1446,7 +1436,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Upload failed. Please try again later.'**
-  String profileSetupUploadFailedGeneric(Object error);
+  String get profileSetupUploadFailedGeneric;
 
   /// No description provided for @profileSetupUploadNetworkError.
   ///
@@ -1627,6 +1617,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use the username field above for divine.video'**
   String get profileSetupExternalNip05DivineDomain;
+
+  /// No description provided for @nostrSettingsNip05Address.
+  ///
+  /// In en, this message translates to:
+  /// **'NIP-05 address'**
+  String get nostrSettingsNip05Address;
+
+  /// No description provided for @nostrSettingsNip05AddressSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.'**
+  String get nostrSettingsNip05AddressSubtitle;
+
+  /// No description provided for @nostrSettingsNip05AddressHint.
+  ///
+  /// In en, this message translates to:
+  /// **'you@example.com'**
+  String get nostrSettingsNip05AddressHint;
+
+  /// No description provided for @nostrSettingsNip05SaveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Save NIP-05'**
+  String get nostrSettingsNip05SaveAction;
+
+  /// No description provided for @nostrSettingsNip05Saved.
+  ///
+  /// In en, this message translates to:
+  /// **'NIP-05 saved'**
+  String get nostrSettingsNip05Saved;
+
+  /// No description provided for @nostrSettingsNip05SaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save NIP-05. Please try again.'**
+  String get nostrSettingsNip05SaveFailed;
+
+  /// No description provided for @profileSetupNip05ConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use your own NIP-05?'**
+  String get profileSetupNip05ConfirmTitle;
+
+  /// No description provided for @profileSetupNip05ConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it\'s wrong, people can\'t find you and your verified handle disappears. Continue only if you\'ve set this up.'**
+  String get profileSetupNip05ConfirmBody;
+
+  /// No description provided for @profileSetupNip05ConfirmContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get profileSetupNip05ConfirmContinue;
+
+  /// No description provided for @profileSetupNip05ConfirmCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get profileSetupNip05ConfirmCancel;
 
   /// No description provided for @profileSetupProfilePicturePreview.
   ///
@@ -1969,6 +2019,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Edit video'**
   String get videoPlayerEditVideoTooltip;
+
+  /// No description provided for @videoPlayerTapHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to play or pause. Double tap to like.'**
+  String get videoPlayerTapHint;
+
+  /// Semantic label for the More button in the home feed top bar that opens the playback-settings popover.
+  ///
+  /// In en, this message translates to:
+  /// **'Open playback settings'**
+  String get videoSettingsMenuOpen;
+
+  /// Semantic label for the More button in the home feed top bar when the playback-settings popover is open.
+  ///
+  /// In en, this message translates to:
+  /// **'Close playback settings'**
+  String get videoSettingsMenuClose;
+
+  /// Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently off.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable captions'**
+  String get videoSettingsCaptionsEnable;
+
+  /// Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently on.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable captions'**
+  String get videoSettingsCaptionsDisable;
 
   /// No description provided for @contentWarningLabel.
   ///
@@ -2378,6 +2458,30 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 collaborator} other{{count} collaborators}}. Tap to view profile.'**
   String videoCollaboratorCountLabel(int count);
 
+  /// Small badge next to a collaborator's name or avatar when the creator (viewing their own video) has invited them but they have not yet accepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get videoCollaboratorPendingDecoration;
+
+  /// Screen reader label for a dimmed pending collaborator avatar on the creator's own video.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending collaborator'**
+  String get videoCollaboratorPendingSemanticLabel;
+
+  /// Appends a pending count to the collaborator label on the creator's own video. {label} is the existing 'with @name' / 'with @name +N' phrase.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} ({pending} pending)'**
+  String videoCollaboratorWithPendingSuffix(String label, int pending);
+
+  /// Screen reader hint announced when a user-chip in the metadata sheet is focused. {name} is the user's display name.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}. Tap to view profile.'**
+  String profileChipTapHint(String name);
+
   /// No description provided for @listAttributionFallback.
   ///
   /// In en, this message translates to:
@@ -2513,7 +2617,7 @@ abstract class AppLocalizations {
   /// No description provided for @videoActionRepostLabel.
   ///
   /// In en, this message translates to:
-  /// **'Repost'**
+  /// **'Revine'**
   String get videoActionRepostLabel;
 
   /// No description provided for @videoActionShareLabel.
@@ -2521,6 +2625,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Share'**
   String get videoActionShareLabel;
+
+  /// Short caption shown beneath the Report icon in the video overlay action column.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get videoActionReportLabel;
+
+  /// Screen reader label for the Report action button in the video overlay action column. Tapping opens the report-content dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Report video'**
+  String get videoActionReport;
+
+  /// Short caption shown beneath the Edit icon in the video overlay action column. Only visible to the owner of the video.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get videoActionEditLabel;
+
+  /// Screen reader label for the Edit action button in the video overlay action column. Tapping opens the video edit dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit video'**
+  String get videoActionEdit;
 
   /// No description provided for @videoActionAboutLabel.
   ///
@@ -2575,6 +2703,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show subtitles'**
   String get videoActionShowSubtitles;
+
+  /// Title of the screen shown when the video owner taps the Like button on their own video — lists the users who liked it.
+  ///
+  /// In en, this message translates to:
+  /// **'Liked by'**
+  String get videoEngagementLikersTitle;
+
+  /// Title of the screen shown when the video owner taps the Repost button on their own video — lists the users who reposted it.
+  ///
+  /// In en, this message translates to:
+  /// **'Reposted by'**
+  String get videoEngagementRepostersTitle;
+
+  /// Empty-state message on the likers list screen when no one has liked the video yet.
+  ///
+  /// In en, this message translates to:
+  /// **'No likes yet'**
+  String get videoEngagementLikersEmpty;
+
+  /// Empty-state message on the reposters list screen when no one has reposted the video yet.
+  ///
+  /// In en, this message translates to:
+  /// **'No reposts yet'**
+  String get videoEngagementRepostersEmpty;
+
+  /// Error-state heading on the engagement list screen when the relay query fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load that list'**
+  String get videoEngagementLoadFailed;
 
   /// Screen-reader label for the tappable title row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the title text itself — that's already read aloud by the underlying Text widget.
   ///
@@ -6852,6 +7010,18 @@ abstract class AppLocalizations {
   /// **'View profiles'**
   String get notificationsViewProfilesSemanticLabel;
 
+  /// Screen-reader label for the video thumbnail on a video-anchored notification row when the video title is known.
+  ///
+  /// In en, this message translates to:
+  /// **'Video thumbnail for {title}'**
+  String notificationsVideoThumbnailFor(String title);
+
+  /// Screen-reader fallback label for the video thumbnail on a video-anchored notification row when the title is missing.
+  ///
+  /// In en, this message translates to:
+  /// **'Video thumbnail'**
+  String get notificationsVideoThumbnail;
+
   /// No description provided for @notificationsLoadingType.
   ///
   /// In en, this message translates to:
@@ -6905,6 +7075,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No followed users.\nFollow someone to see their videos here.'**
   String get feedNoFollowedUsers;
+
+  /// No description provided for @feedModeForYou.
+  ///
+  /// In en, this message translates to:
+  /// **'For You'**
+  String get feedModeForYou;
+
+  /// No description provided for @feedModeNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get feedModeNew;
+
+  /// No description provided for @feedModeFollowing.
+  ///
+  /// In en, this message translates to:
+  /// **'Following'**
+  String get feedModeFollowing;
+
+  /// Semantic label for the feed mode row (current mode plus affordance hint). Screen reader only.
+  ///
+  /// In en, this message translates to:
+  /// **'Feed mode: {label}'**
+  String feedModeSemanticLabel(String label);
+
+  /// Semantic label for the video author's display name region. Screen reader only.
+  ///
+  /// In en, this message translates to:
+  /// **'Video author: {displayName}'**
+  String videoAuthorSemanticLabel(String displayName);
+
+  /// Semantic label for the author's circular profile avatar on feed video metadata. Screen reader only.
+  ///
+  /// In en, this message translates to:
+  /// **'Author avatar'**
+  String get videoAuthorAvatarSemanticLabel;
 
   /// No description provided for @feedForYouEmpty.
   ///
@@ -7446,6 +7652,12 @@ abstract class AppLocalizations {
   /// **'Invalid profile ID'**
   String get routeInvalidProfileId;
 
+  /// Body text when navigation hits an unknown route (GoRouter.errorBuilder).
+  ///
+  /// In en, this message translates to:
+  /// **'That page isn’t in the app.'**
+  String get routeUnknownPath;
+
   /// No description provided for @routeDefaultListName.
   ///
   /// In en, this message translates to:
@@ -7548,6 +7760,18 @@ abstract class AppLocalizations {
   /// **'Failed to export logs'**
   String get supportExportLogsFailed;
 
+  /// Snackbar shown after exporting logs to a file on desktop platforms. {path} is the absolute filesystem path of the saved log file.
+  ///
+  /// In en, this message translates to:
+  /// **'Logs saved to {path}'**
+  String supportLogsSavedTo(String path);
+
+  /// SnackBar action label that opens the folder containing the just-saved log file. Desktop platforms only.
+  ///
+  /// In en, this message translates to:
+  /// **'Show in folder'**
+  String get supportRevealLogsAction;
+
   /// No description provided for @supportChatNotAvailable.
   ///
   /// In en, this message translates to:
@@ -7638,11 +7862,23 @@ abstract class AppLocalizations {
   /// **'Spam or Unwanted Content'**
   String get reportReasonSpam;
 
+  /// No description provided for @reportReasonSpamSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unwanted or repetitive content'**
+  String get reportReasonSpamSubtitle;
+
   /// No description provided for @reportReasonHarassment.
   ///
   /// In en, this message translates to:
   /// **'Harassment, Bullying, or Threats'**
   String get reportReasonHarassment;
+
+  /// No description provided for @reportReasonHarassmentSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Harmful and unwanted replies or mentions'**
+  String get reportReasonHarassmentSubtitle;
 
   /// No description provided for @reportReasonViolence.
   ///
@@ -7650,11 +7886,23 @@ abstract class AppLocalizations {
   /// **'Violent or Extremist Content'**
   String get reportReasonViolence;
 
+  /// No description provided for @reportReasonViolenceSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Violent, extremist, or harmful content'**
+  String get reportReasonViolenceSubtitle;
+
   /// No description provided for @reportReasonSexualContent.
   ///
   /// In en, this message translates to:
   /// **'Sexual or Adult Content'**
   String get reportReasonSexualContent;
+
+  /// No description provided for @reportReasonSexualContentSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nudity, porn, or explicit content'**
+  String get reportReasonSexualContentSubtitle;
 
   /// No description provided for @reportReasonCopyright.
   ///
@@ -7662,11 +7910,23 @@ abstract class AppLocalizations {
   /// **'Copyright Violation'**
   String get reportReasonCopyright;
 
+  /// No description provided for @reportReasonCopyrightSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unauthorized use of intellectual property'**
+  String get reportReasonCopyrightSubtitle;
+
   /// No description provided for @reportReasonFalseInfo.
   ///
   /// In en, this message translates to:
   /// **'False Information'**
   String get reportReasonFalseInfo;
+
+  /// No description provided for @reportReasonFalseInfoSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Misleading or false claims'**
+  String get reportReasonFalseInfoSubtitle;
 
   /// No description provided for @reportReasonCsam.
   ///
@@ -7674,17 +7934,35 @@ abstract class AppLocalizations {
   /// **'Child Safety Violation'**
   String get reportReasonCsam;
 
+  /// No description provided for @reportReasonCsamSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Content that exploits or endangers minors'**
+  String get reportReasonCsamSubtitle;
+
   /// No description provided for @reportReasonAiGenerated.
   ///
   /// In en, this message translates to:
   /// **'AI-Generated Content'**
   String get reportReasonAiGenerated;
 
+  /// No description provided for @reportReasonAiGeneratedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Suspected AI-generated content'**
+  String get reportReasonAiGeneratedSubtitle;
+
   /// No description provided for @reportReasonOther.
   ///
   /// In en, this message translates to:
   /// **'Other Policy Violation'**
   String get reportReasonOther;
+
+  /// No description provided for @reportReasonOtherSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Violations not listed above'**
+  String get reportReasonOtherSubtitle;
 
   /// No description provided for @reportFailed.
   ///
@@ -7715,6 +7993,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Learn More'**
   String get reportLearnMore;
+
+  /// No description provided for @reportLearnMoreAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn more at'**
+  String get reportLearnMoreAt;
 
   /// No description provided for @reportSafetyUrl.
   ///
@@ -8922,11 +9206,11 @@ abstract class AppLocalizations {
   /// **'Wrestling'**
   String get categoryWrestling;
 
-  /// No description provided for @profileSetupUploadSuccess.
+  /// Snackbar shown after a profile picture upload succeeds on the profile edit screen. The new picture is staged in the form but not yet published; the user must tap Save for it to take effect.
   ///
   /// In en, this message translates to:
-  /// **'Profile picture uploaded successfully!'**
-  String get profileSetupUploadSuccess;
+  /// **'Uploaded — tap Save to apply'**
+  String get profileSetupUploadStaged;
 
   /// No description provided for @inboxReportedUser.
   ///
@@ -9036,6 +9320,36 @@ abstract class AppLocalizations {
   /// **'{role} on this post'**
   String inboxCollabInviteCardRoleLabel(String role);
 
+  /// Fallback shown as the collaborator invite card title when the invited video has no title. Avoids exposing the raw d-tag identifier.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled video'**
+  String get inboxCollabInviteCardUntitledVideo;
+
+  /// Tappable label rendered in rich text in place of a Nostr video/event reference. Opens the linked video.
+  ///
+  /// In en, this message translates to:
+  /// **'View video'**
+  String get clickableTextViewVideoLink;
+
+  /// Confirmation dialog title shown before opening an untrusted external URL from a DM.
+  ///
+  /// In en, this message translates to:
+  /// **'Open external link?'**
+  String get messageExternalLinkDialogTitle;
+
+  /// Confirmation dialog body shown before opening an untrusted external URL from a DM.
+  ///
+  /// In en, this message translates to:
+  /// **'This link goes to an external site and may not be safe:\n\n{url}'**
+  String messageExternalLinkDialogBody(String url);
+
+  /// Confirmation button that opens an untrusted external URL from a DM.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get messageExternalLinkDialogOpen;
+
   /// No description provided for @inboxCollabInviteAcceptButton.
   ///
   /// In en, this message translates to:
@@ -9089,6 +9403,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You were invited to collaborate on a video: {url}\n\nOpen diVine to review and accept.'**
   String collaboratorInviteDmBodyUntitled(String url);
+
+  /// SnackBar text shown in a DM conversation when a send fails (relay error, signer error, network error). Paired with the retry action `dmSendFailedRetry`.
+  ///
+  /// In en, this message translates to:
+  /// **'Message couldn\'t be sent'**
+  String get dmSendFailedMessage;
+
+  /// SnackBarAction button label that retries the failed DM send. Keep short — fits next to the SnackBar message.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get dmSendFailedRetry;
+
+  /// SnackBar text shown in a DM conversation after a send where the recipient received the message but the sender's self-addressed gift wrap failed to publish. The sender's other devices won't see this message on relay-only restore. Paired with the retry action `dmSendFailedRetry`.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent, but didn\'t sync to your other devices'**
+  String get dmSendPartialMessage;
+
+  /// Error text shown in place of the message list when DmRepository.watchMessages emits an error (e.g. local DB read failure). Distinct from send failures (which use `dmSendFailedMessage`).
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load messages'**
+  String get dmConversationLoadError;
 
   /// No description provided for @reportDialogCancel.
   ///
@@ -9767,6 +10105,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Thank you! We\'ve received your report and will use it to make Divine better.'**
   String get bugReportSuccessMessage;
+
+  /// No description provided for @bugReportAttachImages.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach images'**
+  String get bugReportAttachImages;
+
+  /// No description provided for @bugReportImagesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of {max} images selected'**
+  String bugReportImagesCount(int count, int max);
+
+  /// No description provided for @bugReportRemoveImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove image'**
+  String get bugReportRemoveImage;
+
+  /// No description provided for @bugReportUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t upload the selected image. Try again or send the report without it.'**
+  String get bugReportUploadFailed;
 
   /// No description provided for @bugReportSendFailed.
   ///
@@ -11310,6 +11672,36 @@ abstract class AppLocalizations {
   /// **'Split selected clip'**
   String get videoEditorSplitSelectedClipSemanticLabel;
 
+  /// No description provided for @videoEditorExtractAudioLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Extract Audio'**
+  String get videoEditorExtractAudioLabel;
+
+  /// No description provided for @videoEditorClipAudioTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clip Audio'**
+  String get videoEditorClipAudioTitle;
+
+  /// No description provided for @videoEditorExtractAudioFromClipSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Extract audio from clip and mute original'**
+  String get videoEditorExtractAudioFromClipSemanticLabel;
+
+  /// No description provided for @videoEditorExtractAudioNoLocalFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot extract audio: clip is not locally available.'**
+  String get videoEditorExtractAudioNoLocalFile;
+
+  /// No description provided for @videoEditorExtractAudioFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not extract audio. Please try again.'**
+  String get videoEditorExtractAudioFailed;
+
   /// No description provided for @videoEditorFinishTimelineEditingSemanticLabel.
   ///
   /// In en, this message translates to:
@@ -11896,6 +12288,18 @@ abstract class AppLocalizations {
   /// **'Publish video to feed'**
   String get videoMetadataPublishVideoHint;
 
+  /// Label for the toggle that also surfaces a video reply in normal feeds.
+  ///
+  /// In en, this message translates to:
+  /// **'Also share to my feed'**
+  String get videoMetadataShareReplyToFeedTitle;
+
+  /// Helper text for the video reply feed visibility toggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Off keeps this video only in the comment thread.'**
+  String get videoMetadataShareReplyToFeedSubtitle;
+
   /// No description provided for @videoMetadataFormNotReadyHint.
   ///
   /// In en, this message translates to:
@@ -11955,24 +12359,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove'**
   String get videoMetadataRemoveSemanticLabel;
-
-  /// Label for the global captions toggle in the video metadata sheet
-  ///
-  /// In en, this message translates to:
-  /// **'Captions'**
-  String get metadataCaptionsLabel;
-
-  /// Screen reader label when the global captions toggle is on
-  ///
-  /// In en, this message translates to:
-  /// **'Captions enabled for all videos'**
-  String get metadataCaptionsEnabledSemantics;
-
-  /// Screen reader label when the global captions toggle is off
-  ///
-  /// In en, this message translates to:
-  /// **'Captions disabled for all videos'**
-  String get metadataCaptionsDisabledSemantics;
 
   /// Empty-state message shown in the fullscreen feed when the last visible video has just been deleted, blocked, or muted and the route cannot be popped back to a parent (e.g. a cold deep-link).
   ///
@@ -12112,6 +12498,78 @@ abstract class AppLocalizations {
   /// **'Waiting for recipient'**
   String get badgesRecipientWaitingStatus;
 
+  /// Semantics label for the button that opens the recorder to create a video reply in comments.
+  ///
+  /// In en, this message translates to:
+  /// **'Record video comment'**
+  String get commentsRecordVideoButtonLabel;
+
+  /// Semantics label for the button that opens an inline video reply in the full video detail route.
+  ///
+  /// In en, this message translates to:
+  /// **'Open video comment'**
+  String get commentsOpenVideoLabel;
+
+  /// Semantics label for the button that mutes inline video comment playback.
+  ///
+  /// In en, this message translates to:
+  /// **'Mute video reply'**
+  String get commentsMuteVideoReplyLabel;
+
+  /// Semantics label for the button that unmutes inline video comment playback.
+  ///
+  /// In en, this message translates to:
+  /// **'Unmute video reply'**
+  String get commentsUnmuteVideoReplyLabel;
+
+  /// Semantics label for the UI that opens the parent video for a video reply.
+  ///
+  /// In en, this message translates to:
+  /// **'Open video this replies to'**
+  String get commentsOpenReplyParentLabel;
+
+  /// Section title shown above the parent video label for a video reply.
+  ///
+  /// In en, this message translates to:
+  /// **'In reply to'**
+  String get commentsReplyParentSectionTitle;
+
+  /// Label describing the parent video a reply points to.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply to {target}'**
+  String commentsReplyParentLabel(String target);
+
+  /// Fallback label when the parent video has no title, author name, or usable content.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply to video'**
+  String get commentsReplyParentFallbackLabel;
+
+  /// Screen reader label for a verified-account chip on a user's profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified {platform} account: {identity}'**
+  String verifiedAccountChipSemanticLabel(String platform, String identity);
+
+  /// Section header on the edit profile screen above the verified-accounts chip row and the Get verified CTA.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified accounts'**
+  String get profileEditVerifiedAccountsTitle;
+
+  /// Primary CTA tile on edit profile that opens the verifyer integrated-app sandbox.
+  ///
+  /// In en, this message translates to:
+  /// **'Get verified'**
+  String get profileEditGetVerifiedCta;
+
+  /// Subtitle under the Get verified tile, harmonized with verifyer.divine.video landing copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Link your social media accounts so people know it\'s really you.'**
+  String get profileEditGetVerifiedSubtitle;
+
   /// No description provided for @videoMetadataEditCoverTitle.
   ///
   /// In en, this message translates to:
@@ -12154,6 +12612,7 @@ class _AppLocalizationsDelegate
     'de',
     'en',
     'es',
+    'fil',
     'fr',
     'id',
     'it',
@@ -12186,6 +12645,8 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
       return AppLocalizationsEn();
     case 'es':
       return AppLocalizationsEs();
+    case 'fil':
+      return AppLocalizationsFil();
     case 'fr':
       return AppLocalizationsFr();
     case 'id':

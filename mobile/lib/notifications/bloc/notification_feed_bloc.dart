@@ -1,5 +1,6 @@
-// ABOUTME: BLoC for the notification feed — handles initial load, pagination,
-// ABOUTME: pull-to-refresh, push/realtime events, mark-read, and follow-back.
+// ABOUTME: BLoC for the notification feed — subscribes to the repository's
+// ABOUTME: snapshot stream, projects it into state, and forwards mutations
+// ABOUTME: (mark-read, refresh, follow-back) to the repository.
 
 import 'dart:async';
 
@@ -7,7 +8,6 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
-import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart';
 import 'package:notification_repository/notification_repository.dart';
 
@@ -16,12 +16,11 @@ part 'notification_feed_state.dart';
 
 /// BLoC for managing the notification feed.
 ///
-/// Handles:
-/// - Initial load and pagination
-/// - Pull-to-refresh and push notification nudges
-/// - WebSocket real-time notification insertion
-/// - Mark as read (single and all)
-/// - Follow-back from follow notifications
+/// Subscribes to [NotificationRepository.watchSnapshot] so the visible
+/// list, unread counts, and per-row read state always reflect the single
+/// source of truth shared with the badge cubit. Event handlers forward
+/// mutations to the repository; the resulting snapshot emission drives
+/// the next state.
 class NotificationFeedBloc
     extends Bloc<NotificationFeedEvent, NotificationFeedState> {
   NotificationFeedBloc({
@@ -30,6 +29,7 @@ class NotificationFeedBloc
   }) : _notificationRepository = notificationRepository,
        _followRepository = followRepository,
        super(const NotificationFeedState()) {
+    on<_SnapshotChanged>(_onSnapshotChanged);
     on<NotificationFeedStarted>(
       _onStarted,
       transformer: droppable(),
@@ -42,24 +42,23 @@ class NotificationFeedBloc
       _onRefreshed,
       transformer: droppable(),
     );
-    on<NotificationFeedPushReceived>(
-      _onPushReceived,
-      transformer: droppable(),
-    );
-    on<NotificationFeedRealtimeReceived>(
-      _onRealtimeReceived,
-      transformer: sequential(),
-    );
     on<NotificationFeedItemTapped>(_onItemTapped);
     on<NotificationFeedMarkAllRead>(_onMarkAllRead);
     on<NotificationFeedFollowBack>(
       _onFollowBack,
       transformer: sequential(),
     );
+
+    // Project the repository's snapshot stream into BLoC state via a
+    // private event so emit() stays inside an event handler.
+    _snapshotSubscription = _notificationRepository.watchSnapshot().listen(
+      (page) => add(_SnapshotChanged(page)),
+    );
   }
 
   final NotificationRepository _notificationRepository;
   final FollowRepository _followRepository;
+  late final StreamSubscription<NotificationPage> _snapshotSubscription;
 
   /// Override [ActorNotification.isFollowingBack] for follow-type rows so the
   /// flag tracks the authoritative follow state in [FollowRepository] rather
@@ -77,7 +76,26 @@ class NotificationFeedBloc
     }).toList();
   }
 
+  /// Project each repository snapshot into BLoC state.
+  void _onSnapshotChanged(
+    _SnapshotChanged event,
+    Emitter<NotificationFeedState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        notifications: _applyFollowState(event.page.items),
+        unreadCount: event.page.unreadCount,
+        hasMore: event.page.hasMore,
+      ),
+    );
+  }
+
   /// Handle initial load.
+  ///
+  /// Triggers `refresh()` then `markAllAsRead()` on the repository. Both
+  /// emit snapshots which `_onSnapshotChanged` translates into state.
+  /// Status transitions (loading → loaded / failure) are emitted here so
+  /// the UI can render the initial spinner and error states.
   Future<void> _onStarted(
     NotificationFeedStarted event,
     Emitter<NotificationFeedState> emit,
@@ -85,19 +103,24 @@ class NotificationFeedBloc
     emit(state.copyWith(status: NotificationFeedStatus.loading));
 
     try {
-      final page = await _notificationRepository.refresh();
-
-      emit(
-        state.copyWith(
-          status: NotificationFeedStatus.loaded,
-          notifications: _applyFollowState(page.items),
-          unreadCount: page.unreadCount,
-          hasMore: page.hasMore,
-        ),
-      );
+      await _notificationRepository.refresh();
+      emit(state.copyWith(status: NotificationFeedStatus.loaded));
     } catch (e, s) {
       addError(e, s);
       emit(state.copyWith(status: NotificationFeedStatus.failure));
+      return;
+    }
+
+    // Best-effort auto-mark-read. The repository rolls back the snapshot
+    // on write failure, so the per-row read state and badge stay correct
+    // either way; we just record the throw via addError. Don't flip
+    // status to failure — the list loaded successfully and is still
+    // valid, and showing the error screen here would hide a working
+    // feed behind a Retry button.
+    try {
+      await _notificationRepository.markAllAsRead();
+    } catch (e, s) {
+      addError(e, s);
     }
   }
 
@@ -111,24 +134,8 @@ class NotificationFeedBloc
     emit(state.copyWith(isLoadingMore: true));
 
     try {
-      final page = await _notificationRepository.getNotifications();
-
-      // Deduplicate by ID — keep existing items, append only new ones.
-      final existingIds = state.notifications.map((n) => n.id).toSet();
-      final newItems = page.items
-          .where((n) => !existingIds.contains(n.id))
-          .toList();
-
-      emit(
-        state.copyWith(
-          notifications: _applyFollowState([
-            ...state.notifications,
-            ...newItems,
-          ]),
-          hasMore: page.hasMore,
-          isLoadingMore: false,
-        ),
-      );
+      await _notificationRepository.getNotifications();
+      emit(state.copyWith(isLoadingMore: false));
     } catch (e, s) {
       addError(e, s);
       emit(state.copyWith(isLoadingMore: false));
@@ -141,180 +148,40 @@ class NotificationFeedBloc
     Emitter<NotificationFeedState> emit,
   ) async {
     try {
-      final page = await _notificationRepository.refresh();
-
-      emit(
-        state.copyWith(
-          status: NotificationFeedStatus.loaded,
-          notifications: _applyFollowState(page.items),
-          unreadCount: page.unreadCount,
-          hasMore: page.hasMore,
-        ),
-      );
+      await _notificationRepository.refresh();
+      emit(state.copyWith(status: NotificationFeedStatus.loaded));
     } catch (e, s) {
       addError(e, s);
       emit(state.copyWith(status: NotificationFeedStatus.failure));
     }
   }
 
-  /// Handle push notification — triggers a full refresh.
-  Future<void> _onPushReceived(
-    NotificationFeedPushReceived event,
-    Emitter<NotificationFeedState> emit,
-  ) async {
-    try {
-      final page = await _notificationRepository.refresh();
-
-      emit(
-        state.copyWith(
-          status: NotificationFeedStatus.loaded,
-          notifications: _applyFollowState(page.items),
-          unreadCount: page.unreadCount,
-          hasMore: page.hasMore,
-        ),
-      );
-    } catch (e, s) {
-      addError(e, s);
-      // Keep current state on push-refresh failure — don't lose data.
-    }
-  }
-
-  /// Handle WebSocket real-time notification.
-  ///
-  /// Enriches the raw [RelayNotification] via the repository (profile +
-  /// video metadata fetched in parallel), then either merges the new
-  /// actor into an existing matching [VideoNotification] group or
-  /// inserts the enriched item at the top.
-  Future<void> _onRealtimeReceived(
-    NotificationFeedRealtimeReceived event,
-    Emitter<NotificationFeedState> emit,
-  ) async {
-    final enriched = await _notificationRepository.enrichOne(event.raw);
-    if (enriched == null) return;
-
-    // Already shown? skip.
-    final exists = state.notifications.any((n) => n.id == enriched.id);
-    if (exists) return;
-
-    // Try to merge into an existing matching VideoNotification group.
-    if (enriched is VideoNotification) {
-      final mergedList = <NotificationItem>[];
-      var merged = false;
-      for (final existing in state.notifications) {
-        if (!merged &&
-            existing is VideoNotification &&
-            existing.videoEventId == enriched.videoEventId &&
-            existing.type == enriched.type) {
-          final mergedActors = [
-            enriched.actors.first,
-            ...existing.actors,
-          ].take(3).toList();
-          mergedList.add(
-            existing.copyWith(
-              actors: mergedActors,
-              totalCount: existing.totalCount + 1,
-              isRead: false,
-              timestamp: enriched.timestamp,
-            ),
-          );
-          merged = true;
-        } else {
-          mergedList.add(existing);
-        }
-      }
-      if (merged) {
-        emit(
-          state.copyWith(
-            notifications: _applyFollowState(mergedList),
-            unreadCount: state.unreadCount + 1,
-          ),
-        );
-        return;
-      }
-    }
-
-    emit(
-      state.copyWith(
-        notifications: _applyFollowState([enriched, ...state.notifications]),
-        unreadCount: state.unreadCount + 1,
-      ),
-    );
-  }
-
-  /// Handle notification tap — mark as read locally and on server.
+  /// Handle notification tap — forwards to the repository, which
+  /// optimistically flips the row in the snapshot and writes to the
+  /// server. The resulting snapshot emission updates this BLoC's state
+  /// and the badge cubit's count atomically.
   Future<void> _onItemTapped(
     NotificationFeedItemTapped event,
     Emitter<NotificationFeedState> emit,
   ) async {
-    final updated = state.notifications.map((n) {
-      if (n.id != event.notificationId || n.isRead) return n;
-      return switch (n) {
-        VideoNotification() => n.copyWith(isRead: true),
-        ActorNotification() => n.copyWith(isRead: true),
-      };
-    }).toList();
-
-    final wasUnread = state.notifications.any(
-      (n) => n.id == event.notificationId && !n.isRead,
-    );
-
-    emit(
-      state.copyWith(
-        notifications: _applyFollowState(updated),
-        unreadCount: wasUnread
-            ? (state.unreadCount - 1).clamp(0, state.unreadCount)
-            : state.unreadCount,
-      ),
-    );
-
-    unawaited(
-      _notificationRepository.markAsRead([event.notificationId]),
-    );
+    try {
+      await _notificationRepository.markAsRead([event.notificationId]);
+    } catch (e, s) {
+      addError(e, s);
+    }
   }
 
-  /// Handle mark all as read.
-  ///
-  /// Optimistically flips every notification's `isRead` to `true` and zeros
-  /// the unread count, then awaits the server write. On failure the
-  /// pre-optimistic notifications and unread count are restored so the next
-  /// refresh does not silently regress the badge / row state, and the
-  /// underlying error is forwarded to the bloc error stream.
+  /// Handle mark-all-as-read — forwards to the repository. Rollback on
+  /// failure (PR #4034 semantics) is implemented at the repository
+  /// layer so the badge cubit and the feed bloc recover consistently.
   Future<void> _onMarkAllRead(
     NotificationFeedMarkAllRead event,
     Emitter<NotificationFeedState> emit,
   ) async {
-    final hasUnread =
-        state.unreadCount > 0 || state.notifications.any((n) => !n.isRead);
-    if (!hasUnread) return;
-
-    final previousNotifications = state.notifications;
-    final previousUnreadCount = state.unreadCount;
-
-    final updatedNotifications = state.notifications.map((n) {
-      if (n.isRead) return n;
-      return switch (n) {
-        VideoNotification() => n.copyWith(isRead: true),
-        ActorNotification() => n.copyWith(isRead: true),
-      };
-    }).toList();
-
-    emit(
-      state.copyWith(
-        notifications: updatedNotifications,
-        unreadCount: 0,
-      ),
-    );
-
     try {
       await _notificationRepository.markAllAsRead();
     } catch (e, s) {
       addError(e, s);
-      emit(
-        state.copyWith(
-          notifications: previousNotifications,
-          unreadCount: previousUnreadCount,
-        ),
-      );
     }
   }
 
@@ -337,4 +204,21 @@ class NotificationFeedBloc
       addError(e, s);
     }
   }
+
+  @override
+  Future<void> close() async {
+    await _snapshotSubscription.cancel();
+    return super.close();
+  }
+}
+
+/// Private event used to inject repository snapshot emissions into the
+/// BLoC's event-handler pipeline.
+final class _SnapshotChanged extends NotificationFeedEvent {
+  const _SnapshotChanged(this.page);
+
+  final NotificationPage page;
+
+  @override
+  List<Object?> get props => [page];
 }

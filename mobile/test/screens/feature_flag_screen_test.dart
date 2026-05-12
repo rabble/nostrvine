@@ -169,13 +169,19 @@ void main() {
       await service.initialize();
       await tester.pumpAndSettle();
 
-      // Find the switch for newCameraUI
-      final switches = tester.widgetList<Switch>(find.byType(Switch));
-      expect(switches, isNotEmpty);
+      // Find the switch for newCameraUI specifically
+      final newCameraSwitch = find.descendant(
+        of: find.ancestor(
+          of: find.text('New Camera UI'),
+          matching: find.byType(Card),
+        ),
+        matching: find.byType(Switch),
+      );
+      expect(newCameraSwitch, findsOneWidget);
 
-      // Check if any switch shows override indication (different color)
-      final firstSwitch = switches.first;
-      expect(firstSwitch.value, isTrue);
+      // Check if the override switch shows true
+      final switchWidget = tester.widget<Switch>(newCameraSwitch);
+      expect(switchWidget.value, isTrue);
     });
 
     testWidgets('should reset all flags on reset button press', (tester) async {
@@ -215,10 +221,6 @@ void main() {
       // Set up mixed flag states
       when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
       when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
-      when(() => mockPrefs.getBool('ff_enhancedVideoPlayer')).thenReturn(false);
-      when(
-        () => mockPrefs.containsKey('ff_enhancedVideoPlayer'),
-      ).thenReturn(true);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -245,7 +247,6 @@ void main() {
 
       // Find switches by looking for the flag display names
       expect(find.text('New Camera UI'), findsOneWidget);
-      expect(find.text('Enhanced Video Player'), findsOneWidget);
       // TOOD(any): Fix and re-enable these tests
     }, skip: true);
 

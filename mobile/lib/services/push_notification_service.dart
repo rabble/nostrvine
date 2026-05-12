@@ -119,7 +119,7 @@ class PushNotificationService {
     }
 
     final published = await _nostrClient.publishEvent(event);
-    if (published == null) {
+    if (published is! PublishSuccess) {
       Log.error(
         'Failed to publish deregistration event',
         name: 'PushNotificationService',
@@ -181,7 +181,7 @@ class PushNotificationService {
     }
 
     final published = await _nostrClient.publishEvent(event);
-    if (published == null) {
+    if (published is! PublishSuccess) {
       Log.error(
         'Failed to publish preferences event',
         name: 'PushNotificationService',
@@ -275,7 +275,7 @@ class PushNotificationService {
     }
 
     final published = await _nostrClient.publishEvent(event);
-    if (published == null) {
+    if (published is! PublishSuccess) {
       Log.error(
         'Failed to publish registration event',
         name: 'PushNotificationService',

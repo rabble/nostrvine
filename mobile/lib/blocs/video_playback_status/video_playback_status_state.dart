@@ -4,7 +4,8 @@
 import 'dart:collection';
 
 import 'package:equatable/equatable.dart';
-import 'package:pooled_video_player/pooled_video_player.dart';
+import 'package:infinite_video_feed/infinite_video_feed.dart'
+    show VideoErrorType;
 
 /// Per-video playback status reported by the pooled video player.
 enum PlaybackStatus {
@@ -87,8 +88,8 @@ class VideoPlaybackStatusState extends Equatable {
   }
 }
 
-/// Maps a [VideoErrorType] from the pooled video player to the
-/// corresponding [PlaybackStatus] the cubit should track.
+/// Maps a [VideoErrorType] to the corresponding [PlaybackStatus] the cubit
+/// should track.
 ///
 /// Null defaults to [PlaybackStatus.generic] because a missing error type
 /// still represents a non-ready state that should replace the normal

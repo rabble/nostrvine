@@ -6,7 +6,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/widgets/notification_avatar_stack.dart';
+import 'package:openvine/notifications/widgets/notification_comment_quote.dart';
+import 'package:openvine/notifications/widgets/notification_video_thumbnail.dart';
 import 'package:openvine/notifications/widgets/video_notification_row.dart';
+import 'package:openvine/widgets/notification_type_icon.dart';
 
 const _alice = ActorInfo(
   pubkey: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
@@ -32,6 +35,7 @@ VideoNotification _video({
   int totalCount = 1,
   String? videoThumbnailUrl,
   String? videoTitle,
+  String? commentText,
   bool isRead = false,
 }) {
   return VideoNotification(
@@ -44,6 +48,7 @@ VideoNotification _video({
     timestamp: DateTime.utc(2026, 5, 4, 12),
     videoThumbnailUrl: videoThumbnailUrl,
     videoTitle: videoTitle,
+    commentText: commentText,
     isRead: isRead,
   );
 }
@@ -74,13 +79,20 @@ Future<void> _pump(
 void main() {
   group(VideoNotificationRow, () {
     group('renders', () {
+      testWidgets('leading $NotificationTypeIcon for every kind', (
+        tester,
+      ) async {
+        await _pump(tester, notification: _video());
+        expect(find.byType(NotificationTypeIcon), findsOneWidget);
+      });
+
       testWidgets('actor name and like message when single actor', (
         tester,
       ) async {
         await _pump(tester, notification: _video());
 
         expect(
-          find.text(_l10n.notificationLikedYourVideo('Alice')),
+          find.textContaining(_l10n.notificationLikedYourVideo('Alice')),
           findsOneWidget,
         );
       });
@@ -96,7 +108,7 @@ void main() {
 
         final verb = _l10n.notificationLikedYourVideo('').trimLeft();
         expect(
-          find.text(
+          find.textContaining(
             'Alice ${_l10n.notificationAndConnector} '
             '${_l10n.notificationOthersCount(49)} $verb',
           ),
@@ -111,10 +123,76 @@ void main() {
         );
 
         expect(
-          find.text(_l10n.notificationCommentedOnYourVideo('Alice')),
+          find.textContaining(_l10n.notificationCommentedOnYourVideo('Alice')),
           findsOneWidget,
         );
       });
+
+      testWidgets(
+        'appends video title for like / comment / repost',
+        (tester) async {
+          await _pump(
+            tester,
+            notification: _video(videoTitle: 'My Cool Vine'),
+          );
+
+          expect(find.textContaining('My Cool Vine'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'renders $NotificationCommentQuote when commentText is set',
+        (tester) async {
+          await _pump(
+            tester,
+            notification: _video(
+              type: NotificationKind.comment,
+              commentText: 'Loved this clip!',
+            ),
+          );
+
+          // The quote widget renders the body with curly quotes.
+          expect(find.byType(NotificationCommentQuote), findsOneWidget);
+          expect(find.textContaining('Loved this clip!'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'no $NotificationCommentQuote when commentText is null',
+        (tester) async {
+          await _pump(
+            tester,
+            notification: _video(type: NotificationKind.comment),
+          );
+
+          expect(find.byType(NotificationCommentQuote), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'timestamp moves to the quote when commentText is present',
+        (tester) async {
+          // The timestamp must anchor to the visual end of the row, so
+          // when a comment quote is rendered the timestamp goes there
+          // instead of the message line. This test asserts the message
+          // line does NOT carry the timestamp suffix while the quote
+          // does.
+          await _pump(
+            tester,
+            notification: _video(
+              type: NotificationKind.comment,
+              commentText: 'Thanks!',
+            ),
+          );
+
+          final quoteWidget = tester.widget<NotificationCommentQuote>(
+            find.byType(NotificationCommentQuote),
+          );
+          // The widget owns the timestamp suffix.
+          expect(quoteWidget.timestamp, isNotNull);
+          expect(quoteWidget.timestamp, isNotEmpty);
+        },
+      );
 
       testWidgets('thumbnail placeholder when videoThumbnailUrl is null', (
         tester,
@@ -122,7 +200,7 @@ void main() {
         await _pump(tester, notification: _video());
 
         expect(
-          find.byKey(const Key('video_notification_thumbnail')),
+          find.byType(NotificationVideoThumbnail),
           findsOneWidget,
         );
       });
@@ -166,7 +244,7 @@ void main() {
         );
 
         await tester.tap(
-          find.byKey(const Key('video_notification_thumbnail')),
+          find.byType(NotificationVideoThumbnail),
         );
         await tester.pump();
 

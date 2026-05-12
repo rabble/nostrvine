@@ -204,6 +204,17 @@ void main() {
 
       expect(result, existing);
     });
+
+    test('preserves original instance when no enrichment matches', () {
+      // Regression: mergeEnrichedVideos must return the same VideoEvent
+      // instance (not a copy) when nothing is enriched, so that
+      // videoListsEqual (which uses identical()) correctly detects no change.
+      final a = video('a');
+
+      final result = mergeEnrichedVideos(existing: [a], enriched: []);
+
+      expect(identical(result[0], a), isTrue);
+    });
   });
 
   group('videoListsEqual', () {
@@ -239,6 +250,18 @@ void main() {
 
     test('returns true for two empty lists', () {
       expect(videoListsEqual([], []), isTrue);
+    });
+
+    test('returns false for same id but different instance', () {
+      // Regression: proves identical() is required rather than ==.
+      // After enrichment mergeEnrichedVideos produces a new VideoEvent
+      // instance for every matched video, so a list comparison based on
+      // == would miss those changes and suppress the provider rebuild.
+      final a1 = video('a');
+      final a2 = video('a'); // same id, different object
+
+      expect(identical(a1, a2), isFalse); // guard: really different instances
+      expect(videoListsEqual([a1], [a2]), isFalse);
     });
   });
 

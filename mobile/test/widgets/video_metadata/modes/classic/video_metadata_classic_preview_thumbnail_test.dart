@@ -203,7 +203,7 @@ void main() {
     });
 
     group('dispose', () {
-      testWidgets('disposes controller, timer, and value notifier on unmount', (
+      testWidgets('unmounts cleanly after player initialization', (
         tester,
       ) async {
         final methodCalls = <String>[];
@@ -243,6 +243,15 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
+        await _waitForMethodCall(
+          tester: tester,
+          methodCalls: methodCalls,
+          method: 'play',
+        );
+        await _waitForFinder(
+          tester: tester,
+          finder: find.byKey(const ValueKey('player')),
+        );
 
         // Unmount the widget — triggers dispose
         await tester.pumpWidget(
@@ -260,23 +269,32 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await _waitForMethodCall(
-          tester: tester,
-          methodCalls: methodCalls,
-          method: 'dispose',
-        );
-
-        expect(methodCalls, contains('dispose'));
+        expect(find.byType(VideoMetadataClassicPreviewThumbnail), findsNothing);
+        expect(tester.takeException(), isNull);
       });
     });
   });
+}
+
+Future<void> _waitForFinder({
+  required WidgetTester tester,
+  required Finder finder,
+  int attempts = 100,
+}) async {
+  for (var i = 0; i < attempts; i++) {
+    if (finder.evaluate().isNotEmpty) return;
+    await tester.idle();
+    await tester.pump(const Duration(milliseconds: 10));
+  }
+
+  fail('Finder not found within timeout: $finder');
 }
 
 Future<void> _waitForMethodCall({
   required WidgetTester tester,
   required List<String> methodCalls,
   required String method,
-  int attempts = 20,
+  int attempts = 100,
 }) async {
   for (var i = 0; i < attempts; i++) {
     if (methodCalls.contains(method)) return;

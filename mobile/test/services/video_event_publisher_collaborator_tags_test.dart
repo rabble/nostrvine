@@ -125,7 +125,7 @@ void main() {
 
     when(
       () => nostrClient.publishEvent(any()),
-    ).thenAnswer((_) async => publishedEvent);
+    ).thenAnswer((_) async => PublishSuccess(event: publishedEvent));
     when(
       () => nostrClient.queryEvents(
         any(),

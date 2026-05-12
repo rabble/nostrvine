@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 /// [uri] is a file path, network URL, or any URI the native player can
 /// resolve. [start] and [end] define the subrange of the source to play.
 /// When [end] is `null`, the clip plays to the end of the source file.
+/// [volume] controls the audio level for this clip (0.0 = muted, 1.0 = full).
 ///
 /// For Flutter assets and in-memory bytes, use the async helpers
 /// [VideoClip.asset] and [VideoClip.memory] which copy data to a temporary
@@ -18,6 +19,7 @@ class VideoClip {
     required this.uri,
     this.start = Duration.zero,
     this.end,
+    this.volume = 1.0,
   });
 
   /// Creates a [VideoClip] from a local file path.
@@ -25,6 +27,7 @@ class VideoClip {
     String path, {
     this.start = Duration.zero,
     this.end,
+    this.volume = 1.0,
   }) : uri = path;
 
   /// Creates a [VideoClip] from a network URL.
@@ -32,6 +35,7 @@ class VideoClip {
     String url, {
     this.start = Duration.zero,
     this.end,
+    this.volume = 1.0,
   }) : uri = url;
 
   /// Creates a [VideoClip] from a Flutter asset.
@@ -42,6 +46,7 @@ class VideoClip {
     String assetPath, {
     Duration start = Duration.zero,
     Duration? end,
+    double volume = 1.0,
     AssetBundle? bundle,
   }) async {
     final (data, dir) = await (
@@ -52,7 +57,7 @@ class VideoClip {
     final file = File('${dir.path}/divine_player_assets/$fileName');
     await file.parent.create(recursive: true);
     await file.writeAsBytes(data.buffer.asUint8List(), flush: true);
-    return VideoClip(uri: file.path, start: start, end: end);
+    return VideoClip(uri: file.path, start: start, end: end, volume: volume);
   }
 
   /// Creates a [VideoClip] from in-memory bytes.
@@ -64,12 +69,13 @@ class VideoClip {
     required String fileName,
     Duration start = Duration.zero,
     Duration? end,
+    double volume = 1.0,
   }) async {
     final dir = await getTemporaryDirectory();
     final file = File('${dir.path}/divine_player_memory/$fileName');
     await file.parent.create(recursive: true);
     await file.writeAsBytes(bytes, flush: true);
-    return VideoClip(uri: file.path, start: start, end: end);
+    return VideoClip(uri: file.path, start: start, end: end, volume: volume);
   }
 
   /// File path, network URL, or platform URI of the video source.
@@ -83,12 +89,16 @@ class VideoClip {
   /// When `null`, the clip plays to the end of the source.
   final Duration? end;
 
+  /// Audio volume for this clip (0.0 = muted, 1.0 = full volume).
+  final double volume;
+
   /// Serializes this clip for platform channel transport.
   Map<String, dynamic> toMap() {
     return {
       'uri': uri,
       'startMs': start.inMilliseconds,
       'endMs': end?.inMilliseconds,
+      'volume': volume,
     };
   }
 }

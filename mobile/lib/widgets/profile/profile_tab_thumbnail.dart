@@ -29,16 +29,27 @@ class ProfileTabThumbnail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (thumbnailUrl != null && thumbnailUrl!.isNotEmpty) {
-      return VineCachedImage(
-        imageUrl: thumbnailUrl!,
-        fadeInDuration: isPrecached
-            ? Duration.zero
-            : const Duration(milliseconds: 500),
-        fadeOutDuration: isPrecached
-            ? Duration.zero
-            : const Duration(milliseconds: 1000),
-        placeholder: (context, url) => _Fallback(blurhash: blurhash),
-        errorWidget: (context, url, error) => _Fallback(blurhash: blurhash),
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final rawWidth = constraints.maxWidth;
+          // Decode at tile_width × DPR so the profile grid stays under the
+          // default ImageCache budget without upscaling. See PR #4220 (#4190).
+          final memCacheWidth = rawWidth.isFinite && rawWidth > 0
+              ? (rawWidth * MediaQuery.devicePixelRatioOf(context)).round()
+              : null;
+          return VineCachedImage(
+            imageUrl: thumbnailUrl!,
+            memCacheWidth: memCacheWidth,
+            fadeInDuration: isPrecached
+                ? Duration.zero
+                : const Duration(milliseconds: 500),
+            fadeOutDuration: isPrecached
+                ? Duration.zero
+                : const Duration(milliseconds: 1000),
+            placeholder: (context, url) => _Fallback(blurhash: blurhash),
+            errorWidget: (context, url, error) => _Fallback(blurhash: blurhash),
+          );
+        },
       );
     }
     return _Fallback(blurhash: blurhash);
@@ -52,8 +63,9 @@ class _Fallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (blurhash != null && blurhash!.isNotEmpty) {
-      return BlurhashDisplay(blurhash: blurhash!);
+    final blurhashValue = blurhash;
+    if (blurhashValue != null && blurhashValue.isNotEmpty) {
+      return BlurhashDisplay(blurhash: blurhashValue);
     }
     return const ProfileTabThumbnailPlaceholder();
   }

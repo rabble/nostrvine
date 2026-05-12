@@ -6,7 +6,6 @@ import 'package:db_client/db_client.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:notification_repository/notification_repository.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:test/test.dart';
@@ -17,13 +16,10 @@ class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 class _MockNotificationsDao extends Mock implements NotificationsDao {}
 
-class _MockNostrClient extends Mock implements NostrClient {}
-
 void main() {
   late _MockFunnelcakeApiClient funnelcakeApiClient;
   late _MockProfileRepository profileRepository;
   late _MockNotificationsDao notificationsDao;
-  late _MockNostrClient nostrClient;
   late NotificationRepository repository;
 
   const userPubkey = 'user1234567890abcdef';
@@ -32,7 +28,6 @@ void main() {
     funnelcakeApiClient = _MockFunnelcakeApiClient();
     profileRepository = _MockProfileRepository();
     notificationsDao = _MockNotificationsDao();
-    nostrClient = _MockNostrClient();
     when(
       () => funnelcakeApiClient.notificationsUri(
         pubkey: any(named: 'pubkey'),
@@ -64,7 +59,6 @@ void main() {
       profileRepository: profileRepository,
       notificationsDao: notificationsDao,
       userPubkey: userPubkey,
-      nostrClient: nostrClient,
     );
   });
 
@@ -103,9 +97,8 @@ void main() {
 
   void stubProfiles(Map<String, UserProfile> profiles) {
     when(
-      () => profileRepository.fetchBatchProfiles(
-        pubkeys: any(named: 'pubkeys'),
-      ),
+      () =>
+          profileRepository.fetchBatchProfiles(pubkeys: any(named: 'pubkeys')),
     ).thenAnswer((_) async => profiles);
   }
 
@@ -186,7 +179,6 @@ void main() {
           profileRepository: profileRepository,
           notificationsDao: notificationsDao,
           userPubkey: userPubkey,
-          nostrClient: nostrClient,
           authHeadersProvider: (url, method) async {
             signedUrl = url;
             signedMethod = method;
@@ -201,16 +193,11 @@ void main() {
         final signedUri = Uri.parse(signedUrl);
         expect(
           '${signedUri.scheme}://${signedUri.host}${signedUri.path}',
-          equals(
-            'https://api.example.com/api/users/$userPubkey/notifications',
-          ),
+          equals('https://api.example.com/api/users/$userPubkey/notifications'),
         );
         expect(signedUri.queryParameters['limit'], equals('50'));
         expect(signedUri.queryParameters['before'], isNotNull);
-        expect(
-          int.tryParse(signedUri.queryParameters['before']!),
-          isNotNull,
-        );
+        expect(int.tryParse(signedUri.queryParameters['before']!), isNotNull);
         expect(signedMethod, equals('GET'));
       });
 
@@ -221,7 +208,6 @@ void main() {
           profileRepository: profileRepository,
           notificationsDao: notificationsDao,
           userPubkey: userPubkey,
-          nostrClient: nostrClient,
           authHeadersProvider: (url, method) async {
             signedUrl = url;
             return {'Authorization': 'Nostr test-token'};
@@ -280,9 +266,7 @@ void main() {
       });
 
       test('falls back to "Unknown user" for missing profiles', () async {
-        stubNotifications([
-          makeNotification(sourcePubkey: 'unknown_pub'),
-        ]);
+        stubNotifications([makeNotification(sourcePubkey: 'unknown_pub')]);
         stubProfiles({});
 
         final page = await repository.getNotifications();
@@ -343,7 +327,6 @@ void main() {
             profileRepository: profileRepository,
             notificationsDao: notificationsDao,
             userPubkey: userPubkey,
-            nostrClient: nostrClient,
             authHeadersProvider: (url, method) async {
               signedUrl = url;
               return {'Authorization': 'Nostr test-token'};
@@ -380,7 +363,6 @@ void main() {
             profileRepository: profileRepository,
             notificationsDao: notificationsDao,
             userPubkey: userPubkey,
-            nostrClient: nostrClient,
             authHeadersProvider: (url, method) async {
               signedUrl = url;
               return {'Authorization': 'Nostr test-token'};
@@ -412,104 +394,95 @@ void main() {
     });
 
     group('video-anchored grouping', () {
-      test(
-        '5 likes on same video become 1 $VideoNotification '
-        'with totalCount 5 and 3 actors',
-        () async {
-          stubNotifications([
-            for (var i = 0; i < 5; i++)
-              makeNotification(
-                id: 'l$i',
-                sourcePubkey: 'pub_$i',
-                referencedEventId: 'video_x',
-                createdAt: DateTime(2025, 1, 5 - i),
-              ),
-          ]);
-          stubProfiles({
-            for (var i = 0; i < 5; i++)
-              'pub_$i': makeProfile('pub_$i', displayName: 'Actor$i'),
-          });
-
-          final page = await repository.getNotifications();
-
-          expect(page.items, hasLength(1));
-          final item = page.items.single as VideoNotification;
-          expect(item.type, equals(NotificationKind.like));
-          expect(item.totalCount, equals(5));
-          // Cap is 3 actors for the stack.
-          expect(item.actors, hasLength(3));
-          // Newest first — pub_0 had the latest createdAt.
-          expect(item.actors.first.displayName, equals('Actor0'));
-          expect(item.videoEventId, equals('video_x'));
-        },
-      );
-
-      test(
-        'grouped video notifications build addressable id from '
-        'user pubkey and d-tag',
-        () async {
-          stubNotifications([
+      test('5 likes on same video become 1 $VideoNotification '
+          'with totalCount 5 and 3 actors', () async {
+        stubNotifications([
+          for (var i = 0; i < 5; i++)
             makeNotification(
-              id: 'l1',
-              sourcePubkey: 'pub_a',
+              id: 'l$i',
+              sourcePubkey: 'pub_$i',
               referencedEventId: 'video_x',
-              referencedDTag: 'vine-id',
+              createdAt: DateTime(2025, 1, 5 - i),
             ),
-            makeNotification(
-              id: 'l2',
-              sourcePubkey: 'pub_b',
-              referencedEventId: 'video_x',
-              referencedDTag: 'vine-id',
-            ),
-          ]);
-          stubProfiles({
-            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
-            'pub_b': makeProfile('pub_b', displayName: 'Bob'),
-          });
+        ]);
+        stubProfiles({
+          for (var i = 0; i < 5; i++)
+            'pub_$i': makeProfile('pub_$i', displayName: 'Actor$i'),
+        });
 
-          final page = await repository.getNotifications();
+        final page = await repository.getNotifications();
 
-          expect(page.items, hasLength(1));
-          final item = page.items.single as VideoNotification;
-          expect(
-            item.videoAddressableId,
-            equals(
-              '${NIP71VideoKinds.addressableShortVideo}:'
-              '$userPubkey:vine-id',
-            ),
-          );
-        },
-      );
+        expect(page.items, hasLength(1));
+        final item = page.items.single as VideoNotification;
+        expect(item.type, equals(NotificationKind.like));
+        expect(item.totalCount, equals(5));
+        // Cap is 3 actors for the stack.
+        expect(item.actors, hasLength(3));
+        // Newest first — pub_0 had the latest createdAt.
+        expect(item.actors.first.displayName, equals('Actor0'));
+        expect(item.videoEventId, equals('video_x'));
+      });
 
-      test(
-        'grouped video notifications leave addressable id null when d-tag '
-        'is null or empty',
-        () async {
-          stubNotifications([
-            makeNotification(
-              id: 'l1',
-              sourcePubkey: 'pub_a',
-              referencedEventId: 'video_x',
-              referencedDTag: '',
-            ),
-            makeNotification(
-              id: 'l2',
-              sourcePubkey: 'pub_b',
-              referencedEventId: 'video_x',
-            ),
-          ]);
-          stubProfiles({
-            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
-            'pub_b': makeProfile('pub_b', displayName: 'Bob'),
-          });
+      test('grouped video notifications build addressable id from '
+          'user pubkey and d-tag', () async {
+        stubNotifications([
+          makeNotification(
+            id: 'l1',
+            sourcePubkey: 'pub_a',
+            referencedEventId: 'video_x',
+            referencedDTag: 'vine-id',
+          ),
+          makeNotification(
+            id: 'l2',
+            sourcePubkey: 'pub_b',
+            referencedEventId: 'video_x',
+            referencedDTag: 'vine-id',
+          ),
+        ]);
+        stubProfiles({
+          'pub_a': makeProfile('pub_a', displayName: 'Alice'),
+          'pub_b': makeProfile('pub_b', displayName: 'Bob'),
+        });
 
-          final page = await repository.getNotifications();
+        final page = await repository.getNotifications();
 
-          expect(page.items, hasLength(1));
-          final item = page.items.single as VideoNotification;
-          expect(item.videoAddressableId, isNull);
-        },
-      );
+        expect(page.items, hasLength(1));
+        final item = page.items.single as VideoNotification;
+        expect(
+          item.videoAddressableId,
+          equals(
+            '${NIP71VideoKinds.addressableShortVideo}:'
+            '$userPubkey:vine-id',
+          ),
+        );
+      });
+
+      test('grouped video notifications leave addressable id null when d-tag '
+          'is null or empty', () async {
+        stubNotifications([
+          makeNotification(
+            id: 'l1',
+            sourcePubkey: 'pub_a',
+            referencedEventId: 'video_x',
+            referencedDTag: '',
+          ),
+          makeNotification(
+            id: 'l2',
+            sourcePubkey: 'pub_b',
+            referencedEventId: 'video_x',
+          ),
+        ]);
+        stubProfiles({
+          'pub_a': makeProfile('pub_a', displayName: 'Alice'),
+          'pub_b': makeProfile('pub_b', displayName: 'Bob'),
+        });
+
+        final page = await repository.getNotifications();
+
+        expect(page.items, hasLength(1));
+        final item = page.items.single as VideoNotification;
+        expect(item.videoAddressableId, isNull);
+      });
 
       test(
         '5 likes on 5 different videos produce 5 ${VideoNotification}s',
@@ -538,56 +511,48 @@ void main() {
         },
       );
 
-      test(
-        'likes + comments on same video become 2 ${VideoNotification}s '
-        'differing by kind',
-        () async {
-          stubNotifications([
-            makeNotification(
-              id: 'l1',
-              sourcePubkey: 'pub_a',
-              referencedEventId: 'video_x',
-            ),
-            makeNotification(
-              id: 'c1',
-              sourcePubkey: 'pub_b',
-              notificationType: 'comment',
-              sourceKind: 1,
-              referencedEventId: 'video_x',
-              content: 'Cool',
-            ),
-          ]);
-          stubProfiles({
-            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
-            'pub_b': makeProfile('pub_b', displayName: 'Bob'),
-          });
+      test('likes + comments on same video become 2 ${VideoNotification}s '
+          'differing by kind', () async {
+        stubNotifications([
+          makeNotification(
+            id: 'l1',
+            sourcePubkey: 'pub_a',
+            referencedEventId: 'video_x',
+          ),
+          makeNotification(
+            id: 'c1',
+            sourcePubkey: 'pub_b',
+            notificationType: 'comment',
+            sourceKind: 1,
+            referencedEventId: 'video_x',
+            content: 'Cool',
+          ),
+        ]);
+        stubProfiles({
+          'pub_a': makeProfile('pub_a', displayName: 'Alice'),
+          'pub_b': makeProfile('pub_b', displayName: 'Bob'),
+        });
 
-          final page = await repository.getNotifications();
+        final page = await repository.getNotifications();
 
-          expect(page.items, hasLength(2));
-          final kinds = page.items
-              .whereType<VideoNotification>()
-              .map((v) => v.type)
-              .toSet();
-          expect(
-            kinds,
-            equals({NotificationKind.like, NotificationKind.comment}),
-          );
-        },
-      );
+        expect(page.items, hasLength(2));
+        final kinds = page.items
+            .whereType<VideoNotification>()
+            .map((v) => v.type)
+            .toSet();
+        expect(
+          kinds,
+          equals({NotificationKind.like, NotificationKind.comment}),
+        );
+      });
 
       test(
         'video-anchored notification with null referencedEventId is dropped',
         () async {
           stubNotifications([
-            makeNotification(
-              sourcePubkey: 'pub_a',
-              referencedEventId: null,
-            ),
+            makeNotification(sourcePubkey: 'pub_a', referencedEventId: null),
           ]);
-          stubProfiles({
-            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
-          });
+          stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
 
           final page = await repository.getNotifications();
 
@@ -604,9 +569,7 @@ void main() {
               referencedEventId: 'video_x',
             ),
           ]);
-          stubProfiles({
-            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
-          });
+          stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
           when(
             () => funnelcakeApiClient.getVideoStats('video_x'),
           ).thenThrow(const FunnelcakeException('boom'));
@@ -622,75 +585,66 @@ void main() {
     });
 
     group('follow consolidation', () {
-      test(
-        '2 follows from same pubkey become 1 $ActorNotification '
-        'with earliest timestamp',
-        () async {
-          final earlier = DateTime(2025);
-          final later = DateTime(2025, 1, 5);
-          stubNotifications([
-            makeNotification(
-              id: 'f1',
-              sourcePubkey: 'follower_pub',
-              notificationType: 'follow',
-              sourceKind: 3,
-              referencedEventId: null,
-              createdAt: later,
-            ),
-            makeNotification(
-              id: 'f2',
-              sourcePubkey: 'follower_pub',
-              notificationType: 'follow',
-              sourceKind: 3,
-              referencedEventId: null,
-              createdAt: earlier,
-            ),
-          ]);
-          stubProfiles({
-            'follower_pub': makeProfile(
-              'follower_pub',
-              displayName: 'Follower',
-            ),
-          });
+      test('2 follows from same pubkey become 1 $ActorNotification '
+          'with earliest timestamp', () async {
+        final earlier = DateTime(2025);
+        final later = DateTime(2025, 1, 5);
+        stubNotifications([
+          makeNotification(
+            id: 'f1',
+            sourcePubkey: 'follower_pub',
+            notificationType: 'follow',
+            sourceKind: 3,
+            referencedEventId: null,
+            createdAt: later,
+          ),
+          makeNotification(
+            id: 'f2',
+            sourcePubkey: 'follower_pub',
+            notificationType: 'follow',
+            sourceKind: 3,
+            referencedEventId: null,
+            createdAt: earlier,
+          ),
+        ]);
+        stubProfiles({
+          'follower_pub': makeProfile('follower_pub', displayName: 'Follower'),
+        });
 
-          final page = await repository.getNotifications();
+        final page = await repository.getNotifications();
 
-          expect(page.items, hasLength(1));
-          final item = page.items.single as ActorNotification;
-          expect(item.type, equals(NotificationKind.follow));
-          expect(item.timestamp, equals(earlier));
-        },
-      );
+        expect(page.items, hasLength(1));
+        final item = page.items.single as ActorNotification;
+        expect(item.type, equals(NotificationKind.follow));
+        expect(item.timestamp, equals(earlier));
+      });
 
-      test(
-        'follows from different pubkeys are not consolidated',
-        () async {
-          stubNotifications([
-            makeNotification(
-              id: 'f1',
-              sourcePubkey: 'pub_a',
-              notificationType: 'follow',
-              sourceKind: 3,
-              referencedEventId: null,
-            ),
-            makeNotification(
-              id: 'f2',
-              sourcePubkey: 'pub_b',
-              notificationType: 'follow',
-              sourceKind: 3,
-              referencedEventId: null,
-            ),
-          ]);
-          stubProfiles({
-            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
-            'pub_b': makeProfile('pub_b', displayName: 'Bob'),
-          });
+      test('follows from different pubkeys are not consolidated', () async {
+        stubNotifications([
+          makeNotification(
+            id: 'f1',
+            sourcePubkey: 'pub_a',
+            notificationType: 'follow',
+            sourceKind: 3,
+            referencedEventId: null,
+          ),
+          makeNotification(
+            id: 'f2',
+            sourcePubkey: 'pub_b',
+            notificationType: 'follow',
+            sourceKind: 3,
+            referencedEventId: null,
+          ),
+        ]);
+        stubProfiles({
+          'pub_a': makeProfile('pub_a', displayName: 'Alice'),
+          'pub_b': makeProfile('pub_b', displayName: 'Bob'),
+        });
 
-          final page = await repository.getNotifications();
+        final page = await repository.getNotifications();
 
-          expect(page.items, hasLength(2));
-        },
-      );
+        expect(page.items, hasLength(2));
+      });
     });
 
     group('comments stay individual when on different videos', () {
@@ -739,37 +693,64 @@ void main() {
         expect(item.type, equals(NotificationKind.like));
       });
 
-      test(
-        'reaction on a non-video target maps to likeComment '
-        '($ActorNotification)',
-        () async {
-          stubNotifications([
-            makeNotification(isReferencedVideo: false),
-          ]);
-          stubProfiles({});
+      test('reaction on a non-video target maps to likeComment '
+          '($ActorNotification)', () async {
+        stubNotifications([makeNotification(isReferencedVideo: false)]);
+        stubProfiles({});
 
-          final page = await repository.getNotifications();
-          final item = page.items.single as ActorNotification;
-          expect(item.type, equals(NotificationKind.likeComment));
-        },
-      );
+        final page = await repository.getNotifications();
+        final item = page.items.single as ActorNotification;
+        expect(item.type, equals(NotificationKind.likeComment));
+      });
 
-      test('reply maps to reply (rendered as $ActorNotification)', () async {
+      test('likeComment carries referencedEventId as targetEventId', () async {
         stubNotifications([
           makeNotification(
-            notificationType: 'reply',
-            sourceKind: 1,
-            referencedEventId: null,
+            isReferencedVideo: false,
+            referencedEventId: 'comment_event_xyz',
           ),
         ]);
         stubProfiles({});
 
         final page = await repository.getNotifications();
-        // Reply is not a video kind — it falls through to actor mapping
-        // and is coerced to system in the ActorNotification.
         final item = page.items.single as ActorNotification;
-        expect(item.type, equals(NotificationKind.system));
+        expect(item.type, equals(NotificationKind.likeComment));
+        expect(item.targetEventId, equals('comment_event_xyz'));
       });
+
+      test('reply on a video maps to comment ($VideoNotification)', () async {
+        stubNotifications([
+          makeNotification(notificationType: 'reply', sourceKind: 1),
+        ]);
+        stubProfiles({});
+
+        final page = await repository.getNotifications();
+        // A reply directly on a video is indistinguishable from a comment
+        // for the user, so it lands in the comment grouping path.
+        final item = page.items.single as VideoNotification;
+        expect(item.type, equals(NotificationKind.comment));
+      });
+
+      test(
+        'reply on a non-video target maps to reply ($ActorNotification) '
+        'with targetEventId',
+        () async {
+          stubNotifications([
+            makeNotification(
+              notificationType: 'reply',
+              sourceKind: 1,
+              isReferencedVideo: false,
+              referencedEventId: 'parent_comment_id',
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as ActorNotification;
+          expect(item.type, equals(NotificationKind.reply));
+          expect(item.targetEventId, equals('parent_comment_id'));
+        },
+      );
 
       test('comment maps to comment', () async {
         stubNotifications([
@@ -889,8 +870,10 @@ void main() {
       });
 
       test(
-        'comment kind on video is a $VideoNotification (no commentText)',
+        'comment kind on video is a $VideoNotification with commentText',
         () async {
+          // The repository carries the comment body through to the row
+          // so it can quote the most recent comment under the message.
           stubNotifications([
             makeNotification(
               notificationType: 'comment',
@@ -901,7 +884,45 @@ void main() {
           stubProfiles({});
 
           final page = await repository.getNotifications();
-          expect(page.items.single, isA<VideoNotification>());
+          final item = page.items.single as VideoNotification;
+          expect(item.type, equals(NotificationKind.comment));
+          expect(item.commentText, equals('Short comment'));
+        },
+      );
+
+      test(
+        'truncates a long comment on $VideoNotification (50 chars + ellipsis)',
+        () async {
+          final longComment = 'A' * 60;
+          stubNotifications([
+            makeNotification(
+              notificationType: 'comment',
+              sourceKind: 1,
+              content: longComment,
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as VideoNotification;
+          // Reuses _truncateComment: caps at 50 chars and appends "..."
+          // so the row never tries to render an unbounded comment body.
+          expect(item.commentText, equals('${'A' * 50}...'));
+        },
+      );
+
+      test(
+        'like / repost on video leaves commentText null (no body text)',
+        () async {
+          // Default makeNotification is a reaction (kind 7) on a video,
+          // which the repository maps to NotificationKind.like.
+          stubNotifications([makeNotification()]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as VideoNotification;
+          expect(item.type, equals(NotificationKind.like));
+          expect(item.commentText, isNull);
         },
       );
     });
@@ -966,10 +987,72 @@ void main() {
           ),
         );
       });
+
+      test(
+        'rolls back the optimistic snapshot when authHeadersProvider throws',
+        () async {
+          // authHeadersProvider returns headers for GET (initial refresh)
+          // but throws on POST (the mark-read call). The rollback boundary
+          // must cover this failure mode — pre-fix it didn't, so the
+          // optimistic isRead=true flip stayed live with no server write.
+          repository = NotificationRepository(
+            funnelcakeApiClient: funnelcakeApiClient,
+            profileRepository: profileRepository,
+            notificationsDao: notificationsDao,
+            userPubkey: userPubkey,
+            authHeadersProvider: (url, method) async {
+              if (method == 'POST') {
+                throw Exception('signer unavailable');
+              }
+              return {'Authorization': 'Nostr test-token'};
+            },
+          );
+
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+          });
+          stubNotifications([makeNotification()], unreadCount: 1);
+          await repository.refresh();
+
+          final loadedId =
+              (await repository.watchSnapshot().first).items.first.id;
+          expect(await repository.watchUnreadCount().first, equals(1));
+
+          await expectLater(
+            repository.markAsRead([loadedId]),
+            throwsA(isA<Exception>()),
+          );
+
+          expect(
+            await repository.watchUnreadCount().first,
+            equals(1),
+            reason:
+                'Auth-header failure must roll back the optimistic flip — '
+                'the snapshot should return to its pre-call state.',
+          );
+          verifyNever(
+            () => funnelcakeApiClient.markNotificationsRead(
+              pubkey: any(named: 'pubkey'),
+              notificationIds: any(named: 'notificationIds'),
+              authHeaders: any(named: 'authHeaders'),
+            ),
+          );
+        },
+      );
     });
 
     group('markAllAsRead', () {
-      test('calls API and DAO', () async {
+      test('calls API and DAO when there are unread items', () async {
+        // Seed the snapshot with an unread item so markAllAsRead's
+        // early-return guard (skip when nothing is unread) does not fire.
+        stubProfiles({
+          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+        });
+        stubNotifications([
+          makeNotification(),
+        ], unreadCount: 1);
+        await repository.refresh();
+
         when(
           () => funnelcakeApiClient.markNotificationsRead(
             pubkey: any(named: 'pubkey'),
@@ -990,6 +1073,51 @@ void main() {
         ).called(1);
         verify(() => notificationsDao.markAllAsRead()).called(1);
       });
+
+      test(
+        'rolls back the optimistic snapshot when authHeadersProvider throws',
+        () async {
+          repository = NotificationRepository(
+            funnelcakeApiClient: funnelcakeApiClient,
+            profileRepository: profileRepository,
+            notificationsDao: notificationsDao,
+            userPubkey: userPubkey,
+            authHeadersProvider: (url, method) async {
+              if (method == 'POST') {
+                throw Exception('signer unavailable');
+              }
+              return {'Authorization': 'Nostr test-token'};
+            },
+          );
+
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+          });
+          stubNotifications([makeNotification()], unreadCount: 1);
+          await repository.refresh();
+
+          expect(await repository.watchUnreadCount().first, equals(1));
+
+          await expectLater(
+            repository.markAllAsRead(),
+            throwsA(isA<Exception>()),
+          );
+
+          expect(
+            await repository.watchUnreadCount().first,
+            equals(1),
+            reason:
+                'Auth-header failure must roll back the optimistic flip — '
+                'the snapshot should return to its pre-call state.',
+          );
+          verifyNever(
+            () => funnelcakeApiClient.markNotificationsRead(
+              pubkey: any(named: 'pubkey'),
+              authHeaders: any(named: 'authHeaders'),
+            ),
+          );
+        },
+      );
     });
 
     group('authHeadersProvider', () {
@@ -1083,9 +1211,7 @@ void main() {
       test(
         'returns $VideoNotification for like with non-null referencedEventId',
         () async {
-          stubProfiles({
-            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
-          });
+          stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
           stubVideoStats(
             'video_x',
             makeVideoStats(id: 'video_x', thumbnail: 'thumb', title: 'T'),
@@ -1102,38 +1228,31 @@ void main() {
         },
       );
 
-      test(
-        'builds addressable id from user pubkey and d-tag for realtime '
-        'video notifications',
-        () async {
-          stubProfiles({
-            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
-          });
-          stubVideoStats(
-            'video_x',
-            makeVideoStats(id: 'video_x', thumbnail: 'thumb', title: 'T'),
-          );
+      test('builds addressable id from user pubkey and d-tag for realtime '
+          'video notifications', () async {
+        stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
+        stubVideoStats(
+          'video_x',
+          makeVideoStats(id: 'video_x', thumbnail: 'thumb', title: 'T'),
+        );
 
-          final result = await repository.enrichOne(
-            raw(referencedDTag: 'vine-id'),
-          );
+        final result = await repository.enrichOne(
+          raw(referencedDTag: 'vine-id'),
+        );
 
-          expect(result, isA<VideoNotification>());
-          final video = result! as VideoNotification;
-          expect(
-            video.videoAddressableId,
-            equals(
-              '${NIP71VideoKinds.addressableShortVideo}:'
-              '$userPubkey:vine-id',
-            ),
-          );
-        },
-      );
+        expect(result, isA<VideoNotification>());
+        final video = result! as VideoNotification;
+        expect(
+          video.videoAddressableId,
+          equals(
+            '${NIP71VideoKinds.addressableShortVideo}:'
+            '$userPubkey:vine-id',
+          ),
+        );
+      });
 
       test('leaves addressable id null when realtime d-tag is empty', () async {
-        stubProfiles({
-          'pub_a': makeProfile('pub_a', displayName: 'Alice'),
-        });
+        stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
 
         final result = await repository.enrichOne(raw(referencedDTag: ''));
 
@@ -1143,21 +1262,15 @@ void main() {
       });
 
       test('returns null for like with null referencedEventId', () async {
-        stubProfiles({
-          'pub_a': makeProfile('pub_a', displayName: 'Alice'),
-        });
+        stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
 
-        final result = await repository.enrichOne(
-          raw(referencedEventId: null),
-        );
+        final result = await repository.enrichOne(raw(referencedEventId: null));
 
         expect(result, isNull);
       });
 
       test('returns $ActorNotification for follow', () async {
-        stubProfiles({
-          'pub_a': makeProfile('pub_a', displayName: 'Alice'),
-        });
+        stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
 
         final result = await repository.enrichOne(
           raw(
@@ -1172,6 +1285,409 @@ void main() {
         expect(actor.type, equals(NotificationKind.follow));
         expect(actor.actor.displayName, equals('Alice'));
       });
+
+      test('returns likeComment with targetEventId when reaction targets a '
+          'non-video event', () async {
+        stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
+
+        final result = await repository.enrichOne(
+          raw(referencedEventId: 'comment_evt_id', isReferencedVideo: false),
+        );
+
+        expect(result, isA<ActorNotification>());
+        final actor = result! as ActorNotification;
+        expect(actor.type, equals(NotificationKind.likeComment));
+        expect(actor.targetEventId, equals('comment_evt_id'));
+      });
+    });
+
+    group('reactive snapshot', () {
+      setUp(() {
+        when(
+          () => funnelcakeApiClient.markNotificationsRead(
+            pubkey: any(named: 'pubkey'),
+            notificationIds: any(named: 'notificationIds'),
+            authHeaders: any(named: 'authHeaders'),
+          ),
+        ).thenAnswer(
+          (_) async => const MarkReadResponse(success: true, markedCount: 1),
+        );
+        when(
+          () => notificationsDao.markAsRead(any()),
+        ).thenAnswer((_) async => true);
+        when(() => notificationsDao.markAllAsRead()).thenAnswer((_) async => 0);
+      });
+
+      test('seeds watchSnapshot with NotificationPage.empty', () async {
+        await expectLater(
+          repository.watchSnapshot().take(1),
+          emitsInOrder([NotificationPage.empty]),
+        );
+      });
+
+      test('watchUnreadCount starts at 0', () async {
+        await expectLater(
+          repository.watchUnreadCount().take(1),
+          emitsInOrder([0]),
+        );
+      });
+
+      test('emits snapshot after refresh', () async {
+        stubProfiles({
+          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+        });
+        stubNotifications([
+          makeNotification(),
+        ], unreadCount: 1);
+
+        await repository.refresh();
+
+        final snapshot = await repository.watchSnapshot().first;
+        expect(snapshot.items, hasLength(1));
+        expect(snapshot.items.first.isRead, isFalse);
+      });
+
+      test('watchUnreadCount derives from consolidated visible list', () async {
+        stubProfiles({
+          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+        });
+        stubNotifications([
+          makeNotification(),
+        ], unreadCount: 5);
+
+        await repository.refresh();
+
+        // Server reported 5, but the consolidated visible list has 1
+        // unread item — watchUnreadCount returns the post-consolidation
+        // count, not the server count.
+        expect(await repository.watchUnreadCount().first, equals(1));
+      });
+
+      test('markAsRead optimistically flips matching items', () async {
+        stubProfiles({
+          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+        });
+        stubNotifications([
+          makeNotification(),
+        ], unreadCount: 1);
+        await repository.refresh();
+        final loadedId = repository.watchSnapshot().first.then(
+          (s) => s.items.first.id,
+        );
+        final id = await loadedId;
+
+        final counts = <int>[];
+        final sub = repository.watchUnreadCount().listen(counts.add);
+
+        await repository.markAsRead([id]);
+        await sub.cancel();
+
+        expect(counts.last, equals(0));
+      });
+
+      test('markAsRead rolls back snapshot when API throws', () async {
+        stubProfiles({
+          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+        });
+        stubNotifications([
+          makeNotification(),
+        ], unreadCount: 1);
+        await repository.refresh();
+        final loadedId =
+            (await repository.watchSnapshot().first).items.first.id;
+
+        when(
+          () => funnelcakeApiClient.markNotificationsRead(
+            pubkey: any(named: 'pubkey'),
+            notificationIds: any(named: 'notificationIds'),
+            authHeaders: any(named: 'authHeaders'),
+          ),
+        ).thenThrow(const FunnelcakeException('boom'));
+
+        await expectLater(
+          repository.markAsRead([loadedId]),
+          throwsA(isA<FunnelcakeException>()),
+        );
+
+        // Rollback restores the pre-write snapshot.
+        expect(await repository.watchUnreadCount().first, equals(1));
+      });
+
+      test('markAllAsRead is a no-op when nothing is unread', () async {
+        await repository.markAllAsRead();
+
+        verifyNever(
+          () => funnelcakeApiClient.markNotificationsRead(
+            pubkey: any(named: 'pubkey'),
+            authHeaders: any(named: 'authHeaders'),
+          ),
+        );
+      });
+
+      test('markAllAsRead optimistically zeros every unread item', () async {
+        stubProfiles({
+          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+          'pubkey_bob': makeProfile('pubkey_bob', displayName: 'Bob'),
+        });
+        stubNotifications([
+          makeNotification(),
+          makeNotification(
+            id: 'n2',
+            sourcePubkey: 'pubkey_bob',
+            referencedEventId: 'video_other',
+          ),
+        ], unreadCount: 2);
+        await repository.refresh();
+        expect(await repository.watchUnreadCount().first, equals(2));
+
+        await repository.markAllAsRead();
+
+        expect(await repository.watchUnreadCount().first, equals(0));
+      });
+
+      test('markAllAsRead rolls back when API throws', () async {
+        stubProfiles({
+          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+        });
+        stubNotifications([
+          makeNotification(),
+        ], unreadCount: 1);
+        await repository.refresh();
+
+        when(
+          () => funnelcakeApiClient.markNotificationsRead(
+            pubkey: any(named: 'pubkey'),
+            authHeaders: any(named: 'authHeaders'),
+          ),
+        ).thenThrow(const FunnelcakeException('boom'));
+
+        await expectLater(
+          repository.markAllAsRead(),
+          throwsA(isA<FunnelcakeException>()),
+        );
+
+        // Rollback restores the pre-write snapshot.
+        expect(await repository.watchUnreadCount().first, equals(1));
+      });
+
+      test(
+        'acceptRealtime enriches, prepends, and increments unread',
+        () async {
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+          });
+
+          await repository.acceptRealtime(makeNotification());
+
+          expect(await repository.watchUnreadCount().first, equals(1));
+        },
+      );
+
+      test('acceptRealtime dedupes against existing snapshot items', () async {
+        stubProfiles({
+          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+        });
+        stubNotifications([
+          makeNotification(),
+        ], unreadCount: 1);
+        await repository.refresh();
+        final beforeItems =
+            (await repository.watchSnapshot().first).items.length;
+
+        // Same id — should be a no-op.
+        await repository.acceptRealtime(makeNotification());
+
+        // Snapshot's item count is unchanged because the realtime event
+        // was deduped against the existing item id.
+        final afterItems =
+            (await repository.watchSnapshot().first).items.length;
+        expect(afterItems, equals(beforeItems));
+      });
+
+      test(
+        'acceptRealtime merges a second actor into an existing '
+        '$VideoNotification group (same videoEventId + type)',
+        () async {
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+            'pubkey_bob': makeProfile('pubkey_bob', displayName: 'Bob'),
+          });
+          // Initial fetch: one like from Alice on video_default. Becomes a
+          // VideoNotification with totalCount: 1, actors: [Alice].
+          stubNotifications([
+            makeNotification(id: 'first', createdAt: DateTime(2025, 3)),
+          ], unreadCount: 1);
+          await repository.refresh();
+
+          // Mark as read so we can verify the merge flips isRead back.
+          await repository.markAllAsRead();
+
+          final laterTimestamp = DateTime(2025, 6);
+          // Realtime arrival: a like from Bob on the same video.
+          await repository.acceptRealtime(
+            makeNotification(
+              id: 'second',
+              sourcePubkey: 'pubkey_bob',
+              createdAt: laterTimestamp,
+            ),
+          );
+
+          final page = await repository.watchSnapshot().first;
+          expect(
+            page.items,
+            hasLength(1),
+            reason:
+                'Same (videoEventId, type) should merge into the existing '
+                'row instead of prepending a duplicate.',
+          );
+
+          final merged = page.items.single as VideoNotification;
+          expect(merged.totalCount, equals(2));
+          expect(merged.actors, hasLength(2));
+          expect(
+            merged.actors.first.pubkey,
+            equals('pubkey_bob'),
+            reason: 'New actor is prepended at the front of the stack.',
+          );
+          expect(merged.actors[1].pubkey, equals('pubkey_alice'));
+          expect(merged.isRead, isFalse);
+          expect(merged.timestamp, equals(laterTimestamp));
+
+          // watchUnreadCount reflects the un-read flip.
+          expect(await repository.watchUnreadCount().first, equals(1));
+        },
+      );
+
+      test(
+        'acceptRealtime caps merged actors at the group display limit',
+        () async {
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+            'pubkey_bob': makeProfile('pubkey_bob', displayName: 'Bob'),
+            'pubkey_carol': makeProfile('pubkey_carol', displayName: 'Carol'),
+            'pubkey_dave': makeProfile('pubkey_dave', displayName: 'Dave'),
+          });
+          // Initial fetch: three likes on the same video — fills the actor
+          // stack to the display cap.
+          stubNotifications([
+            makeNotification(id: 'n_alice', createdAt: DateTime(2024, 1, 3)),
+            makeNotification(
+              id: 'n_bob',
+              sourcePubkey: 'pubkey_bob',
+              createdAt: DateTime(2024, 1, 2),
+            ),
+            makeNotification(
+              id: 'n_carol',
+              sourcePubkey: 'pubkey_carol',
+              createdAt: DateTime(2024),
+            ),
+          ], unreadCount: 3);
+          await repository.refresh();
+
+          await repository.acceptRealtime(
+            makeNotification(
+              id: 'n_dave',
+              sourcePubkey: 'pubkey_dave',
+              createdAt: DateTime(2024, 1, 4),
+            ),
+          );
+
+          final merged =
+              (await repository.watchSnapshot().first).items.single
+                  as VideoNotification;
+          expect(merged.totalCount, equals(4));
+          expect(
+            merged.actors,
+            hasLength(3),
+            reason:
+                'Displayed actor stack stays bounded even though totalCount '
+                'continues to grow.',
+          );
+          expect(merged.actors.first.pubkey, equals('pubkey_dave'));
+        },
+      );
+
+      test(
+        'acceptRealtime dedupes a WS arrival whose id matches a REST '
+        "item's sourceEventId",
+        () async {
+          // REST raws carry the Nostr event id in `sourceEventId` (server's
+          // UUID lives in `id`). WS raws — built by the realtime bridge —
+          // carry the Nostr event id in `id`. Without the cross-path check
+          // the same logical Nostr event accepted via WS after REST would
+          // inflate the snapshot and the unread count.
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+          });
+          stubNotifications([
+            makeNotification(
+              id: 'server-uuid-1',
+              sourceEventId: 'nostr-evt-1',
+              referencedEventId: 'video_a',
+            ),
+          ], unreadCount: 1);
+          await repository.refresh();
+
+          final beforeItems =
+              (await repository.watchSnapshot().first).items.length;
+          expect(await repository.watchUnreadCount().first, equals(1));
+
+          // Same Nostr event arriving over WS — bridge sets both `id` and
+          // `sourceEventId` to the Nostr event id.
+          await repository.acceptRealtime(
+            makeNotification(
+              id: 'nostr-evt-1',
+              sourceEventId: 'nostr-evt-1',
+              referencedEventId: 'video_a',
+              createdAt: DateTime(2025, 6),
+            ),
+          );
+
+          final afterItems =
+              (await repository.watchSnapshot().first).items.length;
+          expect(afterItems, equals(beforeItems));
+          expect(
+            await repository.watchUnreadCount().first,
+            equals(1),
+            reason:
+                'Cross-path duplicate must not bump the unread count or the '
+                'visible item count.',
+          );
+        },
+      );
+
+      test(
+        'acceptRealtime prepends a $VideoNotification when no existing '
+        'group matches by videoEventId + type',
+        () async {
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+            'pubkey_bob': makeProfile('pubkey_bob', displayName: 'Bob'),
+          });
+          stubNotifications([
+            makeNotification(id: 'first', referencedEventId: 'video_a'),
+          ], unreadCount: 1);
+          await repository.refresh();
+
+          // Different videoEventId — must not merge.
+          await repository.acceptRealtime(
+            makeNotification(
+              id: 'second',
+              sourcePubkey: 'pubkey_bob',
+              referencedEventId: 'video_b',
+              createdAt: DateTime(2025, 6),
+            ),
+          );
+
+          final items = (await repository.watchSnapshot().first).items;
+          expect(items, hasLength(2));
+          expect(
+            (items.first as VideoNotification).videoEventId,
+            equals('video_b'),
+            reason: 'New, non-matching item is prepended.',
+          );
+        },
+      );
     });
   });
 }

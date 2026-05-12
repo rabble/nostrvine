@@ -32,6 +32,7 @@ import 'package:openvine/blocs/email_verification/email_verification_cubit.dart'
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/blocs/locale/locale_cubit.dart';
+import 'package:openvine/blocs/notifications/badge/notification_badge_cubit.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/config/app_config.dart';
 import 'package:openvine/config/zendesk_config.dart';
@@ -46,6 +47,8 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/resolve_app_ui_locale.dart';
 import 'package:openvine/network/vine_cdn_http_overrides.dart'
     if (dart.library.html) 'package:openvine/utils/platform_io_web.dart';
+import 'package:openvine/notifications/providers/notification_repository_provider.dart';
+import 'package:openvine/notifications/services/notification_realtime_bridge.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/observability/divine_bloc_observer.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -316,9 +319,15 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
     optional: true,
   );
 
+  // Intentionally essential (not deferred): the manifest must be ready before
+  // the first frame so getCachedFileSync() can serve already-cached videos
+  // instantly on cold launch without falling through to the slower async path.
+  // The I/O cost (aliases.json read + existsSync per entry) is accepted as
+  // the price for zero-latency cache hits from frame 1. If this ever regresses
+  // cold-start on low-end devices, profile first before moving back to deferred.
   coordinator.registerService(
     name: 'VideoCacheManifest',
-    phase: StartupPhase.deferred,
+    phase: StartupPhase.essential,
     initialize: _initializeVideoCacheManifest,
     optional: true,
   );
@@ -1598,6 +1607,20 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       isFeatureEnabledProvider(FeatureFlag.curatedLists),
     );
 
+    // Eagerly create the outgoing-DM retry service so its foreground
+    // subscription is wired up at app shell setup. The service has no
+    // UI consumer (it operates on the durable outgoing_dms queue), so
+    // without an explicit read it would never be created. See #4124.
+    ref.watch(outgoingDmRetryServiceProvider);
+
+    // Eagerly create the notification realtime bridge so WS arrivals
+    // land in the new repository snapshot the moment the repository is
+    // available. The provider returns `null` until the repo is built;
+    // the watch causes a rebuild that wires the bridge as soon as
+    // [notificationRepositoryProvider] yields a non-null value. See
+    // #4204 (badge / list realtime sync).
+    ref.watch(notificationRealtimeBridgeProvider);
+
     // Wrap with geo-blocking check first, then lifecycle handler
     Widget wrapped = MultiRepositoryProvider(
       providers: [
@@ -1639,6 +1662,23 @@ class _DivineAppState extends ConsumerState<DivineApp> {
         BlocProvider(
           create: (_) =>
               DmUnreadCountCubit(dmRepository: ref.read(dmRepositoryProvider)),
+        ),
+        // Notification badge cubit. Subscribes to the new
+        // `NotificationRepository.watchUnreadCount()` stream so the
+        // bottom-nav badge stays in lock-step with per-row reads,
+        // mark-all-read flows, and WS realtime arrivals (the latter via
+        // [NotificationRealtimeBridge] below). The repository is `null`
+        // during early auth — the cubit handles that by emitting 0 with
+        // no subscription. The `ValueKey` on the BlocProvider keyed to
+        // the repository's identity recreates the cubit when the
+        // underlying repository instance flips (account switch).
+        BlocProvider(
+          key: ValueKey(
+            identityHashCode(ref.watch(notificationRepositoryProvider)),
+          ),
+          create: (_) => NotificationBadgeCubit(
+            repository: ref.read(notificationRepositoryProvider),
+          ),
         ),
       ],
       child: MultiBlocProvider(

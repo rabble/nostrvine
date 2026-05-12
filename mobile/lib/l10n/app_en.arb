@@ -306,8 +306,6 @@
   "profileRepostsOwnEmpty": "See something worth sharing? Repost it and it'll appear here.",
   "profileRepostsOtherEmpty": "They haven't passed anything on yet. When they do, it'll show up here.",
   "profileErrorLoadingReposts": "Error loading reposted videos",
-  "profileLoadingTitle": "Loading profile...",
-  "profileLoadingSubtitle": "This may take a few moments",
   "profileLoadingVideos": "Loading videos...",
   "profileNoVideosTitle": "No videos yet",
   "profileNoVideosOwnSubtitle": "Your stage is set. Start posting and your videos will live here.",
@@ -433,6 +431,16 @@
   "profileSetupNip05AddressLabel": "NIP-05 Address",
   "profileSetupExternalNip05InvalidFormat": "Invalid NIP-05 format (e.g., name@domain.com)",
   "profileSetupExternalNip05DivineDomain": "Use the username field above for divine.video",
+  "nostrSettingsNip05Address": "NIP-05 address",
+  "nostrSettingsNip05AddressSubtitle": "Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.",
+  "nostrSettingsNip05AddressHint": "you@example.com",
+  "nostrSettingsNip05SaveAction": "Save NIP-05",
+  "nostrSettingsNip05Saved": "NIP-05 saved",
+  "nostrSettingsNip05SaveFailed": "Couldn't save NIP-05. Please try again.",
+  "profileSetupNip05ConfirmTitle": "Use your own NIP-05?",
+  "profileSetupNip05ConfirmBody": "NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it's wrong, people can't find you and your verified handle disappears. Continue only if you've set this up.",
+  "profileSetupNip05ConfirmContinue": "Continue",
+  "profileSetupNip05ConfirmCancel": "Cancel",
   "profileSetupProfilePicturePreview": "Profile picture preview",
   "nostrInfoIntroBuiltOn": "DiVine is built on Nostr,",
   "nostrInfoIntroDescription": " a censorship-resistant open protocol that lets people communicate online without relying on a single company or platform. ",
@@ -525,6 +533,23 @@
   "videoPlayerUnmute": "Unmute video",
   "videoPlayerEditVideo": "Edit video",
   "videoPlayerEditVideoTooltip": "Edit video",
+  "videoPlayerTapHint": "Tap to play or pause. Double tap to like.",
+  "videoSettingsMenuOpen": "Open playback settings",
+  "@videoSettingsMenuOpen": {
+    "description": "Semantic label for the More button in the home feed top bar that opens the playback-settings popover."
+  },
+  "videoSettingsMenuClose": "Close playback settings",
+  "@videoSettingsMenuClose": {
+    "description": "Semantic label for the More button in the home feed top bar when the playback-settings popover is open."
+  },
+  "videoSettingsCaptionsEnable": "Enable captions",
+  "@videoSettingsCaptionsEnable": {
+    "description": "Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently off."
+  },
+  "videoSettingsCaptionsDisable": "Disable captions",
+  "@videoSettingsCaptionsDisable": {
+    "description": "Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently on."
+  },
   "contentWarningLabel": "Content Warning",
   "contentWarningNudity": "Nudity",
   "contentWarningSexualContent": "Sexual Content",
@@ -624,6 +649,35 @@
       }
     }
   },
+  "videoCollaboratorPendingDecoration": "Pending",
+  "@videoCollaboratorPendingDecoration": {
+    "description": "Small badge next to a collaborator's name or avatar when the creator (viewing their own video) has invited them but they have not yet accepted."
+  },
+  "videoCollaboratorPendingSemanticLabel": "Pending collaborator",
+  "@videoCollaboratorPendingSemanticLabel": {
+    "description": "Screen reader label for a dimmed pending collaborator avatar on the creator's own video."
+  },
+  "videoCollaboratorWithPendingSuffix": "{label} ({pending} pending)",
+  "@videoCollaboratorWithPendingSuffix": {
+    "description": "Appends a pending count to the collaborator label on the creator's own video. {label} is the existing 'with @name' / 'with @name +N' phrase.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "pending": {
+        "type": "int"
+      }
+    }
+  },
+  "profileChipTapHint": "{name}. Tap to view profile.",
+  "@profileChipTapHint": {
+    "description": "Screen reader hint announced when a user-chip in the metadata sheet is focused. {name} is the user's display name.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "listAttributionFallback": "List",
   "shareVideoLabel": "Share video",
   "sharePostSharedWith": "Post shared with {recipientName}",
@@ -666,8 +720,24 @@
   "videoActionAutoLabel": "Compilation",
   "videoActionLikeLabel": "Like",
   "videoActionReplyLabel": "Reply",
-  "videoActionRepostLabel": "Repost",
+  "videoActionRepostLabel": "Revine",
   "videoActionShareLabel": "Share",
+  "videoActionReportLabel": "Report",
+  "@videoActionReportLabel": {
+    "description": "Short caption shown beneath the Report icon in the video overlay action column."
+  },
+  "videoActionReport": "Report video",
+  "@videoActionReport": {
+    "description": "Screen reader label for the Report action button in the video overlay action column. Tapping opens the report-content dialog."
+  },
+  "videoActionEditLabel": "Edit",
+  "@videoActionEditLabel": {
+    "description": "Short caption shown beneath the Edit icon in the video overlay action column. Only visible to the owner of the video."
+  },
+  "videoActionEdit": "Edit video",
+  "@videoActionEdit": {
+    "description": "Screen reader label for the Edit action button in the video overlay action column. Tapping opens the video edit dialog."
+  },
   "videoActionAboutLabel": "About",
   "videoActionEnableAutoAdvance": "Enable auto advance",
   "videoActionDisableAutoAdvance": "Disable auto advance",
@@ -677,6 +747,26 @@
   "videoActionMoreOptions": "More options",
   "videoActionHideSubtitles": "Hide subtitles",
   "videoActionShowSubtitles": "Show subtitles",
+  "videoEngagementLikersTitle": "Liked by",
+  "@videoEngagementLikersTitle": {
+    "description": "Title of the screen shown when the video owner taps the Like button on their own video — lists the users who liked it."
+  },
+  "videoEngagementRepostersTitle": "Reposted by",
+  "@videoEngagementRepostersTitle": {
+    "description": "Title of the screen shown when the video owner taps the Repost button on their own video — lists the users who reposted it."
+  },
+  "videoEngagementLikersEmpty": "No likes yet",
+  "@videoEngagementLikersEmpty": {
+    "description": "Empty-state message on the likers list screen when no one has liked the video yet."
+  },
+  "videoEngagementRepostersEmpty": "No reposts yet",
+  "@videoEngagementRepostersEmpty": {
+    "description": "Empty-state message on the reposters list screen when no one has reposted the video yet."
+  },
+  "videoEngagementLoadFailed": "Couldn't load that list",
+  "@videoEngagementLoadFailed": {
+    "description": "Error-state heading on the engagement list screen when the relay query fails."
+  },
   "videoOverlayOpenMetadataFromTitle": "Open video details",
   "@videoOverlayOpenMetadataFromTitle": {
     "description": "Screen-reader label for the tappable title row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the title text itself — that's already read aloud by the underlying Text widget."
@@ -2032,6 +2122,19 @@
   "@notificationsViewProfilesSemanticLabel": {
     "description": "Screen-reader label for a grouped notification's avatar stack, which opens the list of involved profiles."
   },
+  "notificationsVideoThumbnailFor": "Video thumbnail for {title}",
+  "@notificationsVideoThumbnailFor": {
+    "description": "Screen-reader label for the video thumbnail on a video-anchored notification row when the video title is known.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsVideoThumbnail": "Video thumbnail",
+  "@notificationsVideoThumbnail": {
+    "description": "Screen-reader fallback label for the video thumbnail on a video-anchored notification row when the title is missing."
+  },
   "notificationsLoadingType": "Loading {type} notifications...",
   "@notificationsLoadingType": {
     "placeholders": {
@@ -2055,6 +2158,33 @@
   "feedFailedToLoadVideos": "Failed to load videos",
   "feedRetry": "Retry",
   "feedNoFollowedUsers": "No followed users.\nFollow someone to see their videos here.",
+  "feedModeForYou": "For You",
+  "feedModeNew": "New",
+  "feedModeFollowing": "Following",
+  "feedModeSemanticLabel": "Feed mode: {label}",
+  "@feedModeSemanticLabel": {
+    "description": "Semantic label for the feed mode row (current mode plus affordance hint). Screen reader only.",
+    "placeholders": {
+      "label": {
+        "type": "String",
+        "description": "Localized name of the current feed mode (e.g. New, Following)."
+      }
+    }
+  },
+  "videoAuthorSemanticLabel": "Video author: {displayName}",
+  "@videoAuthorSemanticLabel": {
+    "description": "Semantic label for the video author's display name region. Screen reader only.",
+    "placeholders": {
+      "displayName": {
+        "type": "String",
+        "description": "Localized or resolved display name of the creator."
+      }
+    }
+  },
+  "videoAuthorAvatarSemanticLabel": "Author avatar",
+  "@videoAuthorAvatarSemanticLabel": {
+    "description": "Semantic label for the author's circular profile avatar on feed video metadata. Screen reader only."
+  },
   "feedForYouEmpty": "Your For You feed is empty.\nExplore videos and follow creators to shape it.",
   "feedFollowingEmpty": "No videos from people you follow yet.\nFind creators you like and follow them.",
   "feedLatestEmpty": "No new videos yet.\nCheck back soon.",
@@ -2181,6 +2311,10 @@
   "routeInvalidCategory": "Invalid category",
   "routeNoVideosToDisplay": "No videos to display",
   "routeInvalidProfileId": "Invalid profile ID",
+  "routeUnknownPath": "That page isn’t in the app.",
+  "@routeUnknownPath": {
+    "description": "Body text when navigation hits an unknown route (GoRouter.errorBuilder)."
+  },
   "routeDefaultListName": "List",
   "supportTitle": "Support Center",
   "supportContactSupport": "Contact Support",
@@ -2198,6 +2332,19 @@
   "supportLoginRequired": "Log in to contact support",
   "supportExportingLogs": "Exporting logs...",
   "supportExportLogsFailed": "Failed to export logs",
+  "supportLogsSavedTo": "Logs saved to {path}",
+  "@supportLogsSavedTo": {
+    "description": "Snackbar shown after exporting logs to a file on desktop platforms. {path} is the absolute filesystem path of the saved log file.",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "supportRevealLogsAction": "Show in folder",
+  "@supportRevealLogsAction": {
+    "description": "SnackBar action label that opens the folder containing the just-saved log file. Desktop platforms only."
+  },
   "supportChatNotAvailable": "Support chat not available",
   "supportCouldNotOpenMessages": "Could not open support messages",
   "supportCouldNotOpenPage": "Could not open {pageName}",
@@ -2230,14 +2377,23 @@
   "reportOtherRequiresDetails": "Please describe the issue when selecting Other",
   "reportDetailsRequired": "Please describe the issue",
   "reportReasonSpam": "Spam or Unwanted Content",
+  "reportReasonSpamSubtitle": "Unwanted or repetitive content",
   "reportReasonHarassment": "Harassment, Bullying, or Threats",
+  "reportReasonHarassmentSubtitle": "Harmful and unwanted replies or mentions",
   "reportReasonViolence": "Violent or Extremist Content",
+  "reportReasonViolenceSubtitle": "Violent, extremist, or harmful content",
   "reportReasonSexualContent": "Sexual or Adult Content",
+  "reportReasonSexualContentSubtitle": "Nudity, porn, or explicit content",
   "reportReasonCopyright": "Copyright Violation",
+  "reportReasonCopyrightSubtitle": "Unauthorized use of intellectual property",
   "reportReasonFalseInfo": "False Information",
+  "reportReasonFalseInfoSubtitle": "Misleading or false claims",
   "reportReasonCsam": "Child Safety Violation",
+  "reportReasonCsamSubtitle": "Content that exploits or endangers minors",
   "reportReasonAiGenerated": "AI-Generated Content",
+  "reportReasonAiGeneratedSubtitle": "Suspected AI-generated content",
   "reportReasonOther": "Other Policy Violation",
+  "reportReasonOtherSubtitle": "Violations not listed above",
   "reportFailed": "Failed to report content: {error}",
   "@reportFailed": {
     "placeholders": {
@@ -2250,6 +2406,7 @@
   "reportReceivedThankYou": "Thank you for helping keep Divine safe.",
   "reportReceivedReviewNotice": "Our team will review your report and take appropriate action. You may receive updates via direct message.",
   "reportLearnMore": "Learn More",
+  "reportLearnMoreAt": "Learn more at",
   "reportSafetyUrl": "divine.video/safety",
   "reportClose": "Close",
   "listAddToList": "Add to List",
@@ -2550,10 +2707,10 @@
   "categoryVlog": "Vlog",
   "categoryVlogging": "Vlogging",
   "categoryWrestling": "Wrestling",
-
-  "profileSetupUploadSuccess": "Profile picture uploaded successfully!",
-  "profileSetupSendRequest": "Send request",
-
+  "profileSetupUploadStaged": "Uploaded — tap Save to apply",
+  "@profileSetupUploadStaged": {
+    "description": "Snackbar shown after a profile picture upload succeeds on the profile edit screen. The new picture is staged in the form but not yet published; the user must tap Save for it to take effect."
+  },
   "inboxReportedUser": "Reported {displayName}",
   "@inboxReportedUser": {
     "placeholders": {
@@ -2579,10 +2736,8 @@
     }
   },
   "inboxRemovedConversation": "Removed conversation",
-
   "inboxEmptyTitle": "No messages yet",
   "inboxEmptySubtitle": "That + button won't bite.",
-
   "inboxActionMute": "Mute conversation",
   "inboxActionReport": "Report {displayName}",
   "@inboxActionReport": {
@@ -2609,7 +2764,6 @@
     }
   },
   "inboxActionRemove": "Remove conversation",
-
   "inboxRemoveConfirmTitle": "Remove conversation?",
   "inboxRemoveConfirmBody": "This will delete your conversation with {displayName}. This action cannot be undone.",
   "@inboxRemoveConfirmBody": {
@@ -2620,10 +2774,8 @@
     }
   },
   "inboxRemoveConfirmConfirm": "Remove",
-
   "inboxConversationMuted": "Conversation muted",
   "inboxConversationUnmuted": "Conversation unmuted",
-
   "inboxCollabInviteCardTitle": "Collaborator invite",
   "@inboxCollabInviteCardTitle": {
     "description": "Header label on a collaborator invite card in the DM conversation."
@@ -2637,6 +2789,32 @@
       }
     }
   },
+  "inboxCollabInviteCardUntitledVideo": "Untitled video",
+  "@inboxCollabInviteCardUntitledVideo": {
+    "description": "Fallback shown as the collaborator invite card title when the invited video has no title. Avoids exposing the raw d-tag identifier."
+  },
+  "clickableTextViewVideoLink": "View video",
+  "@clickableTextViewVideoLink": {
+    "description": "Tappable label rendered in rich text in place of a Nostr video/event reference. Opens the linked video."
+  },
+  "messageExternalLinkDialogTitle": "Open external link?",
+  "@messageExternalLinkDialogTitle": {
+    "description": "Confirmation dialog title shown before opening an untrusted external URL from a DM."
+  },
+  "messageExternalLinkDialogBody": "This link goes to an external site and may not be safe:\n\n{url}",
+  "@messageExternalLinkDialogBody": {
+    "description": "Confirmation dialog body shown before opening an untrusted external URL from a DM.",
+    "placeholders": {
+      "url": {
+        "type": "String",
+        "example": "https://example.com"
+      }
+    }
+  },
+  "messageExternalLinkDialogOpen": "Open",
+  "@messageExternalLinkDialogOpen": {
+    "description": "Confirmation button that opens an untrusted external URL from a DM."
+  },
   "inboxCollabInviteAcceptButton": "Accept",
   "inboxCollabInviteIgnoreButton": "Ignore",
   "inboxCollabInviteAcceptedStatus": "Accepted",
@@ -2646,12 +2824,10 @@
   "@inboxCollabInviteSentStatus": {
     "description": "Shown on the inviter's own outgoing collaborator invite card in their DM with the collaborator. Replaces Accept/Ignore which are recipient-only actions."
   },
-
   "inboxConversationCollabInvitePreview": "Collaborator invite",
   "@inboxConversationCollabInvitePreview": {
     "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list. The plaintext copy ('Open diVine to review and accept') is misleading inside diVine."
   },
-
   "collaboratorInviteDmBody": "You were invited to collaborate on {title}: {url}\n\nOpen diVine to review and accept.",
   "@collaboratorInviteDmBody": {
     "description": "Plaintext body of the encrypted DM that invites someone to collaborate on a video. Includes a clickable web link so non-Divine Nostr clients can preview the video. The trailing 'Open diVine to review and accept.' sentence MUST stay verbatim — diVine uses it as a marker to suppress legacy plaintext invites in conversation views.",
@@ -2676,10 +2852,24 @@
       }
     }
   },
-
+  "dmSendFailedMessage": "Message couldn't be sent",
+  "@dmSendFailedMessage": {
+    "description": "SnackBar text shown in a DM conversation when a send fails (relay error, signer error, network error). Paired with the retry action `dmSendFailedRetry`."
+  },
+  "dmSendFailedRetry": "Retry",
+  "@dmSendFailedRetry": {
+    "description": "SnackBarAction button label that retries the failed DM send. Keep short — fits next to the SnackBar message."
+  },
+  "dmSendPartialMessage": "Sent, but didn't sync to your other devices",
+  "@dmSendPartialMessage": {
+    "description": "SnackBar text shown in a DM conversation after a send where the recipient received the message but the sender's self-addressed gift wrap failed to publish. The sender's other devices won't see this message on relay-only restore. Paired with the retry action `dmSendFailedRetry`."
+  },
+  "dmConversationLoadError": "Could not load messages",
+  "@dmConversationLoadError": {
+    "description": "Error text shown in place of the message list when DmRepository.watchMessages emits an error (e.g. local DB read failure). Distinct from send failures (which use `dmSendFailedMessage`)."
+  },
   "reportDialogCancel": "Cancel",
   "reportDialogReport": "Report",
-
   "exploreVideoId": "ID: {id}",
   "@exploreVideoId": {
     "placeholders": {
@@ -2707,9 +2897,7 @@
       }
     }
   },
-  "exploreNoVideosAvailable": "No videos available",
   "exploreSearchHint": "Search...",
-
   "categoryVideoCount": "{count} videos",
   "@categoryVideoCount": {
     "placeholders": {
@@ -2718,7 +2906,6 @@
       }
     }
   },
-
   "discoverListsFailedToUpdateSubscription": "Failed to update subscription: {error}",
   "@discoverListsFailedToUpdateSubscription": {
     "placeholders": {
@@ -2741,21 +2928,18 @@
   "discoverListsEmptyTitle": "No public lists found",
   "discoverListsEmptySubtitle": "Check back later for new lists",
   "discoverListsByAuthorPrefix": "by",
-
   "curatedListEmptyTitle": "No videos in this list",
   "curatedListEmptySubtitle": "Add some videos to get started",
   "curatedListLoadingVideos": "Loading videos...",
   "curatedListFailedToLoad": "Failed to load list",
   "curatedListNoVideosAvailable": "No videos available",
   "curatedListVideoNotAvailable": "Video not available",
-
   "commonRetry": "Retry",
   "commonNext": "Next",
   "commonDelete": "Delete",
   "commonCancel": "Cancel",
   "commonBack": "Back",
   "commonClose": "Close",
-
   "videoMetadataEditCoverFailedSnackbar": "Couldn't update the cover. Try again.",
   "@videoMetadataEditCoverFailedSnackbar": {
     "description": "Snackbar message shown when saving the chosen cover thumbnail fails on the cover-edit screen. The user can dismiss and try again."
@@ -2773,15 +2957,10 @@
   "videoMetadataExpirationOneYear": "1 year",
   "videoMetadataExpirationOneDecade": "1 decade",
   "videoMetadataContentWarnings": "Content Warnings",
-
   "videoEditorStickers": "Stickers",
-
   "trendingTitle": "Trending",
-
   "proofmodeCheckAiGenerated": "Check if AI-generated",
-
   "libraryDeleteConfirm": "Delete",
-
   "libraryWebUnavailableHeadline": "Library is available in the mobile app",
   "libraryWebUnavailableDescription": "Drafts and clips are saved on your device, so open Divine on your phone to manage them.",
   "libraryTabDrafts": "Drafts",
@@ -2872,10 +3051,8 @@
   },
   "libraryAddClips": "Add",
   "libraryRecordVideo": "Record a Video",
-
   "routerInvalidCreator": "Invalid creator",
   "routerInvalidHashtagRoute": "Invalid hashtag route",
-
   "categoryGalleryCouldNotLoadVideos": "Could not load videos",
   "categoryGalleryNoVideosInCategory": "No videos in this category",
   "categoryGallerySortOptionsLabel": "Category sort options",
@@ -2885,15 +3062,12 @@
   "categoryGallerySortForYou": "For You",
   "categoriesCouldNotLoadCategories": "Could not load categories",
   "categoriesNoCategoriesAvailable": "No categories available",
-
   "notificationsEmptyTitle": "No activity yet",
   "notificationsEmptySubtitle": "When people interact with your content, you'll see it here",
-
   "appsPermissionsTitle": "Integration Permissions",
   "appsPermissionsRevoke": "Revoke",
   "appsPermissionsEmptyTitle": "No saved integration permissions",
   "appsPermissionsEmptySubtitle": "Approved integrations will appear here after you remember an access approval.",
-
   "nostrAppPermissionTitle": "{appName} wants your approval",
   "@nostrAppPermissionTitle": {
     "placeholders": {
@@ -2908,7 +3082,6 @@
   "nostrAppPermissionCapability": "Capability",
   "nostrAppPermissionEventKind": "Event kind",
   "nostrAppPermissionAllow": "Allow",
-
   "bugReportSendReport": "Send Report",
   "supportSubjectRequiredLabel": "Subject *",
   "supportRequiredHelper": "Required",
@@ -2921,6 +3094,20 @@
   "bugReportExpectedBehaviorHint": "What should have happened instead?",
   "bugReportDiagnosticsNotice": "Device info and logs will be included automatically.",
   "bugReportSuccessMessage": "Thank you! We've received your report and will use it to make Divine better.",
+  "bugReportAttachImages": "Attach images",
+  "bugReportImagesCount": "{count} of {max} images selected",
+  "@bugReportImagesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "bugReportRemoveImage": "Remove image",
+  "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
   "bugReportSendFailed": "Failed to send bug report. Please try again later.",
   "bugReportFailedWithError": "Bug report failed to send: {error}",
   "@bugReportFailedWithError": {
@@ -2948,9 +3135,7 @@
       }
     }
   },
-
   "notificationFollowBack": "Follow back",
-
   "followingTitle": "Following",
   "followingTitleForName": "{displayName}'s Following",
   "@followingTitleForName": {
@@ -2974,16 +3159,13 @@
   "followersFailedToLoadList": "Failed to load followers list",
   "followersEmptyTitle": "No followers yet",
   "followersUpdateFollowFailed": "Failed to update follow status. Please try again.",
-
   "reportMessageTitle": "Report Message",
   "reportMessageWhyReporting": "Why are you reporting this message?",
   "reportMessageSelectReason": "Please select a reason for reporting this message",
-
   "newMessageTitle": "New message",
   "newMessageFindPeople": "Find people",
   "newMessageNoContacts": "No contacts found.\nFollow people to see them here.",
   "newMessageNoUsersFound": "No users found",
-
   "hashtagSearchTitle": "Search for hashtags",
   "hashtagSearchSubtitle": "Discover trending topics and content",
   "hashtagSearchNoResults": "No hashtags found for \"{query}\"",
@@ -2995,12 +3177,9 @@
     }
   },
   "hashtagSearchFailed": "Search failed",
-
   "userNotAvailableTitle": "Account not available",
   "userNotAvailableBody": "This account isn't available right now.",
-
   "classicVinersTitle": "OG Viners",
-
   "blossomFailedToSaveSettings": "Failed to save settings: {error}",
   "@blossomFailedToSaveSettings": {
     "placeholders": {
@@ -3020,12 +3199,10 @@
   "blossomCustomServerUrl": "Custom Blossom Server URL",
   "blossomCustomServerHelper": "Enter the URL of your custom Blossom server",
   "blossomPopularServers": "Popular Blossom Servers",
-
   "blossomServerUrlMustUseHttps": "Blossom server URL must use https://",
   "@blossomServerUrlMustUseHttps": {
     "description": "Snackbar shown when the user typed a non-loopback http:// Blossom server URL. Under release transport security those uploads would silently fail at the OS layer; the validator rejects them with this hint instead."
   },
-
   "blueskyFailedToUpdateCrosspost": "Failed to update crosspost setting",
   "blueskySignInRequired": "Sign in to manage Bluesky settings",
   "blueskyPublishVideos": "Publish videos to Bluesky",
@@ -3038,13 +3215,14 @@
   "blueskyStatusFailed": "Account provisioning failed",
   "blueskyStatusDisabled": "Account disabled",
   "blueskyStatusNotLinked": "No Bluesky account linked",
-
   "invitesTitle": "Invite Friends",
   "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
   "@invitesGenerateCardTitle": {
     "description": "Title of the generate-invite card on the invites screen, shown when the user has invite capacity that has not been generated as codes yet.",
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
@@ -3073,7 +3251,6 @@
   "invitesClaimed": "Claimed",
   "invitesCouldNotLoad": "Could not load invites",
   "invitesRetry": "Retry",
-
   "searchSomethingWentWrong": "Something went wrong",
   "searchTryAgain": "Try again",
   "searchForLists": "Search for lists",
@@ -3094,13 +3271,8 @@
   "searchVideosLoadingLabel": "Loading video results",
   "searchListsSectionHeader": "Lists",
   "searchListsLoadingLabel": "Loading list results",
-
-  "contentWarningViewAnyway": "View Anyway",
-
   "cameraAgeRestriction": "You must be 16 or older to create content",
-
   "featureRequestCancel": "Cancel",
-
   "keyImportError": "Error: {error}",
   "@keyImportError": {
     "placeholders": {
@@ -3113,7 +3285,6 @@
   "@keyImportInsecureBunkerRelay": {
     "description": "Shown when a pasted bunker:// or nostrconnect:// URL contains a relay parameter that uses cleartext ws:// for a non-loopback host."
   },
-
   "timeNow": "now",
   "@timeNow": {
     "description": "Relative time label for less than one minute ago (short form)"
@@ -3122,42 +3293,54 @@
   "@timeShortMinutes": {
     "description": "Short relative time in minutes, e.g. 3m",
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "timeShortHours": "{count}h",
   "@timeShortHours": {
     "description": "Short relative time in hours, e.g. 2h",
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "timeShortDays": "{count}d",
   "@timeShortDays": {
     "description": "Short relative time in days, e.g. 3d",
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "timeShortWeeks": "{count}w",
   "@timeShortWeeks": {
     "description": "Short relative time in weeks, e.g. 2w",
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "timeShortMonths": "{count}mo",
   "@timeShortMonths": {
     "description": "Short relative time in months, e.g. 1mo",
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "timeShortYears": "{count}y",
   "@timeShortYears": {
     "description": "Short relative time in years, e.g. 1y",
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "timeVerboseNow": "Now",
@@ -3168,7 +3351,9 @@
   "@timeAgo": {
     "description": "Verbose relative time with ago suffix, e.g. 3m ago",
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "timeToday": "Today",
@@ -3187,28 +3372,33 @@
   "@timeMinutesAgo": {
     "description": "Relative time in minutes with ago suffix",
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "timeHoursAgo": "{count}h ago",
   "@timeHoursAgo": {
     "description": "Relative time in hours with ago suffix",
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "timeDaysAgo": "{count}d ago",
   "@timeDaysAgo": {
     "description": "Relative time in days with ago suffix",
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "draftTimeJustNow": "Just now",
   "@draftTimeJustNow": {
     "description": "Draft age label for less than one minute (capitalized)"
   },
-
   "contentLabelNudity": "Nudity",
   "contentLabelSexualContent": "Sexual Content",
   "contentLabelPornography": "Pornography",
@@ -3230,42 +3420,53 @@
   "contentLabelSpoiler": "Spoiler",
   "contentLabelMisleading": "Misleading",
   "contentLabelSensitiveContent": "Sensitive Content",
-
   "notificationLikedYourVideo": "{actorName} liked your video",
   "@notificationLikedYourVideo": {
     "placeholders": {
-      "actorName": { "type": "String" }
+      "actorName": {
+        "type": "String"
+      }
     }
   },
   "notificationLikedYourComment": "{actorName} liked your comment",
   "@notificationLikedYourComment": {
     "description": "Notification text when someone reacts to a comment the user posted (typically under another user's video).",
     "placeholders": {
-      "actorName": { "type": "String" }
+      "actorName": {
+        "type": "String"
+      }
     }
   },
   "notificationCommentedOnYourVideo": "{actorName} commented on your video",
   "@notificationCommentedOnYourVideo": {
     "placeholders": {
-      "actorName": { "type": "String" }
+      "actorName": {
+        "type": "String"
+      }
     }
   },
   "notificationStartedFollowing": "{actorName} started following you",
   "@notificationStartedFollowing": {
     "placeholders": {
-      "actorName": { "type": "String" }
+      "actorName": {
+        "type": "String"
+      }
     }
   },
   "notificationMentionedYou": "{actorName} mentioned you",
   "@notificationMentionedYou": {
     "placeholders": {
-      "actorName": { "type": "String" }
+      "actorName": {
+        "type": "String"
+      }
     }
   },
   "notificationRepostedYourVideo": "{actorName} reposted your video",
   "@notificationRepostedYourVideo": {
     "placeholders": {
-      "actorName": { "type": "String" }
+      "actorName": {
+        "type": "String"
+      }
     }
   },
   "notificationRepliedToYourComment": "replied to your comment",
@@ -3280,7 +3481,9 @@
   "@notificationOthersCount": {
     "description": "Number of additional actors beyond the first in a grouped notification.",
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "notificationSystemUpdate": "You have a new update",
@@ -3291,7 +3494,6 @@
   "@notificationSomeoneLikedYourVideo": {
     "description": "Defensive fallback shown on a grouped like notification when the actor list is empty (e.g. the backend returned a count without resolved actors). Should be rare in practice."
   },
-
   "commentReplyToPrefix": "Re:",
   "@commentReplyToPrefix": {
     "description": "Short prefix shown before a replied-to username (e.g. 'Re: alice'). Used in the orphaned-reply chip on a comment item and above the comment input when actively replying."
@@ -3300,9 +3502,6 @@
   "@commentHideKeyboard": {
     "description": "Accessibility label for the comment input control that dismisses the keyboard."
   },
-
-  "searchSomethingWentWrong": "Something went wrong",
-  "searchTryAgain": "Try again",
   "draftUntitled": "Untitled",
   "contentWarningNone": "None",
   "textBackgroundNone": "None",
@@ -3403,10 +3602,10 @@
   "videoEditorPlayPauseSemanticLabel": "Play or pause video",
   "videoEditorCropSemanticLabel": "Crop",
   "videoEditorCannotSplitProcessing": "Cannot split clip while it is being processed. Please wait.",
-  "videoEditorSplitPositionInvalid": "Split position invalid. Both clips must be at least {minMs}ms long.",
+  "videoEditorSplitPositionInvalid": "Split position invalid. Both clips must be at least {minDurationMs}ms long.",
   "@videoEditorSplitPositionInvalid": {
     "placeholders": {
-      "minMs": {
+      "minDurationMs": {
         "type": "int"
       }
     }
@@ -3444,6 +3643,11 @@
   "videoEditorDuplicateSelectedItemSemanticLabel": "Duplicate selected item",
   "videoEditorSplitLabel": "Split",
   "videoEditorSplitSelectedClipSemanticLabel": "Split selected clip",
+  "videoEditorExtractAudioLabel": "Extract Audio",
+  "videoEditorClipAudioTitle": "Clip Audio",
+  "videoEditorExtractAudioFromClipSemanticLabel": "Extract audio from clip and mute original",
+  "videoEditorExtractAudioNoLocalFile": "Cannot extract audio: clip is not locally available.",
+  "videoEditorExtractAudioFailed": "Could not extract audio. Please try again.",
   "videoEditorFinishTimelineEditingSemanticLabel": "Finish timeline editing",
   "videoEditorAudioPlayPreviewSemanticLabel": "Play preview",
   "videoEditorAudioPausePreviewSemanticLabel": "Pause preview",
@@ -3481,14 +3685,6 @@
   "videoEditorSelectFontSemanticLabel": "Select font",
   "videoEditorFontUnknown": "Unknown",
   "videoEditorSplitPlayheadOutsideClip": "Playhead must be within the selected clip to split.",
-  "videoEditorSplitPositionInvalid": "Split position invalid. Both clips must be at least {minDurationMs}ms long.",
-  "@videoEditorSplitPositionInvalid": {
-    "placeholders": {
-      "minDurationMs": {
-        "type": "int"
-      }
-    }
-  },
   "videoEditorTimelineTrimStartSemanticLabel": "Trim start",
   "videoEditorTimelineTrimEndSemanticLabel": "Trim end",
   "videoEditorTimelineTrimClipSemanticLabel": "Trim clip",
@@ -3524,15 +3720,20 @@
   "videoEditorTimelinePositionFormat": "{minutes}m {seconds}s",
   "@videoEditorTimelinePositionFormat": {
     "placeholders": {
-      "minutes": { "type": "int" },
-      "seconds": { "type": "String" }
+      "minutes": {
+        "type": "int"
+      },
+      "seconds": {
+        "type": "String"
+      }
     }
   },
-  "videoEditorColorPickerSemanticLabel": "Color picker",
   "videoEditorColorSelectedSemanticLabel": "{colorName}, selected",
   "@videoEditorColorSelectedSemanticLabel": {
     "placeholders": {
-      "colorName": { "type": "String" }
+      "colorName": {
+        "type": "String"
+      }
     }
   },
   "videoEditorCloseColorPickerSemanticLabel": "Close color picker",
@@ -3542,8 +3743,12 @@
   "videoEditorSaturationBrightnessValue": "Saturation {saturation}%, Brightness {brightness}%",
   "@videoEditorSaturationBrightnessValue": {
     "placeholders": {
-      "saturation": { "type": "int" },
-      "brightness": { "type": "int" }
+      "saturation": {
+        "type": "int"
+      },
+      "brightness": {
+        "type": "int"
+      }
     }
   },
   "videoEditorHueSemanticLabel": "Hue",
@@ -3551,7 +3756,6 @@
   "videoEditorCloseSemanticLabel": "Close",
   "videoEditorDoneSemanticLabel": "Done",
   "videoEditorLevelSemanticLabel": "Level",
-
   "videoMetadataBackSemanticLabel": "Back",
   "videoMetadataDismissHelpDialogSemanticLabel": "Dismiss help dialog",
   "videoMetadataGotItButton": "Got it!",
@@ -3626,6 +3830,14 @@
   "videoMetadataSaveForLaterButton": "Save for Later",
   "videoMetadataPostSemanticLabel": "Post button",
   "videoMetadataPublishVideoHint": "Publish video to feed",
+  "videoMetadataShareReplyToFeedTitle": "Also share to my feed",
+  "@videoMetadataShareReplyToFeedTitle": {
+    "description": "Label for the toggle that also surfaces a video reply in normal feeds."
+  },
+  "videoMetadataShareReplyToFeedSubtitle": "Off keeps this video only in the comment thread.",
+  "@videoMetadataShareReplyToFeedSubtitle": {
+    "description": "Helper text for the video reply feed visibility toggle."
+  },
   "videoMetadataFormNotReadyHint": "Fill out the form to enable",
   "videoMetadataPostButton": "Post",
   "videoMetadataOpenPreviewSemanticLabel": "Open post preview screen",
@@ -3636,18 +3848,6 @@
   "videoMetadataPausePreviewSemanticLabel": "Pause preview",
   "videoMetadataClosePreviewSemanticLabel": "Close video preview",
   "videoMetadataRemoveSemanticLabel": "Remove",
-  "metadataCaptionsLabel": "Captions",
-  "@metadataCaptionsLabel": {
-    "description": "Label for the global captions toggle in the video metadata sheet"
-  },
-  "metadataCaptionsEnabledSemantics": "Captions enabled for all videos",
-  "@metadataCaptionsEnabledSemantics": {
-    "description": "Screen reader label when the global captions toggle is on"
-  },
-  "metadataCaptionsDisabledSemantics": "Captions disabled for all videos",
-  "@metadataCaptionsDisabledSemantics": {
-    "description": "Screen reader label when the global captions toggle is off"
-  },
   "fullscreenFeedRemovedMessage": "Video removed",
   "@fullscreenFeedRemovedMessage": {
     "description": "Empty-state message shown in the fullscreen feed when the last visible video has just been deleted, blocked, or muted and the route cannot be popped back to a parent (e.g. a cold deep-link)."
@@ -3674,6 +3874,67 @@
   "badgesIssuedNoRecipients": "No recipients found for this award.",
   "badgesRecipientAcceptedStatus": "Accepted by recipient",
   "badgesRecipientWaitingStatus": "Waiting for recipient",
+  "commentsRecordVideoButtonLabel": "Record video comment",
+  "@commentsRecordVideoButtonLabel": {
+    "description": "Semantics label for the button that opens the recorder to create a video reply in comments."
+  },
+  "commentsOpenVideoLabel": "Open video comment",
+  "@commentsOpenVideoLabel": {
+    "description": "Semantics label for the button that opens an inline video reply in the full video detail route."
+  },
+  "commentsMuteVideoReplyLabel": "Mute video reply",
+  "@commentsMuteVideoReplyLabel": {
+    "description": "Semantics label for the button that mutes inline video comment playback."
+  },
+  "commentsUnmuteVideoReplyLabel": "Unmute video reply",
+  "@commentsUnmuteVideoReplyLabel": {
+    "description": "Semantics label for the button that unmutes inline video comment playback."
+  },
+  "commentsOpenReplyParentLabel": "Open video this replies to",
+  "@commentsOpenReplyParentLabel": {
+    "description": "Semantics label for the UI that opens the parent video for a video reply."
+  },
+  "commentsReplyParentSectionTitle": "In reply to",
+  "@commentsReplyParentSectionTitle": {
+    "description": "Section title shown above the parent video label for a video reply."
+  },
+  "commentsReplyParentLabel": "Reply to {target}",
+  "@commentsReplyParentLabel": {
+    "description": "Label describing the parent video a reply points to.",
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "commentsReplyParentFallbackLabel": "Reply to video",
+  "@commentsReplyParentFallbackLabel": {
+    "description": "Fallback label when the parent video has no title, author name, or usable content."
+  },
+  "verifiedAccountChipSemanticLabel": "Verified {platform} account: {identity}",
+  "@verifiedAccountChipSemanticLabel": {
+    "description": "Screen reader label for a verified-account chip on a user's profile.",
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      },
+      "identity": {
+        "type": "String"
+      }
+    }
+  },
+  "profileEditVerifiedAccountsTitle": "Verified accounts",
+  "@profileEditVerifiedAccountsTitle": {
+    "description": "Section header on the edit profile screen above the verified-accounts chip row and the Get verified CTA."
+  },
+  "profileEditGetVerifiedCta": "Get verified",
+  "@profileEditGetVerifiedCta": {
+    "description": "Primary CTA tile on edit profile that opens the verifyer integrated-app sandbox."
+  },
+  "profileEditGetVerifiedSubtitle": "Link your social media accounts so people know it's really you.",
+  "@profileEditGetVerifiedSubtitle": {
+    "description": "Subtitle under the Get verified tile, harmonized with verifyer.divine.video landing copy."
+  },
   "videoMetadataEditCoverTitle": "Edit cover",
   "videoMetadataEditCoverCloseSemanticLabel": "Close cover editor",
   "videoMetadataEditCoverConfirmSemanticLabel": "Confirm cover selection",

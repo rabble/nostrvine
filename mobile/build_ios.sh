@@ -1,106 +1,225 @@
 #!/bin/bash
-# ABOUTME: iOS build script that ensures CocoaPods dependencies are properly installed
-# ABOUTME: before building the iOS app to prevent pod install sync errors
+set -euo pipefail
 
-set -e
+usage() {
+    cat <<'EOF'
+Usage: ./build_ios.sh [debug|release] [options]
 
-echo "🍎 Building iOS App..."
+Positional:
+  debug      - Build debug mode (default)
+  release    - Build release + auto-increment build number
 
-# Navigate to project root
-cd "$(dirname "$0")"
+Options:
+  --increment       - Auto-increment build number even in debug
+  --codegen         - Force running build_runner before build
+  --no-codegen      - Skip build_runner even for release
+  --pod-reset       - Remove ios/Pods and ios/Podfile.lock before build
+  --no-pub-get      - Skip flutter pub get
+  --no-pod-install  - Skip pod install checks
+  --help            - Show this help
 
-# For release builds, ALWAYS increment build number (required by App Store)
-# For debug builds, only increment if --increment flag is passed
-if [ "$1" = "release" ]; then
+Performance note:
+  Debug builds skip codegen by default. Use --codegen only when you touched
+  generated-code sources.
+EOF
+}
+
+BUILD_MODE="debug"
+INCREMENT_BUILD=false
+CODEGEN_MODE="auto"
+PUB_GET=true
+POD_INSTALL_MODE="auto"
+FORCE_POD_RESET=false
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        debug|release)
+            BUILD_MODE="$1"
+            shift
+            ;;
+        --increment)
+            INCREMENT_BUILD=true
+            shift
+            ;;
+        --codegen)
+            CODEGEN_MODE="always"
+            shift
+            ;;
+        --no-codegen)
+            CODEGEN_MODE="never"
+            shift
+            ;;
+        --pod-reset)
+            FORCE_POD_RESET=true
+            shift
+            ;;
+        --no-pub-get)
+            PUB_GET=false
+            shift
+            ;;
+        --no-pod-install)
+            POD_INSTALL_MODE="never"
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "❌ Unknown option: $1"
+            usage
+            exit 1
+            ;;
+    esac
+done
+
+if [[ "$BUILD_MODE" == "release" ]]; then
+    if [[ "$CODEGEN_MODE" == "auto" ]]; then
+        CODEGEN_MODE="always"
+    fi
+    FORCE_POD_RESET=true
+fi
+
+if [[ "$BUILD_MODE" == "release" ]]; then
     echo "🔢 Auto-incrementing build number (required for App Store)..."
     ./increment_build_number.sh --auto
     echo ""
-elif [[ "$1" == "--increment" || "$2" == "--increment" ]]; then
+elif [[ "$INCREMENT_BUILD" == "true" ]]; then
     echo "🔢 Auto-incrementing build number..."
     ./increment_build_number.sh --auto
     echo ""
 fi
 
-# Load environment variables from .env file
+echo "🍎 Building iOS App..."
+cd "$(dirname "$0")"
+
 DART_DEFINES=""
-if [ -f .env ]; then
+if [[ -f .env ]]; then
     echo "📦 Loading environment from .env..."
     source .env
 
-    if [ -n "$ZENDESK_APP_ID" ]; then
+    if [[ -n "${ZENDESK_APP_ID:-}" ]]; then
         DART_DEFINES="$DART_DEFINES --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID"
     fi
 
-    if [ -n "$ZENDESK_CLIENT_ID" ]; then
+    if [[ -n "${ZENDESK_CLIENT_ID:-}" ]]; then
         DART_DEFINES="$DART_DEFINES --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID"
     fi
 
-    if [ -n "$ZENDESK_URL" ]; then
+    if [[ -n "${ZENDESK_URL:-}" ]]; then
         DART_DEFINES="$DART_DEFINES --dart-define=ZENDESK_URL=$ZENDESK_URL"
     fi
 
-    if [ -n "$ZENDESK_API_TOKEN" ]; then
+    if [[ -n "${ZENDESK_API_TOKEN:-}" ]]; then
         DART_DEFINES="$DART_DEFINES --dart-define=ZENDESK_API_TOKEN=$ZENDESK_API_TOKEN"
     fi
 
-    if [ -n "$DEFAULT_ENV" ]; then
+    if [[ -n "${DEFAULT_ENV:-}" ]]; then
         DART_DEFINES="$DART_DEFINES --dart-define=DEFAULT_ENV=$DEFAULT_ENV"
     fi
 
-    if [ -n "$PROOFMODE_SIGNING_SERVER_ENDPOINT" ]; then
+    if [[ -n "${PROOFMODE_SIGNING_SERVER_ENDPOINT:-}" ]]; then
         DART_DEFINES="$DART_DEFINES --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT"
     fi
 
-    if [ -n "$PROOFMODE_SIGNING_SERVER_TOKEN" ]; then
+    if [[ -n "${PROOFMODE_SIGNING_SERVER_TOKEN:-}" ]]; then
         DART_DEFINES="$DART_DEFINES --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN"
-    fi 
-
+    fi
 fi
 
-# Ensure Flutter dependencies are up to date
-echo "📦 Getting Flutter dependencies..."
-flutter pub get
+PUB_HASH_FILE=".dart_tool/.last_pub_get_hash"
+current_pub_hash() {
+    if [[ -f pubspec.yaml ]]; then
+        cat pubspec.yaml pubspec.lock 2>/dev/null | shasum -a 256 | awk '{print $1}'
+    fi
+}
+pub_get_is_fresh() {
+    [[ -f .dart_tool/package_config.json ]] || return 1
+    [[ -f "$PUB_HASH_FILE" ]] || return 1
+    [[ "$(cat "$PUB_HASH_FILE" 2>/dev/null)" == "$(current_pub_hash)" ]] || return 1
+    return 0
+}
+mark_pub_get_fresh() {
+    mkdir -p .dart_tool
+    current_pub_hash > "$PUB_HASH_FILE"
+}
 
-# Generate code (Riverpod providers, Freezed models, etc.)
-echo "🔧 Generating code with build_runner..."
-dart run build_runner build --delete-conflicting-outputs
-
-# Navigate to iOS directory and install CocoaPods
-echo "🏗️  Installing CocoaPods dependencies..."
-cd ios
-
-# Clean up any potential pod cache issues
-if [ -d "Pods" ]; then
-    echo "🧹 Cleaning existing Pods directory..."
-    rm -rf Pods
+if [[ "$PUB_GET" == "true" ]]; then
+    if pub_get_is_fresh; then
+        echo "✅ Dependencies up to date (pubspec unchanged) — skipping pub get"
+    elif [[ "$CODEGEN_MODE" == "always" ]]; then
+        echo "⏭️  Skipping standalone pub get — build_runner will resolve once"
+    else
+        echo "📦 Getting Flutter dependencies..."
+        flutter pub get
+        mark_pub_get_fresh
+    fi
 fi
 
-if [ -f "Podfile.lock" ]; then
-    echo "🧹 Removing existing Podfile.lock..."
-    rm -f Podfile.lock
+CODEGEN_MARKER=".dart_tool/.last_codegen_marker"
+codegen_inputs_changed() {
+    [[ -f "$CODEGEN_MARKER" ]] || return 0
+    local newer
+    newer=$(find lib pubspec.lock \
+        -type f \
+        \( -name '*.dart' -o -name 'pubspec.lock' \) \
+        ! -name '*.g.dart' \
+        ! -name '*.freezed.dart' \
+        ! -name '*.mocks.dart' \
+        -newer "$CODEGEN_MARKER" \
+        -print -quit 2>/dev/null)
+    [[ -n "$newer" ]]
+}
+
+if [[ "$CODEGEN_MODE" == "always" ]]; then
+    if codegen_inputs_changed; then
+        echo "🔧 Generating code with build_runner..."
+        dart run build_runner build --delete-conflicting-outputs
+        mkdir -p .dart_tool && touch "$CODEGEN_MARKER"
+        mark_pub_get_fresh
+    else
+        echo "✅ Codegen up to date (no input changes since last build)"
+    fi
+else
+    echo "⏭️  Skipping build_runner for $BUILD_MODE (use --codegen if needed)"
 fi
 
-# Install pods
-echo "📦 Running pod install..."
-pod install
+if [[ "$POD_INSTALL_MODE" != "never" ]]; then
+    echo "🏗️  Preparing CocoaPods..."
+    cd ios
 
-# Navigate back to project root
-cd ..
+    if [[ "$FORCE_POD_RESET" == "true" ]]; then
+        echo "🧹 Pod reset requested - removing Pods and Podfile.lock"
+        rm -rf Pods
+        rm -f Podfile.lock
+    fi
 
-# Build the iOS app
+    if [[ ! -d Pods ]] || [[ ! -f Podfile.lock ]] || [[ ! -f Pods/Manifest.lock ]]; then
+        echo "📦 Running pod install..."
+        pod install
+    elif ! diff "Podfile.lock" "Pods/Manifest.lock" >/dev/null 2>&1; then
+        echo "📦 Pod state changed, running pod install..."
+        pod install
+    else
+        echo "✅ Pod install already up to date"
+    fi
+
+    cd ..
+else
+    echo "⏭️  Skipping pod install checks"
+fi
+
 echo "🚀 Building iOS app..."
-if [ "$1" = "release" ]; then
+if [[ "$BUILD_MODE" == "release" ]]; then
     echo "🏗️  Building Flutter iOS release..."
     flutter build ios --release $DART_DEFINES
     
     echo "📦 Creating Xcode archive..."
     cd ios
     
-    # Create archive using xcodebuild
     ARCHIVE_NAME="Runner-$(date +%Y-%m-%d-%H%M%S).xcarchive"
     ORGANIZER_PATH="$HOME/Library/Developer/Xcode/Archives/$(date +%Y-%m-%d)"
     
-    # Create Organizer directory if it doesn't exist
     mkdir -p "$ORGANIZER_PATH"
     
     xcodebuild -workspace Runner.xcworkspace \
@@ -114,8 +233,7 @@ if [ "$1" = "release" ]; then
         echo "✅ Archive created successfully!"
         echo "📱 Archive location: $ORGANIZER_PATH/$ARCHIVE_NAME"
         
-        # Refresh Xcode Organizer if Xcode is running
-        if pgrep -x "Xcode" > /dev/null; then
+        if pgrep -x "Xcode" >/dev/null; then
             echo "🔄 Refreshing Xcode Organizer..."
             osascript -e 'tell application "Xcode" to activate' 2>/dev/null || true
         fi
@@ -125,14 +243,12 @@ if [ "$1" = "release" ]; then
         echo "   • Select your archive and click 'Distribute App'"
         echo "   • Choose distribution method (App Store, Ad Hoc, etc.)"
         
-        # Ask user if they want to export to IPA
         echo ""
         read -p "📦 Would you like to export to IPA for App Store distribution? (y/N): " -n 1 -r
         echo ""
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             echo "📦 Exporting archive to IPA..."
             
-            # Create export options plist for App Store distribution
             cat > build/ExportOptions.plist << EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -170,19 +286,7 @@ EOF
     fi
     
     cd ..
-elif [ "$1" = "debug" ]; then
-    flutter build ios --debug $DART_DEFINES
 else
-    echo "Usage: $0 [debug|release] [--increment]"
-    echo "  debug       - Build debug version"
-    echo "  release     - Build release version and create Xcode archive (auto-increments build number)"
-    echo "  --increment - Force auto-increment build number for debug builds"
-    echo ""
-    echo "Examples:"
-    echo "  $0 release              # Build release (automatically increments build number)"
-    echo "  $0 debug --increment    # Build debug with build number increment"
-    echo ""
-    echo "Building in debug mode by default..."
     flutter build ios --debug $DART_DEFINES
 fi
 

@@ -96,6 +96,15 @@ class FetchRepostsFailedException extends RepostsRepositoryException {
   String toString() => 'FetchRepostsFailedException: $message';
 }
 
+/// Exception thrown when fetching the list of reposters for an event fails.
+class FetchRepostersFailedException extends RepostsRepositoryException {
+  /// Creates a new fetch reposters failed exception.
+  const FetchRepostersFailedException(super.message);
+
+  @override
+  String toString() => 'FetchRepostersFailedException: $message';
+}
+
 /// Exception thrown when the video is missing a required d-tag.
 ///
 /// NIP-71 addressable video events require a d-tag for addressing.

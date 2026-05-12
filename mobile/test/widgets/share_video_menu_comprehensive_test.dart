@@ -212,13 +212,9 @@ void main() {
       expect(find.text('Share via'), findsOneWidget);
     });
 
-    testWidgets('More actions row shows Report action', (tester) async {
-      await tester.pumpWidget(buildSubject());
-      await tester.tap(find.byType(ShareActionButton));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Report'), findsOneWidget);
-    });
+    // Report was moved out of the share sheet onto the video overlay's
+    // action column (ReportActionButton) — see commit 39c4f62d2 / PR #4087.
+    // The corresponding share-sheet test is intentionally deleted.
 
     testWidgets('More actions row shows Add to clips for classic Vines', (
       tester,
@@ -341,7 +337,9 @@ void main() {
       // More actions section
       expect(iconNames, contains(DivineIconName.bookmarkSimple));
       expect(iconNames, contains(DivineIconName.linkSimple));
-      expect(iconNames, contains(DivineIconName.flag));
+      // DivineIconName.flag (Report) was removed from the share sheet when
+      // Report became its own button on the video overlay action column —
+      // see ReportActionButton in VideoOverlayActionColumn.
       // shareFat appears in button and Share via action
       expect(
         iconNames.where((n) => n == DivineIconName.shareFat).length,

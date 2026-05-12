@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:infinite_video_feed/infinite_video_feed.dart'
+    show InfiniteVideoFeed, VideoErrorType;
 import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
@@ -35,11 +37,16 @@ import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/nav_rounded_shell.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
+import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
 import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart';
 import 'package:openvine/widgets/web_video_auth_header_provider.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
 import 'package:openvine/widgets/web_video_player.dart';
-import 'package:pooled_video_player/pooled_video_player.dart';
+import 'package:pooled_video_player/pooled_video_player.dart'
+    hide VideoErrorType;
+import 'package:pooled_video_player/pooled_video_player.dart'
+    as pvp
+    show VideoErrorType;
 import 'package:unified_logger/unified_logger.dart';
 
 class VideoFeedPage extends ConsumerWidget {
@@ -130,6 +137,12 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   /// has navigated away to another tab (e.g. Search).
   bool _isOnHomeTab = true;
 
+  /// Tracks whether the new native player feed should be active.
+  ///
+  /// Mirrors the logic that drives [VideoFeedController.setActive] so
+  /// [FeedVideos] pauses/resumes on tab switches and overlay open/close.
+  bool _isNewFeedActive = true;
+
   /// Guards so startup milestones fire only once.
   bool _hasMarkedUIReady = false;
   bool _hasMarkedVideoReady = false;
@@ -205,26 +218,6 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     if (nextIndex >= feedState.controller.videoCount) return;
 
     unawaited(feedState.animateToPage(nextIndex));
-  }
-
-  /// Whether auto-advance is available on this build. Reduced-motion users
-  /// keep the control and runtime disabled regardless of in-app toggle state.
-  bool _isAutoAdvanceAvailable() {
-    if (!mounted) return false;
-    return !MediaQuery.disableAnimationsOf(context);
-  }
-
-  void _toggleAutoAdvance() {
-    if (!_isAutoAdvanceAvailable()) return;
-
-    _autoAdvanceCubit.toggle();
-    if (!_autoAdvanceCubit.state.isEffectivelyActive) {
-      _autoAdvanceCubit.clearPendingPaginationAdvance();
-    }
-    announceAutoAdvanceToggle(
-      context,
-      enabled: _autoAdvanceCubit.state.enabled,
-    );
   }
 
   void _suppressAutoAdvance() => _autoAdvanceCubit.suppressForInteraction();
@@ -314,6 +307,10 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   void handleVideoController([VideoFeedState? state]) {
     if (kIsWeb) return; // Skip media_kit controller on web
     if (!ownsController) return;
+    if (InfiniteVideoFeed.isSupported &&
+        ref.read(isFeatureEnabledProvider(FeatureFlag.nativeFeedPlayer))) {
+      return;
+    }
 
     final effectiveState = state ?? context.read<VideoFeedBloc>().state;
     if (!effectiveState.isLoaded || effectiveState.videos.isEmpty) return;
@@ -474,6 +471,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
       }
 
       controller?.setActive(active: isHome);
+      setState(() => _isNewFeedActive = isHome);
     });
 
     // Refresh feed when blocklist changes (block from profile, DM, or relay).
@@ -501,9 +499,11 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
           active: false,
           retainCurrentPlayer: current.shouldRetainPlayer,
         );
+        setState(() => _isNewFeedActive = false);
       } else if (!hasOverlay && hadOverlay) {
         // All overlays closed - resume playback
         controller?.setActive(active: true);
+        setState(() => _isNewFeedActive = true);
       }
     });
 
@@ -514,9 +514,12 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
         child: MultiBlocListener(
           listeners: [
             // Sync volume when hardware buttons change system volume.
+            // Also forward to the web feed so the in-pause mute toggle in
+            // the paused overlay reaches WebVideoPlayer instances.
             BlocListener<VideoVolumeCubit, VideoVolumeState>(
               listener: (_, state) {
                 controller?.setVolume(state.volume);
+                _webFeedKey.currentState?.setVolume(state.volume);
               },
             ),
             // Reset controller when mode changes so a fresh one is
@@ -589,14 +592,13 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
               // toggled / suppressed / resumed.
               final autoState = context.watch<FeedAutoAdvanceCubit>().state;
 
-              // Gate the rail + runtime on the user's reduced-motion
-              // preference. When Auto is unavailable,
-              // force it "off" at the view layer regardless of cubit state.
+              // Gate the runtime on the user's reduced-motion preference.
+              // When Auto is unavailable, force it "off" at the view layer
+              // regardless of cubit state. The popover toggle has its own
+              // matching visibility gate in [_PlaybackModeToggle].
               final autoAdvanceAvailable = !MediaQuery.disableAnimationsOf(
                 context,
               );
-              final effectiveAutoEnabled =
-                  autoAdvanceAvailable && autoState.enabled;
               final effectiveAutoActive =
                   autoAdvanceAvailable && autoState.isEffectivelyActive;
 
@@ -624,7 +626,37 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                 onRefresh: () => _refreshFeed(context),
                 child: Stack(
                   children: [
-                    if (kIsWeb)
+                    if (InfiniteVideoFeed.isSupported &&
+                        ref.watch(
+                          isFeatureEnabledProvider(
+                            FeatureFlag.nativeFeedPlayer,
+                          ),
+                        ))
+                      FeedVideos(
+                        videos: state.videos,
+                        contextTitle: state.mode.name,
+                        isActive: _isNewFeedActive,
+                        hasMore: state.hasMore,
+                        isLoadingMore: state.isLoadingMore,
+                        onActiveVideoChanged: (video, index) {
+                          _resumeAutoAdvanceAfterSwipe();
+                          FeedPerformanceTracker().startVideoSwipeTracking(
+                            video.id,
+                          );
+                          if (!_hasMarkedVideoReady && index == 0) {
+                            _hasMarkedVideoReady = true;
+                            StartupPerformanceService.instance.markVideoReady();
+                          }
+                        },
+                        onNearEnd: () {
+                          if (state.hasMore) {
+                            context.read<VideoFeedBloc>().add(
+                              const VideoFeedLoadMoreRequested(),
+                            );
+                          }
+                        },
+                      )
+                    else if (kIsWeb)
                       WebVideoFeed(
                         key: _webFeedKey,
                         videos: state.videos
@@ -634,6 +666,10 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                             widget.webControllerFactory ??
                             defaultWebVideoPlayerControllerFactory,
                         authHeaderProvider: webAuthHeaderProvider,
+                        initialVolume: context
+                            .read<VideoVolumeCubit>()
+                            .state
+                            .volume,
                         onActiveVideoChanged: (video, index) {
                           _currentWebIndex = index;
                           _pagePosition.value = index.toDouble();
@@ -668,10 +704,6 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                                 pagePosition: _pagePosition,
                                 contextTitle: state.mode.name,
                                 listSources: listSources,
-                                showAutoButton: autoAdvanceAvailable,
-                                isAutoEnabled: effectiveAutoEnabled,
-                                feedController: null,
-                                onAutoPressed: _toggleAutoAdvance,
                                 onInteracted: _suppressAutoAdvance,
                               );
                             },
@@ -729,10 +761,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                               pagePosition: _pagePosition,
                               contextTitle: state.mode.name,
                               listSources: listSources,
-                              showAutoButton: autoAdvanceAvailable,
-                              isAutoEnabled: effectiveAutoEnabled,
                               isAutoAdvanceActive: effectiveAutoActive,
-                              onAutoPressed: _toggleAutoAdvance,
                               onInteracted: _suppressAutoAdvance,
                               onAutoAdvanceCompleted:
                                   _handleAutoAdvanceCompleted,
@@ -906,12 +935,9 @@ class _PooledVideoFeedItem extends ConsumerWidget {
     required this.index,
     required this.isActive,
     required this.pagePosition,
-    required this.showAutoButton,
-    required this.isAutoEnabled,
     required this.isAutoAdvanceActive,
     this.contextTitle,
     this.listSources,
-    this.onAutoPressed,
     this.onInteracted,
     this.onAutoAdvanceCompleted,
   });
@@ -920,12 +946,9 @@ class _PooledVideoFeedItem extends ConsumerWidget {
   final int index;
   final bool isActive;
   final ValueNotifier<double> pagePosition;
-  final bool showAutoButton;
-  final bool isAutoEnabled;
   final bool isAutoAdvanceActive;
   final String? contextTitle;
   final Set<String>? listSources;
-  final VoidCallback? onAutoPressed;
   final VoidCallback? onInteracted;
   final VoidCallback? onAutoAdvanceCompleted;
 
@@ -940,6 +963,9 @@ class _PooledVideoFeedItem extends ConsumerWidget {
     final likesRepository = ref.watch(likesRepositoryProvider);
     final commentsRepository = ref.watch(commentsRepositoryProvider);
     final repostsRepository = ref.watch(repostsRepositoryProvider);
+    final showVideoReplies = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.videoReplies),
+    );
 
     // Build addressable ID for reposts if video has a d-tag (vineId)
     final addressableId = video.addressableId;
@@ -954,6 +980,7 @@ class _PooledVideoFeedItem extends ConsumerWidget {
               commentsRepository: commentsRepository,
               repostsRepository: repostsRepository,
               addressableId: addressableId,
+              includeVideoReplies: showVideoReplies,
               initialLikeCount: video.nostrLikeCount != null
                   ? video.totalLikes
                   : null,
@@ -967,10 +994,7 @@ class _PooledVideoFeedItem extends ConsumerWidget {
         pagePosition: pagePosition,
         contextTitle: contextTitle,
         listSources: listSources,
-        showAutoButton: showAutoButton,
-        isAutoEnabled: isAutoEnabled,
         isAutoAdvanceActive: isAutoAdvanceActive,
-        onAutoPressed: onAutoPressed,
         onInteracted: onInteracted,
         onAutoAdvanceCompleted: onAutoAdvanceCompleted,
       ),
@@ -984,12 +1008,8 @@ class _WebVideoFeedItem extends ConsumerWidget {
     required this.index,
     required this.isActive,
     required this.pagePosition,
-    required this.feedController,
-    required this.showAutoButton,
-    required this.isAutoEnabled,
     this.contextTitle,
     this.listSources,
-    this.onAutoPressed,
     this.onInteracted,
   });
 
@@ -997,12 +1017,8 @@ class _WebVideoFeedItem extends ConsumerWidget {
   final int index;
   final bool isActive;
   final ValueNotifier<double> pagePosition;
-  final VideoFeedController? feedController;
-  final bool showAutoButton;
-  final bool isAutoEnabled;
   final String? contextTitle;
   final Set<String>? listSources;
-  final VoidCallback? onAutoPressed;
   final VoidCallback? onInteracted;
 
   @override
@@ -1034,10 +1050,6 @@ class _WebVideoFeedItem extends ConsumerWidget {
         pagePosition: pagePosition,
         index: index,
         listSources: listSources,
-        showAutoButton: showAutoButton,
-        feedController: feedController,
-        isAutoEnabled: isAutoEnabled,
-        onAutoPressed: onAutoPressed,
         onInteracted: onInteracted,
       ),
     );
@@ -1050,12 +1062,9 @@ class _PooledVideoFeedItemContent extends StatefulWidget {
     required this.index,
     required this.isActive,
     required this.pagePosition,
-    required this.showAutoButton,
-    required this.isAutoEnabled,
     required this.isAutoAdvanceActive,
     this.contextTitle,
     this.listSources,
-    this.onAutoPressed,
     this.onInteracted,
     this.onAutoAdvanceCompleted,
   });
@@ -1064,12 +1073,9 @@ class _PooledVideoFeedItemContent extends StatefulWidget {
   final int index;
   final bool isActive;
   final ValueNotifier<double> pagePosition;
-  final bool showAutoButton;
-  final bool isAutoEnabled;
   final bool isAutoAdvanceActive;
   final String? contextTitle;
   final Set<String>? listSources;
-  final VoidCallback? onAutoPressed;
   final VoidCallback? onInteracted;
   final VoidCallback? onAutoAdvanceCompleted;
 
@@ -1149,16 +1155,20 @@ class _PooledVideoFeedItemContentState
             index: widget.index,
           ),
           errorBuilder: (context, onRetry, errorType) {
+            // Map pooled_video_player.VideoErrorType to the canonical
+            // infinite_video_feed.VideoErrorType used by playbackStatusFromError
+            // and PooledVideoErrorOverlay.
+            final feedErrorType = _toFeedErrorType(errorType);
             // Capture the cubit eagerly so the post-frame callback doesn't
             // walk the ancestor tree on a potentially-deactivated element.
             final cubit = context.read<VideoPlaybackStatusCubit>();
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              cubit.report(video.id, playbackStatusFromError(errorType));
+              cubit.report(video.id, playbackStatusFromError(feedErrorType));
             });
             return PooledVideoErrorOverlay(
               video: video,
               onRetry: onRetry,
-              errorType: errorType,
+              errorType: feedErrorType,
             );
           },
           overlayBuilder: (context, videoController, player, feedController) =>
@@ -1176,11 +1186,7 @@ class _PooledVideoFeedItemContentState
                       player: player,
                       firstFrameFuture:
                           videoController?.waitUntilFirstFrameRendered,
-                      feedController: feedController,
                       listSources: widget.listSources,
-                      showAutoButton: widget.showAutoButton,
-                      isAutoEnabled: widget.isAutoEnabled,
-                      onAutoPressed: widget.onAutoPressed,
                       onInteracted: widget.onInteracted,
                       onContentWarningRevealed: () {
                         _contentWarningRevealed = true;
@@ -1414,3 +1420,13 @@ class _LoadingIndicator extends StatelessWidget {
     return const Center(child: BrandedLoadingIndicator(size: 60));
   }
 }
+
+/// Converts a [pvp.VideoErrorType] from [PooledVideoPlayer]'s error callback
+/// to the canonical [VideoErrorType] from [infinite_video_feed].
+VideoErrorType? _toFeedErrorType(pvp.VideoErrorType? t) => switch (t) {
+  null => null,
+  pvp.VideoErrorType.ageRestricted => VideoErrorType.ageRestricted,
+  pvp.VideoErrorType.forbidden => VideoErrorType.forbidden,
+  pvp.VideoErrorType.notFound => VideoErrorType.notFound,
+  pvp.VideoErrorType.generic => VideoErrorType.generic,
+};

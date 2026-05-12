@@ -32,6 +32,7 @@ const _notificationRetentionDays = 7;
     Clips,
     DirectMessages,
     Conversations,
+    OutgoingDms,
   ],
   daos: [
     UserProfilesDao,
@@ -49,6 +50,7 @@ const _notificationRetentionDays = 7;
     ClipsDao,
     DirectMessagesDao,
     ConversationsDao,
+    OutgoingDmsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -412,6 +414,68 @@ class AppDatabase extends _$AppDatabase {
     await customStatement('''
       CREATE INDEX IF NOT EXISTS idx_conversation_owner_pubkey
       ON conversations (owner_pubkey)
+    ''');
+
+    // Check if outgoing_dms table exists, create if missing.
+    // Added for #3909 (durable outgoing-DM queue + self-wrap retry).
+    // Schema version stays at 1 — same runtime CREATE-IF-NOT-EXISTS
+    // pattern as personal_reposts and nip05_verifications above.
+    final outgoingDmsResult = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type='table' "
+      "AND name='outgoing_dms'",
+    ).get();
+
+    if (outgoingDmsResult.isEmpty) {
+      await customStatement('''
+        CREATE TABLE outgoing_dms (
+          id TEXT NOT NULL PRIMARY KEY,
+          conversation_id TEXT NOT NULL,
+          recipient_pubkey TEXT NOT NULL,
+          content TEXT NOT NULL,
+          created_at INTEGER NOT NULL,
+          rumor_event_json TEXT NOT NULL,
+          message_kind INTEGER NOT NULL DEFAULT 14,
+          reply_to_id TEXT,
+          recipient_wrap_status TEXT NOT NULL,
+          self_wrap_status TEXT NOT NULL,
+          recipient_wrap_event_id TEXT,
+          self_wrap_event_id TEXT,
+          retry_count INTEGER NOT NULL DEFAULT 0,
+          recipient_wrap_last_error TEXT,
+          self_wrap_last_error TEXT,
+          last_attempt_at INTEGER,
+          queued_at INTEGER NOT NULL,
+          owner_pubkey TEXT NOT NULL
+        )
+      ''');
+    }
+    // Create indexes unconditionally (for new and existing databases).
+    // Drift's `m.createAll()` doesn't register the `List<Index> get
+    // indexes` getter on `OutgoingDms` (the project doesn't wire them
+    // through `@DriftDatabase(indexes: ...)`), so a Drift-created fresh
+    // install would otherwise have the table but none of its indexes,
+    // and `getRetryableForOwner` / `getStillPendingForOwner` would fall
+    // back to a full table scan. Hoisting the CREATE INDEX statements
+    // outside the "if table missing" block makes the runtime path the
+    // single source of truth for the index set on both new and existing
+    // databases — and makes the fresh-install vs runtime-create paths
+    // emit identical schemas, which the schema-parity test in
+    // `app_database_test.dart` pins.
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_outgoing_dms_owner_conversation
+      ON outgoing_dms (owner_pubkey, conversation_id, created_at DESC)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_outgoing_dms_owner_recipient_status
+      ON outgoing_dms (owner_pubkey, recipient_wrap_status)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_outgoing_dms_owner_self_status
+      ON outgoing_dms (owner_pubkey, self_wrap_status)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_outgoing_dms_queued_at
+      ON outgoing_dms (queued_at)
     ''');
 
     // Populate new columns from existing JSON data blobs

@@ -32,11 +32,9 @@ CF_STREAM_TOKEN="uJDzTLyLMd8dgUfmH65jkOwD-jeFYNog3MvVQsNW"
    ```
 
 3. **Build Scripts** (All production builds)
-   - `build_native.sh`
-   - `build_testflight.sh`
-   - `build_web_optimized.sh`
    - `build_ios.sh`
    - `build_macos.sh`
+   - `build_web_optimized.sh`
 
 ## Development Setup
 
@@ -68,8 +66,7 @@ flutter run -d chrome --release --dart-define=CF_STREAM_TOKEN="..."
 All production build scripts automatically include the token:
 
 ```bash
-./build_native.sh ios release   # iOS App Store
-./build_testflight.sh           # TestFlight
+./build_ios.sh release   # iOS App Store
 ./build_web_optimized.sh        # Web deployment
 ./build_macos.sh release        # macOS App Store
 ```

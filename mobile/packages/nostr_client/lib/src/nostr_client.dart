@@ -5,8 +5,8 @@ import 'package:crypto/crypto.dart';
 import 'package:db_client/db_client.dart' hide Filter;
 import 'package:meta/meta.dart';
 import 'package:nostr_client/src/models/models.dart';
+import 'package:nostr_client/src/publish_result.dart';
 import 'package:nostr_client/src/relay_manager.dart';
-import 'package:nostr_client/src/send_profile_result.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:nostr_sdk/utils/hash_util.dart';
 
@@ -238,8 +238,12 @@ class NostrClient {
   ///   (upsert deletes old record, so rollback would lose data)
   /// - Deletion events (Kind 5): Removes target events from cache on success
   ///
-  /// Returns the sent event if successful, or `null` if failed.
-  Future<Event?> publishEvent(
+  /// Returns a [PublishResult] describing the outcome:
+  /// - [PublishSuccess] — the event was broadcast to at least one relay.
+  /// - [PublishNoRelays] — no relays were connected even after retry.
+  /// - [PublishFailed] — the relay pool was reachable but the SDK send
+  ///   returned null (e.g. a serialisation error).
+  Future<PublishResult> publishEvent(
     Event event, {
     List<String>? targetRelays,
   }) async {
@@ -259,7 +263,7 @@ class NostrClient {
         if (useOptimisticCache) {
           _rollbackCachedEvent(event.id);
         }
-        return null;
+        return const PublishNoRelays();
       }
     }
 
@@ -278,7 +282,7 @@ class NostrClient {
       if (useOptimisticCache) {
         _rollbackCachedEvent(event.id);
       }
-      return null;
+      return const PublishFailed();
     }
 
     // Handle successful send
@@ -292,7 +296,7 @@ class NostrClient {
 
     statisticsObserver?.onEventSent();
 
-    return sentEvent;
+    return PublishSuccess(event: sentEvent);
   }
 
   /// Publishes an event and waits for an `OK` confirmation from at least one
@@ -828,17 +832,18 @@ class NostrClient {
 
   /// Sends a user profile (Kind 0 metadata event).
   ///
-  /// Checks relay connectivity (with retry) before broadcasting. Kind 0 is
-  /// replaceable, so the event is cached only on successful publish.
+  /// Delegates to [publishEvent], which handles relay connectivity checks,
+  /// retry, caching, and statistics. Kind 0 is replaceable, so it is cached
+  /// only on successful publish (not optimistically).
   ///
-  /// Returns a [SendProfileResult] that callers can switch exhaustively over:
-  /// - [SendProfileSuccess] — the event was broadcast to at least one relay.
-  /// - [SendProfileNoRelays] — no relays were connected even after retry.
-  /// - [SendProfileFailed] — the SDK send call returned null for a reason
-  ///   other than empty relay list (e.g. serialisation error).
-  Future<SendProfileResult> sendProfile({
+  /// Returns a [PublishResult] that callers can switch exhaustively over:
+  /// - [PublishSuccess] — the event was broadcast to at least one relay.
+  /// - [PublishNoRelays] — no relays were connected even after retry.
+  /// - [PublishFailed] — the relay pool was reachable but the send
+  ///   returned null (e.g. a serialisation error).
+  Future<PublishResult> sendProfile({
     required Map<String, dynamic> profileContent,
-  }) async {
+  }) {
     final event = Event(
       publicKey,
       EventKind.metadata,
@@ -846,27 +851,7 @@ class NostrClient {
       jsonEncode(profileContent),
     );
 
-    // Fast-path: check relay connectivity before attempting to send, and
-    // surface the no-relays case as a first-class result variant rather than
-    // returning null and forcing callers to infer from a subsequent
-    // connectedRelays snapshot.
-    if (_relayManager.connectedRelays.isEmpty) {
-      await retryDisconnectedRelays();
-      if (_relayManager.connectedRelays.isEmpty) {
-        return const SendProfileNoRelays();
-      }
-    }
-
-    final sentEvent = await _nostr.sendEvent(event);
-    if (sentEvent == null) {
-      return const SendProfileFailed();
-    }
-
-    // Kind 0 is replaceable — cache on success only (not optimistically).
-    _cacheEvent(sentEvent);
-    statisticsObserver?.onEventSent();
-
-    return SendProfileSuccess(event: sentEvent);
+    return publishEvent(event);
   }
 
   /// Sends a repost

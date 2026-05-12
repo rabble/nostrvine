@@ -403,6 +403,175 @@ void main() {
       },
     );
 
+    group('iOS frame attestation', () {
+      void Function(dynamic event)? attestedEventHandler;
+      List<String> capturedScripts = <String>[];
+
+      setUp(() {
+        attestedEventHandler = null;
+        capturedScripts = <String>[];
+      });
+
+      Future<void> pumpSandbox(WidgetTester tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: NostrAppSandboxScreen(
+              app: _fixtureApp(),
+              sandboxBuilder: (_) => const SizedBox.shrink(),
+              javaScriptRunnerOverride: (script) async {
+                capturedScripts.add(script);
+              },
+              onAttestedEventHandlerReady: (handler) {
+                attestedEventHandler = handler;
+              },
+              bridgeNonceOverride: 'test-nonce',
+              currentUserPubkeyOverride: 'f' * 64,
+            ),
+          ),
+        );
+      }
+
+      testWidgets('rejects non-main-frame events with subframe_rejected', (
+        tester,
+      ) async {
+        await pumpSandbox(tester);
+
+        attestedEventHandler!({
+          'message': jsonEncode({
+            'id': 'frame-1',
+            'method': 'getPublicKey',
+            'args': <String, dynamic>{},
+            'nonce': 'test-nonce',
+          }),
+          'isMainFrame': false,
+        });
+        await tester.pump();
+
+        expect(capturedScripts, hasLength(1));
+        expect(capturedScripts.single, contains('frame-1'));
+        expect(capturedScripts.single, contains('subframe_rejected'));
+        expect(capturedScripts.single, isNot(contains('"success":true')));
+      });
+
+      testWidgets(
+        'rejects non-main-frame events even when nonce is valid',
+        (tester) async {
+          await pumpSandbox(tester);
+
+          attestedEventHandler!({
+            'message': jsonEncode({
+              'id': 'frame-2',
+              'method': 'signEvent',
+              'args': <String, dynamic>{
+                'event': {'kind': 1},
+              },
+              'nonce': 'test-nonce',
+            }),
+            'isMainFrame': false,
+          });
+          await tester.pump();
+
+          expect(capturedScripts.single, contains('subframe_rejected'));
+          expect(capturedScripts.single, isNot(contains('"success":true')));
+        },
+      );
+
+      testWidgets(
+        'forwards main-frame events to _handleBridgeMessage',
+        (tester) async {
+          SharedPreferences.setMockInitialValues({});
+          final sharedPreferences = await SharedPreferences.getInstance();
+          final grantStore = NostrAppGrantStore(
+            sharedPreferences: sharedPreferences,
+          );
+          final bridgeService = NostrAppBridgeService(
+            authProvider: _FakeAuthProvider(),
+            policy: NostrAppBridgePolicy(
+              grantStore: grantStore,
+              currentUserPubkey: 'f' * 64,
+            ),
+            signerFactory: _FakeNostrSigner.new,
+          );
+
+          await tester.pumpWidget(
+            MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: NostrAppSandboxScreen(
+                app: _fixtureApp(),
+                sandboxBuilder: (_) => const SizedBox.shrink(),
+                bridgeServiceOverride: bridgeService,
+                javaScriptRunnerOverride: (script) async {
+                  capturedScripts.add(script);
+                },
+                onAttestedEventHandlerReady: (handler) {
+                  attestedEventHandler = handler;
+                },
+                bridgeNonceOverride: 'test-nonce',
+                currentUserPubkeyOverride: 'f' * 64,
+              ),
+            ),
+          );
+
+          attestedEventHandler!({
+            'message': jsonEncode({
+              'id': 'frame-3',
+              'method': 'getPublicKey',
+              'args': <String, dynamic>{},
+              'nonce': 'test-nonce',
+            }),
+            'isMainFrame': true,
+          });
+          await tester.pump();
+
+          expect(capturedScripts, hasLength(1));
+          expect(capturedScripts.single, contains('frame-3'));
+          // getPublicKey succeeds — nonce was valid and main-frame was true
+          expect(capturedScripts.single, contains('"success":true'));
+          expect(capturedScripts.single, contains('f' * 64));
+        },
+      );
+
+      testWidgets(
+        'main-frame events with wrong nonce still hit the nonce gate',
+        (tester) async {
+          await pumpSandbox(tester);
+
+          attestedEventHandler!({
+            'message': jsonEncode({
+              'id': 'frame-4',
+              'method': 'getPublicKey',
+              'args': <String, dynamic>{},
+              'nonce': 'attacker-guessed-nonce',
+            }),
+            'isMainFrame': true,
+          });
+          await tester.pump();
+
+          expect(capturedScripts.single, contains('frame-4'));
+          expect(capturedScripts.single, contains('subframe_or_unauthorized'));
+        },
+      );
+
+      testWidgets(
+        'non-main-frame event with unparseable message emits subframe_rejected with unknown id',
+        (tester) async {
+          await pumpSandbox(tester);
+
+          attestedEventHandler!({
+            'message': 'not-valid-json',
+            'isMainFrame': false,
+          });
+          await tester.pump();
+
+          expect(capturedScripts.single, contains('unknown'));
+          expect(capturedScripts.single, contains('subframe_rejected'));
+        },
+      );
+    });
+
     group('bridge bootstrap script', () {
       test('includes eager pubkey when provided', () {
         final script = buildBridgeBootstrapScript(

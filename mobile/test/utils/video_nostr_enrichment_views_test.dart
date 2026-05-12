@@ -85,6 +85,79 @@ void main() {
       },
     );
 
+    test(
+      'uses higher views when Nostr carries zero and REST has aggregate (#3384)',
+      () async {
+        const pubkey =
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+        final nostrEvent = Event(
+          pubkey,
+          34236,
+          [
+            ['d', 'video-views-max'],
+            ['url', 'https://example.com/video-views-max.mp4'],
+            ['title', 'T'],
+            ['m', 'video/mp4'],
+            ['views', '0'],
+          ],
+          'c',
+          createdAt: 1704067200,
+        );
+        final restVideo = _restVideo(
+          id: nostrEvent.id,
+          extraTags: const {'views': '34'},
+        );
+
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [nostrEvent]);
+
+        final enriched = await enrichVideosWithNostrTags([
+          restVideo,
+        ], nostrService: mockNostrClient);
+
+        expect(enriched.single.rawTags['views'], equals('34'));
+        expect(enriched.single.totalLoops, equals(34));
+      },
+    );
+
+    test(
+      'keeps higher originalLoops when Nostr loops tag is zero and REST has count',
+      () async {
+        const pubkey =
+            'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+        final nostrEvent = Event(
+          pubkey,
+          34236,
+          [
+            ['d', 'video-loops-max'],
+            ['url', 'https://example.com/video-loops-max.mp4'],
+            ['title', 'T'],
+            ['m', 'video/mp4'],
+            ['loops', '0'],
+          ],
+          'c',
+          createdAt: 1704067200,
+        );
+        final restVideo = _restVideo(
+          id: nostrEvent.id,
+          originalLoops: 888,
+          extraTags: const {'views': '1'},
+        );
+
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [nostrEvent]);
+
+        final enriched = await enrichVideosWithNostrTags([
+          restVideo,
+        ], nostrService: mockNostrClient);
+
+        expect(enriched.single.originalLoops, equals(888));
+        expect(enriched.single.totalLoops, equals(889));
+      },
+    );
+
     test('Nostr-supplied tags override REST tags on key collision', () async {
       const pubkey =
           'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';

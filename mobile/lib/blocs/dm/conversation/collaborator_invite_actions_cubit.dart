@@ -2,7 +2,9 @@
 // ABOUTME: Accept publishes a response; ignore only updates local UX state.
 
 import 'package:bloc/bloc.dart';
+import 'package:collaborator_repository/collaborator_repository.dart';
 import 'package:equatable/equatable.dart';
+import 'package:models/models.dart';
 import 'package:openvine/models/collaborator_invite.dart';
 import 'package:openvine/services/collaborator_invite_state_store.dart';
 import 'package:openvine/services/collaborator_response_service.dart';
@@ -40,14 +42,17 @@ class CollaboratorInviteActionsCubit
     required CollaboratorInviteStateStore stateStore,
     required CollaboratorResponseService responseService,
     required String currentUserPubkey,
+    CollaboratorConfirmationRepository? confirmationRepository,
   }) : _stateStore = stateStore,
        _responseService = responseService,
        _currentUserPubkey = currentUserPubkey,
+       _confirmationRepository = confirmationRepository,
        super(const CollaboratorInviteActionsState());
 
   final CollaboratorInviteStateStore _stateStore;
   final CollaboratorResponseService _responseService;
   final String _currentUserPubkey;
+  final CollaboratorConfirmationRepository? _confirmationRepository;
 
   void loadInvites(Iterable<CollaboratorInvite> invites) {
     if (_currentUserPubkey.isEmpty) return;
@@ -84,6 +89,13 @@ class CollaboratorInviteActionsCubit
           ? CollaboratorInviteState.accepted
           : CollaboratorInviteState.failed,
     );
+    if (result.success) {
+      _confirmationRepository?.markLocal(
+        videoAddress: invite.videoAddress,
+        collaboratorPubkey: _currentUserPubkey,
+        status: CollaboratorStatus.confirmed,
+      );
+    }
   }
 
   Future<void> ignoreInvite(CollaboratorInvite invite) async {
@@ -95,6 +107,11 @@ class CollaboratorInviteActionsCubit
     if (_currentUserPubkey.isEmpty) return;
     if (_currentUserPubkey == invite.creatorPubkey) return;
     await _setInviteState(invite, CollaboratorInviteState.ignored);
+    _confirmationRepository?.markLocal(
+      videoAddress: invite.videoAddress,
+      collaboratorPubkey: _currentUserPubkey,
+      status: CollaboratorStatus.ignored,
+    );
   }
 
   Future<void> _setInviteState(

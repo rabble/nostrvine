@@ -50,6 +50,9 @@
 /// ```
 library;
 
+export 'src/cancellable_cache_operation.dart' show CancellableCacheOperation;
+export 'src/cancellable_downloader.dart'
+    show CancellableDownload, CancellableDownloader, HttpCancellableDownloader;
 export 'src/media_cache_manager.dart'
     show CacheMetrics, MediaCacheConfig, MediaCacheManager;
 export 'src/safe_cache_info_repository.dart'

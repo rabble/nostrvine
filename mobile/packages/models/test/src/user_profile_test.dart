@@ -175,6 +175,117 @@ void main() {
         expect(profile.rawData['custom_field'], equals('custom_value'));
         expect(profile.rawData['nested'], equals({'key': 'value'}));
       });
+
+      test('preserves event tags as rawTags', () {
+        final event = Event(
+          testPubkey,
+          EventKind.metadata,
+          [
+            ['i', 'github:octocat', 'abc123'],
+            ['i', 'twitter:elonmusk', 'def456'],
+            ['p', 'somepubkey'],
+          ],
+          jsonEncode({'name': 'alice'}),
+          createdAt: 1704067200,
+        )..id = testEventId;
+
+        final profile = UserProfile.fromNostrEvent(event);
+
+        expect(profile.rawTags, hasLength(3));
+        expect(
+          profile.rawTags.first,
+          equals(['i', 'github:octocat', 'abc123']),
+        );
+        expect(
+          profile.rawTags[1],
+          equals(['i', 'twitter:elonmusk', 'def456']),
+        );
+      });
+
+      test('rawTags defaults to empty when JSON content is malformed', () {
+        final event = Event(
+          testPubkey,
+          EventKind.metadata,
+          [
+            ['i', 'github:octocat', 'abc'],
+          ],
+          'not-json',
+          createdAt: 1704067200,
+        )..id = testEventId;
+
+        final profile = UserProfile.fromNostrEvent(event);
+
+        // Malformed JSON falls through to the recovery branch which does not
+        // re-emit tags; callers needing tags should source them from a
+        // well-formed kind 0 event.
+        expect(profile.rawTags, isEmpty);
+      });
+
+      test('rawTags is empty when the event has no tags', () {
+        final event = Event(
+          testPubkey,
+          EventKind.metadata,
+          const [],
+          jsonEncode({'name': 'alice'}),
+          createdAt: 1704067200,
+        )..id = testEventId;
+
+        final profile = UserProfile.fromNostrEvent(event);
+
+        expect(profile.rawTags, isEmpty);
+      });
+    });
+
+    group('fromUserProfileFound', () {
+      test(
+        'mirrors typed REST fields into rawData so a profile round-trip '
+        'through Funnelcake does not silently drop them on the next publish '
+        '(#4175)',
+        () {
+          const result = UserProfileFound(
+            profile: UserProfileData(
+              pubkey: testPubkey,
+              name: 'alice',
+              displayName: 'Alice',
+              about: 'A bio',
+              picture: 'https://example.com/p.png',
+              banner: 'https://example.com/b.png',
+              website: 'https://alice.example',
+              nip05: 'alice@example.com',
+              lud16: 'alice@strike.me',
+            ),
+          );
+
+          final profile = UserProfile.fromUserProfileFound(result);
+
+          expect(profile.rawData, {
+            'name': 'alice',
+            'display_name': 'Alice',
+            'about': 'A bio',
+            'picture': 'https://example.com/p.png',
+            'banner': 'https://example.com/b.png',
+            'website': 'https://alice.example',
+            'nip05': 'alice@example.com',
+            'lud16': 'alice@strike.me',
+          });
+        },
+      );
+
+      test('omits null typed fields from rawData', () {
+        const result = UserProfileFound(
+          profile: UserProfileData(
+            pubkey: testPubkey,
+            displayName: 'Alice',
+            // every other field null
+          ),
+        );
+
+        final profile = UserProfile.fromUserProfileFound(result);
+
+        expect(profile.rawData, equals({'display_name': 'Alice'}));
+        expect(profile.rawData.containsKey('lud16'), isFalse);
+        expect(profile.rawData.containsKey('website'), isFalse);
+      });
     });
 
     group('fromJson', () {
@@ -529,6 +640,30 @@ void main() {
         );
 
         expect(profile.handle, isEmpty);
+      });
+
+      test('strips .divine.video suffix for subdomain format', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: '_@rabble.divine.video',
+        );
+
+        expect(profile.handle, equals('@rabble'));
+      });
+
+      test('strips divine.video suffix for legacy format', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: 'rabble@divine.video',
+        );
+
+        expect(profile.handle, equals('@rabble'));
       });
     });
 
@@ -948,6 +1083,79 @@ void main() {
         );
 
         expect(profile.displayNip05, isNull);
+      });
+    });
+
+    group('shortDisplayNip05', () {
+      test('returns @user (no suffix) for subdomain format', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: '_@alice.divine.video',
+        );
+
+        expect(profile.shortDisplayNip05, equals('@alice'));
+      });
+
+      test('returns @user (no suffix) for legacy user@divine.video', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: 'heybob@divine.video',
+        );
+
+        expect(profile.shortDisplayNip05, equals('@heybob'));
+      });
+
+      test('returns @user (no suffix) for legacy user@openvine.co', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: 'charlie@openvine.co',
+        );
+
+        expect(profile.shortDisplayNip05, equals('@charlie'));
+      });
+
+      test('preserves external NIP-05 unchanged', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: 'alice@example.com',
+        );
+
+        expect(profile.shortDisplayNip05, equals('alice@example.com'));
+      });
+
+      test('returns null when nip05 is null', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+        );
+
+        expect(profile.shortDisplayNip05, isNull);
+      });
+
+      test('returns null when nip05 is empty', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: '',
+        );
+
+        expect(profile.shortDisplayNip05, isNull);
       });
     });
 

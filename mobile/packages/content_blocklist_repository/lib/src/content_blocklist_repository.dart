@@ -311,7 +311,7 @@ class ContentBlocklistRepository {
       if (event != null) {
         final sentEvent = await nostrClient.publishEvent(event);
 
-        if (sentEvent != null) {
+        if (sentEvent is PublishSuccess) {
           Log.info(
             'Published block list to Nostr with '
             '${_runtimeBlocklist.length} entries',

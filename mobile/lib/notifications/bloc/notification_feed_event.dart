@@ -1,5 +1,5 @@
 // ABOUTME: Events for NotificationFeedBloc — initial load, pagination,
-// ABOUTME: refresh, real-time push, mark-read, and follow-back actions.
+// ABOUTME: refresh, mark-read, and follow-back actions.
 
 part of 'notification_feed_bloc.dart';
 
@@ -32,29 +32,6 @@ final class NotificationFeedRefreshed extends NotificationFeedEvent {
 
   @override
   List<Object?> get props => [];
-}
-
-/// Push notification received — triggers a refresh.
-final class NotificationFeedPushReceived extends NotificationFeedEvent {
-  const NotificationFeedPushReceived();
-
-  @override
-  List<Object?> get props => [];
-}
-
-/// WebSocket real-time notification received.
-///
-/// Carries the raw [RelayNotification] — the BLoC enriches it via
-/// [NotificationRepository.enrichOne] before merging into state. This
-/// avoids the "row arrives nameless then snaps to real name" flicker.
-final class NotificationFeedRealtimeReceived extends NotificationFeedEvent {
-  const NotificationFeedRealtimeReceived(this.raw);
-
-  /// The raw relay notification delivered via WebSocket.
-  final RelayNotification raw;
-
-  @override
-  List<Object?> get props => [raw];
 }
 
 /// User tapped a notification — mark it as read.

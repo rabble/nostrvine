@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
+import 'package:openvine/blocs/other_profile/other_profile_bloc.dart';
 import 'package:openvine/features/people_lists/view/people_list_membership_indicator.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -29,9 +30,11 @@ import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_actions_sheet/profile_actions_sheet.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
+import 'package:openvine/widgets/profile/verified_accounts_row.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
+import 'package:profile_repository/profile_repository.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 /// Profile header widget displaying avatar, stats, name, and bio.
@@ -107,43 +110,90 @@ class ProfileHeaderWidget extends ConsumerStatefulWidget {
 }
 
 class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
-  /// Whether the profile content has been revealed.
-  /// Flips to true once profile data arrives and never resets.
-  bool _profileVisible = false;
+  /// Maximum window during which the username/avatar render as a skeleton.
+  /// After this elapses, the existing generated-name / identicon fallback
+  /// kicks in even if the parent says the profile is still loading. This
+  /// keeps users who genuinely have no Kind 0 from seeing an infinite
+  /// shimmer (#4163).
+  static const _identitySkeletonTimeout = Duration(seconds: 7);
+
+  Timer? _identitySkeletonTimer;
+  bool _identityTimeoutExpired = false;
+  bool? _wasLoadingIdentity;
 
   @override
-  void initState() {
-    super.initState();
+  void dispose() {
+    _identitySkeletonTimer?.cancel();
+    super.dispose();
+  }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _profileVisible = true;
-        setState(() {});
-      }
+  void _syncIdentitySkeletonTimer({required bool isLoading}) {
+    if (_wasLoadingIdentity == isLoading) return;
+    _wasLoadingIdentity = isLoading;
+    _identitySkeletonTimer?.cancel();
+    _identitySkeletonTimer = null;
+    _identityTimeoutExpired = false;
+    if (!isLoading) return;
+    _identitySkeletonTimer = Timer(_identitySkeletonTimeout, () {
+      if (mounted) setState(() => _identityTimeoutExpired = true);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // Restore widget fields via `widget.` — same logic as before.
     final UserProfile? effectiveProfile;
+    final bool isLoadingIdentity;
     if (widget.isOwnProfile) {
-      final state = context.watch<MyProfileBloc>().state;
-      effectiveProfile =
-          switch (state) {
-            MyProfileUpdated(:final profile) => profile,
-            MyProfileLoaded(:final profile) => profile,
-            MyProfileLoading(:final profile) => profile,
-            _ => null,
-          } ??
-          widget.profile;
+      // Project to (profile, isInitialOrLoading) so this widget rebuilds only
+      // when the displayed profile or the genuine "still loading" signal
+      // changes. Watching the whole state would also rebuild on isFresh /
+      // extractedUsername / verifiedClaims transitions and on the
+      // MyProfileError variant, none of which the header reads here.
+      final selection = context
+          .select<
+            MyProfileBloc,
+            ({UserProfile? profile, bool isInitialOrLoading})
+          >(
+            (bloc) {
+              final state = bloc.state;
+              return (
+                profile: switch (state) {
+                  MyProfileUpdated(:final profile) => profile,
+                  MyProfileLoaded(:final profile) => profile,
+                  MyProfileLoading(:final profile) => profile,
+                  _ => null,
+                },
+                isInitialOrLoading:
+                    state is MyProfileInitial || state is MyProfileLoading,
+              );
+            },
+          );
+      effectiveProfile = selection.profile ?? widget.profile;
+      // Skeleton on the user's own profile is appropriate only while we
+      // genuinely have nothing to show. As soon as a cached profile is
+      // available, fall through to render the real identity. After
+      // MyProfileError(notFound) the generated fallback is the truthful
+      // steady state — don't skeleton it.
+      isLoadingIdentity =
+          effectiveProfile == null && selection.isInitialOrLoading;
     } else if (widget.profile != null) {
       effectiveProfile = widget.profile;
+      isLoadingIdentity = false;
     } else {
-      effectiveProfile = ref
-          .watch(fetchUserProfileProvider(widget.userIdHex))
-          .value;
+      final asyncProfile = ref.watch(
+        fetchUserProfileProvider(widget.userIdHex),
+      );
+      effectiveProfile = asyncProfile.value;
+      isLoadingIdentity = asyncProfile.isLoading && asyncProfile.value == null;
     }
+
+    final showIdentitySkeleton = isLoadingIdentity && !_identityTimeoutExpired;
+    // Drive the skeleton timeout timer from a post-frame callback rather
+    // than mutating timer state during build. The `_wasLoadingIdentity`
+    // guard inside `_syncIdentitySkeletonTimer` keeps this idempotent.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _syncIdentitySkeletonTimer(isLoading: isLoadingIdentity);
+    });
 
     // Use hints as fallbacks for users without Kind 0 profiles (e.g., classic Viners)
     // Check for both null AND empty string - some profiles have empty picture field
@@ -159,7 +209,7 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
         effectiveProfile?.picture?.isNotEmpty == true ||
         effectiveProfile?.about?.isNotEmpty == true ||
         effectiveProfile?.nip05?.isNotEmpty == true;
-    final nip05 = effectiveProfile?.displayNip05;
+    final nip05 = effectiveProfile?.shortDisplayNip05;
     final about = effectiveProfile?.about;
     final profileColor = effectiveProfile?.profileBackgroundColor;
     final authService = ref.watch(authServiceProvider);
@@ -241,11 +291,16 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
             ),
           ),
 
-          // Profile content fades in once data arrives for the first time.
-          AnimatedOpacity(
-            opacity: effectiveProfile != null || _profileVisible ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 80),
-            curve: Curves.easeInOut,
+          // Identity content. A single Skeletonizer wraps just the avatar
+          // and the name/NIP-05/bio block so its shimmer + pointer
+          // absorption stays scoped to the widgets actually loading. The
+          // people-list pill, stats row, and action buttons sit as
+          // siblings outside the skeleton so they remain tappable
+          // during the loading window (#4183 review).
+          Skeletonizer(
+            enabled: showIdentitySkeleton,
+            enableSwitchAnimation: true,
+            effect: vineSkeletonEffect,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -275,32 +330,34 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
                     isOwnProfile: widget.isOwnProfile,
                   ),
                 ),
-                if (!widget.isOwnProfile) ...[
-                  PeopleListMembershipIndicator(pubkey: widget.userIdHex),
-                  const SizedBox(height: 16),
-                ],
-
-                // Stats row: Followers | Following | Likes | Loops
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: _ProfileStatsRow(
-                    userIdHex: widget.userIdHex,
-                    profileStats: widget.profileStats,
-                  ),
-                ),
-
-                ProfileActionButtons(
-                  userIdHex: widget.userIdHex,
-                  isOwnProfile: widget.isOwnProfile,
-                  displayName: widget.displayName,
-                  onEditProfile: widget.onEditProfile,
-                  onOpenClips: widget.onOpenClips,
-                  onMessageUser: widget.onMessageUser,
-                  onShareProfile: widget.onShareProfile,
-                  onBlockedTap: widget.onBlockedTap,
-                ),
               ],
             ),
+          ),
+          if (!widget.isOwnProfile) ...[
+            PeopleListMembershipIndicator(pubkey: widget.userIdHex),
+            const SizedBox(height: 16),
+          ],
+
+          // Stats row owns its own loading skeleton (driven by
+          // profileStats == null) and lives outside the identity
+          // skeletonizer so it remains interactive.
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: _ProfileStatsRow(
+              userIdHex: widget.userIdHex,
+              profileStats: widget.profileStats,
+            ),
+          ),
+
+          ProfileActionButtons(
+            userIdHex: widget.userIdHex,
+            isOwnProfile: widget.isOwnProfile,
+            displayName: widget.displayName,
+            onEditProfile: widget.onEditProfile,
+            onOpenClips: widget.onOpenClips,
+            onMessageUser: widget.onMessageUser,
+            onShareProfile: widget.onShareProfile,
+            onBlockedTap: widget.onBlockedTap,
           ),
         ],
       ),
@@ -350,6 +407,10 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
 }
 
 /// Profile name, NIP-05, bio, and public key display.
+///
+/// The username shimmers when an enclosing [Skeletonizer] is enabled;
+/// the NIP-05 / npub identifier and the bio body are wrapped in
+/// [Skeleton.keep] so they stay interactive and unshimmered (#4163).
 class _ProfileNameAndBio extends StatelessWidget {
   const _ProfileNameAndBio({
     required this.profile,
@@ -383,18 +444,64 @@ class _ProfileNameAndBio extends StatelessWidget {
             style: VineTheme.titleLargeFont(),
             anonymousName: displayNameHint,
           ),
-        _UniqueIdentifier(
-          userIdHex: userIdHex,
-          nip05: nip05,
-          isOwnProfile: isOwnProfile,
-          accentColor: accentColor,
+        Skeleton.keep(
+          child: _UniqueIdentifier(
+            userIdHex: userIdHex,
+            nip05: nip05,
+            isOwnProfile: isOwnProfile,
+            accentColor: accentColor,
+          ),
         ),
         if (about != null && about!.isNotEmpty) ...[
           const SizedBox(height: 16),
-          _AboutText(about: about!),
+          Skeleton.keep(child: _AboutText(about: about!)),
         ],
+        _VerifiedAccountsBlock(isOwnProfile: isOwnProfile),
       ],
     );
+  }
+}
+
+class _VerifiedAccountsBlock extends StatelessWidget {
+  const _VerifiedAccountsBlock({required this.isOwnProfile});
+
+  final bool isOwnProfile;
+
+  @override
+  Widget build(BuildContext context) {
+    final claims = isOwnProfile
+        ? _readMyClaims(context)
+        : _readOtherClaims(context);
+    if (claims.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: VerifiedAccountsRow(claims: claims),
+    );
+  }
+
+  static List<IdentityClaim> _readMyClaims(BuildContext context) {
+    try {
+      return context.select<MyProfileBloc, List<IdentityClaim>>((bloc) {
+        final state = bloc.state;
+        if (state is MyProfileLoaded) return state.verifiedClaims;
+        if (state is MyProfileUpdated) return state.verifiedClaims;
+        return const [];
+      });
+    } on ProviderNotFoundException {
+      return const [];
+    }
+  }
+
+  static List<IdentityClaim> _readOtherClaims(BuildContext context) {
+    try {
+      return context.select<OtherProfileBloc, List<IdentityClaim>>((bloc) {
+        final state = bloc.state;
+        if (state is OtherProfileLoaded) return state.verifiedClaims;
+        return const [];
+      });
+    } on ProviderNotFoundException {
+      return const [];
+    }
   }
 }
 
@@ -668,10 +775,7 @@ class _BannerImage extends StatelessWidget {
 /// shimmering indefinitely or collapsing the row (which would shift the
 /// surrounding profile layout).
 class _ProfileStatsRow extends StatefulWidget {
-  const _ProfileStatsRow({
-    required this.userIdHex,
-    this.profileStats,
-  });
+  const _ProfileStatsRow({required this.userIdHex, this.profileStats});
 
   final String userIdHex;
   final ProfileStats? profileStats;
@@ -794,6 +898,10 @@ class _StatDivider extends StatelessWidget {
 /// your account") is centred below the avatar. A red count badge appears
 /// on the label when more than one action is pending. Tapping either the
 /// avatar or the label triggers [onActionTap].
+///
+/// The avatar shimmers when an enclosing [Skeletonizer] is enabled. The
+/// pending-action label is decorative chrome and is wrapped in
+/// [Skeleton.keep] so it stays interactive and unshimmered (#4163).
 class _ProfileAvatarWithColor extends StatelessWidget {
   const _ProfileAvatarWithColor({
     required this.imageUrl,
@@ -849,11 +957,13 @@ class _ProfileAvatarWithColor extends StatelessWidget {
         avatar,
         Positioned(
           bottom: 0,
-          child: GestureDetector(
-            onTap: onActionTap,
-            child: _ProfileActionLabel(
-              action: pendingActions.first,
-              badgeCount: pendingActions.length,
+          child: Skeleton.keep(
+            child: GestureDetector(
+              onTap: onActionTap,
+              child: _ProfileActionLabel(
+                action: pendingActions.first,
+                badgeCount: pendingActions.length,
+              ),
             ),
           ),
         ),
@@ -954,10 +1064,8 @@ void _showAvatarLightbox(
     barrierColor: VineTheme.transparent,
     barrierDismissible: true,
     barrierLabel: context.l10n.profileAvatarLightboxBarrierLabel,
-    pageBuilder: (context, _, _) => _AvatarLightbox(
-      imageUrl: imageUrl,
-      userIdHex: userIdHex,
-    ),
+    pageBuilder: (context, _, _) =>
+        _AvatarLightbox(imageUrl: imageUrl, userIdHex: userIdHex),
   );
 }
 

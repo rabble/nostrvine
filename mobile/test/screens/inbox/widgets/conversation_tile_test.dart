@@ -129,6 +129,42 @@ void main() {
         expect(find.text('Hey, how are you?'), findsOneWidget);
       });
 
+      testWidgets(
+        'last message preview uses VineTheme.onSurfaceVariant',
+        (tester) async {
+          // PR #3548 picked onSurfaceVariant for the preview; a later
+          // drift slid it back to onSurfaceMuted (one shade darker) and
+          // shipped without anyone catching it. Pin the color so the
+          // same drift can't recur silently.
+          final testProfile = createTestProfile(displayName: 'Alice');
+          final testConversation = createTestConversation(
+            lastMessageContent: 'Hey, how are you?',
+            lastMessageTimestamp: nowUnix,
+          );
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              additionalOverrides: [
+                fetchUserProfileProvider(
+                  otherPubkey,
+                ).overrideWith((ref) async => testProfile),
+              ],
+              home: Scaffold(
+                body: ConversationTile(
+                  conversation: testConversation,
+                  currentUserPubkey: currentPubkey,
+                  onTap: () {},
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final preview = tester.widget<Text>(find.text('Hey, how are you?'));
+          expect(preview.style?.color, equals(VineTheme.onSurfaceVariant));
+        },
+      );
+
       // #3662 — the structured collab invite carries a deterministic
       // plaintext fallback ('...Open diVine to review and accept.') so
       // legacy clients can still see something. Inside diVine that copy

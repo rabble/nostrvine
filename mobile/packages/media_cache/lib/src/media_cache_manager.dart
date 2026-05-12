@@ -1,13 +1,16 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:http/io_client.dart';
+import 'package:media_cache/src/cancellable_cache_operation.dart';
+import 'package:media_cache/src/cancellable_downloader.dart';
+import 'package:media_cache/src/platform_downloader_factory.dart';
 import 'package:media_cache/src/safe_cache_info_repository.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-import 'package:sqflite/sqflite.dart' as sqflite;
 
 /// {@template media_cache_config}
 /// Configuration for [MediaCacheManager].
@@ -25,6 +28,7 @@ class MediaCacheConfig {
     this.maxConnectionsPerHost = 6,
     this.enableSyncManifest = false,
     this.allowBadCertificatesInDebug = true,
+    this.defaultExtension = '.bin',
   });
 
   /// Creates a configuration optimized for video caching.
@@ -42,6 +46,12 @@ class MediaCacheConfig {
         idleTimeout: const Duration(minutes: 2),
         maxConnectionsPerHost: 4,
         enableSyncManifest: true,
+        // AVURLAsset / ExoPlayer probe the container from the file
+        // extension first. URLs that hash to a path with no extension
+        // (e.g. `https://media.divine.video/<sha>` for original
+        // uploads) would otherwise be cached as `.bin` and fail to
+        // open with `Cannot Open`.
+        defaultExtension: '.mp4',
       );
 
   /// Creates a configuration optimized for image caching.
@@ -59,6 +69,7 @@ class MediaCacheConfig {
         idleTimeout: const Duration(seconds: 30),
         maxConnectionsPerHost: 6,
         enableSyncManifest: false,
+        defaultExtension: '.jpg',
       );
 
   /// Unique key for this cache. Used as the cache directory name.
@@ -71,9 +82,17 @@ class MediaCacheConfig {
   final int maxNrOfCacheObjects;
 
   /// Timeout for establishing HTTP connections.
+  ///
+  /// Applied on Apple (`cupertino_http`) and dart:io fallback clients.
+  /// Android Cronet currently ignores this value because `cronet_http` does
+  /// not expose a matching configuration API.
   final Duration connectionTimeout;
 
   /// Timeout for idle HTTP connections.
+  ///
+  /// Applied on dart:io fallback clients.
+  /// Android Cronet currently ignores this value because `cronet_http` does
+  /// not expose a matching configuration API.
   final Duration idleTimeout;
 
   /// Maximum concurrent connections per host.
@@ -90,6 +109,16 @@ class MediaCacheConfig {
   ///
   /// Useful for local development with self-signed certificates.
   final bool allowBadCertificatesInDebug;
+
+  /// Extension applied to cached files when the source URL has none.
+  ///
+  /// Native media frameworks (`AVURLAsset`, ExoPlayer) probe the
+  /// container format from the file extension first. Hash-style URLs
+  /// such as `https://media.divine.video/<sha>` (used for original
+  /// uploads) would otherwise be cached as `.bin`, which AVFoundation
+  /// rejects with `Cannot Open`. Set to `.mp4` for video caches and
+  /// `.jpg` for image caches via the named factories.
+  final String defaultExtension;
 }
 
 /// Tracks cache hit/miss statistics for observability.
@@ -168,28 +197,39 @@ class CacheMetrics {
 /// ```
 /// {@endtemplate}
 
-/// Provides the path to the sqflite databases directory.
-typedef DatabasePathProvider = Future<String> Function();
-
-/// Opens a sqflite database at the given path.
-typedef DatabaseOpener =
-    Future<sqflite.Database> Function(
-      String path, {
-      bool readOnly,
-    });
-
 /// {@macro media_cache_manager}
 class MediaCacheManager extends CacheManager {
   /// {@macro media_cache_manager}
   MediaCacheManager({
     required MediaCacheConfig config,
     @visibleForTesting DirectoryProvider? tempDirectoryProvider,
-    @visibleForTesting DatabasePathProvider? databasePathProvider,
-    @visibleForTesting DatabaseOpener? databaseOpener,
+    @visibleForTesting CacheInfoRepository? repoOverride,
+    @visibleForTesting CancellableDownloader? downloaderOverride,
+    @visibleForTesting IOClient? fileServiceClientOverride,
+  }) : this._(
+         config: config,
+         tempDirectoryProvider: tempDirectoryProvider ?? getTemporaryDirectory,
+         repoOverride: repoOverride,
+         downloader: downloaderOverride ?? _createDefaultDownloader(config),
+         // Built up-front and retained on the instance so close() can
+         // dispose it. Without this the legacy non-cancellable cacheFile
+         // path leaks an HttpClient on every MediaCacheManager.close().
+         fileServiceClient: kIsWeb
+             ? null
+             : (fileServiceClientOverride ?? _buildFileServiceClient(config)),
+       );
+
+  MediaCacheManager._({
+    required MediaCacheConfig config,
+    required DirectoryProvider tempDirectoryProvider,
+    required CacheInfoRepository? repoOverride,
+    required CancellableDownloader downloader,
+    required IOClient? fileServiceClient,
   }) : _config = config,
-       _tempDirectoryProvider = tempDirectoryProvider ?? getTemporaryDirectory,
-       _databasePathProvider = databasePathProvider ?? sqflite.getDatabasesPath,
-       _databaseOpener = databaseOpener ?? _defaultDatabaseOpener,
+       _tempDirectoryProvider = tempDirectoryProvider,
+       _repoOverride = repoOverride,
+       _downloader = downloader,
+       _fileServiceClient = fileServiceClient,
        super(
          kIsWeb
              // coverage:ignore-start
@@ -204,21 +244,66 @@ class MediaCacheManager extends CacheManager {
                  stalePeriod: config.stalePeriod,
                  maxNrOfCacheObjects: config.maxNrOfCacheObjects,
                  repo: SafeCacheInfoRepository(databaseName: config.cacheKey),
-                 fileService: _createHttpFileService(config),
+                 // Non-null on the non-web branch (kIsWeb == false here);
+                 // the public ctor only nulls fileServiceClient on web.
+                 // ignore: unnecessary_null_checks
+                 fileService: HttpFileService(httpClient: fileServiceClient!),
                ),
        );
 
+  static CancellableDownloader _createDefaultDownloader(
+    MediaCacheConfig config,
+  ) {
+    return createPlatformDownloader(
+      connectionTimeout: config.connectionTimeout,
+      idleTimeout: config.idleTimeout,
+      maxConnectionsPerHost: config.maxConnectionsPerHost,
+      allowBadCertificatesInDebug: config.allowBadCertificatesInDebug,
+      isDebugMode: kDebugMode,
+      isWeb: kIsWeb,
+    );
+  }
+
   final MediaCacheConfig _config;
   final DirectoryProvider _tempDirectoryProvider;
-  final DatabasePathProvider _databasePathProvider;
-  final DatabaseOpener _databaseOpener;
+  final CacheInfoRepository? _repoOverride;
+  final CancellableDownloader _downloader;
+
+  /// HTTP client backing the legacy non-cancellable
+  /// [CacheManager.getFileStream] / [CacheManager.getSingleFile] path.
+  /// Retained so it can be closed symmetrically in [dispose]. `null` on
+  /// web (no `dart:io` HttpClient there).
+  final IOClient? _fileServiceClient;
+
+  /// Resolved `<tempDir>/<cacheKey>` path. Populated by [initialize] and
+  /// reused by [cacheFileCancellable] to compute target file paths
+  /// synchronously.
+  String? _baseCacheDir;
+
+  /// Monotonic counter to disambiguate filenames written within the same
+  /// millisecond when the same key is downloaded repeatedly.
+  int _downloadSeq = 0;
 
   /// In-memory manifest for synchronous lookups.
   /// Maps cache key to file path.
   final Map<String, String> _cacheManifest = {};
 
+  /// Persistent alias → actual cache key mapping.
+  ///
+  /// Survives app restarts so that successful fallback downloads
+  /// (cached under e.g. `<videoId>__fb1`) remain reachable via the
+  /// stable `aliasKey` (e.g. `<videoId>`) on the next launch instead
+  /// of forcing the prefetcher to retry the failing first-attempt URL.
+  final Map<String, String> _aliasMap = {};
+
+  /// Serialises writes to the on-disk alias map.
+  Future<void> _aliasWriteQueue = Future<void>.value();
+
   /// Tracks keys currently being cached to prevent duplicate requests.
-  final Map<String, Future<File?>> _pendingCacheOperations = {};
+  final Map<String, Completer<File?>> _pendingCacheOperations = {};
+
+  /// Tracks cancellable operations currently in-flight.
+  final Set<CancellableCacheOperation> _activeCancellableOperations = {};
 
   /// Tracks keys that were downloaded via [preCacheFiles] (prefetched).
   final Set<String> _prefetchedKeys = {};
@@ -229,18 +314,15 @@ class MediaCacheManager extends CacheManager {
   /// Whether the cache manifest has been initialized.
   bool _manifestInitialized = false;
 
+  bool _isClosed = false;
+
   /// Whether this cache manager has been initialized.
   bool get isInitialized => _manifestInitialized;
 
   /// The configuration used by this cache manager.
   MediaCacheConfig get mediaConfig => _config;
 
-  static Future<sqflite.Database> _defaultDatabaseOpener(
-    String path, {
-    bool readOnly = false,
-  }) => sqflite.openDatabase(path, readOnly: readOnly);
-
-  static HttpFileService _createHttpFileService(MediaCacheConfig config) {
+  static IOClient _buildFileServiceClient(MediaCacheConfig config) {
     final httpClient = HttpClient()
       ..connectionTimeout = config.connectionTimeout
       ..idleTimeout = config.idleTimeout
@@ -254,7 +336,7 @@ class MediaCacheManager extends CacheManager {
       httpClient.badCertificateCallback = (cert, host, port) => true;
     }
 
-    return HttpFileService(httpClient: IOClient(httpClient));
+    return IOClient(httpClient);
   }
 
   /// Initializes the cache manifest by loading all cached files from database.
@@ -277,55 +359,95 @@ class MediaCacheManager extends CacheManager {
     }
 
     try {
-      // Query the cache database to get key → filepath mappings
-      // flutter_cache_manager stores metadata in sqflite, NOT in filenames
-      final dbPath = await _databasePathProvider();
-      final cacheDbPath = path.join(dbPath, '${_config.cacheKey}.db');
-
-      // Check if database exists
-      if (!File(cacheDbPath).existsSync()) {
+      // Read cache metadata via the Config's CacheInfoRepository
+      // (JsonCacheInfoRepository wrapped by SafeCacheInfoRepository).
+      // In tests a repo override may be injected to pre-populate the manifest
+      // without needing a real JSON file on disk.
+      final repo = _repoOverride ?? config.repo;
+      if (!await repo.open()) {
         _manifestInitialized = true;
         return;
       }
 
-      final database = await _databaseOpener(cacheDbPath, readOnly: true);
+      final objects = await repo.getAllObjects();
+      final tempDir = await _tempDirectoryProvider();
+      final baseCacheDir = path.join(tempDir.path, _config.cacheKey);
+      _baseCacheDir = baseCacheDir;
 
-      try {
-        // Query all cache objects from the cacheObject table
-        final List<Map<String, dynamic>> maps = await database.query(
-          'cacheObject',
-        );
+      for (final obj in objects) {
+        final fullPath = path.join(baseCacheDir, obj.relativePath);
+        final file = File(fullPath);
 
-        // Get the base cache directory for constructing full paths
-        final tempDir = await _tempDirectoryProvider();
-        final baseCacheDir = path.join(tempDir.path, _config.cacheKey);
-
-        // Populate manifest with verified cache entries
-        for (final map in maps) {
-          final cacheKey = map['key'] as String?;
-          final relativePath = map['relativePath'] as String?;
-
-          if (cacheKey == null || relativePath == null) continue;
-
-          // Construct full file path
-          final fullPath = path.join(baseCacheDir, relativePath);
-          final file = File(fullPath);
-
-          // Only add to manifest if file actually exists
-          if (file.existsSync()) {
-            _cacheManifest[cacheKey] = fullPath;
-          }
+        if (file.existsSync()) {
+          _cacheManifest[obj.key] = fullPath;
         }
-      } finally {
-        await database.close();
+      }
+
+      // Restore persisted alias → actualKey mappings so successful
+      // fallback downloads from previous sessions remain reachable
+      // via the stable alias on this launch.
+      final aliasFile = File(path.join(baseCacheDir, 'aliases.json'));
+      if (aliasFile.existsSync()) {
+        try {
+          final decoded = jsonDecode(await aliasFile.readAsString());
+          if (decoded is Map<String, dynamic>) {
+            var hadStaleEntries = false;
+            for (final entry in decoded.entries) {
+              final actualKey = entry.value;
+              if (actualKey is! String) continue;
+              final actualPath = _cacheManifest[actualKey];
+              if (actualPath != null) {
+                _aliasMap[entry.key] = actualKey;
+                _cacheManifest[entry.key] = actualPath;
+              } else {
+                // Target was evicted by flutter_cache_manager's LRU; drop
+                // the stale entry rather than letting aliases.json grow
+                // unbounded across sessions.
+                hadStaleEntries = true;
+              }
+            }
+            if (hadStaleEntries) {
+              unawaited(_persistAliasMap());
+            }
+          }
+        } on Exception catch (_) {
+          // Corrupt alias file → ignore, will be overwritten on next write.
+        }
       }
 
       _manifestInitialized = true;
     } on Exception catch (_) {
       // Don't throw - degraded functionality is better than crash
-      // Also handles cases where sqflite isn't initialized (e.g., in tests)
       _manifestInitialized = true;
     }
+  }
+
+  /// Persists the current [_aliasMap] to disk. Calls are serialised so
+  /// concurrent fallback successes never interleave writes.
+  Future<void> _persistAliasMap() {
+    // coverage:ignore-start
+    if (kIsWeb) return Future<void>.value();
+    // coverage:ignore-end
+    final snapshot = Map<String, String>.from(_aliasMap);
+    final next = _aliasWriteQueue.then((_) async {
+      try {
+        final tempDir = await _tempDirectoryProvider();
+        final baseCacheDir = Directory(
+          path.join(tempDir.path, _config.cacheKey),
+        );
+        if (!baseCacheDir.existsSync()) {
+          baseCacheDir.createSync(recursive: true);
+        }
+        final aliasFile = File(path.join(baseCacheDir.path, 'aliases.json'));
+        final tmpFile = File('${aliasFile.path}.tmp');
+        await tmpFile.writeAsString(jsonEncode(snapshot), flush: true);
+        await tmpFile.rename(aliasFile.path);
+      } on Exception catch (_) {
+        // Best-effort; in-memory alias map still works for this session.
+      }
+    });
+    _aliasWriteQueue = next;
+    return next;
   }
 
   /// Gets a cached file synchronously using the in-memory manifest.
@@ -352,8 +474,19 @@ class MediaCacheManager extends CacheManager {
     // Verify file still exists
     final file = File(cachedPath);
     if (!file.existsSync()) {
-      // Remove stale entry from manifest
+      // Remove stale entry from manifest and any aliases pointing at it.
       _cacheManifest.remove(key);
+      final orphanedAliases = _aliasMap.entries
+          .where((e) => e.value == key)
+          .map((e) => e.key)
+          .toList(growable: false);
+      if (orphanedAliases.isNotEmpty) {
+        for (final alias in orphanedAliases) {
+          _aliasMap.remove(alias);
+          _cacheManifest.remove(alias);
+        }
+        unawaited(_persistAliasMap());
+      }
       metrics.misses++;
       return null;
     }
@@ -384,6 +517,8 @@ class MediaCacheManager extends CacheManager {
     required String key,
     Map<String, String>? authHeaders,
   }) async {
+    if (_isClosed) return null;
+
     // Check if already cached
     final existingFile = await getFileFromCache(key);
     if (existingFile != null && existingFile.file.existsSync()) {
@@ -396,33 +531,256 @@ class MediaCacheManager extends CacheManager {
 
     // Check if already being cached
     if (_pendingCacheOperations.containsKey(key)) {
-      return _pendingCacheOperations[key];
+      return _pendingCacheOperations[key]!.future;
     }
 
     // Start caching
     final completer = Completer<File?>();
-    _pendingCacheOperations[key] = completer.future;
+    _pendingCacheOperations[key] = completer;
 
-    try {
-      final fileInfo = await downloadFile(
-        url,
-        key: key,
-        authHeaders: authHeaders ?? {},
-      );
+    unawaited(
+      () async {
+        try {
+          final fileInfo = await downloadFile(
+            url,
+            key: key,
+            authHeaders: authHeaders ?? {},
+          );
 
-      // Update manifest
-      if (_config.enableSyncManifest) {
-        _cacheManifest[key] = fileInfo.file.path;
-      }
+          // Update manifest
+          if (_config.enableSyncManifest && !_isClosed) {
+            _cacheManifest[key] = fileInfo.file.path;
+          }
 
-      completer.complete(fileInfo.file);
-      return fileInfo.file;
-    } on Exception {
-      completer.complete(null);
-      return null;
-    } finally {
-      unawaited(Future(() => _pendingCacheOperations.remove(key)));
+          if (!completer.isCompleted) {
+            completer.complete(_isClosed ? null : fileInfo.file);
+          }
+        } on Exception {
+          if (!completer.isCompleted) completer.complete(null);
+        } finally {
+          _pendingCacheOperations.remove(key);
+        }
+      }(),
+    );
+
+    return completer.future;
+  }
+
+  /// Downloads and caches a file with the ability to cancel mid-download.
+  ///
+  /// Unlike [cacheFile], this returns a [CancellableCacheOperation] whose
+  /// underlying HTTP stream can be torn down immediately via
+  /// `CancellableCacheOperation.cancel()`, freeing bandwidth for
+  /// higher-priority downloads.
+  ///
+  /// Returns a completed operation instantly if the file is already cached.
+  ///
+  /// When [aliasKey] is provided, the manifest also records the resulting
+  /// file path under [aliasKey] on success, and the fast-path lookup
+  /// considers both keys. This lets callers retry the same logical asset
+  /// under multiple cache keys (e.g. one per fallback URL) without
+  /// inheriting partially-cached or otherwise broken data from a previous
+  /// attempt, while still letting consumers look the file up by the
+  /// stable [aliasKey].
+  CancellableCacheOperation cacheFileCancellable(
+    String url, {
+    required String key,
+    String? aliasKey,
+    Map<String, String>? authHeaders,
+  }) {
+    return _cacheFileCancellable(
+      url,
+      key: key,
+      aliasKey: aliasKey,
+      authHeaders: authHeaders,
+    );
+  }
+
+  CancellableCacheOperation _cacheFileCancellable(
+    String url, {
+    required String key,
+    String? aliasKey,
+    Map<String, String>? authHeaders,
+    bool trackPrefetchMetrics = true,
+  }) {
+    if (_isClosed) {
+      return CancellableCacheOperation.fromDownload(_CompletedNullDownload());
     }
+
+    // Fast path: already cached on disk.
+    if (_config.enableSyncManifest) {
+      final cached =
+          getCachedFileSync(key) ??
+          (aliasKey != null ? getCachedFileSync(aliasKey) : null);
+      if (cached != null) return CancellableCacheOperation.completed(cached);
+    }
+
+    // Join an in-flight download for the same key (started by either
+    // cacheFile or a prior cacheFileCancellable call) instead of launching
+    // a second concurrent download that would orphan the first file on disk.
+    if (_pendingCacheOperations.containsKey(key)) {
+      final sharedFuture = _pendingCacheOperations[key]!.future;
+      var localCancelled = false;
+      final localCompleter = Completer<File?>();
+      unawaited(
+        sharedFuture.then((file) {
+          if (!localCompleter.isCompleted) {
+            localCompleter.complete(localCancelled ? null : file);
+          }
+        }),
+      );
+      final joinOp = CancellableCacheOperation.fromDownload(
+        _DeferredDownload(
+          future: localCompleter.future,
+          cancel: () {
+            if (localCancelled) return;
+            localCancelled = true;
+            if (!localCompleter.isCompleted) localCompleter.complete();
+          },
+          // coverage:ignore-start
+          isCancelledGetter: () => localCancelled,
+          // coverage:ignore-end
+        ),
+        cacheKey: key,
+      );
+      _activeCancellableOperations.add(joinOp);
+      unawaited(
+        joinOp.file.whenComplete(() {
+          _activeCancellableOperations.remove(joinOp);
+        }),
+      );
+      return joinOp;
+    }
+
+    if (trackPrefetchMetrics) {
+      _prefetchedKeys.add(key);
+      metrics.prefetchedTotal++;
+    }
+
+    final relativePath = _relativePathFor(key, url);
+    final completer = Completer<File?>();
+    // Register before the async download starts so any concurrent caller
+    // (cacheFile or another cacheFileCancellable) for the same key joins
+    // this operation instead of issuing a second download.
+    _pendingCacheOperations[key] = completer;
+    CancellableDownload? activeDownload;
+    var cancelledBeforeStart = false;
+
+    Future<void> startDownload() async {
+      try {
+        final baseDir = await _resolveBaseCacheDir();
+        if (cancelledBeforeStart) {
+          if (!completer.isCompleted) completer.complete();
+          return;
+        }
+        final targetFile = File(path.join(baseDir, relativePath));
+        final download = _downloader.download(
+          url: url,
+          targetFile: targetFile,
+          headers: authHeaders,
+        );
+        activeDownload = download;
+        final file = await download.file;
+        if (file != null && !download.isCancelled) {
+          // Register in flutter_cache_manager's store so the file survives
+          // app restart and shows up in [getAllObjects] on next launch.
+          try {
+            await store.putFile(
+              CacheObject(
+                url,
+                key: key,
+                relativePath: relativePath,
+                validTill: DateTime.now().add(_config.stalePeriod),
+              ),
+            );
+          } on Object catch (_) {
+            // Best-effort persistence; in-memory manifest still works.
+          }
+          if (_config.enableSyncManifest) {
+            _cacheManifest[key] = file.path;
+            if (aliasKey != null) {
+              _cacheManifest[aliasKey] = file.path;
+              if (_aliasMap[aliasKey] != key) {
+                _aliasMap[aliasKey] = key;
+                unawaited(_persistAliasMap());
+              }
+            }
+          }
+        }
+        if (!completer.isCompleted) completer.complete(file);
+      } on Object {
+        if (!completer.isCompleted) completer.complete();
+      } finally {
+        _pendingCacheOperations.remove(key);
+      }
+    }
+
+    unawaited(startDownload());
+
+    final operation = CancellableCacheOperation.fromDownload(
+      _DeferredDownload(
+        future: completer.future,
+        cancel: () {
+          cancelledBeforeStart = true;
+          activeDownload?.cancel();
+        },
+        // coverage:ignore-start
+        isCancelledGetter: () =>
+            activeDownload?.isCancelled ?? cancelledBeforeStart,
+        // coverage:ignore-end
+      ),
+      cacheKey: key,
+    );
+
+    _activeCancellableOperations.add(operation);
+    unawaited(
+      operation.file.whenComplete(() {
+        _activeCancellableOperations.remove(operation);
+      }),
+    );
+
+    return operation;
+  }
+
+  /// Returns the base cache directory, resolving and caching it on first use.
+  Future<String> _resolveBaseCacheDir() async {
+    final cached = _baseCacheDir;
+    if (cached != null) return cached;
+    final tempDir = await _tempDirectoryProvider();
+    final base = path.join(tempDir.path, _config.cacheKey);
+    final dir = Directory(base);
+    if (!dir.existsSync()) {
+      await dir.create(recursive: true);
+    }
+    _baseCacheDir = base;
+    return base;
+  }
+
+  /// Generates a unique relative filename for [key]. The filename embeds the
+  /// cache key plus a monotonic counter and timestamp so concurrent
+  /// downloads of the same key cannot collide on disk.
+  ///
+  /// Non-filesystem-safe characters (slashes, colons, `?`, Unicode, etc.) in
+  /// [key] are replaced with `_` so the path never creates unintended
+  /// sub-directories or fails on `File.openWrite`.
+  String _relativePathFor(String key, String url) {
+    final safeKey = key.replaceAll(RegExp('[^A-Za-z0-9._-]'), '_');
+    final ext = _extensionFor(url);
+    final seq = ++_downloadSeq;
+    final ts = DateTime.now().microsecondsSinceEpoch;
+    return '${safeKey}_${ts}_$seq$ext';
+  }
+
+  String _extensionFor(String url) {
+    try {
+      final uri = Uri.parse(url);
+      final last = uri.pathSegments.isEmpty ? '' : uri.pathSegments.last;
+      final ext = path.extension(last);
+      if (ext.isNotEmpty) return ext;
+    } on Object catch (_) {
+      // Fall through to default.
+    }
+    return _config.defaultExtension;
   }
 
   /// Checks if a file is cached (async version).
@@ -463,6 +821,8 @@ class MediaCacheManager extends CacheManager {
     }
     metrics.prefetchedTotal += items.length;
 
+    final inFlightByKey = <String, Future<File?>>{};
+
     // Process in batches
     for (var i = 0; i < items.length; i += batchSize) {
       final batch = <Future<File?>>[];
@@ -476,13 +836,25 @@ class MediaCacheManager extends CacheManager {
           continue;
         }
 
-        batch.add(
-          cacheFile(
-            item.url,
-            key: item.key,
-            authHeaders: authHeadersProvider?.call(item.key),
-          ),
-        );
+        final existingDownload = inFlightByKey[item.key];
+        if (existingDownload != null) {
+          batch.add(existingDownload);
+          continue;
+        }
+
+        final downloadFuture =
+            _cacheFileCancellable(
+              item.url,
+              key: item.key,
+              authHeaders: authHeadersProvider?.call(item.key),
+              trackPrefetchMetrics: false,
+            ).file.whenComplete(
+              () {
+                inFlightByKey.removeWhere((key, _) => key == item.key);
+              },
+            );
+        inFlightByKey[item.key] = downloadFuture;
+        batch.add(downloadFuture);
       }
 
       // Wait for batch to complete
@@ -496,6 +868,18 @@ class MediaCacheManager extends CacheManager {
   Future<void> removeCachedFile(String key) async {
     await removeFile(key);
 
+    final aliasKeysToRemove = _aliasMap.entries
+        .where((entry) => entry.value == key)
+        .map((entry) => entry.key)
+        .toList(growable: false);
+    for (final aliasKey in aliasKeysToRemove) {
+      _aliasMap.remove(aliasKey);
+      _cacheManifest.remove(aliasKey);
+    }
+    if (aliasKeysToRemove.isNotEmpty) {
+      await _persistAliasMap();
+    }
+
     // Remove from manifest
     _cacheManifest.remove(key);
     unawaited(Future(() => _pendingCacheOperations.remove(key)));
@@ -507,6 +891,10 @@ class MediaCacheManager extends CacheManager {
 
     // Clear manifest
     _cacheManifest.clear();
+    if (_aliasMap.isNotEmpty) {
+      _aliasMap.clear();
+      await _persistAliasMap();
+    }
     _pendingCacheOperations.clear();
   }
 
@@ -528,8 +916,84 @@ class MediaCacheManager extends CacheManager {
   void resetForTesting() {
     _manifestInitialized = false;
     _cacheManifest.clear();
+    _activeCancellableOperations.clear();
     _pendingCacheOperations.clear();
     _prefetchedKeys.clear();
     metrics.reset();
   }
+
+  /// Waits for all pending alias-map writes to complete.
+  ///
+  /// Use this in tests instead of `pumpEventQueue` whenever a
+  /// [getCachedFileSync] eviction or an [initialize] stale-entry prune
+  /// triggers [_persistAliasMap] and you need the file on disk to reflect
+  /// the updated map before making assertions.
+  @visibleForTesting
+  Future<void> waitForPendingAliasWrites() => _aliasWriteQueue;
+
+  /// Closes this manager and releases owned downloader resources.
+  ///
+  /// Cancels active cancellable downloads and completes pending cache
+  /// operations with `null` so awaiting callers do not hang.
+  Future<void> close() async {
+    if (_isClosed) return;
+    _isClosed = true;
+
+    final activeOps = _activeCancellableOperations.toList(growable: false);
+    for (final operation in activeOps) {
+      operation.cancel();
+    }
+    _activeCancellableOperations.clear();
+
+    final pending = _pendingCacheOperations.values.toList(growable: false);
+    for (final completer in pending) {
+      if (!completer.isCompleted) completer.complete();
+    }
+    _pendingCacheOperations.clear();
+
+    await _downloader.close();
+    _fileServiceClient?.close();
+    await super.dispose();
+  }
+}
+
+/// Bridges a deferred [Future] (which performs async setup before the real
+/// [CancellableDownload] starts) into the [CancellableDownload] interface
+/// expected by [CancellableCacheOperation.fromDownload].
+class _DeferredDownload implements CancellableDownload {
+  _DeferredDownload({
+    required Future<File?> future,
+    required void Function() cancel,
+    required bool Function() isCancelledGetter,
+  }) : _future = future,
+       _cancel = cancel,
+       _isCancelledGetter = isCancelledGetter;
+
+  final Future<File?> _future;
+  final void Function() _cancel;
+  final bool Function() _isCancelledGetter;
+
+  @override
+  Future<File?> get file => _future;
+
+  // coverage:ignore-start
+  @override
+  bool get isCancelled => _isCancelledGetter();
+  // coverage:ignore-end
+
+  @override
+  void cancel() => _cancel();
+}
+
+class _CompletedNullDownload implements CancellableDownload {
+  @override
+  Future<File?> get file async => null;
+
+  // coverage:ignore-start
+  @override
+  bool get isCancelled => false;
+  // coverage:ignore-end
+
+  @override
+  void cancel() {}
 }

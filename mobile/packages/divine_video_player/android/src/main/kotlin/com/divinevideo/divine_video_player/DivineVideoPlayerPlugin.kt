@@ -13,6 +13,7 @@ import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Entry point for the divine_video_player plugin on Android.
@@ -25,12 +26,37 @@ class DivineVideoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, 
     private lateinit var globalChannel: MethodChannel
     private lateinit var binding: FlutterPlugin.FlutterPluginBinding
 
+    companion object {
+        // Tracks the plugin instance attached to the main FlutterEngine.
+        // Flutter creates a NEW DivineVideoPlayerPlugin instance per engine,
+        // so instance variables cannot distinguish engines — only a static
+        // reference to the known-main instance works.
+        //
+        // Background engines (Firebase FCM isolate, WorkManager) attach a
+        // different instance while mainPluginInstance is non-null. They are
+        // skipped entirely so PlayerRegistry.disposeAll() never kills live
+        // players owned by the main engine.
+        @Volatile
+        private var mainPluginInstance: DivineVideoPlayerPlugin? = null
+    }
+
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+        // Treat as the main engine when:
+        //   • nothing is registered yet (cold start), OR
+        //   • this same instance is reattaching (hot restart without a
+        //     preceding onDetachedFromEngine call).
+        // Any other instance attaching while the main one is registered is
+        // a background engine — skip it.
+        val isMainEngine = mainPluginInstance == null || mainPluginInstance === this
+        if (!isMainEngine) return
+
+        mainPluginInstance = this
         binding = flutterPluginBinding
 
-        // Hot restart re-calls onAttachedToEngine without a preceding
-        // onDetachedFromEngine. Dispose any leftover players so zombie
-        // timers and event channels are cleaned up.
+        // Hot restart re-calls onAttachedToEngine on the same instance without
+        // a preceding onDetachedFromEngine. Dispose zombie players left over
+        // from the previous Dart VM. main.dart also calls disposeAll() before
+        // runApp() as belt-and-suspenders coverage.
         PlayerRegistry.disposeAll()
 
         globalChannel = MethodChannel(
@@ -46,6 +72,11 @@ class DivineVideoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, 
     }
 
     override fun onDetachedFromEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+        if (mainPluginInstance !== this) {
+            // Background engine detaching — do not touch main engine's players.
+            return
+        }
+        mainPluginInstance = null
         globalChannel.setMethodCallHandler(null)
         PlayerRegistry.disposeAll()
         VideoCache.release()
@@ -100,8 +131,11 @@ class DivineVideoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, 
 
                 val useTexture = call.argument<Boolean>("useTexture") ?: false
                 if (useTexture) {
+                    val useLegacySurface =
+                        call.argument<Boolean>("useLegacySurface") ?: false
                     val textureId = instance.enableTextureOutput(
                         binding.textureRegistry,
+                        useLegacySurface = useLegacySurface,
                     )
                     result.success(mapOf("textureId" to textureId))
                 } else {
@@ -197,17 +231,17 @@ class DivineVideoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, 
  * instances created by [DivineVideoPlayerPlugin].
  */
 internal object PlayerRegistry {
-    private val players = mutableMapOf<Int, DivineVideoPlayerInstance>()
+    private val players = ConcurrentHashMap<Int, DivineVideoPlayerInstance>()
 
     fun get(id: Int): DivineVideoPlayerInstance? = players[id]
     fun put(id: Int, instance: DivineVideoPlayerInstance) { players[id] = instance }
     fun remove(id: Int): DivineVideoPlayerInstance? = players.remove(id)
     fun forAll(action: (DivineVideoPlayerInstance) -> Unit) {
-        players.values.forEach(action)
+        players.values.toList().forEach(action)
     }
     val size: Int get() = players.size
     fun disposeAll() {
-        players.values.forEach { it.dispose() }
+        players.values.toList().forEach { it.dispose() }
         players.clear()
     }
 }

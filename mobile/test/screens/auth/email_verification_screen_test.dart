@@ -21,6 +21,7 @@ import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 import '../../helpers/test_provider_overrides.dart';
 
@@ -388,6 +389,54 @@ void main() {
         await tester.pumpAndSettle();
 
         verify(() => mockCubit.stopPolling()).called(greaterThan(0));
+      });
+
+      testWidgets('redacts persisted pending email in auto-login logs', (
+        tester,
+      ) async {
+        await LogCaptureService().clearAllLogs();
+        when(() => mockPendingVerification.load()).thenAnswer(
+          (_) async => PendingVerification(
+            deviceCode: 'persisted-device-code',
+            verifier: 'persisted-verifier',
+            email: 'user@example.com',
+            createdAt: DateTime(2026),
+          ),
+        );
+        when(
+          () => mockOAuth.verifyEmail(token: any(named: 'token')),
+        ).thenAnswer((_) async => VerifyEmailResult(success: true));
+        when(
+          () => mockCubit.startPolling(
+            deviceCode: any(named: 'deviceCode'),
+            verifier: any(named: 'verifier'),
+            email: any(named: 'email'),
+            inviteCode: any(named: 'inviteCode'),
+          ),
+        ).thenReturn(null);
+
+        await tester.pumpWidget(createTestWidget(token: 'persisted-token'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 10));
+
+        final logMessage = LogCaptureService()
+            .getRecentLogs()
+            .map((entry) => entry.message)
+            .lastWhere(
+              (message) =>
+                  message.startsWith('Found persisted verification data for '),
+            );
+
+        expect(logMessage, contains('u***@example.com'));
+        expect(logMessage, isNot(contains('user@example.com')));
+        verify(() => mockOAuth.verifyEmail(token: 'persisted-token')).called(1);
+        verify(
+          () => mockCubit.startPolling(
+            deviceCode: 'persisted-device-code',
+            verifier: 'persisted-verifier',
+            email: 'user@example.com',
+          ),
+        ).called(1);
       });
 
       testWidgets(

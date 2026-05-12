@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -77,6 +78,34 @@ sendPostPublishCollaboratorInvites({
     }
   }
   return results;
+}
+
+/// Tag names that carry engagement counts on Vine-imported video events.
+///
+/// These are baked into the Nostr event body and must survive a metadata
+/// edit; without that, `originalLoops` / `originalLikes` / `originalComments`
+/// get permanently zeroed on the replacement event.
+/// See [extractEngagementCountTags].
+const _engagementCountTagNames = {
+  'loops',
+  'likes',
+  'reposts',
+  'views',
+  'comments',
+};
+
+/// Returns the subset of [tags] that carry engagement counts (loops, likes,
+/// reposts, views, comments) on Vine-imported video events.
+///
+/// Tags missing a value are skipped — `tag.length >= 2` already implies
+/// the tag is non-empty.
+@visibleForTesting
+List<List<String>> extractEngagementCountTags(List<List<String>> tags) {
+  return tags
+      .where(
+        (tag) => tag.length >= 2 && _engagementCountTagNames.contains(tag[0]),
+      )
+      .toList();
 }
 
 class _LoadingIndicator extends StatelessWidget {
@@ -1516,6 +1545,10 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
         tags.add(['l', label.value, 'content-warning']);
       }
 
+      // Preserve engagement count tags so a metadata edit doesn't zero
+      // originalLoops / originalLikes for Vine-imported videos.
+      tags.addAll(extractEngagementCountTags(widget.video.nostrEventTags));
+
       // Preserve other original tags that shouldn't be changed
       if (widget.video.publishedAt != null) {
         tags.add(['published_at', widget.video.publishedAt!]);
@@ -1570,10 +1603,11 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
 
       // Publish the updated event
       final nostrService = ref.read(nostrServiceProvider);
-      final publishedEvent = await nostrService.publishEvent(event);
-      if (publishedEvent == null) {
+      final publishResult = await nostrService.publishEvent(event);
+      if (publishResult is! PublishSuccess) {
         throw Exception('Failed to publish updated event');
       }
+      final publishedEvent = publishResult.event;
 
       // Update local cache for immediate UI update
       final personalEventCache = ref.read(personalEventCacheServiceProvider);

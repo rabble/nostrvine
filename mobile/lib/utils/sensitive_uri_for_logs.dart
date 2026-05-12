@@ -1,5 +1,7 @@
-// ABOUTME: Redacts secrets from URIs before writing them to diagnostic logs.
-// ABOUTME: Preserves schemes, hosts, paths, and Nostr path segments unchanged except /invite/code.
+// ABOUTME: Redacts secrets and PII from URIs and free-form text before
+// ABOUTME: writing them to diagnostic logs (URIs, email addresses, Nostr keys
+// ABOUTME: are handled here; Nostr key stripping for crash reports lives in
+// ABOUTME: lib/observability/reportable_error.dart).
 
 /// Placeholder for secrets in free-form log text or HTTP headers.
 const redactedSensitiveLogPlaceholder = '[REDACTED]';
@@ -57,4 +59,29 @@ String redactUriStringForLogs(String uriString) {
     out = '/$out';
   }
   return out;
+}
+
+/// Returns an email address safe for diagnostic logs.
+///
+/// - `user@example.com` → `u***@example.com`
+/// - `a@b.co`           → `a***@b.co`   (single-char local-part still gets
+///                                       a fixed-width mask so the original
+///                                       length is not leaked)
+/// - empty input or input missing `@` or with no `.` in the domain →
+///   [redactedSensitiveLogPlaceholder]
+///
+/// The domain is preserved verbatim so ops can correlate failure patterns
+/// across the same provider (e.g. "all gmail.com users are timing out")
+/// without identifying individual accounts. Local-part collapses to a
+/// fixed 4-character mask (`x***`) regardless of length.
+String redactEmailForLogs(String email) {
+  if (email.isEmpty) return redactedSensitiveLogPlaceholder;
+  final atIndex = email.indexOf('@');
+  // No `@`, or `@` at position 0 (empty local-part) → not a usable email.
+  if (atIndex <= 0) return redactedSensitiveLogPlaceholder;
+  final domain = email.substring(atIndex + 1);
+  // Domain must contain at least one `.` to be a routable host.
+  if (!domain.contains('.')) return redactedSensitiveLogPlaceholder;
+  final firstChar = email.substring(0, 1);
+  return '$firstChar***@$domain';
 }

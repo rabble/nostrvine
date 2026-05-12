@@ -1283,7 +1283,9 @@ void main() {
           tags: any(named: 'tags'),
         ),
       ).thenAnswer((_) async => event);
-      when(() => mockClient.publishEvent(any())).thenAnswer((_) async => event);
+      when(
+        () => mockClient.publishEvent(any()),
+      ).thenAnswer((_) async => PublishSuccess(event: event));
 
       final service = ContentBlocklistRepository();
       await service.syncBlockListsInBackground(
@@ -1318,7 +1320,9 @@ void main() {
           tags: any(named: 'tags'),
         ),
       ).thenAnswer((_) async => buildEvent());
-      when(() => mockClient.publishEvent(any())).thenAnswer((_) async => null);
+      when(
+        () => mockClient.publishEvent(any()),
+      ).thenAnswer((_) async => const PublishFailed());
 
       final service = ContentBlocklistRepository();
       await service.syncBlockListsInBackground(

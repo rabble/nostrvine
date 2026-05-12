@@ -267,8 +267,6 @@
   "profileRepostsOwnEmpty": "Twoje reposty pojawią się tutaj",
   "profileRepostsOtherEmpty": "Jego reposty pojawią się tutaj",
   "profileErrorLoadingReposts": "Błąd wczytywania repostowanych filmów",
-  "profileLoadingTitle": "Wczytywanie profilu...",
-  "profileLoadingSubtitle": "To może chwilę potrwać",
   "profileLoadingVideos": "Wczytywanie filmów...",
   "profileNoVideosTitle": "Brak filmów",
   "profileNoVideosOwnSubtitle": "Udostępnij swój pierwszy film, żeby go tu zobaczyć",
@@ -344,7 +342,7 @@
     }
   },
   "profileSetupGotItButton": "Rozumiem",
-  "profileSetupUploadFailedGeneric": "Nie udało się przesłać obrazu: {error}",
+  "profileSetupUploadFailedGeneric": "Nie udało się przesłać obrazu. Spróbuj ponownie później.",
   "profileSetupUploadNetworkError": "Błąd sieci: Sprawdź połączenie z internetem i spróbuj ponownie.",
   "profileSetupUploadAuthError": "Błąd uwierzytelnienia: Wyloguj się i zaloguj ponownie.",
   "profileSetupUploadFileTooLarge": "Plik za duży: Wybierz mniejszy obraz (maks. 10 MB).",
@@ -358,7 +356,7 @@
   "profileSetupCheckAgain": "Sprawdź ponownie",
   "profileSetupUsernameBurned": "Ta nazwa użytkownika nie jest już dostępna",
   "profileSetupUsernameInvalidFormat": "Dozwolone są tylko litery, cyfry i myślniki",
-  "profileSetupUsernameInvalidLength": "Nazwa użytkownika musi mieć 3-20 znaków",
+  "profileSetupUsernameInvalidLength": "Nazwa użytkownika musi mieć od 3 do 63 znaków",
   "profileSetupUsernameNetworkError": "Nie można sprawdzić dostępności. Spróbuj ponownie.",
   "profileSetupUsernameInvalidFormatGeneric": "Nieprawidłowy format nazwy użytkownika",
   "profileSetupUsernameCheckFailed": "Nie udało się sprawdzić dostępności",
@@ -472,6 +470,7 @@
   "videoPlayerUnmute": "Włącz dźwięk filmu",
   "videoPlayerEditVideo": "Edytuj film",
   "videoPlayerEditVideoTooltip": "Edytuj film",
+  "videoPlayerTapHint": "Dotknij, aby odtworzyć lub wstrzymać. Dotknij dwukrotnie, aby polubić.",
   "contentWarningLabel": "Ostrzeżenie o treści",
   "contentWarningNudity": "Nagość",
   "contentWarningSexualContent": "Treści seksualne",
@@ -563,6 +562,35 @@
       }
     }
   },
+  "videoCollaboratorPendingDecoration": "Pending",
+  "@videoCollaboratorPendingDecoration": {
+    "description": "Small badge next to a collaborator's name or avatar when the creator (viewing their own video) has invited them but they have not yet accepted."
+  },
+  "videoCollaboratorPendingSemanticLabel": "Pending collaborator",
+  "@videoCollaboratorPendingSemanticLabel": {
+    "description": "Screen reader label for a dimmed pending collaborator avatar on the creator's own video."
+  },
+  "videoCollaboratorWithPendingSuffix": "{label} ({pending} pending)",
+  "@videoCollaboratorWithPendingSuffix": {
+    "description": "Appends a pending count to the collaborator label on the creator's own video. {label} is the existing 'with @name' / 'with @name +N' phrase.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "pending": {
+        "type": "int"
+      }
+    }
+  },
+  "profileChipTapHint": "{name}. Tap to view profile.",
+  "@profileChipTapHint": {
+    "description": "Screen reader hint announced when a user-chip in the metadata sheet is focused. {name} is the user's display name.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "listAttributionFallback": "Lista",
   "shareVideoLabel": "Udostępnij film",
   "sharePostSharedWith": "Post udostępniony z {recipientName}",
@@ -605,6 +633,11 @@
   "videoActionMoreOptions": "Więcej opcji",
   "videoActionHideSubtitles": "Ukryj napisy",
   "videoActionShowSubtitles": "Pokaż napisy",
+  "videoEngagementLikersTitle": "Polubione przez",
+  "videoEngagementRepostersTitle": "Udostępnione przez",
+  "videoEngagementLikersEmpty": "Brak polubień",
+  "videoEngagementRepostersEmpty": "Brak udostępnień",
+  "videoEngagementLoadFailed": "Nie udało się wczytać listy",
   "videoDescriptionLoops": "{count} pętli",
   "@videoDescriptionLoops": {
     "placeholders": {
@@ -1742,6 +1775,26 @@
   "feedFailedToLoadVideos": "Nie udało się wczytać filmów",
   "feedRetry": "Spróbuj ponownie",
   "feedNoFollowedUsers": "Nie obserwujesz nikogo.\nZacznij obserwować, żeby zobaczyć ich filmy tutaj.",
+  "feedModeForYou": "Dla ciebie",
+  "feedModeNew": "Nowe",
+  "feedModeFollowing": "Obserwowane",
+  "feedModeSemanticLabel": "Tryb kanału: {label}",
+  "@feedModeSemanticLabel": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "videoAuthorSemanticLabel": "Autor filmu: {displayName}",
+  "@videoAuthorSemanticLabel": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "videoAuthorAvatarSemanticLabel": "Awatar autora",
   "feedForYouEmpty": "Twój kanał Dla Ciebie jest pusty.\nOdkrywaj filmy i obserwuj twórców, aby go ukształtować.",
   "feedFollowingEmpty": "Brak filmów od osób, które obserwujesz.\nZnajdź twórców, których lubisz i zacznij ich obserwować.",
   "feedLatestEmpty": "Brak nowych filmów.\nWróć tu wkrótce.",
@@ -1857,6 +1910,7 @@
   "routeInvalidCategory": "Nieprawidłowa kategoria",
   "routeNoVideosToDisplay": "Brak filmów do wyświetlenia",
   "routeInvalidProfileId": "Nieprawidłowy ID profilu",
+  "routeUnknownPath": "Tej strony nie ma w aplikacji.",
   "routeDefaultListName": "Lista",
   "supportTitle": "Centrum pomocy",
   "supportContactSupport": "Skontaktuj się z pomocą",
@@ -2272,6 +2326,11 @@
       }
     }
   },
+  "inboxCollabInviteCardUntitledVideo": "Film bez tytułu",
+  "clickableTextViewVideoLink": "Zobacz wideo",
+  "messageExternalLinkDialogTitle": "Otworzyć link zewnętrzny?",
+  "messageExternalLinkDialogBody": "Ten link prowadzi do zewnętrznej strony i może nie być bezpieczny:\n\n{url}",
+  "messageExternalLinkDialogOpen": "Otwórz",
   "inboxCollabInviteAcceptButton": "Akceptuj",
   "inboxCollabInviteAcceptError": "Nie udało się zaakceptować. Spróbuj ponownie.",
   "inboxCollabInviteAcceptedStatus": "Zaakceptowano",
@@ -2428,8 +2487,12 @@
   "libraryWebUnavailableDescription": "Wersje robocze i klipy są na urządzeniu — otwórz Divine w telefonie, żeby nimi zarządzać.",
   "libraryWebUnavailableHeadline": "Biblioteka jest w aplikacji mobilnej",
   "notificationFollowBack": "Zaobserwuj",
-  "profileSetupUploadSuccess": "Zdjęcie profilowe przesłane pomyślnie!",
+  "profileSetupUploadStaged": "Przesłano — dotknij Zapisz, aby zastosować",
   "proofmodeCheckAiGenerated": "Sprawdź, czy wygenerowane przez AI",
+  "dmSendFailedMessage": "Nie udało się wysłać wiadomości",
+  "dmSendFailedRetry": "Spróbuj ponownie",
+  "dmSendPartialMessage": "Wysłano, ale nie zsynchronizowano z twoimi innymi urządzeniami",
+  "dmConversationLoadError": "Nie udało się wczytać wiadomości",
   "reportDialogCancel": "Anuluj",
   "reportDialogReport": "Zgłoś",
   "routerInvalidCreator": "Nieprawidłowy twórca",
@@ -2770,6 +2833,11 @@
   "videoEditorDuplicateSelectedItemSemanticLabel": "Duplikuj wybrany element",
   "videoEditorSplitLabel": "Podziel",
   "videoEditorSplitSelectedClipSemanticLabel": "Podziel wybrany klip",
+  "videoEditorExtractAudioLabel": "Wyodrębnij dźwięk",
+  "videoEditorClipAudioTitle": "Dźwięk klipu",
+  "videoEditorExtractAudioFromClipSemanticLabel": "Wyodrębnij dźwięk z klipu i wycisz oryginał",
+  "videoEditorExtractAudioNoLocalFile": "Nie można wyodrębnić audio: klip nie jest dostępny lokalnie.",
+  "videoEditorExtractAudioFailed": "Nie udało się wyodrębnić audio. Spróbuj ponownie.",
   "videoEditorFinishTimelineEditingSemanticLabel": "Zakończ edycję osi czasu",
   "videoEditorAudioPlayPreviewSemanticLabel": "Odtwórz podgląd",
   "videoEditorAudioPausePreviewSemanticLabel": "Wstrzymaj podgląd",
@@ -2779,7 +2847,7 @@
   "videoEditorAudioNoSoundsAvailableTitle": "Brak dostępnych dźwięków",
   "videoEditorAudioNoSoundsAvailableSubtitle": "Dźwięki pojawią się tutaj, gdy twórcy udostępnią audio",
   "videoEditorAudioFailedToLoadTitle": "Nie udało się wczytać dźwięków",
-  "videoEditorAudioCategoryDivine": "diVine",
+  "videoEditorAudioCategoryDivine": "OG Sounds",
   "videoEditorAudioCategoryCommunity": "Społeczność",
   "videoEditorDrawToolArrowSemanticLabel": "Narzędzie strzałki",
   "videoEditorDrawToolEraserSemanticLabel": "Narzędzie gumki",
@@ -2890,11 +2958,11 @@
       }
     }
   },
-  "videoMetadataContentWarningLabel": "Dodaj ostrzeżenie o treści",
+  "videoMetadataContentWarningLabel": "Ostrzeżenie o treści",
   "videoMetadataSelectContentWarningsSemanticLabel": "Wybierz ostrzeżenia o treści",
-  "videoMetadataContentWarningSelectAllThatApply": "Wybierz wszystko, co dotyczy",
+  "videoMetadataContentWarningSelectAllThatApply": "Wybierz wszystko, co dotyczy Twojej treści",
   "videoMetadataContentWarningDoneButton": "Gotowe",
-  "videoMetadataCollaboratorsLabel": "Dodaj współtwórców",
+  "videoMetadataCollaboratorsLabel": "Współtwórcy",
   "videoMetadataAddCollaboratorSemanticLabel": "Dodaj współtwórcę",
   "videoMetadataCollaboratorsHelpTooltip": "Jak działają współtwórcy",
   "videoMetadataCollaboratorsCount": "{count}/{max} współtwórców",
@@ -2919,7 +2987,7 @@
       }
     }
   },
-  "videoMetadataInspiredByLabel": "Dodaj zainspirowane przez",
+  "videoMetadataInspiredByLabel": "Zainspirowane przez",
   "videoMetadataSetInspiredBySemanticLabel": "Ustaw zainspirowane przez",
   "videoMetadataInspiredByHelpTooltip": "Jak działają przypisania inspiracji",
   "videoMetadataInspiredByNone": "Brak",
@@ -2954,9 +3022,6 @@
   "videoMetadataPausePreviewSemanticLabel": "Wstrzymaj podgląd",
   "videoMetadataClosePreviewSemanticLabel": "Zamknij podgląd wideo",
   "videoMetadataRemoveSemanticLabel": "Usuń",
-  "metadataCaptionsLabel": "Napisy",
-  "metadataCaptionsEnabledSemantics": "Napisy włączone dla wszystkich filmów",
-  "metadataCaptionsDisabledSemantics": "Napisy wyłączone dla wszystkich filmów",
   "@metadataLoopsLabel": {
     "placeholders": {
       "count": {
@@ -3092,6 +3157,16 @@
   "profileSetupImagesTypeGroup": "obrazy",
   "profileSetupExternalNip05InvalidFormat": "Nieprawidłowy format NIP-05 (np. nazwa@domena.com)",
   "profileSetupExternalNip05DivineDomain": "Użyj pola nazwy użytkownika powyżej dla divine.video",
+  "nostrSettingsNip05Address": "NIP-05 address",
+  "nostrSettingsNip05AddressSubtitle": "Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.",
+  "nostrSettingsNip05AddressHint": "you@example.com",
+  "nostrSettingsNip05SaveAction": "Save NIP-05",
+  "nostrSettingsNip05Saved": "NIP-05 saved",
+  "nostrSettingsNip05SaveFailed": "Couldn't save NIP-05. Please try again.",
+  "profileSetupNip05ConfirmTitle": "Use your own NIP-05?",
+  "profileSetupNip05ConfirmBody": "NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it's wrong, people can't find you and your verified handle disappears. Continue only if you've set this up.",
+  "profileSetupNip05ConfirmContinue": "Continue",
+  "profileSetupNip05ConfirmCancel": "Cancel",
   "contentWarningReportContentTooltip": "Zgłoś treść",
   "contentWarningBlockUserTooltip": "Zablokuj użytkownika",
   "contentWarningBlockedTitle": "Treść zablokowana",
@@ -3206,6 +3281,30 @@
   "@profileEditPublicKeyLink": {
     "description": "Secondary link on the edit profile screen that navigates to the key management screen where the user's npub lives."
   },
+  "verifiedAccountChipSemanticLabel": "Zweryfikowane konto {platform}: {identity}",
+  "@verifiedAccountChipSemanticLabel": {
+    "description": "Screen reader label for a verified-account chip on a user's profile.",
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      },
+      "identity": {
+        "type": "String"
+      }
+    }
+  },
+  "profileEditVerifiedAccountsTitle": "Zweryfikowane konta",
+  "@profileEditVerifiedAccountsTitle": {
+    "description": "Section header on the edit profile screen above the verified-accounts chip row and the Get verified CTA."
+  },
+  "profileEditGetVerifiedCta": "Zweryfikuj się",
+  "@profileEditGetVerifiedCta": {
+    "description": "Primary CTA tile on edit profile that opens the verifyer integrated-app sandbox."
+  },
+  "profileEditGetVerifiedSubtitle": "Połącz swoje konta w mediach społecznościowych, żeby ludzie wiedzieli, że to naprawdę ty.",
+  "@profileEditGetVerifiedSubtitle": {
+    "description": "Subtitle under the Get verified tile, harmonized with verifyer.divine.video landing copy."
+  },
   "soundUntitled": "Dźwięk bez tytułu",
   "soundStopPreview": "Zatrzymaj podgląd",
   "soundPreviewSemanticLabel": "Odsłuchaj {title}",
@@ -3294,6 +3393,20 @@
   "bugReportExpectedBehaviorHint": "Co powinno się stać zamiast tego?",
   "bugReportDiagnosticsNotice": "Informacje o urządzeniu i logi zostaną dołączone automatycznie.",
   "bugReportSuccessMessage": "Dzięki! Dostaliśmy twoje zgłoszenie i wykorzystamy je, żeby ulepszyć Divine.",
+  "bugReportAttachImages": "Attach images",
+  "bugReportImagesCount": "{count} of {max} images selected",
+  "@bugReportImagesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "bugReportRemoveImage": "Remove image",
+  "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
   "bugReportSendFailed": "Nie udało się wysłać zgłoszenia błędu. Spróbuj ponownie później.",
   "bugReportFailedWithError": "Nie udało się wysłać zgłoszenia błędu: {error}",
   "@bugReportFailedWithError": {
@@ -3437,21 +3550,63 @@
   "authNip07ExtensionNotFound": "Nie znaleziono rozszerzenia przeglądarki. Zainstaluj Alby, nos2x lub inne rozszerzenie zgodne z NIP-07.",
   "authInfoBrowserExtensionTitle": "Rozszerzenie przeglądarki",
   "authInfoBrowserExtensionDescription": "Zaloguj się przez rozszerzenie przeglądarki NIP-07, takie jak Alby lub nos2x. Twoje klucze pozostają w rozszerzeniu — Divine nigdy ich nie widzi.",
-  "soundsAlreadySavedToLibrary": "Already in Sounds",
-  "soundsAvailabilityCommunity": "Community",
-  "soundsAvailabilityPrivate": "Private",
-  "soundsRemoveSavedSound": "Remove sound",
-  "soundsRemovedFromLibrary": "Removed from Sounds",
-  "soundsSavedEmptyDescription": "Tap Use Sound on a video to save it here.",
-  "soundsSavedEmptyTitle": "No saved sounds yet",
-  "soundsSavedLibraryTitle": "My Sounds",
-  "soundsSavedToLibrary": "Saved to Sounds",
-  "videoEditorAudioCategoryFeatured": "Featured",
-  "videoEditorAudioCategoryMySounds": "My Sounds",
-  "videoEditorAudioFeaturedEmptySubtitle": "We’ll drop featured sounds here once they’re ready.",
-  "videoEditorAudioFeaturedEmptyTitle": "Featured sounds coming soon",
-  "videoMetadataAudioReuseSubtitle": "Let others save and reuse this video's audio.",
-  "videoMetadataAudioReuseTitle": "Publish this sound",
+  "soundsAlreadySavedToLibrary": "Już w Dźwiękach",
+  "soundsAvailabilityCommunity": "Społeczność",
+  "soundsAvailabilityPrivate": "Prywatne",
+  "soundsRemoveSavedSound": "Usuń dźwięk",
+  "soundsRemovedFromLibrary": "Usunięto z Dźwięków",
+  "soundsSavedEmptyDescription": "Stuknij Użyj dźwięku w wideo, aby zapisać go tutaj.",
+  "soundsSavedEmptyTitle": "Brak zapisanych dźwięków",
+  "soundsSavedLibraryTitle": "Moje dźwięki",
+  "soundsSavedToLibrary": "Zapisano w Dźwiękach",
+  "videoEditorAudioCategoryFeatured": "Wyróżnione",
+  "videoEditorAudioCategoryMySounds": "Moje dźwięki",
+  "videoEditorAudioFeaturedEmptySubtitle": "Opublikujemy tu wyróżnione dźwięki, gdy będą gotowe.",
+  "videoEditorAudioFeaturedEmptyTitle": "Wyróżnione dźwięki wkrótce",
+  "videoMetadataAudioReuseSubtitle": "Pozwól innym zapisać i ponownie użyć dźwięku z tego wideo.",
+  "videoMetadataAudioReuseTitle": "Opublikuj ten dźwięk",
+  "videoMetadataShareReplyToFeedTitle": "Udostępnij też w moim feedzie",
+  "videoMetadataShareReplyToFeedSubtitle": "Wyłączenie sprawia, że ten film zostaje tylko w wątku komentarzy.",
+  "commentsRecordVideoButtonLabel": "Nagraj komentarz wideo",
+  "commentsOpenVideoLabel": "Otwórz komentarz wideo",
+  "commentsMuteVideoReplyLabel": "Wycisz odpowiedź wideo",
+  "commentsUnmuteVideoReplyLabel": "Włącz dźwięk odpowiedzi wideo",
+  "commentsOpenReplyParentLabel": "Otwórz film, na który to odpowiada",
+  "commentsReplyParentSectionTitle": "W odpowiedzi na",
+  "commentsReplyParentLabel": "Odpowiedź na {target}",
+  "commentsReplyParentFallbackLabel": "Odpowiedź na film",
+  "videoSettingsMenuOpen": "Otwórz ustawienia odtwarzania",
+  "videoSettingsMenuClose": "Zamknij ustawienia odtwarzania",
+  "videoSettingsCaptionsEnable": "Włącz napisy",
+  "videoSettingsCaptionsDisable": "Wyłącz napisy",
+  "videoActionReportLabel": "Zgłoś",
+  "videoActionReport": "Zgłoś wideo",
+  "videoActionEditLabel": "Edytuj",
+  "videoActionEdit": "Edytuj wideo",
+  "reportReasonSpamSubtitle": "Niechciane lub powtarzające się treści",
+  "reportReasonHarassmentSubtitle": "Szkodliwe i niechciane odpowiedzi lub wzmianki",
+  "reportReasonViolenceSubtitle": "Treści brutalne, ekstremistyczne lub szkodliwe",
+  "reportReasonSexualContentSubtitle": "Nagość, pornografia lub treści jednoznaczne",
+  "reportReasonCopyrightSubtitle": "Nieuprawnione użycie własności intelektualnej",
+  "reportReasonFalseInfoSubtitle": "Wprowadzające w błąd lub fałszywe twierdzenia",
+  "reportReasonCsamSubtitle": "Treści wykorzystujące lub narażające nieletnich",
+  "reportReasonAiGeneratedSubtitle": "Treści podejrzane o wygenerowanie przez AI",
+  "reportReasonOtherSubtitle": "Naruszenia niewymienione powyżej",
+  "reportLearnMoreAt": "Dowiedz się więcej na",
+  "supportLogsSavedTo": "Logi zapisano w {path}",
+  "supportRevealLogsAction": "Pokaż w folderze",
+  "notificationsVideoThumbnailFor": "Miniatura wideo dla {title}",
+  "@notificationsVideoThumbnailFor": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsVideoThumbnail": "Miniatura wideo",
+  "metadataCaptionsLabel": "Napisy",
+  "metadataCaptionsEnabledSemantics": "Napisy włączone dla wszystkich filmów",
+  "metadataCaptionsDisabledSemantics": "Napisy wyłączone dla wszystkich filmów",
   "@profileSetupUploadFailedGeneric": {
     "placeholders": {
       "error": {

@@ -5,8 +5,10 @@
 // but no stable alternative exists. Tracked: github.com/ryanheise/audio_session
 // ignore_for_file: experimental_member_use
 import 'dart:async';
+import 'dart:io';
 
 import 'package:audio_session/audio_session.dart' as audio_session;
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:mocktail/mocktail.dart';
@@ -29,13 +31,27 @@ class _FakeAudioDevice extends Fake implements audio_session.AudioDevice {
 }
 
 void main() {
+  const pathProviderChannel = MethodChannel('plugins.flutter.io/path_provider');
+
   setUpAll(() {
     TestWidgetsFlutterBinding.ensureInitialized();
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(pathProviderChannel, (call) async {
+          if (call.method == 'getTemporaryDirectory') {
+            return Directory.systemTemp.path;
+          }
+          return null;
+        });
     registerFallbackValue(_FakeAudioSource());
     registerFallbackValue(Duration.zero);
     registerFallbackValue('');
     registerFallbackValue(0.0);
     registerFallbackValue(_FakeAudioSessionConfig());
+  });
+
+  tearDownAll(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(pathProviderChannel, null);
   });
 
   group(AudioPlaybackService, () {
@@ -86,7 +102,7 @@ void main() {
     test('loadAudio loads audio from URL', () async {
       const testUrl = 'https://example.com/audio.aac';
       when(
-        () => mockPlayer.setUrl(testUrl),
+        () => mockPlayer.setAudioSource(any()),
       ).thenAnswer((_) async => const Duration(seconds: 10));
 
       service = AudioPlaybackService(
@@ -95,7 +111,10 @@ void main() {
       );
       final duration = await service.loadAudio(testUrl);
 
-      verify(() => mockPlayer.setUrl(testUrl)).called(1);
+      final capturedSource =
+          verify(() => mockPlayer.setAudioSource(captureAny())).captured.single
+              as AudioSource;
+      expect(capturedSource, isA<LockCachingAudioSource>());
       expect(duration, const Duration(seconds: 10));
     });
 
@@ -145,7 +164,10 @@ void main() {
         const AudioSourceConfig.network('https://example.com/audio.mp3'),
       );
 
-      verify(() => mockPlayer.setAudioSource(any())).called(1);
+      final capturedSource =
+          verify(() => mockPlayer.setAudioSource(captureAny())).captured.single
+              as AudioSource;
+      expect(capturedSource, isA<LockCachingAudioSource>());
       expect(duration, const Duration(seconds: 20));
     });
 
@@ -173,6 +195,30 @@ void main() {
       },
     );
 
+    test('setAudioSource creates clipped source from file path', () async {
+      when(
+        () => mockPlayer.setAudioSource(any()),
+      ).thenAnswer((_) async => const Duration(seconds: 5));
+
+      service = AudioPlaybackService(
+        audioPlayer: mockPlayer,
+        audioSessionWrapper: mockSessionWrapper,
+      );
+      final duration = await service.setAudioSource(
+        const AudioSourceConfig.file(
+          '/path/to/local.mp3',
+          start: Duration(seconds: 1),
+          end: Duration(seconds: 4),
+        ),
+      );
+
+      final capturedSource =
+          verify(() => mockPlayer.setAudioSource(captureAny())).captured.single
+              as ClippingAudioSource;
+      expect(capturedSource.child.uri.scheme, 'file');
+      expect(duration, const Duration(seconds: 5));
+    });
+
     test('setAudioSource sets audio source from file path', () async {
       when(
         () => mockPlayer.setAudioSource(any()),
@@ -188,6 +234,51 @@ void main() {
 
       verify(() => mockPlayer.setAudioSource(any())).called(1);
       expect(duration, const Duration(seconds: 12));
+    });
+
+    test('setAudioSource keeps non-http URIs as direct URI sources', () async {
+      when(
+        () => mockPlayer.setAudioSource(any()),
+      ).thenAnswer((_) async => const Duration(seconds: 7));
+
+      service = AudioPlaybackService(
+        audioPlayer: mockPlayer,
+        audioSessionWrapper: mockSessionWrapper,
+      );
+      final duration = await service.setAudioSource(
+        const AudioSourceConfig.network('ftp://example.com/audio.mp3'),
+      );
+
+      final capturedSource =
+          verify(() => mockPlayer.setAudioSource(captureAny())).captured.single
+              as UriAudioSource;
+      expect(capturedSource, isNot(isA<LockCachingAudioSource>()));
+      expect(capturedSource.uri.scheme, 'ftp');
+      expect(duration, const Duration(seconds: 7));
+    });
+
+    test('setAudioSource creates clipped source from network URI', () async {
+      when(
+        () => mockPlayer.setAudioSource(any()),
+      ).thenAnswer((_) async => const Duration(seconds: 6));
+
+      service = AudioPlaybackService(
+        audioPlayer: mockPlayer,
+        audioSessionWrapper: mockSessionWrapper,
+      );
+      final duration = await service.setAudioSource(
+        const AudioSourceConfig.network(
+          'https://example.com/audio.mp3',
+          start: Duration(seconds: 1),
+          end: Duration(seconds: 4),
+        ),
+      );
+
+      final capturedSource =
+          verify(() => mockPlayer.setAudioSource(captureAny())).captured.single
+              as ClippingAudioSource;
+      expect(capturedSource.child.uri.scheme, 'https');
+      expect(duration, const Duration(seconds: 6));
     });
 
     test('play starts playback', () async {
@@ -413,7 +504,7 @@ void main() {
 
     test('loadAudio rethrows on error', () async {
       when(
-        () => mockPlayer.setUrl(any()),
+        () => mockPlayer.setAudioSource(any()),
       ).thenThrow(Exception('Network error'));
 
       service = AudioPlaybackService(
@@ -495,9 +586,7 @@ void main() {
     });
 
     test('seek rethrows on error', () async {
-      when(
-        () => mockPlayer.seek(any()),
-      ).thenThrow(Exception('Seek failed'));
+      when(() => mockPlayer.seek(any())).thenThrow(Exception('Seek failed'));
 
       service = AudioPlaybackService(
         audioPlayer: mockPlayer,
@@ -576,7 +665,7 @@ void main() {
       'play retries and succeeds after Loading interrupted with URL source',
       () async {
         when(
-          () => mockPlayer.setUrl(any()),
+          () => mockPlayer.setAudioSource(any()),
         ).thenAnswer((_) async => const Duration(seconds: 10));
 
         var playCallCount = 0;
@@ -600,10 +689,6 @@ void main() {
     test(
       'play rethrows after Loading interrupted when reload also fails',
       () async {
-        when(
-          () => mockPlayer.setUrl(any()),
-        ).thenAnswer((_) async => const Duration(seconds: 10));
-
         var playCallCount = 0;
         when(() => mockPlayer.play()).thenAnswer((_) async {
           if (playCallCount++ == 0) {
@@ -611,10 +696,10 @@ void main() {
           }
         });
 
-        // Reload (setUrl) throws on the second call
-        var setUrlCallCount = 0;
-        when(() => mockPlayer.setUrl(any())).thenAnswer((_) async {
-          if (setUrlCallCount++ > 0) throw Exception('Reload failed');
+        // Reload throws on the second load attempt.
+        var setSourceCallCount = 0;
+        when(() => mockPlayer.setAudioSource(any())).thenAnswer((_) async {
+          if (setSourceCallCount++ > 0) throw Exception('Reload failed');
           return const Duration(seconds: 10);
         });
 
@@ -680,30 +765,27 @@ void main() {
       },
     );
 
-    test(
-      'seek retries and succeeds after Loading interrupted',
-      () async {
-        when(
-          () => mockPlayer.setUrl(any()),
-        ).thenAnswer((_) async => const Duration(seconds: 10));
+    test('seek retries and succeeds after Loading interrupted', () async {
+      when(
+        () => mockPlayer.setAudioSource(any()),
+      ).thenAnswer((_) async => const Duration(seconds: 10));
 
-        var seekCallCount = 0;
-        when(() => mockPlayer.seek(any())).thenAnswer((_) async {
-          if (seekCallCount++ == 0) {
-            throw Exception('Loading interrupted');
-          }
-        });
+      var seekCallCount = 0;
+      when(() => mockPlayer.seek(any())).thenAnswer((_) async {
+        if (seekCallCount++ == 0) {
+          throw Exception('Loading interrupted');
+        }
+      });
 
-        service = AudioPlaybackService(
-          audioPlayer: mockPlayer,
-          audioSessionWrapper: mockSessionWrapper,
-        );
-        await service.loadAudio('https://example.com/audio.mp3');
-        await service.seek(const Duration(seconds: 5));
+      service = AudioPlaybackService(
+        audioPlayer: mockPlayer,
+        audioSessionWrapper: mockSessionWrapper,
+      );
+      await service.loadAudio('https://example.com/audio.mp3');
+      await service.seek(const Duration(seconds: 5));
 
-        verify(() => mockPlayer.seek(any())).called(2);
-      },
-    );
+      verify(() => mockPlayer.seek(any())).called(2);
+    });
   });
 
   group('AudioPlaybackService headphone detection', () {
@@ -1190,7 +1272,7 @@ void main() {
       final result = await service.loadAudio('https://example.com/audio.aac');
 
       expect(result, isNull);
-      verifyNever(() => mockPlayer.setUrl(any()));
+      verifyNever(() => mockPlayer.setAudioSource(any()));
     });
 
     test('loadAudioFromFile returns null after dispose', () async {

@@ -2,25 +2,31 @@
 // ABOUTME: Verifies bandwidth-aware grid and adjacent video prefetching
 
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/constants/app_constants.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/features/feature_flags/services/feature_flag_service.dart';
 import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
 
 class _MockMediaCacheManager extends Mock implements MediaCacheManager {}
 
+class _MockFeatureFlagService extends Mock implements FeatureFlagService {}
+
 /// Test widget that uses GridPrefetchMixin for testing
-class _TestWidget extends StatefulWidget {
+class _TestWidget extends ConsumerStatefulWidget {
   const _TestWidget();
 
   @override
-  State<_TestWidget> createState() => _TestWidgetState();
+  ConsumerState<_TestWidget> createState() => _TestWidgetState();
 }
 
-class _TestWidgetState extends State<_TestWidget> with GridPrefetchMixin {
+class _TestWidgetState extends ConsumerState<_TestWidget>
+    with GridPrefetchMixin {
   @override
   Widget build(BuildContext context) => const SizedBox();
 }
@@ -41,6 +47,7 @@ List<VideoEvent> _createMockVideos(int count) {
 
 void main() {
   late _MockMediaCacheManager mockCache;
+  late _MockFeatureFlagService mockFeatureFlagService;
 
   setUp(() {
     mockCache = _MockMediaCacheManager();
@@ -52,6 +59,8 @@ void main() {
       ),
     ).thenAnswer((_) async {});
 
+    mockFeatureFlagService = _MockFeatureFlagService();
+
     // Ensure high quality so prefetching is enabled
     BandwidthTrackerService.instance.clearSamples();
     BandwidthTrackerService.instance.recordTimeToFirstFrame(200);
@@ -60,7 +69,16 @@ void main() {
   group(GridPrefetchMixin, () {
     group('prefetchGridVideos', () {
       testWidgets('prefetches up to gridPrefetchLimit videos', (tester) async {
-        await tester.pumpWidget(const _TestWidget());
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              featureFlagServiceProvider.overrideWithValue(
+                mockFeatureFlagService,
+              ),
+            ],
+            child: const _TestWidget(),
+          ),
+        );
         final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
 
         final videos = _createMockVideos(20);
@@ -78,7 +96,16 @@ void main() {
       });
 
       testWidgets('handles empty video list', (tester) async {
-        await tester.pumpWidget(const _TestWidget());
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              featureFlagServiceProvider.overrideWithValue(
+                mockFeatureFlagService,
+              ),
+            ],
+            child: const _TestWidget(),
+          ),
+        );
         final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
 
         // Should not throw
@@ -86,7 +113,16 @@ void main() {
       });
 
       testWidgets('handles videos with null URLs', (tester) async {
-        await tester.pumpWidget(const _TestWidget());
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              featureFlagServiceProvider.overrideWithValue(
+                mockFeatureFlagService,
+              ),
+            ],
+            child: const _TestWidget(),
+          ),
+        );
         final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
 
         final videos = [
@@ -106,7 +142,16 @@ void main() {
 
     group('prefetchAroundIndex', () {
       testWidgets('does not throw for valid index', (tester) async {
-        await tester.pumpWidget(const _TestWidget());
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              featureFlagServiceProvider.overrideWithValue(
+                mockFeatureFlagService,
+              ),
+            ],
+            child: const _TestWidget(),
+          ),
+        );
         final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
 
         final videos = _createMockVideos(10);
@@ -116,7 +161,16 @@ void main() {
       });
 
       testWidgets('handles index at start of list', (tester) async {
-        await tester.pumpWidget(const _TestWidget());
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              featureFlagServiceProvider.overrideWithValue(
+                mockFeatureFlagService,
+              ),
+            ],
+            child: const _TestWidget(),
+          ),
+        );
         final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
 
         final videos = _createMockVideos(10);
@@ -126,7 +180,16 @@ void main() {
       });
 
       testWidgets('handles index at end of list', (tester) async {
-        await tester.pumpWidget(const _TestWidget());
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              featureFlagServiceProvider.overrideWithValue(
+                mockFeatureFlagService,
+              ),
+            ],
+            child: const _TestWidget(),
+          ),
+        );
         final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
 
         final videos = _createMockVideos(10);
@@ -136,7 +199,16 @@ void main() {
       });
 
       testWidgets('handles small list', (tester) async {
-        await tester.pumpWidget(const _TestWidget());
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              featureFlagServiceProvider.overrideWithValue(
+                mockFeatureFlagService,
+              ),
+            ],
+            child: const _TestWidget(),
+          ),
+        );
         final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
 
         final videos = _createMockVideos(2);
@@ -154,7 +226,16 @@ void main() {
         BandwidthTrackerService.instance.recordTimeToFirstFrame(5000);
         expect(BandwidthTrackerService.instance.shouldUseHighQuality, isFalse);
 
-        await tester.pumpWidget(const _TestWidget());
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              featureFlagServiceProvider.overrideWithValue(
+                mockFeatureFlagService,
+              ),
+            ],
+            child: const _TestWidget(),
+          ),
+        );
         final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
 
         final videos = _createMockVideos(10);

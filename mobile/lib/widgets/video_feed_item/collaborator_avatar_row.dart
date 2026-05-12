@@ -1,13 +1,18 @@
 // ABOUTME: Collaborator avatar row for video feed overlay
-// ABOUTME: Shows small overlapping avatars of collaborators
-// ABOUTME: with tap navigation to their profiles
+// ABOUTME: Status-aware: hides current user's avatar when ignored locally,
+// ABOUTME: greys pending avatars on the inviter's own video, otherwise
+// ABOUTME: renders raw collaborator p-tags as today.
 
+import 'package:collaborator_repository/collaborator_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/video_collaborator_status/video_collaborator_status_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
@@ -16,12 +21,14 @@ import 'package:unified_logger/unified_logger.dart';
 
 /// Displays collaborator avatars on a video feed item.
 ///
-/// Shows small overlapping avatar circles for each
-/// collaborator. Tapping opens the first collaborator's
-/// profile.
+/// Hides the current user's own avatar when their local invite store says
+/// `ignored` for this video. On the inviter's own video, pending
+/// collaborator avatars render greyed until a kind-34238 acceptance flips
+/// them to confirmed. Third-party viewers see the same raw p-tag list as
+/// before this wiring (status-unaware fallback).
 ///
-/// Returns [SizedBox.shrink] if the video has no
-/// collaborators.
+/// Returns [SizedBox.shrink] if the video has no collaborators after the
+/// status-aware filter.
 class CollaboratorAvatarRow extends ConsumerWidget {
   /// Creates a CollaboratorAvatarRow.
   const CollaboratorAvatarRow({required this.video, super.key});
@@ -36,13 +43,88 @@ class CollaboratorAvatarRow extends ConsumerWidget {
     }
 
     final pubkeys = video.collaboratorPubkeys;
+    final repo = ref.watch(collaboratorConfirmationRepositoryProvider);
+    final currentUserPubkey =
+        ref.watch(authServiceProvider).currentPublicKeyHex ?? '';
+    final videoAddress = video.addressableId;
+
+    // Fallback: render the raw p-tag list (current behaviour) when the
+    // status pipeline is not available (repo gated on isNostrReady, or
+    // the video has no addressable id).
+    if (repo == null || videoAddress == null || currentUserPubkey.isEmpty) {
+      return CollaboratorAvatarRowBody(
+        visibility: CollaboratorVisibility.fallback(taggedPubkeys: pubkeys),
+      );
+    }
+
+    return BlocProvider<VideoCollaboratorStatusCubit>(
+      key: ValueKey((repo, videoAddress, Object.hashAll(pubkeys))),
+      create: (_) => VideoCollaboratorStatusCubit(
+        repository: repo,
+        videoAddress: videoAddress,
+        creatorPubkey: video.pubkey,
+        taggedPubkeys: pubkeys,
+      ),
+      child: _StatusAwareRow(
+        video: video,
+        pubkeys: pubkeys,
+        currentUserPubkey: currentUserPubkey,
+      ),
+    );
+  }
+}
+
+class _StatusAwareRow extends StatelessWidget {
+  const _StatusAwareRow({
+    required this.video,
+    required this.pubkeys,
+    required this.currentUserPubkey,
+  });
+
+  final VideoEvent video;
+  final List<String> pubkeys;
+  final String currentUserPubkey;
+
+  @override
+  Widget build(BuildContext context) {
+    final statusByPubkey = context.select(
+      (VideoCollaboratorStatusCubit c) => c.state.statusByPubkey,
+    );
+    return CollaboratorAvatarRowBody(
+      visibility: CollaboratorVisibility(
+        taggedPubkeys: pubkeys,
+        statusByPubkey: statusByPubkey,
+        currentUserPubkey: currentUserPubkey,
+        creatorPubkey: video.pubkey,
+      ),
+    );
+  }
+}
+
+/// Renders the avatar row from a [CollaboratorVisibility].
+///
+/// Promoted to a top-level class with [visibleForTesting] so widget tests
+/// can exercise every render branch without standing up a Riverpod
+/// container, a `BlocProvider`, or a mock repository.
+@visibleForTesting
+class CollaboratorAvatarRowBody extends StatelessWidget {
+  const CollaboratorAvatarRowBody({required this.visibility, super.key});
+
+  final CollaboratorVisibility visibility;
+
+  @override
+  Widget build(BuildContext context) {
+    final visible = visibility.visiblePubkeys;
+    if (visible.isEmpty) return const SizedBox.shrink();
+
+    final pendingCount = visibility.pendingCount;
 
     return GestureDetector(
-      onTap: () => _navigateToCollaborator(context, pubkeys.first),
+      onTap: () => _navigateToCollaborator(context, visible.first),
       child: Semantics(
         identifier: 'collaborator_avatar_row',
         button: true,
-        label: context.l10n.videoCollaboratorCountLabel(pubkeys.length),
+        label: context.l10n.videoCollaboratorCountLabel(visible.length),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
@@ -54,10 +136,22 @@ class CollaboratorAvatarRow extends ConsumerWidget {
             children: [
               const Icon(Icons.people, size: 14, color: VineTheme.vineGreen),
               const SizedBox(width: 4),
-              // Show up to 3 overlapping avatars
-              _CollaboratorAvatarStack(pubkeys: pubkeys.take(3).toList()),
+              _CollaboratorAvatarStack(
+                entries: [
+                  for (final pubkey in visible.take(3))
+                    _AvatarEntry(
+                      pubkey: pubkey,
+                      isPending: visibility.isPendingForInviter(pubkey),
+                    ),
+                ],
+              ),
               const SizedBox(width: 4),
-              Flexible(child: _CollaboratorLabel(pubkeys: pubkeys)),
+              Flexible(
+                child: _CollaboratorLabel(
+                  pubkeys: visible,
+                  pendingCount: pendingCount,
+                ),
+              ),
             ],
           ),
         ),
@@ -79,23 +173,33 @@ class CollaboratorAvatarRow extends ConsumerWidget {
   }
 }
 
-/// Small overlapping avatar circles.
-class _CollaboratorAvatarStack extends ConsumerWidget {
-  const _CollaboratorAvatarStack({required this.pubkeys});
+class _AvatarEntry {
+  const _AvatarEntry({required this.pubkey, required this.isPending});
 
-  final List<String> pubkeys;
+  final String pubkey;
+  final bool isPending;
+}
+
+/// Small overlapping avatar circles.
+class _CollaboratorAvatarStack extends StatelessWidget {
+  const _CollaboratorAvatarStack({required this.entries});
+
+  final List<_AvatarEntry> entries;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return SizedBox(
-      width: 20.0 + (pubkeys.length - 1) * 12.0,
+      width: 20.0 + (entries.length - 1) * 12.0,
       height: 20,
       child: Stack(
         children: [
-          for (var i = 0; i < pubkeys.length; i++)
+          for (var i = 0; i < entries.length; i++)
             Positioned(
               left: i * 12.0,
-              child: _SmallAvatar(pubkey: pubkeys[i]),
+              child: _SmallAvatar(
+                pubkey: entries[i].pubkey,
+                isPending: entries[i].isPending,
+              ),
             ),
         ],
       ),
@@ -105,15 +209,16 @@ class _CollaboratorAvatarStack extends ConsumerWidget {
 
 /// A small 20px avatar with white border.
 class _SmallAvatar extends ConsumerWidget {
-  const _SmallAvatar({required this.pubkey});
+  const _SmallAvatar({required this.pubkey, required this.isPending});
 
   final String pubkey;
+  final bool isPending;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(fetchUserProfileProvider(pubkey));
 
-    return Container(
+    final avatar = Container(
       width: 20,
       height: 20,
       decoration: BoxDecoration(
@@ -128,14 +233,25 @@ class _SmallAvatar extends ConsumerWidget {
         ),
       ),
     );
+
+    if (!isPending) return avatar;
+
+    return Semantics(
+      label: context.l10n.videoCollaboratorPendingSemanticLabel,
+      child: Opacity(opacity: 0.55, child: avatar),
+    );
   }
 }
 
 /// Text label showing collaborator name(s).
 class _CollaboratorLabel extends ConsumerWidget {
-  const _CollaboratorLabel({required this.pubkeys});
+  const _CollaboratorLabel({
+    required this.pubkeys,
+    required this.pendingCount,
+  });
 
   final List<String> pubkeys;
+  final int pendingCount;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -145,17 +261,18 @@ class _CollaboratorLabel extends ConsumerWidget {
         firstProfile.value?.bestDisplayName ??
         UserProfile.defaultDisplayNameFor(pubkeys.first);
 
-    final label = pubkeys.length == 1
+    final base = pubkeys.length == 1
         ? context.l10n.videoCollaboratorWithOne(firstName)
         : context.l10n.videoCollaboratorWithMore(firstName, pubkeys.length - 1);
 
+    final label = pendingCount > 0
+        ? context.l10n.videoCollaboratorWithPendingSuffix(base, pendingCount)
+        : base;
+
     return Text(
       label,
-      style: const TextStyle(
-        color: VineTheme.whiteText,
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-        shadows: [Shadow(blurRadius: 4)],
+      style: VineTheme.labelMediumFont().copyWith(
+        shadows: const [Shadow(blurRadius: 4)],
       ),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,

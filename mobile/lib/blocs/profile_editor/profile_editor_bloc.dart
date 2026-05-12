@@ -1,11 +1,18 @@
 // ABOUTME: BLoC for orchestrating profile save and username claiming
 // ABOUTME: Claims the username on the registry before publishing kind 0,
 // ABOUTME: so kind 0 with a divine.video nip05 is never broadcast unless the
-// ABOUTME: corresponding registry entry is in place.
+// ABOUTME: corresponding registry entry is in place. Owns the staged
+// ABOUTME: avatar upload for the current edit session; Save remains the
+// ABOUTME: only publish point.
+
+import 'dart:io' show File;
+import 'dart:typed_data';
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:models/models.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:stream_transform/stream_transform.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -39,14 +46,18 @@ EventTransformer<E> _debounceRestartable<E>() {
 class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
   ProfileEditorBloc({
     required ProfileRepository profileRepository,
+    required BlossomUploadService blossomUploadService,
     required bool hasExistingProfile,
     String? currentUserPubkey,
   }) : _profileRepository = profileRepository,
+       _blossomUploadService = blossomUploadService,
        _hasExistingProfile = hasExistingProfile,
        _currentUserPubkey = currentUserPubkey,
        super(const ProfileEditorState()) {
     on<InitialUsernameSet>(_onInitialUsernameSet);
+    on<InitialPersistedPictureSet>(_onInitialPersistedPictureSet);
     on<ProfileSaved>(_onProfileSaved);
+    on<ProfileNip05Saved>(_onProfileNip05Saved);
     on<ProfileSaveConfirmed>(_onProfileSaveConfirmed);
     on<UsernameChanged>(
       _onUsernameChanged,
@@ -56,9 +67,21 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     on<ExternalNip05Changed>(_onExternalNip05Changed);
     on<InitialExternalNip05Set>(_onInitialExternalNip05Set);
     on<UsernameRechecked>(_onUsernameRechecked);
+    // Drop concurrent upload requests while one is already in flight.
+    // The UI disables avatar-source actions during upload; this prevents a
+    // second file/bytes pick from interleaving if a caller dispatches anyway.
+    on<ProfilePictureUploadRequested>(
+      _onProfilePictureUploadRequested,
+      transformer: droppable(),
+    );
+    on<ProfilePictureUploadCleared>(_onProfilePictureUploadCleared);
+    on<ProfilePictureUrlSet>(_onProfilePictureUrlSet);
+    on<VerifierLaunchRequested>(_onVerifierLaunchRequested);
+    on<VerifierWebViewDismissed>(_onVerifierWebViewDismissed);
   }
 
   final ProfileRepository _profileRepository;
+  final BlossomUploadService _blossomUploadService;
   final bool _hasExistingProfile;
   final String? _currentUserPubkey;
 
@@ -69,12 +92,169 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     emit(state.copyWith(initialUsername: event.username));
   }
 
+  void _onInitialPersistedPictureSet(
+    InitialPersistedPictureSet event,
+    Emitter<ProfileEditorState> emit,
+  ) {
+    emit(state.copyWith(persistedPictureUrl: event.pictureUrl));
+  }
+
+  Future<void> _onProfilePictureUploadRequested(
+    ProfilePictureUploadRequested event,
+    Emitter<ProfileEditorState> emit,
+  ) async {
+    emit(state.copyWith(pendingAvatarStatus: PendingAvatarStatus.uploading));
+
+    BlossomUploadResult result;
+    try {
+      if (event.bytes != null) {
+        result = await _blossomUploadService.uploadImageBytes(
+          bytes: event.bytes!,
+          filename: event.filename ?? 'avatar.jpg',
+          nostrPubkey: event.pubkey,
+          mimeType: event.mimeType,
+        );
+      } else {
+        result = await _blossomUploadService.uploadImage(
+          imageFile: event.file!,
+          nostrPubkey: event.pubkey,
+          mimeType: event.mimeType,
+        );
+      }
+    } on Object catch (error, stackTrace) {
+      Log.error(
+        'Avatar upload threw: $error',
+        name: 'ProfileEditorBloc',
+        category: LogCategory.ui,
+      );
+      addError(error, stackTrace);
+      emit(
+        state.copyWith(
+          pendingAvatarStatus: PendingAvatarStatus.failed,
+          avatarUploadError: AvatarUploadError.generic,
+        ),
+      );
+      return;
+    }
+
+    if (result.success && (result.cdnUrl?.isNotEmpty ?? false)) {
+      Log.info(
+        '✅ Avatar staged: ${result.cdnUrl}',
+        name: 'ProfileEditorBloc',
+        category: LogCategory.ui,
+      );
+      emit(
+        state.copyWith(
+          pendingAvatarStatus: PendingAvatarStatus.staged,
+          pendingPictureUrl: result.cdnUrl,
+        ),
+      );
+      return;
+    }
+
+    // Failure surfaces via the bloc's error stream so the bloc observer logs
+    // and Crashlytics flow keeps working. The classified `avatarUploadError`
+    // on state lets the UI map to the right localized snackbar (per
+    // `error_handling.md`: enums on state, not raw error strings).
+    // `pendingPictureUrl` is intentionally left untouched: a failed retry
+    // should not blank out a previously-staged picture.
+    final errorMessage = result.errorMessage ?? 'Upload failed';
+    Log.error(
+      'Avatar upload failed: $errorMessage',
+      name: 'ProfileEditorBloc',
+      category: LogCategory.ui,
+    );
+    addError(Exception(errorMessage), StackTrace.current);
+    emit(
+      state.copyWith(
+        pendingAvatarStatus: PendingAvatarStatus.failed,
+        avatarUploadError: _mapUploadFailureReason(result.failureReason),
+      ),
+    );
+  }
+
+  /// Maps the upload-service failure classification into the bloc's UI-facing
+  /// avatar error enum.
+  AvatarUploadError _mapUploadFailureReason(
+    BlossomUploadFailureReason? failureReason,
+  ) {
+    return switch (failureReason ?? BlossomUploadFailureReason.unknown) {
+      BlossomUploadFailureReason.network => AvatarUploadError.network,
+      BlossomUploadFailureReason.auth => AvatarUploadError.auth,
+      BlossomUploadFailureReason.fileTooLarge => AvatarUploadError.fileTooLarge,
+      BlossomUploadFailureReason.server => AvatarUploadError.server,
+      BlossomUploadFailureReason.unknown => AvatarUploadError.generic,
+    };
+  }
+
+  void _onProfilePictureUploadCleared(
+    ProfilePictureUploadCleared event,
+    Emitter<ProfileEditorState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        pendingAvatarStatus: PendingAvatarStatus.idle,
+        pendingPictureUrl: null,
+      ),
+    );
+  }
+
+  void _onProfilePictureUrlSet(
+    ProfilePictureUrlSet event,
+    Emitter<ProfileEditorState> emit,
+  ) {
+    if (state.pendingAvatarStatus == PendingAvatarStatus.uploading) {
+      Log.info(
+        'Ignoring ProfilePictureUrlSet received while avatar upload is in flight',
+        name: 'ProfileEditorBloc',
+      );
+      return;
+    }
+
+    final trimmed = event.url.trim();
+    if (trimmed.isEmpty) {
+      emit(
+        state.copyWith(
+          pendingAvatarStatus: PendingAvatarStatus.idle,
+          pendingPictureUrl: null,
+        ),
+      );
+      return;
+    }
+    emit(
+      state.copyWith(
+        pendingAvatarStatus: PendingAvatarStatus.staged,
+        pendingPictureUrl: trimmed,
+      ),
+    );
+  }
+
   Future<void> _onProfileSaved(
     ProfileSaved event,
     Emitter<ProfileEditorState> emit,
   ) async {
-    // Guard: Check if we're about to overwrite existing profile with minimal data
-    if (!_hasExistingProfile && event.isMinimal) {
+    // Drop the save when an avatar upload is still in flight. Without this
+    // guard, `_resolveEffectivePicture` would fall back to
+    // `persistedPictureUrl` and publish kind 0 with the OLD picture, then
+    // the staged URL would land and the user would have to Save again. The
+    // UI also disables Save during upload (via `isSaveReady`); this is the
+    // belt-and-braces so any other caller — retry CTAs, future events —
+    // can't slip past.
+    if (state.pendingAvatarStatus == PendingAvatarStatus.uploading) {
+      Log.info(
+        'Ignoring ProfileSaved received while avatar upload is in flight',
+        name: 'ProfileEditorBloc',
+      );
+      return;
+    }
+
+    // The effective picture is owned by bloc state (staged > persisted),
+    // with `event.picture` as a legacy fallback for callers that haven't
+    // migrated to the staged-state model yet.
+    final effectivePicture = _resolveEffectivePicture(event);
+
+    // Guard: about to overwrite existing profile with minimal data?
+    if (!_hasExistingProfile && _isMinimal(event, effectivePicture)) {
       Log.info(
         '⚠️ Blank profile warning: no existing profile found, requesting confirmation',
         name: 'ProfileEditorBloc',
@@ -88,14 +268,70 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       return;
     }
 
-    await _saveProfile(event, emit);
+    await _saveProfile(event, effectivePicture, emit);
+  }
+
+  /// Picture URL the next save should write into kind 0.
+  ///
+  /// Priority: staged URL on bloc state > caller-supplied `event.picture`
+  /// (legacy fallback) > persisted URL on bloc state. An empty string is
+  /// treated as "no picture" at every level.
+  String? _resolveEffectivePicture(ProfileSaved event) {
+    final staged = state.pendingPictureUrl?.trim();
+    if (staged != null && staged.isNotEmpty) return staged;
+    final fromEvent = event.picture?.trim();
+    if (fromEvent != null && fromEvent.isNotEmpty) return fromEvent;
+    final persisted = state.persistedPictureUrl?.trim();
+    if (persisted != null && persisted.isNotEmpty) return persisted;
+    return null;
+  }
+
+  /// Whether the resolved profile data is minimal enough to require user
+  /// confirmation before overwriting an existing profile (or creating one
+  /// from scratch).
+  bool _isMinimal(ProfileSaved event, String? effectivePicture) {
+    final hasShortDisplayName = event.displayName.trim().length < 3;
+    final hasNoBio = event.about?.trim().isEmpty ?? true;
+    final hasNoPicture =
+        effectivePicture == null || effectivePicture.trim().isEmpty;
+    return hasShortDisplayName && hasNoBio && hasNoPicture;
+  }
+
+  Future<void> _onProfileNip05Saved(
+    ProfileNip05Saved event,
+    Emitter<ProfileEditorState> emit,
+  ) async {
+    final displayName =
+        event.currentProfile.displayName ?? event.currentProfile.name ?? '';
+    if (displayName.trim().isEmpty) {
+      Log.error(
+        'NIP-05 save ignored because the loaded profile has no display name',
+        name: 'ProfileEditorBloc',
+      );
+      return;
+    }
+
+    final saveEvent = ProfileSaved(
+      pubkey: event.currentProfile.pubkey,
+      displayName: displayName,
+      about: event.currentProfile.about,
+      username: state.nip05Mode == Nip05Mode.divine ? state.username : null,
+      externalNip05: state.nip05Mode == Nip05Mode.external_
+          ? state.externalNip05
+          : null,
+      picture: event.currentProfile.picture,
+      banner: event.currentProfile.banner,
+    );
+
+    await _saveProfile(saveEvent, _resolveEffectivePicture(saveEvent), emit);
   }
 
   Future<void> _onProfileSaveConfirmed(
     ProfileSaveConfirmed event,
     Emitter<ProfileEditorState> emit,
   ) async {
-    if (state.pendingEvent == null) {
+    final pending = state.pendingEvent;
+    if (pending == null) {
       Log.error(
         'ProfileSaveConfirmed called without pending event',
         name: 'ProfileEditorBloc',
@@ -108,7 +344,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       name: 'ProfileEditorBloc',
     );
 
-    await _saveProfile(state.pendingEvent!, emit);
+    await _saveProfile(pending, _resolveEffectivePicture(pending), emit);
   }
 
   Future<void> _onUsernameChanged(
@@ -357,6 +593,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
   /// has no record of — irrecoverable without manual intervention.
   Future<void> _saveProfile(
     ProfileSaved event,
+    String? effectivePicture,
     Emitter<ProfileEditorState> emit,
   ) async {
     emit(state.copyWith(status: ProfileEditorStatus.loading));
@@ -373,10 +610,12 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
             DivineUsernameValid(:final normalized) => normalized,
             DivineUsernameInvalid() => trimmedUsername,
           };
-    final externalNip05 =
-        !isExternal || (event.externalNip05?.trim().isEmpty ?? true)
+    final externalSource = (event.externalNip05?.trim().isEmpty ?? true)
+        ? state.externalNip05
+        : event.externalNip05!;
+    final externalNip05 = !isExternal || externalSource.trim().isEmpty
         ? null
-        : event.externalNip05?.trim().toLowerCase();
+        : externalSource.trim().toLowerCase();
 
     // Only clear NIP-05 when the user explicitly removes a verified handle
     // they were known to have: their initialUsername or initialExternalNip05
@@ -390,9 +629,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         !isExternal &&
         username == null &&
         (state.initialUsername != null || state.initialExternalNip05 != null);
-    final picture = (event.picture?.trim().isEmpty ?? true)
-        ? null
-        : event.picture;
+    final picture = effectivePicture;
     final banner = (event.banner?.trim().isEmpty ?? true) ? null : event.banner;
 
     final currentProfile = await _profileRepository.getCachedProfile(
@@ -484,25 +721,18 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       );
     }
   }
-}
 
-/// Extension for checking if profile data is minimal/blank.
-extension _ProfileDataMinimal on ProfileSaved {
-  /// Whether this profile data is minimal.
-  ///
-  /// A profile is considered minimal if:
-  /// - Display name is very short (< 3 chars)
-  /// - No bio
-  /// - No picture
-  bool get isMinimal {
-    final trimmedDisplayName = displayName.trim();
-    final trimmedAbout = about?.trim();
-    final trimmedPicture = picture?.trim();
+  void _onVerifierLaunchRequested(
+    VerifierLaunchRequested event,
+    Emitter<ProfileEditorState> emit,
+  ) {
+    emit(state.copyWith(verifierStatus: VerifierStatus.launchRequested));
+  }
 
-    final hasMinimalDisplayName = trimmedDisplayName.length < 3;
-    final hasNoBio = trimmedAbout == null || trimmedAbout.isEmpty;
-    final hasNoPicture = trimmedPicture == null || trimmedPicture.isEmpty;
-
-    return hasMinimalDisplayName && hasNoBio && hasNoPicture;
+  void _onVerifierWebViewDismissed(
+    VerifierWebViewDismissed event,
+    Emitter<ProfileEditorState> emit,
+  ) {
+    emit(state.copyWith(verifierStatus: VerifierStatus.dismissed));
   }
 }

@@ -61,6 +61,7 @@ void main() {
       test('has correct utility colors', () {
         expect(VineTheme.darkOverlay, const Color(0x88000000));
         expect(VineTheme.scrim30, const Color(0x4D000000));
+        expect(VineTheme.shadow25, const Color(0x40000000));
         expect(VineTheme.alphaLight25, const Color(0x40FFFFFF));
         expect(VineTheme.outlineVariant, const Color(0xFF254136));
         expect(VineTheme.borderWhite25, const Color(0x40FFFFFF));
@@ -178,6 +179,22 @@ void main() {
         final style = VineTheme.labelMediumFont();
         expect(style.fontSize, 12);
         expect(style.fontWeight, FontWeight.w600);
+      });
+
+      testWidgets('captionPillFont returns Chivo Mono 300 16/24/0.5', (
+        tester,
+      ) async {
+        final style = VineTheme.captionPillFont();
+        expect(style.fontSize, 16);
+        expect(style.fontWeight, FontWeight.w300);
+        expect(style.height, 24 / 16);
+        expect(style.letterSpacing, 0.5);
+        expect(style.color, VineTheme.whiteText);
+      });
+
+      testWidgets('captionPillFont accepts a color override', (tester) async {
+        final style = VineTheme.captionPillFont(color: VineTheme.vineGreen);
+        expect(style.color, VineTheme.vineGreen);
       });
 
       testWidgets('labelSmallFont returns correct style', (tester) async {

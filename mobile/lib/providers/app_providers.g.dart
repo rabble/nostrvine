@@ -166,6 +166,104 @@ final class PendingActionServiceProvider
 String _$pendingActionServiceHash() =>
     r'67a3a30b8cc1072263ce47f4e2bb3c34fa876fa1';
 
+/// Auto-sweep service for the durable `outgoing_dms` queue.
+///
+/// Listens to app-foreground transitions and re-publishes the missing
+/// self-wrap for any row in `recipient: sent / self: failed` state via
+/// [DmRepository.recoverSelfWrap]. Closes the gap left by the
+/// SnackBar-only manual retry from PR #4106 — see issue #4124.
+///
+/// The service is keepAlive but has no UI consumer, so it is read
+/// eagerly at app shell startup (`main.dart`) so the foreground
+/// subscription is wired up.
+///
+/// Returns null when the user is not authenticated or when
+/// [isNostrReadyProvider] hasn't flipped yet — the underlying
+/// [DmRepository.recoverSelfWrap] requires `setCredentials` to have
+/// run, and gating here is cleaner than catching `StateError` in
+/// every sweep pass.
+
+@ProviderFor(outgoingDmRetryService)
+const outgoingDmRetryServiceProvider = OutgoingDmRetryServiceProvider._();
+
+/// Auto-sweep service for the durable `outgoing_dms` queue.
+///
+/// Listens to app-foreground transitions and re-publishes the missing
+/// self-wrap for any row in `recipient: sent / self: failed` state via
+/// [DmRepository.recoverSelfWrap]. Closes the gap left by the
+/// SnackBar-only manual retry from PR #4106 — see issue #4124.
+///
+/// The service is keepAlive but has no UI consumer, so it is read
+/// eagerly at app shell startup (`main.dart`) so the foreground
+/// subscription is wired up.
+///
+/// Returns null when the user is not authenticated or when
+/// [isNostrReadyProvider] hasn't flipped yet — the underlying
+/// [DmRepository.recoverSelfWrap] requires `setCredentials` to have
+/// run, and gating here is cleaner than catching `StateError` in
+/// every sweep pass.
+
+final class OutgoingDmRetryServiceProvider
+    extends
+        $FunctionalProvider<
+          OutgoingDmRetryService?,
+          OutgoingDmRetryService?,
+          OutgoingDmRetryService?
+        >
+    with $Provider<OutgoingDmRetryService?> {
+  /// Auto-sweep service for the durable `outgoing_dms` queue.
+  ///
+  /// Listens to app-foreground transitions and re-publishes the missing
+  /// self-wrap for any row in `recipient: sent / self: failed` state via
+  /// [DmRepository.recoverSelfWrap]. Closes the gap left by the
+  /// SnackBar-only manual retry from PR #4106 — see issue #4124.
+  ///
+  /// The service is keepAlive but has no UI consumer, so it is read
+  /// eagerly at app shell startup (`main.dart`) so the foreground
+  /// subscription is wired up.
+  ///
+  /// Returns null when the user is not authenticated or when
+  /// [isNostrReadyProvider] hasn't flipped yet — the underlying
+  /// [DmRepository.recoverSelfWrap] requires `setCredentials` to have
+  /// run, and gating here is cleaner than catching `StateError` in
+  /// every sweep pass.
+  const OutgoingDmRetryServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'outgoingDmRetryServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$outgoingDmRetryServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<OutgoingDmRetryService?> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  OutgoingDmRetryService? create(Ref ref) {
+    return outgoingDmRetryService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(OutgoingDmRetryService? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<OutgoingDmRetryService?>(value),
+    );
+  }
+}
+
+String _$outgoingDmRetryServiceHash() =>
+    r'ddd46e4ed60540af76e8f0df321d8f3b4d4073e7';
+
 /// Relay capability service for detecting NIP-11 Divine extensions
 
 @ProviderFor(relayCapabilityService)
@@ -2723,7 +2821,7 @@ final class UserDataCleanupServiceProvider
 }
 
 String _$userDataCleanupServiceHash() =>
-    r'fb6ba794267634f54696092a5888224fa3364dd7';
+    r'6a327dc21d05b9ec426424250176bfe8c1e42a41';
 
 /// Subscription manager for centralized subscription management
 
@@ -3319,6 +3417,111 @@ final class ProfileRepositoryProvider
 }
 
 String _$profileRepositoryHash() => r'150346c88eeee57501b7dfac4c5e5904d99f0e56';
+
+/// Provider for [VerifierClient] pointed at the current environment's
+/// verifier base URL. Stateless — every call hits the network.
+
+@ProviderFor(verifierClient)
+const verifierClientProvider = VerifierClientProvider._();
+
+/// Provider for [VerifierClient] pointed at the current environment's
+/// verifier base URL. Stateless — every call hits the network.
+
+final class VerifierClientProvider
+    extends $FunctionalProvider<VerifierClient, VerifierClient, VerifierClient>
+    with $Provider<VerifierClient> {
+  /// Provider for [VerifierClient] pointed at the current environment's
+  /// verifier base URL. Stateless — every call hits the network.
+  const VerifierClientProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'verifierClientProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$verifierClientHash();
+
+  @$internal
+  @override
+  $ProviderElement<VerifierClient> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  VerifierClient create(Ref ref) {
+    return verifierClient(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(VerifierClient value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<VerifierClient>(value),
+    );
+  }
+}
+
+String _$verifierClientHash() => r'1d6966c5483814cd7fa203e7e9e198dc5c9c232d';
+
+/// Provider for [IdentityClaimsRepository] composing the verifier client
+/// with NIP-39 i tag parsing.
+
+@ProviderFor(identityClaimsRepository)
+const identityClaimsRepositoryProvider = IdentityClaimsRepositoryProvider._();
+
+/// Provider for [IdentityClaimsRepository] composing the verifier client
+/// with NIP-39 i tag parsing.
+
+final class IdentityClaimsRepositoryProvider
+    extends
+        $FunctionalProvider<
+          IdentityClaimsRepository,
+          IdentityClaimsRepository,
+          IdentityClaimsRepository
+        >
+    with $Provider<IdentityClaimsRepository> {
+  /// Provider for [IdentityClaimsRepository] composing the verifier client
+  /// with NIP-39 i tag parsing.
+  const IdentityClaimsRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'identityClaimsRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$identityClaimsRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<IdentityClaimsRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  IdentityClaimsRepository create(Ref ref) {
+    return identityClaimsRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(IdentityClaimsRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<IdentityClaimsRepository>(value),
+    );
+  }
+}
+
+String _$identityClaimsRepositoryHash() =>
+    r'451c65b551cddcf8cf2ef3d23ac862ab0ae1441d';
 
 /// Enhanced notification service with Nostr integration (lazy loaded)
 
@@ -3942,7 +4145,7 @@ final class ContentReportingServiceProvider
 }
 
 String _$contentReportingServiceHash() =>
-    r'b246ddd7f795dcf5adb837e3530bbc21c2c14fa8';
+    r'5f32ae82aae7471e3e3dd008a011607def6bc149';
 
 /// Lists state notifier - manages curated lists state
 
@@ -4643,7 +4846,7 @@ final class DmRepositoryProvider
   }
 }
 
-String _$dmRepositoryHash() => r'a2fa1b080fa8ff0db62cc19074de841115603487';
+String _$dmRepositoryHash() => r'e1f90979df308591183e6bc05b1aabd5ffdb4649';
 
 /// Provider for CommentsRepository instance
 ///

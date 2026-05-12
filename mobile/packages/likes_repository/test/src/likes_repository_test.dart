@@ -56,9 +56,9 @@ void main() {
     // Helper to create a mock deletion event
     MockEvent createMockDeletion(List<String> deletedEventIds) {
       final event = MockEvent();
-      when(() => event.tags).thenReturn(
-        deletedEventIds.map((id) => ['e', id]).toList(),
-      );
+      when(
+        () => event.tags,
+      ).thenReturn(deletedEventIds.map((id) => ['e', id]).toList());
       return event;
     }
 
@@ -98,9 +98,7 @@ void main() {
       // Default mock behaviors
       when(() => mockNostrClient.publicKey).thenReturn(testUserPubkey);
       when(() => mockNostrClient.hasKeys).thenReturn(false);
-      when(
-        () => mockNostrClient.unsubscribe(any()),
-      ).thenAnswer((_) async {});
+      when(() => mockNostrClient.unsubscribe(any())).thenAnswer((_) async {});
       when(
         () => mockLocalStorage.getAllLikeRecords(),
       ).thenAnswer((_) async => []);
@@ -252,10 +250,7 @@ void main() {
           () => mockLocalStorage.saveLikeRecord(captureAny()),
         ).captured.cast<LikeRecord>();
         expect(saved, hasLength(2));
-        expect(
-          saved.first.reactionEventId,
-          startsWith('pending_like_'),
-        );
+        expect(saved.first.reactionEventId, startsWith('pending_like_'));
         expect(saved.last.reactionEventId, equals(testReactionEventId));
       });
 
@@ -467,108 +462,100 @@ void main() {
       // action queued for retry. This covers the "device says online but
       // relays are unhealthy" case where the existing `if (!_isOnline())`
       // guard at the top of likeEvent does not fire.
-      test(
-        'queues offline action and preserves optimistic state when '
-        'sendLike returns null and queueOfflineAction is wired',
-        () async {
-          when(
-            () => mockNostrClient.sendLike(
-              any(),
-              content: any(named: 'content'),
-              addressableId: any(named: 'addressableId'),
-              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
-              targetKind: any(named: 'targetKind'),
-            ),
-          ).thenAnswer((_) async => null);
-          when(
-            () => mockLocalStorage.saveLikeRecord(any()),
-          ).thenAnswer((_) async {});
+      test('queues offline action and preserves optimistic state when '
+          'sendLike returns null and queueOfflineAction is wired', () async {
+        when(
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenAnswer((_) async {});
 
-          var queueCalls = 0;
-          String? queuedEventId;
-          bool? queuedIsLike;
-          repository = createRepository(
-            isOnline: () => true,
-            queueOfflineAction:
-                ({
-                  required isLike,
-                  required eventId,
-                  required authorPubkey,
-                  addressableId,
-                  targetKind,
-                }) async {
-                  queueCalls++;
-                  queuedEventId = eventId;
-                  queuedIsLike = isLike;
-                },
-          );
+        var queueCalls = 0;
+        String? queuedEventId;
+        bool? queuedIsLike;
+        repository = createRepository(
+          isOnline: () => true,
+          queueOfflineAction:
+              ({
+                required isLike,
+                required eventId,
+                required authorPubkey,
+                addressableId,
+                targetKind,
+              }) async {
+                queueCalls++;
+                queuedEventId = eventId;
+                queuedIsLike = isLike;
+              },
+        );
 
-          final result = await repository.likeEvent(
-            eventId: testEventId,
-            authorPubkey: testAuthorPubkey,
-          );
+        final result = await repository.likeEvent(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+        );
 
-          expect(
-            result,
-            equals('pending_like_$testEventId'),
-            reason: 'must return placeholder ID, not throw',
-          );
-          expect(queueCalls, equals(1));
-          expect(queuedEventId, equals(testEventId));
-          expect(queuedIsLike, isTrue);
-          expect(
-            await repository.isLiked(testEventId),
-            isTrue,
-            reason: 'optimistic state must be preserved across the failure',
-          );
-          verifyNever(
-            () => mockLocalStorage.deleteLikeRecord(any()),
-          );
-        },
-      );
+        expect(
+          result,
+          equals('pending_like_$testEventId'),
+          reason: 'must return placeholder ID, not throw',
+        );
+        expect(queueCalls, equals(1));
+        expect(queuedEventId, equals(testEventId));
+        expect(queuedIsLike, isTrue);
+        expect(
+          await repository.isLiked(testEventId),
+          isTrue,
+          reason: 'optimistic state must be preserved across the failure',
+        );
+        verifyNever(() => mockLocalStorage.deleteLikeRecord(any()));
+      });
 
-      test(
-        'queues offline action when sendLike throws and '
-        'queueOfflineAction is wired',
-        () async {
-          when(
-            () => mockNostrClient.sendLike(
-              any(),
-              content: any(named: 'content'),
-              addressableId: any(named: 'addressableId'),
-              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
-              targetKind: any(named: 'targetKind'),
-            ),
-          ).thenThrow(Exception('relay closed'));
-          when(
-            () => mockLocalStorage.saveLikeRecord(any()),
-          ).thenAnswer((_) async {});
+      test('queues offline action when sendLike throws and '
+          'queueOfflineAction is wired', () async {
+        when(
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).thenThrow(Exception('relay closed'));
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenAnswer((_) async {});
 
-          var queueCalls = 0;
-          repository = createRepository(
-            isOnline: () => true,
-            queueOfflineAction:
-                ({
-                  required isLike,
-                  required eventId,
-                  required authorPubkey,
-                  addressableId,
-                  targetKind,
-                }) async {
-                  queueCalls++;
-                },
-          );
+        var queueCalls = 0;
+        repository = createRepository(
+          isOnline: () => true,
+          queueOfflineAction:
+              ({
+                required isLike,
+                required eventId,
+                required authorPubkey,
+                addressableId,
+                targetKind,
+              }) async {
+                queueCalls++;
+              },
+        );
 
-          final result = await repository.likeEvent(
-            eventId: testEventId,
-            authorPubkey: testAuthorPubkey,
-          );
+        final result = await repository.likeEvent(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+        );
 
-          expect(result, equals('pending_like_$testEventId'));
-          expect(queueCalls, equals(1));
-          expect(await repository.isLiked(testEventId), isTrue);
-        },
-      );
+        expect(result, equals('pending_like_$testEventId'));
+        expect(queueCalls, equals(1));
+        expect(await repository.isLiked(testEventId), isTrue);
+      });
     });
 
     group('unlikeEvent', () {
@@ -743,87 +730,81 @@ void main() {
       // Defense-in-depth (mirror of likeEvent): when the kind-5 deletion
       // fails but the offline-action callback is wired, the optimistic
       // removal must be preserved and the unlike queued for retry.
-      test(
-        'queues offline action and preserves optimistic removal when '
-        'deleteEvent returns null and queueOfflineAction is wired',
-        () async {
-          when(
-            () => mockLocalStorage.getAllLikeRecords(),
-          ).thenAnswer((_) async => [createLikeRecord()]);
-          when(
-            () => mockNostrClient.deleteEvent(testReactionEventId),
-          ).thenAnswer((_) async => null);
-          when(
-            () => mockLocalStorage.deleteLikeRecord(testEventId),
-          ).thenAnswer((_) async => true);
+      test('queues offline action and preserves optimistic removal when '
+          'deleteEvent returns null and queueOfflineAction is wired', () async {
+        when(
+          () => mockLocalStorage.getAllLikeRecords(),
+        ).thenAnswer((_) async => [createLikeRecord()]);
+        when(
+          () => mockNostrClient.deleteEvent(testReactionEventId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockLocalStorage.deleteLikeRecord(testEventId),
+        ).thenAnswer((_) async => true);
 
-          var queueCalls = 0;
-          bool? queuedIsLike;
-          repository = createRepository(
-            isOnline: () => true,
-            queueOfflineAction:
-                ({
-                  required isLike,
-                  required eventId,
-                  required authorPubkey,
-                  addressableId,
-                  targetKind,
-                }) async {
-                  queueCalls++;
-                  queuedIsLike = isLike;
-                },
-          );
-          await repository.isLiked(testEventId); // Initialize cache
+        var queueCalls = 0;
+        bool? queuedIsLike;
+        repository = createRepository(
+          isOnline: () => true,
+          queueOfflineAction:
+              ({
+                required isLike,
+                required eventId,
+                required authorPubkey,
+                addressableId,
+                targetKind,
+              }) async {
+                queueCalls++;
+                queuedIsLike = isLike;
+              },
+        );
+        await repository.isLiked(testEventId); // Initialize cache
 
-          await repository.unlikeEvent(testEventId);
+        await repository.unlikeEvent(testEventId);
 
-          expect(queueCalls, equals(1));
-          expect(queuedIsLike, isFalse);
-          expect(
-            await repository.isLiked(testEventId),
-            isFalse,
-            reason: 'optimistic removal must be preserved',
-          );
-          verifyNever(() => mockLocalStorage.saveLikeRecord(any()));
-        },
-      );
+        expect(queueCalls, equals(1));
+        expect(queuedIsLike, isFalse);
+        expect(
+          await repository.isLiked(testEventId),
+          isFalse,
+          reason: 'optimistic removal must be preserved',
+        );
+        verifyNever(() => mockLocalStorage.saveLikeRecord(any()));
+      });
 
-      test(
-        'queues offline action when deleteEvent throws and '
-        'queueOfflineAction is wired',
-        () async {
-          when(
-            () => mockLocalStorage.getAllLikeRecords(),
-          ).thenAnswer((_) async => [createLikeRecord()]);
-          when(
-            () => mockNostrClient.deleteEvent(testReactionEventId),
-          ).thenThrow(Exception('relay closed'));
-          when(
-            () => mockLocalStorage.deleteLikeRecord(testEventId),
-          ).thenAnswer((_) async => true);
+      test('queues offline action when deleteEvent throws and '
+          'queueOfflineAction is wired', () async {
+        when(
+          () => mockLocalStorage.getAllLikeRecords(),
+        ).thenAnswer((_) async => [createLikeRecord()]);
+        when(
+          () => mockNostrClient.deleteEvent(testReactionEventId),
+        ).thenThrow(Exception('relay closed'));
+        when(
+          () => mockLocalStorage.deleteLikeRecord(testEventId),
+        ).thenAnswer((_) async => true);
 
-          var queueCalls = 0;
-          repository = createRepository(
-            isOnline: () => true,
-            queueOfflineAction:
-                ({
-                  required isLike,
-                  required eventId,
-                  required authorPubkey,
-                  addressableId,
-                  targetKind,
-                }) async {
-                  queueCalls++;
-                },
-          );
-          await repository.isLiked(testEventId); // Initialize cache
+        var queueCalls = 0;
+        repository = createRepository(
+          isOnline: () => true,
+          queueOfflineAction:
+              ({
+                required isLike,
+                required eventId,
+                required authorPubkey,
+                addressableId,
+                targetKind,
+              }) async {
+                queueCalls++;
+              },
+        );
+        await repository.isLiked(testEventId); // Initialize cache
 
-          await repository.unlikeEvent(testEventId);
+        await repository.unlikeEvent(testEventId);
 
-          expect(queueCalls, equals(1));
-          expect(await repository.isLiked(testEventId), isFalse);
-        },
-      );
+        expect(queueCalls, equals(1));
+        expect(await repository.isLiked(testEventId), isFalse);
+      });
     });
 
     group('toggleLike', () {
@@ -948,52 +929,49 @@ void main() {
     });
 
     group('downvoteEvent', () {
-      test(
-        'ticks watchDownvotedEventIds before sendLike completes',
-        () async {
-          // Block sendLike on a completer so the optimistic stream emit
-          // is observable before the network call returns.
-          final publishCompleter = Completer<Event?>();
-          when(
-            () => mockNostrClient.sendLike(
-              any(),
-              content: any(named: 'content'),
-              addressableId: any(named: 'addressableId'),
-              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
-              targetKind: any(named: 'targetKind'),
-            ),
-          ).thenAnswer((_) => publishCompleter.future);
+      test('ticks watchDownvotedEventIds before sendLike completes', () async {
+        // Block sendLike on a completer so the optimistic stream emit
+        // is observable before the network call returns.
+        final publishCompleter = Completer<Event?>();
+        when(
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).thenAnswer((_) => publishCompleter.future);
 
-          repository = createRepository(withLocalStorage: false);
+        repository = createRepository(withLocalStorage: false);
 
-          final emitted = <List<String>>[];
-          final subscription = repository.watchDownvotedEventIds().listen(
-            emitted.add,
-          );
+        final emitted = <List<String>>[];
+        final subscription = repository.watchDownvotedEventIds().listen(
+          emitted.add,
+        );
 
-          final downvoteFuture = repository.downvoteEvent(
-            eventId: testEventId,
-            authorPubkey: testAuthorPubkey,
-          );
-          await Future<void>.delayed(Duration.zero);
+        final downvoteFuture = repository.downvoteEvent(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+        );
+        await Future<void>.delayed(Duration.zero);
 
-          expect(
-            emitted.last,
-            contains(testEventId),
-            reason: 'stream must tick before publish completes',
-          );
+        expect(
+          emitted.last,
+          contains(testEventId),
+          reason: 'stream must tick before publish completes',
+        );
 
-          publishCompleter.complete(
-            createMockReaction(
-              id: testReactionEventId,
-              targetEventId: testEventId,
-              content: '-',
-            ),
-          );
-          await downvoteFuture;
-          await subscription.cancel();
-        },
-      );
+        publishCompleter.complete(
+          createMockReaction(
+            id: testReactionEventId,
+            targetEventId: testEventId,
+            content: '-',
+          ),
+        );
+        await downvoteFuture;
+        await subscription.cancel();
+      });
 
       test('publishes kind-7 with content "-" and tracks the record', () async {
         when(
@@ -1029,134 +1007,122 @@ void main() {
         ).called(1);
       });
 
-      test(
-        'throws AlreadyDownvotedException when already downvoted',
-        () async {
-          when(
-            () => mockNostrClient.sendLike(
-              any(),
-              content: any(named: 'content'),
-              addressableId: any(named: 'addressableId'),
-              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
-              targetKind: any(named: 'targetKind'),
-            ),
-          ).thenAnswer(
-            (_) async => createMockReaction(
-              id: testReactionEventId,
-              targetEventId: testEventId,
-              content: '-',
-            ),
-          );
+      test('throws AlreadyDownvotedException when already downvoted', () async {
+        when(
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).thenAnswer(
+          (_) async => createMockReaction(
+            id: testReactionEventId,
+            targetEventId: testEventId,
+            content: '-',
+          ),
+        );
 
-          repository = createRepository(withLocalStorage: false);
-          await repository.downvoteEvent(
+        repository = createRepository(withLocalStorage: false);
+        await repository.downvoteEvent(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+        );
+
+        await expectLater(
+          repository.downvoteEvent(
             eventId: testEventId,
             authorPubkey: testAuthorPubkey,
-          );
+          ),
+          throwsA(isA<AlreadyDownvotedException>()),
+        );
+      });
 
-          await expectLater(
-            repository.downvoteEvent(
-              eventId: testEventId,
-              authorPubkey: testAuthorPubkey,
-            ),
-            throwsA(isA<AlreadyDownvotedException>()),
-          );
-        },
-      );
+      test('rolls back record + stream when publish returns null', () async {
+        when(
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).thenAnswer((_) async => null);
 
-      test(
-        'rolls back record + stream when publish returns null',
-        () async {
-          when(
-            () => mockNostrClient.sendLike(
-              any(),
-              content: any(named: 'content'),
-              addressableId: any(named: 'addressableId'),
-              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
-              targetKind: any(named: 'targetKind'),
-            ),
-          ).thenAnswer((_) async => null);
+        repository = createRepository(withLocalStorage: false);
 
-          repository = createRepository(withLocalStorage: false);
+        await expectLater(
+          repository.downvoteEvent(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+          ),
+          throwsA(isA<LikeFailedException>()),
+        );
 
-          await expectLater(
-            repository.downvoteEvent(
-              eventId: testEventId,
-              authorPubkey: testAuthorPubkey,
-            ),
-            throwsA(isA<LikeFailedException>()),
-          );
+        expect(await repository.isDownvoted(testEventId), isFalse);
+      });
 
-          expect(await repository.isDownvoted(testEventId), isFalse);
-        },
-      );
+      test('rolls back record + stream when publish throws', () async {
+        when(
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).thenThrow(Exception('relay unreachable'));
 
-      test(
-        'rolls back record + stream when publish throws',
-        () async {
-          when(
-            () => mockNostrClient.sendLike(
-              any(),
-              content: any(named: 'content'),
-              addressableId: any(named: 'addressableId'),
-              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
-              targetKind: any(named: 'targetKind'),
-            ),
-          ).thenThrow(Exception('relay unreachable'));
+        repository = createRepository(withLocalStorage: false);
 
-          repository = createRepository(withLocalStorage: false);
+        await expectLater(
+          repository.downvoteEvent(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+          ),
+          throwsA(isA<Exception>()),
+        );
 
-          await expectLater(
-            repository.downvoteEvent(
-              eventId: testEventId,
-              authorPubkey: testAuthorPubkey,
-            ),
-            throwsA(isA<Exception>()),
-          );
-
-          expect(await repository.isDownvoted(testEventId), isFalse);
-        },
-      );
+        expect(await repository.isDownvoted(testEventId), isFalse);
+      });
     });
 
     group('removeDownvote', () {
-      test(
-        'publishes deletion event and removes the record',
-        () async {
-          when(
-            () => mockNostrClient.sendLike(
-              any(),
-              content: any(named: 'content'),
-              addressableId: any(named: 'addressableId'),
-              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
-              targetKind: any(named: 'targetKind'),
-            ),
-          ).thenAnswer(
-            (_) async => createMockReaction(
-              id: testReactionEventId,
-              targetEventId: testEventId,
-              content: '-',
-            ),
-          );
-          final deletionEvent = MockEvent();
-          when(
-            () => mockNostrClient.deleteEvent(any()),
-          ).thenAnswer((_) async => deletionEvent);
+      test('publishes deletion event and removes the record', () async {
+        when(
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).thenAnswer(
+          (_) async => createMockReaction(
+            id: testReactionEventId,
+            targetEventId: testEventId,
+            content: '-',
+          ),
+        );
+        final deletionEvent = MockEvent();
+        when(
+          () => mockNostrClient.deleteEvent(any()),
+        ).thenAnswer((_) async => deletionEvent);
 
-          repository = createRepository(withLocalStorage: false);
-          await repository.downvoteEvent(
-            eventId: testEventId,
-            authorPubkey: testAuthorPubkey,
-          );
+        repository = createRepository(withLocalStorage: false);
+        await repository.downvoteEvent(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+        );
 
-          await repository.removeDownvote(testEventId);
+        await repository.removeDownvote(testEventId);
 
-          expect(await repository.isDownvoted(testEventId), isFalse);
-          verify(
-            () => mockNostrClient.deleteEvent(testReactionEventId),
-          ).called(1);
-        },
-      );
+        expect(await repository.isDownvoted(testEventId), isFalse);
+        verify(
+          () => mockNostrClient.deleteEvent(testReactionEventId),
+        ).called(1);
+      });
 
       test('throws NotDownvotedException when not downvoted', () async {
         repository = createRepository(withLocalStorage: false);
@@ -1167,112 +1133,103 @@ void main() {
         );
       });
 
-      test(
-        'rolls back record + stream when deletion returns null',
-        () async {
-          when(
-            () => mockNostrClient.sendLike(
-              any(),
-              content: any(named: 'content'),
-              addressableId: any(named: 'addressableId'),
-              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
-              targetKind: any(named: 'targetKind'),
-            ),
-          ).thenAnswer(
-            (_) async => createMockReaction(
-              id: testReactionEventId,
-              targetEventId: testEventId,
-              content: '-',
-            ),
-          );
-          when(
-            () => mockNostrClient.deleteEvent(any()),
-          ).thenAnswer((_) async => null);
+      test('rolls back record + stream when deletion returns null', () async {
+        when(
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).thenAnswer(
+          (_) async => createMockReaction(
+            id: testReactionEventId,
+            targetEventId: testEventId,
+            content: '-',
+          ),
+        );
+        when(
+          () => mockNostrClient.deleteEvent(any()),
+        ).thenAnswer((_) async => null);
 
-          repository = createRepository(withLocalStorage: false);
-          await repository.downvoteEvent(
-            eventId: testEventId,
-            authorPubkey: testAuthorPubkey,
-          );
+        repository = createRepository(withLocalStorage: false);
+        await repository.downvoteEvent(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+        );
 
-          await expectLater(
-            repository.removeDownvote(testEventId),
-            throwsA(isA<UnlikeFailedException>()),
-          );
+        await expectLater(
+          repository.removeDownvote(testEventId),
+          throwsA(isA<UnlikeFailedException>()),
+        );
 
-          // Memory: record restored after rollback.
-          expect(await repository.isDownvoted(testEventId), isTrue);
-        },
-      );
+        // Memory: record restored after rollback.
+        expect(await repository.isDownvoted(testEventId), isTrue);
+      });
 
-      test(
-        'rolls back record + stream when deletion throws',
-        () async {
-          when(
-            () => mockNostrClient.sendLike(
-              any(),
-              content: any(named: 'content'),
-              addressableId: any(named: 'addressableId'),
-              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
-              targetKind: any(named: 'targetKind'),
-            ),
-          ).thenAnswer(
-            (_) async => createMockReaction(
-              id: testReactionEventId,
-              targetEventId: testEventId,
-              content: '-',
-            ),
-          );
-          when(
-            () => mockNostrClient.deleteEvent(any()),
-          ).thenThrow(Exception('relay unreachable'));
+      test('rolls back record + stream when deletion throws', () async {
+        when(
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).thenAnswer(
+          (_) async => createMockReaction(
+            id: testReactionEventId,
+            targetEventId: testEventId,
+            content: '-',
+          ),
+        );
+        when(
+          () => mockNostrClient.deleteEvent(any()),
+        ).thenThrow(Exception('relay unreachable'));
 
-          repository = createRepository(withLocalStorage: false);
-          await repository.downvoteEvent(
-            eventId: testEventId,
-            authorPubkey: testAuthorPubkey,
-          );
+        repository = createRepository(withLocalStorage: false);
+        await repository.downvoteEvent(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+        );
 
-          await expectLater(
-            repository.removeDownvote(testEventId),
-            throwsA(isA<Exception>()),
-          );
+        await expectLater(
+          repository.removeDownvote(testEventId),
+          throwsA(isA<Exception>()),
+        );
 
-          expect(await repository.isDownvoted(testEventId), isTrue);
-        },
-      );
+        expect(await repository.isDownvoted(testEventId), isTrue);
+      });
     });
 
     group('toggleDownvote', () {
-      test(
-        'downvotes when not downvoted and returns true',
-        () async {
-          when(
-            () => mockNostrClient.sendLike(
-              any(),
-              content: any(named: 'content'),
-              addressableId: any(named: 'addressableId'),
-              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
-              targetKind: any(named: 'targetKind'),
-            ),
-          ).thenAnswer(
-            (_) async => createMockReaction(
-              id: testReactionEventId,
-              targetEventId: testEventId,
-              content: '-',
-            ),
-          );
+      test('downvotes when not downvoted and returns true', () async {
+        when(
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).thenAnswer(
+          (_) async => createMockReaction(
+            id: testReactionEventId,
+            targetEventId: testEventId,
+            content: '-',
+          ),
+        );
 
-          repository = createRepository(withLocalStorage: false);
-          final result = await repository.toggleDownvote(
-            eventId: testEventId,
-            authorPubkey: testAuthorPubkey,
-          );
+        repository = createRepository(withLocalStorage: false);
+        final result = await repository.toggleDownvote(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+        );
 
-          expect(result, isTrue);
-          expect(await repository.isDownvoted(testEventId), isTrue);
-        },
-      );
+        expect(result, isTrue);
+        expect(await repository.isDownvoted(testEventId), isTrue);
+      });
 
       test(
         'removes downvote when already downvoted and returns false',
@@ -1320,81 +1277,69 @@ void main() {
         expect(await repository.isDownvoted(testEventId), isFalse);
       });
 
-      test(
-        'getDownvoteRecord returns null when not downvoted',
-        () async {
-          repository = createRepository(withLocalStorage: false);
-          expect(await repository.getDownvoteRecord(testEventId), isNull);
-        },
-      );
+      test('getDownvoteRecord returns null when not downvoted', () async {
+        repository = createRepository(withLocalStorage: false);
+        expect(await repository.getDownvoteRecord(testEventId), isNull);
+      });
 
-      test(
-        'getDownvoteRecord returns record after downvoteEvent',
-        () async {
-          when(
-            () => mockNostrClient.sendLike(
-              any(),
-              content: any(named: 'content'),
-              addressableId: any(named: 'addressableId'),
-              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
-              targetKind: any(named: 'targetKind'),
-            ),
-          ).thenAnswer(
-            (_) async => createMockReaction(
-              id: testReactionEventId,
-              targetEventId: testEventId,
-              content: '-',
-            ),
-          );
+      test('getDownvoteRecord returns record after downvoteEvent', () async {
+        when(
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).thenAnswer(
+          (_) async => createMockReaction(
+            id: testReactionEventId,
+            targetEventId: testEventId,
+            content: '-',
+          ),
+        );
 
-          repository = createRepository(withLocalStorage: false);
-          await repository.downvoteEvent(
-            eventId: testEventId,
-            authorPubkey: testAuthorPubkey,
-          );
+        repository = createRepository(withLocalStorage: false);
+        await repository.downvoteEvent(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+        );
 
-          final record = await repository.getDownvoteRecord(testEventId);
-          expect(record, isNotNull);
-          expect(record!.targetEventId, equals(testEventId));
-          expect(record.reactionEventId, equals(testReactionEventId));
-        },
-      );
+        final record = await repository.getDownvoteRecord(testEventId);
+        expect(record, isNotNull);
+        expect(record!.targetEventId, equals(testEventId));
+        expect(record.reactionEventId, equals(testReactionEventId));
+      });
 
-      test(
-        'getDownvotedEventIds returns ordered set',
-        () async {
-          when(
-            () => mockNostrClient.sendLike(
-              any(),
-              content: any(named: 'content'),
-              addressableId: any(named: 'addressableId'),
-              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
-              targetKind: any(named: 'targetKind'),
-            ),
-          ).thenAnswer(
-            (_) async => createMockReaction(
-              id: testReactionEventId,
-              targetEventId: testEventId,
-              content: '-',
-            ),
-          );
+      test('getDownvotedEventIds returns ordered set', () async {
+        when(
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).thenAnswer(
+          (_) async => createMockReaction(
+            id: testReactionEventId,
+            targetEventId: testEventId,
+            content: '-',
+          ),
+        );
 
-          repository = createRepository(withLocalStorage: false);
-          await repository.downvoteEvent(
-            eventId: testEventId,
-            authorPubkey: testAuthorPubkey,
-          );
+        repository = createRepository(withLocalStorage: false);
+        await repository.downvoteEvent(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+        );
 
-          expect(
-            await repository.getDownvotedEventIds(),
-            contains(testEventId),
-          );
-          expect(
-            await repository.getOrderedDownvotedEventIds(),
-            equals([testEventId]),
-          );
-        },
-      );
+        expect(await repository.getDownvotedEventIds(), contains(testEventId));
+        expect(
+          await repository.getOrderedDownvotedEventIds(),
+          equals([testEventId]),
+        );
+      });
 
       test(
         'watchDownvotedEventIds emits initial empty + new state on downvote',
@@ -1454,9 +1399,7 @@ void main() {
 
           // First call returns e-tag count, second call returns a-tag count
           var callCount = 0;
-          when(
-            () => mockNostrClient.countEvents(any()),
-          ).thenAnswer((_) async {
+          when(() => mockNostrClient.countEvents(any())).thenAnswer((_) async {
             callCount++;
             return callCount == 1
                 ? const CountResult(count: 10)
@@ -1479,9 +1422,7 @@ void main() {
         const testAddressableId = '34236:$testAuthorPubkey:test-d-tag';
 
         var callCount = 0;
-        when(
-          () => mockNostrClient.countEvents(any()),
-        ).thenAnswer((_) async {
+        when(() => mockNostrClient.countEvents(any())).thenAnswer((_) async {
           callCount++;
           return callCount == 1
               ? const CountResult(count: 20) // e-tag count
@@ -1615,9 +1556,7 @@ void main() {
         ).thenAnswer((_) async => const CountResult(count: 10));
         when(
           () => mockLocalStorage.getAllLikeRecords(),
-        ).thenAnswer(
-          (_) async => [createLikeRecord()],
-        );
+        ).thenAnswer((_) async => [createLikeRecord()]);
         when(
           () => mockLocalStorage.deleteLikeRecord(any()),
         ).thenAnswer((_) async => true);
@@ -1737,9 +1676,7 @@ void main() {
           ]);
 
           var callCount = 0;
-          when(
-            () => mockNostrClient.queryEvents(any()),
-          ).thenAnswer((_) async {
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer((_) async {
             callCount++;
             // First call is e-tag query, second is a-tag query
             return callCount == 1
@@ -1750,10 +1687,7 @@ void main() {
           repository = createRepository();
           final counts = await repository.getLikeCounts(
             [eventId1, eventId2],
-            addressableIds: {
-              eventId1: aTag1,
-              eventId2: aTag2,
-            },
+            addressableIds: {eventId1: aTag1, eventId2: aTag2},
           );
 
           // event1 has 1 from e-tag, event2 has 2 from a-tag
@@ -1791,9 +1725,7 @@ void main() {
         ]);
 
         var callCount = 0;
-        when(
-          () => mockNostrClient.queryEvents(any()),
-        ).thenAnswer((_) async {
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer((_) async {
           callCount++;
           return callCount == 1
               ? [mockReactionByE1, mockReactionByE2, mockReactionByE3]
@@ -2134,10 +2066,10 @@ void main() {
         ).thenAnswer((_) async => [mockOlder, mockNewer]);
 
         repository = createRepository();
-        expect(
-          await repository.fetchUserLikes(otherUserPubkey),
-          [newerId, olderId],
-        );
+        expect(await repository.fetchUserLikes(otherUserPubkey), [
+          newerId,
+          olderId,
+        ]);
       });
 
       test('deduplicates target event IDs', () async {
@@ -2194,6 +2126,243 @@ void main() {
         expect(
           () => repository.fetchUserLikes(otherUserPubkey),
           throwsA(isA<FetchLikesFailedException>()),
+        );
+      });
+    });
+
+    group('fetchEventLikers', () {
+      const targetEventId = 'target_event_1234567890abcdef';
+      const addressableId = '34236:author_pubkey_1234567890abcdef:d-tag';
+      const likerA = 'liker_a_pubkey_1234567890abcdef';
+      const likerB = 'liker_b_pubkey_1234567890abcdef';
+      const likerC = 'liker_c_pubkey_1234567890abcdef';
+
+      MockEvent createReaction({
+        required String id,
+        required String authorPubkey,
+        String content = '+',
+        int createdAt = defaultTimestamp,
+        List<List<String>>? tags,
+      }) {
+        final event = MockEvent();
+        when(() => event.id).thenReturn(id);
+        when(() => event.pubkey).thenReturn(authorPubkey);
+        when(() => event.content).thenReturn(content);
+        when(() => event.createdAt).thenReturn(createdAt);
+        when(() => event.tags).thenReturn(
+          tags ??
+              [
+                ['e', targetEventId],
+              ],
+        );
+        return event;
+      }
+
+      test('returns empty list when no reactions exist', () async {
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => <Event>[]);
+
+        repository = createRepository();
+        expect(
+          await repository.fetchEventLikers(eventId: targetEventId),
+          isEmpty,
+        );
+      });
+
+      test('returns liker pubkeys ordered by recency', () async {
+        final older = createReaction(
+          id: 'reaction_older',
+          authorPubkey: likerA,
+          createdAt: 1699999900,
+        );
+        final newer = createReaction(
+          id: 'reaction_newer',
+          authorPubkey: likerB,
+          createdAt: 1700000100,
+        );
+
+        mockQueryEventsSequence([
+          [older, newer],
+          <Event>[],
+        ]);
+
+        repository = createRepository();
+        expect(await repository.fetchEventLikers(eventId: targetEventId), [
+          likerB,
+          likerA,
+        ]);
+      });
+
+      test('deduplicates pubkeys across e-tag and a-tag queries', () async {
+        final eTagReaction = createReaction(
+          id: 'reaction_shared',
+          authorPubkey: likerA,
+          createdAt: 1700000050,
+        );
+        final aTagOnlyReaction = createReaction(
+          id: 'reaction_a_only',
+          authorPubkey: likerB,
+          createdAt: 1700000100,
+          tags: [
+            ['a', addressableId],
+          ],
+        );
+
+        mockQueryEventsSequence([
+          [eTagReaction],
+          [eTagReaction, aTagOnlyReaction],
+          <Event>[],
+        ]);
+
+        repository = createRepository();
+        final likers = await repository.fetchEventLikers(
+          eventId: targetEventId,
+          addressableId: addressableId,
+        );
+
+        expect(likers, hasLength(2));
+        expect(likers, [likerB, likerA]);
+      });
+
+      test('excludes pubkeys whose only reactions are downvotes', () async {
+        final downvote = createReaction(
+          id: 'reaction_downvote',
+          authorPubkey: likerA,
+          content: '-',
+          createdAt: 1699999900,
+        );
+        final upvote = createReaction(
+          id: 'reaction_upvote',
+          authorPubkey: likerB,
+          createdAt: 1700000100,
+        );
+
+        mockQueryEventsSequence([
+          [downvote, upvote],
+          <Event>[],
+        ]);
+
+        repository = createRepository();
+        expect(await repository.fetchEventLikers(eventId: targetEventId), [
+          likerB,
+        ]);
+      });
+
+      test('excludes pubkeys whose reactions were deleted by author', () async {
+        final deletedReaction = createReaction(
+          id: 'reaction_deleted',
+          authorPubkey: likerA,
+          createdAt: 1699999900,
+        );
+        final liveReaction = createReaction(
+          id: 'reaction_live',
+          authorPubkey: likerB,
+          createdAt: 1700000100,
+        );
+
+        final deletion = MockEvent();
+        when(() => deletion.pubkey).thenReturn(likerA);
+        when(() => deletion.tags).thenReturn([
+          ['e', 'reaction_deleted'],
+        ]);
+
+        mockQueryEventsSequence([
+          [deletedReaction, liveReaction],
+          [deletion],
+        ]);
+
+        repository = createRepository();
+        expect(await repository.fetchEventLikers(eventId: targetEventId), [
+          likerB,
+        ]);
+      });
+
+      test(
+        'includes pubkey when only some of their reactions were deleted',
+        () async {
+          final deletedReaction = createReaction(
+            id: 'reaction_deleted',
+            authorPubkey: likerA,
+            createdAt: 1699999900,
+          );
+          final liveReaction = createReaction(
+            id: 'reaction_live',
+            authorPubkey: likerA,
+            createdAt: 1700000100,
+          );
+          final otherLiker = createReaction(
+            id: 'reaction_other',
+            authorPubkey: likerC,
+            createdAt: 1700000050,
+          );
+
+          final deletion = MockEvent();
+          when(() => deletion.pubkey).thenReturn(likerA);
+          when(() => deletion.tags).thenReturn([
+            ['e', 'reaction_deleted'],
+          ]);
+
+          mockQueryEventsSequence([
+            [deletedReaction, liveReaction, otherLiker],
+            [deletion],
+          ]);
+
+          repository = createRepository();
+          expect(await repository.fetchEventLikers(eventId: targetEventId), [
+            likerA,
+            likerC,
+          ]);
+        },
+      );
+
+      test(
+        'ignores Kind 5 deletions whose author does not match the reaction '
+        'author',
+        () async {
+          // likerA reacted, but likerB publishes a Kind 5 referencing likerA's
+          // reaction id. Without the same-author guard this would suppress
+          // likerA's like.
+          final reactionA = createReaction(
+            id: 'reaction_a',
+            authorPubkey: likerA,
+            createdAt: 1700000050,
+          );
+          final reactionB = createReaction(
+            id: 'reaction_b',
+            authorPubkey: likerB,
+            createdAt: 1700000100,
+          );
+
+          final spoofedDeletion = MockEvent();
+          when(() => spoofedDeletion.pubkey).thenReturn(likerB);
+          when(() => spoofedDeletion.tags).thenReturn([
+            ['e', 'reaction_a'],
+          ]);
+
+          mockQueryEventsSequence([
+            [reactionA, reactionB],
+            [spoofedDeletion],
+          ]);
+
+          repository = createRepository();
+          expect(await repository.fetchEventLikers(eventId: targetEventId), [
+            likerB,
+            likerA,
+          ]);
+        },
+      );
+
+      test('throws FetchLikersFailedException when relay query fails', () {
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenThrow(Exception('Network error'));
+
+        repository = createRepository();
+
+        expect(
+          () => repository.fetchEventLikers(eventId: targetEventId),
+          throwsA(isA<FetchLikersFailedException>()),
         );
       });
     });
@@ -2261,9 +2430,7 @@ void main() {
     group('initialize', () {
       test('loads records from local storage', () async {
         when(() => mockNostrClient.hasKeys).thenReturn(false);
-        when(
-          () => mockLocalStorage.getAllLikeRecords(),
-        ).thenAnswer(
+        when(() => mockLocalStorage.getAllLikeRecords()).thenAnswer(
           (_) async => [
             createLikeRecord(
               targetEventId: 'event_a_1234567890abcdef',
@@ -2275,10 +2442,7 @@ void main() {
         repository = createRepository();
         await repository.initialize();
 
-        expect(
-          await repository.isLiked('event_a_1234567890abcdef'),
-          isTrue,
-        );
+        expect(await repository.isLiked('event_a_1234567890abcdef'), isTrue);
       });
 
       test('sets up subscription when client has keys', () async {
@@ -2415,9 +2579,7 @@ void main() {
         ).thenAnswer((_) async {});
 
         // Pre-populate with an existing record
-        when(
-          () => mockLocalStorage.getAllLikeRecords(),
-        ).thenAnswer(
+        when(() => mockLocalStorage.getAllLikeRecords()).thenAnswer(
           (_) async => [
             createLikeRecord(
               createdAt: DateTime.fromMillisecondsSinceEpoch(
@@ -2526,10 +2688,7 @@ void main() {
                 addressableId,
                 targetKind,
               }) async {
-                queuedAction = {
-                  'isLike': isLike,
-                  'eventId': eventId,
-                };
+                queuedAction = {'isLike': isLike, 'eventId': eventId};
               },
         );
 
@@ -2704,9 +2863,7 @@ void main() {
         verify(
           () => mockNostrClient.deleteEvent(testReactionEventId),
         ).called(1);
-        verify(
-          () => mockLocalStorage.deleteLikeRecord(testEventId),
-        ).called(1);
+        verify(() => mockLocalStorage.deleteLikeRecord(testEventId)).called(1);
       });
 
       test('skips deletion for pending likes', () async {
@@ -2741,9 +2898,7 @@ void main() {
         await repository.executeUnlikeAction(testEventId);
 
         verifyNever(() => mockNostrClient.deleteEvent(any()));
-        verify(
-          () => mockLocalStorage.deleteLikeRecord(testEventId),
-        ).called(1);
+        verify(() => mockLocalStorage.deleteLikeRecord(testEventId)).called(1);
       });
 
       test('does nothing when no record exists', () async {
@@ -2757,9 +2912,7 @@ void main() {
         await repository.executeUnlikeAction(testEventId);
 
         verifyNever(() => mockNostrClient.deleteEvent(any()));
-        verifyNever(
-          () => mockLocalStorage.deleteLikeRecord(testEventId),
-        );
+        verifyNever(() => mockLocalStorage.deleteLikeRecord(testEventId));
       });
 
       test('throws UnlikeFailedException when deletion fails', () async {
@@ -2814,9 +2967,7 @@ void main() {
 
         await repository.executeUnlikeAction(testEventId);
 
-        verify(
-          () => mockLocalStorage.getLikeRecord(testEventId),
-        ).called(1);
+        verify(() => mockLocalStorage.getLikeRecord(testEventId)).called(1);
         verify(
           () => mockNostrClient.deleteEvent(testReactionEventId),
         ).called(1);

@@ -9,6 +9,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/watermark_download_provider.dart';
 import 'package:openvine/services/watermark_download_service.dart';
+import 'package:openvine/widgets/retry_after_settings_on_resume.dart';
 import 'package:share_plus/share_plus.dart';
 
 /// Shows a bottom sheet that tracks original video save progress.
@@ -44,8 +45,8 @@ class _SaveOriginalProgressSheet extends StatefulWidget {
       _SaveOriginalProgressSheetState();
 }
 
-class _SaveOriginalProgressSheetState
-    extends State<_SaveOriginalProgressSheet> {
+class _SaveOriginalProgressSheetState extends State<_SaveOriginalProgressSheet>
+    with RetryAfterSettingsOnResume {
   OriginalSaveStage _stage = OriginalSaveStage.downloading;
   WatermarkDownloadResult? _result;
   bool _isProcessing = true;
@@ -231,7 +232,18 @@ class _SaveOriginalProgressSheetState
 
   Future<void> _openSettings() async {
     final permissionsService = widget.ref.read(permissionsServiceProvider);
-    await permissionsService.openAppSettings();
+    await openSettingsAndRetryOnResume(
+      openSettings: permissionsService.openAppSettings,
+      retry: () async {
+        if (!mounted) return;
+        setState(() {
+          _result = null;
+          _stage = OriginalSaveStage.downloading;
+          _isProcessing = true;
+        });
+        await _startDownload();
+      },
+    );
   }
 
   Future<void> _shareFile() async {

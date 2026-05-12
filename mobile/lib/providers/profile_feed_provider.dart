@@ -15,6 +15,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_feed_session_cache.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/state/video_feed_state.dart';
+import 'package:openvine/utils/video_event_merge_utils.dart';
 import 'package:openvine/utils/video_nostr_enrichment.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -28,6 +29,18 @@ part 'profile_feed_provider.g.dart';
 ///
 /// Strategy: Try Funnelcake REST API first for better performance,
 /// fall back to Nostr subscription if unavailable.
+///
+/// **Engagement merge policy (#3384):** Lists merge relay snapshots with
+/// Funnelcake REST rows for the same `(pubkey, stableId)`. For counts that
+/// drive the same UX as the home feed ([VideoEvent.totalLoops] and related
+/// engagement fields), **prefer Funnelcake and bulk-stat hydration** over
+/// conflicting static Nostr tag values: relay copies may carry `loops` / zero
+/// or stale figures while the API reflects current aggregates. When only Nostr
+/// data exists (no REST row, no cache backfill), relay values remain the sole
+/// source. [_mergeVideo], [mergeTwoProfileVideos], [mergeProfileEngagementCount],
+/// [mergeRawTagsForVideoMerge], and shared `video_event_merge_utils` (used from
+/// Nostr enrichment) must stay aligned with this policy whenever merge logic
+/// changes.
 ///
 /// Usage:
 /// ```dart
@@ -55,6 +68,16 @@ class ProfileFeed extends _$ProfileFeed {
   /// Guard against duplicate listener registration from retained-state path.
   bool _listenersRegistered = false;
 
+  /// True while a cold-load initial fetch is in flight. Cleared when any
+  /// source produces a definitive answer (videos arrive, REST settles
+  /// success-or-empty) or [initialLoadHardTimeout] fires. Drives the
+  /// `isInitialLoad` flag emitted on [VideoFeedState] so the videos tab
+  /// stays in its loading state during the cold-start window — see
+  /// #4164.
+  bool _initialLoadPending = false;
+
+  Timer? _initialLoadTimer;
+
   /// Cached [VideoEventService] captured at build() time.
   ///
   /// Both [videoEventServiceProvider] and this notifier are keepAlive, so
@@ -68,6 +91,7 @@ class ProfileFeed extends _$ProfileFeed {
     // Reset REST pagination state at start of build to ensure clean state.
     _nextOffset = null;
     _listenersRegistered = false;
+    _completeInitialLoad();
 
     // Watch content filter version — rebuilds when preferences change.
     ref.watch(contentFilterVersionProvider);
@@ -113,6 +137,10 @@ class ProfileFeed extends _$ProfileFeed {
 
     authorVideos = _relayVideosSnapshot();
 
+    if (authorVideos.isEmpty) {
+      _beginInitialLoadTracking();
+    }
+
     unawaited(
       Future(() async {
         await _refreshFromNostrSource();
@@ -150,6 +178,53 @@ class ProfileFeed extends _$ProfileFeed {
   @visibleForTesting
   static Duration staleTtl = const Duration(seconds: 30);
 
+  /// Hard ceiling on how long [_initialLoadPending] stays true if no source
+  /// settles. Aligned with [_restApiTimeout] so REST has a chance to
+  /// complete (success / empty / error) under normal connectivity, while
+  /// guaranteeing the loading spinner can't strand if both sources hang.
+  @visibleForTesting
+  static Duration initialLoadHardTimeout = const Duration(seconds: 10);
+
+  void _beginInitialLoadTracking() {
+    _initialLoadPending = true;
+    _initialLoadTimer?.cancel();
+    _initialLoadTimer = Timer(initialLoadHardTimeout, _onInitialLoadTimeout);
+  }
+
+  void _completeInitialLoad() {
+    if (!_initialLoadPending) {
+      _initialLoadTimer?.cancel();
+      _initialLoadTimer = null;
+      return;
+    }
+    _initialLoadPending = false;
+    _initialLoadTimer?.cancel();
+    _initialLoadTimer = null;
+  }
+
+  void _onInitialLoadTimeout() {
+    if (!_initialLoadPending) return;
+    _initialLoadPending = false;
+    _initialLoadTimer = null;
+    if (!ref.mounted) return;
+    final current = state.asData?.value;
+    if (current != null && current.isInitialLoad) {
+      _emitState(current.copyWith(isInitialLoad: false));
+    }
+  }
+
+  /// Whether [VideoFeedState.isInitialLoad] should remain `true` for an
+  /// emission with the given pending and videos-empty inputs. Extracted
+  /// as a pure function so call sites stay one-liners and the rule is
+  /// pinned by a unit test (#4164).
+  @visibleForTesting
+  static bool shouldKeepInitialLoad({
+    required bool initialLoadPending,
+    required bool videosEmpty,
+  }) {
+    return initialLoadPending && videosEmpty;
+  }
+
   /// Refresh in the background if cached data is stale.
   /// Returns immediately — UI keeps showing cached data, updates when done.
   void refreshIfStale() {
@@ -182,9 +257,21 @@ class ProfileFeed extends _$ProfileFeed {
     Map<String, String> primary,
     Map<String, String> secondary,
   ) {
-    // Preserve REST-only analytics tags like `views` while still letting the
-    // primary video win on collisions for actual event metadata.
-    return {...secondary, ...primary};
+    // Spread order: secondary first, primary wins on duplicate keys. That keeps
+    // canonical event tags on the newer (primary) copy while still exposing
+    // secondary-only keys — important for REST-issued analytics such as
+    // `views` that Nostr events often omit. Do not invert without re-checking
+    // profile engagement parity with the home feed (#3384).
+    return mergeVideoRawTagsPrimaryWins(primary, secondary);
+  }
+
+  /// Combines two nullable engagement ints from relay vs REST duplicates.
+  ///
+  /// Uses the higher non-negative value so a newer relay row cannot zero out
+  /// Funnelcake aggregates (#3384). When both are null, returns null.
+  @visibleForTesting
+  static int? mergeProfileEngagementCount(int? primary, int? secondary) {
+    return mergeNullableEngagementMax(primary, secondary);
   }
 
   @visibleForTesting
@@ -256,6 +343,7 @@ class ProfileFeed extends _$ProfileFeed {
       category: LogCategory.video,
     );
 
+    _completeInitialLoad();
     _emitState(
       currentState.copyWith(
         videos: updatedVideos,
@@ -287,6 +375,10 @@ class ProfileFeed extends _$ProfileFeed {
       _nextOffset = result.nextOffset ?? apiVideos.length;
 
       if (apiVideos.isNotEmpty) {
+        // REST returned videos — initial load is settled regardless of
+        // whether Nostr events have arrived yet (#4164).
+        _completeInitialLoad();
+
         final relayVideos = _relayVideosSnapshot();
         final authorVideos = _mergeVideoLists(
           relayVideos,
@@ -308,26 +400,41 @@ class ProfileFeed extends _$ProfileFeed {
               (apiVideos.length >= AppConstants.paginationBatchSize),
           totalVideoCount: _totalVideoCount,
           isRefreshing: false,
-          isInitialLoad: false,
+          isInitialLoad: shouldKeepInitialLoad(
+            initialLoadPending: _initialLoadPending,
+            videosEmpty: filteredVideos.isEmpty,
+          ),
           mergeWithCurrent: false,
         );
 
         // Enrich with full Nostr event data in the background.
+        // Replace only this REST snapshot's keys: relay events can update
+        // replaceable events (e.g. adding a collaborator p-tag) during the
+        // ~5s enrichment window, so these keys must merge against current
+        // state instead of clobbering it (#3705). But if enrichment causes
+        // a video to be filtered out, that key must disappear rather than
+        // preserving the stale pre-enrichment copy.
+        final enrichmentKeys = {
+          for (final video in authorVideos) _canonicalVideoKey(video),
+        };
         enrichVideosInBackground(
           authorVideos,
           nostrService: ref.read(nostrServiceProvider),
           onEnriched: (enriched) {
             if (!ref.mounted) return;
             final enrichedVideos = _videoEventService.filterVideoList(enriched);
-            _mergeSourceVideos(
+            _mergeEnrichedRestVideos(
               enrichedVideos,
+              sourceKeys: enrichmentKeys,
               hasMoreContent:
                   result.hasMore ??
                   (apiVideos.length >= AppConstants.paginationBatchSize),
               totalVideoCount: _totalVideoCount,
               isRefreshing: false,
-              isInitialLoad: false,
-              mergeWithCurrent: false,
+              isInitialLoad: shouldKeepInitialLoad(
+                initialLoadPending: _initialLoadPending,
+                videosEmpty: enrichedVideos.isEmpty,
+              ),
             );
           },
           callerName: 'ProfileFeedProvider',
@@ -339,6 +446,9 @@ class ProfileFeed extends _$ProfileFeed {
           category: LogCategory.video,
         );
       } else {
+        // REST is authoritative for "user has no videos" — settle the
+        // initial-load tracker so the empty state can render (#4164).
+        _completeInitialLoad();
         _mergeSourceVideos(
           const <VideoEvent>[],
           hasMoreContent: false,
@@ -827,6 +937,13 @@ class ProfileFeed extends _$ProfileFeed {
         return;
       }
 
+      // Relay events arrived — settle initial-load tracker so the cold-load
+      // spinner clears (#4164). Only when videos are actually present;
+      // otherwise REST or [initialLoadHardTimeout] decides.
+      if (updatedVideos.isNotEmpty) {
+        _completeInitialLoad();
+      }
+
       _emitState(
         currentState.copyWith(
           videos: updatedVideos,
@@ -834,7 +951,10 @@ class ProfileFeed extends _$ProfileFeed {
               ? currentState.hasMoreContent
               : updatedVideos.length >= AppConstants.hasMoreContentThreshold,
           isRefreshing: false,
-          isInitialLoad: false,
+          isInitialLoad: shouldKeepInitialLoad(
+            initialLoadPending: _initialLoadPending,
+            videosEmpty: updatedVideos.isEmpty,
+          ),
           lastUpdated: DateTime.now(),
         ),
       );
@@ -865,6 +985,8 @@ class ProfileFeed extends _$ProfileFeed {
     ref.onDispose(() {
       unregisterUpdate();
       unregisterNew();
+      _initialLoadTimer?.cancel();
+      _initialLoadTimer = null;
     });
   }
 
@@ -874,6 +996,15 @@ class ProfileFeed extends _$ProfileFeed {
       if (!ref.mounted) return;
 
       final relayVideos = _relayVideosSnapshot();
+      // `subscribeToUserVideos` returns when the subscription is registered,
+      // not when EVENT messages arrive. If the snapshot is still empty here
+      // we must keep `isInitialLoad: true` until either the relay listener
+      // produces videos, REST settles, or [initialLoadHardTimeout] fires —
+      // otherwise the videos tab flashes "No videos" during the cold-start
+      // fetch window (#4164).
+      if (relayVideos.isNotEmpty) {
+        _completeInitialLoad();
+      }
       final currentState = state.asData?.value;
       _mergeSourceVideos(
         relayVideos,
@@ -882,7 +1013,10 @@ class ProfileFeed extends _$ProfileFeed {
             : relayVideos.length >= AppConstants.hasMoreContentThreshold,
         totalVideoCount: currentState?.totalVideoCount,
         isRefreshing: false,
-        isInitialLoad: false,
+        isInitialLoad: shouldKeepInitialLoad(
+          initialLoadPending: _initialLoadPending,
+          videosEmpty: relayVideos.isEmpty,
+        ),
         isFetchingTotalCount: currentState?.isFetchingTotalCount ?? false,
       );
     } catch (error, stackTrace) {
@@ -963,6 +1097,79 @@ class ProfileFeed extends _$ProfileFeed {
     _emitState(nextState);
   }
 
+  void _mergeEnrichedRestVideos(
+    List<VideoEvent> incoming, {
+    required Set<String> sourceKeys,
+    required bool hasMoreContent,
+    required bool isRefreshing,
+    required bool isInitialLoad,
+    int? totalVideoCount,
+    bool isFetchingTotalCount = false,
+  }) {
+    final currentState = state.asData?.value;
+    final mergedVideos = _mergeVideosReplacingCurrentKeys(
+      current: currentState?.videos ?? const <VideoEvent>[],
+      sourceKeys: sourceKeys,
+      incoming: incoming,
+    );
+
+    final nextState =
+        (currentState ??
+                const VideoFeedState(
+                  videos: <VideoEvent>[],
+                  hasMoreContent: false,
+                ))
+            .copyWith(
+              videos: mergedVideos,
+              hasMoreContent: hasMoreContent,
+              isLoadingMore: false,
+              isRefreshing: isRefreshing,
+              isInitialLoad: isInitialLoad,
+              isFetchingTotalCount: isFetchingTotalCount,
+              lastUpdated: DateTime.now(),
+              totalVideoCount: totalVideoCount ?? currentState?.totalVideoCount,
+              error: null,
+            );
+
+    if (currentState != null &&
+        _sameVideoSequence(currentState.videos, nextState.videos) &&
+        currentState.hasMoreContent == nextState.hasMoreContent &&
+        currentState.totalVideoCount == nextState.totalVideoCount &&
+        currentState.isRefreshing == nextState.isRefreshing &&
+        currentState.isInitialLoad == nextState.isInitialLoad &&
+        currentState.isFetchingTotalCount == nextState.isFetchingTotalCount) {
+      return;
+    }
+
+    _emitState(nextState);
+  }
+
+  List<VideoEvent> _mergeVideosReplacingCurrentKeys({
+    required List<VideoEvent> current,
+    required Set<String> sourceKeys,
+    required List<VideoEvent> incoming,
+  }) {
+    if (sourceKeys.isEmpty) return _mergeVideoLists(current, incoming);
+
+    final currentByKey = {
+      for (final video in current)
+        if (sourceKeys.contains(_canonicalVideoKey(video)))
+          _canonicalVideoKey(video): video,
+    };
+    final keepFromCurrent = current
+        .where((video) => !sourceKeys.contains(_canonicalVideoKey(video)))
+        .toList();
+    final mergedSourceVideos = incoming.map((video) {
+      final key = _canonicalVideoKey(video);
+      final currentVideo = currentByKey[key];
+      return currentVideo == null
+          ? video
+          : _mergeEnrichmentIntoCurrent(currentVideo, video);
+    }).toList();
+
+    return _mergeVideoLists(keepFromCurrent, mergedSourceVideos);
+  }
+
   List<VideoEvent> _mergeVideoLists(
     List<VideoEvent> current,
     List<VideoEvent> incoming,
@@ -980,13 +1187,91 @@ class ProfileFeed extends _$ProfileFeed {
     }
 
     final merged = byKey.values.toList()..sort(_compareVideos);
-    // Drop any session-tombstoned ids the merge carried forward. The
-    // upstream snapshot is already filtered, but `current` may still
-    // contain a video that was just deleted before the source caught up.
+    // Drop any session-tombstoned ids (NIP-09 client-side deletes) the
+    // merge carried forward. Does not cover server-side deletes that
+    // happened after the initial REST page load -- those clear on next
+    // full refresh.
     return _withoutTombstones(merged);
   }
 
+  /// Merges two [VideoEvent]s for the same addressable video.
+  ///
+  /// Delegates to [mergeTwoProfileVideos] (see class-level engagement policy,
+  /// #3384).
   VideoEvent _mergeVideo(VideoEvent existing, VideoEvent incoming) {
+    return mergeTwoProfileVideos(existing, incoming);
+  }
+
+  VideoEvent _mergeEnrichmentIntoCurrent(
+    VideoEvent current,
+    VideoEvent enriched,
+  ) {
+    return current.copyWith(
+      publishedAt:
+          (current.publishedAt != null && current.publishedAt!.isNotEmpty)
+          ? current.publishedAt
+          : enriched.publishedAt,
+      rawTags: mergeRawTagsForVideoMerge(current.rawTags, enriched.rawTags),
+      contentWarningLabels: current.contentWarningLabels.isNotEmpty
+          ? current.contentWarningLabels
+          : enriched.contentWarningLabels,
+      title: current.title ?? enriched.title,
+      videoUrl: current.videoUrl ?? enriched.videoUrl,
+      thumbnailUrl: current.thumbnailUrl ?? enriched.thumbnailUrl,
+      duration: current.duration ?? enriched.duration,
+      dimensions: current.dimensions ?? enriched.dimensions,
+      mimeType: current.mimeType ?? enriched.mimeType,
+      sha256: current.sha256 ?? enriched.sha256,
+      fileSize: current.fileSize ?? enriched.fileSize,
+      hashtags: current.hashtags.isNotEmpty
+          ? current.hashtags
+          : enriched.hashtags,
+      vineId: current.vineId ?? enriched.vineId,
+      group: current.group ?? enriched.group,
+      altText: current.altText ?? enriched.altText,
+      blurhash: current.blurhash ?? enriched.blurhash,
+      originalLoops: mergeProfileEngagementCount(
+        current.originalLoops,
+        enriched.originalLoops,
+      ),
+      originalLikes: mergeProfileEngagementCount(
+        current.originalLikes,
+        enriched.originalLikes,
+      ),
+      originalComments: mergeProfileEngagementCount(
+        current.originalComments,
+        enriched.originalComments,
+      ),
+      originalReposts: mergeProfileEngagementCount(
+        current.originalReposts,
+        enriched.originalReposts,
+      ),
+      audioEventId: current.audioEventId ?? enriched.audioEventId,
+      audioEventRelay: current.audioEventRelay ?? enriched.audioEventRelay,
+      collaboratorPubkeys: current.collaboratorPubkeys.isNotEmpty
+          ? current.collaboratorPubkeys
+          : enriched.collaboratorPubkeys,
+      inspiredByVideo: current.inspiredByVideo ?? enriched.inspiredByVideo,
+      textTrackRef: current.textTrackRef ?? enriched.textTrackRef,
+      textTrackContent: current.textTrackContent ?? enriched.textTrackContent,
+      nostrEventTags: current.nostrEventTags.isNotEmpty
+          ? current.nostrEventTags
+          : enriched.nostrEventTags,
+      authorName: current.authorName ?? enriched.authorName,
+      authorAvatar: current.authorAvatar ?? enriched.authorAvatar,
+      nostrLikeCount: mergeProfileEngagementCount(
+        current.nostrLikeCount,
+        enriched.nostrLikeCount,
+      ),
+    );
+  }
+
+  /// Same logic as [_mergeVideo], exposed for tests (#3384).
+  @visibleForTesting
+  static VideoEvent mergeTwoProfileVideos(
+    VideoEvent existing,
+    VideoEvent incoming,
+  ) {
     final incomingIsNewer =
         incoming.createdAt > existing.createdAt ||
         (incoming.createdAt == existing.createdAt &&
@@ -1032,10 +1317,22 @@ class ProfileFeed extends _$ProfileFeed {
       group: primary.group ?? secondary.group,
       altText: primary.altText ?? secondary.altText,
       blurhash: primary.blurhash ?? secondary.blurhash,
-      originalLoops: primary.originalLoops ?? secondary.originalLoops,
-      originalLikes: primary.originalLikes ?? secondary.originalLikes,
-      originalComments: primary.originalComments ?? secondary.originalComments,
-      originalReposts: primary.originalReposts ?? secondary.originalReposts,
+      originalLoops: mergeProfileEngagementCount(
+        primary.originalLoops,
+        secondary.originalLoops,
+      ),
+      originalLikes: mergeProfileEngagementCount(
+        primary.originalLikes,
+        secondary.originalLikes,
+      ),
+      originalComments: mergeProfileEngagementCount(
+        primary.originalComments,
+        secondary.originalComments,
+      ),
+      originalReposts: mergeProfileEngagementCount(
+        primary.originalReposts,
+        secondary.originalReposts,
+      ),
       audioEventId: primary.audioEventId ?? secondary.audioEventId,
       audioEventRelay: primary.audioEventRelay ?? secondary.audioEventRelay,
       collaboratorPubkeys: primary.collaboratorPubkeys.isNotEmpty
@@ -1049,7 +1346,10 @@ class ProfileFeed extends _$ProfileFeed {
           : secondary.nostrEventTags,
       authorName: primary.authorName ?? secondary.authorName,
       authorAvatar: primary.authorAvatar ?? secondary.authorAvatar,
-      nostrLikeCount: primary.nostrLikeCount ?? secondary.nostrLikeCount,
+      nostrLikeCount: mergeProfileEngagementCount(
+        primary.nostrLikeCount,
+        secondary.nostrLikeCount,
+      ),
     );
   }
 

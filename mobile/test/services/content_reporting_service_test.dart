@@ -70,6 +70,7 @@ void main() {
         nostrService: mockNostrService,
         authService: mockAuthService,
         prefs: prefs,
+        moderationRelayUrl: 'wss://relay.divine.video',
       );
 
       await service.initialize();
@@ -92,6 +93,7 @@ void main() {
           nostrService: mockNostrService,
           authService: mockAuthService,
           prefs: prefs,
+          moderationRelayUrl: 'wss://relay.divine.video',
         );
 
         await uninitializedService.initialize();
@@ -107,6 +109,7 @@ void main() {
         nostrService: mockNostrService,
         authService: mockAuthService,
         prefs: prefs,
+        moderationRelayUrl: 'wss://relay.divine.video',
       );
 
       final result = await uninitializedService.reportContent(
@@ -147,7 +150,7 @@ void main() {
             any(),
             targetRelays: any(named: 'targetRelays'),
           ),
-        ).thenAnswer((_) async => reportEvent);
+        ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
 
         // Act
         final result = await service.reportContent(
@@ -203,7 +206,7 @@ void main() {
           any(),
           targetRelays: any(named: 'targetRelays'),
         ),
-      ).thenAnswer((_) async => reportEvent);
+      ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
 
       const reasons = ContentFilterReason.values;
 
@@ -270,11 +273,13 @@ void main() {
           targetRelays: any(named: 'targetRelays'),
         ),
       ).thenAnswer(
-        (_) async => createTestEvent(
-          pubkey: testPublicKey,
-          kind: 1984,
-          tags: [],
-          content: 'test',
+        (_) async => PublishSuccess(
+          event: createTestEvent(
+            pubkey: testPublicKey,
+            kind: 1984,
+            tags: [],
+            content: 'test',
+          ),
         ),
       );
 
@@ -357,7 +362,7 @@ void main() {
           any(),
           targetRelays: any(named: 'targetRelays'),
         ),
-      ).thenAnswer((_) async => reportEvent);
+      ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
 
       // Act - This should not throw an exception due to missing switch case
       final result = await service.reportContent(
@@ -395,7 +400,7 @@ void main() {
           any(),
           targetRelays: any(named: 'targetRelays'),
         ),
-      ).thenAnswer((_) async => null);
+      ).thenAnswer((_) async => const PublishFailed());
 
       // Act
       final result = await service.reportContent(
@@ -437,7 +442,7 @@ void main() {
           any(),
           targetRelays: any(named: 'targetRelays'),
         ),
-      ).thenAnswer((_) async => reportEvent);
+      ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
 
       // Act
       await service.reportContent(
@@ -537,6 +542,7 @@ void main() {
         nostrService: mockNostrService,
         authService: mockAuthService,
         prefs: prefs,
+        moderationRelayUrl: 'wss://relay.divine.video',
       );
       await service.initialize();
     });
@@ -565,7 +571,7 @@ void main() {
           any(),
           targetRelays: any(named: 'targetRelays'),
         ),
-      ).thenAnswer((_) async => reportEvent);
+      ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
 
       await service.reportContent(
         eventId: 'evt_1',
@@ -579,6 +585,65 @@ void main() {
           kind: EventKind.report,
           content: any(named: 'content'),
           tags: any(named: 'tags'),
+        ),
+      ).called(1);
+
+      verify(
+        () => mockNostrService.publishEvent(
+          any(),
+          targetRelays: ['wss://relay.divine.video'],
+        ),
+      ).called(1);
+    });
+
+    test('publishes report to the configured moderation relay', () async {
+      const customRelay = 'wss://relay.staging.dvines.org';
+      SharedPreferences.setMockInitialValues({});
+      final testPrefs = await SharedPreferences.getInstance();
+      final stagingService = ContentReportingService(
+        nostrService: mockNostrService,
+        authService: mockAuthService,
+        prefs: testPrefs,
+        moderationRelayUrl: customRelay,
+      );
+      await stagingService.initialize();
+
+      final reportEvent = Event(
+        testPublicKey,
+        EventKind.report,
+        [],
+        'test',
+        createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      );
+      reportEvent.id = 'test_id';
+      reportEvent.sig = 'test_sig';
+
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => reportEvent);
+
+      when(
+        () => mockNostrService.publishEvent(
+          any(),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
+
+      await stagingService.reportContent(
+        eventId: 'evt_relay',
+        authorPubkey: 'author_relay',
+        reason: ContentFilterReason.other,
+        details: 'relay routing test',
+      );
+
+      verify(
+        () => mockNostrService.publishEvent(
+          any(),
+          targetRelays: [customRelay],
         ),
       ).called(1);
     });
@@ -612,12 +677,14 @@ void main() {
           targetRelays: any(named: 'targetRelays'),
         ),
       ).thenAnswer(
-        (_) async => Event(
-          testPublicKey,
-          EventKind.report,
-          [],
-          '',
-          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        (_) async => PublishSuccess(
+          event: Event(
+            testPublicKey,
+            EventKind.report,
+            [],
+            '',
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
         ),
       );
 
@@ -691,12 +758,14 @@ void main() {
             targetRelays: any(named: 'targetRelays'),
           ),
         ).thenAnswer(
-          (_) async => Event(
-            testPublicKey,
-            EventKind.report,
-            [],
-            '',
-            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          (_) async => PublishSuccess(
+            event: Event(
+              testPublicKey,
+              EventKind.report,
+              [],
+              '',
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
           ),
         );
 
@@ -741,6 +810,7 @@ void main() {
         nostrService: mockNostrService,
         authService: mockAuthService,
         prefs: prefs,
+        moderationRelayUrl: 'wss://relay.divine.video',
       );
       await service.initialize(); // This is what the provider now does
 
@@ -768,7 +838,7 @@ void main() {
           any(),
           targetRelays: any(named: 'targetRelays'),
         ),
-      ).thenAnswer((_) async => reportEvent);
+      ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
 
       // Now reportContent should work
       final result = await service.reportContent(

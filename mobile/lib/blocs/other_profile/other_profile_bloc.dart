@@ -31,21 +31,25 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
     required ContentBlocklistRepository contentBlocklistRepository,
     required String currentUserPubkey,
     required FollowRepository followRepository,
+    IdentityClaimsRepository? identityClaimsRepository,
   }) : _profileRepository = profileRepository,
        _blocklistRepository = contentBlocklistRepository,
        _currentUserPubkey = currentUserPubkey,
        _followRepository = followRepository,
+       _identityClaimsRepository = identityClaimsRepository,
        super(const OtherProfileInitial()) {
     on<OtherProfileLoadRequested>(_onLoadRequested);
     on<OtherProfileRefreshRequested>(_onRefreshRequested);
     on<OtherProfileBlockRequested>(_onBlockRequested);
     on<OtherProfileUnblockRequested>(_onUnblockRequested);
+    on<VerifiedClaimsRequested>(_onVerifiedClaimsRequested);
   }
 
   final ProfileRepository _profileRepository;
   final ContentBlocklistRepository _blocklistRepository;
   final String _currentUserPubkey;
   final FollowRepository _followRepository;
+  final IdentityClaimsRepository? _identityClaimsRepository;
 
   /// The pubkey of the profile being viewed.
   final String pubkey;
@@ -72,8 +76,10 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
       );
       if (freshProfile != null) {
         emit(OtherProfileLoaded(profile: freshProfile, isFresh: true));
+        add(const VerifiedClaimsRequested());
       } else if (cachedProfile != null) {
         emit(OtherProfileLoaded(profile: cachedProfile, isFresh: false));
+        add(const VerifiedClaimsRequested());
       } else {
         emit(
           const OtherProfileError(errorType: OtherProfileErrorType.notFound),
@@ -82,6 +88,7 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
     } catch (e) {
       if (cachedProfile != null) {
         emit(OtherProfileLoaded(profile: cachedProfile, isFresh: false));
+        add(const VerifiedClaimsRequested());
       } else {
         emit(
           const OtherProfileError(
@@ -110,6 +117,7 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
       );
       if (freshProfile != null) {
         emit(OtherProfileLoaded(profile: freshProfile, isFresh: true));
+        add(const VerifiedClaimsRequested());
       } else {
         emit(
           OtherProfileError(
@@ -121,12 +129,46 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
     } catch (e) {
       if (currentProfile != null) {
         emit(OtherProfileLoaded(profile: currentProfile, isFresh: false));
+        add(const VerifiedClaimsRequested());
       } else {
         emit(
           const OtherProfileError(
             errorType: OtherProfileErrorType.networkError,
           ),
         );
+      }
+    }
+  }
+
+  Future<void> _onVerifiedClaimsRequested(
+    VerifiedClaimsRequested event,
+    Emitter<OtherProfileState> emit,
+  ) async {
+    final repo = _identityClaimsRepository;
+    if (repo == null) return;
+
+    final current = state;
+    if (current is! OtherProfileLoaded) return;
+    final profile = current.profile;
+
+    try {
+      final claims = await repo.verifiedClaims(
+        pubkey: profile.pubkey,
+        tags: profile.rawTags,
+      );
+      final latest = state;
+      if (latest is OtherProfileLoaded &&
+          latest.profile.pubkey == profile.pubkey) {
+        emit(latest.copyWith(verifiedClaims: claims));
+      }
+    } on Exception catch (e, stackTrace) {
+      // Verifier failures are expected (network/4xx/5xx/timeout). Per
+      // .claude/rules/error_handling.md they are NOT Reportable.
+      addError(e, stackTrace);
+      final latest = state;
+      if (latest is OtherProfileLoaded &&
+          latest.profile.pubkey == profile.pubkey) {
+        emit(latest.copyWith(verifiedClaims: const []));
       }
     }
   }

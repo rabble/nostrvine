@@ -8,7 +8,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
-import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:profile_repository/profile_repository.dart';
@@ -73,7 +72,9 @@ void main() {
         (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
       );
       when(() => mockNostrService.publishEvent(any())).thenAnswer(
-        (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
+        (_) async => PublishSuccess(
+          event: Event(_testPubkey, 4, <List<String>>[], 'test'),
+        ),
       );
       when(
         () => mockProfileRepository.fetchFreshProfile(pubkey: _recipientPubkey),
@@ -125,7 +126,9 @@ void main() {
         (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
       );
       when(() => mockNostrService.publishEvent(any())).thenAnswer(
-        (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
+        (_) async => PublishSuccess(
+          event: Event(_testPubkey, 4, <List<String>>[], 'test'),
+        ),
       );
       when(
         () => mockProfileRepository.fetchFreshProfile(
@@ -286,7 +289,7 @@ void main() {
       ).thenAnswer((_) async => signedEvent);
       when(
         () => mockNostrService.publishEvent(any()),
-      ).thenAnswer((_) async => signedEvent);
+      ).thenAnswer((_) async => PublishSuccess(event: signedEvent));
       when(
         () => mockProfileRepository.fetchFreshProfile(
           pubkey: any(named: 'pubkey'),
@@ -322,7 +325,7 @@ void main() {
       );
       when(
         () => mockNostrService.publishEvent(any()),
-      ).thenAnswer((_) async => null);
+      ).thenAnswer((_) async => const PublishFailed());
 
       final now = DateTime.now();
       final result = await service.shareVideoWithUser(
@@ -416,7 +419,9 @@ void main() {
           recipientPubkey: any(named: 'recipientPubkey'),
           content: any(named: 'content'),
         ),
-      ).thenAnswer((_) async => NIP17SendResult.failure('Relay rejected'));
+      ).thenAnswer(
+        (_) async => const NIP17SendResult.failure('Relay rejected'),
+      );
 
       final now = DateTime.now();
       final result = await nip17Service.shareVideoWithUser(
@@ -662,7 +667,7 @@ void main() {
       expect(url, equals('https://divine.video/video/my-vine-id'));
     });
 
-    test('generateShareUrl falls back to nostr nevent without a d tag', () {
+    test('generateShareUrl falls back to event id when d tag is missing', () {
       final now = DateTime.now();
       const eventId =
           'a695f6b60119d9521934a691347d9f78e8770b56da16bb255ee77ac112b4c1f6';
@@ -677,8 +682,9 @@ void main() {
 
       final url = service.generateShareUrl(video);
 
-      expect(url, startsWith('nostr:nevent1'));
-      expect(NIP19Tlv.isNevent(url.replaceFirst('nostr:', '')), isTrue);
+      // Always emits an https URL — never a nostr: URI. The route
+      // handler accepts raw event IDs as well as d-tags / NIP-19 refs.
+      expect(url, equals('https://divine.video/video/$eventId'));
     });
 
     test('hasSharedWithRecently returns false for unknown user', () {
@@ -698,7 +704,9 @@ void main() {
         (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
       );
       when(() => mockNostrService.publishEvent(any())).thenAnswer(
-        (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
+        (_) async => PublishSuccess(
+          event: Event(_testPubkey, 4, <List<String>>[], 'test'),
+        ),
       );
       when(
         () => mockProfileRepository.fetchFreshProfile(
@@ -734,7 +742,9 @@ void main() {
         (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
       );
       when(() => mockNostrService.publishEvent(any())).thenAnswer(
-        (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
+        (_) async => PublishSuccess(
+          event: Event(_testPubkey, 4, <List<String>>[], 'test'),
+        ),
       );
       when(
         () => mockProfileRepository.fetchFreshProfile(

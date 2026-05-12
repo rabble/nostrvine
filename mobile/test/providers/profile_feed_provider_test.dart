@@ -188,18 +188,75 @@ void main() {
           'pubkey1',
           'stable1',
           baseTime.subtract(const Duration(seconds: 1)),
-        ).copyWith(rawTags: {'views': '42'});
+        ).copyWith(rawTags: {'d': 'stable1', 'views': '42'});
 
-        final mergedVideo = relayVideo.copyWith(
-          rawTags: ProfileFeed.mergeRawTagsForVideoMerge(
-            relayVideo.rawTags,
-            restVideo.rawTags,
-          ),
-          originalLoops: relayVideo.originalLoops ?? restVideo.originalLoops,
+        final mergedVideo = ProfileFeed.mergeTwoProfileVideos(
+          restVideo,
+          relayVideo,
         );
 
         expect(mergedVideo.rawTags['views'], equals('42'));
         expect(mergedVideo.totalLoops, equals(42));
+      });
+
+      test(
+        'merge takes max views when newer primary overwrote REST with zero',
+        () {
+          final merged = ProfileFeed.mergeRawTagsForVideoMerge(
+            {'d': 'stable1', 'views': '0'},
+            {'views': '42', 'd': 'stable1'},
+          );
+          expect(merged['views'], equals('42'));
+        },
+      );
+
+      test(
+        'merge preserves higher originalLoops when newer relay carries zero',
+        () {
+          final newerRelay = createTestVideo(
+            'id1',
+            'pubkey1',
+            'stable1',
+            baseTime,
+          ).copyWith(originalLoops: 0);
+          final olderRest = createTestVideo(
+            'id2',
+            'pubkey1',
+            'stable1',
+            baseTime.subtract(const Duration(seconds: 1)),
+          ).copyWith(originalLoops: 500);
+
+          final merged = ProfileFeed.mergeTwoProfileVideos(
+            olderRest,
+            newerRelay,
+          );
+
+          expect(merged.originalLoops, equals(500));
+          expect(merged.totalLoops, equals(500));
+        },
+      );
+
+      group('mergeProfileEngagementCount', () {
+        test('returns null when both sources are null', () {
+          expect(ProfileFeed.mergeProfileEngagementCount(null, null), isNull);
+        });
+
+        test('returns the non-null side when the other is null', () {
+          expect(ProfileFeed.mergeProfileEngagementCount(null, 7), equals(7));
+          expect(ProfileFeed.mergeProfileEngagementCount(7, null), equals(7));
+        });
+
+        test('returns the higher count when both are non-null', () {
+          expect(ProfileFeed.mergeProfileEngagementCount(3, 10), equals(10));
+          expect(ProfileFeed.mergeProfileEngagementCount(10, 3), equals(10));
+        });
+
+        test(
+          'treats zero and null so relay zero does not wipe a positive REST',
+          () {
+            expect(ProfileFeed.mergeProfileEngagementCount(0, 42), equals(42));
+          },
+        );
       });
 
       test('cached metadata rehydrates views onto relay profile videos', () {
@@ -300,6 +357,55 @@ void main() {
             isFalse,
           );
         },
+      );
+    });
+  });
+
+  // Pure-function coverage for shouldKeepInitialLoad; full provider flow is
+  // integration-test territory (ref.watch deps aren't unit-testable). (#4164)
+  group('$ProfileFeed shouldKeepInitialLoad', () {
+    test('keeps loading when pending and videos empty (cold-start window)', () {
+      expect(
+        ProfileFeed.shouldKeepInitialLoad(
+          initialLoadPending: true,
+          videosEmpty: true,
+        ),
+        isTrue,
+      );
+    });
+
+    test('clears loading once videos arrive even while still pending', () {
+      // Once any source has produced videos the spinner should clear, even
+      // if other sources haven't settled yet — otherwise the grid would
+      // re-render the empty branch on the next pending re-emit.
+      expect(
+        ProfileFeed.shouldKeepInitialLoad(
+          initialLoadPending: true,
+          videosEmpty: false,
+        ),
+        isFalse,
+      );
+    });
+
+    test('clears loading after sources have settled with empty result', () {
+      // REST authoritative empty / hard-timeout → pending becomes false →
+      // empty state is allowed to render.
+      expect(
+        ProfileFeed.shouldKeepInitialLoad(
+          initialLoadPending: false,
+          videosEmpty: true,
+        ),
+        isFalse,
+      );
+    });
+
+    test('clears loading when not pending and videos populated', () {
+      expect(
+        ProfileFeed.shouldKeepInitialLoad(
+          initialLoadPending: false,
+          videosEmpty: false,
+        ),
+        isFalse,
       );
     });
   });

@@ -36,14 +36,11 @@ class ShareService {
 
   /// Generate a web app link for a video.
   ///
-  /// Uses the web route only when the video has a real addressable `d` tag.
-  /// Otherwise falls back to a NIP-19 `nevent` link so this method never
-  /// returns a broken `divine.video/video/{eventId}` URL.
+  /// Always emits an `https://divine.video/video/...` URL. The route accepts
+  /// raw event IDs, d-tags, and NIP-19 references, and [VideoEvent.stableId]
+  /// falls back to the event ID when a `d` tag is missing.
   String generateWebLink(VideoEvent video) {
-    if (_hasWebShareableRoute(video)) {
-      return '$_appUrl/video/${video.stableId}';
-    }
-    return generateNostrEventLink(video);
+    return '$_appUrl/video/${video.stableId}';
   }
 
   /// Generate shareable text content.
@@ -51,11 +48,6 @@ class ShareService {
   /// Returns only the web link so users can add their own context.
   String generateShareText(VideoEvent video) {
     return generateWebLink(video);
-  }
-
-  bool _hasWebShareableRoute(VideoEvent video) {
-    final routeId = video.rawTags['d'];
-    return routeId != null && routeId.isNotEmpty;
   }
 
   /// Copy link to clipboard

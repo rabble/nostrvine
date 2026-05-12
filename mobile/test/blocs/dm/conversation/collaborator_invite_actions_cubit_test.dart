@@ -2,8 +2,10 @@
 // ABOUTME: Verifies accept publishes while ignore stays local-only.
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:collaborator_repository/collaborator_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation/collaborator_invite_actions_cubit.dart';
 import 'package:openvine/models/collaborator_invite.dart';
 import 'package:openvine/services/collaborator_invite_state_store.dart';
@@ -14,6 +16,9 @@ class _MockCollaboratorInviteStateStore extends Mock
 
 class _MockCollaboratorResponseService extends Mock
     implements CollaboratorResponseService {}
+
+class _MockConfirmationRepository extends Mock
+    implements CollaboratorConfirmationRepository {}
 
 void main() {
   const currentUserPubkey =
@@ -34,15 +39,25 @@ void main() {
 
   late _MockCollaboratorInviteStateStore store;
   late _MockCollaboratorResponseService responseService;
+  late _MockConfirmationRepository confirmationRepository;
 
   setUpAll(() {
     registerFallbackValue(invite);
     registerFallbackValue(CollaboratorInviteState.pending);
+    registerFallbackValue(CollaboratorStatus.pending);
   });
 
   setUp(() {
     store = _MockCollaboratorInviteStateStore();
     responseService = _MockCollaboratorResponseService();
+    confirmationRepository = _MockConfirmationRepository();
+    when(
+      () => confirmationRepository.markLocal(
+        videoAddress: any(named: 'videoAddress'),
+        collaboratorPubkey: any(named: 'collaboratorPubkey'),
+        status: any(named: 'status'),
+      ),
+    ).thenReturn(null);
   });
 
   CollaboratorInviteActionsCubit buildCubit() {
@@ -50,6 +65,7 @@ void main() {
       stateStore: store,
       responseService: responseService,
       currentUserPubkey: currentUserPubkey,
+      confirmationRepository: confirmationRepository,
     );
   }
 
@@ -116,6 +132,11 @@ void main() {
             collaboratorPubkey: currentUserPubkey,
             state: CollaboratorInviteState.accepted,
           ),
+          () => confirmationRepository.markLocal(
+            videoAddress: invite.videoAddress,
+            collaboratorPubkey: currentUserPubkey,
+            status: CollaboratorStatus.confirmed,
+          ),
         ]);
       },
     );
@@ -151,6 +172,17 @@ void main() {
           CollaboratorInviteState.failed,
         ),
       ],
+      verify: (_) {
+        // Failed publish must NOT optimistically promote the local fast-path
+        // to confirmed.
+        verifyNever(
+          () => confirmationRepository.markLocal(
+            videoAddress: any(named: 'videoAddress'),
+            collaboratorPubkey: any(named: 'collaboratorPubkey'),
+            status: any(named: 'status'),
+          ),
+        );
+      },
     );
 
     blocTest<CollaboratorInviteActionsCubit, CollaboratorInviteActionsState>(
@@ -176,6 +208,13 @@ void main() {
       ],
       verify: (_) {
         verifyNever(() => responseService.acceptInvite(any()));
+        verify(
+          () => confirmationRepository.markLocal(
+            videoAddress: invite.videoAddress,
+            collaboratorPubkey: currentUserPubkey,
+            status: CollaboratorStatus.ignored,
+          ),
+        ).called(1);
       },
     );
 

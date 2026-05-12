@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:divine_video_player/src/audio_track.dart';
 import 'package:divine_video_player/src/video_clip.dart';
@@ -31,12 +30,30 @@ class DivineVideoPlayerController {
   /// on iOS/macOS where `UiKitView`/`AppKitView` are composited as
   /// separate `CALayer`s that bypass Flutter's rendering pipeline.
   /// Defaults to `false` (platform view).
-  DivineVideoPlayerController({this.useTexture = false});
+  ///
+  /// When [useLegacySurface] is `true` AND [useTexture] is `true`, the
+  /// Android side allocates a legacy `SurfaceTextureEntry` instead of
+  /// the default `SurfaceProducer`. The legacy backend has no
+  /// surface-recreate callback (so it can't transparently survive
+  /// permission dialogs / OEM compositor events), but it has no shared
+  /// `ImageReader` buffer pool either — which makes it immune to the
+  /// 1-frame ghost frame that surfaces when many `SurfaceProducer`-backed
+  /// players coexist and a sibling decoder is released (the feed flicker).
+  /// Use it for screens that render many players at once. No effect on
+  /// iOS/macOS. Defaults to `false`.
+  DivineVideoPlayerController({
+    this.useTexture = false,
+    this.useLegacySurface = false,
+  });
 
   /// Whether this player renders via a Flutter texture instead of a
   /// platform view. When `true` the widget should use the [Texture]
   /// widget with [textureId].
   final bool useTexture;
+
+  /// Whether to use the legacy Android `SurfaceTextureEntry` backend
+  /// instead of `SurfaceProducer`. See the constructor docs.
+  final bool useLegacySurface;
 
   static const _globalChannel = MethodChannel('divine_video_player');
 
@@ -185,7 +202,11 @@ class DivineVideoPlayerController {
 
     final result = await _globalChannel.invokeMethod<Map<Object?, Object?>>(
       'create',
-      {'id': _playerId, 'useTexture': useTexture},
+      {
+        'id': _playerId,
+        'useTexture': useTexture,
+        'useLegacySurface': useLegacySurface,
+      },
     );
     if (useTexture && result != null) {
       _textureId = result['textureId'] as int?;
@@ -267,8 +288,11 @@ class DivineVideoPlayerController {
   /// Sets the volume (0.0 silent, 1.0 full).
   Future<void> setVolume(double volume) async {
     _ensureInitialized();
+    final vol = volume.clamp(0.0, 1.0);
+    _state = _state.copyWith(volume: vol);
+    _stateController.add(_state);
     await _methodChannel.invokeMethod<void>('setVolume', {
-      'volume': volume.clamp(0.0, 1.0),
+      'volume': vol,
     });
   }
 
@@ -334,13 +358,18 @@ class DivineVideoPlayerController {
     if (_disposed) return;
     _disposed = true;
 
+    // Cancel the event subscription before disposing the native player.
+    // The native dispose tears down the EventChannel stream handler, so if
+    // dispose races ahead of the cancel message the channel is already gone
+    // and Flutter throws MissingPluginException on the cancel call.
+    await _eventSubscription?.cancel();
+    _eventSubscription = null;
+
     await Future.wait<void>([
-      if (_eventSubscription != null) _eventSubscription!.cancel(),
       if (_initialized)
         _globalChannel.invokeMethod<void>('dispose', {'id': _playerId}),
       _stateController.close(),
     ]);
-    _eventSubscription = null;
   }
 
   // -- internals --
@@ -360,18 +389,6 @@ class DivineVideoPlayerController {
     if (event is! Map) return;
     final map = event.cast<Object?, Object?>();
     _state = DivineVideoPlayerState.fromMap(map);
-
-    // Log native error details rather than storing them in state.
-    if (_state.status == PlaybackStatus.error) {
-      final nativeError = map['errorMessage'] as String?;
-      if (nativeError != null) {
-        developer.log(
-          'Native player error: $nativeError',
-          name: 'DivineVideoPlayer',
-          level: 1000,
-        );
-      }
-    }
 
     if (_state.isFirstFrameRendered && !_firstFrameCompleter.isCompleted) {
       _firstFrameCompleter.complete(true);

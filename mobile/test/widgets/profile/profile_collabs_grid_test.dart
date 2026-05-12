@@ -15,6 +15,7 @@ import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/profile/profile_collabs_grid.dart';
 
 import '../../helpers/go_router.dart';
+import '../../helpers/test_provider_overrides.dart';
 
 class _MockProfileCollabVideosBloc
     extends MockBloc<ProfileCollabVideosEvent, ProfileCollabVideosState>
@@ -73,6 +74,7 @@ void main() {
       );
       final scoped = ProviderScope(
         overrides: [
+          ...getStandardTestOverrides(),
           videoEventServiceProvider.overrideWithValue(
             _FakeVideoEventService(),
           ),
@@ -286,6 +288,7 @@ void main() {
           await tester.pumpWidget(
             ProviderScope(
               overrides: [
+                ...getStandardTestOverrides(),
                 videoEventServiceProvider.overrideWithValue(
                   _FakeVideoEventService(),
                 ),
@@ -335,6 +338,7 @@ void main() {
           await tester.pumpWidget(
             ProviderScope(
               overrides: [
+                ...getStandardTestOverrides(),
                 videoEventServiceProvider.overrideWithValue(
                   _FakeVideoEventService(),
                 ),

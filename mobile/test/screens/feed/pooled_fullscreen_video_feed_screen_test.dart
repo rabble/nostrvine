@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:infinite_video_feed/infinite_video_feed.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -24,11 +25,13 @@ import 'package:openvine/features/feature_flags/services/build_configuration.dar
 import 'package:openvine/features/feature_flags/services/feature_flag_service.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/feed/feed_settings_menu.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/media_viewer_auth_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
+import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
@@ -230,6 +233,37 @@ void main() {
           Alignment.center,
         );
       });
+
+      test('places contained videos below the fullscreen app header', () {
+        expect(
+          fullscreenContainedVideoTopInset(safeAreaTop: 54),
+          54 + DiVineAppBarStyle.defaultStyle.height,
+        );
+      });
+
+      test('does not offset portrait videos that cover the viewport', () {
+        expect(
+          fullscreenContainedVideoTopInset(safeAreaTop: 54, isPortrait: true),
+          0,
+        );
+      });
+
+      test('returns 0 when a context header is present — the Scaffold lays out '
+          'the body beneath the AppBar, so the leaf-level Padding would '
+          'double-pad. Applies to both portrait and contained videos.', () {
+        expect(
+          fullscreenContainedVideoTopInset(
+            safeAreaTop: 54,
+            isPortrait: true,
+            hasHeader: true,
+          ),
+          0,
+        );
+        expect(
+          fullscreenContainedVideoTopInset(safeAreaTop: 54, hasHeader: true),
+          0,
+        );
+      });
     });
 
     late MockFullscreenFeedBloc mockBloc;
@@ -241,6 +275,10 @@ void main() {
     late _MockVideoVolumeCubit videoVolumeCubit;
 
     setUpAll(() {
+      // This suite validates pooled controller behavior; force the widget
+      // to stay on the pooled/native fallback path regardless of host OS.
+      InfiniteVideoFeed.debugIsSupportedOverride = false;
+
       registerFallbackValue(const FullscreenFeedStarted());
       registerFallbackValue(const FullscreenFeedIndexChanged(0));
       registerFallbackValue(const FullscreenFeedLoadMoreRequested());
@@ -274,6 +312,10 @@ void main() {
     tearDown(() async {
       await stateController.close();
       await PlayerPool.reset();
+    });
+
+    tearDownAll(() {
+      InfiniteVideoFeed.debugIsSupportedOverride = null;
     });
 
     List<VideoEvent> createTestVideos({int count = 3}) {
@@ -545,6 +587,68 @@ void main() {
         },
       );
 
+      group('native-player branch', () {
+        setUp(() {
+          InfiniteVideoFeed.debugIsSupportedOverride = true;
+        });
+
+        tearDown(() {
+          InfiniteVideoFeed.debugIsSupportedOverride = false;
+        });
+
+        testWidgets('renders FeedVideos + InfiniteVideoFeed when supported', (
+          tester,
+        ) async {
+          final videos = createTestVideos();
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: videos,
+              ),
+              additionalOverrides: [
+                isFeatureEnabledProvider(
+                  FeatureFlag.nativeFeedPlayer,
+                ).overrideWithValue(true),
+              ],
+            ),
+          );
+          await tester.pump();
+
+          expect(find.byType(FeedVideos), findsOneWidget);
+          expect(find.byType(InfiniteVideoFeed), findsOneWidget);
+          expect(find.byType(PooledVideoFeed), findsNothing);
+          expect(find.byType(WebVideoFeed), findsNothing);
+        });
+
+        testWidgets(
+          'renders PooledVideoFeed when supported but flag is off',
+          (tester) async {
+            final videos = createTestVideos();
+
+            await tester.pumpWidget(
+              buildSubject(
+                state: FullscreenFeedState(
+                  status: FullscreenFeedStatus.ready,
+                  videos: videos,
+                ),
+                additionalOverrides: [
+                  isFeatureEnabledProvider(
+                    FeatureFlag.nativeFeedPlayer,
+                  ).overrideWithValue(false),
+                ],
+              ),
+            );
+            await tester.pump();
+
+            expect(find.byType(PooledVideoFeed), findsOneWidget);
+            expect(find.byType(InfiniteVideoFeed), findsNothing);
+            expect(find.byType(WebVideoFeed), findsNothing);
+          },
+        );
+      });
+
       testWidgets('resumes playback when app resumes on current route', (
         tester,
       ) async {
@@ -560,9 +664,7 @@ void main() {
         );
         await tester.pump();
 
-        tester.binding.handleAppLifecycleStateChanged(
-          AppLifecycleState.paused,
-        );
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
         await tester.pump();
         clearInteractions(defaultController);
 
@@ -810,11 +912,7 @@ void main() {
           // would never see the transition.
           final controller = StreamController<FullscreenFeedState>();
           addTearDown(controller.close);
-          whenListen(
-            mockBloc,
-            controller.stream,
-            initialState: initialState,
-          );
+          whenListen(mockBloc, controller.stream, initialState: initialState);
 
           await tester.pumpWidget(
             MaterialApp(
@@ -854,9 +952,7 @@ void main() {
                                   listener: (ctx, _) {
                                     Navigator.of(ctx).maybePop();
                                   },
-                                  child: const Scaffold(
-                                    body: Text('on-feed'),
-                                  ),
+                                  child: const Scaffold(body: Text('on-feed')),
                                 ),
                           ),
                         ),
@@ -1339,7 +1435,25 @@ void main() {
         await positionController.close();
       });
 
-      testWidgets('shows Auto action in the fullscreen overlay', (
+      // Auto-advance is triggered through the playback-settings popover
+      // (mounted in the fullscreen app bar's customActions slot) rather
+      // than a per-video AutoActionButton. This helper opens the popover
+      // and taps the playback-mode toggle so behavior tests can enable
+      // auto-advance the same way a user would.
+      Future<void> enableAutoAdvanceViaPopover(WidgetTester tester) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.byType(FeedSettingsMenu));
+        // Single-frame pump rather than pumpAndSettle: the position stream
+        // continually emits in these tests, so pumpAndSettle never sees an
+        // idle frame and times out.
+        await tester.pump();
+        await tester.tap(
+          find.bySemanticsLabel(l10n.videoActionEnableAutoAdvance),
+        );
+        await tester.pump();
+      }
+
+      testWidgets('mounts the playback settings popover trigger', (
         tester,
       ) async {
         final videos = createTestVideos();
@@ -1354,7 +1468,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byType(AutoActionButton), findsWidgets);
+        expect(find.byType(FeedSettingsMenu), findsOneWidget);
       });
 
       testWidgets('advances to the next video after one completed play', (
@@ -1375,7 +1489,7 @@ void main() {
         );
         await tester.pump();
 
-        await tester.tap(find.byType(AutoActionButton).first);
+        await enableAutoAdvanceViaPopover(tester);
         await tester.pump();
 
         positionController.add(const Duration(seconds: 4, milliseconds: 500));
@@ -1409,7 +1523,7 @@ void main() {
         );
         await tester.pump();
 
-        await tester.tap(find.byType(AutoActionButton).first);
+        await enableAutoAdvanceViaPopover(tester);
         await tester.pump();
 
         positionController.add(const Duration(seconds: 4, milliseconds: 500));
@@ -1441,7 +1555,7 @@ void main() {
         );
         await tester.pump();
 
-        await tester.tap(find.byType(AutoActionButton).first);
+        await enableAutoAdvanceViaPopover(tester);
         await tester.pump();
 
         positionController.add(const Duration(seconds: 4, milliseconds: 500));
@@ -1473,7 +1587,7 @@ void main() {
         );
         await tester.pump();
 
-        await tester.tap(find.byType(AutoActionButton).first);
+        await enableAutoAdvanceViaPopover(tester);
         await tester.pump();
 
         await tester.tap(find.byType(LikeActionButton).first);

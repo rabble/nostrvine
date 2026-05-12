@@ -1,6 +1,8 @@
 // ABOUTME: Marker interface + wrapper + PII sanitizer used to gate Bloc errors
 // ABOUTME: forwarded to Crashlytics. See .claude/rules/error_handling.md.
 
+import 'package:openvine/utils/sensitive_uri_for_logs.dart';
+
 /// Marker interface signalling that an error is worth reporting to Crashlytics.
 ///
 /// Errors that flow through `addError(error, st)` only reach the crash reporter
@@ -56,17 +58,32 @@ final class Reportable<T extends Object> implements ReportableError {
 
 final RegExp _npubPattern = RegExp('npub1[a-z0-9]+');
 final RegExp _nsecPattern = RegExp('nsec1[a-z0-9]+');
+// Conservative email matcher: local-part of common chars then `@`, host with
+// at least one `.`. Intentionally narrower than RFC 5322 — false negatives on
+// exotic addresses are preferable to false positives on non-email strings.
+final RegExp _emailPattern = RegExp(
+  r'[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}',
+);
 
-/// Strips Nostr `npub1…` and `nsec1…` identifiers from [input] before it is
-/// forwarded to a third-party crash reporter.
+/// Strips Nostr `npub1…` / `nsec1…` identifiers and email addresses from
+/// [input] before it is forwarded to a third-party crash reporter.
 ///
-/// Scope is intentionally narrow: only `npub` (public-key bech32) and `nsec`
-/// (private-key bech32). Other Nostr-format references (`note1`, `nevent1`,
-/// `nprofile1`) encode event/profile pointers, not secrets, and removing them
-/// removes triage value. Call sites that need to redact those should do so
-/// explicitly before constructing the error message.
+/// Scope is intentionally narrow:
+/// - Nostr: only `npub` (public-key bech32) and `nsec` (private-key bech32).
+///   Other Nostr-format references (`note1`, `nevent1`, `nprofile1`) encode
+///   event/profile pointers, not secrets, and removing them removes triage
+///   value. Call sites that need to redact those should do so explicitly
+///   before constructing the error message.
+/// - Email: any RFC-5321-ish local@host.tld pattern. Replacement delegates to
+///   [redactEmailForLogs] so log redaction and crash-report redaction stay in
+///   lockstep.
 String sanitizeForCrashReport(String input) {
   return input
       .replaceAll(_npubPattern, 'npub1<redacted>')
-      .replaceAll(_nsecPattern, 'nsec1<redacted>');
+      .replaceAll(_nsecPattern, 'nsec1<redacted>')
+      .replaceAllMapped(
+        _emailPattern,
+        // Reuse the log helper here so both redaction surfaces stay aligned.
+        (match) => redactEmailForLogs(match.group(0)!),
+      );
 }

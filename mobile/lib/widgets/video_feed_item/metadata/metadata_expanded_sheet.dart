@@ -10,7 +10,6 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_badges_row.dart';
@@ -20,6 +19,7 @@ import 'package:openvine/widgets/video_feed_item/metadata/metadata_tags_section.
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_user_chips.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_verification_section.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/video_reposters_cubit.dart';
+import 'package:openvine/widgets/video_reply_parent_link.dart';
 import 'package:time_formatter/time_formatter.dart';
 
 /// Expanded metadata bottom sheet for a video.
@@ -98,71 +98,20 @@ class _MetadataContent extends StatelessWidget {
       ),
       children: [
         _TitleSection(video: video),
+        VideoReplyParentLink(
+          video: video,
+          variant: VideoReplyParentLinkVariant.metadata,
+        ),
         MetadataBadgesRow(video: video),
         MetadataStatsRow(video: video),
         MetadataVerificationSection(video: video),
         MetadataCreatorSection(pubkey: video.pubkey),
         MetadataTagsSection(video: video),
-        MetadataCollaboratorsSection(
-          collaboratorPubkeys: video.collaboratorPubkeys,
-        ),
+        MetadataCollaboratorsSection(video: video),
         MetadataInspiredBySection(video: video),
         MetadataRepostedBySection(video: video),
         MetadataSoundsSection(video: video),
-        const _CaptionsSettingSection(),
       ],
-    );
-  }
-}
-
-/// Global captions preference row for the metadata sheet.
-class _CaptionsSettingSection extends ConsumerWidget {
-  const _CaptionsSettingSection();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final captionsEnabled = ref.watch(subtitleVisibilityProvider);
-    final l10n = context.l10n;
-
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: VineTheme.outlineDisabled)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-        child: Align(
-          alignment: Alignment.centerRight,
-          child: Semantics(
-            button: true,
-            toggled: captionsEnabled,
-            label: captionsEnabled
-                ? l10n.metadataCaptionsEnabledSemantics
-                : l10n.metadataCaptionsDisabledSemantics,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  l10n.metadataCaptionsLabel,
-                  style: VineTheme.titleSmallFont(),
-                ),
-                const SizedBox(width: 8),
-                Switch(
-                  value: captionsEnabled,
-                  activeThumbColor: VineTheme.whiteText,
-                  activeTrackColor: VineTheme.vineGreen,
-                  inactiveThumbColor: VineTheme.whiteText,
-                  inactiveTrackColor: VineTheme.surfaceContainer,
-                  onChanged: (value) {
-                    ref
-                        .read(subtitleVisibilityProvider.notifier)
-                        .setEnabled(value);
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

@@ -16,7 +16,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.12+501
+version: 1.0.13+502
 
 environment:
   sdk: ^3.11.0
@@ -28,6 +28,7 @@ workspace:
   - packages/blossom_upload_service
   - packages/blurhash_service
   - packages/categories_repository
+  - packages/collaborator_repository
   - packages/comments_repository
   - packages/content_blocklist_repository
   - packages/content_policy
@@ -39,6 +40,7 @@ workspace:
   - packages/divine_camera
   - packages/dm_repository
   - packages/divine_video_player
+  - packages/infinite_video_feed
   - packages/follow_repository
   - packages/funnelcake_api_client
   - packages/hashtag_repository
@@ -66,6 +68,7 @@ workspace:
   - packages/time_formatter
   - packages/tv_static_effect
   - packages/unified_logger
+  - packages/verifier_client
   - packages/video_event_cache
   - packages/videos_repository
 
@@ -109,6 +112,7 @@ dependencies:
   # https://developer.apple.com/documentation/authenticationservices/aswebauthenticationsession
   flutter_web_auth_2: ^4.1.0
   dio: ^5.8.0
+  web: ^1.1.1
   webview_flutter: ^4.13.0
   webview_flutter_wkwebview: ^3.24.1
 
@@ -123,6 +127,8 @@ dependencies:
     path: packages/divine_camera
   divine_video_player:
     path: packages/divine_video_player
+  infinite_video_feed:
+    path: packages/infinite_video_feed
   dm_repository:
   video_player: ^2.9.1 # Uses native AVPlayer (iOS/macOS) and ExoPlayer (Android)
   visibility_detector: ^0.4.0+2 # Detect widget visibility for proper video control
@@ -166,6 +172,9 @@ dependencies:
 
   # Categories Repository - Video categories from Funnelcake API
   categories_repository:
+
+  # Collaborator Repository - Per-video pending/confirmed collaborator status
+  collaborator_repository:
 
   # Content Blocklist Repository - Blocked users, mutual mutes, kind 30000 sync
   content_blocklist_repository:
@@ -236,6 +245,9 @@ dependencies:
   logging: ^1.2.0
   unified_logger:
 
+  # Verifier Client - HTTP client for verifier.divine.video identity attestations
+  verifier_client:
+
   # Date formatting
   intl: ">=0.19.0 <1.0.0"
 
@@ -268,7 +280,7 @@ dependencies:
   firebase_messaging: ^16.1.1
   convert: ^3.1.2
   audio_session: ^0.2.2
-  pro_video_editor: ^1.15.0
+  pro_video_editor: ^1.16.2
   pro_image_editor: ^12.4.4
   flutter_colorpicker: ^1.1.0
   file_picker: ^10.3.7

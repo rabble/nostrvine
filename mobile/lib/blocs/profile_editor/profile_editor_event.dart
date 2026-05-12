@@ -1,5 +1,6 @@
 // ABOUTME: Events for the ProfileEditorBloc
-// ABOUTME: Defines actions for saving profile and claiming username
+// ABOUTME: Defines actions for saving profile, claiming username, and
+// ABOUTME: staging avatar uploads for the current edit session.
 
 part of 'profile_editor_bloc.dart';
 
@@ -43,6 +44,17 @@ final class ProfileSaved extends ProfileEditorEvent {
 
   /// Banner field - can be a hex color (e.g., "0x33ccbf") or URL (optional).
   final String? banner;
+}
+
+/// Request to save only the NIP-05-related profile identity fields.
+///
+/// The BLoC composes the final kind-0 payload from the current profile plus its
+/// own NIP-05 editor state so settings screens do not need to mirror
+/// unrelated profile fields.
+final class ProfileNip05Saved extends ProfileEditorEvent {
+  const ProfileNip05Saved({required this.currentProfile});
+
+  final UserProfile currentProfile;
 }
 
 /// Confirmation to proceed with saving profile despite warnings.
@@ -93,4 +105,87 @@ final class InitialExternalNip05Set extends ProfileEditorEvent {
 /// Re-check a previously reserved username to see if support has released it.
 final class UsernameRechecked extends ProfileEditorEvent {
   const UsernameRechecked();
+}
+
+/// Sets the user's existing persisted profile picture URL after profile load.
+///
+/// Mirrors what the user's kind 0 currently advertises. The avatar widget
+/// renders this when no staged change is present for the session.
+final class InitialPersistedPictureSet extends ProfileEditorEvent {
+  const InitialPersistedPictureSet(this.pictureUrl);
+
+  /// The picture URL from the user's currently persisted kind 0, or `null`
+  /// if the user has no profile yet or no picture set.
+  final String? pictureUrl;
+}
+
+/// Request to upload a new profile picture for the current edit session.
+///
+/// Exactly one of [file] or [bytes] must be supplied. The bloc handles the
+/// upload via the injected `BlossomUploadService` and stages the resulting
+/// CDN URL on success. Save remains the only path that publishes a kind 0
+/// — this event does **not** trigger publish.
+final class ProfilePictureUploadRequested extends ProfileEditorEvent {
+  const ProfilePictureUploadRequested({
+    required this.pubkey,
+    this.file,
+    this.bytes,
+    this.filename,
+    this.mimeType = 'image/jpeg',
+  }) : assert(
+         (file == null) != (bytes == null),
+         'Exactly one of file or bytes must be supplied',
+       );
+
+  /// User's public key in hex format. Required by the upload service for
+  /// the BUD-01 auth event.
+  final String pubkey;
+
+  /// Native file payload (iOS / Android / desktop).
+  final File? file;
+
+  /// In-memory bytes payload (web).
+  final Uint8List? bytes;
+
+  /// Filename for the bytes payload (web only). Used by the metadata
+  /// stripper to preserve / normalize the extension.
+  final String? filename;
+
+  /// MIME type. Defaults to `image/jpeg`.
+  final String mimeType;
+}
+
+/// Clears any staged profile picture for the current edit session.
+///
+/// Used when the user explicitly removes their pick before saving. After
+/// this fires, the avatar reverts to the persisted picture (or
+/// placeholder) and a subsequent Save publishes whatever the persisted
+/// value already was.
+final class ProfilePictureUploadCleared extends ProfileEditorEvent {
+  const ProfilePictureUploadCleared();
+}
+
+/// Stages a profile picture URL the user pasted manually.
+///
+/// Used by the manual-URL entry sheet. Bypasses the upload step because
+/// the bytes are already hosted somewhere; we just need to stage the URL
+/// for the Save step to write into kind 0.
+final class ProfilePictureUrlSet extends ProfileEditorEvent {
+  const ProfilePictureUrlSet(this.url);
+
+  /// The picture URL the user entered. Empty string clears the staged
+  /// picture (effectively the same as [ProfilePictureUploadCleared]).
+  final String url;
+}
+
+/// User tapped the "Get verified" CTA — UI listens for this and pushes the
+/// in-app verifier WebView. The bloc only flips a status; no navigation here.
+final class VerifierLaunchRequested extends ProfileEditorEvent {
+  const VerifierLaunchRequested();
+}
+
+/// In-app verifier WebView was popped — UI dispatches this so downstream
+/// consumers (e.g. MyProfileBloc) can refresh kind 0 and pick up new claims.
+final class VerifierWebViewDismissed extends ProfileEditorEvent {
+  const VerifierWebViewDismissed();
 }

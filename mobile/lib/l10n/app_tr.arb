@@ -267,8 +267,6 @@
   "profileRepostsOwnEmpty": "Yeniden paylaştığın videolar burada görünecek",
   "profileRepostsOtherEmpty": "Yeniden paylaştıkları videolar burada görünecek",
   "profileErrorLoadingReposts": "Yeniden paylaşılan videolar yüklenirken hata",
-  "profileLoadingTitle": "Profil yükleniyor...",
-  "profileLoadingSubtitle": "Bu birkaç saniye sürebilir",
   "profileLoadingVideos": "Videolar yükleniyor...",
   "profileNoVideosTitle": "Henüz Video Yok",
   "profileNoVideosOwnSubtitle": "İlk videonu paylaş ki burada görelim",
@@ -344,7 +342,7 @@
     }
   },
   "profileSetupGotItButton": "Anlaşıldı",
-  "profileSetupUploadFailedGeneric": "Görsel yüklenemedi: {error}",
+  "profileSetupUploadFailedGeneric": "Görsel yüklenemedi. Lütfen daha sonra tekrar dene.",
   "profileSetupUploadNetworkError": "Ağ hatası: Lütfen internet bağlantını kontrol et ve tekrar dene.",
   "profileSetupUploadAuthError": "Kimlik doğrulama hatası: Lütfen çıkış yapıp tekrar giriş yap.",
   "profileSetupUploadFileTooLarge": "Dosya çok büyük: Lütfen daha küçük bir görsel seç (maks. 10MB).",
@@ -358,7 +356,7 @@
   "profileSetupCheckAgain": "Tekrar kontrol et",
   "profileSetupUsernameBurned": "Bu kullanıcı adı artık kullanılamıyor",
   "profileSetupUsernameInvalidFormat": "Sadece harfler, rakamlar ve tire kullanılabilir",
-  "profileSetupUsernameInvalidLength": "Kullanıcı adı 3-20 karakter olmalı",
+  "profileSetupUsernameInvalidLength": "Kullanıcı adı 3-63 karakter olmalı",
   "profileSetupUsernameNetworkError": "Uygunluk kontrol edilemedi. Lütfen tekrar dene.",
   "profileSetupUsernameInvalidFormatGeneric": "Geçersiz kullanıcı adı formatı",
   "profileSetupUsernameCheckFailed": "Uygunluk kontrolü başarısız",
@@ -472,6 +470,7 @@
   "videoPlayerUnmute": "Videonun sesini aç",
   "videoPlayerEditVideo": "Videoyu düzenle",
   "videoPlayerEditVideoTooltip": "Videoyu düzenle",
+  "videoPlayerTapHint": "Oynatmak veya duraklatmak için dokunun. Beğenmek için çift dokunun.",
   "contentWarningLabel": "İçerik Uyarısı",
   "contentWarningNudity": "Çıplaklık",
   "contentWarningSexualContent": "Cinsel İçerik",
@@ -563,6 +562,35 @@
       }
     }
   },
+  "videoCollaboratorPendingDecoration": "Pending",
+  "@videoCollaboratorPendingDecoration": {
+    "description": "Small badge next to a collaborator's name or avatar when the creator (viewing their own video) has invited them but they have not yet accepted."
+  },
+  "videoCollaboratorPendingSemanticLabel": "Pending collaborator",
+  "@videoCollaboratorPendingSemanticLabel": {
+    "description": "Screen reader label for a dimmed pending collaborator avatar on the creator's own video."
+  },
+  "videoCollaboratorWithPendingSuffix": "{label} ({pending} pending)",
+  "@videoCollaboratorWithPendingSuffix": {
+    "description": "Appends a pending count to the collaborator label on the creator's own video. {label} is the existing 'with @name' / 'with @name +N' phrase.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "pending": {
+        "type": "int"
+      }
+    }
+  },
+  "profileChipTapHint": "{name}. Tap to view profile.",
+  "@profileChipTapHint": {
+    "description": "Screen reader hint announced when a user-chip in the metadata sheet is focused. {name} is the user's display name.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "listAttributionFallback": "Liste",
   "shareVideoLabel": "Videoyu paylaş",
   "sharePostSharedWith": "Gönderi {recipientName} ile paylaşıldı",
@@ -602,6 +630,11 @@
   "videoActionMoreOptions": "Daha fazla seçenek",
   "videoActionHideSubtitles": "Altyazıları gizle",
   "videoActionShowSubtitles": "Altyazıları göster",
+  "videoEngagementLikersTitle": "Beğenenler",
+  "videoEngagementRepostersTitle": "Repost edenler",
+  "videoEngagementLikersEmpty": "Henüz beğeni yok",
+  "videoEngagementRepostersEmpty": "Henüz repost yok",
+  "videoEngagementLoadFailed": "Liste yüklenemedi",
   "videoDescriptionLoops": "{count} döngü",
   "@videoDescriptionLoops": {
     "placeholders": {
@@ -1739,6 +1772,26 @@
   "feedFailedToLoadVideos": "Videolar yüklenemedi",
   "feedRetry": "Tekrar Dene",
   "feedNoFollowedUsers": "Takip edilen kullanıcı yok.\nVideolarını burada görmek için birini takip et.",
+  "feedModeForYou": "Senin için",
+  "feedModeNew": "Yeni",
+  "feedModeFollowing": "Takip",
+  "feedModeSemanticLabel": "Akış modu: {label}",
+  "@feedModeSemanticLabel": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "videoAuthorSemanticLabel": "Video yazarı: {displayName}",
+  "@videoAuthorSemanticLabel": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "videoAuthorAvatarSemanticLabel": "Yazar avatarı",
   "feedForYouEmpty": "Sana Özel akışın boş.\nVideolar keşfet ve içerik üreticileri takip ederek akışını şekillendir.",
   "feedFollowingEmpty": "Takip ettiğin kişilerden henüz video yok.\nBeğendiğin içerik üreticilerini bulup takip et.",
   "feedLatestEmpty": "Henüz yeni video yok.\nYakında tekrar kontrol et.",
@@ -1856,6 +1909,7 @@
   "routeInvalidCategory": "Geçersiz kategori",
   "routeNoVideosToDisplay": "Gösterilecek video yok",
   "routeInvalidProfileId": "Geçersiz profil kimliği",
+  "routeUnknownPath": "Bu sayfa uygulamada yok.",
   "routeDefaultListName": "Liste",
   "supportTitle": "Destek Merkezi",
   "supportContactSupport": "Destekle İletişime Geç",
@@ -2271,6 +2325,11 @@
       }
     }
   },
+  "inboxCollabInviteCardUntitledVideo": "Başlıksız video",
+  "clickableTextViewVideoLink": "Videoyu görüntüle",
+  "messageExternalLinkDialogTitle": "Harici bağlantı açılsın mı?",
+  "messageExternalLinkDialogBody": "Bu bağlantı harici bir siteye gidiyor ve güvenli olmayabilir:\n\n{url}",
+  "messageExternalLinkDialogOpen": "Aç",
   "inboxCollabInviteAcceptButton": "Kabul et",
   "inboxCollabInviteAcceptError": "Kabul edilemedi. Tekrar dene.",
   "inboxCollabInviteAcceptedStatus": "Kabul edildi",
@@ -2427,8 +2486,12 @@
   "libraryWebUnavailableDescription": "Taslaklar ve klipler cihazında saklanır; yönetmek için Divine’ı telefonda aç.",
   "libraryWebUnavailableHeadline": "Kitaplık mobil uygulamada",
   "notificationFollowBack": "Geri takip et",
-  "profileSetupUploadSuccess": "Profil fotoğrafı başarıyla yüklendi!",
+  "profileSetupUploadStaged": "Yüklendi — uygulamak için Kaydet'e dokunun",
   "proofmodeCheckAiGenerated": "Yapay zeka ile oluşturulup oluşturulmadığını kontrol et",
+  "dmSendFailedMessage": "Mesaj gönderilemedi",
+  "dmSendFailedRetry": "Tekrar Dene",
+  "dmSendPartialMessage": "Gönderildi, ama diğer cihazlarınla eşitlenmedi",
+  "dmConversationLoadError": "Mesajlar yüklenemedi",
   "reportDialogCancel": "İptal",
   "reportDialogReport": "Bildir",
   "routerInvalidCreator": "Geçersiz içerik üretici",
@@ -2668,7 +2731,7 @@
   "videoEditorAdjustVolumeTitle": "Ses seviyesini ayarla",
   "videoEditorAudioAddAudio": "Ses ekle",
   "videoEditorAudioFailedToLoadTitle": "Sesler yüklenemedi",
-  "videoEditorAudioCategoryDivine": "diVine",
+  "videoEditorAudioCategoryDivine": "OG Sounds",
   "videoEditorAudioCategoryCommunity": "Topluluk",
   "videoEditorAudioLabel": "Ses",
   "videoEditorAudioNoSoundsAvailableSubtitle": "İçerik üreticileri ses paylaştığında burada görünür",
@@ -2780,6 +2843,11 @@
     }
   },
   "videoEditorSplitSelectedClipSemanticLabel": "Seçili klibi böl",
+  "videoEditorExtractAudioLabel": "Sesi çıkar",
+  "videoEditorClipAudioTitle": "Klip sesi",
+  "videoEditorExtractAudioFromClipSemanticLabel": "Klipten sesi çıkar ve orijinali sessize al",
+  "videoEditorExtractAudioNoLocalFile": "Ses çıkarılamıyor: klip yerel olarak kullanılamıyor.",
+  "videoEditorExtractAudioFailed": "Ses çıkarılamadı. Lütfen tekrar deneyin.",
   "videoEditorStickersDivineOriginals": "Divine Orijinaller",
   "videoEditorStickerSearchHint": "Çıkartma ara...",
   "videoEditorTextAlignmentSemanticLabel": "Metin hizalama",
@@ -2848,10 +2916,10 @@
   },
   "videoMetadataCollaboratorsHelpMessage": "Ortak çalışanlar bu gönderide ortak içerik üretici olarak etiketlenir. Yalnızca karşılıklı takip ettiğiniz kişileri ekleyebilirsiniz; yayınlandığında gönderi meta verilerinde görünürler.",
   "videoMetadataCollaboratorsHelpTooltip": "Ortak çalışanlar nasıl çalışır?",
-  "videoMetadataCollaboratorsLabel": "Ortak çalışan ekle",
+  "videoMetadataCollaboratorsLabel": "Ortak çalışanlar",
   "videoMetadataContentWarningDoneButton": "Bitti",
-  "videoMetadataContentWarningLabel": "İçerik uyarısı ekle",
-  "videoMetadataContentWarningSelectAllThatApply": "Geçerli olanların hepsini seçin",
+  "videoMetadataContentWarningLabel": "İçerik Uyarısı",
+  "videoMetadataContentWarningSelectAllThatApply": "İçeriğinize uyanların hepsini seçin",
   "videoMetadataCreatorCannotBeReferencedSnackbar": "Bu içerik üreticisi referans alınamaz.",
   "videoMetadataDeleteTagHint": "{tag} etiketini sil",
   "@videoMetadataDeleteTagHint": {
@@ -2871,7 +2939,7 @@
   "videoMetadataGotItButton": "Anladım!",
   "videoMetadataInspiredByHelpMessage": "Atıf vermek için kullanın. İlham kredisi ortak çalışanlardan farklıdır: etkiyi kabul eder, ancak birini ortak içerik üretici olarak etiketlemez.",
   "videoMetadataInspiredByHelpTooltip": "İlham kredileri nasıl çalışır?",
-  "videoMetadataInspiredByLabel": "İlham kaynağı ekle",
+  "videoMetadataInspiredByLabel": "İlham kaynağı",
   "videoMetadataInspiredByNone": "Yok",
   "videoMetadataLimitReachedWarning": "64KB sınırına ulaşıldı. Devam etmek için bazı içerikleri kaldırın.",
   "videoMetadataMustMutuallyFollowSnackbar": "{name}'i ortak çalışan olarak eklemek için karşılıklı takipleşmeniz gerekiyor.",
@@ -2956,9 +3024,6 @@
   "videoActionAutoLabel": "Otomatik",
   "videoActionEnableAutoAdvance": "Otomatik ilerlemeyi etkinleştir",
   "videoActionDisableAutoAdvance": "Otomatik ilerlemeyi devre dışı bırak",
-  "metadataCaptionsLabel": "Altyazılar",
-  "metadataCaptionsEnabledSemantics": "Tüm videolar için altyazılar etkin",
-  "metadataCaptionsDisabledSemantics": "Tüm videolar için altyazılar devre dışı",
   "@metadataLoopsLabel": {
     "placeholders": {
       "count": {
@@ -3092,6 +3157,16 @@
   "profileSetupImagesTypeGroup": "görseller",
   "profileSetupExternalNip05InvalidFormat": "Geçersiz NIP-05 formatı (örn. ad@alanadi.com)",
   "profileSetupExternalNip05DivineDomain": "divine.video için yukarıdaki kullanıcı adı alanını kullan",
+  "nostrSettingsNip05Address": "NIP-05 address",
+  "nostrSettingsNip05AddressSubtitle": "Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.",
+  "nostrSettingsNip05AddressHint": "you@example.com",
+  "nostrSettingsNip05SaveAction": "Save NIP-05",
+  "nostrSettingsNip05Saved": "NIP-05 saved",
+  "nostrSettingsNip05SaveFailed": "Couldn't save NIP-05. Please try again.",
+  "profileSetupNip05ConfirmTitle": "Use your own NIP-05?",
+  "profileSetupNip05ConfirmBody": "NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it's wrong, people can't find you and your verified handle disappears. Continue only if you've set this up.",
+  "profileSetupNip05ConfirmContinue": "Continue",
+  "profileSetupNip05ConfirmCancel": "Cancel",
   "contentWarningReportContentTooltip": "İçeriği Bildir",
   "contentWarningBlockUserTooltip": "Kullanıcıyı Engelle",
   "contentWarningBlockedTitle": "İçerik Engellendi",
@@ -3206,6 +3281,30 @@
   "@profileEditPublicKeyLink": {
     "description": "Secondary link on the edit profile screen that navigates to the key management screen where the user's npub lives."
   },
+  "verifiedAccountChipSemanticLabel": "Doğrulanmış {platform} hesabı: {identity}",
+  "@verifiedAccountChipSemanticLabel": {
+    "description": "Screen reader label for a verified-account chip on a user's profile.",
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      },
+      "identity": {
+        "type": "String"
+      }
+    }
+  },
+  "profileEditVerifiedAccountsTitle": "Doğrulanmış hesaplar",
+  "@profileEditVerifiedAccountsTitle": {
+    "description": "Section header on the edit profile screen above the verified-accounts chip row and the Get verified CTA."
+  },
+  "profileEditGetVerifiedCta": "Hesabını doğrula",
+  "@profileEditGetVerifiedCta": {
+    "description": "Primary CTA tile on edit profile that opens the verifyer integrated-app sandbox."
+  },
+  "profileEditGetVerifiedSubtitle": "Sosyal medya hesaplarını bağla ki insanlar gerçekten sen olduğunu bilsin.",
+  "@profileEditGetVerifiedSubtitle": {
+    "description": "Subtitle under the Get verified tile, harmonized with verifyer.divine.video landing copy."
+  },
   "soundUntitled": "Adsız ses",
   "soundStopPreview": "Ön izlemeyi durdur",
   "soundPreviewSemanticLabel": "{title} ön izle",
@@ -3294,6 +3393,20 @@
   "bugReportExpectedBehaviorHint": "Bunun yerine ne olmalıydı?",
   "bugReportDiagnosticsNotice": "Cihaz bilgileri ve günlükler otomatik olarak eklenecek.",
   "bugReportSuccessMessage": "Teşekkürler! Raporunu aldık ve Divine'i daha iyi yapmak için kullanacağız.",
+  "bugReportAttachImages": "Attach images",
+  "bugReportImagesCount": "{count} of {max} images selected",
+  "@bugReportImagesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "bugReportRemoveImage": "Remove image",
+  "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
   "bugReportSendFailed": "Hata raporu gönderilemedi. Lütfen daha sonra tekrar dene.",
   "bugReportFailedWithError": "Hata raporu gönderilemedi: {error}",
   "@bugReportFailedWithError": {
@@ -3437,21 +3550,63 @@
   "authNip07ExtensionNotFound": "Tarayıcı uzantısı bulunamadı. Alby, nos2x veya NIP-07 uyumlu başka bir uzantı yükleyin.",
   "authInfoBrowserExtensionTitle": "Tarayıcı Uzantısı",
   "authInfoBrowserExtensionDescription": "Alby veya nos2x gibi bir NIP-07 tarayıcı uzantısıyla giriş yapın. Anahtarlarınız uzantıda kalır — Divine bunları asla görmez.",
-  "soundsAlreadySavedToLibrary": "Already in Sounds",
-  "soundsAvailabilityCommunity": "Community",
-  "soundsAvailabilityPrivate": "Private",
-  "soundsRemoveSavedSound": "Remove sound",
-  "soundsRemovedFromLibrary": "Removed from Sounds",
-  "soundsSavedEmptyDescription": "Tap Use Sound on a video to save it here.",
-  "soundsSavedEmptyTitle": "No saved sounds yet",
-  "soundsSavedLibraryTitle": "My Sounds",
-  "soundsSavedToLibrary": "Saved to Sounds",
-  "videoEditorAudioCategoryFeatured": "Featured",
-  "videoEditorAudioCategoryMySounds": "My Sounds",
-  "videoEditorAudioFeaturedEmptySubtitle": "We’ll drop featured sounds here once they’re ready.",
-  "videoEditorAudioFeaturedEmptyTitle": "Featured sounds coming soon",
-  "videoMetadataAudioReuseSubtitle": "Let others save and reuse this video's audio.",
-  "videoMetadataAudioReuseTitle": "Publish this sound",
+  "soundsAlreadySavedToLibrary": "Zaten Seslerde",
+  "soundsAvailabilityCommunity": "Topluluk",
+  "soundsAvailabilityPrivate": "Özel",
+  "soundsRemoveSavedSound": "Sesi kaldır",
+  "soundsRemovedFromLibrary": "Seslerden kaldırıldı",
+  "soundsSavedEmptyDescription": "Bir videoda Sesi Kullan'a dokunarak burada kaydedin.",
+  "soundsSavedEmptyTitle": "Henüz kaydedilmiş ses yok",
+  "soundsSavedLibraryTitle": "Seslerim",
+  "soundsSavedToLibrary": "Seslere kaydedildi",
+  "videoEditorAudioCategoryFeatured": "Öne çıkanlar",
+  "videoEditorAudioCategoryMySounds": "Seslerim",
+  "videoEditorAudioFeaturedEmptySubtitle": "Hazır olur olmaz öne çıkan sesleri buraya bırakacağız.",
+  "videoEditorAudioFeaturedEmptyTitle": "Öne çıkan sesler yakında",
+  "videoMetadataAudioReuseSubtitle": "Başkalarının bu videonun sesini kaydedip yeniden kullanmasına izin ver.",
+  "videoMetadataAudioReuseTitle": "Bu sesi yayınla",
+  "videoMetadataShareReplyToFeedTitle": "Akışımda da paylaş",
+  "videoMetadataShareReplyToFeedSubtitle": "Kapalı olduğunda bu video yalnızca yorum dizisinde kalır.",
+  "commentsRecordVideoButtonLabel": "Video yorum kaydet",
+  "commentsOpenVideoLabel": "Video yorumu aç",
+  "commentsMuteVideoReplyLabel": "Video yanıtını sessize al",
+  "commentsUnmuteVideoReplyLabel": "Video yanıtının sesini aç",
+  "commentsOpenReplyParentLabel": "Bunun yanıt verdiği videoyu aç",
+  "commentsReplyParentSectionTitle": "Yanıt olarak",
+  "commentsReplyParentLabel": "{target} için yanıt",
+  "commentsReplyParentFallbackLabel": "Videoya yanıt",
+  "videoSettingsMenuOpen": "Oynatma ayarlarını aç",
+  "videoSettingsMenuClose": "Oynatma ayarlarını kapat",
+  "videoSettingsCaptionsEnable": "Altyazıyı etkinleştir",
+  "videoSettingsCaptionsDisable": "Altyazıyı devre dışı bırak",
+  "videoActionReportLabel": "Bildir",
+  "videoActionReport": "Videoyu bildir",
+  "videoActionEditLabel": "Düzenle",
+  "videoActionEdit": "Videoyu düzenle",
+  "reportReasonSpamSubtitle": "İstenmeyen veya tekrarlayan içerik",
+  "reportReasonHarassmentSubtitle": "Zararlı ve istenmeyen yanıtlar veya bahsetmeler",
+  "reportReasonViolenceSubtitle": "Şiddet, aşırılıkçı veya zararlı içerik",
+  "reportReasonSexualContentSubtitle": "Çıplaklık, porno veya müstehcen içerik",
+  "reportReasonCopyrightSubtitle": "Fikri mülkiyetin izinsiz kullanımı",
+  "reportReasonFalseInfoSubtitle": "Yanıltıcı veya yanlış iddialar",
+  "reportReasonCsamSubtitle": "Reşit olmayanları sömüren veya tehlikeye atan içerik",
+  "reportReasonAiGeneratedSubtitle": "Yapay zeka tarafından oluşturulduğundan şüphelenilen içerik",
+  "reportReasonOtherSubtitle": "Yukarıda listelenmeyen ihlaller",
+  "reportLearnMoreAt": "Daha fazla bilgi:",
+  "supportLogsSavedTo": "Günlükler {path} konumuna kaydedildi",
+  "supportRevealLogsAction": "Klasörde göster",
+  "notificationsVideoThumbnailFor": "{title} için video küçük resmi",
+  "@notificationsVideoThumbnailFor": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsVideoThumbnail": "Video küçük resmi",
+  "metadataCaptionsLabel": "Altyazılar",
+  "metadataCaptionsEnabledSemantics": "Tüm videolar için altyazılar etkin",
+  "metadataCaptionsDisabledSemantics": "Tüm videolar için altyazılar devre dışı",
   "@profileSetupUploadFailedGeneric": {
     "placeholders": {
       "error": {

@@ -15,6 +15,8 @@ class _MockBugReportService extends Mock implements BugReportService {}
 class _FakeBugReportData extends Fake implements BugReportData {}
 
 void main() {
+  final l10n = lookupAppLocalizations(const Locale('en'));
+
   setUpAll(() {
     registerFallbackValue(_FakeBugReportData());
   });
@@ -38,16 +40,16 @@ void main() {
       );
 
       // Verify title
-      expect(find.text('Report a Bug'), findsOneWidget);
+      expect(find.text(l10n.supportReportBug), findsOneWidget);
 
       // Verify all 4 text fields exist
       expect(find.byType(TextField), findsNWidgets(4));
 
       // Verify labels
-      expect(find.text('Subject *'), findsOneWidget);
-      expect(find.text('What happened? *'), findsOneWidget);
-      expect(find.text('Steps to Reproduce'), findsOneWidget);
-      expect(find.text('Expected Behavior'), findsOneWidget);
+      expect(find.text(l10n.supportSubjectRequiredLabel), findsOneWidget);
+      expect(find.text(l10n.bugReportDescriptionRequiredLabel), findsOneWidget);
+      expect(find.text(l10n.bugReportStepsLabel), findsOneWidget);
+      expect(find.text(l10n.bugReportExpectedBehaviorLabel), findsOneWidget);
     });
 
     testWidgets('should have Send and Cancel buttons', (tester) async {
@@ -61,8 +63,8 @@ void main() {
         ),
       );
 
-      expect(find.text('Send Report'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text(l10n.bugReportSendReport), findsOneWidget);
+      expect(find.text(l10n.commonCancel), findsOneWidget);
     });
 
     testWidgets('should disable Send button when required fields are empty', (
@@ -78,7 +80,7 @@ void main() {
         ),
       );
 
-      final sendButton = find.text('Send Report');
+      final sendButton = find.text(l10n.bugReportSendReport);
       expect(sendButton, findsOneWidget);
 
       // Button should be disabled when required fields are empty
@@ -112,7 +114,7 @@ void main() {
       );
       await tester.pump();
 
-      final sendButton = find.text('Send Report');
+      final sendButton = find.text(l10n.bugReportSendReport);
       final button = tester.widget<ElevatedButton>(
         find.ancestor(of: sendButton, matching: find.byType(ElevatedButton)),
       );
@@ -158,7 +160,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.text('Send Report'));
+      await tester.tap(find.text(l10n.bugReportSendReport));
       await tester.pump();
 
       verify(
@@ -215,7 +217,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.text('Send Report'));
+      await tester.tap(find.text(l10n.bugReportSendReport));
       await tester.pump();
 
       // Should show loading indicator
@@ -267,12 +269,36 @@ void main() {
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Report a Bug'), findsOneWidget);
+      expect(find.text(l10n.supportReportBug), findsOneWidget);
 
-      await tester.tap(find.text('Cancel'));
+      await tester.tap(find.text(l10n.commonCancel));
       await tester.pumpAndSettle();
 
       expect(dialogClosed, isTrue);
+    });
+
+    testWidgets('submits successfully with zero attachments', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: BugReportDialog(bugReportService: mockBugReportService),
+          ),
+        ),
+      );
+
+      // Fill required fields
+      await tester.enterText(find.byType(TextField).at(0), 'Test subject');
+      await tester.enterText(find.byType(TextField).at(1), 'Test description');
+      await tester.pump();
+
+      // Verify Send button is enabled with zero attachments
+      final sendButton = find.text(l10n.bugReportSendReport);
+      final button = tester.widget<ElevatedButton>(
+        find.ancestor(of: sendButton, matching: find.byType(ElevatedButton)),
+      );
+      expect(button.onPressed, isNotNull);
     });
   });
 }

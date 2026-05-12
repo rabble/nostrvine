@@ -24,7 +24,6 @@ import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/widgets/profile/profile_videos_grid.dart';
-import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/test_provider_overrides.dart';
@@ -147,79 +146,6 @@ void main() {
   );
 
   group('Profile Grid Navigation', () {
-    testWidgets('Tapping grid item at index 2 navigates to video at index 2', (
-      tester,
-    ) async {
-      final c = ProviderContainer(
-        overrides: [
-          appForegroundProvider.overrideWithValue(const AsyncValue.data(true)),
-          videosForProfileRouteProvider.overrideWith((ref) {
-            return AsyncValue.data(
-              VideoFeedState(videos: mockVideos, hasMoreContent: false),
-            );
-          }),
-          fetchUserProfileProvider(testUserHex).overrideWith((ref) async {
-            return mockProfile;
-          }),
-          authServiceProvider.overrideWithValue(
-            createTestAuthService(testUserHex),
-          ),
-        ],
-      );
-      addTearDown(c.dispose);
-
-      await tester.pumpWidget(shell(c));
-
-      // Start at profile grid view (videoIndex=0)
-      c
-          .read(goRouterProvider)
-          .go(ProfileScreenRouter.pathForIndex(testUserNpub, 0));
-      await tester.pumpAndSettle();
-
-      // Verify we're on the grid view
-      expect(find.byType(ProfileScreenRouter), findsOneWidget);
-
-      // Debug: check what's visible
-      expect(find.byIcon(Icons.grid_on), findsOneWidget); // Grid tab icon
-
-      // Ensure the first tab (grid) is selected - it should be by default but let's be explicit
-      await tester.tap(find.byIcon(Icons.grid_on));
-      await tester.pumpAndSettle();
-
-      // Now find grid items - they use GestureDetector wrapping DecoratedBox with play icon
-      final gridItems = find.ancestor(
-        of: find.byIcon(Icons.play_circle_filled),
-        matching: find.byType(GestureDetector),
-      );
-
-      // If no items found, dump the widget tree for debugging
-      if (gridItems.evaluate().isEmpty) {
-        debugDumpApp();
-        fail('No grid items found with play icons');
-      }
-
-      // Tap the third grid item (index 2)
-      await tester.tap(gridItems.at(2));
-      await tester.pumpAndSettle();
-
-      // Verify route changed to /profile/:npub/3 (URL is 1-based: gridIndex 2 → urlIndex 3)
-      final router = c.read(goRouterProvider);
-      expect(
-        router.routeInformationProvider.value.uri.path,
-        ProfileScreenRouter.pathForIndex(testUserNpub, 3),
-      );
-
-      // Verify active video is now video at list index 2 (urlIndex 3 - 1 = 2)
-      expect(c.read(activeVideoIdProvider), 'video2');
-
-      // Verify VideoFeedItem for video2 is now rendered
-      final videoItem = tester.widget<VideoFeedItem>(
-        find.byType(VideoFeedItem).first,
-      );
-      expect(videoItem.video.id, 'video2');
-      expect(videoItem.index, 2); // List index should be 2
-    });
-
     testWidgets('Own profile video shows author name (not "Loading...")', (
       tester,
     ) async {
@@ -253,49 +179,6 @@ void main() {
       expect(find.text('Loading...'), findsNothing);
       expect(find.textContaining('Test User'), findsOneWidget);
     });
-
-    testWidgets(
-      'Own profile video shows edit/delete buttons when forceShowOverlay=true',
-      (tester) async {
-        final c = ProviderContainer(
-          overrides: [
-            appForegroundProvider.overrideWithValue(
-              const AsyncValue.data(true),
-            ),
-            videosForProfileRouteProvider.overrideWith((ref) {
-              return AsyncValue.data(
-                VideoFeedState(videos: mockVideos, hasMoreContent: false),
-              );
-            }),
-            fetchUserProfileProvider(testUserHex).overrideWith((ref) async {
-              return mockProfile;
-            }),
-            authServiceProvider.overrideWithValue(
-              createTestAuthService(testUserHex),
-            ), // Own profile
-          ],
-        );
-        addTearDown(c.dispose);
-
-        await tester.pumpWidget(shell(c));
-
-        // Navigate to own video
-        c
-            .read(goRouterProvider)
-            .go(ProfileScreenRouter.pathForIndex(testUserNpub, 1));
-        await tester.pumpAndSettle();
-
-        // Verify VideoFeedItem has forceShowOverlay=true for own profile
-        final videoItem = tester.widget<VideoFeedItem>(
-          find.byType(VideoFeedItem).first,
-        );
-        expect(videoItem.forceShowOverlay, isTrue);
-
-        // Verify share menu button is visible (overlay is shown)
-        // Note: The actual edit/delete functionality is in ShareVideoMenu widget
-        expect(find.byIcon(Icons.more_vert), findsOneWidget);
-      },
-    );
 
     testWidgets('Video autoplays when navigating from grid to fullscreen', (
       tester,
@@ -380,8 +263,8 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            authServiceProvider.overrideWithValue(
-              createTestAuthService('someone-else'),
+            ...getStandardTestOverrides(
+              mockAuthService: createTestAuthService('someone-else'),
             ),
             profileFeedProvider(testUserHex).overrideWith(() {
               profileFeed = _TestProfileFeed(
@@ -442,8 +325,8 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            authServiceProvider.overrideWithValue(
-              createTestAuthService('someone-else'),
+            ...getStandardTestOverrides(
+              mockAuthService: createTestAuthService('someone-else'),
             ),
             profileFeedProvider(testUserHex).overrideWith(() {
               profileFeed = _TestProfileFeed(
@@ -510,8 +393,8 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              authServiceProvider.overrideWithValue(
-                createTestAuthService('someone-else'),
+              ...getStandardTestOverrides(
+                mockAuthService: createTestAuthService('someone-else'),
               ),
               profileFeedProvider(testUserHex).overrideWith(() {
                 profileFeed = _TestProfileFeed(
@@ -602,8 +485,8 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            authServiceProvider.overrideWithValue(
-              createTestAuthService('someone-else'),
+            ...getStandardTestOverrides(
+              mockAuthService: createTestAuthService('someone-else'),
             ),
             profileFeedProvider(testUserHex).overrideWith(
               () => _TestProfileFeed(

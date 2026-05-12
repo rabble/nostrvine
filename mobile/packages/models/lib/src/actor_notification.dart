@@ -15,15 +15,17 @@ class ActorNotification extends NotificationItem {
     required this.actor,
     required super.timestamp,
     super.isRead,
+    super.targetEventId,
     this.commentText,
     this.isFollowingBack = false,
   }) : assert(
          type == NotificationKind.follow ||
              type == NotificationKind.mention ||
              type == NotificationKind.system ||
-             type == NotificationKind.likeComment,
+             type == NotificationKind.likeComment ||
+             type == NotificationKind.reply,
          'ActorNotification only supports follow, mention, system, '
-         'likeComment',
+         'likeComment, reply',
        );
 
   /// The actor who triggered this notification.
@@ -44,6 +46,7 @@ class ActorNotification extends NotificationItem {
     bool? isRead,
     String? commentText,
     bool? isFollowingBack,
+    String? targetEventId,
   }) {
     return ActorNotification(
       id: id ?? this.id,
@@ -53,6 +56,7 @@ class ActorNotification extends NotificationItem {
       isRead: isRead ?? this.isRead,
       commentText: commentText ?? this.commentText,
       isFollowingBack: isFollowingBack ?? this.isFollowingBack,
+      targetEventId: targetEventId ?? this.targetEventId,
     );
   }
 
@@ -65,5 +69,6 @@ class ActorNotification extends NotificationItem {
     isRead,
     commentText,
     isFollowingBack,
+    targetEventId,
   ];
 }

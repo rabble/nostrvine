@@ -47,6 +47,18 @@ import 'package:unified_logger/unified_logger.dart';
 
 /// Pure ExploreScreen using revolutionary Riverpod architecture
 class ExploreScreen extends ConsumerStatefulWidget {
+  static const _forYouTabName = 'for_you';
+  static const _forYouTabSlug = 'for-you';
+  static const _routeTabNames = <String>{
+    'classics',
+    'new',
+    'popular',
+    'categories',
+    _forYouTabName,
+    'lists',
+    'apps',
+  };
+
   /// Route name for this screen.
   static const routeName = 'explore';
 
@@ -56,11 +68,41 @@ class ExploreScreen extends ConsumerStatefulWidget {
   /// Path for this route with index (feed mode).
   static const pathWithIndex = '/explore/:index';
 
+  /// Path for selecting a specific tab by name (grid mode).
+  /// Valid URL slugs: 'classics', 'new', 'popular', 'categories',
+  /// 'for-you', 'lists', 'apps'.
+  static const pathTabSubpath = '/explore/tab/:name';
+
   /// Build path for grid mode or specific index.
   static String pathForIndex(int? index) =>
       index == null ? path : '$path/$index';
 
-  const ExploreScreen({super.key});
+  /// Build path for selecting a specific tab by name.
+  static String pathForTab(String name) =>
+      '/explore/tab/${tabSlugForName(name)}';
+
+  /// Convert an internal tab name to the public URL slug.
+  static String tabSlugForName(String name) => switch (name) {
+    _forYouTabName => _forYouTabSlug,
+    _ => name,
+  };
+
+  /// Convert a URL path parameter to the internal tab name.
+  static String? tabNameFromPathParameter(String? slug) {
+    if (slug == null) return null;
+    if (slug.contains('_')) return null;
+    final name = switch (slug) {
+      _forYouTabSlug => _forYouTabName,
+      _ => slug,
+    };
+    return _routeTabNames.contains(name) ? name : null;
+  }
+
+  const ExploreScreen({super.key, this.initialTabName});
+
+  /// Optional tab name to select on first build. Takes precedence over
+  /// [forceExploreTabNameProvider] and the saved [exploreTabIndexProvider].
+  final String? initialTabName;
 
   @override
   ConsumerState<ExploreScreen> createState() => _ExploreScreenState();
@@ -105,7 +147,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     final names = <String>[];
     if (_classicsAvailable) names.add('classics');
     names.addAll(['new', 'popular', 'categories']);
-    if (_forYouAvailable) names.add('for_you');
+    if (_forYouAvailable) names.add(ExploreScreen._forYouTabName);
     names.add('lists');
     if (_appsAvailable) names.add('apps');
     return names;
@@ -114,7 +156,10 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
   /// Convert a tab name to index based on current availability
   int _tabNameToIndex(String name) {
     final index = _tabNames.indexOf(name);
-    return index >= 0 ? index : 1; // Default to index 1 if not found
+    if (index >= 0) {
+      return index;
+    }
+    return _tabNames.indexOf('new');
   }
 
   /// Convert a tab index to name based on current availability
@@ -128,15 +173,17 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
 
   /// Build a new [TabController]. [previousTabName] is the name of the
   /// tab the user was on before a rebuild (resolved while the old
-  /// availability flags were still in effect). When set, the forced-tab
-  /// provider still takes priority. Falls back to the 'new' tab by name —
+  /// availability flags were still in effect). Resolution order:
+  /// [ExploreScreen.initialTabName] > [forceExploreTabNameProvider] >
+  /// previous tab > 'new'. Falls back to the 'new' tab by name —
   /// never by raw index, because indices shift when optional tabs appear
   /// or disappear.
   void _initTabController({String? previousTabName}) {
     final forcedTabName = ref.read(forceExploreTabNameProvider);
 
-    // Resolve the target tab name: forced provider > previous tab > default.
-    final targetTabName = forcedTabName ?? previousTabName;
+    // Resolve the target tab name: route arg > forced provider > previous > default.
+    final targetTabName =
+        widget.initialTabName ?? forcedTabName ?? previousTabName;
     final initialIndex = _tabNameToIndex(targetTabName ?? 'new');
 
     if (targetTabName != null) {

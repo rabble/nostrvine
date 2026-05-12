@@ -120,11 +120,21 @@ void main() {
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
-        'skips relay like count query when seeded with initialLikeCount',
+        // Regression for #4159: the relay must always be queried for a fresh
+        // count even when initialLikeCount was seeded from the Funnelcake REST
+        // API (e.g. notification tap). REST counts are indexed asynchronously
+        // and may lag behind real-time relay data, causing the like count to
+        // appear stale until the user navigates away and back.
+        'always fetches relay like count even when seeded with initialLikeCount',
         setUp: () {
           when(
             () => mockLikesRepository.isLiked(testEventId),
           ).thenAnswer((_) async => true);
+          // Relay returns a higher count than the seeded REST value, simulating
+          // the common case where new likes arrived after the REST snapshot.
+          when(
+            () => mockLikesRepository.getLikeCount(testEventId),
+          ).thenAnswer((_) async => 120);
           when(
             () => mockCommentsRepository.getCommentsCount(testEventId),
           ).thenAnswer((_) async => 10);
@@ -142,19 +152,72 @@ void main() {
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
             isLiked: true,
-            likeCount: 100,
+            likeCount: 120, // Updated to relay count, not the stale REST seed.
             repostCount: 5,
             commentCount: 10,
           ),
         ],
         verify: (_) {
-          verifyNever(() => mockLikesRepository.getLikeCount(any()));
-          verifyNever(
+          verify(
+            () => mockLikesRepository.getLikeCount(testEventId),
+          ).called(1);
+        },
+      );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        // Companion to the non-addressable case above: production notification
+        // taps for Kind 34236 videos pass both eventId and addressableId to
+        // getLikeCount(), so the relay query must still fire even when the
+        // count was pre-seeded and an addressableId is present.
+        'always fetches relay like count when seeded with initialLikeCount '
+        'and addressableId',
+        setUp: () {
+          when(
+            () => mockLikesRepository.isLiked(testEventId),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockRepostsRepository.isReposted(testAddressableId),
+          ).thenAnswer((_) async => false);
+          when(
             () => mockLikesRepository.getLikeCount(
-              any(),
-              addressableId: any(named: 'addressableId'),
+              testEventId,
+              addressableId: testAddressableId,
             ),
-          );
+          ).thenAnswer((_) async => 75);
+          when(
+            () => mockCommentsRepository.getCommentsCount(
+              testEventId,
+              rootAddressableId: testAddressableId,
+            ),
+          ).thenAnswer((_) async => 3);
+          when(
+            () => mockRepostsRepository.getRepostCount(testAddressableId),
+          ).thenAnswer((_) async => 2);
+        },
+        build: () => createBloc(
+          addressableId: testAddressableId,
+          initialLikeCount: 50,
+        ),
+        act: (bloc) => bloc.add(const VideoInteractionsFetchRequested()),
+        expect: () => [
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.loading,
+            likeCount: 50,
+          ),
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            likeCount: 75, // Updated to relay count, not the stale REST seed.
+            repostCount: 2,
+            commentCount: 3,
+          ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockLikesRepository.getLikeCount(
+              testEventId,
+              addressableId: testAddressableId,
+            ),
+          ).called(1);
         },
       );
 
@@ -356,6 +419,13 @@ void main() {
           when(
             () => mockLikesRepository.isLiked(testEventId),
           ).thenAnswer((_) async => false);
+          // getLikeCount is now always queried (relay-fresh path). Return the
+          // same value as the seed so the mid-fetch optimistic-toggle
+          // arithmetic remains identical and the test stays focused on the
+          // toggle-during-fetch race, not count reconciliation.
+          when(
+            () => mockLikesRepository.getLikeCount(testEventId),
+          ).thenAnswer((_) async => 10);
           // Hold the fetch open until the test explicitly releases it so
           // the tap deterministically lands between the loading emit and
           // the success emit. Fixed delays were flaky on CI.

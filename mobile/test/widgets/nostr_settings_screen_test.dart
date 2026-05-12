@@ -19,6 +19,8 @@ void main() {
   group(NostrSettingsScreen, () {
     late _MockAuthService mockAuthService;
     late SharedPreferences sharedPreferences;
+    final l10n = lookupAppLocalizations(const Locale('en'));
+
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       sharedPreferences = await SharedPreferences.getInstance();
@@ -56,9 +58,9 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      expect(find.text('Experimental Features'), findsOneWidget);
+      expect(find.text(l10n.settingsExperimentalFeatures), findsOneWidget);
 
-      await tester.tap(find.text('Experimental Features'));
+      await tester.tap(find.text(l10n.settingsExperimentalFeatures));
       await tester.pumpAndSettle();
 
       expect(find.byType(FeatureFlagScreen), findsOneWidget);
@@ -69,8 +71,8 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      expect(find.text('Relays'), findsNothing);
-      expect(find.text('Relay Diagnostics'), findsNothing);
+      expect(find.text(l10n.nostrSettingsRelays), findsNothing);
+      expect(find.text(l10n.nostrSettingsRelayDiagnostics), findsNothing);
     });
 
     testWidgets('shows Relays and Relay Diagnostics tiles when '
@@ -78,8 +80,16 @@ void main() {
       await tester.pumpWidget(buildSubject(advancedRelaySettingsEnabled: true));
       await tester.pumpAndSettle();
 
-      expect(find.text('Relays'), findsOneWidget);
-      expect(find.text('Relay Diagnostics'), findsOneWidget);
+      expect(find.text(l10n.nostrSettingsRelays), findsOneWidget);
+      expect(find.text(l10n.nostrSettingsRelayDiagnostics), findsOneWidget);
+    });
+
+    testWidgets('shows NIP-05 address tile', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.nostrSettingsNip05Address), findsOneWidget);
+      expect(find.text(l10n.nostrSettingsNip05AddressSubtitle), findsOneWidget);
     });
   });
 }

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' show Filter;
+import 'package:openvine/utils/video_event_merge_utils.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Enrich REST API videos with full Nostr event data.
@@ -11,6 +12,12 @@ import 'package:unified_logger/unified_logger.dart';
 /// Nostr event (rawTags for ProofMode/C2PA badges, dimensions, hashtags,
 /// blurhash, etc.). This function fetches the full events from Nostr relays
 /// by ID and merges any missing fields into the REST API videos.
+///
+/// Tag merge uses [mergeVideoRawTagsPrimaryWins] so Nostr wins on metadata
+/// collisions but `views` (and thus [VideoEvent.totalLoops]) takes the
+/// higher parsed count — Nostr must not zero out Funnelcake aggregates (#3384).
+/// Nullable engagement ints use [mergeNullableEngagementMax] for the same
+/// reason as profile relay/REST merge.
 Future<List<VideoEvent>> enrichVideosWithNostrTags(
   List<VideoEvent> videos, {
   required NostrClient nostrService,
@@ -47,6 +54,12 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
     for (final event in nostrEvents) {
       try {
         final parsed = VideoEvent.fromNostrEvent(event, permissive: true);
+        Log.info(
+          'enrichVideos: parsed Nostr event ${parsed.id} '
+          'blurhash=${parsed.blurhash} '
+          'rawTags.len=${parsed.rawTags.length}',
+          name: callerName,
+        );
         if (parsed.rawTags.isNotEmpty) {
           nostrEventsMap[parsed.id] = parsed;
         }
@@ -64,9 +77,10 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
         // Check if Nostr event has original Vine metric tags
 
         return video.copyWith(
-          // Merge: keep REST-only keys (e.g. `views` engagement metric that
-          // Nostr events never carry), but let Nostr win on key collisions.
-          rawTags: {...video.rawTags, ...parsed.rawTags},
+          // Merge: Nostr wins on key collisions for canonical event tags;
+          // `views` uses the higher of REST vs Nostr so API aggregates survive
+          // enrichment (#3384) — see [mergeVideoRawTagsPrimaryWins].
+          rawTags: mergeVideoRawTagsPrimaryWins(parsed.rawTags, video.rawTags),
           contentWarningLabels: video.contentWarningLabels.isEmpty
               ? parsed.contentWarningLabels
               : video.contentWarningLabels,
@@ -85,14 +99,24 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
           group: video.group ?? parsed.group,
           altText: video.altText ?? parsed.altText,
           blurhash: video.blurhash ?? parsed.blurhash,
-          // Original Vine metrics: keep Funnelcake values when present
-          // (they include Nostr-era counts), fill from Nostr tags only
-          // when missing. Don't clear existing values — Funnelcake's
-          // aggregates are more accurate than the static Nostr tags.
-          originalLoops: video.originalLoops ?? parsed.originalLoops,
-          originalLikes: video.originalLikes ?? parsed.originalLikes,
-          originalComments: video.originalComments ?? parsed.originalComments,
-          originalReposts: video.originalReposts ?? parsed.originalReposts,
+          // Original metrics: take max so a Nostr zero/static tag cannot wipe
+          // Funnelcake aggregates (same rule as ProfileFeed — #3384).
+          originalLoops: mergeNullableEngagementMax(
+            parsed.originalLoops,
+            video.originalLoops,
+          ),
+          originalLikes: mergeNullableEngagementMax(
+            parsed.originalLikes,
+            video.originalLikes,
+          ),
+          originalComments: mergeNullableEngagementMax(
+            parsed.originalComments,
+            video.originalComments,
+          ),
+          originalReposts: mergeNullableEngagementMax(
+            parsed.originalReposts,
+            video.originalReposts,
+          ),
           audioEventId: video.audioEventId ?? parsed.audioEventId,
           audioEventRelay: video.audioEventRelay ?? parsed.audioEventRelay,
           collaboratorPubkeys: video.collaboratorPubkeys.isEmpty
@@ -104,6 +128,10 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
           nostrEventTags: video.nostrEventTags.isEmpty
               ? parsed.nostrEventTags
               : video.nostrEventTags,
+          nostrLikeCount: mergeNullableEngagementMax(
+            parsed.nostrLikeCount,
+            video.nostrLikeCount,
+          ),
         );
       }
       return video;
@@ -123,9 +151,11 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
 ///
 /// Returns the original [videos] immediately. Enrichment runs in the
 /// background; when it finishes, [onEnriched] is called with the
-/// enriched list so the caller can update its state. If enrichment
-/// fails, [onEnriched] is never called and the un-enriched videos
-/// remain visible.
+/// enriched list so the caller can update its state.
+///
+/// [onEnriched] is NOT called when enrichment fails, when all videos
+/// already have full tags (nothing to enrich), or when the relay query
+/// returns no events. Callers must not rely on it firing.
 List<VideoEvent> enrichVideosInBackground(
   List<VideoEvent> videos, {
   required NostrClient nostrService,

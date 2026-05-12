@@ -1,0 +1,255 @@
+import 'dart:io';
+
+import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:openvine/l10n/l10n.dart';
+import 'package:unified_logger/unified_logger.dart';
+
+// ABOUTME: Mobile-only image attachment picker for bug reports.
+// ABOUTME: Limits the selection count, announces changes for accessibility,
+// ABOUTME: and keeps interactions aligned with the Divine design system.
+
+class ImageAttachmentPicker extends StatefulWidget {
+  const ImageAttachmentPicker({
+    required this.onChanged,
+    super.key,
+    this.maxImages = 3,
+    this.enabled = true,
+  });
+
+  final int maxImages;
+  final ValueChanged<List<XFile>> onChanged;
+  final bool enabled;
+
+  @visibleForTesting
+  static ImagePicker imagePicker = ImagePicker();
+
+  @override
+  State<ImageAttachmentPicker> createState() => _ImageAttachmentPickerState();
+}
+
+class _ImageAttachmentPickerState extends State<ImageAttachmentPicker> {
+  final List<XFile> _images = [];
+
+  bool get _isMobile =>
+      defaultTargetPlatform == TargetPlatform.iOS ||
+      defaultTargetPlatform == TargetPlatform.android;
+
+  Future<void> _pickImages() async {
+    if (!widget.enabled) return;
+
+    final remaining = widget.maxImages - _images.length;
+    if (remaining <= 0) return;
+
+    List<XFile> picked;
+    try {
+      picked = await ImageAttachmentPicker.imagePicker.pickMultiImage(
+        maxWidth: 1920,
+        imageQuality: 80,
+      );
+    } catch (error, stackTrace) {
+      Log.error(
+        'Failed to pick bug report attachments: $error',
+        category: LogCategory.ui,
+        error: error,
+        stackTrace: stackTrace,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.bugReportUploadFailed),
+          backgroundColor: VineTheme.error,
+        ),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    if (picked.isEmpty) return;
+
+    setState(() {
+      final toAdd = picked.take(remaining).toList();
+      _images.addAll(toAdd);
+    });
+    widget.onChanged(List.unmodifiable(_images));
+
+    if (mounted) {
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        context.l10n.bugReportImagesCount(_images.length, widget.maxImages),
+        Directionality.of(context),
+      );
+    }
+  }
+
+  void _removeImage(int index) {
+    if (!widget.enabled) return;
+
+    setState(() {
+      _images.removeAt(index);
+    });
+    widget.onChanged(List.unmodifiable(_images));
+
+    if (mounted) {
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        context.l10n.bugReportImagesCount(_images.length, widget.maxImages),
+        Directionality.of(context),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_isMobile) return const SizedBox.shrink();
+
+    final l10n = context.l10n;
+    final showAddButton = _images.length < widget.maxImages;
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (var i = 0; i < _images.length; i++)
+          _Thumbnail(
+            file: _images[i],
+            enabled: widget.enabled,
+            semanticsLabel: l10n.bugReportRemoveImage,
+            onRemove: () => _removeImage(i),
+          ),
+        if (showAddButton)
+          _AddButton(
+            enabled: widget.enabled,
+            semanticsLabel: l10n.bugReportAttachImages,
+            onTap: _pickImages,
+          ),
+      ],
+    );
+  }
+}
+
+class _Thumbnail extends StatelessWidget {
+  const _Thumbnail({
+    required this.file,
+    required this.enabled,
+    required this.semanticsLabel,
+    required this.onRemove,
+  });
+
+  final XFile file;
+  final bool enabled;
+  final String semanticsLabel;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 64,
+      height: 64,
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.file(
+              File(file.path),
+              width: 64,
+              height: 64,
+              fit: BoxFit.cover,
+              semanticLabel: file.name,
+              errorBuilder: (_, _, _) => Container(
+                width: 64,
+                height: 64,
+                color: VineTheme.cardBackground,
+                child: const DivineIcon(
+                  icon: DivineIconName.image,
+                  color: VineTheme.lightText,
+                ),
+              ),
+            ),
+          ),
+          if (enabled)
+            Positioned(
+              top: 0,
+              right: 0,
+              child: Semantics(
+                button: true,
+                label: semanticsLabel,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: onRemove,
+                  child: SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: Align(
+                      alignment: Alignment.topRight,
+                      child: ExcludeSemantics(
+                        child: Container(
+                          width: 20,
+                          height: 20,
+                          decoration: const BoxDecoration(
+                            color: VineTheme.cardBackground,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const DivineIcon(
+                            icon: DivineIconName.x,
+                            size: 14,
+                            color: VineTheme.whiteText,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AddButton extends StatelessWidget {
+  const _AddButton({
+    required this.enabled,
+    required this.semanticsLabel,
+    required this.onTap,
+  });
+
+  final bool enabled;
+  final String semanticsLabel;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: semanticsLabel,
+      child: GestureDetector(
+        onTap: enabled ? onTap : null,
+        child: ExcludeSemantics(
+          child: Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: enabled
+                    ? VineTheme.vineGreen.withValues(alpha: 0.7)
+                    : VineTheme.lightText.withValues(alpha: 0.7),
+              ),
+            ),
+            child: Center(
+              child: DivineIcon(
+                icon: DivineIconName.imagesSquare,
+                color: enabled ? VineTheme.vineGreen : VineTheme.lightText,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

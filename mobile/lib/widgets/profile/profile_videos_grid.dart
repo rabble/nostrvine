@@ -5,6 +5,7 @@ import 'dart:async' show FutureOr;
 import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -36,9 +37,56 @@ class _GridVideoEventEntry extends _GridVideoEntry {
 }
 
 class _GridUploadingVideoEntry extends _GridVideoEntry {
-  _GridUploadingVideoEntry(this.backgroundUpload);
+  _GridUploadingVideoEntry({
+    required this.draftId,
+    required this.thumbnailPath,
+  });
 
-  final BackgroundUpload backgroundUpload;
+  final String draftId;
+  final String? thumbnailPath;
+}
+
+/// Debug-only counter incremented at the top of every
+/// [_ProfileVideosGridState.build] call. Used by tests to pin the
+/// rebuild count to 1 across progress-only `BackgroundPublishBloc`
+/// emissions — a regression to identity-based list equality on the
+/// selector would tick this counter higher. The increment is wrapped
+/// in an `assert` so it is tree-shaken out of release builds.
+@visibleForTesting
+int debugProfileVideosGridBuildCount = 0;
+
+/// Equatable wrapper over the list of active uploads consumed by
+/// [_ProfileVideosGridState.build]. Exists because `context.select`
+/// compares its selected value with `==`, and a raw list of records falls
+/// through to identity equality even when the records themselves compare
+/// equal structurally. Equatable's deep `iterableEquals` gives the selector
+/// the progress-insensitive comparison the optimization needs.
+@visibleForTesting
+class ActiveUploadsView extends Equatable {
+  @visibleForTesting
+  const ActiveUploadsView(this.uploads);
+
+  // Public field uses the record type inline so the private [_ActiveUpload]
+  // typedef alias doesn't leak through the public API surface
+  // (avoids `library_private_types_in_public_api`).
+  final List<({String draftId, String? title, String? thumbnailPath})> uploads;
+
+  /// Projects the bloc's [BackgroundPublishState] into the shape the grid
+  /// renders. Used as the selector callback in [_ProfileVideosGridState.build].
+  static ActiveUploadsView fromState(BackgroundPublishState state) {
+    return ActiveUploadsView([
+      for (final upload in state.uploads)
+        if (upload.result == null)
+          (
+            draftId: upload.draft.id,
+            title: upload.draft.title,
+            thumbnailPath: upload.draft.clips.firstOrNull?.thumbnailPath,
+          ),
+    ]);
+  }
+
+  @override
+  List<Object?> get props => [uploads];
 }
 
 /// Grid widget displaying user's videos on their profile
@@ -174,16 +222,30 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
 
   @override
   Widget build(BuildContext context) {
+    assert(() {
+      debugProfileVideosGridBuildCount++;
+      return true;
+    }());
     final authService = ref.read(authServiceProvider);
-    final backgroundPublish = context.watch<BackgroundPublishBloc>();
     final isOwnProfile = authService.currentPublicKeyHex == widget.userIdHex;
 
-    // Uploads that are still in progress (no result yet).
+    // Subscribe to the *shape* of the active upload list (id + title +
+    // thumbnailPath per upload). Progress is intentionally excluded so that
+    // per-tick progress emissions don't rebuild the grid — each upload
+    // tile subscribes to its own progress in [_VideoGridUploadingTile].
+    //
+    // The selector returns [ActiveUploadsView] (Equatable) rather than a raw
+    // [List]: `context.select` compares its result with `==`, and `List`
+    // equality is identity-based — without the wrapper, a freshly-built list
+    // every tick would defeat the optimization regardless of record equality
+    // inside it.
     final activeUploads = isOwnProfile
-        ? backgroundPublish.state.uploads
-              .where((upload) => upload.result == null)
-              .toList()
-        : <BackgroundUpload>[];
+        ? context
+              .select<BackgroundPublishBloc, ActiveUploadsView>(
+                (bloc) => ActiveUploadsView.fromState(bloc.state),
+              )
+              .uploads
+        : const <({String draftId, String? title, String? thumbnailPath})>[];
 
     // De-duplicate relay-delivered videos against active uploads.
     //
@@ -213,7 +275,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
             final isDuplicate =
                 !matchedTitles.contains(video.title) &&
                 activeUploads.any(
-                  (upload) => upload.draft.title == video.title,
+                  (upload) => upload.title == video.title,
                 );
 
             // Step 3: Mark the title as matched so only the first duplicate
@@ -243,7 +305,12 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
         : widget.videos;
 
     final allVideos = [
-      ...activeUploads.map(_GridUploadingVideoEntry.new),
+      ...activeUploads.map(
+        (upload) => _GridUploadingVideoEntry(
+          draftId: upload.draftId,
+          thumbnailPath: upload.thumbnailPath,
+        ),
+      ),
       ...filteredVideos.map(_GridVideoEventEntry.new),
     ];
 
@@ -294,7 +361,8 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
               return switch (videoEntry) {
                 final _GridUploadingVideoEntry uploadEntry =>
                   _VideoGridUploadingTile(
-                    backgroundUpload: uploadEntry.backgroundUpload,
+                    draftId: uploadEntry.draftId,
+                    thumbnailPath: uploadEntry.thumbnailPath,
                   ),
                 final _GridVideoEventEntry eventEntry => _VideoGridTile(
                   videoEvent: eventEntry.videoEvent,
@@ -327,32 +395,47 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
 }
 
 class _VideoGridUploadingTile extends StatelessWidget {
-  const _VideoGridUploadingTile({required this.backgroundUpload});
+  const _VideoGridUploadingTile({
+    required this.draftId,
+    required this.thumbnailPath,
+  });
 
-  final BackgroundUpload backgroundUpload;
+  final String draftId;
+  final String? thumbnailPath;
 
   @override
   Widget build(BuildContext context) {
-    final thumbnailPath =
-        backgroundUpload.draft.clips.firstOrNull?.thumbnailPath;
+    // Subscribe to this specific upload's progress so the tile rebuilds on
+    // every progress tick without the surrounding grid having to.
+    //
+    // Fallback returns 1.0 (not 0): this branch is reached only after the
+    // bloc removes the upload from state on [PublishSuccess]. If the tile
+    // renders one frame before the parent grid prunes it, animating the
+    // spinner forward to full is correct; animating backward to empty
+    // would briefly snap the spinner across a 200ms animation.
+    final progress = context.select<BackgroundPublishBloc, double>((bloc) {
+      for (final upload in bloc.state.uploads) {
+        if (upload.draft.id == draftId) return upload.progress;
+      }
+      return 1.0;
+    });
+    final path = thumbnailPath;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(4),
       child: Stack(
         fit: StackFit.expand,
         children: [
-          if (thumbnailPath != null)
+          if (path != null)
             Image.file(
-              File(thumbnailPath),
+              File(path),
               fit: BoxFit.cover,
               errorBuilder: (_, _, _) => const ProfileTabThumbnailPlaceholder(),
             )
           else
             const ProfileTabThumbnailPlaceholder(),
           const ColoredBox(color: Color(0x66000000)),
-          Center(
-            child: PartialCircleSpinner(progress: backgroundUpload.progress),
-          ),
+          Center(child: PartialCircleSpinner(progress: progress)),
         ],
       ),
     );

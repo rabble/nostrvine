@@ -1,8 +1,10 @@
+import 'package:blurhash_service/blurhash_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/widgets/blurhash_display.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 
 import '../test_data/video_test_data.dart';
@@ -250,6 +252,130 @@ void main() {
       expect(find.byType(CachedNetworkImage), findsNothing);
       expect(find.byType(Container), findsWidgets);
     });
+
+    testWidgets(
+      'updates blurhash placeholder when enrichment returns same id new instance',
+      (tester) async {
+        const enrichedBlurhash = 'LEHV6nWB2yk8pyo0adR*.7kCMdnj';
+        final unenrichedVideo = createTestVideoEvent(
+          id: 'same-id',
+          hashtags: const ['dance'],
+        );
+        final enrichedVideo = createTestVideoEvent(
+          id: 'same-id',
+          blurhash: enrichedBlurhash,
+          hashtags: const ['dance'],
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: VideoThumbnailWidget(
+                video: unenrichedVideo,
+                width: 200,
+                height: 200,
+              ),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(find.byType(BlurhashDisplay), findsOneWidget);
+        expect(
+          tester.widget<BlurhashDisplay>(find.byType(BlurhashDisplay)).blurhash,
+          isNull,
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: VideoThumbnailWidget(
+                video: enrichedVideo,
+                width: 200,
+                height: 200,
+              ),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(
+          tester.widget<BlurhashDisplay>(find.byType(BlurhashDisplay)).blurhash,
+          enrichedBlurhash,
+        );
+      },
+    );
+
+    testWidgets(
+      'updates derived content-type placeholder when metadata changes',
+      (tester) async {
+        final unknownVideo = createTestVideoEvent(
+          id: 'same-id',
+          hashtags: const ['random'],
+          title: 'plain title',
+          content: 'nothing special',
+        );
+        final danceVideo = createTestVideoEvent(
+          id: 'same-id',
+          hashtags: const ['dance'],
+          title: 'plain title',
+          content: 'nothing special',
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: VideoThumbnailWidget(
+                video: unknownVideo,
+                width: 200,
+                height: 200,
+              ),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(find.byType(BlurhashDisplay), findsOneWidget);
+        expect(
+          tester
+              .widget<BlurhashDisplay>(find.byType(BlurhashDisplay))
+              .contentType,
+          isNull,
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: VideoThumbnailWidget(
+                video: danceVideo,
+                width: 200,
+                height: 200,
+              ),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(
+          tester
+              .widget<BlurhashDisplay>(find.byType(BlurhashDisplay))
+              .contentType,
+          VineContentType.dance,
+        );
+      },
+    );
 
     testWidgets('does not try to generate thumbnails when URL is missing', (
       tester,

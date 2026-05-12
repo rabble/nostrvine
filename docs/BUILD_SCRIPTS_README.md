@@ -1,7 +1,7 @@
 # Build Scripts for iOS and macOS
 
 Status: Current
-Validated against: `mobile/build_native.sh`, `mobile/build_ios.sh`, and `mobile/build_macos.sh` on 2026-03-19.
+Validated against: `mobile/build_ios.sh`, `mobile/build_macos.sh`, and `mobile/build_native.sh` on 2026-05-08.
 
 This directory contains build scripts that ensure CocoaPods dependencies are properly synced before building, preventing the common "sandbox is not in sync with Podfile.lock" errors.
 
@@ -19,9 +19,9 @@ The iOS and macOS Xcode projects have been modified to automatically run `pod in
 
 ### Command Line Building
 
-- **`build_native.sh`** - Universal build script for both iOS and macOS
-- **`build_ios.sh`** - iOS-specific build script  
-- **`build_macos.sh`** - macOS-specific build script
+- **`build_native.sh`** - Backward-compatible wrapper for legacy usage (**deprecated**)
+- **`build_ios.sh`** - iOS-specific build script (**preferred**)
+- **`build_macos.sh`** - macOS-specific build script (**preferred**)
 
 ### Xcode Integration Scripts
 
@@ -32,39 +32,71 @@ The iOS and macOS Xcode projects have been modified to automatically run `pod in
 
 ## Usage
 
+Run these commands from `mobile/`.
+
 ### Command Line Builds
 
 ```bash
-# Interactive build (asks for platform)
 ./build_native.sh
 
-# Build iOS debug
-./build_native.sh ios debug
+# Preferred platform-specific scripts (faster local iterations)
 
-# Build iOS release  
-./build_native.sh ios release
-
-# Build macOS debug
-./build_native.sh macos debug
-
-# Build macOS release
-./build_native.sh macos release
-
-# Build both platforms
-./build_native.sh both debug
-```
-
-Or use platform-specific scripts:
-
-```bash
 # iOS builds
 ./build_ios.sh debug
+./build_ios.sh debug --codegen
+./build_ios.sh debug --pod-reset
 ./build_ios.sh release
 
 # macOS builds  
 ./build_macos.sh debug
+./build_macos.sh debug --codegen
+./build_macos.sh debug --pod-reset
 ./build_macos.sh release
+
+# Compatibility mode
+./build_native.sh ios debug
+./build_native.sh ios release
+./build_native.sh both debug
 ```
+
+### Dev Onboarding with `run_dev.sh`
+
+Use `run_dev.sh` for quick iteration on a device or simulator:
+
+```bash
+./run_dev.sh ios debug
+./run_dev.sh macos debug
+```
+
+If generated files changed, regenerate first:
+
+```bash
+./build_ios.sh debug --codegen
+./run_dev.sh ios debug
+```
+
+If CocoaPods needs repair, reset first:
+
+```bash
+./build_ios.sh debug --pod-reset
+./run_dev.sh ios debug
+```
+
+macOS equivalent:
+
+```bash
+./build_macos.sh debug --codegen
+./run_dev.sh macos debug
+./build_macos.sh debug --pod-reset
+./run_dev.sh macos debug
+```
+
+## Fast local workflow
+
+- `./build_ios.sh debug` and `./build_macos.sh debug` do not run `build_runner` by default.
+- Use `--codegen` only when generated sources changed (freezed/riverpod/json_serializable/mocks).
+- Use `--pod-reset` only when CocoaPods is genuinely out of sync.
+- Use `flutter clean` or full pod removal only for unrecoverable local state issues.
 
 ### Xcode Integration (Already Configured!)
 
@@ -102,9 +134,7 @@ If you still get CocoaPods errors:
 
 1. **Clean build folders:**
    ```bash
-   flutter clean
-   rm -rf ios/Pods ios/Podfile.lock
-   rm -rf macos/Pods macos/Podfile.lock
+   ./clear_cache.sh --full
    ```
 
 2. **Update CocoaPods:**
@@ -125,3 +155,7 @@ If you still get CocoaPods errors:
 - They check if CocoaPods installation is actually needed before running it
 - Safe to run multiple times - they won't reinstall pods unnecessarily
 - Pre-build scripts can be added to Xcode schemes to fix builds from within Xcode
+
+### Related docs
+
+- [docs/BUILD_SPEED_CHECKLIST.md](BUILD_SPEED_CHECKLIST.md)

@@ -17,6 +17,7 @@ dependencies:
   models:
   nostr_client:
   profile_repository:
+  rxdart: ^0.28.0
 
 dev_dependencies:
   mocktail: ^1.0.4

@@ -59,6 +59,36 @@ void main() {
       expect(find.byIcon(Icons.arrow_upward), findsOneWidget);
     });
 
+    testWidgets('shows video reply button when callback is provided', (
+      tester,
+    ) async {
+      var tapped = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: CommentInput(
+              controller: controller,
+              onSubmit: () {},
+              onVideoReplyPressed: () => tapped = true,
+            ),
+          ),
+        ),
+      );
+
+      final videoButton = find.bySemanticsIdentifier(
+        'record_video_comment_button',
+      );
+      expect(videoButton, findsOneWidget);
+
+      await tester.tap(videoButton);
+      await tester.pump();
+
+      expect(tapped, isTrue);
+    });
+
     testWidgets(
       'never shows a CircularProgressIndicator on the send button',
       (tester) async {
@@ -205,6 +235,45 @@ void main() {
       // composition without submitting early.
       expect(textField.textInputAction, TextInputAction.newline);
       expect(textField.onSubmitted, isNull);
+    });
+
+    testWidgets('cancels reply when tapping the gap before the close icon', (
+      tester,
+    ) async {
+      var cancelled = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: CommentInput(
+              controller: controller,
+              replyToDisplayName: 'alice',
+              onCancelReply: () => cancelled = true,
+              onSubmit: () {},
+            ),
+          ),
+        ),
+      );
+
+      final label = find.text('Re: alice');
+      final closeIcon = find.byIcon(Icons.close);
+      expect(label, findsOneWidget);
+      expect(closeIcon, findsOneWidget);
+
+      final labelRect = tester.getRect(label);
+      final closeRect = tester.getRect(closeIcon);
+
+      await tester.tapAt(
+        Offset(
+          (labelRect.right + closeRect.left) / 2,
+          closeRect.center.dy,
+        ),
+      );
+      await tester.pump();
+
+      expect(cancelled, isTrue);
     });
 
     testWidgets('shows keyboard dismissal control while focused', (

@@ -58,6 +58,10 @@ class SavedSoundsService {
     await _writeSounds(sounds);
   }
 
+  /// Overwrites the persisted list. Used by the notifier after backfilling
+  /// missing fields (e.g. duration) on legacy entries.
+  Future<void> replaceAll(List<AudioEvent> sounds) => _writeSounds(sounds);
+
   Future<void> _writeSounds(List<AudioEvent> sounds) async {
     await _preferences.setString(
       storageKey,

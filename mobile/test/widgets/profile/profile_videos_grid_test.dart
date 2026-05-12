@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -76,6 +78,7 @@ void main() {
       mockAuth = _MockAuthService();
       mockBloc = _MockBackgroundPublishBloc();
       when(() => mockBloc.state).thenReturn(const BackgroundPublishState());
+      debugProfileVideosGridBuildCount = 0;
     });
 
     Widget buildSubject({
@@ -388,6 +391,244 @@ void main() {
           findsOneWidget,
         );
       });
+    });
+
+    group('loading-vs-empty regression guard (#4164)', () {
+      // The screens (`profile_screen_router.dart`, `other_profile_screen.dart`)
+      // are responsible for threading `state.isInitialLoad` into the
+      // `isLoading` parameter so the cold-start fetch window does not
+      // surface as a misleading "No videos" empty state. These tests pin
+      // the widget-side contract that drives the screens' wiring choice.
+      testWidgets(
+        'shows loading state — not empty state — when isLoading is true '
+        'and videos is empty',
+        (tester) async {
+          when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+
+          await tester.pumpWidget(
+            buildSubject(userIdHex: _ownPubkey, isLoading: true),
+          );
+
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          expect(find.text(l10n.profileLoadingVideos), findsOneWidget);
+          expect(find.text(l10n.profileNoVideosTitle), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'shows empty state — not loading state — when isLoading is false '
+        'and videos is empty (preserves the genuine "user has nothing '
+        'posted" path)',
+        (tester) async {
+          when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+
+          await tester.pumpWidget(buildSubject(userIdHex: _ownPubkey));
+
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          expect(find.text(l10n.profileNoVideosTitle), findsOneWidget);
+          expect(find.text(l10n.profileLoadingVideos), findsNothing);
+        },
+      );
+    });
+
+    group('rebuild optimization (#3605)', () {
+      // These tests pin the `context.select` contract that keeps the grid
+      // from rebuilding on every `BackgroundPublishBloc` progress tick.
+      //
+      // The optimization hinges on [ActiveUploadsView]'s equality semantics:
+      // two states that differ only in `BackgroundUpload.progress` must
+      // produce equal projections so `context.select` suppresses the
+      // consumer rebuild. A regression to identity-based list equality
+      // would fail the first test below.
+
+      test(
+        'ActiveUploadsView.fromState compares equal across progress-only '
+        'state changes',
+        () {
+          final draft = _createTestDraft();
+          final state1 = BackgroundPublishState(
+            uploads: [
+              BackgroundUpload(draft: draft, result: null, progress: 0.1),
+            ],
+          );
+          final state2 = BackgroundPublishState(
+            uploads: [
+              BackgroundUpload(draft: draft, result: null, progress: 0.9),
+            ],
+          );
+
+          expect(
+            ActiveUploadsView.fromState(state1),
+            equals(ActiveUploadsView.fromState(state2)),
+          );
+        },
+      );
+
+      test(
+        'ActiveUploadsView.fromState compares unequal when an upload '
+        'is added',
+        () {
+          final draftA = _createTestDraft(title: 'A');
+          final draftB = _createTestDraft(title: 'B');
+          final state1 = BackgroundPublishState(
+            uploads: [
+              BackgroundUpload(draft: draftA, result: null, progress: 0.5),
+            ],
+          );
+          final state2 = BackgroundPublishState(
+            uploads: [
+              BackgroundUpload(draft: draftA, result: null, progress: 0.5),
+              BackgroundUpload(draft: draftB, result: null, progress: 0.5),
+            ],
+          );
+
+          expect(
+            ActiveUploadsView.fromState(state1),
+            isNot(equals(ActiveUploadsView.fromState(state2))),
+          );
+        },
+      );
+
+      test(
+        'ActiveUploadsView.fromState compares unequal when a draft title '
+        'changes',
+        () {
+          final draftA = _createTestDraft(title: 'Old title');
+          final draftB = _createTestDraft(title: 'New title');
+          final state1 = BackgroundPublishState(
+            uploads: [
+              BackgroundUpload(draft: draftA, result: null, progress: 0.5),
+            ],
+          );
+          final state2 = BackgroundPublishState(
+            uploads: [
+              BackgroundUpload(draft: draftB, result: null, progress: 0.5),
+            ],
+          );
+
+          expect(
+            ActiveUploadsView.fromState(state1),
+            isNot(equals(ActiveUploadsView.fromState(state2))),
+          );
+        },
+      );
+
+      test(
+        'ActiveUploadsView.fromState excludes uploads with a non-null result',
+        () {
+          final draft = _createTestDraft();
+          final state = BackgroundPublishState(
+            uploads: [
+              BackgroundUpload(
+                draft: draft,
+                result: const PublishSuccess(),
+                progress: 1,
+              ),
+            ],
+          );
+
+          expect(ActiveUploadsView.fromState(state).uploads, isEmpty);
+        },
+      );
+
+      testWidgets(
+        'progress-only state emission does not rebuild the grid '
+        'while the per-tile spinner still receives the update',
+        (tester) async {
+          when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+
+          final draft = _createTestDraft();
+          final initial = BackgroundPublishState(
+            uploads: [
+              BackgroundUpload(draft: draft, result: null, progress: 0.1),
+            ],
+          );
+          final tick = BackgroundPublishState(
+            uploads: [
+              BackgroundUpload(draft: draft, result: null, progress: 0.9),
+            ],
+          );
+
+          // Use an externally-driven broadcast stream so we can pump the
+          // initial Riverpod async (profileFeedProvider transitions from
+          // AsyncLoading → AsyncData and triggers an orthogonal rebuild
+          // via `ref.watch`) to a steady state before measuring the
+          // bloc-tick's incremental rebuild count.
+          final controller =
+              StreamController<BackgroundPublishState>.broadcast();
+          addTearDown(controller.close);
+          whenListen(mockBloc, controller.stream, initialState: initial);
+
+          await tester.pumpWidget(buildSubject(userIdHex: _ownPubkey));
+          // Settle initial async (Riverpod's profileFeedProvider, post-
+          // frame callbacks, etc.) — anything not caused by our tick.
+          await tester.pump();
+          final baselineBuildCount = debugProfileVideosGridBuildCount;
+
+          // Now emit the progress-only update.
+          controller.add(tick);
+          await tester.pump();
+          // PartialCircleSpinner.animateTo runs over 200ms — settle the
+          // implicit animation so we read the post-tick value.
+          await tester.pump(const Duration(milliseconds: 250));
+
+          // (a) Grid did NOT rebuild as a result of the progress-only
+          // emission. A regression to identity-based list equality on
+          // the selector would tick this counter higher.
+          expect(debugProfileVideosGridBuildCount, equals(baselineBuildCount));
+
+          // (b) Per-tile spinner DID receive the updated progress —
+          // the tile's own context.select<...double>(...) projects to
+          // a primitive whose equality compares cleanly.
+          final spinner = tester.widget<PartialCircleSpinner>(
+            find.byType(PartialCircleSpinner),
+          );
+          expect(spinner.progress, closeTo(0.9, 1e-9));
+        },
+      );
+
+      testWidgets(
+        'shape-change state emission does rebuild the grid '
+        '(contrast for the rebuild-count counter)',
+        (tester) async {
+          when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+
+          final draftA = _createTestDraft(title: 'A');
+          final draftB = _createTestDraft(title: 'B');
+          final initial = BackgroundPublishState(
+            uploads: [
+              BackgroundUpload(draft: draftA, result: null, progress: 0.5),
+            ],
+          );
+          final shapeChange = BackgroundPublishState(
+            uploads: [
+              BackgroundUpload(draft: draftA, result: null, progress: 0.5),
+              BackgroundUpload(draft: draftB, result: null, progress: 0.5),
+            ],
+          );
+
+          final controller =
+              StreamController<BackgroundPublishState>.broadcast();
+          addTearDown(controller.close);
+          whenListen(mockBloc, controller.stream, initialState: initial);
+
+          await tester.pumpWidget(buildSubject(userIdHex: _ownPubkey));
+          await tester.pump();
+          final baselineBuildCount = debugProfileVideosGridBuildCount;
+
+          controller.add(shapeChange);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 250));
+
+          // Shape changed (a new upload appeared) → grid must rebuild
+          // so the new tile is added to the SliverGrid.
+          expect(
+            debugProfileVideosGridBuildCount,
+            greaterThan(baselineBuildCount),
+          );
+          expect(find.byType(PartialCircleSpinner), findsNWidgets(2));
+        },
+      );
     });
 
     group('scroll coordination with NestedScrollView', () {

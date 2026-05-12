@@ -8,14 +8,15 @@ import 'dart:math';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/widgets/apps/nostr_app_permission_prompt_sheet.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import 'package:webview_flutter_wkwebview/src/common/web_kit.g.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
 typedef SandboxViewBuilder =
@@ -35,6 +36,7 @@ class NostrAppSandboxScreen extends ConsumerStatefulWidget {
     this.bootstrapHttpClientOverride,
     this.javaScriptRunnerOverride,
     this.onBridgeMessageHandlerReady,
+    this.onAttestedEventHandlerReady,
     this.currentUserPubkeyOverride,
     this.bridgeNonceOverride,
     super.key,
@@ -49,6 +51,8 @@ class NostrAppSandboxScreen extends ConsumerStatefulWidget {
   final ValueChanged<Future<void> Function(String message)>?
   onBridgeMessageHandlerReady;
   @visibleForTesting
+  final ValueChanged<void Function(dynamic event)>? onAttestedEventHandlerReady;
+  @visibleForTesting
   final String? currentUserPubkeyOverride;
   @visibleForTesting
   final String? bridgeNonceOverride;
@@ -62,12 +66,22 @@ class NostrAppSandboxScreen extends ConsumerStatefulWidget {
 }
 
 class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
+  // iOS frame attestation channels.
+  static const MethodChannel _attestationMethodChannel = MethodChannel(
+    'co.openvine/nostr_bridge_attestation',
+  );
+  static const EventChannel _attestationEventChannel = EventChannel(
+    'co.openvine/nostr_bridge_attestation/events',
+  );
+
   WebViewController? _webViewController;
   bool _isLoading = true;
   Uri? _blockedUri;
   Uri? _currentPageUri;
   http.Client? _ownedBootstrapHttpClient;
   late final String _bridgeNonce;
+  bool _isNativeAttestationActive = false;
+  StreamSubscription<dynamic>? _attestedMessageSubscription;
 
   String? get _currentUserPubkey =>
       widget.currentUserPubkeyOverride ??
@@ -80,6 +94,7 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
     _bridgeNonce = widget.bridgeNonceOverride ?? _generateBridgeNonce();
     widget.onNavigationHandlerReady?.call(_handleNavigationAttempt);
     widget.onBridgeMessageHandlerReady?.call(_handleBridgeMessage);
+    widget.onAttestedEventHandlerReady?.call(_handleAttestedEvent);
 
     if (widget.sandboxBuilder != null) {
       return;
@@ -93,6 +108,18 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
 
   @override
   void dispose() {
+    _attestedMessageSubscription?.cancel();
+    if (_isNativeAttestationActive) {
+      final platformController = _webViewController?.platform;
+      if (platformController is WebKitWebViewController) {
+        unawaited(
+          _attestationMethodChannel.invokeMethod<void>(
+            'detach',
+            {'webViewId': platformController.webViewIdentifier},
+          ),
+        );
+      }
+    }
     _ownedBootstrapHttpClient?.close();
     super.dispose();
   }
@@ -204,11 +231,23 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
     await controller.addJavaScriptChannel(
       NostrAppSandboxScreen.bridgeChannelName,
       onMessageReceived: (message) {
-        _handleBridgeMessage(message.message);
+        // On iOS, the native attesting handler replaces this pigeon handler
+        // after attach() completes. This guard prevents double-handling during
+        // the brief setup window before replacement.
+        if (!_isNativeAttestationActive) {
+          unawaited(_handleBridgeMessage(message.message));
+        }
       },
     );
 
-    await _installDocumentStartBridgeIfSupported(controller);
+    // On iOS, replace the pigeon handler with the frame-attesting one and
+    // hand off the document-start bootstrap script to the native plugin.
+    // Must run before the page loads so the native handler is in place when
+    // the bootstrap script fires its first postMessage.
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      await _activateNativeAttestation(controller);
+    }
+
     await _loadSandboxPage(launchUri);
   }
 
@@ -216,6 +255,91 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
     return defaultTargetPlatform == TargetPlatform.android &&
         request.isMainFrame &&
         _isAllowedOrigin(uri);
+  }
+
+  /// Activates platform-level frame attestation on iOS by replacing the
+  /// pigeon-managed WKScriptMessageHandler with a native one that includes
+  /// WKScriptMessage.frameInfo. Messages arrive via EventChannel instead of
+  /// the addJavaScriptChannel callback.
+  ///
+  /// Also hands the document-start bridge bootstrap script to the native
+  /// plugin so it can be installed as a `WKUserScript` without the Dart
+  /// layer needing to import private webview_flutter_wkwebview src types.
+  ///
+  /// Falls back to nonce-only enforcement when the native plugin is
+  /// unavailable (e.g. in tests that do not configure the channel, or if a
+  /// previous sandbox is still attached). Logs a warning so the degraded
+  /// security posture is visible in unified logs.
+  Future<void> _activateNativeAttestation(WebViewController controller) async {
+    final platformController = controller.platform;
+    if (platformController is! WebKitWebViewController) return;
+
+    final bootstrapScript = buildBridgeBootstrapScript(
+      nonce: _bridgeNonce,
+      pubkey: _currentUserPubkey,
+      autoLoginScript: widget.app.autoLoginScript,
+    );
+
+    try {
+      await _attestationMethodChannel.invokeMethod<void>('attach', {
+        'webViewId': platformController.webViewIdentifier,
+        'bootstrapScript': bootstrapScript,
+      });
+      _isNativeAttestationActive = true;
+      _attestedMessageSubscription = _attestationEventChannel
+          .receiveBroadcastStream()
+          .listen(_handleAttestedEvent);
+    } on PlatformException catch (error) {
+      Log.warning(
+        'Native frame attestation unavailable (${error.code}); '
+        'falling back to nonce-only enforcement.',
+        name: 'NostrAppSandboxScreen',
+        category: LogCategory.system,
+      );
+    } on MissingPluginException catch (_) {
+      // Channel is not registered (tests, simulator without the plugin set
+      // up). Nonce gate remains the only defence on iOS in this case.
+    }
+  }
+
+  /// Handles a message delivered by the native frame-attesting handler.
+  ///
+  /// Rejects non-main-frame messages before the nonce check: the platform
+  /// itself reports isMainFrame, so no JS can spoof this value.
+  void _handleAttestedEvent(dynamic event) {
+    if (event is! Map) {
+      Log.warning(
+        'Unexpected attestation event shape: ${event.runtimeType}',
+        name: 'NostrAppSandboxScreen',
+        category: LogCategory.system,
+      );
+      return;
+    }
+    final message = event['message'] as String? ?? '';
+    final isMainFrame = event['isMainFrame'] as bool? ?? false;
+
+    if (!isMainFrame) {
+      String responseId = 'unknown';
+      try {
+        final payload = jsonDecode(message);
+        if (payload is Map) {
+          responseId = payload['id']?.toString() ?? 'unknown';
+        }
+      } on FormatException {
+        // Best-effort id extraction; subframe rejection is unconditional
+        // regardless of payload validity. Real invariant bugs (StateError,
+        // TypeError) are intentionally not swallowed here.
+      }
+      unawaited(
+        _emitBridgeResponse(
+          id: responseId,
+          result: const BridgeResult.error('subframe_rejected'),
+        ),
+      );
+      return;
+    }
+
+    unawaited(_handleBridgeMessage(message));
   }
 
   Future<void> _loadSandboxPage(Uri uri) async {
@@ -243,47 +367,6 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
 
     _currentPageUri = uri;
     await controller.loadRequest(uri);
-  }
-
-  Future<void> _installDocumentStartBridgeIfSupported(
-    WebViewController controller,
-  ) async {
-    final platformController = controller.platform;
-    if (platformController is! WebKitWebViewController) {
-      return;
-    }
-
-    final nativeWebView = PigeonInstanceManager.instance
-        .getInstanceWithWeakReference<WKWebView>(
-          platformController.webViewIdentifier,
-        );
-    if (nativeWebView == null) {
-      return;
-    }
-
-    final WKWebViewConfiguration configuration;
-    switch (nativeWebView) {
-      case UIViewWKWebView():
-        configuration = nativeWebView.configuration;
-      case NSViewWKWebView():
-        configuration = nativeWebView.configuration;
-      default:
-        return;
-    }
-
-    final contentController = await configuration.getUserContentController();
-    final fullScript = buildBridgeBootstrapScript(
-      nonce: _bridgeNonce,
-      pubkey: _currentUserPubkey,
-      autoLoginScript: widget.app.autoLoginScript,
-    );
-    final userScript = WKUserScript(
-      source: fullScript,
-      injectionTime: UserScriptInjectionTime.atDocumentStart,
-      isForMainFrameOnly: true,
-    );
-
-    await contentController.addUserScript(userScript);
   }
 
   Future<_BootstrappedSandboxPage?> _prepareBootstrapHtml(Uri uri) async {

@@ -21,6 +21,7 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
+import 'package:openvine/providers/video_reply_context_provider.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
@@ -316,6 +317,13 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     triggerAutosave();
   }
 
+  /// Set whether a video reply should also be eligible for normal feed display.
+  void setShareReplyToFeed(bool shareReplyToFeed) {
+    if (state.shareReplyToFeed == shareReplyToFeed) return;
+    state = state.copyWith(shareReplyToFeed: shareReplyToFeed);
+    triggerAutosave();
+  }
+
   // === COLLABORATORS & INSPIRED BY ===
 
   /// Add a collaborator pubkey to the pending verification set.
@@ -520,6 +528,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       originalAudioVolume: state.originalAudioVolume,
       customAudioVolume: state.customAudioVolume,
       thumbnailTimestamp: state.finalRenderedClip?.thumbnailTimestamp,
+      videoReplyContext: ref.read(videoReplyContextProvider),
+      shareReplyToFeed: state.shareReplyToFeed,
     );
   }
 
@@ -783,6 +793,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       description: draft.description,
       tags: draft.hashtags,
       allowAudioReuse: draft.allowAudioReuse,
+      shareReplyToFeed: draft.shareReplyToFeed,
       expiration: VideoMetadataExpiration.fromDuration(draft.expireTime),
       editorStateHistory: draft.editorStateHistory,
       editorEditingParameters: CompleteParameters.fromMap(
@@ -1011,6 +1022,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
             duration: Duration(seconds: track.duration?.toInt() ?? 0),
             audio: track.isBundled
                 ? EditorAudio.asset(track.assetPath!)
+                : track.url!.startsWith('/')
+                ? EditorAudio.file(File(track.url!))
                 : EditorAudio.network(track.url!),
             startTime: track.startTime,
             endTime: track.endTime,

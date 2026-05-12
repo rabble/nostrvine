@@ -267,8 +267,6 @@
   "profileRepostsOwnEmpty": "あなたがリポストした動画がここに出るよ",
   "profileRepostsOtherEmpty": "この人がリポストした動画がここに出るよ",
   "profileErrorLoadingReposts": "リポスト動画の読み込みに失敗",
-  "profileLoadingTitle": "プロフィールを読み込み中...",
-  "profileLoadingSubtitle": "ちょっと待ってね",
   "profileLoadingVideos": "動画を読み込み中...",
   "profileNoVideosTitle": "動画はまだないよ",
   "profileNoVideosOwnSubtitle": "最初の動画を投稿してここに表示しよう",
@@ -344,7 +342,7 @@
     }
   },
   "profileSetupGotItButton": "了解！",
-  "profileSetupUploadFailedGeneric": "画像のアップロードがうまくいかなかった: {error}",
+  "profileSetupUploadFailedGeneric": "画像をアップロードできなかった。あとでもう一度試してみて。",
   "profileSetupUploadNetworkError": "ネットワークエラー: ネット接続を確認してもう一回試してみて。",
   "profileSetupUploadAuthError": "認証エラー: 一度ログアウトしてもう一回ログインしてみて。",
   "profileSetupUploadFileTooLarge": "ファイルが大きすぎる: もっと小さい画像を選んでね (最大 10MB)。",
@@ -358,7 +356,7 @@
   "profileSetupCheckAgain": "もう一回確認",
   "profileSetupUsernameBurned": "このユーザー名はもう使えないよ",
   "profileSetupUsernameInvalidFormat": "使えるのは英数字とハイフンだけだよ",
-  "profileSetupUsernameInvalidLength": "ユーザー名は3〜20文字にしてね",
+  "profileSetupUsernameInvalidLength": "ユーザー名は3〜63文字にしてね",
   "profileSetupUsernameNetworkError": "使えるか確認できなかった。もう一回試してみて。",
   "profileSetupUsernameInvalidFormatGeneric": "ユーザー名の形式が正しくないよ",
   "profileSetupUsernameCheckFailed": "使えるか確認できなかった",
@@ -472,6 +470,7 @@
   "videoPlayerUnmute": "動画のミュートを解除",
   "videoPlayerEditVideo": "動画を編集",
   "videoPlayerEditVideoTooltip": "動画を編集",
+  "videoPlayerTapHint": "タップで再生・一時停止。ダブルタップでいいね。",
   "contentWarningLabel": "コンテンツ警告",
   "contentWarningNudity": "ヌード",
   "contentWarningSexualContent": "性的コンテンツ",
@@ -563,6 +562,35 @@
       }
     }
   },
+  "videoCollaboratorPendingDecoration": "Pending",
+  "@videoCollaboratorPendingDecoration": {
+    "description": "Small badge next to a collaborator's name or avatar when the creator (viewing their own video) has invited them but they have not yet accepted."
+  },
+  "videoCollaboratorPendingSemanticLabel": "Pending collaborator",
+  "@videoCollaboratorPendingSemanticLabel": {
+    "description": "Screen reader label for a dimmed pending collaborator avatar on the creator's own video."
+  },
+  "videoCollaboratorWithPendingSuffix": "{label} ({pending} pending)",
+  "@videoCollaboratorWithPendingSuffix": {
+    "description": "Appends a pending count to the collaborator label on the creator's own video. {label} is the existing 'with @name' / 'with @name +N' phrase.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "pending": {
+        "type": "int"
+      }
+    }
+  },
+  "profileChipTapHint": "{name}. Tap to view profile.",
+  "@profileChipTapHint": {
+    "description": "Screen reader hint announced when a user-chip in the metadata sheet is focused. {name} is the user's display name.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "listAttributionFallback": "リスト",
   "shareVideoLabel": "動画を共有",
   "sharePostSharedWith": "{recipientName}に投稿を共有したよ",
@@ -602,6 +630,11 @@
   "videoActionMoreOptions": "その他のオプション",
   "videoActionHideSubtitles": "字幕を隠す",
   "videoActionShowSubtitles": "字幕を表示",
+  "videoEngagementLikersTitle": "いいねしたユーザー",
+  "videoEngagementRepostersTitle": "リポストしたユーザー",
+  "videoEngagementLikersEmpty": "まだいいねがありません",
+  "videoEngagementRepostersEmpty": "まだリポストがありません",
+  "videoEngagementLoadFailed": "リストを読み込めませんでした",
   "videoDescriptionLoops": "{count}ループ",
   "@videoDescriptionLoops": {
     "placeholders": {
@@ -1732,6 +1765,26 @@
   "feedFailedToLoadVideos": "動画の読み込みがうまくいかなかった",
   "feedRetry": "もう一回",
   "feedNoFollowedUsers": "まだ誰もフォローしてないよ。\n誰かをフォローすると、ここに動画が出るよ。",
+  "feedModeForYou": "おすすめ",
+  "feedModeNew": "新着",
+  "feedModeFollowing": "フォロー中",
+  "feedModeSemanticLabel": "フィードモード: {label}",
+  "@feedModeSemanticLabel": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "videoAuthorSemanticLabel": "動画の作者: {displayName}",
+  "@videoAuthorSemanticLabel": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "videoAuthorAvatarSemanticLabel": "作者のアバター",
   "feedForYouEmpty": "おすすめフィードはまだ空です。\n動画を見つけてクリエイターをフォローし、あなた向けに育てましょう。",
   "feedFollowingEmpty": "フォロー中の人の動画はまだありません。\n気に入ったクリエイターを見つけてフォローしましょう。",
   "feedLatestEmpty": "新しい動画はまだありません。\nしばらくしてからもう一度確認してください。",
@@ -1849,6 +1902,7 @@
   "routeInvalidCategory": "無効なカテゴリ",
   "routeNoVideosToDisplay": "表示する動画がないよ",
   "routeInvalidProfileId": "無効なプロフィール ID",
+  "routeUnknownPath": "このページはアプリ内にありません。",
   "routeDefaultListName": "リスト",
   "supportTitle": "サポート",
   "supportContactSupport": "サポートに連絡",
@@ -2264,6 +2318,11 @@
       }
     }
   },
+  "inboxCollabInviteCardUntitledVideo": "無題の動画",
+  "clickableTextViewVideoLink": "動画を見る",
+  "messageExternalLinkDialogTitle": "外部リンクを開きますか？",
+  "messageExternalLinkDialogBody": "このリンクは外部サイトに移動します。安全ではない可能性があります:\n\n{url}",
+  "messageExternalLinkDialogOpen": "開く",
   "inboxCollabInviteAcceptButton": "承認",
   "inboxCollabInviteAcceptError": "承認できなかったよ。もう一度試してね。",
   "inboxCollabInviteAcceptedStatus": "承認済み",
@@ -2420,8 +2479,12 @@
   "libraryWebUnavailableDescription": "下書きとクリップは端末に保存されます。管理するにはスマートフォンでDivineを開いてください。",
   "libraryWebUnavailableHeadline": "ライブラリはモバイルアプリで利用できます",
   "notificationFollowBack": "フォローバック",
-  "profileSetupUploadSuccess": "プロフィール写真をアップロードしたよ！",
+  "profileSetupUploadStaged": "アップロードしたよ — 適用するには「保存」をタップしてね",
   "proofmodeCheckAiGenerated": "AI生成かチェック",
+  "dmSendFailedMessage": "メッセージを送信できなかった",
+  "dmSendFailedRetry": "もう一回",
+  "dmSendPartialMessage": "送信したけど、ほかのデバイスには同期できなかった",
+  "dmConversationLoadError": "メッセージを読み込めなかった",
   "reportDialogCancel": "キャンセル",
   "reportDialogReport": "報告",
   "routerInvalidCreator": "無効なクリエイター",
@@ -2661,7 +2724,7 @@
   "videoEditorAdjustVolumeTitle": "音量を調整",
   "videoEditorAudioAddAudio": "オーディオを追加",
   "videoEditorAudioFailedToLoadTitle": "サウンドの読み込みに失敗",
-  "videoEditorAudioCategoryDivine": "diVine",
+  "videoEditorAudioCategoryDivine": "OG Sounds",
   "videoEditorAudioCategoryCommunity": "コミュニティ",
   "videoEditorAudioLabel": "オーディオ",
   "videoEditorAudioNoSoundsAvailableSubtitle": "クリエイターがオーディオを共有するとここに表示されます",
@@ -2773,6 +2836,11 @@
     }
   },
   "videoEditorSplitSelectedClipSemanticLabel": "選択したクリップを分割",
+  "videoEditorExtractAudioLabel": "音声を抽出",
+  "videoEditorClipAudioTitle": "クリップ音声",
+  "videoEditorExtractAudioFromClipSemanticLabel": "クリップから音声を抽出してオリジナルをミュート",
+  "videoEditorExtractAudioNoLocalFile": "音声を抽出できません：クリップがローカルで利用できません。",
+  "videoEditorExtractAudioFailed": "音声を抽出できませんでした。もう一度お試しください。",
   "videoEditorStickersDivineOriginals": "Divine オリジナル",
   "videoEditorStickerSearchHint": "ステッカーを検索...",
   "videoEditorTextAlignmentSemanticLabel": "テキストの配置",
@@ -2841,10 +2909,10 @@
   },
   "videoMetadataCollaboratorsHelpMessage": "コラボレーターはこの投稿の共同クリエイターとしてタグ付けされます。相互フォローしている人のみ追加でき、公開時に投稿メタデータに表示されます。",
   "videoMetadataCollaboratorsHelpTooltip": "コラボレーターの仕組み",
-  "videoMetadataCollaboratorsLabel": "コラボレーターを追加",
+  "videoMetadataCollaboratorsLabel": "コラボレーター",
   "videoMetadataContentWarningDoneButton": "完了",
-  "videoMetadataContentWarningLabel": "コンテンツ警告を追加",
-  "videoMetadataContentWarningSelectAllThatApply": "該当するものをすべて選択",
+  "videoMetadataContentWarningLabel": "コンテンツ警告",
+  "videoMetadataContentWarningSelectAllThatApply": "コンテンツに該当するものをすべて選択",
   "videoMetadataCreatorCannotBeReferencedSnackbar": "このクリエイターは参照できません。",
   "videoMetadataDeleteTagHint": "タグ{tag}を削除",
   "@videoMetadataDeleteTagHint": {
@@ -2864,7 +2932,7 @@
   "videoMetadataGotItButton": "わかりました！",
   "videoMetadataInspiredByHelpMessage": "帰属のために使用します。インスパイアクレジットはコラボレーターとは異なります。影響を認めますが、共同クリエイターとしてタグ付けはしません。",
   "videoMetadataInspiredByHelpTooltip": "インスピレーションクレジットの仕組み",
-  "videoMetadataInspiredByLabel": "インスパイア元を追加",
+  "videoMetadataInspiredByLabel": "インスパイア元",
   "videoMetadataInspiredByNone": "なし",
   "videoMetadataLimitReachedWarning": "64KBの上限に達しました。続けるにはコンテンツを削除してください。",
   "videoMetadataMustMutuallyFollowSnackbar": "{name}をコラボレーターとして追加するには、相互フォローが必要です。",
@@ -2949,9 +3017,6 @@
   "videoActionAutoLabel": "自動",
   "videoActionEnableAutoAdvance": "自動送りを有効にする",
   "videoActionDisableAutoAdvance": "自動送りを無効にする",
-  "metadataCaptionsLabel": "字幕",
-  "metadataCaptionsEnabledSemantics": "すべての動画で字幕が有効になっています",
-  "metadataCaptionsDisabledSemantics": "すべての動画で字幕が無効になっています",
   "@metadataLoopsLabel": {
     "placeholders": {
       "count": {
@@ -3085,6 +3150,16 @@
   "profileSetupImagesTypeGroup": "画像",
   "profileSetupExternalNip05InvalidFormat": "NIP-05 の形式が正しくないよ (例: name@domain.com)",
   "profileSetupExternalNip05DivineDomain": "divine.video の場合は上のユーザー名欄を使ってね",
+  "nostrSettingsNip05Address": "NIP-05 address",
+  "nostrSettingsNip05AddressSubtitle": "Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.",
+  "nostrSettingsNip05AddressHint": "you@example.com",
+  "nostrSettingsNip05SaveAction": "Save NIP-05",
+  "nostrSettingsNip05Saved": "NIP-05 saved",
+  "nostrSettingsNip05SaveFailed": "Couldn't save NIP-05. Please try again.",
+  "profileSetupNip05ConfirmTitle": "Use your own NIP-05?",
+  "profileSetupNip05ConfirmBody": "NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it's wrong, people can't find you and your verified handle disappears. Continue only if you've set this up.",
+  "profileSetupNip05ConfirmContinue": "Continue",
+  "profileSetupNip05ConfirmCancel": "Cancel",
   "contentWarningReportContentTooltip": "コンテンツを報告",
   "contentWarningBlockUserTooltip": "ユーザーをブロック",
   "contentWarningBlockedTitle": "ブロック済みのコンテンツ",
@@ -3206,6 +3281,30 @@
   "@profileEditPublicKeyLink": {
     "description": "Secondary link on the edit profile screen that navigates to the key management screen where the user's npub lives."
   },
+  "verifiedAccountChipSemanticLabel": "認証済み{platform}アカウント: {identity}",
+  "@verifiedAccountChipSemanticLabel": {
+    "description": "Screen reader label for a verified-account chip on a user's profile.",
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      },
+      "identity": {
+        "type": "String"
+      }
+    }
+  },
+  "profileEditVerifiedAccountsTitle": "認証済みアカウント",
+  "@profileEditVerifiedAccountsTitle": {
+    "description": "Section header on the edit profile screen above the verified-accounts chip row and the Get verified CTA."
+  },
+  "profileEditGetVerifiedCta": "認証を受ける",
+  "@profileEditGetVerifiedCta": {
+    "description": "Primary CTA tile on edit profile that opens the verifyer integrated-app sandbox."
+  },
+  "profileEditGetVerifiedSubtitle": "ソーシャルメディアのアカウントをつないで、本物のあなただと伝えよう。",
+  "@profileEditGetVerifiedSubtitle": {
+    "description": "Subtitle under the Get verified tile, harmonized with verifyer.divine.video landing copy."
+  },
   "soundUntitled": "無題のサウンド",
   "soundStopPreview": "プレビューを停止",
   "soundPreviewSemanticLabel": "{title}をプレビュー",
@@ -3294,6 +3393,20 @@
   "bugReportExpectedBehaviorHint": "本来どうなるはずだった?",
   "bugReportDiagnosticsNotice": "デバイス情報とログは自動で添付されるよ。",
   "bugReportSuccessMessage": "ありがとう！レポートを受け取ったよ。Divine をよくするのに使うね。",
+  "bugReportAttachImages": "Attach images",
+  "bugReportImagesCount": "{count} of {max} images selected",
+  "@bugReportImagesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "bugReportRemoveImage": "Remove image",
+  "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
   "bugReportSendFailed": "バグレポートの送信に失敗。あとでもう一回試してみて。",
   "bugReportFailedWithError": "バグレポートの送信に失敗: {error}",
   "@bugReportFailedWithError": {
@@ -3437,21 +3550,63 @@
   "authNip07ExtensionNotFound": "ブラウザ拡張機能が見つかりません。Alby、nos2x、またはその他の NIP-07 対応拡張機能をインストールしてください。",
   "authInfoBrowserExtensionTitle": "ブラウザ拡張機能",
   "authInfoBrowserExtensionDescription": "Alby や nos2x のような NIP-07 ブラウザ拡張機能でサインインします。鍵は拡張機能内に保持され、Divine からは見えません。",
-  "soundsAlreadySavedToLibrary": "Already in Sounds",
-  "soundsAvailabilityCommunity": "Community",
-  "soundsAvailabilityPrivate": "Private",
-  "soundsRemoveSavedSound": "Remove sound",
-  "soundsRemovedFromLibrary": "Removed from Sounds",
-  "soundsSavedEmptyDescription": "Tap Use Sound on a video to save it here.",
-  "soundsSavedEmptyTitle": "No saved sounds yet",
-  "soundsSavedLibraryTitle": "My Sounds",
-  "soundsSavedToLibrary": "Saved to Sounds",
-  "videoEditorAudioCategoryFeatured": "Featured",
-  "videoEditorAudioCategoryMySounds": "My Sounds",
-  "videoEditorAudioFeaturedEmptySubtitle": "We’ll drop featured sounds here once they’re ready.",
-  "videoEditorAudioFeaturedEmptyTitle": "Featured sounds coming soon",
-  "videoMetadataAudioReuseSubtitle": "Let others save and reuse this video's audio.",
-  "videoMetadataAudioReuseTitle": "Publish this sound",
+  "soundsAlreadySavedToLibrary": "すでにサウンドにあります",
+  "soundsAvailabilityCommunity": "コミュニティ",
+  "soundsAvailabilityPrivate": "プライベート",
+  "soundsRemoveSavedSound": "サウンドを削除",
+  "soundsRemovedFromLibrary": "サウンドから削除しました",
+  "soundsSavedEmptyDescription": "動画でサウンドを使用をタップして、ここに保存します。",
+  "soundsSavedEmptyTitle": "保存されたサウンドはまだありません",
+  "soundsSavedLibraryTitle": "マイサウンド",
+  "soundsSavedToLibrary": "サウンドに保存しました",
+  "videoEditorAudioCategoryFeatured": "おすすめ",
+  "videoEditorAudioCategoryMySounds": "マイサウンド",
+  "videoEditorAudioFeaturedEmptySubtitle": "準備ができ次第、おすすめサウンドをここに掲載します。",
+  "videoEditorAudioFeaturedEmptyTitle": "おすすめサウンドは近日公開",
+  "videoMetadataAudioReuseSubtitle": "他のユーザーがこの動画の音声を保存して再利用できるようにします。",
+  "videoMetadataAudioReuseTitle": "このサウンドを公開",
+  "videoMetadataShareReplyToFeedTitle": "自分のフィードにも共有",
+  "videoMetadataShareReplyToFeedSubtitle": "オフにすると、この動画はコメントスレッド内にのみ表示されます。",
+  "commentsRecordVideoButtonLabel": "動画コメントを録画",
+  "commentsOpenVideoLabel": "動画コメントを開く",
+  "commentsMuteVideoReplyLabel": "動画返信をミュート",
+  "commentsUnmuteVideoReplyLabel": "動画返信のミュートを解除",
+  "commentsOpenReplyParentLabel": "返信先の動画を開く",
+  "commentsReplyParentSectionTitle": "返信先",
+  "commentsReplyParentLabel": "{target} への返信",
+  "commentsReplyParentFallbackLabel": "動画への返信",
+  "videoSettingsMenuOpen": "再生設定を開く",
+  "videoSettingsMenuClose": "再生設定を閉じる",
+  "videoSettingsCaptionsEnable": "字幕を有効にする",
+  "videoSettingsCaptionsDisable": "字幕を無効にする",
+  "videoActionReportLabel": "報告",
+  "videoActionReport": "動画を報告",
+  "videoActionEditLabel": "編集",
+  "videoActionEdit": "動画を編集",
+  "reportReasonSpamSubtitle": "迷惑または繰り返しのコンテンツ",
+  "reportReasonHarassmentSubtitle": "有害で望まない返信やメンション",
+  "reportReasonViolenceSubtitle": "暴力的、過激、または有害なコンテンツ",
+  "reportReasonSexualContentSubtitle": "ヌード、ポルノ、または露骨なコンテンツ",
+  "reportReasonCopyrightSubtitle": "知的財産の無許可使用",
+  "reportReasonFalseInfoSubtitle": "誤解を招くまたは虚偽の主張",
+  "reportReasonCsamSubtitle": "未成年者を搾取または危険にさらすコンテンツ",
+  "reportReasonAiGeneratedSubtitle": "AI生成と疑われるコンテンツ",
+  "reportReasonOtherSubtitle": "上記に記載されていない違反",
+  "reportLearnMoreAt": "詳しくはこちら",
+  "supportLogsSavedTo": "ログを{path}に保存しました",
+  "supportRevealLogsAction": "フォルダで表示",
+  "notificationsVideoThumbnailFor": "{title}の動画サムネイル",
+  "@notificationsVideoThumbnailFor": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsVideoThumbnail": "動画のサムネイル",
+  "metadataCaptionsLabel": "字幕",
+  "metadataCaptionsEnabledSemantics": "すべての動画で字幕が有効になっています",
+  "metadataCaptionsDisabledSemantics": "すべての動画で字幕が無効になっています",
   "@profileSetupUploadFailedGeneric": {
     "placeholders": {
       "error": {

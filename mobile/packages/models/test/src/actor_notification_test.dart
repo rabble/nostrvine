@@ -3,10 +3,7 @@ import 'package:test/test.dart';
 
 void main() {
   group(ActorNotification, () {
-    final actor = ActorInfo(
-      pubkey: 'a' * 64,
-      displayName: 'Alice',
-    );
+    final actor = ActorInfo(pubkey: 'a' * 64, displayName: 'Alice');
     final timestamp = DateTime.utc(2026, 5, 4, 12);
 
     group('structure', () {
@@ -31,6 +28,29 @@ void main() {
           type: NotificationKind.likeComment,
           actor: actor,
           timestamp: timestamp,
+        );
+      });
+
+      test('exposes targetEventId for likeComment', () {
+        final notification = ActorNotification(
+          id: 'n1',
+          type: NotificationKind.likeComment,
+          actor: actor,
+          timestamp: timestamp,
+          targetEventId: 'b' * 64,
+        );
+
+        expect(notification.targetEventId, equals('b' * 64));
+      });
+
+      test('accepts reply as an actor-anchored kind', () {
+        // Should not throw the assert.
+        ActorNotification(
+          id: 'n1',
+          type: NotificationKind.reply,
+          actor: actor,
+          timestamp: timestamp,
+          targetEventId: 'd' * 64,
         );
       });
     });
@@ -99,6 +119,20 @@ void main() {
         final updated = original.copyWith(isFollowingBack: true);
 
         expect(updated.isRead, isTrue);
+      });
+
+      test('preserves targetEventId when not overridden', () {
+        final original = ActorNotification(
+          id: 'n1',
+          type: NotificationKind.likeComment,
+          actor: actor,
+          timestamp: timestamp,
+          targetEventId: 'c' * 64,
+        );
+
+        final updated = original.copyWith(isRead: true);
+
+        expect(updated.targetEventId, equals('c' * 64));
       });
     });
   });

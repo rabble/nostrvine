@@ -99,6 +99,33 @@ void main() {
       expect(state.clips.length, equals(1));
     });
 
+    test(
+      'removeClipById resolves true even when post-mutation cleanup throws',
+      () async {
+        // The autosave / database / file-cleanup chain that runs after the
+        // state mutation is best-effort. A test environment without a real
+        // database (or a production environment with a transient disk
+        // failure) must not turn `removeClipById` into a rejected future —
+        // the clip is already gone from state and that contract is what
+        // callers rely on. This test pins that contract.
+        final notifier = container.read(clipManagerProvider.notifier);
+
+        notifier.addClip(
+          limitClipDuration: false,
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 2),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+        final clipId = container.read(clipManagerProvider).clips[0].id;
+
+        final result = await notifier.removeClipById(clipId);
+
+        expect(result, isTrue);
+        expect(container.read(clipManagerProvider).clips, isEmpty);
+      },
+    );
+
     test('selectClip updates selected clip state', () {
       final notifier = container.read(clipManagerProvider.notifier);
 

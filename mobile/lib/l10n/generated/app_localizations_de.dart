@@ -568,12 +568,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileErrorLoadingReposts => 'Fehler beim Laden der Reposts';
 
   @override
-  String get profileLoadingTitle => 'Profil wird geladen...';
-
-  @override
-  String get profileLoadingSubtitle => 'Das kann einen Moment dauern';
-
-  @override
   String get profileLoadingVideos => 'Videos werden geladen...';
 
   @override
@@ -785,9 +779,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileSetupGotItButton => 'Verstanden';
 
   @override
-  String profileSetupUploadFailedGeneric(Object error) {
-    return 'Bild konnte nicht hochgeladen werden: $error';
-  }
+  String get profileSetupUploadFailedGeneric =>
+      'Bild konnte nicht hochgeladen werden. Bitte versuche es später noch einmal.';
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -838,7 +831,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get profileSetupUsernameInvalidLength =>
-      'Benutzername muss 3-20 Zeichen lang sein';
+      'Benutzername muss 3-63 Zeichen lang sein';
 
   @override
   String get profileSetupUsernameNetworkError =>
@@ -898,6 +891,39 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get profileSetupExternalNip05DivineDomain =>
       'Nutz das Nutzernamen-Feld oben für divine.video';
+
+  @override
+  String get nostrSettingsNip05Address => 'NIP-05 address';
+
+  @override
+  String get nostrSettingsNip05AddressSubtitle =>
+      'Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.';
+
+  @override
+  String get nostrSettingsNip05AddressHint => 'you@example.com';
+
+  @override
+  String get nostrSettingsNip05SaveAction => 'Save NIP-05';
+
+  @override
+  String get nostrSettingsNip05Saved => 'NIP-05 saved';
+
+  @override
+  String get nostrSettingsNip05SaveFailed =>
+      'Couldn\'t save NIP-05. Please try again.';
+
+  @override
+  String get profileSetupNip05ConfirmTitle => 'Use your own NIP-05?';
+
+  @override
+  String get profileSetupNip05ConfirmBody =>
+      'NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it\'s wrong, people can\'t find you and your verified handle disappears. Continue only if you\'ve set this up.';
+
+  @override
+  String get profileSetupNip05ConfirmContinue => 'Continue';
+
+  @override
+  String get profileSetupNip05ConfirmCancel => 'Cancel';
 
   @override
   String get profileSetupProfilePicturePreview => 'Profilbild-Vorschau';
@@ -1104,6 +1130,22 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get videoPlayerEditVideoTooltip => 'Video bearbeiten';
+
+  @override
+  String get videoPlayerTapHint =>
+      'Tippe zum Abspielen oder Pausieren. Doppelt tippen zum Liken.';
+
+  @override
+  String get videoSettingsMenuOpen => 'Wiedergabeeinstellungen öffnen';
+
+  @override
+  String get videoSettingsMenuClose => 'Wiedergabeeinstellungen schließen';
+
+  @override
+  String get videoSettingsCaptionsEnable => 'Untertitel aktivieren';
+
+  @override
+  String get videoSettingsCaptionsDisable => 'Untertitel deaktivieren';
 
   @override
   String get contentWarningLabel => 'Inhaltswarnung';
@@ -1341,6 +1383,22 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get videoCollaboratorPendingDecoration => 'Pending';
+
+  @override
+  String get videoCollaboratorPendingSemanticLabel => 'Pending collaborator';
+
+  @override
+  String videoCollaboratorWithPendingSuffix(String label, int pending) {
+    return '$label ($pending pending)';
+  }
+
+  @override
+  String profileChipTapHint(String name) {
+    return '$name. Tap to view profile.';
+  }
+
+  @override
   String get listAttributionFallback => 'Liste';
 
   @override
@@ -1419,6 +1477,18 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoActionShareLabel => 'Teilen';
 
   @override
+  String get videoActionReportLabel => 'Melden';
+
+  @override
+  String get videoActionReport => 'Video melden';
+
+  @override
+  String get videoActionEditLabel => 'Bearbeiten';
+
+  @override
+  String get videoActionEdit => 'Video bearbeiten';
+
+  @override
   String get videoActionAboutLabel => 'Info';
 
   @override
@@ -1446,6 +1516,21 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get videoActionShowSubtitles => 'Untertitel anzeigen';
+
+  @override
+  String get videoEngagementLikersTitle => 'Geliket von';
+
+  @override
+  String get videoEngagementRepostersTitle => 'Repostet von';
+
+  @override
+  String get videoEngagementLikersEmpty => 'Noch keine Likes';
+
+  @override
+  String get videoEngagementRepostersEmpty => 'Noch keine Reposts';
+
+  @override
+  String get videoEngagementLoadFailed => 'Liste konnte nicht geladen werden';
 
   @override
   String get videoOverlayOpenMetadataFromTitle => 'Videodetails öffnen';
@@ -3837,32 +3922,32 @@ class AppLocalizationsDe extends AppLocalizations {
       'Versuch einen anderen Suchbegriff';
 
   @override
-  String get soundsSavedToLibrary => 'Saved to Sounds';
+  String get soundsSavedToLibrary => 'In Sounds gespeichert';
 
   @override
-  String get soundsAlreadySavedToLibrary => 'Already in Sounds';
+  String get soundsAlreadySavedToLibrary => 'Bereits in Sounds';
 
   @override
-  String get soundsSavedLibraryTitle => 'My Sounds';
+  String get soundsSavedLibraryTitle => 'Meine Sounds';
 
   @override
-  String get soundsSavedEmptyTitle => 'No saved sounds yet';
+  String get soundsSavedEmptyTitle => 'Noch keine gespeicherten Sounds';
 
   @override
   String get soundsSavedEmptyDescription =>
-      'Tap Use Sound on a video to save it here.';
+      'Tippe in einem Video auf Sound verwenden, um ihn hier zu speichern.';
 
   @override
-  String get soundsAvailabilityPrivate => 'Private';
+  String get soundsAvailabilityPrivate => 'Privat';
 
   @override
   String get soundsAvailabilityCommunity => 'Community';
 
   @override
-  String get soundsRemoveSavedSound => 'Remove sound';
+  String get soundsRemoveSavedSound => 'Sound entfernen';
 
   @override
-  String get soundsRemovedFromLibrary => 'Removed from Sounds';
+  String get soundsRemovedFromLibrary => 'Aus Sounds entfernt';
 
   @override
   String get soundsFailedToLoad => 'Sounds konnten nicht geladen werden';
@@ -3954,6 +4039,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get notificationsViewProfilesSemanticLabel => 'Profile öffnen';
 
   @override
+  String notificationsVideoThumbnailFor(String title) {
+    return 'Videovorschaubild für $title';
+  }
+
+  @override
+  String get notificationsVideoThumbnail => 'Videovorschaubild';
+
+  @override
   String notificationsLoadingType(String type) {
     return '$type-Benachrichtigungen werden geladen...';
   }
@@ -3985,6 +4078,28 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get feedNoFollowedUsers =>
       'Keine abonnierten Nutzer.\nFolge jemandem, um hier seine Videos zu sehen.';
+
+  @override
+  String get feedModeForYou => 'Für dich';
+
+  @override
+  String get feedModeNew => 'Neu';
+
+  @override
+  String get feedModeFollowing => 'Abonniert';
+
+  @override
+  String feedModeSemanticLabel(String label) {
+    return 'Feed-Modus: $label';
+  }
+
+  @override
+  String videoAuthorSemanticLabel(String displayName) {
+    return 'Urheber des Videos: $displayName';
+  }
+
+  @override
+  String get videoAuthorAvatarSemanticLabel => 'Avatar des Urhebers';
 
   @override
   String get feedForYouEmpty =>
@@ -4281,6 +4396,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get routeInvalidProfileId => 'Ungültige Profil-ID';
 
   @override
+  String get routeUnknownPath => 'Diese Seite gibt es in der App nicht.';
+
+  @override
   String get routeDefaultListName => 'Liste';
 
   @override
@@ -4337,6 +4455,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get supportExportLogsFailed => 'Logs konnten nicht exportiert werden';
 
   @override
+  String supportLogsSavedTo(String path) {
+    return 'Logs gespeichert unter $path';
+  }
+
+  @override
+  String get supportRevealLogsAction => 'Im Ordner anzeigen';
+
+  @override
   String get supportChatNotAvailable => 'Support-Chat nicht verfügbar';
 
   @override
@@ -4390,28 +4516,64 @@ class AppLocalizationsDe extends AppLocalizations {
   String get reportReasonSpam => 'Spam oder unerwünschte Inhalte';
 
   @override
+  String get reportReasonSpamSubtitle =>
+      'Unerwünschte oder sich wiederholende Inhalte';
+
+  @override
   String get reportReasonHarassment => 'Belästigung, Mobbing oder Drohungen';
+
+  @override
+  String get reportReasonHarassmentSubtitle =>
+      'Schädliche und unerwünschte Antworten oder Erwähnungen';
 
   @override
   String get reportReasonViolence => 'Gewalttätige oder extremistische Inhalte';
 
   @override
+  String get reportReasonViolenceSubtitle =>
+      'Gewalttätige, extremistische oder schädliche Inhalte';
+
+  @override
   String get reportReasonSexualContent => 'Sexuelle oder Erwachseneninhalte';
+
+  @override
+  String get reportReasonSexualContentSubtitle =>
+      'Nacktheit, Porno oder explizite Inhalte';
 
   @override
   String get reportReasonCopyright => 'Urheberrechtsverletzung';
 
   @override
+  String get reportReasonCopyrightSubtitle =>
+      'Unbefugte Nutzung von geistigem Eigentum';
+
+  @override
   String get reportReasonFalseInfo => 'Falschinformationen';
+
+  @override
+  String get reportReasonFalseInfoSubtitle =>
+      'Irreführende oder falsche Behauptungen';
 
   @override
   String get reportReasonCsam => 'Verletzung der Kindersicherheit';
 
   @override
+  String get reportReasonCsamSubtitle =>
+      'Inhalte, die Minderjährige ausbeuten oder gefährden';
+
+  @override
   String get reportReasonAiGenerated => 'KI-generierter Inhalt';
 
   @override
+  String get reportReasonAiGeneratedSubtitle =>
+      'Mutmaßlich KI-generierte Inhalte';
+
+  @override
   String get reportReasonOther => 'Andere Richtlinienverletzung';
+
+  @override
+  String get reportReasonOtherSubtitle =>
+      'Verstöße, die oben nicht aufgeführt sind';
 
   @override
   String reportFailed(Object error) {
@@ -4431,6 +4593,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get reportLearnMore => 'Mehr erfahren';
+
+  @override
+  String get reportLearnMoreAt => 'Mehr erfahren unter';
 
   @override
   String get reportSafetyUrl => 'divine.video/safety';
@@ -5083,7 +5248,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get categoryWrestling => 'Wrestling';
 
   @override
-  String get profileSetupUploadSuccess => 'Profilbild erfolgreich hochgeladen!';
+  String get profileSetupUploadStaged =>
+      'Hochgeladen – tippe auf Speichern, um zu übernehmen';
 
   @override
   String inboxReportedUser(String displayName) {
@@ -5157,6 +5323,23 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get inboxCollabInviteCardUntitledVideo => 'Video ohne Titel';
+
+  @override
+  String get clickableTextViewVideoLink => 'Video ansehen';
+
+  @override
+  String get messageExternalLinkDialogTitle => 'Externen Link öffnen?';
+
+  @override
+  String messageExternalLinkDialogBody(String url) {
+    return 'Dieser Link führt zu einer externen Website und ist möglicherweise nicht sicher:\n\n$url';
+  }
+
+  @override
+  String get messageExternalLinkDialogOpen => 'Öffnen';
+
+  @override
   String get inboxCollabInviteAcceptButton => 'Annehmen';
 
   @override
@@ -5188,6 +5371,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String collaboratorInviteDmBodyUntitled(String url) {
     return 'Du wurdest eingeladen, an einem Video mitzuarbeiten: $url\n\nOpen diVine to review and accept.';
   }
+
+  @override
+  String get dmSendFailedMessage => 'Nachricht konnte nicht gesendet werden';
+
+  @override
+  String get dmSendFailedRetry => 'Erneut versuchen';
+
+  @override
+  String get dmSendPartialMessage =>
+      'Gesendet, aber nicht mit deinen anderen Geräten synchronisiert';
+
+  @override
+  String get dmConversationLoadError =>
+      'Nachrichten konnten nicht geladen werden';
 
   @override
   String get reportDialogCancel => 'Abbrechen';
@@ -5493,13 +5690,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get categoryGallerySortOptionsLabel => 'Sortieroptionen für Kategorie';
 
   @override
-  String get categoryGallerySortHot => 'Hot';
+  String get categoryGallerySortHot => 'Beliebt';
 
   @override
   String get categoryGallerySortNew => 'Neu';
 
   @override
-  String get categoryGallerySortClassic => 'Classic';
+  String get categoryGallerySortClassic => 'Klassiker';
 
   @override
   String get categoryGallerySortForYou => 'Für dich';
@@ -5596,6 +5793,21 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get bugReportSuccessMessage =>
       'Danke! Wir haben deinen Bericht erhalten und nutzen ihn, um Divine besser zu machen.';
+
+  @override
+  String get bugReportAttachImages => 'Attach images';
+
+  @override
+  String bugReportImagesCount(int count, int max) {
+    return '$count of $max images selected';
+  }
+
+  @override
+  String get bugReportRemoveImage => 'Remove image';
+
+  @override
+  String get bugReportUploadFailed =>
+      'We couldn\'t upload the selected image. Try again or send the report without it.';
 
   @override
   String get bugReportSendFailed =>
@@ -6497,6 +6709,24 @@ class AppLocalizationsDe extends AppLocalizations {
       'Ausgewählten Clip teilen';
 
   @override
+  String get videoEditorExtractAudioLabel => 'Audio extrahieren';
+
+  @override
+  String get videoEditorClipAudioTitle => 'Clip-Audio';
+
+  @override
+  String get videoEditorExtractAudioFromClipSemanticLabel =>
+      'Audio aus Clip extrahieren und Original stummschalten';
+
+  @override
+  String get videoEditorExtractAudioNoLocalFile =>
+      'Audio kann nicht extrahiert werden: Clip ist lokal nicht verfügbar.';
+
+  @override
+  String get videoEditorExtractAudioFailed =>
+      'Audio konnte nicht extrahiert werden. Bitte erneut versuchen.';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Timeline-Bearbeitung abschließen';
 
@@ -6531,24 +6761,24 @@ class AppLocalizationsDe extends AppLocalizations {
       'Wähle den Audiobereich für dein Video aus';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'diVine';
+  String get videoEditorAudioCategoryDivine => 'OG Sounds';
 
   @override
   String get videoEditorAudioCategoryCommunity => 'Community';
 
   @override
-  String get videoEditorAudioCategoryFeatured => 'Featured';
+  String get videoEditorAudioCategoryFeatured => 'Vorgestellt';
 
   @override
-  String get videoEditorAudioCategoryMySounds => 'My Sounds';
+  String get videoEditorAudioCategoryMySounds => 'Meine Sounds';
 
   @override
   String get videoEditorAudioFeaturedEmptyTitle =>
-      'Featured sounds coming soon';
+      'Vorgestellte Sounds folgen bald';
 
   @override
   String get videoEditorAudioFeaturedEmptySubtitle =>
-      'We’ll drop featured sounds here once they’re ready.';
+      'Wir veröffentlichen vorgestellte Sounds hier, sobald sie bereit sind.';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Pfeil-Werkzeug';
@@ -6726,7 +6956,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get videoMetadataContentWarningLabel => 'Inhaltswarnung hinzufügen';
+  String get videoMetadataContentWarningLabel => 'Inhaltswarnung';
 
   @override
   String get videoMetadataSelectContentWarningsSemanticLabel =>
@@ -6734,20 +6964,20 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get videoMetadataContentWarningSelectAllThatApply =>
-      'Wähle alles Zutreffende aus';
+      'Wähle alles aus, was auf deinen Inhalt zutrifft';
 
   @override
   String get videoMetadataContentWarningDoneButton => 'Fertig';
 
   @override
-  String get videoMetadataAudioReuseTitle => 'Publish this sound';
+  String get videoMetadataAudioReuseTitle => 'Diesen Sound veröffentlichen';
 
   @override
   String get videoMetadataAudioReuseSubtitle =>
-      'Let others save and reuse this video\'s audio.';
+      'Lass andere den Audio dieses Videos speichern und wiederverwenden.';
 
   @override
-  String get videoMetadataCollaboratorsLabel => 'Mitwirkende hinzufügen';
+  String get videoMetadataCollaboratorsLabel => 'Mitwirkende';
 
   @override
   String get videoMetadataAddCollaboratorSemanticLabel =>
@@ -6779,7 +7009,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get videoMetadataInspiredByLabel => 'Inspiriert von hinzufügen';
+  String get videoMetadataInspiredByLabel => 'Inspiriert von';
 
   @override
   String get videoMetadataSetInspiredBySemanticLabel =>
@@ -6841,6 +7071,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoMetadataPublishVideoHint => 'Video im Feed veröffentlichen';
 
   @override
+  String get videoMetadataShareReplyToFeedTitle => 'Auch in meinem Feed teilen';
+
+  @override
+  String get videoMetadataShareReplyToFeedSubtitle =>
+      'Aus bedeutet, dass dieses Video nur im Kommentar-Thread bleibt.';
+
+  @override
   String get videoMetadataFormNotReadyHint =>
       'Fülle das Formular aus, um es zu aktivieren';
 
@@ -6874,28 +7111,17 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoMetadataRemoveSemanticLabel => 'Entfernen';
 
   @override
-  String get metadataCaptionsLabel => 'Untertitel';
-
-  @override
-  String get metadataCaptionsEnabledSemantics =>
-      'Untertitel für alle Videos aktiviert';
-
-  @override
-  String get metadataCaptionsDisabledSemantics =>
-      'Untertitel für alle Videos deaktiviert';
-
-  @override
   String get fullscreenFeedRemovedMessage => 'Video entfernt';
 
   @override
-  String get settingsBadgesTitle => 'Badges';
+  String get settingsBadgesTitle => 'Abzeichen';
 
   @override
   String get settingsBadgesSubtitle =>
       'Auszeichnungen annehmen und Status vergebener Badges prüfen.';
 
   @override
-  String get badgesTitle => 'Badges';
+  String get badgesTitle => 'Abzeichen';
 
   @override
   String get badgesIntroTitle => 'Versteh deine Badge-Spur';
@@ -6957,6 +7183,49 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get badgesRecipientWaitingStatus => 'Wartet auf Empfänger';
+
+  @override
+  String get commentsRecordVideoButtonLabel => 'Videokommentar aufnehmen';
+
+  @override
+  String get commentsOpenVideoLabel => 'Videokommentar öffnen';
+
+  @override
+  String get commentsMuteVideoReplyLabel => 'Videoantwort stummschalten';
+
+  @override
+  String get commentsUnmuteVideoReplyLabel =>
+      'Stummschaltung der Videoantwort aufheben';
+
+  @override
+  String get commentsOpenReplyParentLabel =>
+      'Video öffnen, auf das hier geantwortet wird';
+
+  @override
+  String get commentsReplyParentSectionTitle => 'Als Antwort auf';
+
+  @override
+  String commentsReplyParentLabel(String target) {
+    return 'Antwort auf $target';
+  }
+
+  @override
+  String get commentsReplyParentFallbackLabel => 'Antwort auf Video';
+
+  @override
+  String verifiedAccountChipSemanticLabel(String platform, String identity) {
+    return 'Verifiziertes $platform-Konto: $identity';
+  }
+
+  @override
+  String get profileEditVerifiedAccountsTitle => 'Verifizierte Konten';
+
+  @override
+  String get profileEditGetVerifiedCta => 'Lass dich verifizieren';
+
+  @override
+  String get profileEditGetVerifiedSubtitle =>
+      'Verknüpfe deine Social-Media-Konten, damit alle wissen, dass du es bist.';
 
   @override
   String get videoMetadataEditCoverTitle => 'Cover bearbeiten';

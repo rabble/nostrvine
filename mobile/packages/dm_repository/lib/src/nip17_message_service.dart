@@ -3,6 +3,7 @@
 // ABOUTME: (kind 14 rumor → kind 13 seal → kind 1059 gift wrap)
 // ABOUTME: Works with any NostrSigner (local keys, Keycast RPC, Amber, etc.)
 
+import 'package:meta/meta.dart';
 import 'package:models/models.dart' show NIP17SendResult;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
@@ -12,6 +13,22 @@ import 'package:nostr_sdk/nostr.dart';
 import 'package:nostr_sdk/relay/relay.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
 import 'package:unified_logger/unified_logger.dart';
+
+/// Builds a NIP-59 gift-wrapped event for [recipientPubkey] from
+/// [rumorEvent], using [nostr] for signing. Returns `null` when the
+/// underlying SDK declines to produce one (e.g. an internal encryption
+/// step yields a null result without throwing).
+///
+/// Defaults to [GiftWrapUtil.getGiftWrapEvent]; injectable for tests
+/// so the `null`-return branch in [NIP17MessageService] can be
+/// exercised without conjuring valid gift-wrapped events by hand.
+@internal
+typedef GiftWrapBuilder =
+    Future<Event?> Function(
+      Nostr nostr,
+      Event rumorEvent,
+      String recipientPubkey,
+    );
 
 /// Service for sending encrypted private messages using NIP-17 gift wrapping.
 ///
@@ -23,34 +40,62 @@ class NIP17MessageService {
     required NostrSigner signer,
     required String senderPublicKey,
     required NostrClient nostrService,
+    @visibleForTesting GiftWrapBuilder? giftWrapBuilder,
   }) : _signer = signer,
        _senderPublicKey = senderPublicKey,
-       _nostrService = nostrService;
+       _nostrService = nostrService,
+       _giftWrapBuilder = giftWrapBuilder ?? GiftWrapUtil.getGiftWrapEvent;
 
   final NostrSigner _signer;
   final String _senderPublicKey;
   final NostrClient _nostrService;
+  final GiftWrapBuilder _giftWrapBuilder;
 
   /// Access to the underlying NostrService for relay management
   NostrClient get nostrService => _nostrService;
 
-  /// Send a private encrypted message to a recipient.
+  /// Build the unsigned NIP-17 rumor event for a 1:1 send.
   ///
-  /// Uses NIP-17 three-layer encryption:
-  /// 1. Rumor (unsigned) — the actual message content
-  /// 2. Kind 13 (seal) — signed and encrypted by sender
-  /// 3. Kind 1059 (gift wrap) — wrapped with random ephemeral key
+  /// Pure construction — does not touch relays or the signer. Exposed
+  /// separately from [sendRumor] so the repository can persist the
+  /// rumor (or its serialized JSON) into the durable outgoing-DM queue
+  /// **before** publishing, keyed by the rumor's id. Without this split
+  /// a publish that succeeds with the recipient relay but the app
+  /// crashes before [sendPrivateMessage] returns leaves no local
+  /// trace of the in-flight send.
   ///
   /// Parameters:
   /// - [recipientPubkey]: Recipient's public key (hex format)
   /// - [content]: Message content (text for kind 14, file URL for kind 15)
   /// - [eventKind]: The rumor event kind (14 = text, 15 = file)
   /// - [additionalTags]: Optional tags to include in the rumor event
-  Future<NIP17SendResult> sendPrivateMessage({
+  Event buildRumor({
     required String recipientPubkey,
     required String content,
     int eventKind = EventKind.privateDirectMessage,
     List<List<String>> additionalTags = const [],
+  }) {
+    final rumorTags = <List<String>>[
+      ['p', recipientPubkey],
+      ...additionalTags,
+    ];
+
+    return Event(_senderPublicKey, eventKind, rumorTags, content);
+  }
+
+  /// Wrap and publish a pre-built [rumorEvent] to the recipient and to
+  /// ourselves (self-addressed gift wrap for cross-device recovery).
+  ///
+  /// Self-wrap failure is intentionally non-fatal — the message has
+  /// already been delivered to the recipient at that point, and
+  /// blocking the success result on the self-wrap would cause the
+  /// repository to mark a successfully-delivered message as failed and
+  /// retry the recipient publish, double-delivering. A future revision
+  /// (PR #3910) will surface the self-wrap outcome separately so the
+  /// repository can mark each wrap status independently.
+  Future<NIP17SendResult> sendRumor({
+    required Event rumorEvent,
+    required String recipientPubkey,
   }) async {
     try {
       Log.info(
@@ -67,33 +112,22 @@ class NIP17MessageService {
       );
       await nostr.refreshPublicKey();
 
-      // Create kind 14 rumor event (unsigned, will be encrypted)
-      final rumorTags = <List<String>>[
-        ['p', recipientPubkey],
-        ...additionalTags,
-      ];
-
-      final rumorEvent = Event(
-        _senderPublicKey,
-        eventKind,
-        rumorTags,
-        content,
-      );
-
       Log.debug(
-        'Created kind $eventKind rumor event',
+        'Wrapping kind ${rumorEvent.kind} rumor event',
         category: LogCategory.system,
       );
 
       // Create gift wrap for the recipient
-      final giftWrapEvent = await GiftWrapUtil.getGiftWrapEvent(
+      final giftWrapEvent = await _giftWrapBuilder(
         nostr,
         rumorEvent,
         recipientPubkey,
       );
 
       if (giftWrapEvent == null) {
-        return NIP17SendResult.failure('Failed to create gift wrap event');
+        return const NIP17SendResult.failure(
+          'Failed to create gift wrap event',
+        );
       }
 
       Log.debug(
@@ -105,40 +139,35 @@ class NIP17MessageService {
       // Publish the recipient's gift wrap
       final sentEvent = await _nostrService.publishEvent(giftWrapEvent);
 
-      if (sentEvent == null) {
+      if (sentEvent is! PublishSuccess) {
         const errorMsg = 'Message publish failed to relays';
         Log.error(errorMsg, category: LogCategory.system);
-        return NIP17SendResult.failure(errorMsg);
+        return const NIP17SendResult.failure(errorMsg);
       }
 
-      // NIP-17: publish a self-addressed gift wrap so our own sent messages
-      // are recoverable from relays after reinstall or data loss.
-      // Wrapped in its own try-catch because the message was already
-      // delivered to the recipient — self-wrap failure is non-fatal.
-      try {
-        final selfWrapEvent = await GiftWrapUtil.getGiftWrapEvent(
-          nostr,
-          rumorEvent,
-          _senderPublicKey,
-        );
-        if (selfWrapEvent != null) {
-          await _nostrService.publishEvent(selfWrapEvent);
-        }
-      } on Object catch (e) {
-        Log.error(
-          'Self-wrap failed (non-fatal): $e',
-          category: LogCategory.system,
-        );
-      }
+      // NIP-17: publish a self-addressed gift wrap so our own sent
+      // messages are recoverable from relays after reinstall or data
+      // loss. The recipient already received the message at this
+      // point, so a self-wrap failure must never bubble up — the
+      // helper catches everything and reports the per-wrap status
+      // separately. Re-publishing the recipient wrap would
+      // double-deliver, so the recovery path uses [publishSelfWrap]
+      // to retry only the missing self-wrap.
+      final selfWrapPublished = await _publishSelfWrap(
+        nostr: nostr,
+        rumorEvent: rumorEvent,
+      );
 
       Log.info(
-        'Successfully published NIP-17 message',
+        'Successfully published NIP-17 message '
+        '(selfWrapPublished=$selfWrapPublished)',
         category: LogCategory.system,
       );
       return NIP17SendResult.success(
         rumorEventId: rumorEvent.id,
         messageEventId: giftWrapEvent.id,
         recipientPubkey: recipientPubkey,
+        selfWrapPublished: selfWrapPublished,
       );
     } on Object catch (e, stackTrace) {
       Log.error(
@@ -149,6 +178,127 @@ class NIP17MessageService {
       );
       return NIP17SendResult.failure('Failed to send message: $e');
     }
+  }
+
+  /// Publish only the sender self-addressed gift wrap for an
+  /// already-sent [rumorEvent].
+  ///
+  /// Used by the recovery path when a previous [sendRumor] delivered
+  /// to the recipient (the recipient kind 1059 wrap landed) but the
+  /// self-addressed wrap did not. Re-running [sendRumor] would publish
+  /// the recipient wrap a second time and double-deliver, so the
+  /// recovery path goes through this method instead. Receiver-side
+  /// dedup keys on the rumor event id, so callers must pass the same
+  /// rumor that was published originally — rebuilding it from the
+  /// queue's `rumor_event_json` preserves the id, minting a fresh
+  /// rumor would not.
+  ///
+  /// Returns [NIP17SendResult.success] on a successful self-wrap
+  /// publish (the `messageEventId` slot carries the rumor id since no
+  /// new recipient-wrap event id is produced on this path) or
+  /// [NIP17SendResult.failure] when the self-wrap could not be built
+  /// or did not reach a relay.
+  Future<NIP17SendResult> publishSelfWrap({required Event rumorEvent}) async {
+    try {
+      Log.info(
+        'Publishing self-addressed NIP-17 gift wrap for rumor recovery',
+        category: LogCategory.system,
+      );
+
+      final nostr = Nostr(_signer, [], _dummyRelayGenerator);
+      await nostr.refreshPublicKey();
+
+      final published = await _publishSelfWrap(
+        nostr: nostr,
+        rumorEvent: rumorEvent,
+      );
+      if (!published) {
+        return const NIP17SendResult.failure('Self-wrap publish failed');
+      }
+      return NIP17SendResult.success(
+        rumorEventId: rumorEvent.id,
+        messageEventId: rumorEvent.id,
+        recipientPubkey: _senderPublicKey,
+      );
+    } on Object catch (e, stackTrace) {
+      Log.error(
+        'Failed to publish self-wrap recovery: $e',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return NIP17SendResult.failure('Failed to publish self-wrap: $e');
+    }
+  }
+
+  /// Build and publish the sender self-addressed gift wrap for
+  /// [rumorEvent]. Returns `true` when the wrap reached at least one
+  /// relay.
+  ///
+  /// Catches every error — used by both the happy-path send (where the
+  /// recipient has already received the message and an exception must
+  /// not crash the result) and the recovery path (where an exception
+  /// is just another failure mode the caller surfaces).
+  Future<bool> _publishSelfWrap({
+    required Nostr nostr,
+    required Event rumorEvent,
+  }) async {
+    try {
+      final selfWrapEvent = await _giftWrapBuilder(
+        nostr,
+        rumorEvent,
+        _senderPublicKey,
+      );
+      if (selfWrapEvent == null) {
+        Log.warning(
+          'Self-wrap creation returned null — the sender will not see '
+          'this message on other devices or after a reinstall.',
+          category: LogCategory.system,
+        );
+        return false;
+      }
+      final published = await _nostrService.publishEvent(selfWrapEvent);
+      if (published is! PublishSuccess) {
+        Log.warning(
+          'Self-wrap publish failed — the sender will not see this '
+          'message on other devices or after a reinstall.',
+          category: LogCategory.system,
+        );
+        return false;
+      }
+      return true;
+    } on Object catch (e) {
+      Log.error(
+        'Self-wrap failed (non-fatal): the sender will not see this '
+        'message on other devices or after a reinstall: $e',
+        category: LogCategory.system,
+      );
+      return false;
+    }
+  }
+
+  /// Convenience wrapper that builds a rumor and sends it in one call.
+  ///
+  /// Existing callers (group sends, file sends, NIP-04 fallback wiring)
+  /// keep working unchanged. New callers that need to enqueue a durable
+  /// queue row keyed by the rumor's id should call [buildRumor] +
+  /// [sendRumor] directly so the queue insert happens between the two.
+  Future<NIP17SendResult> sendPrivateMessage({
+    required String recipientPubkey,
+    required String content,
+    int eventKind = EventKind.privateDirectMessage,
+    List<List<String>> additionalTags = const [],
+  }) async {
+    final rumor = buildRumor(
+      recipientPubkey: recipientPubkey,
+      content: content,
+      eventKind: eventKind,
+      additionalTags: additionalTags,
+    );
+    return sendRumor(
+      rumorEvent: rumor,
+      recipientPubkey: recipientPubkey,
+    );
   }
 
   /// Dummy relay generator - we don't use relays in this Nostr instance

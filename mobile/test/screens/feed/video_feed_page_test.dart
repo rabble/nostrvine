@@ -10,17 +10,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:infinite_video_feed/infinite_video_feed.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/router/router.dart';
+import 'package:openvine/screens/feed/feed_settings_menu.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
+import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
+import 'package:openvine/widgets/web_video_feed.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
 import '../../helpers/test_provider_overrides.dart';
@@ -72,6 +78,16 @@ Widget _buildEmptyFeedSubject(VideoFeedState state) {
 }
 
 void main() {
+  setUpAll(() {
+    // This test suite validates pooled-feed behavior; pin the runtime branch
+    // so host platform support changes do not flip widget paths.
+    InfiniteVideoFeed.debugIsSupportedOverride = false;
+  });
+
+  tearDownAll(() {
+    InfiniteVideoFeed.debugIsSupportedOverride = null;
+  });
+
   group(FeedEmptyWidget, () {
     testWidgets('uses no-follow guidance for an empty For You feed', (
       tester,
@@ -343,9 +359,7 @@ void main() {
       clearInteractions(videoFeedBloc);
       clearInteractions(videoFeedController);
 
-      tester.binding.handleAppLifecycleStateChanged(
-        AppLifecycleState.resumed,
-      );
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pump();
 
       verify(
@@ -753,36 +767,33 @@ void main() {
       },
     );
 
-    testWidgets(
-      'wraps the loaded feed in a RefreshIndicator that dispatches '
-      'VideoFeedRefreshRequested on pull',
-      (tester) async {
-        final testVideo = createTestVideoEvent();
-        final state = VideoFeedState(
-          status: VideoFeedStatus.success,
-          videos: [testVideo],
-        );
+    testWidgets('wraps the loaded feed in a RefreshIndicator that dispatches '
+        'VideoFeedRefreshRequested on pull', (tester) async {
+      final testVideo = createTestVideoEvent();
+      final state = VideoFeedState(
+        status: VideoFeedStatus.success,
+        videos: [testVideo],
+      );
 
-        stubControllerForVideo(testVideo);
+      stubControllerForVideo(testVideo);
 
-        await tester.pumpWidget(buildSubject(state));
-        await tester.pump();
+      await tester.pumpWidget(buildSubject(state));
+      await tester.pump();
 
-        expect(find.byType(RefreshIndicator), findsOneWidget);
+      expect(find.byType(RefreshIndicator), findsOneWidget);
 
-        final indicator = tester.widget<RefreshIndicator>(
-          find.byType(RefreshIndicator),
-        );
-        // _refreshFeed awaits bloc.stream which the mock never emits, so
-        // we don't await — the event is added synchronously.
-        unawaited(indicator.onRefresh());
-        await tester.pump();
+      final indicator = tester.widget<RefreshIndicator>(
+        find.byType(RefreshIndicator),
+      );
+      // _refreshFeed awaits bloc.stream which the mock never emits, so
+      // we don't await — the event is added synchronously.
+      unawaited(indicator.onRefresh());
+      await tester.pump();
 
-        verify(
-          () => videoFeedBloc.add(const VideoFeedRefreshRequested()),
-        ).called(1);
-      },
-    );
+      verify(
+        () => videoFeedBloc.add(const VideoFeedRefreshRequested()),
+      ).called(1);
+    });
 
     testWidgets(
       'forces always-scrollable physics so Android produces the start-edge '
@@ -803,10 +814,94 @@ void main() {
           find.byType(PooledVideoFeed),
         );
 
-        expect(
-          pooledVideoFeed.physics,
-          isA<AlwaysScrollableScrollPhysics>(),
+        expect(pooledVideoFeed.physics, isA<AlwaysScrollableScrollPhysics>());
+      },
+    );
+  });
+
+  group('VideoFeedView native-player branch', () {
+    late VideoFeedBloc videoFeedBloc;
+    late VideoFeedController videoFeedController;
+    late _MockVideoVolumeCubit videoVolumeCubit;
+
+    setUp(() async {
+      await PlayerPool.init();
+      InfiniteVideoFeed.debugIsSupportedOverride = true;
+      videoFeedBloc = _MockVideoFeedBloc();
+      videoFeedController = _MockVideoFeedController();
+      videoVolumeCubit = _MockVideoVolumeCubit();
+      when(() => videoVolumeCubit.state).thenReturn(const VideoVolumeState());
+
+      when(() => videoFeedController.videoCount).thenReturn(1);
+      when(() => videoFeedController.videos).thenReturn([
+        const VideoItem(id: 'video-1', url: 'https://example.com/video.mp4'),
+      ]);
+      when(() => videoFeedController.currentIndex).thenReturn(0);
+      when(() => videoFeedController.addListener(any())).thenReturn(null);
+      when(() => videoFeedController.removeListener(any())).thenReturn(null);
+      when(() => videoFeedController.dispose()).thenReturn(null);
+    });
+
+    tearDown(() {
+      InfiniteVideoFeed.debugIsSupportedOverride = false;
+    });
+
+    Widget buildSubject(VideoFeedState state, {bool nativeFeedEnabled = true}) {
+      when(() => videoFeedBloc.state).thenReturn(state);
+
+      return testMaterialApp(
+        additionalOverrides: [
+          routerLocationStreamProvider.overrideWith(
+            (ref) => Stream.value('/home'),
+          ),
+          isFeatureEnabledProvider(
+            FeatureFlag.nativeFeedPlayer,
+          ).overrideWithValue(nativeFeedEnabled),
+        ],
+        home: MultiBlocProvider(
+          providers: [
+            BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
+            BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
+            BlocProvider<VideoPlaybackStatusCubit>(
+              create: (_) => VideoPlaybackStatusCubit(),
+            ),
+          ],
+          child: VideoFeedView(controller: videoFeedController),
+        ),
+      );
+    }
+
+    testWidgets('renders FeedVideos + InfiniteVideoFeed when supported', (
+      tester,
+    ) async {
+      final state = VideoFeedState(
+        status: VideoFeedStatus.success,
+        videos: [createTestVideoEvent()],
+      );
+
+      await tester.pumpWidget(buildSubject(state));
+      await tester.pump();
+
+      expect(find.byType(FeedVideos), findsOneWidget);
+      expect(find.byType(InfiniteVideoFeed), findsOneWidget);
+      expect(find.byType(PooledVideoFeed), findsNothing);
+      expect(find.byType(WebVideoFeed), findsNothing);
+    });
+
+    testWidgets(
+      'renders PooledVideoFeed when supported but flag is off',
+      (tester) async {
+        final state = VideoFeedState(
+          status: VideoFeedStatus.success,
+          videos: [createTestVideoEvent()],
         );
+
+        await tester.pumpWidget(buildSubject(state, nativeFeedEnabled: false));
+        await tester.pump();
+
+        expect(find.byType(PooledVideoFeed), findsOneWidget);
+        expect(find.byType(InfiniteVideoFeed), findsNothing);
+        expect(find.byType(WebVideoFeed), findsNothing);
       },
     );
   });
@@ -925,7 +1020,9 @@ void main() {
       );
     }
 
-    testWidgets('shows Auto action in the home feed overlay', (tester) async {
+    testWidgets('exposes the playback-mode toggle in the settings popover', (
+      tester,
+    ) async {
       final videos = createVideos();
 
       await tester.pumpWidget(
@@ -935,7 +1032,12 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(AutoActionButton), findsWidgets);
+      // Settings menu is mounted in the home feed top bar.
+      expect(find.byType(FeedSettingsMenu), findsOneWidget);
+
+      // Open the popover and confirm the playback-mode toggle renders.
+      await _openSettingsMenu(tester);
+      expect(find.bySemanticsLabel('Enable auto advance'), findsOneWidget);
     });
 
     testWidgets('advances to the next home video after one completed play', (
@@ -953,9 +1055,8 @@ void main() {
       );
       await tester.pump();
 
-      final autoButton = find.byType(AutoActionButton).last;
-      await tester.ensureVisible(autoButton);
-      await tester.tap(autoButton, warnIfMissed: false);
+      await _openSettingsMenu(tester);
+      await tester.tap(find.bySemanticsLabel('Enable auto advance'));
       await tester.pump();
 
       positionController.add(const Duration(seconds: 4, milliseconds: 500));
@@ -982,7 +1083,8 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byType(AutoActionButton).first);
+      await _openSettingsMenu(tester);
+      await tester.tap(find.bySemanticsLabel('Enable auto advance'));
       await tester.pump();
 
       await tester.tap(find.byType(LikeActionButton).first);
@@ -997,4 +1099,14 @@ void main() {
       verifyNever(() => videoFeedController.onPageChanged(1));
     });
   });
+}
+
+Future<void> _openSettingsMenu(WidgetTester tester) async {
+  await tester.tap(
+    find.descendant(
+      of: find.byType(FeedSettingsMenu),
+      matching: find.bySemanticsLabel('Open playback settings'),
+    ),
+  );
+  await tester.pump();
 }

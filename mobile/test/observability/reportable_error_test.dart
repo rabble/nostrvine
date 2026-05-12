@@ -3,6 +3,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/observability/reportable_error.dart';
+import 'package:openvine/utils/sensitive_uri_for_logs.dart';
 
 void main() {
   group(Reportable, () {
@@ -110,6 +111,59 @@ void main() {
           'failed to fetch note1abcdefghijklmnopqrstuvwxyz0123456789abcdef';
 
       expect(sanitizeForCrashReport(input), equals(input));
+    });
+
+    // Issue #4254 — emails are PII and must not flow to Crashlytics.
+    test('replaces an email with the first-char + domain mask', () {
+      const input = 'verification failed for user@example.com after 3 retries';
+
+      expect(
+        sanitizeForCrashReport(input),
+        'verification failed for u***@example.com after 3 retries',
+      );
+    });
+
+    test('replaces multiple emails in the same string', () {
+      const input = 'forwarded alice@a.com to bob@b.io';
+      final out = sanitizeForCrashReport(input);
+
+      expect(out, contains('a***@a.com'));
+      expect(out, contains('b***@b.io'));
+      expect(out, isNot(contains('alice')));
+      expect(out, isNot(contains('bob')));
+    });
+
+    test('strips email PII alongside npub / nsec in one pass', () {
+      const input =
+          'user@example.com leaked nsec1qwertyuiopasdfghjklzxcvbnm0123456789ab '
+          'tied to npub1abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnop';
+      final out = sanitizeForCrashReport(input);
+
+      expect(out, contains('u***@example.com'));
+      expect(out, contains('nsec1<redacted>'));
+      expect(out, contains('npub1<redacted>'));
+      expect(out, isNot(contains('user@example.com')));
+    });
+
+    test('preserves the domain so ops can correlate failure patterns', () {
+      // The whole point of partial (not opaque) redaction: ops can spot
+      // "all gmail.com users are failing" without identifying anyone.
+      const input = 'auth failed for alice@gmail.com';
+
+      expect(
+        sanitizeForCrashReport(input),
+        contains('@gmail.com'),
+      );
+    });
+
+    test('uses the shared email redactor so masking stays aligned', () {
+      const email = 'first.last+tag@example.com';
+
+      expect(
+        // This locks the crash-report fallback to the same mask shape as logs.
+        sanitizeForCrashReport('auth failed for $email'),
+        'auth failed for ${redactEmailForLogs(email)}',
+      );
     });
   });
 }

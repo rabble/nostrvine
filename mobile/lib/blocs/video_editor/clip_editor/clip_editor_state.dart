@@ -17,6 +17,8 @@ class ClipEditorState extends Equatable {
     this.lastSplit,
     this.trimPosition,
     this.trimmingClipId,
+    this.isExtractingAudio = false,
+    this.lastAudioExtraction,
   });
 
   /// Local copy of clips managed by this editor session.
@@ -56,6 +58,16 @@ class ClipEditorState extends Equatable {
   /// timeline) seeks to the correct frame.
   final String? trimmingClipId;
 
+  /// Whether an audio extraction operation is currently running.
+  final bool isExtractingAudio;
+
+  /// Last completed audio extraction result. Consumed by the widget layer
+  /// to write history (on success) or show an error snackbar (on failure).
+  ///
+  /// Identity-compared (not value-compared) so each extraction delivers a
+  /// fresh signal even when fields happen to repeat.
+  final ClipAudioExtractionResult? lastAudioExtraction;
+
   /// Total duration of all clips (respecting trim).
   Duration get totalDuration =>
       clips.fold(Duration.zero, (sum, clip) => sum + clip.trimmedDuration);
@@ -72,6 +84,8 @@ class ClipEditorState extends Equatable {
     bool clearTrimPosition = false,
     String? trimmingClipId,
     bool clearTrimmingClipId = false,
+    bool? isExtractingAudio,
+    ClipAudioExtractionResult? lastAudioExtraction,
   }) {
     return ClipEditorState(
       clips: clips ?? this.clips,
@@ -86,6 +100,8 @@ class ClipEditorState extends Equatable {
       trimmingClipId: clearTrimmingClipId
           ? null
           : (trimmingClipId ?? this.trimmingClipId),
+      isExtractingAudio: isExtractingAudio ?? this.isExtractingAudio,
+      lastAudioExtraction: lastAudioExtraction ?? this.lastAudioExtraction,
     );
   }
 
@@ -100,6 +116,9 @@ class ClipEditorState extends Equatable {
     identityHashCode(lastSplit),
     trimPosition,
     trimmingClipId,
+    isExtractingAudio,
+    // Identity-only: each ClipAudioExtractionResult is a fresh instance.
+    identityHashCode(lastAudioExtraction),
   ];
 }
 
@@ -127,3 +146,32 @@ class ClipSplitEvent {
   final Duration sourceTrimStart;
   final Duration sourceTrimEnd;
 }
+
+// === AUDIO EXTRACTION RESULT ===
+
+/// One-shot signal describing the outcome of an audio extraction operation.
+///
+/// Emitted into [ClipEditorState.lastAudioExtraction] after each extraction
+/// attempt. Identity-compared so the [BlocListener] in the widget fires
+/// exactly once per attempt.
+sealed class ClipAudioExtractionResult {}
+
+/// Extraction completed; widget should write history with the created
+/// [audioEvent] and the updated (muted) clip already in [ClipEditorState.clips].
+final class ClipAudioExtractionSuccess extends ClipAudioExtractionResult {
+  ClipAudioExtractionSuccess({required this.audioEvent});
+
+  final AudioEvent audioEvent;
+}
+
+/// Extraction was attempted but the clip has no locally available file.
+final class ClipAudioExtractionNoLocalFile extends ClipAudioExtractionResult {}
+
+/// Extraction completed but the source clip was removed from the timeline
+/// while the async extraction was in flight. The widget should silently
+/// ignore this — there is no clip to attach the result to and no user
+/// action that warrants a snackbar.
+final class ClipAudioExtractionDiscarded extends ClipAudioExtractionResult {}
+
+/// Extraction failed; widget should show a snackbar.
+final class ClipAudioExtractionFailure extends ClipAudioExtractionResult {}

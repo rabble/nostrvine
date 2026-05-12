@@ -628,19 +628,7 @@ class _VideoThumbnail extends StatelessWidget {
   Widget build(BuildContext context) {
     return ColoredBox(
       color: VineTheme.cardBackground,
-      child: video.thumbnailUrl != null
-          ? VideoThumbnailWidget(video: video)
-          : const AspectRatio(
-              aspectRatio: 2 / 3,
-              child: ColoredBox(
-                color: VineTheme.cardBackground,
-                child: Icon(
-                  Icons.videocam,
-                  size: 40,
-                  color: VineTheme.secondaryText,
-                ),
-              ),
-            ),
+      child: VideoThumbnailWidget(video: video),
     );
   }
 }

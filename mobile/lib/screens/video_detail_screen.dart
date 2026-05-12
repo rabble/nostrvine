@@ -14,7 +14,18 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:unified_logger/unified_logger.dart';
+
+class VideoDetailRouteExtra {
+  const VideoDetailRouteExtra({
+    this.autoOpenComments = false,
+    this.initialVideo,
+  });
+
+  final bool autoOpenComments;
+  final VideoEvent? initialVideo;
+}
 
 class VideoDetailScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.
@@ -34,11 +45,15 @@ class VideoDetailScreen extends ConsumerStatefulWidget {
 
   const VideoDetailScreen({
     required this.videoId,
+    this.autoOpenComments = false,
+    this.initialVideo,
     this.videoFeedBuilder,
     super.key,
   });
 
   final String videoId;
+  final bool autoOpenComments;
+  final VideoEvent? initialVideo;
   final Widget Function(VideoEvent video)? videoFeedBuilder;
 
   @override
@@ -56,13 +71,22 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialVideo != null) {
+      _video = widget.initialVideo;
+      _isLoading = false;
+      ScreenAnalyticsService().markDataLoaded('video_detail');
+      return;
+    }
     _loadVideo();
   }
 
   @override
   void didUpdateWidget(covariant VideoDetailScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.videoId == widget.videoId) return;
+    if (oldWidget.videoId == widget.videoId &&
+        oldWidget.initialVideo == widget.initialVideo) {
+      return;
+    }
 
     // Deep links can retarget an already-mounted video screen. Reset the
     // previous request state so the second shared link triggers a fresh load.
@@ -72,10 +96,15 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
     _hasRetriedAfterRelayReady = false;
 
     setState(() {
-      _video = null;
-      _isLoading = true;
+      _video = widget.initialVideo;
+      _isLoading = widget.initialVideo == null;
       _error = null;
     });
+
+    if (widget.initialVideo != null) {
+      ScreenAnalyticsService().markDataLoaded('video_detail');
+      return;
+    }
 
     unawaited(_loadVideo());
   }
@@ -219,9 +248,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: VineTheme.backgroundColor,
-        body: Center(
-          child: CircularProgressIndicator(color: VineTheme.vineGreen),
-        ),
+        body: Center(child: BrandedLoadingIndicator()),
       );
     }
 
@@ -270,6 +297,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
           removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
           contextTitle: 'Shared Video',
           trafficSource: ViewTrafficSource.share,
+          autoOpenComments: widget.autoOpenComments,
         );
   }
 

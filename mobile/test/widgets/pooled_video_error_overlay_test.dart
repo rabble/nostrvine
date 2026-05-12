@@ -6,11 +6,12 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:infinite_video_feed/infinite_video_feed.dart'
+    show VideoErrorType;
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart';
-import 'package:pooled_video_player/pooled_video_player.dart';
 
 import '../builders/test_video_event_builder.dart';
 

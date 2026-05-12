@@ -149,7 +149,8 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         Task { @MainActor [weak self] in
             guard let self else { return }
             do {
-                let (composition, offsets, durations) = try await self.buildComposition(from: clipsRaw)
+                let (composition, videoComposition, offsets, durations, audioMix) =
+                    try await self.buildComposition(from: clipsRaw)
                 self.clipOffsets = offsets
                 self.clipDurations = durations
                 self.clipCount = offsets.count
@@ -157,11 +158,13 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                 self.firstFrameRendered = false
 
                 let playerItem = AVPlayerItem(asset: composition)
-                let avComposition = AVVideoComposition(propertiesOf: composition)
-                guard avComposition.renderSize.isPositive else {
+                if let videoComposition {
+                    playerItem.videoComposition = videoComposition
+                }
+                if let audioMix { playerItem.audioMix = audioMix }
+                guard (videoComposition?.renderSize ?? composition.naturalSize).isPositive else {
                     throw CompositionError.invalidRenderSize
                 }
-                playerItem.videoComposition = avComposition
                 self.templateItem = playerItem
 
                 let startPositionMs = (args["startPositionMs"] as? NSNumber)?.int64Value ?? 0
@@ -211,7 +214,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
 
     private func buildComposition(
         from clipsRaw: [[String: Any]]
-    ) async throws -> (AVMutableComposition, [Double], [Double]) {
+    ) async throws -> (AVMutableComposition, AVVideoComposition?, [Double], [Double], AVMutableAudioMix?) {
         let composition = AVMutableComposition()
         guard let videoTrack = composition.addMutableTrack(
             withMediaType: .video,
@@ -227,11 +230,15 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         var insertTime = CMTime.zero
         var offsets: [Double] = []
         var durations: [Double] = []
+        var videoComposition: AVMutableVideoComposition?
+        var layerInstruction: AVMutableVideoCompositionLayerInstruction?
+        var clipVolumes: [Float] = []
 
         for clipMap in clipsRaw {
             guard let uri = clipMap["uri"] as? String else { continue }
             let startMs = (clipMap["startMs"] as? NSNumber)?.int64Value ?? 0
             let endMs = clipMap["endMs"] as? NSNumber
+            let clipVol = (clipMap["volume"] as? NSNumber)?.floatValue ?? 1.0
 
             let url: URL
             if uri.hasPrefix("/") {
@@ -253,6 +260,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             )
             let displaySize = naturalSize.applying(transform).absoluteSize
             guard displaySize.isPositive else { continue }
+            let standardizedTransform = transform.standardized(for: naturalSize)
 
             let startTime = CMTime(value: startMs, timescale: 1000)
             let endTime: CMTime
@@ -268,7 +276,23 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             if offsets.isEmpty {
                 composition.naturalSize = displaySize
                 videoTrack.preferredTransform = transform
+                if !standardizedTransform.isEffectivelyIdentity {
+                    let instruction = AVMutableVideoCompositionLayerInstruction(
+                        assetTrack: videoTrack
+                    )
+                    let mutableVideoComposition = AVMutableVideoComposition()
+                    mutableVideoComposition.renderSize = displaySize
+                    mutableVideoComposition.sourceTrackIDForFrameTiming = videoTrack.trackID
+                    if sourceVideoTrack.minFrameDuration.isValid {
+                        mutableVideoComposition.frameDuration = sourceVideoTrack.minFrameDuration
+                    } else {
+                        mutableVideoComposition.frameDuration = CMTime(value: 1, timescale: 30)
+                    }
+                    layerInstruction = instruction
+                    videoComposition = mutableVideoComposition
+                }
             }
+            layerInstruction?.setTransform(standardizedTransform, at: insertTime)
 
             try videoTrack.insertTimeRange(timeRange, of: sourceVideoTrack, at: insertTime)
 
@@ -278,14 +302,45 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
 
             offsets.append(CMTimeGetSeconds(insertTime))
             durations.append(CMTimeGetSeconds(clipDuration))
+            clipVolumes.append(clipVol)
             insertTime = CMTimeAdd(insertTime, clipDuration)
         }
 
         guard !offsets.isEmpty else {
             throw CompositionError.noPlayableVideoTracks
         }
+        if let videoComposition, let layerInstruction {
+            let instruction = AVMutableVideoCompositionInstruction()
+            instruction.timeRange = CMTimeRange(start: .zero, duration: insertTime)
+            instruction.layerInstructions = [layerInstruction]
+            videoComposition.instructions = [instruction]
+        }
 
-        return (composition, offsets, durations)
+        // Build an AVAudioMix that applies per-clip volume using time ranges on
+        // the single composition audio track. AVQueuePlayer.volume multiplies on
+        // top automatically, so 0.0 here = muted for that clip regardless of the
+        // global volume.
+        var audioMix: AVMutableAudioMix?
+        if let audioTrack {
+            let params = AVMutableAudioMixInputParameters(track: audioTrack)
+            var t = CMTime.zero
+            for (i, dur) in durations.enumerated() {
+                let clipDuration = CMTime(seconds: dur, preferredTimescale: 600)
+                let range = CMTimeRange(start: t, duration: clipDuration)
+                let vol = clipVolumes[i]
+                params.setVolumeRamp(
+                    fromStartVolume: vol,
+                    toEndVolume: vol,
+                    timeRange: range
+                )
+                t = CMTimeAdd(t, clipDuration)
+            }
+            let mix = AVMutableAudioMix()
+            mix.inputParameters = [params]
+            audioMix = mix
+        }
+
+        return (composition, videoComposition, offsets, durations, audioMix)
     }
 
     // MARK: - Seek
@@ -386,6 +441,8 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         totalDuration = 0
         firstFrameRendered = false
         currentStatus = "idle"
+        errorMessage = nil  // clear stale error so sendStateUpdate never emits
+                            // status="error" after media has been released.
         sendStateUpdate()
         result(nil)
     }
@@ -443,7 +500,15 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         guard player.rate == 0 else { return }
         if player.status == .readyToPlay {
             player.preroll(atRate: 1.0) { [weak self] prerolled in
-                if prerolled { self?.textureOutput?.forceRefresh(for: time) }
+                guard prerolled else { return }
+                // `preroll(atRate:)` completion runs on an unspecified
+                // internal queue. Hop to main before touching
+                // `currentItem` / `step(byCount:)` / `textureOutput`.
+                DispatchQueue.main.async { [weak self] in
+                    guard let self else { return }
+                    self.nudgeOutputQueue()
+                    self.textureOutput?.forceRefresh(for: time)
+                }
             }
             return
         }
@@ -453,12 +518,34 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             options: [.new]
         ) { [weak self] obsPlayer, _ in
             guard obsPlayer.status == .readyToPlay else { return }
-            self?.pendingPrerollObservation?.invalidate()
-            self?.pendingPrerollObservation = nil
-            guard obsPlayer.rate == 0 else { return }
-            obsPlayer.preroll(atRate: 1.0) { [weak self] prerolled in
-                if prerolled { self?.textureOutput?.forceRefresh(for: time) }
+            // KVO callbacks fire on whichever queue mutated the
+            // observed key. `pendingPrerollObservation` mutation and
+            // the inner preroll must happen on main.
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.pendingPrerollObservation?.invalidate()
+                self.pendingPrerollObservation = nil
+                guard obsPlayer.rate == 0 else { return }
+                obsPlayer.preroll(atRate: 1.0) { [weak self] prerolled in
+                    guard prerolled else { return }
+                    DispatchQueue.main.async { [weak self] in
+                        guard let self else { return }
+                        self.nudgeOutputQueue()
+                        self.textureOutput?.forceRefresh(for: time)
+                    }
+                }
             }
+        }
+    }
+
+    /// Forces `AVPlayerItemVideoOutput` to populate its frame queue while
+    /// the player is paused. Mirrors the iOS implementation — see the
+    /// iOS `nudgeOutputQueue` doc comment for the full rationale.
+    private func nudgeOutputQueue() {
+        guard let item = player?.currentItem, item.canStepForward else { return }
+        item.step(byCount: 1)
+        if item.canStepBackward {
+            item.step(byCount: -1)
         }
     }
 
@@ -623,7 +710,53 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         if let errorMessage {
             map["errorMessage"] = errorMessage
         }
+        if let errorCode = resolvedErrorCode() {
+            map["errorCode"] = errorCode
+        }
         sink(map)
+    }
+
+    /// Maps the current player error to a canonical error code string that
+    /// matches the values defined in `NativePlayerErrorCode` on the Dart side.
+    private func resolvedErrorCode() -> String? {
+        let nsError: NSError?
+        if let itemError = player?.currentItem?.error as NSError? {
+            nsError = itemError
+        } else if currentStatus == "error" {
+            nsError = nil
+        } else {
+            return nil
+        }
+
+        guard let err = nsError else { return currentStatus == "error" ? "unknown" : nil }
+
+        // HTTP errors carried inside AVFoundation errors.
+        if let httpResponse = err.userInfo["NSURLErrorFailingURLResponseErrorKey"] as? HTTPURLResponse {
+            return httpResponse.statusCode >= 500 ? "http_server_error" : "http_client_error"
+        }
+
+        switch (err.domain, err.code) {
+        case (NSURLErrorDomain, NSURLErrorNotConnectedToInternet),
+             (NSURLErrorDomain, NSURLErrorNetworkConnectionLost),
+             (NSURLErrorDomain, NSURLErrorDataNotAllowed):
+            return "network_error"
+        case (NSURLErrorDomain, NSURLErrorTimedOut):
+            return "timeout"
+        default:
+            // AVFoundation format / decoder errors.
+            if err.domain == AVFoundationErrorDomain {
+                let code = AVError.Code(rawValue: err.code)
+                switch code {
+                case .decodeFailed, .noCompatibleAlternatesForExternalDisplay:
+                    return "decoder_error"
+                case .fileFormatNotRecognized, .contentIsNotAuthorized:
+                    return "parse_error"
+                default:
+                    break
+                }
+            }
+            return "unknown"
+        }
     }
 
     // MARK: - FlutterStreamHandler
@@ -655,15 +788,8 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
     private func updateVideoSize(from item: AVPlayerItem) {
         Task { @MainActor [weak self] in
             guard let self else { return }
-            guard let track = try? await item.asset.loadTracks(
-                withMediaType: .video
-            ).first else {
-                return
-            }
-            let (naturalSize, transform) = try await track.load(
-                .naturalSize, .preferredTransform
-            )
-            let size = naturalSize.applying(transform)
+            let size = item.presentationSize
+            guard size.isPositive else { return }
             self.videoWidth = Int(abs(size.width))
             self.videoHeight = Int(abs(size.height))
             self.sendStateUpdate()
@@ -758,5 +884,50 @@ private extension CGSize {
 
     var isPositive: Bool {
         width.isFinite && height.isFinite && width > 0 && height > 0
+    }
+}
+
+private extension CGAffineTransform {
+    var isEffectivelyIdentity: Bool {
+        abs(a - 1) < 0.001
+            && abs(b) < 0.001
+            && abs(c) < 0.001
+            && abs(d - 1) < 0.001
+            && abs(tx) < 0.001
+            && abs(ty) < 0.001
+    }
+
+    func standardized(for size: CGSize) -> CGAffineTransform {
+        var transform = self
+        if close(a, 1) && close(b, 0) && close(c, 0) && close(d, 1) {
+            transform.tx = 0
+            transform.ty = 0
+        } else if close(a, -1) && close(b, 0) && close(c, 0) && close(d, -1) {
+            transform.tx = size.width
+            transform.ty = size.height
+        } else if close(a, 0) && close(b, -1) && close(c, 1) && close(d, 0) {
+            transform.tx = 0
+            transform.ty = size.width
+        } else if close(a, 0) && close(b, 1) && close(c, -1) && close(d, 0) {
+            transform.tx = size.height
+            transform.ty = 0
+        } else if close(a, -1) && close(b, 0) && close(c, 0) && close(d, 1) {
+            transform.tx = size.width
+            transform.ty = 0
+        } else if close(a, 1) && close(b, 0) && close(c, 0) && close(d, -1) {
+            transform.tx = 0
+            transform.ty = size.height
+        } else if close(a, 0) && close(b, -1) && close(c, -1) && close(d, 0) {
+            transform.tx = size.height
+            transform.ty = size.width
+        } else if close(a, 0) && close(b, 1) && close(c, 1) && close(d, 0) {
+            transform.tx = 0
+            transform.ty = 0
+        }
+        return transform
+    }
+
+    private func close(_ lhs: CGFloat, _ rhs: CGFloat) -> Bool {
+        abs(lhs - rhs) < 0.001
     }
 }

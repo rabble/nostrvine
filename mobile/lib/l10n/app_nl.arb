@@ -267,8 +267,6 @@
   "profileRepostsOwnEmpty": "Video's die je repost verschijnen hier",
   "profileRepostsOtherEmpty": "Video's die zij reposten verschijnen hier",
   "profileErrorLoadingReposts": "Fout bij laden van reposts",
-  "profileLoadingTitle": "Profiel laden...",
-  "profileLoadingSubtitle": "Dit kan even duren",
   "profileLoadingVideos": "Video's laden...",
   "profileNoVideosTitle": "Nog geen video's",
   "profileNoVideosOwnSubtitle": "Deel je eerste video om hem hier te zien",
@@ -344,7 +342,7 @@
     }
   },
   "profileSetupGotItButton": "Begrepen",
-  "profileSetupUploadFailedGeneric": "Afbeelding uploaden mislukt: {error}",
+  "profileSetupUploadFailedGeneric": "Uploaden van afbeelding mislukt. Probeer het later opnieuw.",
   "profileSetupUploadNetworkError": "Netwerkfout: check je internetverbinding en probeer opnieuw.",
   "profileSetupUploadAuthError": "Authenticatiefout: log uit en weer in.",
   "profileSetupUploadFileTooLarge": "Bestand te groot: kies een kleinere afbeelding (max 10 MB).",
@@ -358,7 +356,7 @@
   "profileSetupCheckAgain": "Opnieuw controleren",
   "profileSetupUsernameBurned": "Deze gebruikersnaam is niet meer beschikbaar",
   "profileSetupUsernameInvalidFormat": "Alleen letters, cijfers en koppeltekens zijn toegestaan",
-  "profileSetupUsernameInvalidLength": "Gebruikersnaam moet 3-20 tekens zijn",
+  "profileSetupUsernameInvalidLength": "Gebruikersnaam moet 3-63 tekens zijn",
   "profileSetupUsernameNetworkError": "Beschikbaarheid checken mislukt. Probeer opnieuw.",
   "profileSetupUsernameInvalidFormatGeneric": "Ongeldig formaat voor gebruikersnaam",
   "profileSetupUsernameCheckFailed": "Beschikbaarheid checken mislukt",
@@ -472,6 +470,7 @@
   "videoPlayerUnmute": "Videogeluid inschakelen",
   "videoPlayerEditVideo": "Video bewerken",
   "videoPlayerEditVideoTooltip": "Video bewerken",
+  "videoPlayerTapHint": "Tik om af te spelen of te pauzeren. Dubbel tikken om te liken.",
   "contentWarningLabel": "Inhoudswaarschuwing",
   "contentWarningNudity": "Naaktheid",
   "contentWarningSexualContent": "Seksuele inhoud",
@@ -563,6 +562,35 @@
       }
     }
   },
+  "videoCollaboratorPendingDecoration": "Pending",
+  "@videoCollaboratorPendingDecoration": {
+    "description": "Small badge next to a collaborator's name or avatar when the creator (viewing their own video) has invited them but they have not yet accepted."
+  },
+  "videoCollaboratorPendingSemanticLabel": "Pending collaborator",
+  "@videoCollaboratorPendingSemanticLabel": {
+    "description": "Screen reader label for a dimmed pending collaborator avatar on the creator's own video."
+  },
+  "videoCollaboratorWithPendingSuffix": "{label} ({pending} pending)",
+  "@videoCollaboratorWithPendingSuffix": {
+    "description": "Appends a pending count to the collaborator label on the creator's own video. {label} is the existing 'with @name' / 'with @name +N' phrase.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "pending": {
+        "type": "int"
+      }
+    }
+  },
+  "profileChipTapHint": "{name}. Tap to view profile.",
+  "@profileChipTapHint": {
+    "description": "Screen reader hint announced when a user-chip in the metadata sheet is focused. {name} is the user's display name.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "listAttributionFallback": "Lijst",
   "shareVideoLabel": "Video delen",
   "sharePostSharedWith": "Post gedeeld met {recipientName}",
@@ -605,6 +633,11 @@
   "videoActionMoreOptions": "Meer opties",
   "videoActionHideSubtitles": "Ondertiteling verbergen",
   "videoActionShowSubtitles": "Ondertiteling tonen",
+  "videoEngagementLikersTitle": "Geliket door",
+  "videoEngagementRepostersTitle": "Gerepost door",
+  "videoEngagementLikersEmpty": "Nog geen likes",
+  "videoEngagementRepostersEmpty": "Nog geen reposts",
+  "videoEngagementLoadFailed": "Kon die lijst niet laden",
   "videoDescriptionLoops": "{count} loops",
   "@videoDescriptionLoops": {
     "placeholders": {
@@ -1742,6 +1775,26 @@
   "feedFailedToLoadVideos": "Video's laden mislukt",
   "feedRetry": "Opnieuw",
   "feedNoFollowedUsers": "Geen gevolgde gebruikers.\nVolg iemand om hun video's hier te zien.",
+  "feedModeForYou": "Voor jou",
+  "feedModeNew": "Nieuw",
+  "feedModeFollowing": "Volgend",
+  "feedModeSemanticLabel": "Feedmodus: {label}",
+  "@feedModeSemanticLabel": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "videoAuthorSemanticLabel": "Video-auteur: {displayName}",
+  "@videoAuthorSemanticLabel": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "videoAuthorAvatarSemanticLabel": "Avatar van maker",
   "feedForYouEmpty": "Je Voor jou-feed is leeg.\nVerken video's en volg makers om hem vorm te geven.",
   "feedFollowingEmpty": "Nog geen video's van mensen die je volgt.\nVind makers die je leuk vindt en volg ze.",
   "feedLatestEmpty": "Nog geen nieuwe video's.\nKom binnenkort terug.",
@@ -1857,6 +1910,7 @@
   "routeInvalidCategory": "Ongeldige categorie",
   "routeNoVideosToDisplay": "Geen video's om weer te geven",
   "routeInvalidProfileId": "Ongeldige profiel-ID",
+  "routeUnknownPath": "Die pagina zit niet in de app.",
   "routeDefaultListName": "Lijst",
   "supportTitle": "Supportcentrum",
   "supportContactSupport": "Contact met support",
@@ -2272,6 +2326,11 @@
       }
     }
   },
+  "inboxCollabInviteCardUntitledVideo": "Video zonder titel",
+  "clickableTextViewVideoLink": "Video bekijken",
+  "messageExternalLinkDialogTitle": "Externe link openen?",
+  "messageExternalLinkDialogBody": "Deze link gaat naar een externe site en is mogelijk niet veilig:\n\n{url}",
+  "messageExternalLinkDialogOpen": "Openen",
   "inboxCollabInviteAcceptButton": "Accepteren",
   "inboxCollabInviteAcceptError": "Accepteren is niet gelukt. Probeer het opnieuw.",
   "inboxCollabInviteAcceptedStatus": "Geaccepteerd",
@@ -2428,8 +2487,12 @@
   "libraryWebUnavailableDescription": "Concepten en clips worden op je apparaat opgeslagen. Open Divine op je telefoon om ze te beheren.",
   "libraryWebUnavailableHeadline": "Bibliotheek is beschikbaar in de mobiele app",
   "notificationFollowBack": "Terugvolgen",
-  "profileSetupUploadSuccess": "Profielfoto succesvol geüpload!",
+  "profileSetupUploadStaged": "Geüpload — tik op Opslaan om toe te passen",
   "proofmodeCheckAiGenerated": "Controleren of AI-gegenereerd",
+  "dmSendFailedMessage": "Bericht kon niet worden verzonden",
+  "dmSendFailedRetry": "Opnieuw",
+  "dmSendPartialMessage": "Verzonden, maar niet gesynchroniseerd met je andere apparaten",
+  "dmConversationLoadError": "Berichten konden niet worden geladen",
   "reportDialogCancel": "Annuleren",
   "reportDialogReport": "Rapporteren",
   "routerInvalidCreator": "Ongeldige maker",
@@ -2770,6 +2833,11 @@
   "videoEditorDuplicateSelectedItemSemanticLabel": "Geselecteerd item dupliceren",
   "videoEditorSplitLabel": "Splitsen",
   "videoEditorSplitSelectedClipSemanticLabel": "Geselecteerde clip splitsen",
+  "videoEditorExtractAudioLabel": "Audio extraheren",
+  "videoEditorClipAudioTitle": "Clip-audio",
+  "videoEditorExtractAudioFromClipSemanticLabel": "Audio uit clip extraheren en origineel dempen",
+  "videoEditorExtractAudioNoLocalFile": "Kan audio niet extraheren: clip is niet lokaal beschikbaar.",
+  "videoEditorExtractAudioFailed": "Kon audio niet extraheren. Probeer het opnieuw.",
   "videoEditorFinishTimelineEditingSemanticLabel": "Bewerken van tijdlijn voltooien",
   "videoEditorAudioPlayPreviewSemanticLabel": "Voorbeeld afspelen",
   "videoEditorAudioPausePreviewSemanticLabel": "Voorbeeld pauzeren",
@@ -2779,7 +2847,7 @@
   "videoEditorAudioNoSoundsAvailableTitle": "Geen geluiden beschikbaar",
   "videoEditorAudioNoSoundsAvailableSubtitle": "Geluiden verschijnen hier wanneer creators audio delen",
   "videoEditorAudioFailedToLoadTitle": "Geluiden laden mislukt",
-  "videoEditorAudioCategoryDivine": "diVine",
+  "videoEditorAudioCategoryDivine": "OG Sounds",
   "videoEditorAudioCategoryCommunity": "Gemeenschap",
   "videoEditorDrawToolArrowSemanticLabel": "Pijlgereedschap",
   "videoEditorDrawToolEraserSemanticLabel": "Gumgereedschap",
@@ -2890,11 +2958,11 @@
       }
     }
   },
-  "videoMetadataContentWarningLabel": "Inhoudswaarschuwing toevoegen",
+  "videoMetadataContentWarningLabel": "Inhoudswaarschuwing",
   "videoMetadataSelectContentWarningsSemanticLabel": "Inhoudswaarschuwingen selecteren",
-  "videoMetadataContentWarningSelectAllThatApply": "Selecteer alles wat van toepassing is",
+  "videoMetadataContentWarningSelectAllThatApply": "Selecteer alles wat van toepassing is op je inhoud",
   "videoMetadataContentWarningDoneButton": "Gereed",
-  "videoMetadataCollaboratorsLabel": "Samenwerkers toevoegen",
+  "videoMetadataCollaboratorsLabel": "Samenwerkers",
   "videoMetadataAddCollaboratorSemanticLabel": "Samenwerker toevoegen",
   "videoMetadataCollaboratorsHelpTooltip": "Hoe samenwerkers werken",
   "videoMetadataCollaboratorsCount": "{count}/{max} samenwerkers",
@@ -2919,7 +2987,7 @@
       }
     }
   },
-  "videoMetadataInspiredByLabel": "Geïnspireerd door toevoegen",
+  "videoMetadataInspiredByLabel": "Geinspireerd door",
   "videoMetadataSetInspiredBySemanticLabel": "Geinspireerd door instellen",
   "videoMetadataInspiredByHelpTooltip": "Hoe inspiratievermeldingen werken",
   "videoMetadataInspiredByNone": "Geen",
@@ -2954,9 +3022,6 @@
   "videoMetadataPausePreviewSemanticLabel": "Voorbeeld pauzeren",
   "videoMetadataClosePreviewSemanticLabel": "Videovoorbeeld sluiten",
   "videoMetadataRemoveSemanticLabel": "Verwijderen",
-  "metadataCaptionsLabel": "Ondertitels",
-  "metadataCaptionsEnabledSemantics": "Ondertitels ingeschakeld voor alle video's",
-  "metadataCaptionsDisabledSemantics": "Ondertitels uitgeschakeld voor alle video's",
   "@metadataLoopsLabel": {
     "placeholders": {
       "count": {
@@ -3092,6 +3157,16 @@
   "profileSetupImagesTypeGroup": "afbeeldingen",
   "profileSetupExternalNip05InvalidFormat": "Ongeldig NIP-05-formaat (bijv. naam@domein.com)",
   "profileSetupExternalNip05DivineDomain": "Gebruik het gebruikersnaamveld hierboven voor divine.video",
+  "nostrSettingsNip05Address": "NIP-05 address",
+  "nostrSettingsNip05AddressSubtitle": "Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.",
+  "nostrSettingsNip05AddressHint": "you@example.com",
+  "nostrSettingsNip05SaveAction": "Save NIP-05",
+  "nostrSettingsNip05Saved": "NIP-05 saved",
+  "nostrSettingsNip05SaveFailed": "Couldn't save NIP-05. Please try again.",
+  "profileSetupNip05ConfirmTitle": "Use your own NIP-05?",
+  "profileSetupNip05ConfirmBody": "NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it's wrong, people can't find you and your verified handle disappears. Continue only if you've set this up.",
+  "profileSetupNip05ConfirmContinue": "Continue",
+  "profileSetupNip05ConfirmCancel": "Cancel",
   "contentWarningReportContentTooltip": "Inhoud rapporteren",
   "contentWarningBlockUserTooltip": "Gebruiker blokkeren",
   "contentWarningBlockedTitle": "Inhoud geblokkeerd",
@@ -3100,7 +3175,7 @@
   "contentWarningPotentiallyHarmfulTitle": "Mogelijk schadelijke inhoud",
   "contentWarningView": "Bekijken",
   "contentWarningReportAction": "Rapporteren",
-  "videoActionLikeLabel": "Like",
+  "videoActionLikeLabel": "Liken",
   "videoActionReplyLabel": "Reageren",
   "videoActionRepostLabel": "Repost",
   "videoActionShareLabel": "Delen",
@@ -3127,7 +3202,7 @@
       }
     }
   },
-  "relaySettingsSubscriptionsSummary": "{count} subs",
+  "relaySettingsSubscriptionsSummary": "{count} abonnementen",
   "@relaySettingsSubscriptionsSummary": {
     "placeholders": {
       "count": {
@@ -3135,7 +3210,7 @@
       }
     }
   },
-  "relaySettingsEventsSummary": "{count} events",
+  "relaySettingsEventsSummary": "{count} gebeurtenissen",
   "@relaySettingsEventsSummary": {
     "placeholders": {
       "count": {
@@ -3206,9 +3281,33 @@
   "@profileEditPublicKeyLink": {
     "description": "Secondary link on the edit profile screen that navigates to the key management screen where the user's npub lives."
   },
+  "verifiedAccountChipSemanticLabel": "Geverifieerd {platform}-account: {identity}",
+  "@verifiedAccountChipSemanticLabel": {
+    "description": "Screen reader label for a verified-account chip on a user's profile.",
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      },
+      "identity": {
+        "type": "String"
+      }
+    }
+  },
+  "profileEditVerifiedAccountsTitle": "Geverifieerde accounts",
+  "@profileEditVerifiedAccountsTitle": {
+    "description": "Section header on the edit profile screen above the verified-accounts chip row and the Get verified CTA."
+  },
+  "profileEditGetVerifiedCta": "Laat je verifiëren",
+  "@profileEditGetVerifiedCta": {
+    "description": "Primary CTA tile on edit profile that opens the verifyer integrated-app sandbox."
+  },
+  "profileEditGetVerifiedSubtitle": "Koppel je social-media-accounts zodat mensen weten dat jij het bent.",
+  "@profileEditGetVerifiedSubtitle": {
+    "description": "Subtitle under the Get verified tile, harmonized with verifyer.divine.video landing copy."
+  },
   "soundUntitled": "Geluid zonder titel",
   "soundStopPreview": "Preview stoppen",
-  "soundPreviewSemanticLabel": "Preview {title}",
+  "soundPreviewSemanticLabel": "Voorbeeld van {title}",
   "@soundPreviewSemanticLabel": {
     "placeholders": {
       "title": {
@@ -3257,7 +3356,7 @@
   "commonClose": "Sluiten",
   "categoryGalleryNoVideosInCategory": "Geen video's in deze categorie",
   "categoryGallerySortOptionsLabel": "Sorteeropties categorie",
-  "categoryGallerySortHot": "Hot",
+  "categoryGallerySortHot": "Populair",
   "categoryGallerySortNew": "Nieuw",
   "categoryGallerySortClassic": "Klassiek",
   "categoryGallerySortForYou": "Voor jou",
@@ -3294,6 +3393,20 @@
   "bugReportExpectedBehaviorHint": "Wat had er moeten gebeuren?",
   "bugReportDiagnosticsNotice": "Apparaatinfo en logs worden automatisch meegestuurd.",
   "bugReportSuccessMessage": "Dank je! We hebben je rapport ontvangen en gebruiken het om Divine beter te maken.",
+  "bugReportAttachImages": "Attach images",
+  "bugReportImagesCount": "{count} of {max} images selected",
+  "@bugReportImagesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "bugReportRemoveImage": "Remove image",
+  "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
   "bugReportSendFailed": "Bugrapport verzenden mislukt. Probeer het later opnieuw.",
   "bugReportFailedWithError": "Bugrapport verzenden mislukt: {error}",
   "@bugReportFailedWithError": {
@@ -3437,21 +3550,63 @@
   "authNip07ExtensionNotFound": "Geen browserextensie gevonden. Installeer Alby, nos2x of een andere NIP-07-compatibele extensie.",
   "authInfoBrowserExtensionTitle": "Browserextensie",
   "authInfoBrowserExtensionDescription": "Meld je aan met een NIP-07-browserextensie zoals Alby of nos2x. Je sleutels blijven in de extensie — Divine ziet ze nooit.",
-  "soundsAlreadySavedToLibrary": "Already in Sounds",
+  "soundsAlreadySavedToLibrary": "Al in Sounds",
   "soundsAvailabilityCommunity": "Community",
-  "soundsAvailabilityPrivate": "Private",
-  "soundsRemoveSavedSound": "Remove sound",
-  "soundsRemovedFromLibrary": "Removed from Sounds",
-  "soundsSavedEmptyDescription": "Tap Use Sound on a video to save it here.",
-  "soundsSavedEmptyTitle": "No saved sounds yet",
-  "soundsSavedLibraryTitle": "My Sounds",
-  "soundsSavedToLibrary": "Saved to Sounds",
-  "videoEditorAudioCategoryFeatured": "Featured",
-  "videoEditorAudioCategoryMySounds": "My Sounds",
-  "videoEditorAudioFeaturedEmptySubtitle": "We’ll drop featured sounds here once they’re ready.",
-  "videoEditorAudioFeaturedEmptyTitle": "Featured sounds coming soon",
-  "videoMetadataAudioReuseSubtitle": "Let others save and reuse this video's audio.",
-  "videoMetadataAudioReuseTitle": "Publish this sound",
+  "soundsAvailabilityPrivate": "Privé",
+  "soundsRemoveSavedSound": "Sound verwijderen",
+  "soundsRemovedFromLibrary": "Verwijderd uit Sounds",
+  "soundsSavedEmptyDescription": "Tik op Sound gebruiken in een video om die hier op te slaan.",
+  "soundsSavedEmptyTitle": "Nog geen opgeslagen sounds",
+  "soundsSavedLibraryTitle": "Mijn sounds",
+  "soundsSavedToLibrary": "Opgeslagen in Sounds",
+  "videoEditorAudioCategoryFeatured": "Uitgelicht",
+  "videoEditorAudioCategoryMySounds": "Mijn sounds",
+  "videoEditorAudioFeaturedEmptySubtitle": "We droppen hier uitgelichte sounds zodra ze klaar zijn.",
+  "videoEditorAudioFeaturedEmptyTitle": "Uitgelichte sounds komen eraan",
+  "videoMetadataAudioReuseSubtitle": "Laat anderen de audio van deze video opslaan en hergebruiken.",
+  "videoMetadataAudioReuseTitle": "Publiceer deze sound",
+  "videoMetadataShareReplyToFeedTitle": "Ook delen in mijn feed",
+  "videoMetadataShareReplyToFeedSubtitle": "Uit laat deze video alleen in de reactiethread staan.",
+  "commentsRecordVideoButtonLabel": "Videoreactie opnemen",
+  "commentsOpenVideoLabel": "Videoreactie openen",
+  "commentsMuteVideoReplyLabel": "Videoreactie dempen",
+  "commentsUnmuteVideoReplyLabel": "Dempen van videoreactie opheffen",
+  "commentsOpenReplyParentLabel": "Video openen waarop dit reageert",
+  "commentsReplyParentSectionTitle": "Als reactie op",
+  "commentsReplyParentLabel": "Reactie op {target}",
+  "commentsReplyParentFallbackLabel": "Reactie op video",
+  "videoSettingsMenuOpen": "Afspeelinstellingen openen",
+  "videoSettingsMenuClose": "Afspeelinstellingen sluiten",
+  "videoSettingsCaptionsEnable": "Ondertiteling inschakelen",
+  "videoSettingsCaptionsDisable": "Ondertiteling uitschakelen",
+  "videoActionReportLabel": "Rapporteren",
+  "videoActionReport": "Video rapporteren",
+  "videoActionEditLabel": "Bewerken",
+  "videoActionEdit": "Video bewerken",
+  "reportReasonSpamSubtitle": "Ongewenste of repetitieve content",
+  "reportReasonHarassmentSubtitle": "Schadelijke en ongewenste reacties of vermeldingen",
+  "reportReasonViolenceSubtitle": "Gewelddadige, extremistische of schadelijke content",
+  "reportReasonSexualContentSubtitle": "Naaktheid, porno of expliciete content",
+  "reportReasonCopyrightSubtitle": "Ongeoorloofd gebruik van intellectueel eigendom",
+  "reportReasonFalseInfoSubtitle": "Misleidende of onware beweringen",
+  "reportReasonCsamSubtitle": "Content die minderjarigen uitbuit of in gevaar brengt",
+  "reportReasonAiGeneratedSubtitle": "Vermoedelijk door AI gegenereerde content",
+  "reportReasonOtherSubtitle": "Overtredingen die hierboven niet staan",
+  "reportLearnMoreAt": "Meer info op",
+  "supportLogsSavedTo": "Logs opgeslagen in {path}",
+  "supportRevealLogsAction": "Tonen in map",
+  "notificationsVideoThumbnailFor": "Videominiatuur van {title}",
+  "@notificationsVideoThumbnailFor": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsVideoThumbnail": "Videominiatuur",
+  "metadataCaptionsLabel": "Ondertitels",
+  "metadataCaptionsEnabledSemantics": "Ondertitels ingeschakeld voor alle video's",
+  "metadataCaptionsDisabledSemantics": "Ondertitels uitgeschakeld voor alle video's",
   "@profileSetupUploadFailedGeneric": {
     "placeholders": {
       "error": {

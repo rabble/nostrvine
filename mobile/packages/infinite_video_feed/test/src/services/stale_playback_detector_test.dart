@@ -1,0 +1,286 @@
+import 'package:divine_video_player/divine_video_player.dart';
+import 'package:fake_async/fake_async.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:infinite_video_feed/src/services/stale_playback_detector.dart';
+
+import '../../helpers/fake_controller.dart';
+
+StalePlaybackDetector _makeDetector({
+  List<(int, int)>? seekEvents,
+  List<int>? failoverEvents,
+  List<String>? logs,
+}) => StalePlaybackDetector(
+  onSeekRecovery: (i, pos) => seekEvents?.add((i, pos)),
+  onSourceFailover: (i) => failoverEvents?.add(i),
+  log: (msg) => logs?.add(msg),
+);
+
+/// Advances time to trigger [ticks] heartbeat intervals.
+void _tick(FakeAsync async, int ticks) =>
+    async.elapse(StalePlaybackDetector.interval * ticks);
+
+void main() {
+  group(StalePlaybackDetector, () {
+    group('start with null controller', () {
+      test('does nothing', () {
+        fakeAsync((async) {
+          final seeks = <(int, int)>[];
+          final det = _makeDetector(seekEvents: seeks)..start(0, null);
+          _tick(async, 20);
+
+          expect(seeks, isEmpty);
+          det.disposeAll();
+        });
+      });
+    });
+
+    group('grace period', () {
+      test('does not fire during grace period even if position stalls', () {
+        fakeAsync((async) {
+          final seeks = <(int, int)>[];
+          final controller = FakeController();
+          final det = _makeDetector(seekEvents: seeks)..start(0, controller);
+
+          // Push playing state with stalled position during grace.
+          for (var i = 0; i < StalePlaybackDetector.graceAfterPlay; i++) {
+            controller.pushState(
+              const DivineVideoPlayerState(
+                status: PlaybackStatus.playing,
+                position: Duration(seconds: 1),
+              ),
+            );
+            _tick(async, 1);
+          }
+
+          expect(seeks, isEmpty);
+          det.disposeAll();
+        });
+      });
+    });
+
+    group('stale detection → seek recovery', () {
+      test('fires onSeekRecovery after heartbeatThreshold frozen ticks', () {
+        fakeAsync((async) {
+          final seeks = <(int, int)>[];
+          final controller = FakeController();
+          final det = _makeDetector(seekEvents: seeks)..start(0, controller);
+
+          // Burn through grace period with advancing position.
+          for (var i = 0; i < StalePlaybackDetector.graceAfterPlay + 1; i++) {
+            controller.pushState(
+              DivineVideoPlayerState(
+                status: PlaybackStatus.playing,
+                position: Duration(milliseconds: i * 100),
+              ),
+            );
+            _tick(async, 1);
+          }
+
+          // Now stall at the same position.
+          const stalePosMs = 500;
+          for (var i = 0; i < StalePlaybackDetector.heartbeatThreshold; i++) {
+            controller.pushState(
+              const DivineVideoPlayerState(
+                status: PlaybackStatus.playing,
+                position: Duration(milliseconds: stalePosMs),
+              ),
+            );
+            _tick(async, 1);
+          }
+
+          expect(seeks, isNotEmpty);
+          expect(seeks.first.$1, equals(0));
+          det.disposeAll();
+        });
+      });
+    });
+
+    group('stale detection → source failover', () {
+      test(
+        'fires onSourceFailover after maxRecoveryAttempts seek attempts',
+        () {
+          fakeAsync((async) {
+            final seeks = <(int, int)>[];
+            final failovers = <int>[];
+            final controller = FakeController();
+            final det = _makeDetector(
+              seekEvents: seeks,
+              failoverEvents: failovers,
+            )..start(0, controller);
+
+            // Helper: burn grace + trigger one stall cycle.
+            void burnGraceAndStall({required int startMs}) {
+              for (
+                var i = 0;
+                i < StalePlaybackDetector.graceAfterPlay + 1;
+                i++
+              ) {
+                controller.pushState(
+                  DivineVideoPlayerState(
+                    status: PlaybackStatus.playing,
+                    position: Duration(milliseconds: startMs + i),
+                  ),
+                );
+                _tick(async, 1);
+              }
+              for (
+                var i = 0;
+                i < StalePlaybackDetector.heartbeatThreshold;
+                i++
+              ) {
+                controller.pushState(
+                  DivineVideoPlayerState(
+                    status: PlaybackStatus.playing,
+                    position: Duration(milliseconds: startMs),
+                  ),
+                );
+                _tick(async, 1);
+              }
+            }
+
+            // Exhaust all recovery attempts.
+            for (
+              var attempt = 0;
+              attempt <= StalePlaybackDetector.maxRecoveryAttempts;
+              attempt++
+            ) {
+              burnGraceAndStall(startMs: attempt * 10000);
+            }
+
+            expect(failovers, isNotEmpty);
+            expect(failovers.first, equals(0));
+            det.disposeAll();
+          });
+        },
+      );
+    });
+
+    group('stop', () {
+      test('cancels the timer', () {
+        fakeAsync((async) {
+          final seeks = <(int, int)>[];
+          final controller = FakeController();
+          final det = _makeDetector(seekEvents: seeks)
+            ..start(0, controller)
+            ..stop();
+          _tick(async, 20);
+
+          expect(seeks, isEmpty);
+          det.disposeAll();
+        });
+      });
+
+      test('is safe to call when no timer is running', () {
+        fakeAsync((async) {
+          final det = _makeDetector();
+          expect(det.stop, returnsNormally);
+          det.disposeAll();
+        });
+      });
+    });
+
+    group('resetGrace', () {
+      test('resets grace heartbeat counter', () {
+        fakeAsync((async) {
+          final seeks = <(int, int)>[];
+          final controller = FakeController();
+          final det = _makeDetector(seekEvents: seeks)..start(0, controller);
+          // Burn part of grace.
+          controller.pushState(
+            const DivineVideoPlayerState(
+              status: PlaybackStatus.playing,
+              position: Duration(milliseconds: 100),
+            ),
+          );
+          _tick(async, 3);
+
+          // Reset grace — counters go back to graceAfterPlay.
+          det.resetGrace();
+
+          // Stall immediately after reset → should NOT fire (still in grace).
+          for (var i = 0; i < StalePlaybackDetector.heartbeatThreshold; i++) {
+            controller.pushState(
+              const DivineVideoPlayerState(
+                status: PlaybackStatus.playing,
+                position: Duration(milliseconds: 100),
+              ),
+            );
+            _tick(async, 1);
+          }
+
+          expect(seeks, isEmpty);
+          det.disposeAll();
+        });
+      });
+    });
+
+    group('forget', () {
+      test('removes recovery counter for the index', () {
+        final det = _makeDetector();
+        // Accessing internal state indirectly: forget must not throw.
+        expect(() => det.forget(0), returnsNormally);
+        det.disposeAll();
+      });
+    });
+
+    group('disposeAll', () {
+      test('stops the timer and clears recovery counters', () {
+        fakeAsync((async) {
+          final seeks = <(int, int)>[];
+          final controller = FakeController();
+          _makeDetector(seekEvents: seeks)
+            ..start(0, controller)
+            ..disposeAll();
+          _tick(async, 20);
+
+          expect(seeks, isEmpty);
+        });
+      });
+    });
+
+    group('non-playing state resets heartbeat', () {
+      test('heartbeat counter resets when state becomes paused', () {
+        fakeAsync((async) {
+          final seeks = <(int, int)>[];
+          final controller = FakeController();
+          final det = _makeDetector(seekEvents: seeks)..start(0, controller);
+          // Burn grace.
+          for (var i = 0; i < StalePlaybackDetector.graceAfterPlay + 1; i++) {
+            controller.pushState(
+              DivineVideoPlayerState(
+                status: PlaybackStatus.playing,
+                position: Duration(milliseconds: i * 100),
+              ),
+            );
+            _tick(async, 1);
+          }
+
+          // Accumulate some stale heartbeats, then pause.
+          for (
+            var i = 0;
+            i < StalePlaybackDetector.heartbeatThreshold - 1;
+            i++
+          ) {
+            controller.pushState(
+              const DivineVideoPlayerState(
+                status: PlaybackStatus.playing,
+                position: Duration(milliseconds: 1000),
+              ),
+            );
+            _tick(async, 1);
+          }
+
+          // Pause → counter resets.
+          controller.pushState(
+            const DivineVideoPlayerState(status: PlaybackStatus.paused),
+          );
+          _tick(async, 1);
+
+          // Resume: any further stall restarts counting from zero.
+          expect(seeks, isEmpty);
+          det.disposeAll();
+        });
+      });
+    });
+  });
+}

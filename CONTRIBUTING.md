@@ -25,13 +25,11 @@ flutter doctor
 
 ## Worktree-First Workflow
 
-Start every task from a clean `main` checkout:
+Start every task from a fresh branch created from `origin/main`:
 
 ```bash
 git fetch origin
-git switch main
-git pull --ff-only origin main
-git worktree add .worktrees/<task-name> -b codex/<task-name> main
+git worktree add .worktrees/<task-name> -b codex/<task-name> origin/main
 ```
 
 Do not start new work in a dirty checkout. Keep one task per worktree and commit the completed work before handoff.
@@ -51,13 +49,37 @@ flutter analyze
 flutter test
 ```
 
-Useful app entry paths:
+From `mobile/`, useful app entry paths:
 
 - `./run_dev.sh ios debug`
 - `./run_dev.sh android debug`
 - `./run_dev.sh macos debug`
+- `cd mobile && flutter run -d macos`
 - `./build_ios.sh release`
 - `./build_android.sh release`
+
+If generated code changes, run from `mobile/` with a fast reset step:
+
+```bash
+./build_ios.sh debug --codegen
+./run_dev.sh ios debug
+```
+
+If pods are out of sync, run from `mobile/`:
+
+```bash
+./build_ios.sh debug --pod-reset
+./run_dev.sh ios debug
+```
+
+For local cache cleanup from `mobile/`:
+
+```bash
+./clear_cache.sh
+./clear_cache.sh --full
+```
+
+See [docs/BUILD_SPEED_CHECKLIST.md](docs/BUILD_SPEED_CHECKLIST.md) for the decision flow.
 
 ## Codegen And Generated Files
 

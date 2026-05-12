@@ -7,6 +7,7 @@ import 'dart:core';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:categories_repository/categories_repository.dart';
+import 'package:collaborator_repository/collaborator_repository.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:content_policy/content_policy.dart';
@@ -37,6 +38,7 @@ import 'package:openvine/features/feature_flags/providers/feature_flag_providers
 import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/models/known_account.dart';
+import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -61,6 +63,7 @@ import 'package:openvine/services/broken_video_tracker.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/cawg_verifier_client.dart';
 import 'package:openvine/services/clip_library_service.dart';
+import 'package:openvine/services/collaborator_invite_local_state_adapter.dart';
 import 'package:openvine/services/collaborator_invite_state_store.dart';
 import 'package:openvine/services/collaborator_response_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
@@ -90,6 +93,7 @@ import 'package:openvine/services/notification_preferences_service.dart';
 import 'package:openvine/services/notification_service.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
 import 'package:openvine/services/nsfw_content_filter.dart';
+import 'package:openvine/services/outgoing_dm_retry_service.dart';
 import 'package:openvine/services/password_reset_listener.dart';
 import 'package:openvine/services/pending_action_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
@@ -180,6 +184,29 @@ final collaboratorInviteStateStoreProvider =
       return CollaboratorInviteStateStore(
         prefs: ref.watch(sharedPreferencesProvider),
       );
+    });
+
+/// Per-video collaborator confirmation status. Returns `null` until
+/// [isNostrReadyProvider] flips, so consumers render a safe fallback
+/// instead of capturing a stale Nostr client.
+final collaboratorConfirmationRepositoryProvider =
+    Provider<CollaboratorConfirmationRepository?>((ref) {
+      if (!ref.watch(isNostrReadyProvider)) return null;
+      final authService = ref.watch(authServiceProvider);
+      final currentUserPubkey = authService.currentPublicKeyHex;
+      if (currentUserPubkey == null || currentUserPubkey.isEmpty) {
+        return null;
+      }
+
+      final nostrClient = ref.watch(nostrServiceProvider);
+      final localStore = ref.watch(collaboratorInviteStateStoreProvider);
+      final repo = CollaboratorConfirmationRepository(
+        nostrClient: nostrClient,
+        localStateReader: CollaboratorInviteLocalStateAdapter(localStore),
+        currentUserPubkey: currentUserPubkey,
+      );
+      ref.onDispose(repo.close);
+      return repo;
     });
 
 final pushNotificationServiceProvider = Provider<PushNotificationService>((
@@ -311,6 +338,78 @@ PendingActionService? pendingActionService(Ref ref) {
       error: e,
     );
   });
+
+  ref.onDispose(service.dispose);
+  return service;
+}
+
+/// Auto-sweep service for the durable `outgoing_dms` queue.
+///
+/// Listens to app-foreground transitions and re-publishes the missing
+/// self-wrap for any row in `recipient: sent / self: failed` state via
+/// [DmRepository.recoverSelfWrap]. Closes the gap left by the
+/// SnackBar-only manual retry from PR #4106 — see issue #4124.
+///
+/// The service is keepAlive but has no UI consumer, so it is read
+/// eagerly at app shell startup (`main.dart`) so the foreground
+/// subscription is wired up.
+///
+/// Returns null when the user is not authenticated or when
+/// [isNostrReadyProvider] hasn't flipped yet — the underlying
+/// [DmRepository.recoverSelfWrap] requires `setCredentials` to have
+/// run, and gating here is cleaner than catching `StateError` in
+/// every sweep pass.
+@Riverpod(keepAlive: true)
+OutgoingDmRetryService? outgoingDmRetryService(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+
+  // Watch auth state to rebuild on sign-in / sign-out / account switch.
+  ref.watch(currentAuthStateProvider);
+
+  final userPubkey = authService.currentPublicKeyHex;
+  if (userPubkey == null) return null;
+
+  // Gate on Nostr readiness so DmRepository.setCredentials has run by
+  // the time the service's first foreground sweep fires.
+  if (!ref.watch(isNostrReadyProvider)) return null;
+
+  final dmRepository = ref.watch(dmRepositoryProvider);
+  final db = ref.watch(databaseProvider);
+
+  // Bridge the synchronous AppForeground notifier into a Stream<bool>
+  // so the service's contract stays free of Riverpod types and is easy
+  // to drive from unit tests.
+  final foregroundController = StreamController<bool>();
+  ref.onDispose(foregroundController.close);
+
+  final service = OutgoingDmRetryService(
+    dmRepository: dmRepository,
+    outgoingDmsDao: db.outgoingDmsDao,
+    userPubkey: userPubkey,
+    appForegroundStream: foregroundController.stream,
+  );
+
+  // initialize() subscribes to the controller's stream synchronously
+  // (no await before the .listen call), so it is safe to register the
+  // ref.listen below afterwards — fireImmediately will reach the
+  // service's subscriber.
+  service.initialize().catchError((e) {
+    Log.error(
+      'Failed to initialize OutgoingDmRetryService',
+      name: 'AppProviders',
+      error: e,
+    );
+  });
+
+  ref.listen<bool>(
+    appForegroundProvider,
+    (_, next) {
+      if (!foregroundController.isClosed) {
+        foregroundController.add(next);
+      }
+    },
+    fireImmediately: true,
+  );
 
   ref.onDispose(service.dispose);
   return service;
@@ -1074,7 +1173,7 @@ final cawgVerifierBaseUriProvider = Provider<Uri>((ref) {
   return Uri.parse(
     const String.fromEnvironment(
       'CAWG_VERIFIER_BASE_URL',
-      defaultValue: 'https://verifier.divine.video',
+      defaultValue: 'https://verifyer.divine.video',
     ),
   );
 });
@@ -1415,6 +1514,10 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
             'pendingActions',
             () => db.pendingActionsDao.clearAll(userPubkey),
           );
+          await safeDelete(
+            'outgoingDms',
+            () => db.outgoingDmsDao.clearAllForUser(userPubkey),
+          );
         }
       };
 
@@ -1749,6 +1852,23 @@ ProfileRepository? profileRepository(Ref ref) {
   return repo;
 }
 
+/// Provider for [VerifierClient] pointed at the current environment's
+/// verifier base URL. Stateless — every call hits the network.
+@Riverpod(keepAlive: true)
+VerifierClient verifierClient(Ref ref) {
+  final env = ref.watch(currentEnvironmentProvider);
+  return VerifierClient(baseUrl: env.verifierBaseUrl);
+}
+
+/// Provider for [IdentityClaimsRepository] composing the verifier client
+/// with NIP-39 i tag parsing.
+@Riverpod(keepAlive: true)
+IdentityClaimsRepository identityClaimsRepository(Ref ref) {
+  return IdentityClaimsRepository(
+    verifierClient: ref.watch(verifierClientProvider),
+  );
+}
+
 /// Enhanced notification service with Nostr integration (lazy loaded)
 @riverpod
 NotificationServiceEnhanced notificationServiceEnhanced(Ref ref) {
@@ -1977,10 +2097,12 @@ Future<ContentReportingService> contentReportingService(Ref ref) async {
   final nostrService = ref.watch(nostrServiceProvider);
   final authService = ref.watch(authServiceProvider);
   final prefs = ref.watch(sharedPreferencesProvider);
+  final env = ref.watch(currentEnvironmentProvider);
   final service = ContentReportingService(
     nostrService: nostrService,
     authService: authService,
     prefs: prefs,
+    moderationRelayUrl: env.relayUrl,
   );
 
   // Initialize the service to enable reporting
@@ -2269,6 +2391,7 @@ DmRepository dmRepository(Ref ref) {
     nostrClient: nostrService,
     directMessagesDao: db.directMessagesDao,
     conversationsDao: db.conversationsDao,
+    outgoingDmsDao: db.outgoingDmsDao,
     syncState: DmSyncState(prefs),
   );
 

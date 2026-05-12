@@ -542,12 +542,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileErrorLoadingReposts => 'እንደገና የተለጠፉ ቪዲዮዎችን መጫን ላይ ስህተት';
 
   @override
-  String get profileLoadingTitle => 'መገለጫን በመጫን ላይ...';
-
-  @override
-  String get profileLoadingSubtitle => 'ይሄ ጥቂት ጊዜ ሊወስድ ይችላል።';
-
-  @override
   String get profileLoadingVideos => 'ቪዲዮዎችን በመጫን ላይ...';
 
   @override
@@ -750,9 +744,8 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileSetupGotItButton => 'ገባኝ';
 
   @override
-  String profileSetupUploadFailedGeneric(Object error) {
-    return 'ምስል መስቀል አልተሳካም። ቆይተህ እንደገና ሞክር።';
-  }
+  String get profileSetupUploadFailedGeneric =>
+      'ምስል መስቀል አልተሳካም። ቆይተህ እንደገና ሞክር።';
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -858,6 +851,39 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get profileSetupExternalNip05DivineDomain =>
       'ለdivine.video ከላይ ያለውን የተጠቃሚ ስም መስክ ይጠቀሙ';
+
+  @override
+  String get nostrSettingsNip05Address => 'NIP-05 address';
+
+  @override
+  String get nostrSettingsNip05AddressSubtitle =>
+      'Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.';
+
+  @override
+  String get nostrSettingsNip05AddressHint => 'you@example.com';
+
+  @override
+  String get nostrSettingsNip05SaveAction => 'Save NIP-05';
+
+  @override
+  String get nostrSettingsNip05Saved => 'NIP-05 saved';
+
+  @override
+  String get nostrSettingsNip05SaveFailed =>
+      'Couldn\'t save NIP-05. Please try again.';
+
+  @override
+  String get profileSetupNip05ConfirmTitle => 'Use your own NIP-05?';
+
+  @override
+  String get profileSetupNip05ConfirmBody =>
+      'NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it\'s wrong, people can\'t find you and your verified handle disappears. Continue only if you\'ve set this up.';
+
+  @override
+  String get profileSetupNip05ConfirmContinue => 'Continue';
+
+  @override
+  String get profileSetupNip05ConfirmCancel => 'Cancel';
 
   @override
   String get profileSetupProfilePicturePreview => 'የመገለጫ ስዕል ቅድመ እይታ';
@@ -1062,6 +1088,21 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoPlayerEditVideoTooltip => 'ቪዲዮን ያርትዑ';
+
+  @override
+  String get videoPlayerTapHint => 'ለማጫወት ወይም ለማቆም ይንኩ። ለመውደድ ሁለት ጊዜ ይንኩ።';
+
+  @override
+  String get videoSettingsMenuOpen => 'የመልሶ ማጫወቻ ቅንብሮችን ክፈት';
+
+  @override
+  String get videoSettingsMenuClose => 'የመልሶ ማጫወቻ ቅንብሮችን ዝጋ';
+
+  @override
+  String get videoSettingsCaptionsEnable => 'መግለጫ ጽሑፎችን አንቃ';
+
+  @override
+  String get videoSettingsCaptionsDisable => 'መግለጫ ጽሑፎችን አሰናክል';
 
   @override
   String get contentWarningLabel => 'የይዘት ማስጠንቀቂያ';
@@ -1287,6 +1328,22 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String get videoCollaboratorPendingDecoration => 'Pending';
+
+  @override
+  String get videoCollaboratorPendingSemanticLabel => 'Pending collaborator';
+
+  @override
+  String videoCollaboratorWithPendingSuffix(String label, int pending) {
+    return '$label ($pending pending)';
+  }
+
+  @override
+  String profileChipTapHint(String name) {
+    return '$name. Tap to view profile.';
+  }
+
+  @override
   String get listAttributionFallback => 'ዝርዝር';
 
   @override
@@ -1363,6 +1420,18 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoActionShareLabel => 'አጋራ';
 
   @override
+  String get videoActionReportLabel => 'ሪፖርት';
+
+  @override
+  String get videoActionReport => 'ቪዲዮውን ሪፖርት አድርግ';
+
+  @override
+  String get videoActionEditLabel => 'አርትዕ';
+
+  @override
+  String get videoActionEdit => 'ቪዲዮውን አርትዕ';
+
+  @override
   String get videoActionAboutLabel => 'ስለ';
 
   @override
@@ -1388,6 +1457,21 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoActionShowSubtitles => 'የትርጉም ጽሑፎችን አሳይ';
+
+  @override
+  String get videoEngagementLikersTitle => 'የወደዱት';
+
+  @override
+  String get videoEngagementRepostersTitle => 'እንደገና ያጋሩት';
+
+  @override
+  String get videoEngagementLikersEmpty => 'እስካሁን ምንም ምልክት የለም';
+
+  @override
+  String get videoEngagementRepostersEmpty => 'እስካሁን ምንም ድጋሚ ጋራ የለም';
+
+  @override
+  String get videoEngagementLoadFailed => 'ዝርዝሩን መጫን አልተቻለም';
 
   @override
   String get videoOverlayOpenMetadataFromTitle => 'የቪዲዮ ዝርዝሮችን ይክፈቱ';
@@ -3704,32 +3788,32 @@ class AppLocalizationsAm extends AppLocalizations {
   String get soundsNoSoundsFoundDescription => 'የተለየ የፍለጋ ቃል ይሞክሩ';
 
   @override
-  String get soundsSavedToLibrary => 'Saved to Sounds';
+  String get soundsSavedToLibrary => 'ወደ ድምፆች ተቀመጠ';
 
   @override
-  String get soundsAlreadySavedToLibrary => 'Already in Sounds';
+  String get soundsAlreadySavedToLibrary => 'ቀድሞውኑ በድምፆች ውስጥ';
 
   @override
-  String get soundsSavedLibraryTitle => 'My Sounds';
+  String get soundsSavedLibraryTitle => 'የእኔ ድምፆች';
 
   @override
-  String get soundsSavedEmptyTitle => 'No saved sounds yet';
+  String get soundsSavedEmptyTitle => 'ገና የተቀመጠ ድምፅ የለም';
 
   @override
   String get soundsSavedEmptyDescription =>
-      'Tap Use Sound on a video to save it here.';
+      'ድምፅን እዚህ ለማስቀመጥ በቪዲዮ ላይ ድምፅ ተጠቀም የሚለውን ይንኩ።';
 
   @override
-  String get soundsAvailabilityPrivate => 'Private';
+  String get soundsAvailabilityPrivate => 'የግል';
 
   @override
-  String get soundsAvailabilityCommunity => 'Community';
+  String get soundsAvailabilityCommunity => 'ማህበረሰብ';
 
   @override
-  String get soundsRemoveSavedSound => 'Remove sound';
+  String get soundsRemoveSavedSound => 'ድምፁን አስወግድ';
 
   @override
-  String get soundsRemovedFromLibrary => 'Removed from Sounds';
+  String get soundsRemovedFromLibrary => 'ከድምፆች ተወገደ';
 
   @override
   String get soundsFailedToLoad => 'ድምጾችን መጫን አልተሳካም።';
@@ -3819,6 +3903,14 @@ class AppLocalizationsAm extends AppLocalizations {
   String get notificationsViewProfilesSemanticLabel => 'መገለጫዎችን ይመልከቱ';
 
   @override
+  String notificationsVideoThumbnailFor(String title) {
+    return 'የ$title ቪዲዮ ድንክዬ';
+  }
+
+  @override
+  String get notificationsVideoThumbnail => 'የቪዲዮ ድንክዬ';
+
+  @override
   String notificationsLoadingType(String type) {
     return '$type ማሳወቂያዎችን በመጫን ላይ...';
   }
@@ -3849,6 +3941,28 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get feedNoFollowedUsers =>
       'ምንም የተከተሉት ተጠቃሚዎች የሉም።\nቪዲዮዎቻቸውን እዚህ ለማየት አንድ ሰው ይከተሉ።';
+
+  @override
+  String get feedModeForYou => 'ለእርስዎ';
+
+  @override
+  String get feedModeNew => 'አዲስ';
+
+  @override
+  String get feedModeFollowing => 'እየተከተሉ';
+
+  @override
+  String feedModeSemanticLabel(String label) {
+    return 'የፊድ ሁነታ: $label';
+  }
+
+  @override
+  String videoAuthorSemanticLabel(String displayName) {
+    return 'የቪድዮ ፈጣሪ: $displayName';
+  }
+
+  @override
+  String get videoAuthorAvatarSemanticLabel => 'የፈጣሪ ፎቶ';
 
   @override
   String get feedForYouEmpty =>
@@ -4139,6 +4253,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get routeInvalidProfileId => 'ልክ ያልሆነ የመገለጫ መታወቂያ';
 
   @override
+  String get routeUnknownPath => 'ያ ገጽ በመተግበሪያው ውስጥ የለም።';
+
+  @override
   String get routeDefaultListName => 'ዝርዝር';
 
   @override
@@ -4188,6 +4305,14 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get supportExportLogsFailed => 'ምዝግብ ማስታወሻዎችን ወደ ውጭ መላክ አልተሳካም።';
+
+  @override
+  String supportLogsSavedTo(String path) {
+    return 'ምዝግቦች ተቀምጠዋል በ $path';
+  }
+
+  @override
+  String get supportRevealLogsAction => 'በአቃፊ ውስጥ አሳይ';
 
   @override
   String get supportChatNotAvailable => 'የድጋፍ ውይይት አይገኝም';
@@ -4240,28 +4365,55 @@ class AppLocalizationsAm extends AppLocalizations {
   String get reportReasonSpam => 'አይፈለጌ መልእክት ወይም የማይፈለግ ይዘት';
 
   @override
+  String get reportReasonSpamSubtitle => 'ያልተፈለገ ወይም ተደጋጋሚ ይዘት';
+
+  @override
   String get reportReasonHarassment => 'ማስፈራራት፣ ማስፈራራት ወይም ማስፈራራት';
+
+  @override
+  String get reportReasonHarassmentSubtitle => 'ጎጂ እና ያልተፈለጉ መልሶች ወይም ጥቅሶች';
 
   @override
   String get reportReasonViolence => 'የጥቃት ወይም ጽንፈኛ ይዘት';
 
   @override
+  String get reportReasonViolenceSubtitle => 'ጥቃት፣ ጽንፈኛ፣ ወይም ጎጂ ይዘት';
+
+  @override
   String get reportReasonSexualContent => 'ወሲባዊ ወይም የአዋቂ ይዘት';
+
+  @override
+  String get reportReasonSexualContentSubtitle => 'እርቃንነት፣ ወሲባዊ፣ ወይም ግልጽ ይዘት';
 
   @override
   String get reportReasonCopyright => 'የቅጂ መብት ጥሰት';
 
   @override
+  String get reportReasonCopyrightSubtitle => 'የአዕምሯዊ ንብረትን ሳይፈቀድ መጠቀም';
+
+  @override
   String get reportReasonFalseInfo => 'የውሸት መረጃ';
+
+  @override
+  String get reportReasonFalseInfoSubtitle => 'አሳሳች ወይም የውሸት ማስታወቂያዎች';
 
   @override
   String get reportReasonCsam => 'የልጅ ደህንነት ጥሰት';
 
   @override
+  String get reportReasonCsamSubtitle => 'ህፃናትን የሚበዘብዝ ወይም አደጋ ላይ የሚጥል ይዘት';
+
+  @override
   String get reportReasonAiGenerated => 'በAI የተፈጠረ ይዘት';
 
   @override
+  String get reportReasonAiGeneratedSubtitle => 'AI የመነጨ ሊሆን የሚችል ይዘት';
+
+  @override
   String get reportReasonOther => 'ሌላ የፖሊሲ ጥሰት';
+
+  @override
+  String get reportReasonOtherSubtitle => 'ከላይ ያልተዘረዘሩ ጥሰቶች';
 
   @override
   String reportFailed(Object error) {
@@ -4280,6 +4432,9 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get reportLearnMore => 'የበለጠ ተማር';
+
+  @override
+  String get reportLearnMoreAt => 'የበለጠ ይወቁ በ';
 
   @override
   String get reportSafetyUrl => 'divine.video/safety';
@@ -4922,7 +5077,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get categoryWrestling => 'ትግል';
 
   @override
-  String get profileSetupUploadSuccess => 'የመገለጫ ስዕል በተሳካ ሁኔታ ተሰቅሏል!';
+  String get profileSetupUploadStaged => 'ተሰቅሏል — ለመተግበር አስቀምጥን ጠቅ ያድርጉ';
 
   @override
   String inboxReportedUser(String displayName) {
@@ -4995,6 +5150,23 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String get inboxCollabInviteCardUntitledVideo => 'ርዕስ የሌለው ቪዲዮ';
+
+  @override
+  String get clickableTextViewVideoLink => 'ቪዲዮውን ይመልከቱ';
+
+  @override
+  String get messageExternalLinkDialogTitle => 'ውጫዊ ሊንክ ይክፈቱ?';
+
+  @override
+  String messageExternalLinkDialogBody(String url) {
+    return 'ይህ ሊንክ ወደ ውጫዊ ድረ-ገጽ ይሄዳል እና ደህንነቱ አልተረጋገጠም:\n\n$url';
+  }
+
+  @override
+  String get messageExternalLinkDialogOpen => 'ክፈት';
+
+  @override
   String get inboxCollabInviteAcceptButton => 'ተቀበል';
 
   @override
@@ -5024,6 +5196,18 @@ class AppLocalizationsAm extends AppLocalizations {
   String collaboratorInviteDmBodyUntitled(String url) {
     return 'በቪዲዮ ላይ እንድትተባበር ተጋብዘሃል፦ $url\n\nOpen diVine to review and accept.';
   }
+
+  @override
+  String get dmSendFailedMessage => 'መልዕክቱ መላክ አልተሳካም';
+
+  @override
+  String get dmSendFailedRetry => 'እንደገና ይሞክሩ';
+
+  @override
+  String get dmSendPartialMessage => 'ተልኳል፣ ግን ወደ ሌሎች መሣሪያዎች አልተመሳሰለም';
+
+  @override
+  String get dmConversationLoadError => 'መልዕክቶችን መጫን አልተቻለም';
 
   @override
   String get reportDialogCancel => 'ሰርዝ';
@@ -5417,6 +5601,21 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get bugReportSuccessMessage =>
       'እናመሰግናለን! ሪፖርትዎን ተቀብለናል፣ Divineን ለማሻሻል እንጠቀምበታለን።';
+
+  @override
+  String get bugReportAttachImages => 'Attach images';
+
+  @override
+  String bugReportImagesCount(int count, int max) {
+    return '$count of $max images selected';
+  }
+
+  @override
+  String get bugReportRemoveImage => 'Remove image';
+
+  @override
+  String get bugReportUploadFailed =>
+      'We couldn\'t upload the selected image. Try again or send the report without it.';
 
   @override
   String get bugReportSendFailed => 'የሳንካ ሪፖርት መላክ አልተሳካም። እባክዎ ቆይተው ይሞክሩ።';
@@ -6284,6 +6483,23 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorSplitSelectedClipSemanticLabel => 'የተመረጠውን ቅንጥብ ክፈል።';
 
   @override
+  String get videoEditorExtractAudioLabel => 'ኦዲዮ ያውጡ';
+
+  @override
+  String get videoEditorClipAudioTitle => 'ክሊፕ ኦዲዮ';
+
+  @override
+  String get videoEditorExtractAudioFromClipSemanticLabel =>
+      'ከቅንጥብ ኦዲዮ ያውጡ እና ኦሪጅናሉን ያጥፉ';
+
+  @override
+  String get videoEditorExtractAudioNoLocalFile =>
+      'ድምፅ ማዎጣት አልተቻለም፤ ቅንጥቡ በሀገር ዉስጥ አይገኝም።';
+
+  @override
+  String get videoEditorExtractAudioFailed => 'ድምፅ ማዎጣት አልተቻለም። እንደገና ሞክር።';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'የጊዜ መስመር አርትዖትን ጨርስ';
 
@@ -6322,18 +6538,17 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorAudioCategoryCommunity => 'ማህበረሰብ';
 
   @override
-  String get videoEditorAudioCategoryFeatured => 'Featured';
+  String get videoEditorAudioCategoryFeatured => 'ተለይቶ የቀረበ';
 
   @override
-  String get videoEditorAudioCategoryMySounds => 'My Sounds';
+  String get videoEditorAudioCategoryMySounds => 'የእኔ ድምፆች';
 
   @override
-  String get videoEditorAudioFeaturedEmptyTitle =>
-      'Featured sounds coming soon';
+  String get videoEditorAudioFeaturedEmptyTitle => 'ተለይተው የቀረቡ ድምፆች በቅርቡ';
 
   @override
   String get videoEditorAudioFeaturedEmptySubtitle =>
-      'We’ll drop featured sounds here once they’re ready.';
+      'ዝግጁ ሲሆኑ ተለይተው የቀረቡ ድምፆችን እዚህ እናስቀምጣለን።';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => 'የቀስት መሣሪያ';
@@ -6519,11 +6734,11 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoMetadataContentWarningDoneButton => 'ተከናውኗል';
 
   @override
-  String get videoMetadataAudioReuseTitle => 'Publish this sound';
+  String get videoMetadataAudioReuseTitle => 'ይህን ድምፅ አሳትም';
 
   @override
   String get videoMetadataAudioReuseSubtitle =>
-      'Let others save and reuse this video\'s audio.';
+      'ሌሎች የዚህን ቪዲዮ ድምፅ እንዲያስቀምጡ እና እንደገና እንዲጠቀሙ ፍቀድ።';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'ተባባሪዎች';
@@ -6613,6 +6828,13 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoMetadataPublishVideoHint => 'ለመመገብ ቪዲዮ ያትሙ';
 
   @override
+  String get videoMetadataShareReplyToFeedTitle => 'በፊዴ ላይም አጋራ';
+
+  @override
+  String get videoMetadataShareReplyToFeedSubtitle =>
+      'ሲጠፋ ይህ ቪዲዮ በአስተያየት ክር ውስጥ ብቻ ይቀራል።';
+
+  @override
   String get videoMetadataFormNotReadyHint => 'ለማንቃት ቅጹን ይሙሉ';
 
   @override
@@ -6641,16 +6863,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoMetadataRemoveSemanticLabel => 'አስወግድ';
-
-  @override
-  String get metadataCaptionsLabel => 'መግለጫ ጽሑፎች';
-
-  @override
-  String get metadataCaptionsEnabledSemantics => 'መግለጫ ጽሑፎች ለሁሉም ቪዲዮዎች ነቅተዋል።';
-
-  @override
-  String get metadataCaptionsDisabledSemantics =>
-      'መግለጫ ጽሑፎች ለሁሉም ቪዲዮዎች ተሰናክለዋል።';
 
   @override
   String get fullscreenFeedRemovedMessage => 'ቪዲዮ ተወግዷል';
@@ -6721,6 +6933,47 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get badgesRecipientWaitingStatus => 'ተቀባይን በመጠባበቅ ላይ';
+
+  @override
+  String get commentsRecordVideoButtonLabel => 'የቪዲዮ አስተያየት ቅረጽ';
+
+  @override
+  String get commentsOpenVideoLabel => 'የቪዲዮ አስተያየት ክፈት';
+
+  @override
+  String get commentsMuteVideoReplyLabel => 'የቪዲዮ ምላሽን ዝም አድርግ';
+
+  @override
+  String get commentsUnmuteVideoReplyLabel => 'የቪዲዮ ምላሽን ድምጽ አስጀምር';
+
+  @override
+  String get commentsOpenReplyParentLabel => 'ይህ የሚመልስበትን ቪዲዮ ክፈት';
+
+  @override
+  String get commentsReplyParentSectionTitle => 'ምላሽ ለ';
+
+  @override
+  String commentsReplyParentLabel(String target) {
+    return 'ምላሽ ለ $target';
+  }
+
+  @override
+  String get commentsReplyParentFallbackLabel => 'ምላሽ ለ ቪዲዮ';
+
+  @override
+  String verifiedAccountChipSemanticLabel(String platform, String identity) {
+    return 'የተረጋገጠ $platform መለያ: $identity';
+  }
+
+  @override
+  String get profileEditVerifiedAccountsTitle => 'የተረጋገጡ መለያዎች';
+
+  @override
+  String get profileEditGetVerifiedCta => 'ተረጋግጥ';
+
+  @override
+  String get profileEditGetVerifiedSubtitle =>
+      'ሰዎች በእርግጥ አንተ መሆንህን እንዲያውቁ የማህበራዊ ሚዲያ መለያዎችህን አገናኝ።';
 
   @override
   String get videoMetadataEditCoverTitle => 'Edit cover';

@@ -171,3 +171,22 @@ class ClipEditorTrimDragEnded extends ClipEditorEvent {
   @override
   List<Object?> get props => [];
 }
+
+// === AUDIO EXTRACTION ===
+
+/// Request audio extraction for the currently selected clip.
+///
+/// The bloc handles the async service call, mutes the clip, and emits a
+/// [ClipAudioExtractionResult] one-shot signal for the widget layer to
+/// write history and surface errors.
+///
+/// [clipTitle] is the l10n-resolved title forwarded to the created
+/// [AudioEvent] so the bloc stays free of Flutter/UI dependencies.
+class ClipEditorAudioExtractionRequested extends ClipEditorEvent {
+  const ClipEditorAudioExtractionRequested({required this.clipTitle});
+
+  final String clipTitle;
+
+  @override
+  List<Object?> get props => [clipTitle];
+}

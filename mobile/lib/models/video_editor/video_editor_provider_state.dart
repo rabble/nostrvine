@@ -22,6 +22,7 @@ class VideoEditorProviderState {
     this.isSavingDraft = false,
     this.isAutosavedDraft = true,
     this.allowAudioReuse = false,
+    this.shareReplyToFeed = false,
     this.title = '',
     this.description = '',
     this.tags = const {},
@@ -66,6 +67,12 @@ class VideoEditorProviderState {
 
   /// Whether the audio from the original video can be reused in other videos.
   final bool allowAudioReuse;
+
+  /// Whether a video reply should also be eligible for normal feed display.
+  ///
+  /// The recording is still a single NIP-71 event with reply tags; this only
+  /// controls the app-specific visibility marker on that event.
+  final bool shareReplyToFeed;
 
   /// Expiration setting determining when the video post expires.
   final VideoMetadataExpiration expiration;
@@ -139,6 +146,7 @@ class VideoEditorProviderState {
     bool? isSavingDraft,
     bool? isAutosavedDraft,
     bool? allowAudioReuse,
+    bool? shareReplyToFeed,
     GlobalKey? deleteButtonKey,
     String? title,
     String? description,
@@ -169,6 +177,7 @@ class VideoEditorProviderState {
       isSavingDraft: isSavingDraft ?? this.isSavingDraft,
       isAutosavedDraft: isAutosavedDraft ?? this.isAutosavedDraft,
       allowAudioReuse: allowAudioReuse ?? this.allowAudioReuse,
+      shareReplyToFeed: shareReplyToFeed ?? this.shareReplyToFeed,
       deleteButtonKey: deleteButtonKey ?? this.deleteButtonKey,
       title: title ?? this.title,
       description: description ?? this.description,

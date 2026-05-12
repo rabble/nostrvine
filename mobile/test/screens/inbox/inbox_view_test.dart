@@ -11,10 +11,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
+import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
+import 'package:openvine/blocs/notifications/badge/notification_badge_cubit.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
-import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/inbox_view.dart';
@@ -39,30 +40,11 @@ class _MockMyFollowingBloc extends MockBloc<MyFollowingEvent, MyFollowingState>
 class _MockInviteStatusCubit extends MockCubit<InviteStatusState>
     implements InviteStatusCubit {}
 
-/// Minimal mock so the legacy RelayNotifications provider (still used for
-/// unread-count) does not start real timers or HTTP calls.
-class _MockRelayNotifications extends RelayNotifications {
-  @override
-  Future<NotificationFeedState> build() async {
-    return NotificationFeedState(
-      notifications: const [],
-      isInitialLoad: false,
-      lastUpdated: DateTime.now(),
-    );
-  }
+class _MockDmUnreadCountCubit extends MockCubit<int>
+    implements DmUnreadCountCubit {}
 
-  @override
-  Future<void> markAsRead(String notificationId) async {}
-
-  @override
-  Future<void> markAllAsRead() async {}
-
-  @override
-  Future<void> loadMore() async {}
-
-  @override
-  Future<void> refresh() async {}
-}
+class _MockNotificationBadgeCubit extends MockCubit<int>
+    implements NotificationBadgeCubit {}
 
 class _MockAuthService extends MockAuthService {
   _MockAuthService(this._pubkey) {
@@ -106,7 +88,11 @@ void main() {
       );
     });
 
-    Widget buildSubject({ConversationListState? state}) {
+    Widget buildSubject({
+      ConversationListState? state,
+      int dmUnreadCount = 0,
+      int notificationUnreadCount = 0,
+    }) {
       if (state != null) {
         whenListen(
           mockBloc,
@@ -125,11 +111,25 @@ void main() {
       when(() => mockInviteCubit.state).thenReturn(const InviteStatusState());
       when(mockInviteCubit.load).thenAnswer((_) async {});
 
+      final mockDmUnreadCubit = _MockDmUnreadCountCubit();
+      when(() => mockDmUnreadCubit.state).thenReturn(dmUnreadCount);
+      whenListen(
+        mockDmUnreadCubit,
+        const Stream<int>.empty(),
+        initialState: dmUnreadCount,
+      );
+
+      final mockNotifBadgeCubit = _MockNotificationBadgeCubit();
+      when(() => mockNotifBadgeCubit.state).thenReturn(notificationUnreadCount);
+      whenListen(
+        mockNotifBadgeCubit,
+        const Stream<int>.empty(),
+        initialState: notificationUnreadCount,
+      );
+
       return testMaterialApp(
         mockAuthService: mockAuthService,
         additionalOverrides: [
-          relayNotificationUnreadCountProvider.overrideWithValue(0),
-          relayNotificationsProvider.overrideWith(_MockRelayNotifications.new),
           notificationRepositoryProvider.overrideWithValue(null),
           goRouterProvider.overrideWithValue(mockGoRouter),
         ],
@@ -140,6 +140,10 @@ void main() {
               BlocProvider<ConversationListBloc>.value(value: mockBloc),
               BlocProvider<MyFollowingBloc>.value(value: mockFollowingBloc),
               BlocProvider<InviteStatusCubit>.value(value: mockInviteCubit),
+              BlocProvider<DmUnreadCountCubit>.value(value: mockDmUnreadCubit),
+              BlocProvider<NotificationBadgeCubit>.value(
+                value: mockNotifBadgeCubit,
+              ),
             ],
             child: const InboxView(),
           ),
@@ -154,6 +158,34 @@ void main() {
 
         expect(find.byType(InboxSegmentedToggle), findsOneWidget);
       });
+
+      testWidgets(
+        'forwards DmUnreadCountCubit state to '
+        '$InboxSegmentedToggle.messageCount',
+        (tester) async {
+          await tester.pumpWidget(buildSubject(dmUnreadCount: 5));
+          await tester.pump();
+
+          final toggle = tester.widget<InboxSegmentedToggle>(
+            find.byType(InboxSegmentedToggle),
+          );
+          expect(toggle.messageCount, equals(5));
+        },
+      );
+
+      testWidgets(
+        'forwards NotificationBadgeCubit state to '
+        '$InboxSegmentedToggle.notificationCount',
+        (tester) async {
+          await tester.pumpWidget(buildSubject(notificationUnreadCount: 7));
+          await tester.pump();
+
+          final toggle = tester.widget<InboxSegmentedToggle>(
+            find.byType(InboxSegmentedToggle),
+          );
+          expect(toggle.notificationCount, equals(7));
+        },
+      );
 
       testWidgets('renders $FollowingBar in messages tab', (tester) async {
         await tester.pumpWidget(buildSubject());

@@ -40,7 +40,7 @@ final notificationRepositoryProvider = Provider<NotificationRepository?>((ref) {
   final userPubkey = authService.currentPublicKeyHex ?? '';
 
   final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
-  return NotificationRepository(
+  final repository = NotificationRepository(
     funnelcakeApiClient: funnelcakeApiClient,
     profileRepository: profileRepository,
     notificationsDao: db.notificationsDao,
@@ -62,4 +62,11 @@ final notificationRepositoryProvider = Provider<NotificationRepository?>((ref) {
       return {'Authorization': token.authorizationHeader};
     },
   );
+  // Close the internal BehaviorSubject when this provider rebuilds or the
+  // container disposes (e.g. auth flip, account switch). By the time this
+  // fires, dependent consumers (feed bloc, badge cubit, realtime bridge)
+  // have already cancelled their watchSnapshot subscriptions because
+  // their own providers / BlocProviders re-key on repository identity.
+  ref.onDispose(repository.close);
+  return repository;
 });

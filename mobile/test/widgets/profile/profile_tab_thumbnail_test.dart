@@ -99,6 +99,29 @@ void main() {
         expect(image.fadeInDuration, equals(Duration.zero));
         expect(image.fadeOutDuration, equals(Duration.zero));
       });
+
+      // memCacheWidth = tile_width × DPR caps decoded size; memCacheHeight
+      // stays null so portrait thumbnails decode proportionally and
+      // BoxFit.cover crops without upscaling. See PR #4220 (#4190).
+      testWidgets(
+        '$VineCachedImage memCacheWidth matches tile width × devicePixelRatio '
+        'and memCacheHeight is null',
+        (tester) async {
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.resetDevicePixelRatio);
+
+          await tester.pumpWidget(
+            buildSubject(thumbnailUrl: 'https://example.com/thumb.jpg'),
+          );
+
+          final image = tester.widget<VineCachedImage>(
+            find.byType(VineCachedImage),
+          );
+          // SizedBox is 100×100 and DPR is pinned to 1, so width = 100.
+          expect(image.memCacheWidth, equals(100));
+          expect(image.memCacheHeight, isNull);
+        },
+      );
     });
 
     group('blurhash fallback', () {

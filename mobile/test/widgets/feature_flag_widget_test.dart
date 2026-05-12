@@ -167,10 +167,6 @@ void main() {
       // Set up different states for different flags
       when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
       when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
-      when(() => mockPrefs.getBool('ff_enhancedVideoPlayer')).thenReturn(false);
-      when(
-        () => mockPrefs.containsKey('ff_enhancedVideoPlayer'),
-      ).thenReturn(true);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -186,9 +182,9 @@ void main() {
                   child: Text('Camera UI Enabled'),
                 ),
                 FeatureFlagWidget(
-                  flag: FeatureFlag.enhancedVideoPlayer,
-                  disabled: Text('Video Player Disabled'),
-                  child: Text('Video Player Enabled'),
+                  flag: FeatureFlag.accountSwitching,
+                  disabled: Text('Account Switching Disabled'),
+                  child: Text('Account Switching Enabled'),
                 ),
               ],
             ),
@@ -207,8 +203,8 @@ void main() {
 
       expect(find.text('Camera UI Enabled'), findsOneWidget);
       expect(find.text('Camera UI Disabled'), findsNothing);
-      expect(find.text('Video Player Enabled'), findsNothing);
-      expect(find.text('Video Player Disabled'), findsOneWidget);
+      expect(find.text('Account Switching Enabled'), findsNothing);
+      expect(find.text('Account Switching Disabled'), findsOneWidget);
     });
 
     testWidgets('should handle loading state gracefully', (tester) async {

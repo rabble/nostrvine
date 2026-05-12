@@ -182,5 +182,216 @@ void main() {
         );
       });
     });
+
+    group('_getVideoFile (cached file fallback)', () {
+      test(
+        'returns cached file when extension is .mp4 and file exists',
+        () async {
+          final tempDir = await Directory.systemTemp.createTemp(
+            'watermark-ext-test',
+          );
+          final videoFile = File('${tempDir.path}/video.mp4');
+          await videoFile.writeAsBytes(const [1, 2, 3, 4]);
+          addTearDown(() async {
+            if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+          });
+
+          when(() => mockCache.getCachedFileSync(any())).thenReturn(videoFile);
+          when(
+            () => mockGallerySave.saveVideoToGallery(any()),
+          ).thenAnswer((_) async => const GallerySaveSuccess());
+
+          final result = await service.downloadOriginal(
+            video: _createTestVideo(),
+            onProgress: (_) {},
+          );
+
+          // File was used — gallery save was called
+          verify(() => mockGallerySave.saveVideoToGallery(any())).called(1);
+          // removeCachedFile must NOT have been called
+          verifyNever(() => mockCache.removeCachedFile(any()));
+          expect(result, isA<WatermarkDownloadSuccess>());
+        },
+      );
+
+      test(
+        'evicts cache and re-downloads when cached file has .bin extension',
+        () async {
+          final tempDir = await Directory.systemTemp.createTemp(
+            'watermark-ext-test',
+          );
+          // Simulate stale download stored as .bin (seen in flutter_cache_manager
+          // when a previous download was interrupted without a Content-Type header)
+          final badFile = File('${tempDir.path}/video.bin');
+          await badFile.writeAsBytes(const [0, 0, 0, 0]);
+
+          final freshFile = File('${tempDir.path}/fresh.mp4');
+          await freshFile.writeAsBytes(const [1, 2, 3, 4]);
+
+          addTearDown(() async {
+            if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+          });
+
+          when(() => mockCache.getCachedFileSync(any())).thenReturn(badFile);
+          when(
+            () => mockCache.removeCachedFile(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockCache.cacheFile(any(), key: any(named: 'key')),
+          ).thenAnswer((_) async => freshFile);
+          when(
+            () => mockGallerySave.saveVideoToGallery(any()),
+          ).thenAnswer((_) async => const GallerySaveSuccess());
+
+          await service.downloadOriginal(
+            video: _createTestVideo(),
+            onProgress: (_) {},
+          );
+
+          verify(() => mockCache.removeCachedFile(any())).called(1);
+          verify(
+            () => mockCache.cacheFile(any(), key: any(named: 'key')),
+          ).called(1);
+        },
+      );
+
+      test('evicts cache when cached file has no extension', () async {
+        final tempDir = await Directory.systemTemp.createTemp(
+          'watermark-ext-test',
+        );
+        final badFile = File('${tempDir.path}/video');
+        await badFile.writeAsBytes(const [0, 0, 0, 0]);
+
+        addTearDown(() async {
+          if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+        });
+
+        when(() => mockCache.getCachedFileSync(any())).thenReturn(badFile);
+        when(() => mockCache.removeCachedFile(any())).thenAnswer((_) async {});
+        when(
+          () => mockCache.cacheFile(any(), key: any(named: 'key')),
+        ).thenAnswer((_) async => null);
+
+        final result = await service.downloadOriginal(
+          video: _createTestVideo(),
+          onProgress: (_) {},
+        );
+
+        verify(() => mockCache.removeCachedFile(any())).called(1);
+        expect(result, isA<WatermarkDownloadFailure>());
+      });
+
+      test(
+        'fresh download continues when invalid cache eviction fails',
+        () async {
+          final video = _createTestVideo();
+          final tempDir = await Directory.systemTemp.createTemp(
+            'watermark-ext-test',
+          );
+          final badFile = File('${tempDir.path}/video.bin');
+          await badFile.writeAsBytes(const [0, 0, 0, 0]);
+
+          final freshFile = File('${tempDir.path}/fresh.mp4');
+          await freshFile.writeAsBytes(const [1, 2, 3, 4]);
+
+          addTearDown(() async {
+            if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+          });
+
+          when(() => mockCache.getCachedFileSync(any())).thenReturn(badFile);
+          when(
+            () => mockCache.removeCachedFile(any()),
+          ).thenThrow(Exception('eviction failed'));
+          when(
+            () => mockCache.cacheFile(any(), key: any(named: 'key')),
+          ).thenAnswer((invocation) async {
+            final key = invocation.namedArguments[#key] as String;
+            return key == video.id ? badFile : freshFile;
+          });
+          when(
+            () => mockGallerySave.saveVideoToGallery(any()),
+          ).thenAnswer((_) async => const GallerySaveSuccess());
+
+          final result = await service.downloadOriginal(
+            video: video,
+            onProgress: (_) {},
+          );
+
+          verify(() => mockCache.removeCachedFile(any())).called(1);
+          final cacheKey =
+              verify(
+                    () => mockCache.cacheFile(
+                      any(),
+                      key: captureAny(named: 'key'),
+                    ),
+                  ).captured.single
+                  as String;
+          expect(cacheKey, isNot(video.id));
+          expect(cacheKey, startsWith('${video.id}-redownload-'));
+          final savedVideo =
+              verify(
+                    () => mockGallerySave.saveVideoToGallery(captureAny()),
+                  ).captured.single
+                  as EditorVideo;
+          expect(savedVideo.file!.path, freshFile.path);
+          expect(result, isA<WatermarkDownloadSuccess>());
+        },
+      );
+
+      test('accepts .mov cached files without eviction', () async {
+        final tempDir = await Directory.systemTemp.createTemp(
+          'watermark-ext-test',
+        );
+        final movFile = File('${tempDir.path}/video.mov');
+        await movFile.writeAsBytes(const [1, 2, 3, 4]);
+        addTearDown(() async {
+          if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+        });
+
+        when(() => mockCache.getCachedFileSync(any())).thenReturn(movFile);
+        when(
+          () => mockGallerySave.saveVideoToGallery(any()),
+        ).thenAnswer((_) async => const GallerySaveSuccess());
+
+        await service.downloadOriginal(
+          video: _createTestVideo(),
+          onProgress: (_) {},
+        );
+
+        verifyNever(() => mockCache.removeCachedFile(any()));
+      });
+
+      test(
+        'falls back to fresh download when getCachedFileSync returns null',
+        () async {
+          final tempDir = await Directory.systemTemp.createTemp(
+            'watermark-ext-test',
+          );
+          final freshFile = File('${tempDir.path}/fresh.mp4');
+          await freshFile.writeAsBytes(const [1, 2, 3, 4]);
+          addTearDown(() async {
+            if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+          });
+
+          when(() => mockCache.getCachedFileSync(any())).thenReturn(null);
+          when(
+            () => mockCache.cacheFile(any(), key: any(named: 'key')),
+          ).thenAnswer((_) async => freshFile);
+          when(
+            () => mockGallerySave.saveVideoToGallery(any()),
+          ).thenAnswer((_) async => const GallerySaveSuccess());
+
+          final result = await service.downloadOriginal(
+            video: _createTestVideo(),
+            onProgress: (_) {},
+          );
+
+          verify(
+            () => mockCache.cacheFile(any(), key: any(named: 'key')),
+          ).called(1);
+          expect(result, isA<WatermarkDownloadSuccess>());
+        },
+      );
+    });
   });
 }

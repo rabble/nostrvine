@@ -92,7 +92,8 @@ void main() {
       ).thenAnswer((_) async => mockEvent);
 
       when(() => mockNostrService.publishEvent(any())).thenAnswer(
-        (invocation) async => invocation.positionalArguments[0] as Event,
+        (invocation) async =>
+            PublishSuccess(event: invocation.positionalArguments[0] as Event),
       );
 
       // Act
@@ -141,7 +142,8 @@ void main() {
       ).thenAnswer((_) async => mockEvent);
 
       when(() => mockNostrService.publishEvent(any())).thenAnswer(
-        (invocation) async => invocation.positionalArguments[0] as Event,
+        (invocation) async =>
+            PublishSuccess(event: invocation.positionalArguments[0] as Event),
       );
 
       // Act
@@ -211,7 +213,8 @@ void main() {
       ).thenAnswer((_) async => mockEvent);
 
       when(() => mockNostrService.publishEvent(any())).thenAnswer(
-        (invocation) async => invocation.positionalArguments[0] as Event,
+        (invocation) async =>
+            PublishSuccess(event: invocation.positionalArguments[0] as Event),
       );
 
       // Mock profile repository to cache profile
@@ -335,7 +338,8 @@ void main() {
       ).thenAnswer((_) async => mockEvent2);
 
       when(() => mockNostrService.publishEvent(any())).thenAnswer(
-        (invocation) async => invocation.positionalArguments[0] as Event,
+        (invocation) async =>
+            PublishSuccess(event: invocation.positionalArguments[0] as Event),
       );
 
       // Act - simulate concurrent updates

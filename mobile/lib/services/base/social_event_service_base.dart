@@ -28,7 +28,7 @@ abstract class SocialEventServiceBase {
     // Publish to relays
     final sentEvent = await nostrService.publishEvent(event);
 
-    if (sentEvent == null) {
+    if (sentEvent is! PublishSuccess) {
       throw Exception('Failed to publish event to relays');
     }
 

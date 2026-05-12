@@ -5,11 +5,12 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:infinite_video_feed/infinite_video_feed.dart'
+    show VideoErrorType;
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
-import 'package:openvine/widgets/video_thumbnail_widget.dart';
-import 'package:pooled_video_player/pooled_video_player.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 
 /// Error overlay for videos playing through the pooled video player.
 ///
@@ -26,6 +27,8 @@ class PooledVideoErrorOverlay extends ConsumerWidget {
     required this.video,
     required this.onRetry,
     required this.errorType,
+    this.shouldPortraitExpand = true,
+    this.isSquare = false,
     super.key,
   });
 
@@ -33,16 +36,32 @@ class PooledVideoErrorOverlay extends ConsumerWidget {
   final VoidCallback onRetry;
   final VideoErrorType? errorType;
 
+  /// Mirrors `InfiniteVideoFeed.shouldPortraitExpand`. When `false`, the
+  /// thumbnail uses [BoxFit.contain] regardless of orientation so square
+  /// or letterboxed videos are not cropped.
+  final bool shouldPortraitExpand;
+
+  /// Whether the video is square (1:1). When `true` the thumbnail uses
+  /// [BoxFit.contain] to avoid stretching it across the full feed
+  /// viewport.
+  final bool isSquare;
+
+  BoxFit _resolveBoxFit() {
+    if (!shouldPortraitExpand) return BoxFit.contain;
+    return isSquare ? BoxFit.contain : BoxFit.cover;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final type = errorType ?? VideoErrorType.generic;
+    final shouldEnrichNotFoundWithModeration = type == VideoErrorType.notFound;
     final isDivineUrl = VideoModerationStatusService.shouldCheckModeration(
       video.videoUrl,
     );
 
     // For divine URLs, check moderation status to enrich 404/notFound
     // errors with moderation context.
-    final sha256 = isDivineUrl
+    final sha256 = isDivineUrl && shouldEnrichNotFoundWithModeration
         ? VideoModerationStatusService.resolveSha256(
             explicitSha256: video.sha256,
             videoUrl: video.videoUrl,
@@ -58,27 +77,46 @@ class PooledVideoErrorOverlay extends ConsumerWidget {
     );
     final isModerationRestricted =
         type == VideoErrorType.forbidden ||
-        (moderationStatus != null &&
+        (shouldEnrichNotFoundWithModeration &&
+            moderationStatus != null &&
             moderationStatus.isUnavailableDueToModeration);
 
-    final icon = type == VideoErrorType.ageRestricted
-        ? DivineIconName.lockSimple
-        : isModerationRestricted
-        ? DivineIconName.shieldCheck
-        : DivineIconName.warningCircle;
+    final DivineIconName icon = switch ((type, isModerationRestricted)) {
+      (VideoErrorType.ageRestricted, _) => DivineIconName.lockSimple,
+      (VideoErrorType.notFound, true) => DivineIconName.shieldCheck,
+      (VideoErrorType.notFound, false) => DivineIconName.warningCircle,
+      (_, true) => DivineIconName.shieldCheck,
+      _ => DivineIconName.warningCircle,
+    };
 
-    final message = type == VideoErrorType.ageRestricted
-        ? context.l10n.videoErrorAgeRestricted
-        : isModerationRestricted
-        ? context.l10n.videoErrorContentRestricted
-        : _userMessage(context, type);
+    final message = switch ((type, isModerationRestricted)) {
+      (VideoErrorType.ageRestricted, _) => context.l10n.videoErrorAgeRestricted,
+      (VideoErrorType.notFound, true) =>
+        context.l10n.videoErrorContentRestricted,
+      (VideoErrorType.notFound, false) => context.l10n.videoErrorNotFound,
+      (VideoErrorType.forbidden, _) => context.l10n.videoErrorContentRestricted,
+      (VideoErrorType.generic, _) => context.l10n.videoErrorPlayback,
+    };
 
     final showRetry = !isModerationRestricted;
 
     return Stack(
       fit: StackFit.expand,
       children: [
-        VideoThumbnailWidget(video: video),
+        ColoredBox(
+          color: VineTheme.backgroundColor,
+          child: video.thumbnailUrl != null && video.thumbnailUrl!.isNotEmpty
+              ? SizedBox.expand(
+                  child: VineCachedImage(
+                    imageUrl: video.thumbnailUrl!,
+                    fit: _resolveBoxFit(),
+                    fadeInDuration: Duration.zero,
+                    fadeOutDuration: Duration.zero,
+                    errorWidget: (_, _, _) => const SizedBox.shrink(),
+                  ),
+                )
+              : const SizedBox.expand(),
+        ),
         ColoredBox(
           color: VineTheme.scrim50,
           child: Center(
@@ -106,12 +144,4 @@ class PooledVideoErrorOverlay extends ConsumerWidget {
       ],
     );
   }
-
-  static String _userMessage(BuildContext context, VideoErrorType type) =>
-      switch (type) {
-        VideoErrorType.ageRestricted => context.l10n.videoErrorAgeRestricted,
-        VideoErrorType.forbidden => context.l10n.videoErrorContentRestricted,
-        VideoErrorType.notFound => context.l10n.videoErrorNotFound,
-        VideoErrorType.generic => context.l10n.videoErrorPlayback,
-      };
 }

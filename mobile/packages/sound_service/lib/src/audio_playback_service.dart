@@ -194,11 +194,10 @@ class AudioPlaybackService {
           name: 'AudioPlaybackService',
         );
       } else {
-        loadedDuration = await _audioPlayer.setUrl(url);
-        log(
-          'Loaded audio from URL: $url',
-          name: 'AudioPlaybackService',
+        loadedDuration = await _audioPlayer.setAudioSource(
+          _networkAudioSource(url),
         );
+        log('Loaded audio from URL: $url', name: 'AudioPlaybackService');
       }
 
       _lastSource = (type: _SourceType.url, value: url);
@@ -224,10 +223,7 @@ class AudioPlaybackService {
     _loadCompleter = Completer<void>();
     try {
       final loadedDuration = await _audioPlayer.setFilePath(filePath);
-      log(
-        'Loaded audio from file: $filePath',
-        name: 'AudioPlaybackService',
-      );
+      log('Loaded audio from file: $filePath', name: 'AudioPlaybackService');
       _lastSource = (type: _SourceType.file, value: filePath);
       return loadedDuration;
     } catch (e) {
@@ -252,24 +248,34 @@ class AudioPlaybackService {
     if (_isDisposed) return null;
     _loadCompleter = Completer<void>();
     try {
-      final UriAudioSource child;
-      if (config.isAsset) {
-        child = AudioSource.asset(config.uri);
-      } else if (config.isFile) {
-        child = AudioSource.file(config.uri);
-      } else {
-        child = AudioSource.uri(Uri.parse(config.uri));
-      }
-
       final AudioSource source;
-      if (config.isClipped) {
+      if (config.isAsset) {
+        final child = AudioSource.asset(config.uri);
+        source = config.isClipped
+            ? ClippingAudioSource(
+                child: child,
+                start: config.start,
+                end: config.end,
+              )
+            : child;
+      } else if (config.isFile) {
+        final child = AudioSource.file(config.uri);
+        source = config.isClipped
+            ? ClippingAudioSource(
+                child: child,
+                start: config.start,
+                end: config.end,
+              )
+            : child;
+      } else if (config.isClipped) {
+        final child = AudioSource.uri(Uri.parse(config.uri));
         source = ClippingAudioSource(
           child: child,
           start: config.start,
           end: config.end,
         );
       } else {
-        source = child;
+        source = _networkAudioSource(config.uri);
       }
 
       final loadedDuration = await _audioPlayer.setAudioSource(source);
@@ -290,6 +296,15 @@ class AudioPlaybackService {
       _loadCompleter?.complete();
       _loadCompleter = null;
     }
+  }
+
+  AudioSource _networkAudioSource(String uri) {
+    final parsedUri = Uri.parse(uri);
+    if (parsedUri.scheme == 'http' || parsedUri.scheme == 'https') {
+      return LockCachingAudioSource(parsedUri);
+    }
+
+    return AudioSource.uri(parsedUri);
   }
 
   /// Starts audio playback.
@@ -401,11 +416,7 @@ class AudioPlaybackService {
         name: 'AudioPlaybackService',
       );
     } catch (e) {
-      log(
-        'Failed to set volume: $e',
-        name: 'AudioPlaybackService',
-        level: 900,
-      );
+      log('Failed to set volume: $e', name: 'AudioPlaybackService', level: 900);
       rethrow;
     }
   }
@@ -527,10 +538,7 @@ class AudioPlaybackService {
         ),
       );
 
-      log(
-        'Reset audio session to default',
-        name: 'AudioPlaybackService',
-      );
+      log('Reset audio session to default', name: 'AudioPlaybackService');
     } on Exception catch (e) {
       log(
         'Failed to reset audio session: $e',
@@ -552,10 +560,7 @@ class AudioPlaybackService {
     await _headphonesConnectedSubject.close();
     await _audioPlayer.dispose();
 
-    log(
-      'AudioPlaybackService disposed',
-      name: 'AudioPlaybackService',
-    );
+    log('AudioPlaybackService disposed', name: 'AudioPlaybackService');
   }
 
   /// Returns `true` if the error is a transient "Loading interrupted" error

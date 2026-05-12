@@ -13,6 +13,8 @@ const _testRootEventId =
 const _testRootAuthorPubkey =
     'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
 
+bool _disabledVideoReplies() => false;
+
 void main() {
   group(ProfileCommentsBloc, () {
     late _MockCommentsRepository mockCommentsRepository;
@@ -21,10 +23,12 @@ void main() {
       mockCommentsRepository = _MockCommentsRepository();
     });
 
-    ProfileCommentsBloc createBloc() => ProfileCommentsBloc(
-      commentsRepository: mockCommentsRepository,
-      targetUserPubkey: _testAuthorPubkey,
-    );
+    ProfileCommentsBloc createBloc({bool includeVideoReplies = true}) =>
+        ProfileCommentsBloc(
+          commentsRepository: mockCommentsRepository,
+          targetUserPubkey: _testAuthorPubkey,
+          includeVideoReplies: includeVideoReplies,
+        );
 
     Comment createTextComment({
       required String id,
@@ -109,6 +113,7 @@ void main() {
             () => mockCommentsRepository.loadCommentsByAuthor(
               authorPubkey: any(named: 'authorPubkey'),
               limit: any(named: 'limit'),
+              includeVideoReplies: true,
             ),
           ).thenAnswer(
             (_) async => [
@@ -141,6 +146,7 @@ void main() {
             () => mockCommentsRepository.loadCommentsByAuthor(
               authorPubkey: any(named: 'authorPubkey'),
               limit: any(named: 'limit'),
+              includeVideoReplies: true,
             ),
           ).thenAnswer((_) async => []);
           return createBloc();
@@ -166,6 +172,7 @@ void main() {
             () => mockCommentsRepository.loadCommentsByAuthor(
               authorPubkey: any(named: 'authorPubkey'),
               limit: any(named: 'limit'),
+              includeVideoReplies: true,
             ),
           ).thenThrow(
             const LoadCommentsByAuthorFailedException('Network error'),
@@ -188,12 +195,52 @@ void main() {
       );
 
       blocTest<ProfileCommentsBloc, ProfileCommentsState>(
+        'passes disabled video replies flag to repository',
+        build: () {
+          final includeVideoReplies = _disabledVideoReplies();
+          when(
+            () => mockCommentsRepository.loadCommentsByAuthor(
+              authorPubkey: any(named: 'authorPubkey'),
+              limit: any(named: 'limit'),
+              includeVideoReplies: includeVideoReplies,
+            ),
+          ).thenAnswer(
+            (_) async => [
+              createTextComment(id: 't1', createdAtSeconds: 1700000500),
+            ],
+          );
+          return createBloc(includeVideoReplies: includeVideoReplies);
+        },
+        act: (bloc) => bloc.add(const ProfileCommentsSyncRequested()),
+        expect: () => [
+          isA<ProfileCommentsState>().having(
+            (s) => s.status,
+            'status',
+            ProfileCommentsStatus.loading,
+          ),
+          isA<ProfileCommentsState>()
+              .having((s) => s.status, 'status', ProfileCommentsStatus.success)
+              .having((s) => s.videoReplies, 'videoReplies', isEmpty)
+              .having((s) => s.textComments.length, 'textComments.length', 1),
+        ],
+        verify: (_) {
+          verify(
+            () => mockCommentsRepository.loadCommentsByAuthor(
+              authorPubkey: _testAuthorPubkey,
+              includeVideoReplies: _disabledVideoReplies(),
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<ProfileCommentsBloc, ProfileCommentsState>(
         'does not re-fetch when already loading',
         build: () {
           when(
             () => mockCommentsRepository.loadCommentsByAuthor(
               authorPubkey: any(named: 'authorPubkey'),
               limit: any(named: 'limit'),
+              includeVideoReplies: true,
             ),
           ).thenAnswer((_) async => []);
           return createBloc();
@@ -207,6 +254,7 @@ void main() {
             () => mockCommentsRepository.loadCommentsByAuthor(
               authorPubkey: any(named: 'authorPubkey'),
               limit: any(named: 'limit'),
+              includeVideoReplies: true,
             ),
           );
         },
@@ -220,6 +268,7 @@ void main() {
             () => mockCommentsRepository.loadCommentsByAuthor(
               authorPubkey: any(named: 'authorPubkey'),
               limit: any(named: 'limit'),
+              includeVideoReplies: true,
             ),
           ).thenAnswer(
             (_) async => List.generate(
@@ -266,6 +315,7 @@ void main() {
               authorPubkey: any(named: 'authorPubkey'),
               limit: any(named: 'limit'),
               before: any(named: 'before'),
+              includeVideoReplies: true,
             ),
           ).thenAnswer(
             (_) async => [
@@ -303,6 +353,7 @@ void main() {
               authorPubkey: any(named: 'authorPubkey'),
               limit: any(named: 'limit'),
               before: any(named: 'before'),
+              includeVideoReplies: true,
             ),
           ).thenAnswer(
             (_) async => [
@@ -378,6 +429,7 @@ void main() {
               authorPubkey: any(named: 'authorPubkey'),
               limit: any(named: 'limit'),
               before: any(named: 'before'),
+              includeVideoReplies: true,
             ),
           ).thenThrow(Exception('Network error'));
           return createBloc();
@@ -400,6 +452,53 @@ void main() {
               .having((s) => s.videoReplies.length, 'videoReplies.length', 1)
               .having((s) => s.textComments.length, 'textComments.length', 2),
         ],
+      );
+
+      blocTest<ProfileCommentsBloc, ProfileCommentsState>(
+        'passes disabled video replies flag when loading more',
+        build: () {
+          final includeVideoReplies = _disabledVideoReplies();
+          when(
+            () => mockCommentsRepository.loadCommentsByAuthor(
+              authorPubkey: any(named: 'authorPubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+              includeVideoReplies: includeVideoReplies,
+            ),
+          ).thenAnswer(
+            (_) async => [
+              createTextComment(id: 't3', createdAtSeconds: 1699999000),
+            ],
+          );
+          return createBloc(includeVideoReplies: includeVideoReplies);
+        },
+        seed: () => ProfileCommentsState(
+          status: ProfileCommentsStatus.success,
+          videoReplies: seedVideoReplies,
+          textComments: seedTextComments,
+          paginationCursor: seedCursor,
+        ),
+        act: (bloc) => bloc.add(const ProfileCommentsLoadMoreRequested()),
+        expect: () => [
+          isA<ProfileCommentsState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            isTrue,
+          ),
+          isA<ProfileCommentsState>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', isFalse)
+              .having((s) => s.videoReplies.length, 'videoReplies.length', 1)
+              .having((s) => s.textComments.length, 'textComments.length', 3),
+        ],
+        verify: (_) {
+          verify(
+            () => mockCommentsRepository.loadCommentsByAuthor(
+              authorPubkey: _testAuthorPubkey,
+              before: seedCursor.subtract(const Duration(seconds: 1)),
+              includeVideoReplies: _disabledVideoReplies(),
+            ),
+          ).called(1);
+        },
       );
     });
   });

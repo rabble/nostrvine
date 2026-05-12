@@ -32,6 +32,7 @@ class UserProfile {
     this.nip05,
     this.lud16,
     this.lud06,
+    this.rawTags = const [],
   });
 
   /// Create UserProfile from a Nostr kind 0 event
@@ -58,6 +59,9 @@ class UserProfile {
         lud16: content['lud16']?.toString(),
         lud06: content['lud06']?.toString(),
         rawData: content,
+        rawTags: List<List<String>>.unmodifiable(
+          event.tags.map(List<String>.unmodifiable),
+        ),
         createdAt: event.createdAtDateTime,
         eventId: event.id,
       );
@@ -73,34 +77,63 @@ class UserProfile {
   }
 
   /// Create profile from JSON
-  factory UserProfile.fromJson(Map<String, dynamic> json) => UserProfile(
-    pubkey: json['pubkey'] as String,
-    name: json['name'] as String?,
-    displayName: json['display_name'] as String?,
-    about: json['about'] as String?,
-    picture: json['picture'] as String?,
-    banner: json['banner'] as String?,
-    website: json['website'] as String?,
-    nip05: json['nip05'] as String?,
-    lud16: json['lud16'] as String?,
-    lud06: json['lud06'] as String?,
-    rawData: json['raw_data'] as Map<String, dynamic>? ?? {},
-    createdAt: DateTime.fromMillisecondsSinceEpoch(
-      json['created_at'] as int,
-      isUtc: true,
-    ),
-    eventId: json['event_id'] as String,
-  );
+  factory UserProfile.fromJson(Map<String, dynamic> json) {
+    final rawTagsJson = json['raw_tags'] as List<dynamic>?;
+    final parsedRawTags = rawTagsJson == null
+        ? const <List<String>>[]
+        : List<List<String>>.unmodifiable(
+            rawTagsJson.cast<List<dynamic>>().map(
+              (tag) => List<String>.unmodifiable(tag.cast<String>()),
+            ),
+          );
+    return UserProfile(
+      pubkey: json['pubkey'] as String,
+      name: json['name'] as String?,
+      displayName: json['display_name'] as String?,
+      about: json['about'] as String?,
+      picture: json['picture'] as String?,
+      banner: json['banner'] as String?,
+      website: json['website'] as String?,
+      nip05: json['nip05'] as String?,
+      lud16: json['lud16'] as String?,
+      lud06: json['lud06'] as String?,
+      rawData: json['raw_data'] as Map<String, dynamic>? ?? {},
+      rawTags: parsedRawTags,
+      createdAt: DateTime.fromMillisecondsSinceEpoch(
+        json['created_at'] as int,
+        isUtc: true,
+      ),
+      eventId: json['event_id'] as String,
+    );
+  }
 
   /// Creates a [UserProfile] from a typed [UserProfileFound] result.
   ///
   /// Use [eventIdPrefix] to distinguish the source (defaults to `'rest'`;
   /// batch callers pass `'rest-bulk'`).
+  ///
+  /// `rawData` is populated from the typed REST fields so a profile
+  /// round-trip through the REST API does not silently drop them on
+  /// the next publish. The Funnelcake REST API does not expose the
+  /// raw Kind 0 event JSON, so unknown fields (custom client keys,
+  /// future NIP additions) cannot be recovered by this factory and
+  /// must be re-seeded by `ProfileRepository.saveProfileEvent` from a
+  /// relay query before publishing.
   factory UserProfile.fromUserProfileFound(
     UserProfileFound result, {
     String? eventIdPrefix,
   }) {
     final p = result.profile;
+    final rawData = <String, dynamic>{
+      if (p.name != null) 'name': p.name,
+      if (p.displayName != null) 'display_name': p.displayName,
+      if (p.about != null) 'about': p.about,
+      if (p.picture != null) 'picture': p.picture,
+      if (p.banner != null) 'banner': p.banner,
+      if (p.website != null) 'website': p.website,
+      if (p.nip05 != null) 'nip05': p.nip05,
+      if (p.lud16 != null) 'lud16': p.lud16,
+    };
     return UserProfile(
       pubkey: p.pubkey,
       name: p.name,
@@ -111,7 +144,7 @@ class UserProfile {
       website: p.website,
       nip05: p.nip05,
       lud16: p.lud16,
-      rawData: const {},
+      rawData: rawData,
       createdAt: DateTime.now(),
       eventId: '${eventIdPrefix ?? 'rest'}-${p.pubkey}',
     );
@@ -161,6 +194,13 @@ class UserProfile {
   final DateTime createdAt;
   final String eventId;
 
+  /// Raw tags from the source kind 0 event, preserved for callers that need
+  /// to inspect them (e.g. NIP-39 `i` identity claim parsing).
+  ///
+  /// Defaults to an empty list when the profile was constructed from a source
+  /// that doesn't carry tags (REST API, Drift cache row, malformed event).
+  final List<List<String>> rawTags;
+
   /// Get shortened pubkey for display
   String get shortPubkey {
     if (pubkey.length <= 16) return pubkey;
@@ -181,21 +221,26 @@ class UserProfile {
   /// A display handle for the user, prefixed with `@`.
   ///
   /// Prefers NIP-05 identifier, falls back to [name]. Returns an empty
-  /// string when neither is available.
+  /// string when neither is available. Uses [shortDisplayNip05] so
+  /// divine.video users render as `@rabble`, not `@rabble.divine.video`.
   String get handle {
     if (nip05 != null && nip05!.isNotEmpty) {
-      final dn = displayNip05!;
+      final dn = shortDisplayNip05!;
       return dn.startsWith('@') ? dn : '@$dn';
     }
     if (name != null && name!.isNotEmpty) return '@$name';
     return '';
   }
 
-  /// NIP-05 formatted for display.
+  /// NIP-05 formatted for display, full form.
   ///
   /// Normalises all divine.video / openvine.co identifiers to the canonical
   /// `@username.divine.video` form. External identifiers (e.g.
   /// `alice@example.com`) are returned unchanged.
+  ///
+  /// Use this when the domain is meaningful to the user — settings screens,
+  /// the share-video watermark, the NIP-05 editor — so people understand
+  /// what they own. For general UI rendering prefer [shortDisplayNip05].
   String? get displayNip05 {
     if (nip05 == null || nip05!.isEmpty) return null;
     // New subdomain format: _@username.divine.video → @username.divine.video
@@ -204,6 +249,19 @@ class UserProfile {
     final username = divineUsername;
     if (username != null) return '@$username.divine.video';
     // External domain: keep as-is
+    return nip05;
+  }
+
+  /// NIP-05 formatted for display, short form.
+  ///
+  /// Strips the `.divine.video` suffix for divine-owned subdomains so the
+  /// user shows up as `@rabble` instead of `@rabble.divine.video`. External
+  /// identifiers (e.g. `alice@example.com`) are returned unchanged because
+  /// the domain is the user's own and meaningful.
+  String? get shortDisplayNip05 {
+    if (nip05 == null || nip05!.isEmpty) return null;
+    final username = divineUsername;
+    if (username != null) return '@$username';
     return nip05;
   }
 
@@ -379,6 +437,7 @@ class UserProfile {
     'created_at': createdAt.millisecondsSinceEpoch,
     'event_id': eventId,
     'raw_data': rawData,
+    'raw_tags': rawTags,
   };
 
   /// Create copy with updated fields
@@ -393,6 +452,7 @@ class UserProfile {
     String? lud16,
     String? lud06,
     Map<String, dynamic>? rawData,
+    List<List<String>>? rawTags,
   }) => UserProfile(
     pubkey: pubkey,
     name: name ?? this.name,
@@ -405,6 +465,7 @@ class UserProfile {
     lud16: lud16 ?? this.lud16,
     lud06: lud06 ?? this.lud06,
     rawData: rawData ?? this.rawData,
+    rawTags: rawTags ?? this.rawTags,
     createdAt: createdAt,
     eventId: eventId,
   );

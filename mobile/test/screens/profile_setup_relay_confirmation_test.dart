@@ -89,7 +89,7 @@ void main() {
 
         when(
           () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => publishedEvent);
+        ).thenAnswer((_) async => PublishSuccess(event: publishedEvent));
 
         // Mock profile fetches - first two return stale profile, third returns updated
         final staleProfile = UserProfile(
@@ -233,7 +233,7 @@ void main() {
 
       when(
         () => mockNostrService.publishEvent(any()),
-      ).thenAnswer((_) async => publishedEvent);
+      ).thenAnswer((_) async => PublishSuccess(event: publishedEvent));
 
       // Mock profile repository to ALWAYS return stale profile
       final staleProfile = UserProfile(
@@ -330,7 +330,7 @@ void main() {
 
         when(
           () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => publishedEvent);
+        ).thenAnswer((_) async => PublishSuccess(event: publishedEvent));
 
         // Mock profile repository to return updated profile immediately
         final updatedProfile = UserProfile(

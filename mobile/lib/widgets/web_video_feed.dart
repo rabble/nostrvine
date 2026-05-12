@@ -1,6 +1,8 @@
 // ABOUTME: Web-native video feed using Flutter's video_player package
 // ABOUTME: Replaces PooledVideoFeed on web where media_kit is not available
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +11,7 @@ import 'package:hls_auth_web_player/hls_auth_web_player.dart'
 import 'package:models/models.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_policy.dart';
+import 'package:openvine/widgets/video_feed_item/web_paused_video_play_overlay.dart';
 import 'package:openvine/widgets/web_video_player.dart';
 import 'package:video_player/video_player.dart';
 
@@ -61,6 +64,7 @@ class WebVideoFeed extends StatefulWidget {
     this.endThreshold = FeedAutoAdvanceDefaults.endThreshold,
     this.controllerFactory = defaultWebVideoPlayerControllerFactory,
     this.authHeaderProvider,
+    this.initialVolume = 1.0,
     super.key,
   });
 
@@ -117,6 +121,11 @@ class WebVideoFeed extends StatefulWidget {
   /// `kIsWeb && FeatureFlag.hlsAuthWebPlayer`.
   final AuthHeaderProvider? authHeaderProvider;
 
+  /// Volume to apply to each [WebVideoPlayer] when it initialises. Callers
+  /// can update the volume of all live players at runtime via
+  /// [WebVideoFeedState.setVolume].
+  final double initialVolume;
+
   @override
   State<WebVideoFeed> createState() => WebVideoFeedState();
 }
@@ -124,6 +133,20 @@ class WebVideoFeed extends StatefulWidget {
 class WebVideoFeedState extends State<WebVideoFeed> {
   late PageController _pageController;
   int _currentIndex = 0;
+
+  /// Current volume applied to every player on init and on [setVolume].
+  late double _currentVolume = widget.initialVolume;
+
+  /// Applies [volume] to every live [WebVideoPlayer] and remembers it for
+  /// future players that initialise later. Called by the host screens from
+  /// their `BlocListener<VideoVolumeCubit>` so the cubit is the single
+  /// source of truth across native and web feed surfaces.
+  void setVolume(double volume) {
+    _currentVolume = volume;
+    for (final key in _playerKeys.values) {
+      key.currentState?.setVolume(volume);
+    }
+  }
 
   // Track web player keys to control playback.
   final Map<int, GlobalKey<WebVideoPlayerState>> _playerKeys = {};
@@ -202,6 +225,12 @@ class WebVideoFeedState extends State<WebVideoFeed> {
   /// Drops both the controller reference and the GlobalKey so we don't
   /// retain disposed controllers across scroll. If the user scrolls back
   /// to this index, the next [_getPlayerKey] call mints a fresh key.
+  ///
+  /// The notifier mutation is deferred to a microtask: callers reach
+  /// this from `WebVideoPlayerState.dispose()`, which fires during the
+  /// framework's locked unmount tick. Mutating `_controllers.value`
+  /// synchronously would re-enter sibling `ValueListenableBuilder`s and
+  /// trip "setState() called when widget tree was locked".
   void _onPlayerDisposed(int index) {
     _playerKeys.remove(index);
     final current = _controllers.value;
@@ -209,7 +238,10 @@ class WebVideoFeedState extends State<WebVideoFeed> {
     if (controller == null) return;
     _detachCompletionListener(index, controller);
     final next = Map<int, VideoPlayerController>.of(current)..remove(index);
-    _controllers.value = next;
+    scheduleMicrotask(() {
+      if (!mounted) return;
+      _controllers.value = next;
+    });
   }
 
   Future<void> animateToPage(int index) async {
@@ -350,6 +382,9 @@ class WebVideoFeedState extends State<WebVideoFeed> {
           hlsFallbackUrl: video.getFallbackUrl(),
           onInitialized: (controller) {
             if (!mounted) return;
+            // Apply the current cubit-sourced volume so newly-initialised
+            // players honour mute state set before they mounted.
+            unawaited(controller.setVolume(_currentVolume));
             setState(() {
               _attachCompletionListener(index, controller);
             });
@@ -417,39 +452,56 @@ class _WebVideoFeedItem extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        WebVideoPlayer(
-          key: playerKey,
-          url: videoUrl,
-          autoPlay: isActive,
-          headers: headers,
-          controllerFactory: controllerFactory,
-          authHeaderProvider: authHeaderProvider,
-          hlsFallbackUrl: hlsFallbackUrl,
-          onInitialized: onInitialized,
-          onDisposed: onDisposed,
-          onError: onError,
-          onRequiresAuth: onRequiresAuth,
-        ),
-        if (itemBuilder != null)
-          ValueListenableBuilder<Map<int, VideoPlayerController>>(
-            valueListenable: controllersListenable,
-            builder: (context, controllers, _) {
-              // Only expose the controller once it has initialized so
-              // overlays never receive an uninitialized controller.
-              final tracked = controllers[index];
-              final controller =
-                  (tracked != null && tracked.value.isInitialized)
-                  ? tracked
-                  : null;
-              return itemBuilder!(
-                context,
-                video,
-                index,
-                isActive: isActive,
-                controller: controller,
-              );
-            },
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => playerKey.currentState?.togglePlayPause(),
+          child: WebVideoPlayer(
+            key: playerKey,
+            url: videoUrl,
+            autoPlay: isActive,
+            headers: headers,
+            controllerFactory: controllerFactory,
+            authHeaderProvider: authHeaderProvider,
+            hlsFallbackUrl: hlsFallbackUrl,
+            onInitialized: onInitialized,
+            onDisposed: onDisposed,
+            onError: onError,
+            onRequiresAuth: onRequiresAuth,
           ),
+        ),
+        // Single ValueListenableBuilder for both the paused overlay and
+        // the optional itemBuilder. Combining them avoids registering two
+        // listeners on the same notifier, which matters during player
+        // disposal: WebVideoFeedState._onPlayerDisposed mutates the
+        // notifier from inside a tree-locked tear-down, and any rebuild
+        // siblings still subscribed at that moment trip
+        // "setState called when widget tree was locked".
+        ValueListenableBuilder<Map<int, VideoPlayerController>>(
+          valueListenable: controllersListenable,
+          builder: (context, controllers, _) {
+            final tracked = controllers[index];
+            final controller = (tracked != null && tracked.value.isInitialized)
+                ? tracked
+                : null;
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                WebPausedVideoPlayOverlay(
+                  controller: controller,
+                  isVisible: isActive,
+                ),
+                if (itemBuilder != null)
+                  itemBuilder!(
+                    context,
+                    video,
+                    index,
+                    isActive: isActive,
+                    controller: controller,
+                  ),
+              ],
+            );
+          },
+        ),
       ],
     );
   }

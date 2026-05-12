@@ -89,13 +89,18 @@ void main() {
       expect(find.text('New Camera UI'), findsOneWidget);
 
       // Enable the new camera UI feature
-      final switches = find.byType(Switch);
-
       // Update mock to return true when getBool is called after toggle
       when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
       when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
 
-      await tester.tap(switches.first);
+      final newCameraSwitch = find.descendant(
+        of: find.ancestor(
+          of: find.text('New Camera UI'),
+          matching: find.byType(Card),
+        ),
+        matching: find.byType(Switch),
+      );
+      await tester.tap(newCameraSwitch);
       await tester.pumpAndSettle();
 
       // Verify persistence call was made
@@ -114,10 +119,6 @@ void main() {
       // Set up mixed initial state
       when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
       when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
-      when(() => mockPrefs.getBool('ff_enhancedVideoPlayer')).thenReturn(false);
-      when(
-        () => mockPrefs.containsKey('ff_enhancedVideoPlayer'),
-      ).thenReturn(true);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -132,11 +133,6 @@ void main() {
                     flag: FeatureFlag.newCameraUI,
                     disabled: Text('Standard Camera'),
                     child: Text('Enhanced Camera'),
-                  ),
-                  const FeatureFlagWidget(
-                    flag: FeatureFlag.enhancedVideoPlayer,
-                    disabled: Text('Standard Player'),
-                    child: Text('Enhanced Player'),
                   ),
                   Builder(
                     builder: (context) => ElevatedButton(
@@ -167,8 +163,6 @@ void main() {
       // Verify independent flag states
       expect(find.text('Enhanced Camera'), findsOneWidget);
       expect(find.text('Standard Camera'), findsNothing);
-      expect(find.text('Standard Player'), findsOneWidget);
-      expect(find.text('Enhanced Player'), findsNothing);
 
       // Navigate to settings to verify switch states
       await tester.tap(find.text('Open Settings'));
@@ -185,7 +179,6 @@ void main() {
 
       // Verify the feature flag list items are present
       expect(find.text('New Camera UI'), findsOneWidget);
-      expect(find.text('Enhanced Video Player'), findsOneWidget);
     });
 
     testWidgets('should persist flag changes across app restarts', (
@@ -211,9 +204,18 @@ void main() {
       await service1.initialize();
       await tester.pumpAndSettle();
 
-      // Change a flag
-      final firstSwitch = find.byType(Switch).first;
-      await tester.tap(firstSwitch);
+      // Change a flag - find the newCameraUI switch specifically
+      when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
+
+      final newCameraSwitch = find.descendant(
+        of: find.ancestor(
+          of: find.text('New Camera UI'),
+          matching: find.byType(Card),
+        ),
+        matching: find.byType(Switch),
+      );
+      await tester.tap(newCameraSwitch);
       await tester.pumpAndSettle();
 
       // Verify persistence call
@@ -252,10 +254,6 @@ void main() {
       // Set up flags with user overrides
       when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
       when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
-      when(() => mockPrefs.getBool('ff_enhancedVideoPlayer')).thenReturn(false);
-      when(
-        () => mockPrefs.containsKey('ff_enhancedVideoPlayer'),
-      ).thenReturn(true);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -410,8 +408,14 @@ void main() {
       await tester.pumpAndSettle();
 
       // Try to toggle a flag - should not crash the app but should update UI
-      final firstSwitch = find.byType(Switch).first;
-      await tester.tap(firstSwitch);
+      final newCameraSwitch = find.descendant(
+        of: find.ancestor(
+          of: find.text('New Camera UI'),
+          matching: find.byType(Card),
+        ),
+        matching: find.byType(Switch),
+      );
+      await tester.tap(newCameraSwitch);
       await tester.pumpAndSettle();
 
       // App should still be functional

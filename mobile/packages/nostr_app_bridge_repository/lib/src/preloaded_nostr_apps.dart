@@ -215,6 +215,25 @@ final List<NostrAppDirectoryEntry> preloadedNostrApps = List.unmodifiable([
     promptRequiredFor: const ['signEvent'],
     sortOrder: 15,
   ),
+  _buildPreloadedApp(
+    id: 'bundled-verifyer',
+    slug: 'verifyer',
+    name: 'Divine Verifyer',
+    tagline: 'Link your social accounts so people know it is really you.',
+    description:
+        'A first-party Divine Nostr app for verifying ownership of '
+        'external accounts (GitHub, Twitter, Bluesky, etc.) and '
+        'attaching them to your profile via NIP-39 i tags.',
+    launchUrl: 'https://verifyer.divine.video/',
+    allowedMethods: const [
+      'getPublicKey',
+      'getRelays',
+      'signEvent',
+    ],
+    allowedSignEventKinds: const [0],
+    promptRequiredFor: const [],
+    sortOrder: 16,
+  ),
 ]);
 
 /// Per-app localStorage seeding scripts keyed by slug.

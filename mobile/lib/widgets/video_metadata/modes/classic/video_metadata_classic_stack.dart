@@ -31,6 +31,7 @@ class VideoMetadataClassicStack extends StatelessWidget {
                     enableContentWarning: false,
                     enableCollaborators: false,
                     enableInspiredBy: false,
+                    enableVideoReply: false,
                   ),
                 ],
               ),

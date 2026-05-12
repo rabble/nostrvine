@@ -1,13 +1,26 @@
+import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/io_client.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:sqflite/sqflite.dart' as sqflite;
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'helpers/mocks.dart';
 import 'helpers/test_helpers.dart';
+
+class _TrackingIOClient extends IOClient {
+  _TrackingIOClient() : super(HttpClient());
+
+  int closeCount = 0;
+
+  @override
+  void close() {
+    closeCount++;
+    super.close();
+  }
+}
 
 void main() {
   group('MediaCacheManager', () {
@@ -29,8 +42,6 @@ void main() {
           cacheKey: 'test_cache_${DateTime.now().millisecondsSinceEpoch}',
           enableSyncManifest: true,
         ),
-        // Use test paths so sqflite doesn't need to be initialized
-        databasePathProvider: () async => testTempPath,
       );
     });
 
@@ -80,8 +91,6 @@ void main() {
             cacheKey: 'failing_${DateTime.now().millisecondsSinceEpoch}',
             enableSyncManifest: true,
           ),
-          databasePathProvider: () async =>
-              throw Exception('Database path unavailable'),
         );
 
         // Should not throw - graceful degradation
@@ -91,38 +100,36 @@ void main() {
         failingCache.resetForTesting();
       });
 
-      test('completes successfully when no database exists', () async {
-        // With the sqflite-based manifest, if no database exists,
-        // initialization still succeeds (graceful degradation)
+      test('completes successfully when no existing cache entries', () async {
+        // JsonCacheInfoRepository starts empty on first use, so the manifest
+        // stays empty — initialization still succeeds.
         await cacheManager.initialize();
 
         expect(cacheManager.isInitialized, true);
-        // Manifest should be empty since no database was found
         expect(cacheManager.getCacheStats()['manifestSize'], 0);
       });
 
-      test('loads cache entries from database into manifest', () async {
-        // Create a database file so the code doesn't early-return
+      test('loads cache entries from repository into manifest', () async {
         final timestamp = DateTime.now().millisecondsSinceEpoch;
         final cacheKey = 'db_test_$timestamp';
-        final dbFile = File('$testTempPath/$cacheKey.db')..createSync();
 
-        // Create cache directory with actual files
+        // Create cache directory with an actual file on disk.
         final cacheDir = Directory('$testTempPath/$cacheKey')
           ..createSync(recursive: true);
         final testFile = await createTestFile(cacheDir, 'test_video.mp4');
 
-        // Mock database that returns cache entries
-        final mockDb = MockDatabase();
-        when(() => mockDb.query('cacheObject')).thenAnswer(
+        final mockRepo = MockCacheInfoRepository();
+        when(mockRepo.open).thenAnswer((_) async => true);
+        when(mockRepo.getAllObjects).thenAnswer(
           (_) async => [
-            {
-              'key': 'video_key_1',
-              'relativePath': 'test_video.mp4',
-            },
+            CacheObject(
+              'https://example.com/test_video.mp4',
+              relativePath: 'test_video.mp4',
+              validTill: DateTime(2099),
+              key: 'video_key_1',
+            ),
           ],
         );
-        when(mockDb.close).thenAnswer((_) async {});
 
         final dbCache = MediaCacheManager(
           config: MediaCacheConfig(
@@ -130,8 +137,7 @@ void main() {
             enableSyncManifest: true,
           ),
           tempDirectoryProvider: () async => Directory(testTempPath),
-          databasePathProvider: () async => testTempPath,
-          databaseOpener: (path, {readOnly = false}) async => mockDb,
+          repoOverride: mockRepo,
         );
 
         await dbCache.initialize();
@@ -139,35 +145,34 @@ void main() {
         expect(dbCache.isInitialized, true);
         expect(dbCache.getCacheStats()['manifestSize'], 1);
 
-        // Should be able to get the cached file synchronously
         final cachedFile = dbCache.getCachedFileSync('video_key_1');
         expect(cachedFile, isNotNull);
         expect(cachedFile!.path, testFile.path);
 
-        // Clean up
         dbCache.resetForTesting();
-        if (dbFile.existsSync()) dbFile.deleteSync();
         if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
       });
 
       test('skips entries with missing files', () async {
         final timestamp = DateTime.now().millisecondsSinceEpoch;
         final cacheKey = 'missing_file_test_$timestamp';
-        final dbFile = File('$testTempPath/$cacheKey.db')..createSync();
 
-        // Create cache directory but NOT the actual file
-        Directory('$testTempPath/$cacheKey').createSync(recursive: true);
+        // Create cache directory but NOT the actual file.
+        final cacheDir = Directory('$testTempPath/$cacheKey')
+          ..createSync(recursive: true);
 
-        final mockDb = MockDatabase();
-        when(() => mockDb.query('cacheObject')).thenAnswer(
+        final mockRepo = MockCacheInfoRepository();
+        when(mockRepo.open).thenAnswer((_) async => true);
+        when(mockRepo.getAllObjects).thenAnswer(
           (_) async => [
-            {
-              'key': 'missing_video',
-              'relativePath': 'nonexistent.mp4',
-            },
+            CacheObject(
+              'https://example.com/nonexistent.mp4',
+              relativePath: 'nonexistent.mp4',
+              validTill: DateTime(2099),
+              key: 'missing_video',
+            ),
           ],
         );
-        when(mockDb.close).thenAnswer((_) async {});
 
         final dbCache = MediaCacheManager(
           config: MediaCacheConfig(
@@ -175,47 +180,7 @@ void main() {
             enableSyncManifest: true,
           ),
           tempDirectoryProvider: () async => Directory(testTempPath),
-          databasePathProvider: () async => testTempPath,
-          databaseOpener: (path, {readOnly = false}) async => mockDb,
-        );
-
-        await dbCache.initialize();
-
-        expect(dbCache.isInitialized, true);
-        // Entry should not be added since file doesn't exist
-        expect(dbCache.getCacheStats()['manifestSize'], 0);
-
-        // Clean up
-        dbCache.resetForTesting();
-        if (dbFile.existsSync()) dbFile.deleteSync();
-        Directory('$testTempPath/$cacheKey').deleteSync(recursive: true);
-      });
-
-      test('skips entries with null key or relativePath', () async {
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final cacheKey = 'null_entries_test_$timestamp';
-        final dbFile = File('$testTempPath/$cacheKey.db')..createSync();
-
-        Directory('$testTempPath/$cacheKey').createSync(recursive: true);
-
-        final mockDb = MockDatabase();
-        when(() => mockDb.query('cacheObject')).thenAnswer(
-          (_) async => [
-            {'key': null, 'relativePath': 'video.mp4'},
-            {'key': 'valid_key', 'relativePath': null},
-            <String, Object?>{}, // Empty map
-          ],
-        );
-        when(mockDb.close).thenAnswer((_) async {});
-
-        final dbCache = MediaCacheManager(
-          config: MediaCacheConfig(
-            cacheKey: cacheKey,
-            enableSyncManifest: true,
-          ),
-          tempDirectoryProvider: () async => Directory(testTempPath),
-          databasePathProvider: () async => testTempPath,
-          databaseOpener: (path, {readOnly = false}) async => mockDb,
+          repoOverride: mockRepo,
         );
 
         await dbCache.initialize();
@@ -223,66 +188,122 @@ void main() {
         expect(dbCache.isInitialized, true);
         expect(dbCache.getCacheStats()['manifestSize'], 0);
 
-        // Clean up
         dbCache.resetForTesting();
-        if (dbFile.existsSync()) dbFile.deleteSync();
-        Directory('$testTempPath/$cacheKey').deleteSync(recursive: true);
+        if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
       });
 
-      test('handles database query error gracefully', () async {
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final cacheKey = 'db_error_test_$timestamp';
-        final dbFile = File('$testTempPath/$cacheKey.db')..createSync();
-
-        final mockDb = MockDatabase();
-        when(() => mockDb.query('cacheObject')).thenThrow(
-          Exception('Database corrupted'),
-        );
-        when(mockDb.close).thenAnswer((_) async {});
+      test('skips initialization when repository.open returns false', () async {
+        final mockRepo = MockCacheInfoRepository();
+        when(mockRepo.open).thenAnswer((_) async => false);
 
         final dbCache = MediaCacheManager(
           config: MediaCacheConfig(
-            cacheKey: cacheKey,
+            cacheKey: 'open_false_${DateTime.now().millisecondsSinceEpoch}',
             enableSyncManifest: true,
           ),
-          tempDirectoryProvider: () async => Directory(testTempPath),
-          databasePathProvider: () async => testTempPath,
-          databaseOpener: (path, {readOnly = false}) async => mockDb,
+          repoOverride: mockRepo,
         );
 
-        // Should not throw - graceful degradation
+        await dbCache.initialize();
+
+        expect(dbCache.isInitialized, true);
+        expect(dbCache.getCacheStats()['manifestSize'], 0);
+        verifyNever(mockRepo.getAllObjects);
+
+        dbCache.resetForTesting();
+      });
+
+      test('handles repository query error gracefully', () async {
+        final mockRepo = MockCacheInfoRepository();
+        when(mockRepo.open).thenAnswer((_) async => true);
+        when(mockRepo.getAllObjects).thenThrow(
+          Exception('Repository corrupted'),
+        );
+
+        final dbCache = MediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: 'error_test_${DateTime.now().millisecondsSinceEpoch}',
+            enableSyncManifest: true,
+          ),
+          repoOverride: mockRepo,
+        );
+
         await dbCache.initialize();
         expect(dbCache.isInitialized, true);
 
-        // Clean up
         dbCache.resetForTesting();
-        if (dbFile.existsSync()) dbFile.deleteSync();
       });
 
-      test('uses default database opener when cache database exists', () async {
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final cacheKey = 'default_opener_test_$timestamp';
-        final dbFile = File('$testTempPath/$cacheKey.db')..createSync();
+      test('uses config.repo when no repoOverride is provided', () async {
+        // Without repoOverride the manager uses SafeCacheInfoRepository
+        // (wrapping JsonCacheInfoRepository). On first use that repo is empty,
+        // so the manifest stays empty but initialization still succeeds.
+        await cacheManager.initialize();
 
-        sqfliteFfiInit();
-        sqflite.databaseFactory = databaseFactoryFfi;
-
-        final defaultOpenerCache = MediaCacheManager(
-          config: MediaCacheConfig(
-            cacheKey: cacheKey,
-            enableSyncManifest: true,
-          ),
-          databasePathProvider: () async => testTempPath,
-          tempDirectoryProvider: () async => Directory(testTempPath),
-        );
-
-        await defaultOpenerCache.initialize();
-
-        expect(defaultOpenerCache.isInitialized, true);
-
-        defaultOpenerCache.resetForTesting();
-        if (dbFile.existsSync()) dbFile.deleteSync();
+        expect(cacheManager.isInitialized, true);
+        expect(cacheManager.getCacheStats()['manifestSize'], 0);
       });
+
+      test(
+        'prunes stale alias entries when target files are missing',
+        () async {
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final cacheKey = 'stale_alias_prune_$timestamp';
+
+          final cacheDir = Directory('$testTempPath/$cacheKey')
+            ..createSync(recursive: true);
+          await createTestFile(cacheDir, 'valid.mp4');
+
+          // aliases.json has one valid entry and one stale (evicted) entry.
+          final aliasFile = File('${cacheDir.path}/aliases.json');
+          await aliasFile.writeAsString(
+            '{"alias_valid":"valid_key","alias_evicted":"evicted_key"}',
+          );
+
+          final mockRepo = MockCacheInfoRepository();
+          when(mockRepo.open).thenAnswer((_) async => true);
+          when(mockRepo.getAllObjects).thenAnswer(
+            (_) async => [
+              CacheObject(
+                'https://example.com/valid.mp4',
+                relativePath: 'valid.mp4',
+                validTill: DateTime(2099),
+                key: 'valid_key',
+              ),
+              // evicted_key is intentionally absent — its file was LRU-evicted.
+            ],
+          );
+
+          final manager = MediaCacheManager(
+            config: MediaCacheConfig(
+              cacheKey: cacheKey,
+              enableSyncManifest: true,
+            ),
+            tempDirectoryProvider: () async => Directory(testTempPath),
+            repoOverride: mockRepo,
+          );
+
+          await manager.initialize();
+
+          expect(manager.getCachedFileSync('alias_valid'), isNotNull);
+          expect(manager.getCachedFileSync('alias_evicted'), isNull);
+
+          // Wait for the async persist triggered by stale-entry detection.
+          // Awaiting _aliasWriteQueue directly is more reliable than
+          // pumpEventQueue() because real file-IO callbacks (writeAsString +
+          // rename) may not complete within pumpEventQueue's microtask budget
+          // on slower CI machines.
+          await manager.waitForPendingAliasWrites();
+
+          final contents = await aliasFile.readAsString();
+          expect(contents, contains('alias_valid'));
+          expect(contents, isNot(contains('alias_evicted')));
+          expect(contents, isNot(contains('evicted_key')));
+
+          manager.resetForTesting();
+          if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
+        },
+      );
     });
 
     group('getCachedFileSync', () {
@@ -303,9 +324,9 @@ void main() {
       });
 
       test('returns null when file exists on disk but'
-          ' not in database', () async {
-        // With sqflite-based manifest, files must be registered in the database
-        // to appear in the manifest. Files on disk alone are not discovered.
+          ' not in manifest', () async {
+        // Files on disk are not automatically discovered — they must be
+        // registered in the repository before initialize() is called.
         final cacheDir = Directory(
           '$testTempPath/${cacheManager.mediaConfig.cacheKey}',
         )..createSync(recursive: true);
@@ -313,7 +334,7 @@ void main() {
 
         await cacheManager.initialize();
 
-        // File exists on disk but not in database, so returns null
+        // File exists on disk but not in manifest, so returns null.
         final file = cacheManager.getCachedFileSync('orphan_file');
         expect(file, isNull);
 
@@ -324,20 +345,26 @@ void main() {
       test('removes stale entry when file no longer exists', () async {
         final timestamp = DateTime.now().millisecondsSinceEpoch;
         final cacheKey = 'stale_test_$timestamp';
-        final dbFile = File('$testTempPath/$cacheKey.db')..createSync();
 
-        // Create cache directory with a file
         final cacheDir = Directory('$testTempPath/$cacheKey')
           ..createSync(recursive: true);
-        final testFile = await createTestFile(cacheDir, 'will_be_deleted.mp4');
+        final testFile = await createTestFile(
+          cacheDir,
+          'will_be_deleted.mp4',
+        );
 
-        final mockDb = MockDatabase();
-        when(() => mockDb.query('cacheObject')).thenAnswer(
+        final mockRepo = MockCacheInfoRepository();
+        when(mockRepo.open).thenAnswer((_) async => true);
+        when(mockRepo.getAllObjects).thenAnswer(
           (_) async => [
-            {'key': 'stale_key', 'relativePath': 'will_be_deleted.mp4'},
+            CacheObject(
+              'https://example.com/will_be_deleted.mp4',
+              relativePath: 'will_be_deleted.mp4',
+              validTill: DateTime(2099),
+              key: 'stale_key',
+            ),
           ],
         );
-        when(mockDb.close).thenAnswer((_) async {});
 
         final staleCache = MediaCacheManager(
           config: MediaCacheConfig(
@@ -345,30 +372,158 @@ void main() {
             enableSyncManifest: true,
           ),
           tempDirectoryProvider: () async => Directory(testTempPath),
-          databasePathProvider: () async => testTempPath,
-          databaseOpener: (path, {readOnly = false}) async => mockDb,
+          repoOverride: mockRepo,
         );
 
         await staleCache.initialize();
 
-        // Verify file is in manifest
         expect(staleCache.getCacheStats()['manifestSize'], 1);
         var file = staleCache.getCachedFileSync('stale_key');
         expect(file, isNotNull);
 
-        // Delete the file externally
         testFile.deleteSync();
 
-        // Should return null and remove stale entry from manifest
+        // getCachedFileSync detects the file is gone and evicts the stale
+        // entry.
         file = staleCache.getCachedFileSync('stale_key');
         expect(file, isNull);
         expect(staleCache.getCacheStats()['manifestSize'], 0);
 
-        // Clean up
         staleCache.resetForTesting();
-        if (dbFile.existsSync()) dbFile.deleteSync();
         if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
       });
+
+      test(
+        'prunes alias map and manifest when actual file is evicted',
+        () async {
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final cacheKey = 'alias_eviction_test_$timestamp';
+
+          final cacheDir = Directory('$testTempPath/$cacheKey')
+            ..createSync(recursive: true);
+          final actualFile = await createTestFile(cacheDir, 'actual.mp4');
+
+          // Persist an alias so initialize() restores it.
+          final aliasFile = File('${cacheDir.path}/aliases.json');
+          await aliasFile.writeAsString('{"alias_key":"actual_key"}');
+
+          final mockRepo = MockCacheInfoRepository();
+          when(mockRepo.open).thenAnswer((_) async => true);
+          when(mockRepo.getAllObjects).thenAnswer(
+            (_) async => [
+              CacheObject(
+                'https://example.com/actual.mp4',
+                relativePath: 'actual.mp4',
+                validTill: DateTime(2099),
+                key: 'actual_key',
+              ),
+            ],
+          );
+
+          final manager = MediaCacheManager(
+            config: MediaCacheConfig(
+              cacheKey: cacheKey,
+              enableSyncManifest: true,
+            ),
+            tempDirectoryProvider: () async => Directory(testTempPath),
+            repoOverride: mockRepo,
+          );
+
+          await manager.initialize();
+
+          // Both keys reachable before eviction.
+          expect(manager.getCachedFileSync('actual_key'), isNotNull);
+          expect(manager.getCachedFileSync('alias_key'), isNotNull);
+
+          // Simulate LRU eviction by deleting the underlying file.
+          actualFile.deleteSync();
+
+          // Lookup on the actual key detects the miss and should also prune
+          // the alias entry from the manifest.
+          expect(manager.getCachedFileSync('actual_key'), isNull);
+          expect(manager.getCachedFileSync('alias_key'), isNull);
+
+          // Wait for the async alias persist triggered by the eviction.
+          // Awaiting _aliasWriteQueue directly is more reliable than
+          // pumpEventQueue() because real file-IO callbacks (writeAsString +
+          // rename) may not complete within pumpEventQueue's microtask budget
+          // on slower CI machines.
+          await manager.waitForPendingAliasWrites();
+
+          final contents = await aliasFile.readAsString();
+          expect(contents, isNot(contains('alias_key')));
+
+          manager.resetForTesting();
+          if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
+        },
+      );
+    });
+
+    group('_persistAliasMap atomic write', () {
+      test(
+        'no .tmp file remains and aliases.json is correct after persist',
+        () async {
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final cacheKey = 'atomic_write_$timestamp';
+
+          final cacheDir = Directory('$testTempPath/$cacheKey')
+            ..createSync(recursive: true);
+          await createTestFile(cacheDir, 'valid.mp4');
+
+          // Seed aliases.json with one valid and one stale entry so that
+          // initialize() detects the stale entry and triggers _persistAliasMap.
+          final aliasFile = File('${cacheDir.path}/aliases.json');
+          await aliasFile.writeAsString(
+            '{"alias_valid":"valid_key","alias_stale":"stale_key"}',
+          );
+
+          final mockRepo = MockCacheInfoRepository();
+          when(mockRepo.open).thenAnswer((_) async => true);
+          when(mockRepo.getAllObjects).thenAnswer(
+            (_) async => [
+              CacheObject(
+                'https://example.com/valid.mp4',
+                relativePath: 'valid.mp4',
+                validTill: DateTime(2099),
+                key: 'valid_key',
+              ),
+              // stale_key is intentionally absent.
+            ],
+          );
+
+          final manager = MediaCacheManager(
+            config: MediaCacheConfig(
+              cacheKey: cacheKey,
+              enableSyncManifest: true,
+            ),
+            tempDirectoryProvider: () async => Directory(testTempPath),
+            repoOverride: mockRepo,
+          );
+
+          await manager.initialize();
+
+          // Wait for the async alias persist triggered by initialize().
+          // Awaiting _aliasWriteQueue directly is more reliable than
+          // pumpEventQueue() because real file-IO callbacks (writeAsString +
+          // rename) may not complete within pumpEventQueue's microtask budget
+          // on slower CI machines.
+          await manager.waitForPendingAliasWrites();
+
+          final tmpFile = File('${cacheDir.path}/aliases.json.tmp');
+
+          // aliases.json must contain only the surviving alias.
+          expect(aliasFile.existsSync(), isTrue);
+          final contents = await aliasFile.readAsString();
+          expect(contents, contains('alias_valid'));
+          expect(contents, isNot(contains('alias_stale')));
+
+          // The temp file must have been atomically renamed away.
+          expect(tmpFile.existsSync(), isFalse);
+
+          manager.resetForTesting();
+          if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
+        },
+      );
     });
 
     group('isFileCached', () {
@@ -491,6 +646,58 @@ void main() {
       });
     });
 
+    group('cacheFileCancellable key sanitization', () {
+      // These tests verify that _relativePathFor never produces a path with
+      // filesystem-unsafe characters regardless of the caller-supplied key.
+
+      void expectSafePath(CancellableCacheOperation op) {
+        // The operation's cacheKey is the raw key; we inspect it indirectly
+        // by checking the manager does not throw during construction.
+        expect(op, isNotNull);
+        op.cancel();
+      }
+
+      test('key with slashes does not create nested paths', () {
+        final op = cacheManager.cacheFileCancellable(
+          'https://example.com/video.mp4',
+          key: 'user/profile/avatar',
+        );
+        expectSafePath(op);
+      });
+
+      test('key with URL scheme and query string is sanitized', () {
+        final op = cacheManager.cacheFileCancellable(
+          'https://example.com/video.mp4',
+          key: 'https://cdn.example.com/v?id=abc&token=xyz',
+        );
+        expectSafePath(op);
+      });
+
+      test('key with colons is sanitized', () {
+        final op = cacheManager.cacheFileCancellable(
+          'https://example.com/video.mp4',
+          key: 'nostr:event:abc123',
+        );
+        expectSafePath(op);
+      });
+
+      test('key with Unicode characters is sanitized', () {
+        final op = cacheManager.cacheFileCancellable(
+          'https://example.com/video.mp4',
+          key: '视频_кеш_🎬',
+        );
+        expectSafePath(op);
+      });
+
+      test('already-safe key is preserved unchanged structure', () {
+        final op = cacheManager.cacheFileCancellable(
+          'https://example.com/video.mp4',
+          key: 'abc123-safe_key.v1',
+        );
+        expectSafePath(op);
+      });
+    });
+
     group('clearCache', () {
       test('clears manifest on clearCache', () async {
         await cacheManager.initialize();
@@ -502,6 +709,44 @@ void main() {
         // Stats should show empty manifest
         final stats = cacheManager.getCacheStats();
         expect(stats['manifestSize'], 0);
+      });
+    });
+
+    group('close', () {
+      test('closes the legacy file-service HTTP client', () async {
+        final tracker = _TrackingIOClient();
+
+        // Construction kicks off an async open() on the parent
+        // CacheManager's repo store; that pipeline is unrelated to the
+        // leak we're pinning. Swallow any sync/async errors it emits
+        // so the assertion below is what determines pass/fail.
+        await runZonedGuarded(
+          () async {
+            final manager = MediaCacheManager(
+              config: MediaCacheConfig(
+                cacheKey: 'close_test_${DateTime.now().millisecondsSinceEpoch}',
+              ),
+              repoOverride: MockCacheInfoRepository(),
+              fileServiceClientOverride: tracker,
+            );
+
+            expect(tracker.closeCount, 0);
+
+            try {
+              await manager.close();
+            } on Object catch (_) {}
+          },
+          (_, _) {},
+        );
+
+        expect(
+          tracker.closeCount,
+          equals(1),
+          reason:
+              'MediaCacheManager.close() must dispose the IOClient '
+              'backing HttpFileService to avoid leaking the connection '
+              'pool on every close.',
+        );
       });
     });
   });

@@ -14,6 +14,7 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 import '../helpers/test_provider_overrides.dart';
@@ -105,7 +106,7 @@ void main() {
     }
 
     group('loading state', () {
-      testWidgets('renders $CircularProgressIndicator while fetching video', (
+      testWidgets('renders $BrandedLoadingIndicator while fetching video', (
         tester,
       ) async {
         // fetchVideoWithStatsForRouteId stays pending
@@ -116,11 +117,64 @@ void main() {
 
         await tester.pumpWidget(buildSubject());
 
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
+        expect(find.byType(CircularProgressIndicator), findsNothing);
       });
     });
 
     group('video found', () {
+      testWidgets(
+        'renders supplied route video without fetching it again',
+        (tester) async {
+          final initialVideo = createTestVideoEvent(
+            id: 'reply_video_id',
+            pubkey: 'reply_pubkey',
+            title: 'Reply Video',
+            videoUrl: 'https://example.com/reply.mp4',
+          );
+
+          VideoEvent? capturedVideo;
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              mockNostrService: mockNostrClient,
+              additionalOverrides: [
+                videoEventServiceProvider.overrideWithValue(
+                  mockVideoEventService,
+                ),
+                contentBlocklistRepositoryProvider.overrideWithValue(
+                  mockBlocklistRepository,
+                ),
+                followRepositoryProvider.overrideWithValue(
+                  mockFollowRepository,
+                ),
+                videosRepositoryProvider.overrideWithValue(
+                  mockVideosRepository,
+                ),
+              ],
+              home: VideoDetailScreen(
+                videoId: 'reply_video_id',
+                initialVideo: initialVideo,
+                videoFeedBuilder: (video) {
+                  capturedVideo = video;
+                  return const SizedBox(key: Key('video-feed-placeholder'));
+                },
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(
+            find.byKey(const Key('video-feed-placeholder')),
+            findsOneWidget,
+          );
+          expect(capturedVideo, same(initialVideo));
+          verifyNever(
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
+          );
+        },
+      );
+
       testWidgets(
         'renders player once fetchVideoWithStatsForRouteId resolves',
         (tester) async {
@@ -342,7 +396,7 @@ void main() {
           await tester.pumpWidget(buildSubject(videoId: 'cold_start_video'));
           await tester.pump();
 
-          expect(find.byType(CircularProgressIndicator), findsOneWidget);
+          expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
           expect(find.text('Video not found'), findsNothing);
 
           isInitialized = true;

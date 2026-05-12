@@ -1,0 +1,23 @@
+name: infinite_video_feed
+description: Infinite scrolling video feed widget.
+version: 0.1.0
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.11.0
+  flutter: ^3.41.1
+
+dependencies:
+  divine_video_player: any
+  flutter:
+    sdk: flutter
+  media_cache: any
+  models: any
+
+dev_dependencies:
+  fake_async: ^1.3.3
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.4
+  very_good_analysis: ^10.0.0

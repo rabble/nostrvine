@@ -1,0 +1,94 @@
+// ABOUTME: Localized route error UI: unknown paths (errorBuilder) and bad pooled extras
+// ABOUTME: Covers GoRouter.errorBuilder and RouteErrorScreen from app routes (#3371)
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/l10n/generated/app_localizations_en.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/router.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
+import 'package:openvine/services/auth_service.dart';
+
+import '../helpers/test_provider_overrides.dart';
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(resetNavigationState);
+
+  MockAuthService authenticatedAuth() {
+    final mockAuth = createMockAuthService();
+    when(() => mockAuth.isAuthenticated).thenReturn(true);
+    when(() => mockAuth.currentPublicKeyHex).thenReturn(
+      '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738',
+    );
+    when(() => mockAuth.authState).thenReturn(AuthState.authenticated);
+    when(
+      () => mockAuth.authStateStream,
+    ).thenAnswer((_) => Stream.value(AuthState.authenticated));
+    when(() => mockAuth.hasExpiredOAuthSession).thenReturn(false);
+    return mockAuth;
+  }
+
+  testWidgets('errorBuilder shows RouteErrorScreen for unknown location', (
+    tester,
+  ) async {
+    final strings = AppLocalizationsEn();
+    final container = ProviderContainer(
+      overrides: [authServiceProvider.overrideWithValue(authenticatedAuth())],
+    );
+    addTearDown(container.dispose);
+
+    await _pumpRouter(tester, container);
+
+    container
+        .read(goRouterProvider)
+        .go('/__route_error_smoke_not_in_route_table__');
+    await tester.pumpAndSettle();
+
+    expect(find.byType(RouteErrorScreen), findsOneWidget);
+    expect(find.text(strings.routeUnknownPath), findsOneWidget);
+  });
+
+  testWidgets(
+    'pooled fullscreen route without feed args uses RouteErrorScreen with no videos copy',
+    (tester) async {
+      final strings = AppLocalizationsEn();
+      final container = ProviderContainer(
+        overrides: [
+          authServiceProvider.overrideWithValue(authenticatedAuth()),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await _pumpRouter(tester, container);
+
+      container.read(goRouterProvider).go(PooledFullscreenVideoFeedScreen.path);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RouteErrorScreen), findsOneWidget);
+      expect(find.text(strings.routeNoVideosToDisplay), findsOneWidget);
+    },
+  );
+}
+
+Future<void> _pumpRouter(
+  WidgetTester tester,
+  ProviderContainer container,
+) async {
+  await tester.pumpWidget(
+    UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp.router(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('en'),
+        routerConfig: container.read(goRouterProvider),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+}

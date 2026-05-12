@@ -734,6 +734,26 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     unawaited(crashlytics.recordError(error, stack, reason: reason));
   }
 
+  /// Clears any persisted Divine OAuth session that was created before an
+  /// invite consume completed.
+  ///
+  /// Invite flows can exchange OAuth tokens before invite activation runs.
+  /// If activation then fails, startup must not restore that partial session
+  /// and bypass the invite gate on the next launch.
+  Future<void> clearPendingDivineOAuthSession() async {
+    try {
+      await _clearKeycastSessionAndTokens();
+    } catch (e) {
+      Log.warning(
+        'Failed to clear pending Divine OAuth session: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      // Invite activation failures can legitimately leave no session to clear.
+      // Keep local visibility without sending expected cleanup noise upstream.
+    }
+  }
+
   /// Check if there are saved keys on device (without authenticating)
   ///
   /// Useful for showing different UI on welcome screen when user has
@@ -2164,9 +2184,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
       final result = await service.connect();
       if (!result.success || result.publicKey == null) {
-        throw Exception(
-          result.errorMessage ?? 'NIP-07 authentication failed.',
-        );
+        throw Exception(result.errorMessage ?? 'NIP-07 authentication failed.');
       }
 
       final pubkey = result.publicKey!;

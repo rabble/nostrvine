@@ -36,14 +36,11 @@ void main() {
     group('initialization', () {
       test('should load saved flags from preferences', () async {
         when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
-        when(
-          () => mockPrefs.getBool('ff_enhancedVideoPlayer'),
-        ).thenReturn(false);
 
         await service.initialize();
 
         expect(service.isEnabled(FeatureFlag.newCameraUI), isTrue);
-        expect(service.isEnabled(FeatureFlag.enhancedVideoPlayer), isFalse);
+        expect(service.isEnabled(FeatureFlag.accountSwitching), isFalse);
       });
 
       test('should use build defaults when no saved preference', () async {
@@ -100,7 +97,7 @@ void main() {
         when(() => mockPrefs.remove(any())).thenAnswer((_) async => true);
 
         await service.setFlag(FeatureFlag.newCameraUI, true);
-        await service.setFlag(FeatureFlag.enhancedVideoPlayer, true);
+        await service.setFlag(FeatureFlag.accountSwitching, true);
 
         await service.resetAllFlags();
 
@@ -113,13 +110,10 @@ void main() {
     group('state queries', () {
       test('should identify user overrides', () async {
         when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
-        when(
-          () => mockPrefs.containsKey('ff_enhancedVideoPlayer'),
-        ).thenReturn(false);
 
         expect(service.hasUserOverride(FeatureFlag.newCameraUI), isTrue);
         expect(
-          service.hasUserOverride(FeatureFlag.enhancedVideoPlayer),
+          service.hasUserOverride(FeatureFlag.accountSwitching),
           isFalse,
         );
       });

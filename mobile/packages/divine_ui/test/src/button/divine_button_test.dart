@@ -187,6 +187,24 @@ void main() {
         );
         expect(divineIcon.size, 24);
       });
+
+      testWidgets('tiny size renders 20px icon', (tester) async {
+        // The 32px visible chip can't fit a 24px icon plus the 6px
+        // padding above and below — tiny scales the icon down to 20px so
+        // 6 + 20 + 6 = 32 exactly.
+        await tester.pumpWidget(
+          buildTestWidget(
+            size: DivineButtonSize.tiny,
+            leadingIcon: DivineIconName.envelope,
+            onPressed: () {},
+          ),
+        );
+
+        final divineIcon = tester.widget<DivineIcon>(
+          find.byType(DivineIcon),
+        );
+        expect(divineIcon.size, 20);
+      });
     });
 
     group('interaction', () {
@@ -294,6 +312,17 @@ void main() {
     });
 
     group('button sizes', () {
+      testWidgets('renders tiny size', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            size: DivineButtonSize.tiny,
+            onPressed: () {},
+          ),
+        );
+
+        expect(find.byType(DivineButton), findsOneWidget);
+      });
+
       testWidgets('renders small size', (tester) async {
         await tester.pumpWidget(
           buildTestWidget(
@@ -314,6 +343,94 @@ void main() {
 
         expect(find.byType(DivineButton), findsOneWidget);
       });
+
+      testWidgets(
+        'tiny outer == inner == 32px (no tap-padding inflation)',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              size: DivineButtonSize.tiny,
+              onPressed: () {},
+            ),
+          );
+
+          // Tiny intentionally skips the outer tap-padding wrap so its
+          // painted bounds match the 32px module of the avatar / type
+          // icon it usually sits next to. A row that swaps the button in
+          // and out (e.g. a Follow back affordance) keeps the same
+          // intrinsic height because the button never adds height
+          // beyond what the avatar already contributes.
+          final outerSize = tester.getSize(find.byType(DivineButton));
+          final innerSize = tester.getSize(find.byType(AnimatedOpacity));
+          expect(outerSize.height, equals(32));
+          expect(innerSize.height, equals(32));
+        },
+      );
+
+      testWidgets(
+        'tiny uses 12.8 corner radius (matches 32px UserAvatar)',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(size: DivineButtonSize.tiny, onPressed: () {}),
+          );
+
+          // The Ink widget owns the decorated background; its border
+          // radius is the source of truth for the chip's corner.
+          final ink = tester.widget<Ink>(find.byType(Ink));
+          final decoration = ink.decoration! as BoxDecoration;
+          final radius = decoration.borderRadius! as BorderRadius;
+          expect(radius.topLeft, equals(const Radius.circular(12.8)));
+        },
+      );
+
+      testWidgets(
+        'tiny uses titleSmallFont (Bricolage Grotesque 800 14/20)',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(size: DivineButtonSize.tiny, onPressed: () {}),
+          );
+
+          final text = tester.widget<Text>(find.text('Test'));
+          // titleSmallFont = Bricolage 800 14/20/0.1.  Bigger weight
+          // than labelLargeFont (Inter 600) so the small chip still
+          // reads as a primary action.
+          expect(text.style?.fontWeight, equals(FontWeight.w800));
+          expect(text.style?.fontSize, equals(14));
+        },
+      );
+
+      testWidgets(
+        'small uses titleMediumFont (Bricolage Grotesque 800 16/24)',
+        (tester) async {
+          // Locks the contract that small / base keep the heavier-feel
+          // titleMediumFont — the tiny→titleSmallFont fork above must
+          // not leak into the other variants.
+          await tester.pumpWidget(
+            buildTestWidget(size: DivineButtonSize.small, onPressed: () {}),
+          );
+
+          final text = tester.widget<Text>(find.text('Test'));
+          expect(text.style?.fontWeight, equals(FontWeight.w800));
+          expect(text.style?.fontSize, equals(16));
+        },
+      );
+
+      testWidgets(
+        'small visible chip is 40px tall (4px outer × 2 + 40 = 48 tap target)',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              size: DivineButtonSize.small,
+              onPressed: () {},
+            ),
+          );
+
+          final outerSize = tester.getSize(find.byType(DivineButton));
+          final innerSize = tester.getSize(find.byType(AnimatedOpacity));
+          expect(outerSize.height - innerSize.height, equals(8));
+          expect(innerSize.height, equals(40));
+        },
+      );
     });
 
     group('disabled state', () {
@@ -503,6 +620,25 @@ void main() {
     });
 
     group('icon-only mode (empty label)', () {
+      testWidgets('tiny size uses DivineIconButton padding', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            label: '',
+            leadingIcon: DivineIconName.heart,
+            size: DivineButtonSize.tiny,
+            onPressed: () {},
+          ),
+        );
+
+        expect(find.byType(DivineButton), findsOneWidget);
+        expect(find.byType(DivineIcon), findsOneWidget);
+        expect(find.text(''), findsNothing);
+
+        // Tiny icon-only is 6 + 20 + 6 = 32 visible.
+        final innerSize = tester.getSize(find.byType(AnimatedOpacity));
+        expect(innerSize.height, equals(32));
+      });
+
       testWidgets('small size uses DivineIconButton padding', (tester) async {
         await tester.pumpWidget(
           buildTestWidget(

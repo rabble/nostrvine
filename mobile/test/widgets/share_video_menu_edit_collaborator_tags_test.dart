@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -113,7 +114,7 @@ void main() {
 
     when(
       () => mockNostrService.publishEvent(any()),
-    ).thenAnswer((_) async => signedEvent);
+    ).thenAnswer((_) async => PublishSuccess(event: signedEvent));
 
     when(
       () => mockBookmarkService.isVideoBookmarkedGlobally(any()),

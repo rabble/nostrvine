@@ -11,14 +11,10 @@ class BuildConfiguration {
     switch (flag) {
       case FeatureFlag.newCameraUI:
         return const bool.fromEnvironment('FF_NEW_CAMERA_UI');
-      case FeatureFlag.enhancedVideoPlayer:
-        return const bool.fromEnvironment('FF_ENHANCED_VIDEO_PLAYER');
       case FeatureFlag.enhancedAnalytics:
         return const bool.fromEnvironment('FF_ENHANCED_ANALYTICS');
       case FeatureFlag.newProfileLayout:
         return const bool.fromEnvironment('FF_NEW_PROFILE_LAYOUT');
-      case FeatureFlag.livestreamingBeta:
-        return const bool.fromEnvironment('FF_LIVESTREAMING_BETA');
       case FeatureFlag.debugTools:
         return const bool.fromEnvironment('FF_DEBUG_TOOLS', defaultValue: true);
       case FeatureFlag.routerDrivenHome:
@@ -48,8 +44,16 @@ class BuildConfiguration {
         return const bool.fromEnvironment('FF_PROFILE_LIST_FEATURES');
       case FeatureFlag.contentPolicyV2:
         return const bool.fromEnvironment('FF_CONTENT_POLICY_V2');
+      case FeatureFlag.videoReplies:
+        const isReleaseBuild = bool.fromEnvironment('dart.vm.product');
+        return const bool.fromEnvironment(
+          'FF_VIDEO_REPLIES',
+          defaultValue: !isReleaseBuild,
+        );
       case FeatureFlag.advancedRelaySettings:
         return const bool.fromEnvironment('FF_ADVANCED_RELAY_SETTINGS');
+      case FeatureFlag.nativeFeedPlayer:
+        return const bool.fromEnvironment('FF_NATIVE_FEED_PLAYER');
     }
   }
 
@@ -64,14 +68,10 @@ class BuildConfiguration {
     switch (flag) {
       case FeatureFlag.newCameraUI:
         return 'FF_NEW_CAMERA_UI';
-      case FeatureFlag.enhancedVideoPlayer:
-        return 'FF_ENHANCED_VIDEO_PLAYER';
       case FeatureFlag.enhancedAnalytics:
         return 'FF_ENHANCED_ANALYTICS';
       case FeatureFlag.newProfileLayout:
         return 'FF_NEW_PROFILE_LAYOUT';
-      case FeatureFlag.livestreamingBeta:
-        return 'FF_LIVESTREAMING_BETA';
       case FeatureFlag.debugTools:
         return 'FF_DEBUG_TOOLS';
       case FeatureFlag.routerDrivenHome:
@@ -94,8 +94,12 @@ class BuildConfiguration {
         return 'FF_PROFILE_LIST_FEATURES';
       case FeatureFlag.contentPolicyV2:
         return 'FF_CONTENT_POLICY_V2';
+      case FeatureFlag.videoReplies:
+        return 'FF_VIDEO_REPLIES';
       case FeatureFlag.advancedRelaySettings:
         return 'FF_ADVANCED_RELAY_SETTINGS';
+      case FeatureFlag.nativeFeedPlayer:
+        return 'FF_NATIVE_FEED_PLAYER';
     }
   }
 }

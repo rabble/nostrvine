@@ -1,4 +1,4 @@
-// ABOUTME: Repository for managing comments (Kind 1111 NIP-22) on Nostr.
+// ABOUTME: Repository for managing NIP-22 text comments and video replies.
 // ABOUTME: Provides loading, posting, and streaming of threaded comments.
 // ABOUTME: Uses NostrClient for relay operations and organizes comments
 // chronologically.
@@ -22,7 +22,12 @@ const int _deletionKind = EventKind.eventDeletion;
 /// Default limit for comment queries.
 const _defaultLimit = 100;
 
-/// Repository for managing comments (Kind 1111 NIP-22) on Nostr events.
+List<int> _threadKinds({required bool includeVideoReplies}) => [
+  _commentKind,
+  if (includeVideoReplies) EventKind.videoVertical,
+];
+
+/// Repository for managing comments and video replies on Nostr events.
 ///
 /// This repository provides a unified interface for:
 /// - Loading comments with thread structure
@@ -97,6 +102,7 @@ class CommentsRepository {
     int limit = _defaultLimit,
     DateTime? before,
     int offset = 0,
+    bool includeVideoReplies = false,
   }) async {
     try {
       if (before == null && (_funnelcakeApiClient?.isAvailable ?? false)) {
@@ -107,12 +113,23 @@ class CommentsRepository {
             offset: offset,
           );
           if (response != null) {
-            final thread = _buildThreadFromRestComments(
+            final restThread = _buildThreadFromRestComments(
               response,
               rootEventId,
               rootEventKind,
               rootAddressableId: rootAddressableId,
             );
+            final thread = includeVideoReplies
+                ? _mergeRestThreadWithRelayVideoReplies(
+                    restThread: restThread,
+                    relayVideoReplyThread: await _loadRelayVideoReplies(
+                      rootEventId: rootEventId,
+                      rootEventKind: rootEventKind,
+                      rootAddressableId: rootAddressableId,
+                      limit: limit,
+                    ),
+                  )
+                : restThread;
             // Auto-update the count cache with the authoritative REST total.
             if (thread.totalCount > 0) {
               _commentCountCache[rootEventId] = thread.totalCount;
@@ -130,7 +147,7 @@ class CommentsRepository {
 
       // NIP-22: Filter by Kind 1111 and uppercase E tag for root scope
       final filterByE = Filter(
-        kinds: const [_commentKind],
+        kinds: _threadKinds(includeVideoReplies: includeVideoReplies),
         uppercaseE: [rootEventId],
         limit: limit,
         until: untilTimestamp,
@@ -142,7 +159,7 @@ class CommentsRepository {
       // Some clients may reference addressable events using A instead of E
       if (rootAddressableId != null && rootAddressableId.isNotEmpty) {
         final filterByA = Filter(
-          kinds: const [_commentKind],
+          kinds: _threadKinds(includeVideoReplies: includeVideoReplies),
           uppercaseA: [rootAddressableId],
           limit: limit,
           until: untilTimestamp,
@@ -266,24 +283,32 @@ class CommentsRepository {
 
     try {
       // Broadcast the event (NostrClient handles signing)
-      final sentEvent = await _nostrClient.publishEvent(event);
+      final result = await _nostrClient.publishEvent(event);
 
-      if (sentEvent == null) {
+      if (result is! PublishSuccess) {
         throw const PostCommentFailedException('Failed to publish comment');
       }
+      final sentEvent = result.event;
 
       final cached = _commentCountCache[rootEventId];
       if (cached != null) _commentCountCache[rootEventId] = cached + 1;
+      final videoMetadata = _parseVideoMetadataFromImetaTags(sentEvent.tags);
 
       return Comment(
         id: sentEvent.id,
         content: trimmedContent,
         authorPubkey: sentEvent.pubkey,
-        createdAt: event.createdAtDateTime,
+        createdAt: sentEvent.createdAtDateTime,
         rootEventId: rootEventId,
         rootAuthorPubkey: rootEventAuthorPubkey,
+        rootAddressableId: rootAddressableId,
         replyToEventId: replyToEventId,
         replyToAuthorPubkey: replyToAuthorPubkey,
+        videoUrl: videoMetadata.videoUrl,
+        thumbnailUrl: videoMetadata.thumbnailUrl,
+        videoDimensions: videoMetadata.videoDimensions,
+        videoDuration: videoMetadata.videoDuration,
+        videoBlurhash: videoMetadata.videoBlurhash,
       );
     } on CommentsRepositoryException {
       rethrow;
@@ -302,6 +327,9 @@ class CommentsRepository {
   /// - [rootAddressableId]: Optional addressable identifier for the root event
   ///   (format: `kind:pubkey:d-tag`). When provided, counts comments from both
   ///   E and A tag queries to get an accurate total.
+  /// - [includeVideoReplies]: Whether to include Kind 34236 video replies in
+  ///   the count. Defaults to `false` so flag-off callers do not inflate the
+  ///   comment badge with reply-only videos.
   ///
   /// Returns the number of comments on the event.
   ///
@@ -309,6 +337,7 @@ class CommentsRepository {
   Future<int> getCommentsCount(
     String rootEventId, {
     String? rootAddressableId,
+    bool includeVideoReplies = false,
   }) async {
     final cached = _commentCountCache[rootEventId];
     if (cached != null) return cached;
@@ -316,7 +345,7 @@ class CommentsRepository {
     try {
       // NIP-22: Filter by Kind 1111 and uppercase E tag
       final filterByE = Filter(
-        kinds: const [_commentKind],
+        kinds: _threadKinds(includeVideoReplies: includeVideoReplies),
         uppercaseE: [rootEventId],
       );
 
@@ -325,7 +354,7 @@ class CommentsRepository {
       // If we have an addressable ID, also query by uppercase A tag
       if (rootAddressableId != null && rootAddressableId.isNotEmpty) {
         final filterByA = Filter(
-          kinds: const [_commentKind],
+          kinds: _threadKinds(includeVideoReplies: includeVideoReplies),
           uppercaseA: [rootAddressableId],
         );
 
@@ -406,7 +435,7 @@ class CommentsRepository {
       );
 
       final sentEvent = await _nostrClient.publishEvent(event);
-      if (sentEvent == null) {
+      if (sentEvent is! PublishSuccess) {
         throw const DeleteCommentFailedException(
           'Failed to publish deletion request',
         );
@@ -447,6 +476,7 @@ class CommentsRepository {
     DateTime? since,
     String? rootAddressableId,
     void Function()? onEose,
+    bool includeVideoReplies = false,
   }) {
     try {
       final sinceTimestamp = since != null
@@ -455,13 +485,13 @@ class CommentsRepository {
 
       final filters = <Filter>[
         Filter(
-          kinds: const [_commentKind],
+          kinds: _threadKinds(includeVideoReplies: includeVideoReplies),
           uppercaseE: [rootEventId],
           since: sinceTimestamp,
         ),
         if (rootAddressableId != null && rootAddressableId.isNotEmpty)
           Filter(
-            kinds: const [_commentKind],
+            kinds: _threadKinds(includeVideoReplies: includeVideoReplies),
             uppercaseA: [rootAddressableId],
             since: sinceTimestamp,
           ),
@@ -508,6 +538,10 @@ class CommentsRepository {
   /// Returns a list of comments sorted newest first.
   /// Supports cursor-based pagination via [before].
   ///
+  /// By default this returns text comments only. Callers that render a
+  /// dedicated video-replies surface should opt in with
+  /// [includeVideoReplies].
+  ///
   /// Throws:
   ///
   /// * [LoadCommentsByAuthorFailedException] if the query fails.
@@ -515,6 +549,7 @@ class CommentsRepository {
     required String authorPubkey,
     int limit = _authorCommentsLimit,
     DateTime? before,
+    bool includeVideoReplies = false,
   }) async {
     try {
       final untilTimestamp = before != null
@@ -522,7 +557,7 @@ class CommentsRepository {
           : null;
 
       final filter = Filter(
-        kinds: const [_commentKind],
+        kinds: _threadKinds(includeVideoReplies: includeVideoReplies),
         authors: [authorPubkey],
         limit: limit,
         until: untilTimestamp,
@@ -664,41 +699,7 @@ class CommentsRepository {
           parentKind == rootEventKind.toString() ||
           replyToEventId == parsedRootEventId;
 
-      // Parse NIP-92 imeta tags for attached video metadata
-      String? videoUrl;
-      String? thumbnailUrl;
-      String? videoDimensions;
-      int? videoDuration;
-      String? videoBlurhash;
-
-      for (final rawTag in event.tags) {
-        final tag = rawTag as List<dynamic>;
-        if (tag.isEmpty) continue;
-        if (tag[0] as String != 'imeta') continue;
-
-        // imeta tag fields: "key value" pairs after the tag name
-        for (var i = 1; i < tag.length; i++) {
-          final field = (tag[i] as String).trim();
-          if (field.startsWith('url ')) {
-            final url = field.substring(4).trim();
-            // Only treat as video if it has a video extension
-            if (url.endsWith('.mp4') ||
-                url.endsWith('.mov') ||
-                url.endsWith('.webm') ||
-                url.contains('video')) {
-              videoUrl = url;
-            }
-          } else if (field.startsWith('image ')) {
-            thumbnailUrl = field.substring(6).trim();
-          } else if (field.startsWith('dim ')) {
-            videoDimensions = field.substring(4).trim();
-          } else if (field.startsWith('duration ')) {
-            videoDuration = int.tryParse(field.substring(9).trim());
-          } else if (field.startsWith('blurhash ')) {
-            videoBlurhash = field.substring(9).trim();
-          }
-        }
-      }
+      final videoMetadata = _parseVideoMetadataFromImetaTags(event.tags);
 
       return Comment(
         id: event.id,
@@ -709,12 +710,13 @@ class CommentsRepository {
         // For top-level comments, replyToEventId should be null
         replyToEventId: isTopLevel ? null : replyToEventId,
         rootAuthorPubkey: rootAuthorPubkey ?? '',
+        rootAddressableId: parsedRootAddressableId,
         replyToAuthorPubkey: isTopLevel ? null : replyToAuthorPubkey,
-        videoUrl: videoUrl,
-        thumbnailUrl: thumbnailUrl,
-        videoDimensions: videoDimensions,
-        videoDuration: videoDuration,
-        videoBlurhash: videoBlurhash,
+        videoUrl: videoMetadata.videoUrl,
+        thumbnailUrl: videoMetadata.thumbnailUrl,
+        videoDimensions: videoMetadata.videoDimensions,
+        videoDuration: videoMetadata.videoDuration,
+        videoBlurhash: videoMetadata.videoBlurhash,
       );
     } on Exception {
       return null;
@@ -792,6 +794,73 @@ class CommentsRepository {
     return thread.copyWith(totalCount: response.total);
   }
 
+  Future<CommentThread> _loadRelayVideoReplies({
+    required String rootEventId,
+    required int rootEventKind,
+    required String? rootAddressableId,
+    required int limit,
+  }) async {
+    final filterByE = Filter(
+      kinds: const [EventKind.videoVertical],
+      uppercaseE: [rootEventId],
+      limit: limit,
+    );
+
+    final events = <String, Event>{};
+    if (rootAddressableId != null && rootAddressableId.isNotEmpty) {
+      final filterByA = Filter(
+        kinds: const [EventKind.videoVertical],
+        uppercaseA: [rootAddressableId],
+        limit: limit,
+      );
+      final results = await Future.wait([
+        _nostrClient.queryEvents([filterByE]),
+        _nostrClient.queryEvents([filterByA]),
+      ]);
+      for (final event in results.expand((result) => result)) {
+        events[event.id] = event;
+      }
+    } else {
+      final results = await _nostrClient.queryEvents([filterByE]);
+      for (final event in results) {
+        events[event.id] = event;
+      }
+    }
+
+    return _buildThreadFromEvents(
+      events.values.toList(),
+      rootEventId,
+      rootEventKind,
+      rootAddressableId: rootAddressableId,
+    );
+  }
+
+  CommentThread _mergeRestThreadWithRelayVideoReplies({
+    required CommentThread restThread,
+    required CommentThread relayVideoReplyThread,
+  }) {
+    if (relayVideoReplyThread.comments.isEmpty) return restThread;
+
+    final commentMap = <String, Comment>{
+      for (final comment in restThread.comments) comment.id: comment,
+    };
+    var addedRelayVideoReplyCount = 0;
+    for (final comment in relayVideoReplyThread.comments) {
+      if (!comment.hasVideo || commentMap.containsKey(comment.id)) continue;
+      commentMap[comment.id] = comment;
+      addedRelayVideoReplyCount++;
+    }
+
+    final merged = _buildThreadFromComments(commentMap, restThread.rootEventId);
+    final restTotal = max(restThread.totalCount, restThread.comments.length);
+    return merged.copyWith(
+      totalCount: max(
+        merged.comments.length,
+        restTotal + addedRelayVideoReplyCount,
+      ),
+    );
+  }
+
   Comment? _restCommentToComment(
     VideoComment restComment,
     String rootEventId,
@@ -844,6 +913,7 @@ class CommentsRepository {
         ),
         rootEventId: parsedRootEventId ?? rootEventId,
         rootAuthorPubkey: rootAuthorPubkey ?? '',
+        rootAddressableId: parsedRootAddressableId ?? rootAddressableId,
         replyToEventId: isTopLevel ? null : parsedReplyToEventId,
         replyToAuthorPubkey: isTopLevel ? null : restComment.replyToPubkey,
       );
@@ -851,6 +921,64 @@ class CommentsRepository {
       return null;
     }
   }
+
+  _CommentVideoMetadata _parseVideoMetadataFromImetaTags(
+    List<List<dynamic>> tags,
+  ) {
+    String? videoUrl;
+    String? thumbnailUrl;
+    String? videoDimensions;
+    int? videoDuration;
+    String? videoBlurhash;
+
+    for (final tag in tags) {
+      if (tag.isEmpty || tag.first != 'imeta') continue;
+
+      String? imetaUrlCandidate;
+      String? imetaMimeType;
+
+      for (var i = 1; i < tag.length; i++) {
+        final field = tag[i].toString().trim();
+        if (field.startsWith('url ')) {
+          imetaUrlCandidate = field.substring(4).trim();
+        } else if (field.startsWith('m ')) {
+          imetaMimeType = field.substring(2).trim().toLowerCase();
+        } else if (field.startsWith('image ')) {
+          thumbnailUrl = field.substring(6).trim();
+        } else if (field.startsWith('dim ')) {
+          videoDimensions = field.substring(4).trim();
+        } else if (field.startsWith('duration ')) {
+          videoDuration = int.tryParse(field.substring(9).trim());
+        } else if (field.startsWith('blurhash ')) {
+          videoBlurhash = field.substring(9).trim();
+        }
+      }
+
+      if (imetaUrlCandidate != null &&
+          ((imetaMimeType?.startsWith('video/') ?? false) ||
+              _isVideoUrl(imetaUrlCandidate))) {
+        videoUrl = imetaUrlCandidate;
+      }
+    }
+
+    return _CommentVideoMetadata(
+      videoUrl: videoUrl,
+      thumbnailUrl: thumbnailUrl,
+      videoDimensions: videoDimensions,
+      videoDuration: videoDuration,
+      videoBlurhash: videoBlurhash,
+    );
+  }
+
+  bool _isVideoUrl(String url) =>
+      switch (Uri.tryParse(url)?.path.toLowerCase()) {
+        final String path
+            when path.endsWith('.mp4') ||
+                path.endsWith('.mov') ||
+                path.endsWith('.webm') =>
+          true,
+        _ => false,
+      };
 
   /// Builds a CommentThread from a map of comments.
   ///
@@ -876,4 +1004,20 @@ class CommentsRepository {
       commentCache: Map<String, Comment>.unmodifiable(commentMap),
     );
   }
+}
+
+class _CommentVideoMetadata {
+  const _CommentVideoMetadata({
+    this.videoUrl,
+    this.thumbnailUrl,
+    this.videoDimensions,
+    this.videoDuration,
+    this.videoBlurhash,
+  });
+
+  final String? videoUrl;
+  final String? thumbnailUrl;
+  final String? videoDimensions;
+  final int? videoDuration;
+  final String? videoBlurhash;
 }

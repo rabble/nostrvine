@@ -82,21 +82,25 @@ Semantics(
 
 ## Dynamic Announcements
 
-When the UI changes asynchronously (upload complete, error, navigation), announce the change to screen readers using `SemanticsService.announce`:
+When the UI changes asynchronously (upload complete, error, navigation), announce the change to screen readers using `SemanticsService.sendAnnouncement`. Prefer it over the older 2-arg `SemanticsService.announce` — `announce` was deprecated in Flutter 3.27 in favor of the view-aware form. All in-repo precedents (`feed_auto_advance_cubit.dart`, `feed_settings_menu.dart`, `paused_video_play_overlay.dart`, `conversation_view.dart`) already use the newer API.
 
 ```dart
 import 'package:flutter/semantics.dart';
 
 // After async operation completes
-SemanticsService.announce(
+SemanticsService.sendAnnouncement(
+  View.of(context),
   'Video uploaded successfully',
-  TextDirection.ltr,
+  Directionality.of(context),
 );
 
-// After error
-SemanticsService.announce(
+// After error — use Directionality.of(context) (not a hardcoded
+// TextDirection.ltr) so RTL locales like ar get the correct
+// reading direction.
+SemanticsService.sendAnnouncement(
+  View.of(context),
   'Upload failed. Please try again.',
-  TextDirection.ltr,
+  Directionality.of(context),
 );
 ```
 
@@ -304,7 +308,7 @@ When writing or reviewing code, flag these accessibility issues.
 - **Meaningful image or thumbnail without `semanticLabel`** — screen reader announces nothing useful
 - **Decorative image not wrapped in `ExcludeSemantics`** — clutters the semantics tree
 - **Fixed `SizedBox(height:)` around text-bearing widget** → suggest `ConstrainedBox(minHeight:)` for font scaling
-- **Missing `SemanticsService.announce()` after async state change** that updates visible content (upload, delete, error)
+- **Missing `SemanticsService.sendAnnouncement()` after async state change** that updates visible content (upload, delete, error)
 - **Semantic identifier as inline magic string** → suggest constant from `SemanticIds`
 
 ### Nitpick

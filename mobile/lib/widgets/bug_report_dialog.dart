@@ -7,10 +7,12 @@ import 'dart:async';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
+import 'package:openvine/widgets/image_attachment_picker.dart';
 import 'package:openvine/widgets/support_dialog_utils.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -90,6 +92,7 @@ class _BugReportDialogState extends State<BugReportDialog> {
   bool? _isSuccess;
   bool _isDisposed = false;
   Timer? _closeTimer;
+  List<XFile> _attachments = [];
 
   @override
   void dispose() {
@@ -139,6 +142,7 @@ class _BugReportDialogState extends State<BugReportDialog> {
         userPubkey: widget.userPubkey,
         errorCounts: reportData.errorCounts,
         logsSummary: _buildLogsSummary(reportData.recentLogs),
+        attachmentPaths: _attachments.map((f) => f.path).toList(),
       );
 
       if (!_isDisposed && mounted) {
@@ -173,7 +177,9 @@ class _BugReportDialogState extends State<BugReportDialog> {
         setState(() {
           _isSubmitting = false;
           _isSuccess = false;
-          _resultMessage = context.l10n.bugReportFailedWithError('$e');
+          _resultMessage = e is ZendeskAttachmentUploadException
+              ? context.l10n.bugReportUploadFailed
+              : context.l10n.bugReportSendFailed;
         });
       }
     }
@@ -255,12 +261,20 @@ class _BugReportDialogState extends State<BugReportDialog> {
                 onChanged: (_) => setState(() {}),
               ),
 
+              const SizedBox(height: 16),
+
+              // Image attachments (mobile only)
+              ImageAttachmentPicker(
+                enabled: !_isSubmitting,
+                onChanged: (files) => setState(() => _attachments = files),
+              ),
+
               const SizedBox(height: 8),
 
               // Info text
               Text(
                 context.l10n.bugReportDiagnosticsNotice,
-                style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                style: VineTheme.bodySmallFont(color: VineTheme.lightText),
               ),
 
               const SizedBox(height: 16),

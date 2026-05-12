@@ -1,10 +1,13 @@
 // ABOUTME: Pinned regression tests for the mocktail + Future.timeout gotcha.
 // ABOUTME: When mocktail's thenAnswer((_) async => value) infers a non-nullable
-// ABOUTME: Future<T>, .timeout(onTimeout: () => null) throws a runtime TypeError
-// ABOUTME: because Null is not a subtype of FutureOr<T>. Production code in
-// ABOUTME: video_event_publisher.dart sidesteps this by using try/catch on
+// ABOUTME: Future<T>, .timeout(onTimeout: () => fallback) throws a runtime TypeError
+// ABOUTME: because the closure return type is inferred too narrowly. Production code
+// ABOUTME: in video_event_publisher.dart sidesteps this by using try/catch on
 // ABOUTME: TimeoutException; this file locks the gotcha so future contributors
 // ABOUTME: don't reach for onTimeout when stubbing publishEvent in tests.
+// ABOUTME: Note: publishEvent now returns Future<PublishResult> (a non-nullable
+// ABOUTME: sealed class), so the original Event? nullable flavour is gone, but
+// ABOUTME: the try/catch shape remains the preferred pattern.
 
 import 'dart:async';
 
@@ -37,39 +40,49 @@ void main() {
     });
 
     test(
-      'plain mocktail thenAnswer + await returns the stubbed event',
+      'plain mocktail thenAnswer + await returns the stubbed PublishSuccess',
       () async {
+        final stubResult = PublishSuccess(event: event);
         when(
           () => mock.publishEvent(any()),
-        ).thenAnswer((_) async => event);
+        ).thenAnswer((_) async => stubResult);
 
         final result = await mock.publishEvent(event);
 
-        expect(result, equals(event));
+        expect(result, equals(stubResult));
       },
     );
 
     test(
-      'GOTCHA: mocktail thenAnswer((_) async => event) + .timeout(onTimeout: '
-      '() => null) throws TypeError at runtime because the stubbed Future has '
-      'lost the ? nullability of the declared signature',
+      'GOTCHA: mocktail thenAnswer((_) async => value) + .timeout(onTimeout: '
+      '() => fallback) throws TypeError at runtime because the stubbed Future '
+      'has lost nullability of the closure return type',
       () async {
+        final stubResult = PublishSuccess(event: event);
         when(
           () => mock.publishEvent(any()),
-        ).thenAnswer((_) async => event);
+        ).thenAnswer((_) async => stubResult);
 
         await expectLater(
           () async => mock
               .publishEvent(event)
               .timeout(
                 const Duration(seconds: 30),
-                onTimeout: () => null,
+                onTimeout: () => const PublishFailed(),
               ),
+          // With a non-nullable sealed class the TypeError manifests differently
+          // than with Event? — the closure infers its return as PublishFailed,
+          // which is not assignable to the inferred non-nullable PublishSuccess
+          // type that mocktail bakes in. The safe workaround is try/catch.
           throwsA(
             isA<TypeError>().having(
-              (e) => e.toString(),
+              (error) => error.toString(),
               'message',
-              contains("'() => Null' is not a subtype of"),
+              allOf(
+                contains('PublishFailed'),
+                contains('PublishSuccess'),
+                contains('subtype of'),
+              ),
             ),
           ),
           reason:
@@ -80,43 +93,40 @@ void main() {
       },
     );
 
-    test(
-      'WORKAROUND A: try/catch on TimeoutException avoids the closure-cast '
-      'trap (this is the production-code shape)',
-      () async {
-        when(
-          () => mock.publishEvent(any()),
-        ).thenAnswer((_) async => event);
+    test('WORKAROUND A: try/catch on TimeoutException avoids the closure-cast '
+        'trap (this is the production-code shape)', () async {
+      final stubResult = PublishSuccess(event: event);
+      when(() => mock.publishEvent(any())).thenAnswer((_) async => stubResult);
 
-        Event? result;
-        try {
-          result = await mock
-              .publishEvent(event)
-              .timeout(const Duration(seconds: 30));
-        } on TimeoutException {
-          result = null;
-        }
+      PublishResult? result;
+      try {
+        result = await mock
+            .publishEvent(event)
+            .timeout(const Duration(seconds: 30));
+      } on TimeoutException {
+        result = const PublishFailed();
+      }
 
-        expect(result, equals(event));
-      },
-    );
+      expect(result, equals(stubResult));
+    });
 
     test(
-      'WORKAROUND B: stubbing with Future<Event?>.value(event) preserves '
-      'nullability so onTimeout: () => null also works',
+      'WORKAROUND B: stubbing with Future<PublishResult>.value(result) '
+      'preserves the declared return type so onTimeout closure also works',
       () async {
+        final stubResult = PublishSuccess(event: event);
         when(
           () => mock.publishEvent(any()),
-        ).thenAnswer((_) => Future<Event?>.value(event));
+        ).thenAnswer((_) => Future<PublishResult>.value(stubResult));
 
         final result = await mock
             .publishEvent(event)
             .timeout(
               const Duration(seconds: 30),
-              onTimeout: () => null,
+              onTimeout: () => const PublishFailed(),
             );
 
-        expect(result, equals(event));
+        expect(result, equals(stubResult));
       },
     );
 
@@ -124,12 +134,13 @@ void main() {
       'sanity: plain Future.value with the right type + .timeout works',
       () async {
         // Confirms the gotcha is mocktail-specific, not a Dart stdlib issue.
-        final source = Future<Event?>.value(event);
+        final stubResult = PublishSuccess(event: event);
+        final source = Future<PublishResult>.value(stubResult);
         final result = await source.timeout(
           const Duration(seconds: 30),
-          onTimeout: () => null,
+          onTimeout: () => const PublishFailed(),
         );
-        expect(result, equals(event));
+        expect(result, equals(stubResult));
       },
     );
   });

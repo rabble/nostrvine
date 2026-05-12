@@ -3,6 +3,7 @@
 // ABOUTME: data is absent. Covers badges, title, stats, creator, tags,
 // ABOUTME: collaborators, inspired by, reposted by, and sounds sections.
 
+import 'package:collaborator_repository/collaborator_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -13,9 +14,9 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
-import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_badges_row.dart';
@@ -27,7 +28,7 @@ import 'package:openvine/widgets/video_feed_item/metadata/metadata_user_chips.da
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_verification_section.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/video_reposters_cubit.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
 
@@ -35,6 +36,8 @@ class _MockVideoInteractionsBloc extends Mock
     implements VideoInteractionsBloc {}
 
 class _MockVideoRepostersCubit extends Mock implements VideoRepostersCubit {}
+
+class _MockVideosRepository extends Mock implements VideosRepository {}
 
 // Stable 64-char hex pubkeys for deterministic tests.
 const _creatorPubkey =
@@ -51,6 +54,10 @@ const _audioPubkey =
     'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 const _audioEventId =
     '1111111111111111111111111111111111111111111111111111111111111111';
+const _parentEventId =
+    '32e8069cb2f468548236bf743563bfd930b96fe2e5731a4b2f58e38d24df82b2';
+const _parentAddressableId =
+    '34236:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:parent-d-tag';
 
 AppLocalizations _l10n(WidgetTester tester) =>
     AppLocalizations.of(tester.element(find.byType(Scaffold).first));
@@ -77,6 +84,7 @@ VideoEvent _makeVideo({
   int originalLoops = 1500,
   int createdAt = 1700000000,
   String? publishedAt,
+  List<List<String>> nostrEventTags = const [],
 }) => VideoEvent(
   id: 'test_video_id_00000000000000000000000000000000000000000000000000',
   pubkey: _creatorPubkey,
@@ -94,6 +102,7 @@ VideoEvent _makeVideo({
   originalLoops: originalLoops,
   rawTags: rawTags,
   publishedAt: publishedAt,
+  nostrEventTags: nostrEventTags,
 );
 
 const _testAudio = AudioEvent(
@@ -108,8 +117,10 @@ const _testAudio = AudioEvent(
 void main() {
   late _MockVideoInteractionsBloc mockInteractionsBloc;
   late _MockVideoRepostersCubit mockRepostersCubit;
+  late _MockVideosRepository mockVideosRepository;
 
   setUp(() {
+    mockVideosRepository = _MockVideosRepository();
     mockInteractionsBloc = _MockVideoInteractionsBloc();
     when(
       () => mockInteractionsBloc.stream,
@@ -131,6 +142,9 @@ void main() {
       () => mockRepostersCubit.state,
     ).thenReturn(const VideoRepostersState(isLoading: false));
     when(() => mockRepostersCubit.close()).thenAnswer((_) async {});
+    when(
+      () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
+    ).thenAnswer((_) async => null);
   });
 
   /// Pumps a metadata widget inside the required provider tree.
@@ -149,6 +163,7 @@ void main() {
           sharedPreferencesProvider.overrideWithValue(
             createMockSharedPreferences(),
           ),
+          videosRepositoryProvider.overrideWithValue(mockVideosRepository),
           ...providerOverrides,
         ],
       ),
@@ -176,6 +191,47 @@ void main() {
   // Title section
   // ---------------------------------------------------------------------------
   group('_TitleSection (via $MetadataExpandedSheet)', () {
+    testWidgets('renders fetched parent context for a video reply', (
+      tester,
+    ) async {
+      final video = _makeVideo(
+        title: 'Comment video',
+        rawTags: const {
+          'A': _parentAddressableId,
+          'E': _parentEventId,
+          'K': '34236',
+          'a': _parentAddressableId,
+        },
+        inspiredByVideo: const InspiredByInfo(
+          addressableId: _parentAddressableId,
+        ),
+      );
+      final parentVideo = _makeVideo(
+        title: 'Original cat video',
+        content: 'where the reply belongs',
+      );
+      when(
+        () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+          _parentAddressableId,
+        ),
+      ).thenAnswer((_) async => parentVideo);
+
+      await tester.pumpWidget(
+        buildSubject(child: MetadataExpandedSheet(video: video)),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('In reply to'), findsOneWidget);
+      expect(find.text('Reply to Original cat video'), findsOneWidget);
+      expect(find.textContaining('Inspired by'), findsNothing);
+      verify(
+        () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+          _parentAddressableId,
+        ),
+      ).called(1);
+    });
+
     testWidgets('renders title and description when present', (tester) async {
       final video = _makeVideo(title: 'Who knew?', content: 'A description');
 
@@ -327,110 +383,6 @@ void main() {
         ),
         findsOneWidget,
       );
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // Captions setting
-  // ---------------------------------------------------------------------------
-  group('Captions setting', () {
-    testWidgets('renders captions row even when video has no subtitles', (
-      tester,
-    ) async {
-      final video = _makeVideo();
-
-      await tester.pumpWidget(
-        buildSubject(child: MetadataExpandedSheet(video: video)),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('Captions'), findsOneWidget);
-      expect(find.byType(Switch), findsOneWidget);
-    });
-
-    testWidgets('defaults captions switch to on from global preference', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        buildSubject(child: MetadataExpandedSheet(video: _makeVideo())),
-      );
-      await tester.pumpAndSettle();
-
-      final switchWidget = tester.widget<Switch>(find.byType(Switch));
-      expect(switchWidget.value, isTrue);
-      expect(switchWidget.activeThumbColor, VineTheme.whiteText);
-      expect(switchWidget.activeTrackColor, VineTheme.vineGreen);
-      expect(switchWidget.inactiveThumbColor, VineTheme.whiteText);
-      expect(switchWidget.inactiveTrackColor, VineTheme.surfaceContainer);
-    });
-
-    testWidgets('renders captions after the primary metadata content', (
-      tester,
-    ) async {
-      final video = _makeVideo(title: 'Why', content: 'Because');
-
-      await tester.pumpWidget(
-        buildSubject(child: MetadataExpandedSheet(video: video)),
-      );
-      await tester.pumpAndSettle();
-
-      final titleY = tester.getTopLeft(find.text('Why')).dy;
-      final captionsY = tester.getTopLeft(find.text('Captions')).dy;
-
-      expect(captionsY, greaterThan(titleY));
-    });
-
-    testWidgets('keeps captions label adjacent to the toggle', (tester) async {
-      await tester.pumpWidget(
-        buildSubject(child: MetadataExpandedSheet(video: _makeVideo())),
-      );
-      await tester.pumpAndSettle();
-
-      final labelRight = tester.getTopRight(find.text('Captions')).dx;
-      final switchLeft = tester.getTopLeft(find.byType(Switch)).dx;
-
-      expect(switchLeft - labelRight, lessThanOrEqualTo(24));
-    });
-
-    testWidgets('toggling captions switch updates global provider state', (
-      tester,
-    ) async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-      final container = ProviderContainer(
-        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
-      );
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: MultiBlocProvider(
-                providers: [
-                  BlocProvider<VideoInteractionsBloc>.value(
-                    value: mockInteractionsBloc,
-                  ),
-                  BlocProvider<VideoRepostersCubit>.value(
-                    value: mockRepostersCubit,
-                  ),
-                ],
-                child: MetadataExpandedSheet(video: _makeVideo()),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byType(Switch));
-      await tester.pumpAndSettle();
-
-      expect(container.read(subtitleVisibilityProvider), isFalse);
-      expect(prefs.getBool('subtitle_visibility_enabled'), isFalse);
     });
   });
 
@@ -663,6 +615,9 @@ void main() {
   // ---------------------------------------------------------------------------
   group(MetadataCollaboratorsSection, () {
     testWidgets('renders collaborator chips when present', (tester) async {
+      final video = _makeVideo(
+        collaboratorPubkeys: const [_collaborator1, _collaborator2],
+      );
       await tester.pumpWidget(
         buildSubject(
           providerOverrides: [
@@ -673,27 +628,204 @@ void main() {
               (ref) async => _makeProfile(_collaborator2, 'Dan Spurgin'),
             ),
           ],
-          child: const MetadataCollaboratorsSection(
-            collaboratorPubkeys: [_collaborator1, _collaborator2],
-          ),
+          child: MetadataCollaboratorsSection(video: video),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Collaborators'), findsOneWidget);
+      final l10n = _l10n(tester);
+      expect(find.text(l10n.metadataCollaboratorsLabel), findsOneWidget);
       expect(find.text('Josh Musick'), findsOneWidget);
       expect(find.text('Dan Spurgin'), findsOneWidget);
     });
 
     testWidgets('hides when no collaborators', (tester) async {
+      final video = _makeVideo();
       await tester.pumpWidget(
-        buildSubject(
-          child: const MetadataCollaboratorsSection(collaboratorPubkeys: []),
-        ),
+        buildSubject(child: MetadataCollaboratorsSection(video: video)),
       );
 
-      expect(find.text('Collaborators'), findsNothing);
+      final l10n = _l10n(tester);
+      expect(find.text(l10n.metadataCollaboratorsLabel), findsNothing);
     });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Collaborators section body (status-aware rendering)
+  // ---------------------------------------------------------------------------
+  group(MetadataCollaboratorsSectionBody, () {
+    testWidgets(
+      'fallback mode: renders all chips without Pending decoration',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            providerOverrides: [
+              fetchUserProfileProvider(_collaborator1).overrideWith(
+                (ref) async => _makeProfile(_collaborator1, 'Alice'),
+              ),
+              fetchUserProfileProvider(_collaborator2).overrideWith(
+                (ref) async => _makeProfile(_collaborator2, 'Bob'),
+              ),
+            ],
+            child: const MetadataCollaboratorsSectionBody(
+              visibility: CollaboratorVisibility.fallback(
+                taggedPubkeys: [_collaborator1, _collaborator2],
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = _l10n(tester);
+        expect(
+          find.text(l10n.metadataCollaboratorsLabel),
+          findsOneWidget,
+        );
+        expect(find.text('Alice'), findsOneWidget);
+        expect(find.text('Bob'), findsOneWidget);
+        expect(
+          find.text(l10n.videoCollaboratorPendingDecoration),
+          findsNothing,
+        );
+        expect(find.byType(Opacity), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'inviter view: pending chip shows Pending label and is dimmed',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            providerOverrides: [
+              fetchUserProfileProvider(_collaborator1).overrideWith(
+                (ref) async => _makeProfile(_collaborator1, 'Alice'),
+              ),
+              fetchUserProfileProvider(_collaborator2).overrideWith(
+                (ref) async => _makeProfile(_collaborator2, 'Bob'),
+              ),
+            ],
+            child: const MetadataCollaboratorsSectionBody(
+              visibility: CollaboratorVisibility(
+                taggedPubkeys: [_collaborator1, _collaborator2],
+                statusByPubkey: {
+                  _collaborator1: CollaboratorStatus.pending,
+                  _collaborator2: CollaboratorStatus.confirmed,
+                },
+                currentUserPubkey: _creatorPubkey,
+                creatorPubkey: _creatorPubkey,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = _l10n(tester);
+        // Exactly one chip has the Pending label (Alice).
+        expect(
+          find.text(l10n.videoCollaboratorPendingDecoration),
+          findsOneWidget,
+        );
+        // The pending chip is wrapped in an Opacity.
+        final opacityWidgets = tester.widgetList<Opacity>(
+          find.byType(Opacity),
+        );
+        expect(opacityWidgets, hasLength(1));
+        expect(opacityWidgets.first.opacity, closeTo(0.7, 0.001));
+      },
+    );
+
+    testWidgets(
+      'recipient view (ignored): own chip filtered out',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            providerOverrides: [
+              fetchUserProfileProvider(_collaborator1).overrideWith(
+                (ref) async => _makeProfile(_collaborator1, 'Alice'),
+              ),
+              fetchUserProfileProvider(_collaborator2).overrideWith(
+                (ref) async => _makeProfile(_collaborator2, 'Bob'),
+              ),
+            ],
+            child: const MetadataCollaboratorsSectionBody(
+              visibility: CollaboratorVisibility(
+                taggedPubkeys: [_collaborator1, _collaborator2],
+                statusByPubkey: {
+                  _collaborator1: CollaboratorStatus.ignored,
+                },
+                currentUserPubkey: _collaborator1,
+                creatorPubkey: _creatorPubkey,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Alice (current user, ignored) is hidden; Bob is visible.
+        expect(find.text('Alice'), findsNothing);
+        expect(find.text('Bob'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'recipient view (ignored, sole collaborator): section shrinks',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            child: const MetadataCollaboratorsSectionBody(
+              visibility: CollaboratorVisibility(
+                taggedPubkeys: [_collaborator1],
+                statusByPubkey: {
+                  _collaborator1: CollaboratorStatus.ignored,
+                },
+                currentUserPubkey: _collaborator1,
+                creatorPubkey: _creatorPubkey,
+              ),
+            ),
+          ),
+        );
+
+        final l10n = _l10n(tester);
+        expect(
+          find.text(l10n.metadataCollaboratorsLabel),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'third-party view: no Pending decoration even for pending status',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            providerOverrides: [
+              fetchUserProfileProvider(_collaborator1).overrideWith(
+                (ref) async => _makeProfile(_collaborator1, 'Alice'),
+              ),
+            ],
+            child: const MetadataCollaboratorsSectionBody(
+              visibility: CollaboratorVisibility(
+                taggedPubkeys: [_collaborator1],
+                statusByPubkey: {
+                  _collaborator1: CollaboratorStatus.pending,
+                },
+                currentUserPubkey: _reposterPubkey,
+                creatorPubkey: _creatorPubkey,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = _l10n(tester);
+        expect(find.text('Alice'), findsOneWidget);
+        expect(
+          find.text(l10n.videoCollaboratorPendingDecoration),
+          findsNothing,
+        );
+        expect(find.byType(Opacity), findsNothing);
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------

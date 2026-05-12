@@ -1,8 +1,9 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:infinite_video_feed/infinite_video_feed.dart'
+    show VideoErrorType;
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
-import 'package:pooled_video_player/pooled_video_player.dart';
 
 void main() {
   group(VideoPlaybackStatusCubit, () {

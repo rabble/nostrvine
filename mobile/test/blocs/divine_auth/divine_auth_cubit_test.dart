@@ -11,6 +11,7 @@ import 'package:openvine/blocs/divine_auth/divine_auth_cubit.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/utils/validators.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class _MockKeycastOAuth extends Mock implements KeycastOAuth {}
 
@@ -50,11 +51,15 @@ void main() {
     const testDeviceCode = 'test-device-code-abc123';
     const testCode = 'auth-code-456';
 
-    setUp(() {
+    setUp(() async {
+      await LogCaptureService().clearAllLogs();
       mockOAuth = _MockKeycastOAuth();
       mockAuthService = _MockAuthService();
       mockPendingVerification = _MockPendingVerificationService();
       mockInviteApiClient = _MockInviteApiClient();
+      when(
+        () => mockAuthService.clearPendingDivineOAuthSession(),
+      ).thenAnswer((_) async {});
       when(() => mockOAuth.config).thenReturn(
         const OAuthConfig(
           serverUrl: 'https://login.divine.video',
@@ -329,6 +334,7 @@ void main() {
             verify(
               () => mockAuthService.signInWithDivineOAuth(any()),
             ).called(1);
+            verifyNever(() => mockAuthService.clearPendingDivineOAuthSession());
           },
         );
 
@@ -464,6 +470,82 @@ void main() {
               inviteRecoveryCode: 'AB12-EF34',
             ),
           ],
+          verify: (_) {
+            verify(
+              () => mockAuthService.clearPendingDivineOAuthSession(),
+            ).called(1);
+          },
+        );
+
+        blocTest<DivineAuthCubit, DivineAuthState>(
+          'redacts sensitive invite activation causes during sign in',
+          setUp: () {
+            when(
+              () => mockOAuth.headlessLogin(
+                email: any(named: 'email'),
+                password: any(named: 'password'),
+                scope: any(named: 'scope'),
+              ),
+            ).thenAnswer(
+              (_) async => (
+                HeadlessLoginResult(success: true, code: testCode),
+                testVerifier,
+              ),
+            );
+            when(
+              () => mockOAuth.exchangeCode(
+                code: any(named: 'code'),
+                verifier: any(named: 'verifier'),
+              ),
+            ).thenAnswer(
+              (_) async => const TokenResponse(bunkerUrl: 'bunker://test'),
+            );
+            when(
+              () => mockInviteApiClient.consumeInviteWithSession(
+                code: any(named: 'code'),
+                oauthConfig: any(named: 'oauthConfig'),
+                session: any(named: 'session'),
+              ),
+            ).thenThrow(
+              const InviteApiException(
+                'Failed to authenticate invite request: signer leaked '
+                'nsec1qwertyuiopasdfghjklzxcvbnm0123456789abcdef',
+                code: InviteApiErrorCode.clientAuthFailed,
+                cause: FormatException(
+                  'relay refused npub1abcdefghijklmnopqrstuvwxyz0123456789abcdefg',
+                ),
+              ),
+            );
+          },
+          build: () => buildCubit(inviteCode: 'ab12ef34'),
+          seed: () => const DivineAuthFormState(
+            email: testEmail,
+            password: testPassword,
+            isSignIn: true,
+          ),
+          act: (cubit) => cubit.submit(),
+          expect: () => [
+            const DivineAuthFormState(
+              email: testEmail,
+              password: testPassword,
+              isSignIn: true,
+              isSubmitting: true,
+            ),
+            isA<DivineAuthFormState>(),
+          ],
+          verify: (_) {
+            final logMessage = LogCaptureService()
+                .getRecentLogs()
+                .map((entry) => entry.message)
+                .lastWhere(
+                  (message) => message.startsWith('Invite activation failed:'),
+                );
+
+            expect(logMessage, contains('nsec1<redacted>'));
+            expect(logMessage, contains('npub1<redacted>'));
+            expect(logMessage, isNot(contains('nsec1qwerty')));
+            expect(logMessage, isNot(contains('npub1abc')));
+          },
         );
 
         blocTest<DivineAuthCubit, DivineAuthState>(

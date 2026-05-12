@@ -40,7 +40,9 @@ void main() {
     // Helper to stub publishEvent - call after reset(mockNostr)
     void stubPublishEvent() {
       when(() => mockNostr.publishEvent(any())).thenAnswer((invocation) async {
-        return invocation.positionalArguments[0] as Event;
+        return PublishSuccess(
+          event: invocation.positionalArguments[0] as Event,
+        );
       });
     }
 
