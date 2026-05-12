@@ -177,38 +177,16 @@ post_install do |installer|
   # TODO(#4146): Remove after cupertino_http ships dart-lang/http#1417
   # and pubspec.yaml bumps to that version.
   #
-  # Force-load cupertino_http's static framework into Runner.
-  #
-  # cupertino_http v2.x looks up native symbols
-  # (e.g. `_NativeCupertinoHttp_protocolTrampoline_*`) from the
-  # process via Dart FFI. With our
-  # `use_frameworks! :linkage => :static` Podfile setting, the static
-  # framework is built but the linker drops these symbols as unused
-  # because no Swift/ObjC call site references them — they are only
-  # ever called from Dart at runtime. The result at runtime is:
-  #   Couldn't resolve native function ... No asset with id
-  #   'package:cupertino_http/src/native_cupertino_bindings.dart'.
-  # `-force_load` tells the linker to keep every object file from the
-  # framework, preserving the FFI symbols so dlsym(RTLD_DEFAULT, ...)
-  # finds them. See dart-lang/http#1417.
-  #
-  # We also strip the regular `-framework "cupertino_http"` entry
-  # that CocoaPods auto-injects into Pods-Runner.*.xcconfig — without
-  # that, the framework is linked twice (once via -framework, once
-  # via -force_load) which produces "duplicate symbols" errors.
-  #
-  # Both edits target only the CocoaPods-generated xcconfig files
-  # (`Pods-Runner.{config}.xcconfig`), which CocoaPods regenerates on
-  # every `pod install`. We deliberately avoid mutating
-  # `Pods.xcodeproj` so a future cleanup of this hack reverts cleanly
-  # by just deleting this block — no manual project-file surgery
-  # required.
+  # cupertino_http's native bindings are only reached through Dart FFI,
+  # so the static linker can drop them as unused under static frameworks.
+  # Keep CocoaPods' normal `-framework cupertino_http` link for build
+  # ordering, and add `-u` for one symbol in native_cupertino_bindings.m
+  # so the object file containing all generated FFI trampolines is loaded.
   cupertino_http_framework_re =
     /\s*-framework\s+(?:"cupertino_http"|'cupertino_http'|cupertino_http\b)/
-  cupertino_http_force_load =
-    '-force_load "${BUILT_PRODUCTS_DIR}/cupertino_http/' \
-    'cupertino_http.framework/cupertino_http"'
-  stripped_any = false
+  cupertino_http_keep_symbol =
+    '-u "__NativeCupertinoHttp_wrapListenerBlock_1pl9qdv"'
+  linked_any = false
 
   installer.aggregate_targets.each do |aggregate_target|
     next unless aggregate_target.name == 'Pods-Runner'
@@ -218,21 +196,16 @@ post_install do |installer|
       next unless File.exist?(xcconfig_path)
 
       content = File.read(xcconfig_path)
+      linked_any ||= content.match?(cupertino_http_framework_re)
       new_content = content.dup
 
-      # 1. Strip CocoaPods' auto-injected `-framework cupertino_http`.
-      new_content = new_content.gsub(cupertino_http_framework_re, '')
-      stripped_any = true if new_content != content
-
-      # 2. Append `-force_load` to OTHER_LDFLAGS in the same xcconfig,
-      # so we don't have to mutate Pods.xcodeproj.
-      if new_content !~ /-force_load[^\n]*cupertino_http\.framework/
+      if new_content !~ /-u\s+"?__NativeCupertinoHttp_wrapListenerBlock_1pl9qdv"?/
         if new_content =~ /^OTHER_LDFLAGS\s*=\s*(.*)$/
           existing = Regexp.last_match(1).strip
-          replacement = "OTHER_LDFLAGS = #{existing} #{cupertino_http_force_load}".strip
+          replacement = "OTHER_LDFLAGS = #{existing} #{cupertino_http_keep_symbol}".strip
           new_content = new_content.sub(/^OTHER_LDFLAGS\s*=\s*.*$/, replacement)
         else
-          new_content += "\nOTHER_LDFLAGS = $(inherited) #{cupertino_http_force_load}\n"
+          new_content += "\nOTHER_LDFLAGS = $(inherited) #{cupertino_http_keep_symbol}\n"
         end
       end
 
@@ -240,16 +213,13 @@ post_install do |installer|
     end
   end
 
-  unless stripped_any
+  unless linked_any
     raise <<~MSG
-      Podfile cupertino_http workaround: failed to strip the auto-injected
-      `-framework cupertino_http` entry from any Pods-Runner.*.xcconfig.
-      CocoaPods may have changed how it emits framework link flags, which
-      means the `-force_load` workaround below will produce duplicate-symbol
-      link errors. Update the regex (`cupertino_http_framework_re`) above
-      to match the current format, or remove the workaround entirely if
-      cupertino_http no longer needs it. See the comment block above and
-      dart-lang/http#1417.
+      Podfile cupertino_http workaround: did not find CocoaPods' generated
+      `-framework cupertino_http` flag in any Pods-Runner.*.xcconfig.
+      The `-u` linker workaround depends on that normal framework link.
+      Update the regex (`cupertino_http_framework_re`) above, or remove
+      this workaround if cupertino_http no longer needs it.
     MSG
   end
 end
