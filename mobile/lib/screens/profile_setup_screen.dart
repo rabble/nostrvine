@@ -148,6 +148,10 @@ class ProfileSetupScreenView extends ConsumerStatefulWidget {
 
 class _ProfileSetupScreenViewState
     extends ConsumerState<ProfileSetupScreenView> {
+  static const _maxAvatarImageWidth = 1024.0;
+  static const _maxAvatarImageHeight = 1024.0;
+  static const _avatarImageQuality = 85;
+
   final _nameController = TextEditingController();
   final _bioController = TextEditingController();
   final _pictureController = TextEditingController();
@@ -1356,9 +1360,9 @@ class _ProfileSetupScreenViewState
     try {
       return await _picker.pickImage(
         source: source,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 85,
+        maxWidth: _maxAvatarImageWidth,
+        maxHeight: _maxAvatarImageHeight,
+        imageQuality: _avatarImageQuality,
         requestFullMetadata: false,
       );
     } catch (e) {
