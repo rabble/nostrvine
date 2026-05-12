@@ -504,6 +504,7 @@ class _ThumbnailStrip extends StatefulWidget {
 
 class _ThumbnailStripState extends State<_ThumbnailStrip> {
   static const double _cursorWidth = 36;
+  static const Duration _semanticSeekStep = Duration(milliseconds: 500);
 
   List<StripThumbnail>? _cachedThumbnails;
   int? _cachedCount;
@@ -532,6 +533,18 @@ class _ThumbnailStripState extends State<_ThumbnailStrip> {
     final fraction =
         position.inMilliseconds / widget.clip.duration.inMilliseconds;
     return (fraction * stripWidth).clamp(0.0, stripWidth);
+  }
+
+  Duration _clampPosition(Duration position) {
+    final maxMs = widget.clip.duration.inMilliseconds;
+    return Duration(
+      milliseconds: position.inMilliseconds.clamp(0, maxMs),
+    );
+  }
+
+  void _seekBySemanticsDelta(Duration delta) {
+    final target = _clampPosition(widget.selectedPosition + delta);
+    widget.onSeek(target);
   }
 
   /// Maps a visual slot index to the best [StripThumbnail] path for that
@@ -572,10 +585,21 @@ class _ThumbnailStripState extends State<_ThumbnailStrip> {
 
   @override
   Widget build(BuildContext context) {
+    final increasedPosition = _clampPosition(
+      widget.selectedPosition + _semanticSeekStep,
+    );
+    final decreasedPosition = _clampPosition(
+      widget.selectedPosition - _semanticSeekStep,
+    );
+
     return Semantics(
       label: context.l10n.videoMetadataEditCoverStripSemanticLabel,
       slider: true,
       value: TimeFormatter.formatMinutesSeconds(widget.selectedPosition),
+      increasedValue: TimeFormatter.formatMinutesSeconds(increasedPosition),
+      decreasedValue: TimeFormatter.formatMinutesSeconds(decreasedPosition),
+      onIncrease: () => _seekBySemanticsDelta(_semanticSeekStep),
+      onDecrease: () => _seekBySemanticsDelta(-_semanticSeekStep),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final stripWidth = constraints.maxWidth;

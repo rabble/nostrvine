@@ -66,6 +66,28 @@ _MockFollowRepository _createMockFollowRepository({
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  group('computeEffectiveCollaboratorResultPubkeys', () {
+    test('preserves unresolved confirmed collaborators', () {
+      final effective = computeEffectiveCollaboratorResultPubkeys(
+        confirmedPubkeys: {'a', 'b'},
+        preselectedPubkeys: {'a'},
+        pickerResultPubkeys: {'a'},
+      );
+
+      expect(effective, equals({'a', 'b'}));
+    });
+
+    test('keeps explicit deselection for loaded collaborators', () {
+      final effective = computeEffectiveCollaboratorResultPubkeys(
+        confirmedPubkeys: {'a', 'b'},
+        preselectedPubkeys: {'a', 'b'},
+        pickerResultPubkeys: {'a'},
+      );
+
+      expect(effective, equals({'a'}));
+    });
+  });
+
   group(VideoMetadataCollaboratorsInput, () {
     late SharedPreferences prefs;
 

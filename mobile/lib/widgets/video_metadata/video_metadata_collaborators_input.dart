@@ -11,6 +11,20 @@ import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/user_picker_sheet.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_selection_tile.dart';
 
+/// Preserves confirmed collaborators whose profiles were unavailable when the
+/// picker opened, so they are not silently dropped on Done.
+@visibleForTesting
+Set<String> computeEffectiveCollaboratorResultPubkeys({
+  required Set<String> confirmedPubkeys,
+  required Set<String> preselectedPubkeys,
+  required Set<String> pickerResultPubkeys,
+}) {
+  final unresolvedConfirmedPubkeys = confirmedPubkeys.difference(
+    preselectedPubkeys,
+  );
+  return {...pickerResultPubkeys, ...unresolvedConfirmedPubkeys};
+}
+
 /// Input widget for adding and managing collaborators on a video.
 ///
 /// Displays collaborator chips (avatar + name + remove) and an
@@ -71,11 +85,17 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
 
     final notifier = ref.read(videoEditorProvider.notifier);
     final confirmedPubkeys = editorState.collaboratorPubkeys;
+    final preselectedPubkeys = {for (final p in confirmedProfiles) p.pubkey};
     final resultPubkeys = {for (final p in result) p.pubkey};
+    final effectiveResultPubkeys = computeEffectiveCollaboratorResultPubkeys(
+      confirmedPubkeys: confirmedPubkeys,
+      preselectedPubkeys: preselectedPubkeys,
+      pickerResultPubkeys: resultPubkeys,
+    );
 
     // Remove confirmed collaborators that were deselected in the picker.
     for (final pubkey in confirmedPubkeys) {
-      if (!resultPubkeys.contains(pubkey)) {
+      if (!effectiveResultPubkeys.contains(pubkey)) {
         notifier.removeCollaborator(pubkey);
       }
     }

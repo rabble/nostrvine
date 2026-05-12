@@ -177,38 +177,53 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     final profilesFuture = Future.wait(
       followingPubkeys.map((pk) => profileRepo.getCachedProfile(pubkey: pk)),
     );
-    final myFollowersFuture =
-        widget.filterMode == UserPickerFilterMode.mutualFollowsOnly
-        ? followRepo.getMyFollowers()
-        : Future.value(const <String>[]);
+    try {
+      final myFollowersFuture =
+          widget.filterMode == UserPickerFilterMode.mutualFollowsOnly
+          ? followRepo
+                .getMyFollowers()
+                .then<Set<String>?>((followers) => followers.toSet())
+                // Relay/network failures should not block sheet loading.
+                .catchError((Object _, StackTrace _) => null)
+          : Future<Set<String>?>.value(const <String>{});
 
-    final (rawProfiles, myFollowers) = await (
-      profilesFuture,
-      myFollowersFuture,
-    ).wait;
-    final myFollowersSet = myFollowers.toSet();
+      final (rawProfiles, myFollowersSet) = await (
+        profilesFuture,
+        myFollowersFuture,
+      ).wait;
 
-    var profiles = rawProfiles.whereType<UserProfile>().toList();
+      var profiles = rawProfiles.whereType<UserProfile>().toList();
 
-    // For mutualFollowsOnly, keep only users who follow us back.
-    if (widget.filterMode == UserPickerFilterMode.mutualFollowsOnly) {
-      profiles = profiles
-          .where((p) => myFollowersSet.contains(p.pubkey))
-          .toList();
-    }
+      // When mutual-follow fetch fails, fall back to local follows so the
+      // picker remains usable instead of hanging in loading.
+      if (widget.filterMode == UserPickerFilterMode.mutualFollowsOnly &&
+          myFollowersSet != null) {
+        profiles = profiles
+            .where((p) => myFollowersSet.contains(p.pubkey))
+            .toList();
+      }
 
-    profiles.sort(
-      (a, b) => a.bestDisplayName.toLowerCase().compareTo(
-        b.bestDisplayName.toLowerCase(),
-      ),
-    );
+      profiles.sort(
+        (a, b) => a.bestDisplayName.toLowerCase().compareTo(
+          b.bestDisplayName.toLowerCase(),
+        ),
+      );
 
-    if (mounted) {
-      setState(() {
-        _followProfiles = profiles;
-        _filteredFollowProfiles = profiles;
-        _followListLoaded = true;
-      });
+      if (mounted) {
+        setState(() {
+          _followProfiles = profiles;
+          _filteredFollowProfiles = profiles;
+          _followListLoaded = true;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _followProfiles = const [];
+          _filteredFollowProfiles = const [];
+          _followListLoaded = true;
+        });
+      }
     }
   }
 

@@ -259,6 +259,56 @@ void main() {
         expect(find.text('Go back'), findsOneWidget);
       });
 
+      testWidgets(
+        'falls back to local follows when getMyFollowers fails',
+        (tester) async {
+          final profile = UserProfile(
+            pubkey: 'pubkey1',
+            name: 'User One',
+            rawData: const {'name': 'User One'},
+            createdAt: DateTime.now(),
+            eventId: 'event1',
+          );
+
+          final mockFollowRepo = _createMockFollowRepository(
+            followingPubkeys: ['pubkey1'],
+          );
+          when(
+            mockFollowRepo.getMyFollowers,
+          ).thenAnswer((_) async => throw Exception('relay down'));
+
+          final mockProfileRepo = _createMockProfileRepository();
+          when(
+            () => mockProfileRepo.getCachedProfile(pubkey: 'pubkey1'),
+          ).thenAnswer((_) async => profile);
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                profileRepositoryProvider.overrideWithValue(mockProfileRepo),
+                followRepositoryProvider.overrideWithValue(mockFollowRepo),
+              ],
+              child: const MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: Scaffold(
+                  body: UserPickerSheet(
+                    title: 'Title',
+                    filterMode: UserPickerFilterMode.mutualFollowsOnly,
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.pumpAndSettle();
+
+          expect(find.byType(CircularProgressIndicator), findsNothing);
+          expect(find.text('User One'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        },
+      );
+
       testWidgets('displays follow list after loading', (tester) async {
         final followPubkeys = ['pubkey1', 'pubkey2'];
         final profiles = [
