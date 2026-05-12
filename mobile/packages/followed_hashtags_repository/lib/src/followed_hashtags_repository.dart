@@ -1,5 +1,5 @@
 // ABOUTME: Profile-saved vs feed-selector hashtag lists (home)
-// ABOUTME: Normalizes via hashtag_repository (divine-web parity)
+// ABOUTME: Normalizes via hashtag_repository on read and when persisting
 // ABOUTME: Sync prefs warm-read in ctor (getters ok before async bootstrap)
 
 import 'dart:async';
@@ -8,7 +8,7 @@ import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Persists two lists (alignment plan §5):
+/// Persists two lists:
 /// **Profile** — Saved tab, Explore “tracked” highlight.
 /// **Feed selector** — labels shown as their own home feed rows (top-left
 /// switcher), loaded as single-tag streams — not merged into the Following
@@ -91,12 +91,12 @@ class FollowedHashtagsRepository {
   /// while consumers validated persisted `FeedMode.homeHashtag` against an
   /// empty sheet and cleared the saved mode.
   void _syncLoadFromPrefs() {
-    final profile = _readNonEmptyList(_profileKey);
+    final profile = _readNormalizedList(_profileKey);
     final List<String> initialFeed;
     if (!_separateFollowingFeedHashtagsEnabled) {
       initialFeed = List<String>.from(profile);
     } else if (_prefs.containsKey(_feedKey)) {
-      initialFeed = _readNonEmptyList(_feedKey);
+      initialFeed = _readNormalizedList(_feedKey);
     } else {
       initialFeed = List<String>.from(profile);
     }
@@ -106,13 +106,14 @@ class FollowedHashtagsRepository {
 
   Future<void> _bootstrapLists() async {
     await _migrateFeedFromProfileIfNeeded();
-    final profile = _readNonEmptyList(_profileKey);
+    await _persistPrefsLiteralCanonicalForm();
+    final profile = _readNormalizedList(_profileKey);
     if (!_separateFollowingFeedHashtagsEnabled) {
       _subjectProfile(profile);
       await _setFeedToMatchProfile(profile, persist: true);
     } else {
       _subjectProfile(profile);
-      _subjectFeed(_readNonEmptyList(_feedKey));
+      _subjectFeed(_readNormalizedList(_feedKey));
     }
   }
 
@@ -245,10 +246,11 @@ class FollowedHashtagsRepository {
   /// Useful when external changes to SharedPreferences are suspected
   /// (e.g., after a migration or a debug‑tool modification).
   Future<void> reloadFromPrefs() async {
-    final profile = _readNonEmptyList(_profileKey);
+    await _persistPrefsLiteralCanonicalForm();
+    final profile = _readNormalizedList(_profileKey);
     _subjectProfile(profile);
     if (_separateFollowingFeedHashtagsEnabled) {
-      _subjectFeed(_readNonEmptyList(_feedKey));
+      _subjectFeed(_readNormalizedList(_feedKey));
     } else {
       await _setFeedToMatchProfile(profile, persist: true);
     }
@@ -266,10 +268,56 @@ class FollowedHashtagsRepository {
 
   // --- Internals ---
 
-  List<String> _readNonEmptyList(String key) {
+  /// Canonical list: each element passed through normalizeHashtagLabel;
+  /// first occurrence wins for case-insensitive duplicates; order preserved.
+  List<String> _canonicalizeLabelList(Iterable<String> raw) {
+    final seen = <String>{};
+    final out = <String>[];
+    for (final e in raw) {
+      final c = normalizeHashtagLabel(e);
+      if (c.isEmpty) continue;
+      if (seen.add(c)) {
+        out.add(c);
+      }
+    }
+    return out;
+  }
+
+  List<String> _readNormalizedList(String key) {
+    return _canonicalizeLabelList(_prefs.getStringList(key) ?? const []);
+  }
+
+  /// Rewrites prefs when stored rows are not already literal canonical lists
+  /// (trimmed lowercase, no `#`, no duplicate logical tags). Idempotent.
+  Future<void> _persistPrefsLiteralCanonicalForm() async {
+    final profile = _readNormalizedList(_profileKey);
+    await _persistLiteralIfNeeded(_profileKey, profile);
+    if (_separateFollowingFeedHashtagsEnabled) {
+      if (_prefs.containsKey(_feedKey)) {
+        final feed = _readNormalizedList(_feedKey);
+        await _persistLiteralIfNeeded(_feedKey, feed);
+      }
+    } else {
+      await _persistLiteralIfNeeded(_feedKey, profile);
+    }
+  }
+
+  Future<void> _persistLiteralIfNeeded(
+    String key,
+    List<String> canonical,
+  ) async {
     final raw = _prefs.getStringList(key);
-    if (raw == null) return const [];
-    return List<String>.from(raw).where((e) => e.isNotEmpty).toList();
+    if (_isLiteralCanonicalStorage(raw, canonical)) return;
+    await _prefs.setStringList(key, List<String>.from(canonical));
+  }
+
+  bool _isLiteralCanonicalStorage(List<String>? raw, List<String> canonical) {
+    if (raw == null) return canonical.isEmpty;
+    if (raw.length != canonical.length) return false;
+    for (var i = 0; i < canonical.length; i++) {
+      if (raw[i] != canonical[i]) return false;
+    }
+    return true;
   }
 
   void _subjectProfile(List<String> list) {
@@ -284,9 +332,7 @@ class FollowedHashtagsRepository {
 
   Future<void> _migrateFeedFromProfileIfNeeded() async {
     if (_prefs.containsKey(_feedKey)) return;
-    final p = _prefs.getStringList(_profileKey);
-    if (p == null || p.isEmpty) return;
-    final copy = p.where((e) => e.isNotEmpty).toList();
+    final copy = _readNormalizedList(_profileKey);
     if (copy.isNotEmpty) {
       await _prefs.setStringList(_feedKey, copy);
     }

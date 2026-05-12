@@ -354,6 +354,72 @@ void main() {
       await repo.dispose();
     });
 
+    test(
+      'normalizes and dedupes persisted profile labels on load, then rewrites '
+      'prefs literally',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          FollowedHashtagsRepository.preferencesKey: [
+            '#Foo',
+            'FOO',
+            'bar',
+            'BAR',
+          ],
+        });
+        final prefs = await SharedPreferences.getInstance();
+        final repo = FollowedHashtagsRepository(prefs: prefs);
+
+        expect(repo.profileSavedHashtags, ['foo', 'bar']);
+        expect(repo.followingFeedHashtagLabels, ['foo', 'bar']);
+
+        await _afterRepoOpen();
+
+        expect(
+          prefs.getStringList(FollowedHashtagsRepository.preferencesKey),
+          ['foo', 'bar'],
+        );
+        await repo.dispose();
+      },
+    );
+
+    test(
+      'reloadFromPrefs normalizes externally written raw labels',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          FollowedHashtagsRepository.preferencesKey: ['ok'],
+          FollowedHashtagsRepository.followingFeedPreferencesKey: ['f'],
+        });
+        final prefs = await SharedPreferences.getInstance();
+        final repo = FollowedHashtagsRepository(prefs: prefs);
+        await _afterRepoOpen();
+
+        await prefs.setStringList(FollowedHashtagsRepository.preferencesKey, [
+          '#One',
+          'TWO',
+          'two',
+        ]);
+        await prefs.setStringList(
+          FollowedHashtagsRepository.followingFeedPreferencesKey,
+          ['#X', 'x'],
+        );
+        await repo.reloadFromPrefs();
+
+        expect(repo.profileSavedHashtags, ['one', 'two']);
+        expect(repo.followingFeedHashtagLabels, ['x']);
+        expect(
+          prefs.getStringList(FollowedHashtagsRepository.preferencesKey),
+          ['one', 'two'],
+        );
+        expect(
+          prefs.getStringList(
+            FollowedHashtagsRepository.followingFeedPreferencesKey,
+          ),
+          ['x'],
+        );
+        await repo.dispose();
+      },
+    );
+
     test('custom storage keys are isolated from defaults', () async {
       SharedPreferences.setMockInitialValues({
         'custom_profile': ['c'],
