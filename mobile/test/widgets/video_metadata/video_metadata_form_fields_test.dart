@@ -211,7 +211,16 @@ void main() {
       expect(tile, findsOneWidget);
       expect(tester.widget<SwitchListTile>(tile).value, isFalse);
 
-      await tester.tap(tile);
+      await tester.ensureVisible(tile);
+      await tester.pumpAndSettle();
+
+      final toggle = find.descendant(
+        of: tile,
+        matching: find.byType(Switch),
+      );
+      expect(toggle, findsOneWidget);
+
+      await tester.tap(toggle);
       await tester.pumpAndSettle();
 
       expect(mockNotifier.lastShareReplyToFeed, isTrue);
