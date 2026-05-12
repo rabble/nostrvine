@@ -213,17 +213,19 @@ Future<void> _pumpFeedVideos(
       feedAutoAdvanceCubit ??
       (_MockFeedAutoAdvanceCubit()..stub(const FeedAutoAdvanceState()));
   final mockVolumeCubit = videoVolumeCubit ?? (_MockVideoVolumeCubit()..stub());
+  final container = ProviderContainer(
+    overrides: _buildOverrides(
+      moderationService: moderationService,
+      likesRepository: likesRepository,
+      commentsRepository: commentsRepository,
+      repostsRepository: repostsRepository,
+    ).cast(),
+  );
+  addTearDown(container.dispose);
 
   await tester.pumpWidget(
     UncontrolledProviderScope(
-      container: ProviderContainer(
-        overrides: _buildOverrides(
-          moderationService: moderationService,
-          likesRepository: likesRepository,
-          commentsRepository: commentsRepository,
-          repostsRepository: repostsRepository,
-        ).cast(),
-      ),
+      container: container,
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
