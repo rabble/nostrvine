@@ -4645,11 +4645,11 @@ class AppLocalizationsRo extends AppLocalizations {
       'General concerns about minors\' safety';
 
   @override
-  String get reportReasonCsam => 'Încălcarea siguranței copiilor';
+  String get reportReasonCsam => 'Child Sexual Abuse';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Conținut care exploatează sau pune în pericol minorii';
+      'Content depicting sexual abuse of minors';
 
   @override
   String get reportReasonUnderageUser => 'User Appears Under 16';

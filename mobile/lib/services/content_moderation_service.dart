@@ -14,7 +14,7 @@ import 'package:unified_logger/unified_logger.dart';
 
 /// Reasons for content filtering/reporting.
 ///
-/// Aligned with the 6 design categories for flag/report flows.
+/// Categories for content filtering and report flows.
 enum ContentFilterReason {
   spam('Spam or unwanted content'),
   harassment('Harassment, bullying, or threats'),

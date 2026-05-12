@@ -4501,11 +4501,11 @@ class AppLocalizationsTr extends AppLocalizations {
       'General concerns about minors\' safety';
 
   @override
-  String get reportReasonCsam => 'Çocuk Güvenliği İhlali';
+  String get reportReasonCsam => 'Child Sexual Abuse';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Reşit olmayanları sömüren veya tehlikeye atan içerik';
+      'Content depicting sexual abuse of minors';
 
   @override
   String get reportReasonUnderageUser => 'User Appears Under 16';

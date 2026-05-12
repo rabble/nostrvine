@@ -4469,10 +4469,11 @@ class AppLocalizationsAr extends AppLocalizations {
       'General concerns about minors\' safety';
 
   @override
-  String get reportReasonCsam => 'انتهاك سلامة الأطفال';
+  String get reportReasonCsam => 'Child Sexual Abuse';
 
   @override
-  String get reportReasonCsamSubtitle => 'محتوى يستغل القاصرين أو يعرضهم للخطر';
+  String get reportReasonCsamSubtitle =>
+      'Content depicting sexual abuse of minors';
 
   @override
   String get reportReasonUnderageUser => 'User Appears Under 16';

@@ -4580,11 +4580,11 @@ class AppLocalizationsFil extends AppLocalizations {
       'General concerns about minors\' safety';
 
   @override
-  String get reportReasonCsam => 'Paglabag sa Kaligtasan ng Bata';
+  String get reportReasonCsam => 'Child Sexual Abuse';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Content na nag-eexploit o naglalagay sa panganib ng mga menor de edad';
+      'Content depicting sexual abuse of minors';
 
   @override
   String get reportReasonUnderageUser => 'User Appears Under 16';

@@ -4307,10 +4307,11 @@ class AppLocalizationsJa extends AppLocalizations {
       'General concerns about minors\' safety';
 
   @override
-  String get reportReasonCsam => '子どもの安全に関する違反';
+  String get reportReasonCsam => 'Child Sexual Abuse';
 
   @override
-  String get reportReasonCsamSubtitle => '未成年者を搾取または危険にさらすコンテンツ';
+  String get reportReasonCsamSubtitle =>
+      'Content depicting sexual abuse of minors';
 
   @override
   String get reportReasonUnderageUser => 'User Appears Under 16';

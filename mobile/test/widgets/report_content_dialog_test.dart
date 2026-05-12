@@ -240,8 +240,8 @@ void main() {
       // wrapping it that we can count.
       expect(
         ContentFilterReason.values.length,
-        equals(9),
-        reason: 'Sanity-check: 9 report reasons defined',
+        equals(11),
+        reason: 'Sanity-check: 11 report reasons defined',
       );
       // Verify all titles render by checking the last and first in the list.
       expect(find.text(l10n.reportReasonSpam), findsOneWidget);
