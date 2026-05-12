@@ -29,10 +29,16 @@ final _emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
 /// (UUIDs, alphanumeric strings). Only word characters and hyphens are
 /// matched so trailing punctuation (`.`, `,`, `)`) and query strings
 /// (`?q=1`) are excluded.
-final _divineVideoUrlRegex = RegExp(
+final divineVideoUrlRegex = RegExp(
   r'https?://(?:www\.)?divine\.video/video/([\w-]+)',
   caseSensitive: false,
 );
+
+/// Returns the full divine.video URL contained in [content], or null if
+/// the message body doesn't include one. Used by the conversation
+/// long-press handler to surface a "Copy video URL" action.
+String? tryExtractDivineVideoUrl(String content) =>
+    divineVideoUrlRegex.firstMatch(content)?.group(0);
 
 /// A single chat message bubble.
 ///
@@ -76,7 +82,7 @@ class MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final videoMatch = _divineVideoUrlRegex.firstMatch(message);
+    final videoMatch = divineVideoUrlRegex.firstMatch(message);
     final videoStableId = videoMatch?.group(1);
 
     // Text following the video URL, if any. Anything BEFORE the URL is

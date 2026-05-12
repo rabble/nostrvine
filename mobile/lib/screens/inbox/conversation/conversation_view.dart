@@ -21,6 +21,8 @@ import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_content.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
+import 'package:openvine/widgets/profile/profile_header_widget.dart'
+    show truncateNpubForDisplay;
 import 'package:openvine/widgets/report_content_dialog.dart';
 
 /// View for a single DM conversation.
@@ -100,7 +102,19 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
     final displayName =
         profile?.bestDisplayName ??
         UserProfile.defaultDisplayNameFor(otherPubkey);
-    final handle = profile?.handle ?? '';
+    // Prefer the profile's NIP-05 / divine handle when set, otherwise
+    // fall back to a truncated npub so the header always carries a
+    // stable secondary identifier under the display name. Format
+    // mirrors the profile header (`profile_header_widget.dart`): first
+    // 16 chars of the npub + ellipsis.
+    final profileHandle = profile?.handle;
+    final handle = (profileHandle != null && profileHandle.isNotEmpty)
+        ? profileHandle
+        : (otherPubkey.isNotEmpty
+              ? truncateNpubForDisplay(
+                  NostrKeyUtils.encodePubKey(otherPubkey),
+                )
+              : '');
 
     return Scaffold(
       backgroundColor: VineTheme.surfaceBackground,
@@ -306,9 +320,11 @@ class _MessageList extends StatelessWidget {
     DmMessage message,
     bool isSent,
   ) async {
+    final videoUrl = tryExtractDivineVideoUrl(message.content);
     final action = await MessageActionsSheet.show(
       context: context,
       isSent: isSent,
+      isVideoShare: videoUrl != null,
     );
     if (action == null) return;
     if (!context.mounted) return;
@@ -316,6 +332,11 @@ class _MessageList extends StatelessWidget {
     switch (action) {
       case MessageAction.copy:
         await ClipboardUtils.copy(context, message.content);
+      case MessageAction.copyVideoUrl:
+        // Defensive: the sheet only surfaces this action when videoUrl
+        // is non-null, but guard against a future caller change.
+        if (videoUrl == null) return;
+        await ClipboardUtils.copy(context, videoUrl);
       case MessageAction.delete:
         context.read<ConversationBloc>().add(
           ConversationMessageDeleted(rumorId: message.id),
