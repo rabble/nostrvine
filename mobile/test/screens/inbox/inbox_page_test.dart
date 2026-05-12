@@ -12,7 +12,6 @@ import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
 import 'package:openvine/screens/inbox/inbox_view.dart';
@@ -32,30 +31,6 @@ class _MockContentBlocklistRepository extends Mock
 
 class _MockInviteStatusCubit extends MockCubit<InviteStatusState>
     implements InviteStatusCubit {}
-
-/// Minimal mock so InboxNotificationsPage (default tab) renders without crashing.
-class _MockRelayNotifications extends RelayNotifications {
-  @override
-  Future<NotificationFeedState> build() async {
-    return NotificationFeedState(
-      notifications: const [],
-      isInitialLoad: false,
-      lastUpdated: DateTime.now(),
-    );
-  }
-
-  @override
-  Future<void> markAsRead(String notificationId) async {}
-
-  @override
-  Future<void> markAllAsRead() async {}
-
-  @override
-  Future<void> loadMore() async {}
-
-  @override
-  Future<void> refresh() async {}
-}
 
 void main() {
   const testPubkey =
@@ -133,10 +108,6 @@ void main() {
                   mockBlocklistRepository,
                 ),
                 goRouterProvider.overrideWithValue(mockGoRouter),
-                relayNotificationUnreadCountProvider.overrideWithValue(0),
-                relayNotificationsProvider.overrideWith(
-                  _MockRelayNotifications.new,
-                ),
               ],
             ),
           );
@@ -175,10 +146,6 @@ void main() {
                 mockBlocklistRepository,
               ),
               goRouterProvider.overrideWithValue(mockGoRouter),
-              relayNotificationUnreadCountProvider.overrideWithValue(0),
-              relayNotificationsProvider.overrideWith(
-                _MockRelayNotifications.new,
-              ),
             ],
           ),
         );
