@@ -1,6 +1,6 @@
 // ABOUTME: Inbox notifications scaffold — TabBar (All/Likes/Comments/
 // ABOUTME: Follows/Reposts) + invites banner wrapping the BLoC-driven
-// ABOUTME: NotificationsView. Replaces legacy NotificationsScreen in inbox.
+// ABOUTME: NotificationsView.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
