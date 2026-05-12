@@ -15,6 +15,29 @@ void main() {
       SharedPreferences.setMockInitialValues({});
     });
 
+    test(
+      'exposes following feed labels from prefs synchronously on construction',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          FollowedHashtagsRepository.followingFeedPreferencesKey: [
+            'alpha',
+            'beta',
+          ],
+        });
+        final prefs = await SharedPreferences.getInstance();
+        final repo = FollowedHashtagsRepository(prefs: prefs);
+
+        expect(
+          repo.followingFeedHashtagLabels,
+          ['alpha', 'beta'],
+          reason: 'sync warm-read before any pumpEventQueue / async bootstrap',
+        );
+
+        await _afterRepoOpen();
+        await repo.dispose();
+      },
+    );
+
     test('loads empty when unset', () async {
       final prefs = await SharedPreferences.getInstance();
       final repo = FollowedHashtagsRepository(prefs: prefs);

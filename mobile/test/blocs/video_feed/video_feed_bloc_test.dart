@@ -337,6 +337,93 @@ void main() {
       );
 
       blocTest<VideoFeedBloc, VideoFeedState>(
+        'restores persisted home hashtag mode when label is on the feed sheet '
+        'at startup',
+        setUp: () async {
+          final videos = createTestVideos(pageSize);
+          SharedPreferences.setMockInitialValues({
+            'selected_feed_mode': FeedMode.homeHashtag.name,
+            'selected_home_hashtag_label': 'nostalgia',
+          });
+          final sharedPreferences = await SharedPreferences.getInstance();
+
+          final mockHashtagRepo = _MockFollowedHashtagsRepository();
+          when(
+            () => mockHashtagRepo.separateFollowingFeedHashtagsEnabled,
+          ).thenReturn(true);
+          when(
+            () => mockHashtagRepo.followingFeedHashtagLabels,
+          ).thenReturn(['nostalgia']);
+          when(
+            () => mockHashtagRepo.followingFeedHashtagLabelsStream,
+          ).thenAnswer(
+            (_) => Stream<List<String>>.value(const ['nostalgia']),
+          );
+
+          when(() => mockFollowRepository.followingPubkeys).thenReturn(
+            ['author1'],
+          );
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              followedHashtagLabels: any(named: 'followedHashtagLabels'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer((invocation) async {
+            final labels =
+                invocation.namedArguments[#followedHashtagLabels]
+                    as List<String>;
+            expect(labels, contains('nostalgia'));
+            return HomeFeedResult(videos: videos);
+          });
+
+          when(
+            () => mockFollowRepository.followingStream,
+          ).thenAnswer((_) => followingController.stream);
+          when(
+            () => mockCuratedListRepository.subscribedListsStream,
+          ).thenAnswer((_) => curatedListsController.stream);
+
+          savedModeBloc = VideoFeedBloc(
+            videosRepository: mockVideosRepository,
+            followRepository: mockFollowRepository,
+            curatedListRepository: mockCuratedListRepository,
+            followedHashtagsRepository: mockHashtagRepo,
+            sharedPreferences: sharedPreferences,
+          );
+        },
+        build: () => savedModeBloc,
+        act: (bloc) => bloc.add(const VideoFeedStarted()),
+        expect: () => [
+          isA<VideoFeedState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.loading)
+              .having((s) => s.mode, 'mode', FeedMode.homeHashtag)
+              .having(
+                (s) => s.homeHashtagLabel,
+                'homeHashtagLabel',
+                'nostalgia',
+              )
+              .having(
+                (s) => s.feedHashtagSheetLabels,
+                'sheet',
+                contains('nostalgia'),
+              ),
+          isA<VideoFeedState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.mode, 'mode', FeedMode.homeHashtag)
+              .having(
+                (s) => s.homeHashtagLabel,
+                'homeHashtagLabel',
+                'nostalgia',
+              ),
+        ],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
         'emits noFollowedUsers when following list is empty on startup',
         setUp: () {
           when(() => mockFollowRepository.followingPubkeys).thenReturn([]);

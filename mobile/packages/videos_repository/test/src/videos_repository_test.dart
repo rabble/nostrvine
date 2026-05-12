@@ -2705,7 +2705,6 @@ void main() {
             final result = await repo.getHomeFeedVideos(
               authors: [],
               followedHashtagLabels: tags,
-              limit: 25,
             );
 
             expect(result.videos, hasLength(75));

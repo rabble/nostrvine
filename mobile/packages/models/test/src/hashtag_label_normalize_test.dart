@@ -1,6 +1,5 @@
+import 'package:models/src/hashtag_label_normalize.dart';
 import 'package:test/test.dart';
-
-import '../../lib/src/hashtag_label_normalize.dart';
 
 void main() {
   group('normalizeHashtagLabel', () {
