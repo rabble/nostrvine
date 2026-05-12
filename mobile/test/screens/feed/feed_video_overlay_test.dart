@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:cache_sync/cache_sync.dart';
 import 'package:curated_list_repository/curated_list_repository.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -469,9 +470,16 @@ void main() {
           await tester.pump();
 
           expect(find.byType(ClickableHashtagText), findsOneWidget);
-          final l10n = _l10n(tester);
+          // Hashtag "more" uses [DiVineAppBarIconButton] with tooltip/semantics
+          // labels, but the description row wraps the rich text in a parent
+          // [Semantics] (explicitChildNodes). Relying on merged
+          // [find.bySemanticsLabel] is brittle; assert the overflow affordance
+          // exists under the linkified caption widget instead.
           expect(
-            find.bySemanticsLabel(l10n.hashtagOptionsMoreTooltip),
+            find.descendant(
+              of: find.byType(ClickableHashtagText),
+              matching: find.byType(DiVineAppBarIconButton),
+            ),
             findsOneWidget,
           );
         },
