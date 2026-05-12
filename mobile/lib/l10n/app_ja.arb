@@ -1139,7 +1139,7 @@
     "analyticsDiagnosticsUseFixture": "フィクスチャデータを使う",
     "analyticsNa": "N/A",
     "authCreateNewAccount": "新しい Divine アカウントを作ろう",
-    "authSignInDifferentAccount": "別のアカウントでサインイン",
+    "authSignInDifferentAccount": "既存のアカウントでサインイン",
     "authSignBackIn": "もう一回サインイン",
     "authTermsPrefix": "上のオプションを選ぶと、16歳以上であることを確認し、次に同意したことになるよ: ",
     "authTermsOfService": "利用規約",

@@ -2599,7 +2599,7 @@ class AppLocalizationsBg extends AppLocalizations {
   String get authCreateNewAccount => 'Създай нов Divine акаунт';
 
   @override
-  String get authSignInDifferentAccount => 'Влез с друг акаунт';
+  String get authSignInDifferentAccount => 'Влез със съществуващ акаунт';
 
   @override
   String get authSignBackIn => 'Влез отново';

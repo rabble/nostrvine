@@ -4517,7 +4517,7 @@ abstract class AppLocalizations {
   /// No description provided for @authSignInDifferentAccount.
   ///
   /// In en, this message translates to:
-  /// **'Sign in with a different account'**
+  /// **'Sign in with an existing account'**
   String get authSignInDifferentAccount;
 
   /// No description provided for @authSignBackIn.

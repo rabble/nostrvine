@@ -1139,7 +1139,7 @@
     "analyticsDiagnosticsUseFixture": "Sabit test verisini kullan",
     "analyticsNa": "Yok",
     "authCreateNewAccount": "Yeni bir Divine hesabı oluştur",
-    "authSignInDifferentAccount": "Farklı bir hesapla giriş yap",
+    "authSignInDifferentAccount": "Mevcut bir hesapla giriş yap",
     "authSignBackIn": "Tekrar giriş yap",
     "authTermsPrefix": "Yukarıdaki bir seçeneği seçerek en az 16 yaşında olduğunu onayladığını ve ",
     "authTermsOfService": "Hizmet Şartları",

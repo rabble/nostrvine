@@ -1146,7 +1146,7 @@
     "analyticsDiagnosticsUseFixture": "Usar datos de prueba",
     "analyticsNa": "N/D",
     "authCreateNewAccount": "Crear una cuenta nueva en Divine",
-    "authSignInDifferentAccount": "Iniciar sesión con otra cuenta",
+    "authSignInDifferentAccount": "Iniciar sesión con una cuenta existente",
     "authSignBackIn": "Volver a iniciar sesión",
     "authTermsPrefix": "Al seleccionar una opción, confirmás que tenés al menos 16 años y aceptás los ",
     "authTermsOfService": "Términos del Servicio",

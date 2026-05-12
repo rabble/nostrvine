@@ -1142,7 +1142,7 @@
     "analyticsDiagnosticsUseFixture": "Folosește date de test",
     "analyticsNa": "N/A",
     "authCreateNewAccount": "Creează un cont Divine nou",
-    "authSignInDifferentAccount": "Autentifică-te cu un alt cont",
+    "authSignInDifferentAccount": "Autentifică-te cu un cont existent",
     "authSignBackIn": "Reautentifică-te",
     "authTermsPrefix": "Selecționând o opțiune de mai sus, confirmi că ai cel puțin 16 ani și ești de acord cu ",
     "authTermsOfService": "Termenii serviciului",

@@ -1142,7 +1142,7 @@
     "analyticsDiagnosticsUseFixture": "Använd fixturedata",
     "analyticsNa": "N/A",
     "authCreateNewAccount": "Skapa ett nytt Divine-konto",
-    "authSignInDifferentAccount": "Logga in med ett annat konto",
+    "authSignInDifferentAccount": "Logga in med ett befintligt konto",
     "authSignBackIn": "Logga in igen",
     "authTermsPrefix": "Genom att välja ett alternativ ovan bekräftar du att du är minst 16 år gammal och godkänner ",
     "authTermsOfService": "Användarvillkor",

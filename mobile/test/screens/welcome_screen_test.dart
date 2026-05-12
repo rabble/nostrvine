@@ -142,7 +142,7 @@ void main() {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
-        expect(find.text('Sign in with a different account'), findsOneWidget);
+        expect(find.text('Sign in with an existing account'), findsOneWidget);
       });
 
       testWidgets('displays terms notice with legal links', (tester) async {
@@ -180,7 +180,7 @@ void main() {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Sign in with a different account'));
+        await tester.tap(find.text('Sign in with an existing account'));
         await tester.pumpAndSettle();
 
         verify(() => mockAuthService.acceptTerms()).called(1);
@@ -215,7 +215,7 @@ void main() {
         await tester.pump();
 
         expect(find.text('Create a new Divine account'), findsNothing);
-        expect(find.text('Sign in with a different account'), findsNothing);
+        expect(find.text('Sign in with an existing account'), findsNothing);
       });
 
       testWidgets('hides action buttons when auth state is authenticating', (
@@ -227,7 +227,7 @@ void main() {
         await tester.pump();
 
         expect(find.text('Create a new Divine account'), findsNothing);
-        expect(find.text('Sign in with a different account'), findsNothing);
+        expect(find.text('Sign in with an existing account'), findsNothing);
       });
 
       testWidgets('does not call acceptTerms when auth state is checking', (
@@ -368,7 +368,7 @@ void main() {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Sign in with a different account'));
+        await tester.tap(find.text('Sign in with an existing account'));
         await tester.pumpAndSettle();
 
         verify(() => mockAuthService.acceptTerms()).called(1);

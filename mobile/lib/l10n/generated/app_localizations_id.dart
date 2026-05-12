@@ -2530,7 +2530,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get authCreateNewAccount => 'Buat akun Divine baru';
 
   @override
-  String get authSignInDifferentAccount => 'Masuk dengan akun yang berbeda';
+  String get authSignInDifferentAccount => 'Masuk dengan akun yang sudah ada';
 
   @override
   String get authSignBackIn => 'Masuk kembali';

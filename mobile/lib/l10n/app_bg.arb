@@ -1216,7 +1216,7 @@
     "analyticsDiagnosticsUseFixture": "Използвай примерни данни",
     "analyticsNa": "N/A",
     "authCreateNewAccount": "Създай нов Divine акаунт",
-    "authSignInDifferentAccount": "Влез с друг акаунт",
+    "authSignInDifferentAccount": "Влез със съществуващ акаунт",
     "authSignBackIn": "Влез отново",
     "authTermsPrefix": "Като избереш опция по-горе, потвърждаваш, че си на 16 или повече и се съгласяваш с",
     "authTermsOfService": "Условия за ползване",

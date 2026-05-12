@@ -2629,7 +2629,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get authCreateNewAccount => 'Utwórz nowe konto Divine';
 
   @override
-  String get authSignInDifferentAccount => 'Zaloguj się na inne konto';
+  String get authSignInDifferentAccount => 'Zaloguj się na istniejące konto';
 
   @override
   String get authSignBackIn => 'Zaloguj się z powrotem';

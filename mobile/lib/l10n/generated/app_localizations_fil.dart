@@ -2599,7 +2599,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get authSignInDifferentAccount =>
-      'Mag-sign in gamit ang ibang account';
+      'Mag-sign in gamit ang umiiral na account';
 
   @override
   String get authSignBackIn => 'Mag-sign in muli';

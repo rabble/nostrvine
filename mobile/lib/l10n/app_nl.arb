@@ -1142,7 +1142,7 @@
     "analyticsDiagnosticsUseFixture": "Fixture-data gebruiken",
     "analyticsNa": "N.v.t.",
     "authCreateNewAccount": "Nieuw Divine-account aanmaken",
-    "authSignInDifferentAccount": "Inloggen met een ander account",
+    "authSignInDifferentAccount": "Inloggen met een bestaand account",
     "authSignBackIn": "Opnieuw inloggen",
     "authTermsPrefix": "Door hierboven een optie te kiezen bevestig je dat je minstens 16 jaar bent en ga je akkoord met de ",
     "authTermsOfService": "Servicevoorwaarden",

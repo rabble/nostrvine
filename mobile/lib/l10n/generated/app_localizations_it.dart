@@ -2585,7 +2585,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get authCreateNewAccount => 'Crea un nuovo account Divine';
 
   @override
-  String get authSignInDifferentAccount => 'Accedi con un account diverso';
+  String get authSignInDifferentAccount => 'Accedi con un account esistente';
 
   @override
   String get authSignBackIn => 'Rientra';

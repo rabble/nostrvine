@@ -2526,7 +2526,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get authCreateNewAccount => 'إنشاء حساب Divine جديد';
 
   @override
-  String get authSignInDifferentAccount => 'تسجيل الدخول بحساب آخر';
+  String get authSignInDifferentAccount => 'تسجيل الدخول بحساب موجود';
 
   @override
   String get authSignBackIn => 'عد إلى تسجيل الدخول';

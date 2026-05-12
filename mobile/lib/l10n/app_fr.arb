@@ -1142,7 +1142,7 @@
     "analyticsDiagnosticsUseFixture": "Utiliser des données fixtures",
     "analyticsNa": "N/D",
     "authCreateNewAccount": "Créer un nouveau compte Divine",
-    "authSignInDifferentAccount": "Se connecter avec un autre compte",
+    "authSignInDifferentAccount": "Se connecter avec un compte existant",
     "authSignBackIn": "Se reconnecter",
     "authTermsPrefix": "En choisissant une option ci-dessus, tu confirmes avoir au moins 16 ans et accepter les ",
     "authTermsOfService": "Conditions d'utilisation",

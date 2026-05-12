@@ -2552,7 +2552,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get authCreateNewAccount => 'Skapa ett nytt Divine-konto';
 
   @override
-  String get authSignInDifferentAccount => 'Logga in med ett annat konto';
+  String get authSignInDifferentAccount => 'Logga in med ett befintligt konto';
 
   @override
   String get authSignBackIn => 'Logga in igen';

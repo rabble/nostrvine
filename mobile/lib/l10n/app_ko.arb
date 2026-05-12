@@ -621,7 +621,7 @@
     "analyticsDiagnosticsUseFixture": "고정 데이터 사용",
     "analyticsNa": "N/A",
     "authCreateNewAccount": "새 Divine 계정 만들기",
-    "authSignInDifferentAccount": "다른 계정으로 로그인",
+    "authSignInDifferentAccount": "기존 계정으로 로그인",
     "authSignBackIn": "다시 로그인",
     "authTermsPrefix": "위에서 옵션을 선택하면 만 16세 이상임을 확인하고 다음 내용에 동의하는 것이에요: ",
     "authTermsOfService": "이용약관",

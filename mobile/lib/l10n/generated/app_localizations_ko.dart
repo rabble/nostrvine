@@ -2437,7 +2437,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get authCreateNewAccount => '새 Divine 계정 만들기';
 
   @override
-  String get authSignInDifferentAccount => '다른 계정으로 로그인';
+  String get authSignInDifferentAccount => '기존 계정으로 로그인';
 
   @override
   String get authSignBackIn => '다시 로그인';

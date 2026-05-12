@@ -1139,7 +1139,7 @@
     "analyticsDiagnosticsUseFixture": "Pakai data fixture",
     "analyticsNa": "N/A",
     "authCreateNewAccount": "Buat akun Divine baru",
-    "authSignInDifferentAccount": "Masuk dengan akun yang berbeda",
+    "authSignInDifferentAccount": "Masuk dengan akun yang sudah ada",
     "authSignBackIn": "Masuk kembali",
     "authTermsPrefix": "Dengan memilih opsi di atas, kamu mengonfirmasi bahwa kamu berusia minimal 16 tahun dan setuju dengan ",
     "authTermsOfService": "Ketentuan Layanan",
