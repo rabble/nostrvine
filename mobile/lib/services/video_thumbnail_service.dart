@@ -478,10 +478,10 @@ class VideoThumbnailService {
 
   /// Persist ghost-frame bytes to disk and return the path.
   static Future<String> _writeGhostFrame(Uint8List bytes) async {
-    final documentsDir = await getApplicationDocumentsDirectory();
-    await Directory(documentsDir.path).create(recursive: true);
+    final targetDir = await _resolveGhostFrameDirectory();
+    await targetDir.create(recursive: true);
     final destPath =
-        '${documentsDir.path}/ghost_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        '${targetDir.path}/ghost_${DateTime.now().millisecondsSinceEpoch}.jpg';
     await File(destPath).writeAsBytes(bytes);
 
     Log.debug(
@@ -490,6 +490,30 @@ class VideoThumbnailService {
       category: LogCategory.video,
     );
     return destPath;
+  }
+
+  static Future<Directory> _resolveGhostFrameDirectory() async {
+    try {
+      return await getApplicationDocumentsDirectory();
+    } catch (e) {
+      Log.warning(
+        '⚠️ getApplicationDocumentsDirectory failed for ghost frame: $e',
+        name: 'VideoThumbnailService',
+        category: LogCategory.video,
+      );
+    }
+
+    try {
+      return await getTemporaryDirectory();
+    } catch (e) {
+      Log.warning(
+        '⚠️ getTemporaryDirectory failed for ghost frame: $e',
+        name: 'VideoThumbnailService',
+        category: LogCategory.video,
+      );
+    }
+
+    return Directory.systemTemp;
   }
 
   /// Generates thumbnails for a timeline strip, yielded in batches so the
