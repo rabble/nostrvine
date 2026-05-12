@@ -71,6 +71,15 @@ class MockFollowRepository extends Mock implements FollowRepository {
   }
 
   @override
+  Stream<CacheResult<FollowingSnapshot>> watchMyFollowingCached({
+    bool forceRefresh = false,
+  }) {
+    return Stream.value(
+      const CacheResult.live(FollowingSnapshot(pubkeys: <String>[], count: 0)),
+    );
+  }
+
+  @override
   Future<int> getMyFollowerCount() async => 0;
 
   @override

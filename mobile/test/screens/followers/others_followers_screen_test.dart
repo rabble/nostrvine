@@ -68,6 +68,9 @@ void main() {
       when(() => mockBlocklistRepository.isBlocked(any())).thenReturn(false);
       when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
       when(() => mockFollowRepository.followingPubkeys).thenReturn(const []);
+      when(
+        () => mockFollowRepository.followingStream,
+      ).thenAnswer((_) => Stream<List<String>>.value(const []));
       when(() => mockNostrClient.publicKey).thenReturn(currentUserPubkey);
       when(() => mockFollowRepository.watchMyFollowingCached()).thenAnswer(
         (_) => Stream.value(
