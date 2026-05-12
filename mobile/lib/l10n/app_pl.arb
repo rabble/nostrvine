@@ -991,6 +991,7 @@
     "notificationSettingsMarkAllAsRead": "Oznacz wszystkie jako przeczytane",
     "notificationSettingsMarkAllAsReadSubtitle": "Oznacz wszystkie powiadomienia jako przeczytane",
     "notificationSettingsAllMarkedAsRead": "Wszystkie powiadomienia oznaczone jako przeczytane",
+    "notificationSettingsMarkAllAsReadFailed": "Nie udało się oznaczyć wszystkich jako przeczytane",
     "notificationSettingsResetToDefaults": "Ustawienia zresetowane do domyślnych",
     "notificationSettingsAbout": "O powiadomieniach",
     "notificationSettingsAboutDescription": "Powiadomienia są zasilane przez protokół Nostr. Aktualizacje w czasie rzeczywistym zależą od twojego połączenia z przekaźnikami Nostr. Niektóre powiadomienia mogą mieć opóźnienia.",

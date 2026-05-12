@@ -567,6 +567,7 @@
     "notificationSettingsMarkAllAsRead": "모두 읽음으로 표시",
     "notificationSettingsMarkAllAsReadSubtitle": "모든 알림을 읽음으로 표시",
     "notificationSettingsAllMarkedAsRead": "모든 알림을 읽음으로 표시했어요",
+    "notificationSettingsMarkAllAsReadFailed": "모두 읽음으로 표시하지 못했어요",
     "notificationSettingsResetToDefaults": "설정이 기본값으로 되돌아갔어요",
     "notificationSettingsAbout": "알림 안내",
     "notificationSettingsAboutDescription": "알림은 Nostr 프로토콜로 구동돼요. 실시간 업데이트는 Nostr 릴레이에의 연결에 따라 달라져요. 일부 알림은 지연될 수 있어요.",

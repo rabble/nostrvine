@@ -1065,6 +1065,7 @@
     "notificationSettingsMarkAllAsRead": "Маркирай всички като прочетени",
     "notificationSettingsMarkAllAsReadSubtitle": "Маркирай всички известия като прочетени",
     "notificationSettingsAllMarkedAsRead": "Всички известия са маркирани като прочетени",
+    "notificationSettingsMarkAllAsReadFailed": "Неуспешно маркиране на всички като прочетени",
     "notificationSettingsResetToDefaults": "Настройките се нулират до стойностите по подразбиране",
     "notificationSettingsAbout": "Относно известията",
     "notificationSettingsAboutDescription": "Известията се захранват от Nostr. Обновяването в реално време зависи от връзката ти с Nostr релета. Някои известия може да закъсняват.",

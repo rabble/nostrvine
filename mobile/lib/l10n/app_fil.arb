@@ -600,6 +600,7 @@
     "notificationSettingsMarkAllAsRead": "Markahang Lahat Bilang Nabasa",
     "notificationSettingsMarkAllAsReadSubtitle": "Markahan lahat ng notification bilang nabasa na",
     "notificationSettingsAllMarkedAsRead": "Lahat ng notification ay namarkahan bilang nabasa",
+    "notificationSettingsMarkAllAsReadFailed": "Hindi nagawang markahan lahat bilang nabasa",
     "notificationSettingsResetToDefaults": "Naibalik ang mga setting sa default",
     "notificationSettingsAbout": "Tungkol sa Mga Notification",
     "notificationSettingsAboutDescription": "Ang mga notification ay pinapagana ng Nostr protocol. Ang real-time na update ay nakadepende sa iyong koneksyon sa mga Nostr relay. May ilang notification na maaaring ma-delay.",

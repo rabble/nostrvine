@@ -991,6 +991,7 @@
     "notificationSettingsMarkAllAsRead": "Alles als gelezen markeren",
     "notificationSettingsMarkAllAsReadSubtitle": "Markeer alle meldingen als gelezen",
     "notificationSettingsAllMarkedAsRead": "Alle meldingen als gelezen gemarkeerd",
+    "notificationSettingsMarkAllAsReadFailed": "Alles als gelezen markeren mislukt",
     "notificationSettingsResetToDefaults": "Instellingen teruggezet naar standaard",
     "notificationSettingsAbout": "Over meldingen",
     "notificationSettingsAboutDescription": "Meldingen werken via het Nostr-protocol. Realtime updates hangen af van je verbinding met Nostr-relays. Sommige meldingen kunnen vertraging hebben.",

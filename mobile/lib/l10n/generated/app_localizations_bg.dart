@@ -2292,7 +2292,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get notificationSettingsMarkAllAsReadFailed =>
-      'Failed to mark all as read';
+      'Неуспешно маркиране на всички като прочетени';
 
   @override
   String get notificationSettingsResetToDefaults =>

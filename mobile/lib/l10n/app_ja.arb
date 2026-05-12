@@ -988,6 +988,7 @@
     "notificationSettingsMarkAllAsRead": "すべて既読にする",
     "notificationSettingsMarkAllAsReadSubtitle": "すべての通知を既読にするよ",
     "notificationSettingsAllMarkedAsRead": "すべての通知を既読にしたよ",
+    "notificationSettingsMarkAllAsReadFailed": "すべて既読にできなかったよ",
     "notificationSettingsResetToDefaults": "設定を既定値にリセットしたよ",
     "notificationSettingsAbout": "通知について",
     "notificationSettingsAboutDescription": "通知は Nostr プロトコルで動いてるよ。リアルタイム更新は Nostr リレーへの接続に依存するから、遅れることもあるよ。",

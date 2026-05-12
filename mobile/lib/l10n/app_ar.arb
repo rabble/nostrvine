@@ -988,6 +988,7 @@
     "notificationSettingsMarkAllAsRead": "وسم الكل كمقروء",
     "notificationSettingsMarkAllAsReadSubtitle": "وسم جميع الإشعارات كمقروءة",
     "notificationSettingsAllMarkedAsRead": "تم وسم جميع الإشعارات كمقروءة",
+    "notificationSettingsMarkAllAsReadFailed": "تعذّر وسم الكل كمقروء",
     "notificationSettingsResetToDefaults": "تمت إعادة الإعدادات إلى الافتراضي",
     "notificationSettingsAbout": "عن الإشعارات",
     "notificationSettingsAboutDescription": "الإشعارات مدعومة ببروتوكول Nostr. التحديثات الفورية تعتمد على اتصالك بمحولات Nostr. قد تواجه بعض الإشعارات تأخيرًا.",

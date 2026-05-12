@@ -991,6 +991,7 @@
     "notificationSettingsMarkAllAsRead": "Alle als gelesen markieren",
     "notificationSettingsMarkAllAsReadSubtitle": "Alle Benachrichtigungen als gelesen markieren",
     "notificationSettingsAllMarkedAsRead": "Alle Benachrichtigungen als gelesen markiert",
+    "notificationSettingsMarkAllAsReadFailed": "Konnten nicht alle als gelesen markiert werden",
     "notificationSettingsResetToDefaults": "Einstellungen auf Standard zurückgesetzt",
     "notificationSettingsAbout": "Über Benachrichtigungen",
     "notificationSettingsAboutDescription": "Benachrichtigungen werden über das Nostr-Protokoll bereitgestellt. Echtzeit-Updates hängen von deiner Verbindung zu den Nostr-Relays ab. Manche Benachrichtigungen können verzögert sein.",

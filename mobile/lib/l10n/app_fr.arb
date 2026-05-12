@@ -991,6 +991,7 @@
     "notificationSettingsMarkAllAsRead": "Tout marquer comme lu",
     "notificationSettingsMarkAllAsReadSubtitle": "Marquer toutes les notifications comme lues",
     "notificationSettingsAllMarkedAsRead": "Toutes les notifications marquées comme lues",
+    "notificationSettingsMarkAllAsReadFailed": "Échec du marquage de toutes comme lues",
     "notificationSettingsResetToDefaults": "Réglages réinitialisés par défaut",
     "notificationSettingsAbout": "À propos des notifications",
     "notificationSettingsAboutDescription": "Les notifications fonctionnent grâce au protocole Nostr. Les mises à jour en temps réel dépendent de ta connexion aux relays Nostr. Certaines notifications peuvent avoir du retard.",

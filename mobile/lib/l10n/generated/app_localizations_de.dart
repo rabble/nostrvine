@@ -2280,7 +2280,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get notificationSettingsMarkAllAsReadFailed =>
-      'Failed to mark all as read';
+      'Konnten nicht alle als gelesen markiert werden';
 
   @override
   String get notificationSettingsResetToDefaults =>

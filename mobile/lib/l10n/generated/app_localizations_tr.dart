@@ -2235,7 +2235,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get notificationSettingsMarkAllAsReadFailed =>
-      'Failed to mark all as read';
+      'Tümünü okundu olarak işaretleme başarısız';
 
   @override
   String get notificationSettingsResetToDefaults =>

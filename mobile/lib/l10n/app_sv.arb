@@ -991,6 +991,7 @@
     "notificationSettingsMarkAllAsRead": "Markera alla som lästa",
     "notificationSettingsMarkAllAsReadSubtitle": "Markera alla aviseringar som lästa",
     "notificationSettingsAllMarkedAsRead": "Alla aviseringar markerade som lästa",
+    "notificationSettingsMarkAllAsReadFailed": "Kunde inte markera alla som lästa",
     "notificationSettingsResetToDefaults": "Inställningar återställda till standard",
     "notificationSettingsAbout": "Om aviseringar",
     "notificationSettingsAboutDescription": "Aviseringar drivs av Nostr-protokollet. Realtidsuppdateringar beror på din anslutning till Nostr-reler. Vissa aviseringar kan vara fördröjda.",

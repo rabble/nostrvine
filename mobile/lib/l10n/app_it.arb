@@ -991,6 +991,7 @@
     "notificationSettingsMarkAllAsRead": "Segna tutto come letto",
     "notificationSettingsMarkAllAsReadSubtitle": "Segna tutte le notifiche come lette",
     "notificationSettingsAllMarkedAsRead": "Tutte le notifiche segnate come lette",
+    "notificationSettingsMarkAllAsReadFailed": "Impossibile segnare tutte come lette",
     "notificationSettingsResetToDefaults": "Impostazioni ripristinate ai valori predefiniti",
     "notificationSettingsAbout": "Info sulle notifiche",
     "notificationSettingsAboutDescription": "Le notifiche sono alimentate dal protocollo Nostr. Gli aggiornamenti in tempo reale dipendono dalla tua connessione ai relay Nostr. Alcune notifiche potrebbero subire ritardi.",

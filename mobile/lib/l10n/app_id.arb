@@ -988,6 +988,7 @@
     "notificationSettingsMarkAllAsRead": "Tandai Semua Sudah Dibaca",
     "notificationSettingsMarkAllAsReadSubtitle": "Tandai semua notifikasi sudah dibaca",
     "notificationSettingsAllMarkedAsRead": "Semua notifikasi ditandai sudah dibaca",
+    "notificationSettingsMarkAllAsReadFailed": "Gagal menandai semua sudah dibaca",
     "notificationSettingsResetToDefaults": "Pengaturan direset ke bawaan",
     "notificationSettingsAbout": "Tentang Notifikasi",
     "notificationSettingsAboutDescription": "Notifikasi ditenagai oleh protokol Nostr. Pembaruan real-time bergantung pada koneksimu ke relay Nostr. Beberapa notifikasi mungkin tertunda.",

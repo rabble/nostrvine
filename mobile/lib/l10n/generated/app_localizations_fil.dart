@@ -2292,7 +2292,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get notificationSettingsMarkAllAsReadFailed =>
-      'Failed to mark all as read';
+      'Hindi nagawang markahan lahat bilang nabasa';
 
   @override
   String get notificationSettingsResetToDefaults =>

@@ -995,6 +995,7 @@
     "notificationSettingsMarkAllAsRead": "Marcar todas como leídas",
     "notificationSettingsMarkAllAsReadSubtitle": "Marcá todas las notificaciones como leídas",
     "notificationSettingsAllMarkedAsRead": "Todas las notificaciones marcadas como leídas",
+    "notificationSettingsMarkAllAsReadFailed": "No se pudieron marcar todas como leídas",
     "notificationSettingsResetToDefaults": "Ajustes restablecidos a los valores predeterminados",
     "notificationSettingsAbout": "Sobre las notificaciones",
     "notificationSettingsAboutDescription": "Las notificaciones funcionan con el protocolo Nostr. Las actualizaciones en tiempo real dependen de tu conexión con los relays de Nostr. Algunas notificaciones pueden demorarse.",

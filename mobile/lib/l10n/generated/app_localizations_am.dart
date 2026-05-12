@@ -2211,7 +2211,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get notificationSettingsMarkAllAsReadFailed =>
-      'Failed to mark all as read';
+      'ሁሉንም እንደተነበቡ ለማመልከት አልተሳካም';
 
   @override
   String get notificationSettingsResetToDefaults =>

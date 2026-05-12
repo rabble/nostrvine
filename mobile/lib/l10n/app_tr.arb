@@ -988,6 +988,7 @@
     "notificationSettingsMarkAllAsRead": "Tümünü Okundu Olarak İşaretle",
     "notificationSettingsMarkAllAsReadSubtitle": "Tüm bildirimleri okundu olarak işaretle",
     "notificationSettingsAllMarkedAsRead": "Tüm bildirimler okundu olarak işaretlendi",
+    "notificationSettingsMarkAllAsReadFailed": "Tümünü okundu olarak işaretleme başarısız",
     "notificationSettingsResetToDefaults": "Ayarlar varsayılanlara sıfırlandı",
     "notificationSettingsAbout": "Bildirimler Hakkında",
     "notificationSettingsAboutDescription": "Bildirimler Nostr protokolüyle desteklenir. Gerçek zamanlı güncellemeler Nostr rölelerine olan bağlantına bağlıdır. Bazı bildirimler gecikebilir.",

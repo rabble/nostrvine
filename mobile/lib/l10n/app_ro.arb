@@ -991,6 +991,7 @@
     "notificationSettingsMarkAllAsRead": "Marchează toate ca citite",
     "notificationSettingsMarkAllAsReadSubtitle": "Marchează toate notificările ca citite",
     "notificationSettingsAllMarkedAsRead": "Toate notificările au fost marcate ca citite",
+    "notificationSettingsMarkAllAsReadFailed": "Marcarea tuturor ca citite a eșuat",
     "notificationSettingsResetToDefaults": "Setările au fost resetate la valorile implicite",
     "notificationSettingsAbout": "Despre notificări",
     "notificationSettingsAboutDescription": "Notificările sunt alimentate de protocolul Nostr. Actualizările în timp real depind de conexiunea ta la relay-urile Nostr. Unele notificări pot avea întârzieri.",

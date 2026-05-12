@@ -1179,6 +1179,7 @@
     "notificationSettingsMarkAllAsRead": "ሁሉንም እንደተነበቡ ምልክት ያድርጉበት",
     "notificationSettingsMarkAllAsReadSubtitle": "ሁሉንም ማሳወቂያዎች እንደተነበቡ ምልክት ያድርጉባቸው",
     "notificationSettingsAllMarkedAsRead": "ሁሉም ማሳወቂያዎች እንደተነበቡ ምልክት ተደርጎባቸዋል",
+    "notificationSettingsMarkAllAsReadFailed": "ሁሉንም እንደተነበቡ ለማመልከት አልተሳካም",
     "notificationSettingsResetToDefaults": "ቅንብሮች ወደ ነባሪዎች ዳግም ተጀምረዋል።",
     "notificationSettingsAbout": "ስለ ማሳወቂያዎች",
     "notificationSettingsAboutDescription": "ማሳወቂያዎች የተጎላበተው በNostr ፕሮቶኮል ነው። የቅጽበታዊ ዝማኔዎች ከNostr ቅብብሎሽ ጋር ባለዎት ግንኙነት ይወሰናል። አንዳንድ ማሳወቂያዎች መዘግየቶች ሊኖራቸው ይችላል።",
