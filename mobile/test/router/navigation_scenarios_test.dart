@@ -5,11 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
-import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
@@ -205,18 +205,18 @@ void main() {
 
       final router = container.read(goRouterProvider);
 
-      router.go(NotificationsScreen.pathForIndex(0));
+      router.go(NotificationsPage.pathForIndex(0));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        NotificationsScreen.pathForIndex(0),
+        NotificationsPage.pathForIndex(0),
       );
 
-      router.go(NotificationsScreen.pathForIndex(2));
+      router.go(NotificationsPage.pathForIndex(2));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        NotificationsScreen.pathForIndex(2),
+        NotificationsPage.pathForIndex(2),
       );
     });
 
