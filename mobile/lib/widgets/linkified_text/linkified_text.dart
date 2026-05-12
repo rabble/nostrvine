@@ -68,7 +68,10 @@ class _LinkifiedTextState extends ConsumerState<LinkifiedText> {
       defaultStyle: defaultStyle,
       linkStyle: linkStyle,
       mentionStyle: mentionStyle,
-      videoLabel: context.l10n.clickableTextViewVideoLink,
+      videoLabel: Localizations.of<AppLocalizations>(
+        context,
+        AppLocalizations,
+      )?.clickableTextViewVideoLink,
       profileLabelForHex: _profileDisplayText,
       onHashtagTap: (hashtag) => _navigateToHashtagFeed(context, hashtag),
       onProfileTap: (hexPubkey) => _navigateToProfile(context, hexPubkey),
