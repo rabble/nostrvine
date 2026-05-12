@@ -67,8 +67,8 @@ bloc can always distinguish "true empty" from "everything failed".
 |---|---|---|
 | `SearchSourcePending` | Source has not yet reported. Internal/initial state, normally not visible in a terminal envelope. | — |
 | `SearchSourceSkipped` | Source was intentionally not consulted (`offset > 0` for local/NIP-50, or Funnelcake unconfigured). | — |
-| `SearchSourceSuccess` | Source returned successfully. Carries `resultCount` (pre-dedup) and `latencyMs`. | yes |
-| `SearchSourceFailed` | Source threw / timed out. Carries `SearchSourceFailureReason` (`timeout` / `network` / `unavailable` / `other`) and `latencyMs`. | yes |
+| `SearchSourceSuccess` | Source returned successfully. Carries `resultCount` (new distinct profiles this source contributed to the accumulated result set) and `latencyMs`. | yes |
+| `SearchSourceFailed` | Source threw / timed out. Carries `SearchSourceFailureReason` (`timeout` / `network` / `other`) and `latencyMs`. | yes |
 
 The bloc never re-derives or invents source statuses — it forwards
 the repository's view, except when the outer 20 s timeout fires (see

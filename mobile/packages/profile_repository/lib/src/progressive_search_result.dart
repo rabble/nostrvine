@@ -38,10 +38,6 @@ enum SearchSourceFailureReason {
   /// (HTTP error, connection refused, etc.).
   network,
 
-  /// The source is configured but not currently usable
-  /// (e.g. Funnelcake client has no base URL).
-  unavailable,
-
   /// Any other failure — typically a `StateError` from the WebSocket
   /// layer or an unexpected runtime error.
   other,
@@ -80,8 +76,8 @@ class SearchSourceSuccess extends SearchSourceStatus {
     required this.latencyMs,
   });
 
-  /// Number of distinct profiles this source contributed before
-  /// deduplication.
+  /// Number of new distinct profiles this source contributed to the
+  /// accumulated result set.
   final int resultCount;
 
   /// Wall-clock latency for the source's call, in milliseconds.

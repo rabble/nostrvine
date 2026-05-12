@@ -1096,6 +1096,7 @@ class ProfileRepository {
     final prevCount = resultMap.length;
     if (_funnelcakeApiClient?.isAvailable ?? false) {
       final phase2Watch = Stopwatch()..start();
+      final preRestCount = resultMap.length;
       try {
         final restResults = await _funnelcakeApiClient!.searchProfiles(
           query: trimmed,
@@ -1108,7 +1109,7 @@ class ProfileRepository {
           resultMap[result.pubkey] = result.toUserProfile();
         }
         sources[SearchSource.funnelcakeApi] = SearchSourceSuccess(
-          resultCount: restResults.length,
+          resultCount: resultMap.length - preRestCount,
           latencyMs: phase2Watch.elapsedMilliseconds,
         );
       } on Exception catch (e) {
