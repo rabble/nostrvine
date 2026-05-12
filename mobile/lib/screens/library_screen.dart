@@ -630,7 +630,7 @@ class _LibraryToolbar extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Text(
-                context.l10n.profileLibraryLabel,
+                context.l10n.profileMyLibraryLabel,
                 style: VineTheme.titleMediumFont(),
               ),
             ),
@@ -788,7 +788,7 @@ class _LibraryWebUnavailableScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: VineTheme.onPrimary,
       appBar: DiVineAppBar(
-        title: context.l10n.profileLibraryLabel,
+        title: context.l10n.profileMyLibraryLabel,
         backgroundColor: VineTheme.onPrimary,
         surfaceTintColor: VineTheme.transparent,
         shape: const Border(
