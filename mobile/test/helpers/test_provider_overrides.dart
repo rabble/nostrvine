@@ -1,6 +1,8 @@
 // ABOUTME: Centralized provider overrides for widget tests to fix ProviderException failures
 // ABOUTME: Provides mock implementations of all providers that throw UnimplementedError in production
 
+import 'dart:async';
+
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:cache_sync/cache_sync.dart';
 import 'package:flutter/material.dart';
@@ -142,6 +144,13 @@ MockNostrClient createMockNostrService() {
   // Stub publicKey with empty string default so tests that access it
   // do not get type 'Null' is not a subtype of type 'String'
   when(() => mockNostr.publicKey).thenReturn('');
+
+  // Stub ready with a future that never completes so
+  // isNostrReadyProvider (which awaits this) does not get
+  // type 'Null' is not a subtype of type 'Future<void>'.
+  // Tests that need the ready transition should override this in their own
+  // setUp via Completer<void>.future — see is_nostr_ready_provider_test.dart.
+  when(() => mockNostr.ready).thenAnswer((_) => Completer<void>().future);
   return mockNostr;
 }
 
