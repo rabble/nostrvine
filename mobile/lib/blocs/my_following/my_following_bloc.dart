@@ -77,17 +77,20 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
       );
       addError(e, stackTrace);
       emit(
-        state.copyWith(
-          status: MyFollowingStatus.failure,
-          isRefreshing: false,
-        ),
+        state.copyWith(status: MyFollowingStatus.failure, isRefreshing: false),
       );
     }
   }
 
   /// Handle follow toggle request.
-  /// Delegates to repository which handles the toggle logic internally.
-  /// UI updates reactively via the repository's stream.
+  ///
+  /// Delegates to repository which handles the toggle logic internally,
+  /// then re-dispatches [MyFollowingListLoadRequested] so the cache layer
+  /// and UI re-observe the new follow set. The previous implementation
+  /// relied on a [BehaviorSubject] replay flowing through
+  /// `CacheSync.watchStream`, which mis-tagged stale in-memory snapshots
+  /// as live; [FollowRepository.watchMyFollowingCached] is now one-shot,
+  /// so explicit re-load here owns the post-toggle refresh.
   ///
   /// Uses [droppable] transformer to prevent concurrent toggles from
   /// racing each other (e.g. rapid taps toggling follow/unfollow/follow).
@@ -102,6 +105,7 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
 
     try {
       await _followRepository.toggleFollow(event.pubkey);
+      add(const MyFollowingListLoadRequested());
     } catch (e) {
       Log.error(
         'Failed to toggle follow for user: $e',

@@ -241,11 +241,7 @@ class FollowRepository {
   /// pubkeys. Returns an empty snapshot if no event is found.
   Future<FollowingSnapshot> getOthersFollowing(String pubkey) async {
     final events = await _nostrClient.queryEvents([
-      Filter(
-        authors: [pubkey],
-        kinds: const [3],
-        limit: 1,
-      ),
+      Filter(authors: [pubkey], kinds: const [3], limit: 1),
     ]);
 
     final following = <String>[];
@@ -313,12 +309,25 @@ class FollowRepository {
 
   /// Cache-backed stream of the current user's following list.
   ///
-  /// Emits cached data immediately when present, then live updates from
-  /// [watchMyFollowing]. See [CacheSync.watchStream].
+  /// Emits a [CacheResult.cached] if disk-cached data exists, then a single
+  /// [CacheResult.live] once the network fetch resolves.
+  ///
+  /// Uses [CacheSync.watchOne] rather than [CacheSync.watchStream] for the
+  /// same reason as [watchMyFollowersCached]: [watchMyFollowing] emits from
+  /// a [BehaviorSubject] seeded by `initialize()`'s LocalStorage /
+  /// PersonalEventCache reads. Subscribing via [CacheSync.watchStream]
+  /// would replay that pre-network in-memory snapshot and CacheSync would
+  /// incorrectly tag it as [CacheResult.live] before the network refresh
+  /// has actually run, breaking the new `isRefreshing` / [CacheResult.isLive]
+  /// contract.
+  ///
+  /// Ongoing follow/unfollow reactivity is handled by [MyFollowingBloc],
+  /// which re-dispatches [MyFollowingListLoadRequested] after a successful
+  /// toggle so the cache + UI both observe the new state.
   Stream<CacheResult<FollowingSnapshot>> watchMyFollowingCached() {
-    return CacheSync.watchStream<FollowingSnapshot>(
+    return CacheSync.watchOne<FollowingSnapshot>(
       key: _myFollowingCacheKey(_nostrClient.publicKey),
-      source: watchMyFollowing,
+      fetch: () => getOthersFollowing(_nostrClient.publicKey),
       fromJson: FollowingSnapshot.fromJson,
       toJson: (s) => s.toJson(),
     );
@@ -336,10 +345,7 @@ class FollowRepository {
       key: _othersFollowersCacheKey(pubkey),
       fetch: () async {
         final followers = await getFollowers(pubkey);
-        return FollowersSnapshot(
-          pubkeys: followers,
-          count: followers.length,
-        );
+        return FollowersSnapshot(pubkeys: followers, count: followers.length);
       },
       fromJson: FollowersSnapshot.fromJson,
       toJson: (s) => s.toJson(),
@@ -1487,9 +1493,7 @@ class FollowRepository {
     }
 
     try {
-      final cachedContactLists = _getCachedEventsByKind!(
-        EventKind.contactList,
-      );
+      final cachedContactLists = _getCachedEventsByKind!(EventKind.contactList);
 
       if (cachedContactLists.isNotEmpty) {
         // Use the most recent contact list event

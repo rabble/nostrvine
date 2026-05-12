@@ -171,6 +171,9 @@ void main() {
           when(
             () => mockFollowRepository.toggleFollow(any()),
           ).thenAnswer((_) async {});
+          when(
+            () => mockFollowRepository.watchMyFollowingCached(),
+          ).thenAnswer((_) => const Stream.empty());
         },
         build: createBloc,
         act: (bloc) =>
@@ -178,6 +181,39 @@ void main() {
         verify: (_) {
           verify(
             () => mockFollowRepository.toggleFollow(validPubkey('user')),
+          ).called(1);
+        },
+      );
+
+      blocTest<MyFollowingBloc, MyFollowingState>(
+        're-dispatches load after successful toggle so cache layer '
+        're-observes new follow set',
+        setUp: () {
+          when(
+            () => mockFollowRepository.toggleFollow(any()),
+          ).thenAnswer((_) async {});
+          when(() => mockFollowRepository.watchMyFollowingCached()).thenAnswer(
+            (_) => Stream.value(
+              CacheResult.live(
+                FollowingSnapshot(
+                  pubkeys: [validPubkey('user')],
+                  count: 1,
+                ),
+              ),
+            ),
+          );
+        },
+        build: createBloc,
+        act: (bloc) =>
+            bloc.add(MyFollowingToggleRequested(validPubkey('user'))),
+        verify: (_) {
+          // Toggle issues the relay write and the BLoC re-fetches via
+          // watchMyFollowingCached so the disk cache layer + UI both
+          // observe the new state (replaces the old BehaviorSubject-replay
+          // reactivity that broke the stale/live contract).
+          verify(() => mockFollowRepository.toggleFollow(any())).called(1);
+          verify(
+            () => mockFollowRepository.watchMyFollowingCached(),
           ).called(1);
         },
       );
@@ -209,6 +245,9 @@ void main() {
               await Future<void>.delayed(const Duration(milliseconds: 50));
             }
           });
+          when(
+            () => mockFollowRepository.watchMyFollowingCached(),
+          ).thenAnswer((_) => const Stream.empty());
         },
         build: createBloc,
         act: (bloc) async {

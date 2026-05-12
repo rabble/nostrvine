@@ -229,25 +229,74 @@ void main() {
   });
 
   group('FollowRepository.watchMyFollowingCached', () {
-    test('emits live result from underlying watchMyFollowing', () async {
-      final repo = _TestableFollowRepository(
-        nostrClient: mockNostrClient,
-        myFollowingStream: Stream.value(
-          const FollowingSnapshot(pubkeys: ['x'], count: 1),
-        ),
-        othersFollowersResult: const [],
-        othersFollowingResult: const FollowingSnapshot(
-          pubkeys: [],
-          count: 0,
-        ),
-      );
+    test(
+      'emits live result from a fresh getOthersFollowing fetch, '
+      'NOT from the watchMyFollowing BehaviorSubject replay',
+      () async {
+        final repo = _TestableFollowRepository(
+          nostrClient: mockNostrClient,
+          // BehaviorSubject replay value — must be IGNORED by the new
+          // watchOne-based implementation so CacheSync alone owns
+          // stale/live semantics.
+          myFollowingStream: Stream.value(
+            const FollowingSnapshot(pubkeys: ['in_memory_replay'], count: 1),
+          ),
+          othersFollowersResult: const [],
+          othersFollowingResult: const FollowingSnapshot(
+            pubkeys: ['network'],
+            count: 1,
+          ),
+        );
 
-      final events = await repo.watchMyFollowingCached().take(1).toList();
+        final events = await repo.watchMyFollowingCached().take(1).toList();
 
-      expect(events, hasLength(1));
-      expect(events[0].isLive, isTrue);
-      expect(events[0].data.pubkeys, ['x']);
-    });
+        expect(events, hasLength(1));
+        expect(events[0].isLive, isTrue);
+        expect(events[0].data.pubkeys, ['network']);
+        expect(repo.getOthersFollowingCallCount, 1);
+      },
+    );
+
+    test(
+      'emits cached (stale) then live (fresh) — proves CacheSync owns '
+      'the single stale/live boundary',
+      () async {
+        await dao.write(
+          key: 'my_following_bob',
+          payload: const FollowingSnapshot(
+            pubkeys: ['disk'],
+            count: 1,
+          ).toJson(),
+        );
+        when(() => mockNostrClient.publicKey).thenReturn('bob');
+
+        final repo = _TestableFollowRepository(
+          nostrClient: mockNostrClient,
+          // In-memory replay should NEVER be mis-tagged as live by the
+          // wrapper. This is the regression check for the reviewer's
+          // "double cache layer" concern.
+          myFollowingStream: Stream.value(
+            const FollowingSnapshot(pubkeys: ['in_memory_replay'], count: 1),
+          ),
+          othersFollowersResult: const [],
+          othersFollowingResult: const FollowingSnapshot(
+            pubkeys: ['network'],
+            count: 1,
+          ),
+        );
+
+        final events = await repo.watchMyFollowingCached().take(2).toList();
+
+        expect(events, hasLength(2));
+        expect(events[0].isLive, isFalse);
+        expect(events[0].data.pubkeys, ['disk']);
+        expect(events[1].isLive, isTrue);
+        // Must be ['network'] from getOthersFollowing(), NOT
+        // ['in_memory_replay'] from the BehaviorSubject.
+        expect(events[1].data.pubkeys, ['network']);
+        expect(repo.getOthersFollowingCallCount, 1);
+      },
+    );
 
     test('uses current-user scoped cache key', () async {
       await dao.write(
@@ -262,12 +311,12 @@ void main() {
       final repo = _TestableFollowRepository(
         nostrClient: mockNostrClient,
         myFollowingStream: Stream.value(
-          const FollowingSnapshot(pubkeys: ['bob_live'], count: 1),
+          const FollowingSnapshot(pubkeys: ['bob_in_memory'], count: 1),
         ),
         othersFollowersResult: const [],
         othersFollowingResult: const FollowingSnapshot(
-          pubkeys: [],
-          count: 0,
+          pubkeys: ['bob_live'],
+          count: 1,
         ),
       );
 
@@ -275,6 +324,7 @@ void main() {
 
       expect(events, hasLength(1));
       expect(events[0].isLive, isTrue);
+      // Bob's own pubkey was used to query — not Alice's cached entry.
       expect(events[0].data.pubkeys, ['bob_live']);
     });
   });
