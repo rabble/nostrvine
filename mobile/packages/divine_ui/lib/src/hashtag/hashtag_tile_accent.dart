@@ -1,10 +1,10 @@
 // ABOUTME: Stable accent backgrounds for hashtag surfaces (trending strip,
-// menu # tile).
+// hashtag menu tile).
 
 import 'dart:ui' show Color;
 
 import 'package:divine_ui/src/theme/vine_theme.dart';
-import 'package:hashtag_repository/hashtag_repository.dart';
+import 'package:models/models.dart';
 
 /// Round-robin palette — same order as the original profile/trending chip treatment.
 const List<Color> kHashtagTilePalette = <Color>[

@@ -314,19 +314,12 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
             const SizedBox(height: 24),
             Text(
               l10n.hashtagFeedLoadingMessage(widget.hashtag),
-              style: const TextStyle(
-                color: VineTheme.primaryText,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
+              style: VineTheme.titleLargeFont(),
             ),
             const SizedBox(height: 8),
             Text(
               l10n.hashtagFeedLoadingSubtitle,
-              style: const TextStyle(
-                color: VineTheme.secondaryText,
-                fontSize: 14,
-              ),
+              style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
             ),
           ],
         ),
@@ -337,23 +330,20 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.tag, size: 64, color: VineTheme.secondaryText),
+            const DivineIcon(
+              icon: DivineIconName.hashtag,
+              size: 64,
+              color: VineTheme.secondaryText,
+            ),
             const SizedBox(height: 16),
             Text(
               l10n.hashtagFeedEmptyTitle(widget.hashtag),
-              style: const TextStyle(
-                color: VineTheme.primaryText,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
+              style: VineTheme.titleLargeFont(),
             ),
             const SizedBox(height: 8),
             Text(
               l10n.hashtagFeedEmptySubtitle,
-              style: const TextStyle(
-                color: VineTheme.secondaryText,
-                fontSize: 14,
-              ),
+              style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
             ),
           ],
         ),

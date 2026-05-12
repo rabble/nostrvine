@@ -14,9 +14,9 @@ dependencies:
     sdk: flutter
   flutter_svg: ^2.0.10+1
   google_fonts: ^6.3.2
-  hashtag_repository:
-    path: ../hashtag_repository
   intl: ">=0.19.0 <1.0.0"
+  models:
+    path: ../models
   skeletonizer: ^2.1.2
 
 dev_dependencies:

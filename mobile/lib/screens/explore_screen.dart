@@ -155,7 +155,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
 
   /// Convert a tab name to index based on current availability
   int _tabNameToIndex(String name) {
-    // #1602: Tags moved under Popular; deep links may still request `tags`.
+    // Tags tab merged under Popular; deep links may still request `tags`.
     final resolved = name == 'tags' ? 'popular' : name;
     final index = _tabNames.indexOf(resolved);
     if (index >= 0) {

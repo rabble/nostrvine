@@ -2613,7 +2613,7 @@ void main() {
         });
 
         test(
-          'caps followed-hashtag fan-out to first eight labels (#1602)',
+          'caps followed-hashtag fan-out to first eight labels',
           () async {
             for (var i = 0; i < 12; i++) {
               when(
@@ -2672,7 +2672,7 @@ void main() {
         );
 
         test(
-          'caps merged hashtag-sourced rows before home merge (#1602)',
+          'caps merged hashtag-sourced rows before home merge',
           () async {
             const tags = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
             for (final t in tags) {

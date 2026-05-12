@@ -1,5 +1,5 @@
-// ABOUTME: Top-of-page hashtag line for Following feed (step 6 UX).
-// ABOUTME: Sits under [FeedModeSwitch] ([FeedModeOverlayLayout]), tracks scroll via [pagePosition].
+// ABOUTME: Top-of-page hashtag line for Following feed.
+// ABOUTME: Sits under feed mode switch overlay; tracks scroll via pagePosition.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';

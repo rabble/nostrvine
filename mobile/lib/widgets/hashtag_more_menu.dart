@@ -1,6 +1,5 @@
-// ABOUTME: Bottom sheet for saving a hashtag to profile / home feed list (#1602).
-// ABOUTME: Shared by hashtag feed screen and inline video description hashtag actions.
-// ABOUTME: Header follows Chardot visual review (#1602): chip + headline + count.
+// ABOUTME: Bottom sheet for saving a hashtag to profile / home feed list.
+// ABOUTME: Shared by hashtag feed screen and inline video description actions.
 
 import 'dart:async';
 
@@ -11,8 +10,7 @@ import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 
-/// Hashtag block: rounded accent `#` tile + tag label and optional video count
-/// (visual review #1602 / design QA — token alignment with `VineTheme`).
+/// Hashtag block: rounded accent `#` tile, tag label, and optional video count.
 class HashtagActionMenuHeader extends StatelessWidget {
   const HashtagActionMenuHeader({
     required this.hashtag,
@@ -37,7 +35,7 @@ class HashtagActionMenuHeader extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: DefaultTextStyle(
-        style: const TextStyle(),
+        style: VineTheme.bodyMediumFont(),
         child: Semantics(
           label: body.isEmpty
               ? l10n.hashtagOptionsMoreTooltip

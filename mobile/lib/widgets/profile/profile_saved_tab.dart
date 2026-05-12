@@ -1,6 +1,5 @@
-// ABOUTME: Own profile "Saved" tab — plan #1602: bookmarked Videos + Tags sub-filters
-// ABOUTME: Replaces separate Saved grid-only tab and a dedicated # tab per Figma alignment
-// ABOUTME: Chardot ref: inactive = plain label; selected = pill on surfaceContainer (#1602 review PNG).
+// ABOUTME: Own profile Saved tab — bookmarked videos and profile-saved hashtags.
+// ABOUTME: Videos / Tags sub-filters; inactive filter is plain label, selected is pill.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';

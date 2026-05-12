@@ -1,4 +1,4 @@
-// ABOUTME: Plan #1602 alignment §6 — More menu, save/remove, feed action, a11y
+// ABOUTME: Widget test for hashtag more menu (save to profile, following feed, a11y).
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';

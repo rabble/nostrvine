@@ -11,7 +11,7 @@ import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_shee
 
 /// Video description overlay showing title/content and loop count.
 ///
-/// Caption uses [ClickableHashtagText] with inline hashtag options (#1602).
+/// Caption uses [ClickableHashtagText] with inline hashtag save and menu actions.
 /// Also shows the original loop count if available.
 class VideoDescriptionOverlay extends ConsumerWidget {
   const VideoDescriptionOverlay({required this.video, super.key});

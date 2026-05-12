@@ -1,27 +1,14 @@
-// ABOUTME: Unit tests for canonical hashtag normalization (divine-web parity).
-
-import 'package:flutter_test/flutter_test.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
+import 'package:test/test.dart';
 
 void main() {
-  group('normalizeHashtagLabel', () {
-    test('matches divine-web: trim, leading #, lower case', () {
-      expect(normalizeHashtagLabel('  #Vine  '), 'vine');
-      expect(normalizeHashtagLabel('##openvine'), 'openvine');
-      expect(normalizeHashtagLabel('#'), '');
-      expect(normalizeHashtagLabel('Nostr'), 'nostr');
-    });
-  });
-
-  group('formatHashtagForDisplay', () {
-    test('adds single hash and handles empty', () {
-      expect(formatHashtagForDisplay('vine'), '#vine');
-      expect(formatHashtagForDisplay(''), '#');
+  group('canonical hashtag API (re-exported from models)', () {
+    test('normalizeHashtagLabel is available via package export', () {
+      expect(normalizeHashtagLabel('  #Tag  '), 'tag');
     });
 
-    test('strips existing leading hashes before prefixing', () {
-      expect(formatHashtagForDisplay('#dup'), '#dup');
-      expect(formatHashtagForDisplay('##dup'), '#dup');
+    test('formatHashtagForDisplay is available via package export', () {
+      expect(formatHashtagForDisplay('tag'), '#tag');
     });
   });
 }
