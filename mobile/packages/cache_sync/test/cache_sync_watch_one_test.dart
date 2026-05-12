@@ -97,33 +97,30 @@ void main() {
     // UX contract: when a refresh fails the caller already received stale data
     // and should keep showing it. The cache entry must survive the error so the
     // next caller can serve the stale value again rather than a blank screen.
-    test(
-      'emits stale cached value then error when cache has data '
-      'and fetch fails — stale entry survives',
-      () async {
-        await dao.write(key: 'stale:err', payload: '99');
+    test('emits stale cached value then error when cache has data '
+        'and fetch fails — stale entry survives', () async {
+      await dao.write(key: 'stale:err', payload: '99');
 
-        final stream = CacheSync.watchOne<int>(
-          key: 'stale:err',
-          fetch: () async => throw StateError('network down'),
-          fromJson: int.parse,
-          toJson: (v) => '$v',
-        );
+      final stream = CacheSync.watchOne<int>(
+        key: 'stale:err',
+        fetch: () async => throw StateError('network down'),
+        fromJson: int.parse,
+        toJson: (v) => '$v',
+      );
 
-        await expectLater(
-          stream,
-          emitsInOrder([
-            isA<CacheResult<int>>()
-                .having((r) => r.isStale, 'isStale', isTrue)
-                .having((r) => r.data, 'data', equals(99)),
-            emitsError(isA<StateError>()),
-          ]),
-        );
+      await expectLater(
+        stream,
+        emitsInOrder([
+          isA<CacheResult<int>>()
+              .having((r) => r.isStale, 'isStale', isTrue)
+              .having((r) => r.data, 'data', equals(99)),
+          emitsError(isA<StateError>()),
+        ]),
+      );
 
-        // Cache entry must NOT be wiped after a failed refresh.
-        expect(dao.rawRead('stale:err'), equals('99'));
-      },
-    );
+      // Cache entry must NOT be wiped after a failed refresh.
+      expect(dao.rawRead('stale:err'), equals('99'));
+    });
 
     test('cacheOnly policy never calls fetch', () async {
       await dao.write(key: 'only:key', payload: '5');
@@ -160,6 +157,30 @@ void main() {
       expect(events[0].isLive, isTrue);
       expect(events[0].data, equals(2));
     });
+
+    test(
+      'cacheFirst policy returns cached value without calling fetch',
+      () async {
+        await dao.write(key: 'first:key', payload: '7');
+        var fetchCalled = false;
+
+        final events = await CacheSync.watchOne<int>(
+          key: 'first:key',
+          fetch: () async {
+            fetchCalled = true;
+            return 8;
+          },
+          fromJson: int.parse,
+          toJson: (v) => '$v',
+          policy: CacheFetchPolicy.cacheFirst,
+        ).toList();
+
+        expect(fetchCalled, isFalse);
+        expect(events, hasLength(1));
+        expect(events[0].isLive, isFalse);
+        expect(events[0].data, equals(7));
+      },
+    );
 
     test('ignores corrupted cache entry and fetches fresh', () async {
       await dao.write(key: 'bad:key', payload: 'NOT_A_NUMBER');

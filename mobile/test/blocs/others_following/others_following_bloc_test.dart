@@ -158,6 +158,32 @@ void main() {
       );
 
       blocTest<OthersFollowingBloc, OthersFollowingState>(
+        'keeps cached data when refresh errors after cached emission',
+        setUp: () {
+          when(
+            () => mockFollowRepository.watchOthersFollowingCached(
+              any(),
+              forceRefresh: any(named: 'forceRefresh'),
+            ),
+          ).thenAnswer((_) async* {
+            yield CacheResult.cached(
+              FollowingSnapshot(pubkeys: [validPubkey('cached')], count: 1),
+            );
+            throw Exception('Network error');
+          });
+        },
+        build: createBloc,
+        act: (bloc) =>
+            bloc.add(OthersFollowingListLoadRequested(validPubkey('target'))),
+        verify: (bloc) {
+          expect(bloc.state.status, OthersFollowingStatus.success);
+          expect(bloc.state.followingPubkeys, [validPubkey('cached')]);
+          expect(bloc.state.isRefreshing, isFalse);
+        },
+        errors: () => [isA<Exception>()],
+      );
+
+      blocTest<OthersFollowingBloc, OthersFollowingState>(
         'stores targetPubkey in state',
         setUp: () {
           when(
@@ -274,10 +300,7 @@ void main() {
         verify: (bloc) {
           expect(
             bloc.state.followingPubkeys,
-            containsAll([
-              validPubkey('following1'),
-              validPubkey('following2'),
-            ]),
+            containsAll([validPubkey('following1'), validPubkey('following2')]),
           );
           expect(
             bloc.state.followingPubkeys,
@@ -338,10 +361,7 @@ void main() {
             (_) => Stream<CacheResult<FollowingSnapshot>>.value(
               CacheResult.live(
                 FollowingSnapshot(
-                  pubkeys: [
-                    validPubkey('following1'),
-                    validPubkey('toBlock'),
-                  ],
+                  pubkeys: [validPubkey('following1'), validPubkey('toBlock')],
                   count: 2,
                 ),
               ),

@@ -115,6 +115,7 @@ class FollowRepository {
   List<String> _cachedMyFollowersPubkeys = [];
   int _cachedMyFollowerCount = 0;
   bool _hasMyFollowersCache = false;
+  static const _profileListCacheTtl = Duration(seconds: 30);
 
   // Real-time sync subscription for cross-device synchronization
   StreamSubscription<Event>? _contactListSubscription;
@@ -344,14 +345,21 @@ class FollowRepository {
     return CacheSync.watchOne<FollowersSnapshot>(
       key: _othersFollowersCacheKey(pubkey),
       fetch: () async {
-        final followers = await getFollowers(pubkey);
-        return FollowersSnapshot(pubkeys: followers, count: followers.length);
+        final results = await Future.wait([
+          getFollowers(pubkey),
+          getFollowerCount(pubkey),
+        ]);
+        final followers = results[0] as List<String>;
+        final countFromService = results[1] as int;
+        final count = max(followers.length, countFromService);
+        return FollowersSnapshot(pubkeys: followers, count: count);
       },
       fromJson: FollowersSnapshot.fromJson,
       toJson: (s) => s.toJson(),
+      ttl: _profileListCacheTtl,
       policy: forceRefresh
           ? CacheFetchPolicy.networkOnly
-          : CacheFetchPolicy.cacheAndNetwork,
+          : CacheFetchPolicy.cacheFirst,
     );
   }
 
@@ -368,9 +376,10 @@ class FollowRepository {
       fetch: () => getOthersFollowing(pubkey),
       fromJson: FollowingSnapshot.fromJson,
       toJson: (s) => s.toJson(),
+      ttl: _profileListCacheTtl,
       policy: forceRefresh
           ? CacheFetchPolicy.networkOnly
-          : CacheFetchPolicy.cacheAndNetwork,
+          : CacheFetchPolicy.cacheFirst,
     );
   }
 

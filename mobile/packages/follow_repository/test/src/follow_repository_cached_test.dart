@@ -24,12 +24,14 @@ class _TestableFollowRepository extends FollowRepository {
     required this.othersFollowingResult,
     this.myFollowersResult = const [],
     this.myFollowerCountResult = 0,
+    this.othersFollowerCountResult = 0,
     Stream<FollowersSnapshot>? myFollowersStream,
   }) : _myFollowersStream = myFollowersStream,
        super(indexerRelayUrls: const []);
 
   final List<String> myFollowersResult;
   final int myFollowerCountResult;
+  final int othersFollowerCountResult;
   // Injected only in regression tests that need to simulate the two-phase
   // emission pattern of the production watchMyFollowers() method.
   final Stream<FollowersSnapshot>? _myFollowersStream;
@@ -73,6 +75,10 @@ class _TestableFollowRepository extends FollowRepository {
   }
 
   @override
+  Future<int> getFollowerCount(String pubkey) async =>
+      othersFollowerCountResult;
+
+  @override
   Future<FollowingSnapshot> getOthersFollowing(String pubkey) async {
     getOthersFollowingCallCount++;
     return othersFollowingResult;
@@ -98,10 +104,7 @@ void main() {
         myFollowerCountResult: 2,
         myFollowingStream: const Stream.empty(),
         othersFollowersResult: const [],
-        othersFollowingResult: const FollowingSnapshot(
-          pubkeys: [],
-          count: 0,
-        ),
+        othersFollowingResult: const FollowingSnapshot(pubkeys: [], count: 0),
       );
 
       final events = await repo.watchMyFollowersCached().take(1).toList();
@@ -127,10 +130,7 @@ void main() {
         myFollowerCountResult: 1,
         myFollowingStream: const Stream.empty(),
         othersFollowersResult: const [],
-        othersFollowingResult: const FollowingSnapshot(
-          pubkeys: [],
-          count: 0,
-        ),
+        othersFollowingResult: const FollowingSnapshot(pubkeys: [], count: 0),
       );
 
       final events = await repo.watchMyFollowersCached().take(2).toList();
@@ -158,10 +158,7 @@ void main() {
         myFollowerCountResult: 1,
         myFollowingStream: const Stream.empty(),
         othersFollowersResult: const [],
-        othersFollowingResult: const FollowingSnapshot(
-          pubkeys: [],
-          count: 0,
-        ),
+        othersFollowingResult: const FollowingSnapshot(pubkeys: [], count: 0),
       );
 
       final events = await repo.watchMyFollowersCached().take(1).toList();
@@ -208,10 +205,7 @@ void main() {
           ]),
           myFollowingStream: const Stream.empty(),
           othersFollowersResult: const [],
-          othersFollowingResult: const FollowingSnapshot(
-            pubkeys: [],
-            count: 0,
-          ),
+          othersFollowingResult: const FollowingSnapshot(pubkeys: [], count: 0),
         );
 
         final events = await repo.watchMyFollowersCached().take(2).toList();
@@ -229,74 +223,65 @@ void main() {
   });
 
   group('FollowRepository.watchMyFollowingCached', () {
-    test(
-      'emits live result from a fresh getOthersFollowing fetch, '
-      'NOT from the watchMyFollowing BehaviorSubject replay',
-      () async {
-        final repo = _TestableFollowRepository(
-          nostrClient: mockNostrClient,
-          // BehaviorSubject replay value — must be IGNORED by the new
-          // watchOne-based implementation so CacheSync alone owns
-          // stale/live semantics.
-          myFollowingStream: Stream.value(
-            const FollowingSnapshot(pubkeys: ['in_memory_replay'], count: 1),
-          ),
-          othersFollowersResult: const [],
-          othersFollowingResult: const FollowingSnapshot(
-            pubkeys: ['network'],
-            count: 1,
-          ),
-        );
+    test('emits live result from a fresh getOthersFollowing fetch, '
+        'NOT from the watchMyFollowing BehaviorSubject replay', () async {
+      final repo = _TestableFollowRepository(
+        nostrClient: mockNostrClient,
+        // BehaviorSubject replay value — must be IGNORED by the new
+        // watchOne-based implementation so CacheSync alone owns
+        // stale/live semantics.
+        myFollowingStream: Stream.value(
+          const FollowingSnapshot(pubkeys: ['in_memory_replay'], count: 1),
+        ),
+        othersFollowersResult: const [],
+        othersFollowingResult: const FollowingSnapshot(
+          pubkeys: ['network'],
+          count: 1,
+        ),
+      );
 
-        final events = await repo.watchMyFollowingCached().take(1).toList();
+      final events = await repo.watchMyFollowingCached().take(1).toList();
 
-        expect(events, hasLength(1));
-        expect(events[0].isLive, isTrue);
-        expect(events[0].data.pubkeys, ['network']);
-        expect(repo.getOthersFollowingCallCount, 1);
-      },
-    );
+      expect(events, hasLength(1));
+      expect(events[0].isLive, isTrue);
+      expect(events[0].data.pubkeys, ['network']);
+      expect(repo.getOthersFollowingCallCount, 1);
+    });
 
-    test(
-      'emits cached (stale) then live (fresh) — proves CacheSync owns '
-      'the single stale/live boundary',
-      () async {
-        await dao.write(
-          key: 'my_following_bob',
-          payload: const FollowingSnapshot(
-            pubkeys: ['disk'],
-            count: 1,
-          ).toJson(),
-        );
-        when(() => mockNostrClient.publicKey).thenReturn('bob');
+    test('emits cached (stale) then live (fresh) — proves CacheSync owns '
+        'the single stale/live boundary', () async {
+      await dao.write(
+        key: 'my_following_bob',
+        payload: const FollowingSnapshot(pubkeys: ['disk'], count: 1).toJson(),
+      );
+      when(() => mockNostrClient.publicKey).thenReturn('bob');
 
-        final repo = _TestableFollowRepository(
-          nostrClient: mockNostrClient,
-          // In-memory replay should NEVER be mis-tagged as live by the
-          // wrapper. This is the regression check for the reviewer's
-          // "double cache layer" concern.
-          myFollowingStream: Stream.value(
-            const FollowingSnapshot(pubkeys: ['in_memory_replay'], count: 1),
-          ),
-          othersFollowersResult: const [],
-          othersFollowingResult: const FollowingSnapshot(
-            pubkeys: ['network'],
-            count: 1,
-          ),
-        );
+      final repo = _TestableFollowRepository(
+        nostrClient: mockNostrClient,
+        // In-memory replay should NEVER be mis-tagged as live by the
+        // wrapper. This is the regression check for the reviewer's
+        // "double cache layer" concern.
+        myFollowingStream: Stream.value(
+          const FollowingSnapshot(pubkeys: ['in_memory_replay'], count: 1),
+        ),
+        othersFollowersResult: const [],
+        othersFollowingResult: const FollowingSnapshot(
+          pubkeys: ['network'],
+          count: 1,
+        ),
+      );
 
-        final events = await repo.watchMyFollowingCached().take(2).toList();
+      final events = await repo.watchMyFollowingCached().take(2).toList();
 
-        expect(events, hasLength(2));
-        expect(events[0].isLive, isFalse);
-        expect(events[0].data.pubkeys, ['disk']);
-        expect(events[1].isLive, isTrue);
-        // Must be ['network'] from getOthersFollowing(), NOT
-        // ['in_memory_replay'] from the BehaviorSubject.
-        expect(events[1].data.pubkeys, ['network']);
-        expect(repo.getOthersFollowingCallCount, 1);
-      },
-    );
+      expect(events, hasLength(2));
+      expect(events[0].isLive, isFalse);
+      expect(events[0].data.pubkeys, ['disk']);
+      expect(events[1].isLive, isTrue);
+      // Must be ['network'] from getOthersFollowing(), NOT
+      // ['in_memory_replay'] from the BehaviorSubject.
+      expect(events[1].data.pubkeys, ['network']);
+      expect(repo.getOthersFollowingCallCount, 1);
+    });
 
     test('uses current-user scoped cache key', () async {
       await dao.write(
@@ -330,15 +315,13 @@ void main() {
   });
 
   group('FollowRepository.watchOthersFollowersCached', () {
-    test('derives count from list length', () async {
+    test('uses max of follower list length and authoritative count', () async {
       final repo = _TestableFollowRepository(
         nostrClient: mockNostrClient,
         myFollowingStream: const Stream.empty(),
         othersFollowersResult: const ['p1', 'p2', 'p3'],
-        othersFollowingResult: const FollowingSnapshot(
-          pubkeys: [],
-          count: 0,
-        ),
+        othersFollowerCountResult: 10,
+        othersFollowingResult: const FollowingSnapshot(pubkeys: [], count: 0),
       );
 
       final events = await repo
@@ -348,35 +331,58 @@ void main() {
 
       expect(events, hasLength(1));
       expect(events[0].data.pubkeys, ['p1', 'p2', 'p3']);
-      expect(events[0].data.count, 3);
+      expect(events[0].data.count, 10);
     });
 
-    test('emits cached then live when cache is populated', () async {
+    test('expired cached entry refetches live data', () async {
       await dao.write(
         key: 'others_followers_target',
         payload: const FollowersSnapshot(pubkeys: ['stale'], count: 1).toJson(),
+        ttl: const Duration(microseconds: 1),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+
+      final repo = _TestableFollowRepository(
+        nostrClient: mockNostrClient,
+        myFollowingStream: const Stream.empty(),
+        othersFollowersResult: const ['fresh'],
+        othersFollowingResult: const FollowingSnapshot(pubkeys: [], count: 0),
+      );
+
+      final events = await repo
+          .watchOthersFollowersCached('target')
+          .take(1)
+          .toList();
+
+      expect(events, hasLength(1));
+      expect(events[0].isLive, isTrue);
+      expect(events[0].data.pubkeys, ['fresh']);
+    });
+
+    test('uses cacheFirst policy for fresh cached profile lists', () async {
+      await dao.write(
+        key: 'others_followers_target',
+        payload: const FollowersSnapshot(pubkeys: ['stale'], count: 1).toJson(),
+        ttl: const Duration(hours: 1),
       );
 
       final repo = _TestableFollowRepository(
         nostrClient: mockNostrClient,
         myFollowingStream: const Stream.empty(),
         othersFollowersResult: const ['fresh'],
-        othersFollowingResult: const FollowingSnapshot(
-          pubkeys: [],
-          count: 0,
-        ),
+        othersFollowerCountResult: 5,
+        othersFollowingResult: const FollowingSnapshot(pubkeys: [], count: 0),
       );
 
       final events = await repo
           .watchOthersFollowersCached('target')
-          .take(2)
+          .take(1)
           .toList();
 
-      expect(events, hasLength(2));
+      expect(events, hasLength(1));
       expect(events[0].isLive, isFalse);
       expect(events[0].data.pubkeys, ['stale']);
-      expect(events[1].isLive, isTrue);
-      expect(events[1].data.pubkeys, ['fresh']);
+      expect(repo.getFollowersCallCount, 0);
     });
 
     test('forceRefresh skips cached emission', () async {
@@ -389,10 +395,7 @@ void main() {
         nostrClient: mockNostrClient,
         myFollowingStream: const Stream.empty(),
         othersFollowersResult: const ['fresh'],
-        othersFollowingResult: const FollowingSnapshot(
-          pubkeys: [],
-          count: 0,
-        ),
+        othersFollowingResult: const FollowingSnapshot(pubkeys: [], count: 0),
       );
 
       final events = await repo
@@ -418,10 +421,7 @@ void main() {
         nostrClient: mockNostrClient,
         myFollowingStream: const Stream.empty(),
         othersFollowersResult: const ['bob_live'],
-        othersFollowingResult: const FollowingSnapshot(
-          pubkeys: [],
-          count: 0,
-        ),
+        othersFollowingResult: const FollowingSnapshot(pubkeys: [], count: 0),
       );
 
       // Querying 'bob' must NOT see 'alice's cache.
@@ -459,13 +459,38 @@ void main() {
       expect(events[0].data.count, 2);
     });
 
+    test('uses cacheFirst policy for fresh cached following lists', () async {
+      await dao.write(
+        key: 'others_following_target',
+        payload: const FollowingSnapshot(pubkeys: ['stale'], count: 1).toJson(),
+        ttl: const Duration(hours: 1),
+      );
+
+      final repo = _TestableFollowRepository(
+        nostrClient: mockNostrClient,
+        myFollowingStream: const Stream.empty(),
+        othersFollowersResult: const [],
+        othersFollowingResult: const FollowingSnapshot(
+          pubkeys: ['fresh'],
+          count: 1,
+        ),
+      );
+
+      final events = await repo
+          .watchOthersFollowingCached('target')
+          .take(1)
+          .toList();
+
+      expect(events, hasLength(1));
+      expect(events[0].isLive, isFalse);
+      expect(events[0].data.pubkeys, ['stale']);
+      expect(repo.getOthersFollowingCallCount, 0);
+    });
+
     test('forceRefresh skips cached emission', () async {
       await dao.write(
         key: 'others_following_target',
-        payload: const FollowingSnapshot(
-          pubkeys: ['stale'],
-          count: 1,
-        ).toJson(),
+        payload: const FollowingSnapshot(pubkeys: ['stale'], count: 1).toJson(),
       );
 
       final repo = _TestableFollowRepository(

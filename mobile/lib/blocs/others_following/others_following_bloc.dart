@@ -102,6 +102,9 @@ class OthersFollowingBloc
             category: LogCategory.system,
           );
           addError(error, stackTrace);
+          if (state.status == OthersFollowingStatus.success) {
+            return state.copyWith(isRefreshing: false);
+          }
           return state.copyWith(
             status: OthersFollowingStatus.failure,
             isRefreshing: false,
@@ -115,6 +118,10 @@ class OthersFollowingBloc
         category: LogCategory.system,
       );
       addError(e, stackTrace);
+      if (state.status == OthersFollowingStatus.success) {
+        emit(state.copyWith(isRefreshing: false));
+        return;
+      }
       emit(
         state.copyWith(
           status: OthersFollowingStatus.failure,

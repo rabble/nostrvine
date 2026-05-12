@@ -54,6 +54,9 @@ abstract final class CacheSync {
   ///   1. A [CacheResult.cached] if a non-expired cached value exists.
   ///   2. A [CacheResult.live] once the [fetch] Future resolves.
   ///
+  /// When [policy] is [CacheFetchPolicy.cacheFirst], a fresh cached value ends
+  /// the stream without calling [fetch].
+  ///
   /// If [toJson] returns an empty string the result is **not** written to the
   /// cache. This lets callers signal "do not cache this response" by returning
   /// an empty payload.
@@ -87,6 +90,9 @@ abstract final class CacheSync {
   /// Behaves like [watchOne] but the fetch is an ongoing [Stream] rather than
   /// a one-shot [Future]. Each live event from [source] is written to the
   /// cache and re-emitted as [CacheResult.live].
+  ///
+  /// When [policy] is [CacheFetchPolicy.cacheFirst], a fresh cached value ends
+  /// the stream without subscribing to [source].
   ///
   /// Errors from [source] are forwarded as stream errors.
   static Stream<CacheResult<T>> watchStream<T>({
@@ -138,11 +144,13 @@ abstract final class CacheSync {
     required CacheFetchPolicy policy,
   }) async {
     // 1. Serve from cache when applicable.
+    var servedCachedValue = false;
     if (policy != CacheFetchPolicy.networkOnly) {
       final cached = await _dao.read(key);
       if (cached != null && cached.isNotEmpty) {
         try {
           controller.add(CacheResult.cached(fromJson(cached)));
+          servedCachedValue = true;
         } on Object {
           // Corrupted cache entry — ignore and fetch fresh.
           await _dao.delete(key);
@@ -150,7 +158,8 @@ abstract final class CacheSync {
       }
     }
 
-    if (policy == CacheFetchPolicy.cacheOnly) {
+    if (policy == CacheFetchPolicy.cacheOnly ||
+        (policy == CacheFetchPolicy.cacheFirst && servedCachedValue)) {
       await controller.close();
       return;
     }
@@ -185,18 +194,21 @@ abstract final class CacheSync {
     required void Function(StreamIterator<T> iterator) registerIterator,
   }) async {
     // 1. Serve from cache when applicable.
+    var servedCachedValue = false;
     if (policy != CacheFetchPolicy.networkOnly) {
       final cached = await _dao.read(key);
       if (cached != null && cached.isNotEmpty) {
         try {
           controller.add(CacheResult.cached(fromJson(cached)));
+          servedCachedValue = true;
         } on Object {
           await _dao.delete(key);
         }
       }
     }
 
-    if (policy == CacheFetchPolicy.cacheOnly) {
+    if (policy == CacheFetchPolicy.cacheOnly ||
+        (policy == CacheFetchPolicy.cacheFirst && servedCachedValue)) {
       await controller.close();
       return;
     }

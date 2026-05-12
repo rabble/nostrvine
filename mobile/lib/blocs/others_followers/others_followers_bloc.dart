@@ -111,10 +111,10 @@ class OthersFollowersBloc
             category: LogCategory.system,
           );
           addError(error, stackTrace);
-          return state.copyWith(
-            status: .failure,
-            isRefreshing: false,
-          );
+          if (state.status == OthersFollowersStatus.success) {
+            return state.copyWith(isRefreshing: false);
+          }
+          return state.copyWith(status: .failure, isRefreshing: false);
         },
       );
     } catch (e, stackTrace) {
@@ -124,14 +124,11 @@ class OthersFollowersBloc
         category: LogCategory.system,
       );
       addError(e, stackTrace);
-      if (state.status != OthersFollowersStatus.success) {
-        emit(
-          state.copyWith(
-            status: .failure,
-            isRefreshing: false,
-          ),
-        );
+      if (state.status == OthersFollowersStatus.success) {
+        emit(state.copyWith(isRefreshing: false));
+        return;
       }
+      emit(state.copyWith(status: .failure, isRefreshing: false));
     }
   }
 

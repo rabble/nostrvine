@@ -1,5 +1,7 @@
 // ABOUTME: BLoC for managing current user's following list with reactive updates
-// ABOUTME: Delegates stale-while-revalidate to FollowRepository
+// ABOUTME: Combines CacheSync bootstrap with live FollowRepository reactivity
+
+import 'dart:async';
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
@@ -24,17 +26,29 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
     required ContentBlocklistRepository contentBlocklistRepository,
   }) : _followRepository = followRepository,
        _blocklistRepository = contentBlocklistRepository,
-       super(const MyFollowingState()) {
+       super(
+         MyFollowingState(
+           status: followRepository.followingPubkeys.isEmpty
+               ? MyFollowingStatus.initial
+               : MyFollowingStatus.success,
+           rawFollowingPubkeys: followRepository.followingPubkeys,
+           followingPubkeys: followRepository.followingPubkeys
+               .where((pk) => !contentBlocklistRepository.isBlocked(pk))
+               .toList(),
+         ),
+       ) {
     on<MyFollowingListLoadRequested>(_onLoadRequested);
     on<MyFollowingToggleRequested>(
       _onToggleRequested,
       transformer: droppable(),
     );
     on<MyFollowingBlocklistChanged>(_onBlocklistChanged);
+    on<_MyFollowingRepositoryUpdated>(_onRepositoryUpdated);
   }
 
   final FollowRepository _followRepository;
   final ContentBlocklistRepository _blocklistRepository;
+  StreamSubscription<List<String>>? _followingSubscription;
 
   /// Filter pubkeys by removing blocked users.
   List<String> _filterPubkeys(List<String> pubkeys) =>
@@ -45,6 +59,7 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
     MyFollowingListLoadRequested event,
     Emitter<MyFollowingState> emit,
   ) async {
+    _ensureFollowingSubscription();
     try {
       await emit.forEach<CacheResult<FollowingSnapshot>>(
         _followRepository.watchMyFollowingCached(),
@@ -63,6 +78,9 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
             category: LogCategory.system,
           );
           addError(error, stackTrace);
+          if (_hasVisibleData) {
+            return state.copyWith(isRefreshing: false);
+          }
           return state.copyWith(
             status: MyFollowingStatus.failure,
             isRefreshing: false,
@@ -76,6 +94,10 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
         category: LogCategory.system,
       );
       addError(e, stackTrace);
+      if (_hasVisibleData) {
+        emit(state.copyWith(isRefreshing: false));
+        return;
+      }
       emit(
         state.copyWith(status: MyFollowingStatus.failure, isRefreshing: false),
       );
@@ -116,6 +138,29 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
     }
   }
 
+  void _onRepositoryUpdated(
+    _MyFollowingRepositoryUpdated event,
+    Emitter<MyFollowingState> emit,
+  ) {
+    if (state.status == MyFollowingStatus.initial && event.pubkeys.isEmpty) {
+      return;
+    }
+    if (_samePubkeys(state.rawFollowingPubkeys, event.pubkeys) &&
+        state.status == MyFollowingStatus.success &&
+        !state.isRefreshing) {
+      return;
+    }
+
+    emit(
+      state.copyWith(
+        status: MyFollowingStatus.success,
+        rawFollowingPubkeys: event.pubkeys,
+        followingPubkeys: _filterPubkeys(event.pubkeys),
+        isRefreshing: false,
+      ),
+    );
+  }
+
   /// Re-filter following when blocklist changes.
   void _onBlocklistChanged(
     MyFollowingBlocklistChanged event,
@@ -128,5 +173,31 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
         followingPubkeys: _filterPubkeys(state.rawFollowingPubkeys),
       ),
     );
+  }
+
+  bool get _hasVisibleData =>
+      state.status == MyFollowingStatus.toggleFailure ||
+      state.isRefreshing ||
+      state.rawFollowingPubkeys.isNotEmpty;
+
+  void _ensureFollowingSubscription() {
+    _followingSubscription ??= _followRepository.followingStream.listen(
+      (pubkeys) => add(_MyFollowingRepositoryUpdated(pubkeys)),
+    );
+  }
+
+  bool _samePubkeys(List<String> a, List<String> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  @override
+  Future<void> close() async {
+    await _followingSubscription?.cancel();
+    return super.close();
   }
 }

@@ -1,6 +1,8 @@
 // ABOUTME: Tests for MyFollowingBloc - current user's following list
 // ABOUTME: Tests CacheSync stream, toggle operations, and blocklist filtering
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -32,6 +34,10 @@ void main() {
 
       // Default: nothing is blocked
       when(() => mockBlocklistRepository.isBlocked(any())).thenReturn(false);
+      when(() => mockFollowRepository.followingPubkeys).thenReturn(const []);
+      when(
+        () => mockFollowRepository.followingStream,
+      ).thenAnswer((_) => const Stream<List<String>>.empty());
     });
 
     MyFollowingBloc createBloc() => MyFollowingBloc(
@@ -39,9 +45,26 @@ void main() {
       contentBlocklistRepository: mockBlocklistRepository,
     );
 
-    test('initial state is initial with empty list', () {
+    test('initial state is initial when repository cache is empty', () {
       final bloc = createBloc();
       expect(bloc.state, const MyFollowingState());
+      bloc.close();
+    });
+
+    test('initial state is seeded from repository cache when available', () {
+      when(
+        () => mockFollowRepository.followingPubkeys,
+      ).thenReturn([validPubkey('cached')]);
+
+      final bloc = createBloc();
+      expect(
+        bloc.state,
+        MyFollowingState(
+          status: MyFollowingStatus.success,
+          rawFollowingPubkeys: [validPubkey('cached')],
+          followingPubkeys: [validPubkey('cached')],
+        ),
+      );
       bloc.close();
     });
 
@@ -115,8 +138,11 @@ void main() {
       );
 
       blocTest<MyFollowingBloc, MyFollowingState>(
-        'emits failure when stream errors',
+        'emits failure when stream errors before any visible data exists',
         setUp: () {
+          when(
+            () => mockFollowRepository.followingPubkeys,
+          ).thenReturn(const []);
           when(() => mockFollowRepository.watchMyFollowingCached()).thenAnswer(
             (_) => Stream<CacheResult<FollowingSnapshot>>.error(
               Exception('Network error'),
@@ -127,6 +153,28 @@ void main() {
         act: (bloc) => bloc.add(const MyFollowingListLoadRequested()),
         verify: (bloc) {
           expect(bloc.state.status, MyFollowingStatus.failure);
+          expect(bloc.state.isRefreshing, isFalse);
+        },
+        errors: () => [isA<Exception>()],
+      );
+
+      blocTest<MyFollowingBloc, MyFollowingState>(
+        'keeps visible data when cached refresh errors',
+        setUp: () {
+          when(() => mockFollowRepository.watchMyFollowingCached()).thenAnswer((
+            _,
+          ) async* {
+            yield CacheResult.cached(
+              FollowingSnapshot(pubkeys: [validPubkey('cached')], count: 1),
+            );
+            throw Exception('Network error');
+          });
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const MyFollowingListLoadRequested()),
+        verify: (bloc) {
+          expect(bloc.state.status, MyFollowingStatus.success);
+          expect(bloc.state.followingPubkeys, [validPubkey('cached')]);
           expect(bloc.state.isRefreshing, isFalse);
         },
         errors: () => [isA<Exception>()],
@@ -195,10 +243,7 @@ void main() {
           when(() => mockFollowRepository.watchMyFollowingCached()).thenAnswer(
             (_) => Stream.value(
               CacheResult.live(
-                FollowingSnapshot(
-                  pubkeys: [validPubkey('user')],
-                  count: 1,
-                ),
+                FollowingSnapshot(pubkeys: [validPubkey('user')], count: 1),
               ),
             ),
           );
@@ -212,9 +257,7 @@ void main() {
           // observe the new state (replaces the old BehaviorSubject-replay
           // reactivity that broke the stale/live contract).
           verify(() => mockFollowRepository.toggleFollow(any())).called(1);
-          verify(
-            () => mockFollowRepository.watchMyFollowingCached(),
-          ).called(1);
+          verify(() => mockFollowRepository.watchMyFollowingCached()).called(1);
         },
       );
 
@@ -264,6 +307,32 @@ void main() {
       );
     });
 
+    test('applies live repository updates after initial load', () async {
+      final controller = StreamController<List<String>>.broadcast();
+      when(
+        () => mockFollowRepository.followingStream,
+      ).thenAnswer((_) => controller.stream);
+      when(
+        () => mockFollowRepository.watchMyFollowingCached(),
+      ).thenAnswer((_) => const Stream.empty());
+
+      final bloc = createBloc();
+      bloc.add(const MyFollowingListLoadRequested());
+      await Future<void>.delayed(Duration.zero);
+
+      controller.add([validPubkey('live1'), validPubkey('live2')]);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(bloc.state.status, MyFollowingStatus.success);
+      expect(bloc.state.followingPubkeys, [
+        validPubkey('live1'),
+        validPubkey('live2'),
+      ]);
+
+      await bloc.close();
+      await controller.close();
+    });
+
     group('blocklist filtering', () {
       blocTest<MyFollowingBloc, MyFollowingState>(
         'filters blocked users from following list',
@@ -291,10 +360,7 @@ void main() {
         verify: (bloc) {
           expect(
             bloc.state.followingPubkeys,
-            containsAll([
-              validPubkey('following1'),
-              validPubkey('following2'),
-            ]),
+            containsAll([validPubkey('following1'), validPubkey('following2')]),
           );
           expect(
             bloc.state.followingPubkeys,
@@ -310,10 +376,7 @@ void main() {
             (_) => Stream.value(
               CacheResult.live(
                 FollowingSnapshot(
-                  pubkeys: [
-                    validPubkey('following1'),
-                    validPubkey('toBlock'),
-                  ],
+                  pubkeys: [validPubkey('following1'), validPubkey('toBlock')],
                   count: 2,
                 ),
               ),

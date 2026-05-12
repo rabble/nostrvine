@@ -235,6 +235,33 @@ void main() {
       );
 
       blocTest<OthersFollowersBloc, OthersFollowersState>(
+        'keeps cached data when refresh errors after cached emission',
+        setUp: () {
+          when(
+            () => mockFollowRepository.watchOthersFollowersCached(
+              any(),
+              forceRefresh: any(named: 'forceRefresh'),
+            ),
+          ).thenAnswer((_) async* {
+            yield CacheResult.cached(
+              FollowersSnapshot(pubkeys: [validPubkey('cached')], count: 10),
+            );
+            throw Exception('Network error');
+          });
+        },
+        build: createBloc,
+        act: (bloc) =>
+            bloc.add(OthersFollowersListLoadRequested(validPubkey('target'))),
+        verify: (bloc) {
+          expect(bloc.state.status, OthersFollowersStatus.success);
+          expect(bloc.state.followersPubkeys, [validPubkey('cached')]);
+          expect(bloc.state.followerCount, 10);
+          expect(bloc.state.isRefreshing, isFalse);
+        },
+        errors: () => [isA<Exception>()],
+      );
+
+      blocTest<OthersFollowersBloc, OthersFollowersState>(
         'stores targetPubkey in state for retry',
         setUp: () {
           when(

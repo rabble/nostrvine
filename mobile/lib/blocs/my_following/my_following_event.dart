@@ -26,3 +26,9 @@ final class MyFollowingToggleRequested extends MyFollowingEvent {
 final class MyFollowingBlocklistChanged extends MyFollowingEvent {
   const MyFollowingBlocklistChanged();
 }
+
+final class _MyFollowingRepositoryUpdated extends MyFollowingEvent {
+  const _MyFollowingRepositoryUpdated(this.pubkeys);
+
+  final List<String> pubkeys;
+}
