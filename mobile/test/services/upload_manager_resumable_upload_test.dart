@@ -8,9 +8,11 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/upload_manager.dart';
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/test_helpers.dart';
+import '../mocks/mock_path_provider_platform.dart';
 
 class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
 
@@ -33,6 +35,7 @@ void main() {
     late UploadManager uploadManager;
     late Directory tempDir;
     late File videoFile;
+    late PathProviderPlatform originalPathProviderInstance;
 
     setUp(() async {
       await TestHelpers.cleanupHiveBox('pending_uploads');
@@ -41,6 +44,12 @@ void main() {
       tempDir = await Directory.systemTemp.createTemp(
         'upload_manager_resumable_',
       );
+      originalPathProviderInstance = PathProviderPlatform.instance;
+      final mockPathProvider = MockPathProviderPlatform()
+        ..setTemporaryPath(tempDir.path)
+        ..setApplicationDocumentsPath('${tempDir.path}/documents')
+        ..setApplicationSupportPath('${tempDir.path}/support');
+      PathProviderPlatform.instance = mockPathProvider;
       videoFile = File('${tempDir.path}/video.mp4')
         ..writeAsBytesSync(List<int>.generate(32, (index) => index));
 
@@ -56,6 +65,7 @@ void main() {
 
     tearDown(() async {
       uploadManager.dispose();
+      PathProviderPlatform.instance = originalPathProviderInstance;
       if (tempDir.existsSync()) {
         await tempDir.delete(recursive: true);
       }

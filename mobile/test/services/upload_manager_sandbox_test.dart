@@ -42,12 +42,14 @@ void main() {
 
   late Directory testDir;
   late MockPathProviderPlatform mockPathProvider;
+  late PathProviderPlatform originalPathProviderInstance;
 
   setUp(() async {
     // Create temp directory for test
     testDir = await Directory.systemTemp.createTemp('upload_sandbox_test_');
 
     // Setup mock path provider
+    originalPathProviderInstance = PathProviderPlatform.instance;
     mockPathProvider = MockPathProviderPlatform(
       tempPath: testDir.path,
       appSupportPath: p.join(testDir.path, 'app_support'),
@@ -67,6 +69,7 @@ void main() {
   tearDown(() async {
     // Clean up
     try {
+      PathProviderPlatform.instance = originalPathProviderInstance;
       // Close all boxes
       if (Hive.isBoxOpen('pending_uploads')) {
         await Hive.box('pending_uploads').close();

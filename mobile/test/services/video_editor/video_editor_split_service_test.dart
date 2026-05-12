@@ -48,13 +48,19 @@ class MockProVideoEditor extends ProVideoEditor {
 @Tags(['skip_very_good_optimization'])
 void main() {
   late MockProVideoEditor mockProVideoEditor;
+  late PathProviderPlatform originalPathProviderInstance;
 
   setUp(() {
     TestWidgetsFlutterBinding.ensureInitialized();
+    originalPathProviderInstance = PathProviderPlatform.instance;
     PathProviderPlatform.instance = MockPathProviderPlatform();
     mockProVideoEditor = MockProVideoEditor();
     ProVideoEditor.instance = mockProVideoEditor;
     mockProVideoEditor.renderedPaths.clear();
+  });
+
+  tearDown(() {
+    PathProviderPlatform.instance = originalPathProviderInstance;
   });
 
   group('VideoEditorSplitService', () {
