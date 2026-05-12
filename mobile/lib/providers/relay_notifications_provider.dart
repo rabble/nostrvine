@@ -81,9 +81,9 @@ class NotificationFeedState {
 /// - Refresh on app resume — driven by [appForegroundProvider] flipping
 ///   from background to foreground. The previous 5-min wall-clock timer
 ///   wasted wakeups when the user wasn't even looking at the screen.
-/// - Refresh on realtime push — see the FCM `onMessage` listener in
-///   [pushNotificationSync] which calls `refresh()` after handling a
-///   foreground message.
+/// - Refresh on realtime push — [build] subscribes to
+///   [firebaseOnMessageProvider] and calls [refresh] for every foreground
+///   FCM message.
 /// - Refresh on explicit user action — pull-to-refresh in
 ///   `notifications_screen.dart`.
 @Riverpod()

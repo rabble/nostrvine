@@ -100,19 +100,22 @@ void main() {
     );
 
     test(
-      'late ready completion after auth flip does not flip stale provider',
+      'late ready completion after provider rebuild is a no-op (smoke)',
       () async {
-        // Simulates an account switch race: the original client we observed
-        // is replaced by a new one before its ready future resolves. The
-        // late completion must NOT invalidate the provider, otherwise we
-        // would briefly report ready against the wrong identity.
+        // Smoke-coverage for the stale-late-completion regime: once the
+        // provider rebuilds (here triggered by `ref.invalidate` on the
+        // upstream nostrServiceProvider), the `.then` callback's
+        // `ref.mounted` short-circuit must fire before the `identical(...)`
+        // check, so a late `readyCompleter.complete()` must not throw.
+        //
+        // This does NOT exercise the `identical(...)` guard in isolation —
+        // doing that would require swapping the `nostrServiceProvider`
+        // override mid-test to a different mock client, which the current
+        // ProviderContainer API does not support cleanly. The orderly
+        // account-switch case is covered by integration tests against
+        // NostrService's own rebuild path.
         when(() => mockAuthService.isAuthenticated).thenReturn(true);
         when(() => mockNostrClient.hasKeys).thenReturn(false);
-
-        final newClient = _MockNostrClient();
-        final newReadyCompleter = Completer<void>();
-        when(() => newClient.hasKeys).thenReturn(false);
-        when(() => newClient.ready).thenAnswer((_) => newReadyCompleter.future);
 
         final container = ProviderContainer(
           overrides: [
@@ -125,19 +128,16 @@ void main() {
 
         container.read(isNostrReadyProvider);
 
-        // Swap the underlying client (simulating account switch).
+        // Force the provider to rebuild, invalidating the `ref` captured
+        // in the `.then` callback.
         container.invalidate(nostrServiceProvider);
-        // Note: we can't easily re-override mid-test here, so this test
-        // primarily exercises the identical-check guard via the `mounted`
-        // path. The orderly-recovery case is covered by integration tests.
 
-        // Late completion on the original (now stale) client — must be a
-        // no-op from the provider's perspective.
+        // Late completion on the captured ref — must be a no-op.
         readyCompleter.complete();
         await Future<void>.delayed(Duration.zero);
         await Future<void>.delayed(Duration.zero);
 
-        // No exception, no crash. The stale-client guard ate the callback.
+        // No exception, no crash.
       },
     );
 

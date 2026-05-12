@@ -918,13 +918,16 @@ void main() {
         });
       });
 
-      test('exposes a non-empty schedule and a finite cap', () {
+      test('exposes a non-empty schedule and a sane cap', () {
         // Guard against future changes to the schedule constants that would
         // silently regress the 15-min budget or remove the cap.
         expect(EmailVerificationCubit.pollBackoffSchedule, isNotEmpty);
+        // Cap is 30 s in the current schedule. Allow a small headroom for
+        // future tweaks but flag anything that would noticeably blunt UX
+        // for a late-clicking user.
         expect(
           EmailVerificationCubit.pollBackoffCap.inSeconds,
-          lessThanOrEqualTo(60),
+          lessThanOrEqualTo(45),
         );
         for (final entry in EmailVerificationCubit.pollBackoffSchedule) {
           expect(entry.inSeconds, greaterThan(0));

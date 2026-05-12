@@ -135,9 +135,12 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
     _pollTimer = Timer(delay, () async {
       _pollTickIndex++;
       await _poll();
-      // Only schedule the next poll if a poll callback hasn't already cleaned
-      // up. _pollTimer is cleared in _cleanup() and on terminal poll results.
-      if (!isClosed && _pollTimer != null) {
+      // Continue only while we still have a pending verification. _cleanup()
+      // (called on success, terminal failure, or close) nulls
+      // _pendingDeviceCode, which stops the recursion cleanly. Using the
+      // pending state — not _pollTimer — as the guard keeps intent explicit
+      // and survives future cleanup paths that forget to clear the timer.
+      if (!isClosed && _pendingDeviceCode != null) {
         _schedulePoll();
       }
     });
