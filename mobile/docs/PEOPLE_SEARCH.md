@@ -82,7 +82,7 @@ it fires:
 
 1. The bloc takes the latest snapshot of `state.sourceOutcomes`.
 2. For each source still in `SearchSourcePending` (or absent from the
-   snapshot entirely), it writes
+   snapshot defensively), it writes
    `SearchSourceFailed(reason: timeout, latencyMs: <outer timeout>)`.
 3. Sources that already reported a terminal status keep that status.
 4. The bloc emits `UserSearchStatus.success` with the updated map.

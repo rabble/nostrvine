@@ -752,100 +752,90 @@ void main() {
           verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
         });
 
-        test(
-          'does not overwrite a newer locally-cached bio with stale '
-          'Funnelcake data (regression: bio appears not to save)',
-          () async {
-            // Simulate: user just saved their bio. The local cache holds
-            // the freshly-published profile (createdAt = 1704153600, newer).
-            // Funnelcake returns a stale cached profile
-            // (createdAt = 1704067200, older). The bio must NOT be
-            // overwritten, the relay path must still run (so a newer Kind 0
-            // on relays can win), and the return value must be the locally
-            // cached profile when relays find nothing newer.
-            const newerTimestamp = 1704153600; // newer — just saved
-            const olderTimestamp = 1704067200; // older — stale Funnelcake cache
+        test('does not overwrite a newer locally-cached bio with stale '
+            'Funnelcake data (regression: bio appears not to save)', () async {
+          // Simulate: user just saved their bio. The local cache holds
+          // the freshly-published profile (createdAt = 1704153600, newer).
+          // Funnelcake returns a stale cached profile
+          // (createdAt = 1704067200, older). The bio must NOT be
+          // overwritten, the relay path must still run (so a newer Kind 0
+          // on relays can win), and the return value must be the locally
+          // cached profile when relays find nothing newer.
+          const newerTimestamp = 1704153600; // newer — just saved
+          const olderTimestamp = 1704067200; // older — stale Funnelcake cache
 
-            final freshlySavedProfile = UserProfile(
-              pubkey: testPubkey,
-              displayName: 'Test User',
-              about: 'My new bio',
-              rawData: const {
+          final freshlySavedProfile = UserProfile(
+            pubkey: testPubkey,
+            displayName: 'Test User',
+            about: 'My new bio',
+            rawData: const {'display_name': 'Test User', 'about': 'My new bio'},
+            createdAt: DateTime.fromMillisecondsSinceEpoch(
+              newerTimestamp * 1000,
+              isUtc: true,
+            ),
+            eventId: testEventId,
+          );
+
+          // Use a fresh DAO mock so we can control getProfile return values
+          // without stub-ordering issues from the outer setUp.
+          final freshDao = MockUserProfilesDao();
+          when(
+            () => freshDao.getProfile(any()),
+          ).thenAnswer((_) async => freshlySavedProfile);
+          when(() => freshDao.upsertProfile(any())).thenAnswer((_) async {});
+
+          final repo = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: freshDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            profileStatsDao: mockProfileStatsDao,
+          );
+
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getUserProfile(testPubkey),
+          ).thenAnswer(
+            (_) async => UserProfileFound(
+              profile: UserProfileData.fromJson(testPubkey, const {
                 'display_name': 'Test User',
-                'about': 'My new bio',
-              },
-              createdAt: DateTime.fromMillisecondsSinceEpoch(
-                newerTimestamp * 1000,
-                isUtc: true,
-              ),
-              eventId: testEventId,
-            );
+                'about': '', // stale — bio not yet indexed by Funnelcake
+                'created_at': olderTimestamp,
+              }),
+            ),
+          );
 
-            // Use a fresh DAO mock so we can control getProfile return values
-            // without stub-ordering issues from the outer setUp.
-            final freshDao = MockUserProfilesDao();
-            when(
-              () => freshDao.getProfile(any()),
-            ).thenAnswer((_) async => freshlySavedProfile);
-            when(
-              () => freshDao.upsertProfile(any()),
-            ).thenAnswer((_) async {});
+          // Relays find nothing newer — the local cache is the fallback.
+          when(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).thenAnswer((_) async => null);
 
-            final repo = ProfileRepository(
-              nostrClient: mockNostrClient,
-              userProfilesDao: freshDao,
-              httpClient: mockHttpClient,
-              funnelcakeApiClient: mockFunnelcakeClient,
-              profileStatsDao: mockProfileStatsDao,
-            );
+          final result = await repo.fetchFreshProfile(pubkey: testPubkey);
 
-            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-            when(
-              () => mockFunnelcakeClient.getUserProfile(testPubkey),
-            ).thenAnswer(
-              (_) async => UserProfileFound(
-                profile: UserProfileData.fromJson(testPubkey, const {
-                  'display_name': 'Test User',
-                  'about': '', // stale — bio not yet indexed by Funnelcake
-                  'created_at': olderTimestamp,
-                }),
-              ),
-            );
-
-            // Relays find nothing newer — the local cache is the fallback.
-            when(
-              () => mockNostrClient.fetchProfile(testPubkey),
-            ).thenAnswer((_) async => null);
-
-            final result = await repo.fetchFreshProfile(pubkey: testPubkey);
-
-            // The stale Funnelcake profile must NOT overwrite the newer cache.
-            verifyNever(
-              () => freshDao.upsertProfile(
-                any(
-                  that: isA<UserProfile>().having(
-                    (p) => p.about,
-                    'about',
-                    equals(''),
-                  ),
+          // The stale Funnelcake profile must NOT overwrite the newer cache.
+          verifyNever(
+            () => freshDao.upsertProfile(
+              any(
+                that: isA<UserProfile>().having(
+                  (p) => p.about,
+                  'about',
+                  equals(''),
                 ),
               ),
-            );
+            ),
+          );
 
-            // The relay path must have been invoked so a newer Kind 0 can
-            // still win — a future refactor cannot safely turn the Funnelcake
-            // break into an early return while keeping this assertion green.
-            verify(
-              () => mockNostrClient.fetchProfile(testPubkey),
-            ).called(1);
+          // The relay path must have been invoked so a newer Kind 0 can
+          // still win — a future refactor cannot safely turn the Funnelcake
+          // break into an early return while keeping this assertion green.
+          verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
 
-            // The return value must be the freshly-saved local profile,
-            // not null (the break path falls back to the cache when relays
-            // find nothing).
-            expect(result, isNotNull);
-            expect(result!.about, equals('My new bio'));
-          },
-        );
+          // The return value must be the freshly-saved local profile,
+          // not null (the break path falls back to the cache when relays
+          // find nothing).
+          expect(result, isNotNull);
+          expect(result!.about, equals('My new bio'));
+        });
       });
 
       group('indexer relay fallback', () {
@@ -1393,10 +1383,7 @@ void main() {
 
         verify(
           () => mockNostrClient.sendProfile(
-            profileContent: {
-              'display_name': 'Test User',
-              'banner': '0x33ccbf',
-            },
+            profileContent: {'display_name': 'Test User', 'banner': '0x33ccbf'},
           ),
         ).called(1);
       });
@@ -1555,86 +1542,77 @@ void main() {
 
           verify(
             () => mockNostrClient.sendProfile(
+              profileContent: {'display_name': 'New Name', 'about': 'Bio'},
+            ),
+          ).called(1);
+        });
+
+        test('preserves nip05 from currentProfile.rawData when sourced from '
+            'Funnelcake REST (post-#4175 fromUserProfileFound mirrors typed '
+            'fields into rawData)', () async {
+          // After #4175, fromUserProfileFound populates rawData from
+          // typed REST fields. Construct a profile in that shape and
+          // assert nip05 survives a profile edit unchanged.
+          final funnelcakeProfile = UserProfile(
+            pubkey: testPubkey,
+            displayName: 'Old Name',
+            nip05: '_@ike.divine.video',
+            rawData: const {
+              'display_name': 'Old Name',
+              'nip05': '_@ike.divine.video',
+            },
+            createdAt: DateTime.now(),
+            eventId: 'rest-$testPubkey',
+          );
+
+          when(() => mockProfileEvent.content).thenReturn(
+            jsonEncode({
+              'display_name': 'New Name',
+              'nip05': '_@ike.divine.video',
+            }),
+          );
+
+          await profileRepository.saveProfileEvent(
+            displayName: 'New Name',
+            currentProfile: funnelcakeProfile,
+          );
+
+          verify(
+            () => mockNostrClient.sendProfile(
               profileContent: {
                 'display_name': 'New Name',
-                'about': 'Bio',
+                'nip05': '_@ike.divine.video',
               },
             ),
           ).called(1);
         });
 
-        test(
-          'preserves nip05 from currentProfile.rawData when sourced from '
-          'Funnelcake REST (post-#4175 fromUserProfileFound mirrors typed '
-          'fields into rawData)',
-          () async {
-            // After #4175, fromUserProfileFound populates rawData from
-            // typed REST fields. Construct a profile in that shape and
-            // assert nip05 survives a profile edit unchanged.
-            final funnelcakeProfile = UserProfile(
-              pubkey: testPubkey,
-              displayName: 'Old Name',
-              nip05: '_@ike.divine.video',
-              rawData: const {
-                'display_name': 'Old Name',
-                'nip05': '_@ike.divine.video',
-              },
-              createdAt: DateTime.now(),
-              eventId: 'rest-$testPubkey',
-            );
+        test('clearNip05 removes nip05 even when sourced from a '
+            'post-#4175 Funnelcake profile', () async {
+          final funnelcakeProfile = UserProfile(
+            pubkey: testPubkey,
+            displayName: 'Old Name',
+            nip05: '_@ike.divine.video',
+            rawData: const {
+              'display_name': 'Old Name',
+              'nip05': '_@ike.divine.video',
+            },
+            createdAt: DateTime.now(),
+            eventId: 'rest-$testPubkey',
+          );
 
-            when(() => mockProfileEvent.content).thenReturn(
-              jsonEncode({
-                'display_name': 'New Name',
-                'nip05': '_@ike.divine.video',
-              }),
-            );
+          await profileRepository.saveProfileEvent(
+            displayName: 'New Name',
+            clearNip05: true,
+            currentProfile: funnelcakeProfile,
+          );
 
-            await profileRepository.saveProfileEvent(
-              displayName: 'New Name',
-              currentProfile: funnelcakeProfile,
-            );
-
-            verify(
-              () => mockNostrClient.sendProfile(
-                profileContent: {
-                  'display_name': 'New Name',
-                  'nip05': '_@ike.divine.video',
-                },
-              ),
-            ).called(1);
-          },
-        );
-
-        test(
-          'clearNip05 removes nip05 even when sourced from a '
-          'post-#4175 Funnelcake profile',
-          () async {
-            final funnelcakeProfile = UserProfile(
-              pubkey: testPubkey,
-              displayName: 'Old Name',
-              nip05: '_@ike.divine.video',
-              rawData: const {
-                'display_name': 'Old Name',
-                'nip05': '_@ike.divine.video',
-              },
-              createdAt: DateTime.now(),
-              eventId: 'rest-$testPubkey',
-            );
-
-            await profileRepository.saveProfileEvent(
-              displayName: 'New Name',
-              clearNip05: true,
-              currentProfile: funnelcakeProfile,
-            );
-
-            verify(
-              () => mockNostrClient.sendProfile(
-                profileContent: {'display_name': 'New Name'},
-              ),
-            ).called(1);
-          },
-        );
+          verify(
+            () => mockNostrClient.sendProfile(
+              profileContent: {'display_name': 'New Name'},
+            ),
+          ).called(1);
+        });
 
         test(
           'clearNip05 is a no-op when a new nip05 is also provided',
@@ -2291,10 +2269,7 @@ void main() {
             ),
           ).called(1);
           verifyNever(
-            () => mockNostrClient.queryUsers(
-              any(),
-              limit: any(named: 'limit'),
-            ),
+            () => mockNostrClient.queryUsers(any(), limit: any(named: 'limit')),
           );
         },
       );
@@ -2340,10 +2315,7 @@ void main() {
             ),
           ).called(1);
           verifyNever(
-            () => mockNostrClient.queryUsers(
-              any(),
-              limit: any(named: 'limit'),
-            ),
+            () => mockNostrClient.queryUsers(any(), limit: any(named: 'limit')),
           );
         },
       );
@@ -2757,6 +2729,18 @@ void main() {
         // First emission: local results only
         expect(emissions.first.profiles, hasLength(1));
         expect(emissions.first.profiles.first.pubkey, equals(testPubkey));
+        expect(
+          emissions.first.sources[SearchSource.localCache],
+          isA<SearchSourceSuccess>(),
+        );
+        expect(
+          emissions.first.sources[SearchSource.funnelcakeApi],
+          isA<SearchSourcePending>(),
+        );
+        expect(
+          emissions.first.sources[SearchSource.nip50Relay],
+          isA<SearchSourcePending>(),
+        );
         expect(emissions.first.isComplete, isFalse);
 
         // Last emission: merged and enriched
@@ -3230,124 +3214,103 @@ void main() {
           },
         );
 
-        test(
-          'is a no-op when the boost set is empty',
-          () async {
-            when(
-              () => mockFunnelcakeClient.searchProfiles(
+        test('is a no-op when the boost set is empty', () async {
+          when(
+            () => mockFunnelcakeClient.searchProfiles(
+              query: 'test',
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer(
+            (_) async => [restResult(pubA, 'Zoe'), restResult(pubB, 'Maya')],
+          );
+
+          final repo = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repo
+              .searchUsersProgressive(
                 query: 'test',
-                limit: any(named: 'limit'),
-                offset: any(named: 'offset'),
-                sortBy: any(named: 'sortBy'),
-                hasVideos: any(named: 'hasVideos'),
-              ),
-            ).thenAnswer(
-              (_) async => [
-                restResult(pubA, 'Zoe'),
-                restResult(pubB, 'Maya'),
-              ],
-            );
+                sortBy: 'followers',
+                boostPubkeys: const <String>{},
+              )
+              .last;
 
-            final repo = ProfileRepository(
-              nostrClient: mockNostrClient,
-              userProfilesDao: mockUserProfilesDao,
-              httpClient: mockHttpClient,
-              funnelcakeApiClient: mockFunnelcakeClient,
-            );
+          expect(
+            result.profiles.map((p) => p.displayName).toList(),
+            equals(['Zoe', 'Maya']),
+          );
+        });
 
-            final result = await repo
-                .searchUsersProgressive(
-                  query: 'test',
-                  sortBy: 'followers',
-                  boostPubkeys: const <String>{},
-                )
-                .last;
+        test('is a no-op when boostPubkeys is null', () async {
+          when(
+            () => mockFunnelcakeClient.searchProfiles(
+              query: 'test',
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer(
+            (_) async => [restResult(pubA, 'Zoe'), restResult(pubB, 'Maya')],
+          );
 
-            expect(
-              result.profiles.map((p) => p.displayName).toList(),
-              equals(['Zoe', 'Maya']),
-            );
-          },
-        );
+          final repo = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
 
-        test(
-          'is a no-op when boostPubkeys is null',
-          () async {
-            when(
-              () => mockFunnelcakeClient.searchProfiles(
+          final result = await repo
+              .searchUsersProgressive(query: 'test', sortBy: 'followers')
+              .last;
+
+          expect(
+            result.profiles.map((p) => p.displayName).toList(),
+            equals(['Zoe', 'Maya']),
+          );
+        });
+
+        test('is a no-op when no result is in the boost set', () async {
+          when(
+            () => mockFunnelcakeClient.searchProfiles(
+              query: 'test',
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer(
+            (_) async => [restResult(pubA, 'Zoe'), restResult(pubB, 'Maya')],
+          );
+
+          final repo = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repo
+              .searchUsersProgressive(
                 query: 'test',
-                limit: any(named: 'limit'),
-                offset: any(named: 'offset'),
-                sortBy: any(named: 'sortBy'),
-                hasVideos: any(named: 'hasVideos'),
-              ),
-            ).thenAnswer(
-              (_) async => [
-                restResult(pubA, 'Zoe'),
-                restResult(pubB, 'Maya'),
-              ],
-            );
+                sortBy: 'followers',
+                boostPubkeys: {'f' * 64},
+              )
+              .last;
 
-            final repo = ProfileRepository(
-              nostrClient: mockNostrClient,
-              userProfilesDao: mockUserProfilesDao,
-              httpClient: mockHttpClient,
-              funnelcakeApiClient: mockFunnelcakeClient,
-            );
-
-            final result = await repo
-                .searchUsersProgressive(
-                  query: 'test',
-                  sortBy: 'followers',
-                )
-                .last;
-
-            expect(
-              result.profiles.map((p) => p.displayName).toList(),
-              equals(['Zoe', 'Maya']),
-            );
-          },
-        );
-
-        test(
-          'is a no-op when no result is in the boost set',
-          () async {
-            when(
-              () => mockFunnelcakeClient.searchProfiles(
-                query: 'test',
-                limit: any(named: 'limit'),
-                offset: any(named: 'offset'),
-                sortBy: any(named: 'sortBy'),
-                hasVideos: any(named: 'hasVideos'),
-              ),
-            ).thenAnswer(
-              (_) async => [
-                restResult(pubA, 'Zoe'),
-                restResult(pubB, 'Maya'),
-              ],
-            );
-
-            final repo = ProfileRepository(
-              nostrClient: mockNostrClient,
-              userProfilesDao: mockUserProfilesDao,
-              httpClient: mockHttpClient,
-              funnelcakeApiClient: mockFunnelcakeClient,
-            );
-
-            final result = await repo
-                .searchUsersProgressive(
-                  query: 'test',
-                  sortBy: 'followers',
-                  boostPubkeys: {'f' * 64},
-                )
-                .last;
-
-            expect(
-              result.profiles.map((p) => p.displayName).toList(),
-              equals(['Zoe', 'Maya']),
-            );
-          },
-        );
+          expect(
+            result.profiles.map((p) => p.displayName).toList(),
+            equals(['Zoe', 'Maya']),
+          );
+        });
       });
 
       group('source provenance', () {
@@ -3424,20 +3387,12 @@ void main() {
         });
 
         test(
-          'records SearchSourceFailed(network) when REST throws',
+          'records SearchSourceFailed(other) when local cache throws',
           () async {
             when(
               () => mockUserProfilesDao.getAllProfiles(),
-            ).thenAnswer((_) async => []);
-            when(
-              () => mockFunnelcakeClient.searchProfiles(
-                query: 'test',
-                limit: any(named: 'limit'),
-                offset: any(named: 'offset'),
-                sortBy: any(named: 'sortBy'),
-                hasVideos: any(named: 'hasVideos'),
-              ),
-            ).thenThrow(Exception('connection refused'));
+            ).thenThrow(StateError('db down'));
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
             when(
               () => mockNostrClient.queryUsers('test', limit: 200),
             ).thenAnswer((_) async => []);
@@ -3453,14 +3408,48 @@ void main() {
                 .searchUsersProgressive(query: 'test')
                 .last;
 
-            final apiStatus = result.sources[SearchSource.funnelcakeApi];
-            expect(apiStatus, isA<SearchSourceFailed>());
+            final localStatus = result.sources[SearchSource.localCache];
+            expect(localStatus, isA<SearchSourceFailed>());
             expect(
-              (apiStatus! as SearchSourceFailed).reason,
-              SearchSourceFailureReason.network,
+              (localStatus! as SearchSourceFailed).reason,
+              SearchSourceFailureReason.other,
             );
           },
         );
+
+        test('records SearchSourceFailed(network) when REST throws', () async {
+          when(
+            () => mockUserProfilesDao.getAllProfiles(),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockFunnelcakeClient.searchProfiles(
+              query: 'test',
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenThrow(Exception('connection refused'));
+          when(
+            () => mockNostrClient.queryUsers('test', limit: 200),
+          ).thenAnswer((_) async => []);
+
+          final repo = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repo.searchUsersProgressive(query: 'test').last;
+
+          final apiStatus = result.sources[SearchSource.funnelcakeApi];
+          expect(apiStatus, isA<SearchSourceFailed>());
+          expect(
+            (apiStatus! as SearchSourceFailed).reason,
+            SearchSourceFailureReason.network,
+          );
+        });
 
         test(
           'records SearchSourceFailed(timeout) when NIP-50 times out',
@@ -3837,43 +3826,40 @@ void main() {
         },
       );
 
-      test(
-        'returns server error message when claim returns 400 '
-        'with JSON error body',
-        () async {
-          when(
-            () => mockNostrClient.createNip98AuthHeader(
-              url: any(named: 'url'),
-              method: any(named: 'method'),
-              payload: any(named: 'payload'),
-            ),
-          ).thenAnswer((_) => Future.value('authHeader'));
-          when(
-            () => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            ),
-          ).thenAnswer(
-            (_) => Future.value(
-              Response('{"error": "Name server rejected claim"}', 400),
-            ),
-          );
+      test('returns server error message when claim returns 400 '
+          'with JSON error body', () async {
+        when(
+          () => mockNostrClient.createNip98AuthHeader(
+            url: any(named: 'url'),
+            method: any(named: 'method'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenAnswer((_) => Future.value('authHeader'));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) => Future.value(
+            Response('{"error": "Name server rejected claim"}', 400),
+          ),
+        );
 
-          final result = await profileRepository.claimUsername(
-            username: 'validuser',
-          );
+        final result = await profileRepository.claimUsername(
+          username: 'validuser',
+        );
 
-          expect(
-            result,
-            isA<UsernameClaimError>().having(
-              (e) => e.message,
-              'message',
-              'Name server rejected claim',
-            ),
-          );
-        },
-      );
+        expect(
+          result,
+          isA<UsernameClaimError>().having(
+            (e) => e.message,
+            'message',
+            'Name server rejected claim',
+          ),
+        );
+      });
 
       test('returns error with default message when server returns '
           'non-200 with unparseable body', () async {
@@ -4081,28 +4067,25 @@ void main() {
         expect(result, isA<UsernameInvalidFormat>());
       });
 
-      test(
-        'returns UsernameInvalidFormat for too-short names',
-        () async {
-          final result = await profileRepository.checkUsernameAvailability(
-            username: 'ab',
-          );
+      test('returns UsernameInvalidFormat for too-short names', () async {
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'ab',
+        );
 
-          expect(
-            result,
-            isA<UsernameInvalidFormat>().having(
-              (e) => e.reason,
-              'reason',
-              'Usernames must be 3–63 characters',
-            ),
-          );
-          verifyNever(
-            () => mockHttpClient.get(
-              Uri.parse('https://names.divine.video/api/username/check/ab'),
-            ),
-          );
-        },
-      );
+        expect(
+          result,
+          isA<UsernameInvalidFormat>().having(
+            (e) => e.reason,
+            'reason',
+            'Usernames must be 3–63 characters',
+          ),
+        );
+        verifyNever(
+          () => mockHttpClient.get(
+            Uri.parse('https://names.divine.video/api/username/check/ab'),
+          ),
+        );
+      });
 
       test(
         'returns UsernameInvalidFormat for names with underscores',
@@ -4375,49 +4358,46 @@ void main() {
         expect(result, equals(const UsernameTaken()));
       });
 
-      test(
-        'returns UsernameCheckError when the GET exceeds the timeout',
-        () {
-          fakeAsync((async) {
-            when(
-              () => mockHttpClient.get(
-                Uri.parse(
-                  'https://names.divine.video/api/username/check/testuser',
-                ),
+      test('returns UsernameCheckError when the GET exceeds the timeout', () {
+        fakeAsync((async) {
+          when(
+            () => mockHttpClient.get(
+              Uri.parse(
+                'https://names.divine.video/api/username/check/testuser',
               ),
-            ).thenAnswer((_) async {
-              // Simulates an unresponsive name server: never resolves within
-              // the repository's _nameServerHttpTimeout (10s).
-              await Future<void>.delayed(const Duration(minutes: 5));
-              return Response('unused', 200);
-            });
-
-            UsernameAvailabilityResult? result;
-            unawaited(
-              profileRepository
-                  .checkUsernameAvailability(username: 'testuser')
-                  .then((r) => result = r),
-            );
-
-            async
-              ..elapse(const Duration(seconds: 9))
-              ..flushMicrotasks();
-            expect(result, isNull);
-
-            async
-              ..elapse(const Duration(seconds: 2))
-              ..flushMicrotasks();
-            expect(
-              result,
-              isA<UsernameCheckError>().having(
-                (e) => e.message,
-                'message',
-                contains('TimeoutException'),
-              ),
-            );
+            ),
+          ).thenAnswer((_) async {
+            // Simulates an unresponsive name server: never resolves within
+            // the repository's _nameServerHttpTimeout (10s).
+            await Future<void>.delayed(const Duration(minutes: 5));
+            return Response('unused', 200);
           });
-        },
-      );
+
+          UsernameAvailabilityResult? result;
+          unawaited(
+            profileRepository
+                .checkUsernameAvailability(username: 'testuser')
+                .then((r) => result = r),
+          );
+
+          async
+            ..elapse(const Duration(seconds: 9))
+            ..flushMicrotasks();
+          expect(result, isNull);
+
+          async
+            ..elapse(const Duration(seconds: 2))
+            ..flushMicrotasks();
+          expect(
+            result,
+            isA<UsernameCheckError>().having(
+              (e) => e.message,
+              'message',
+              contains('TimeoutException'),
+            ),
+          );
+        });
+      });
     });
 
     group('UsernameAvailabilityResult', () {
@@ -4885,10 +4865,9 @@ void main() {
           (_) async => BulkProfilesResponse(
             profiles: {
               testPubkey2: UserProfileFound(
-                profile: UserProfileData.fromJson(
-                  testPubkey2,
-                  const {'display_name': 'API User'},
-                ),
+                profile: UserProfileData.fromJson(testPubkey2, const {
+                  'display_name': 'API User',
+                }),
               ),
             },
           ),
@@ -5161,10 +5140,9 @@ void main() {
             (_) async => BulkProfilesResponse(
               profiles: {
                 testPubkey: UserProfileFound(
-                  profile: UserProfileData.fromJson(
-                    testPubkey,
-                    const {'display_name': 'Real User'},
-                  ),
+                  profile: UserProfileData.fromJson(testPubkey, const {
+                    'display_name': 'Real User',
+                  }),
                 ),
                 testPubkey2: const UserProfileNotPublished(pubkey: testPubkey2),
               },
@@ -5281,9 +5259,7 @@ void main() {
 
           when(
             () => mockUserProfilesDao.getAllProfiles(),
-          ).thenAnswer(
-            (_) async => [blockedProfile, allowedProfile],
-          );
+          ).thenAnswer((_) async => [blockedProfile, allowedProfile]);
 
           when(
             () => mockNostrClient.queryUsers(any(), limit: any(named: 'limit')),
@@ -5314,105 +5290,96 @@ void main() {
         },
       );
 
-      test(
-        'returns all profiles when blockFilter is null',
-        () async {
-          final profile1 = UserProfile(
-            pubkey: blockedPubkey,
-            displayName: 'User One',
-            rawData: const {'display_name': 'User One'},
-            createdAt: DateTime(2026),
-            eventId: 'evt_one',
-          );
-          final profile2 = UserProfile(
-            pubkey: testPubkey,
-            displayName: 'User Two',
-            rawData: const {'display_name': 'User Two'},
-            createdAt: DateTime(2026),
-            eventId: testEventId,
-          );
+      test('returns all profiles when blockFilter is null', () async {
+        final profile1 = UserProfile(
+          pubkey: blockedPubkey,
+          displayName: 'User One',
+          rawData: const {'display_name': 'User One'},
+          createdAt: DateTime(2026),
+          eventId: 'evt_one',
+        );
+        final profile2 = UserProfile(
+          pubkey: testPubkey,
+          displayName: 'User Two',
+          rawData: const {'display_name': 'User Two'},
+          createdAt: DateTime(2026),
+          eventId: testEventId,
+        );
 
-          when(
-            () => mockUserProfilesDao.getAllProfiles(),
-          ).thenAnswer((_) async => [profile1, profile2]);
+        when(
+          () => mockUserProfilesDao.getAllProfiles(),
+        ).thenAnswer((_) async => [profile1, profile2]);
 
-          when(
-            () => mockNostrClient.queryUsers(any(), limit: any(named: 'limit')),
-          ).thenAnswer((_) async => []);
+        when(
+          () => mockNostrClient.queryUsers(any(), limit: any(named: 'limit')),
+        ).thenAnswer((_) async => []);
 
-          // Default profileRepository has no blockFilter.
-          final emissions = await profileRepository
-              .searchUsersProgressive(query: 'user')
-              .toList();
+        // Default profileRepository has no blockFilter.
+        final emissions = await profileRepository
+            .searchUsersProgressive(query: 'user')
+            .toList();
 
-          expect(emissions.last.profiles, hasLength(2));
-        },
-      );
+        expect(emissions.last.profiles, hasLength(2));
+      });
 
-      test(
-        'filters blocked users from searchUsersLocally results',
-        () async {
-          const blockedPubkey =
-              'dddddddddddddddddddddddddddddddd'
-              'dddddddddddddddddddddddddddddddd';
-          final blockedProfile = UserProfile(
-            pubkey: blockedPubkey,
-            displayName: 'Blocked User',
-            rawData: const {'display_name': 'Blocked User'},
-            createdAt: DateTime(2026),
-            eventId: 'evt_blocked_local',
-          );
-          final allowedProfile = UserProfile(
-            pubkey: testPubkey,
-            displayName: 'Allowed User',
-            rawData: const {'display_name': 'Allowed User'},
-            createdAt: DateTime(2026),
-            eventId: testEventId,
-          );
+      test('filters blocked users from searchUsersLocally results', () async {
+        const blockedPubkey =
+            'dddddddddddddddddddddddddddddddd'
+            'dddddddddddddddddddddddddddddddd';
+        final blockedProfile = UserProfile(
+          pubkey: blockedPubkey,
+          displayName: 'Blocked User',
+          rawData: const {'display_name': 'Blocked User'},
+          createdAt: DateTime(2026),
+          eventId: 'evt_blocked_local',
+        );
+        final allowedProfile = UserProfile(
+          pubkey: testPubkey,
+          displayName: 'Allowed User',
+          rawData: const {'display_name': 'Allowed User'},
+          createdAt: DateTime(2026),
+          eventId: testEventId,
+        );
 
-          when(
-            () => mockUserProfilesDao.getAllProfiles(),
-          ).thenAnswer((_) async => [blockedProfile, allowedProfile]);
+        when(
+          () => mockUserProfilesDao.getAllProfiles(),
+        ).thenAnswer((_) async => [blockedProfile, allowedProfile]);
 
-          final repoWithBlockFilter = ProfileRepository(
-            nostrClient: mockNostrClient,
-            userProfilesDao: mockUserProfilesDao,
-            httpClient: mockHttpClient,
-            blockFilter: (pubkey) => pubkey == blockedPubkey,
-          );
+        final repoWithBlockFilter = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          blockFilter: (pubkey) => pubkey == blockedPubkey,
+        );
 
-          final result = await repoWithBlockFilter.searchUsersLocally(
-            query: 'user',
-          );
+        final result = await repoWithBlockFilter.searchUsersLocally(
+          query: 'user',
+        );
 
-          expect(result.map((p) => p.pubkey), isNot(contains(blockedPubkey)));
-          expect(result, hasLength(1));
-          expect(result.first.pubkey, equals(testPubkey));
-        },
-      );
+        expect(result.map((p) => p.pubkey), isNot(contains(blockedPubkey)));
+        expect(result, hasLength(1));
+        expect(result.first.pubkey, equals(testPubkey));
+      });
 
-      test(
-        'fetchFreshProfile returns null for a blocked pubkey',
-        () async {
-          const blockedPubkey =
-              'dddddddddddddddddddddddddddddddd'
-              'dddddddddddddddddddddddddddddddd';
+      test('fetchFreshProfile returns null for a blocked pubkey', () async {
+        const blockedPubkey =
+            'dddddddddddddddddddddddddddddddd'
+            'dddddddddddddddddddddddddddddddd';
 
-          final repoWithBlockFilter = ProfileRepository(
-            nostrClient: mockNostrClient,
-            userProfilesDao: mockUserProfilesDao,
-            httpClient: mockHttpClient,
-            blockFilter: (pubkey) => pubkey == blockedPubkey,
-          );
+        final repoWithBlockFilter = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          blockFilter: (pubkey) => pubkey == blockedPubkey,
+        );
 
-          final result = await repoWithBlockFilter.fetchFreshProfile(
-            pubkey: blockedPubkey,
-          );
+        final result = await repoWithBlockFilter.fetchFreshProfile(
+          pubkey: blockedPubkey,
+        );
 
-          expect(result, isNull);
-          verifyNever(() => mockNostrClient.fetchProfile(any()));
-        },
-      );
+        expect(result, isNull);
+        verifyNever(() => mockNostrClient.fetchProfile(any()));
+      });
 
       test(
         'fetchBatchProfiles excludes blocked pubkeys from map result',
@@ -5425,14 +5392,12 @@ void main() {
           when(() => blockedEvent.kind).thenReturn(0);
           when(() => blockedEvent.pubkey).thenReturn(blockedPubkey);
           when(() => blockedEvent.createdAt).thenReturn(1704067200);
-          when(
-            () => blockedEvent.id,
-          ).thenReturn(
+          when(() => blockedEvent.id).thenReturn(
             'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
           );
-          when(() => blockedEvent.content).thenReturn(
-            '{"display_name":"Blocked Batch User"}',
-          );
+          when(
+            () => blockedEvent.content,
+          ).thenReturn('{"display_name":"Blocked Batch User"}');
 
           when(
             () => mockUserProfilesDao.getProfilesByPubkeys(any()),

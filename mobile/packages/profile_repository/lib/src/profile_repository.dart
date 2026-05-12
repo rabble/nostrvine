@@ -1036,7 +1036,10 @@ class ProfileRepository {
     if (trimmed.isEmpty) return;
 
     final resultMap = <String, UserProfile>{};
-    final sources = <SearchSource, SearchSourceStatus>{};
+    final sources = <SearchSource, SearchSourceStatus>{
+      for (final source in SearchSource.values)
+        source: const SearchSourcePending(),
+    };
     final useServerSort = sortBy != null;
 
     ProgressiveSearchResult snapshot({

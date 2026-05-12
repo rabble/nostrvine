@@ -18,6 +18,13 @@ part 'user_search_state.dart';
 /// Number of results per page
 const _pageSize = 50;
 
+Map<SearchSource, SearchSourceStatus> _pendingSourceOutcomes() {
+  return {
+    for (final source in SearchSource.values)
+      source: const SearchSourcePending(),
+  };
+}
+
 /// BLoC for searching user profiles.
 class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
   UserSearchBloc({
@@ -79,11 +86,13 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
         offset: 0,
         hasMore: false,
         isLoadingMore: false,
+        sourceOutcomes: const {},
       ),
     );
 
     _feedTracker?.startFeedLoad('user_search');
     var trackedFirst = false;
+    var latestSourceOutcomes = _pendingSourceOutcomes();
     // Snapshot of sources whose terminal status has already been
     // forwarded to feedTracker — prevents duplicate events when a
     // source's outcome is repeated across yields.
@@ -122,6 +131,7 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
               _feedTracker?.trackSearchSource(entry.key, entry.value);
             }
           }
+          latestSourceOutcomes = result.sources;
           return state.copyWith(
             status: UserSearchStatus.loading,
             results: result.profiles,
@@ -150,7 +160,7 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
       final updatedOutcomes =
           <SearchSource, SearchSourceStatus>{
             for (final source in SearchSource.values)
-              source: switch (state.sourceOutcomes[source]) {
+              source: switch (latestSourceOutcomes[source]) {
                 null || SearchSourcePending() => SearchSourceFailed(
                   reason: SearchSourceFailureReason.timeout,
                   latencyMs: outerTimeoutMs,
@@ -159,7 +169,7 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
               },
           }..forEach((source, status) {
             if (status is SearchSourceFailed &&
-                state.sourceOutcomes[source] is! SearchSourceFailed &&
+                latestSourceOutcomes[source] is! SearchSourceFailed &&
                 trackedSources.add(source)) {
               _feedTracker?.trackSearchSource(source, status);
             }

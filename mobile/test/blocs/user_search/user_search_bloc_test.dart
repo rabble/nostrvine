@@ -1500,6 +1500,54 @@ void main() {
       );
 
       blocTest<UserSearchBloc, UserSearchState>(
+        'resets prior source outcomes before timing out a new query',
+        setUp: () {
+          final controller = StreamController<ProgressiveSearchResult>();
+          when(
+            () => mockProfileRepository.searchUsersProgressive(
+              query: 'fresh-query',
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+        },
+        build: () =>
+            createBloc(searchTimeout: const Duration(milliseconds: 10)),
+        seed: () => const UserSearchState(
+          status: UserSearchStatus.success,
+          query: 'stale-query',
+          sourceOutcomes: {
+            SearchSource.localCache: SearchSourceSuccess(
+              resultCount: 0,
+              latencyMs: 1,
+            ),
+            SearchSource.funnelcakeApi: SearchSourceSkipped(),
+            SearchSource.nip50Relay: SearchSourceSuccess(
+              resultCount: 0,
+              latencyMs: 5,
+            ),
+          },
+        ),
+        act: (bloc) => bloc.add(const UserSearchQueryChanged('fresh-query')),
+        wait: const Duration(milliseconds: 500),
+        verify: (bloc) {
+          expect(bloc.state.status, UserSearchStatus.success);
+          expect(bloc.state.query, 'fresh-query');
+          for (final source in SearchSource.values) {
+            expect(
+              bloc.state.sourceOutcomes[source],
+              isA<SearchSourceFailed>().having(
+                (f) => f.reason,
+                'reason',
+                SearchSourceFailureReason.timeout,
+              ),
+            );
+          }
+        },
+      );
+
+      blocTest<UserSearchBloc, UserSearchState>(
         'isDegradedEmpty becomes true when outer timeout fires on empty '
         'accumulated results',
         setUp: () {
@@ -1540,72 +1588,63 @@ void main() {
         expect(state.isDegradedEmpty, isFalse);
       });
 
-      test(
-        'isDegradedEmpty getter: false with non-empty results even when '
-        'a source failed',
-        () {
-          final profile = UserProfile(
-            pubkey: 'a' * 64,
-            displayName: 'Alice',
-            createdAt: DateTime.now(),
-            eventId: 'e1',
-            rawData: const {'display_name': 'Alice'},
-          );
-          final state = UserSearchState(
-            status: UserSearchStatus.success,
-            results: [profile],
-            sourceOutcomes: const {
-              SearchSource.nip50Relay: SearchSourceFailed(
-                reason: SearchSourceFailureReason.timeout,
-                latencyMs: 5000,
-              ),
-            },
-          );
-          expect(state.isDegradedEmpty, isFalse);
-        },
-      );
+      test('isDegradedEmpty getter: false with non-empty results even when '
+          'a source failed', () {
+        final profile = UserProfile(
+          pubkey: 'a' * 64,
+          displayName: 'Alice',
+          createdAt: DateTime.now(),
+          eventId: 'e1',
+          rawData: const {'display_name': 'Alice'},
+        );
+        final state = UserSearchState(
+          status: UserSearchStatus.success,
+          results: [profile],
+          sourceOutcomes: const {
+            SearchSource.nip50Relay: SearchSourceFailed(
+              reason: SearchSourceFailureReason.timeout,
+              latencyMs: 5000,
+            ),
+          },
+        );
+        expect(state.isDegradedEmpty, isFalse);
+      });
 
-      test(
-        'isDegradedEmpty getter: true with empty results and a failed '
-        'source',
-        () {
-          const state = UserSearchState(
-            status: UserSearchStatus.success,
-            sourceOutcomes: {
-              SearchSource.nip50Relay: SearchSourceFailed(
-                reason: SearchSourceFailureReason.timeout,
-                latencyMs: 5000,
-              ),
-            },
-          );
-          expect(state.isDegradedEmpty, isTrue);
-        },
-      );
+      test('isDegradedEmpty getter: true with empty results and a failed '
+          'source', () {
+        const state = UserSearchState(
+          status: UserSearchStatus.success,
+          sourceOutcomes: {
+            SearchSource.nip50Relay: SearchSourceFailed(
+              reason: SearchSourceFailureReason.timeout,
+              latencyMs: 5000,
+            ),
+          },
+        );
+        expect(state.isDegradedEmpty, isTrue);
+      });
 
-      test(
-        'isDegradedEmpty getter: false with empty results but all sources '
-        'succeeded (true empty)',
-        () {
-          const state = UserSearchState(
-            status: UserSearchStatus.success,
-            sourceOutcomes: {
-              SearchSource.localCache: SearchSourceSuccess(
-                resultCount: 0,
-                latencyMs: 1,
-              ),
-              SearchSource.funnelcakeApi: SearchSourceSuccess(
-                resultCount: 0,
-                latencyMs: 50,
-              ),
-              SearchSource.nip50Relay: SearchSourceSuccess(
-                resultCount: 0,
-                latencyMs: 500,
-              ),
-            },
-          );
-          expect(state.isDegradedEmpty, isFalse);
-        },
-      );
+      test('isDegradedEmpty getter: false with empty results but all sources '
+          'succeeded (true empty)', () {
+        const state = UserSearchState(
+          status: UserSearchStatus.success,
+          sourceOutcomes: {
+            SearchSource.localCache: SearchSourceSuccess(
+              resultCount: 0,
+              latencyMs: 1,
+            ),
+            SearchSource.funnelcakeApi: SearchSourceSuccess(
+              resultCount: 0,
+              latencyMs: 50,
+            ),
+            SearchSource.nip50Relay: SearchSourceSuccess(
+              resultCount: 0,
+              latencyMs: 500,
+            ),
+          },
+        );
+        expect(state.isDegradedEmpty, isFalse);
+      });
     });
   });
 }

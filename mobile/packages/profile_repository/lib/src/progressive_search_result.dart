@@ -54,9 +54,9 @@ sealed class SearchSourceStatus {
 
 /// Source has not yet reported a result.
 ///
-/// Emitted as the initial value while the bloc waits for a phase to
-/// complete. When the outer stream timeout fires, every entry still in
-/// `pending` is promoted to [SearchSourceFailed] with reason
+/// Emitted in progressive envelopes for sources the repository has not
+/// consulted yet. When the outer stream timeout fires, every entry still
+/// in `pending` is promoted to [SearchSourceFailed] with reason
 /// [SearchSourceFailureReason.timeout].
 class SearchSourcePending extends SearchSourceStatus {
   /// Creates a pending status.
@@ -91,10 +91,7 @@ class SearchSourceSuccess extends SearchSourceStatus {
 /// Source failed to produce results.
 class SearchSourceFailed extends SearchSourceStatus {
   /// Creates a failed status with [reason] and [latencyMs].
-  const SearchSourceFailed({
-    required this.reason,
-    required this.latencyMs,
-  });
+  const SearchSourceFailed({required this.reason, required this.latencyMs});
 
   /// Coarse failure category. Free-form error messages live in logs,
   /// not in this type — keeping the type cheap and PII-free.
@@ -121,9 +118,9 @@ class ProgressiveSearchResult {
   /// Accumulated, deduplicated, filter+boost-applied profile list.
   final List<UserProfile> profiles;
 
-  /// Outcome of each source consulted so far. Sources not yet reached
-  /// may be absent from the map; the bloc treats absence as
-  /// [SearchSourcePending] equivalent.
+  /// Outcome of each search source at this snapshot. Progressive
+  /// intermediate yields may still contain [SearchSourcePending] for
+  /// phases the repository has not reached yet.
   final Map<SearchSource, SearchSourceStatus> sources;
 
   /// `true` when no further yields will arrive for this query.
