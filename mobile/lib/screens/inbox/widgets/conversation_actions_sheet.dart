@@ -35,6 +35,10 @@ class ConversationActionsSheet {
       context: context,
       scrollable: false,
       expanded: false,
+      // Route through the root Navigator so the sheet sits above the
+      // tab shell's nested Navigator and covers the bottom nav bar —
+      // matches the home-feed Comments / Report sheet behavior.
+      useRootNavigator: true,
       body: Semantics(
         label: 'Conversation actions',
         child: Column(
