@@ -250,6 +250,9 @@ class CameraController: NSObject {
             // can fail or the mic gets no samples because the session
             // transitions while still active.
             try? audioSession.setActive(false, options: .notifyOthersOnDeactivation)
+            // .videoRecording mode enables system-level noise suppression and
+            // echo cancellation tuned for direct capture (vs .default which is
+            // tuned for VoIP). This gives better mic quality without extra work.
             try audioSession.setCategory(
                 .playAndRecord,
                 mode: .videoRecording,
@@ -288,8 +291,12 @@ class CameraController: NSObject {
 
         switch type {
         case .began:
-            audioInterrupted = true
-            print("[DivineCameraController] AVAudioSession interruption began")
+            // Dispatch to sessionQueue so reads and writes to audioInterrupted
+            // always happen on the same serial queue, avoiding data races.
+            sessionQueue.async { [weak self] in
+                self?.audioInterrupted = true
+                print("[DivineCameraController] AVAudioSession interruption began")
+            }
         case .ended:
             let shouldResume: Bool = {
                 guard let raw = info[AVAudioSessionInterruptionOptionKey] as? UInt else {
@@ -1484,6 +1491,12 @@ class CameraController: NSObject {
         // blocks for ~1.4s on older A9/A10 iPads — accepted as edge case.
         sessionQueue.async { [weak self] in
             guard let self = self else { return }
+            // Note: there is a brief window between this check and the first
+            // audioInput.append() call on videoOutputQueue. An interruption
+            // arriving in that window produces a silent track rather than no
+            // audio track. The captureOutput guard (!audioInterrupted) limits
+            // the damage; full protection would require a writer-level lock
+            // that is not worth the added complexity here.
             let audioReady = self.attachAudioToSessionIfNeeded() && !self.audioInterrupted
             if !audioReady {
                 print("[DivineCameraController] Audio not ready — recording WITHOUT audio track")
@@ -1939,7 +1952,10 @@ extension CameraController: AVCaptureVideoDataOutputSampleBufferDelegate {
         }
         // Handle audio output
         else if output == audioOutput {
-            if isRecording, let writer = assetWriter, let audioInput = audioWriterInput {
+            // Skip appending while interrupted — iOS keeps delivering
+            // (silent) buffers after the session is deactivated, which
+            // would produce a valid AAC track with no sound.
+            if isRecording, !audioInterrupted, let writer = assetWriter, let audioInput = audioWriterInput {
                 // Only append audio after session has started
                 if isWriterSessionStarted && writer.status == .writing && audioInput.isReadyForMoreMediaData {
                     audioInput.append(sampleBuffer)
