@@ -16,11 +16,16 @@ part of 'relay_notifications_provider.dart';
 /// - Server-side unread count tracking
 /// - Server-side mark-as-read persistence
 ///
-/// Timer lifecycle:
-/// - Starts when provider is first watched
-/// - Pauses when all listeners detach (ref.onCancel)
-/// - Resumes when a new listener attaches (ref.onResume)
-/// - Cancels on dispose
+/// Refresh model (post-#3352):
+/// - Initial load happens in [build].
+/// - Refresh on app resume — driven by [appForegroundProvider] flipping
+///   from background to foreground. The previous 5-min wall-clock timer
+///   wasted wakeups when the user wasn't even looking at the screen.
+/// - Refresh on realtime push — see the FCM `onMessage` listener in
+///   [pushNotificationSync] which calls `refresh()` after handling a
+///   foreground message.
+/// - Refresh on explicit user action — pull-to-refresh in
+///   `notifications_screen.dart`.
 
 @ProviderFor(RelayNotifications)
 const relayNotificationsProvider = RelayNotificationsProvider._();
@@ -33,11 +38,16 @@ const relayNotificationsProvider = RelayNotificationsProvider._();
 /// - Server-side unread count tracking
 /// - Server-side mark-as-read persistence
 ///
-/// Timer lifecycle:
-/// - Starts when provider is first watched
-/// - Pauses when all listeners detach (ref.onCancel)
-/// - Resumes when a new listener attaches (ref.onResume)
-/// - Cancels on dispose
+/// Refresh model (post-#3352):
+/// - Initial load happens in [build].
+/// - Refresh on app resume — driven by [appForegroundProvider] flipping
+///   from background to foreground. The previous 5-min wall-clock timer
+///   wasted wakeups when the user wasn't even looking at the screen.
+/// - Refresh on realtime push — see the FCM `onMessage` listener in
+///   [pushNotificationSync] which calls `refresh()` after handling a
+///   foreground message.
+/// - Refresh on explicit user action — pull-to-refresh in
+///   `notifications_screen.dart`.
 final class RelayNotificationsProvider
     extends $AsyncNotifierProvider<RelayNotifications, NotificationFeedState> {
   /// Provider for relay-based notifications with REST API pagination
@@ -48,11 +58,16 @@ final class RelayNotificationsProvider
   /// - Server-side unread count tracking
   /// - Server-side mark-as-read persistence
   ///
-  /// Timer lifecycle:
-  /// - Starts when provider is first watched
-  /// - Pauses when all listeners detach (ref.onCancel)
-  /// - Resumes when a new listener attaches (ref.onResume)
-  /// - Cancels on dispose
+  /// Refresh model (post-#3352):
+  /// - Initial load happens in [build].
+  /// - Refresh on app resume — driven by [appForegroundProvider] flipping
+  ///   from background to foreground. The previous 5-min wall-clock timer
+  ///   wasted wakeups when the user wasn't even looking at the screen.
+  /// - Refresh on realtime push — see the FCM `onMessage` listener in
+  ///   [pushNotificationSync] which calls `refresh()` after handling a
+  ///   foreground message.
+  /// - Refresh on explicit user action — pull-to-refresh in
+  ///   `notifications_screen.dart`.
   const RelayNotificationsProvider._()
     : super(
         from: null,
@@ -73,7 +88,7 @@ final class RelayNotificationsProvider
 }
 
 String _$relayNotificationsHash() =>
-    r'f6f5572a7b0b8c65ed37e703f02e4ae8c73b919c';
+    r'f9b95c424651963f5375c95b830ed7505336f91a';
 
 /// Provider for relay-based notifications with REST API pagination
 ///
@@ -83,11 +98,16 @@ String _$relayNotificationsHash() =>
 /// - Server-side unread count tracking
 /// - Server-side mark-as-read persistence
 ///
-/// Timer lifecycle:
-/// - Starts when provider is first watched
-/// - Pauses when all listeners detach (ref.onCancel)
-/// - Resumes when a new listener attaches (ref.onResume)
-/// - Cancels on dispose
+/// Refresh model (post-#3352):
+/// - Initial load happens in [build].
+/// - Refresh on app resume — driven by [appForegroundProvider] flipping
+///   from background to foreground. The previous 5-min wall-clock timer
+///   wasted wakeups when the user wasn't even looking at the screen.
+/// - Refresh on realtime push — see the FCM `onMessage` listener in
+///   [pushNotificationSync] which calls `refresh()` after handling a
+///   foreground message.
+/// - Refresh on explicit user action — pull-to-refresh in
+///   `notifications_screen.dart`.
 
 abstract class _$RelayNotifications
     extends $AsyncNotifier<NotificationFeedState> {

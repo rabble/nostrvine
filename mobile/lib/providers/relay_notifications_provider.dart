@@ -6,6 +6,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:models/models.dart';
+import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -75,11 +76,16 @@ class NotificationFeedState {
 /// - Server-side unread count tracking
 /// - Server-side mark-as-read persistence
 ///
-/// Timer lifecycle:
-/// - Starts when provider is first watched
-/// - Pauses when all listeners detach (ref.onCancel)
-/// - Resumes when a new listener attaches (ref.onResume)
-/// - Cancels on dispose
+/// Refresh model (post-#3352):
+/// - Initial load happens in [build].
+/// - Refresh on app resume — driven by [appForegroundProvider] flipping
+///   from background to foreground. The previous 5-min wall-clock timer
+///   wasted wakeups when the user wasn't even looking at the screen.
+/// - Refresh on realtime push — see the FCM `onMessage` listener in
+///   [pushNotificationSync] which calls `refresh()` after handling a
+///   foreground message.
+/// - Refresh on explicit user action — pull-to-refresh in
+///   `notifications_screen.dart`.
 @Riverpod()
 class RelayNotifications extends _$RelayNotifications {
   // Pagination state
@@ -92,44 +98,6 @@ class RelayNotifications extends _$RelayNotifications {
   /// Minimum items to show before stopping auto-load.
   /// If consolidation reduces items below this, we automatically fetch more.
   static const _minVisibleItems = 10;
-
-  // Auto-refresh timer
-  Timer? _autoRefreshTimer;
-  static const _autoRefreshInterval = Duration(minutes: 5);
-
-  void _startAutoRefresh() {
-    _autoRefreshTimer?.cancel();
-    _autoRefreshTimer = Timer(_autoRefreshInterval, () {
-      if (!ref.mounted) return;
-
-      // Skip refresh when app is backgrounded to avoid NIP-98 auth
-      // attempts while the bunker signer is paused (which would timeout
-      // after 60s and fail).
-      final backgroundManager = ref.read(backgroundActivityManagerProvider);
-      if (backgroundManager.isAppInBackground) {
-        Log.debug(
-          'RelayNotifications: Auto-refresh skipped (app is backgrounded)',
-          name: 'RelayNotificationsProvider',
-          category: LogCategory.system,
-        );
-        // Restart the timer so refresh triggers after app resumes
-        _startAutoRefresh();
-        return;
-      }
-
-      Log.info(
-        'RelayNotifications: Auto-refresh triggered',
-        name: 'RelayNotificationsProvider',
-        category: LogCategory.system,
-      );
-      refresh();
-    });
-  }
-
-  void _stopAutoRefresh() {
-    _autoRefreshTimer?.cancel();
-    _autoRefreshTimer = null;
-  }
 
   @override
   Future<NotificationFeedState> build() async {
@@ -150,38 +118,41 @@ class RelayNotifications extends _$RelayNotifications {
       category: LogCategory.system,
     );
 
-    // Start timer when provider is first watched or resumed
-    ref.onResume(() {
-      Log.debug(
-        'RelayNotifications: Resuming auto-refresh timer',
+    // Refresh when the app transitions from background to foreground.
+    // Edge-triggered: only refresh on the false → true transition so we
+    // don't double-fire on initial build (which already loads below).
+    ref.listen<bool>(appForegroundProvider, (previous, next) {
+      final resumed = previous != null && !previous && next;
+      if (resumed) {
+        Log.info(
+          'RelayNotifications: refresh on app resume',
+          name: 'RelayNotificationsProvider',
+          category: LogCategory.system,
+        );
+        unawaited(refresh());
+      }
+    });
+
+    // A foreground FCM push usually signals a new notification on the relay,
+    // so refresh in response. Replaces the 5-min wall-clock timer that used
+    // to drive this (#3352).
+    final fcmSubscription = ref.read(firebaseOnMessageProvider).listen((_) {
+      Log.info(
+        'RelayNotifications: refresh on FCM message',
         name: 'RelayNotificationsProvider',
         category: LogCategory.system,
       );
-      _startAutoRefresh();
+      unawaited(refresh());
     });
 
-    // Pause timer when all listeners detach
-    ref.onCancel(() {
-      Log.debug(
-        'RelayNotifications: Pausing auto-refresh timer (no listeners)',
-        name: 'RelayNotificationsProvider',
-        category: LogCategory.system,
-      );
-      _stopAutoRefresh();
-    });
-
-    // Clean up timer on dispose
     ref.onDispose(() {
       Log.info(
         'RelayNotifications: BUILD DISPOSED',
         name: 'RelayNotificationsProvider',
         category: LogCategory.system,
       );
-      _stopAutoRefresh();
+      fcmSubscription.cancel();
     });
-
-    // Start timer immediately for first build
-    _startAutoRefresh();
 
     // Get current user pubkey
     final authService = ref.read(authServiceProvider);
@@ -594,9 +565,6 @@ class RelayNotifications extends _$RelayNotifications {
     } finally {
       _isRefreshing = false;
     }
-
-    // Restart auto-refresh timer
-    _startAutoRefresh();
   }
 
   /// Mark a single notification as read
