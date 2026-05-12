@@ -1,6 +1,7 @@
 // ABOUTME: Tests for AuthService signOut clearing user-specific data
 // ABOUTME: Verifies that explicit logout clears pubkey tracking and user data
 
+import 'package:cache_sync/cache_sync.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
@@ -15,12 +16,49 @@ class _MockSecureKeyStorage extends Mock implements SecureKeyStorage {}
 class _MockUserDataCleanupService extends Mock
     implements UserDataCleanupService {}
 
+/// Tracking [CacheDao] so assertions can check `deleteAll` was invoked.
+class _TrackingCacheDao implements CacheDao {
+  final Map<String, String> store = {};
+  int deleteAllCallCount = 0;
+
+  @override
+  Future<String?> read(String key) async => store[key];
+
+  @override
+  Future<void> write({
+    required String key,
+    required String payload,
+    Duration? ttl,
+  }) async {
+    store[key] = payload;
+  }
+
+  @override
+  Future<void> delete(String key) async {
+    store.remove(key);
+  }
+
+  @override
+  Future<void> deleteAll() async {
+    deleteAllCallCount++;
+    store.clear();
+  }
+
+  @override
+  Future<int> totalPayloadBytes() async =>
+      store.values.fold<int>(0, (sum, v) => sum + v.length);
+
+  @override
+  Future<void> evictOldest(int bytesToFree) async {}
+}
+
 void main() {
   setupTestEnvironment();
 
   group('AuthService signOut cleanup', () {
     late _MockSecureKeyStorage mockKeyStorage;
     late _MockUserDataCleanupService mockCleanupService;
+    late _TrackingCacheDao cacheDao;
     late AuthService authService;
     late SharedPreferences prefs;
 
@@ -37,6 +75,8 @@ void main() {
       prefs = await SharedPreferences.getInstance();
       mockKeyStorage = _MockSecureKeyStorage();
       mockCleanupService = _MockUserDataCleanupService();
+      cacheDao = _TrackingCacheDao();
+      await CacheSync.init(dao: cacheDao);
 
       // Create AuthService with mock dependencies
       authService = AuthService(
@@ -141,6 +181,55 @@ void main() {
       // Note: After deleteKeys=true, a new identity is auto-created,
       // which sets a new pubkey. So we verify cleanup was called,
       // not that pubkey is null (since new identity sets it).
+    });
+
+    test('destructive signOut invalidates CacheSync', () async {
+      // Arrange: seed the cache so we can observe it being cleared.
+      await cacheDao.write(
+        key: 'my_followers_existing_pubkey_hex_123',
+        payload: '{"pubkeys":["a","b"],"count":2}',
+      );
+      await cacheDao.write(
+        key: 'my_following_existing_pubkey_hex_123',
+        payload: '{"pubkeys":["c"],"count":1}',
+      );
+      expect(cacheDao.store, isNotEmpty);
+
+      when(() => mockKeyStorage.deleteKeys()).thenAnswer((_) async => {});
+      when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
+      when(() => mockKeyStorage.initialize()).thenAnswer((_) async => {});
+      final newKeyContainer = SecureKeyContainer.fromNsec(testNsec);
+      when(
+        () => mockKeyStorage.generateAndStoreKeys(
+          biometricPrompt: any(named: 'biometricPrompt'),
+        ),
+      ).thenAnswer((_) async => newKeyContainer);
+
+      // Act: destructive sign-out (covers nostr_settings_screen.dart and
+      // delete_account_dialog.dart paths that bypass SettingsAccountCubit).
+      await authService.signOut(deleteKeys: true);
+
+      // Assert: canonical signOut path cleared every persisted cache row.
+      expect(cacheDao.deleteAllCallCount, equals(1));
+      expect(cacheDao.store, isEmpty);
+    });
+
+    test('non-destructive signOut does NOT invalidate CacheSync', () async {
+      // Arrange: seed the cache. On account-switch the SettingsAccountCubit
+      // owns invalidation (keys are pubkey-scoped so non-destructive
+      // signOut alone does not leak data across users).
+      await cacheDao.write(
+        key: 'my_followers_existing_pubkey_hex_123',
+        payload: '{"pubkeys":["a"],"count":1}',
+      );
+      when(() => mockKeyStorage.clearCache()).thenReturn(null);
+
+      // Act
+      await authService.signOut();
+
+      // Assert
+      expect(cacheDao.deleteAllCallCount, equals(0));
+      expect(cacheDao.store, isNotEmpty);
     });
 
     test('signOut should set auth state to unauthenticated', () async {

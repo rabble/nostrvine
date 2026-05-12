@@ -6,6 +6,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:cache_sync/cache_sync.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
@@ -3196,6 +3197,24 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         if (currentPubkey != null) {
           await _removeFromKnownAccounts(currentPubkey);
           await _clearArchivedSignerInfo(currentPubkey);
+        }
+
+        // Drop every persisted CacheSync row. Cache keys are pubkey-scoped so
+        // a *different* next user could not inherit this user's followers /
+        // following, but the rows would otherwise sit on disk until next
+        // re-login as the same user — destructive sign-out is the canonical
+        // moment to release that disk + close the forensic-readability gap.
+        // Covers `nostr_settings_screen.dart`'s `signOut(deleteKeys: true)`
+        // and `delete_account_dialog.dart`'s account-deletion flow, neither
+        // of which goes through `SettingsAccountCubit`.
+        try {
+          await CacheSync.invalidateAll();
+        } catch (e) {
+          Log.error(
+            'CacheSync.invalidateAll failed during signOut: $e',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
         }
 
         Log.debug(
