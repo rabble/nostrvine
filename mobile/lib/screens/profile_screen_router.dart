@@ -22,6 +22,7 @@ import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
+import 'package:openvine/utils/share_position_origin.dart';
 import 'package:openvine/widgets/profile/blocked_user_screen.dart';
 import 'package:openvine/widgets/profile/profile_grid.dart';
 import 'package:openvine/widgets/profile/profile_loading_view.dart';
@@ -147,12 +148,18 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     await context.push(ProfileSetupScreen.editPath);
   }
 
-  Future<void> _shareProfile(String userIdHex) async {
+  Future<void> _shareProfile(
+    BuildContext shareButtonContext,
+    String userIdHex,
+  ) async {
     // Capture l10n callable functions before any awaits to avoid
     // use_build_context_synchronously warnings.
     final l10n = context.l10n;
     final shareTextFn = l10n.profileShareText;
     final shareSubjectFn = l10n.profileShareSubject;
+    final sharePositionOrigin = sharePositionOriginForContext(
+      shareButtonContext,
+    );
 
     try {
       // Get profile info for better share text
@@ -167,9 +174,12 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
       // Create share text with divine.video URL format
       final shareText = shareTextFn(displayName, npub);
 
-      // Use share_plus to show native share sheet
       final result = await SharePlus.instance.share(
-        ShareParams(text: shareText, subject: shareSubjectFn(displayName)),
+        ShareParams(
+          text: shareText,
+          subject: shareSubjectFn(displayName),
+          sharePositionOrigin: sharePositionOrigin,
+        ),
       );
 
       if (result.status == ShareResultStatus.success) {
@@ -321,7 +331,7 @@ class _ProfileContentView extends ConsumerWidget {
   final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
   final void Function(String userIdHex) onMore;
-  final void Function(String userIdHex) onShareProfile;
+  final void Function(BuildContext context, String userIdHex) onShareProfile;
   final ValueNotifier<int> refreshNotifier;
 
   @override
@@ -456,7 +466,7 @@ class _ProfileDataView extends ConsumerWidget {
   final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
   final void Function(String userIdHex) onMore;
-  final void Function(String userIdHex) onShareProfile;
+  final void Function(BuildContext context, String userIdHex) onShareProfile;
   final ValueNotifier<int> refreshNotifier;
 
   @override
@@ -553,7 +563,7 @@ class ProfileViewSwitcher extends StatelessWidget {
   final VoidCallback? onEditProfile;
   final VoidCallback onOpenClips;
   final void Function(String userIdHex) onMore;
-  final void Function(String userIdHex) onShareProfile;
+  final void Function(BuildContext context, String userIdHex) onShareProfile;
 
   /// Whether the videos fetch (Nostr relay + Funnelcake REST) is still in
   /// flight. Drives the videos-tab loading-vs-empty branch in
@@ -597,7 +607,7 @@ class ProfileViewSwitcher extends StatelessWidget {
             onEditProfile: onEditProfile,
             onOpenClips: onOpenClips,
             onMore: () => onMore(userIdHex),
-            onShareProfile: () => onShareProfile(userIdHex),
+            onShareProfile: (context) => onShareProfile(context, userIdHex),
             refreshNotifier: refreshNotifier,
           );
   }

@@ -41,7 +41,7 @@ class ProfileActionButtons extends ConsumerWidget {
   final VoidCallback? onEditProfile;
   final VoidCallback? onOpenClips;
   final VoidCallback? onMessageUser;
-  final VoidCallback? onShareProfile;
+  final void Function(BuildContext context)? onShareProfile;
 
   /// Callback when the Blocked button is tapped.
   final VoidCallback? onBlockedTap;
@@ -107,7 +107,9 @@ class ProfileActionButtons extends ConsumerWidget {
         icon: .shareFat,
         type: .secondary,
         size: .small,
-        onPressed: onShareProfile,
+        onPressed: onShareProfile == null
+            ? null
+            : () => onShareProfile!(context),
       ),
     ];
   }
@@ -150,7 +152,7 @@ class _OtherProfileButtons extends StatelessWidget {
   final bool isBlocked;
   final bool isBlockedByThem;
   final VoidCallback? onMessageUser;
-  final VoidCallback? onShareProfile;
+  final void Function(BuildContext context)? onShareProfile;
   final VoidCallback? onBlockedTap;
 
   @override
@@ -172,7 +174,9 @@ class _OtherProfileButtons extends StatelessWidget {
           icon: .shareFat,
           type: .secondary,
           size: .small,
-          onPressed: onShareProfile,
+          onPressed: onShareProfile == null
+              ? null
+              : () => onShareProfile!(context),
         );
 
         final List<Widget> children;

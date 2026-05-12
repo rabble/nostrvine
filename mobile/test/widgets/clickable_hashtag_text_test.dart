@@ -57,6 +57,82 @@ void main() {
 
     final strings = AppLocalizationsEn();
 
+    group('wrapper compatibility', () {
+      testWidgets('renders plain text as a simple Text widget', (tester) async {
+        const plainText = 'This is a simple text without hashtags';
+
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: ClickableHashtagText(text: plainText)),
+          ),
+        );
+
+        final text = tester.widget<Text>(find.byType(Text));
+        expect(text.data, equals(plainText));
+        expect(text.textSpan, isNull);
+      });
+
+      testWidgets('keeps URL spans tappable and normalizes bare domains', (
+        tester,
+      ) async {
+        const textWithLink = 'Read more at example.com/docs';
+
+        await tester.pumpWidget(
+          const ProviderScope(
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(body: ClickableHashtagText(text: textWithLink)),
+            ),
+          ),
+        );
+
+        final text = tester.widget<Text>(find.byType(Text));
+        final textSpan = text.textSpan! as TextSpan;
+        final spans = textSpan.children!.cast<TextSpan>();
+        final linkSpan = spans.firstWhere(
+          (span) => span.text == 'example.com/docs',
+        );
+
+        expect(linkSpan.recognizer, isA<TapGestureRecognizer>());
+
+        final recognizer = linkSpan.recognizer! as TapGestureRecognizer;
+        recognizer.onTap!();
+        await tester.pump();
+
+        expect(fakeUrlLauncherPlatform.launchedUrl, 'https://example.com/docs');
+      });
+
+      testWidgets('keeps trailing punctuation outside URL spans', (
+        tester,
+      ) async {
+        const textWithLink = 'Visit violetblue.com.!';
+
+        await tester.pumpWidget(
+          const ProviderScope(
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(body: ClickableHashtagText(text: textWithLink)),
+            ),
+          ),
+        );
+
+        final text = tester.widget<Text>(find.byType(Text));
+        final textSpan = text.textSpan! as TextSpan;
+        final spans = textSpan.children!.cast<TextSpan>();
+        final linkSpan = spans.firstWhere(
+          (span) => span.text == 'violetblue.com',
+        );
+        final punctuationSpan = spans.firstWhere((span) => span.text == '.!');
+
+        expect(linkSpan.recognizer, isA<TapGestureRecognizer>());
+        expect(punctuationSpan.recognizer, isNull);
+      });
+    });
+
     testWidgets('displays plain text without hashtags correctly', (
       tester,
     ) async {

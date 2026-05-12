@@ -27,6 +27,7 @@ import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/divine_login_banner_dismissal.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
+import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_actions_sheet/profile_actions_sheet.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
@@ -99,7 +100,7 @@ class ProfileHeaderWidget extends ConsumerStatefulWidget {
   final VoidCallback? onMessageUser;
 
   /// Callback when share button is tapped.
-  final VoidCallback? onShareProfile;
+  final void Function(BuildContext context)? onShareProfile;
 
   /// Callback when the Blocked button is tapped (other profiles only).
   final VoidCallback? onBlockedTap;
@@ -647,10 +648,10 @@ class _AboutTextState extends State<_AboutText> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (_isExpanded)
-              SelectableText(widget.about, style: textStyle)
+              SelectableLinkifiedText(text: widget.about, style: textStyle)
             else
-              Text(
-                widget.about,
+              LinkifiedText(
+                text: widget.about,
                 style: textStyle,
                 maxLines: _AboutText._collapsedMaxLines,
                 overflow: TextOverflow.ellipsis,

@@ -86,7 +86,7 @@ class ProfileGridView extends ConsumerStatefulWidget {
   final VoidCallback? onMessageUser;
 
   /// Callback when share button is tapped.
-  final VoidCallback? onShareProfile;
+  final void Function(BuildContext context)? onShareProfile;
 
   /// Callback when the Blocked button is tapped (other profiles only).
   final VoidCallback? onBlockedTap;

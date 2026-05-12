@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 
 /// Card for displaying a user list (kind 30000 - people list)
 class UserListCard extends StatelessWidget {
@@ -44,8 +45,8 @@ class UserListCard extends StatelessWidget {
                         ),
                         if (userList.description != null) ...[
                           const SizedBox(height: 4),
-                          Text(
-                            userList.description!,
+                          LinkifiedText(
+                            text: userList.description!,
                             style: const TextStyle(
                               color: VineTheme.secondaryText,
                               fontSize: 14,
@@ -125,8 +126,8 @@ class CuratedListCard extends StatelessWidget {
                         ),
                         if (curatedList.description != null) ...[
                           const SizedBox(height: 4),
-                          Text(
-                            curatedList.description!,
+                          LinkifiedText(
+                            text: curatedList.description!,
                             style: const TextStyle(
                               color: VineTheme.secondaryText,
                               fontSize: 14,

@@ -16,6 +16,7 @@ import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
+import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/scroll_to_hide_mixin.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -103,6 +104,38 @@ class _ListNotFoundView extends StatelessWidget {
   }
 }
 
+class _PeopleListAppBarTitle extends StatelessWidget {
+  const _PeopleListAppBarTitle({required this.userList});
+
+  final UserList userList;
+
+  @override
+  Widget build(BuildContext context) {
+    final description = userList.description;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          userList.name,
+          style: VineTheme.titleLargeFont(),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        if (description != null && description.isNotEmpty) ...[
+          const SizedBox(height: 2),
+          LinkifiedText(
+            text: description,
+            style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 /// Body view for a resolved [UserList].
 class _UserListPeopleView extends ConsumerStatefulWidget {
   const _UserListPeopleView({required this.userList});
@@ -132,8 +165,7 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
       backgroundColor: VineTheme.backgroundColor,
       appBar: _activeVideoIndex == null
           ? DiVineAppBar(
-              title: userList.name,
-              subtitle: userList.description,
+              titleWidget: _PeopleListAppBarTitle(userList: userList),
               showBackButton: true,
               onBackPressed: context.pop,
               actions: [
