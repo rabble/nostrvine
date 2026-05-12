@@ -2526,7 +2526,7 @@
     "searchResultsCategoryLists": "Daftar",
     "searchResultsCategoryTags": "Tag",
     "searchResultsCategoryVideos": "Video",
-    "searchResultsFilterSemantic": "Filter: {category}",
+    "searchResultsFilterSemantic": "Saringan: {category}",
     "@searchResultsFilterSemantic": {
         "placeholders": {
             "category": {

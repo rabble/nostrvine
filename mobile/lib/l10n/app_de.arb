@@ -267,7 +267,7 @@
     "profileNoFollowedTagsSubtitle": "Speicher einen Hashtag auf seiner Seite und finde ihn hier wieder",
     "profileTabSavedSemantic": "Gespeichert",
     "profileSavedFilterVideos": "Videos",
-    "profileSavedFilterTags": "Tags",
+    "profileSavedFilterTags": "Schlagwörter",
     "hashtagFavoriteSaveTooltip": "Hashtag speichern",
     "hashtagFavoriteRemoveTooltip": "Aus gespeicherten Hashtags entfernen",
     "hashtagOptionsMoreTooltip": "Hashtag-Optionen",
@@ -457,7 +457,7 @@
     "exploreTabNew": "Neu",
     "exploreTabPopular": "Beliebt",
     "exploreTabCategories": "Kategorien",
-    "exploreTabTags": "Tags",
+    "exploreTabTags": "Schlagwörter",
     "exploreTagsSearchHint": "Tags suchen...",
     "exploreTagsEmptyFilter": "Keine Tags passen zu deiner Suche",
     "exploreTagsTrackedTooltip": "In deinem Profil gespeichert",
@@ -2525,9 +2525,9 @@
     "searchResultsCategoryAll": "Alle",
     "searchResultsCategoryPeople": "Personen",
     "searchResultsCategoryLists": "Listen",
-    "searchResultsCategoryTags": "Tags",
+    "searchResultsCategoryTags": "Schlagwörter",
     "searchResultsCategoryVideos": "Videos",
-    "searchResultsFilterSemantic": "Filter: {category}",
+    "searchResultsFilterSemantic": "Filter für {category}",
     "@searchResultsFilterSemantic": {
         "placeholders": {
             "category": {

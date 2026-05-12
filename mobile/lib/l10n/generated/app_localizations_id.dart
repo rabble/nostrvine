@@ -6162,7 +6162,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String searchResultsFilterSemantic(String category) {
-    return 'Saring: $category';
+    return 'Saringan: $category';
   }
 
   @override

@@ -563,7 +563,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileSavedFilterVideos => 'Video\'s';
 
   @override
-  String get profileSavedFilterTags => 'Labels';
+  String get profileSavedFilterTags => 'Hashtags';
 
   @override
   String get hashtagFavoriteSaveTooltip => 'Hashtag opslaan';
@@ -1120,7 +1120,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get exploreTabCategories => 'Categorieën';
 
   @override
-  String get exploreTabTags => 'Labels';
+  String get exploreTabTags => 'Hashtags';
 
   @override
   String get exploreTagsSearchHint => 'Zoek tags...';
@@ -6214,7 +6214,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get searchResultsCategoryLists => 'Lijsten';
 
   @override
-  String get searchResultsCategoryTags => 'Labels';
+  String get searchResultsCategoryTags => 'Hashtags';
 
   @override
   String get searchResultsCategoryVideos => 'Video\'s';

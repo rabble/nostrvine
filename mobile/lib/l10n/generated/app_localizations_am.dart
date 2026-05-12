@@ -529,78 +529,75 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileErrorLoadingLiked => 'የተወደዱ ቪዲዮዎችን መጫን ላይ ስህተት';
 
   @override
-  String get profileNoFollowedTagsTitle => 'No tags saved yet';
+  String get profileNoFollowedTagsTitle => 'እስካሁን ምንም ሀሽታግ አልተቀመጠም';
 
   @override
   String get profileNoFollowedTagsSubtitle =>
-      'Save a hashtag from its page to jump back here anytime';
+      'ሀሽታግን ከገጹበት አስቀምጥ፣ በማንኛውም ጊዜ እዚህ ተመለስ';
 
   @override
-  String get profileTabSavedSemantic => 'Saved';
+  String get profileTabSavedSemantic => 'የተቀመጡ';
 
   @override
-  String get profileSavedFilterVideos => 'Videos';
+  String get profileSavedFilterVideos => 'ቪዲዮዎች';
 
   @override
-  String get profileSavedFilterTags => 'Tags';
+  String get profileSavedFilterTags => 'መለያዎች';
 
   @override
-  String get hashtagFavoriteSaveTooltip => 'Save hashtag';
+  String get hashtagFavoriteSaveTooltip => 'ሀሽታግ አስቀምጥ';
 
   @override
-  String get hashtagFavoriteRemoveTooltip => 'Remove from saved hashtags';
+  String get hashtagFavoriteRemoveTooltip => 'ከተቀመጡ ሀሽታጎች አስወግድ';
 
   @override
-  String get hashtagOptionsMoreTooltip => 'Hashtag options';
+  String get hashtagOptionsMoreTooltip => 'የሀሽታግ አማራጮች';
 
   @override
   String hashtagMenuVideoCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count videos',
-      one: '1 video',
+      other: '$count ቪዲዮዎች',
+      one: '1 ቪዲዮ',
     );
     return '$_temp0';
   }
 
   @override
-  String get hashtagOptionSaveToProfile => 'Save to profile';
+  String get hashtagOptionSaveToProfile => 'አስቀምጥ';
 
   @override
-  String get hashtagOptionRemoveFromProfile => 'Remove from saved tags';
+  String get hashtagOptionRemoveFromProfile => 'ከተቀመጡ መለያዎች አስወግድ';
 
   @override
-  String get hashtagSavedToProfileSnackbar => 'Saved to your profile';
+  String get hashtagSavedToProfileSnackbar => 'በመገለጫዎ ተቀምጧል';
 
   @override
-  String get hashtagRemovedFromProfileSnackbar => 'Removed from saved tags';
+  String get hashtagRemovedFromProfileSnackbar => 'ከተቀመጡ መለያዎች ተወግዷል';
 
   @override
-  String get hashtagOptionAddToFollowingFeed => 'Add to Following feed';
+  String get hashtagOptionAddToFollowingFeed => 'ወደ ፊዶቼ ጨምር';
 
   @override
-  String get hashtagOptionRemoveFromFollowingFeed =>
-      'Remove from Following feed';
+  String get hashtagOptionRemoveFromFollowingFeed => 'ከፊዶቼ አስወግድ';
 
   @override
-  String get hashtagAddedToFollowingFeedSnackbar =>
-      'Added to your Following feed';
+  String get hashtagAddedToFollowingFeedSnackbar => 'ወደ ፊዶቼ ተጨመረ';
 
   @override
-  String get hashtagRemovedFromFollowingFeedSnackbar =>
-      'Removed from your Following feed';
+  String get hashtagRemovedFromFollowingFeedSnackbar => 'ከፊዶቼ ተወግዷል';
 
   @override
-  String get profileFollowedTagRemoveTitle => 'Remove this tag?';
+  String get profileFollowedTagRemoveTitle => 'ይህን መለያ ያስወግዱ?';
 
   @override
   String profileFollowedTagRemoveMessage(String displayTag) {
-    return 'Remove $displayTag from your saved tags? You can add it again anytime from that hashtag page.';
+    return '$displayTag ከተቀመጡ መለያዎችዎ ይወገድ? በማንኛውም ጊዜ ከዚያ የሀሽታግ ገጽ እንደገና ማከል ይችላሉ።';
   }
 
   @override
-  String get profileFollowedTagRemoveConfirm => 'Remove';
+  String get profileFollowedTagRemoveConfirm => 'አስወግድ';
 
   @override
   String get profileNoRepostsTitle => 'እስካሁን ምንም ድጋሚ የተለጠፈ የለም።';
@@ -1084,19 +1081,19 @@ class AppLocalizationsAm extends AppLocalizations {
   String get exploreTabCategories => 'ምድቦች';
 
   @override
-  String get exploreTabTags => 'Tags';
+  String get exploreTabTags => 'መለያዎች';
 
   @override
-  String get exploreTagsSearchHint => 'Search tags...';
+  String get exploreTagsSearchHint => 'መለያዎችን ፈልግ...';
 
   @override
-  String get exploreTagsEmptyFilter => 'No tags match your search';
+  String get exploreTagsEmptyFilter => 'ለፍለጋዎ የሚስማሙ መለያዎች የሉም';
 
   @override
-  String get exploreTagsTrackedTooltip => 'Saved on your profile';
+  String get exploreTagsTrackedTooltip => 'በመገለጫዎ ተቀምጧል';
 
   @override
-  String get explorePopularTagsSearchCta => 'Search all tags';
+  String get explorePopularTagsSearchCta => 'ሁሉንም መለያዎች ፈልግ';
 
   @override
   String get exploreTabForYou => 'ለእርስዎ';
@@ -4081,6 +4078,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get feedLatestEmpty => 'እስካሁን ምንም አዲስ ቪዲዮዎች የሉም።\nበቅርቡ ተመልሰው ይመልከቱ።';
 
   @override
+  String get feedHomeHashtagEmpty =>
+      'ለዚህ ሀሽታግ እስካሁን ምንም ቪዲዮ የለም።\nበቅርቡ ተመልሰው ይመልከቱ።';
+
+  @override
   String get feedExploreVideos => 'ቪዲዮዎችን ያስሱ';
 
   @override
@@ -6042,52 +6043,56 @@ class AppLocalizationsAm extends AppLocalizations {
   String get searchListsLoadingLabel => 'የዝርዝር ውጤቶችን በመጫን ላይ';
 
   @override
-  String get searchResultsCategoryAll => 'All';
+  String get searchResultsCategoryAll => 'ሁሉም';
 
   @override
-  String get searchResultsCategoryPeople => 'People';
+  String get searchResultsCategoryPeople => 'ሰዎች';
 
   @override
-  String get searchResultsCategoryLists => 'Lists';
+  String get searchResultsCategoryLists => 'ዝርዝሮች';
 
   @override
-  String get searchResultsCategoryTags => 'Tags';
+  String get searchResultsCategoryTags => 'መለያዎች';
 
   @override
-  String get searchResultsCategoryVideos => 'Videos';
+  String get searchResultsCategoryVideos => 'ቪዲዮዎች';
 
   @override
   String searchResultsFilterSemantic(String category) {
-    return 'Filter: $category';
+    return 'ማጣሪያ፦ $category';
   }
 
   @override
   String searchResultsNoMatchesForQuery(String query) {
-    return 'No results found for \"$query\"';
+    return 'ለ«$query» ምንም ውጤት የለም';
   }
 
   @override
-  String get searchResultsTryDifferentTerm => 'Try a different search term';
+  String get searchResultsTryDifferentTerm => 'ሌላ የፍለጋ ቃል ይሞክሩ';
 
   @override
-  String get searchResultsTagsLoadingSemantic => 'Loading tag results';
+  String get searchResultsTagsLoadingSemantic => 'የመለያ ውጤቶችን በመጫን ላይ';
 
   @override
   String hashtagFeedLoadingMessage(String hashtag) {
-    return 'Loading videos about #$hashtag...';
+    return 'ስለ #$hashtag ቪዲዮዎችን በመጫን ላይ...';
   }
 
   @override
-  String get hashtagFeedLoadingSubtitle => 'This may take a few moments';
+  String get hashtagFeedLoadingSubtitle => 'ጥቂት ጊዜ ሊወስድ ይችላል';
 
   @override
   String hashtagFeedEmptyTitle(String hashtag) {
-    return 'No videos found for #$hashtag';
+    return 'ለ#$hashtag ምንም ቪዲዮ የለም';
   }
 
   @override
-  String get hashtagFeedEmptySubtitle =>
-      'Be the first to post a video with this hashtag!';
+  String get hashtagFeedEmptySubtitle => 'በዚህ ሀሽታግ የመጀመሪያው የሚለጥፉ ይሁኑ!';
+
+  @override
+  String followingHashtagPageTitleSemantic(String title) {
+    return 'የ$title ሀሽታግ ፊድ ክፈት';
+  }
 
   @override
   String get cameraAgeRestriction => 'ይዘት ለመፍጠር 16 ወይም ከዚያ በላይ መሆን አለቦት';

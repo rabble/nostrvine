@@ -556,78 +556,79 @@ class AppLocalizationsBg extends AppLocalizations {
       'Грешка при зареждане на харесаните видеа';
 
   @override
-  String get profileNoFollowedTagsTitle => 'No tags saved yet';
+  String get profileNoFollowedTagsTitle => 'Още няма запазени хаштагове';
 
   @override
   String get profileNoFollowedTagsSubtitle =>
-      'Save a hashtag from its page to jump back here anytime';
+      'Запази хаштег от страницата му, за да се върнеш тук по всяко време';
 
   @override
-  String get profileTabSavedSemantic => 'Saved';
+  String get profileTabSavedSemantic => 'Запазени';
 
   @override
-  String get profileSavedFilterVideos => 'Videos';
+  String get profileSavedFilterVideos => 'Видеа';
 
   @override
-  String get profileSavedFilterTags => 'Tags';
+  String get profileSavedFilterTags => 'Тагове';
 
   @override
-  String get hashtagFavoriteSaveTooltip => 'Save hashtag';
+  String get hashtagFavoriteSaveTooltip => 'Запази хаштег';
 
   @override
-  String get hashtagFavoriteRemoveTooltip => 'Remove from saved hashtags';
+  String get hashtagFavoriteRemoveTooltip => 'Премахни от запазените хаштагове';
 
   @override
-  String get hashtagOptionsMoreTooltip => 'Hashtag options';
+  String get hashtagOptionsMoreTooltip => 'Опции за хаштег';
 
   @override
   String hashtagMenuVideoCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count videos',
-      one: '1 video',
+      other: '$count видеа',
+      one: '1 видео',
     );
     return '$_temp0';
   }
 
   @override
-  String get hashtagOptionSaveToProfile => 'Save to profile';
+  String get hashtagOptionSaveToProfile => 'Запази';
 
   @override
-  String get hashtagOptionRemoveFromProfile => 'Remove from saved tags';
+  String get hashtagOptionRemoveFromProfile => 'Премахни от запазените тагове';
 
   @override
-  String get hashtagSavedToProfileSnackbar => 'Saved to your profile';
+  String get hashtagSavedToProfileSnackbar => 'Запазено в профила ти';
 
   @override
-  String get hashtagRemovedFromProfileSnackbar => 'Removed from saved tags';
+  String get hashtagRemovedFromProfileSnackbar =>
+      'Премахнато от запазените тагове';
 
   @override
-  String get hashtagOptionAddToFollowingFeed => 'Add to Following feed';
+  String get hashtagOptionAddToFollowingFeed => 'Добави към моите фийдове';
 
   @override
   String get hashtagOptionRemoveFromFollowingFeed =>
-      'Remove from Following feed';
+      'Премахни от моите фийдове';
 
   @override
   String get hashtagAddedToFollowingFeedSnackbar =>
-      'Added to your Following feed';
+      'Добавено към моите фийдове';
 
   @override
   String get hashtagRemovedFromFollowingFeedSnackbar =>
-      'Removed from your Following feed';
+      'Премахнато от моите фийдове';
 
   @override
-  String get profileFollowedTagRemoveTitle => 'Remove this tag?';
+  String get profileFollowedTagRemoveTitle => 'Премахване на този таг?';
 
   @override
   String profileFollowedTagRemoveMessage(String displayTag) {
-    return 'Remove $displayTag from your saved tags? You can add it again anytime from that hashtag page.';
+    return 'Премахване на $displayTag от запазените тагове? Можеш да го добавиш отново по всяко време от страницата на хаштега.';
   }
 
   @override
-  String get profileFollowedTagRemoveConfirm => 'Remove';
+  String get profileFollowedTagRemoveConfirm => 'Премахни';
 
   @override
   String get profileNoRepostsTitle => 'Още няма репостове';
@@ -1129,19 +1130,20 @@ class AppLocalizationsBg extends AppLocalizations {
   String get exploreTabCategories => 'Категории';
 
   @override
-  String get exploreTabTags => 'Tags';
+  String get exploreTabTags => 'Тагове';
 
   @override
-  String get exploreTagsSearchHint => 'Search tags...';
+  String get exploreTagsSearchHint => 'Търси тагове...';
 
   @override
-  String get exploreTagsEmptyFilter => 'No tags match your search';
+  String get exploreTagsEmptyFilter =>
+      'Няма тагове, които да съвпадат с търсенето';
 
   @override
-  String get exploreTagsTrackedTooltip => 'Saved on your profile';
+  String get exploreTagsTrackedTooltip => 'Запазено в профила ти';
 
   @override
-  String get explorePopularTagsSearchCta => 'Search all tags';
+  String get explorePopularTagsSearchCta => 'Търси всички тагове';
 
   @override
   String get exploreTabForYou => 'За теб';
@@ -4214,6 +4216,10 @@ class AppLocalizationsBg extends AppLocalizations {
   String get feedLatestEmpty => 'Още няма нови видеа.\nПровери пак скоро.';
 
   @override
+  String get feedHomeHashtagEmpty =>
+      'Още няма видеа за този хаштег.\nПровери пак скоро.';
+
+  @override
   String get feedExploreVideos => 'Разгледай видеа';
 
   @override
@@ -6235,52 +6241,58 @@ class AppLocalizationsBg extends AppLocalizations {
   String get searchListsLoadingLabel => 'Резултатите от списъка се зареждат';
 
   @override
-  String get searchResultsCategoryAll => 'All';
+  String get searchResultsCategoryAll => 'Всички';
 
   @override
-  String get searchResultsCategoryPeople => 'People';
+  String get searchResultsCategoryPeople => 'Хора';
 
   @override
-  String get searchResultsCategoryLists => 'Lists';
+  String get searchResultsCategoryLists => 'Списъци';
 
   @override
-  String get searchResultsCategoryTags => 'Tags';
+  String get searchResultsCategoryTags => 'Тагове';
 
   @override
-  String get searchResultsCategoryVideos => 'Videos';
+  String get searchResultsCategoryVideos => 'Видеа';
 
   @override
   String searchResultsFilterSemantic(String category) {
-    return 'Filter: $category';
+    return 'Филтър: $category';
   }
 
   @override
   String searchResultsNoMatchesForQuery(String query) {
-    return 'No results found for \"$query\"';
+    return 'Няма резултати за „$query“';
   }
 
   @override
-  String get searchResultsTryDifferentTerm => 'Try a different search term';
+  String get searchResultsTryDifferentTerm => 'Опитай с друга дума за търсене';
 
   @override
-  String get searchResultsTagsLoadingSemantic => 'Loading tag results';
+  String get searchResultsTagsLoadingSemantic =>
+      'Зареждат се резултатите от таговете';
 
   @override
   String hashtagFeedLoadingMessage(String hashtag) {
-    return 'Loading videos about #$hashtag...';
+    return 'Зареждат се видеа за #$hashtag...';
   }
 
   @override
-  String get hashtagFeedLoadingSubtitle => 'This may take a few moments';
+  String get hashtagFeedLoadingSubtitle => 'Може да отнеме малко време';
 
   @override
   String hashtagFeedEmptyTitle(String hashtag) {
-    return 'No videos found for #$hashtag';
+    return 'Няма видеа за #$hashtag';
   }
 
   @override
   String get hashtagFeedEmptySubtitle =>
-      'Be the first to post a video with this hashtag!';
+      'Бъди първият, който публикува видео с този хаштег!';
+
+  @override
+  String followingHashtagPageTitleSemantic(String title) {
+    return 'Отвори фийда на хаштега за $title';
+  }
 
   @override
   String get cameraAgeRestriction =>

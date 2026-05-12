@@ -267,7 +267,7 @@
     "profileNoFollowedTagsSubtitle": "Sla een hashtag op vanaf de pagina om hier snel terug te komen",
     "profileTabSavedSemantic": "Opgeslagen",
     "profileSavedFilterVideos": "Video's",
-    "profileSavedFilterTags": "Tags",
+    "profileSavedFilterTags": "Hashtags",
     "hashtagFavoriteSaveTooltip": "Hashtag opslaan",
     "hashtagFavoriteRemoveTooltip": "Verwijderen uit opgeslagen hashtags",
     "hashtagOptionsMoreTooltip": "Hashtag-opties",
@@ -457,7 +457,7 @@
     "exploreTabNew": "Nieuw",
     "exploreTabPopular": "Populair",
     "exploreTabCategories": "Categorieën",
-    "exploreTabTags": "Tags",
+    "exploreTabTags": "Hashtags",
     "exploreTagsSearchHint": "Zoek tags...",
     "exploreTagsEmptyFilter": "Geen tags komen overeen met je zoekopdracht",
     "exploreTagsTrackedTooltip": "Opgeslagen op je profiel",
@@ -2525,9 +2525,9 @@
     "searchResultsCategoryAll": "Alles",
     "searchResultsCategoryPeople": "Mensen",
     "searchResultsCategoryLists": "Lijsten",
-    "searchResultsCategoryTags": "Tags",
+    "searchResultsCategoryTags": "Hashtags",
     "searchResultsCategoryVideos": "Video's",
-    "searchResultsFilterSemantic": "Filter: {category}",
+    "searchResultsFilterSemantic": "Filter voor {category}",
     "@searchResultsFilterSemantic": {
         "placeholders": {
             "category": {

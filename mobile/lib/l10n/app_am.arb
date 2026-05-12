@@ -302,6 +302,40 @@
     "profileLikedOwnEmpty": "የሆነ ነገር ዓይንዎን ሲይዝ, ልብን ይንኩ. መውደዶችዎ እዚህ ይታያሉ።",
     "profileLikedOtherEmpty": "እስካሁን ዓይናቸውን የሳበ ነገር የለም። ጊዜ ስጠው።",
     "profileErrorLoadingLiked": "የተወደዱ ቪዲዮዎችን መጫን ላይ ስህተት",
+    "profileNoFollowedTagsTitle": "እስካሁን ምንም ሀሽታግ አልተቀመጠም",
+    "profileNoFollowedTagsSubtitle": "ሀሽታግን ከገጹበት አስቀምጥ፣ በማንኛውም ጊዜ እዚህ ተመለስ",
+    "profileTabSavedSemantic": "የተቀመጡ",
+    "profileSavedFilterVideos": "ቪዲዮዎች",
+    "profileSavedFilterTags": "መለያዎች",
+    "hashtagFavoriteSaveTooltip": "ሀሽታግ አስቀምጥ",
+    "hashtagFavoriteRemoveTooltip": "ከተቀመጡ ሀሽታጎች አስወግድ",
+    "hashtagOptionsMoreTooltip": "የሀሽታግ አማራጮች",
+    "hashtagMenuVideoCount": "{count, plural, =1{1 ቪዲዮ} other{{count} ቪዲዮዎች}}",
+    "@hashtagMenuVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "hashtagOptionSaveToProfile": "አስቀምጥ",
+    "hashtagOptionRemoveFromProfile": "ከተቀመጡ መለያዎች አስወግድ",
+    "hashtagSavedToProfileSnackbar": "በመገለጫዎ ተቀምጧል",
+    "hashtagRemovedFromProfileSnackbar": "ከተቀመጡ መለያዎች ተወግዷል",
+    "hashtagOptionAddToFollowingFeed": "ወደ ፊዶቼ ጨምር",
+    "hashtagOptionRemoveFromFollowingFeed": "ከፊዶቼ አስወግድ",
+    "hashtagAddedToFollowingFeedSnackbar": "ወደ ፊዶቼ ተጨመረ",
+    "hashtagRemovedFromFollowingFeedSnackbar": "ከፊዶቼ ተወግዷል",
+    "profileFollowedTagRemoveTitle": "ይህን መለያ ያስወግዱ?",
+    "profileFollowedTagRemoveMessage": "{displayTag} ከተቀመጡ መለያዎችዎ ይወገድ? በማንኛውም ጊዜ ከዚያ የሀሽታግ ገጽ እንደገና ማከል ይችላሉ።",
+    "@profileFollowedTagRemoveMessage": {
+        "placeholders": {
+            "displayTag": {
+                "type": "String"
+            }
+        }
+    },
+    "profileFollowedTagRemoveConfirm": "አስወግድ",
     "profileNoRepostsTitle": "እስካሁን ምንም ድጋሚ የተለጠፈ የለም።",
     "profileRepostsOwnEmpty": "ማጋራት የሚገባ ነገር አየህ? እንደገና ይለጥፉት እና እዚህ ይታያል።",
     "profileRepostsOtherEmpty": "እስካሁን ምንም አላለፉም። ሲያደርጉ፣ እዚህ ይታያል።",
@@ -486,6 +520,11 @@
     "exploreTabNew": "አዲስ",
     "exploreTabPopular": "ታዋቂ",
     "exploreTabCategories": "ምድቦች",
+    "exploreTabTags": "መለያዎች",
+    "exploreTagsSearchHint": "መለያዎችን ፈልግ...",
+    "exploreTagsEmptyFilter": "ለፍለጋዎ የሚስማሙ መለያዎች የሉም",
+    "exploreTagsTrackedTooltip": "በመገለጫዎ ተቀምጧል",
+    "explorePopularTagsSearchCta": "ሁሉንም መለያዎች ፈልግ",
     "exploreTabForYou": "ለእርስዎ",
     "exploreTabLists": "ዝርዝሮች",
     "exploreTabIntegratedApps": "የተዋሃዱ መተግበሪያዎች",
@@ -2081,6 +2120,7 @@
     "feedForYouEmpty": "የእርስዎ ለአንተ ምግብ ባዶ ነው።\nቪዲዮዎችን ያስሱ እና ለመቅረጽ ፈጣሪዎችን ይከተሉ።",
     "feedFollowingEmpty": "እስካሁን ከምትከተላቸው ሰዎች ምንም ቪዲዮዎች የሉም።\nየሚወዷቸውን ፈጣሪዎች ያግኙ እና ይከተሉዋቸው።",
     "feedLatestEmpty": "እስካሁን ምንም አዲስ ቪዲዮዎች የሉም።\nበቅርቡ ተመልሰው ይመልከቱ።",
+    "feedHomeHashtagEmpty": "ለዚህ ሀሽታግ እስካሁን ምንም ቪዲዮ የለም።\nበቅርቡ ተመልሰው ይመልከቱ።",
     "feedExploreVideos": "ቪዲዮዎችን ያስሱ",
     "feedExternalVideoSlow": "ውጫዊ ቪዲዮ ቀስ በቀስ በመጫን ላይ",
     "feedSkip": "ዝለል",
@@ -3019,6 +3059,55 @@
     "searchVideosLoadingLabel": "የቪዲዮ ውጤቶችን በመጫን ላይ",
     "searchListsSectionHeader": "ዝርዝሮች",
     "searchListsLoadingLabel": "የዝርዝር ውጤቶችን በመጫን ላይ",
+    "searchResultsCategoryAll": "ሁሉም",
+    "searchResultsCategoryPeople": "ሰዎች",
+    "searchResultsCategoryLists": "ዝርዝሮች",
+    "searchResultsCategoryTags": "መለያዎች",
+    "searchResultsCategoryVideos": "ቪዲዮዎች",
+    "searchResultsFilterSemantic": "ማጣሪያ፦ {category}",
+    "@searchResultsFilterSemantic": {
+        "placeholders": {
+            "category": {
+                "type": "String"
+            }
+        }
+    },
+    "searchResultsNoMatchesForQuery": "ለ«{query}» ምንም ውጤት የለም",
+    "@searchResultsNoMatchesForQuery": {
+        "placeholders": {
+            "query": {
+                "type": "String"
+            }
+        }
+    },
+    "searchResultsTryDifferentTerm": "ሌላ የፍለጋ ቃል ይሞክሩ",
+    "searchResultsTagsLoadingSemantic": "የመለያ ውጤቶችን በመጫን ላይ",
+    "hashtagFeedLoadingMessage": "ስለ #{hashtag} ቪዲዮዎችን በመጫን ላይ...",
+    "@hashtagFeedLoadingMessage": {
+        "placeholders": {
+            "hashtag": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagFeedLoadingSubtitle": "ጥቂት ጊዜ ሊወስድ ይችላል",
+    "hashtagFeedEmptyTitle": "ለ#{hashtag} ምንም ቪዲዮ የለም",
+    "@hashtagFeedEmptyTitle": {
+        "placeholders": {
+            "hashtag": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagFeedEmptySubtitle": "በዚህ ሀሽታግ የመጀመሪያው የሚለጥፉ ይሁኑ!",
+    "followingHashtagPageTitleSemantic": "የ{title} ሀሽታግ ፊድ ክፈት",
+    "@followingHashtagPageTitleSemantic": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
     "cameraAgeRestriction": "ይዘት ለመፍጠር 16 ወይም ከዚያ በላይ መሆን አለቦት",
     "featureRequestCancel": "ሰርዝ",
     "keyImportError": "ስህተት፡ {error}",

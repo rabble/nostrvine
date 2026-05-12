@@ -281,6 +281,40 @@
     "profileLikedOwnEmpty": "Когато нещо ти хване окото, натисни сърцето. Харесванията ти ще се появят тук.",
     "profileLikedOtherEmpty": "Още нищо не им е хванало окото. Дай му време.",
     "profileErrorLoadingLiked": "Грешка при зареждане на харесаните видеа",
+    "profileNoFollowedTagsTitle": "Още няма запазени хаштагове",
+    "profileNoFollowedTagsSubtitle": "Запази хаштег от страницата му, за да се върнеш тук по всяко време",
+    "profileTabSavedSemantic": "Запазени",
+    "profileSavedFilterVideos": "Видеа",
+    "profileSavedFilterTags": "Тагове",
+    "hashtagFavoriteSaveTooltip": "Запази хаштег",
+    "hashtagFavoriteRemoveTooltip": "Премахни от запазените хаштагове",
+    "hashtagOptionsMoreTooltip": "Опции за хаштег",
+    "hashtagMenuVideoCount": "{count, plural, =1{1 видео} other{{count} видеа}}",
+    "@hashtagMenuVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "hashtagOptionSaveToProfile": "Запази",
+    "hashtagOptionRemoveFromProfile": "Премахни от запазените тагове",
+    "hashtagSavedToProfileSnackbar": "Запазено в профила ти",
+    "hashtagRemovedFromProfileSnackbar": "Премахнато от запазените тагове",
+    "hashtagOptionAddToFollowingFeed": "Добави към моите фийдове",
+    "hashtagOptionRemoveFromFollowingFeed": "Премахни от моите фийдове",
+    "hashtagAddedToFollowingFeedSnackbar": "Добавено към моите фийдове",
+    "hashtagRemovedFromFollowingFeedSnackbar": "Премахнато от моите фийдове",
+    "profileFollowedTagRemoveTitle": "Премахване на този таг?",
+    "profileFollowedTagRemoveMessage": "Премахване на {displayTag} от запазените тагове? Можеш да го добавиш отново по всяко време от страницата на хаштега.",
+    "@profileFollowedTagRemoveMessage": {
+        "placeholders": {
+            "displayTag": {
+                "type": "String"
+            }
+        }
+    },
+    "profileFollowedTagRemoveConfirm": "Премахни",
     "profileNoRepostsTitle": "Още няма репостове",
     "profileRepostsOwnEmpty": "Видя нещо, което си струва да споделиш? Публикувай го пак и ще се появи тук.",
     "profileRepostsOtherEmpty": "Още не са препубликували нищо. Когато го направят, ще се появи тук.",
@@ -452,6 +486,11 @@
     "exploreTabNew": "Нови",
     "exploreTabPopular": "Популярни",
     "exploreTabCategories": "Категории",
+    "exploreTabTags": "Тагове",
+    "exploreTagsSearchHint": "Търси тагове...",
+    "exploreTagsEmptyFilter": "Няма тагове, които да съвпадат с търсенето",
+    "exploreTagsTrackedTooltip": "Запазено в профила ти",
+    "explorePopularTagsSearchCta": "Търси всички тагове",
     "exploreTabForYou": "За теб",
     "exploreTabLists": "Списъци",
     "exploreTabIntegratedApps": "Интегрирани приложения",
@@ -1972,6 +2011,7 @@
     "feedForYouEmpty": "Твоят фийд „За теб“ е празен.\nРазгледай видеа и последвай творци, за да го оформиш.",
     "feedFollowingEmpty": "Още няма видеа от хората, които следваш.\nНамери творци, които ти допадат, и ги последвай.",
     "feedLatestEmpty": "Още няма нови видеа.\nПровери пак скоро.",
+    "feedHomeHashtagEmpty": "Още няма видеа за този хаштег.\nПровери пак скоро.",
     "feedExploreVideos": "Разгледай видеа",
     "feedExternalVideoSlow": "Външното видео се зарежда бавно",
     "feedSkip": "Пропускане",
@@ -2714,6 +2754,48 @@
     "searchVideosLoadingLabel": "Зареждат се видео резултати",
     "searchListsSectionHeader": "Списъци",
     "searchListsLoadingLabel": "Резултатите от списъка се зареждат",
+    "searchResultsCategoryAll": "Всички",
+    "searchResultsCategoryPeople": "Хора",
+    "searchResultsCategoryLists": "Списъци",
+    "searchResultsCategoryTags": "Тагове",
+    "searchResultsCategoryVideos": "Видеа",
+    "searchResultsFilterSemantic": "Филтър: {category}",
+    "@searchResultsFilterSemantic": {
+        "placeholders": {
+            "category": {
+                "type": "String"
+            }
+        }
+    },
+    "searchResultsNoMatchesForQuery": "Няма резултати за „{query}“",
+    "@searchResultsNoMatchesForQuery": {
+        "placeholders": {
+            "query": {
+                "type": "String"
+            }
+        }
+    },
+    "searchResultsTryDifferentTerm": "Опитай с друга дума за търсене",
+    "searchResultsTagsLoadingSemantic": "Зареждат се резултатите от таговете",
+    "hashtagFeedLoadingMessage": "Зареждат се видеа за #{hashtag}...",
+    "@hashtagFeedLoadingMessage": {
+        "placeholders": {
+            "hashtag": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagFeedLoadingSubtitle": "Може да отнеме малко време",
+    "hashtagFeedEmptyTitle": "Няма видеа за #{hashtag}",
+    "@hashtagFeedEmptyTitle": {
+        "placeholders": {
+            "hashtag": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagFeedEmptySubtitle": "Бъди първият, който публикува видео с този хаштег!",
+    "followingHashtagPageTitleSemantic": "Отвори фийда на хаштега за {title}",
     "cameraAgeRestriction": "Трябва да си на 16 или повече, за да създаваш съдържание",
     "featureRequestCancel": "Отказ",
     "keyImportError": "Грешка: {error}",

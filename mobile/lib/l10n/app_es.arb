@@ -271,7 +271,7 @@
     "hashtagFavoriteSaveTooltip": "Guardar hashtag",
     "hashtagFavoriteRemoveTooltip": "Quitar de hashtags guardados",
     "hashtagOptionsMoreTooltip": "Opciones del hashtag",
-    "hashtagMenuVideoCount": "{count, plural, =1{1 video} other{{count} videos}}",
+    "hashtagMenuVideoCount": "{count, plural, =1{1 vídeo} other{{count} vídeos}}",
     "@hashtagMenuVideoCount": {
         "placeholders": {
             "count": {

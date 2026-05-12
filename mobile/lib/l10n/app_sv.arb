@@ -2527,7 +2527,7 @@
     "searchResultsCategoryLists": "Listor",
     "searchResultsCategoryTags": "Taggar",
     "searchResultsCategoryVideos": "Videor",
-    "searchResultsFilterSemantic": "Filter: {category}",
+    "searchResultsFilterSemantic": "Filter för {category}",
     "@searchResultsFilterSemantic": {
         "placeholders": {
             "category": {

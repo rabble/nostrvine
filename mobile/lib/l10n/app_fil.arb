@@ -124,6 +124,40 @@
     "profileLikedOwnEmpty": "Pag may nakita kang nakakaakit, i-tap ang puso. Lalabas dito ang mga like mo.",
     "profileLikedOtherEmpty": "Wala pa silang nagugustuhan. Hintayin mo lang.",
     "profileErrorLoadingLiked": "May error sa pag-load ng mga liked video",
+    "profileNoFollowedTagsTitle": "Wala pang naka-save na hashtag",
+    "profileNoFollowedTagsSubtitle": "I-save ang hashtag mula sa page nito para makabalik dito anumang oras",
+    "profileTabSavedSemantic": "Naka-save",
+    "profileSavedFilterVideos": "Mga Video",
+    "profileSavedFilterTags": "Mga Tag",
+    "hashtagFavoriteSaveTooltip": "I-save ang hashtag",
+    "hashtagFavoriteRemoveTooltip": "Alisin sa mga naka-save na hashtag",
+    "hashtagOptionsMoreTooltip": "Mga opsyon ng hashtag",
+    "hashtagMenuVideoCount": "{count, plural, =1{1 video} other{{count} na video}}",
+    "@hashtagMenuVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "hashtagOptionSaveToProfile": "I-save",
+    "hashtagOptionRemoveFromProfile": "Alisin sa mga naka-save na tag",
+    "hashtagSavedToProfileSnackbar": "Na-save sa profile mo",
+    "hashtagRemovedFromProfileSnackbar": "Inalis sa mga naka-save na tag",
+    "hashtagOptionAddToFollowingFeed": "Idagdag sa mga feed ko",
+    "hashtagOptionRemoveFromFollowingFeed": "Alisin sa mga feed ko",
+    "hashtagAddedToFollowingFeedSnackbar": "Idinagdag sa mga feed ko",
+    "hashtagRemovedFromFollowingFeedSnackbar": "Inalis sa mga feed ko",
+    "profileFollowedTagRemoveTitle": "Alisin ang tag na ito?",
+    "profileFollowedTagRemoveMessage": "Alisin ang {displayTag} sa mga naka-save mong tag? Maaari mo itong idagdag ulit anumang oras mula sa page ng hashtag.",
+    "@profileFollowedTagRemoveMessage": {
+        "placeholders": {
+            "displayTag": {
+                "type": "String"
+            }
+        }
+    },
+    "profileFollowedTagRemoveConfirm": "Alisin",
     "profileNoRepostsTitle": "Wala pang repost",
     "profileRepostsOwnEmpty": "May nakita kang dapat ipasa? I-repost mo at lalabas ito dito.",
     "profileRepostsOtherEmpty": "Wala pa silang ipinasang content. Pag may inipasa, lalabas dito.",
@@ -278,6 +312,11 @@
     "exploreTabNew": "Bago",
     "exploreTabPopular": "Sikat",
     "exploreTabCategories": "Mga Category",
+    "exploreTabTags": "Mga Tag",
+    "exploreTagsSearchHint": "Maghanap ng mga tag...",
+    "exploreTagsEmptyFilter": "Walang tag na tumugma sa iyong hinahanap",
+    "exploreTagsTrackedTooltip": "Naka-save sa profile mo",
+    "explorePopularTagsSearchCta": "Hanapin ang lahat ng tag",
     "exploreTabForYou": "Para sa Iyo",
     "exploreTabLists": "Mga List",
     "exploreTabIntegratedApps": "Mga Integrated App",
@@ -1085,6 +1124,7 @@
     "feedForYouEmpty": "Walang laman ang For You feed mo.\nMag-explore ng video at mag-follow ng creators para mahubog ito.",
     "feedFollowingEmpty": "Wala pang video mula sa mga taong fino-follow mo.\nHumanap ng creators na gusto mo at i-follow sila.",
     "feedLatestEmpty": "Wala pang bagong video.\nBumalik mamaya.",
+    "feedHomeHashtagEmpty": "Wala pang video para sa hashtag na ito.\nBumalik mamaya.",
     "feedExploreVideos": "Mag-explore ng Video",
     "feedExternalVideoSlow": "Mabagal nag-lo-load ang external video",
     "feedSkip": "Laktawan",
@@ -1540,6 +1580,48 @@
     "searchVideosLoadingLabel": "Naglo-load ng mga resulta para sa video",
     "searchListsSectionHeader": "Mga List",
     "searchListsLoadingLabel": "Naglo-load ng mga resulta para sa list",
+    "searchResultsCategoryAll": "Lahat",
+    "searchResultsCategoryPeople": "Mga Tao",
+    "searchResultsCategoryLists": "Mga List",
+    "searchResultsCategoryTags": "Mga Tag",
+    "searchResultsCategoryVideos": "Mga Video",
+    "searchResultsFilterSemantic": "Salain: {category}",
+    "@searchResultsFilterSemantic": {
+        "placeholders": {
+            "category": {
+                "type": "String"
+            }
+        }
+    },
+    "searchResultsNoMatchesForQuery": "Walang resulta para sa \"{query}\"",
+    "@searchResultsNoMatchesForQuery": {
+        "placeholders": {
+            "query": {
+                "type": "String"
+            }
+        }
+    },
+    "searchResultsTryDifferentTerm": "Subukan ang ibang search term",
+    "searchResultsTagsLoadingSemantic": "Naglo-load ng mga resulta para sa tag",
+    "hashtagFeedLoadingMessage": "Naglo-load ng mga video tungkol sa #{hashtag}...",
+    "@hashtagFeedLoadingMessage": {
+        "placeholders": {
+            "hashtag": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagFeedLoadingSubtitle": "Maaaring tumagal ng ilang sandali",
+    "hashtagFeedEmptyTitle": "Walang video para sa #{hashtag}",
+    "@hashtagFeedEmptyTitle": {
+        "placeholders": {
+            "hashtag": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagFeedEmptySubtitle": "Maging una na mag-post ng video gamit ang hashtag na ito!",
+    "followingHashtagPageTitleSemantic": "Buksan ang hashtag feed para kay {title}",
     "cameraAgeRestriction": "Dapat 16 taong gulang ka pataas para gumawa ng content",
     "featureRequestCancel": "Cancel",
     "keyImportError": "Error: {error}",

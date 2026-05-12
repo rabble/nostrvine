@@ -457,7 +457,7 @@
     "exploreTabNew": "Nouveautés",
     "exploreTabPopular": "Populaire",
     "exploreTabCategories": "Catégories",
-    "exploreTabTags": "Tags",
+    "exploreTabTags": "Hashtags",
     "exploreTagsSearchHint": "Rechercher des tags...",
     "exploreTagsEmptyFilter": "Aucun tag ne correspond à ta recherche",
     "exploreTagsTrackedTooltip": "Enregistré sur ton profil",
@@ -2525,7 +2525,7 @@
     "searchResultsCategoryAll": "Tout",
     "searchResultsCategoryPeople": "Personnes",
     "searchResultsCategoryLists": "Listes",
-    "searchResultsCategoryTags": "Tags",
+    "searchResultsCategoryTags": "Hashtags",
     "searchResultsCategoryVideos": "Vidéos",
     "searchResultsFilterSemantic": "Filtre : {category}",
     "@searchResultsFilterSemantic": {
