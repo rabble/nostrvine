@@ -5,6 +5,8 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/content_filter_reason_localizations.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 
 /// Result of a comment options modal action.
@@ -255,7 +257,9 @@ class _FlagContentSheetState extends State<_FlagContentSheet> {
                       widget.onSubmit(
                         CommentReportResult(
                           reason: _selectedReason!,
-                          details: _getReasonDisplayName(_selectedReason!),
+                          details: context.l10n.reportReasonTitle(
+                            _selectedReason!,
+                          ),
                         ),
                       );
                     }
@@ -339,7 +343,7 @@ class _ReasonRadioTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _getReasonDisplayName(reason),
+                    context.l10n.reportReasonTitle(reason),
                     style: VineTheme.bodyLargeFont(
                       color: isSelected
                           ? VineTheme.onSurface
@@ -348,7 +352,7 @@ class _ReasonRadioTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    _getReasonDescription(reason),
+                    context.l10n.reportReasonSubtitle(reason),
                     style: VineTheme.bodySmallFont(
                       color: VineTheme.onSurfaceMuted,
                     ),
@@ -361,39 +365,4 @@ class _ReasonRadioTile extends StatelessWidget {
       ),
     );
   }
-}
-
-String _getReasonDisplayName(ContentFilterReason reason) {
-  return switch (reason) {
-    ContentFilterReason.spam => 'Spam',
-    ContentFilterReason.harassment => 'Harassment',
-    ContentFilterReason.violence => 'Violence',
-    ContentFilterReason.sexualContent => 'Sexual Content',
-    ContentFilterReason.copyright => 'Copyright',
-    ContentFilterReason.falseInformation => 'Misinformation',
-    ContentFilterReason.childSafety => 'Child Safety',
-    ContentFilterReason.csam => 'Child Sexual Abuse',
-    ContentFilterReason.underageUser => 'Under 16',
-    ContentFilterReason.aiGenerated => 'AI Generated',
-    ContentFilterReason.other => 'Other',
-  };
-}
-
-String _getReasonDescription(ContentFilterReason reason) {
-  return switch (reason) {
-    ContentFilterReason.spam => 'Unsolicited or repetitive content',
-    ContentFilterReason.harassment =>
-      'Harmful and unwanted replies or mentions',
-    ContentFilterReason.violence => 'Graphic violence or extremist material',
-    ContentFilterReason.sexualContent => 'Nudity, porn, or sexual content',
-    ContentFilterReason.copyright => 'Unauthorized use of copyrighted material',
-    ContentFilterReason.falseInformation =>
-      'Misleading or deliberately false claims',
-    ContentFilterReason.childSafety => "General concerns about minors' safety",
-    ContentFilterReason.csam => 'Content depicting sexual abuse of minors',
-    ContentFilterReason.underageUser => 'Account holder appears to be underage',
-    ContentFilterReason.aiGenerated =>
-      'Deceptive AI-generated or manipulated media',
-    ContentFilterReason.other => 'Items not included above',
-  };
 }

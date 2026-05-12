@@ -6,6 +6,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/content_filter_reason_localizations.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -72,7 +73,7 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
                     .map(
                       (reason) => RadioListTile<ContentFilterReason>(
                         title: Text(
-                          reason.description,
+                          context.l10n.reportReasonTitle(reason),
                           style: VineTheme.bodyMediumFont(),
                         ),
                         value: reason,
@@ -144,6 +145,9 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
     if (_selectedReason == null) return;
 
     setState(() => _isSubmitting = true);
+    final selectedReasonTitle = context.l10n.reportReasonTitle(
+      _selectedReason!,
+    );
 
     try {
       final reportService = await ref.read(
@@ -154,7 +158,7 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
         authorPubkey: widget.senderPubkey,
         reason: _selectedReason!,
         details: _detailsController.text.trim().isEmpty
-            ? _selectedReason!.description
+            ? selectedReasonTitle
             : _detailsController.text.trim(),
       );
 
@@ -166,9 +170,7 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
             final muteService = await ref.read(muteServiceProvider.future);
             await muteService.muteUser(
               widget.senderPubkey,
-              reason:
-                  'Reported and blocked for '
-                  '${_selectedReason!.description}',
+              reason: 'Reported and blocked for $selectedReasonTitle',
             );
 
             final blocklistRepository = ref.read(
@@ -195,7 +197,7 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
             await dmRepo.sendMessage(
               recipientPubkey: labelService.divineModerationPubkeyHex,
               content: _formatReportDm(
-                reason: _selectedReason!,
+                reasonTitle: selectedReasonTitle,
                 messageId: widget.messageId,
                 details: _detailsController.text.trim(),
               ),
@@ -246,13 +248,13 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
   }
 
   String _formatReportDm({
-    required ContentFilterReason reason,
+    required String reasonTitle,
     required String messageId,
     required String details,
   }) {
     final buffer = StringBuffer()
       ..writeln('DM Message Report')
-      ..writeln('Reason: ${reason.description}')
+      ..writeln('Reason: $reasonTitle')
       ..writeln('Message ID: $messageId');
     if (details.isNotEmpty) {
       buffer.writeln('Details: $details');

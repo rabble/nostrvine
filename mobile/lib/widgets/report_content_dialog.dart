@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/l10n/content_filter_reason_localizations.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/content_moderation_service.dart';
@@ -136,10 +137,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 8),
-          Text(
-            l10n.reportWhyReporting,
-            style: VineTheme.titleMediumFont(),
-          ),
+          Text(l10n.reportWhyReporting, style: VineTheme.titleMediumFont()),
           const SizedBox(height: 8),
           Text(
             l10n.reportPolicyNotice,
@@ -151,8 +149,8 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
               key: reason == ContentFilterReason.other ? _otherCardKey : null,
               padding: const EdgeInsets.only(bottom: 8),
               child: _ReasonCard(
-                title: _getReasonTitle(reason),
-                subtitle: _getReasonSubtitle(reason),
+                title: l10n.reportReasonTitle(reason),
+                subtitle: l10n.reportReasonSubtitle(reason),
                 isSelected: _selectedReason == reason,
                 onTap: () => _onReasonSelected(reason),
               ),
@@ -231,46 +229,13 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
     _submitReport();
   }
 
-  String _getReasonTitle(ContentFilterReason reason) {
-    final l10n = context.l10n;
-    return switch (reason) {
-      ContentFilterReason.spam => l10n.reportReasonSpam,
-      ContentFilterReason.harassment => l10n.reportReasonHarassment,
-      ContentFilterReason.violence => l10n.reportReasonViolence,
-      ContentFilterReason.sexualContent => l10n.reportReasonSexualContent,
-      ContentFilterReason.copyright => l10n.reportReasonCopyright,
-      ContentFilterReason.falseInformation => l10n.reportReasonFalseInfo,
-      ContentFilterReason.childSafety => l10n.reportReasonChildSafety,
-      ContentFilterReason.csam => l10n.reportReasonCsam,
-      ContentFilterReason.underageUser => l10n.reportReasonUnderageUser,
-      ContentFilterReason.aiGenerated => l10n.reportReasonAiGenerated,
-      ContentFilterReason.other => l10n.reportReasonOther,
-    };
-  }
-
-  String _getReasonSubtitle(ContentFilterReason reason) {
-    final l10n = context.l10n;
-    return switch (reason) {
-      ContentFilterReason.spam => l10n.reportReasonSpamSubtitle,
-      ContentFilterReason.harassment => l10n.reportReasonHarassmentSubtitle,
-      ContentFilterReason.violence => l10n.reportReasonViolenceSubtitle,
-      ContentFilterReason.sexualContent =>
-        l10n.reportReasonSexualContentSubtitle,
-      ContentFilterReason.copyright => l10n.reportReasonCopyrightSubtitle,
-      ContentFilterReason.falseInformation =>
-        l10n.reportReasonFalseInfoSubtitle,
-      ContentFilterReason.childSafety => l10n.reportReasonChildSafetySubtitle,
-      ContentFilterReason.csam => l10n.reportReasonCsamSubtitle,
-      ContentFilterReason.underageUser => l10n.reportReasonUnderageUserSubtitle,
-      ContentFilterReason.aiGenerated => l10n.reportReasonAiGeneratedSubtitle,
-      ContentFilterReason.other => l10n.reportReasonOtherSubtitle,
-    };
-  }
-
   Future<void> _submitReport() async {
     if (_selectedReason == null) return;
 
     setState(() => _isSubmitting = true);
+    final selectedReasonTitle = context.l10n.reportReasonTitle(
+      _selectedReason!,
+    );
 
     try {
       final reportService = await ref.read(
@@ -281,7 +246,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
         authorPubkey: widget.video.pubkey,
         reason: _selectedReason!,
         details: _detailsController.text.trim().isEmpty
-            ? _getReasonTitle(_selectedReason!)
+            ? selectedReasonTitle
             : _detailsController.text.trim(),
       );
 
@@ -356,7 +321,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   }) {
     final buffer = StringBuffer()
       ..writeln('Content Report')
-      ..writeln('Reason: ${_getReasonTitle(reason)}')
+      ..writeln('Reason: ${context.l10n.reportReasonTitle(reason)}')
       ..writeln('Event: $eventId');
     if (details.isNotEmpty) {
       buffer.writeln('Details: $details');
@@ -408,10 +373,7 @@ class _ReportConfirmationView extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          Text(
-            l10n.reportReceivedThankYou,
-            style: VineTheme.bodyLargeFont(),
-          ),
+          Text(l10n.reportReceivedThankYou, style: VineTheme.bodyLargeFont()),
           const SizedBox(height: 16),
           Text(
             l10n.reportReceivedReviewNotice,
@@ -436,9 +398,7 @@ class _ReportConfirmationView extends StatelessWidget {
                   ),
                   TextSpan(
                     text: l10n.reportSafetyUrl,
-                    style: VineTheme.bodyMediumFont(
-                      color: VineTheme.vineGreen,
-                    ),
+                    style: VineTheme.bodyMediumFont(color: VineTheme.vineGreen),
                   ),
                 ],
               ),
@@ -508,10 +468,7 @@ class _ReasonCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      title,
-                      style: VineTheme.bodyLargeFont(),
-                    ),
+                    Text(title, style: VineTheme.bodyLargeFont()),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,

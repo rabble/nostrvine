@@ -16,21 +16,17 @@ import 'package:unified_logger/unified_logger.dart';
 ///
 /// Categories for content filtering and report flows.
 enum ContentFilterReason {
-  spam('Spam or unwanted content'),
-  harassment('Harassment, bullying, or threats'),
-  violence('Violent or extremist content'),
-  sexualContent('Sexual or adult content'),
-  copyright('Copyright violation'),
-  falseInformation('Misinformation'),
-  childSafety("General concerns about minors' safety"),
-  csam('Child sexual abuse'),
-  underageUser('User appears under 16'),
-  aiGenerated('Suspected AI-generated content'),
-  other('Other violation')
-  ;
-
-  const ContentFilterReason(this.description);
-  final String description;
+  spam,
+  harassment,
+  violence,
+  sexualContent,
+  copyright,
+  falseInformation,
+  childSafety,
+  csam,
+  underageUser,
+  aiGenerated,
+  other,
 }
 
 /// Content severity levels for filtering

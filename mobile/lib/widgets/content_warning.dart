@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/content_filter_reason_localizations.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 
@@ -62,164 +63,172 @@ class _ContentWarningState extends State<ContentWarning>
     return _buildWarningOverlay(context);
   }
 
-  Widget _buildWarningOverlay(BuildContext context) => Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: _getWarningColor(
-        widget.moderationResult.severity,
-      ).withValues(alpha: 0.9),
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(
-        color: _getWarningColor(widget.moderationResult.severity),
-        width: 2,
+  Widget _buildWarningOverlay(BuildContext context) {
+    final warningDetails = _warningDetails(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _getWarningColor(
+          widget.moderationResult.severity,
+        ).withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: _getWarningColor(widget.moderationResult.severity),
+          width: 2,
+        ),
       ),
-    ),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Warning icon and title
-        Row(
-          children: [
-            Icon(
-              _getWarningIcon(widget.moderationResult.severity),
-              color: VineTheme.whiteText,
-              size: 24,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _getWarningTitle(context, widget.moderationResult.severity),
-                    style: const TextStyle(
-                      color: VineTheme.whiteText,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  if (widget.moderationResult.warningMessage != null)
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Icon(
+                _getWarningIcon(widget.moderationResult.severity),
+                color: VineTheme.whiteText,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      widget.moderationResult.warningMessage!,
+                      _getWarningTitle(
+                        context,
+                        widget.moderationResult.severity,
+                      ),
                       style: const TextStyle(
-                        color: VineTheme.onSurfaceVariant,
-                        fontSize: 14,
+                        color: VineTheme.whiteText,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                ],
+                    if (warningDetails != null)
+                      Text(
+                        warningDetails,
+                        style: const TextStyle(
+                          color: VineTheme.onSurfaceVariant,
+                          fontSize: 14,
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 16),
-
-        // Filter reason chips
-        if (widget.moderationResult.reasons.isNotEmpty)
-          Wrap(
-            spacing: 8,
-            children: widget.moderationResult.reasons
-                .map(
-                  (reason) => Chip(
-                    label: Text(
-                      reason.description,
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                    backgroundColor: VineTheme.whiteText.withValues(alpha: 0.2),
-                    labelStyle: const TextStyle(color: VineTheme.whiteText),
-                  ),
-                )
-                .toList(),
-          ),
-
-        const SizedBox(height: 16),
-
-        // Action buttons
-        Row(
-          children: [
-            // Show content button
-            Expanded(
-              child: OutlinedButton(
-                onPressed: _revealContent,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: VineTheme.whiteText,
-                  side: const BorderSide(color: VineTheme.whiteText),
-                ),
-                child: Text(context.l10n.contentWarningViewAnyway),
-              ),
-            ),
-
-            if (widget.showControls) ...[
-              const SizedBox(width: 12),
-
-              // Report button
-              if (widget.onReport != null)
-                IconButton(
-                  onPressed: widget.onReport,
-                  icon: const Icon(Icons.flag_outlined),
-                  color: VineTheme.whiteText,
-                  tooltip: context.l10n.contentWarningReportContentTooltip,
-                ),
-
-              // Block button
-              if (widget.onBlock != null)
-                IconButton(
-                  onPressed: widget.onBlock,
-                  icon: const Icon(Icons.block_outlined),
-                  color: VineTheme.whiteText,
-                  tooltip: context.l10n.contentWarningBlockUserTooltip,
-                ),
             ],
-          ],
-        ),
-      ],
-    ),
-  );
-
-  Widget _buildBlockedContent(BuildContext context) => Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(24),
-    decoration: BoxDecoration(
-      color: VineTheme.errorContainer,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: VineTheme.error, width: 2),
-    ),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Icon(Icons.block, color: VineTheme.whiteText, size: 48),
-        const SizedBox(height: 16),
-        Text(
-          context.l10n.contentWarningBlockedTitle,
-          style: const TextStyle(
-            color: VineTheme.whiteText,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
           ),
-        ),
-        const SizedBox(height: 8),
-        if (widget.moderationResult.warningMessage != null)
+          const SizedBox(height: 16),
+          if (widget.moderationResult.reasons.isNotEmpty)
+            Wrap(
+              spacing: 8,
+              children: widget.moderationResult.reasons
+                  .map(
+                    (reason) => Chip(
+                      label: Text(
+                        context.l10n.reportReasonTitle(reason),
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      backgroundColor: VineTheme.whiteText.withValues(
+                        alpha: 0.2,
+                      ),
+                      labelStyle: const TextStyle(color: VineTheme.whiteText),
+                    ),
+                  )
+                  .toList(),
+            ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _revealContent,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: VineTheme.whiteText,
+                    side: const BorderSide(color: VineTheme.whiteText),
+                  ),
+                  child: Text(context.l10n.contentWarningViewAnyway),
+                ),
+              ),
+              if (widget.showControls) ...[
+                const SizedBox(width: 12),
+                if (widget.onReport != null)
+                  IconButton(
+                    onPressed: widget.onReport,
+                    icon: const Icon(Icons.flag_outlined),
+                    color: VineTheme.whiteText,
+                    tooltip: context.l10n.contentWarningReportContentTooltip,
+                  ),
+                if (widget.onBlock != null)
+                  IconButton(
+                    onPressed: widget.onBlock,
+                    icon: const Icon(Icons.block_outlined),
+                    color: VineTheme.whiteText,
+                    tooltip: context.l10n.contentWarningBlockUserTooltip,
+                  ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBlockedContent(BuildContext context) {
+    final warningDetails = _warningDetails(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: VineTheme.errorContainer,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: VineTheme.error, width: 2),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.block, color: VineTheme.whiteText, size: 48),
+          const SizedBox(height: 16),
           Text(
-            widget.moderationResult.warningMessage!,
+            context.l10n.contentWarningBlockedTitle,
             style: const TextStyle(
-              color: VineTheme.onSurfaceVariant,
-              fontSize: 14,
+              color: VineTheme.whiteText,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (warningDetails != null)
+            Text(
+              warningDetails,
+              style: const TextStyle(
+                color: VineTheme.onSurfaceVariant,
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          const SizedBox(height: 16),
+          Text(
+            context.l10n.contentWarningBlockedPolicy,
+            style: TextStyle(
+              color: VineTheme.whiteText.withValues(alpha: 0.8),
+              fontSize: 12,
             ),
             textAlign: TextAlign.center,
           ),
-        const SizedBox(height: 16),
-        Text(
-          context.l10n.contentWarningBlockedPolicy,
-          style: TextStyle(
-            color: VineTheme.whiteText.withValues(alpha: 0.8),
-            fontSize: 12,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
+
+  String? _warningDetails(BuildContext context) {
+    final reasons = widget.moderationResult.reasons;
+    if (reasons.isNotEmpty) {
+      return context.l10n.reportReasonSubtitle(reasons.first);
+    }
+    return widget.moderationResult.warningMessage;
+  }
 
   void _revealContent() {
     setState(() {
