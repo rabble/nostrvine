@@ -5568,6 +5568,27 @@ class AppLocalizationsNl extends AppLocalizations {
       'Geselecteerde clips verwijderen';
 
   @override
+  String get librarySelect => 'Selecteren';
+
+  @override
+  String get librarySortNewestCreation => 'Nieuwst aangemaakt';
+
+  @override
+  String get librarySortOldestCreation => 'Oudst aangemaakt';
+
+  @override
+  String get librarySortLongestClip => 'Langste clip';
+
+  @override
+  String get librarySortShortestClip => 'Kortste clip';
+
+  @override
+  String get librarySortSquareFirst => 'Vierkant eerst';
+
+  @override
+  String get librarySortVerticalFirst => 'Verticaal eerst';
+
+  @override
   String get libraryDeleteClipsTitle => 'Clips verwijderen';
 
   @override
@@ -5691,6 +5712,28 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get libraryRecordVideo => 'Video opnemen';
+
+  @override
+  String videoClipSemanticLabel(String duration) {
+    return 'Videoclip, $duration seconden';
+  }
+
+  @override
+  String get videoClipSemanticValueSelected => 'Geselecteerd';
+
+  @override
+  String get videoClipSemanticValueNotSelected => 'Niet geselecteerd';
+
+  @override
+  String get videoClipSemanticHintDisabled => 'Uitgeschakeld';
+
+  @override
+  String get videoClipSemanticHintSelect =>
+      'Tik om te selecteren, houd vast voor voorbeeld';
+
+  @override
+  String get videoClipSemanticHintDeselect =>
+      'Tik om te deselecteren, houd vast voor voorbeeld';
 
   @override
   String get routerInvalidCreator => 'Ongeldige maker';

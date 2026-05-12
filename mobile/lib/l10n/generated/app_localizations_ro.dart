@@ -5694,6 +5694,27 @@ class AppLocalizationsRo extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'Șterge clipurile selectate';
 
   @override
+  String get librarySelect => 'Selectează';
+
+  @override
+  String get librarySortNewestCreation => 'Cele mai noi create';
+
+  @override
+  String get librarySortOldestCreation => 'Cele mai vechi create';
+
+  @override
+  String get librarySortLongestClip => 'Cel mai lung clip';
+
+  @override
+  String get librarySortShortestClip => 'Cel mai scurt clip';
+
+  @override
+  String get librarySortSquareFirst => 'Pătratele mai întâi';
+
+  @override
+  String get librarySortVerticalFirst => 'Verticalele mai întâi';
+
+  @override
   String get libraryDeleteClipsTitle => 'Șterge clipurile';
 
   @override
@@ -5814,6 +5835,28 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get libraryRecordVideo => 'Înregistrează un video';
+
+  @override
+  String videoClipSemanticLabel(String duration) {
+    return 'Clip video, $duration secunde';
+  }
+
+  @override
+  String get videoClipSemanticValueSelected => 'Selectat';
+
+  @override
+  String get videoClipSemanticValueNotSelected => 'Neselectat';
+
+  @override
+  String get videoClipSemanticHintDisabled => 'Dezactivat';
+
+  @override
+  String get videoClipSemanticHintSelect =>
+      'Atinge pentru a selecta, ține apăsat pentru previzualizare';
+
+  @override
+  String get videoClipSemanticHintDeselect =>
+      'Atinge pentru a deselecta, ține apăsat pentru previzualizare';
 
   @override
   String get routerInvalidCreator => 'Creator invalid';

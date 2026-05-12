@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
 
@@ -18,6 +19,7 @@ class VideoClipThumbnailCard extends StatefulWidget {
     required this.onTap,
     required this.onLongPress,
     this.selectionIndex = -1,
+    this.showSelectionIndicator = true,
     this.disabled = false,
     this.showDurationBadge = true,
     super.key,
@@ -31,6 +33,9 @@ class VideoClipThumbnailCard extends StatefulWidget {
   ///
   /// Displayed inside the selection circle when the card is selected.
   final int selectionIndex;
+
+  /// Whether to show the selection indicator in the top-right corner.
+  final bool showSelectionIndicator;
 
   /// Callback invoked when the card is tapped.
   final VoidCallback onTap;
@@ -62,20 +67,24 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
     // Calculate aspect ratio for container
     final aspectRatio = widget.clip.targetAspectRatio.value;
 
+    final l10n = context.l10n;
     return Semantics(
-      // TODO(l10n): Replace with context.l10n when localization is added.
-      label: 'Video clip, ${widget.clip.duration.toFormattedSeconds()} seconds',
-      value: _isSelected ? 'Selected' : 'Not selected',
+      label: l10n.videoClipSemanticLabel(
+        widget.clip.duration.toFormattedSeconds(),
+      ),
+      value: _isSelected
+          ? l10n.videoClipSemanticValueSelected
+          : l10n.videoClipSemanticValueNotSelected,
       button: true,
       selected: _isSelected,
       enabled: !widget.disabled,
       onTap: widget.disabled ? null : widget.onTap,
       onLongPress: widget.disabled ? null : widget.onLongPress,
-      // TODO(l10n): Replace with context.l10n when localization is added.
       hint: widget.disabled
-          ? 'Disabled'
-          : 'Tap to ${_isSelected ? 'deselect' : 'select'}, '
-                'long press to preview',
+          ? l10n.videoClipSemanticHintDisabled
+          : _isSelected
+          ? l10n.videoClipSemanticHintDeselect
+          : l10n.videoClipSemanticHintSelect,
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 100),
         opacity: widget.disabled ? 0.4 : 1.0,
@@ -99,7 +108,8 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
                       _DurationBadge(clip: widget.clip),
 
                     /// Selection check circle - top right
-                    _SelectionOverlay(selectionIndex: widget.selectionIndex),
+                    if (widget.showSelectionIndicator)
+                      _SelectionOverlay(selectionIndex: widget.selectionIndex),
                   ],
                 ),
               ),

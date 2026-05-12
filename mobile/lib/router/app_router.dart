@@ -947,10 +947,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, _) => const LibraryScreen(initialTabIndex: 1),
       ),
       GoRoute(
-        path: LibraryScreen.clipsNoSoundPath,
-        name: LibraryScreen.clipsNoSoundRouteName,
+        path: LibraryScreen.clipsOnlyPath,
+        name: LibraryScreen.clipsOnlyRouteName,
         builder: (_, _) =>
-            const LibraryScreen(initialTabIndex: 1, enableSoundTab: false),
+            const LibraryScreen(tabsMode: LibraryTabsMode.clipsOnly),
       ),
       GoRoute(
         path: LibraryScreen.soundsPath,

@@ -280,7 +280,7 @@ class _SearchInput extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      color: VineTheme.onPrimary,
+      color: VineTheme.surfaceContainerHigh,
       child: TextField(
         controller: controller,
         onChanged: onChanged,
@@ -290,7 +290,7 @@ class _SearchInput extends StatelessWidget {
           hintStyle: const TextStyle(color: VineTheme.onSurfaceMuted),
           prefixIcon: const Icon(Icons.search, color: VineTheme.onSurfaceMuted),
           filled: true,
-          fillColor: VineTheme.backgroundColor,
+          fillColor: VineTheme.surfaceContainer,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,

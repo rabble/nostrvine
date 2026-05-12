@@ -5526,6 +5526,27 @@ class AppLocalizationsTr extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'Seçili klipleri sil';
 
   @override
+  String get librarySelect => 'Seç';
+
+  @override
+  String get librarySortNewestCreation => 'En yeni oluşturulan';
+
+  @override
+  String get librarySortOldestCreation => 'En eski oluşturulan';
+
+  @override
+  String get librarySortLongestClip => 'En uzun klip';
+
+  @override
+  String get librarySortShortestClip => 'En kısa klip';
+
+  @override
+  String get librarySortSquareFirst => 'Önce kare';
+
+  @override
+  String get librarySortVerticalFirst => 'Önce dikey';
+
+  @override
   String get libraryDeleteClipsTitle => 'Klipleri sil';
 
   @override
@@ -5646,6 +5667,28 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get libraryRecordVideo => 'Video kaydet';
+
+  @override
+  String videoClipSemanticLabel(String duration) {
+    return 'Video klibi, $duration saniye';
+  }
+
+  @override
+  String get videoClipSemanticValueSelected => 'Seçildi';
+
+  @override
+  String get videoClipSemanticValueNotSelected => 'Seçilmedi';
+
+  @override
+  String get videoClipSemanticHintDisabled => 'Devre dışı';
+
+  @override
+  String get videoClipSemanticHintSelect =>
+      'Seçmek için dokun, önizlemek için uzun bas';
+
+  @override
+  String get videoClipSemanticHintDeselect =>
+      'Seçimi kaldırmak için dokun, önizlemek için uzun bas';
 
   @override
   String get routerInvalidCreator => 'Geçersiz içerik üretici';

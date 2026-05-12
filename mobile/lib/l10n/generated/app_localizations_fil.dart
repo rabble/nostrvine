@@ -5616,6 +5616,27 @@ class AppLocalizationsFil extends AppLocalizations {
       'Burahin ang mga napiling clip';
 
   @override
+  String get librarySelect => 'Piliin';
+
+  @override
+  String get librarySortNewestCreation => 'Pinakabagong ginawa';
+
+  @override
+  String get librarySortOldestCreation => 'Pinakalumang ginawa';
+
+  @override
+  String get librarySortLongestClip => 'Pinakamahabang clip';
+
+  @override
+  String get librarySortShortestClip => 'Pinakamaikling clip';
+
+  @override
+  String get librarySortSquareFirst => 'Unahin ang parisukat';
+
+  @override
+  String get librarySortVerticalFirst => 'Unahin ang patayo';
+
+  @override
   String get libraryDeleteClipsTitle => 'Burahin ang mga Clip';
 
   @override
@@ -5738,6 +5759,28 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get libraryRecordVideo => 'Mag-record ng Video';
+
+  @override
+  String videoClipSemanticLabel(String duration) {
+    return 'Video clip, $duration segundo';
+  }
+
+  @override
+  String get videoClipSemanticValueSelected => 'Napili';
+
+  @override
+  String get videoClipSemanticValueNotSelected => 'Hindi napili';
+
+  @override
+  String get videoClipSemanticHintDisabled => 'Hindi pinagana';
+
+  @override
+  String get videoClipSemanticHintSelect =>
+      'I-tap para piliin, pindutin nang matagal para i-preview';
+
+  @override
+  String get videoClipSemanticHintDeselect =>
+      'I-tap para alisin ang pagpili, pindutin nang matagal para i-preview';
 
   @override
   String get routerInvalidCreator => 'Invalid na creator';

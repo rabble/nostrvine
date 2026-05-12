@@ -3036,6 +3036,13 @@
   "libraryTabClips": "Clips",
   "librarySaveToCameraRollTooltip": "Save to camera roll",
   "libraryDeleteSelectedClipsTooltip": "Delete selected clips",
+  "librarySelect": "Select",
+  "librarySortNewestCreation": "Newest Creation",
+  "librarySortOldestCreation": "Oldest Creation",
+  "librarySortLongestClip": "Longest Clip",
+  "librarySortShortestClip": "Shortest Clip",
+  "librarySortSquareFirst": "Square First",
+  "librarySortVerticalFirst": "Vertical First",
   "libraryDeleteClipsTitle": "Delete Clips",
   "libraryDeleteClipsMessage": "Are you sure you want to delete {count, plural, one{# selected clip} other{# selected clips}}?",
   "@libraryDeleteClipsMessage": {
@@ -3120,6 +3127,20 @@
   },
   "libraryAddClips": "Add",
   "libraryRecordVideo": "Record a Video",
+  "videoClipSemanticLabel": "Video clip, {duration} seconds",
+  "@videoClipSemanticLabel": {
+    "description": "Accessibility label for a video clip thumbnail. Duration is formatted as seconds with 2 decimal places, e.g. '5.73'.",
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "videoClipSemanticValueSelected": "Selected",
+  "videoClipSemanticValueNotSelected": "Not selected",
+  "videoClipSemanticHintDisabled": "Disabled",
+  "videoClipSemanticHintSelect": "Tap to select, long press to preview",
+  "videoClipSemanticHintDeselect": "Tap to deselect, long press to preview",
   "routerInvalidCreator": "Invalid creator",
   "routerInvalidHashtagRoute": "Invalid hashtag route",
   "categoryGalleryCouldNotLoadVideos": "Could not load videos",

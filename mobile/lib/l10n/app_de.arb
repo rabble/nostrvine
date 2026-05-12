@@ -2417,6 +2417,13 @@
     "libraryDeleteClipsTitle": "Clips löschen",
     "libraryDeleteClipsWarning": "Das kann nicht rückgängig gemacht werden. Die Videodateien werden dauerhaft von deinem Gerät entfernt.",
     "libraryDeleteConfirm": "Löschen",
+    "librarySelect": "Auswählen",
+    "librarySortNewestCreation": "Neueste Aufnahme",
+    "librarySortOldestCreation": "Älteste Aufnahme",
+    "librarySortLongestClip": "Längster Clip",
+    "librarySortShortestClip": "Kürzester Clip",
+    "librarySortSquareFirst": "Quadratisch zuerst",
+    "librarySortVerticalFirst": "Vertikal zuerst",
     "libraryDeleteDraftMessage": "„{title}“ wirklich löschen?",
     "@libraryDeleteDraftMessage": {
         "placeholders": {
@@ -2447,6 +2454,12 @@
     "libraryOpenErrorDescription": "Beim Öffnen deiner Mediathek ist etwas schiefgelaufen. Versuch es noch einmal.",
     "libraryPreparingVideo": "Video wird vorbereitet …",
     "libraryRecordVideo": "Video aufnehmen",
+    "videoClipSemanticLabel": "Videoclip, {duration} Sekunden",
+    "videoClipSemanticValueSelected": "Ausgewählt",
+    "videoClipSemanticValueNotSelected": "Nicht ausgewählt",
+    "videoClipSemanticHintDisabled": "Deaktiviert",
+    "videoClipSemanticHintSelect": "Tippen zum Auswählen, lang drücken für Vorschau",
+    "videoClipSemanticHintDeselect": "Tippen zum Abwählen, lang drücken für Vorschau",
     "librarySaveToCameraRollTooltip": "In der Fotomediathek speichern",
     "librarySecondsRemaining": "Noch {seconds}s",
     "@librarySecondsRemaining": {

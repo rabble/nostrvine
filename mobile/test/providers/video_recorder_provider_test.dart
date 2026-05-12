@@ -1277,7 +1277,7 @@ void main() {
 
   group('VideoRecorderNotifier - Library Navigation', () {
     testWidgets(
-      'openLibrary navigates to clips-no-sound and reinitializes camera on return',
+      'openLibrary navigates to clips-only and reinitializes camera on return',
       (tester) async {
         SharedPreferences.setMockInitialValues({});
         final prefs = await SharedPreferences.getInstance();
@@ -1319,8 +1319,8 @@ void main() {
               ),
             ),
             GoRoute(
-              name: LibraryScreen.clipsNoSoundRouteName,
-              path: LibraryScreen.clipsNoSoundPath,
+              name: LibraryScreen.clipsOnlyRouteName,
+              path: LibraryScreen.clipsOnlyPath,
               builder: (context, state) => Scaffold(
                 body: Center(
                   child: ElevatedButton(

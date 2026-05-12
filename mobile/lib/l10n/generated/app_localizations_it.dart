@@ -5592,6 +5592,27 @@ class AppLocalizationsIt extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'Elimina clip selezionate';
 
   @override
+  String get librarySelect => 'Seleziona';
+
+  @override
+  String get librarySortNewestCreation => 'Creazione più recente';
+
+  @override
+  String get librarySortOldestCreation => 'Creazione più vecchia';
+
+  @override
+  String get librarySortLongestClip => 'Clip più lungo';
+
+  @override
+  String get librarySortShortestClip => 'Clip più corto';
+
+  @override
+  String get librarySortSquareFirst => 'Prima i quadrati';
+
+  @override
+  String get librarySortVerticalFirst => 'Prima i verticali';
+
+  @override
   String get libraryDeleteClipsTitle => 'Elimina clip';
 
   @override
@@ -5713,6 +5734,28 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get libraryRecordVideo => 'Registra un video';
+
+  @override
+  String videoClipSemanticLabel(String duration) {
+    return 'Clip video, $duration secondi';
+  }
+
+  @override
+  String get videoClipSemanticValueSelected => 'Selezionato';
+
+  @override
+  String get videoClipSemanticValueNotSelected => 'Non selezionato';
+
+  @override
+  String get videoClipSemanticHintDisabled => 'Disabilitato';
+
+  @override
+  String get videoClipSemanticHintSelect =>
+      'Tocca per selezionare, tieni premuto per anteprima';
+
+  @override
+  String get videoClipSemanticHintDeselect =>
+      'Tocca per deselezionare, tieni premuto per anteprima';
 
   @override
   String get routerInvalidCreator => 'Creatore non valido';

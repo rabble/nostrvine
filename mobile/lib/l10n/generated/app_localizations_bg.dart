@@ -5598,6 +5598,27 @@ class AppLocalizationsBg extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'Изтрийте избраните клипове';
 
   @override
+  String get librarySelect => 'Избери';
+
+  @override
+  String get librarySortNewestCreation => 'Най-ново създадени';
+
+  @override
+  String get librarySortOldestCreation => 'Най-старо създадени';
+
+  @override
+  String get librarySortLongestClip => 'Най-дълъг клип';
+
+  @override
+  String get librarySortShortestClip => 'Най-кратък клип';
+
+  @override
+  String get librarySortSquareFirst => 'Първо квадратни';
+
+  @override
+  String get librarySortVerticalFirst => 'Първо вертикални';
+
+  @override
   String get libraryDeleteClipsTitle => 'Изтриване на клипове';
 
   @override
@@ -5727,6 +5748,28 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get libraryRecordVideo => 'Запишете видео';
+
+  @override
+  String videoClipSemanticLabel(String duration) {
+    return 'Видео клип, $duration секунди';
+  }
+
+  @override
+  String get videoClipSemanticValueSelected => 'Избран';
+
+  @override
+  String get videoClipSemanticValueNotSelected => 'Не е избран';
+
+  @override
+  String get videoClipSemanticHintDisabled => 'Деактивиран';
+
+  @override
+  String get videoClipSemanticHintSelect =>
+      'Докоснете за избор, задръжте за преглед';
+
+  @override
+  String get videoClipSemanticHintDeselect =>
+      'Докоснете за премахване на избора, задръжте за преглед';
 
   @override
   String get routerInvalidCreator => 'Невалиден създател';

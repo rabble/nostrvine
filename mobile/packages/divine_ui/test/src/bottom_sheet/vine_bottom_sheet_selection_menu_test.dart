@@ -83,7 +83,12 @@ void main() {
       await tester.tap(find.text('Show Menu'));
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.check), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is DivineIcon && w.icon == DivineIconName.check,
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('shows no checkmark when nothing selected', (tester) async {
@@ -106,7 +111,48 @@ void main() {
       await tester.tap(find.text('Show Menu'));
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.check), findsNothing);
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is DivineIcon && w.icon == DivineIconName.check,
+        ),
+        findsNothing,
+      );
+    });
+
+    testWidgets('shows leading icon when provided', (tester) async {
+      const optionsWithIcon = [
+        VineBottomSheetSelectionOptionData(
+          label: 'Newest',
+          value: 'newest',
+          leadingIcon: DivineIconName.arrowFatLineDown,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => VineBottomSheetSelectionMenu.show(
+                  context: context,
+                  options: optionsWithIcon,
+                ),
+                child: const Text('Show Menu'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Show Menu'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is DivineIcon && w.icon == DivineIconName.arrowFatLineDown,
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('returns selected value when option tapped', (tester) async {
@@ -164,8 +210,11 @@ void main() {
       await tester.tap(find.text('Show Menu'));
       await tester.pumpAndSettle();
 
-      // Dismiss by tapping outside (the barrier)
-      await tester.tapAt(const Offset(10, 10));
+      // Dismiss by tapping the modal barrier.
+      await tester.tap(
+        find.byType(ModalBarrier).first,
+        warnIfMissed: false,
+      );
       await tester.pumpAndSettle();
 
       expect(selectedValue, isNull);
@@ -183,6 +232,16 @@ void main() {
 
       expect(data.label, 'Test');
       expect(data.value, 'test_value');
+    });
+
+    test('creates with optional leading icon', () {
+      const data = VineBottomSheetSelectionOptionData(
+        label: 'Test',
+        value: 'test_value',
+        leadingIcon: DivineIconName.arrowUp,
+      );
+
+      expect(data.leadingIcon, DivineIconName.arrowUp);
     });
   });
 }

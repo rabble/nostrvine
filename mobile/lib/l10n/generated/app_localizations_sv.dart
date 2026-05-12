@@ -5544,6 +5544,27 @@ class AppLocalizationsSv extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'Ta bort valda klipp';
 
   @override
+  String get librarySelect => 'Välj';
+
+  @override
+  String get librarySortNewestCreation => 'Senast skapade';
+
+  @override
+  String get librarySortOldestCreation => 'Äldst skapade';
+
+  @override
+  String get librarySortLongestClip => 'Längsta klipp';
+
+  @override
+  String get librarySortShortestClip => 'Kortaste klipp';
+
+  @override
+  String get librarySortSquareFirst => 'Kvadratiska först';
+
+  @override
+  String get librarySortVerticalFirst => 'Vertikala först';
+
+  @override
   String get libraryDeleteClipsTitle => 'Ta bort klipp';
 
   @override
@@ -5665,6 +5686,28 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get libraryRecordVideo => 'Spela in video';
+
+  @override
+  String videoClipSemanticLabel(String duration) {
+    return 'Videoklipp, $duration sekunder';
+  }
+
+  @override
+  String get videoClipSemanticValueSelected => 'Valt';
+
+  @override
+  String get videoClipSemanticValueNotSelected => 'Inte valt';
+
+  @override
+  String get videoClipSemanticHintDisabled => 'Inaktiverat';
+
+  @override
+  String get videoClipSemanticHintSelect =>
+      'Tryck för att välja, håll för förhandsgranskning';
+
+  @override
+  String get videoClipSemanticHintDeselect =>
+      'Tryck för att avmarkera, håll för förhandsgranskning';
 
   @override
   String get routerInvalidCreator => 'Ogiltig skapare';

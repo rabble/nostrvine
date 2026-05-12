@@ -19,7 +19,19 @@ import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/widgets/library/library.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
+
+enum LibraryTabsMode { allTabs, clipsOnly }
+
+enum _LibraryClipSort {
+  newestCreation,
+  oldestCreation,
+  longestClip,
+  shortestClip,
+  squareFirst,
+  verticalFirst,
+}
 
 class LibraryScreen extends ConsumerStatefulWidget {
   /// Route name for drafts path.
@@ -34,11 +46,11 @@ class LibraryScreen extends ConsumerStatefulWidget {
   /// Path for clips route.
   static const clipsPath = '/clips';
 
-  /// Route name for clips path without Sounds tab.
-  static const clipsNoSoundRouteName = 'clipsNoSound';
+  /// Route name for clips-only path.
+  static const clipsOnlyRouteName = 'clipsOnly';
 
-  /// Path for clips route without Sounds tab.
-  static const clipsNoSoundPath = '/clips-no-sound';
+  /// Path for clips-only route.
+  static const clipsOnlyPath = '/clips-only';
 
   /// Route name for sounds path.
   static const soundsRouteName = 'sounds';
@@ -50,7 +62,7 @@ class LibraryScreen extends ConsumerStatefulWidget {
     super.key,
     this.initialTabIndex = 0,
     this.selectionMode = false,
-    this.enableSoundTab = true,
+    this.tabsMode = LibraryTabsMode.allTabs,
     this.editorClips = const [],
     this.scrollController,
   });
@@ -69,8 +81,8 @@ class LibraryScreen extends ConsumerStatefulWidget {
   /// - Selected clips are added to the video editor on confirmation
   final bool selectionMode;
 
-  /// Whether the Sounds tab is visible.
-  final bool enableSoundTab;
+  /// Controls whether all tabs are shown or only the clips content.
+  final LibraryTabsMode tabsMode;
 
   /// Current editor clips, used to calculate remaining duration and
   /// target aspect ratio in selection mode.
@@ -85,16 +97,41 @@ class LibraryScreen extends ConsumerStatefulWidget {
 
 class _LibraryScreenState extends ConsumerState<LibraryScreen>
     with SingleTickerProviderStateMixin {
+  static const _libraryClipSortPrefsKey = 'library_clip_sort';
+
   late final TabController _tabController;
+  late int _activeTabIndex;
+  _LibraryClipSort _clipSort = _LibraryClipSort.newestCreation;
+  bool _isLibrarySelectionMode = false;
+  bool _didAutoOpenSelectionMode = false;
+
+  bool get _isClipsOnlyMode =>
+      widget.selectionMode || widget.tabsMode == LibraryTabsMode.clipsOnly;
+
+  bool get _isSelectionEnabled =>
+      widget.selectionMode || _isLibrarySelectionMode;
+
+  bool get _shouldAutoOpenSelectionMode =>
+      !widget.selectionMode && widget.tabsMode == LibraryTabsMode.clipsOnly;
+
+  bool get _isSelectionModeLockedToCloseOnly =>
+      _shouldAutoOpenSelectionMode &&
+      _didAutoOpenSelectionMode &&
+      _isLibrarySelectionMode;
 
   @override
   void initState() {
     super.initState();
+    final initialIndex = _isClipsOnlyMode
+        ? 0
+        : widget.initialTabIndex.clamp(0, 2);
+    _activeTabIndex = initialIndex;
     _tabController = TabController(
-      length: widget.enableSoundTab ? 3 : 2,
-      initialIndex: widget.initialTabIndex,
+      length: _isClipsOnlyMode ? 1 : 3,
+      initialIndex: initialIndex,
       vsync: this,
-    );
+    )..addListener(_onTabChanged);
+    _restoreSavedClipSort();
 
     Log.info(
       '📚 ClipLibrary opened (selectionMode: ${widget.selectionMode})',
@@ -105,8 +142,37 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
 
   @override
   void dispose() {
+    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     super.dispose();
+  }
+
+  void _onTabChanged() {
+    if (!mounted) return;
+    if (_activeTabIndex == _tabController.index) return;
+    setState(() {
+      _activeTabIndex = _tabController.index;
+    });
+  }
+
+  Future<void> _restoreSavedClipSort() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedSortName = prefs.getString(_libraryClipSortPrefsKey);
+    if (savedSortName == null || !mounted) return;
+
+    final savedSort = _LibraryClipSort.values.where(
+      (value) => value.name == savedSortName,
+    );
+    if (savedSort.isEmpty || savedSort.first == _clipSort) return;
+
+    setState(() {
+      _clipSort = savedSort.first;
+    });
+  }
+
+  Future<void> _saveClipSortPreference(_LibraryClipSort sort) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_libraryClipSortPrefsKey, sort.name);
   }
 
   void _showSnackBar(
@@ -122,6 +188,88 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
         content: DivineSnackbarContainer(label: label, error: error),
       ),
     );
+  }
+
+  List<DivineVideoClip> _sortedClips(List<DivineVideoClip> clips) {
+    final sorted = List<DivineVideoClip>.from(clips);
+    switch (_clipSort) {
+      case _LibraryClipSort.newestCreation:
+        sorted.sort((a, b) => b.recordedAt.compareTo(a.recordedAt));
+      case _LibraryClipSort.oldestCreation:
+        sorted.sort((a, b) => a.recordedAt.compareTo(b.recordedAt));
+      case _LibraryClipSort.longestClip:
+        sorted.sort((a, b) => b.duration.compareTo(a.duration));
+      case _LibraryClipSort.shortestClip:
+        sorted.sort((a, b) => a.duration.compareTo(b.duration));
+      case _LibraryClipSort.squareFirst:
+        sorted.sort((a, b) {
+          final aRank = a.targetAspectRatio == .square ? 0 : 1;
+          final bRank = b.targetAspectRatio == .square ? 0 : 1;
+          if (aRank != bRank) {
+            return aRank.compareTo(bRank);
+          }
+          return b.recordedAt.compareTo(a.recordedAt);
+        });
+      case _LibraryClipSort.verticalFirst:
+        sorted.sort((a, b) {
+          final aRank = a.targetAspectRatio == .vertical ? 0 : 1;
+          final bRank = b.targetAspectRatio == .vertical ? 0 : 1;
+          if (aRank != bRank) {
+            return aRank.compareTo(bRank);
+          }
+          return b.recordedAt.compareTo(a.recordedAt);
+        });
+    }
+    return sorted;
+  }
+
+  Future<void> _openSortMenu(BuildContext context) async {
+    final selected = await VineBottomSheetSelectionMenu.show(
+      context: context,
+      selectedValue: _clipSort.name,
+      options: [
+        VineBottomSheetSelectionOptionData(
+          label: context.l10n.librarySortNewestCreation,
+          value: 'newestCreation',
+          leadingIcon: .arrowFatLineDown,
+        ),
+        VineBottomSheetSelectionOptionData(
+          label: context.l10n.librarySortOldestCreation,
+          value: 'oldestCreation',
+          leadingIcon: .arrowFatLineUp,
+        ),
+        VineBottomSheetSelectionOptionData(
+          label: context.l10n.librarySortLongestClip,
+          value: 'longestClip',
+          leadingIcon: .arrowUp,
+        ),
+        VineBottomSheetSelectionOptionData(
+          label: context.l10n.librarySortShortestClip,
+          value: 'shortestClip',
+          leadingIcon: .arrowDown,
+        ),
+        VineBottomSheetSelectionOptionData(
+          label: context.l10n.librarySortSquareFirst,
+          value: 'squareFirst',
+          leadingIcon: .cropSquare,
+        ),
+        VineBottomSheetSelectionOptionData(
+          label: context.l10n.librarySortVerticalFirst,
+          value: 'verticalFirst',
+          leadingIcon: .cropPortrait,
+        ),
+      ],
+    );
+
+    if (selected == null || !context.mounted) return;
+
+    setState(() {
+      _clipSort = _LibraryClipSort.values.firstWhere(
+        (value) => value.name == selected,
+        orElse: () => .newestCreation,
+      );
+    });
+    await _saveClipSortPreference(_clipSort);
   }
 
   Future<void> _createVideoFromSelected(
@@ -162,6 +310,34 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     }
   }
 
+  void _exitLibrarySelectionMode(ClipsLibraryBloc clipsBloc) {
+    setState(() {
+      _isLibrarySelectionMode = false;
+    });
+    clipsBloc.add(const ClipsLibraryClearSelection());
+  }
+
+  Future<void> _confirmDeleteSelectedClips(
+    BuildContext context,
+    ClipsLibraryBloc clipsBloc,
+    int selectedCount,
+  ) async {
+    await VineBottomSheetPrompt.show<void>(
+      context: context,
+      sticker: .alert,
+      title: context.l10n.libraryDeleteClipsTitle,
+      subtitle: context.l10n.libraryDeleteClipsMessage(selectedCount),
+      additionalText: context.l10n.libraryDeleteClipsWarning,
+      primaryButtonText: context.l10n.libraryDeleteConfirm,
+      secondaryButtonText: context.l10n.commonCancel,
+      onPrimaryPressed: () {
+        context.pop();
+        clipsBloc.add(const ClipsLibraryDeleteSelected());
+      },
+      onSecondaryPressed: context.pop,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (kIsWeb) {
@@ -176,16 +352,21 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     );
     final isPreparing = publishState == VideoPublishState.preparing;
 
+    final clipLibraryService = ref.watch(clipLibraryServiceProvider);
+    final gallerySaveService = ref.watch(gallerySaveServiceProvider);
+    final draftStorageService = ref.watch(draftStorageServiceProvider);
+
     return MultiBlocProvider(
       providers: [
         BlocProvider<ClipsLibraryBloc>(
+          key: ValueKey((clipLibraryService, gallerySaveService)),
           create: (_) {
             final editorClipIds = widget.selectionMode
                 ? widget.editorClips.map((c) => c.id).toSet()
                 : ref.read(clipManagerProvider).clips.map((c) => c.id).toSet();
             return ClipsLibraryBloc(
-              clipLibraryService: ref.read(clipLibraryServiceProvider),
-              gallerySaveService: ref.read(gallerySaveServiceProvider),
+              clipLibraryService: clipLibraryService,
+              gallerySaveService: gallerySaveService,
             )..add(
               ClipsLibraryLoadRequested(
                 preSelectedIds: editorClipIds,
@@ -197,8 +378,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
           },
         ),
         BlocProvider<DraftsLibraryBloc>(
+          key: ValueKey(draftStorageService),
           create: (_) => DraftsLibraryBloc(
-            draftStorageService: ref.read(draftStorageServiceProvider),
+            draftStorageService: draftStorageService,
           )..add(const DraftsLibraryLoadRequested()),
         ),
       ],
@@ -208,6 +390,20 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
 
           return MultiBlocListener(
             listeners: [
+              BlocListener<ClipsLibraryBloc, ClipsLibraryState>(
+                listenWhen: (prev, curr) =>
+                    _shouldAutoOpenSelectionMode &&
+                    !_didAutoOpenSelectionMode &&
+                    prev.selectedClipIds.isEmpty &&
+                    curr.selectedClipIds.isNotEmpty,
+                listener: (context, state) {
+                  if (!mounted || _isLibrarySelectionMode) return;
+                  setState(() {
+                    _isLibrarySelectionMode = true;
+                    _didAutoOpenSelectionMode = true;
+                  });
+                },
+              ),
               BlocListener<ClipsLibraryBloc, ClipsLibraryState>(
                 listenWhen: (prev, curr) =>
                     curr.lastGallerySaveResult != null &&
@@ -265,14 +461,28 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
             ],
             child: BlocBuilder<ClipsLibraryBloc, ClipsLibraryState>(
               builder: (context, clipsState) {
+                final isClipsTabActive =
+                    _isClipsOnlyMode || _activeTabIndex == 1;
+
+                if (!widget.selectionMode &&
+                    !_isClipsOnlyMode &&
+                    _isLibrarySelectionMode &&
+                    !isClipsTabActive) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (!mounted || !_isLibrarySelectionMode) return;
+                    _exitLibrarySelectionMode(clipsBloc);
+                  });
+                }
+
+                final sortedClips = _sortedClips(clipsState.clips);
                 final targetAspectRatio =
                     widget.selectionMode && editorClips.isNotEmpty
                     ? editorClips.first.targetAspectRatio.value
                     : clipsState.selectedClipIds.isNotEmpty
-                    ? clipsState.clips
+                    ? sortedClips
                           .firstWhere(
                             (el) => el.id == clipsState.selectedClipIds.first,
-                            orElse: () => clipsState.clips.first,
+                            orElse: () => sortedClips.first,
                           )
                           .targetAspectRatio
                           .value
@@ -280,36 +490,213 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
 
                 return Stack(
                   children: [
-                    Scaffold(
-                      backgroundColor: widget.selectionMode
-                          ? VineTheme.surfaceBackground
-                          : VineTheme.onPrimary,
-                      appBar: widget.selectionMode
-                          ? null
-                          : _LibraryAppBar(
-                              tabController: _tabController,
-                              enableSoundTab: widget.enableSoundTab,
-                              onNext: () => _createVideoFromSelected(
-                                context,
-                                selectedClips: clipsState.selectedClips,
-                                clipsBloc: clipsBloc,
+                    Material(
+                      color: VineTheme.onPrimary,
+                      child: Column(
+                        children: [
+                          if (!widget.selectionMode)
+                            Padding(
+                              padding: const .all(16),
+                              child: Row(
+                                spacing: 8,
+                                children: [
+                                  DivineIconButton(
+                                    size: .small,
+                                    type: .secondary,
+                                    icon: _isLibrarySelectionMode
+                                        ? .x
+                                        : .caretLeft,
+                                    semanticLabel:
+                                        _isLibrarySelectionMode &&
+                                            !_isSelectionModeLockedToCloseOnly
+                                        ? context.l10n.commonCancel
+                                        : null,
+                                    onPressed: () {
+                                      if (_isLibrarySelectionMode &&
+                                          !_isSelectionModeLockedToCloseOnly) {
+                                        _exitLibrarySelectionMode(clipsBloc);
+                                        return;
+                                      }
+                                      if (context.canPop()) {
+                                        context.pop();
+                                      } else {
+                                        context.go(
+                                          VideoFeedPage.pathForIndex(0),
+                                        );
+                                      }
+                                    },
+                                  ),
+
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const .symmetric(horizontal: 8),
+                                      child: Text(
+                                        context.l10n.profileLibraryLabel,
+                                        style: VineTheme.titleMediumFont(),
+                                      ),
+                                    ),
+                                  ),
+                                  if (isClipsTabActive) ...[
+                                    DivineIconButton(
+                                      size: .small,
+                                      type: .secondary,
+                                      icon: .funnelSimple,
+                                      onPressed: () => _openSortMenu(context),
+                                    ),
+                                    if (!_isLibrarySelectionMode)
+                                      DivineButton(
+                                        size: .small,
+                                        type: .secondary,
+                                        label: context.l10n.librarySelect,
+                                        onPressed: () {
+                                          setState(() {
+                                            _isLibrarySelectionMode = true;
+                                          });
+                                        },
+                                      ),
+
+                                    if (_isLibrarySelectionMode)
+                                      DivineIconButton(
+                                        size: .small,
+                                        type: .error,
+                                        icon: .trash,
+                                        semanticLabel:
+                                            context.l10n.commonDelete,
+                                        onPressed:
+                                            clipsState
+                                                .selectedClipIds
+                                                .isNotEmpty
+                                            ? () {
+                                                _confirmDeleteSelectedClips(
+                                                  context,
+                                                  clipsBloc,
+                                                  clipsState
+                                                      .selectedClipIds
+                                                      .length,
+                                                );
+                                              }
+                                            : null,
+                                      ),
+                                  ],
+                                ],
                               ),
                             ),
-                      body: widget.selectionMode
-                          ? _SelectionBody(
-                              scrollController: widget.scrollController,
-                              targetAspectRatio: targetAspectRatio,
-                              onCreate: () => _createVideoFromSelected(
-                                context,
-                                selectedClips: clipsState.selectedClips,
-                                clipsBloc: clipsBloc,
+
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: const .all(
+                                .circular(VineTheme.shellInnerCornerRadius),
                               ),
-                            )
-                          : _TabBody(
-                              tabController: _tabController,
-                              enableSoundTab: widget.enableSoundTab,
-                              targetAspectRatio: targetAspectRatio,
+                              child: ColoredBox(
+                                color: VineTheme.surfaceContainerHigh,
+                                child: Column(
+                                  crossAxisAlignment: .stretch,
+                                  children: [
+                                    if (!_isClipsOnlyMode)
+                                      const SizedBox(height: 12),
+                                    if (!_isClipsOnlyMode)
+                                      TabBar(
+                                        controller: _tabController,
+                                        isScrollable: true,
+                                        tabAlignment: TabAlignment.start,
+                                        padding:
+                                            const EdgeInsetsDirectional.only(
+                                              start: 16,
+                                            ),
+                                        indicatorColor:
+                                            VineTheme.tabIndicatorGreen,
+                                        indicatorWeight: 4,
+                                        indicatorSize: TabBarIndicatorSize.tab,
+                                        dividerColor: VineTheme.transparent,
+                                        labelColor: VineTheme.whiteText,
+                                        unselectedLabelColor:
+                                            VineTheme.onSurfaceMuted55,
+                                        labelPadding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 14,
+                                            ),
+                                        labelStyle: VineTheme.titleMediumFont(),
+                                        unselectedLabelStyle:
+                                            VineTheme.titleMediumFont(
+                                              color: VineTheme.onSurfaceMuted55,
+                                            ),
+                                        tabs: [
+                                          Tab(
+                                            text: context.l10n.libraryTabDrafts,
+                                          ),
+                                          Tab(
+                                            text: context.l10n.libraryTabClips,
+                                          ),
+                                          Tab(text: context.l10n.soundsTitle),
+                                        ],
+                                      ),
+                                    if (!_isClipsOnlyMode)
+                                      const SizedBox(height: 2),
+                                    Expanded(
+                                      child: widget.selectionMode
+                                          ? _SelectionBody(
+                                              scrollController:
+                                                  widget.scrollController,
+                                              targetAspectRatio:
+                                                  targetAspectRatio,
+                                              onCreate: () =>
+                                                  _createVideoFromSelected(
+                                                    context,
+                                                    selectedClips: clipsState
+                                                        .selectedClips,
+                                                    clipsBloc: clipsBloc,
+                                                  ),
+                                            )
+                                          : _TabBody(
+                                              clips: sortedClips,
+                                              selectionEnabled:
+                                                  _isSelectionEnabled,
+                                              isClipsOnlyMode: _isClipsOnlyMode,
+                                              tabController: _tabController,
+                                              targetAspectRatio:
+                                                  targetAspectRatio,
+                                            ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
+                          ),
+
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 120),
+                            transitionBuilder: (child, animation) =>
+                                FadeTransition(
+                                  opacity: animation,
+                                  child: SizeTransition(
+                                    sizeFactor: animation,
+                                    axisAlignment: -1,
+                                    child: child,
+                                  ),
+                                ),
+                            child:
+                                !widget.selectionMode &&
+                                    _isSelectionEnabled &&
+                                    (_activeTabIndex == 1 ||
+                                        widget.tabsMode == .clipsOnly) &&
+                                    clipsState.selectedClipIds.isNotEmpty
+                                ? Container(
+                                    padding: const .all(16),
+                                    color: VineTheme.onPrimary,
+                                    child: DivineButton(
+                                      expanded: true,
+                                      label: context.l10n.libraryCreateVideo,
+                                      onPressed: () => _createVideoFromSelected(
+                                        context,
+                                        selectedClips: clipsState.selectedClips,
+                                        clipsBloc: clipsBloc,
+                                      ),
+                                    ),
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
+                        ],
+                      ),
                     ),
                     if (clipsState.isDeleting ||
                         clipsState.isSavingToGallery ||
@@ -393,79 +780,6 @@ class _LibraryWebUnavailableScreen extends StatelessWidget {
   }
 }
 
-class _LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const _LibraryAppBar({
-    required this.tabController,
-    required this.onNext,
-    this.enableSoundTab = true,
-  });
-
-  final TabController tabController;
-  final VoidCallback onNext;
-  final bool enableSoundTab;
-
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight + 48);
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocSelector<ClipsLibraryBloc, ClipsLibraryState, bool>(
-      selector: (state) => state.selectedClipIds.isNotEmpty,
-      builder: (context, hasSelection) {
-        return DiVineAppBar(
-          title: context.l10n.profileLibraryLabel,
-          style: DiVineAppBarStyle(titleStyle: VineTheme.titleMediumFont()),
-          backgroundColor: VineTheme.onPrimary,
-          surfaceTintColor: VineTheme.transparent,
-          shape: const Border(
-            bottom: BorderSide(color: VineTheme.outlineDisabled),
-          ),
-          showBackButton: true,
-          onBackPressed: () {
-            final ctx = context;
-            if (ctx.canPop()) {
-              ctx.pop();
-            } else {
-              ctx.go(VideoFeedPage.pathForIndex(0));
-            }
-          },
-          actions: hasSelection
-              ? [
-                  DiVineAppBarAction(
-                    backgroundColor: VineTheme.primary,
-                    iconColor: VineTheme.onPrimary,
-                    icon: SvgIconSource(DivineIconName.caretRight.assetPath),
-                    onPressed: onNext,
-                    tooltip: context.l10n.commonNext,
-                    semanticLabel: context.l10n.commonNext,
-                  ),
-                ]
-              : const [],
-          bottom: TabBar(
-            controller: tabController,
-            indicator: const UnderlineTabIndicator(
-              borderSide: BorderSide(color: VineTheme.vineGreen, width: 6),
-              borderRadius: BorderRadius.zero,
-            ),
-            labelColor: VineTheme.whiteText,
-            unselectedLabelColor: VineTheme.secondaryText,
-            labelStyle: VineTheme.tabTextStyle(),
-            padding: .zero,
-            labelPadding: const .symmetric(horizontal: 16),
-            isScrollable: true,
-            tabAlignment: .start,
-            tabs: [
-              Tab(text: context.l10n.libraryTabDrafts),
-              Tab(text: context.l10n.libraryTabClips),
-              if (enableSoundTab) Tab(text: context.l10n.soundsTitle),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
 class _SelectionBody extends StatelessWidget {
   const _SelectionBody({
     required this.onCreate,
@@ -497,22 +811,40 @@ class _SelectionBody extends StatelessWidget {
 class _TabBody extends StatelessWidget {
   const _TabBody({
     required this.tabController,
-    this.enableSoundTab = true,
+    required this.isClipsOnlyMode,
+    required this.clips,
+    required this.selectionEnabled,
     this.targetAspectRatio,
   });
 
   final TabController tabController;
-  final bool enableSoundTab;
+  final bool isClipsOnlyMode;
+  final List<DivineVideoClip> clips;
+  final bool selectionEnabled;
   final double? targetAspectRatio;
 
   @override
   Widget build(BuildContext context) {
+    if (isClipsOnlyMode) {
+      return ClipsTab(
+        clips: clips,
+        selectionEnabled: selectionEnabled,
+        targetAspectRatio: targetAspectRatio,
+        showRecordButton: false,
+      );
+    }
+
     return TabBarView(
       controller: tabController,
       children: [
         const DraftsTab(showRecordButton: false, showAutosavedDraft: false),
-        ClipsTab(targetAspectRatio: targetAspectRatio, showRecordButton: false),
-        if (enableSoundTab) const SoundsTab(),
+        ClipsTab(
+          clips: clips,
+          selectionEnabled: selectionEnabled,
+          targetAspectRatio: targetAspectRatio,
+          showRecordButton: false,
+        ),
+        const SoundsTab(),
       ],
     );
   }

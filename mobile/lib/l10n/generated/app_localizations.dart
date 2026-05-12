@@ -9836,6 +9836,48 @@ abstract class AppLocalizations {
   /// **'Delete selected clips'**
   String get libraryDeleteSelectedClipsTooltip;
 
+  /// No description provided for @librarySelect.
+  ///
+  /// In en, this message translates to:
+  /// **'Select'**
+  String get librarySelect;
+
+  /// No description provided for @librarySortNewestCreation.
+  ///
+  /// In en, this message translates to:
+  /// **'Newest Creation'**
+  String get librarySortNewestCreation;
+
+  /// No description provided for @librarySortOldestCreation.
+  ///
+  /// In en, this message translates to:
+  /// **'Oldest Creation'**
+  String get librarySortOldestCreation;
+
+  /// No description provided for @librarySortLongestClip.
+  ///
+  /// In en, this message translates to:
+  /// **'Longest Clip'**
+  String get librarySortLongestClip;
+
+  /// No description provided for @librarySortShortestClip.
+  ///
+  /// In en, this message translates to:
+  /// **'Shortest Clip'**
+  String get librarySortShortestClip;
+
+  /// No description provided for @librarySortSquareFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Square First'**
+  String get librarySortSquareFirst;
+
+  /// No description provided for @librarySortVerticalFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Vertical First'**
+  String get librarySortVerticalFirst;
+
   /// No description provided for @libraryDeleteClipsTitle.
   ///
   /// In en, this message translates to:
@@ -10009,6 +10051,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Record a Video'**
   String get libraryRecordVideo;
+
+  /// Accessibility label for a video clip thumbnail. Duration is formatted as seconds with 2 decimal places, e.g. '5.73'.
+  ///
+  /// In en, this message translates to:
+  /// **'Video clip, {duration} seconds'**
+  String videoClipSemanticLabel(String duration);
+
+  /// No description provided for @videoClipSemanticValueSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected'**
+  String get videoClipSemanticValueSelected;
+
+  /// No description provided for @videoClipSemanticValueNotSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Not selected'**
+  String get videoClipSemanticValueNotSelected;
+
+  /// No description provided for @videoClipSemanticHintDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled'**
+  String get videoClipSemanticHintDisabled;
+
+  /// No description provided for @videoClipSemanticHintSelect.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to select, long press to preview'**
+  String get videoClipSemanticHintSelect;
+
+  /// No description provided for @videoClipSemanticHintDeselect.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to deselect, long press to preview'**
+  String get videoClipSemanticHintDeselect;
 
   /// No description provided for @routerInvalidCreator.
   ///

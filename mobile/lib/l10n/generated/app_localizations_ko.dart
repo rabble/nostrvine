@@ -5337,6 +5337,27 @@ class AppLocalizationsKo extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => '선택한 클립 삭제';
 
   @override
+  String get librarySelect => '선택';
+
+  @override
+  String get librarySortNewestCreation => '최신 생성순';
+
+  @override
+  String get librarySortOldestCreation => '오래된 생성순';
+
+  @override
+  String get librarySortLongestClip => '긴 클립순';
+
+  @override
+  String get librarySortShortestClip => '짧은 클립순';
+
+  @override
+  String get librarySortSquareFirst => '정사각형 먼저';
+
+  @override
+  String get librarySortVerticalFirst => '세로형 먼저';
+
+  @override
   String get libraryDeleteClipsTitle => '클립 삭제';
 
   @override
@@ -5454,6 +5475,26 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get libraryRecordVideo => '동영상 녹화';
+
+  @override
+  String videoClipSemanticLabel(String duration) {
+    return '동영상 클립, $duration초';
+  }
+
+  @override
+  String get videoClipSemanticValueSelected => '선택됨';
+
+  @override
+  String get videoClipSemanticValueNotSelected => '선택 안 됨';
+
+  @override
+  String get videoClipSemanticHintDisabled => '비활성화됨';
+
+  @override
+  String get videoClipSemanticHintSelect => '탭하여 선택, 길게 눌러 미리보기';
+
+  @override
+  String get videoClipSemanticHintDeselect => '탭하여 선택 해제, 길게 눌러 미리보기';
 
   @override
   String get routerInvalidCreator => '유효하지 않은 크리에이터';

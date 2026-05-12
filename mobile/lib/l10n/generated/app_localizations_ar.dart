@@ -5497,6 +5497,27 @@ class AppLocalizationsAr extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'حذف المقاطع المحددة';
 
   @override
+  String get librarySelect => 'تحديد';
+
+  @override
+  String get librarySortNewestCreation => 'الأحدث إنشاءً';
+
+  @override
+  String get librarySortOldestCreation => 'الأقدم إنشاءً';
+
+  @override
+  String get librarySortLongestClip => 'أطول مقطع';
+
+  @override
+  String get librarySortShortestClip => 'أقصر مقطع';
+
+  @override
+  String get librarySortSquareFirst => 'المربّع أولاً';
+
+  @override
+  String get librarySortVerticalFirst => 'العمودي أولاً';
+
+  @override
   String get libraryDeleteClipsTitle => 'حذف المقاطع';
 
   @override
@@ -5617,6 +5638,28 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get libraryRecordVideo => 'تسجيل فيديو';
+
+  @override
+  String videoClipSemanticLabel(String duration) {
+    return 'مقطع فيديو، $duration ثانية';
+  }
+
+  @override
+  String get videoClipSemanticValueSelected => 'محدد';
+
+  @override
+  String get videoClipSemanticValueNotSelected => 'غير محدد';
+
+  @override
+  String get videoClipSemanticHintDisabled => 'معطل';
+
+  @override
+  String get videoClipSemanticHintSelect =>
+      'انقر للتحديد، اضغط مطولاً للمعاينة';
+
+  @override
+  String get videoClipSemanticHintDeselect =>
+      'انقر لإلغاء التحديد، اضغط مطولاً للمعاينة';
 
   @override
   String get routerInvalidCreator => 'منشئ غير صالح';

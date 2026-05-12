@@ -5320,6 +5320,27 @@ class AppLocalizationsJa extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => '選択したクリップを削除';
 
   @override
+  String get librarySelect => '選択';
+
+  @override
+  String get librarySortNewestCreation => '作成日が新しい順';
+
+  @override
+  String get librarySortOldestCreation => '作成日が古い順';
+
+  @override
+  String get librarySortLongestClip => '長いクリップ順';
+
+  @override
+  String get librarySortShortestClip => '短いクリップ順';
+
+  @override
+  String get librarySortSquareFirst => '正方形を先に';
+
+  @override
+  String get librarySortVerticalFirst => '縦長を先に';
+
+  @override
   String get libraryDeleteClipsTitle => 'クリップを削除';
 
   @override
@@ -5430,6 +5451,26 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get libraryRecordVideo => '動画を録画';
+
+  @override
+  String videoClipSemanticLabel(String duration) {
+    return '動画クリップ、$duration秒';
+  }
+
+  @override
+  String get videoClipSemanticValueSelected => '選択済み';
+
+  @override
+  String get videoClipSemanticValueNotSelected => '未選択';
+
+  @override
+  String get videoClipSemanticHintDisabled => '無効';
+
+  @override
+  String get videoClipSemanticHintSelect => 'タップして選択、長押しでプレビュー';
+
+  @override
+  String get videoClipSemanticHintDeselect => 'タップして選択解除、長押しでプレビュー';
 
   @override
   String get routerInvalidCreator => '無効なクリエイター';

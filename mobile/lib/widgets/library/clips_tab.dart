@@ -21,10 +21,18 @@ class ClipsTab extends StatelessWidget {
   /// Creates a clips tab.
   const ClipsTab({
     required this.showRecordButton,
+    this.selectionEnabled = true,
+    this.clips,
     this.targetAspectRatio,
     this.scrollController,
     super.key,
   });
+
+  /// Optional externally provided clip order.
+  final List<DivineVideoClip>? clips;
+
+  /// Whether tapping a clip should toggle selection.
+  final bool selectionEnabled;
 
   /// Whether in selection mode (adding to existing project).
   final bool showRecordButton;
@@ -39,6 +47,8 @@ class ClipsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<ClipsLibraryBloc, ClipsLibraryState>(
       builder: (context, state) {
+        final visibleClips = clips ?? state.clips;
+
         if (state.isLoading) {
           return const Center(
             child: CircularProgressIndicator(color: VineTheme.vineGreen),
@@ -79,7 +89,7 @@ class ClipsTab extends StatelessWidget {
           );
         }
 
-        if (state.clips.isEmpty) {
+        if (visibleClips.isEmpty) {
           return EmptyLibraryState(
             icon: DivineIconName.filmSlate,
             title: context.l10n.libraryNoClipsYetTitle,
@@ -89,14 +99,21 @@ class ClipsTab extends StatelessWidget {
         }
 
         return _MasonryLayout(
-          clips: state.clips,
+          clips: visibleClips,
           selectedClipIds: state.selectedClipIds,
+          showSelectionIndicator: selectionEnabled,
           disabledClipIds: state.disabledClipIds,
           scrollController: scrollController,
           targetAspectRatio: targetAspectRatio,
-          onTapClip: (clip) => context.read<ClipsLibraryBloc>().add(
-            ClipsLibraryToggleSelection(clip),
-          ),
+          onTapClip: (clip) {
+            if (selectionEnabled) {
+              context.read<ClipsLibraryBloc>().add(
+                ClipsLibraryToggleSelection(clip),
+              );
+              return;
+            }
+            _showClipPreview(context, clip);
+          },
           onLongPressClip: (clip) => _showClipPreview(context, clip),
         );
       },
@@ -128,42 +145,20 @@ class ClipsTab extends StatelessWidget {
     BuildContext context,
     DivineVideoClip clip,
   ) async {
-    final confirmed = await showDialog<bool>(
+    await VineBottomSheetPrompt.show<void>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: VineTheme.cardBackground,
-        title: Text(
-          context.l10n.libraryDeleteClipTitle,
-          style: VineTheme.titleSmallFont(),
-        ),
-        content: Text(
-          context.l10n.libraryDeleteClipMessage,
-          style: VineTheme.bodyMediumFont(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(
-              context.l10n.commonCancel,
-              style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: VineTheme.error,
-              foregroundColor: VineTheme.whiteText,
-            ),
-            child: Text(context.l10n.commonDelete),
-          ),
-        ],
-      ),
+      sticker: .alert,
+      title: context.l10n.libraryDeleteClipTitle,
+      subtitle: context.l10n.libraryDeleteClipMessage,
+      additionalText: context.l10n.libraryDeleteClipsWarning,
+      primaryButtonText: context.l10n.libraryDeleteConfirm,
+      secondaryButtonText: context.l10n.commonCancel,
+      onPrimaryPressed: () {
+        Navigator.pop(context);
+        context.read<ClipsLibraryBloc>().add(ClipsLibraryDeleteClip(clip));
+      },
+      onSecondaryPressed: context.pop,
     );
-
-    if (confirmed == true && context.mounted) {
-      Navigator.pop(context);
-      context.read<ClipsLibraryBloc>().add(ClipsLibraryDeleteClip(clip));
-    }
   }
 }
 
@@ -231,6 +226,7 @@ class _MasonryLayout extends StatelessWidget {
   const _MasonryLayout({
     required this.clips,
     required this.selectedClipIds,
+    required this.showSelectionIndicator,
     required this.onTapClip,
     required this.onLongPressClip,
     this.disabledClipIds = const {},
@@ -240,6 +236,7 @@ class _MasonryLayout extends StatelessWidget {
 
   final List<DivineVideoClip> clips;
   final Set<String> selectedClipIds;
+  final bool showSelectionIndicator;
   final Set<String> disabledClipIds;
   final ScrollController? scrollController;
   final ValueChanged<DivineVideoClip> onTapClip;
@@ -247,7 +244,6 @@ class _MasonryLayout extends StatelessWidget {
   final double? targetAspectRatio;
 
   static const _columnCount = 3;
-  static const _radius = Radius.circular(VineTheme.shellInnerCornerRadius);
 
   @override
   Widget build(BuildContext context) {
@@ -255,37 +251,30 @@ class _MasonryLayout extends StatelessWidget {
       for (var i = 0; i < selectedClipIds.length; i++)
         selectedClipIds.elementAt(i): i + 1,
     };
-    return Padding(
-      padding: const .symmetric(horizontal: 8),
-      child: ClipRRect(
-        borderRadius: clips.length >= _columnCount
-            ? const .vertical(top: _radius)
-            : .zero,
-        child: MasonryGridView.count(
-          controller: scrollController,
-          padding: .only(bottom: MediaQuery.viewPaddingOf(context).bottom),
-          crossAxisCount: _columnCount,
-          mainAxisSpacing: 4,
-          crossAxisSpacing: 4,
-          cacheExtent: MediaQuery.sizeOf(context).height * 2,
-          itemCount: clips.length,
-          itemBuilder: (context, index) {
-            final clip = clips[index];
-            final selectionIndex = selectionIndexById[clip.id] ?? -1;
+    return MasonryGridView.count(
+      controller: scrollController,
+      padding: .only(bottom: MediaQuery.viewPaddingOf(context).bottom),
+      crossAxisCount: _columnCount,
+      mainAxisSpacing: 4,
+      crossAxisSpacing: 4,
+      cacheExtent: MediaQuery.sizeOf(context).height * 2,
+      itemCount: clips.length,
+      itemBuilder: (context, index) {
+        final clip = clips[index];
+        final selectionIndex = selectionIndexById[clip.id] ?? -1;
 
-            return VideoClipThumbnailCard(
-              clip: clip,
-              selectionIndex: selectionIndex,
-              disabled:
-                  disabledClipIds.contains(clip.id) ||
-                  (targetAspectRatio != null &&
-                      targetAspectRatio != clip.targetAspectRatio.value),
-              onTap: () => onTapClip(clip),
-              onLongPress: () => onLongPressClip(clip),
-            );
-          },
-        ),
-      ),
+        return VideoClipThumbnailCard(
+          clip: clip,
+          selectionIndex: selectionIndex,
+          showSelectionIndicator: showSelectionIndicator,
+          disabled:
+              disabledClipIds.contains(clip.id) ||
+              (targetAspectRatio != null &&
+                  targetAspectRatio != clip.targetAspectRatio.value),
+          onTap: () => onTapClip(clip),
+          onLongPress: () => onLongPressClip(clip),
+        );
+      },
     );
   }
 }
@@ -300,8 +289,7 @@ class _AddClipButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      // TODO(l10n): Replace with context.l10n when localization is added.
-      label: 'Select',
+      label: context.l10n.librarySelect,
       child: GestureDetector(
         onTap: enable ? onTap : null,
         child: Opacity(
@@ -316,9 +304,7 @@ class _AddClipButton extends StatelessWidget {
               ),
             ),
             child: Text(
-              // TODO(l10n): Replace with context.l10n when localization
-              // is added.
-              'Select',
+              context.l10n.librarySelect,
               textAlign: .center,
               style: VineTheme.titleMediumFont(color: VineTheme.onPrimary),
             ),

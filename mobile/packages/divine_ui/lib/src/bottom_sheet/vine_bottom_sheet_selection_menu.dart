@@ -10,6 +10,7 @@ class VineBottomSheetSelectionOptionData {
   const VineBottomSheetSelectionOptionData({
     required this.label,
     required this.value,
+    this.leadingIcon,
   });
 
   /// The display text for this option.
@@ -17,6 +18,9 @@ class VineBottomSheetSelectionOptionData {
 
   /// The unique value identifier for this option.
   final String value;
+
+  /// Optional icon displayed before the option label.
+  final DivineIconName? leadingIcon;
 }
 
 /// A bottom sheet menu displaying selectable options with checkmark indicator.
@@ -68,6 +72,7 @@ class VineBottomSheetSelectionMenu {
             for (final option in options)
               _VineBottomSheetSelectionOption(
                 label: option.label,
+                leadingIcon: option.leadingIcon,
                 isSelected: option.value == selectedValue,
                 onTap: () => Navigator.of(context).pop(option.value),
               ),
@@ -83,37 +88,49 @@ class _VineBottomSheetSelectionOption extends StatelessWidget {
   const _VineBottomSheetSelectionOption({
     required this.label,
     required this.onTap,
+    this.leadingIcon,
     this.isSelected = false,
   });
 
   final String label;
+  final DivineIconName? leadingIcon;
   final bool isSelected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: isSelected ? VineTheme.surfaceContainer : VineTheme.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          height: 64,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  label,
-                  style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+    return Semantics(
+      button: true,
+      label: label,
+      child: Material(
+        color: isSelected ? VineTheme.surfaceContainer : VineTheme.transparent,
+        child: InkWell(
+          onTap: onTap,
+          child: Container(
+            height: 64,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                if (leadingIcon != null)
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(end: 12),
+                    child: DivineIcon(
+                      icon: leadingIcon!,
+                      color: VineTheme.onSurface,
+                    ),
+                  ),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: VineTheme.titleMediumFont(
+                      color: VineTheme.onSurface,
+                    ),
+                  ),
                 ),
-              ),
-              if (isSelected)
-                const Icon(
-                  Icons.check,
-                  color: VineTheme.vineGreen,
-                  size: 24,
-                ),
-            ],
+                if (isSelected)
+                  const DivineIcon(icon: .check, color: VineTheme.vineGreen),
+              ],
+            ),
           ),
         ),
       ),

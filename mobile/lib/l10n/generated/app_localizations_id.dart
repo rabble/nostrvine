@@ -5520,6 +5520,27 @@ class AppLocalizationsId extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'Hapus klip terpilih';
 
   @override
+  String get librarySelect => 'Pilih';
+
+  @override
+  String get librarySortNewestCreation => 'Paling baru dibuat';
+
+  @override
+  String get librarySortOldestCreation => 'Paling lama dibuat';
+
+  @override
+  String get librarySortLongestClip => 'Klip terpanjang';
+
+  @override
+  String get librarySortShortestClip => 'Klip terpendek';
+
+  @override
+  String get librarySortSquareFirst => 'Persegi terlebih dahulu';
+
+  @override
+  String get librarySortVerticalFirst => 'Vertikal terlebih dahulu';
+
+  @override
   String get libraryDeleteClipsTitle => 'Hapus klip';
 
   @override
@@ -5641,6 +5662,28 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get libraryRecordVideo => 'Rekam video';
+
+  @override
+  String videoClipSemanticLabel(String duration) {
+    return 'Klip video, $duration detik';
+  }
+
+  @override
+  String get videoClipSemanticValueSelected => 'Dipilih';
+
+  @override
+  String get videoClipSemanticValueNotSelected => 'Tidak dipilih';
+
+  @override
+  String get videoClipSemanticHintDisabled => 'Dinonaktifkan';
+
+  @override
+  String get videoClipSemanticHintSelect =>
+      'Ketuk untuk memilih, tekan lama untuk pratinjau';
+
+  @override
+  String get videoClipSemanticHintDeselect =>
+      'Ketuk untuk membatalkan pilihan, tekan lama untuk pratinjau';
 
   @override
   String get routerInvalidCreator => 'Kreator tidak valid';

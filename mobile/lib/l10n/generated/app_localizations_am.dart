@@ -5434,6 +5434,27 @@ class AppLocalizationsAm extends AppLocalizations {
   String get libraryDeleteSelectedClipsTooltip => 'የተመረጡ ቅንጥቦችን ሰርዝ';
 
   @override
+  String get librarySelect => 'ምረጥ';
+
+  @override
+  String get librarySortNewestCreation => 'በጣም አዲስ የተፈጠረ';
+
+  @override
+  String get librarySortOldestCreation => 'በጣም አሮጌ የተፈጠረ';
+
+  @override
+  String get librarySortLongestClip => 'ረጅሙ ክሊፕ';
+
+  @override
+  String get librarySortShortestClip => 'አጭሩ ክሊፕ';
+
+  @override
+  String get librarySortSquareFirst => 'ካሬ በመጀመሪያ';
+
+  @override
+  String get librarySortVerticalFirst => 'ቁመት በመጀመሪያ';
+
+  @override
   String get libraryDeleteClipsTitle => 'ክሊፖችን ሰርዝ';
 
   @override
@@ -5553,6 +5574,28 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get libraryRecordVideo => 'ቪዲዮ ይቅረጹ';
+
+  @override
+  String videoClipSemanticLabel(String duration) {
+    return 'የቪዲዮ ክሊፕ፣ $duration ሰከንድ';
+  }
+
+  @override
+  String get videoClipSemanticValueSelected => 'ተመርጧል';
+
+  @override
+  String get videoClipSemanticValueNotSelected => 'አልተመረጠም';
+
+  @override
+  String get videoClipSemanticHintDisabled => 'ተሰናክሏል';
+
+  @override
+  String get videoClipSemanticHintSelect =>
+      'ለመምረጥ ነካ ያድርጉ፣ ቅድሚያ ለማሳየት ረዘም ያሉ ጫን';
+
+  @override
+  String get videoClipSemanticHintDeselect =>
+      'ለማቋረጥ ነካ ያድርጉ፣ ቅድሚያ ለማሳየት ረዘም ያሉ ጫን';
 
   @override
   String get routerInvalidCreator => 'ልክ ያልሆነ ፈጣሪ';
