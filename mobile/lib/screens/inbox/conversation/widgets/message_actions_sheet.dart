@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Actions available from the message long-press sheet.
 enum MessageAction {
@@ -38,28 +39,29 @@ class MessageActionsSheet {
   }) async {
     MessageAction? result;
 
+    final l10n = context.l10n;
     final options = <VineBottomSheetActionData>[
       VineBottomSheetActionData(
         iconPath: DivineIconName.copy.assetPath,
-        label: 'Copy text',
+        label: l10n.dmMessageActionCopyText,
         onTap: () => result = MessageAction.copy,
       ),
       if (isVideoShare)
         VineBottomSheetActionData(
           iconPath: DivineIconName.linkSimple.assetPath,
-          label: 'Copy video URL',
+          label: l10n.dmMessageActionCopyVideoUrl,
           onTap: () => result = MessageAction.copyVideoUrl,
         ),
       if (isSent)
         VineBottomSheetActionData(
           iconPath: DivineIconName.trash.assetPath,
-          label: 'Delete for everyone',
+          label: l10n.dmMessageActionDeleteForEveryone,
           onTap: () => result = MessageAction.delete,
         ),
       if (!isSent)
         VineBottomSheetActionData(
           iconPath: DivineIconName.flag.assetPath,
-          label: 'Report',
+          label: l10n.dmMessageActionReport,
           onTap: () => result = MessageAction.report,
         ),
     ];

@@ -40,7 +40,7 @@ class ConversationActionsSheet {
       // matches the home-feed Comments / Report sheet behavior.
       useRootNavigator: true,
       body: Semantics(
-        label: 'Conversation actions',
+        label: context.l10n.inboxConversationActionsSheetLabel,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

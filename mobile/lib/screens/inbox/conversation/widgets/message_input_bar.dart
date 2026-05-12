@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Message input bar at the bottom of the conversation screen.
 ///
@@ -79,7 +80,7 @@ class _MessageInputBarState extends State<MessageInputBar> {
                     textInputAction: TextInputAction.send,
                     onSubmitted: (_) => _handleSend(),
                     decoration: InputDecoration(
-                      hintText: 'Say something...',
+                      hintText: context.l10n.dmMessageInputHint,
                       hintStyle: VineTheme.bodyLargeFont(
                         color: VineTheme.onSurfaceMuted,
                       ),

@@ -68,8 +68,8 @@ class ConversationTile extends ConsumerWidget {
 
     return Semantics(
       button: true,
-      label: '$displayName conversation',
-      onLongPressHint: 'Show conversation actions',
+      label: context.l10n.inboxConversationTileLabel(displayName),
+      onLongPressHint: context.l10n.inboxConversationTileLongPressHint,
       child: GestureDetector(
         onTap: () {
           Log.debug(

@@ -5127,6 +5127,32 @@ class AppLocalizationsJa extends AppLocalizations {
   String get dmConversationLoadError => 'メッセージを読み込めなかった';
 
   @override
+  String get dmMessageInputHint => 'Say something…';
+
+  @override
+  String get dmMessageActionCopyText => 'Copy text';
+
+  @override
+  String get dmMessageActionCopyVideoUrl => 'Copy video URL';
+
+  @override
+  String get dmMessageActionDeleteForEveryone => 'Delete for everyone';
+
+  @override
+  String get dmMessageActionReport => 'Report';
+
+  @override
+  String get inboxConversationActionsSheetLabel => 'Conversation actions';
+
+  @override
+  String inboxConversationTileLabel(String displayName) {
+    return '$displayName conversation';
+  }
+
+  @override
+  String get inboxConversationTileLongPressHint => 'Show conversation actions';
+
+  @override
   String get reportDialogCancel => 'キャンセル';
 
   @override

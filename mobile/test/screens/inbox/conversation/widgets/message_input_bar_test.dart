@@ -20,8 +20,9 @@ void main() {
           ),
         );
 
+        final l10n = lookupAppLocalizations(const Locale('en'));
         expect(find.byType(TextField), findsOneWidget);
-        expect(find.text('Say something...'), findsOneWidget);
+        expect(find.text(l10n.dmMessageInputHint), findsOneWidget);
       });
 
       testWidgets('does not render send button when text is empty', (
