@@ -184,23 +184,21 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
           case NotificationKind.mention:
           case NotificationKind.likeComment:
           case NotificationKind.reply:
-            // mention → targetEventId is the kind-1 mention event; the
-            // resolver walks its E-tags to the root video.
-            // likeComment/reply → targetEventId is the referenced comment
-            // event; same resolver path.
-            // videoAddressableId is the stable NIP-33 ID built from the
-            // server-provided d_tag — when set it bypasses the resolver.
-            // Falls back to the actor's profile when resolution fails.
+            // targetEventId is the event the resolver will walk to find the
+            // root video. Falls back to the actor's profile only for mentions,
+            // where the mention may have no video context at all.
             if (targetEventId != null && targetEventId.isNotEmpty) {
-              await _navigateToVideo(
+              final navigated = await _navigateToVideo(
                 context,
                 targetEventId,
                 videoAddressableId: videoAddressableId,
                 notificationKind: type,
-                profileFallbackPubkey: type == NotificationKind.mention
-                    ? actor.pubkey
-                    : null,
               );
+              if (!navigated &&
+                  type == NotificationKind.mention &&
+                  context.mounted) {
+                _navigateToProfile(context, actor.pubkey);
+              }
             } else {
               _navigateToProfile(context, actor.pubkey);
             }
@@ -216,16 +214,20 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
     }
   }
 
-  Future<void> _navigateToVideo(
+  /// Resolves the video route and pushes [PooledFullscreenVideoFeedScreen].
+  ///
+  /// Returns `true` if a navigation was pushed, `false` if resolution failed
+  /// (resolver returned null) and no navigation occurred. The caller decides
+  /// what to do on `false` — e.g. the mention branch falls back to profile.
+  ///
+  /// The video fetch runs concurrently after the push so the screen opens
+  /// immediately; if the fetch fails or the video is unavailable a snackbar
+  /// is shown on the notifications scaffold without touching the router.
+  Future<bool> _navigateToVideo(
     BuildContext context,
     String videoEventId, {
     String? videoAddressableId,
     NotificationKind? notificationKind,
-
-    /// When set and the resolver cannot find a root video, navigate to this
-    /// actor's profile instead of showing a "video not found" snackbar.
-    /// Used for mentions, which may reference a plain post with no video.
-    String? profileFallbackPubkey,
   }) async {
     Log.info(
       'Navigating to video from notification: '
@@ -237,10 +239,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
     final videoEventService = ref.read(videoEventServiceProvider);
     final videosRepository = ref.read(videosRepositoryProvider);
 
-    // Use the stable NIP-33 addressable ID whenever the notification payload
-    // includes one. It survives metadata updates because it's keyed on
-    // (kind:pubkey:d-tag) rather than the mutable event hash.
-    final isComment =
+    final shouldAutoOpenComments =
         notificationKind == NotificationKind.comment ||
         notificationKind == NotificationKind.reply ||
         notificationKind == NotificationKind.likeComment ||
@@ -258,27 +257,18 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
     if (videoAddressableId != null && videoAddressableId.isNotEmpty) {
       // Stable path: addressable ID works even after a metadata update.
       routeId = videoAddressableId;
-    } else if (isComment) {
-      // Comment path: walk E/e tags to find the root video event ID.
+    } else if (shouldAutoOpenComments) {
+      // Comment/mention path: walk E/e tags to find the root video event ID.
       final resolved = await NotificationTargetResolver(
         videoEventService: videoEventService,
         nostrService: ref.read(nostrServiceProvider),
       ).resolveVideoEventIdFromNotificationTarget(videoEventId);
 
-      if (!context.mounted) return;
+      if (!context.mounted) return false;
 
       if (resolved == null) {
-        if (profileFallbackPubkey != null) {
-          _navigateToProfile(context, profileFallbackPubkey);
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(context.l10n.notificationsVideoNotFound),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
-        return;
+        // Resolution failed — caller decides the fallback (e.g. profile).
+        return false;
       }
       routeId = resolved;
     } else {
@@ -286,31 +276,27 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
       routeId = videoEventId;
     }
 
-    // Capture context-dependent objects before the async gap so they remain
-    // valid in the post-navigation callbacks below.
+    // Capture l10n and scaffold messenger before the async gap; they remain
+    // valid even after the push transitions away from this view.
     final l10n = context.l10n;
     final scaffoldMessenger = ScaffoldMessenger.of(context);
-    final router = GoRouter.of(context);
 
-    // Build the video fetch as a Future so we can:
-    //   (a) navigate immediately — the screen shows BrandedLoadingIndicator
-    //   (b) pop + snackbar if the video turns out to be unavailable
+    // Fetch the video concurrently. The stream is consumed by the opened
+    // screen's BLoC — we never pop here to avoid touching the wrong route
+    // if the user navigated away before the fetch resolved.
     final videoFuture = videosRepository
         .fetchVideoWithStatsForRouteId(routeId)
         .then((video) {
           if (video == null) {
-            if (router.canPop()) router.pop();
             scaffoldMessenger.showSnackBar(
               SnackBar(
                 content: Text(l10n.notificationsVideoNotFound),
                 duration: const Duration(seconds: 2),
               ),
             );
-            // Return empty list — stream completes without emitting videos.
             return <VideoEvent>[];
           }
           if (videoEventService.shouldHideVideo(video)) {
-            if (router.canPop()) router.pop();
             scaffoldMessenger.showSnackBar(
               SnackBar(
                 content: Text(l10n.notificationsVideoUnavailable),
@@ -329,7 +315,6 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
             error: e,
             stackTrace: stackTrace,
           );
-          if (router.canPop()) router.pop();
           scaffoldMessenger.showSnackBar(
             SnackBar(
               content: Text(l10n.notificationsVideoNotFound),
@@ -339,7 +324,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
           return <VideoEvent>[];
         });
 
-    if (!context.mounted) return;
+    if (!context.mounted) return false;
 
     context.push(
       PooledFullscreenVideoFeedScreen.path,
@@ -347,9 +332,10 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
         videosStream: Stream.fromFuture(videoFuture),
         initialIndex: 0,
         contextTitle: l10n.notificationsFromNotification,
-        autoOpenComments: isComment,
+        autoOpenComments: shouldAutoOpenComments,
       ),
     );
+    return true;
   }
 
   void _navigateToProfile(BuildContext context, String userPubkey) {
