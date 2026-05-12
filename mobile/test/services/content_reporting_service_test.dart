@@ -243,7 +243,9 @@ void main() {
         ContentFilterReason.sexualContent: 'NS-sexualContent',
         ContentFilterReason.copyright: 'NS-copyright',
         ContentFilterReason.falseInformation: 'NS-falseInformation',
+        ContentFilterReason.childSafety: 'NS-childSafety',
         ContentFilterReason.csam: 'NS-csam',
+        ContentFilterReason.underageUser: 'NS-underageUser',
         ContentFilterReason.aiGenerated: 'NS-aiGenerated',
         ContentFilterReason.other: 'NS-other',
       };
@@ -723,7 +725,9 @@ void main() {
         ContentFilterReason.sexualContent: 'nudity',
         ContentFilterReason.copyright: 'illegal',
         ContentFilterReason.falseInformation: 'other',
+        ContentFilterReason.childSafety: 'other',
         ContentFilterReason.csam: 'illegal',
+        ContentFilterReason.underageUser: 'other',
         ContentFilterReason.aiGenerated: 'other',
         ContentFilterReason.other: 'other',
       };

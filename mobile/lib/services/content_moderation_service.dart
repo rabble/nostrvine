@@ -22,7 +22,9 @@ enum ContentFilterReason {
   sexualContent('Sexual or adult content'),
   copyright('Copyright violation'),
   falseInformation('Misinformation'),
-  csam('Child safety concern'),
+  childSafety("General concerns about minors' safety"),
+  csam('Child sexual abuse'),
+  underageUser('User appears under 16'),
   aiGenerated('Suspected AI-generated content'),
   other('Other violation')
   ;
@@ -603,8 +605,12 @@ class ContentModerationService with NostrListServiceMixin {
         baseMessage = 'This content may violate copyright';
       case ContentFilterReason.falseInformation:
         baseMessage = 'This content may contain misinformation';
+      case ContentFilterReason.childSafety:
+        baseMessage = 'This content raises child safety concerns';
       case ContentFilterReason.csam:
-        baseMessage = 'This content violates child safety policies';
+        baseMessage = 'This content depicts child sexual abuse';
+      case ContentFilterReason.underageUser:
+        baseMessage = 'This account holder appears to be underage';
       case ContentFilterReason.aiGenerated:
         baseMessage = 'This content may be AI-generated';
       case ContentFilterReason.other:

@@ -4529,11 +4529,25 @@ class AppLocalizationsNl extends AppLocalizations {
       'Misleidende of onware beweringen';
 
   @override
+  String get reportReasonChildSafety => 'Child Safety Violation';
+
+  @override
+  String get reportReasonChildSafetySubtitle =>
+      'General concerns about minors\' safety';
+
+  @override
   String get reportReasonCsam => 'Schending kinderveiligheid';
 
   @override
   String get reportReasonCsamSubtitle =>
       'Content die minderjarigen uitbuit of in gevaar brengt';
+
+  @override
+  String get reportReasonUnderageUser => 'User Appears Under 16';
+
+  @override
+  String get reportReasonUnderageUserSubtitle =>
+      'Account holder appears to be underage';
 
   @override
   String get reportReasonAiGenerated => 'AI-gegenereerde inhoud';

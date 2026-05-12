@@ -371,7 +371,9 @@ String _getReasonDisplayName(ContentFilterReason reason) {
     ContentFilterReason.sexualContent => 'Sexual Content',
     ContentFilterReason.copyright => 'Copyright',
     ContentFilterReason.falseInformation => 'Misinformation',
-    ContentFilterReason.csam => 'Child Safety',
+    ContentFilterReason.childSafety => 'Child Safety',
+    ContentFilterReason.csam => 'Child Sexual Abuse',
+    ContentFilterReason.underageUser => 'Under 16',
     ContentFilterReason.aiGenerated => 'AI Generated',
     ContentFilterReason.other => 'Other',
   };
@@ -387,7 +389,10 @@ String _getReasonDescription(ContentFilterReason reason) {
     ContentFilterReason.copyright => 'Unauthorized use of copyrighted material',
     ContentFilterReason.falseInformation =>
       'Misleading or deliberately false claims',
-    ContentFilterReason.csam => 'Content that endangers minors',
+    ContentFilterReason.childSafety => "General concerns about minors' safety",
+    ContentFilterReason.csam => 'Content depicting sexual abuse of minors',
+    ContentFilterReason.underageUser =>
+      'Account holder appears to be underage',
     ContentFilterReason.aiGenerated =>
       'Deceptive AI-generated or manipulated media',
     ContentFilterReason.other => 'Items not included above',

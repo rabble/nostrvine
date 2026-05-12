@@ -4494,11 +4494,25 @@ class AppLocalizationsTr extends AppLocalizations {
   String get reportReasonFalseInfoSubtitle => 'Yanıltıcı veya yanlış iddialar';
 
   @override
+  String get reportReasonChildSafety => 'Child Safety Violation';
+
+  @override
+  String get reportReasonChildSafetySubtitle =>
+      'General concerns about minors\' safety';
+
+  @override
   String get reportReasonCsam => 'Çocuk Güvenliği İhlali';
 
   @override
   String get reportReasonCsamSubtitle =>
       'Reşit olmayanları sömüren veya tehlikeye atan içerik';
+
+  @override
+  String get reportReasonUnderageUser => 'User Appears Under 16';
+
+  @override
+  String get reportReasonUnderageUserSubtitle =>
+      'Account holder appears to be underage';
 
   @override
   String get reportReasonAiGenerated => 'Yapay Zeka Üretimi İçerik';

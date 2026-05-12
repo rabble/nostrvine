@@ -4575,11 +4575,25 @@ class AppLocalizationsFr extends AppLocalizations {
       'Affirmations trompeuses ou fausses';
 
   @override
+  String get reportReasonChildSafety => 'Child Safety Violation';
+
+  @override
+  String get reportReasonChildSafetySubtitle =>
+      'General concerns about minors\' safety';
+
+  @override
   String get reportReasonCsam => 'Violation de sécurité des enfants';
 
   @override
   String get reportReasonCsamSubtitle =>
       'Contenu qui exploite ou met en danger des mineurs';
+
+  @override
+  String get reportReasonUnderageUser => 'User Appears Under 16';
+
+  @override
+  String get reportReasonUnderageUserSubtitle =>
+      'Account holder appears to be underage';
 
   @override
   String get reportReasonAiGenerated => 'Contenu généré par IA';

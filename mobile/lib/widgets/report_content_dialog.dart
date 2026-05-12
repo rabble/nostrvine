@@ -240,7 +240,9 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
       ContentFilterReason.sexualContent => l10n.reportReasonSexualContent,
       ContentFilterReason.copyright => l10n.reportReasonCopyright,
       ContentFilterReason.falseInformation => l10n.reportReasonFalseInfo,
+      ContentFilterReason.childSafety => l10n.reportReasonChildSafety,
       ContentFilterReason.csam => l10n.reportReasonCsam,
+      ContentFilterReason.underageUser => l10n.reportReasonUnderageUser,
       ContentFilterReason.aiGenerated => l10n.reportReasonAiGenerated,
       ContentFilterReason.other => l10n.reportReasonOther,
     };
@@ -257,7 +259,10 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
       ContentFilterReason.copyright => l10n.reportReasonCopyrightSubtitle,
       ContentFilterReason.falseInformation =>
         l10n.reportReasonFalseInfoSubtitle,
+      ContentFilterReason.childSafety => l10n.reportReasonChildSafetySubtitle,
       ContentFilterReason.csam => l10n.reportReasonCsamSubtitle,
+      ContentFilterReason.underageUser =>
+        l10n.reportReasonUnderageUserSubtitle,
       ContentFilterReason.aiGenerated => l10n.reportReasonAiGeneratedSubtitle,
       ContentFilterReason.other => l10n.reportReasonOtherSubtitle,
     };

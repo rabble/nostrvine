@@ -4315,10 +4315,24 @@ class AppLocalizationsKo extends AppLocalizations {
   String get reportReasonFalseInfoSubtitle => '오해의 소지가 있거나 허위 주장';
 
   @override
+  String get reportReasonChildSafety => 'Child Safety Violation';
+
+  @override
+  String get reportReasonChildSafetySubtitle =>
+      'General concerns about minors\' safety';
+
+  @override
   String get reportReasonCsam => '아동 안전 위반';
 
   @override
   String get reportReasonCsamSubtitle => '미성년자를 착취하거나 위험에 빠뜨리는 콘텐츠';
+
+  @override
+  String get reportReasonUnderageUser => 'User Appears Under 16';
+
+  @override
+  String get reportReasonUnderageUserSubtitle =>
+      'Account holder appears to be underage';
 
   @override
   String get reportReasonAiGenerated => 'AI 생성 콘텐츠';

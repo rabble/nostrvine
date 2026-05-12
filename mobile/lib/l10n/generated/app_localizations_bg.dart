@@ -4559,11 +4559,25 @@ class AppLocalizationsBg extends AppLocalizations {
       'Подвеждащи или неверни твърдения';
 
   @override
+  String get reportReasonChildSafety => 'Child Safety Violation';
+
+  @override
+  String get reportReasonChildSafetySubtitle =>
+      'General concerns about minors\' safety';
+
+  @override
   String get reportReasonCsam => 'Нарушение на безопасността на детето';
 
   @override
   String get reportReasonCsamSubtitle =>
       'Съдържание, което експлоатира или застрашава непълнолетни';
+
+  @override
+  String get reportReasonUnderageUser => 'User Appears Under 16';
+
+  @override
+  String get reportReasonUnderageUserSubtitle =>
+      'Account holder appears to be underage';
 
   @override
   String get reportReasonAiGenerated => 'AI-генерирано съдържание';

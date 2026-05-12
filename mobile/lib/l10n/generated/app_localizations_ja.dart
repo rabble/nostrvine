@@ -4300,10 +4300,24 @@ class AppLocalizationsJa extends AppLocalizations {
   String get reportReasonFalseInfoSubtitle => '誤解を招くまたは虚偽の主張';
 
   @override
+  String get reportReasonChildSafety => 'Child Safety Violation';
+
+  @override
+  String get reportReasonChildSafetySubtitle =>
+      'General concerns about minors\' safety';
+
+  @override
   String get reportReasonCsam => '子どもの安全に関する違反';
 
   @override
   String get reportReasonCsamSubtitle => '未成年者を搾取または危険にさらすコンテンツ';
+
+  @override
+  String get reportReasonUnderageUser => 'User Appears Under 16';
+
+  @override
+  String get reportReasonUnderageUserSubtitle =>
+      'Account holder appears to be underage';
 
   @override
   String get reportReasonAiGenerated => 'AI 生成コンテンツ';

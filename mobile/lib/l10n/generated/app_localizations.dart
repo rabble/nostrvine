@@ -7952,17 +7952,41 @@ abstract class AppLocalizations {
   /// **'Misleading or false claims'**
   String get reportReasonFalseInfoSubtitle;
 
-  /// No description provided for @reportReasonCsam.
+  /// No description provided for @reportReasonChildSafety.
   ///
   /// In en, this message translates to:
   /// **'Child Safety Violation'**
+  String get reportReasonChildSafety;
+
+  /// No description provided for @reportReasonChildSafetySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'General concerns about minors\' safety'**
+  String get reportReasonChildSafetySubtitle;
+
+  /// No description provided for @reportReasonCsam.
+  ///
+  /// In en, this message translates to:
+  /// **'Child Sexual Abuse'**
   String get reportReasonCsam;
 
   /// No description provided for @reportReasonCsamSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Content that exploits or endangers minors'**
+  /// **'Content depicting sexual abuse of minors'**
   String get reportReasonCsamSubtitle;
+
+  /// No description provided for @reportReasonUnderageUser.
+  ///
+  /// In en, this message translates to:
+  /// **'User Appears Under 16'**
+  String get reportReasonUnderageUser;
+
+  /// No description provided for @reportReasonUnderageUserSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account holder appears to be underage'**
+  String get reportReasonUnderageUserSubtitle;
 
   /// No description provided for @reportReasonAiGenerated.
   ///

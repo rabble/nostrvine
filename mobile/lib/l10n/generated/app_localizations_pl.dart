@@ -4623,11 +4623,25 @@ class AppLocalizationsPl extends AppLocalizations {
       'Wprowadzające w błąd lub fałszywe twierdzenia';
 
   @override
+  String get reportReasonChildSafety => 'Child Safety Violation';
+
+  @override
+  String get reportReasonChildSafetySubtitle =>
+      'General concerns about minors\' safety';
+
+  @override
   String get reportReasonCsam => 'Naruszenie bezpieczeństwa dzieci';
 
   @override
   String get reportReasonCsamSubtitle =>
       'Treści wykorzystujące lub narażające nieletnich';
+
+  @override
+  String get reportReasonUnderageUser => 'User Appears Under 16';
+
+  @override
+  String get reportReasonUnderageUserSubtitle =>
+      'Account holder appears to be underage';
 
   @override
   String get reportReasonAiGenerated => 'Treść wygenerowana przez AI';

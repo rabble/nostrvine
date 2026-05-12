@@ -4573,11 +4573,25 @@ class AppLocalizationsFil extends AppLocalizations {
   String get reportReasonFalseInfoSubtitle => 'Mapanlinlang o maling claim';
 
   @override
+  String get reportReasonChildSafety => 'Child Safety Violation';
+
+  @override
+  String get reportReasonChildSafetySubtitle =>
+      'General concerns about minors\' safety';
+
+  @override
   String get reportReasonCsam => 'Paglabag sa Kaligtasan ng Bata';
 
   @override
   String get reportReasonCsamSubtitle =>
       'Content na nag-eexploit o naglalagay sa panganib ng mga menor de edad';
+
+  @override
+  String get reportReasonUnderageUser => 'User Appears Under 16';
+
+  @override
+  String get reportReasonUnderageUserSubtitle =>
+      'Account holder appears to be underage';
 
   @override
   String get reportReasonAiGenerated => 'AI-Generated na Content';

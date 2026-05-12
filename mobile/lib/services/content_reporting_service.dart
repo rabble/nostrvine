@@ -440,7 +440,9 @@ class ContentReportingService {
       ContentFilterReason.sexualContent => 'nudity',
       ContentFilterReason.copyright => 'illegal',
       ContentFilterReason.falseInformation => 'other',
+      ContentFilterReason.childSafety => 'other',
       ContentFilterReason.csam => 'illegal',
+      ContentFilterReason.underageUser => 'other',
       ContentFilterReason.aiGenerated => 'other',
       ContentFilterReason.other => 'other',
     };
@@ -457,7 +459,9 @@ class ContentReportingService {
       ContentFilterReason.copyright => '${_reportLabelPrefix}copyright',
       ContentFilterReason.falseInformation =>
         '${_reportLabelPrefix}falseInformation',
+      ContentFilterReason.childSafety => '${_reportLabelPrefix}childSafety',
       ContentFilterReason.csam => '${_reportLabelPrefix}csam',
+      ContentFilterReason.underageUser => '${_reportLabelPrefix}underageUser',
       ContentFilterReason.aiGenerated => '${_reportLabelPrefix}aiGenerated',
       ContentFilterReason.other => '${_reportLabelPrefix}other',
     };
@@ -575,8 +579,12 @@ class ContentReportingService {
         return 'This content appears to violate copyright.';
       case ContentFilterReason.falseInformation:
         return 'This content contains misinformation or false claims.';
+      case ContentFilterReason.childSafety:
+        return 'This content raises child safety concerns.';
       case ContentFilterReason.csam:
-        return 'This content violates child safety policies.';
+        return 'This content depicts child sexual abuse.';
+      case ContentFilterReason.underageUser:
+        return 'This account holder appears to be under 16 years old.';
       case ContentFilterReason.aiGenerated:
         return 'This content appears to be deceptive AI-generated media.';
       case ContentFilterReason.other:
