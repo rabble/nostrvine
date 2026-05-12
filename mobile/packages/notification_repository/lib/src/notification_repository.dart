@@ -244,18 +244,15 @@ class NotificationRepository {
   /// `mobile/lib/providers/notification_realtime_bridge_provider.dart`
   /// which wrote into the now-unused Riverpod cache.
   Future<void> acceptRealtime(RelayNotification raw) async {
-    final current = _snapshot.value;
-    // Cross-path dedupe: REST raws carry the Nostr event id in
-    // `sourceEventId`, WS raws (built by `notification_realtime_bridge.dart`)
-    // carry it in `id`. Query the live snapshot so dedupe follows the
-    // current first-page replacement boundary instead of a separate side set.
-    if (raw.id.isNotEmpty &&
-        current.items.any((n) => n.sourceEventIds.contains(raw.id))) {
-      return;
-    }
+    if (_snapshotContainsSourceEventId(raw.id)) return;
 
     final enriched = await _enrichAndGroup([raw]);
     if (enriched.isEmpty) return;
+
+    final current = _snapshot.value;
+    // Re-check against the post-await snapshot so concurrent refresh/page
+    // updates can neither be clobbered nor bypass the cross-path dedupe.
+    if (_snapshotContainsSourceEventId(raw.id)) return;
 
     final newItem = enriched.first;
     if (current.items.any((n) => n.id == newItem.id)) return;
@@ -269,6 +266,13 @@ class NotificationRepository {
     }
 
     _snapshot.add(current.copyWith(items: [newItem, ...current.items]));
+  }
+
+  bool _snapshotContainsSourceEventId(String sourceEventId) {
+    if (sourceEventId.isEmpty) return false;
+    return _snapshot.value.items.any(
+      (n) => n.sourceEventIds.contains(sourceEventId),
+    );
   }
 
   /// If [items] contains a [VideoNotification] matching [incoming] by

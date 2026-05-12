@@ -2,6 +2,8 @@
 // ABOUTME: grouping by (referencedEventId, kind), follow consolidation, type
 // ABOUTME: mapping, comment truncation, and the realtime enrichOne path.
 
+import 'dart:async';
+
 import 'package:db_client/db_client.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
@@ -1674,6 +1676,60 @@ void main() {
         );
         expect(items.single.sourceEventIds, equals(<String>['nostr-event-1']));
       });
+
+      test(
+        'acceptRealtime rechecks the snapshot after enrichment before '
+        'writing',
+        () async {
+          final profilesCompleter = Completer<Map<String, UserProfile>>();
+          when(
+            () => profileRepository.fetchBatchProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).thenAnswer((_) => profilesCompleter.future);
+
+          final realtimeFuture = repository.acceptRealtime(
+            makeNotification(
+              id: 'nostr-event-1',
+              sourceEventId: 'nostr-event-1',
+              notificationType: 'follow',
+              sourceKind: 3,
+              referencedEventId: null,
+              isReferencedVideo: false,
+            ),
+          );
+
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+          });
+          stubNotifications([
+            makeNotification(
+              id: 'server-uuid-1',
+              sourceEventId: 'nostr-event-1',
+              notificationType: 'follow',
+              sourceKind: 3,
+              referencedEventId: null,
+              isReferencedVideo: false,
+            ),
+          ], unreadCount: 1);
+          await repository.refresh();
+
+          profilesCompleter.complete({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+          });
+          await realtimeFuture;
+
+          final items = (await repository.watchSnapshot().first).items;
+          expect(
+            items,
+            hasLength(1),
+            reason:
+                'The post-await snapshot check must see the refreshed REST '
+                'row and avoid prepending a stale duplicate.',
+          );
+          expect(items.single.id, equals('server-uuid-1'));
+        },
+      );
 
       test('acceptRealtime merges a second actor into an existing '
           '$VideoNotification group (same videoEventId + type)', () async {
