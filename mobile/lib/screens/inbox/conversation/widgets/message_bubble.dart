@@ -12,6 +12,7 @@ import 'package:models/models.dart' hide AspectRatio, LogCategory;
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/universal_link_resolver.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/video_link_preview_cubit.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
@@ -118,7 +119,12 @@ class MessageBubble extends StatelessWidget {
               constraints: BoxConstraints(
                 maxWidth: MediaQuery.sizeOf(context).width * 0.75,
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              // Video bubbles use symmetric 16 px padding so the thumbnail
+              // sits in an even frame; text bubbles keep the tighter
+              // vertical rhythm (12) for compact reading flow.
+              padding: hasVideo
+                  ? const EdgeInsets.all(16)
+                  : const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: isSent
                     ? VineTheme.primaryAccessible
@@ -132,7 +138,10 @@ class MessageBubble extends StatelessWidget {
                 children: [
                   if (effectiveIsFirstInGroup)
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
+                      // Video messages need a bigger breath between the
+                      // date header and the thumbnail; text messages
+                      // keep the tighter 4 px rhythm.
+                      padding: EdgeInsets.only(bottom: hasVideo ? 12 : 4),
                       child: Text(
                         timestamp,
                         style: VineTheme.labelSmallFont(
@@ -323,7 +332,7 @@ class _VideoLinkPreview extends ConsumerWidget {
 
   static Widget _buildLoadingPlaceholder() {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(8),
       child: Container(
         width: 248,
         height: 350,
@@ -346,21 +355,29 @@ class _VideoLinkPreview extends ConsumerWidget {
 /// Tappable 248×350 card showing a video thumbnail with the title and loop
 /// count rendered inside a gradient overlay footer. Mirrors the
 /// `part/video thumbnail` Figma component used elsewhere in the app.
-class _VideoCard extends StatelessWidget {
+class _VideoCard extends ConsumerWidget {
   const _VideoCard({required this.video});
 
   final VideoEvent video;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final title = video.title;
     final loops = video.totalLoops;
     final hasTitle = title != null && title.isNotEmpty;
     final hasLoops = loops > 0;
+    final profileAsync = ref.watch(userProfileReactiveProvider(video.pubkey));
+    final authorName = switch (profileAsync) {
+      AsyncData(:final value) when value != null => value.bestDisplayName,
+      AsyncData() ||
+      AsyncError() => UserProfile.defaultDisplayNameFor(video.pubkey),
+      AsyncLoading() => null,
+    };
+    final hasAuthor = authorName != null && authorName.isNotEmpty;
     return GestureDetector(
       onTap: () => context.push(VideoDetailScreen.pathForId(video.id)),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(8),
         child: SizedBox(
           width: 248,
           height: 350,
@@ -368,7 +385,7 @@ class _VideoCard extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               VideoThumbnailWidget(video: video),
-              if (hasTitle || hasLoops)
+              if (hasAuthor || hasTitle || hasLoops)
                 Positioned(
                   left: 0,
                   right: 0,
@@ -397,15 +414,38 @@ class _VideoCard extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (hasTitle)
+                          if (hasAuthor)
+                            Text(
+                              authorName,
+                              // Mirrors the Explore > New grid creator
+                              // style: titleTinyFont (Bricolage Grotesque
+                              // 12 px / w800) with a subtle legibility
+                              // shadow, no underline.
+                              style: VineTheme.titleTinyFont().copyWith(
+                                decoration: TextDecoration.none,
+                                shadows: const [
+                                  Shadow(
+                                    offset: Offset(0, 1),
+                                    blurRadius: 2,
+                                    color: VineTheme.scrim15,
+                                  ),
+                                ],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          if (hasTitle) ...[
+                            if (hasAuthor) const SizedBox(height: 4),
                             Text(
                               title,
                               style: VineTheme.labelMediumFont(),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
+                          ],
                           if (hasLoops) ...[
-                            if (hasTitle) const SizedBox(height: 4),
+                            if (hasAuthor || hasTitle)
+                              const SizedBox(height: 4),
                             Text(
                               '${StringUtils.formatCompactNumber(loops)} loops',
                               style: VineTheme.bodySmallFont(),
