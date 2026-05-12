@@ -135,6 +135,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Hello there'), findsOneWidget);
+      expect(find.byType(Positioned), findsNothing);
     },
   );
 }

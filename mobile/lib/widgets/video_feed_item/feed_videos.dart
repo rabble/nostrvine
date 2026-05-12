@@ -17,7 +17,6 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_coordinator.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
@@ -709,32 +708,22 @@ class _FeedItemOverlayActions extends StatelessWidget {
 }
 
 /// Streams player position and renders subtitle text for fullscreen feed.
-class _SubtitleLayer extends ConsumerWidget {
+class _SubtitleLayer extends StatelessWidget {
   const _SubtitleLayer({required this.video, required this.controller});
 
   final VideoEvent video;
   final DivineVideoPlayerController controller;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final subtitlesVisible = ref.watch(subtitleVisibilityProvider);
-
+  Widget build(BuildContext context) {
     return Padding(
-      padding: const .only(bottom: 24),
-      child: StreamBuilder<int>(
-        stream: controller.stateStream
-            .map((s) => s.position.inMilliseconds)
+      padding: const EdgeInsets.only(bottom: 24),
+      child: SubtitleCueStreamPill(
+        video: video,
+        positionStream: controller.stateStream
+            .map((s) => s.position)
             .distinct(),
-        builder: (context, snapshot) {
-          final positionMs = snapshot.data ?? 0;
-          return SubtitleOverlay(
-            video: video,
-            positionMs: positionMs,
-            visible: subtitlesVisible,
-            enablePositioned: false,
-            bottomOffset: 0,
-          );
-        },
+        initialPosition: controller.state.position,
       ),
     );
   }

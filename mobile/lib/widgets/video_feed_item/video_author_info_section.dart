@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
@@ -31,6 +30,7 @@ class VideoAuthorInfoSection extends ConsumerWidget {
     required this.video,
     required this.hasTextContent,
     this.player,
+    this.subtitleLayer,
     this.onInteracted,
     super.key,
   });
@@ -42,6 +42,9 @@ class VideoAuthorInfoSection extends ConsumerWidget {
   /// caption pill streams the current cue from the player and renders
   /// it 16 px above the author row.
   final Player? player;
+
+  /// Layout-neutral subtitle widget for non-pooled player integrations.
+  final Widget? subtitleLayer;
 
   final VoidCallback? onInteracted;
 
@@ -59,9 +62,16 @@ class VideoAuthorInfoSection extends ConsumerWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         // Caption pill — sits 16 px above the author row, matching Figma
-        if (video.hasSubtitles && player != null) ...[
-          _InlineCaptionPill(video: video, player: player!),
-          const SizedBox(height: 16),
+        if (video.hasSubtitles) ...[
+          if (subtitleLayer != null)
+            subtitleLayer!
+          else if (player != null)
+            SubtitleCueStreamPill(
+              video: video,
+              positionStream: player!.stream.position,
+            ),
+          if (subtitleLayer != null || player != null)
+            const SizedBox(height: 16),
         ],
         if (video.isVideoReply) ...[
           VideoReplyParentLink(
@@ -227,29 +237,6 @@ class _AuthorAvatar extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// Streams the player position and renders [SubtitleCuePill] when a cue is
-/// active and captions are enabled. Returns [SizedBox.shrink] otherwise.
-class _InlineCaptionPill extends ConsumerWidget {
-  const _InlineCaptionPill({required this.video, required this.player});
-
-  final VideoEvent video;
-  final Player player;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final visible = ref.watch(subtitleVisibilityProvider);
-    if (!visible) return const SizedBox.shrink();
-
-    return StreamBuilder<Duration>(
-      stream: player.stream.position,
-      builder: (context, snapshot) {
-        final positionMs = snapshot.data?.inMilliseconds ?? 0;
-        return SubtitleCuePill(video: video, positionMs: positionMs);
-      },
     );
   }
 }

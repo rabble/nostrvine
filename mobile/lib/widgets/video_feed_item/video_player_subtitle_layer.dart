@@ -10,17 +10,16 @@ class VideoPlayerSubtitleLayer extends ConsumerWidget {
   const VideoPlayerSubtitleLayer({
     required this.video,
     required this.controller,
-    this.bottomOffset = 180,
     super.key,
   });
 
   final VideoEvent video;
   final VideoPlayerController controller;
-  final double bottomOffset;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final subtitlesVisible = ref.watch(subtitleVisibilityProvider);
+    if (!subtitlesVisible) return const SizedBox.shrink();
 
     return ValueListenableBuilder<VideoPlayerValue>(
       valueListenable: controller,
@@ -29,15 +28,9 @@ class VideoPlayerSubtitleLayer extends ConsumerWidget {
           return const SizedBox.shrink();
         }
 
-        return Stack(
-          children: [
-            SubtitleOverlay(
-              video: video,
-              positionMs: value.position.inMilliseconds,
-              visible: subtitlesVisible,
-              bottomOffset: bottomOffset,
-            ),
-          ],
+        return SubtitleCuePositionPill(
+          video: video,
+          positionMs: value.position.inMilliseconds,
         );
       },
     );
