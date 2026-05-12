@@ -1,3 +1,4 @@
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -135,8 +136,14 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Check that checkmark icon exists in the widget tree
-      expect(find.byIcon(Icons.check), findsWidgets);
+      // Selected option uses DivineIconName.check in the selection menu.
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is DivineIcon && widget.icon == DivineIconName.check,
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('updates expiration when option is selected', (tester) async {

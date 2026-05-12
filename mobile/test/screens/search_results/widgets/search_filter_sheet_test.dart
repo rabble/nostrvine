@@ -1,4 +1,5 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -79,7 +80,13 @@ void main() {
       await tester.pumpAndSettle();
 
       // The checkmark icon should be present for the selected option.
-      expect(find.byIcon(Icons.check), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is DivineIcon && widget.icon == DivineIconName.check,
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('calls filterChanged when option is selected', (tester) async {
