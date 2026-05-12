@@ -2181,14 +2181,16 @@ class FunnelcakeApiClient {
   /// mark all as read. The [authHeaders] parameter allows the caller to
   /// provide pre-built NIP-98 auth headers.
   ///
-  /// A `200 OK` response is returned as-is even when its body indicates a
-  /// soft failure (`success: false` with an `error` string) — only HTTP
-  /// non-success responses throw. Callers that need to react to soft
-  /// failures must inspect [MarkReadResponse.success] themselves.
+  /// A `200 OK` response with `success: false` is treated as an API
+  /// failure and throws [FunnelcakeApiException] (with `statusCode: 200`
+  /// and the server-provided `error` text in the message) so the
+  /// repository rollback path fires consistently with the HTTP-error
+  /// case.
   ///
   /// Throws:
   /// - [FunnelcakeNotConfiguredException] if the API is not configured.
-  /// - [FunnelcakeApiException] if the request fails with a non-success status.
+  /// - [FunnelcakeApiException] if the request fails with a non-success
+  ///   status, or returns `200` with `success: false`.
   /// - [FunnelcakeTimeoutException] if the request times out.
   /// - [FunnelcakeException] for other errors.
   Future<MarkReadResponse> markNotificationsRead({
@@ -2220,7 +2222,18 @@ class FunnelcakeApiClient {
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
-        return MarkReadResponse.fromJson(json);
+        final result = MarkReadResponse.fromJson(json);
+        if (!result.success) {
+          final detail = result.error;
+          throw FunnelcakeApiException(
+            message: detail != null && detail.isNotEmpty
+                ? 'Mark notifications read rejected by server: $detail'
+                : 'Mark notifications read rejected by server',
+            statusCode: 200,
+            url: url.toString(),
+          );
+        }
+        return result;
       } else {
         throw FunnelcakeApiException(
           message: 'Failed to mark notifications as read',

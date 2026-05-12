@@ -1107,6 +1107,49 @@ void main() {
           );
         },
       );
+
+      test(
+        'rolls back optimistic snapshot on 200 / success:false soft-failure',
+        () async {
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+          });
+          stubNotifications([makeNotification()], unreadCount: 1);
+          await repository.refresh();
+          final loadedId =
+              (await repository.watchSnapshot().first).items.first.id;
+          expect(await repository.watchUnreadCount().first, equals(1));
+
+          when(
+            () => funnelcakeApiClient.markNotificationsRead(
+              pubkey: any(named: 'pubkey'),
+              notificationIds: any(named: 'notificationIds'),
+              authHeaders: any(named: 'authHeaders'),
+            ),
+          ).thenThrow(
+            const FunnelcakeApiException(
+              message:
+                  'Mark notifications read rejected by server: token rejected',
+              statusCode: 200,
+            ),
+          );
+
+          await expectLater(
+            repository.markAsRead([loadedId]),
+            throwsA(isA<FunnelcakeApiException>()),
+          );
+
+          expect(
+            await repository.watchUnreadCount().first,
+            equals(1),
+            reason:
+                'A 200 / success:false from the API now throws and must '
+                'roll back the optimistic flip so the snapshot matches '
+                'server truth.',
+          );
+          verifyNever(() => notificationsDao.markAsRead(any()));
+        },
+      );
     });
 
     group('markAllAsRead', () {

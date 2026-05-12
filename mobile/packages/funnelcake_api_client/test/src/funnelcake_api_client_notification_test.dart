@@ -496,6 +496,72 @@ void main() {
         expect(response.success, isTrue);
         expect(response.markedCount, equals(10));
       });
+
+      test(
+        'throws FunnelcakeApiException on 200 with success: false',
+        () async {
+          when(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer(
+            (_) async => http.Response(
+              jsonEncode({
+                'success': false,
+                'marked_count': 0,
+                'error': 'token rejected',
+              }),
+              200,
+            ),
+          );
+
+          expect(
+            () => client.markNotificationsRead(pubkey: testPubkey),
+            throwsA(
+              isA<FunnelcakeApiException>()
+                  .having((e) => e.statusCode, 'statusCode', equals(200))
+                  .having(
+                    (e) => e.message,
+                    'message',
+                    contains('token rejected'),
+                  ),
+            ),
+          );
+        },
+      );
+
+      test(
+        'throws FunnelcakeApiException on 200 / success:false with no error',
+        () async {
+          when(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer(
+            (_) async => http.Response(
+              jsonEncode({'success': false, 'marked_count': 0}),
+              200,
+            ),
+          );
+
+          expect(
+            () => client.markNotificationsRead(pubkey: testPubkey),
+            throwsA(
+              isA<FunnelcakeApiException>()
+                  .having((e) => e.statusCode, 'statusCode', equals(200))
+                  .having(
+                    (e) => e.message,
+                    'message',
+                    equals('Mark notifications read rejected by server'),
+                  ),
+            ),
+          );
+        },
+      );
     });
 
     group('notificationsUri', () {
