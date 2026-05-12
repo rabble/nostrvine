@@ -9,9 +9,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
+import 'package:invite_api_client/invite_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:notification_repository/notification_repository.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/notifications/view/inbox_notifications_page.dart';
 import 'package:openvine/notifications/view/notifications_view.dart';
@@ -101,5 +103,85 @@ void main() {
         expect(find.byType(NotificationsView), findsWidgets);
       },
     );
+
+    group('invite banner', () {
+      // Restores show/hide coverage that the deleted
+      // notifications_screen_test.dart asserted before #3567 removed
+      // the legacy screen. The banner is gated on
+      // InviteStatusState.hasAvailableInvites (true when remaining > 0).
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      testWidgets('renders the invite card when invites are available', (
+        tester,
+      ) async {
+        when(() => mockInviteCubit.state).thenReturn(
+          const InviteStatusState(
+            status: InviteStatusLoadingStatus.loaded,
+            inviteStatus: InviteStatus(
+              canInvite: true,
+              remaining: 2,
+              total: 2,
+              codes: [
+                InviteCode(code: 'AB23-EF7K', claimed: false),
+                InviteCode(code: 'HN4P-QR56', claimed: false),
+              ],
+            ),
+          ),
+        );
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.notificationsInvitePlural(2)), findsOneWidget);
+      });
+
+      testWidgets(
+        'renders the singular label when exactly one invite is left',
+        (
+          tester,
+        ) async {
+          when(() => mockInviteCubit.state).thenReturn(
+            const InviteStatusState(
+              status: InviteStatusLoadingStatus.loaded,
+              inviteStatus: InviteStatus(
+                canInvite: true,
+                remaining: 1,
+                total: 2,
+                codes: [InviteCode(code: 'AB23-EF7K', claimed: false)],
+              ),
+            ),
+          );
+
+          await tester.pumpWidget(buildSubject());
+          await tester.pumpAndSettle();
+
+          expect(find.text(l10n.notificationsInviteSingular), findsOneWidget);
+        },
+      );
+
+      testWidgets('hides the invite card when no invites are available', (
+        tester,
+      ) async {
+        // Default state from setUp() already has no invites, but be
+        // explicit to pin the intent.
+        when(() => mockInviteCubit.state).thenReturn(
+          const InviteStatusState(
+            status: InviteStatusLoadingStatus.loaded,
+            inviteStatus: InviteStatus(
+              canInvite: false,
+              remaining: 0,
+              total: 0,
+              codes: [],
+            ),
+          ),
+        );
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.notificationsInviteSingular), findsNothing);
+        expect(find.text(l10n.notificationsInvitePlural(2)), findsNothing);
+      });
+    });
   });
 }
