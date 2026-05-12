@@ -18,10 +18,19 @@ import '../mocks/mock_path_provider_platform.dart';
 
 void main() {
   group('DraftStorageService', () {
+    const documentsPath = '/tmp/documents';
     late AppDatabase database;
     late DraftStorageService service;
+    late PathProviderPlatform originalPathProviderInstance;
 
     setUp(() async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+
+      originalPathProviderInstance = PathProviderPlatform.instance;
+      final mockPlatform = MockPathProviderPlatform()
+        ..setApplicationDocumentsPath(documentsPath);
+      PathProviderPlatform.instance = mockPlatform;
+
       // Start with clean in-memory database for each test
       database = AppDatabase.test(NativeDatabase.memory());
       service = DraftStorageService(
@@ -31,6 +40,7 @@ void main() {
     });
 
     tearDown(() async {
+      PathProviderPlatform.instance = originalPathProviderInstance;
       await database.close();
     });
 
@@ -632,29 +642,11 @@ void main() {
     });
 
     group('migrateOldDrafts', () {
-      const documentsPath = '/tmp/documents';
-      late PathProviderPlatform originalPathProviderInstance;
-
       setUp(() {
-        TestWidgetsFlutterBinding.ensureInitialized();
-
-        // Save the current PathProviderPlatform.instance so tearDown can
-        // restore it. Without this, the `MockPathProviderPlatform` installed
-        // below leaks into subsequent test files in the VGV shared isolate;
-        // any test that transitively calls `getApplicationDocumentsDirectory`
-        // (e.g. `VideoThumbnailService.extractThumbnail`) gets the mock's
-        // `/tmp/documents` path and fails with I/O errors.
-        originalPathProviderInstance = PathProviderPlatform.instance;
-        final mockPlatform = MockPathProviderPlatform()
-          ..setApplicationDocumentsPath(documentsPath);
-        PathProviderPlatform.instance = mockPlatform;
         SharedPreferences.setMockInitialValues({});
       });
 
-      tearDown(() {
-        PathProviderPlatform.instance = originalPathProviderInstance;
-        SharedPreferences.resetStatic();
-      });
+      tearDown(SharedPreferences.resetStatic);
 
       Map<String, dynamic> buildClipJson({
         required String id,
