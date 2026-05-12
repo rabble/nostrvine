@@ -127,11 +127,11 @@ class NotificationRealtimeBridge {
   ///
   /// `NotificationServiceEnhanced` puts the comment body under
   /// `metadata['comment']` and mention text under `metadata['text']`.
-  /// `notification_model_converter.dart` mirrors those keys on the REST
-  /// side and additionally writes a unified `metadata['content']` —
-  /// accepted here as a fallback. Likes, reposts, follows, and system
-  /// notifications have no raw body, so [content] stays null and rows
-  /// fall back to the presentation message produced by the repository.
+  /// The REST path also surfaces a unified `metadata['content']`
+  /// alongside those — accepted here as a fallback. Likes, reposts,
+  /// follows, and system notifications have no raw body, so [content]
+  /// stays null and rows fall back to the presentation message
+  /// produced by the repository.
   static String? _contentForType(
     NotificationType type,
     Map<String, dynamic>? metadata,

@@ -7,8 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/notification_preferences.dart';
+import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/relay_notifications_provider.dart';
 
 class NotificationSettingsScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.
@@ -72,16 +72,29 @@ class _NotificationSettingsScreenState
   }
 
   Future<void> _markAllAsRead() async {
-    await ref.read(relayNotificationsProvider.notifier).markAllAsRead();
-    if (!mounted) return;
+    final repo = ref.read(notificationRepositoryProvider);
+    if (repo == null) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.l10n.notificationSettingsAllMarkedAsRead),
-        duration: const Duration(seconds: 2),
-        backgroundColor: VineTheme.vineGreen,
-      ),
-    );
+    try {
+      await repo.markAllAsRead();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.notificationSettingsAllMarkedAsRead),
+          duration: const Duration(seconds: 2),
+          backgroundColor: VineTheme.vineGreen,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.notificationSettingsMarkAllAsReadFailed),
+          duration: const Duration(seconds: 2),
+          backgroundColor: VineTheme.error,
+        ),
+      );
+    }
   }
 
   void _showResetSnackBar() {
@@ -231,7 +244,9 @@ class _NotificationSettingsScreenState
               iconColor: VineTheme.vineGreenLight,
               title: context.l10n.notificationSettingsMarkAllAsRead,
               subtitle: context.l10n.notificationSettingsMarkAllAsReadSubtitle,
-              onTap: _markAllAsRead,
+              onTap: ref.watch(notificationRepositoryProvider) == null
+                  ? null
+                  : _markAllAsRead,
             ),
 
             const SizedBox(height: 24),
@@ -296,7 +311,7 @@ class _NotificationSettingsScreenState
     required Color iconColor,
     required String title,
     required String subtitle,
-    required VoidCallback onTap,
+    required VoidCallback? onTap,
   }) => Card(
     color: VineTheme.cardBackground,
     margin: const EdgeInsets.only(bottom: 8),
