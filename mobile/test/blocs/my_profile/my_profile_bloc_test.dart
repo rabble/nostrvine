@@ -673,17 +673,35 @@ void main() {
 
     group('$MyProfileSubscriptionRequested', () {
       blocTest<MyProfileBloc, MyProfileState>(
-        'emits [loading, updated] when stream emits a profile',
+        'emits [loading with cached profile, updated] when stream emits a profile',
         setUp: () {
-          final profile = createTestProfile();
+          final cachedProfile = createTestProfile(
+            displayName: 'Cached Name',
+            eventId:
+                'cached12345678901234567890123456789012345678901234567890123456',
+          );
+          final streamProfile = createTestProfile(
+            displayName: 'Stream Name',
+            eventId:
+                'stream12345678901234567890123456789012345678901234567890123456',
+          );
+          when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => cachedProfile);
           when(
             () => mockProfileRepository.watchProfile(pubkey: testPubkey),
-          ).thenAnswer((_) => Stream.value(profile));
+          ).thenAnswer((_) => Stream.value(streamProfile));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const MyProfileSubscriptionRequested()),
         expect: () => [
-          isA<MyProfileLoading>(),
+          // Initial emit carries the cached profile so the real name is
+          // shown immediately — no generated-name flash (#4181).
+          isA<MyProfileLoading>().having(
+            (s) => s.profile?.displayName,
+            'profile.displayName',
+            'Cached Name',
+          ),
           isA<MyProfileUpdated>().having(
             (s) => s.profile.pubkey,
             'profile.pubkey',
@@ -692,35 +710,8 @@ void main() {
         ],
         verify: (_) {
           verify(
-            () => mockProfileRepository.watchProfile(pubkey: testPubkey),
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
           ).called(1);
-          verifyNever(
-            () => mockProfileRepository.fetchFreshProfile(
-              pubkey: any(named: 'pubkey'),
-            ),
-          );
-          verifyNever(
-            () => mockProfileRepository.getCachedProfile(
-              pubkey: any(named: 'pubkey'),
-            ),
-          );
-        },
-      );
-
-      blocTest<MyProfileBloc, MyProfileState>(
-        'emits only [loading] when stream emits null',
-        setUp: () {
-          when(
-            () => mockProfileRepository.watchProfile(pubkey: testPubkey),
-          ).thenAnswer((_) => Stream.value(null));
-        },
-        build: createBloc,
-        act: (bloc) => bloc.add(const MyProfileSubscriptionRequested()),
-        expect: () => [
-          // Initial loading + stream null → same state, BLoC deduplicates
-          isA<MyProfileLoading>(),
-        ],
-        verify: (_) {
           verify(
             () => mockProfileRepository.watchProfile(pubkey: testPubkey),
           ).called(1);
@@ -729,8 +720,35 @@ void main() {
               pubkey: any(named: 'pubkey'),
             ),
           );
+        },
+      );
+
+      blocTest<MyProfileBloc, MyProfileState>(
+        'emits [loading with null profile] when no cache and stream emits null',
+        setUp: () {
+          when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockProfileRepository.watchProfile(pubkey: testPubkey),
+          ).thenAnswer((_) => Stream.value(null));
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const MyProfileSubscriptionRequested()),
+        expect: () => [
+          // No cache → loading with null profile; stream null → same
+          // state deduplication means only one emit.
+          isA<MyProfileLoading>().having((s) => s.profile, 'profile', isNull),
+        ],
+        verify: (_) {
+          verify(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).called(1);
+          verify(
+            () => mockProfileRepository.watchProfile(pubkey: testPubkey),
+          ).called(1);
           verifyNever(
-            () => mockProfileRepository.getCachedProfile(
+            () => mockProfileRepository.fetchFreshProfile(
               pubkey: any(named: 'pubkey'),
             ),
           );
@@ -738,27 +756,39 @@ void main() {
       );
 
       blocTest<MyProfileBloc, MyProfileState>(
-        'emits [loading, updated, updated] '
+        'emits [loading with cached, updated, updated] '
         'when stream emits multiple profiles',
         setUp: () {
-          final cached = createTestProfile(
-            displayName: 'Old Name',
+          final cachedProfile = createTestProfile(
+            displayName: 'Cached Name',
             eventId:
                 'cached12345678901234567890123456789012345678901234567890123456',
           );
-          final fresh = createTestProfile(
+          final oldName = createTestProfile(
+            displayName: 'Old Name',
+            eventId:
+                'oldnam12345678901234567890123456789012345678901234567890123456',
+          );
+          final newName = createTestProfile(
             displayName: 'New Name',
             eventId:
                 'fresh123456789012345678901234567890123456789012345678901234567',
           );
           when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => cachedProfile);
+          when(
             () => mockProfileRepository.watchProfile(pubkey: testPubkey),
-          ).thenAnswer((_) => Stream.fromIterable([cached, fresh]));
+          ).thenAnswer((_) => Stream.fromIterable([oldName, newName]));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const MyProfileSubscriptionRequested()),
         expect: () => [
-          isA<MyProfileLoading>(),
+          isA<MyProfileLoading>().having(
+            (s) => s.profile?.displayName,
+            'profile.displayName',
+            'Cached Name',
+          ),
           isA<MyProfileUpdated>().having(
             (s) => s.profile.displayName,
             'displayName',
@@ -772,15 +802,13 @@ void main() {
         ],
         verify: (_) {
           verify(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).called(1);
+          verify(
             () => mockProfileRepository.watchProfile(pubkey: testPubkey),
           ).called(1);
           verifyNever(
             () => mockProfileRepository.fetchFreshProfile(
-              pubkey: any(named: 'pubkey'),
-            ),
-          );
-          verifyNever(
-            () => mockProfileRepository.getCachedProfile(
               pubkey: any(named: 'pubkey'),
             ),
           );
@@ -792,13 +820,16 @@ void main() {
         setUp: () {
           final profile = createTestProfile(nip05: '_@alice.divine.video');
           when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => null);
+          when(
             () => mockProfileRepository.watchProfile(pubkey: testPubkey),
           ).thenAnswer((_) => Stream.value(profile));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const MyProfileSubscriptionRequested()),
         expect: () => [
-          isA<MyProfileLoading>(),
+          isA<MyProfileLoading>().having((s) => s.profile, 'profile', isNull),
           isA<MyProfileUpdated>().having(
             (s) => s.extractedUsername,
             'extractedUsername',
@@ -806,6 +837,9 @@ void main() {
           ),
         ],
         verify: (_) {
+          verify(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).called(1);
           verify(
             () => mockProfileRepository.watchProfile(pubkey: testPubkey),
           ).called(1);
@@ -817,13 +851,16 @@ void main() {
         setUp: () {
           final profile = createTestProfile(nip05: 'alice@example.com');
           when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => null);
+          when(
             () => mockProfileRepository.watchProfile(pubkey: testPubkey),
           ).thenAnswer((_) => Stream.value(profile));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const MyProfileSubscriptionRequested()),
         expect: () => [
-          isA<MyProfileLoading>(),
+          isA<MyProfileLoading>().having((s) => s.profile, 'profile', isNull),
           isA<MyProfileUpdated>()
               .having(
                 (s) => s.externalNip05,
@@ -833,6 +870,9 @@ void main() {
               .having((s) => s.extractedUsername, 'extractedUsername', isNull),
         ],
         verify: (_) {
+          verify(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).called(1);
           verify(
             () => mockProfileRepository.watchProfile(pubkey: testPubkey),
           ).called(1);
@@ -854,6 +894,9 @@ void main() {
           );
           var callCount = 0;
           when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => null);
+          when(
             () => mockProfileRepository.watchProfile(pubkey: testPubkey),
           ).thenAnswer((_) {
             callCount++;
@@ -868,13 +911,13 @@ void main() {
           bloc.add(const MyProfileSubscriptionRequested());
         },
         expect: () => [
-          isA<MyProfileLoading>(),
+          isA<MyProfileLoading>().having((s) => s.profile, 'profile', isNull),
           isA<MyProfileUpdated>().having(
             (s) => s.profile.displayName,
             'displayName',
             'First',
           ),
-          isA<MyProfileLoading>(),
+          isA<MyProfileLoading>().having((s) => s.profile, 'profile', isNull),
           isA<MyProfileUpdated>().having(
             (s) => s.profile.displayName,
             'displayName',

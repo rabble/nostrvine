@@ -102,7 +102,20 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
     MyProfileSubscriptionRequested event,
     Emitter<MyProfileState> emit,
   ) async {
-    emit(const MyProfileLoading());
+    // Pre-seed with cached profile so the real display name is shown
+    // immediately rather than the generated fallback ("Feminist Sloth 82")
+    // while the Drift watch stream fires its first event. Mirrors the same
+    // pattern used in _onLoadRequested.
+    final cachedProfile = await _profileRepository.getCachedProfile(
+      pubkey: pubkey,
+    );
+    emit(
+      MyProfileLoading(
+        profile: cachedProfile,
+        extractedUsername: cachedProfile?.divineUsername,
+        externalNip05: cachedProfile?.externalNip05,
+      ),
+    );
 
     await emit.forEach<UserProfile?>(
       _profileRepository.watchProfile(pubkey: pubkey),
