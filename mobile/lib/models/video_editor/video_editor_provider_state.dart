@@ -32,7 +32,6 @@ class VideoEditorProviderState {
     this.editorStateHistory = const {},
     this.editorEditingParameters,
     this.collaboratorPubkeys = const {},
-    this.pendingCollaboratorPubkeys = const {},
     this.inspiredByVideo,
     this.inspiredByNpub,
     this.selectedSound,
@@ -93,9 +92,6 @@ class VideoEditorProviderState {
 
   /// Pubkeys of collaborators to tag in the published video.
   final Set<String> collaboratorPubkeys;
-
-  /// Pubkeys of collaborators awaiting mutual-follow verification.
-  final Set<String> pendingCollaboratorPubkeys;
 
   /// Reference to a specific video that inspired this one (a-tag).
   final InspiredByInfo? inspiredByVideo;
@@ -161,7 +157,6 @@ class VideoEditorProviderState {
     CompleteParameters? editorEditingParameters,
     bool clearEditorEditingParameters = false,
     Set<String>? collaboratorPubkeys,
-    Set<String>? pendingCollaboratorPubkeys,
     InspiredByInfo? inspiredByVideo,
     bool clearInspiredByVideo = false,
     String? inspiredByNpub,
@@ -193,8 +188,6 @@ class VideoEditorProviderState {
           ? null
           : editorEditingParameters ?? this.editorEditingParameters,
       collaboratorPubkeys: collaboratorPubkeys ?? this.collaboratorPubkeys,
-      pendingCollaboratorPubkeys:
-          pendingCollaboratorPubkeys ?? this.pendingCollaboratorPubkeys,
       inspiredByVideo: clearInspiredByVideo
           ? null
           : (inspiredByVideo ?? this.inspiredByVideo),

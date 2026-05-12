@@ -163,6 +163,36 @@ void main() {
 
         expect(find.text('Type a name to search'), findsOneWidget);
       });
+
+      testWidgets('shows custom searchText in the header when provided', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              profileRepositoryProvider.overrideWithValue(
+                _createMockProfileRepository(),
+              ),
+              followRepositoryProvider.overrideWithValue(
+                _createMockFollowRepository(),
+              ),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: UserPickerSheet(
+                  title: 'Title',
+                  searchText: 'Mutual followers',
+                  filterMode: UserPickerFilterMode.allUsers,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('Mutual followers'), findsOneWidget);
+      });
     });
 
     group('mutualFollowsOnly mode', () {

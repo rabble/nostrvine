@@ -49,6 +49,7 @@ Future<List<UserProfile>?> showUserPickerSheet(
       scrollController: scrollController,
       autoFocus: autoFocus,
       title: title,
+      searchText: searchText,
       maxCount: maxCount,
       excludePubkeys: excludePubkeys,
       searchHint: searchHint,
@@ -66,6 +67,7 @@ class UserPickerSheet extends ConsumerStatefulWidget {
     required this.title,
     this.scrollController,
     this.autoFocus = false,
+    this.searchText,
     this.maxCount,
     this.excludePubkeys = const {},
     this.searchHint,
@@ -79,6 +81,9 @@ class UserPickerSheet extends ConsumerStatefulWidget {
 
   /// Title shown in the header.
   final String title;
+
+  /// Optional helper text shown below the title in the header.
+  final String? searchText;
 
   /// Optional maximum selectable count shown in the header as
   /// "selected/max title".
@@ -323,6 +328,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
           ),
           title: _UserPickerTitle(
             title: widget.title,
+            subtitle: widget.searchText,
             selectedCount: _selectedProfiles.length,
             maxCount: widget.maxCount,
           ),
@@ -842,11 +848,13 @@ class _UserPickerTitle extends StatelessWidget {
   const _UserPickerTitle({
     required this.title,
     required this.selectedCount,
+    this.subtitle,
     this.maxCount,
   });
 
   final String title;
   final int selectedCount;
+  final String? subtitle;
   final int? maxCount;
 
   @override
@@ -854,9 +862,20 @@ class _UserPickerTitle extends StatelessWidget {
     final displayTitle = maxCount != null
         ? '$selectedCount/$maxCount $title'
         : title;
-    return Text(
-      displayTitle,
-      style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      spacing: 2,
+      children: [
+        Text(
+          displayTitle,
+          style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+        ),
+        if (subtitle != null && subtitle!.isNotEmpty)
+          Text(
+            subtitle!,
+            style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+          ),
+      ],
     );
   }
 }

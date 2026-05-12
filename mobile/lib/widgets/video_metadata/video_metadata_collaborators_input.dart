@@ -35,16 +35,11 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final (:collaborators, :pendingCollaborators) = ref.watch(
-      videoEditorProvider.select(
-        (s) => (
-          collaborators: s.collaboratorPubkeys,
-          pendingCollaborators: s.pendingCollaboratorPubkeys,
-        ),
-      ),
+    final collaborators = ref.watch(
+      videoEditorProvider.select((s) => s.collaboratorPubkeys),
     );
 
-    final collaboratorNames = [...collaborators, ...pendingCollaborators]
+    final collaboratorNames = collaborators
         .map((pubkey) {
           final name = ref
               .watch(userProfileReactiveProvider(pubkey))
