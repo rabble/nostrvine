@@ -223,11 +223,16 @@ class _ContentWarningState extends State<ContentWarning>
   }
 
   String? _warningDetails(BuildContext context) {
+    final warningMessage = widget.moderationResult.warningMessage;
+    if (warningMessage != null) {
+      return warningMessage;
+    }
+
     final reasons = widget.moderationResult.reasons;
     if (reasons.isNotEmpty) {
       return context.l10n.reportReasonSubtitle(reasons.first);
     }
-    return widget.moderationResult.warningMessage;
+    return null;
   }
 
   void _revealContent() {
