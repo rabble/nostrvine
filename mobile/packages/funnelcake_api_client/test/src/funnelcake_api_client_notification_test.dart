@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
@@ -176,7 +177,21 @@ void main() {
         expect(captured.first, same(requestUri));
       });
 
-      test('returns empty response on 404', () async {
+      test('throws FunnelcakeNotConfiguredException when not available', () {
+        final emptyClient = FunnelcakeApiClient(
+          baseUrl: '',
+          httpClient: mockHttpClient,
+        );
+
+        expect(
+          () => emptyClient.getNotifications(pubkey: testPubkey),
+          throwsA(isA<FunnelcakeNotConfiguredException>()),
+        );
+
+        emptyClient.dispose();
+      });
+
+      test('throws FunnelcakeApiException on 404', () async {
         when(
           () => mockHttpClient.get(
             any(),
@@ -186,14 +201,19 @@ void main() {
           (_) async => http.Response('Not found', 404),
         );
 
-        final response = await client.getNotifications(pubkey: testPubkey);
-
-        expect(response.notifications, isEmpty);
-        expect(response.unreadCount, equals(0));
-        expect(response.hasMore, isFalse);
+        expect(
+          () => client.getNotifications(pubkey: testPubkey),
+          throwsA(
+            isA<FunnelcakeApiException>().having(
+              (e) => e.statusCode,
+              'statusCode',
+              equals(404),
+            ),
+          ),
+        );
       });
 
-      test('returns empty response on server error', () async {
+      test('throws FunnelcakeApiException on server error', () async {
         when(
           () => mockHttpClient.get(
             any(),
@@ -203,13 +223,33 @@ void main() {
           (_) async => http.Response('Internal error', 500),
         );
 
-        final response = await client.getNotifications(pubkey: testPubkey);
-
-        expect(response.notifications, isEmpty);
-        expect(response.unreadCount, equals(0));
+        expect(
+          () => client.getNotifications(pubkey: testPubkey),
+          throwsA(
+            isA<FunnelcakeApiException>().having(
+              (e) => e.statusCode,
+              'statusCode',
+              equals(500),
+            ),
+          ),
+        );
       });
 
-      test('returns empty response on exception', () async {
+      test('throws FunnelcakeTimeoutException on timeout', () async {
+        when(
+          () => mockHttpClient.get(
+            any(),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer((_) async => throw TimeoutException('Request timed out'));
+
+        expect(
+          () => client.getNotifications(pubkey: testPubkey),
+          throwsA(isA<FunnelcakeTimeoutException>()),
+        );
+      });
+
+      test('throws FunnelcakeException on network error', () async {
         when(
           () => mockHttpClient.get(
             any(),
@@ -217,10 +257,16 @@ void main() {
           ),
         ).thenThrow(Exception('network error'));
 
-        final response = await client.getNotifications(pubkey: testPubkey);
-
-        expect(response.notifications, isEmpty);
-        expect(response.unreadCount, equals(0));
+        expect(
+          () => client.getNotifications(pubkey: testPubkey),
+          throwsA(
+            isA<FunnelcakeException>().having(
+              (e) => e.message,
+              'message',
+              contains('Failed to fetch notifications'),
+            ),
+          ),
+        );
       });
 
       test('parses successful response with notifications', () async {
@@ -358,7 +404,21 @@ void main() {
         expect(body['notification_ids'], equals(['id1', 'id2']));
       });
 
-      test('returns failure response on server error', () async {
+      test('throws FunnelcakeNotConfiguredException when not available', () {
+        final emptyClient = FunnelcakeApiClient(
+          baseUrl: '',
+          httpClient: mockHttpClient,
+        );
+
+        expect(
+          () => emptyClient.markNotificationsRead(pubkey: testPubkey),
+          throwsA(isA<FunnelcakeNotConfiguredException>()),
+        );
+
+        emptyClient.dispose();
+      });
+
+      test('throws FunnelcakeApiException on server error', () async {
         when(
           () => mockHttpClient.post(
             any(),
@@ -369,13 +429,34 @@ void main() {
           (_) async => http.Response('Internal error', 500),
         );
 
-        final response = await client.markNotificationsRead(pubkey: testPubkey);
-
-        expect(response.success, isFalse);
-        expect(response.markedCount, equals(0));
+        expect(
+          () => client.markNotificationsRead(pubkey: testPubkey),
+          throwsA(
+            isA<FunnelcakeApiException>().having(
+              (e) => e.statusCode,
+              'statusCode',
+              equals(500),
+            ),
+          ),
+        );
       });
 
-      test('returns failure response on exception', () async {
+      test('throws FunnelcakeTimeoutException on timeout', () async {
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => throw TimeoutException('Request timed out'));
+
+        expect(
+          () => client.markNotificationsRead(pubkey: testPubkey),
+          throwsA(isA<FunnelcakeTimeoutException>()),
+        );
+      });
+
+      test('throws FunnelcakeException on network error', () async {
         when(
           () => mockHttpClient.post(
             any(),
@@ -384,10 +465,16 @@ void main() {
           ),
         ).thenThrow(Exception('network error'));
 
-        final response = await client.markNotificationsRead(pubkey: testPubkey);
-
-        expect(response.success, isFalse);
-        expect(response.markedCount, equals(0));
+        expect(
+          () => client.markNotificationsRead(pubkey: testPubkey),
+          throwsA(
+            isA<FunnelcakeException>().having(
+              (e) => e.message,
+              'message',
+              contains('Failed to mark notifications as read'),
+            ),
+          ),
+        );
       });
 
       test('parses successful mark-read response', () async {

@@ -277,7 +277,7 @@ void main() {
         expect(item.actors.first.pictureUrl, isNull);
       });
 
-      test('returns empty page on API error', () async {
+      test('rethrows on API error after logging', () async {
         when(
           () => funnelcakeApiClient.getNotifications(
             pubkey: any(named: 'pubkey'),
@@ -286,12 +286,18 @@ void main() {
             authHeaders: any(named: 'authHeaders'),
             limit: any(named: 'limit'),
           ),
-        ).thenThrow(Exception('network error'));
+        ).thenThrow(const FunnelcakeException('network error'));
 
-        final page = await repository.getNotifications();
+        await expectLater(
+          repository.getNotifications(),
+          throwsA(isA<FunnelcakeException>()),
+        );
 
-        expect(page.items, isEmpty);
-        expect(page.unreadCount, equals(0));
+        // BehaviorSubject preserves its prior value across the throw —
+        // the seeded NotificationPage.empty stays as the snapshot value
+        // so downstream consumers don't see a spurious update.
+        final snapshot = await repository.watchSnapshot().first;
+        expect(snapshot, equals(NotificationPage.empty));
       });
 
       test('passes cursor for pagination', () async {

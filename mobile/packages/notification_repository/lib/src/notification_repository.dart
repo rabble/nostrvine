@@ -113,6 +113,11 @@ class NotificationRepository {
   /// Pass [cursor] to override the stored pagination cursor. On success,
   /// merges the new items into the snapshot — the first page replaces
   /// the snapshot's items, subsequent pages append.
+  ///
+  /// Rethrows any [Exception] (typically a [FunnelcakeException] subtype)
+  /// after structured logging, so callers can drive a failure UI. The
+  /// snapshot is left at its prior value on throw — the [BehaviorSubject]
+  /// preserves it for downstream consumers.
   Future<NotificationPage> getNotifications({String? cursor}) async {
     try {
       final effectiveCursor = cursor ?? _lastCursor;
@@ -150,7 +155,7 @@ class NotificationRepository {
         error: e,
         stackTrace: s,
       );
-      return NotificationPage.empty;
+      rethrow;
     }
   }
 
