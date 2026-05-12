@@ -103,9 +103,9 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
     Emitter<MyProfileState> emit,
   ) async {
     // Pre-seed with cached profile so the real display name is shown
-    // immediately rather than the generated fallback ("Feminist Sloth 82")
-    // while the Drift watch stream fires its first event. Mirrors the same
-    // pattern used in _onLoadRequested.
+    // immediately rather than a generated fallback while the Drift watch
+    // stream fires its first event. Mirrors the same pattern used in
+    // _onLoadRequested.
     final cachedProfile = await _profileRepository.getCachedProfile(
       pubkey: pubkey,
     );
