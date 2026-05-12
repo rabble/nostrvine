@@ -245,6 +245,13 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
         notificationKind == NotificationKind.mention;
 
     // Resolve the navigation target.
+    //
+    // The stable-ID path (videoAddressableId set) and the raw-event-id
+    // fallback are synchronous — no await before navigation.
+    // The resolver path (comment/mention without addressable ID) requires
+    // one relay round-trip; we await only that before opening the screen,
+    // then hand the video fetch off as a stream so the screen opens
+    // immediately showing its own loading indicator.
     String routeId;
     if (videoAddressableId != null && videoAddressableId.isNotEmpty) {
       // Stable path: addressable ID works even after a metadata update.
@@ -277,46 +284,67 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
       routeId = videoEventId;
     }
 
-    VideoEvent? video;
-    try {
-      video = await videosRepository.fetchVideoWithStatsForRouteId(routeId);
-      if (!context.mounted) return;
-    } catch (e) {
-      Log.error(
-        'Failed to fetch video: $e',
-        name: 'NotificationsView',
-        category: LogCategory.ui,
-      );
-    }
+    // Capture context-dependent objects before the async gap so they remain
+    // valid in the post-navigation callbacks below.
+    final l10n = context.l10n;
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final router = GoRouter.of(context);
+
+    // Build the video fetch as a Future so we can:
+    //   (a) navigate immediately — the screen shows BrandedLoadingIndicator
+    //   (b) pop + snackbar if the video turns out to be unavailable
+    final videoFuture = videosRepository
+        .fetchVideoWithStatsForRouteId(routeId)
+        .then((video) {
+          if (video == null) {
+            if (router.canPop()) router.pop();
+            scaffoldMessenger.showSnackBar(
+              SnackBar(
+                content: Text(l10n.notificationsVideoNotFound),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+            // Return empty list — stream completes without emitting videos.
+            return <VideoEvent>[];
+          }
+          if (videoEventService.shouldHideVideo(video)) {
+            if (router.canPop()) router.pop();
+            scaffoldMessenger.showSnackBar(
+              SnackBar(
+                content: Text(l10n.notificationsVideoUnavailable),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+            return <VideoEvent>[];
+          }
+          return [video];
+        })
+        .onError<Object>((e, stackTrace) {
+          Log.error(
+            'Failed to fetch video for notification',
+            name: 'NotificationsView',
+            category: LogCategory.ui,
+            error: e,
+            stackTrace: stackTrace,
+          );
+          if (router.canPop()) router.pop();
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: Text(l10n.notificationsVideoNotFound),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+          return <VideoEvent>[];
+        });
 
     if (!context.mounted) return;
-
-    if (video == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.notificationsVideoNotFound),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-
-    if (videoEventService.shouldHideVideo(video)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.notificationsVideoUnavailable),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
 
     context.push(
       PooledFullscreenVideoFeedScreen.path,
       extra: PooledFullscreenVideoFeedArgs(
-        videosStream: Stream.value([video]),
+        videosStream: Stream.fromFuture(videoFuture),
         initialIndex: 0,
-        contextTitle: context.l10n.notificationsFromNotification,
+        contextTitle: l10n.notificationsFromNotification,
         autoOpenComments: isComment,
       ),
     );
