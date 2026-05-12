@@ -139,26 +139,38 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
               onOptions: () => _onOptions(otherPubkey, displayName),
             ),
             Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(32),
-                child: ColoredBox(
-                  color: VineTheme.surfaceContainerHigh,
-                  // Tap anywhere in the messages area to dismiss the
-                  // keyboard. Translucent hit behavior keeps bubble
-                  // long-press and list-scroll gestures intact.
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.translucent,
-                    onTap: () => FocusScope.of(context).unfocus(),
-                    child: _ConversationContent(
-                      currentPubkey: currentPubkey,
-                      otherPubkey: otherPubkey,
-                      displayName: displayName,
-                      imageUrl: profile?.picture,
-                      nip05: profile?.shortDisplayNip05,
-                      onViewProfile: () {
-                        final npub = NostrKeyUtils.encodePubKey(otherPubkey);
-                        context.push('${OtherProfileScreen.path}/$npub');
-                      },
+              // Force the messages card to fill the available width
+              // regardless of its content. Without this, the empty /
+              // loading state's SingleChildScrollView shrink-wraps the
+              // ClipRRect down to the EmptyConversation column's
+              // intrinsic width and the surface card renders as a
+              // narrow strip; the ListView (with messages) is fine on
+              // its own.
+              child: SizedBox(
+                width: double.infinity,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(32),
+                  child: ColoredBox(
+                    color: VineTheme.surfaceContainerHigh,
+                    // Tap anywhere in the messages area to dismiss the
+                    // keyboard. Translucent hit behavior keeps bubble
+                    // long-press and list-scroll gestures intact.
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onTap: () => FocusScope.of(context).unfocus(),
+                      child: _ConversationContent(
+                        currentPubkey: currentPubkey,
+                        otherPubkey: otherPubkey,
+                        displayName: displayName,
+                        imageUrl: profile?.picture,
+                        nip05: profile?.shortDisplayNip05,
+                        onViewProfile: () {
+                          final npub = NostrKeyUtils.encodePubKey(
+                            otherPubkey,
+                          );
+                          context.push('${OtherProfileScreen.path}/$npub');
+                        },
+                      ),
                     ),
                   ),
                 ),
