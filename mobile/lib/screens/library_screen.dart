@@ -495,205 +495,65 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                       child: Column(
                         children: [
                           if (!widget.selectionMode)
-                            Padding(
-                              padding: const .all(16),
-                              child: Row(
-                                spacing: 8,
-                                children: [
-                                  DivineIconButton(
-                                    size: .small,
-                                    type: .secondary,
-                                    icon: _isLibrarySelectionMode
-                                        ? .x
-                                        : .caretLeft,
-                                    semanticLabel:
-                                        _isLibrarySelectionMode &&
-                                            !_isSelectionModeLockedToCloseOnly
-                                        ? context.l10n.commonCancel
-                                        : null,
-                                    onPressed: () {
-                                      if (_isLibrarySelectionMode &&
-                                          !_isSelectionModeLockedToCloseOnly) {
-                                        _exitLibrarySelectionMode(clipsBloc);
-                                        return;
-                                      }
-                                      if (context.canPop()) {
-                                        context.pop();
-                                      } else {
-                                        context.go(
-                                          VideoFeedPage.pathForIndex(0),
-                                        );
-                                      }
-                                    },
-                                  ),
-
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const .symmetric(horizontal: 8),
-                                      child: Text(
-                                        context.l10n.profileLibraryLabel,
-                                        style: VineTheme.titleMediumFont(),
-                                      ),
-                                    ),
-                                  ),
-                                  if (isClipsTabActive) ...[
-                                    DivineIconButton(
-                                      size: .small,
-                                      type: .secondary,
-                                      icon: .funnelSimple,
-                                      onPressed: () => _openSortMenu(context),
-                                    ),
-                                    if (!_isLibrarySelectionMode)
-                                      DivineButton(
-                                        size: .small,
-                                        type: .secondary,
-                                        label: context.l10n.librarySelect,
-                                        onPressed: () {
-                                          setState(() {
-                                            _isLibrarySelectionMode = true;
-                                          });
-                                        },
-                                      ),
-
-                                    if (_isLibrarySelectionMode)
-                                      DivineIconButton(
-                                        size: .small,
-                                        type: .error,
-                                        icon: .trash,
-                                        semanticLabel:
-                                            context.l10n.commonDelete,
-                                        onPressed:
-                                            clipsState
-                                                .selectedClipIds
-                                                .isNotEmpty
-                                            ? () {
-                                                _confirmDeleteSelectedClips(
-                                                  context,
-                                                  clipsBloc,
-                                                  clipsState
-                                                      .selectedClipIds
-                                                      .length,
-                                                );
-                                              }
-                                            : null,
-                                      ),
-                                  ],
-                                ],
+                            _LibraryToolbar(
+                              isLibrarySelectionMode: _isLibrarySelectionMode,
+                              canExitSelectionMode:
+                                  !_isSelectionModeLockedToCloseOnly,
+                              isClipsTabActive: isClipsTabActive,
+                              onLeadingPressed: () {
+                                if (_isLibrarySelectionMode &&
+                                    !_isSelectionModeLockedToCloseOnly) {
+                                  _exitLibrarySelectionMode(clipsBloc);
+                                  return;
+                                }
+                                if (context.canPop()) {
+                                  context.pop();
+                                } else {
+                                  context.go(VideoFeedPage.pathForIndex(0));
+                                }
+                              },
+                              onOpenSortMenu: () => _openSortMenu(context),
+                              onEnterSelectionMode: () => setState(
+                                () => _isLibrarySelectionMode = true,
                               ),
+                              onDeleteSelectedClips:
+                                  clipsState.selectedClipIds.isNotEmpty
+                                  ? () => _confirmDeleteSelectedClips(
+                                      context,
+                                      clipsBloc,
+                                      clipsState.selectedClipIds.length,
+                                    )
+                                  : null,
                             ),
-
                           Expanded(
-                            child: ClipRRect(
-                              borderRadius: const .all(
-                                .circular(VineTheme.shellInnerCornerRadius),
-                              ),
-                              child: ColoredBox(
-                                color: VineTheme.surfaceContainerHigh,
-                                child: Column(
-                                  crossAxisAlignment: .stretch,
-                                  children: [
-                                    if (!_isClipsOnlyMode)
-                                      const SizedBox(height: 12),
-                                    if (!_isClipsOnlyMode)
-                                      TabBar(
-                                        controller: _tabController,
-                                        isScrollable: true,
-                                        tabAlignment: TabAlignment.start,
-                                        padding:
-                                            const EdgeInsetsDirectional.only(
-                                              start: 16,
-                                            ),
-                                        indicatorColor:
-                                            VineTheme.tabIndicatorGreen,
-                                        indicatorWeight: 4,
-                                        indicatorSize: TabBarIndicatorSize.tab,
-                                        dividerColor: VineTheme.transparent,
-                                        labelColor: VineTheme.whiteText,
-                                        unselectedLabelColor:
-                                            VineTheme.onSurfaceMuted55,
-                                        labelPadding:
-                                            const EdgeInsets.symmetric(
-                                              horizontal: 14,
-                                            ),
-                                        labelStyle: VineTheme.titleMediumFont(),
-                                        unselectedLabelStyle:
-                                            VineTheme.titleMediumFont(
-                                              color: VineTheme.onSurfaceMuted55,
-                                            ),
-                                        tabs: [
-                                          Tab(
-                                            text: context.l10n.libraryTabDrafts,
-                                          ),
-                                          Tab(
-                                            text: context.l10n.libraryTabClips,
-                                          ),
-                                          Tab(text: context.l10n.soundsTitle),
-                                        ],
-                                      ),
-                                    if (!_isClipsOnlyMode)
-                                      const SizedBox(height: 2),
-                                    Expanded(
-                                      child: widget.selectionMode
-                                          ? _SelectionBody(
-                                              scrollController:
-                                                  widget.scrollController,
-                                              targetAspectRatio:
-                                                  targetAspectRatio,
-                                              onCreate: () =>
-                                                  _createVideoFromSelected(
-                                                    context,
-                                                    selectedClips: clipsState
-                                                        .selectedClips,
-                                                    clipsBloc: clipsBloc,
-                                                  ),
-                                            )
-                                          : _TabBody(
-                                              clips: sortedClips,
-                                              selectionEnabled:
-                                                  _isSelectionEnabled,
-                                              isClipsOnlyMode: _isClipsOnlyMode,
-                                              tabController: _tabController,
-                                              targetAspectRatio:
-                                                  targetAspectRatio,
-                                            ),
-                                    ),
-                                  ],
-                                ),
+                            child: _LibraryContent(
+                              isClipsOnlyMode: _isClipsOnlyMode,
+                              tabController: _tabController,
+                              selectionMode: widget.selectionMode,
+                              scrollController: widget.scrollController,
+                              targetAspectRatio: targetAspectRatio,
+                              sortedClips: sortedClips,
+                              selectionEnabled: _isSelectionEnabled,
+                              onCreateVideo: () => _createVideoFromSelected(
+                                context,
+                                selectedClips: clipsState.selectedClips,
+                                clipsBloc: clipsBloc,
                               ),
                             ),
                           ),
-
-                          AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 120),
-                            transitionBuilder: (child, animation) =>
-                                FadeTransition(
-                                  opacity: animation,
-                                  child: SizeTransition(
-                                    sizeFactor: animation,
-                                    axisAlignment: -1,
-                                    child: child,
-                                  ),
-                                ),
-                            child:
+                          _CreateVideoBar(
+                            visible:
                                 !widget.selectionMode &&
-                                    _isSelectionEnabled &&
-                                    (_activeTabIndex == 1 ||
-                                        widget.tabsMode == .clipsOnly) &&
-                                    clipsState.selectedClipIds.isNotEmpty
-                                ? Container(
-                                    padding: const .all(16),
-                                    color: VineTheme.onPrimary,
-                                    child: DivineButton(
-                                      expanded: true,
-                                      label: context.l10n.libraryCreateVideo,
-                                      onPressed: () => _createVideoFromSelected(
-                                        context,
-                                        selectedClips: clipsState.selectedClips,
-                                        clipsBloc: clipsBloc,
-                                      ),
-                                    ),
-                                  )
-                                : const SizedBox.shrink(),
+                                _isSelectionEnabled &&
+                                (_activeTabIndex == 1 ||
+                                    widget.tabsMode ==
+                                        LibraryTabsMode.clipsOnly) &&
+                                clipsState.selectedClipIds.isNotEmpty,
+                            onPressed: () => _createVideoFromSelected(
+                              context,
+                              selectedClips: clipsState.selectedClips,
+                              clipsBloc: clipsBloc,
+                            ),
                           ),
                         ],
                       ),
@@ -727,6 +587,194 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
           );
         },
       ),
+    );
+  }
+}
+
+class _LibraryToolbar extends StatelessWidget {
+  const _LibraryToolbar({
+    required this.isLibrarySelectionMode,
+    required this.canExitSelectionMode,
+    required this.isClipsTabActive,
+    required this.onLeadingPressed,
+    required this.onOpenSortMenu,
+    required this.onEnterSelectionMode,
+    this.onDeleteSelectedClips,
+  });
+
+  final bool isLibrarySelectionMode;
+  final bool canExitSelectionMode;
+  final bool isClipsTabActive;
+  final VoidCallback onLeadingPressed;
+  final VoidCallback onOpenSortMenu;
+  final VoidCallback onEnterSelectionMode;
+  final VoidCallback? onDeleteSelectedClips;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        spacing: 8,
+        children: [
+          DivineIconButton(
+            size: .small,
+            type: .secondary,
+            icon: isLibrarySelectionMode ? .x : .caretLeft,
+            semanticLabel: isLibrarySelectionMode && canExitSelectionMode
+                ? context.l10n.commonCancel
+                : null,
+            onPressed: onLeadingPressed,
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                context.l10n.profileLibraryLabel,
+                style: VineTheme.titleMediumFont(),
+              ),
+            ),
+          ),
+          if (isClipsTabActive) ...[
+            DivineIconButton(
+              size: .small,
+              type: .secondary,
+              icon: .funnelSimple,
+              onPressed: onOpenSortMenu,
+            ),
+            if (!isLibrarySelectionMode)
+              DivineButton(
+                size: .small,
+                type: .secondary,
+                label: context.l10n.librarySelect,
+                onPressed: onEnterSelectionMode,
+              ),
+            if (isLibrarySelectionMode)
+              DivineIconButton(
+                size: .small,
+                type: .error,
+                icon: .trash,
+                semanticLabel: context.l10n.commonDelete,
+                onPressed: onDeleteSelectedClips,
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _LibraryContent extends StatelessWidget {
+  const _LibraryContent({
+    required this.isClipsOnlyMode,
+    required this.tabController,
+    required this.selectionMode,
+    required this.sortedClips,
+    required this.selectionEnabled,
+    required this.onCreateVideo,
+    this.scrollController,
+    this.targetAspectRatio,
+  });
+
+  final bool isClipsOnlyMode;
+  final TabController tabController;
+  final bool selectionMode;
+  final List<DivineVideoClip> sortedClips;
+  final bool selectionEnabled;
+  final VoidCallback onCreateVideo;
+  final ScrollController? scrollController;
+  final double? targetAspectRatio;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.all(
+        Radius.circular(VineTheme.shellInnerCornerRadius),
+      ),
+      child: ColoredBox(
+        color: VineTheme.surfaceContainerHigh,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (!isClipsOnlyMode) const SizedBox(height: 12),
+            if (!isClipsOnlyMode)
+              TabBar(
+                controller: tabController,
+                isScrollable: true,
+                tabAlignment: TabAlignment.start,
+                padding: const EdgeInsetsDirectional.only(start: 16),
+                indicatorColor: VineTheme.tabIndicatorGreen,
+                indicatorWeight: 4,
+                indicatorSize: TabBarIndicatorSize.tab,
+                dividerColor: VineTheme.transparent,
+                labelColor: VineTheme.whiteText,
+                unselectedLabelColor: VineTheme.onSurfaceMuted55,
+                labelPadding: const EdgeInsets.symmetric(horizontal: 14),
+                labelStyle: VineTheme.titleMediumFont(),
+                unselectedLabelStyle: VineTheme.titleMediumFont(
+                  color: VineTheme.onSurfaceMuted55,
+                ),
+                tabs: [
+                  Tab(text: context.l10n.libraryTabDrafts),
+                  Tab(text: context.l10n.libraryTabClips),
+                  Tab(text: context.l10n.soundsTitle),
+                ],
+              ),
+            if (!isClipsOnlyMode) const SizedBox(height: 2),
+            Expanded(
+              child: selectionMode
+                  ? _SelectionBody(
+                      scrollController: scrollController,
+                      targetAspectRatio: targetAspectRatio,
+                      onCreate: onCreateVideo,
+                    )
+                  : _TabBody(
+                      clips: sortedClips,
+                      selectionEnabled: selectionEnabled,
+                      isClipsOnlyMode: isClipsOnlyMode,
+                      tabController: tabController,
+                      targetAspectRatio: targetAspectRatio,
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CreateVideoBar extends StatelessWidget {
+  const _CreateVideoBar({
+    required this.visible,
+    required this.onPressed,
+  });
+
+  final bool visible;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 120),
+      transitionBuilder: (child, animation) => FadeTransition(
+        opacity: animation,
+        child: SizeTransition(
+          sizeFactor: animation,
+          axisAlignment: -1,
+          child: child,
+        ),
+      ),
+      child: visible
+          ? Container(
+              padding: const EdgeInsets.all(16),
+              color: VineTheme.onPrimary,
+              child: DivineButton(
+                expanded: true,
+                label: context.l10n.libraryCreateVideo,
+                onPressed: onPressed,
+              ),
+            )
+          : const SizedBox.shrink(),
     );
   }
 }

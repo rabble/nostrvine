@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/widgets/video_clip/video_clip_thumbnail_card.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -33,6 +34,8 @@ void main() {
     }) {
       return MaterialApp(
         theme: VineTheme.theme,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: VideoClipThumbnailCard(
             clip: clip ?? createClip(),
