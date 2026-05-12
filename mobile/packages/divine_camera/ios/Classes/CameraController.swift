@@ -31,7 +31,26 @@ class CameraController: NSObject {
     /// Set by the AVAudioSession interruption observer. While true the
     /// audio capture path is known to be silent and we skip appending
     /// audio buffers to the asset writer.
-    private var audioInterrupted: Bool = false
+    ///
+    /// Synchronized via `audioInterruptedLock` because writes happen on
+    /// `sessionQueue` (interruption handler) but reads happen on
+    /// `videoOutputQueue` (`captureOutput`) — without a lock those
+    /// cross-queue accesses are an unsynchronized data race on a plain
+    /// `Bool`.
+    private let audioInterruptedLock = NSLock()
+    private var _audioInterrupted: Bool = false
+    private var audioInterrupted: Bool {
+        get {
+            audioInterruptedLock.lock()
+            defer { audioInterruptedLock.unlock() }
+            return _audioInterrupted
+        }
+        set {
+            audioInterruptedLock.lock()
+            _audioInterrupted = newValue
+            audioInterruptedLock.unlock()
+        }
+    }
     
     private var textureRegistry: FlutterTextureRegistry
     private var textureId: Int64 = -1
@@ -291,12 +310,11 @@ class CameraController: NSObject {
 
         switch type {
         case .began:
-            // Dispatch to sessionQueue so reads and writes to audioInterrupted
-            // always happen on the same serial queue, avoiding data races.
-            sessionQueue.async { [weak self] in
-                self?.audioInterrupted = true
-                print("[DivineCameraController] AVAudioSession interruption began")
-            }
+            // Access goes through the lock-backed `audioInterrupted`
+            // accessor so cross-queue reads from `videoOutputQueue`
+            // (captureOutput) see a consistent value.
+            self.audioInterrupted = true
+            print("[DivineCameraController] AVAudioSession interruption began")
         case .ended:
             let shouldResume: Bool = {
                 guard let raw = info[AVAudioSessionInterruptionOptionKey] as? UInt else {
@@ -307,6 +325,9 @@ class CameraController: NSObject {
             print("[DivineCameraController] AVAudioSession interruption ended (shouldResume=\(shouldResume))")
             // Always try to recover — even when shouldResume is false the
             // user can still press record again and we want a working session.
+            // attachAudioToSessionIfNeeded() must run on sessionQueue (it
+            // mutates capture-session state); the lock-backed
+            // `audioInterrupted` accessor handles cross-queue safety.
             sessionQueue.async { [weak self] in
                 guard let self = self else { return }
                 _ = self.attachAudioToSessionIfNeeded()
@@ -805,11 +826,18 @@ class CameraController: NSObject {
                     existing.stopRunning()
                 }
                 let configured = configureAudioSessionForRecording()
-                if wasRunning {
-                    existing.startRunning()
-                }
                 if !configured {
                     return false
+                }
+                // After a successful reconfigure, restart the dedicated
+                // audio capture session whenever it is not running — not
+                // just when it happened to be running before stopRunning().
+                // An interruption / category drift can leave the session
+                // already stopped on entry, in which case `wasRunning`
+                // is false but we still need to bring it back up so the
+                // next recording actually captures audio.
+                if !existing.isRunning {
+                    existing.startRunning()
                 }
             } else {
                 // Recover from interruption: setActive(true) is a no-op when
@@ -831,8 +859,17 @@ class CameraController: NSObject {
         // Make sure the AVAudioSession category is set.
         // DivineCameraPlugin.preWarmFrameworks() runs at plugin registration
         // and should already have done this; calling it again is cheap when warm.
-        configureAudioSessionForRecording()
-        
+        //
+        // Propagate failure: if setCategory / setActive fails on the cold
+        // path, the dedicated audio capture session would still be built
+        // and started below, but with no working AVAudioSession the
+        // captured buffers would be silent. Returning false here keeps
+        // the new `audioReady` contract honest — the recording proceeds
+        // without an audio track instead of producing a silent AAC track.
+        if !configureAudioSessionForRecording() {
+            return false
+        }
+
         let session = self.audioCaptureSession ?? AVCaptureSession()
         session.automaticallyConfiguresApplicationAudioSession = false
         session.beginConfiguration()
