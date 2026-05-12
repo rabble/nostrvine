@@ -13,7 +13,7 @@ void main() {
     const mentionStyle = TextStyle(color: Colors.blue);
 
     test('returns one plain span when text has no link tokens', () {
-      final spans = LinkifiedTextSpanBuilder(
+      final spans = const LinkifiedTextSpanBuilder(
         text: 'plain bio text',
         defaultStyle: defaultStyle,
         linkStyle: linkStyle,
@@ -46,7 +46,7 @@ void main() {
     });
 
     test('keeps trailing punctuation outside URL spans', () {
-      final spans = LinkifiedTextSpanBuilder(
+      final spans = const LinkifiedTextSpanBuilder(
         text: 'Visit violetblue.com.! More: https://example.com/path?:;',
         defaultStyle: defaultStyle,
         linkStyle: linkStyle,
@@ -237,7 +237,7 @@ void main() {
     test('leaves invalid profile Nostr IDs plain and unchanged', () {
       const invalidNpub = 'npub1invalidprofile';
 
-      final spans = LinkifiedTextSpanBuilder(
+      final spans = const LinkifiedTextSpanBuilder(
         text: invalidNpub,
         defaultStyle: defaultStyle,
         linkStyle: linkStyle,
