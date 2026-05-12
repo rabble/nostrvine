@@ -32,11 +32,15 @@ class FollowedHashtagsRepository {
   ///   Defaults to [preferencesKey] if not provided.
   /// - [followingFeedStorageKey]: Custom key for following‑feed hashtags.
   ///   Defaults to [followingFeedPreferencesKey] if not provided.
+  /// - [separateFollowingFeedHashtagsEnabled]: when `false`, feed list tracks
+  ///   profile list. Defaults to
+  ///   [kDefaultSeparateFollowingFeedHashtagsEnabled].
   FollowedHashtagsRepository({
     required SharedPreferences prefs,
     String? profileStorageKey,
     String? followingFeedStorageKey,
-    bool separateFollowingFeedHashtagsEnabled = true,
+    bool separateFollowingFeedHashtagsEnabled =
+        kDefaultSeparateFollowingFeedHashtagsEnabled,
   }) : _prefs = prefs,
        _profileKey = profileStorageKey ?? preferencesKey,
        _feedKey = followingFeedStorageKey ?? followingFeedPreferencesKey,
@@ -60,12 +64,15 @@ class FollowedHashtagsRepository {
   /// [SharedPreferences] key for feed-selector hashtag labels (home sheet).
   static const followingFeedPreferencesKey = 'following_feed_hashtag_labels';
 
-  /// When `false`, feed and profile lists are kept in sync (no separate
-  /// “Add to Following” product surface).
-  ///
-  /// The constructor parameter `separateFollowingFeedHashtagsEnabled`
-  /// defaults to this value.
-  static const bool separateFollowingFeedHashtagsEnabled = true;
+  /// App default when [separateFollowingFeedHashtagsEnabled] is omitted at
+  /// construction. UI must read [separateFollowingFeedHashtagsEnabled] on the
+  /// repository instance — not this constant alone — so DI/tests match
+  /// persistence behaviour.
+  static const bool kDefaultSeparateFollowingFeedHashtagsEnabled = true;
+
+  /// Whether feed-selector hashtags are stored separately from profile saves.
+  bool get separateFollowingFeedHashtagsEnabled =>
+      _separateFollowingFeedHashtagsEnabled;
 
   final SharedPreferences _prefs;
   final String _profileKey;
@@ -73,6 +80,7 @@ class FollowedHashtagsRepository {
   final bool _separateFollowingFeedHashtagsEnabled;
   final BehaviorSubject<List<String>> _profile;
   final BehaviorSubject<List<String>> _feed;
+  bool _closed = false;
 
   /// Reads prefs synchronously and seeds both subjects.
   ///
@@ -251,6 +259,7 @@ class FollowedHashtagsRepository {
   /// Call this method when the repository is no longer needed (e.g., during
   /// app shutdown or when swapping dependencies).
   Future<void> dispose() async {
+    _closed = true;
     await _profile.close();
     await _feed.close();
   }
@@ -264,10 +273,12 @@ class FollowedHashtagsRepository {
   }
 
   void _subjectProfile(List<String> list) {
+    if (_closed) return;
     _profile.add(List<String>.unmodifiable(list));
   }
 
   void _subjectFeed(List<String> list) {
+    if (_closed) return;
     _feed.add(List<String>.unmodifiable(list));
   }
 

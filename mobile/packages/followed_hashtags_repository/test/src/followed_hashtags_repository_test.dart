@@ -30,6 +30,28 @@ void main() {
       await repo.dispose();
     });
 
+    test('separateFollowingFeedHashtagsEnabled getter defaults true', () async {
+      final prefs = await SharedPreferences.getInstance();
+      final repo = FollowedHashtagsRepository(prefs: prefs);
+      expect(repo.separateFollowingFeedHashtagsEnabled, isTrue);
+      await repo.dispose();
+      await _afterRepoOpen();
+    });
+
+    test(
+      'separateFollowingFeedHashtagsEnabled getter respects false',
+      () async {
+        final prefs = await SharedPreferences.getInstance();
+        final repo = FollowedHashtagsRepository(
+          prefs: prefs,
+          separateFollowingFeedHashtagsEnabled: false,
+        );
+        expect(repo.separateFollowingFeedHashtagsEnabled, isFalse);
+        await repo.dispose();
+        await _afterRepoOpen();
+      },
+    );
+
     test(
       'seeds following feed from profile when the feed key '
       'is absent on first open',

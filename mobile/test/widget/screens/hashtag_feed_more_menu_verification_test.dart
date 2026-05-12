@@ -31,6 +31,7 @@ void main() {
     Future<void> pumpScreen(
       WidgetTester tester, {
       bool embedded = false,
+      bool separateFollowingFeedHashtagsEnabled = true,
     }) async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
@@ -40,6 +41,8 @@ void main() {
         prefs: prefs,
         profileStorageKey: 'test_profile_hashtags_1602_6',
         followingFeedStorageKey: 'test_feed_hashtags_1602_6',
+        separateFollowingFeedHashtagsEnabled:
+            separateFollowingFeedHashtagsEnabled,
       );
       addTearDown(() async {
         await repo.dispose();
@@ -119,6 +122,18 @@ void main() {
       expect(repo.hasFollowingFeedHashtag('plan6test'), isTrue);
       expect(find.text('Added to my feeds'), findsOneWidget);
     });
+
+    testWidgets(
+      'More menu hides add-to-feed when separate feed list is disabled',
+      (tester) async {
+        await pumpScreen(tester, separateFollowingFeedHashtagsEnabled: false);
+        await tester.tap(find.bySemanticsLabel('Hashtag options'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Add to my feeds'), findsNothing);
+        expect(find.text('Save'), findsOneWidget);
+      },
+    );
 
     testWidgets('embedded toolbar uses same a11y label for More', (
       tester,
