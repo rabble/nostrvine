@@ -53,6 +53,11 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
   String? _pendingDeviceCode;
   String? _pendingVerifier;
   String? _pendingInviteCode;
+
+  /// Cubit-internal backoff counter for [_schedulePoll]. Lives outside
+  /// state because the UI never reads it — analogous to [_pollTimer] and
+  /// [_pendingDeviceCode]. See `rules/state_management.md` "No Mutable
+  /// Instance Variables in BLoC" for the exception this falls under.
   int _pollTickIndex = 0;
 
   /// Reset the static completed device code tracking.

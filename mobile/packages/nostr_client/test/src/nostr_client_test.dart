@@ -2548,6 +2548,41 @@ void main() {
           expect(client.isDisposed, isTrue);
         },
       );
+
+      test(
+        'ready completes with error when refreshPublicKey() throws',
+        () async {
+          final boom = StateError('refresh failed');
+          when(() => mockNostr.refreshPublicKey()).thenThrow(boom);
+
+          // Attach the ready listener before initialize() so completeError
+          // has a handler — otherwise the test zone treats it as unhandled.
+          final readyExpectation = expectLater(
+            client.ready,
+            throwsA(same(boom)),
+          );
+
+          await expectLater(client.initialize(), throwsA(same(boom)));
+          await readyExpectation;
+        },
+      );
+
+      test(
+        'ready completes with error when relayManager.initialize() throws',
+        () async {
+          final boom = StateError('relay init failed');
+          when(() => mockNostr.refreshPublicKey()).thenAnswer((_) async {});
+          when(() => mockRelayManager.initialize()).thenThrow(boom);
+
+          final readyExpectation = expectLater(
+            client.ready,
+            throwsA(same(boom)),
+          );
+
+          await expectLater(client.initialize(), throwsA(same(boom)));
+          await readyExpectation;
+        },
+      );
     });
 
     group('relay convenience properties', () {

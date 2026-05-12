@@ -223,12 +223,22 @@ class NostrClient {
   /// This must be called before using the client to ensure relay connections
   /// are established. Also refreshes the public key from the signer to ensure
   /// the client has the correct key. Can be called multiple times safely.
+  ///
+  /// On failure, [ready] resolves with the same error so consumers awaiting
+  /// readiness fail fast instead of hanging until a wall-clock timeout.
   Future<void> initialize() async {
-    // Refresh public key from signer - signer is the single source of truth
-    await _nostr.refreshPublicKey();
-    await _relayManager.initialize();
-    if (!_readyCompleter.isCompleted) {
-      _readyCompleter.complete();
+    try {
+      // Signer is the single source of truth for the public key.
+      await _nostr.refreshPublicKey();
+      await _relayManager.initialize();
+      if (!_readyCompleter.isCompleted) {
+        _readyCompleter.complete();
+      }
+    } catch (e, st) {
+      if (!_readyCompleter.isCompleted) {
+        _readyCompleter.completeError(e, st);
+      }
+      rethrow;
     }
   }
 
