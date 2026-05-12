@@ -62,18 +62,6 @@ class NotificationRepository {
   /// Last cursor returned by the API, used for pagination.
   String? _lastCursor;
 
-  /// Nostr event ids the repository has ingested via either path.
-  ///
-  /// Populated from every raw notification's `sourceEventId` as it flows
-  /// through [_enrichAndGroup] — REST-loaded items carry the Nostr event
-  /// id in `sourceEventId` (with the server's UUID in `id`), while
-  /// WS-loaded items carry the Nostr event id in both fields. Querying
-  /// `raw.id` against this set in [acceptRealtime] therefore catches the
-  /// "same logical event arrives via REST then via WS" case the legacy
-  /// `notification_realtime_bridge_provider.dart` covered with its
-  /// `metadata['sourceEventId'] == notification.id` check.
-  final Set<String> _knownSourceEventIds = <String>{};
-
   /// Reactive snapshot of the enriched, grouped notification feed.
   ///
   /// Single source of truth for the feed bloc (list rendering) and the
@@ -256,18 +244,19 @@ class NotificationRepository {
   /// `mobile/lib/providers/notification_realtime_bridge_provider.dart`
   /// which wrote into the now-unused Riverpod cache.
   Future<void> acceptRealtime(RelayNotification raw) async {
+    final current = _snapshot.value;
     // Cross-path dedupe: REST raws carry the Nostr event id in
     // `sourceEventId`, WS raws (built by `notification_realtime_bridge.dart`)
-    // carry it in `id`. The legacy bridge checked
-    // `metadata['sourceEventId'] == notification.id` for the same reason —
-    // skip a WS arrival when the same Nostr event was already loaded over
-    // REST.
-    if (raw.id.isNotEmpty && _knownSourceEventIds.contains(raw.id)) return;
+    // carry it in `id`. Query the live snapshot so dedupe follows the
+    // current first-page replacement boundary instead of a separate side set.
+    if (raw.id.isNotEmpty &&
+        current.items.any((n) => n.sourceEventIds.contains(raw.id))) {
+      return;
+    }
 
     final enriched = await _enrichAndGroup([raw]);
     if (enriched.isEmpty) return;
 
-    final current = _snapshot.value;
     final newItem = enriched.first;
     if (current.items.any((n) => n.id == newItem.id)) return;
 
@@ -279,11 +268,7 @@ class NotificationRepository {
       }
     }
 
-    _snapshot.add(
-      current.copyWith(
-        items: [newItem, ...current.items],
-      ),
-    );
+    _snapshot.add(current.copyWith(items: [newItem, ...current.items]));
   }
 
   /// If [items] contains a [VideoNotification] matching [incoming] by
@@ -350,8 +335,8 @@ class NotificationRepository {
   /// 2. **`sourceEventIds` overlap** — when an incoming item's
   ///    underlying Nostr event ids overlap the rendered snapshot's set,
   ///    the incoming item is skipped as a cross-path duplicate. Same
-  ///    logical-event identity that [acceptRealtime]'s
-  ///    `_knownSourceEventIds` guard uses (Nostr event id).
+  ///    logical-event identity that [acceptRealtime] queries against the
+  ///    current snapshot (Nostr event id).
   /// 3. **`id` equality fallback** — defensive against the rare case of
   ///    items with empty `sourceEventIds` (server returned a notification
   ///    without `source_event_id`). Preserves the original
@@ -371,9 +356,7 @@ class NotificationRepository {
     }
     final current = _snapshot.value;
     final mergedItems = _mergeAppendedPage(current.items, page.items);
-    _snapshot.add(
-      page.copyWith(items: mergedItems),
-    );
+    _snapshot.add(page.copyWith(items: mergedItems));
   }
 
   /// Returns the merged item list for a non-first-page emission.
@@ -530,12 +513,6 @@ class NotificationRepository {
     List<RelayNotification> raw,
   ) async {
     if (raw.isEmpty) return [];
-
-    for (final n in raw) {
-      if (n.sourceEventId.isNotEmpty) {
-        _knownSourceEventIds.add(n.sourceEventId);
-      }
-    }
 
     final pubkeys = raw.map((n) => n.sourcePubkey).toSet().toList();
     final eventIds = raw

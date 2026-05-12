@@ -160,10 +160,7 @@ void main() {
           sourceEventIds: const ['nostr-follow-evt-1'],
         );
 
-        expect(
-          updated.sourceEventIds,
-          equals(<String>['nostr-follow-evt-1']),
-        );
+        expect(updated.sourceEventIds, equals(<String>['nostr-follow-evt-1']));
       });
 
       test('two otherwise-equal items differ by sourceEventIds', () {

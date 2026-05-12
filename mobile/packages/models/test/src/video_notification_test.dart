@@ -3,14 +3,8 @@ import 'package:test/test.dart';
 
 void main() {
   group(VideoNotification, () {
-    final actorAlice = ActorInfo(
-      pubkey: 'a' * 64,
-      displayName: 'Alice',
-    );
-    final actorBob = ActorInfo(
-      pubkey: 'b' * 64,
-      displayName: 'Bob',
-    );
+    final actorAlice = ActorInfo(pubkey: 'a' * 64, displayName: 'Alice');
+    final actorBob = ActorInfo(pubkey: 'b' * 64, displayName: 'Bob');
     final timestamp = DateTime.utc(2026, 5, 4, 12);
 
     group('structure', () {
