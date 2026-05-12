@@ -39,7 +39,15 @@ _MockProfileRepository _createMockProfileRepository({
       hasVideos: any(named: 'hasVideos'),
       boostPubkeys: any(named: 'boostPubkeys'),
     ),
-  ).thenAnswer((_) => Stream.value(searchResults));
+  ).thenAnswer(
+    (_) => Stream.value(
+      ProgressiveSearchResult(
+        profiles: searchResults,
+        sources: const {},
+        isComplete: true,
+      ),
+    ),
+  );
 
   // Mock getCachedProfile
   for (final profile in cachedProfiles) {
@@ -420,7 +428,7 @@ void main() {
         // NIP-50 WebSocket phase) while the REST phase has already
         // delivered results.
         final streamController =
-            StreamController<List<UserProfile>>.broadcast();
+            StreamController<ProgressiveSearchResult>.broadcast();
         addTearDown(streamController.close);
 
         final alice = UserProfile(
@@ -469,7 +477,13 @@ void main() {
         // Emit the first batch — stream stays open, so the BLoC
         // stays in `loading` with results available. The fix is that
         // the picker now renders these results instead of a spinner.
-        streamController.add([alice]);
+        streamController.add(
+          ProgressiveSearchResult(
+            profiles: [alice],
+            sources: const {},
+            isComplete: false,
+          ),
+        );
         await tester.pump();
 
         // The tile renders while the stream is still open (loading). Before
@@ -519,7 +533,13 @@ void main() {
                 invocation.namedArguments[#boostPubkeys] as Set<String>? ??
                 const <String>{};
             final results = [zoe, liz];
-            if (boost.isEmpty) return Stream.value(results);
+            ProgressiveSearchResult wrap(List<UserProfile> profiles) =>
+                ProgressiveSearchResult(
+                  profiles: profiles,
+                  sources: const {},
+                  isComplete: true,
+                );
+            if (boost.isEmpty) return Stream.value(wrap(results));
             final boosted = <UserProfile>[];
             final rest = <UserProfile>[];
             for (final p in results) {
@@ -529,7 +549,7 @@ void main() {
                 rest.add(p);
               }
             }
-            return Stream.value([...boosted, ...rest]);
+            return Stream.value(wrap([...boosted, ...rest]));
           });
           when(
             () =>
@@ -630,7 +650,8 @@ void main() {
           createdAt: DateTime.now(),
           eventId: 'event_bob',
         );
-        final bobController = StreamController<List<UserProfile>>.broadcast();
+        final bobController =
+            StreamController<ProgressiveSearchResult>.broadcast();
         addTearDown(bobController.close);
 
         final mockProfileRepo = _createMockProfileRepository();
@@ -643,7 +664,15 @@ void main() {
             hasVideos: any(named: 'hasVideos'),
             boostPubkeys: any(named: 'boostPubkeys'),
           ),
-        ).thenAnswer((_) => Stream.value([alice]));
+        ).thenAnswer(
+          (_) => Stream.value(
+            ProgressiveSearchResult(
+              profiles: [alice],
+              sources: const {},
+              isComplete: true,
+            ),
+          ),
+        );
         when(
           () => mockProfileRepo.searchUsersProgressive(
             query: 'bob',
@@ -689,7 +718,13 @@ void main() {
         expect(find.text('Alice'), findsOneWidget);
 
         // When 'bob' results arrive, the list updates in place.
-        bobController.add([bob]);
+        bobController.add(
+          ProgressiveSearchResult(
+            profiles: [bob],
+            sources: const {},
+            isComplete: true,
+          ),
+        );
         // Pump twice: once to let the stream event propagate through the
         // bloc's emit.forEach, once more for the rebuilt BlocBuilder.
         await tester.pump();

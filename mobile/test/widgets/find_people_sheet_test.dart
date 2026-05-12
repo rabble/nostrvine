@@ -108,7 +108,7 @@ void main() {
         tester,
       ) async {
         // Use a StreamController to control when results arrive
-        final controller = StreamController<List<UserProfile>>();
+        final controller = StreamController<ProgressiveSearchResult>();
         when(
           () => mockProfileRepo.searchUsersProgressive(
             query: any(named: 'query'),
@@ -128,7 +128,13 @@ void main() {
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
         // Close the stream to avoid pending timer errors
-        controller.add([]);
+        controller.add(
+          const ProgressiveSearchResult(
+            profiles: [],
+            sources: {},
+            isComplete: true,
+          ),
+        );
         await controller.close();
         await tester.pumpAndSettle();
       });
@@ -145,16 +151,22 @@ void main() {
             hasVideos: any(named: 'hasVideos'),
           ),
         ).thenAnswer(
-          (_) => Stream.value([
-            UserProfile(
-              pubkey: pubkey,
-              displayName: 'Bob',
-              picture: 'https://example.com/bob.jpg',
-              createdAt: DateTime.now(),
-              eventId: 'event-$pubkey',
-              rawData: const {'display_name': 'Bob'},
+          (_) => Stream.value(
+            ProgressiveSearchResult(
+              profiles: [
+                UserProfile(
+                  pubkey: pubkey,
+                  displayName: 'Bob',
+                  picture: 'https://example.com/bob.jpg',
+                  createdAt: DateTime.now(),
+                  eventId: 'event-$pubkey',
+                  rawData: const {'display_name': 'Bob'},
+                ),
+              ],
+              sources: const {},
+              isComplete: true,
             ),
-          ]),
+          ),
         );
 
         await openSheet(tester);
@@ -176,7 +188,15 @@ void main() {
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer((_) => Stream.value([]));
+          ).thenAnswer(
+            (_) => Stream.value(
+              const ProgressiveSearchResult(
+                profiles: [],
+                sources: {},
+                isComplete: true,
+              ),
+            ),
+          );
 
           await openSheet(tester);
 
@@ -197,7 +217,8 @@ void main() {
             hasVideos: any(named: 'hasVideos'),
           ),
         ).thenAnswer(
-          (_) => Stream<List<UserProfile>>.error(Exception('Network error')),
+          (_) =>
+              Stream<ProgressiveSearchResult>.error(Exception('Network error')),
         );
 
         await openSheet(tester);
@@ -219,7 +240,15 @@ void main() {
             sortBy: any(named: 'sortBy'),
             hasVideos: any(named: 'hasVideos'),
           ),
-        ).thenAnswer((_) => Stream.value([]));
+        ).thenAnswer(
+          (_) => Stream.value(
+            const ProgressiveSearchResult(
+              profiles: [],
+              sources: {},
+              isComplete: true,
+            ),
+          ),
+        );
 
         await openSheet(tester);
 
@@ -304,7 +333,15 @@ void main() {
               limit: any(named: 'limit'),
               sortBy: any(named: 'sortBy'),
             ),
-          ).thenAnswer((_) => Stream.value([]));
+          ).thenAnswer(
+            (_) => Stream.value(
+              const ProgressiveSearchResult(
+                profiles: [],
+                sources: {},
+                isComplete: true,
+              ),
+            ),
+          );
 
           await openSheet(tester);
 
