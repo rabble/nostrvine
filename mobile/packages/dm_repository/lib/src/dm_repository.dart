@@ -1670,6 +1670,15 @@ class DmRepository {
   /// `lastMessageTimestamp` columns can drift out of sync (e.g. an older
   /// gift wrap arriving after a newer one writes back during backfill),
   /// so the messages table is the source of truth for the inbox preview.
+  // TODO(perf-4296): Remove this read-time overlay; it performs one
+  // getMessagesForConversation limit-1 query per conversation on every
+  // stream emission (N+1 reads on a hot inbox path). Removal plan in
+  // #4296: add a batched DAO method returning the latest message per
+  // conversation in one query, or fix the write path so the
+  // conversations.lastMessageContent/lastMessageTimestamp columns never
+  // drift out of sync with direct_messages and delete this overlay
+  // entirely. Regression coverage in dm_repository_test.dart must remain
+  // green after the follow-up lands.
   Future<List<DmConversation>> _overlayLatestMessages(
     List<ConversationRow> rows,
   ) async {

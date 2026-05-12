@@ -83,6 +83,28 @@ void main() {
         final icon = tester.widget<Icon>(find.byType(Icon));
         expect(icon.size, 40);
       });
+
+      testWidgets(
+        'outer tap target is 48x48 even when size is smaller',
+        (tester) async {
+          // Default size = 40 (< 48) is intentional: the outer 48x48 tap
+          // target must be enforced regardless of the visual button size.
+          await tester.pumpWidget(
+            buildTestWidget(
+              icon: const MaterialIconSource(Icons.arrow_back),
+            ),
+          );
+
+          final sizedBox = tester.widget<SizedBox>(
+            find.ancestor(
+              of: find.byType(IconButton),
+              matching: find.byType(SizedBox),
+            ),
+          );
+          expect(sizedBox.width, 48);
+          expect(sizedBox.height, 48);
+        },
+      );
     });
 
     group('styling', () {

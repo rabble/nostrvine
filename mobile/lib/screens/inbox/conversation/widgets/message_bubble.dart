@@ -488,7 +488,10 @@ class _VideoCard extends ConsumerWidget {
                             if (hasAuthor || hasTitle)
                               const SizedBox(height: 4),
                             Text(
-                              '${StringUtils.formatCompactNumber(loops)} loops',
+                              context.l10n.videoFeedLoopCountLine(
+                                StringUtils.formatCompactNumber(loops),
+                                loops,
+                              ),
                               style: VineTheme.bodySmallFont(),
                             ),
                           ],
