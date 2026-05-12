@@ -40,6 +40,20 @@ final divineVideoUrlRegex = RegExp(
 String? tryExtractDivineVideoUrl(String content) =>
     divineVideoUrlRegex.firstMatch(content)?.group(0);
 
+/// Matches a single line whose entire content is a straight-quoted
+/// string — the shape `VideoSharingService` uses to embed the title in
+/// the share-message body (`"<title>"`). The bubble drops this line so
+/// the title isn't duplicated alongside the overlay-footer rendering.
+final _quotedTitleRegex = RegExp(r'^"[^"]*"$');
+
+/// Width of the video share card thumbnail (also used to cap the
+/// surrounding bubble's max width so the bubble doesn't grow wider
+/// than the card when a personal note wraps below it).
+const double _videoCardWidth = 248;
+
+/// Height of the video share card thumbnail.
+const double _videoCardHeight = 350;
+
 /// A single chat message bubble.
 ///
 /// Sent messages (right-aligned): primaryAccessible background.
@@ -85,14 +99,36 @@ class MessageBubble extends StatelessWidget {
     final videoMatch = divineVideoUrlRegex.firstMatch(message);
     final videoStableId = videoMatch?.group(1);
 
-    // Text following the video URL, if any. Anything BEFORE the URL is
-    // intentionally dropped — the shared-video title from the message
-    // body now lives inside the video card's overlay footer instead.
+    // Slice the message body around the video URL.
+    //
+    // The share-message template emitted by VideoSharingService is
+    //   [optional personal note]
+    //   <blank line>
+    //   "<video title>"
+    //   <blank line>
+    //   <URL>
+    //   [optional trailing text]
+    //
+    // The quoted-title line duplicates what the video card's overlay
+    // footer already shows, so it's stripped. Everything else before
+    // the URL is treated as the user's personal note and rendered
+    // below the thumbnail. Text after the URL is preserved as-is.
+    final String? personalMessage;
     final String? textAfterUrl;
     if (videoMatch != null) {
       final after = message.substring(videoMatch.end).trim();
       textAfterUrl = after.isEmpty ? null : after;
+
+      final beforeLines = message
+          .substring(0, videoMatch.start)
+          .split('\n')
+          .map((line) => line.trim())
+          .where((line) => line.isNotEmpty)
+          .where((line) => !_quotedTitleRegex.hasMatch(line))
+          .toList();
+      personalMessage = beforeLines.isEmpty ? null : beforeLines.join('\n');
     } else {
+      personalMessage = null;
       textAfterUrl = null;
     }
 
@@ -122,8 +158,15 @@ class MessageBubble extends StatelessWidget {
           child: GestureDetector(
             onLongPress: onLongPress,
             child: Container(
+              // Video bubbles cap their max width at the thumbnail's
+              // own width (248) plus the symmetric 16 px padding so the
+              // bubble doesn't grow wider than the card when a personal
+              // message wraps below it. Text-only bubbles stay at the
+              // chat-typical 75 % of screen width.
               constraints: BoxConstraints(
-                maxWidth: MediaQuery.sizeOf(context).width * 0.75,
+                maxWidth: hasVideo
+                    ? _videoCardWidth + 32
+                    : MediaQuery.sizeOf(context).width * 0.75,
               ),
               // Video bubbles use symmetric 16 px padding so the thumbnail
               // sits in an even frame; text bubbles keep the tighter
@@ -156,13 +199,21 @@ class MessageBubble extends StatelessWidget {
                       ),
                     ),
                   if (videoStableId != null) ...[
-                    // Title that travels in the share message body is
-                    // suppressed — the video card now renders it inside
-                    // an overlay footer on the thumbnail itself.
                     _VideoLinkPreview(
                       videoStableId: videoStableId,
                       isSent: isSent,
                     ),
+                    // Optional personal note (text before the URL minus
+                    // the quoted title) sits directly under the
+                    // thumbnail, inside the same bubble pill.
+                    if (personalMessage != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: _MessageText(
+                          message: personalMessage,
+                          isSent: isSent,
+                        ),
+                      ),
                     if (textAfterUrl != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
@@ -340,8 +391,8 @@ class _VideoLinkPreview extends ConsumerWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: Container(
-        width: 248,
-        height: 350,
+        width: _videoCardWidth,
+        height: _videoCardHeight,
         color: VineTheme.cardBackground,
         child: const Center(
           child: SizedBox(
@@ -385,8 +436,8 @@ class _VideoCard extends ConsumerWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: SizedBox(
-          width: 248,
-          height: 350,
+          width: _videoCardWidth,
+          height: _videoCardHeight,
           child: Stack(
             fit: StackFit.expand,
             children: [
