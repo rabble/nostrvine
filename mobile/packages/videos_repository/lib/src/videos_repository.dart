@@ -5,6 +5,7 @@
 // ABOUTME: loading is pagination-based.
 
 import 'dart:developer' as developer;
+import 'dart:math' as math;
 
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart';
@@ -24,6 +25,16 @@ const int _videoKind = EventKind.videoVertical;
 
 /// Default number of videos to fetch per page.
 const int _defaultLimit = 25;
+
+/// Max parallel `getVideosByHashtag` calls when merging followed tags into the
+/// home feed. Unbounded fan-out (one upstream call per label) spikes latency
+/// and load
+const int _maxFollowedHashtagParallelFetches = 8;
+
+/// Hard ceiling on merged hashtag-sourced rows after dedupe + sort, even when
+/// the home feed page limit is large. Keeps memory and downstream merge
+/// bounded.
+const int _maxMergedFollowedHashtagVideosCap = 120;
 
 /// Timeout for relay search queries.
 ///
@@ -123,10 +134,12 @@ class VideosRepository {
   ///   addressable coordinates (`kind:pubkey:d-tag`). Defaults to empty.
   /// - [followedHashtagLabels]: Canonical hashtag labels (lowercase, no `#`)
   ///   to merge in via [getVideosByHashtag] (Funnelcake). Empty by default.
-  ///   Per-tag failures yield an empty list for that tag only.
+  ///   Per-tag failures yield an empty list for that tag only. Only the first
+  ///   eight distinct labels are queried in parallel; merged hashtag rows are
+  ///   capped before merging with the following feed.
   /// - [userPubkey]: The current user's pubkey for Funnelcake API lookups.
   ///   Required for API-first path; when null, goes directly to Nostr.
-  /// - [limit]: Maximum number of videos to return (default 5)
+  /// - [limit]: Maximum number of videos to return (default 25)
   /// - [until]: Only return videos created before this Unix timestamp
   ///   (for pagination - pass `previousVideo.createdAt`)
   ///
@@ -278,6 +291,11 @@ class VideosRepository {
   /// Fetches [getVideosByHashtag] per label in parallel; swallows per-tag
   /// errors. Dedupes across tags and sorts by [VideoEvent.createdAt] desc.
   ///
+  /// Fan-out is bounded: only the first eight labels (order preserved from
+  /// deduped input) are fetched in parallel. The merged hashtag list is then
+  /// truncated to at most `min(120, limit * 3)` rows so a large followed-tag
+  /// sheet cannot explode the home merge.
+  ///
   /// videoHashtagSources maps each video id to the tag label(s) whose
   /// API response included that video.
   Future<
@@ -288,8 +306,13 @@ class VideosRepository {
     int limit = _defaultLimit,
     int? until,
   }) async {
+    final labelsToFetch =
+        hashtagLabels.length <= _maxFollowedHashtagParallelFetches
+        ? hashtagLabels
+        : hashtagLabels.sublist(0, _maxFollowedHashtagParallelFetches);
+
     final results = await Future.wait(
-      hashtagLabels.map((tag) async {
+      labelsToFetch.map((tag) async {
         try {
           return await getVideosByHashtag(
             hashtag: tag,
@@ -310,7 +333,7 @@ class VideosRepository {
 
     final videoHashtagSources = <String, Set<String>>{};
     for (var i = 0; i < results.length; i++) {
-      final tag = hashtagLabels[i];
+      final tag = labelsToFetch[i];
       for (final v in results[i]) {
         videoHashtagSources.putIfAbsent(v.id, () => <String>{}).add(tag);
       }
@@ -326,7 +349,21 @@ class VideosRepository {
       }
     }
     merged.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    return (videos: merged, videoHashtagSources: videoHashtagSources);
+
+    final mergedCap = math.min(
+      _maxMergedFollowedHashtagVideosCap,
+      limit * 3,
+    );
+    if (merged.length <= mergedCap) {
+      return (videos: merged, videoHashtagSources: videoHashtagSources);
+    }
+
+    final capped = merged.sublist(0, mergedCap);
+    final keptLower = capped.map((v) => v.id.toLowerCase()).toSet();
+    videoHashtagSources.removeWhere(
+      (id, _) => !keptLower.contains(id.toLowerCase()),
+    );
+    return (videos: capped, videoHashtagSources: videoHashtagSources);
   }
 
   /// Fetches videos from followed users via Funnelcake API or Nostr relays.

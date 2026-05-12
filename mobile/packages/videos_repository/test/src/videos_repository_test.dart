@@ -2612,6 +2612,106 @@ void main() {
           expect(result.videos.first.id, equals('ok'));
         });
 
+        test(
+          'caps followed-hashtag fan-out to first eight labels (#1602)',
+          () async {
+            for (var i = 0; i < 12; i++) {
+              when(
+                () => mockFunnelcakeClient.getVideosByHashtag(
+                  hashtag: 't$i',
+                  limit: any(named: 'limit'),
+                  before: any(named: 'before'),
+                ),
+              ).thenAnswer(
+                (_) async => [
+                  _createVideoStats(
+                    id: 'v$i',
+                    pubkey: 'p1',
+                    dTag: 'd$i',
+                    videoUrl: 'https://example.com/t$i.mp4',
+                    createdAt: 1704068000 + i,
+                  ),
+                ],
+              );
+            }
+
+            final repo = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            final result = await repo.getHomeFeedVideos(
+              authors: [],
+              followedHashtagLabels: [for (var i = 0; i < 12; i++) 't$i'],
+            );
+
+            verify(
+              () => mockFunnelcakeClient.getVideosByHashtag(
+                hashtag: any(named: 'hashtag'),
+                limit: any(named: 'limit'),
+                before: any(named: 'before'),
+              ),
+            ).called(8);
+
+            for (var i = 8; i < 12; i++) {
+              verifyNever(
+                () => mockFunnelcakeClient.getVideosByHashtag(
+                  hashtag: 't$i',
+                  limit: any(named: 'limit'),
+                  before: any(named: 'before'),
+                ),
+              );
+            }
+
+            expect(result.videos, hasLength(8));
+            expect(
+              result.videos.map((v) => v.id).toSet(),
+              equals({for (var i = 0; i < 8; i++) 'v$i'}),
+            );
+          },
+        );
+
+        test(
+          'caps merged hashtag-sourced rows before home merge (#1602)',
+          () async {
+            const tags = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+            for (final t in tags) {
+              when(
+                () => mockFunnelcakeClient.getVideosByHashtag(
+                  hashtag: t,
+                  limit: any(named: 'limit'),
+                  before: any(named: 'before'),
+                ),
+              ).thenAnswer((invocation) async {
+                final lim = invocation.namedArguments[#limit] as int;
+                return List.generate(
+                  lim,
+                  (j) => _createVideoStats(
+                    id: '${t}_$j',
+                    pubkey: 'p1',
+                    dTag: '${t}_$j',
+                    videoUrl: 'https://example.com/$t/$j.mp4',
+                    createdAt: 1704069000 - j * 100 - t.codeUnitAt(0),
+                  ),
+                );
+              });
+            }
+
+            final repo = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            final result = await repo.getHomeFeedVideos(
+              authors: [],
+              followedHashtagLabels: tags,
+              limit: 25,
+            );
+
+            expect(result.videos, hasLength(75));
+          },
+        );
+
         test('uses separate in-memory cache entries per hashtag set', () async {
           final feedCache = InMemoryFeedCache();
           when(
