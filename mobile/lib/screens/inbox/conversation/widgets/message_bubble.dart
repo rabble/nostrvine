@@ -16,29 +16,13 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/universal_link_resolver.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/video_link_preview_cubit.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
+import 'package:openvine/utils/divine_video_url.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 final _emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
-
-/// Matches `divine.video/video/{stableId}` URLs in message text.
-///
-/// The stableId capture group accepts hex event IDs (64 chars) and d-tags
-/// (UUIDs, alphanumeric strings). Only word characters and hyphens are
-/// matched so trailing punctuation (`.`, `,`, `)`) and query strings
-/// (`?q=1`) are excluded.
-final divineVideoUrlRegex = RegExp(
-  r'https?://(?:www\.)?divine\.video/video/([\w-]+)',
-  caseSensitive: false,
-);
-
-/// Returns the full divine.video URL contained in [content], or null if
-/// the message body doesn't include one. Used by the conversation
-/// long-press handler to surface a "Copy video URL" action.
-String? tryExtractDivineVideoUrl(String content) =>
-    divineVideoUrlRegex.firstMatch(content)?.group(0);
 
 /// Matches a single line whose entire content is a straight-quoted
 /// string — the shape `VideoSharingService` uses to embed the title in
