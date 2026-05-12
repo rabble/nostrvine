@@ -3,6 +3,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/features/people_lists/view/create_people_list_page.dart';
+import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/apps/app_detail_screen.dart';
 import 'package:openvine/screens/apps/apps_directory_screen.dart';
@@ -17,7 +18,6 @@ import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
-import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
@@ -255,9 +255,9 @@ void main() {
       );
 
       test(
-        '${NotificationsScreen.pathForIndex(0)} parses to RouteType.notifications',
+        '${NotificationsPage.pathForIndex(0)} parses to RouteType.notifications',
         () {
-          final context = parseRoute(NotificationsScreen.pathForIndex(0));
+          final context = parseRoute(NotificationsPage.pathForIndex(0));
           expect(context.type, RouteType.notifications);
           expect(context.videoIndex, 0);
         },
@@ -477,7 +477,7 @@ void main() {
       final routeTypeExamples = {
         RouteType.home: VideoFeedPage.pathForIndex(0),
         RouteType.explore: ExploreScreen.path,
-        RouteType.notifications: NotificationsScreen.pathForIndex(0),
+        RouteType.notifications: NotificationsPage.pathForIndex(0),
         RouteType.profile: ProfileScreenRouter.pathForNpub('npub1test'),
         RouteType.hashtag: HashtagScreenRouter.pathForTag('test'),
         RouteType.categoryGallery: CategoryGalleryScreen.locationFor('animals'),
