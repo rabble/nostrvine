@@ -2593,10 +2593,12 @@ String _$knownAccountsHash() => r'8e9753265420cf092af04aa07686c98cdaa8eb1e';
 /// This prevents race conditions where auth state is 'authenticated' but
 /// the NostrClient hasn't yet rebuilt with the new keys.
 ///
-/// NostrClient.initialize() runs asynchronously in a Future.microtask after
-/// NostrService.build() returns. Riverpod can't detect when hasKeys transitions
-/// because it's the same object reference. When not ready but authenticated,
-/// we schedule brief retries to catch the async initialization.
+/// `NostrClient.initialize()` runs asynchronously in a `Future.microtask`
+/// after `NostrService.build()` returns. Riverpod cannot detect that
+/// transition through the client reference because it's the same instance
+/// before and after. Instead, when the client reports `!hasKeys` we await
+/// its `ready` future (completed by `initialize()`) and invalidate this
+/// provider once — replacing the previous 50 ms polling timer (#3352).
 
 @ProviderFor(isNostrReady)
 const isNostrReadyProvider = IsNostrReadyProvider._();
@@ -2608,10 +2610,12 @@ const isNostrReadyProvider = IsNostrReadyProvider._();
 /// This prevents race conditions where auth state is 'authenticated' but
 /// the NostrClient hasn't yet rebuilt with the new keys.
 ///
-/// NostrClient.initialize() runs asynchronously in a Future.microtask after
-/// NostrService.build() returns. Riverpod can't detect when hasKeys transitions
-/// because it's the same object reference. When not ready but authenticated,
-/// we schedule brief retries to catch the async initialization.
+/// `NostrClient.initialize()` runs asynchronously in a `Future.microtask`
+/// after `NostrService.build()` returns. Riverpod cannot detect that
+/// transition through the client reference because it's the same instance
+/// before and after. Instead, when the client reports `!hasKeys` we await
+/// its `ready` future (completed by `initialize()`) and invalidate this
+/// provider once — replacing the previous 50 ms polling timer (#3352).
 
 final class IsNostrReadyProvider extends $FunctionalProvider<bool, bool, bool>
     with $Provider<bool> {
@@ -2622,10 +2626,12 @@ final class IsNostrReadyProvider extends $FunctionalProvider<bool, bool, bool>
   /// This prevents race conditions where auth state is 'authenticated' but
   /// the NostrClient hasn't yet rebuilt with the new keys.
   ///
-  /// NostrClient.initialize() runs asynchronously in a Future.microtask after
-  /// NostrService.build() returns. Riverpod can't detect when hasKeys transitions
-  /// because it's the same object reference. When not ready but authenticated,
-  /// we schedule brief retries to catch the async initialization.
+  /// `NostrClient.initialize()` runs asynchronously in a `Future.microtask`
+  /// after `NostrService.build()` returns. Riverpod cannot detect that
+  /// transition through the client reference because it's the same instance
+  /// before and after. Instead, when the client reports `!hasKeys` we await
+  /// its `ready` future (completed by `initialize()`) and invalidate this
+  /// provider once — replacing the previous 50 ms polling timer (#3352).
   const IsNostrReadyProvider._()
     : super(
         from: null,
@@ -2659,7 +2665,7 @@ final class IsNostrReadyProvider extends $FunctionalProvider<bool, bool, bool>
   }
 }
 
-String _$isNostrReadyHash() => r'fbbb0c3d96960fd4b2c49cc9180437f988da3b41';
+String _$isNostrReadyHash() => r'8e478bdb678b1c1b0c35ce9a9099dd3c50aa728f';
 
 /// Provider that sets Zendesk user identity when auth state changes
 /// Watch this provider at app startup to keep Zendesk identity in sync with auth
@@ -3575,7 +3581,7 @@ final class NotificationServiceEnhancedProvider
 }
 
 String _$notificationServiceEnhancedHash() =>
-    r'5a9dc0a52085f0b2dc35786f947dde4ec414d299';
+    r'6651e865aeb5b6f1df646efafe4a7744579e2c60';
 
 /// NIP-98 authentication service
 

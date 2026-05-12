@@ -2492,6 +2492,62 @@ void main() {
 
         expect(client.hasKeys, isFalse);
       });
+
+      test('ready completes after initialize() succeeds', () async {
+        when(() => mockNostr.refreshPublicKey()).thenAnswer((_) async {});
+        when(() => mockRelayManager.initialize()).thenAnswer((_) async {});
+
+        // ready must be pending before initialize().
+        var resolved = false;
+        unawaited(client.ready.then((_) => resolved = true));
+        await Future<void>.delayed(Duration.zero);
+        expect(resolved, isFalse);
+
+        await client.initialize();
+        await Future<void>.delayed(Duration.zero);
+
+        expect(resolved, isTrue);
+      });
+
+      test('ready stays resolved on a second initialize() call', () async {
+        when(() => mockNostr.refreshPublicKey()).thenAnswer((_) async {});
+        when(() => mockRelayManager.initialize()).thenAnswer((_) async {});
+
+        await client.initialize();
+        // Second call must not throw "Future already completed".
+        await client.initialize();
+
+        // Reading ready a second time must still resolve normally.
+        await client.ready;
+      });
+
+      test(
+        'ready stays pending when dispose() runs before initialize() — the '
+        'surrounding provider rebuilds with a fresh client and a fresh future',
+        () async {
+          when(() => mockNostr.unsubscribe(any())).thenReturn(null);
+
+          final readyFuture = client.ready;
+          await client.dispose();
+
+          // Pending — short timeout proves no completion in either direction.
+          await expectLater(
+            readyFuture.timeout(
+              const Duration(milliseconds: 50),
+              onTimeout: () =>
+                  throw StateError('intentional timeout — ready is pending'),
+            ),
+            throwsA(
+              isA<StateError>().having(
+                (e) => e.message,
+                'message',
+                contains('intentional timeout'),
+              ),
+            ),
+          );
+          expect(client.isDisposed, isTrue);
+        },
+      );
     });
 
     group('relay convenience properties', () {

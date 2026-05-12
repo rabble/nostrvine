@@ -1193,10 +1193,12 @@ final cawgVerifierClientProvider = Provider<CawgVerifierClient>((ref) {
 /// This prevents race conditions where auth state is 'authenticated' but
 /// the NostrClient hasn't yet rebuilt with the new keys.
 ///
-/// NostrClient.initialize() runs asynchronously in a Future.microtask after
-/// NostrService.build() returns. Riverpod can't detect when hasKeys transitions
-/// because it's the same object reference. When not ready but authenticated,
-/// we schedule brief retries to catch the async initialization.
+/// `NostrClient.initialize()` runs asynchronously in a `Future.microtask`
+/// after `NostrService.build()` returns. Riverpod cannot detect that
+/// transition through the client reference because it's the same instance
+/// before and after. Instead, when the client reports `!hasKeys` we await
+/// its `ready` future (completed by `initialize()`) and invalidate this
+/// provider once — replacing the previous 50 ms polling timer (#3352).
 @Riverpod(keepAlive: true)
 bool isNostrReady(Ref ref) {
   final authService = ref.watch(authServiceProvider);
@@ -1212,24 +1214,41 @@ bool isNostrReady(Ref ref) {
   final ready = nostrClient.hasKeys;
 
   if (!ready) {
-    // NostrClient.initialize() runs asynchronously in a Future.microtask
-    // after NostrService.build() returns. Riverpod can't detect when
-    // hasKeys transitions because it's the same object reference.
-    // Poll with a periodic timer until hasKeys becomes true.
-    const pollInterval = Duration(milliseconds: 50);
-    final timer = Timer.periodic(pollInterval, (timer) {
-      if (nostrClient.hasKeys) {
-        timer.cancel();
-        Log.info(
-          'isNostrReady: NostrClient.hasKeys became true after '
-          '${timer.tick * pollInterval.inMilliseconds}ms, invalidating',
-          name: 'isNostrReadyProvider',
-          category: LogCategory.system,
-        );
-        ref.invalidateSelf();
-      }
-    });
-    ref.onDispose(timer.cancel);
+    // One-shot listener: wait for initialize() to complete on the current
+    // client, then invalidate so this provider re-reads hasKeys.
+    final readyFuture = nostrClient.ready;
+    final clientAtSubscribe = nostrClient;
+    unawaited(
+      readyFuture.then(
+        (_) {
+          // Guard against late completion after the provider has rebuilt
+          // for a different reason (e.g. account switch produced a new
+          // NostrClient instance). Only invalidate if we're still pointing
+          // at the same client.
+          if (!ref.mounted) return;
+          if (!identical(ref.read(nostrServiceProvider), clientAtSubscribe)) {
+            return;
+          }
+          Log.info(
+            'isNostrReady: NostrClient.ready completed, invalidating',
+            name: 'isNostrReadyProvider',
+            category: LogCategory.system,
+          );
+          ref.invalidateSelf();
+        },
+        onError: (Object error) {
+          // A disposed client surfaces here when the auth flow tears the
+          // NostrService down before initialize() resolves. The provider
+          // will rebuild on the next auth state change.
+          Log.debug(
+            'isNostrReady: NostrClient.ready errored ($error) — '
+            'awaiting next auth-state rebuild',
+            name: 'isNostrReadyProvider',
+            category: LogCategory.system,
+          );
+        },
+      ),
+    );
   }
 
   return ready;
@@ -1883,18 +1902,23 @@ NotificationServiceEnhanced notificationServiceEnhanced(Ref ref) {
 
     Future.microtask(() async {
       try {
-        // Wait for Nostr keys to be loaded before initializing notifications
-        // Keys may take a moment to load from secure storage
-        var retries = 0;
-        while (!nostrService.hasKeys && retries < 30) {
-          // Wait 500ms between checks, up to 15 seconds total
-          await Future.delayed(const Duration(milliseconds: 500));
-          retries++;
+        // Wait for the NostrClient to finish initialize() instead of polling
+        // hasKeys every 500 ms (#3352). 15 s timeout matches the previous
+        // budget (30 retries × 500 ms).
+        try {
+          await nostrService.ready.timeout(const Duration(seconds: 15));
+        } on TimeoutException {
+          Log.warning(
+            'Notification service initialization skipped - no Nostr keys available after 15s',
+            name: 'AppProviders',
+            category: LogCategory.system,
+          );
+          return;
         }
 
         if (!nostrService.hasKeys) {
           Log.warning(
-            'Notification service initialization skipped - no Nostr keys available after 15s',
+            'Notification service initialization skipped - ready completed but hasKeys is false',
             name: 'AppProviders',
             category: LogCategory.system,
           );
