@@ -1,6 +1,8 @@
 // ABOUTME: Tests for EmailVerificationCubit
 // ABOUTME: Verifies polling lifecycle, state transitions, and error handling
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -781,6 +783,156 @@ void main() {
 
         // Cubit should be closed without errors
         // (verifying no lingering timers cause issues)
+      });
+
+      test('close leaves no pending timers', () {
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+        when(
+          () => mockOAuth.pollForCode(testDeviceCode),
+        ).thenAnswer((_) async => PollResult.pending());
+
+        fakeAsync((fake) {
+          final cubit = buildCubit();
+          cubit.startPolling(
+            deviceCode: testDeviceCode,
+            verifier: testVerifier,
+            email: testEmail,
+          );
+
+          // Advance enough to schedule a few backoff ticks.
+          fake.elapse(const Duration(seconds: 8));
+
+          unawaited(cubit.close());
+          fake.flushMicrotasks();
+
+          // No timers must remain after close — leaked timers would keep the
+          // fake clock advancing and cause the test to hang on shutdown.
+          expect(fake.pendingTimers, isEmpty);
+        });
+      });
+    });
+
+    group('bounded backoff schedule', () {
+      // The fixed-3 s Timer.periodic was replaced with a recursive Timer
+      // using EmailVerificationCubit.pollBackoffSchedule (3, 3, 5, 8, 13,
+      // 21 s) capped at 30 s. The schedule must:
+      //   - keep first-poll UX snappy (no slower than the old 3 s),
+      //   - reduce the wakeup count over the 15-min budget, and
+      //   - cap at 30 s so users never wait too long after a delayed click.
+
+      test('first poll fires at +3s (matches legacy snappy interval)', () {
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+        when(
+          () => mockOAuth.pollForCode(testDeviceCode),
+        ).thenAnswer((_) async => PollResult.pending());
+
+        fakeAsync((fake) {
+          final cubit = buildCubit();
+          cubit.startPolling(
+            deviceCode: testDeviceCode,
+            verifier: testVerifier,
+            email: testEmail,
+          );
+
+          // Just before the first scheduled tick.
+          fake.elapse(const Duration(seconds: 2));
+          verifyNever(() => mockOAuth.pollForCode(any()));
+
+          // Cross the 3 s mark.
+          fake.elapse(const Duration(seconds: 1));
+          fake.flushMicrotasks();
+          verify(() => mockOAuth.pollForCode(testDeviceCode)).called(1);
+
+          unawaited(cubit.close());
+          fake.flushMicrotasks();
+        });
+      });
+
+      test('issues fewer polls in 60 s than a fixed 3 s interval would', () {
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+        when(
+          () => mockOAuth.pollForCode(testDeviceCode),
+        ).thenAnswer((_) async => PollResult.pending());
+
+        fakeAsync((fake) {
+          final cubit = buildCubit();
+          cubit.startPolling(
+            deviceCode: testDeviceCode,
+            verifier: testVerifier,
+            email: testEmail,
+          );
+
+          // 60 s window.
+          // Backoff schedule cumulative ticks at: 3, 6, 11, 19, 32, 53. After
+          // index 5 the cap of 30 s applies, so the next tick lands at 83 s
+          // (outside the window). That leaves 6 ticks total in 60 s vs the
+          // 20 ticks a fixed 3 s interval would produce.
+          fake.elapse(const Duration(seconds: 60));
+          fake.flushMicrotasks();
+
+          verify(() => mockOAuth.pollForCode(testDeviceCode)).called(6);
+
+          unawaited(cubit.close());
+          fake.flushMicrotasks();
+        });
+      });
+
+      test('caps subsequent polls at 30 s', () {
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+        when(
+          () => mockOAuth.pollForCode(testDeviceCode),
+        ).thenAnswer((_) async => PollResult.pending());
+
+        fakeAsync((fake) {
+          final cubit = buildCubit();
+          cubit.startPolling(
+            deviceCode: testDeviceCode,
+            verifier: testVerifier,
+            email: testEmail,
+          );
+
+          // Burn through the variable portion of the schedule (sums to
+          // 3+3+5+8+13+21 = 53 s, after which the cap takes over).
+          fake.elapse(const Duration(seconds: 53));
+          fake.flushMicrotasks();
+          final pollsAfterScheduleBody = verify(
+            () => mockOAuth.pollForCode(testDeviceCode),
+          ).callCount;
+          expect(pollsAfterScheduleBody, equals(6));
+
+          // From here every additional 30 s should add exactly one poll.
+          fake.elapse(const Duration(seconds: 30));
+          fake.flushMicrotasks();
+          verify(() => mockOAuth.pollForCode(testDeviceCode)).called(1);
+
+          fake.elapse(const Duration(seconds: 30));
+          fake.flushMicrotasks();
+          verify(() => mockOAuth.pollForCode(testDeviceCode)).called(1);
+
+          unawaited(cubit.close());
+          fake.flushMicrotasks();
+        });
+      });
+
+      test('exposes a non-empty schedule and a finite cap', () {
+        // Guard against future changes to the schedule constants that would
+        // silently regress the 15-min budget or remove the cap.
+        expect(EmailVerificationCubit.pollBackoffSchedule, isNotEmpty);
+        expect(
+          EmailVerificationCubit.pollBackoffCap.inSeconds,
+          lessThanOrEqualTo(60),
+        );
+        for (final entry in EmailVerificationCubit.pollBackoffSchedule) {
+          expect(entry.inSeconds, greaterThan(0));
+          expect(
+            entry,
+            lessThanOrEqualTo(EmailVerificationCubit.pollBackoffCap),
+          );
+        }
       });
     });
   });

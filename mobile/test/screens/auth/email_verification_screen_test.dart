@@ -391,6 +391,34 @@ void main() {
         verify(() => mockCubit.stopPolling()).called(greaterThan(0));
       });
 
+      testWidgets(
+        'calls stopPolling when widget is removed from tree without nav',
+        (tester) async {
+          // Distinct from the go_router-driven test above: this pins the
+          // contract that the screen's own dispose() cancels polling, so a
+          // future refactor that drops the GoRouter teardown path still
+          // keeps zombie timers from surviving the screen.
+          await tester.pumpWidget(
+            createTestWidget(
+              deviceCode: 'test-device-code',
+              verifier: 'test-verifier',
+              initialState: const EmailVerificationState(
+                status: EmailVerificationStatus.polling,
+                pendingEmail: 'user@example.com',
+              ),
+            ),
+          );
+          await tester.pump();
+
+          // Replace the widget tree entirely so the screen unmounts without
+          // GoRouter being involved.
+          await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+          await tester.pump();
+
+          verify(() => mockCubit.stopPolling()).called(greaterThan(0));
+        },
+      );
+
       testWidgets('redacts persisted pending email in auto-login logs', (
         tester,
       ) async {
