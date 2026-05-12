@@ -726,6 +726,18 @@ class NotificationRepository {
           n.sourceEventId.isNotEmpty ? n.sourceEventId : null,
         _ => null,
       };
+      // Build the stable NIP-33 addressable ID from the server-provided
+      // d_tag for likeComment and reply — same pattern as _groupVideoAnchored
+      // for likes. When set, the tap handler navigates directly to the video
+      // without a relay round-trip through NotificationTargetResolver.
+      final videoAddressableId =
+          (mapped == NotificationKind.likeComment ||
+              mapped == NotificationKind.reply) &&
+          n.referencedDTag != null &&
+          n.referencedDTag!.isNotEmpty
+          ? '${NIP71VideoKinds.addressableShortVideo}'
+              ':$_userPubkey:${n.referencedDTag}'
+          : null;
       result.add(
         ActorNotification(
           id: n.dedupeKey,
@@ -738,6 +750,7 @@ class NotificationRepository {
           sourceEventIds: n.sourceEventId.isNotEmpty
               ? [n.sourceEventId]
               : const [],
+          videoAddressableId: videoAddressableId,
         ),
       );
     }
@@ -817,6 +830,15 @@ class NotificationRepository {
         raw.sourceEventId.isNotEmpty ? raw.sourceEventId : null,
       _ => null,
     };
+    // Stable NIP-33 addressable ID for likeComment/reply — bypasses resolver.
+    final videoAddressableId =
+        (mapped == NotificationKind.likeComment ||
+            mapped == NotificationKind.reply) &&
+        raw.referencedDTag != null &&
+        raw.referencedDTag!.isNotEmpty
+        ? '${NIP71VideoKinds.addressableShortVideo}'
+            ':$_userPubkey:${raw.referencedDTag}'
+        : null;
     return ActorNotification(
       id: raw.dedupeKey,
       type: mapped,
@@ -828,6 +850,7 @@ class NotificationRepository {
       sourceEventIds: raw.sourceEventId.isNotEmpty
           ? [raw.sourceEventId]
           : const [],
+      videoAddressableId: videoAddressableId,
     );
   }
 

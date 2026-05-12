@@ -788,6 +788,49 @@ void main() {
         expect(item.targetEventId, equals('comment_event_xyz'));
       });
 
+      test(
+        'likeComment carries videoAddressableId when referencedDTag is set',
+        () async {
+          // When the server provides the d_tag for the video the comment was
+          // on, the repository builds the stable NIP-33 addressable ID so the
+          // tap handler can skip the resolver entirely.
+          stubNotifications([
+            makeNotification(
+              isReferencedVideo: false,
+              referencedEventId: 'comment_event_xyz',
+              referencedDTag: 'vine-abc',
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as ActorNotification;
+          expect(item.type, equals(NotificationKind.likeComment));
+          expect(
+            item.videoAddressableId,
+            equals('34236:$userPubkey:vine-abc'),
+          );
+        },
+      );
+
+      test(
+        'likeComment videoAddressableId is null when referencedDTag is absent',
+        () async {
+          stubNotifications([
+            makeNotification(
+              isReferencedVideo: false,
+              referencedEventId: 'comment_event_xyz',
+              // referencedDTag intentionally omitted
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as ActorNotification;
+          expect(item.videoAddressableId, isNull);
+        },
+      );
+
       test('reply on a video maps to comment ($VideoNotification)', () async {
         stubNotifications([
           makeNotification(notificationType: 'reply', sourceKind: 1),
@@ -1430,6 +1473,46 @@ void main() {
         expect(actor.type, equals(NotificationKind.likeComment));
         expect(actor.targetEventId, equals('comment_evt_id'));
       });
+
+      test(
+        'enrichOne: likeComment carries videoAddressableId when '
+        'referencedDTag is set',
+        () async {
+          stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
+
+          final result = await repository.enrichOne(
+            raw(
+              referencedEventId: 'comment_evt_id',
+              isReferencedVideo: false,
+              referencedDTag: 'vine-xyz',
+            ),
+          );
+
+          expect(result, isA<ActorNotification>());
+          final actor = result! as ActorNotification;
+          expect(actor.type, equals(NotificationKind.likeComment));
+          expect(
+            actor.videoAddressableId,
+            equals('34236:$userPubkey:vine-xyz'),
+          );
+        },
+      );
+
+      test(
+        'enrichOne: likeComment videoAddressableId is null when '
+        'referencedDTag is absent',
+        () async {
+          stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
+
+          final result = await repository.enrichOne(
+            raw(referencedEventId: 'comment_evt_id', isReferencedVideo: false),
+          );
+
+          expect(result, isA<ActorNotification>());
+          final actor = result! as ActorNotification;
+          expect(actor.videoAddressableId, isNull);
+        },
+      );
     });
 
     group('reactive snapshot', () {

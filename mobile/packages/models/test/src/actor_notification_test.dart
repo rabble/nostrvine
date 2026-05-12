@@ -53,6 +53,48 @@ void main() {
           targetEventId: 'd' * 64,
         );
       });
+
+      test('videoAddressableId defaults to null', () {
+        final notification = ActorNotification(
+          id: 'n1',
+          type: NotificationKind.likeComment,
+          actor: actor,
+          timestamp: timestamp,
+        );
+
+        expect(notification.videoAddressableId, isNull);
+      });
+
+      test('exposes videoAddressableId when set on likeComment', () {
+        final addressableId = '34236:${'a' * 64}:vine-abc';
+        final notification = ActorNotification(
+          id: 'n1',
+          type: NotificationKind.likeComment,
+          actor: actor,
+          timestamp: timestamp,
+          videoAddressableId: addressableId,
+        );
+
+        expect(notification.videoAddressableId, equals(addressableId));
+      });
+
+      test('unequal when videoAddressableId differs', () {
+        final a = ActorNotification(
+          id: 'n1',
+          type: NotificationKind.likeComment,
+          actor: actor,
+          timestamp: timestamp,
+        );
+        final b = ActorNotification(
+          id: 'n1',
+          type: NotificationKind.likeComment,
+          actor: actor,
+          timestamp: timestamp,
+          videoAddressableId: '34236:${'a' * 64}:vine-abc',
+        );
+
+        expect(a, isNot(equals(b)));
+      });
     });
 
     group('equality', () {
@@ -133,6 +175,38 @@ void main() {
         final updated = original.copyWith(isRead: true);
 
         expect(updated.targetEventId, equals('c' * 64));
+      });
+
+      test('preserves videoAddressableId when not overridden', () {
+        final addressableId = '34236:${'b' * 64}:vine-xyz';
+        final original = ActorNotification(
+          id: 'n1',
+          type: NotificationKind.likeComment,
+          actor: actor,
+          timestamp: timestamp,
+          videoAddressableId: addressableId,
+        );
+
+        final updated = original.copyWith(isRead: true);
+
+        expect(updated.videoAddressableId, equals(addressableId));
+      });
+
+      test('updates videoAddressableId when overridden', () {
+        final initial = '34236:${'b' * 64}:vine-old';
+        final updated = '34236:${'b' * 64}:vine-new';
+        final original = ActorNotification(
+          id: 'n1',
+          type: NotificationKind.likeComment,
+          actor: actor,
+          timestamp: timestamp,
+          videoAddressableId: initial,
+        );
+
+        final copy = original.copyWith(videoAddressableId: updated);
+
+        expect(copy.videoAddressableId, equals(updated));
+        expect(original.videoAddressableId, equals(initial));
       });
     });
 

@@ -541,6 +541,68 @@ void main() {
           expect(videos.single.id, resolvedVideo.id);
         },
       );
+
+      testWidgets(
+        'likeComment tap uses videoAddressableId directly when available '
+        '— no relay round-trip through resolver',
+        (tester) async {
+          // When the repository populates videoAddressableId from the
+          // server-provided d_tag, the stable NIP-33 path must be taken
+          // and fetchEventById must never be called.
+          final videoService = _MockVideoEventService();
+          final nostrClient = _MockNostrClient();
+          final videosRepository = _MockVideosRepository();
+          const addressableId =
+              '34236:'
+              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+              ':vine-liked-comment';
+          final video = _video('liked_comment_video');
+
+          when(
+            () => videosRepository.fetchVideoWithStatsForRouteId(addressableId),
+          ).thenAnswer((_) async => video);
+          when(() => videoService.shouldHideVideo(video)).thenReturn(false);
+
+          when(() => mockBloc.state).thenReturn(
+            NotificationFeedState(
+              status: NotificationFeedStatus.loaded,
+              notifications: [
+                ActorNotification(
+                  id: 'lc-addr',
+                  type: NotificationKind.likeComment,
+                  actor: ActorInfo(pubkey: 'liker_pubkey', displayName: 'Liz'),
+                  timestamp: DateTime(2026),
+                  targetEventId: 'some_comment_event_id',
+                  // videoAddressableId set — bypasses resolver.
+                  videoAddressableId: addressableId,
+                ),
+              ],
+            ),
+          );
+
+          final capturedArgs = await _pumpRoutedView(
+            tester,
+            mockBloc,
+            videoEventService: videoService,
+            nostrClient: nostrClient,
+            videosRepository: videosRepository,
+          );
+
+          await tester.tap(find.byType(NotificationListItem).first);
+          await tester.pumpAndSettle();
+
+          // Resolver must NOT be called — stable path is taken directly.
+          verifyNever(() => nostrClient.fetchEventById(any()));
+          verify(
+            () =>
+                videosRepository.fetchVideoWithStatsForRouteId(addressableId),
+          ).called(1);
+          expect(capturedArgs, hasLength(1));
+          expect(capturedArgs.single.autoOpenComments, isTrue);
+          final videos = await capturedArgs.single.videosStream.first;
+          expect(videos.single.id, video.id);
+        },
+      );
     });
 
     // -----------------------------------------------------------------------

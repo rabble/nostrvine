@@ -172,7 +172,12 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
           videoAddressableId: videoAddressableId,
           notificationKind: type,
         );
-      case ActorNotification(:final actor, :final type, :final targetEventId):
+      case ActorNotification(
+        :final actor,
+        :final type,
+        :final targetEventId,
+        :final videoAddressableId,
+      ):
         switch (type) {
           case NotificationKind.follow:
             _navigateToProfile(context, actor.pubkey);
@@ -183,11 +188,14 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
             // resolver walks its E-tags to the root video.
             // likeComment/reply → targetEventId is the referenced comment
             // event; same resolver path.
+            // videoAddressableId is the stable NIP-33 ID built from the
+            // server-provided d_tag — when set it bypasses the resolver.
             // Falls back to the actor's profile when resolution fails.
             if (targetEventId != null && targetEventId.isNotEmpty) {
               await _navigateToVideo(
                 context,
                 targetEventId,
+                videoAddressableId: videoAddressableId,
                 notificationKind: type,
                 profileFallbackPubkey:
                     type == NotificationKind.mention ? actor.pubkey : null,
