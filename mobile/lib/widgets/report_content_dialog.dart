@@ -261,8 +261,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
         l10n.reportReasonFalseInfoSubtitle,
       ContentFilterReason.childSafety => l10n.reportReasonChildSafetySubtitle,
       ContentFilterReason.csam => l10n.reportReasonCsamSubtitle,
-      ContentFilterReason.underageUser =>
-        l10n.reportReasonUnderageUserSubtitle,
+      ContentFilterReason.underageUser => l10n.reportReasonUnderageUserSubtitle,
       ContentFilterReason.aiGenerated => l10n.reportReasonAiGeneratedSubtitle,
       ContentFilterReason.other => l10n.reportReasonOtherSubtitle,
     };

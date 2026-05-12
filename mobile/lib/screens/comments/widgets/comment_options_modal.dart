@@ -391,8 +391,7 @@ String _getReasonDescription(ContentFilterReason reason) {
       'Misleading or deliberately false claims',
     ContentFilterReason.childSafety => "General concerns about minors' safety",
     ContentFilterReason.csam => 'Content depicting sexual abuse of minors',
-    ContentFilterReason.underageUser =>
-      'Account holder appears to be underage',
+    ContentFilterReason.underageUser => 'Account holder appears to be underage',
     ContentFilterReason.aiGenerated =>
       'Deceptive AI-generated or manipulated media',
     ContentFilterReason.other => 'Items not included above',

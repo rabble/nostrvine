@@ -369,6 +369,14 @@ const _knownUntranslatedDebt = {
   'reportReasonCsamSubtitle',
   'reportReasonAiGeneratedSubtitle',
   'reportReasonOtherSubtitle',
+  // Split child-safety report reasons (#3489). reportReasonCsam changed
+  // meaning from "Child Safety Violation" to "Child Sexual Abuse"; stale
+  // translations removed. New keys added for the two new categories.
+  'reportReasonCsam',
+  'reportReasonChildSafety',
+  'reportReasonChildSafetySubtitle',
+  'reportReasonUnderageUser',
+  'reportReasonUnderageUserSubtitle',
   // Added by the in-sheet Report confirmation state ("Learn more at
   // divine.video/safety" link). Falls back to English in non-English
   // locales until translated.
