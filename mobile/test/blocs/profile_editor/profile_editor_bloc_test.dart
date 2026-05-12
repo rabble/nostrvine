@@ -34,13 +34,14 @@ void main() {
     const testPicture = 'https://example.com/avatar.png';
 
     /// Helper to create a test UserProfile
-    UserProfile createTestProfile({String? nip05}) {
+    UserProfile createTestProfile({String? nip05, String? banner}) {
       return UserProfile(
         pubkey: testPubkey,
         displayName: testDisplayName,
         about: testAbout,
         picture: testPicture,
         nip05: nip05,
+        banner: banner,
         rawData: const {},
         createdAt: DateTime.now(),
         eventId:
@@ -1216,6 +1217,42 @@ void main() {
                 (s) => s.usernameStatus,
                 'usernameStatus',
                 UsernameStatus.idle,
+              ),
+        ],
+        verify: (_) {
+          verifyNever(
+            () => mockProfileRepository.checkUsernameAvailability(
+              username: any(named: 'username'),
+            ),
+          );
+        },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'clears stale validation state when username matches initial username',
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          username: testUsername,
+          initialUsername: testUsername,
+          usernameStatus: UsernameStatus.error,
+          usernameError: UsernameValidationError.networkError,
+          usernameFormatMessage: 'stale error',
+        ),
+        act: (bloc) => bloc.add(const UsernameChanged(testUsername)),
+        wait: debounceDuration,
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having((s) => s.username, 'username', testUsername)
+              .having(
+                (s) => s.usernameStatus,
+                'usernameStatus',
+                UsernameStatus.idle,
+              )
+              .having((s) => s.usernameError, 'usernameError', isNull)
+              .having(
+                (s) => s.usernameFormatMessage,
+                'usernameFormatMessage',
+                isNull,
               ),
         ],
         verify: (_) {
@@ -2498,9 +2535,8 @@ void main() {
       blocTest<ProfileEditorBloc, ProfileEditorState>(
         'InitialPersistedBannerSet seeds pendingBannerHex when banner is hex',
         build: createBloc,
-        act: (bloc) => bloc.add(
-          const InitialPersistedBannerSet(testBannerPersistedHex),
-        ),
+        act: (bloc) =>
+            bloc.add(const InitialPersistedBannerSet(testBannerPersistedHex)),
         expect: () => [
           isA<ProfileEditorState>()
               .having(
@@ -2520,9 +2556,8 @@ void main() {
       blocTest<ProfileEditorBloc, ProfileEditorState>(
         'InitialPersistedBannerSet leaves pendingBannerHex null when banner is URL',
         build: createBloc,
-        act: (bloc) => bloc.add(
-          const InitialPersistedBannerSet(testBannerPersistedUrl),
-        ),
+        act: (bloc) =>
+            bloc.add(const InitialPersistedBannerSet(testBannerPersistedUrl)),
         expect: () => [
           isA<ProfileEditorState>()
               .having(
@@ -2541,9 +2576,8 @@ void main() {
           pendingBannerUrl: testBannerStagedUrl,
           pendingBannerStatus: PendingBannerStatus.staged,
         ),
-        act: (bloc) => bloc.add(
-          const ProfileBannerColorSelected(testBannerSwatchHex),
-        ),
+        act: (bloc) =>
+            bloc.add(const ProfileBannerColorSelected(testBannerSwatchHex)),
         expect: () => [
           isA<ProfileEditorState>()
               .having(
@@ -2567,9 +2601,8 @@ void main() {
           persistedBanner: testBannerPersistedUrl,
           bannerCleared: true,
         ),
-        act: (bloc) => bloc.add(
-          const ProfileBannerColorSelected(testBannerSwatchHex),
-        ),
+        act: (bloc) =>
+            bloc.add(const ProfileBannerColorSelected(testBannerSwatchHex)),
         expect: () => [
           isA<ProfileEditorState>()
               .having((s) => s.bannerCleared, 'bannerCleared', isFalse)
@@ -2590,9 +2623,8 @@ void main() {
         'ProfileBannerCleared with persistedBanner sets cleared sentinel '
         'so effectiveBanner returns null',
         build: createBloc,
-        seed: () => const ProfileEditorState(
-          persistedBanner: testBannerPersistedUrl,
-        ),
+        seed: () =>
+            const ProfileEditorState(persistedBanner: testBannerPersistedUrl),
         act: (bloc) => bloc.add(const ProfileBannerCleared()),
         expect: () => [
           isA<ProfileEditorState>()
@@ -2617,6 +2649,55 @@ void main() {
             pubkey: testPubkey,
             displayName: testDisplayName,
             about: testAbout,
+          ),
+        ),
+        verify: (_) {
+          verify(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: any(named: 'displayName'),
+              about: any(named: 'about'),
+              username: any(named: 'username'),
+              nip05: any(named: 'nip05'),
+              clearNip05: any(named: 'clearNip05'),
+              picture: any(named: 'picture'),
+              banner: any(named: 'banner', that: isNull),
+              currentProfile: any(named: 'currentProfile'),
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfileNip05Saved after clearing a persisted banner still '
+        'publishes banner: null instead of reviving currentProfile.banner',
+        setUp: () {
+          final currentProfile = createTestProfile(
+            banner: testBannerPersistedUrl,
+          );
+          when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => currentProfile);
+          when(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: any(named: 'displayName'),
+              about: any(named: 'about'),
+              username: any(named: 'username'),
+              nip05: any(named: 'nip05'),
+              clearNip05: any(named: 'clearNip05'),
+              picture: any(named: 'picture'),
+              banner: any(named: 'banner'),
+              currentProfile: any(named: 'currentProfile'),
+            ),
+          ).thenAnswer((_) async => createTestProfile());
+        },
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          persistedBanner: testBannerPersistedUrl,
+          bannerCleared: true,
+        ),
+        act: (bloc) => bloc.add(
+          ProfileNip05Saved(
+            currentProfile: createTestProfile(banner: testBannerPersistedUrl),
           ),
         ),
         verify: (_) {
@@ -2789,9 +2870,8 @@ void main() {
         seed: () => const ProfileEditorState(
           pendingBannerStatus: PendingBannerStatus.uploading,
         ),
-        act: (bloc) => bloc.add(
-          const ProfileBannerColorSelected(testBannerSwatchHex),
-        ),
+        act: (bloc) =>
+            bloc.add(const ProfileBannerColorSelected(testBannerSwatchHex)),
         expect: () => const <ProfileEditorState>[],
       );
     });

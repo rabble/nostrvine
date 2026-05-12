@@ -447,7 +447,14 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
   /// Priority: staged value derived from bloc state ([effectiveBanner]) >
   /// caller-supplied `event.banner` (legacy fallback). Empty / whitespace
   /// is treated as "no banner".
+  ///
+  /// [bannerCleared] is authoritative across all save entrypoints. In
+  /// particular, callers such as [ProfileNip05Saved] may still forward the
+  /// currently persisted banner via `event.banner`; once the user has
+  /// explicitly cleared the banner in this edit session, that legacy fallback
+  /// must not republish it.
   String? _resolveEffectiveBanner(ProfileSaved event) {
+    if (state.bannerCleared) return null;
     final fromState = state.effectiveBanner?.trim();
     if (fromState != null && fromState.isNotEmpty) return fromState;
     final fromEvent = event.banner?.trim();
@@ -579,7 +586,10 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     final initial = state.initialUsername;
     if (initial != null && normalized == initial.toLowerCase()) {
       emit(
-        state.copyWith(username: username, usernameStatus: UsernameStatus.idle),
+        state.copyWith(
+          username: username,
+          usernameStatus: UsernameStatus.idle,
+        ),
       );
       return;
     }
