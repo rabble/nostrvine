@@ -7073,4 +7073,19 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
       'التنقل عبر الفيديو لاختيار إطار الغلاف';
+
+  @override
+  String get videoMetadataTagsPickerSearchHint => 'ابحث أو أضف وسوماً';
+
+  @override
+  String get videoMetadataTagsPickerEmptyHint =>
+      'أضف وسوماً ليكتشف الآخرون فيديوك';
+
+  @override
+  String get videoMetadataTagsPickerNoResults => 'لا توجد وسوم مطابقة';
+
+  @override
+  String videoMetadataTagsPickerAddTag(String tag) {
+    return 'إضافة \"#$tag\"';
+  }
 }

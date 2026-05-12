@@ -3627,5 +3627,16 @@
     }
   },
   "videoMetadataEditCoverFailedSnackbar": "Kan de cover niet bijwerken. Probeer het opnieuw.",
-  "videoMetadataEditCoverSuccessAnnouncement": "Omslag bijgewerkt"
+  "videoMetadataEditCoverSuccessAnnouncement": "Omslag bijgewerkt",
+  "videoMetadataTagsPickerSearchHint": "Tags zoeken of toevoegen",
+  "videoMetadataTagsPickerEmptyHint": "Voeg tags toe zodat anderen je video ontdekken",
+  "videoMetadataTagsPickerNoResults": "Geen overeenkomende tags",
+  "videoMetadataTagsPickerAddTag": "«#{tag}» toevoegen",
+  "@videoMetadataTagsPickerAddTag": {
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      }
+    }
+  }
 }

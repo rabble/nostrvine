@@ -3938,5 +3938,16 @@
   "videoMetadataEditCoverTitle": "Edit cover",
   "videoMetadataEditCoverCloseSemanticLabel": "Close cover editor",
   "videoMetadataEditCoverConfirmSemanticLabel": "Confirm cover selection",
-  "videoMetadataEditCoverStripSemanticLabel": "Seek through video to select cover frame"
+  "videoMetadataEditCoverStripSemanticLabel": "Seek through video to select cover frame",
+  "videoMetadataTagsPickerSearchHint": "Search or add tags",
+  "videoMetadataTagsPickerEmptyHint": "Add tags to help people discover your video",
+  "videoMetadataTagsPickerNoResults": "No matching tags",
+  "videoMetadataTagsPickerAddTag": "Add \"#{tag}\"",
+  "@videoMetadataTagsPickerAddTag": {
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      }
+    }
+  }
 }

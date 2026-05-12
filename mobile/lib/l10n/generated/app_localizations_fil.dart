@@ -7238,4 +7238,19 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
       'Seek through video to select cover frame';
+
+  @override
+  String get videoMetadataTagsPickerSearchHint => 'Maghanap o magdagdag ng tag';
+
+  @override
+  String get videoMetadataTagsPickerEmptyHint =>
+      'Magdagdag ng tag para matuklasan ang video mo';
+
+  @override
+  String get videoMetadataTagsPickerNoResults => 'Walang tugmang tag';
+
+  @override
+  String videoMetadataTagsPickerAddTag(String tag) {
+    return 'Idagdag ang \"#$tag\"';
+  }
 }

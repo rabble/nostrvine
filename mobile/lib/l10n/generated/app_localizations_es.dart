@@ -7230,4 +7230,19 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
       'Desliza el video para seleccionar el fotograma de portada';
+
+  @override
+  String get videoMetadataTagsPickerSearchHint => 'Buscar o añadir etiquetas';
+
+  @override
+  String get videoMetadataTagsPickerEmptyHint =>
+      'Añade etiquetas para que otros descubran tu vídeo';
+
+  @override
+  String get videoMetadataTagsPickerNoResults => 'Sin etiquetas coincidentes';
+
+  @override
+  String videoMetadataTagsPickerAddTag(String tag) {
+    return 'Añadir «#$tag»';
+  }
 }

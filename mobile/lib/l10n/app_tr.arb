@@ -3627,5 +3627,16 @@
     }
   },
   "videoMetadataEditCoverFailedSnackbar": "Kapak güncellenemedi. Tekrar dene.",
-  "videoMetadataEditCoverSuccessAnnouncement": "Kapak güncellendi"
+  "videoMetadataEditCoverSuccessAnnouncement": "Kapak güncellendi",
+  "videoMetadataTagsPickerSearchHint": "Etiket ara veya ekle",
+  "videoMetadataTagsPickerEmptyHint": "İnsanların videonu keşfetmesi için etiket ekle",
+  "videoMetadataTagsPickerNoResults": "Eşleşen etiket yok",
+  "videoMetadataTagsPickerAddTag": "\"#{tag}\" ekle",
+  "@videoMetadataTagsPickerAddTag": {
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      }
+    }
+  }
 }

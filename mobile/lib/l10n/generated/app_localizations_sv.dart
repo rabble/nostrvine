@@ -7151,4 +7151,19 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
       'Sök igenom videon för att välja omslagsbild';
+
+  @override
+  String get videoMetadataTagsPickerSearchHint => 'Sök eller lägg till taggar';
+
+  @override
+  String get videoMetadataTagsPickerEmptyHint =>
+      'Lägg till taggar så att andra hittar din video';
+
+  @override
+  String get videoMetadataTagsPickerNoResults => 'Inga matchande taggar';
+
+  @override
+  String videoMetadataTagsPickerAddTag(String tag) {
+    return 'Lägg till ”#$tag”';
+  }
 }

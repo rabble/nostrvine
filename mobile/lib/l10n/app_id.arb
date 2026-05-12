@@ -3627,5 +3627,16 @@
     }
   },
   "videoMetadataEditCoverFailedSnackbar": "Tidak dapat memperbarui sampul. Coba lagi.",
-  "videoMetadataEditCoverSuccessAnnouncement": "Sampul diperbarui"
+  "videoMetadataEditCoverSuccessAnnouncement": "Sampul diperbarui",
+  "videoMetadataTagsPickerSearchHint": "Cari atau tambahkan tag",
+  "videoMetadataTagsPickerEmptyHint": "Tambahkan tag agar orang menemukan videomu",
+  "videoMetadataTagsPickerNoResults": "Tidak ada tag yang cocok",
+  "videoMetadataTagsPickerAddTag": "Tambahkan \"#{tag}\"",
+  "@videoMetadataTagsPickerAddTag": {
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      }
+    }
+  }
 }

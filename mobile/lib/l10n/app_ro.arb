@@ -3627,5 +3627,16 @@
     }
   },
   "videoMetadataEditCoverFailedSnackbar": "Coperta nu a putut fi actualizată. Încearcă din nou.",
-  "videoMetadataEditCoverSuccessAnnouncement": "Coperta a fost actualizată"
+  "videoMetadataEditCoverSuccessAnnouncement": "Coperta a fost actualizată",
+  "videoMetadataTagsPickerSearchHint": "Caută sau adaugă etichete",
+  "videoMetadataTagsPickerEmptyHint": "Adaugă etichete pentru ca alții să-ți descopere videoclipul",
+  "videoMetadataTagsPickerNoResults": "Nicio etichetă potrivită",
+  "videoMetadataTagsPickerAddTag": "Adaugă „#{tag}\"",
+  "@videoMetadataTagsPickerAddTag": {
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      }
+    }
+  }
 }

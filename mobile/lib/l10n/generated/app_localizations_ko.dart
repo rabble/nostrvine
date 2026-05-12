@@ -6871,4 +6871,19 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel => '커버 프레임 선택을 위해 동영상 탐색';
+
+  @override
+  String get videoMetadataTagsPickerSearchHint => '태그 검색 또는 추가';
+
+  @override
+  String get videoMetadataTagsPickerEmptyHint =>
+      '사람들이 동영상을 발견할 수 있도록 태그를 추가하세요';
+
+  @override
+  String get videoMetadataTagsPickerNoResults => '일치하는 태그 없음';
+
+  @override
+  String videoMetadataTagsPickerAddTag(String tag) {
+    return '\"#$tag\" 추가';
+  }
 }

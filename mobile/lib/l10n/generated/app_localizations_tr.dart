@@ -7121,4 +7121,19 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
       'Kapak karesi seçmek için videoda gezin';
+
+  @override
+  String get videoMetadataTagsPickerSearchHint => 'Etiket ara veya ekle';
+
+  @override
+  String get videoMetadataTagsPickerEmptyHint =>
+      'İnsanların videonu keşfetmesi için etiket ekle';
+
+  @override
+  String get videoMetadataTagsPickerNoResults => 'Eşleşen etiket yok';
+
+  @override
+  String videoMetadataTagsPickerAddTag(String tag) {
+    return '\"#$tag\" ekle';
+  }
 }

@@ -3759,5 +3759,16 @@
   "videoMetadataEditCoverTitle": "Edit cover",
   "videoMetadataEditCoverCloseSemanticLabel": "Close cover editor",
   "videoMetadataEditCoverConfirmSemanticLabel": "Confirm cover selection",
-  "videoMetadataEditCoverStripSemanticLabel": "Seek through video to select cover frame"
+  "videoMetadataEditCoverStripSemanticLabel": "Seek through video to select cover frame",
+  "videoMetadataTagsPickerSearchHint": "Търсене или добавяне на тагове",
+  "videoMetadataTagsPickerEmptyHint": "Добавете тагове, за да открият хората вашето видео",
+  "videoMetadataTagsPickerNoResults": "Няма съвпадащи тагове",
+  "videoMetadataTagsPickerAddTag": "Добавяне на „#{tag}\"",
+  "@videoMetadataTagsPickerAddTag": {
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      }
+    }
+  }
 }

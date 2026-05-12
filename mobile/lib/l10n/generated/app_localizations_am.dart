@@ -6988,4 +6988,18 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
       'Seek through video to select cover frame';
+
+  @override
+  String get videoMetadataTagsPickerSearchHint => 'መለያዎችን ይፈልጉ ወይም ያክሉ';
+
+  @override
+  String get videoMetadataTagsPickerEmptyHint => 'ሰዎች ቪዲዮዎን እንዲያገኙ መለያዎችን ያክሉ';
+
+  @override
+  String get videoMetadataTagsPickerNoResults => 'ተዛማጅ መለያዎች የሉም';
+
+  @override
+  String videoMetadataTagsPickerAddTag(String tag) {
+    return '\"#$tag\" ያክሉ';
+  }
 }

@@ -7231,4 +7231,20 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
       'Seek through video to select cover frame';
+
+  @override
+  String get videoMetadataTagsPickerSearchHint =>
+      'Търсене или добавяне на тагове';
+
+  @override
+  String get videoMetadataTagsPickerEmptyHint =>
+      'Добавете тагове, за да открият хората вашето видео';
+
+  @override
+  String get videoMetadataTagsPickerNoResults => 'Няма съвпадащи тагове';
+
+  @override
+  String videoMetadataTagsPickerAddTag(String tag) {
+    return 'Добавяне на „#$tag\"';
+  }
 }

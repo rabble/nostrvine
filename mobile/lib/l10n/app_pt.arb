@@ -3627,5 +3627,16 @@
     }
   },
   "videoMetadataEditCoverFailedSnackbar": "Não foi possível atualizar a capa. Tente novamente.",
-  "videoMetadataEditCoverSuccessAnnouncement": "Capa atualizada"
+  "videoMetadataEditCoverSuccessAnnouncement": "Capa atualizada",
+  "videoMetadataTagsPickerSearchHint": "Pesquisar ou adicionar tags",
+  "videoMetadataTagsPickerEmptyHint": "Adiciona tags para que outros descubram o teu vídeo",
+  "videoMetadataTagsPickerNoResults": "Sem tags correspondentes",
+  "videoMetadataTagsPickerAddTag": "Adicionar «#{tag}»",
+  "@videoMetadataTagsPickerAddTag": {
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      }
+    }
+  }
 }

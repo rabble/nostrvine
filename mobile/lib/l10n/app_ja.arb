@@ -3627,5 +3627,16 @@
     }
   },
   "videoMetadataEditCoverFailedSnackbar": "カバーを更新できませんでした。もう一度お試しください。",
-  "videoMetadataEditCoverSuccessAnnouncement": "カバーを更新しました"
+  "videoMetadataEditCoverSuccessAnnouncement": "カバーを更新しました",
+  "videoMetadataTagsPickerSearchHint": "タグを検索または追加",
+  "videoMetadataTagsPickerEmptyHint": "タグを追加して動画を見つけてもらおう",
+  "videoMetadataTagsPickerNoResults": "一致するタグがありません",
+  "videoMetadataTagsPickerAddTag": "「#{tag}」を追加",
+  "@videoMetadataTagsPickerAddTag": {
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      }
+    }
+  }
 }

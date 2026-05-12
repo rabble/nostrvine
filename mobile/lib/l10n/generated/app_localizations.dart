@@ -12593,6 +12593,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Seek through video to select cover frame'**
   String get videoMetadataEditCoverStripSemanticLabel;
+
+  /// No description provided for @videoMetadataTagsPickerSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search or add tags'**
+  String get videoMetadataTagsPickerSearchHint;
+
+  /// No description provided for @videoMetadataTagsPickerEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add tags to help people discover your video'**
+  String get videoMetadataTagsPickerEmptyHint;
+
+  /// No description provided for @videoMetadataTagsPickerNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching tags'**
+  String get videoMetadataTagsPickerNoResults;
+
+  /// No description provided for @videoMetadataTagsPickerAddTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Add \"#{tag}\"'**
+  String videoMetadataTagsPickerAddTag(String tag);
 }
 
 class _AppLocalizationsDelegate

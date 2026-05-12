@@ -7184,4 +7184,19 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
       'Door video scrollen om omslagframe te selecteren';
+
+  @override
+  String get videoMetadataTagsPickerSearchHint => 'Tags zoeken of toevoegen';
+
+  @override
+  String get videoMetadataTagsPickerEmptyHint =>
+      'Voeg tags toe zodat anderen je video ontdekken';
+
+  @override
+  String get videoMetadataTagsPickerNoResults => 'Geen overeenkomende tags';
+
+  @override
+  String videoMetadataTagsPickerAddTag(String tag) {
+    return '«#$tag» toevoegen';
+  }
 }

@@ -7121,4 +7121,19 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
       'Gulir video untuk memilih bingkai sampul';
+
+  @override
+  String get videoMetadataTagsPickerSearchHint => 'Cari atau tambahkan tag';
+
+  @override
+  String get videoMetadataTagsPickerEmptyHint =>
+      'Tambahkan tag agar orang menemukan videomu';
+
+  @override
+  String get videoMetadataTagsPickerNoResults => 'Tidak ada tag yang cocok';
+
+  @override
+  String videoMetadataTagsPickerAddTag(String tag) {
+    return 'Tambahkan \"#$tag\"';
+  }
 }

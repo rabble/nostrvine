@@ -3627,5 +3627,16 @@
     }
   },
   "videoMetadataEditCoverFailedSnackbar": "Impossibile aggiornare la copertina. Riprova.",
-  "videoMetadataEditCoverSuccessAnnouncement": "Copertina aggiornata"
+  "videoMetadataEditCoverSuccessAnnouncement": "Copertina aggiornata",
+  "videoMetadataTagsPickerSearchHint": "Cerca o aggiungi tag",
+  "videoMetadataTagsPickerEmptyHint": "Aggiungi tag per far scoprire il tuo video",
+  "videoMetadataTagsPickerNoResults": "Nessun tag corrispondente",
+  "videoMetadataTagsPickerAddTag": "Aggiungi «#{tag}»",
+  "@videoMetadataTagsPickerAddTag": {
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -3627,5 +3627,16 @@
     }
   },
   "videoMetadataEditCoverFailedSnackbar": "Det gick inte att uppdatera omslaget. Försök igen.",
-  "videoMetadataEditCoverSuccessAnnouncement": "Omslag uppdaterat"
+  "videoMetadataEditCoverSuccessAnnouncement": "Omslag uppdaterat",
+  "videoMetadataTagsPickerSearchHint": "Sök eller lägg till taggar",
+  "videoMetadataTagsPickerEmptyHint": "Lägg till taggar så att andra hittar din video",
+  "videoMetadataTagsPickerNoResults": "Inga matchande taggar",
+  "videoMetadataTagsPickerAddTag": "Lägg till ”#{tag}”",
+  "@videoMetadataTagsPickerAddTag": {
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      }
+    }
+  }
 }

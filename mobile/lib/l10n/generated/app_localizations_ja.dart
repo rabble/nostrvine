@@ -6849,4 +6849,18 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
       'カバーフレームを選択するために動画をシーク';
+
+  @override
+  String get videoMetadataTagsPickerSearchHint => 'タグを検索または追加';
+
+  @override
+  String get videoMetadataTagsPickerEmptyHint => 'タグを追加して動画を見つけてもらおう';
+
+  @override
+  String get videoMetadataTagsPickerNoResults => '一致するタグがありません';
+
+  @override
+  String videoMetadataTagsPickerAddTag(String tag) {
+    return '「#$tag」を追加';
+  }
 }

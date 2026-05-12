@@ -11,7 +11,7 @@ import 'package:openvine/widgets/video_metadata/video_metadata_content_warning_s
 import 'package:openvine/widgets/video_metadata/video_metadata_expiration_selector.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_inspired_by_input.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_limit_warning_banner.dart';
-import 'package:openvine/widgets/video_metadata/video_metadata_tags_input.dart';
+import 'package:openvine/widgets/video_metadata/video_metadata_tags_selector.dart';
 
 class VideoMetadataFormFields extends ConsumerStatefulWidget {
   const VideoMetadataFormFields({
@@ -149,7 +149,7 @@ class _VideoMetadataFormFieldsState
           ),
 
           if (widget.enableTags)
-            const _InputWrapper(child: VideoMetadataTagsInput()),
+            const _InputWrapper(child: VideoMetadataTagsSelector()),
 
           if (widget.enableExpiration)
             const _InputWrapper(child: VideoMetadataExpirationSelector()),

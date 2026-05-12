@@ -7224,4 +7224,19 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
       'Scorri il video per selezionare il fotogramma di copertina';
+
+  @override
+  String get videoMetadataTagsPickerSearchHint => 'Cerca o aggiungi tag';
+
+  @override
+  String get videoMetadataTagsPickerEmptyHint =>
+      'Aggiungi tag per far scoprire il tuo video';
+
+  @override
+  String get videoMetadataTagsPickerNoResults => 'Nessun tag corrispondente';
+
+  @override
+  String videoMetadataTagsPickerAddTag(String tag) {
+    return 'Aggiungi «#$tag»';
+  }
 }

@@ -7241,4 +7241,19 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
       'Durch Video scrollen, um Cover-Frame auszuwählen';
+
+  @override
+  String get videoMetadataTagsPickerSearchHint => 'Tags suchen oder hinzufügen';
+
+  @override
+  String get videoMetadataTagsPickerEmptyHint =>
+      'Tags hinzufügen, damit andere dein Video entdecken';
+
+  @override
+  String get videoMetadataTagsPickerNoResults => 'Keine passenden Tags';
+
+  @override
+  String videoMetadataTagsPickerAddTag(String tag) {
+    return '„#$tag\" hinzufügen';
+  }
 }

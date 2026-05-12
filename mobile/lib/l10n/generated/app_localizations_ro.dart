@@ -7328,4 +7328,19 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
       'Parcurge videoclipul pentru a selecta cadrul copertei';
+
+  @override
+  String get videoMetadataTagsPickerSearchHint => 'Caută sau adaugă etichete';
+
+  @override
+  String get videoMetadataTagsPickerEmptyHint =>
+      'Adaugă etichete pentru ca alții să-ți descopere videoclipul';
+
+  @override
+  String get videoMetadataTagsPickerNoResults => 'Nicio etichetă potrivită';
+
+  @override
+  String videoMetadataTagsPickerAddTag(String tag) {
+    return 'Adaugă „#$tag\"';
+  }
 }

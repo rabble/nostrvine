@@ -3627,5 +3627,16 @@
     }
   },
   "videoMetadataEditCoverFailedSnackbar": "تعذر تحديث الغلاف. حاول مرة أخرى.",
-  "videoMetadataEditCoverSuccessAnnouncement": "تم تحديث الغلاف"
+  "videoMetadataEditCoverSuccessAnnouncement": "تم تحديث الغلاف",
+  "videoMetadataTagsPickerSearchHint": "ابحث أو أضف وسوماً",
+  "videoMetadataTagsPickerEmptyHint": "أضف وسوماً ليكتشف الآخرون فيديوك",
+  "videoMetadataTagsPickerNoResults": "لا توجد وسوم مطابقة",
+  "videoMetadataTagsPickerAddTag": "إضافة \"#{tag}\"",
+  "@videoMetadataTagsPickerAddTag": {
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      }
+    }
+  }
 }

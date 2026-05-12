@@ -7304,4 +7304,19 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
       'Przewijaj wideo, aby wybrać klatkę okładki';
+
+  @override
+  String get videoMetadataTagsPickerSearchHint => 'Szukaj lub dodaj tagi';
+
+  @override
+  String get videoMetadataTagsPickerEmptyHint =>
+      'Dodaj tagi, aby inni odkryli Twój film';
+
+  @override
+  String get videoMetadataTagsPickerNoResults => 'Brak pasujących tagów';
+
+  @override
+  String videoMetadataTagsPickerAddTag(String tag) {
+    return 'Dodaj „#$tag\"';
+  }
 }

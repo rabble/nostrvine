@@ -3627,5 +3627,16 @@
     }
   },
   "videoMetadataEditCoverFailedSnackbar": "Impossible de mettre à jour la couverture. Réessayez.",
-  "videoMetadataEditCoverSuccessAnnouncement": "Couverture mise à jour"
+  "videoMetadataEditCoverSuccessAnnouncement": "Couverture mise à jour",
+  "videoMetadataTagsPickerSearchHint": "Rechercher ou ajouter des tags",
+  "videoMetadataTagsPickerEmptyHint": "Ajoute des tags pour que d'autres découvrent ta vidéo",
+  "videoMetadataTagsPickerNoResults": "Aucun tag correspondant",
+  "videoMetadataTagsPickerAddTag": "Ajouter «#{tag}»",
+  "@videoMetadataTagsPickerAddTag": {
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      }
+    }
+  }
 }

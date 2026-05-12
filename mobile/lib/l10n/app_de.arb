@@ -3627,5 +3627,16 @@
     }
   },
   "videoMetadataEditCoverFailedSnackbar": "Cover konnte nicht aktualisiert werden. Versuche es erneut.",
-  "videoMetadataEditCoverSuccessAnnouncement": "Cover aktualisiert"
+  "videoMetadataEditCoverSuccessAnnouncement": "Cover aktualisiert",
+  "videoMetadataTagsPickerSearchHint": "Tags suchen oder hinzufügen",
+  "videoMetadataTagsPickerEmptyHint": "Tags hinzufügen, damit andere dein Video entdecken",
+  "videoMetadataTagsPickerNoResults": "Keine passenden Tags",
+  "videoMetadataTagsPickerAddTag": "„#{tag}\" hinzufügen",
+  "@videoMetadataTagsPickerAddTag": {
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -2153,5 +2153,16 @@
             }
         }
     },
-    "notificationsVideoThumbnail": "Thumbnail ng video"
+    "notificationsVideoThumbnail": "Thumbnail ng video",
+    "videoMetadataTagsPickerSearchHint": "Maghanap o magdagdag ng tag",
+    "videoMetadataTagsPickerEmptyHint": "Magdagdag ng tag para matuklasan ang video mo",
+    "videoMetadataTagsPickerNoResults": "Walang tugmang tag",
+    "videoMetadataTagsPickerAddTag": "Idagdag ang \"#{tag}\"",
+    "@videoMetadataTagsPickerAddTag": {
+        "placeholders": {
+            "tag": {
+                "type": "String"
+            }
+        }
+    }
 }
