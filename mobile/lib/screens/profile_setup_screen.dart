@@ -25,6 +25,7 @@ import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
 import 'package:openvine/screens/apps/web_iframe_sandbox_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/utils/nostr_apps_platform_support.dart';
+import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/nostr_info_sheet_content.dart';
 import 'package:openvine/widgets/profile/verified_accounts_row.dart';
@@ -1167,7 +1168,7 @@ class _ProfileSetupScreenViewState
                                 username: _nip05Controller.text,
                                 // Picture and banner are owned by bloc state.
                                 // The bloc reads pendingPictureUrl /
-                                // pendingBannerUrl / pendingBannerColor /
+                                // pendingBannerUrl / pendingBannerHex /
                                 // persistedBanner directly via
                                 // `effectiveBanner`, so we don't pass them
                                 // through the event.
@@ -1545,12 +1546,14 @@ class _SaveButton extends StatelessWidget {
   }
 }
 
-/// Banner editing block: 3:1 preview, gallery upload, and color swatches.
+/// Banner editing block: 3:1 preview, camera/gallery upload, and color
+/// swatches.
 ///
 /// Image and color are mutually exclusive — selecting one clears the other
 /// at the bloc layer. The preview reads
-/// `pendingBannerUrl ?? pendingBannerColor ?? persistedBanner` via
-/// granular `context.select`s so unrelated state changes don't rebuild it.
+/// `pendingBannerUrl ?? pendingBannerHex ?? persistedBanner` via granular
+/// `context.select`s so unrelated state changes don't rebuild it, and
+/// short-circuits to "no banner" when the user has explicitly cleared.
 class _BannerEditingBlock extends StatelessWidget {
   const _BannerEditingBlock();
 
@@ -1606,11 +1609,14 @@ class _BannerPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bannerCleared = context.select(
+      (ProfileEditorBloc b) => b.state.bannerCleared,
+    );
     final pendingUrl = context.select(
       (ProfileEditorBloc b) => b.state.pendingBannerUrl,
     );
-    final pendingColor = context.select(
-      (ProfileEditorBloc b) => b.state.pendingBannerColor,
+    final pendingHex = context.select(
+      (ProfileEditorBloc b) => b.state.pendingBannerHex,
     );
     final persistedBanner = context.select(
       (ProfileEditorBloc b) => b.state.persistedBanner,
@@ -1621,7 +1627,10 @@ class _BannerPreview extends StatelessWidget {
     );
 
     final radius = BorderRadius.circular(16);
-    final imageUrl = (pendingUrl != null && pendingUrl.isNotEmpty)
+    final pendingColor = colorFromBannerHex(pendingHex);
+    final imageUrl = bannerCleared
+        ? null
+        : (pendingUrl != null && pendingUrl.isNotEmpty)
         ? pendingUrl
         : (pendingColor == null &&
               persistedBanner != null &&
@@ -1641,7 +1650,7 @@ class _BannerPreview extends StatelessWidget {
           child: VineCachedImage(imageUrl: imageUrl),
         ),
       );
-    } else if (pendingColor != null) {
+    } else if (!bannerCleared && pendingColor != null) {
       previewKey = const ValueKey('profile_banner_color_preview');
       child = DecoratedBox(
         decoration: BoxDecoration(color: pendingColor, borderRadius: radius),
@@ -1692,9 +1701,10 @@ class _BannerActionRow extends StatelessWidget {
     final l10n = context.l10n;
     final hasSelection = context.select(
       (ProfileEditorBloc b) =>
-          (b.state.pendingBannerUrl?.isNotEmpty ?? false) ||
-          b.state.pendingBannerColor != null ||
-          (b.state.persistedBanner?.isNotEmpty ?? false),
+          !b.state.bannerCleared &&
+          ((b.state.pendingBannerUrl?.isNotEmpty ?? false) ||
+              (b.state.pendingBannerHex?.isNotEmpty ?? false) ||
+              (b.state.persistedBanner?.isNotEmpty ?? false)),
     );
     final isUploading = context.select(
       (ProfileEditorBloc b) =>
@@ -1799,31 +1809,43 @@ class _BannerColorSwatch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final swatchHex = hexFromColor(color);
     final isSelected = context.select(
-      (ProfileEditorBloc b) => b.state.pendingBannerColor == color,
+      (ProfileEditorBloc b) =>
+          !b.state.bannerCleared && b.state.pendingBannerHex == swatchHex,
+    );
+    final isUploading = context.select(
+      (ProfileEditorBloc b) =>
+          b.state.pendingBannerStatus == PendingBannerStatus.uploading,
     );
     return Semantics(
       button: true,
+      enabled: !isUploading,
       label: context.l10n.profileSetupBannerSectionTitle,
       child: GestureDetector(
         key: ValueKey('profile_banner_color_swatch_preset_$index'),
-        onTap: () => context.read<ProfileEditorBloc>().add(
-          ProfileBannerColorSelected(color),
-        ),
-        child: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected ? VineTheme.whiteText : VineTheme.transparent,
-              width: 3,
+        onTap: isUploading
+            ? null
+            : () => context.read<ProfileEditorBloc>().add(
+                ProfileBannerColorSelected(swatchHex),
+              ),
+        child: Opacity(
+          opacity: isUploading ? 0.4 : 1,
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isSelected ? VineTheme.whiteText : VineTheme.transparent,
+                width: 3,
+              ),
             ),
+            child: isSelected
+                ? const Icon(Icons.check, color: VineTheme.whiteText, size: 20)
+                : null,
           ),
-          child: isSelected
-              ? const Icon(Icons.check, color: VineTheme.whiteText, size: 20)
-              : null,
         ),
       ),
     );

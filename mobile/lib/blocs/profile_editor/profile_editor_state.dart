@@ -99,7 +99,9 @@ enum BannerUploadError {
 /// Status of the staged banner upload for the current edit session.
 ///
 /// Parallels [PendingAvatarStatus]. The banner shown on the edit screen
-/// resolves to `pendingBannerUrl ?? pendingBannerColor ?? persistedBanner`.
+/// resolves to `pendingBannerUrl ?? pendingBannerHex ?? persistedBanner`,
+/// short-circuited to `null` when [ProfileEditorState.bannerCleared] is
+/// `true`.
 enum PendingBannerStatus {
   /// No upload in flight and no staged change for this session.
   idle,
@@ -258,8 +260,9 @@ final class ProfileEditorState extends Equatable {
     this.avatarUploadError,
     this.pendingBannerStatus = PendingBannerStatus.idle,
     this.pendingBannerUrl,
-    this.pendingBannerColor,
+    this.pendingBannerHex,
     this.persistedBanner,
+    this.bannerCleared = false,
     this.bannerUploadError,
     this.verifierStatus = VerifierStatus.idle,
   });
@@ -328,31 +331,44 @@ final class ProfileEditorState extends Equatable {
   final PendingBannerStatus pendingBannerStatus;
 
   /// URL of the staged banner image (uploaded) that has not yet been
-  /// persisted via Save. Mutually exclusive with [pendingBannerColor].
+  /// persisted via Save. Mutually exclusive with [pendingBannerHex].
   final String? pendingBannerUrl;
 
-  /// Staged banner color (user picked a swatch) that has not yet been
-  /// persisted via Save. Mutually exclusive with [pendingBannerUrl].
-  final Color? pendingBannerColor;
+  /// Staged banner color in canonical `0xRRGGBB` hex form (user picked a
+  /// swatch) that has not yet been persisted via Save. Mutually exclusive
+  /// with [pendingBannerUrl].
+  ///
+  /// Stored as a `String` rather than a Flutter `Color` so the bloc layer
+  /// stays free of `dart:ui`; the presentation layer converts via
+  /// `colorFromBannerHex` at the render boundary.
+  final String? pendingBannerHex;
 
   /// Banner value currently persisted on the user's kind 0. Can be either
   /// a URL or a hex color string (e.g. `0x33ccbf`); see
   /// `UserProfileUtils.profileBackgroundColor` for the parse contract.
   final String? persistedBanner;
 
+  /// Whether the user explicitly cleared the banner in this edit session.
+  ///
+  /// Required so [effectiveBanner] can distinguish "no staged change"
+  /// (fall back to [persistedBanner]) from "user wants to remove the
+  /// banner" (publish `null`). Without this sentinel, clearing and saving
+  /// would silently republish the previously-persisted banner.
+  final bool bannerCleared;
+
   /// Categorization of the most recent banner upload failure.
   final BannerUploadError? bannerUploadError;
 
   /// The banner value that should be written when Save is tapped:
-  /// staged image URL > staged color (encoded as `0xRRGGBB`) > persisted
-  /// banner. Returns `null` when none are set.
+  /// staged image URL > staged color hex > persisted banner. Returns
+  /// `null` when [bannerCleared] is `true` (user explicitly removed the
+  /// banner) or when none of the three sources are set.
   String? get effectiveBanner {
+    if (bannerCleared) return null;
     final url = pendingBannerUrl;
     if (url != null && url.isNotEmpty) return url;
-    final color = pendingBannerColor;
-    if (color != null) {
-      return '0x${color.toARGB32().toRadixString(16).substring(2)}';
-    }
+    final hex = pendingBannerHex;
+    if (hex != null && hex.isNotEmpty) return hex;
     return persistedBanner;
   }
 
@@ -418,8 +434,9 @@ final class ProfileEditorState extends Equatable {
     AvatarUploadError? avatarUploadError,
     PendingBannerStatus? pendingBannerStatus,
     Object? pendingBannerUrl = _kUnset,
-    Object? pendingBannerColor = _kUnset,
+    Object? pendingBannerHex = _kUnset,
     Object? persistedBanner = _kUnset,
+    bool? bannerCleared,
     BannerUploadError? bannerUploadError,
     VerifierStatus? verifierStatus,
   }) {
@@ -449,12 +466,13 @@ final class ProfileEditorState extends Equatable {
       pendingBannerUrl: identical(pendingBannerUrl, _kUnset)
           ? this.pendingBannerUrl
           : pendingBannerUrl as String?,
-      pendingBannerColor: identical(pendingBannerColor, _kUnset)
-          ? this.pendingBannerColor
-          : pendingBannerColor as Color?,
+      pendingBannerHex: identical(pendingBannerHex, _kUnset)
+          ? this.pendingBannerHex
+          : pendingBannerHex as String?,
       persistedBanner: identical(persistedBanner, _kUnset)
           ? this.persistedBanner
           : persistedBanner as String?,
+      bannerCleared: bannerCleared ?? this.bannerCleared,
       bannerUploadError: bannerUploadError,
       verifierStatus: verifierStatus ?? this.verifierStatus,
     );
@@ -481,8 +499,9 @@ final class ProfileEditorState extends Equatable {
     avatarUploadError,
     pendingBannerStatus,
     pendingBannerUrl,
-    pendingBannerColor,
+    pendingBannerHex,
     persistedBanner,
+    bannerCleared,
     bannerUploadError,
     verifierStatus,
   ];

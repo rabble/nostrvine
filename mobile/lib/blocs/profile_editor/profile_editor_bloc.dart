@@ -7,13 +7,13 @@
 
 import 'dart:io' show File;
 import 'dart:typed_data';
-import 'dart:ui' show Color;
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
+import 'package:openvine/utils/banner_color.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:stream_transform/stream_transform.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -242,35 +242,13 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     Emitter<ProfileEditorState> emit,
   ) {
     final banner = event.banner;
-    final parsedColor = _parseBannerHexColor(banner);
     emit(
       state.copyWith(
         persistedBanner: banner,
-        pendingBannerColor: parsedColor,
+        pendingBannerHex: normalizeBannerHex(banner),
+        bannerCleared: false,
       ),
     );
-  }
-
-  /// Parses a banner string into a [Color] when it looks like a hex color.
-  ///
-  /// Accepts `0xRRGGBB`, `#RRGGBB`, or bare `RRGGBB`. Returns `null` for
-  /// URLs, empty strings, and malformed input. Mirrors the parser in
-  /// `UserProfileUtils.profileBackgroundColor` to keep the seeding behavior
-  /// in lockstep with how the rest of the app reads `banner` as a color.
-  Color? _parseBannerHexColor(String? banner) {
-    if (banner == null || banner.isEmpty) return null;
-    var hex = banner;
-    if (hex.startsWith('0x')) {
-      hex = hex.substring(2);
-    } else if (hex.startsWith('#')) {
-      hex = hex.substring(1);
-    } else if (hex.startsWith('http')) {
-      return null;
-    }
-    if (hex.length != 6) return null;
-    final value = int.tryParse(hex, radix: 16);
-    if (value == null) return null;
-    return Color(0xFF000000 | value);
   }
 
   Future<void> _onProfileBannerUploadRequested(
@@ -321,8 +299,10 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         state.copyWith(
           pendingBannerStatus: PendingBannerStatus.staged,
           pendingBannerUrl: result.cdnUrl,
-          // Image and color are mutually exclusive — clear any staged color.
-          pendingBannerColor: null,
+          // Image and color are mutually exclusive — clear any staged hex.
+          pendingBannerHex: null,
+          // Staging a fresh banner cancels a prior explicit clear.
+          bannerCleared: false,
         ),
       );
       return;
@@ -359,12 +339,35 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     ProfileBannerColorSelected event,
     Emitter<ProfileEditorState> emit,
   ) {
+    // Drop swatch taps that land while a banner upload is in flight. The
+    // upload bucket is `droppable()` and the color event is in its own
+    // bucket, so without this guard a late swatch tap could be silently
+    // overwritten by an arriving upload completion (and vice versa). The
+    // UI also disables swatch interaction during upload; this is the
+    // belt-and-braces so any other caller can't slip past.
+    if (state.pendingBannerStatus == PendingBannerStatus.uploading) {
+      Log.info(
+        'Ignoring ProfileBannerColorSelected while banner upload is in flight',
+        name: 'ProfileEditorBloc',
+      );
+      return;
+    }
+    final hex = normalizeBannerHex(event.hex);
+    if (hex == null) {
+      Log.error(
+        'ProfileBannerColorSelected received a non-hex value; ignoring',
+        name: 'ProfileEditorBloc',
+      );
+      return;
+    }
     emit(
       state.copyWith(
-        pendingBannerColor: event.color,
+        pendingBannerHex: hex,
         // Image and color are mutually exclusive — clear any staged URL.
         pendingBannerUrl: null,
         pendingBannerStatus: PendingBannerStatus.idle,
+        // Picking a color cancels a prior explicit clear.
+        bannerCleared: false,
       ),
     );
   }
@@ -376,8 +379,12 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     emit(
       state.copyWith(
         pendingBannerUrl: null,
-        pendingBannerColor: null,
+        pendingBannerHex: null,
         pendingBannerStatus: PendingBannerStatus.idle,
+        // Explicit user clear — overrides the persistedBanner fallback in
+        // `effectiveBanner` so Save publishes `banner: null` instead of
+        // republishing the old value.
+        bannerCleared: true,
       ),
     );
   }

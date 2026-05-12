@@ -2423,6 +2423,379 @@ void main() {
       );
     });
 
+    // Reviewer-mandated coverage for the banner upload flow on PR #4232:
+    // effectiveBanner resolution, clear-with-persisted semantics, upload
+    // failure mapping, save-while-uploading, and the upload/color race.
+    // These five surfaces live in the bloc, not the screen — the widget
+    // tests on profile_setup_screen don't exercise them.
+    group('banner staging', () {
+      const testBannerStagedUrl = 'https://media.divine.video/banner-staged';
+      const testBannerPersistedUrl =
+          'https://media.divine.video/banner-persisted';
+      const testBannerPersistedHex = '0x33ccbf';
+      const testBannerSwatchHex = '0xff0000';
+      final testBannerBytes = Uint8List.fromList([0xFF, 0xD8, 0xFF]);
+
+      void mockSaveProfileEventReturnsTestProfile() {
+        when(
+          () => mockProfileRepository.getCachedProfile(
+            pubkey: any(named: 'pubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockProfileRepository.saveProfileEvent(
+            displayName: any(named: 'displayName'),
+            about: any(named: 'about'),
+            username: any(named: 'username'),
+            nip05: any(named: 'nip05'),
+            clearNip05: any(named: 'clearNip05'),
+            picture: any(named: 'picture'),
+            banner: any(named: 'banner'),
+            currentProfile: any(named: 'currentProfile'),
+          ),
+        ).thenAnswer((_) async => createTestProfile());
+      }
+
+      group('effectiveBanner resolution', () {
+        test('falls back to persistedBanner when nothing is staged', () {
+          const state = ProfileEditorState(
+            persistedBanner: testBannerPersistedUrl,
+          );
+          expect(state.effectiveBanner, equals(testBannerPersistedUrl));
+        });
+
+        test('staged hex wins over persistedBanner', () {
+          const state = ProfileEditorState(
+            persistedBanner: testBannerPersistedUrl,
+            pendingBannerHex: testBannerSwatchHex,
+          );
+          expect(state.effectiveBanner, equals(testBannerSwatchHex));
+        });
+
+        test('staged URL wins over both hex and persistedBanner', () {
+          const state = ProfileEditorState(
+            persistedBanner: testBannerPersistedHex,
+            pendingBannerHex: testBannerSwatchHex,
+            pendingBannerUrl: testBannerStagedUrl,
+          );
+          expect(state.effectiveBanner, equals(testBannerStagedUrl));
+        });
+
+        test(
+          'bannerCleared short-circuits to null over every other source',
+          () {
+            const state = ProfileEditorState(
+              persistedBanner: testBannerPersistedUrl,
+              pendingBannerHex: testBannerSwatchHex,
+              pendingBannerUrl: testBannerStagedUrl,
+              bannerCleared: true,
+            );
+            expect(state.effectiveBanner, isNull);
+          },
+        );
+      });
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'InitialPersistedBannerSet seeds pendingBannerHex when banner is hex',
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          const InitialPersistedBannerSet(testBannerPersistedHex),
+        ),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having(
+                (s) => s.persistedBanner,
+                'persistedBanner',
+                testBannerPersistedHex,
+              )
+              .having(
+                (s) => s.pendingBannerHex,
+                'pendingBannerHex',
+                testBannerPersistedHex,
+              )
+              .having((s) => s.bannerCleared, 'bannerCleared', isFalse),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'InitialPersistedBannerSet leaves pendingBannerHex null when banner is URL',
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          const InitialPersistedBannerSet(testBannerPersistedUrl),
+        ),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having(
+                (s) => s.persistedBanner,
+                'persistedBanner',
+                testBannerPersistedUrl,
+              )
+              .having((s) => s.pendingBannerHex, 'pendingBannerHex', isNull),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfileBannerColorSelected stages hex and clears any URL',
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          pendingBannerUrl: testBannerStagedUrl,
+          pendingBannerStatus: PendingBannerStatus.staged,
+        ),
+        act: (bloc) => bloc.add(
+          const ProfileBannerColorSelected(testBannerSwatchHex),
+        ),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having(
+                (s) => s.pendingBannerHex,
+                'pendingBannerHex',
+                testBannerSwatchHex,
+              )
+              .having((s) => s.pendingBannerUrl, 'pendingBannerUrl', isNull)
+              .having(
+                (s) => s.pendingBannerStatus,
+                'pendingBannerStatus',
+                PendingBannerStatus.idle,
+              ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfileBannerColorSelected after explicit clear unsets bannerCleared',
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          persistedBanner: testBannerPersistedUrl,
+          bannerCleared: true,
+        ),
+        act: (bloc) => bloc.add(
+          const ProfileBannerColorSelected(testBannerSwatchHex),
+        ),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having((s) => s.bannerCleared, 'bannerCleared', isFalse)
+              .having(
+                (s) => s.pendingBannerHex,
+                'pendingBannerHex',
+                testBannerSwatchHex,
+              )
+              .having(
+                (s) => s.effectiveBanner,
+                'effectiveBanner',
+                testBannerSwatchHex,
+              ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfileBannerCleared with persistedBanner sets cleared sentinel '
+        'so effectiveBanner returns null',
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          persistedBanner: testBannerPersistedUrl,
+        ),
+        act: (bloc) => bloc.add(const ProfileBannerCleared()),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having((s) => s.bannerCleared, 'bannerCleared', isTrue)
+              .having((s) => s.pendingBannerUrl, 'pendingBannerUrl', isNull)
+              .having((s) => s.pendingBannerHex, 'pendingBannerHex', isNull)
+              .having((s) => s.effectiveBanner, 'effectiveBanner', isNull),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfileSaved after clearing a persisted banner publishes banner: null '
+        '(does NOT silently republish the old value)',
+        setUp: mockSaveProfileEventReturnsTestProfile,
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          persistedBanner: testBannerPersistedUrl,
+          bannerCleared: true,
+        ),
+        act: (bloc) => bloc.add(
+          const ProfileSaved(
+            pubkey: testPubkey,
+            displayName: testDisplayName,
+            about: testAbout,
+          ),
+        ),
+        verify: (_) {
+          verify(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: any(named: 'displayName'),
+              about: any(named: 'about'),
+              username: any(named: 'username'),
+              nip05: any(named: 'nip05'),
+              clearNip05: any(named: 'clearNip05'),
+              picture: any(named: 'picture'),
+              banner: any(named: 'banner', that: isNull),
+              currentProfile: any(named: 'currentProfile'),
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfileBannerUploadRequested success stages URL and resets '
+        'bannerCleared',
+        setUp: () {
+          when(
+            () => mockBlossomUploadService.uploadImageBytes(
+              bytes: any(named: 'bytes'),
+              filename: any(named: 'filename'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              mimeType: any(named: 'mimeType'),
+            ),
+          ).thenAnswer(
+            (_) async => const BlossomUploadResult(
+              success: true,
+              url: testBannerStagedUrl,
+              fallbackUrl: testBannerStagedUrl,
+            ),
+          );
+        },
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          persistedBanner: testBannerPersistedUrl,
+          bannerCleared: true,
+        ),
+        act: (bloc) => bloc.add(
+          ProfileBannerUploadRequested(
+            pubkey: testPubkey,
+            bytes: testBannerBytes,
+          ),
+        ),
+        expect: () => [
+          isA<ProfileEditorState>().having(
+            (s) => s.pendingBannerStatus,
+            'pendingBannerStatus',
+            PendingBannerStatus.uploading,
+          ),
+          isA<ProfileEditorState>()
+              .having(
+                (s) => s.pendingBannerStatus,
+                'pendingBannerStatus',
+                PendingBannerStatus.staged,
+              )
+              .having(
+                (s) => s.pendingBannerUrl,
+                'pendingBannerUrl',
+                testBannerStagedUrl,
+              )
+              .having((s) => s.pendingBannerHex, 'pendingBannerHex', isNull)
+              .having((s) => s.bannerCleared, 'bannerCleared', isFalse),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfileBannerUploadRequested maps a 413 to fileTooLarge',
+        setUp: () {
+          when(
+            () => mockBlossomUploadService.uploadImageBytes(
+              bytes: any(named: 'bytes'),
+              filename: any(named: 'filename'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              mimeType: any(named: 'mimeType'),
+            ),
+          ).thenAnswer(
+            (_) async => const BlossomUploadResult(
+              success: false,
+              errorMessage: 'File too large',
+              failureReason: BlossomUploadFailureReason.fileTooLarge,
+            ),
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          ProfileBannerUploadRequested(
+            pubkey: testPubkey,
+            bytes: testBannerBytes,
+          ),
+        ),
+        expect: () => [
+          isA<ProfileEditorState>().having(
+            (s) => s.pendingBannerStatus,
+            'pendingBannerStatus',
+            PendingBannerStatus.uploading,
+          ),
+          isA<ProfileEditorState>()
+              .having(
+                (s) => s.pendingBannerStatus,
+                'pendingBannerStatus',
+                PendingBannerStatus.failed,
+              )
+              .having(
+                (s) => s.bannerUploadError,
+                'bannerUploadError',
+                BannerUploadError.fileTooLarge,
+              ),
+        ],
+        errors: () => [isA<Exception>()],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfileSaved while banner upload is in flight is dropped — '
+        'no publish, no claim',
+        // The avatar gate has the same shape (covered above); this pins the
+        // banner-specific guard so a save can't slip past while a staged URL
+        // is still pending and silently publish the pre-upload banner.
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          pendingBannerStatus: PendingBannerStatus.uploading,
+          persistedBanner: testBannerPersistedUrl,
+        ),
+        act: (bloc) => bloc.add(
+          const ProfileSaved(
+            pubkey: testPubkey,
+            displayName: testDisplayName,
+            about: testAbout,
+          ),
+        ),
+        expect: () => const <ProfileEditorState>[],
+        verify: (_) {
+          verifyNever(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: any(named: 'displayName'),
+              about: any(named: 'about'),
+              username: any(named: 'username'),
+              nip05: any(named: 'nip05'),
+              clearNip05: any(named: 'clearNip05'),
+              picture: any(named: 'picture'),
+              banner: any(named: 'banner'),
+              currentProfile: any(named: 'currentProfile'),
+            ),
+          );
+          verifyNever(
+            () => mockProfileRepository.claimUsername(
+              username: any(named: 'username'),
+            ),
+          );
+          verifyNever(
+            () => mockProfileRepository.getCachedProfile(
+              pubkey: any(named: 'pubkey'),
+            ),
+          );
+        },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfileBannerColorSelected while banner upload is in flight is '
+        'ignored (closes the upload/color race window)',
+        // Pins the bloc-side guard from reviewer thread on PR #4232: even if
+        // the UI swatch-disable is bypassed, the bloc must not let a late
+        // swatch tap and an arriving upload-completion interleave such that
+        // one silently overwrites the other.
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          pendingBannerStatus: PendingBannerStatus.uploading,
+        ),
+        act: (bloc) => bloc.add(
+          const ProfileBannerColorSelected(testBannerSwatchHex),
+        ),
+        expect: () => const <ProfileEditorState>[],
+      );
+    });
+
     group('verifier launch flow', () {
       blocTest<ProfileEditorBloc, ProfileEditorState>(
         'flips verifierStatus to launchRequested on VerifierLaunchRequested',

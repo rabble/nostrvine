@@ -691,7 +691,7 @@ void main() {
         when(() => mockEditorBloc.state).thenReturn(
           const ProfileEditorState(
             persistedBanner: '0x33ccbf',
-            pendingBannerColor: Color(0xFF33CCBF),
+            pendingBannerHex: '0x33ccbf',
           ),
         );
 
@@ -747,11 +747,11 @@ void main() {
         );
       });
 
-      testWidgets('staged pendingBannerColor shows color preview, no image', (
+      testWidgets('staged pendingBannerHex shows color preview, no image', (
         tester,
       ) async {
         when(() => mockEditorBloc.state).thenReturn(
-          const ProfileEditorState(pendingBannerColor: Color(0xFFFF0000)),
+          const ProfileEditorState(pendingBannerHex: '0xff0000'),
         );
 
         await pumpScreen(tester);

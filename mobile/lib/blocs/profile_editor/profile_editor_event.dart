@@ -194,7 +194,7 @@ final class VerifierWebViewDismissed extends ProfileEditorEvent {
 ///
 /// Mirrors what the user's kind 0 currently advertises. The banner string
 /// can be either a CDN URL or a hex color (e.g. `0x33ccbf`); the bloc
-/// classifies it and seeds [ProfileEditorState.pendingBannerColor] when it
+/// classifies it and seeds [ProfileEditorState.pendingBannerHex] when it
 /// looks like a color so the color picker pre-selects.
 final class InitialPersistedBannerSet extends ProfileEditorEvent {
   const InitialPersistedBannerSet(this.banner);
@@ -241,11 +241,14 @@ final class ProfileBannerUploadRequested extends ProfileEditorEvent {
 /// User picked a banner color. Mutually exclusive with an uploaded image —
 /// selecting a color clears any staged banner image URL.
 final class ProfileBannerColorSelected extends ProfileEditorEvent {
-  const ProfileBannerColorSelected(this.color);
+  const ProfileBannerColorSelected(this.hex);
 
-  /// The selected color. The bloc serializes this into a hex string when
-  /// publishing kind 0 via [ProfileEditorState.effectiveBanner].
-  final Color color;
+  /// The selected color in canonical `0xRRGGBB` hex form.
+  ///
+  /// Passed as a hex string rather than a Flutter `Color` so the bloc layer
+  /// stays free of `dart:ui`. The UI converts the swatch color via
+  /// `hexFromColor` at the dispatch site.
+  final String hex;
 }
 
 /// User explicitly cleared the banner. Drops both the staged image URL and
