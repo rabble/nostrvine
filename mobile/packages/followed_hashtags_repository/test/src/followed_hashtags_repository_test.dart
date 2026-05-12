@@ -4,8 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:followed_hashtags_repository/followed_hashtags_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// [FollowedHashtagsRepository] loads from prefs in an async [Future] started
-/// from the constructor; drain the microtask queue before reading state.
+/// [FollowedHashtagsRepository] applies a synchronous prefs warm-read in the
+/// constructor; async work (migration persist) still runs in the background —
+/// use [pumpEventQueue] when tests need that persist to finish.
 Future<void> _afterRepoOpen() => pumpEventQueue();
 
 void main() {
@@ -17,11 +18,15 @@ void main() {
     test('loads empty when unset', () async {
       final prefs = await SharedPreferences.getInstance();
       final repo = FollowedHashtagsRepository(prefs: prefs);
-      await _afterRepoOpen();
 
       expect(repo.profileSavedHashtags, isEmpty);
       expect(repo.followingFeedHashtagLabels, isEmpty);
       expect(repo.hasProfileSavedHashtag('#vine'), isFalse);
+
+      await _afterRepoOpen();
+
+      expect(repo.profileSavedHashtags, isEmpty);
+      expect(repo.followingFeedHashtagLabels, isEmpty);
       await repo.dispose();
     });
 
@@ -34,9 +39,17 @@ void main() {
         });
         final prefs = await SharedPreferences.getInstance();
         final repo = FollowedHashtagsRepository(prefs: prefs);
-        await _afterRepoOpen();
 
         expect(repo.profileSavedHashtags, ['alpha', 'beta']);
+        expect(
+          repo.followingFeedHashtagLabels,
+          ['alpha', 'beta'],
+          reason:
+              'sync warm-read mirrors profile before async migration persists',
+        );
+
+        await _afterRepoOpen();
+
         expect(
           repo.followingFeedHashtagLabels,
           ['alpha', 'beta'],

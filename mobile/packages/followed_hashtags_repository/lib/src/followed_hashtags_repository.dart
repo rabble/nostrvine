@@ -1,5 +1,6 @@
-// ABOUTME: Local hashtag lists — profile “saved” vs feed-selector tags (home)
-// ABOUTME: Normalizes with hashtag_repository (divine-web parity)
+// ABOUTME: Profile-saved vs feed-selector hashtag lists (home)
+// ABOUTME: Normalizes via hashtag_repository (divine-web parity)
+// ABOUTME: Sync prefs warm-read in ctor (getters ok before async bootstrap)
 
 import 'dart:async';
 
@@ -49,6 +50,7 @@ class FollowedHashtagsRepository {
          const [],
          sync: true,
        ) {
+    _syncLoadFromPrefs();
     unawaited(_bootstrapLists());
   }
 
@@ -71,6 +73,28 @@ class FollowedHashtagsRepository {
   final bool _separateFollowingFeedHashtagsEnabled;
   final BehaviorSubject<List<String>> _profile;
   final BehaviorSubject<List<String>> _feed;
+
+  /// Reads prefs synchronously and seeds both subjects.
+  ///
+  /// When [separateFollowingFeedHashtagsEnabled] is `true` and the feed prefs
+  /// key is absent, mirrors the profile list in memory immediately — the same
+  /// data [_migrateFeedFromProfileIfNeeded] will persist asynchronously. That
+  /// avoids a cold-start window where [followingFeedHashtagLabels] was `[]`
+  /// while consumers validated persisted `FeedMode.homeHashtag` against an
+  /// empty sheet and cleared the saved mode.
+  void _syncLoadFromPrefs() {
+    final profile = _readNonEmptyList(_profileKey);
+    final List<String> initialFeed;
+    if (!_separateFollowingFeedHashtagsEnabled) {
+      initialFeed = List<String>.from(profile);
+    } else if (_prefs.containsKey(_feedKey)) {
+      initialFeed = _readNonEmptyList(_feedKey);
+    } else {
+      initialFeed = List<String>.from(profile);
+    }
+    _subjectProfile(profile);
+    _subjectFeed(initialFeed);
+  }
 
   Future<void> _bootstrapLists() async {
     await _migrateFeedFromProfileIfNeeded();
