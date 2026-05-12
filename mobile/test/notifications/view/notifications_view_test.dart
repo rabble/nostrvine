@@ -594,8 +594,7 @@ void main() {
           // Resolver must NOT be called — stable path is taken directly.
           verifyNever(() => nostrClient.fetchEventById(any()));
           verify(
-            () =>
-                videosRepository.fetchVideoWithStatsForRouteId(addressableId),
+            () => videosRepository.fetchVideoWithStatsForRouteId(addressableId),
           ).called(1);
           expect(capturedArgs, hasLength(1));
           expect(capturedArgs.single.autoOpenComments, isTrue);
@@ -624,8 +623,7 @@ void main() {
           final likedVideo = _video('liked_video_event');
 
           when(
-            () =>
-                videosRepository.fetchVideoWithStatsForRouteId(addressableId),
+            () => videosRepository.fetchVideoWithStatsForRouteId(addressableId),
           ).thenAnswer((_) async => likedVideo);
           when(
             () => videoService.shouldHideVideo(likedVideo),
@@ -662,8 +660,7 @@ void main() {
           await tester.pumpAndSettle();
 
           verify(
-            () =>
-                videosRepository.fetchVideoWithStatsForRouteId(addressableId),
+            () => videosRepository.fetchVideoWithStatsForRouteId(addressableId),
           ).called(1);
           expect(result.videoArgs, hasLength(1));
           expect(result.videoArgs.single.autoOpenComments, isFalse);
@@ -741,8 +738,7 @@ void main() {
           final repostedVideo = _video('reposted_video_event');
 
           when(
-            () =>
-                videosRepository.fetchVideoWithStatsForRouteId(addressableId),
+            () => videosRepository.fetchVideoWithStatsForRouteId(addressableId),
           ).thenAnswer((_) async => repostedVideo);
           when(
             () => videoService.shouldHideVideo(repostedVideo),
@@ -786,8 +782,7 @@ void main() {
           await tester.pumpAndSettle();
 
           verify(
-            () =>
-                videosRepository.fetchVideoWithStatsForRouteId(addressableId),
+            () => videosRepository.fetchVideoWithStatsForRouteId(addressableId),
           ).called(1);
           expect(result.videoArgs, hasLength(1));
           expect(result.videoArgs.single.autoOpenComments, isFalse);
@@ -936,8 +931,7 @@ void main() {
           final nostrClient = _MockNostrClient();
           final videosRepository = _MockVideosRepository();
           const mentionEventId = 'unresolvable_mention_event';
-          final mentionerPubkey =
-              'f' * 64;
+          final mentionerPubkey = 'f' * 64;
 
           // Resolver returns null — event has no E-tags and is not a video.
           when(

@@ -197,8 +197,9 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
                 targetEventId,
                 videoAddressableId: videoAddressableId,
                 notificationKind: type,
-                profileFallbackPubkey:
-                    type == NotificationKind.mention ? actor.pubkey : null,
+                profileFallbackPubkey: type == NotificationKind.mention
+                    ? actor.pubkey
+                    : null,
               );
             } else {
               _navigateToProfile(context, actor.pubkey);
@@ -220,6 +221,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
     String videoEventId, {
     String? videoAddressableId,
     NotificationKind? notificationKind,
+
     /// When set and the resolver cannot find a root video, navigate to this
     /// actor's profile instead of showing a "video not found" snackbar.
     /// Used for mentions, which may reference a plain post with no video.

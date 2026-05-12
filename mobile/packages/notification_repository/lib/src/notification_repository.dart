@@ -732,11 +732,11 @@ class NotificationRepository {
       // without a relay round-trip through NotificationTargetResolver.
       final videoAddressableId =
           (mapped == NotificationKind.likeComment ||
-              mapped == NotificationKind.reply) &&
-          n.referencedDTag != null &&
-          n.referencedDTag!.isNotEmpty
+                  mapped == NotificationKind.reply) &&
+              n.referencedDTag != null &&
+              n.referencedDTag!.isNotEmpty
           ? '${NIP71VideoKinds.addressableShortVideo}'
-              ':$_userPubkey:${n.referencedDTag}'
+                ':$_userPubkey:${n.referencedDTag}'
           : null;
       result.add(
         ActorNotification(
@@ -833,11 +833,11 @@ class NotificationRepository {
     // Stable NIP-33 addressable ID for likeComment/reply — bypasses resolver.
     final videoAddressableId =
         (mapped == NotificationKind.likeComment ||
-            mapped == NotificationKind.reply) &&
-        raw.referencedDTag != null &&
-        raw.referencedDTag!.isNotEmpty
+                mapped == NotificationKind.reply) &&
+            raw.referencedDTag != null &&
+            raw.referencedDTag!.isNotEmpty
         ? '${NIP71VideoKinds.addressableShortVideo}'
-            ':$_userPubkey:${raw.referencedDTag}'
+              ':$_userPubkey:${raw.referencedDTag}'
         : null;
     return ActorNotification(
       id: raw.dedupeKey,
