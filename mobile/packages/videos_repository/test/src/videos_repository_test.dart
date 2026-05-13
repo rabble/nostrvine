@@ -8375,6 +8375,48 @@ void main() {
       });
 
       test(
+        'falls back to popular videos when no pubkey is available',
+        () async {
+          final popular = _createVideoStats(
+            id: 'popular-video',
+            pubkey: 'popular-pubkey',
+            dTag: 'popular-dtag',
+            videoUrl: 'https://example.com/popular.mp4',
+          );
+          when(
+            () => mockFunnelcakeClient.getWatchingVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((_) async => [popular]);
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repo.getRecommendedVideos(
+            userPubkey: null,
+            limit: 10,
+          );
+
+          expect(result.videos, hasLength(1));
+          expect(result.videos.single.id, equals('popular-video'));
+          verify(
+            () => mockFunnelcakeClient.getWatchingVideos(limit: 10),
+          ).called(1);
+          verifyNever(
+            () => mockFunnelcakeClient.getRecommendations(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              fallback: any(named: 'fallback'),
+              category: any(named: 'category'),
+            ),
+          );
+        },
+      );
+
+      test(
         'falls back to popular videos when recommendations are empty',
         () async {
           final popular = _createVideoStats(
