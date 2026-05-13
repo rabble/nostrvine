@@ -293,7 +293,7 @@ class PopularVideosFeed extends _$PopularVideosFeed {
         offset: page.nextOffset ?? page.videos.length,
       ),
       PopularVideosVariant.classic => _ClassicPopularCursor(
-        until: page.legacyUntil,
+        until: page.videos.isEmpty ? null : getOldestTimestamp(page.videos),
       ),
     };
   }
@@ -304,7 +304,6 @@ class PopularVideosFeed extends _$PopularVideosFeed {
     return NativePopularVideosPage(
       videos: videos,
       consumedItemCount: videos.length,
-      legacyUntil: videos.isEmpty ? null : getOldestTimestamp(videos),
     );
   }
 
