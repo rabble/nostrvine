@@ -670,9 +670,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       // unmount or a rapid re-init for the same index. Both are observable in
       // production, but not reproducible in package widget tests without
       // microsecond-precise control over native platform-channel timing.
-      _log(
-        'Abort stale init at index $index (${video.id}) during $step',
-      );
+      _log('Abort stale init at index $index (${video.id}) during $step');
       if (identical(_controllers[index], controller)) {
         _controllers.remove(index);
       }
@@ -1102,7 +1100,6 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
 
         final hasVideoSize =
             controller != null && controller.state.videoHeight != 0;
-
         return Stack(
           fit: StackFit.expand,
           children: [

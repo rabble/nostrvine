@@ -25,10 +25,7 @@ VideoEvent _makeVideo(String id, {String? videoUrl}) => VideoEvent(
 
 Widget _wrapFeed(InfiniteVideoFeed feed) => Directionality(
   textDirection: TextDirection.ltr,
-  child: MediaQuery(
-    data: const MediaQueryData(),
-    child: feed,
-  ),
+  child: MediaQuery(data: const MediaQueryData(), child: feed),
 );
 
 void main() {
@@ -39,9 +36,7 @@ void main() {
     // Stub all cache checks to return null — nothing is cached in tests.
     when(() => cache.getCachedFileSync(any())).thenReturn(null);
     // Stub eviction (used when cache file is corrupt on failover).
-    when(
-      () => cache.removeCachedFile(any()),
-    ).thenAnswer((_) async {});
+    when(() => cache.removeCachedFile(any())).thenAnswer((_) async {});
     // Stub cacheFileCancellable so DiskPrefetcher does not throw.
     final mockCancellable = _MockCancellable();
     when(() => mockCancellable.file).thenAnswer((_) async => null);
@@ -60,9 +55,7 @@ void main() {
     group('empty video list', () {
       testWidgets('renders without error', (tester) async {
         await tester.pumpWidget(
-          _wrapFeed(
-            InfiniteVideoFeed(videos: const [], cache: cache),
-          ),
+          _wrapFeed(InfiniteVideoFeed(videos: const [], cache: cache)),
         );
 
         // PageView with 0 items renders an empty scrollable.
@@ -74,18 +67,11 @@ void main() {
 
         await tester.pumpWidget(
           _wrapFeed(
-            InfiniteVideoFeed(
-              key: key,
-              videos: const [],
-              cache: cache,
-            ),
+            InfiniteVideoFeed(key: key, videos: const [], cache: cache),
           ),
         );
 
-        expect(
-          () => key.currentState!.animateToPage(0),
-          returnsNormally,
-        );
+        expect(() => key.currentState!.animateToPage(0), returnsNormally);
       });
 
       testWidgets('pauseActive and resumeActive are no-ops for empty list', (
@@ -105,26 +91,25 @@ void main() {
     });
 
     group('with videos', () {
-      testWidgets(
-        'pagePositionListenable exposes initial page position',
-        (tester) async {
-          final key = GlobalKey<InfiniteVideoFeedState>();
+      testWidgets('pagePositionListenable exposes initial page position', (
+        tester,
+      ) async {
+        final key = GlobalKey<InfiniteVideoFeedState>();
 
-          await tester.pumpWidget(
-            _wrapFeed(
-              InfiniteVideoFeed(
-                key: key,
-                videos: List.generate(2, (i) => _makeVideo('p$i')),
-                cache: cache,
-                prefetchCount: 0,
-                preloadGracePeriod: Duration.zero,
-              ),
+        await tester.pumpWidget(
+          _wrapFeed(
+            InfiniteVideoFeed(
+              key: key,
+              videos: List.generate(2, (i) => _makeVideo('p$i')),
+              cache: cache,
+              prefetchCount: 0,
+              preloadGracePeriod: Duration.zero,
             ),
-          );
+          ),
+        );
 
-          expect(key.currentState!.pagePositionListenable.value, equals(0));
-        },
-      );
+        expect(key.currentState!.pagePositionListenable.value, equals(0));
+      });
 
       testWidgets('pagePositionListenable updates after page animation', (
         tester,
@@ -148,10 +133,7 @@ void main() {
         await tester.drag(find.byType(PageView), const Offset(0, -80));
         await tester.pump();
         expect(key.currentState!.currentIndex, equals(0));
-        expect(
-          key.currentState!.pagePositionListenable.value,
-          greaterThan(0),
-        );
+        expect(key.currentState!.pagePositionListenable.value, greaterThan(0));
       });
 
       testWidgets('renders PageView with correct item count', (tester) async {
@@ -443,9 +425,7 @@ void main() {
         final videos = List.generate(3, (i) => _makeVideo('v$i'));
 
         await tester.pumpWidget(
-          _wrapFeed(
-            InfiniteVideoFeed(key: key, videos: videos, cache: cache),
-          ),
+          _wrapFeed(InfiniteVideoFeed(key: key, videos: videos, cache: cache)),
         );
 
         expect(key.currentState!.currentIndex, equals(0));
@@ -564,101 +544,97 @@ void main() {
         expect(find.byType(InfiniteVideoFeed), findsOneWidget);
       });
 
-      testWidgets(
-        'same id but changed playback URL is treated as non-append '
-        '(controller is rebuilt)',
-        (tester) async {
-          final key = GlobalKey<InfiniteVideoFeedState>();
-          final videos1 = [
-            _makeVideo('a', videoUrl: 'https://example.com/a-v1.m3u8'),
-            _makeVideo('b'),
-          ];
+      testWidgets('same id but changed playback URL is treated as non-append '
+          '(controller is rebuilt)', (tester) async {
+        final key = GlobalKey<InfiniteVideoFeedState>();
+        final videos1 = [
+          _makeVideo('a', videoUrl: 'https://example.com/a-v1.m3u8'),
+          _makeVideo('b'),
+        ];
 
-          await tester.pumpWidget(
-            _wrapFeed(
-              InfiniteVideoFeed(
-                key: key,
-                videos: videos1,
-                cache: cache,
-                preloadGracePeriod: Duration.zero,
-                prefetchCount: 0,
-              ),
+        await tester.pumpWidget(
+          _wrapFeed(
+            InfiniteVideoFeed(
+              key: key,
+              videos: videos1,
+              cache: cache,
+              preloadGracePeriod: Duration.zero,
+              prefetchCount: 0,
             ),
-          );
-          await tester.pump(const Duration(milliseconds: 50));
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 50));
 
-          // Same ids, but the playback URL for index 0 changed.
-          final videos2 = [
-            _makeVideo('a', videoUrl: 'https://example.com/a-v2.m3u8'),
-            _makeVideo('b'),
-          ];
+        // Same ids, but the playback URL for index 0 changed.
+        final videos2 = [
+          _makeVideo('a', videoUrl: 'https://example.com/a-v2.m3u8'),
+          _makeVideo('b'),
+        ];
 
-          await tester.pumpWidget(
-            _wrapFeed(
-              InfiniteVideoFeed(
-                key: key,
-                videos: videos2,
-                cache: cache,
-                preloadGracePeriod: Duration.zero,
-                prefetchCount: 0,
-              ),
+        await tester.pumpWidget(
+          _wrapFeed(
+            InfiniteVideoFeed(
+              key: key,
+              videos: videos2,
+              cache: cache,
+              preloadGracePeriod: Duration.zero,
+              prefetchCount: 0,
             ),
-          );
-          // pump twice (not pumpAndSettle): the post-frame callback that
-          // jumps the PageController needs one frame; pumpAndSettle would
-          // hang waiting for the mocked controller.initialize() future.
-          await tester.pump();
-          await tester.pump();
+          ),
+        );
+        // pump twice (not pumpAndSettle): the post-frame callback that
+        // jumps the PageController needs one frame; pumpAndSettle would
+        // hang waiting for the mocked controller.initialize() future.
+        await tester.pump();
+        await tester.pump();
 
-          // The widget survives the URL swap. The teardown branch runs
-          // because the resolved source for index 0 differs even though
-          // the id matches; without the URL comparison the cached
-          // controller for 'a' would still be wired to the old URL.
-          expect(find.byType(InfiniteVideoFeed), findsOneWidget);
-          expect(key.currentState!.currentIndex, equals(0));
-        },
-      );
+        // The widget survives the URL swap. The teardown branch runs
+        // because the resolved source for index 0 differs even though
+        // the id matches; without the URL comparison the cached
+        // controller for 'a' would still be wired to the old URL.
+        expect(find.byType(InfiniteVideoFeed), findsOneWidget);
+        expect(key.currentState!.currentIndex, equals(0));
+      });
 
-      testWidgets(
-        'urlResolver change for same id is treated as non-append',
-        (tester) async {
-          final key = GlobalKey<InfiniteVideoFeedState>();
-          final videos = [_makeVideo('a'), _makeVideo('b')];
+      testWidgets('urlResolver change for same id is treated as non-append', (
+        tester,
+      ) async {
+        final key = GlobalKey<InfiniteVideoFeedState>();
+        final videos = [_makeVideo('a'), _makeVideo('b')];
 
-          await tester.pumpWidget(
-            _wrapFeed(
-              InfiniteVideoFeed(
-                key: key,
-                videos: videos,
-                cache: cache,
-                urlResolver: (v) => 'https://cdn.example.com/v1/${v.id}.mp4',
-                preloadGracePeriod: Duration.zero,
-                prefetchCount: 0,
-              ),
+        await tester.pumpWidget(
+          _wrapFeed(
+            InfiniteVideoFeed(
+              key: key,
+              videos: videos,
+              cache: cache,
+              urlResolver: (v) => 'https://cdn.example.com/v1/${v.id}.mp4',
+              preloadGracePeriod: Duration.zero,
+              prefetchCount: 0,
             ),
-          );
-          await tester.pump(const Duration(milliseconds: 50));
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 50));
 
-          // Replace the videos list (new identity) AND swap the resolver
-          // so the same ids resolve to a different playback source.
-          await tester.pumpWidget(
-            _wrapFeed(
-              InfiniteVideoFeed(
-                key: key,
-                videos: List<VideoEvent>.from(videos),
-                cache: cache,
-                urlResolver: (v) => 'https://cdn.example.com/v2/${v.id}.mp4',
-                preloadGracePeriod: Duration.zero,
-                prefetchCount: 0,
-              ),
+        // Replace the videos list (new identity) AND swap the resolver
+        // so the same ids resolve to a different playback source.
+        await tester.pumpWidget(
+          _wrapFeed(
+            InfiniteVideoFeed(
+              key: key,
+              videos: List<VideoEvent>.from(videos),
+              cache: cache,
+              urlResolver: (v) => 'https://cdn.example.com/v2/${v.id}.mp4',
+              preloadGracePeriod: Duration.zero,
+              prefetchCount: 0,
             ),
-          );
-          await tester.pump();
-          await tester.pump();
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
 
-          expect(find.byType(InfiniteVideoFeed), findsOneWidget);
-        },
-      );
+        expect(find.byType(InfiniteVideoFeed), findsOneWidget);
+      });
 
       testWidgets(
         'non-append replacement jumps PageController to widget.initialIndex',
@@ -826,10 +802,7 @@ void main() {
 
         // animateToPage on a non-empty list should not throw even though
         // DivineVideoPlayerController cannot be initialized in tests.
-        expect(
-          () => key.currentState!.animateToPage(0),
-          returnsNormally,
-        );
+        expect(() => key.currentState!.animateToPage(0), returnsNormally);
 
         // Drain the animation.
         await tester.pumpAndSettle();

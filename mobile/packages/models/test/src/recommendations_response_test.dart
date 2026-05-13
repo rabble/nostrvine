@@ -5,10 +5,7 @@ void main() {
   group(RecommendationsResponse, () {
     group('constructor', () {
       test('creates instance with required fields', () {
-        const response = RecommendationsResponse(
-          videos: [],
-          source: 'popular',
-        );
+        const response = RecommendationsResponse(videos: [], source: 'popular');
 
         expect(response.videos, isEmpty);
         expect(response.source, equals('popular'));
@@ -26,28 +23,19 @@ void main() {
       });
 
       test('returns false when source is popular', () {
-        const response = RecommendationsResponse(
-          videos: [],
-          source: 'popular',
-        );
+        const response = RecommendationsResponse(videos: [], source: 'popular');
 
         expect(response.isPersonalized, isFalse);
       });
 
       test('returns false when source is recent', () {
-        const response = RecommendationsResponse(
-          videos: [],
-          source: 'recent',
-        );
+        const response = RecommendationsResponse(videos: [], source: 'recent');
 
         expect(response.isPersonalized, isFalse);
       });
 
       test('returns false when source is error', () {
-        const response = RecommendationsResponse(
-          videos: [],
-          source: 'error',
-        );
+        const response = RecommendationsResponse(videos: [], source: 'error');
 
         expect(response.isPersonalized, isFalse);
       });

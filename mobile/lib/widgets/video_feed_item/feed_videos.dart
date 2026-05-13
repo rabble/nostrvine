@@ -32,6 +32,7 @@ import 'package:openvine/widgets/video_feed_item/paused_video_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
+import 'package:openvine/widgets/video_feed_item/video_interactions_bloc_key.dart';
 import 'package:openvine/widgets/video_feed_item/video_loading_placeholder.dart';
 
 class FeedVideos extends ConsumerStatefulWidget {
@@ -434,10 +435,11 @@ class __OverlayState extends ConsumerState<_Overlay> {
     final video = widget.video;
     final pagePositionListenable = _pagePositionListenable;
 
-    // See _PooledFullscreenItem.build for the rationale on watch + key. #3503.
+    // See _PooledFullscreenItem.build for the watch + key rationale. #3503.
     final likesRepository = ref.watch(likesRepositoryProvider);
     final commentsRepository = ref.watch(commentsRepositoryProvider);
     final repostsRepository = ref.watch(repostsRepositoryProvider);
+    final addressableId = video.addressableId;
 
     final authService = ref.watch(authServiceProvider);
     final currentUserPubkey = authService.currentPublicKeyHex;
@@ -514,11 +516,12 @@ class __OverlayState extends ConsumerState<_Overlay> {
           isAutoAdvanceActive: effectiveAutoActive,
           onSkipBrokenVideo: _skipToNextVideo,
           child: BlocProvider<VideoInteractionsBloc>(
-            key: ValueKey((
-              likesRepository,
-              commentsRepository,
-              repostsRepository,
-            )),
+            key: videoInteractionsBlocKey(
+              likesRepository: likesRepository,
+              commentsRepository: commentsRepository,
+              repostsRepository: repostsRepository,
+              video: video,
+            ),
             create: (_) =>
                 VideoInteractionsBloc(
                     eventId: video.id,
@@ -526,7 +529,7 @@ class __OverlayState extends ConsumerState<_Overlay> {
                     likesRepository: likesRepository,
                     commentsRepository: commentsRepository,
                     repostsRepository: repostsRepository,
-                    addressableId: video.addressableId,
+                    addressableId: addressableId,
                     initialLikeCount: video.nostrLikeCount != null
                         ? video.totalLikes
                         : null,

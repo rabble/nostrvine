@@ -135,7 +135,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     // After the initial load, check for the "no follows" CTA. Needed for
     // BLoC re-creation (e.g. navigating back to home) when the follow repo
     // is already initialized — .skip(1) would skip the only replay.
-    if (mode == FeedMode.following || mode == FeedMode.forYou) {
+    if (mode == FeedMode.following) {
       final currentFollowing = _followRepository.followingPubkeys;
       if (currentFollowing.isEmpty && state.videos.isEmpty) {
         emit(
@@ -430,7 +430,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     // Serve cached home feed on first load for instant startup.
     if (_serveCachedHomeFeed &&
         !_cacheServed &&
-        (mode == FeedMode.following || mode == FeedMode.forYou) &&
+        mode == FeedMode.following &&
         _sharedPreferences != null) {
       _cacheServed = true;
       final cached = _homeFeedCache.read(_sharedPreferences);
@@ -487,7 +487,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
       await _fetchCreatorProfiles(validVideos, emit);
 
       // Cache the raw response for next cold start (fire-and-forget).
-      if ((mode == FeedMode.following || mode == FeedMode.forYou) &&
+      if (mode == FeedMode.following &&
           _sharedPreferences != null &&
           result.rawResponseBody != null) {
         unawaited(
@@ -534,7 +534,11 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     int? until,
     bool skipCache = false,
   }) => switch (mode) {
-    FeedMode.forYou ||
+    FeedMode.forYou => _videosRepository.getRecommendedVideos(
+      userPubkey: _userPubkey,
+      until: until,
+      skipCache: skipCache,
+    ),
     FeedMode.following => _videosRepository.getHomeFeedVideos(
       authors: _followRepository.followingPubkeys,
       videoRefs: _curatedListRepository.getSubscribedListVideoRefs(),

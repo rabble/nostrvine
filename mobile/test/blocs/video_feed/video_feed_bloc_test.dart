@@ -243,16 +243,14 @@ void main() {
       );
 
       blocTest<VideoFeedBloc, VideoFeedState>(
-        'emits [loading, success] with forYou mode when specified',
+        'loads recommendations when forYou mode is specified',
         setUp: () {
           final videos = createTestVideos(5);
           final authors = ['author1', 'author2'];
 
           when(() => mockFollowRepository.followingPubkeys).thenReturn(authors);
           when(
-            () => mockVideosRepository.getHomeFeedVideos(
-              authors: authors,
-              videoRefs: any(named: 'videoRefs'),
+            () => mockVideosRepository.getRecommendedVideos(
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -270,15 +268,23 @@ void main() {
         ],
         verify: (_) {
           verify(
-            () => mockVideosRepository.getHomeFeedVideos(
-              authors: ['author1', 'author2'],
-              videoRefs: any(named: 'videoRefs'),
+            () => mockVideosRepository.getRecommendedVideos(
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
               skipCache: any(named: 'skipCache'),
             ),
           ).called(1);
+          verifyNever(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          );
         },
       );
 
@@ -357,6 +363,27 @@ void main() {
             hasMore: false,
             error: VideoFeedError.noFollowedUsers,
           ),
+        ],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'does not emit noFollowedUsers for forYou when following list is empty',
+        setUp: () {
+          when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
+          when(
+            () => mockVideosRepository.getRecommendedVideos(
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer((_) async => const HomeFeedResult(videos: []));
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const VideoFeedStarted()),
+        expect: () => [
+          const VideoFeedState(),
+          const VideoFeedState(status: VideoFeedStatus.success, hasMore: false),
         ],
       );
 
@@ -541,6 +568,62 @@ void main() {
 
     group('VideoFeedLoadMoreRequested', () {
       blocTest<VideoFeedBloc, VideoFeedState>(
+        'uses recommendations pagination path for forYou mode',
+        setUp: () {
+          final moreVideos = createTestVideos(
+            2,
+            startTimestamp: 1000,
+            idPrefix: 'recommended',
+          );
+
+          when(
+            () => mockVideosRepository.getRecommendedVideos(
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer((_) async => HomeFeedResult(videos: moreVideos));
+        },
+        build: createBloc,
+        seed: () => VideoFeedState(
+          status: VideoFeedStatus.success,
+          videos: createTestVideos(pageSize, startTimestamp: 2000),
+        ),
+        act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
+        expect: () => [
+          isA<VideoFeedState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<VideoFeedState>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', false)
+              .having((s) => s.videos.length, 'videos count', pageSize + 2)
+              .having((s) => s.hasMore, 'hasMore', true),
+        ],
+        verify: (_) {
+          verify(
+            () => mockVideosRepository.getRecommendedVideos(
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: 1995,
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          );
+        },
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
         'appends new videos to existing list',
         setUp: () {
           // Use different ID prefix to ensure unique videos
@@ -565,6 +648,7 @@ void main() {
         build: createBloc,
         seed: () => VideoFeedState(
           status: VideoFeedStatus.success,
+          mode: FeedMode.following,
           videos: createTestVideos(pageSize, startTimestamp: 2000),
         ),
         act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
@@ -660,6 +744,7 @@ void main() {
         build: createBloc,
         seed: () => VideoFeedState(
           status: VideoFeedStatus.success,
+          mode: FeedMode.following,
           videos: createTestVideos(pageSize, startTimestamp: 2000),
         ),
         act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
@@ -694,6 +779,7 @@ void main() {
         build: createBloc,
         seed: () => VideoFeedState(
           status: VideoFeedStatus.success,
+          mode: FeedMode.following,
           videos: createTestVideos(pageSize, startTimestamp: 2000),
         ),
         act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
@@ -738,6 +824,7 @@ void main() {
         build: createBloc,
         seed: () => VideoFeedState(
           status: VideoFeedStatus.success,
+          mode: FeedMode.following,
           videos: createTestVideos(pageSize, startTimestamp: 2000),
         ),
         act: (bloc) {
@@ -792,6 +879,7 @@ void main() {
         build: createBloc,
         seed: () => VideoFeedState(
           status: VideoFeedStatus.success,
+          mode: FeedMode.following,
           videos: createTestVideos(
             3,
             startTimestamp: 2000,
@@ -831,6 +919,7 @@ void main() {
         build: createBloc,
         seed: () => VideoFeedState(
           status: VideoFeedStatus.success,
+          mode: FeedMode.following,
           videos: createTestVideos(5),
         ),
         act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
@@ -868,12 +957,13 @@ void main() {
         build: createBloc,
         seed: () => VideoFeedState(
           status: VideoFeedStatus.success,
+          mode: FeedMode.following,
           videos: createTestVideos(10), // Previous videos
           hasMore: false,
         ),
         act: (bloc) => bloc.add(const VideoFeedRefreshRequested()),
         expect: () => [
-          const VideoFeedState(),
+          const VideoFeedState(mode: FeedMode.following),
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize)
@@ -914,11 +1004,12 @@ void main() {
         build: createBloc,
         seed: () => const VideoFeedState(
           status: VideoFeedStatus.failure,
+          mode: FeedMode.following,
           error: VideoFeedError.loadFailed,
         ),
         act: (bloc) => bloc.add(const VideoFeedRefreshRequested()),
         expect: () => [
-          const VideoFeedState(),
+          const VideoFeedState(mode: FeedMode.following),
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.error, 'error', isNull),
@@ -1531,6 +1622,7 @@ void main() {
         build: createBloc,
         seed: () => VideoFeedState(
           status: VideoFeedStatus.success,
+          mode: FeedMode.following,
           videos: createTestVideos(pageSize, startTimestamp: 2000),
           videoListSources: const {
             'existing-0': {'list-1'},
@@ -1940,6 +2032,46 @@ void main() {
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'count', 3),
+        ],
+        verify: (_) {
+          verifyNever(() => mockCache.read(any()));
+        },
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'does not serve following cache for forYou mode',
+        setUp: () {
+          final cachedVideos = createTestVideos(2, idPrefix: 'cached');
+          final recommendedVideos = createTestVideos(
+            3,
+            idPrefix: 'recommended',
+          );
+
+          when(
+            () => mockCache.read(sharedPreferences),
+          ).thenReturn(HomeFeedResult(videos: cachedVideos));
+          when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
+          when(
+            () => mockVideosRepository.getRecommendedVideos(
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer((_) async => HomeFeedResult(videos: recommendedVideos));
+        },
+        build: createBlocWithCache,
+        act: (bloc) => bloc.add(const VideoFeedStarted()),
+        expect: () => [
+          const VideoFeedState(),
+          isA<VideoFeedState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.videos.length, 'recommended count', 3)
+              .having(
+                (s) => s.videos.first.id,
+                'first recommended id',
+                'recommended-0',
+              ),
         ],
         verify: (_) {
           verifyNever(() => mockCache.read(any()));

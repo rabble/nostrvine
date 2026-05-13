@@ -53,9 +53,15 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
             // 1. AudioToolbox + AVAudioSession + mediaserverd XPC roundtrip.
             let audioSession = AVAudioSession.sharedInstance()
             do {
+                // Use the same mode as the real recording path
+                // (CameraController.configureAudioSessionForRecording).
+                // Pre-warming with a different mode means the warmed audio
+                // route doesn't match what we actually use at record time,
+                // so the first recording still pays the mode-switch cost
+                // and the warmed behaviour drifts from the real one.
                 try audioSession.setCategory(
                     .playAndRecord,
-                    mode: .default,
+                    mode: .videoRecording,
                     options: [.defaultToSpeaker, .allowBluetoothA2DP]
                 )
                 // Do NOT call setActive(true) — that would steal audio focus

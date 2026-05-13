@@ -3722,74 +3722,71 @@ void main() {
           },
         );
 
-        test(
-          'uses period-specific cache key '
-          '(different periods do not share cache)',
-          () async {
-            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-            when(
-              () => mockFunnelcakeClient.getLeaderboardVideos(
-                period: LeaderboardPeriod.week,
-                limit: any(named: 'limit'),
-                offset: any(named: 'offset'),
-              ),
-            ).thenAnswer(
-              (_) async => [
-                _createVideoStats(
-                  id: 'week-1',
-                  pubkey: 'p1',
-                  dTag: 'd1',
-                  videoUrl: 'https://example.com/week.mp4',
-                ),
-              ],
-            );
-            when(
-              () => mockFunnelcakeClient.getLeaderboardVideos(
-                period: LeaderboardPeriod.month,
-                limit: any(named: 'limit'),
-                offset: any(named: 'offset'),
-              ),
-            ).thenAnswer(
-              (_) async => [
-                _createVideoStats(
-                  id: 'month-1',
-                  pubkey: 'p1',
-                  dTag: 'd1',
-                  videoUrl: 'https://example.com/month.mp4',
-                ),
-              ],
-            );
-
-            final feedCache = InMemoryFeedCache();
-            final repositoryWithApi = VideosRepository(
-              nostrClient: mockNostrClient,
-              funnelcakeApiClient: mockFunnelcakeClient,
-              inMemoryFeedCache: feedCache,
-            );
-
-            await repositoryWithApi.getPopularVideos(
+        test('uses period-specific cache key '
+            '(different periods do not share cache)', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getLeaderboardVideos(
               period: LeaderboardPeriod.week,
-            );
-            await repositoryWithApi.getPopularVideos(
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              _createVideoStats(
+                id: 'week-1',
+                pubkey: 'p1',
+                dTag: 'd1',
+                videoUrl: 'https://example.com/week.mp4',
+              ),
+            ],
+          );
+          when(
+            () => mockFunnelcakeClient.getLeaderboardVideos(
               period: LeaderboardPeriod.month,
-            );
-            // Both calls hit the network — cache is keyed by period.
-            verify(
-              () => mockFunnelcakeClient.getLeaderboardVideos(
-                period: LeaderboardPeriod.week,
-                limit: any(named: 'limit'),
-                offset: any(named: 'offset'),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              _createVideoStats(
+                id: 'month-1',
+                pubkey: 'p1',
+                dTag: 'd1',
+                videoUrl: 'https://example.com/month.mp4',
               ),
-            ).called(1);
-            verify(
-              () => mockFunnelcakeClient.getLeaderboardVideos(
-                period: LeaderboardPeriod.month,
-                limit: any(named: 'limit'),
-                offset: any(named: 'offset'),
-              ),
-            ).called(1);
-          },
-        );
+            ],
+          );
+
+          final feedCache = InMemoryFeedCache();
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            inMemoryFeedCache: feedCache,
+          );
+
+          await repositoryWithApi.getPopularVideos(
+            period: LeaderboardPeriod.week,
+          );
+          await repositoryWithApi.getPopularVideos(
+            period: LeaderboardPeriod.month,
+          );
+          // Both calls hit the network — cache is keyed by period.
+          verify(
+            () => mockFunnelcakeClient.getLeaderboardVideos(
+              period: LeaderboardPeriod.week,
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+            ),
+          ).called(1);
+          verify(
+            () => mockFunnelcakeClient.getLeaderboardVideos(
+              period: LeaderboardPeriod.month,
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+            ),
+          ).called(1);
+        });
 
         test(
           'null period preserves existing watching path (no regression)',
@@ -7844,113 +7841,107 @@ void main() {
         expect(result, isNull);
       });
 
-      test(
-        'returns Funnelcake video when bulk-stats hydration hangs past '
-        'the stats timeout',
-        () async {
-          const stableId =
-              'e96357668c72c8923340b0ecf4bfacea'
-              '505172c4190e9953e603124c67175f3b';
-          const eventId =
-              'e46ff7d0d71d6c8114b58728afa43f08'
-              'd6286fd9a704683af799fd8f855586c2';
-          final apiHit = Event.fromJson({
-            'id': eventId,
-            'pubkey':
-                '076c979382b90f5d3a2b21f95e1ee86b'
-                '6033f14c92e79b7fad3fe1f1073f4886',
-            'created_at': 1777868006,
-            'kind': 34236,
-            'tags': [
-              ['d', stableId],
-              ['url', 'https://media.divine.video/$stableId'],
-              ['title', 'Stats hang test'],
-            ],
-            'content': 'Stats hang test',
-            'sig': 'sig',
-          });
+      test('returns Funnelcake video when bulk-stats hydration hangs past '
+          'the stats timeout', () async {
+        const stableId =
+            'e96357668c72c8923340b0ecf4bfacea'
+            '505172c4190e9953e603124c67175f3b';
+        const eventId =
+            'e46ff7d0d71d6c8114b58728afa43f08'
+            'd6286fd9a704683af799fd8f855586c2';
+        final apiHit = Event.fromJson({
+          'id': eventId,
+          'pubkey':
+              '076c979382b90f5d3a2b21f95e1ee86b'
+              '6033f14c92e79b7fad3fe1f1073f4886',
+          'created_at': 1777868006,
+          'kind': 34236,
+          'tags': [
+            ['d', stableId],
+            ['url', 'https://media.divine.video/$stableId'],
+            ['title', 'Stats hang test'],
+          ],
+          'content': 'Stats hang test',
+          'sig': 'sig',
+        });
 
-          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-          when(
-            () => mockFunnelcakeClient.getVideoEvent(stableId),
-          ).thenAnswer((_) async => apiHit);
-          // Bulk stats endpoint hangs forever — would have re-stalled the
-          // spinner before the stats-timeout was added to the route helpers.
-          when(
-            () => mockFunnelcakeClient.getBulkVideoStats(any()),
-          ).thenAnswer((_) => Completer<BulkVideoStatsResponse>().future);
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getVideoEvent(stableId),
+        ).thenAnswer((_) async => apiHit);
+        // Bulk stats endpoint hangs forever — would have re-stalled the
+        // spinner before the stats-timeout was added to the route helpers.
+        when(
+          () => mockFunnelcakeClient.getBulkVideoStats(any()),
+        ).thenAnswer((_) => Completer<BulkVideoStatsResponse>().future);
 
-          final repo = VideosRepository(
-            nostrClient: mockNostrClient,
-            funnelcakeApiClient: mockFunnelcakeClient,
-          );
+        final repo = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
 
-          final result = await repo
-              .fetchVideoWithStatsForRouteId(stableId)
-              // Wider than the 3s stats timeout but well below the 15s
-              // route-relay budget — a passing test proves stats hydration
-              // degraded rather than blocking the caller.
-              .timeout(const Duration(seconds: 8));
+        final result = await repo
+            .fetchVideoWithStatsForRouteId(stableId)
+            // Wider than the 3s stats timeout but well below the 15s
+            // route-relay budget — a passing test proves stats hydration
+            // degraded rather than blocking the caller.
+            .timeout(const Duration(seconds: 8));
 
-          expect(result, isNotNull);
-          expect(result!.id, equals(eventId));
-          // Stats never hydrated, so derived fields stay at the parsed
-          // event's defaults rather than the (non-existent) API totals.
-          verify(() => mockFunnelcakeClient.getVideoEvent(stableId)).called(1);
-        },
-      );
+        expect(result, isNotNull);
+        expect(result!.id, equals(eventId));
+        // Stats never hydrated, so derived fields stay at the parsed
+        // event's defaults rather than the (non-existent) API totals.
+        verify(() => mockFunnelcakeClient.getVideoEvent(stableId)).called(1);
+      });
 
-      test(
-        'addressable relay lookup returns the video even when stats hang — '
-        'the per-helper timeouts must not compound',
-        () async {
-          const eventId =
-              'd695f6b60119d9521934a691347d9f78'
-              'e8770b56da16bb255ee77ac112b4c1f6';
-          const author =
-              '4bf0c63fcb93463407af97a5e5ee64fa'
-              '883d107ef9e558472c4eb9aaaefa459d';
-          const dTag = 'addressable-stats-hang';
-          const rawAddressableId = '34236:$author:$dTag';
-          final event = _createVideoEventWithDTag(
-            id: eventId,
-            pubkey: author,
-            dTag: dTag,
-            videoUrl: 'https://example.com/video.mp4',
-            createdAt: 1739350000,
-          );
+      test('addressable relay lookup returns the video even when stats hang — '
+          'the per-helper timeouts must not compound', () async {
+        const eventId =
+            'd695f6b60119d9521934a691347d9f78'
+            'e8770b56da16bb255ee77ac112b4c1f6';
+        const author =
+            '4bf0c63fcb93463407af97a5e5ee64fa'
+            '883d107ef9e558472c4eb9aaaefa459d';
+        const dTag = 'addressable-stats-hang';
+        const rawAddressableId = '34236:$author:$dTag';
+        final event = _createVideoEventWithDTag(
+          id: eventId,
+          pubkey: author,
+          dTag: dTag,
+          videoUrl: 'https://example.com/video.mp4',
+          createdAt: 1739350000,
+        );
 
-          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-          // The parser sets stableId from the raw addressable id's d-tag, so
-          // the orchestrator still tries REST first. Stub it to miss so the
-          // addressable relay branch is exercised.
-          when(
-            () => mockFunnelcakeClient.getVideoEvent(dTag),
-          ).thenAnswer((_) async => null);
-          when(
-            () => mockNostrClient.queryEvents(any()),
-          ).thenAnswer((_) async => [event]);
-          // Stats endpoint hangs forever. The pre-fix orchestrator wrapped
-          // the whole addressable branch in a 3s timeout that would have
-          // killed this successful relay lookup once stats stalled.
-          when(
-            () => mockFunnelcakeClient.getBulkVideoStats(any()),
-          ).thenAnswer((_) => Completer<BulkVideoStatsResponse>().future);
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        // The parser sets stableId from the raw addressable id's d-tag, so
+        // the orchestrator still tries REST first. Stub it to miss so the
+        // addressable relay branch is exercised.
+        when(
+          () => mockFunnelcakeClient.getVideoEvent(dTag),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
+        // Stats endpoint hangs forever. The pre-fix orchestrator wrapped
+        // the whole addressable branch in a 3s timeout that would have
+        // killed this successful relay lookup once stats stalled.
+        when(
+          () => mockFunnelcakeClient.getBulkVideoStats(any()),
+        ).thenAnswer((_) => Completer<BulkVideoStatsResponse>().future);
 
-          final repo = VideosRepository(
-            nostrClient: mockNostrClient,
-            funnelcakeApiClient: mockFunnelcakeClient,
-          );
+        final repo = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
 
-          final result = await repo
-              .fetchVideoWithStatsForRouteId(rawAddressableId)
-              .timeout(const Duration(seconds: 8));
+        final result = await repo
+            .fetchVideoWithStatsForRouteId(rawAddressableId)
+            .timeout(const Duration(seconds: 8));
 
-          expect(result, isNotNull);
-          expect(result!.id, equals(eventId));
-          expect(result.vineId, equals(dTag));
-        },
-      );
+        expect(result, isNotNull);
+        expect(result!.id, equals(eventId));
+        expect(result.vineId, equals(dTag));
+      });
 
       test('returns blocked-author videos for direct route lookups', () async {
         const stableId =
@@ -8316,6 +8307,325 @@ void main() {
           throwsA(isA<FunnelcakeException>()),
         );
       });
+    });
+
+    group('getRecommendedVideos', () {
+      late MockFunnelcakeApiClient mockFunnelcakeClient;
+
+      setUp(() {
+        mockFunnelcakeClient = MockFunnelcakeApiClient();
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+      });
+
+      test('returns home feed result from recommendations endpoint', () async {
+        final recommended = _createVideoStats(
+          id: 'recommended-video',
+          pubkey: 'recommended-pubkey',
+          dTag: 'recommended-dtag',
+          videoUrl: 'https://example.com/recommended.mp4',
+        );
+        when(
+          () => mockFunnelcakeClient.getRecommendations(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            fallback: any(named: 'fallback'),
+            category: any(named: 'category'),
+          ),
+        ).thenAnswer(
+          (_) async => RecommendationsResponse(
+            videos: [recommended],
+            source: 'personalized',
+          ),
+        );
+
+        final repo = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        final result = await repo.getRecommendedVideos(
+          userPubkey: 'user-pubkey',
+          limit: 10,
+        );
+
+        expect(result.videos, hasLength(1));
+        expect(result.videos.single.id, equals('recommended-video'));
+        expect(result.videoListSources, isEmpty);
+        expect(result.listOnlyVideoIds, isEmpty);
+        verify(
+          () => mockFunnelcakeClient.getRecommendations(
+            pubkey: 'user-pubkey',
+            limit: 10,
+          ),
+        ).called(1);
+      });
+
+      test(
+        'falls back to popular videos when no pubkey is available',
+        () async {
+          final popular = _createVideoStats(
+            id: 'popular-video',
+            pubkey: 'popular-pubkey',
+            dTag: 'popular-dtag',
+            videoUrl: 'https://example.com/popular.mp4',
+          );
+          when(
+            () => mockFunnelcakeClient.getWatchingVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((_) async => [popular]);
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repo.getRecommendedVideos(
+            userPubkey: null,
+            limit: 10,
+          );
+
+          expect(result.videos, hasLength(1));
+          expect(result.videos.single.id, equals('popular-video'));
+          verify(
+            () => mockFunnelcakeClient.getWatchingVideos(limit: 10),
+          ).called(1);
+          verifyNever(
+            () => mockFunnelcakeClient.getRecommendations(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              fallback: any(named: 'fallback'),
+              category: any(named: 'category'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'falls back to popular videos when recommendations are empty',
+        () async {
+          final popular = _createVideoStats(
+            id: 'popular-video',
+            pubkey: 'popular-pubkey',
+            dTag: 'popular-dtag',
+            videoUrl: 'https://example.com/popular.mp4',
+          );
+          when(
+            () => mockFunnelcakeClient.getRecommendations(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              fallback: any(named: 'fallback'),
+              category: any(named: 'category'),
+            ),
+          ).thenAnswer(
+            (_) async =>
+                const RecommendationsResponse(videos: [], source: 'popular'),
+          );
+          when(
+            () => mockFunnelcakeClient.getWatchingVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((_) async => [popular]);
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repo.getRecommendedVideos(
+            userPubkey: 'user-pubkey',
+            limit: 10,
+          );
+
+          expect(result.videos, hasLength(1));
+          expect(result.videos.single.id, equals('popular-video'));
+          verify(
+            () => mockFunnelcakeClient.getWatchingVideos(limit: 10),
+          ).called(1);
+        },
+      );
+
+      test(
+        'falls back to popular videos when recommendations are unavailable',
+        () async {
+          final popular = _createVideoEvent(
+            id: 'popular-video',
+            pubkey: 'popular-pubkey',
+            videoUrl: 'https://example.com/popular.mp4',
+            createdAt: 1700000000,
+          );
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
+          when(
+            () => mockNostrClient.queryEvents(any(), useCache: false),
+          ).thenAnswer((_) async => [popular]);
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repo.getRecommendedVideos(
+            userPubkey: 'user-pubkey',
+            limit: 10,
+          );
+
+          expect(result.videos, hasLength(1));
+          expect(result.videos.single.id, equals('popular-video'));
+          verifyNever(
+            () => mockFunnelcakeClient.getRecommendations(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              fallback: any(named: 'fallback'),
+              category: any(named: 'category'),
+            ),
+          );
+          verify(
+            () => mockNostrClient.queryEvents(any(), useCache: false),
+          ).called(1);
+        },
+      );
+
+      test('falls back to popular videos when API client is null', () async {
+        final popular = _createVideoEvent(
+          id: 'popular-video',
+          pubkey: 'popular-pubkey',
+          videoUrl: 'https://example.com/popular.mp4',
+          createdAt: 1700000000,
+        );
+        when(
+          () => mockNostrClient.queryEvents(any(), useCache: false),
+        ).thenAnswer((_) async => [popular]);
+
+        final repo = VideosRepository(nostrClient: mockNostrClient);
+
+        final result = await repo.getRecommendedVideos(
+          userPubkey: 'user-pubkey',
+          limit: 10,
+        );
+
+        expect(result.videos, hasLength(1));
+        expect(result.videos.single.id, equals('popular-video'));
+        verify(
+          () => mockNostrClient.queryEvents(any(), useCache: false),
+        ).called(1);
+      });
+
+      test(
+        'falls back to popular videos when no user pubkey is available',
+        () async {
+          final popular = _createVideoStats(
+            id: 'popular-video',
+            pubkey: 'popular-pubkey',
+            dTag: 'popular-dtag',
+            videoUrl: 'https://example.com/popular.mp4',
+          );
+          when(
+            () => mockFunnelcakeClient.getWatchingVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((_) async => [popular]);
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repo.getRecommendedVideos(
+            userPubkey: null,
+            limit: 10,
+          );
+
+          expect(result.videos, hasLength(1));
+          expect(result.videos.single.id, equals('popular-video'));
+          verifyNever(
+            () => mockFunnelcakeClient.getRecommendations(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              fallback: any(named: 'fallback'),
+              category: any(named: 'category'),
+            ),
+          );
+          verify(
+            () => mockFunnelcakeClient.getWatchingVideos(limit: 10),
+          ).called(1);
+        },
+      );
+
+      test('uses popular pagination for subsequent forYou pages', () async {
+        final popular = _createVideoStats(
+          id: 'popular-page-2-video',
+          pubkey: 'popular-pubkey',
+          dTag: 'popular-dtag',
+          videoUrl: 'https://example.com/popular-page-2.mp4',
+        );
+        when(
+          () => mockFunnelcakeClient.getWatchingVideos(
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer((_) async => [popular]);
+
+        final repo = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        final result = await repo.getRecommendedVideos(
+          userPubkey: 'user-pubkey',
+          limit: 10,
+          until: 1700000000,
+        );
+
+        expect(result.videos, hasLength(1));
+        expect(result.videos.single.id, equals('popular-page-2-video'));
+        verifyNever(
+          () => mockFunnelcakeClient.getRecommendations(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            fallback: any(named: 'fallback'),
+            category: any(named: 'category'),
+          ),
+        );
+        verify(
+          () => mockFunnelcakeClient.getWatchingVideos(
+            limit: 10,
+            before: 1700000000,
+          ),
+        ).called(1);
+      });
+
+      test(
+        'propagates recommendation errors without popular fallback',
+        () async {
+          when(
+            () => mockFunnelcakeClient.getRecommendations(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              fallback: any(named: 'fallback'),
+              category: any(named: 'category'),
+            ),
+          ).thenThrow(const FunnelcakeException('recommendations failed'));
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          expect(
+            () => repo.getRecommendedVideos(userPubkey: 'user-pubkey'),
+            throwsA(isA<FunnelcakeException>()),
+          );
+          verifyNever(
+            () => mockFunnelcakeClient.getWatchingVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          );
+        },
+      );
     });
 
     group('getRecommendations', () {
