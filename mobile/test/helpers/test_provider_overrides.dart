@@ -145,11 +145,10 @@ MockNostrClient createMockNostrService() {
   // do not get type 'Null' is not a subtype of type 'String'
   when(() => mockNostr.publicKey).thenReturn('');
 
-  // Stub ready with a future that never completes so
-  // isNostrReadyProvider (which awaits this) does not get
-  // type 'Null' is not a subtype of type 'Future<void>'.
-  // Tests that need the ready transition should override this in their own
-  // setUp via Completer<void>.future — see is_nostr_ready_provider_test.dart.
+  // Stub ready with a future that never completes so tests that await client
+  // initialization do not get type 'Null' is not a subtype of type
+  // 'Future<void>'. Tests that need the ready transition should override this
+  // in their own setUp via Completer<void>.future.
   when(() => mockNostr.ready).thenAnswer((_) => Completer<void>().future);
   // Match the stubbed `ready` (a Completer that never completes): the
   // synchronous gate isReadyResolved reads isCompleted on the same

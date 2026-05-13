@@ -883,7 +883,9 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
   Future<void> _shareExternally() async {
     try {
       final sharingService = ref.read(videoSharingServiceProvider);
-      final shareText = sharingService.generateShareText(widget.video);
+      final shareText =
+          sharingService?.generateShareText(widget.video) ??
+          'https://divine.video/video/${widget.video.stableId}';
 
       await SharePlus.instance.share(ShareParams(text: shareText));
     } catch (e) {

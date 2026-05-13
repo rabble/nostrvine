@@ -26,6 +26,15 @@ class _MockAuthService extends Mock implements AuthService {}
 
 class _FakeFilter extends Fake implements nostr_filter.Filter {}
 
+class _TestNostrSession extends NostrSession {
+  _TestNostrSession(this._readiness);
+
+  final NostrSessionReadiness _readiness;
+
+  @override
+  NostrSessionReadiness build() => _readiness;
+}
+
 void main() {
   // 64-character hex pubkey for tests.
   const testPubkey =
@@ -58,6 +67,7 @@ void main() {
       // diagnostic logging and subscription path.
       when(() => mockNostrClient.connectedRelayCount).thenReturn(1);
       when(() => mockNostrClient.configuredRelayCount).thenReturn(1);
+      when(() => mockNostrClient.hasKeys).thenReturn(true);
       when(() => mockNostrClient.publicKey).thenReturn(testPubkey);
       when(() => mockNostrClient.signer).thenReturn(signer);
       when(
@@ -82,22 +92,29 @@ void main() {
       await database.close();
     });
 
-    ProviderContainer createContainer({required bool isReady}) {
+    ProviderContainer createContainer({
+      required NostrSessionReadiness readiness,
+    }) {
       return ProviderContainer(
         overrides: [
           nostrServiceProvider.overrideWithValue(mockNostrClient),
           authServiceProvider.overrideWithValue(mockAuthService),
           currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
-          isNostrReadyProvider.overrideWithValue(isReady),
+          nostrSessionProvider.overrideWith(() => _TestNostrSession(readiness)),
           databaseProvider.overrideWithValue(database),
           sharedPreferencesProvider.overrideWithValue(prefs),
         ],
       );
     }
 
-    test('opens gift-wrap subscription when isNostrReady is true', () async {
+    test('opens gift-wrap subscription when Nostr session is ready', () async {
       // ARRANGE
-      final container = createContainer(isReady: true);
+      final container = createContainer(
+        readiness: NostrSessionReadiness.nostrReady(
+          pubkey: testPubkey,
+          client: mockNostrClient,
+        ),
+      );
       addTearDown(container.dispose);
 
       // ACT — touching the provider triggers the build
@@ -120,9 +137,13 @@ void main() {
       expect(repository.userPubkey, equals(testPubkey));
     });
 
-    test('does NOT open subscription when isNostrReady is false', () async {
+    test('does NOT open subscription before Nostr session is ready', () async {
       // ARRANGE — pre-auth or initialization-pending state
-      final container = createContainer(isReady: false);
+      final container = createContainer(
+        readiness: const NostrSessionReadiness.identityKnown(
+          pubkey: testPubkey,
+        ),
+      );
       addTearDown(container.dispose);
 
       // ACT
@@ -130,7 +151,7 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       // ASSERT — the repository exists for read-only operations but no
-      // relay traffic is generated until isNostrReady flips true.
+      // relay traffic is generated until Nostr session readiness flips true.
       verifyNever(
         () => mockNostrClient.subscribe(
           any(),
@@ -142,7 +163,12 @@ void main() {
 
     test('tears down subscription on container dispose', () async {
       // ARRANGE
-      final container = createContainer(isReady: true);
+      final container = createContainer(
+        readiness: NostrSessionReadiness.nostrReady(
+          pubkey: testPubkey,
+          client: mockNostrClient,
+        ),
+      );
       container.read(dmRepositoryProvider);
       await Future<void>.delayed(Duration.zero);
 

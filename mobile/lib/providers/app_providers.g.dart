@@ -177,11 +177,10 @@ String _$pendingActionServiceHash() =>
 /// eagerly at app shell startup (`main.dart`) so the foreground
 /// subscription is wired up.
 ///
-/// Returns null when the user is not authenticated or when
-/// [isNostrReadyProvider] hasn't flipped yet — the underlying
-/// [DmRepository.recoverSelfWrap] requires `setCredentials` to have
-/// run, and gating here is cleaner than catching `StateError` in
-/// every sweep pass.
+/// Returns null when the user is not authenticated or when the current Nostr
+/// session is not ready — the underlying [DmRepository.recoverSelfWrap]
+/// requires `setCredentials` to have run, and gating here is cleaner than
+/// catching `StateError` in every sweep pass.
 
 @ProviderFor(outgoingDmRetryService)
 const outgoingDmRetryServiceProvider = OutgoingDmRetryServiceProvider._();
@@ -197,11 +196,10 @@ const outgoingDmRetryServiceProvider = OutgoingDmRetryServiceProvider._();
 /// eagerly at app shell startup (`main.dart`) so the foreground
 /// subscription is wired up.
 ///
-/// Returns null when the user is not authenticated or when
-/// [isNostrReadyProvider] hasn't flipped yet — the underlying
-/// [DmRepository.recoverSelfWrap] requires `setCredentials` to have
-/// run, and gating here is cleaner than catching `StateError` in
-/// every sweep pass.
+/// Returns null when the user is not authenticated or when the current Nostr
+/// session is not ready — the underlying [DmRepository.recoverSelfWrap]
+/// requires `setCredentials` to have run, and gating here is cleaner than
+/// catching `StateError` in every sweep pass.
 
 final class OutgoingDmRetryServiceProvider
     extends
@@ -222,11 +220,10 @@ final class OutgoingDmRetryServiceProvider
   /// eagerly at app shell startup (`main.dart`) so the foreground
   /// subscription is wired up.
   ///
-  /// Returns null when the user is not authenticated or when
-  /// [isNostrReadyProvider] hasn't flipped yet — the underlying
-  /// [DmRepository.recoverSelfWrap] requires `setCredentials` to have
-  /// run, and gating here is cleaner than catching `StateError` in
-  /// every sweep pass.
+  /// Returns null when the user is not authenticated or when the current Nostr
+  /// session is not ready — the underlying [DmRepository.recoverSelfWrap]
+  /// requires `setCredentials` to have run, and gating here is cleaner than
+  /// catching `StateError` in every sweep pass.
   const OutgoingDmRetryServiceProvider._()
     : super(
         from: null,
@@ -262,7 +259,7 @@ final class OutgoingDmRetryServiceProvider
 }
 
 String _$outgoingDmRetryServiceHash() =>
-    r'ddd46e4ed60540af76e8f0df321d8f3b4d4073e7';
+    r'ccbee39cf920a0847be410ca804e048200962d38';
 
 /// Relay capability service for detecting NIP-11 Divine extensions
 
@@ -2194,11 +2191,11 @@ abstract class _$BlocklistVersion extends $Notifier<int> {
   }
 }
 
-/// Bridge that starts blocklist sync when the user becomes authenticated.
+/// Bridge that starts blocklist sync when the Nostr session becomes ready.
 ///
-/// Watch this at app shell level. It listens to [authStateStream] and
+/// Watch this at app shell level. It listens to [nostrSessionProvider] and
 /// triggers [syncMuteListsInBackground] + [syncBlockListsInBackground]
-/// the first time the user is authenticated. This covers:
+/// the first time the signer-backed Nostr client is initialized. This covers:
 /// - Already-authenticated startup (iOS keychain persists across reinstalls)
 /// - Post-login authentication (Android wipes credentials on uninstall)
 ///
@@ -2208,11 +2205,11 @@ abstract class _$BlocklistVersion extends $Notifier<int> {
 @ProviderFor(blocklistSyncBridge)
 const blocklistSyncBridgeProvider = BlocklistSyncBridgeProvider._();
 
-/// Bridge that starts blocklist sync when the user becomes authenticated.
+/// Bridge that starts blocklist sync when the Nostr session becomes ready.
 ///
-/// Watch this at app shell level. It listens to [authStateStream] and
+/// Watch this at app shell level. It listens to [nostrSessionProvider] and
 /// triggers [syncMuteListsInBackground] + [syncBlockListsInBackground]
-/// the first time the user is authenticated. This covers:
+/// the first time the signer-backed Nostr client is initialized. This covers:
 /// - Already-authenticated startup (iOS keychain persists across reinstalls)
 /// - Post-login authentication (Android wipes credentials on uninstall)
 ///
@@ -2222,11 +2219,11 @@ const blocklistSyncBridgeProvider = BlocklistSyncBridgeProvider._();
 final class BlocklistSyncBridgeProvider
     extends $FunctionalProvider<void, void, void>
     with $Provider<void> {
-  /// Bridge that starts blocklist sync when the user becomes authenticated.
+  /// Bridge that starts blocklist sync when the Nostr session becomes ready.
   ///
-  /// Watch this at app shell level. It listens to [authStateStream] and
+  /// Watch this at app shell level. It listens to [nostrSessionProvider] and
   /// triggers [syncMuteListsInBackground] + [syncBlockListsInBackground]
-  /// the first time the user is authenticated. This covers:
+  /// the first time the signer-backed Nostr client is initialized. This covers:
   /// - Already-authenticated startup (iOS keychain persists across reinstalls)
   /// - Post-login authentication (Android wipes credentials on uninstall)
   ///
@@ -2266,7 +2263,7 @@ final class BlocklistSyncBridgeProvider
 }
 
 String _$blocklistSyncBridgeHash() =>
-    r'a543fd12f75015c3e71079ff8560b873c576bbe5';
+    r'0ffe1bb65877c094a330ec773089bb738247fe98';
 
 /// Draft storage service for persisting vine drafts
 
@@ -2586,87 +2583,6 @@ final class KnownAccountsProvider
 
 String _$knownAccountsHash() => r'8e9753265420cf092af04aa07686c98cdaa8eb1e';
 
-/// Provider that returns true only when NostrClient is fully ready for operations.
-/// Combines auth state check AND nostrClient.hasKeys verification.
-/// Use this to guard providers that require authenticated NostrClient access.
-///
-/// This prevents race conditions where auth state is 'authenticated' but
-/// the NostrClient hasn't yet rebuilt with the new keys.
-///
-/// `NostrClient.initialize()` runs asynchronously in a `Future.microtask`
-/// after `NostrService.build()` returns. Riverpod cannot detect that
-/// transition through the client reference because it's the same instance
-/// before and after. Instead, when the client reports `!hasKeys` we await
-/// its `ready` future (completed by `initialize()`) and invalidate this
-/// provider once — replacing the previous 50 ms polling timer (#3352).
-
-@ProviderFor(isNostrReady)
-const isNostrReadyProvider = IsNostrReadyProvider._();
-
-/// Provider that returns true only when NostrClient is fully ready for operations.
-/// Combines auth state check AND nostrClient.hasKeys verification.
-/// Use this to guard providers that require authenticated NostrClient access.
-///
-/// This prevents race conditions where auth state is 'authenticated' but
-/// the NostrClient hasn't yet rebuilt with the new keys.
-///
-/// `NostrClient.initialize()` runs asynchronously in a `Future.microtask`
-/// after `NostrService.build()` returns. Riverpod cannot detect that
-/// transition through the client reference because it's the same instance
-/// before and after. Instead, when the client reports `!hasKeys` we await
-/// its `ready` future (completed by `initialize()`) and invalidate this
-/// provider once — replacing the previous 50 ms polling timer (#3352).
-
-final class IsNostrReadyProvider extends $FunctionalProvider<bool, bool, bool>
-    with $Provider<bool> {
-  /// Provider that returns true only when NostrClient is fully ready for operations.
-  /// Combines auth state check AND nostrClient.hasKeys verification.
-  /// Use this to guard providers that require authenticated NostrClient access.
-  ///
-  /// This prevents race conditions where auth state is 'authenticated' but
-  /// the NostrClient hasn't yet rebuilt with the new keys.
-  ///
-  /// `NostrClient.initialize()` runs asynchronously in a `Future.microtask`
-  /// after `NostrService.build()` returns. Riverpod cannot detect that
-  /// transition through the client reference because it's the same instance
-  /// before and after. Instead, when the client reports `!hasKeys` we await
-  /// its `ready` future (completed by `initialize()`) and invalidate this
-  /// provider once — replacing the previous 50 ms polling timer (#3352).
-  const IsNostrReadyProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'isNostrReadyProvider',
-        isAutoDispose: false,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$isNostrReadyHash();
-
-  @$internal
-  @override
-  $ProviderElement<bool> $createElement($ProviderPointer pointer) =>
-      $ProviderElement(pointer);
-
-  @override
-  bool create(Ref ref) {
-    return isNostrReady(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(bool value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<bool>(value),
-    );
-  }
-}
-
-String _$isNostrReadyHash() => r'45f0b46f7dccacfaa8562434a26e41b1b923e6bb';
-
 /// Provider that sets Zendesk user identity when auth state changes
 /// Watch this provider at app startup to keep Zendesk identity in sync with auth
 
@@ -2717,26 +2633,29 @@ final class ZendeskIdentitySyncProvider
 String _$zendeskIdentitySyncHash() =>
     r'e49d4f9cedf56ec4131b30a6f1d9d45dada68bed';
 
-/// Bridges auth state changes to push notification registration.
+/// Bridges Nostr session readiness to push notification registration.
 ///
-/// Registers FCM token on login, deregisters on logout.
-/// Same pattern as [zendeskIdentitySync].
+/// Registers FCM token only after the signer-backed Nostr client is ready.
+/// Deregisters the last ready client through AuthService's pre-teardown hook so
+/// outgoing-session cleanup runs before signers and callbacks are cleared.
 
 @ProviderFor(pushNotificationSync)
 const pushNotificationSyncProvider = PushNotificationSyncProvider._();
 
-/// Bridges auth state changes to push notification registration.
+/// Bridges Nostr session readiness to push notification registration.
 ///
-/// Registers FCM token on login, deregisters on logout.
-/// Same pattern as [zendeskIdentitySync].
+/// Registers FCM token only after the signer-backed Nostr client is ready.
+/// Deregisters the last ready client through AuthService's pre-teardown hook so
+/// outgoing-session cleanup runs before signers and callbacks are cleared.
 
 final class PushNotificationSyncProvider
     extends $FunctionalProvider<void, void, void>
     with $Provider<void> {
-  /// Bridges auth state changes to push notification registration.
+  /// Bridges Nostr session readiness to push notification registration.
   ///
-  /// Registers FCM token on login, deregisters on logout.
-  /// Same pattern as [zendeskIdentitySync].
+  /// Registers FCM token only after the signer-backed Nostr client is ready.
+  /// Deregisters the last ready client through AuthService's pre-teardown hook so
+  /// outgoing-session cleanup runs before signers and callbacks are cleared.
   const PushNotificationSyncProvider._()
     : super(
         from: null,
@@ -2771,7 +2690,7 @@ final class PushNotificationSyncProvider
 }
 
 String _$pushNotificationSyncHash() =>
-    r'42aa13bfec4492b045273818e6a4a88b28949b06';
+    r'3c9cc104d5269d00d3746cd05c1aec49ef449781';
 
 /// User data cleanup service for handling identity changes
 /// Prevents data leakage between different Nostr accounts
@@ -3164,7 +3083,7 @@ final class FollowRepositoryProvider
   }
 }
 
-String _$followRepositoryHash() => r'a94622f52c4a1e843f707fa192b08ba65c75d6c2';
+String _$followRepositoryHash() => r'fb0dd5265e3906366876638e6a2026d1b672e8c9';
 
 /// Provider for [CuratedListRepository] instance.
 ///
@@ -3422,7 +3341,7 @@ final class ProfileRepositoryProvider
   }
 }
 
-String _$profileRepositoryHash() => r'150346c88eeee57501b7dfac4c5e5904d99f0e56';
+String _$profileRepositoryHash() => r'323c17d6613c13649f8738e6d418a0318294b265';
 
 /// Provider for [VerifierClient] pointed at the current environment's
 /// verifier base URL. Stateless — every call hits the network.
@@ -4433,11 +4352,11 @@ const videoSharingServiceProvider = VideoSharingServiceProvider._();
 final class VideoSharingServiceProvider
     extends
         $FunctionalProvider<
-          VideoSharingService,
-          VideoSharingService,
-          VideoSharingService
+          VideoSharingService?,
+          VideoSharingService?,
+          VideoSharingService?
         >
-    with $Provider<VideoSharingService> {
+    with $Provider<VideoSharingService?> {
   /// Video sharing service
   ///
   /// When a [DmRepository] is available the service sends videos via NIP-17
@@ -4458,26 +4377,26 @@ final class VideoSharingServiceProvider
 
   @$internal
   @override
-  $ProviderElement<VideoSharingService> $createElement(
+  $ProviderElement<VideoSharingService?> $createElement(
     $ProviderPointer pointer,
   ) => $ProviderElement(pointer);
 
   @override
-  VideoSharingService create(Ref ref) {
+  VideoSharingService? create(Ref ref) {
     return videoSharingService(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(VideoSharingService value) {
+  Override overrideWithValue(VideoSharingService? value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<VideoSharingService>(value),
+      providerOverride: $SyncValueProvider<VideoSharingService?>(value),
     );
   }
 }
 
 String _$videoSharingServiceHash() =>
-    r'4c869ac60484c15c6c196f164af34d658d9f2cac';
+    r'c67ca5b381903ab2a6d29bc2f64e057661279598';
 
 /// Content deletion service for NIP-09 delete events
 
@@ -4760,7 +4679,7 @@ String _$bugReportServiceHash() => r'a243bf5fae16e223b148a829b14f9857af1c4592';
 ///   `dm_decryption_worker.dart`, keeping the UI thread responsive.
 ///
 /// Uses `keepAlive: true` because the repository must survive transient
-/// dependency rebuilds (e.g. `isNostrReadyProvider` polling,
+/// dependency rebuilds (e.g. `nostrSessionProvider` readiness changes,
 /// `nostrServiceProvider` auth-state changes).
 ///
 /// Non-nullable: the repository works without keys at construction time.
@@ -4787,7 +4706,7 @@ const dmRepositoryProvider = DmRepositoryProvider._();
 ///   `dm_decryption_worker.dart`, keeping the UI thread responsive.
 ///
 /// Uses `keepAlive: true` because the repository must survive transient
-/// dependency rebuilds (e.g. `isNostrReadyProvider` polling,
+/// dependency rebuilds (e.g. `nostrSessionProvider` readiness changes,
 /// `nostrServiceProvider` auth-state changes).
 ///
 /// Non-nullable: the repository works without keys at construction time.
@@ -4814,7 +4733,7 @@ final class DmRepositoryProvider
   ///   `dm_decryption_worker.dart`, keeping the UI thread responsive.
   ///
   /// Uses `keepAlive: true` because the repository must survive transient
-  /// dependency rebuilds (e.g. `isNostrReadyProvider` polling,
+  /// dependency rebuilds (e.g. `nostrSessionProvider` readiness changes,
   /// `nostrServiceProvider` auth-state changes).
   ///
   /// Non-nullable: the repository works without keys at construction time.
@@ -4852,7 +4771,7 @@ final class DmRepositoryProvider
   }
 }
 
-String _$dmRepositoryHash() => r'e1f90979df308591183e6bc05b1aabd5ffdb4649';
+String _$dmRepositoryHash() => r'667e81afd13949c7b535bd64894c284c79568358';
 
 /// Provider for CommentsRepository instance
 ///

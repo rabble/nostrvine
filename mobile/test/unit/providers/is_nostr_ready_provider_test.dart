@@ -1,210 +1,55 @@
-// Tests for isNostrReadyProvider.
-// Verifies that the provider observes NostrClient.ready (a one-shot future
-// completed by initialize()) instead of polling hasKeys with a periodic
-// timer (#3352).
-
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/services/auth_service.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
-class _MockAuthService extends Mock implements AuthService {}
+class _TestNostrSession extends NostrSession {
+  _TestNostrSession(this.readiness);
+
+  final NostrSessionReadiness readiness;
+
+  @override
+  NostrSessionReadiness build() => readiness;
+}
 
 void main() {
-  group('isNostrReadyProvider', () {
-    late _MockNostrClient mockNostrClient;
-    late _MockAuthService mockAuthService;
-    late Completer<void> readyCompleter;
+  const pubkey =
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
-    setUp(() {
-      mockNostrClient = _MockNostrClient();
-      mockAuthService = _MockAuthService();
-      readyCompleter = Completer<void>();
-      when(
-        () => mockAuthService.authStateStream,
-      ).thenAnswer((_) => const Stream<AuthState>.empty());
-      when(
-        () => mockNostrClient.ready,
-      ).thenAnswer((_) => readyCompleter.future);
-      // Default: the ready future is still pending. The "settled but
-      // hasKeys still false" regression case overrides this stub.
-      when(() => mockNostrClient.isReadyResolved).thenReturn(false);
-    });
-
-    ProviderContainer createContainer() {
-      return ProviderContainer(
-        overrides: [
-          nostrServiceProvider.overrideWithValue(mockNostrClient),
-          authServiceProvider.overrideWithValue(mockAuthService),
-          currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
-        ],
-      );
-    }
-
-    test('returns false when not authenticated', () {
-      when(() => mockAuthService.isAuthenticated).thenReturn(false);
-      when(() => mockNostrClient.hasKeys).thenReturn(false);
-
-      final container = createContainer();
-      addTearDown(container.dispose);
-
-      expect(container.read(isNostrReadyProvider), isFalse);
-    });
-
-    test('returns true when authenticated and hasKeys is true', () {
-      when(() => mockAuthService.isAuthenticated).thenReturn(true);
-      when(() => mockNostrClient.hasKeys).thenReturn(true);
-
-      final container = createContainer();
-      addTearDown(container.dispose);
-
-      expect(container.read(isNostrReadyProvider), isTrue);
-    });
-
-    test('returns false initially when hasKeys is false', () {
-      when(() => mockAuthService.isAuthenticated).thenReturn(true);
-      when(() => mockNostrClient.hasKeys).thenReturn(false);
-
-      final container = createContainer();
-      addTearDown(container.dispose);
-
-      expect(container.read(isNostrReadyProvider), isFalse);
-    });
-
-    test(
-      'transitions to true after NostrClient.ready completes (no time advance)',
-      () async {
-        when(() => mockAuthService.isAuthenticated).thenReturn(true);
-        when(() => mockNostrClient.hasKeys).thenReturn(false);
-
-        final container = createContainer();
-        addTearDown(container.dispose);
-
-        expect(container.read(isNostrReadyProvider), isFalse);
-
-        // Simulate NostrClient.initialize() completing — flip hasKeys true
-        // then complete the ready future. The provider must invalidate
-        // and re-read without any wall-clock time advance.
-        when(() => mockNostrClient.hasKeys).thenReturn(true);
-        readyCompleter.complete();
-        // Yield to the microtask queue so the `.then(...)` callback runs.
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
-
-        expect(container.read(isNostrReadyProvider), isTrue);
-      },
+  ProviderContainer createContainer(NostrSessionReadiness readiness) {
+    return ProviderContainer(
+      overrides: [
+        nostrSessionProvider.overrideWith(() => _TestNostrSession(readiness)),
+      ],
     );
+  }
 
-    test(
-      'late ready completion after provider rebuild is a no-op (smoke)',
-      () async {
-        // Smoke-coverage for the stale-late-completion regime: once the
-        // provider rebuilds (here triggered by `ref.invalidate` on the
-        // upstream nostrServiceProvider), the `.then` callback's
-        // `ref.mounted` short-circuit must fire before the `identical(...)`
-        // check, so a late `readyCompleter.complete()` must not throw.
-        //
-        // This does NOT exercise the `identical(...)` guard in isolation —
-        // doing that would require swapping the `nostrServiceProvider`
-        // override mid-test to a different mock client, which the current
-        // ProviderContainer API does not support cleanly. The orderly
-        // account-switch case is covered by integration tests against
-        // NostrService's own rebuild path.
-        when(() => mockAuthService.isAuthenticated).thenReturn(true);
-        when(() => mockNostrClient.hasKeys).thenReturn(false);
+  test('is false until the Nostr session has a matching ready client', () {
+    final client = _MockNostrClient();
+    when(() => client.hasKeys).thenReturn(true);
+    when(() => client.publicKey).thenReturn(pubkey);
 
-        final container = ProviderContainer(
-          overrides: [
-            nostrServiceProvider.overrideWithValue(mockNostrClient),
-            authServiceProvider.overrideWithValue(mockAuthService),
-            currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
-          ],
-        );
-        addTearDown(container.dispose);
+    final signedOut = createContainer(const NostrSessionReadiness.signedOut());
+    addTearDown(signedOut.dispose);
 
-        container.read(isNostrReadyProvider);
+    expect(signedOut.read(isNostrReadyProvider), isFalse);
 
-        // Force the provider to rebuild, invalidating the `ref` captured
-        // in the `.then` callback.
-        container.invalidate(nostrServiceProvider);
-
-        // Late completion on the captured ref — must be a no-op.
-        readyCompleter.complete();
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
-
-        // No exception, no crash.
-      },
+    final identityKnown = createContainer(
+      const NostrSessionReadiness.identityKnown(pubkey: pubkey),
     );
+    addTearDown(identityKnown.dispose);
 
-    test('cancellation on dispose does not throw', () {
-      when(() => mockAuthService.isAuthenticated).thenReturn(true);
-      when(() => mockNostrClient.hasKeys).thenReturn(false);
+    expect(identityKnown.read(isNostrReadyProvider), isFalse);
 
-      final container = createContainer();
-
-      container.read(isNostrReadyProvider);
-
-      // Dispose should leave no dangling timers — completing the ready
-      // future after dispose must not throw.
-      container.dispose();
-      readyCompleter.complete();
-
-      // No expectations — the test passes if no exception leaks.
-    });
-
-    test(
-      'returns false without re-arming .then when ready is already '
-      'settled but hasKeys is still false (regression: #4276 log storm — '
-      'cold boot where refreshPublicKey() returned an empty key)',
-      () async {
-        when(() => mockAuthService.isAuthenticated).thenReturn(true);
-        when(() => mockNostrClient.hasKeys).thenReturn(false);
-        // ready future already settled, but the client never picked up a
-        // key (signer not configured yet). The bug: every rebuild
-        // attached a fresh `.then(...)` to this already-resolved future,
-        // which fired on the next microtask and `invalidateSelf`'d,
-        // producing hundreds of invalidations in a few milliseconds.
-        when(() => mockNostrClient.isReadyResolved).thenReturn(true);
-
-        final container = createContainer();
-        addTearDown(container.dispose);
-
-        // First read returns false — gate fires before any .then is
-        // attached.
-        expect(container.read(isNostrReadyProvider), isFalse);
-
-        // Yield to the microtask queue twice. With the bug, this is
-        // where the re-armed `.then` would fire and the loop would
-        // spin. With the fix, nothing happens.
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
-
-        // Still false on a subsequent read. The contract is "stay
-        // false until an external rebuild trigger arrives" — auth
-        // state change or a fresh NostrClient instance.
-        expect(container.read(isNostrReadyProvider), isFalse);
-
-        // And critically: the provider never reached for the `ready`
-        // future, because the synchronous gate caught it first.
-        verifyNever(() => mockNostrClient.ready);
-      },
+    final ready = createContainer(
+      NostrSessionReadiness.nostrReady(pubkey: pubkey, client: client),
     );
+    addTearDown(ready.dispose);
 
-    test('profileRepositoryProvider is null when isNostrReady is false', () {
-      final container = ProviderContainer(
-        overrides: [isNostrReadyProvider.overrideWithValue(false)],
-      );
-      addTearDown(container.dispose);
-
-      expect(container.read(profileRepositoryProvider), isNull);
-    });
+    expect(ready.read(isNostrReadyProvider), isTrue);
   });
 }

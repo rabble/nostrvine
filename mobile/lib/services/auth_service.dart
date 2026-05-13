@@ -135,7 +135,8 @@ typedef PreFetchFollowingCallback = Future<void> Function(String pubkeyHex);
 /// Callback invoked when NIP-65 relay discovery completes with a non-empty list.
 /// Used by NostrService to add discovered relays to the current client without
 /// blocking app startup.
-typedef UserRelaysDiscoveredCallback = void Function(List<String> relayUrls);
+typedef UserRelaysDiscoveredCallback =
+    void Function(String pubkey, List<String> relayUrls);
 
 /// Callback invoked when AuthService wants to publish a bootstrap kind:10002
 /// relay list on behalf of the user (because indexer discovery returned empty).
@@ -146,6 +147,9 @@ typedef UserRelaysDiscoveredCallback = void Function(List<String> relayUrls);
 typedef BootstrapRelayListCallback =
     Future<bool> Function(Event event, List<String> targetRelays);
 
+/// Callback invoked before AuthService clears the outgoing session identity.
+typedef BeforeSessionTeardownCallback = Future<void> Function();
+
 /// SharedPreferences key prefix for the per-pubkey one-shot flag that records
 /// whether we have already published a bootstrap kind:10002 on this device.
 const _kBootstrapKind10002Prefix = 'bootstrap_kind10002_published_';
@@ -155,6 +159,9 @@ const _kBootstrapKind10002Prefix = 'bootstrap_kind10002_published_';
 /// window (hung Keycast RPC, unreachable Amber, etc.) we abandon the publish
 /// and leave the flag unset so the next login retries. See #3174 / #3162.
 const _kBootstrapSignTimeout = Duration(seconds: 10);
+
+/// Total time budget for pre-teardown callbacks during sign-out.
+const _kBeforeSessionTeardownTimeout = Duration(seconds: 5);
 
 /// Main authentication service for the Divine app
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via
@@ -250,6 +257,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   ///
   /// See [registerBootstrapRelayListCallback].
   BootstrapRelayListCallback? _onBootstrapRelayListRequested;
+
+  final List<BeforeSessionTeardownCallback> _beforeSessionTeardownCallbacks =
+      [];
 
   /// The current user's atomic signing identity, or null if not authenticated.
   ///
@@ -711,6 +721,29 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     BootstrapRelayListCallback? callback,
   ) {
     _onBootstrapRelayListRequested = callback;
+  }
+
+  /// Register work that must run with the outgoing session still available.
+  ///
+  /// The returned disposer unregisters [callback]. AuthService runs remaining
+  /// callbacks sequentially at sign-out before clearing [currentIdentity],
+  /// signers, or Nostr callbacks.
+  ///
+  /// All callbacks share a single 5 second sign-out budget. A timeout is
+  /// warning-only: sign-out continues and later callbacks still get a chance to
+  /// run if budget remains. Dart [Future.timeout] does not cancel the
+  /// underlying future, so callbacks must tolerate late completion after the
+  /// outgoing identity/signers have been cleared.
+  VoidCallback registerBeforeSessionTeardownCallback(
+    BeforeSessionTeardownCallback callback,
+  ) {
+    _beforeSessionTeardownCallbacks.add(callback);
+    var registered = true;
+    return () {
+      if (!registered) return;
+      registered = false;
+      _beforeSessionTeardownCallbacks.remove(callback);
+    };
   }
 
   /// Check if user has an existing profile (kind 0)
@@ -3155,6 +3188,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
     Object? keyDeletionError;
 
+    await _runBeforeSessionTeardownCallbacks();
+
     try {
       // Clear TOS acceptance on any logout - user must re-accept when logging
       // back in
@@ -3375,6 +3410,44 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       throw SecureKeyStorageException(
         'Signed out but key deletion failed: $keyDeletionError',
       );
+    }
+  }
+
+  Future<void> _runBeforeSessionTeardownCallbacks() async {
+    if (_beforeSessionTeardownCallbacks.isEmpty) return;
+
+    final callbacks = List<BeforeSessionTeardownCallback>.of(
+      _beforeSessionTeardownCallbacks,
+    );
+    final deadline = DateTime.now().add(_kBeforeSessionTeardownTimeout);
+
+    for (final callback in callbacks) {
+      final remaining = deadline.difference(DateTime.now());
+      if (remaining <= Duration.zero) {
+        Log.warning(
+          'Before-session teardown callbacks timed out',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        return;
+      }
+
+      try {
+        await callback().timeout(remaining);
+      } on TimeoutException catch (e) {
+        Log.warning(
+          'Before-session teardown callback timed out: $e',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        continue;
+      } catch (e) {
+        Log.warning(
+          'Before-session teardown callback failed: $e',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+      }
     }
   }
 
@@ -4212,7 +4285,12 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     try {
       // Run discoveries in parallel - each service manages its own WebSocket
       // connections to indexer relays. No temp NostrClient needed.
-      await Future.wait([_discoverUserRelays(npub), _checkExistingProfile()]);
+      final targetPubkey =
+          _currentIdentity?.pubkey ?? _currentKeyContainer?.publicKeyHex;
+      await Future.wait([
+        _discoverUserRelays(npub, targetPubkey),
+        _checkExistingProfile(),
+      ]);
     } catch (e) {
       Log.warning(
         '⚠️ Discovery failed: $e - using default fallbacks',
@@ -4244,9 +4322,17 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// relay. The fallback set is NOT stored in [userRelays] — that getter
   /// continues to report only the user's own published relays so embedded
   /// Nostr apps querying via the bridge see accurate data. See #2931.
-  Future<void> _discoverUserRelays(String npub) async {
+  Future<void> _discoverUserRelays(String npub, String? targetPubkey) async {
     try {
       final result = await _relayDiscoveryService.discoverRelays(npub);
+      if (!_isRelayDiscoveryCurrent(targetPubkey)) {
+        Log.info(
+          'Ignoring relay discovery result for stale session',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        return;
+      }
 
       if (result.success && result.hasRelays) {
         _userRelays = result.relays;
@@ -4269,7 +4355,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
         // Notify NostrService so it can add these relays to the current client
         final urls = _userRelays.map((r) => r.url).toList();
-        _onUserRelaysDiscovered?.call(urls);
+        _onUserRelaysDiscovered?.call(targetPubkey ?? npub, urls);
       } else {
         _userRelays = [];
 
@@ -4279,10 +4365,18 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           name: 'AuthService',
           category: LogCategory.auth,
         );
-        _connectToFallbackRelays();
+        _connectToFallbackRelays(targetPubkey ?? npub);
         await _publishBootstrapRelayList();
       }
     } catch (e) {
+      if (!_isRelayDiscoveryCurrent(targetPubkey)) {
+        Log.info(
+          'Ignoring relay discovery failure for stale session',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        return;
+      }
       _userRelays = [];
 
       Log.error(
@@ -4291,10 +4385,13 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         name: 'AuthService',
         category: LogCategory.auth,
       );
-      _connectToFallbackRelays();
+      _connectToFallbackRelays(targetPubkey ?? npub);
       await _publishBootstrapRelayList();
     }
   }
+
+  bool _isRelayDiscoveryCurrent(String? targetPubkey) =>
+      targetPubkey == null || _currentIdentity?.pubkey == targetPubkey;
 
   /// Publish a bootstrap kind:10002 relay list for the signed-in user when
   /// indexer discovery returned empty.
@@ -4419,14 +4516,17 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// represents the user's *own* published relay list (kind 10002) and is
   /// surfaced to embedded Nostr apps via the bridge. The fallback set is a
   /// reachability mechanism, not a relay list the user has chosen. See #2931.
-  void _connectToFallbackRelays() {
+  void _connectToFallbackRelays(String targetPubkey) {
     Log.info(
       'Fallback relays: '
       '${IndexerRelayConfig.safeFallbackRelays.join(', ')}',
       name: 'AuthService',
       category: LogCategory.auth,
     );
-    _onUserRelaysDiscovered?.call(IndexerRelayConfig.safeFallbackRelays);
+    _onUserRelaysDiscovered?.call(
+      targetPubkey,
+      IndexerRelayConfig.safeFallbackRelays,
+    );
   }
 
   /// Test seam exposing the private NIP-65 discovery routine so unit
@@ -4435,7 +4535,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// of the normal sign-in flow via [_setupUserSession].
   @visibleForTesting
   Future<void> debugDiscoverUserRelays(String npub) =>
-      _discoverUserRelays(npub);
+      _discoverUserRelays(npub, _currentIdentity?.pubkey);
 
   /// Test seam that lets unit tests install a [NostrIdentity] without
   /// going through the full sign-in pipeline. Used by tests that exercise

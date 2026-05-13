@@ -1,11 +1,15 @@
 // ABOUTME: Tests for AuthService signOut clearing user-specific data
 // ABOUTME: Verifies that explicit logout clears pubkey tracking and user data
 
+import 'dart:async';
+
 import 'package:cache_sync/cache_sync.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/nostr_identity.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -241,6 +245,116 @@ void main() {
 
       // Assert: Auth state should be unauthenticated
       expect(authService.authState, equals(AuthState.unauthenticated));
+    });
+
+    group('before session teardown callbacks', () {
+      test('run sequentially before identity is cleared', () async {
+        when(() => mockKeyStorage.clearCache()).thenReturn(null);
+        final identity = LocalNostrIdentity(
+          keyContainer: SecureKeyContainer.fromNsec(testNsec),
+        );
+        authService.debugSetIdentity(identity);
+        final events = <String>[];
+
+        authService.registerBeforeSessionTeardownCallback(() async {
+          events.add('first:${authService.currentIdentity?.pubkey}');
+        });
+        authService.registerBeforeSessionTeardownCallback(() async {
+          events.add('second:${authService.currentIdentity?.pubkey}');
+        });
+
+        await authService.signOut();
+
+        expect(events, [
+          'first:${identity.pubkey}',
+          'second:${identity.pubkey}',
+        ]);
+        expect(authService.currentIdentity, isNull);
+        expect(authService.authState, AuthState.unauthenticated);
+      });
+
+      test('unregistered callback does not run', () async {
+        when(() => mockKeyStorage.clearCache()).thenReturn(null);
+        var called = false;
+
+        final unregister = authService.registerBeforeSessionTeardownCallback(
+          () async {
+            called = true;
+          },
+        );
+        unregister();
+
+        await authService.signOut();
+
+        expect(called, isFalse);
+      });
+
+      test('callback failure does not block unauthenticated state', () async {
+        when(() => mockKeyStorage.clearCache()).thenReturn(null);
+
+        authService.registerBeforeSessionTeardownCallback(() async {
+          throw StateError('deregister failed');
+        });
+
+        await authService.signOut();
+
+        expect(authService.authState, AuthState.unauthenticated);
+      });
+
+      test(
+        'callback timeout exception does not skip later callbacks',
+        () async {
+          when(() => mockKeyStorage.clearCache()).thenReturn(null);
+          final events = <String>[];
+
+          authService.registerBeforeSessionTeardownCallback(() async {
+            events.add('first');
+            throw TimeoutException('deregister timed out');
+          });
+          authService.registerBeforeSessionTeardownCallback(() async {
+            events.add('second');
+          });
+
+          await authService.signOut();
+
+          expect(events, ['first', 'second']);
+          expect(authService.authState, AuthState.unauthenticated);
+        },
+      );
+
+      test(
+        'callbacks share one timeout budget but later callbacks still run',
+        () {
+          fakeAsync((async) {
+            when(() => mockKeyStorage.clearCache()).thenReturn(null);
+            final events = <String>[];
+            var completed = false;
+
+            authService.registerBeforeSessionTeardownCallback(() async {
+              events.add('slow started');
+              await Future<void>.delayed(const Duration(seconds: 10));
+              events.add('slow completed');
+            });
+            authService.registerBeforeSessionTeardownCallback(() async {
+              events.add('second started');
+            });
+
+            authService.signOut().then((_) {
+              completed = true;
+            });
+            async.flushMicrotasks();
+
+            expect(events, ['slow started']);
+
+            async.elapse(const Duration(seconds: 5));
+            async.flushMicrotasks();
+
+            expect(events, ['slow started', 'second started']);
+            expect(completed, isTrue);
+            expect(authService.authState, AuthState.unauthenticated);
+          });
+        },
+      );
     });
 
     group('key deletion error propagation', () {

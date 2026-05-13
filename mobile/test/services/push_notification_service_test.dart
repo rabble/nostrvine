@@ -11,6 +11,7 @@ import 'package:nostr_sdk/signer/nostr_signer.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/models/notification_preferences.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/nostr_identity.dart';
 import 'package:openvine/services/notification_service.dart';
 import 'package:openvine/services/push_notification_service.dart';
 
@@ -23,6 +24,8 @@ class _MockNotificationService extends Mock implements NotificationService {}
 class _MockNostrSigner extends Mock implements NostrSigner {}
 
 class _FakeEvent extends Fake implements Event {}
+
+class _MockEvent extends Mock implements Event {}
 
 class _ConfiguredEnvironmentConfig extends EnvironmentConfig {
   const _ConfiguredEnvironmentConfig({
@@ -77,7 +80,10 @@ void main() {
     tokenRefreshController.close();
   });
 
-  PushNotificationService buildService({String? token = testToken}) {
+  PushNotificationService buildService({
+    String? token = testToken,
+    FutureOr<bool> Function()? isCurrent,
+  }) {
     return PushNotificationService(
       authService: mockAuthService,
       nostrClient: mockNostrClient,
@@ -85,6 +91,7 @@ void main() {
       environmentConfig: testEnvironment,
       getToken: () async => token,
       onTokenRefresh: tokenRefreshController.stream,
+      isCurrent: isCurrent,
     );
   }
 
@@ -367,7 +374,6 @@ void main() {
         verifyNever(() => mockNostrClient.publishEvent(any()));
         service.dispose();
       });
-
       test(
         'completes without error when deregistration publish returns PublishNoRelays',
         () async {
@@ -408,6 +414,129 @@ void main() {
 
           final service = buildService();
           await expectLater(service.deregister(testPubkey), completes);
+          service.dispose();
+        },
+      );
+
+      test(
+        'does not sign deregistration when session is already stale',
+        () async {
+          final service = buildService(isCurrent: () => false);
+
+          await service.deregister(testPubkey);
+
+          verifyNever(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          );
+          verifyNever(() => mockNostrClient.publishEvent(any()));
+          service.dispose();
+        },
+      );
+
+      test(
+        'does not publish deregistration when session becomes stale after signing',
+        () async {
+          var current = true;
+          final fakeEvent = _MockEvent();
+          when(() => fakeEvent.isSigned).thenReturn(true);
+          when(() => fakeEvent.isValid).thenReturn(true);
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: PushNotificationService.pushDeregistrationKind,
+              content: '',
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async {
+            current = false;
+            return fakeEvent;
+          });
+
+          final service = buildService(isCurrent: () => current);
+
+          await service.deregister(testPubkey);
+
+          verify(
+            () => mockAuthService.createAndSignEvent(
+              kind: PushNotificationService.pushDeregistrationKind,
+              content: '',
+              tags: any(named: 'tags'),
+            ),
+          ).called(1);
+          verifyNever(() => mockNostrClient.publishEvent(any()));
+          service.dispose();
+        },
+      );
+
+      test(
+        'can sign deregistration with captured outgoing identity',
+        () async {
+          final capturedSigner = _MockNostrSigner();
+          final capturedIdentity = KeycastNostrIdentity(
+            pubkey: testPubkey,
+            rpcSigner: capturedSigner,
+          );
+          final fakeEvent = _MockEvent();
+          when(() => fakeEvent.isSigned).thenReturn(true);
+          when(() => fakeEvent.isValid).thenReturn(true);
+          when(
+            () => capturedSigner.signEvent(any()),
+          ).thenAnswer((_) async => fakeEvent);
+          when(
+            () => mockNostrClient.publishEvent(fakeEvent),
+          ).thenAnswer((_) async => PublishSuccess(event: fakeEvent));
+
+          final service = buildService(isCurrent: () => false);
+          await service.deregister(
+            testPubkey,
+            signingIdentity: capturedIdentity,
+          );
+
+          verifyNever(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          );
+          verify(() => capturedSigner.signEvent(any())).called(1);
+          verify(() => mockNostrClient.publishEvent(fakeEvent)).called(1);
+          service.dispose();
+        },
+      );
+
+      test(
+        'publishes captured-identity deregistration with supplied cleanup client',
+        () async {
+          final capturedSigner = _MockNostrSigner();
+          final capturedIdentity = KeycastNostrIdentity(
+            pubkey: testPubkey,
+            rpcSigner: capturedSigner,
+          );
+          final cleanupClient = _MockNostrClient();
+          final fakeEvent = _MockEvent();
+          when(() => fakeEvent.isSigned).thenReturn(true);
+          when(() => fakeEvent.isValid).thenReturn(true);
+          when(
+            () => capturedSigner.signEvent(any()),
+          ).thenAnswer((_) async => fakeEvent);
+          when(
+            () => cleanupClient.publishEvent(fakeEvent),
+          ).thenAnswer((_) async => PublishSuccess(event: fakeEvent));
+
+          final service = buildService(isCurrent: () => false);
+          await service.deregister(
+            testPubkey,
+            signingIdentity: capturedIdentity,
+            publishClient: cleanupClient,
+          );
+
+          verify(() => capturedSigner.signEvent(any())).called(1);
+          verifyNever(() => mockNostrClient.publishEvent(any()));
+          verify(() => cleanupClient.publishEvent(fakeEvent)).called(1);
           service.dispose();
         },
       );
@@ -498,7 +627,6 @@ void main() {
           service.dispose();
         },
       );
-
       test(
         'completes without error when preferences publish returns PublishNoRelays',
         () async {
@@ -551,6 +679,35 @@ void main() {
 
           final service = buildService();
           await expectLater(service.updatePreferences(prefs), completes);
+          service.dispose();
+        },
+      );
+
+      test(
+        'drops preferences update when session changes after signing',
+        () async {
+          const prefs = NotificationPreferences();
+          var current = true;
+          when(
+            () => mockNostrSigner.nip44Encrypt(any(), any()),
+          ).thenAnswer((_) async => encryptedPayload);
+
+          final fakeEvent = _FakeEvent();
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: PushNotificationService.pushPreferencesKind,
+              content: encryptedPayload,
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async {
+            current = false;
+            return fakeEvent;
+          });
+
+          final service = buildService(isCurrent: () => current);
+          await service.updatePreferences(prefs);
+
+          verifyNever(() => mockNostrClient.publishEvent(any()));
           service.dispose();
         },
       );
@@ -652,6 +809,34 @@ void main() {
           ),
         ).called(1);
 
+        service.dispose();
+      });
+
+      test('drops token refresh registration when session is stale', () async {
+        final service = buildService(isCurrent: () => false);
+
+        tokenRefreshController.add('new-refreshed-token');
+        await Future<void>.delayed(Duration.zero);
+
+        verifyNever(() => mockNostrSigner.nip44Encrypt(any(), any()));
+        service.dispose();
+      });
+
+      test('catches token refresh registration failures', () async {
+        when(
+          () => mockNostrSigner.nip44Encrypt(any(), any()),
+        ).thenThrow(StateError('relay encryption failed'));
+
+        final service = buildService();
+        final unhandled = <Object>[];
+
+        await runZonedGuarded(() async {
+          tokenRefreshController.add('new-refreshed-token');
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+        }, (error, stack) => unhandled.add(error));
+
+        expect(unhandled, isEmpty);
         service.dispose();
       });
     });

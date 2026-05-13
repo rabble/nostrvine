@@ -2,9 +2,13 @@
 // ABOUTME: when NIP-65 relay discovery returns empty or fails, so DM
 // ABOUTME: reachability degrades gracefully for imported accounts. #2931.
 
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/nostr_identity.dart';
 import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -14,6 +18,8 @@ import '../test_setup.dart';
 class _MockUserDataCleanupService extends Mock
     implements UserDataCleanupService {}
 
+class _MockSecureKeyContainer extends Mock implements SecureKeyContainer {}
+
 /// Test double for [RelayDiscoveryService] that lets each test scenario
 /// control the discovery outcome (success / empty / throw) without hitting
 /// real WebSockets.
@@ -21,11 +27,11 @@ class _ControllableRelayDiscoveryService extends RelayDiscoveryService {
   _ControllableRelayDiscoveryService({required this.outcome})
     : super(indexerRelays: const ['wss://test.invalid']);
 
-  final RelayDiscoveryResult Function() outcome;
+  final FutureOr<RelayDiscoveryResult> Function() outcome;
 
   @override
   Future<RelayDiscoveryResult> discoverRelays(String npub) async {
-    return outcome();
+    return await outcome();
   }
 }
 
@@ -65,7 +71,7 @@ void main() {
         // Capture the URLs the AuthService asks NostrService to add.
         List<String>? capturedRelayUrls;
         authService.registerUserRelaysDiscoveredCallback(
-          (urls) => capturedRelayUrls = urls,
+          (_, urls) => capturedRelayUrls = urls,
         );
 
         // ACT: drive the discovery routine directly via the test seam.
@@ -98,7 +104,7 @@ void main() {
 
       List<String>? capturedRelayUrls;
       authService.registerUserRelaysDiscoveredCallback(
-        (urls) => capturedRelayUrls = urls,
+        (_, urls) => capturedRelayUrls = urls,
       );
 
       // ACT
@@ -126,7 +132,7 @@ void main() {
 
         List<String>? capturedRelayUrls;
         authService.registerUserRelaysDiscoveredCallback(
-          (urls) => capturedRelayUrls = urls,
+          (_, urls) => capturedRelayUrls = urls,
         );
 
         // ACT
@@ -151,5 +157,46 @@ void main() {
         );
       },
     );
+
+    test('ignores relay discovery result after identity changes', () async {
+      const pubkeyA =
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      const pubkeyB =
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+      final keyContainerA = _MockSecureKeyContainer();
+      final keyContainerB = _MockSecureKeyContainer();
+      when(() => keyContainerA.publicKeyHex).thenReturn(pubkeyA);
+      when(() => keyContainerA.isDisposed).thenReturn(false);
+      when(() => keyContainerB.publicKeyHex).thenReturn(pubkeyB);
+      when(() => keyContainerB.isDisposed).thenReturn(false);
+      final identityA = LocalNostrIdentity(keyContainer: keyContainerA);
+      final identityB = LocalNostrIdentity(keyContainer: keyContainerB);
+
+      final discoveryCompleter = Completer<RelayDiscoveryResult>();
+      final discovery = _ControllableRelayDiscoveryService(
+        outcome: () => discoveryCompleter.future,
+      );
+      final authService = buildAuthService(discovery)
+        ..debugSetIdentity(identityA);
+
+      List<String>? capturedRelayUrls;
+      authService.registerUserRelaysDiscoveredCallback(
+        (_, urls) => capturedRelayUrls = urls,
+      );
+
+      final discoveryFuture = authService.debugDiscoverUserRelays(testNpub);
+      authService.debugSetIdentity(identityB);
+      discoveryCompleter.complete(
+        RelayDiscoveryResult.success(
+          [const DiscoveredRelay(url: 'wss://old-user-relay.example')],
+          'wss://test-indexer',
+        ),
+      );
+
+      await discoveryFuture;
+
+      expect(capturedRelayUrls, isNull);
+      expect(authService.userRelays, isEmpty);
+    });
   });
 }

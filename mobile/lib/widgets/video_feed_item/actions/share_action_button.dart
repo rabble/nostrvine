@@ -59,11 +59,12 @@ class ShareActionButton extends StatelessWidget {
   /// This is exposed as a static method so share entry points can reuse the
   /// same bottom-sheet wiring without duplicating setup logic.
   static void showShareSheet(BuildContext context, VideoEvent video) {
-    // Read here so the sheet receives a guaranteed non-null repository.
+    // Read here so the sheet receives guaranteed non-null sharing dependencies.
     // If Nostr client hasn't initialized yet, skip opening the sheet.
     final container = ProviderScope.containerOf(context);
     final profileRepository = container.read(profileRepositoryProvider);
-    if (profileRepository == null) return;
+    final videoSharingService = container.read(videoSharingServiceProvider);
+    if (profileRepository == null || videoSharingService == null) return;
 
     final inheritedLookupContext = context;
 
@@ -71,6 +72,7 @@ class ShareActionButton extends StatelessWidget {
       builder: (sheetContext) => _UnifiedShareSheet(
         video: video,
         profileRepository: profileRepository,
+        videoSharingService: videoSharingService,
         inheritedLookupContext: inheritedLookupContext,
       ),
     );
@@ -104,11 +106,13 @@ class _UnifiedShareSheet extends ConsumerStatefulWidget {
   const _UnifiedShareSheet({
     required this.video,
     required this.profileRepository,
+    required this.videoSharingService,
     required this.inheritedLookupContext,
   });
 
   final VideoEvent video;
   final ProfileRepository profileRepository;
+  final VideoSharingService videoSharingService;
 
   /// Context from the widget that opened the sheet (not the modal builder).
   /// Used to reach [ProfileSavedVideosBloc] under the profile grid, which a
@@ -129,7 +133,7 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
     _shareSheetBloc = ShareSheetBloc(
       video: widget.video,
       relayUrl: ref.read(currentEnvironmentProvider).relayUrl,
-      videoSharingService: ref.read(videoSharingServiceProvider),
+      videoSharingService: widget.videoSharingService,
       profileRepository: widget.profileRepository,
       followRepository: ref.read(followRepositoryProvider),
       bookmarkServiceFuture: ref.read(bookmarkServiceProvider.future),
