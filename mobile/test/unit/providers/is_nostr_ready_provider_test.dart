@@ -33,6 +33,9 @@ void main() {
       when(
         () => mockNostrClient.ready,
       ).thenAnswer((_) => readyCompleter.future);
+      // Default: the ready future is still pending. The "settled but
+      // hasKeys still false" regression case overrides this stub.
+      when(() => mockNostrClient.isReadyResolved).thenReturn(false);
     });
 
     ProviderContainer createContainer() {
@@ -156,6 +159,44 @@ void main() {
 
       // No expectations — the test passes if no exception leaks.
     });
+
+    test(
+      'returns false without re-arming .then when ready is already '
+      'settled but hasKeys is still false (regression: #4276 log storm — '
+      'cold boot where refreshPublicKey() returned an empty key)',
+      () async {
+        when(() => mockAuthService.isAuthenticated).thenReturn(true);
+        when(() => mockNostrClient.hasKeys).thenReturn(false);
+        // ready future already settled, but the client never picked up a
+        // key (signer not configured yet). The bug: every rebuild
+        // attached a fresh `.then(...)` to this already-resolved future,
+        // which fired on the next microtask and `invalidateSelf`'d,
+        // producing hundreds of invalidations in a few milliseconds.
+        when(() => mockNostrClient.isReadyResolved).thenReturn(true);
+
+        final container = createContainer();
+        addTearDown(container.dispose);
+
+        // First read returns false — gate fires before any .then is
+        // attached.
+        expect(container.read(isNostrReadyProvider), isFalse);
+
+        // Yield to the microtask queue twice. With the bug, this is
+        // where the re-armed `.then` would fire and the loop would
+        // spin. With the fix, nothing happens.
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        // Still false on a subsequent read. The contract is "stay
+        // false until an external rebuild trigger arrives" — auth
+        // state change or a fresh NostrClient instance.
+        expect(container.read(isNostrReadyProvider), isFalse);
+
+        // And critically: the provider never reached for the `ready`
+        // future, because the synchronous gate caught it first.
+        verifyNever(() => mockNostrClient.ready);
+      },
+    );
 
     test('profileRepositoryProvider is null when isNostrReady is false', () {
       final container = ProviderContainer(

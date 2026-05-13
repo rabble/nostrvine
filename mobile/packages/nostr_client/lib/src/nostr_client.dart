@@ -200,6 +200,17 @@ class NostrClient {
   /// "signer is ready" without busy-polling `hasKeys` — see #3352.
   Future<void> get ready => _readyCompleter.future;
 
+  /// Synchronous companion to [ready]: whether [initialize] has settled
+  /// (successfully or with an error).
+  ///
+  /// Consumers that attach `.then(...)` to [ready] on every rebuild must
+  /// check this first — once the completer is settled, every fresh
+  /// `.then(...)` fires on the next microtask, so re-arming without a
+  /// gate produces a tight invalidate loop on the "ready resolved but
+  /// `hasKeys` still false" path (signer started empty during cold
+  /// boot, then `refreshPublicKey()` returned `''`).
+  bool get isReadyResolved => _readyCompleter.isCompleted;
+
   /// Public key of the client
   String get publicKey => _nostr.publicKey;
 

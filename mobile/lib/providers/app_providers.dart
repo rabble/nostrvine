@@ -1214,6 +1214,19 @@ bool isNostrReady(Ref ref) {
   final ready = nostrClient.hasKeys;
 
   if (!ready) {
+    // If the ready future has already settled but `hasKeys` is still
+    // false, `refreshPublicKey()` returned an empty string during
+    // initialize() (signer not yet configured at cold boot). Attaching
+    // another `.then(...)` here would fire on the next microtask and
+    // re-invalidate this provider in a tight loop — every rebuild adds
+    // a fresh subscription to the already-resolved completer. Just
+    // return false and wait for an external rebuild trigger (auth
+    // state change or a new NostrClient instance from
+    // nostrServiceProvider).
+    if (nostrClient.isReadyResolved) {
+      return false;
+    }
+
     // One-shot listener: wait for initialize() to complete on the current
     // client, then invalidate so this provider re-reads hasKeys.
     final readyFuture = nostrClient.ready;

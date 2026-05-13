@@ -2583,6 +2583,38 @@ void main() {
           await readyExpectation;
         },
       );
+
+      test('isReadyResolved is false before initialize() runs', () {
+        expect(client.isReadyResolved, isFalse);
+      });
+
+      test('isReadyResolved is true after initialize() succeeds', () async {
+        when(() => mockNostr.refreshPublicKey()).thenAnswer((_) async {});
+        when(() => mockRelayManager.initialize()).thenAnswer((_) async {});
+
+        await client.initialize();
+
+        expect(client.isReadyResolved, isTrue);
+      });
+
+      test(
+        'isReadyResolved is true after initialize() fails — gives '
+        'isNostrReadyProvider a synchronous "future already settled" '
+        'check so it stops re-arming .then on a completed completer',
+        () async {
+          final boom = StateError('refresh failed');
+          when(() => mockNostr.refreshPublicKey()).thenThrow(boom);
+
+          final readyExpectation = expectLater(
+            client.ready,
+            throwsA(same(boom)),
+          );
+          await expectLater(client.initialize(), throwsA(same(boom)));
+          await readyExpectation;
+
+          expect(client.isReadyResolved, isTrue);
+        },
+      );
     });
 
     group('relay convenience properties', () {
