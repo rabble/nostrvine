@@ -281,6 +281,7 @@ void main() {
           () => mockVideosRepository.getPopularVideos(
             limit: any(named: 'limit'),
             until: any(named: 'until'),
+            variant: PopularVideosVariant.native,
             fetchMultiplier: any(named: 'fetchMultiplier'),
             skipCache: any(named: 'skipCache'),
           ),
