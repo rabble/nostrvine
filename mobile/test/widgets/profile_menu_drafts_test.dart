@@ -8,9 +8,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockClipLibraryService extends Mock implements ClipLibraryService {}
 
@@ -18,6 +20,12 @@ class _MockDraftStorageService extends Mock implements DraftStorageService {}
 
 void main() {
   group('Profile menu drafts widget', () {
+    late SharedPreferences sharedPreferences;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      sharedPreferences = await SharedPreferences.getInstance();
+    });
     testWidgets('should render Drafts menu item with correct icon and text', (
       tester,
     ) async {
@@ -152,6 +160,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
             clipLibraryServiceProvider.overrideWithValue(
               mockClipLibraryService,
             ),
