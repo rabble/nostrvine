@@ -46,9 +46,6 @@ extension PublishResultX on PublishResult {
   /// Whether the publish succeeded.
   bool get isSuccess => this is PublishSuccess;
 
-  /// Whether the publish failed for any reason.
-  bool get isFailure => this is! PublishSuccess;
-
   /// A short, reason-specific diagnostic string for logging, or `null` when
   /// the result is [PublishSuccess].
   ///
