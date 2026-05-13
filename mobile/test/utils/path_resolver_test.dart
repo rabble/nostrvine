@@ -3,7 +3,8 @@
 // `getDocumentsPath` on web is covered by the web-only test below; run it with
 // `flutter test test/utils/path_resolver_test.dart --platform chrome` (manual /
 // local — not executed in CI). `flutter build web` only checks compilation, not
-// this runtime branch.
+// this runtime branch. On headless setups, set `CHROME_EXECUTABLE` to your
+// Chrome/Chromium binary and wrap the command with `xvfb-run -a`.
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_test/flutter_test.dart';
