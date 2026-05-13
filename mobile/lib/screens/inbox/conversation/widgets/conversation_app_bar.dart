@@ -42,7 +42,13 @@ class ConversationAppBar extends StatelessWidget
       showBackButton: true,
       onBackPressed: onBack,
       backgroundColor: VineTheme.surfaceBackground,
-      style: DiVineAppBarStyle(titleStyle: VineTheme.titleMediumFont()),
+      style: DiVineAppBarStyle(
+        titleStyle: VineTheme.titleMediumFont(),
+        horizontalPadding: 10,
+        // 16 px visual gap to the title: leadingWidth − (start padding + button)
+        // = 74 − (10 + 48).
+        leadingWidth: 74,
+      ),
       actions: [
         DiVineAppBarAction(
           icon: SvgIconSource(DivineIconName.dotsThree.assetPath),

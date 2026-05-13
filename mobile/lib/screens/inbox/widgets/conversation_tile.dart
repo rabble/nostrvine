@@ -10,6 +10,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
+import 'package:openvine/utils/divine_video_url.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -68,8 +69,8 @@ class ConversationTile extends ConsumerWidget {
 
     return Semantics(
       button: true,
-      label: '$displayName conversation',
-      onLongPressHint: 'Show conversation actions',
+      label: context.l10n.inboxConversationTileLabel(displayName),
+      onLongPressHint: context.l10n.inboxConversationTileLongPressHint,
       child: GestureDetector(
         onTap: () {
           Log.debug(
@@ -91,6 +92,10 @@ class ConversationTile extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
             child: Row(
+              // Top-anchored so the avatar lines up with the name on the
+              // first line whether the preview wraps to a second line or
+              // not, instead of drifting down with a centered column.
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
@@ -134,16 +139,11 @@ class ConversationTile extends ConsumerWidget {
                       ),
                       if (conversation.lastMessageContent != null) ...[
                         const SizedBox(height: 4),
-                        Text(
-                          _previewText(
+                        _ConversationPreviewText(
+                          payload: _previewPayload(
                             context,
                             conversation.lastMessageContent!,
                           ),
-                          style: VineTheme.bodyMediumFont(
-                            color: VineTheme.onSurfaceVariant,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ],
@@ -158,15 +158,89 @@ class ConversationTile extends ConsumerWidget {
   }
 }
 
-String _previewText(BuildContext context, String content) {
+class _PreviewPayload {
+  const _PreviewPayload({required this.text, required this.isDivineVideoShare});
+
+  final String text;
+  final bool isDivineVideoShare;
+}
+
+_PreviewPayload _previewPayload(BuildContext context, String content) {
   // The structured collaborator-invite card carries a deterministic
   // plaintext fallback ("...Open diVine to review and accept.") so old
   // clients can still see something. Inside diVine that copy is misleading
   // — show a localized label instead (#3662, follows up on #3559 Phase 2).
   if (content.endsWith(CollaboratorInviteService.invitePlaintextSuffix)) {
-    return context.l10n.inboxConversationCollabInvitePreview;
+    return _PreviewPayload(
+      text: context.l10n.inboxConversationCollabInvitePreview,
+      isDivineVideoShare: false,
+    );
   }
-  return content;
+  // Drop blank lines and trim each remaining line. Shared-video DMs and
+  // similar payloads arrive with a blank line between title and URL —
+  // without this, `Text(maxLines: 2)` reserves height for the empty line
+  // and the tile renders taller than a true one-line preview.
+  final lines = content
+      .split('\n')
+      .map((line) => line.trim())
+      .where((line) => line.isNotEmpty)
+      .toList();
+  final isDivineVideoShare = lines.any(divineVideoUrlLineRegex.hasMatch);
+  if (isDivineVideoShare) {
+    final nonUrlLines = lines
+        .where((line) => !divineVideoUrlLineRegex.hasMatch(line))
+        .toList();
+    return _PreviewPayload(
+      text: nonUrlLines.join('\n'),
+      isDivineVideoShare: true,
+    );
+  }
+  return _PreviewPayload(text: lines.join('\n'), isDivineVideoShare: false);
+}
+
+/// Two-line preview text with an optional inline camera icon prefix when
+/// the last message in the conversation is a divine-video share.
+class _ConversationPreviewText extends StatelessWidget {
+  const _ConversationPreviewText({required this.payload});
+
+  final _PreviewPayload payload;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = VineTheme.bodyMediumFont(color: VineTheme.onSurfaceVariant);
+    if (!payload.isDivineVideoShare) {
+      return Text(
+        payload.text,
+        style: style,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      );
+    }
+    // Icon sized to the preview text's line height so it occupies exactly
+    // one line of vertical space; rendered white per design.
+    final iconSize = style.fontSize! * (style.height ?? 1);
+    return Text.rich(
+      TextSpan(
+        children: [
+          WidgetSpan(
+            alignment: PlaceholderAlignment.middle,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: DivineIcon(
+                icon: DivineIconName.cameraRetro,
+                color: VineTheme.whiteText,
+                size: iconSize,
+              ),
+            ),
+          ),
+          if (payload.text.isNotEmpty) TextSpan(text: payload.text),
+        ],
+      ),
+      style: style,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
 }
 
 class _UnreadDot extends StatelessWidget {

@@ -13,21 +13,54 @@ import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// Shows a [VineBottomSheet] for reporting a video.
+/// Shows a [VineBottomSheet] for reporting content.
 ///
 /// Usage:
 /// ```dart
 /// await ReportContentDialog.show(context, video: video);
+/// await ReportContentDialog.showForMessage(
+///   context,
+///   messageId: message.id,
+///   senderPubkey: message.senderPubkey,
+/// );
 /// ```
 class ReportContentDialog extends ConsumerStatefulWidget {
-  const ReportContentDialog({
-    required this.video,
+  ReportContentDialog({
     super.key,
+    this.video,
+    this.eventId,
+    this.authorPubkey,
+    this.moderationKindLabel = 'Content Report',
+    this.moderationEventLabel = 'Event',
     this.isFromShareMenu = false,
     this.draggableController,
-  });
+  }) {
+    if (video == null && (eventId == null || authorPubkey == null)) {
+      throw ArgumentError(
+        'Provide either a video or both eventId and authorPubkey.',
+      );
+    }
+  }
 
-  final VideoEvent video;
+  /// The video being reported. When non-null, [eventId] / [authorPubkey]
+  /// fall back to `video.id` / `video.pubkey`.
+  final VideoEvent? video;
+
+  /// Event id of the content being reported. Required when [video] is null.
+  final String? eventId;
+
+  /// Author pubkey of the content being reported. Required when [video]
+  /// is null.
+  final String? authorPubkey;
+
+  /// Header used in the moderation DM (e.g. "Content Report", "DM
+  /// Message Report"). Internal-only — not user-visible.
+  final String moderationKindLabel;
+
+  /// Label preceding the event id in the moderation DM body (e.g.
+  /// "Event", "Message ID"). Internal-only — not user-visible.
+  final String moderationEventLabel;
+
   final bool isFromShareMenu;
 
   /// Optional controller used to programmatically expand the bottom sheet
@@ -56,6 +89,31 @@ class ReportContentDialog extends ConsumerStatefulWidget {
         .whenComplete(controller.dispose);
   }
 
+  /// Shows the bottom sheet for reporting a DM message. Uses the same UX
+  /// as the video flow; differs only in the moderation-DM body labels.
+  static Future<void> showForMessage(
+    BuildContext context, {
+    required String messageId,
+    required String senderPubkey,
+  }) {
+    final controller = DraggableScrollableController();
+    return context
+        .showVideoPausingVineBottomSheet<void>(
+          initialChildSize: 0.85,
+          maxChildSize: 0.95,
+          minChildSize: 0.5,
+          draggableController: controller,
+          body: ReportContentDialog(
+            eventId: messageId,
+            authorPubkey: senderPubkey,
+            moderationKindLabel: 'DM Message Report',
+            moderationEventLabel: 'Message ID',
+            draggableController: controller,
+          ),
+        )
+        .whenComplete(controller.dispose);
+  }
+
   @override
   ConsumerState<ReportContentDialog> createState() =>
       _ReportContentDialogState();
@@ -72,6 +130,9 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   bool _submitted = false;
   bool _scrollWhenKeyboardOpens = false;
   double _previousViewInsetsBottom = 0;
+
+  String get _eventId => widget.eventId ?? widget.video!.id;
+  String get _authorPubkey => widget.authorPubkey ?? widget.video!.pubkey;
 
   @override
   void didChangeDependencies() {
@@ -242,8 +303,8 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
         contentReportingServiceProvider.future,
       );
       final result = await reportService.reportContent(
-        eventId: widget.video.id,
-        authorPubkey: widget.video.pubkey,
+        eventId: _eventId,
+        authorPubkey: _authorPubkey,
         reason: _selectedReason!,
         details: _detailsController.text.trim().isEmpty
             ? selectedReasonTitle
@@ -260,7 +321,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
               recipientPubkey: labelService.divineModerationPubkeyHex,
               content: _formatReportDm(
                 reason: _selectedReason!,
-                eventId: widget.video.id,
+                eventId: _eventId,
                 details: _detailsController.text.trim(),
               ),
             );
@@ -320,9 +381,9 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
     required String details,
   }) {
     final buffer = StringBuffer()
-      ..writeln('Content Report')
+      ..writeln(widget.moderationKindLabel)
       ..writeln('Reason: ${context.l10n.reportReasonTitle(reason)}')
-      ..writeln('Event: $eventId');
+      ..writeln('${widget.moderationEventLabel}: $eventId');
     if (details.isNotEmpty) {
       buffer.writeln('Details: $details');
     }
@@ -522,8 +583,8 @@ class _RadioIndicator extends StatelessWidget {
 
 /// Confirmation dialog shown after successfully reporting content.
 ///
-/// Used by [share_video_menu.dart] and [report_message_dialog.dart].
-/// [ReportContentDialog] uses [_ReportConfirmationView] (in-sheet) instead.
+/// Used by `share_video_menu.dart`. [ReportContentDialog] (both video and
+/// DM-message variants) uses the in-sheet [_ReportConfirmationView] instead.
 class ReportConfirmationDialog extends StatelessWidget {
   const ReportConfirmationDialog({super.key});
 

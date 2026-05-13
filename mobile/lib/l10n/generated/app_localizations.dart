@@ -9482,6 +9482,72 @@ abstract class AppLocalizations {
   /// **'Could not load messages'**
   String get dmConversationLoadError;
 
+  /// Placeholder text shown inside the compose field at the bottom of a DM conversation when the user hasn't typed anything yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Say something…'**
+  String get dmMessageInputHint;
+
+  /// Accessibility hint announcing that a direct message bubble was sent by the current user
+  ///
+  /// In en, this message translates to:
+  /// **'Sent message'**
+  String get dmMessageBubbleSentHint;
+
+  /// Accessibility hint announcing that a direct message bubble was received from another user
+  ///
+  /// In en, this message translates to:
+  /// **'Received message'**
+  String get dmMessageBubbleReceivedHint;
+
+  /// Accessibility hint announcing that a direct message bubble supports a long-press action menu
+  ///
+  /// In en, this message translates to:
+  /// **'Message actions'**
+  String get dmMessageBubbleLongPressHint;
+
+  /// Long-press menu action on a DM bubble that copies the message's plaintext content to the clipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy text'**
+  String get dmMessageActionCopyText;
+
+  /// Long-press menu action on a shared-video DM bubble that copies the underlying divine.video URL (without the surrounding personal-note text) to the clipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy video URL'**
+  String get dmMessageActionCopyVideoUrl;
+
+  /// Long-press menu action on a sent DM bubble that publishes a NIP-09 kind 5 deletion event so the message disappears for both participants.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete for everyone'**
+  String get dmMessageActionDeleteForEveryone;
+
+  /// Long-press menu action on a received DM bubble that opens the report flow for that specific message.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get dmMessageActionReport;
+
+  /// Accessibility label announced by screen readers when the long-press actions bottom sheet for a conversation row opens.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation actions'**
+  String get inboxConversationActionsSheetLabel;
+
+  /// Accessibility label for a conversation row in the inbox list, read by screen readers when the row receives focus. Use the other participant's display name.
+  ///
+  /// In en, this message translates to:
+  /// **'{displayName} conversation'**
+  String inboxConversationTileLabel(String displayName);
+
+  /// Accessibility hint announced when a conversation row is focused, telling the user that long-pressing opens the actions sheet (mute, report, block, remove).
+  ///
+  /// In en, this message translates to:
+  /// **'Show conversation actions'**
+  String get inboxConversationTileLongPressHint;
+
   /// No description provided for @reportDialogCancel.
   ///
   /// In en, this message translates to:

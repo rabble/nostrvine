@@ -718,6 +718,85 @@ void main() {
         expect(find.byType(VideoThumbnailWidget), findsOneWidget);
         expect(find.text('check this'), findsOneWidget);
       });
+
+      testWidgets(
+        'drops the share-template quoted title line ahead of the URL',
+        (tester) async {
+          // VideoSharingService composes the share body as
+          //   [personal message?]
+          //   "<title>"
+          //   <blank>
+          //   <URL>
+          // The "<title>" line duplicates what the card's overlay
+          // footer renders, so the bubble must NOT also show it as
+          // bubble text. Pin that contract — without this, the title
+          // can silently leak back above the thumbnail.
+          when(
+            () => mockVideoEventService.getVideoById('abc123'),
+          ).thenReturn(testVideo);
+
+          await tester.pumpWidget(
+            buildWithVideoMessage(
+              message:
+                  '"Test Vine Title"\n\n'
+                  'https://divine.video/video/abc123',
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.byType(VideoThumbnailWidget), findsOneWidget);
+          expect(find.text('"Test Vine Title"'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'preserves the personal note when share body also carries a '
+        'quoted title',
+        (tester) async {
+          // Real share format with a user-typed personal note. The note
+          // must render under the thumbnail; the "<title>" line above
+          // it (also part of the template) must NOT render.
+          when(
+            () => mockVideoEventService.getVideoById('abc123'),
+          ).thenReturn(testVideo);
+
+          await tester.pumpWidget(
+            buildWithVideoMessage(
+              message:
+                  'You have to watch this 😂\n\n'
+                  '"Test Vine Title"\n\n'
+                  'https://divine.video/video/abc123',
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.byType(VideoThumbnailWidget), findsOneWidget);
+          expect(find.text('You have to watch this 😂'), findsOneWidget);
+          expect(find.text('"Test Vine Title"'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'drops a quoted title line even when the title itself contains '
+        'embedded quotes',
+        (tester) async {
+          when(
+            () => mockVideoEventService.getVideoById('abc123'),
+          ).thenReturn(testVideo);
+
+          await tester.pumpWidget(
+            buildWithVideoMessage(
+              message:
+                  '"Watch "Inception" trailer"\n\n'
+                  'https://divine.video/video/abc123',
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.byType(VideoThumbnailWidget), findsOneWidget);
+          expect(find.text('"Watch "Inception" trailer"'), findsNothing);
+        },
+      );
     });
 
     group('long-press', () {

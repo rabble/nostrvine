@@ -2889,6 +2889,54 @@
   "@dmConversationLoadError": {
     "description": "Error text shown in place of the message list when DmRepository.watchMessages emits an error (e.g. local DB read failure). Distinct from send failures (which use `dmSendFailedMessage`)."
   },
+
+  "dmMessageInputHint": "Say something…",
+  "@dmMessageInputHint": {
+    "description": "Placeholder text shown inside the compose field at the bottom of a DM conversation when the user hasn't typed anything yet."
+  },
+  "dmMessageBubbleSentHint": "Sent message",
+  "@dmMessageBubbleSentHint": {
+    "description": "Accessibility hint announcing that a direct message bubble was sent by the current user"
+  },
+  "dmMessageBubbleReceivedHint": "Received message",
+  "@dmMessageBubbleReceivedHint": {
+    "description": "Accessibility hint announcing that a direct message bubble was received from another user"
+  },
+  "dmMessageBubbleLongPressHint": "Message actions",
+  "@dmMessageBubbleLongPressHint": {
+    "description": "Accessibility hint announcing that a direct message bubble supports a long-press action menu"
+  },
+  "dmMessageActionCopyText": "Copy text",
+  "@dmMessageActionCopyText": {
+    "description": "Long-press menu action on a DM bubble that copies the message's plaintext content to the clipboard."
+  },
+  "dmMessageActionCopyVideoUrl": "Copy video URL",
+  "@dmMessageActionCopyVideoUrl": {
+    "description": "Long-press menu action on a shared-video DM bubble that copies the underlying divine.video URL (without the surrounding personal-note text) to the clipboard."
+  },
+  "dmMessageActionDeleteForEveryone": "Delete for everyone",
+  "@dmMessageActionDeleteForEveryone": {
+    "description": "Long-press menu action on a sent DM bubble that publishes a NIP-09 kind 5 deletion event so the message disappears for both participants."
+  },
+  "dmMessageActionReport": "Report",
+  "@dmMessageActionReport": {
+    "description": "Long-press menu action on a received DM bubble that opens the report flow for that specific message."
+  },
+  "inboxConversationActionsSheetLabel": "Conversation actions",
+  "@inboxConversationActionsSheetLabel": {
+    "description": "Accessibility label announced by screen readers when the long-press actions bottom sheet for a conversation row opens."
+  },
+  "inboxConversationTileLabel": "{displayName} conversation",
+  "@inboxConversationTileLabel": {
+    "description": "Accessibility label for a conversation row in the inbox list, read by screen readers when the row receives focus. Use the other participant's display name.",
+    "placeholders": {
+      "displayName": { "type": "String", "example": "Alice" }
+    }
+  },
+  "inboxConversationTileLongPressHint": "Show conversation actions",
+  "@inboxConversationTileLongPressHint": {
+    "description": "Accessibility hint announced when a conversation row is focused, telling the user that long-pressing opens the actions sheet (mute, report, block, remove)."
+  },
   "reportDialogCancel": "Cancel",
   "reportDialogReport": "Report",
   "exploreVideoId": "ID: {id}",

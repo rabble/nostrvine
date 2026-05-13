@@ -385,6 +385,23 @@ const _knownUntranslatedDebt = {
   // fall back to English until the next translation pass.
   'supportLogsSavedTo',
   'supportRevealLogsAction',
+  // Added by the DM-screen l10n pass — migrates the conversation
+  // long-press actions, the message-bubble long-press menu, the compose
+  // field hint, and the conversation-row Semantics labels from
+  // hardcoded English. Translators will pick these up in a follow-up
+  // pass; until then non-English locales fall back to the English
+  // source.
+  'dmMessageInputHint',
+  'dmMessageBubbleSentHint',
+  'dmMessageBubbleReceivedHint',
+  'dmMessageBubbleLongPressHint',
+  'dmMessageActionCopyText',
+  'dmMessageActionCopyVideoUrl',
+  'dmMessageActionDeleteForEveryone',
+  'dmMessageActionReport',
+  'inboxConversationActionsSheetLabel',
+  'inboxConversationTileLabel',
+  'inboxConversationTileLongPressHint',
 };
 
 Map<String, Object?> _readArb(File file) {

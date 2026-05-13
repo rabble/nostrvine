@@ -18,9 +18,13 @@ import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/collaborator_invite_parser.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
+import 'package:openvine/utils/divine_video_url.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_content.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
+import 'package:openvine/widgets/profile/profile_header_widget.dart'
+    show truncateNpubForDisplay;
+import 'package:openvine/widgets/report_content_dialog.dart';
 
 /// View for a single DM conversation.
 ///
@@ -99,7 +103,19 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
     final displayName =
         profile?.bestDisplayName ??
         UserProfile.defaultDisplayNameFor(otherPubkey);
-    final handle = profile?.handle ?? '';
+    // Prefer the profile's NIP-05 / divine handle when set, otherwise
+    // fall back to a truncated npub so the header always carries a
+    // stable secondary identifier under the display name. Format
+    // mirrors the profile header (`profile_header_widget.dart`): first
+    // 16 chars of the npub + ellipsis.
+    final profileHandle = profile?.handle;
+    final handle = (profileHandle != null && profileHandle.isNotEmpty)
+        ? profileHandle
+        : (otherPubkey.isNotEmpty
+              ? truncateNpubForDisplay(
+                  NostrKeyUtils.encodePubKey(otherPubkey),
+                )
+              : '');
 
     return Scaffold(
       backgroundColor: VineTheme.surfaceBackground,
@@ -123,16 +139,41 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
               onOptions: () => _onOptions(otherPubkey, displayName),
             ),
             Expanded(
-              child: _ConversationContent(
-                currentPubkey: currentPubkey,
-                otherPubkey: otherPubkey,
-                displayName: displayName,
-                imageUrl: profile?.picture,
-                nip05: profile?.shortDisplayNip05,
-                onViewProfile: () {
-                  final npub = NostrKeyUtils.encodePubKey(otherPubkey);
-                  context.push('${OtherProfileScreen.path}/$npub');
-                },
+              // Force the messages card to fill the available width
+              // regardless of its content. Without this, the empty /
+              // loading state's SingleChildScrollView shrink-wraps the
+              // ClipRRect down to the EmptyConversation column's
+              // intrinsic width and the surface card renders as a
+              // narrow strip; the ListView (with messages) is fine on
+              // its own.
+              child: SizedBox(
+                width: double.infinity,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(32),
+                  child: ColoredBox(
+                    color: VineTheme.surfaceContainerHigh,
+                    // Tap anywhere in the messages area to dismiss the
+                    // keyboard. Translucent hit behavior keeps bubble
+                    // long-press and list-scroll gestures intact.
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onTap: () => FocusScope.of(context).unfocus(),
+                      child: _ConversationContent(
+                        currentPubkey: currentPubkey,
+                        otherPubkey: otherPubkey,
+                        displayName: displayName,
+                        imageUrl: profile?.picture,
+                        nip05: profile?.shortDisplayNip05,
+                        onViewProfile: () {
+                          final npub = NostrKeyUtils.encodePubKey(
+                            otherPubkey,
+                          );
+                          context.push('${OtherProfileScreen.path}/$npub');
+                        },
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
             _SendBar(participantPubkeys: widget.participantPubkeys),
@@ -292,9 +333,11 @@ class _MessageList extends StatelessWidget {
     DmMessage message,
     bool isSent,
   ) async {
+    final videoUrl = tryExtractDivineVideoUrl(message.content);
     final action = await MessageActionsSheet.show(
       context: context,
       isSent: isSent,
+      isVideoShare: videoUrl != null,
     );
     if (action == null) return;
     if (!context.mounted) return;
@@ -302,18 +345,21 @@ class _MessageList extends StatelessWidget {
     switch (action) {
       case MessageAction.copy:
         await ClipboardUtils.copy(context, message.content);
+      case MessageAction.copyVideoUrl:
+        // Defensive: the sheet only surfaces this action when videoUrl
+        // is non-null, but guard against a future caller change.
+        if (videoUrl == null) return;
+        await ClipboardUtils.copy(context, videoUrl);
       case MessageAction.delete:
         context.read<ConversationBloc>().add(
           ConversationMessageDeleted(rumorId: message.id),
         );
       case MessageAction.report:
         if (!context.mounted) return;
-        await showDialog<void>(
-          context: context,
-          builder: (_) => ReportMessageDialog(
-            messageId: message.id,
-            senderPubkey: message.senderPubkey,
-          ),
+        await ReportContentDialog.showForMessage(
+          context,
+          messageId: message.id,
+          senderPubkey: message.senderPubkey,
         );
     }
   }
@@ -322,7 +368,9 @@ class _MessageList extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView.builder(
       reverse: true,
-      padding: const EdgeInsets.only(top: 8),
+      // bottom: 8 stacks with the newest bubble's own 8 px bottom padding
+      // for a 16 px gap to the scroll-view edge.
+      padding: const EdgeInsets.only(top: 8, bottom: 8),
       itemCount: messages.length,
       itemBuilder: (context, index) {
         final message = messages[index];

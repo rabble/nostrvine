@@ -90,6 +90,18 @@ void main() {
     ).thenAnswer((_) async => true);
   });
 
+  group('$ReportContentDialog constructor', () {
+    test(
+      'throws when neither a video nor message identifiers are provided',
+      () {
+        expect(
+          ReportContentDialog.new,
+          throwsA(isA<ArgumentError>()),
+        );
+      },
+    );
+  });
+
   group('$ReportContentDialog rendering', () {
     Widget buildSubject() => ProviderScope(
       overrides: [
@@ -747,6 +759,141 @@ void main() {
             content: any(named: 'content'),
             replyToId: any(named: 'replyToId'),
           ),
+        );
+      },
+    );
+  });
+
+  group('moderation DM integration (showForMessage path)', () {
+    late MockNostrClient mockNostrClient;
+    late _MockDmRepository mockDmRepository;
+    late _MockModerationLabelService mockModerationLabelService;
+
+    const testMessageId =
+        'aaaa1111bbbb2222cccc3333dddd4444eeee5555ffff6666aaaa1111bbbb2222';
+    const testSenderPubkey =
+        '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738';
+
+    setUp(() {
+      mockNostrClient = createMockNostrService();
+      mockDmRepository = _MockDmRepository();
+      mockModerationLabelService = _MockModerationLabelService();
+
+      when(() => mockNostrClient.publicKey).thenReturn('test_pubkey_hex');
+      when(
+        () => mockModerationLabelService.divineModerationPubkeyHex,
+      ).thenReturn(ModerationLabelService.fallbackModerationPubkeyHex);
+      when(
+        () => mockDmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+        ),
+      ).thenAnswer(
+        (_) async => NIP17SendResult.success(
+          rumorEventId: 'dm_rumor_id',
+          messageEventId: 'dm_event_id',
+          recipientPubkey: ModerationLabelService.fallbackModerationPubkeyHex,
+        ),
+      );
+    });
+
+    Widget buildMessageReportSubject() {
+      final router = GoRouter(
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) => Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => showDialog<void>(
+                    context: context,
+                    builder: (_) => Material(
+                      child: ReportContentDialog(
+                        eventId: testMessageId,
+                        authorPubkey: testSenderPubkey,
+                        moderationKindLabel: 'DM Message Report',
+                        moderationEventLabel: 'Message ID',
+                      ),
+                    ),
+                  ),
+                  child: const Text('Open Report'),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+
+      return testProviderScope(
+        mockNostrService: mockNostrClient,
+        mockModerationLabelService: mockModerationLabelService,
+        additionalOverrides: [
+          contentReportingServiceProvider.overrideWith(
+            (ref) async => mockReportingService,
+          ),
+          contentBlocklistRepositoryProvider.overrideWith(
+            (ref) => mockBlocklistRepository,
+          ),
+          muteServiceProvider.overrideWith((ref) async => mockMuteService),
+          dmRepositoryProvider.overrideWithValue(mockDmRepository),
+        ],
+        child: MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      );
+    }
+
+    Future<void> openAndSubmitMessageReport(WidgetTester tester) async {
+      await tester.pumpWidget(buildMessageReportSubject());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Open Report'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.reportReasonSpam));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+      'moderation DM body uses DM Message Report header and Message ID label',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(800, 1200));
+        await openAndSubmitMessageReport(tester);
+
+        final captured = verify(
+          () => mockDmRepository.sendMessage(
+            recipientPubkey: any(named: 'recipientPubkey'),
+            content: captureAny(named: 'content'),
+            replyToId: any(named: 'replyToId'),
+          ),
+        ).captured;
+
+        final dmContent = captured.single as String;
+        expect(
+          dmContent,
+          contains('DM Message Report'),
+          reason:
+              'header should distinguish message reports from video reports',
+        );
+        expect(
+          dmContent,
+          contains('Message ID: $testMessageId'),
+          reason: 'event-id line should be labeled "Message ID:" not "Event:"',
+        );
+        expect(
+          dmContent,
+          isNot(contains('Content Report')),
+          reason: 'video-report header must not leak into message-report body',
+        );
+        expect(
+          dmContent,
+          isNot(contains('Event: $testMessageId')),
+          reason: 'video-report event-id label must not leak into message body',
         );
       },
     );

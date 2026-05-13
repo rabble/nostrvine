@@ -7,10 +7,29 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
+import 'package:pro_video_editor/pro_video_editor.dart' show EditorVideo;
 import 'package:unified_logger/unified_logger.dart';
 
 part 'clip_editor_event.dart';
 part 'clip_editor_state.dart';
+
+/// Function signature matching [VideoEditorSplitService.splitClip], used as
+/// an injectable seam so tests can swap in a pure-Dart fake that does not
+/// touch `path_provider` or `pro_video_editor` plugins.
+typedef SplitClipFn =
+    Future<void> Function({
+      required DivineVideoClip sourceClip,
+      required Duration splitPosition,
+      required void Function(
+        DivineVideoClip startClip,
+        DivineVideoClip endClip,
+      )?
+      onClipsCreated,
+      required void Function(DivineVideoClip clip, String thumbnailPath)?
+      onThumbnailExtracted,
+      required void Function(DivineVideoClip clip, EditorVideo video)?
+      onClipRendered,
+    });
 
 /// BLoC for managing video clip editor state.
 ///
@@ -28,8 +47,10 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
   ClipEditorBloc({
     required this.onFinalClipInvalidated,
     AudioExtractionService? audioExtractionService,
+    SplitClipFn? splitClip,
   }) : _audioExtractionService =
            audioExtractionService ?? AudioExtractionService(),
+       _splitClip = splitClip ?? VideoEditorSplitService.splitClip,
        super(const ClipEditorState()) {
     // Clip data
     on<ClipEditorInitialized>(_onInitialized);
@@ -64,6 +85,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
 
   final void Function() onFinalClipInvalidated;
   final AudioExtractionService _audioExtractionService;
+  final SplitClipFn _splitClip;
 
   // === CLIP DATA ===
 
@@ -265,7 +287,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       // file) was processed before ClipEditorOriginalClipReplaced
       // had inserted the new clip ids — the index lookup failed and
       // the clips kept pointing at the original source video.
-      await VideoEditorSplitService.splitClip(
+      await _splitClip(
         sourceClip: selectedClip,
         splitPosition: splitPosition,
         onClipsCreated: (startClip, endClip) {
