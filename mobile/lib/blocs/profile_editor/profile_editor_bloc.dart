@@ -14,6 +14,7 @@ import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
+import 'package:openvine/services/image_upload_validation.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:stream_transform/stream_transform.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -112,6 +113,10 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     Emitter<ProfileEditorState> emit,
   ) async {
     emit(state.copyWith(pendingAvatarStatus: PendingAvatarStatus.uploading));
+
+    if (_emitIfAvatarClientImageInvalid(event, emit)) {
+      return;
+    }
 
     BlossomUploadResult result;
     try {
@@ -279,6 +284,10 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
   ) async {
     emit(state.copyWith(pendingBannerStatus: PendingBannerStatus.uploading));
 
+    if (_emitIfBannerClientImageInvalid(event, emit)) {
+      return;
+    }
+
     BlossomUploadResult result;
     try {
       if (event.bytes != null) {
@@ -353,6 +362,114 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       BlossomUploadFailureReason.server => BannerUploadError.server,
       BlossomUploadFailureReason.unknown => BannerUploadError.generic,
     };
+  }
+
+  /// Client-side byte/extension guard before [BlossomUploadService] for avatar.
+  ///
+  /// Returns `true` when [emit] already handled a failure (caller must return).
+  bool _emitIfAvatarClientImageInvalid(
+    ProfilePictureUploadRequested event,
+    Emitter<ProfileEditorState> emit,
+  ) {
+    final ImageUploadValidationResult validation = event.bytes != null
+        ? validateImageBytes(
+            event.bytes!,
+            ImageUploadKind.avatar,
+            filename: event.filename,
+          )
+        : validateImageFile(event.file!, ImageUploadKind.avatar);
+
+    if (validation.isOk) {
+      return false;
+    }
+
+    final (String message, AvatarUploadError error) = switch (validation) {
+      ImageUploadValidationTooLarge(
+        :final limitBytes,
+        :final actualBytes,
+      ) =>
+        (
+          'Avatar exceeds client byte limit ($actualBytes bytes > $limitBytes)',
+          AvatarUploadError.fileTooLarge,
+        ),
+      ImageUploadValidationUnsupportedFormat(:final extension) => (
+        'Avatar has unsupported file extension: .$extension',
+        AvatarUploadError.generic,
+      ),
+      ImageUploadValidationUnreadable(:final cause) => (
+        'Avatar file unreadable before upload${cause != null ? ': $cause' : ''}',
+        AvatarUploadError.generic,
+      ),
+      ImageUploadValidationOk() => throw StateError('unreachable'),
+    };
+
+    Log.error(
+      message,
+      name: 'ProfileEditorBloc',
+      category: LogCategory.ui,
+    );
+    addError(Exception(message), StackTrace.current);
+    emit(
+      state.copyWith(
+        pendingAvatarStatus: PendingAvatarStatus.failed,
+        avatarUploadError: error,
+      ),
+    );
+    return true;
+  }
+
+  /// Client-side byte/extension guard before [BlossomUploadService] for banner.
+  ///
+  /// Returns `true` when [emit] already handled a failure (caller must return).
+  bool _emitIfBannerClientImageInvalid(
+    ProfileBannerUploadRequested event,
+    Emitter<ProfileEditorState> emit,
+  ) {
+    final ImageUploadValidationResult validation = event.bytes != null
+        ? validateImageBytes(
+            event.bytes!,
+            ImageUploadKind.banner,
+            filename: event.filename,
+          )
+        : validateImageFile(event.file!, ImageUploadKind.banner);
+
+    if (validation.isOk) {
+      return false;
+    }
+
+    final (String message, BannerUploadError error) = switch (validation) {
+      ImageUploadValidationTooLarge(
+        :final limitBytes,
+        :final actualBytes,
+      ) =>
+        (
+          'Banner exceeds client byte limit ($actualBytes bytes > $limitBytes)',
+          BannerUploadError.fileTooLarge,
+        ),
+      ImageUploadValidationUnsupportedFormat(:final extension) => (
+        'Banner has unsupported file extension: .$extension',
+        BannerUploadError.generic,
+      ),
+      ImageUploadValidationUnreadable(:final cause) => (
+        'Banner file unreadable before upload${cause != null ? ': $cause' : ''}',
+        BannerUploadError.generic,
+      ),
+      ImageUploadValidationOk() => throw StateError('unreachable'),
+    };
+
+    Log.error(
+      message,
+      name: 'ProfileEditorBloc',
+      category: LogCategory.ui,
+    );
+    addError(Exception(message), StackTrace.current);
+    emit(
+      state.copyWith(
+        pendingBannerStatus: PendingBannerStatus.failed,
+        bannerUploadError: error,
+      ),
+    );
+    return true;
   }
 
   void _onProfileBannerColorSelected(

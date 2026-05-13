@@ -13,13 +13,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
+import 'package:openvine/services/image_upload_validation.dart';
 import 'package:profile_repository/profile_repository.dart';
 
 class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
-
-class _FakeFile extends Fake implements File {}
 
 void main() {
   group('ProfileEditorBloc', () {
@@ -61,7 +60,7 @@ void main() {
               'fallback12345678901234567890123456789012345678901234567890123456',
         ),
       );
-      registerFallbackValue(_FakeFile());
+      registerFallbackValue(File('mocktail_file_fallback.jpg'));
       registerFallbackValue(Uint8List(0));
     });
 
@@ -1891,6 +1890,7 @@ void main() {
       const testStagedUrl = 'https://media.divine.video/staged-hash';
       const testPersistedUrl = 'https://media.divine.video/persisted-hash';
       final testBytes = Uint8List.fromList([0xFF, 0xD8, 0xFF]);
+      late Directory avatarFilePickTempDir;
 
       blocTest<ProfileEditorBloc, ProfileEditorState>(
         'ProfilePictureUploadRequested with bytes stages on success',
@@ -1956,6 +1956,9 @@ void main() {
       blocTest<ProfileEditorBloc, ProfileEditorState>(
         'ProfilePictureUploadRequested with file stages on success',
         setUp: () {
+          avatarFilePickTempDir = Directory.systemTemp.createTempSync(
+            'profile_editor_avatar_file_',
+          );
           when(
             () => mockBlossomUploadService.uploadImage(
               imageFile: any(named: 'imageFile'),
@@ -1970,10 +1973,17 @@ void main() {
             ),
           );
         },
+        tearDown: () {
+          if (avatarFilePickTempDir.existsSync()) {
+            avatarFilePickTempDir.deleteSync(recursive: true);
+          }
+        },
         build: createBloc,
-        act: (bloc) => bloc.add(
-          ProfilePictureUploadRequested(pubkey: testPubkey, file: _FakeFile()),
-        ),
+        act: (bloc) {
+          final f = File('${avatarFilePickTempDir.path}/picked.jpg')
+            ..writeAsBytesSync(testBytes);
+          bloc.add(ProfilePictureUploadRequested(pubkey: testPubkey, file: f));
+        },
         expect: () => [
           isA<ProfileEditorState>().having(
             (s) => s.pendingAvatarStatus,
@@ -1999,6 +2009,135 @@ void main() {
               nostrPubkey: testPubkey,
             ),
           ).called(1);
+        },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'client byte guard rejects oversize avatar bytes before Blossom',
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          ProfilePictureUploadRequested(
+            pubkey: testPubkey,
+            bytes: Uint8List(kProfileImageUploadMaxBytes + 1),
+            filename: 'big.jpg',
+          ),
+        ),
+        expect: () => [
+          isA<ProfileEditorState>().having(
+            (s) => s.pendingAvatarStatus,
+            'pendingAvatarStatus',
+            PendingAvatarStatus.uploading,
+          ),
+          isA<ProfileEditorState>()
+              .having(
+                (s) => s.pendingAvatarStatus,
+                'pendingAvatarStatus',
+                PendingAvatarStatus.failed,
+              )
+              .having(
+                (s) => s.avatarUploadError,
+                'avatarUploadError',
+                AvatarUploadError.fileTooLarge,
+              ),
+        ],
+        errors: () => [isA<Exception>()],
+        verify: (_) {
+          verifyNever(
+            () => mockBlossomUploadService.uploadImageBytes(
+              bytes: any(named: 'bytes'),
+              filename: any(named: 'filename'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              mimeType: any(named: 'mimeType'),
+            ),
+          );
+          verifyNever(
+            () => mockBlossomUploadService.uploadImage(
+              imageFile: any(named: 'imageFile'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+            ),
+          );
+        },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'client extension guard rejects avatar bytes with bad filename before Blossom',
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          ProfilePictureUploadRequested(
+            pubkey: testPubkey,
+            bytes: testBytes,
+            filename: 'avatar.exe',
+          ),
+        ),
+        expect: () => [
+          isA<ProfileEditorState>().having(
+            (s) => s.pendingAvatarStatus,
+            'pendingAvatarStatus',
+            PendingAvatarStatus.uploading,
+          ),
+          isA<ProfileEditorState>()
+              .having(
+                (s) => s.pendingAvatarStatus,
+                'pendingAvatarStatus',
+                PendingAvatarStatus.failed,
+              )
+              .having(
+                (s) => s.avatarUploadError,
+                'avatarUploadError',
+                AvatarUploadError.generic,
+              ),
+        ],
+        errors: () => [isA<Exception>()],
+        verify: (_) {
+          verifyNever(
+            () => mockBlossomUploadService.uploadImageBytes(
+              bytes: any(named: 'bytes'),
+              filename: any(named: 'filename'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              mimeType: any(named: 'mimeType'),
+            ),
+          );
+        },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'client byte guard rejects oversize banner bytes before Blossom',
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          ProfileBannerUploadRequested(
+            pubkey: testPubkey,
+            bytes: Uint8List(kProfileImageUploadMaxBytes + 1),
+            filename: 'big.jpg',
+          ),
+        ),
+        expect: () => [
+          isA<ProfileEditorState>().having(
+            (s) => s.pendingBannerStatus,
+            'pendingBannerStatus',
+            PendingBannerStatus.uploading,
+          ),
+          isA<ProfileEditorState>()
+              .having(
+                (s) => s.pendingBannerStatus,
+                'pendingBannerStatus',
+                PendingBannerStatus.failed,
+              )
+              .having(
+                (s) => s.bannerUploadError,
+                'bannerUploadError',
+                BannerUploadError.fileTooLarge,
+              ),
+        ],
+        errors: () => [isA<Exception>()],
+        verify: (_) {
+          verifyNever(
+            () => mockBlossomUploadService.uploadImageBytes(
+              bytes: any(named: 'bytes'),
+              filename: any(named: 'filename'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              mimeType: any(named: 'mimeType'),
+            ),
+          );
         },
       );
 
