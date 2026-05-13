@@ -12,6 +12,14 @@
 
 **Related Issue:** Closes # or Relates to #
 
+## Out of Scope
+
+<!--- Note any intentionally excluded follow-up work or confirm "None". -->
+
+## Verification
+
+<!--- List the checks you ran, for example `flutter analyze` or targeted tests. -->
+
 ## Type of Change
 
 <!--- Put an `x` in all the boxes that apply: -->

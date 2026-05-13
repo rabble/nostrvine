@@ -299,15 +299,15 @@ Requirements:
   later does not reliably retrigger all checks.
 - Target `main`.
 - Fill out `.github/pull_request_template.md` completely, including the
-  description, related issue, and type-of-change checklist.
-- Include a clear description of what changed, what is out of scope, and how
-  you verified it.
+  description, related issue, out-of-scope notes, verification details, and
+  type-of-change checklist.
 - End with a clean `git status`.
 - Rebase on `origin/main` before pushing.
 - Each PR should address a single GitHub issue whenever possible. Assign that
-  issue to yourself before starting work and keep it assigned throughout the
-  review cycle. This prevents duplicate work and makes it clear who is driving
-  the fix.
+  issue to yourself before starting work when you have permission to do so. If
+  you do not, ask a maintainer to assign or confirm ownership before you begin
+  and keep that ownership clear throughout the review cycle. This prevents
+  duplicate work and makes it clear who is driving the fix.
 
 Before opening a PR, ask yourself:
 
