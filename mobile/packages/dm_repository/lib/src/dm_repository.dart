@@ -1670,41 +1670,30 @@ class DmRepository {
   /// `lastMessageTimestamp` columns can drift out of sync (e.g. an older
   /// gift wrap arriving after a newer one writes back during backfill),
   /// so the messages table is the source of truth for the inbox preview.
-  // TODO(perf-4296): Remove this read-time overlay; it performs one
-  // getMessagesForConversation limit-1 query per conversation on every
-  // stream emission (N+1 reads on a hot inbox path). Removal plan in
-  // #4296: add a batched DAO method returning the latest message per
-  // conversation in one query, or fix the write path so the
-  // conversations.lastMessageContent/lastMessageTimestamp columns never
-  // drift out of sync with direct_messages and delete this overlay
-  // entirely. Regression coverage in dm_repository_test.dart must remain
-  // green after the follow-up lands.
   Future<List<DmConversation>> _overlayLatestMessages(
     List<ConversationRow> rows,
   ) async {
-    final overlaid = await Future.wait(
-      rows.map((row) async {
-        final base = _conversationFromRow(row);
-        final latest = (await _directMessagesDao.getMessagesForConversation(
-          row.id,
-          limit: 1,
+    final latestMessages = await _directMessagesDao
+        .getLatestMessagesForConversations(
+          rows.map((row) => row.id),
           ownerPubkey: _ownerPubkey,
-        )).firstOrNull;
-        if (latest == null) return base;
-        final preview = latest.messageKind == EventKind.fileMessage
-            ? _filePreviewText(latest.fileType)
-            : latest.content;
-        return base.copyWith(
-          lastMessageContent: preview,
-          lastMessageTimestamp: latest.createdAt,
-          lastMessageSenderPubkey: latest.senderPubkey,
         );
-      }),
-    );
-    overlaid.sort(
+    final overlaid = rows.map((row) {
+      final base = _conversationFromRow(row);
+      final latest = latestMessages[row.id];
+      if (latest == null) return base;
+      final preview = latest.messageKind == EventKind.fileMessage
+          ? _filePreviewText(latest.fileType)
+          : latest.content;
+      return base.copyWith(
+        lastMessageContent: preview,
+        lastMessageTimestamp: latest.createdAt,
+        lastMessageSenderPubkey: latest.senderPubkey,
+      );
+    }).toList();
+    return overlaid..sort(
       (a, b) => b.effectiveTimestamp.compareTo(a.effectiveTimestamp),
     );
-    return overlaid;
   }
 
   /// Classifies potential request conversations by follow state.

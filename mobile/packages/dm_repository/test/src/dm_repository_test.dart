@@ -5461,12 +5461,11 @@ void main() {
           ]),
         );
         when(
-          () => mockDirectMessagesDao.getMessagesForConversation(
+          () => mockDirectMessagesDao.getLatestMessagesForConversations(
             any(),
-            limit: any(named: 'limit'),
             ownerPubkey: any(named: 'ownerPubkey'),
           ),
-        ).thenAnswer((_) async => const []);
+        ).thenAnswer((_) async => const {});
 
         final repository = createRepository();
         final conversations = await repository
@@ -5512,14 +5511,13 @@ void main() {
             ]),
           );
           when(
-            () => mockDirectMessagesDao.getMessagesForConversation(
-              convId,
-              limit: 1,
+            () => mockDirectMessagesDao.getLatestMessagesForConversations(
+              any(),
               ownerPubkey: any(named: 'ownerPubkey'),
             ),
           ).thenAnswer(
-            (_) async => [
-              DirectMessageRow(
+            (_) async => {
+              convId: DirectMessageRow(
                 id: _rumorEventId,
                 conversationId: convId,
                 senderPubkey: _validPubkeyA,
@@ -5529,7 +5527,7 @@ void main() {
                 messageKind: EventKind.privateDirectMessage,
                 isDeleted: false,
               ),
-            ],
+            },
           );
 
           final repository = createRepository();
@@ -5594,14 +5592,13 @@ void main() {
             ]),
           );
           when(
-            () => mockDirectMessagesDao.getMessagesForConversation(
-              convA,
-              limit: 1,
+            () => mockDirectMessagesDao.getLatestMessagesForConversations(
+              any(),
               ownerPubkey: any(named: 'ownerPubkey'),
             ),
           ).thenAnswer(
-            (_) async => [
-              DirectMessageRow(
+            (_) async => {
+              convA: DirectMessageRow(
                 id: 'rumor-A',
                 conversationId: convA,
                 senderPubkey: _validPubkeyB,
@@ -5611,17 +5608,7 @@ void main() {
                 messageKind: EventKind.privateDirectMessage,
                 isDeleted: false,
               ),
-            ],
-          );
-          when(
-            () => mockDirectMessagesDao.getMessagesForConversation(
-              convB,
-              limit: 1,
-              ownerPubkey: any(named: 'ownerPubkey'),
-            ),
-          ).thenAnswer(
-            (_) async => [
-              DirectMessageRow(
+              convB: DirectMessageRow(
                 id: 'rumor-B',
                 conversationId: convB,
                 senderPubkey: _validPubkeyC,
@@ -5631,7 +5618,7 @@ void main() {
                 messageKind: EventKind.privateDirectMessage,
                 isDeleted: false,
               ),
-            ],
+            },
           );
 
           final repository = createRepository();
@@ -5669,12 +5656,11 @@ void main() {
           ]),
         );
         when(
-          () => mockDirectMessagesDao.getMessagesForConversation(
+          () => mockDirectMessagesDao.getLatestMessagesForConversations(
             any(),
-            limit: any(named: 'limit'),
             ownerPubkey: any(named: 'ownerPubkey'),
           ),
-        ).thenAnswer((_) async => const []);
+        ).thenAnswer((_) async => const {});
 
         final repository = createRepository();
         final requests = await repository.watchPotentialRequests().first;

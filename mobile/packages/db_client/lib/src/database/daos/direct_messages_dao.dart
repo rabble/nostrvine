@@ -104,13 +104,67 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
             _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
       )
       ..orderBy([
-        (t) => OrderingTerm(
-          expression: t.createdAt,
-          mode: OrderingMode.desc,
-        ),
+        (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
       ]);
     if (limit != null) query.limit(limit, offset: offset);
     return query.get();
+  }
+
+  /// Returns the latest non-deleted message for each conversation in one query.
+  ///
+  /// Results are keyed by `conversationId`. Conversations with no messages are
+  /// omitted from the returned map.
+  Future<Map<String, DirectMessageRow>> getLatestMessagesForConversations(
+    Iterable<String> conversationIds, {
+    String? ownerPubkey,
+  }) async {
+    final ids = conversationIds.toSet().toList();
+    if (ids.isEmpty) return const {};
+
+    final variables = <Variable<Object>>[...ids.map(Variable.withString)];
+    if (ownerPubkey != null) {
+      variables
+        ..add(Variable.withString(ownerPubkey))
+        ..add(Variable.withString(ownerPubkey));
+    }
+
+    final ownerFilter = ownerPubkey == null
+        ? '1 = 1'
+        : '(dm.owner_pubkey = ? OR dm.owner_pubkey IS NULL)';
+    final newerOwnerFilter = ownerPubkey == null
+        ? '1 = 1'
+        : '(newer.owner_pubkey = ? OR newer.owner_pubkey IS NULL)';
+    final placeholders = List.filled(ids.length, '?').join(', ');
+
+    final rows = await customSelect(
+      '''
+      SELECT dm.*
+      FROM direct_messages dm
+      WHERE dm.is_deleted = 0
+        AND dm.conversation_id IN ($placeholders)
+        AND $ownerFilter
+        AND NOT EXISTS (
+          SELECT 1
+          FROM direct_messages newer
+          WHERE newer.conversation_id = dm.conversation_id
+            AND newer.is_deleted = 0
+            AND $newerOwnerFilter
+            AND (
+              newer.created_at > dm.created_at OR
+              (newer.created_at = dm.created_at AND newer.id > dm.id)
+            )
+        )
+      ''',
+      variables: variables,
+      readsFrom: {directMessages},
+    ).get();
+
+    final latestByConversation = <String, DirectMessageRow>{};
+    for (final row in rows) {
+      final message = directMessages.map(row.data);
+      latestByConversation[message.conversationId] = message;
+    }
+    return latestByConversation;
   }
 
   /// Watch messages for a conversation (reactive stream), newest first.
@@ -129,10 +183,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
             _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
       )
       ..orderBy([
-        (t) => OrderingTerm(
-          expression: t.createdAt,
-          mode: OrderingMode.desc,
-        ),
+        (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
       ]);
     if (limit != null) query.limit(limit);
     return query.watch();
@@ -145,10 +196,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   ///
   /// Returns `true` if the row was updated, `false` if [rumorId] was not
   /// found.
-  Future<bool> markMessageDeleted(
-    String rumorId, {
-    String? ownerPubkey,
-  }) async {
+  Future<bool> markMessageDeleted(String rumorId, {String? ownerPubkey}) async {
     final rows =
         await (update(directMessages)..where(
               (t) =>
@@ -162,10 +210,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// Look up a message by rumor event ID.
   ///
   /// Used to validate sender pubkey before applying a kind 5 deletion.
-  Future<DirectMessageRow?> getMessageById(
-    String id, {
-    String? ownerPubkey,
-  }) {
+  Future<DirectMessageRow?> getMessageById(String id, {String? ownerPubkey}) {
     return (select(directMessages)..where(
           (t) => t.id.equals(id) & _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
         ))
@@ -235,10 +280,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Delete a single message by ID.
-  Future<int> deleteMessage(
-    String id, {
-    String? ownerPubkey,
-  }) {
+  Future<int> deleteMessage(String id, {String? ownerPubkey}) {
     return (delete(directMessages)..where(
           (t) => t.id.equals(id) & _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
         ))
