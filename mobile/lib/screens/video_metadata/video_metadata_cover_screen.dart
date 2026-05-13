@@ -86,12 +86,11 @@ class _VideoMetadataCoverScreenState
     super.initState();
     _selectedPosition = widget.clip.thumbnailTimestamp;
     unawaited(_initializePlayer());
-
-    _startStripGeneration();
   }
 
   Future<void> _initializePlayer() async {
     final localPath = await widget.clip.video.safeFilePath();
+
     if (!mounted) return;
 
     final metadata = await ProVideoEditor.instance.getMetadata(
@@ -99,6 +98,7 @@ class _VideoMetadataCoverScreenState
     );
     if (!mounted) return;
     _videoDuration = metadata.duration;
+    _startStripGeneration(localPath);
 
     final controller = DivineVideoPlayerController(useTexture: true);
     await controller.initialize();
@@ -119,9 +119,7 @@ class _VideoMetadataCoverScreenState
     }
   }
 
-  Future<void> _startStripGeneration() async {
-    final videoPath = await widget.clip.video.safeFilePath();
-
+  Future<void> _startStripGeneration(String videoPath) async {
     final view = WidgetsBinding.instance.platformDispatcher.views.first;
     final pixelRatio = view.devicePixelRatio;
     final screenWidth = view.physicalSize.width / pixelRatio;
@@ -341,6 +339,7 @@ class _VideoMetadataCoverScreenState
                 children: [
                   Expanded(
                     child: Stack(
+                      fit: .expand,
                       children: [
                         RepaintBoundary(
                           child: _VideoArea(
