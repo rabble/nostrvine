@@ -1,11 +1,146 @@
 # Contributing To Divine
 
 Status: Current
-Validated against: `AGENTS.md`, `mobile/pubspec.yaml`, current workspace packages, and active mobile scripts on 2026-03-19.
+Validated against: `AGENTS.md`, `.claude/rules/agent_workflow.md`,
+`.claude/rules/code_style.md`, current workspace packages, and active mobile
+scripts on 2026-05-13.
 
-This guide is the fast path for contributors working on the Divine mobile app and its workspace packages.
+This guide is the source of truth for outside contributors.
 
-## Prerequisites
+## Current Contribution Status
+
+We appreciate the time and care people put into this project. Right now,
+however, we are **not accepting outside implementation PRs by default** while
+we tighten our contributor guidance and clarify product ownership boundaries.
+
+What this means in practice:
+
+- A well-intentioned PR may still be closed if it lands in an area where
+  product, UX, architecture, or sequencing is not explicitly approved.
+- Large feature branches are especially likely to be closed even if they
+  contain real effort and test coverage, because the review and cleanup cost is
+  too high for the current team size.
+- We are working toward clearer issue labels and contribution lanes. Until that
+  is in place, assume implementation work needs maintainer buy-in **before**
+  code is written.
+
+If you want to help right now, the safest path is to start with issues that a
+maintainer has explicitly marked as ready for outside contribution.
+
+## Good First Contributions
+
+These are the kinds of changes most likely to be reviewable and mergeable:
+
+- Small bug fixes with a clear reproduction and narrow diff.
+- Targeted tests that improve coverage around existing behavior.
+- Documentation fixes that align docs to current code.
+- Small refactors requested by a maintainer.
+- Clearly scoped UI polish where the intended behavior and visual direction are
+  already settled.
+
+These are **not** good first contributions unless a maintainer has explicitly
+asked for them:
+
+- New features or feature revivals from old issues, designs, or dormant PRs.
+- Broad UX or information architecture changes.
+- Multi-screen flows or changes that touch many packages at once.
+- New repositories, storage models, caching layers, or cross-cutting state
+  management changes.
+- “I implemented the whole issue” PRs opened without prior maintainer
+  confirmation.
+
+## Before You Start
+
+Before writing code, make sure the answer to all of these is yes:
+
+1. A maintainer has indicated the work is wanted **now**, not just eventually.
+2. The intended product behavior and design direction are already clear.
+3. The change can be delivered as a small, focused PR.
+4. You know which package or layer owns the change.
+5. You are prepared to run the relevant tests and code generation locally.
+
+If any of those are unclear, start a discussion first instead of opening a PR.
+
+## Templates And Agent Compliance
+
+We enforce our repository templates and agent instructions.
+
+Before starting work:
+
+- Read [AGENTS.md](AGENTS.md).
+- Read the repo rules under `.claude/rules/`, especially
+  `.claude/rules/agent_workflow.md` and `.claude/rules/code_style.md`.
+- If you use Codex, Claude, ChatGPT, Cursor, Copilot, or any other coding
+  agent, make sure that agent has reviewed those files before it writes code,
+  opens an issue, or opens a PR.
+
+When opening issues and PRs:
+
+- Use the appropriate GitHub template and fill it out completely.
+- Follow the issue title prefixes from the templates, such as `fix:` for bugs
+  and `feat:` for feature requests.
+- Use the PR template in `.github/pull_request_template.md`.
+- Use a semantic PR title that matches our checks. The repo enforces this via
+  `.github/workflows/semantic_pr.yaml`.
+
+Submissions that ignore the templates, semantic formatting, or repo
+instructions may be closed or sent back for correction before review starts.
+
+## Technical Debt Standard
+
+In the age of agentic programming, we expect a higher bar, not a lower one.
+We enforce a standard of:
+
+- No new technical debt in submitted PRs.
+- Elimination of as much relevant prior technical debt as is reasonably
+  possible within the scope of the change.
+
+That means:
+
+- Do not add TODOs, compatibility shims, temporary hacks, commented-out code,
+  partial migrations, or “we’ll fix this later” scaffolding unless a maintainer
+  has explicitly approved a transitional step.
+- Do not leave generated files stale, tests red, architecture half-migrated, or
+  known cleanup deferred just to get the branch over the line.
+- If your change touches an area with existing debt, clean up the parts you are
+  already in unless doing so would turn the PR into a different project.
+- If a proposed fix would require introducing new mess to ship now and repair
+  later, stop and rescope the change instead.
+- Issues related to eliminating prior technical debt and preventing future
+  technical debt already exist in our issue backlog. Do not use a PR to create
+  vague new cleanup debt. If relevant backlog tracking already exists, use it
+  and address that debt directly in the work.
+
+Using an agent is not an excuse to produce larger diffs with lower standards.
+If anything, agent assistance means we expect contributors to arrive with
+cleaner structure, better test coverage, stronger adherence to repo rules, and
+less leftover cleanup for maintainers.
+
+## Why PRs Get Closed
+
+We want to be direct about this because it saves everyone time.
+
+A PR may be closed without merge if any of the following are true:
+
+- The work was started without maintainer alignment.
+- The feature direction is still unsettled across product, design, or
+  architecture.
+- The branch is too large or spans too many concerns to review safely.
+- The implementation solves the wrong problem, even if the code quality is
+  solid.
+- The branch mixes feature work with unrelated cleanup, dependency churn, or
+  architecture experiments.
+- The branch introduces new technical debt or avoids cleanup that should have
+  been handled in the touched area.
+- The change creates more review, rework, or coordination cost than the team
+  can absorb right now.
+
+Closure in those cases is usually a sequencing decision, not a judgment on
+effort or intent.
+
+## Repository Setup
+
+Prerequisites:
 
 - Flutter `^3.41.1`
 - Dart `^3.11.0`
@@ -13,7 +148,7 @@ This guide is the fast path for contributors working on the Divine mobile app an
 - Android Studio and Android SDK for Android work
 - CocoaPods for Apple platform dependencies
 
-## Setup
+Initial setup:
 
 ```bash
 git clone https://github.com/divinevideo/divine-mobile.git
@@ -29,16 +164,60 @@ Start every task from a fresh branch created from `origin/main`:
 
 ```bash
 git fetch origin
-git worktree add .worktrees/<task-name> -b codex/<task-name> origin/main
+git worktree add .worktrees/<task-name> -b <branch-name> origin/main
 ```
 
-Do not start new work in a dirty checkout. Keep one task per worktree and commit the completed work before handoff.
+Rules:
+
+- Never start new work in a dirty checkout.
+- Keep one task per worktree.
+- Rebase onto fresh `origin/main` before every push.
+- Never merge `main` into a feature branch. Always rebase.
+- Never stack PRs. Every PR targets `main`.
 
 ## Where To Work
 
 - Run Flutter commands from `mobile/`.
 - Put reusable logic in the owning package under `mobile/packages/`.
-- Follow the current architecture direction in [docs/STATE_MANAGEMENT.md](docs/STATE_MANAGEMENT.md) and [docs/BLOC_UI_MIGRATION_PRD.md](docs/BLOC_UI_MIGRATION_PRD.md).
+- Trust current implementation and focused tests over stale historical docs.
+- Start with:
+  - [docs/STATE_MANAGEMENT.md](docs/STATE_MANAGEMENT.md)
+  - [docs/BLOC_UI_MIGRATION_PRD.md](docs/BLOC_UI_MIGRATION_PRD.md)
+  - [docs/NOSTR_EVENT_TYPES.md](docs/NOSTR_EVENT_TYPES.md)
+  - [mobile/docs/NOSTR_VIDEO_EVENTS.md](mobile/docs/NOSTR_VIDEO_EVENTS.md)
+  - [mobile/docs/DESIGN_SYSTEM_COMPONENTS.md](mobile/docs/DESIGN_SYSTEM_COMPONENTS.md)
+  - [mobile/docs/GOLDEN_TESTING_GUIDE.md](mobile/docs/GOLDEN_TESTING_GUIDE.md)
+
+## Architecture Expectations
+
+- Prefer `UI -> BLoC/Cubit -> Repository -> Client` for new work.
+- Repositories and blocs should not depend on Flutter UI types.
+- Prefer constructor injection over hidden singletons.
+- New UI state should use BLoC/Cubit.
+- Riverpod is legacy compatibility glue during migration, not the preferred
+  direction for new feature state.
+- Prefer small widget classes over helper methods that return `Widget`.
+- Reuse shared `divine_ui` components and `VineTheme` instead of one-off UI.
+
+## Product And Design Boundaries
+
+Do not assume that an old issue, Figma, comment thread, or dormant branch is
+enough authorization to implement a feature. For contribution purposes, the
+source of truth is current maintainer direction.
+
+If the change affects any of the following, get explicit maintainer confirmation
+first:
+
+- Navigation model or feed structure
+- Saved/followed content behavior
+- Search behavior or discovery surfaces
+- New storage or persistence semantics
+- New package boundaries
+- Overlay behavior or interaction models
+- Any UI that needs design fidelity rather than engineering approximation
+
+If design direction is unresolved, stop and ask first. Do not fill in the
+blanks yourself and hope review will sort it out later.
 
 ## Day-To-Day Commands
 
@@ -49,41 +228,16 @@ flutter analyze
 flutter test
 ```
 
-From `mobile/`, useful app entry paths:
+Useful app entry paths from `mobile/`:
 
 - `./run_dev.sh ios debug`
 - `./run_dev.sh android debug`
 - `./run_dev.sh macos debug`
-- `cd mobile && flutter run -d macos`
+- `flutter run -d macos`
 - `./build_ios.sh release`
 - `./build_android.sh release`
 
-If generated code changes, run from `mobile/` with a fast reset step:
-
-```bash
-./build_ios.sh debug --codegen
-./run_dev.sh ios debug
-```
-
-If pods are out of sync, run from `mobile/`:
-
-```bash
-./build_ios.sh debug --pod-reset
-./run_dev.sh ios debug
-```
-
-For local cache cleanup from `mobile/`:
-
-```bash
-./clear_cache.sh
-./clear_cache.sh --full
-```
-
-See [docs/BUILD_SPEED_CHECKLIST.md](docs/BUILD_SPEED_CHECKLIST.md) for the decision flow.
-
-## Codegen And Generated Files
-
-Run code generation when you touch `@riverpod`, `@freezed`, `@JsonSerializable`, Drift schema, or generated mocks:
+If generated code changes:
 
 ```bash
 cd mobile
@@ -94,7 +248,8 @@ Commit the relevant generated outputs with the source change.
 
 ## Testing Expectations
 
-Start with the smallest relevant verification, then broaden when the change is cross-cutting.
+Start with the smallest relevant verification, then broaden when the diff is
+cross-cutting.
 
 Core checks:
 
@@ -107,29 +262,63 @@ flutter test
 Additional expectations:
 
 - Run `mobile/scripts/golden.sh verify` for visual changes.
-- If you touch `mobile/packages/videos_repository`, run `flutter test --coverage` from that package.
+- If you touch `mobile/packages/videos_repository`, run
+  `flutter test --coverage` from that package.
 - Add or update tests next to the changed feature or package.
-- Web-only branches: VM shards skip tests guarded with `kIsWeb`. Mobile CI does **not** run browser tests; before merging changes that touch `getDocumentsPath` / web document paths, run manually from `mobile/`: `flutter test test/utils/path_resolver_test.dart --platform chrome` (headless setups may need `CHROME_EXECUTABLE` and `xvfb-run -a`).
+- If you touch generated-code inputs, regenerate and commit the outputs.
+- Do not push red tests “to see what CI says.”
 
-## Engineering Guardrails
+## Scope Discipline
 
-- Prefer `UI -> BLoC/Cubit -> Repository -> Client` for new feature work.
-- Constructor injection over hidden singletons.
-- No arbitrary `Future.delayed()` in app logic.
-- Never truncate Nostr IDs in code, logs, analytics, or tests.
-- Reuse `divine_ui` components and `VineTheme` instead of one-off styling.
-- Keep public copy direct, human, and aligned with the brand guidelines.
+Keep PRs focused and reviewable.
+
+Do:
+
+- Change only what is required for the agreed task.
+- Stage only task-related files.
+- Keep dependency changes justified and narrow.
+- Split truly independent work into separate PRs targeting `main`.
+
+Do not:
+
+- Mix feature work with unrelated cleanup or version bumps.
+- Add speculative architecture while solving a smaller problem.
+- Land partial work with TODOs instead of finishing or scoping down.
+- Introduce new technical debt with the expectation that maintainers will clean
+  it up later.
+- Leave generated files stale.
+- Leave the branch dirty at handoff.
 
 ## Pull Requests
 
-- Use a Conventional Commit PR title, for example `feat(settings): split settings into sub-screens`.
-- Stage only task-related files.
+Requirements:
+
+- Use a Conventional Commit PR title such as
+  `feat(settings): split settings into sub-screens`.
+- Make sure the PR title is semantic when the PR is opened. Editing the title
+  later does not reliably retrigger all checks.
+- Target `main`.
+- Fill out `.github/pull_request_template.md` completely, including the
+  description, related issue, and type-of-change checklist.
+- Include a clear description of what changed, what is out of scope, and how
+  you verified it.
 - End with a clean `git status`.
-- Open a PR once the branch is ready for review.
-- If you change behavior, update the current docs or add follow-up notes to the launch hub if the change affects release readiness.
+- Rebase on `origin/main` before pushing.
+
+Before opening a PR, ask yourself:
+
+1. Is this branch small enough for a maintainer to review without
+   reconstructing product intent?
+2. Does it stay inside a clearly approved scope?
+3. Did I avoid mixing in unrelated files or concerns?
+4. Did I run the relevant tests locally?
+
+If the answer to any of those is no, the PR is not ready yet.
 
 ## Documentation Rules
 
 - Current docs belong in `docs/` or `mobile/docs/`.
-- Historical plans and completed investigations should be preserved but clearly marked historical.
-- Before adding a new doc, check [docs/DOCUMENTATION_GUIDELINES.md](docs/DOCUMENTATION_GUIDELINES.md).
+- Historical plans and completed investigations should be preserved but clearly
+  marked historical.
+- Before adding a new doc, check
+  [docs/DOCUMENTATION_GUIDELINES.md](docs/DOCUMENTATION_GUIDELINES.md).
