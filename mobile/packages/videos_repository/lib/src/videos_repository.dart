@@ -13,6 +13,7 @@ import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:videos_repository/src/home_feed_result.dart';
 import 'package:videos_repository/src/in_memory_feed_cache.dart';
+import 'package:videos_repository/src/native_popular_videos_page.dart';
 import 'package:videos_repository/src/video_content_filter.dart';
 import 'package:videos_repository/src/video_event_filter.dart';
 import 'package:videos_repository/src/video_local_storage.dart';
@@ -47,6 +48,8 @@ const Duration _statsFetchTimeout = Duration(seconds: 3);
 /// stops a stuck subscription from dominating deep-link UX once Funnelcake
 /// has already been tried.
 const Duration _routeRelayTimeout = Duration(seconds: 3);
+const String _popularCacheKey = 'popular';
+const String _nativePopularCacheKey = 'popular-native';
 
 /// {@template videos_repository}
 /// Repository for video operations with Nostr.
@@ -679,11 +682,32 @@ class VideosRepository {
     int offset = 0,
     bool skipCache = false,
   }) async {
-    const cacheKey = 'popular-native';
+    final page = await getNativePopularVideosPage(
+      limit: limit,
+      offset: offset,
+      skipCache: skipCache,
+    );
+    return page.videos;
+  }
 
+  /// Fetches native diVine videos from the popular leaderboard plus the
+  /// pagination metadata needed to continue the same source cleanly.
+  Future<NativePopularVideosPage> getNativePopularVideosPage({
+    int limit = _defaultLimit,
+    int offset = 0,
+    bool skipCache = false,
+  }) async {
     if (!skipCache && offset == 0) {
-      final cached = _inMemoryFeedCache?.get(cacheKey);
-      if (cached != null) return cached.videos;
+      final cached = _inMemoryFeedCache?.get(_nativePopularCacheKey);
+      if (cached != null) {
+        final consumedItemCount =
+            cached.consumedItemCount ?? cached.videos.length;
+        return NativePopularVideosPage(
+          videos: cached.videos,
+          consumedItemCount: consumedItemCount,
+          nextOffset: consumedItemCount,
+        );
+      }
     }
 
     if (_funnelcakeApiClient != null && _funnelcakeApiClient.isAvailable) {
@@ -692,17 +716,45 @@ class VideosRepository {
           limit: limit,
           offset: offset,
         );
-        final videos = _transformVideoStats(videoStats, sortByCreatedAt: false);
+        // Repository policy requires issue-linked TODOs for temporary code.
+        // ignore: flutter_style_todos
+        // TODO(#4307): Remove after the native popular exclude_platform
+        // fix ships.
+        final videos = _filterNativePopularVideos(
+          _transformVideoStats(videoStats, sortByCreatedAt: false),
+        );
         if (!skipCache && offset == 0) {
-          _inMemoryFeedCache?.set(cacheKey, HomeFeedResult(videos: videos));
+          _inMemoryFeedCache?.set(
+            _nativePopularCacheKey,
+            HomeFeedResult(
+              videos: videos,
+              consumedItemCount: videoStats.length,
+            ),
+          );
         }
-        return videos;
+        return NativePopularVideosPage(
+          videos: videos,
+          consumedItemCount: videoStats.length,
+          nextOffset: offset + videoStats.length,
+        );
       } on FunnelcakeException {
-        return getPopularVideos(limit: limit, skipCache: skipCache);
+        if (offset > 0) rethrow;
       }
     }
 
-    return getPopularVideos(limit: limit, skipCache: skipCache);
+    if (offset > 0) {
+      throw const FunnelcakeException(
+        'Native popular pagination is unavailable after the first page.',
+      );
+    }
+
+    final videos = await getPopularVideos(limit: limit, skipCache: skipCache);
+    return NativePopularVideosPage(
+      videos: videos,
+      consumedItemCount: videos.length,
+      legacyUntil: _cursorBeforeOldestVideoEvents(videos),
+      usesLegacyPopularFallback: true,
+    );
   }
 
   /// Fetches popular videos sorted by engagement score.
@@ -745,7 +797,7 @@ class VideosRepository {
     final cacheKey = variant != null
         ? 'popular:v2:${variant.name}'
         : period == null
-        ? 'popular'
+        ? _popularCacheKey
         : 'popular:${period.wireValue}';
 
     // Return in-memory cached result when available (initial page only).
@@ -1278,6 +1330,18 @@ class VideosRepository {
         .map((stat) => stat.createdAt.millisecondsSinceEpoch ~/ 1000)
         .reduce((a, b) => a < b ? a : b);
     return oldest - 1;
+  }
+
+  int? _cursorBeforeOldestVideoEvents(List<VideoEvent> videos) {
+    if (videos.isEmpty) return null;
+    final oldest = videos
+        .map((video) => video.createdAt)
+        .reduce((a, b) => a < b ? a : b);
+    return oldest - 1;
+  }
+
+  List<VideoEvent> _filterNativePopularVideos(List<VideoEvent> videos) {
+    return videos.where((video) => !video.isOriginalVine).toList();
   }
 
   VideoEvent? _applyContentPreferences(VideoEvent video) {

@@ -23,6 +23,7 @@ class HomeFeedResult extends Equatable {
     required this.videos,
     this.videoListSources = const {},
     this.listOnlyVideoIds = const {},
+    this.consumedItemCount,
     this.rawResponseBody,
   });
 
@@ -43,6 +44,10 @@ class HomeFeedResult extends Equatable {
   /// visual attribution since the user didn't follow the author.
   final Set<String> listOnlyVideoIds;
 
+  /// Number of raw upstream items consumed to produce [videos], when the
+  /// caller needs pagination metadata that differs from `videos.length`.
+  final int? consumedItemCount;
+
   /// The raw JSON response body from the API, if available.
   ///
   /// Populated on initial (non-paginated) home feed fetches so the
@@ -51,5 +56,10 @@ class HomeFeedResult extends Equatable {
   final String? rawResponseBody;
 
   @override
-  List<Object?> get props => [videos, videoListSources, listOnlyVideoIds];
+  List<Object?> get props => [
+    videos,
+    videoListSources,
+    listOnlyVideoIds,
+    consumedItemCount,
+  ];
 }
