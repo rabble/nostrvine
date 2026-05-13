@@ -428,6 +428,33 @@ void main() {
       );
 
       blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'clears stale deleted count so repeated single-delete results still emit',
+        setUp: () {
+          when(
+            () => mockClipLibraryService.deleteClip(any()),
+          ).thenAnswer((_) async {});
+          when(() => mockClipLibraryService.getAllClips()).thenAnswer(
+            (_) async => [],
+          );
+        },
+        seed: () => ClipsLibraryState(
+          status: ClipsLibraryStatus.loaded,
+          clips: [clip1],
+          lastDeletedCount: 1,
+        ),
+        build: createBloc,
+        act: (bloc) => bloc.add(ClipsLibraryDeleteClip(clip1)),
+        expect: () => [
+          isA<ClipsLibraryState>()
+              .having((s) => s.status, 'status', ClipsLibraryStatus.deleting)
+              .having((s) => s.lastDeletedCount, 'lastDeletedCount', isNull),
+          isA<ClipsLibraryState>()
+              .having((s) => s.status, 'status', ClipsLibraryStatus.loaded)
+              .having((s) => s.lastDeletedCount, 'lastDeletedCount', 1),
+        ],
+      );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
         'removes clip from selection if it was selected',
         setUp: () {
           when(

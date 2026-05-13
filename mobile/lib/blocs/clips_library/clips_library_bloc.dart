@@ -198,7 +198,12 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
   ) async {
     if (state.selectedClipIds.isEmpty) return;
 
-    emit(state.copyWith(status: ClipsLibraryStatus.deleting));
+    emit(
+      state.copyWith(
+        status: ClipsLibraryStatus.deleting,
+        clearDeletedCount: true,
+      ),
+    );
 
     final deletedCount = state.selectedClipIds.length;
 
@@ -241,7 +246,12 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
     ClipsLibraryDeleteClip event,
     Emitter<ClipsLibraryState> emit,
   ) async {
-    emit(state.copyWith(status: ClipsLibraryStatus.deleting));
+    emit(
+      state.copyWith(
+        status: ClipsLibraryStatus.deleting,
+        clearDeletedCount: true,
+      ),
+    );
 
     try {
       Log.info(
