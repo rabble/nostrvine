@@ -3688,6 +3688,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get shareMenuUpdate => 'Uppdatera';
 
   @override
+  String get shareMenuChangeCover => 'Byt omslag';
+
+  @override
+  String get shareMenuCoverUploadingBackground =>
+      'Miniatyren laddas upp i bakgrunden';
+
+  @override
   String get shareMenuVideoUpdated => 'Videon uppdaterades';
 
   @override

@@ -3690,6 +3690,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareMenuUpdate => 'Update';
 
   @override
+  String get shareMenuChangeCover => 'Change Cover';
+
+  @override
+  String get shareMenuCoverUploadingBackground =>
+      'Thumbnail is being uploaded in the background';
+
+  @override
   String get shareMenuVideoUpdated => 'Video updated successfully';
 
   @override

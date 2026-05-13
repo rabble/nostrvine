@@ -6482,6 +6482,18 @@ abstract class AppLocalizations {
   /// **'Update'**
   String get shareMenuUpdate;
 
+  /// No description provided for @shareMenuChangeCover.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Cover'**
+  String get shareMenuChangeCover;
+
+  /// No description provided for @shareMenuCoverUploadingBackground.
+  ///
+  /// In en, this message translates to:
+  /// **'Thumbnail is being uploaded in the background'**
+  String get shareMenuCoverUploadingBackground;
+
   /// No description provided for @shareMenuVideoUpdated.
   ///
   /// In en, this message translates to:

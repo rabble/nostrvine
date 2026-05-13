@@ -890,6 +890,8 @@
     "shareMenuEditMetadataNote": "참고: 메타데이터만 수정할 수 있어요. 영상 콘텐츠는 변경할 수 없어요.",
     "shareMenuDeleting": "삭제 중...",
     "shareMenuUpdate": "업데이트",
+    "shareMenuChangeCover": "커버 변경",
+    "shareMenuCoverUploadingBackground": "썸네일을 백그라운드에서 업로드 중이에요",
     "shareMenuVideoUpdated": "영상을 업데이트했어요",
     "shareMenuFailedToUpdateVideo": "영상 업데이트에 실패했어요: {error}",
     "shareMenuDeleteVideoQuestion": "영상을 삭제할까요?",

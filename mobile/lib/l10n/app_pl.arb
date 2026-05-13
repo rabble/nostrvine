@@ -1562,6 +1562,8 @@
     "shareMenuEditMetadataNote": "Uwaga: Można edytować tylko metadane. Treści filmu nie można zmienić.",
     "shareMenuDeleting": "Usuwanie...",
     "shareMenuUpdate": "Zaktualizuj",
+    "shareMenuChangeCover": "Zmień okładkę",
+    "shareMenuCoverUploadingBackground": "Miniatura jest przesyłana w tle",
     "shareMenuVideoUpdated": "Film zaktualizowany pomyślnie",
     "shareMenuFailedToUpdateVideo": "Nie udało się zaktualizować filmu: {error}",
     "@shareMenuFailedToUpdateVideo": {

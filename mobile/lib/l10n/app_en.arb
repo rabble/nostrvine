@@ -1955,6 +1955,8 @@
   "shareMenuEditMetadataNote": "Note: Only metadata can be edited. Video content cannot be changed.",
   "shareMenuDeleting": "Deleting...",
   "shareMenuUpdate": "Update",
+  "shareMenuChangeCover": "Change Cover",
+  "shareMenuCoverUploadingBackground": "Thumbnail is being uploaded in the background",
   "shareMenuVideoUpdated": "Video updated successfully",
   "shareMenuFailedToUpdateVideo": "Failed to update video: {error}",
   "@shareMenuFailedToUpdateVideo": {

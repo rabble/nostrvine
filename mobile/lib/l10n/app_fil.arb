@@ -971,6 +971,8 @@
     "shareMenuEditMetadataNote": "Tandaan: Metadata lang ang puwedeng i-edit. Hindi mababago ang content ng video.",
     "shareMenuDeleting": "Binubura...",
     "shareMenuUpdate": "I-update",
+    "shareMenuChangeCover": "Palitan ang Cover",
+    "shareMenuCoverUploadingBackground": "Ina-upload ang thumbnail sa background",
     "shareMenuVideoUpdated": "Matagumpay na na-update ang video",
     "shareMenuFailedToUpdateVideo": "Hindi na-update ang video: {error}",
     "shareMenuFailedToDeleteVideo": "Hindi nabura ang video: {error}",

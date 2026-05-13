@@ -1562,6 +1562,8 @@
     "shareMenuEditMetadataNote": "Let op: alleen metadata kan worden bewerkt. Video-inhoud kan niet worden gewijzigd.",
     "shareMenuDeleting": "Verwijderen...",
     "shareMenuUpdate": "Bijwerken",
+    "shareMenuChangeCover": "Cover wijzigen",
+    "shareMenuCoverUploadingBackground": "Miniatuur wordt op de achtergrond geüpload",
     "shareMenuVideoUpdated": "Video succesvol bijgewerkt",
     "shareMenuFailedToUpdateVideo": "Video bijwerken mislukt: {error}",
     "@shareMenuFailedToUpdateVideo": {

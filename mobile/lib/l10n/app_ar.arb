@@ -1552,6 +1552,8 @@
     "shareMenuEditMetadataNote": "ملحوظة: يمكن تعديل البيانات الوصفية فقط. لا يمكن تغيير محتوى الفيديو.",
     "shareMenuDeleting": "جاري الحذف...",
     "shareMenuUpdate": "تحديث",
+    "shareMenuChangeCover": "تغيير الغلاف",
+    "shareMenuCoverUploadingBackground": "يتم رفع الصورة المصغرة في الخلفية",
     "shareMenuVideoUpdated": "تم تحديث الفيديو بنجاح",
     "shareMenuFailedToUpdateVideo": "فشل تحديث الفيديو: {error}",
     "@shareMenuFailedToUpdateVideo": {

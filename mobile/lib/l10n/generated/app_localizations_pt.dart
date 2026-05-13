@@ -3716,6 +3716,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get shareMenuUpdate => 'Atualizar';
 
   @override
+  String get shareMenuChangeCover => 'Alterar capa';
+
+  @override
+  String get shareMenuCoverUploadingBackground =>
+      'A miniatura está sendo enviada em segundo plano';
+
+  @override
   String get shareMenuVideoUpdated => 'Vídeo atualizado com sucesso';
 
   @override

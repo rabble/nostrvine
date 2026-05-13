@@ -1559,6 +1559,8 @@
     "shareMenuEditMetadataNote": "Not: Yalnızca meta veriler düzenlenebilir. Video içeriği değiştirilemez.",
     "shareMenuDeleting": "Siliniyor...",
     "shareMenuUpdate": "Güncelle",
+    "shareMenuChangeCover": "Kapağı Değiştir",
+    "shareMenuCoverUploadingBackground": "Küçük resim arka planda yükleniyor",
     "shareMenuVideoUpdated": "Video başarıyla güncellendi",
     "shareMenuFailedToUpdateVideo": "Video güncellenemedi: {error}",
     "@shareMenuFailedToUpdateVideo": {

@@ -3790,6 +3790,13 @@ class AppLocalizationsPl extends AppLocalizations {
   String get shareMenuUpdate => 'Zaktualizuj';
 
   @override
+  String get shareMenuChangeCover => 'Zmień okładkę';
+
+  @override
+  String get shareMenuCoverUploadingBackground =>
+      'Miniatura jest przesyłana w tle';
+
+  @override
   String get shareMenuVideoUpdated => 'Film zaktualizowany pomyślnie';
 
   @override

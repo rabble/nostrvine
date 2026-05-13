@@ -3672,6 +3672,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get shareMenuUpdate => 'Güncelle';
 
   @override
+  String get shareMenuChangeCover => 'Kapağı Değiştir';
+
+  @override
+  String get shareMenuCoverUploadingBackground =>
+      'Küçük resim arka planda yükleniyor';
+
+  @override
   String get shareMenuVideoUpdated => 'Video başarıyla güncellendi';
 
   @override

@@ -3520,6 +3520,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuUpdate => '업데이트';
 
   @override
+  String get shareMenuChangeCover => '커버 변경';
+
+  @override
+  String get shareMenuCoverUploadingBackground => '썸네일을 백그라운드에서 업로드 중이에요';
+
+  @override
   String get shareMenuVideoUpdated => '영상을 업데이트했어요';
 
   @override

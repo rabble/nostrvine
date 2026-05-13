@@ -3746,6 +3746,13 @@ class AppLocalizationsFil extends AppLocalizations {
   String get shareMenuUpdate => 'I-update';
 
   @override
+  String get shareMenuChangeCover => 'Palitan ang Cover';
+
+  @override
+  String get shareMenuCoverUploadingBackground =>
+      'Ina-upload ang thumbnail sa background';
+
+  @override
   String get shareMenuVideoUpdated => 'Matagumpay na na-update ang video';
 
   @override

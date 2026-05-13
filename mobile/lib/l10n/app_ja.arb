@@ -1552,6 +1552,8 @@
     "shareMenuEditMetadataNote": "注意: 編集できるのはメタデータだけだよ。動画の中身は変えられないよ。",
     "shareMenuDeleting": "削除中...",
     "shareMenuUpdate": "更新",
+    "shareMenuChangeCover": "カバーを変更",
+    "shareMenuCoverUploadingBackground": "サムネイルをバックグラウンドでアップロード中",
     "shareMenuVideoUpdated": "動画を更新したよ",
     "shareMenuFailedToUpdateVideo": "動画の更新がうまくいかなかった: {error}",
     "@shareMenuFailedToUpdateVideo": {

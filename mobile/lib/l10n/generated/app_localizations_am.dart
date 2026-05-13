@@ -3611,6 +3611,12 @@ class AppLocalizationsAm extends AppLocalizations {
   String get shareMenuUpdate => 'አዘምን';
 
   @override
+  String get shareMenuChangeCover => 'ሽፋን ቀይር';
+
+  @override
+  String get shareMenuCoverUploadingBackground => 'ድቅን ምስሉ ዳራ ላይ እየተሰቀለ ነው';
+
+  @override
   String get shareMenuVideoUpdated => 'ቪዲዮው በተሳካ ሁኔታ ተዘምኗል';
 
   @override

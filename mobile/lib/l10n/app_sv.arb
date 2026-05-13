@@ -1562,6 +1562,8 @@
     "shareMenuEditMetadataNote": "Obs: Endast metadata kan redigeras. Själva videoinnehållet kan inte ändras.",
     "shareMenuDeleting": "Tar bort...",
     "shareMenuUpdate": "Uppdatera",
+    "shareMenuChangeCover": "Byt omslag",
+    "shareMenuCoverUploadingBackground": "Miniatyren laddas upp i bakgrunden",
     "shareMenuVideoUpdated": "Videon uppdaterades",
     "shareMenuFailedToUpdateVideo": "Kunde inte uppdatera videon: {error}",
     "@shareMenuFailedToUpdateVideo": {

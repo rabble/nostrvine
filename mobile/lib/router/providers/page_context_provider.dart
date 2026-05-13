@@ -48,6 +48,7 @@ import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
+import 'package:openvine/screens/video_metadata/video_metadata_edit_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:riverpod/riverpod.dart';
@@ -66,6 +67,7 @@ enum RouteType {
   videoRecorder, // Video recorder screen
   videoEditor, // Video editor screen
   videoMetadata, // Video editor meta screen
+  videoEdit, // Full-screen edit flow for published videos
   importKey,
   invites, // Invite codes share/list screen
   badges, // Badge awards dashboard
@@ -274,6 +276,9 @@ RouteContext parseRoute(String path) {
 
     case 'video-metadata':
       return const RouteContext(type: RouteType.videoMetadata);
+
+    case 'video-edit':
+      return const RouteContext(type: RouteType.videoEdit);
 
     case 'settings':
       return const RouteContext(type: RouteType.settings);
@@ -529,6 +534,9 @@ String buildRoute(RouteContext context) {
 
     case RouteType.videoMetadata:
       return VideoMetadataScreen.path;
+
+    case RouteType.videoEdit:
+      return VideoMetadataEditScreen.path;
 
     case RouteType.settings:
       if (context.appSlug != null) {

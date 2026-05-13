@@ -3736,6 +3736,13 @@ class AppLocalizationsBg extends AppLocalizations {
   String get shareMenuUpdate => 'Актуализация';
 
   @override
+  String get shareMenuChangeCover => 'Смяна на корицата';
+
+  @override
+  String get shareMenuCoverUploadingBackground =>
+      'Миниатюрата се качва на заден план';
+
+  @override
   String get shareMenuVideoUpdated => 'Видеото е обновено';
 
   @override

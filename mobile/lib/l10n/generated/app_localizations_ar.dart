@@ -3652,6 +3652,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareMenuUpdate => 'تحديث';
 
   @override
+  String get shareMenuChangeCover => 'تغيير الغلاف';
+
+  @override
+  String get shareMenuCoverUploadingBackground =>
+      'يتم رفع الصورة المصغرة في الخلفية';
+
+  @override
   String get shareMenuVideoUpdated => 'تم تحديث الفيديو بنجاح';
 
   @override

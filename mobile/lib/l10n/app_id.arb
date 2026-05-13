@@ -1559,6 +1559,8 @@
     "shareMenuEditMetadataNote": "Catatan: Hanya metadata yang bisa diubah. Konten video tidak bisa diubah.",
     "shareMenuDeleting": "Menghapus...",
     "shareMenuUpdate": "Perbarui",
+    "shareMenuChangeCover": "Ubah Sampul",
+    "shareMenuCoverUploadingBackground": "Thumbnail sedang diunggah di latar belakang",
     "shareMenuVideoUpdated": "Video berhasil diperbarui",
     "shareMenuFailedToUpdateVideo": "Gagal memperbarui video: {error}",
     "@shareMenuFailedToUpdateVideo": {

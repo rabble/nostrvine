@@ -57,6 +57,7 @@ void main() {
     String? additionalText,
     String? primaryButtonText,
     VoidCallback? onPrimaryPressed,
+    DivineButtonType primaryButtonType = DivineButtonType.primary,
     String? secondaryButtonText,
     VoidCallback? onSecondaryPressed,
     String? tertiaryButtonText,
@@ -73,6 +74,7 @@ void main() {
             additionalText: additionalText,
             primaryButtonText: primaryButtonText,
             onPrimaryPressed: onPrimaryPressed,
+            primaryButtonType: primaryButtonType,
             secondaryButtonText: secondaryButtonText,
             onSecondaryPressed: onSecondaryPressed,
             tertiaryButtonText: tertiaryButtonText,
@@ -184,6 +186,31 @@ void main() {
 
         expect(find.byType(DivineButton), findsOneWidget);
         expect(find.text('Learn more'), findsOneWidget);
+      });
+
+      testWidgets('primary button with default type', (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            primaryButtonText: 'OK',
+            onPrimaryPressed: () {},
+          ),
+        );
+
+        final button = tester.widget<DivineButton>(find.byType(DivineButton));
+        expect(button.type, equals(DivineButtonType.primary));
+      });
+
+      testWidgets('primary button with error type', (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            primaryButtonText: 'Delete',
+            onPrimaryPressed: () {},
+            primaryButtonType: DivineButtonType.error,
+          ),
+        );
+
+        final button = tester.widget<DivineButton>(find.byType(DivineButton));
+        expect(button.type, equals(DivineButtonType.error));
       });
 
       testWidgets('all three buttons', (tester) async {

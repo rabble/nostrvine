@@ -1562,6 +1562,8 @@
     "shareMenuEditMetadataNote": "Note : seules les métadonnées peuvent être modifiées. Le contenu vidéo ne peut pas être changé.",
     "shareMenuDeleting": "Suppression...",
     "shareMenuUpdate": "Mettre à jour",
+    "shareMenuChangeCover": "Changer la couverture",
+    "shareMenuCoverUploadingBackground": "La miniature est envoyée en arrière-plan",
     "shareMenuVideoUpdated": "Vidéo mise à jour avec succès",
     "shareMenuFailedToUpdateVideo": "Échec de la mise à jour de la vidéo : {error}",
     "@shareMenuFailedToUpdateVideo": {

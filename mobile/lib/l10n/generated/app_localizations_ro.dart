@@ -3802,6 +3802,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get shareMenuUpdate => 'Actualizează';
 
   @override
+  String get shareMenuChangeCover => 'Schimbă coperta';
+
+  @override
+  String get shareMenuCoverUploadingBackground =>
+      'Miniatura se încarcă în fundal';
+
+  @override
   String get shareMenuVideoUpdated => 'Videoclip actualizat cu succes';
 
   @override

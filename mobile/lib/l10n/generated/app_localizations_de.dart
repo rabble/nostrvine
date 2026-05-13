@@ -3736,6 +3736,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get shareMenuUpdate => 'Aktualisieren';
 
   @override
+  String get shareMenuChangeCover => 'Cover ändern';
+
+  @override
+  String get shareMenuCoverUploadingBackground =>
+      'Vorschaubild wird im Hintergrund hochgeladen';
+
+  @override
   String get shareMenuVideoUpdated => 'Video erfolgreich aktualisiert';
 
   @override

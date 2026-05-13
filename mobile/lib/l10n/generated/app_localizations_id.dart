@@ -3662,6 +3662,13 @@ class AppLocalizationsId extends AppLocalizations {
   String get shareMenuUpdate => 'Perbarui';
 
   @override
+  String get shareMenuChangeCover => 'Ubah Sampul';
+
+  @override
+  String get shareMenuCoverUploadingBackground =>
+      'Thumbnail sedang diunggah di latar belakang';
+
+  @override
   String get shareMenuVideoUpdated => 'Video berhasil diperbarui';
 
   @override

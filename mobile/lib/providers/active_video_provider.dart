@@ -101,6 +101,7 @@ final activeVideoIdProvider = Provider<String?>((ref) {
     case RouteType.videoRecorder:
     case RouteType.videoEditor:
     case RouteType.videoMetadata:
+    case RouteType.videoEdit:
     case RouteType.settings:
     case RouteType.badges:
     case RouteType.relaySettings:

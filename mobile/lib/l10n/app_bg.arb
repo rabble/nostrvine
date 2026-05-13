@@ -1744,6 +1744,8 @@
     "shareMenuEditMetadataNote": "Забележка: Могат да се редактират само метаданни. Видеосъдържанието не може да се променя.",
     "shareMenuDeleting": "Изтриване...",
     "shareMenuUpdate": "Актуализация",
+    "shareMenuChangeCover": "Смяна на корицата",
+    "shareMenuCoverUploadingBackground": "Миниатюрата се качва на заден план",
     "shareMenuVideoUpdated": "Видеото е обновено",
     "shareMenuFailedToUpdateVideo": "Не успяхме да обновим видеото: {error}",
     "@shareMenuFailedToUpdateVideo": {

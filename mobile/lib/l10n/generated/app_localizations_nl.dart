@@ -3704,6 +3704,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get shareMenuUpdate => 'Bijwerken';
 
   @override
+  String get shareMenuChangeCover => 'Cover wijzigen';
+
+  @override
+  String get shareMenuCoverUploadingBackground =>
+      'Miniatuur wordt op de achtergrond geüpload';
+
+  @override
   String get shareMenuVideoUpdated => 'Video succesvol bijgewerkt';
 
   @override

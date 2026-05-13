@@ -3505,6 +3505,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareMenuUpdate => '更新';
 
   @override
+  String get shareMenuChangeCover => 'カバーを変更';
+
+  @override
+  String get shareMenuCoverUploadingBackground => 'サムネイルをバックグラウンドでアップロード中';
+
+  @override
   String get shareMenuVideoUpdated => '動画を更新したよ';
 
   @override

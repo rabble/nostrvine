@@ -49,6 +49,7 @@ class VineBottomSheetPrompt extends StatelessWidget {
     this.additionalText,
     this.primaryButtonText,
     this.onPrimaryPressed,
+    this.primaryButtonType = DivineButtonType.primary,
     this.secondaryButtonText,
     this.onSecondaryPressed,
     this.tertiaryButtonText,
@@ -94,6 +95,12 @@ class VineBottomSheetPrompt extends StatelessWidget {
   /// Callback for the primary action button.
   final VoidCallback? onPrimaryPressed;
 
+  /// The style of the primary action button. Defaults to
+  /// [DivineButtonType.primary].
+  ///
+  /// Set to [DivineButtonType.error] for destructive actions like "Delete".
+  final DivineButtonType primaryButtonType;
+
   /// Optional label for the secondary action button.
   final String? secondaryButtonText;
 
@@ -109,6 +116,7 @@ class VineBottomSheetPrompt extends StatelessWidget {
     String? additionalText,
     String? primaryButtonText,
     VoidCallback? onPrimaryPressed,
+    DivineButtonType primaryButtonType = DivineButtonType.primary,
     String? secondaryButtonText,
     VoidCallback? onSecondaryPressed,
     String? tertiaryButtonText,
@@ -127,6 +135,7 @@ class VineBottomSheetPrompt extends StatelessWidget {
         additionalText: additionalText,
         primaryButtonText: primaryButtonText,
         onPrimaryPressed: onPrimaryPressed,
+        primaryButtonType: primaryButtonType,
         secondaryButtonText: secondaryButtonText,
         onSecondaryPressed: onSecondaryPressed,
         tertiaryButtonText: tertiaryButtonText,
@@ -185,6 +194,7 @@ class VineBottomSheetPrompt extends StatelessWidget {
             DivineButton(
               label: primaryButtonText!,
               onPressed: onPrimaryPressed,
+              type: primaryButtonType,
               expanded: true,
             ),
 
