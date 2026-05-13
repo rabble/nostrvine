@@ -30,8 +30,10 @@ class VideoEditorSplitService {
   ///
   /// This method:
   /// 1. Creates two new clip objects with completers for tracking processing
-  /// 2. Generates output paths in the cache directory
-  /// 3. Calls onClipsCreated callback to add clips to UI BEFORE rendering
+  /// 2. Calls [onClipsCreated] so the UI can insert clips **before** any async
+  ///    path or render work (avoids races where the editor closes or tests
+  ///    finish while [getDocumentsPath] is still pending).
+  /// 3. Resolves output paths under the documents directory
   /// 4. Extracts thumbnail for the end clip
   /// 5. Renders both clips in parallel
   ///
@@ -94,6 +96,11 @@ class VideoEditorSplitService {
       processingCompleter: Completer<bool>(),
     );
 
+    // Notify that clips are created (so they can be added to UI before
+    // rendering). Must run before awaiting path/render so callers are not
+    // blocked on I/O for the first UI update.
+    onClipsCreated?.call(startClip, endClip);
+
     final documentsPath = await getDocumentsPath();
     final startClipPath = p.join(documentsPath, '${startClipId}_start.mp4');
     final endClipPath = p.join(documentsPath, '${endClipId}_end.mp4');
@@ -104,10 +111,6 @@ class VideoEditorSplitService {
       name: 'VideoEditorSplitService',
       category: .video,
     );
-
-    // Notify that clips are created (so they can be added to UI before
-    // rendering)
-    onClipsCreated?.call(startClip, endClip);
 
     // Extract thumbnail for the end clip at the absolute split position
     await _extractThumbnailForClip(
