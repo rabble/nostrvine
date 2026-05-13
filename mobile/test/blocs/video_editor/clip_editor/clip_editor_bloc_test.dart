@@ -57,6 +57,39 @@ DivineVideoClip _createClipNoFile({String id = 'clip-no-file'}) {
   );
 }
 
+/// Pure-Dart fake of [VideoEditorSplitService.splitClip] for tests.
+///
+/// Mirrors the real service's clip-id and duration math so the bloc behaves
+/// identically without touching `path_provider` or `pro_video_editor`
+/// plugins. Without this seam, the real service awaits
+/// `getApplicationDocumentsDirectory()` before invoking `onClipsCreated`,
+/// which hangs on Linux CI when sibling tests in the VGV-merged bundle
+/// leave the global plugin mocks in a broken state.
+Future<void> _fakeSplitClip({
+  required DivineVideoClip sourceClip,
+  required Duration splitPosition,
+  required void Function(DivineVideoClip startClip, DivineVideoClip endClip)?
+  onClipsCreated,
+  required void Function(DivineVideoClip clip, String thumbnailPath)?
+  onThumbnailExtracted,
+  required void Function(DivineVideoClip clip, EditorVideo video)?
+  onClipRendered,
+}) async {
+  final absoluteSplitPos = sourceClip.trimStart + splitPosition;
+  final timestampMs = DateTime.now().microsecondsSinceEpoch;
+  final startClip = sourceClip.copyWith(
+    id: '${timestampMs}_start',
+    duration: absoluteSplitPos,
+    trimEnd: Duration.zero,
+  );
+  final endClip = sourceClip.copyWith(
+    id: '${timestampMs}_end',
+    duration: sourceClip.duration - absoluteSplitPos,
+    trimStart: Duration.zero,
+  );
+  onClipsCreated?.call(startClip, endClip);
+}
+
 void main() {
   group(ClipEditorBloc, () {
     late List<DivineVideoClip> twoClips;
@@ -76,10 +109,12 @@ void main() {
 
     ClipEditorBloc buildBloc({
       AudioExtractionService? audioExtractionService,
+      SplitClipFn? splitClip,
     }) {
       return ClipEditorBloc(
         onFinalClipInvalidated: () {},
         audioExtractionService: audioExtractionService,
+        splitClip: splitClip,
       );
     }
 
@@ -411,7 +446,7 @@ void main() {
     group('ClipEditorSplitRequested', () {
       blocTest<ClipEditorBloc, ClipEditorState>(
         'stops editing and replaces clip when split position is valid',
-        build: buildBloc,
+        build: () => buildBloc(splitClip: _fakeSplitClip),
         seed: () {
           final clip = _createClip(
             id: 'split-me',
@@ -447,7 +482,7 @@ void main() {
       test('uses state splitPosition for resulting clip durations', () async {
         final clip = _createClip(id: 'x', duration: const Duration(seconds: 2));
 
-        final bloc = buildBloc();
+        final bloc = buildBloc(splitClip: _fakeSplitClip);
 
         bloc.emit(
           ClipEditorState(
@@ -507,8 +542,8 @@ void main() {
       );
 
       blocTest<ClipEditorBloc, ClipEditorState>(
-        'stops editing and performs split with default service',
-        build: buildBloc,
+        'stops editing and performs split with injected splitter',
+        build: () => buildBloc(splitClip: _fakeSplitClip),
         seed: () {
           final clip = _createClip(duration: const Duration(seconds: 2));
           return ClipEditorState(
@@ -566,7 +601,7 @@ void main() {
             id: 'source-clip',
             duration: const Duration(seconds: 2),
           );
-          final bloc = buildBloc()
+          final bloc = buildBloc(splitClip: _fakeSplitClip)
             ..emit(
               ClipEditorState(
                 clips: [clip],
@@ -606,7 +641,7 @@ void main() {
             duration: const Duration(seconds: 4),
           ).copyWith(trimStart: const Duration(milliseconds: 500));
 
-          final bloc = buildBloc()
+          final bloc = buildBloc(splitClip: _fakeSplitClip)
             ..emit(
               ClipEditorState(
                 clips: [clip],
@@ -640,7 +675,7 @@ void main() {
               trimEnd: const Duration(seconds: 2),
             );
 
-        final bloc = buildBloc()
+        final bloc = buildBloc(splitClip: _fakeSplitClip)
           ..emit(
             ClipEditorState(
               clips: [clip],
