@@ -862,6 +862,50 @@ void main() {
         expect(item.targetEventId, equals('parent_comment_id'));
       });
 
+      test(
+        'reply falls back to sourceEventId when referencedEventId is null',
+        () async {
+          stubNotifications([
+            makeNotification(
+              notificationType: 'reply',
+              sourceKind: 1,
+              isReferencedVideo: false,
+              sourceEventId: 'reply_event_id',
+              referencedEventId: null,
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as ActorNotification;
+          expect(item.type, equals(NotificationKind.reply));
+          // targetEventId must be non-null so _onItemTap can call the resolver
+          // instead of falling back to the actor's profile screen.
+          expect(item.targetEventId, equals('reply_event_id'));
+        },
+      );
+
+      test(
+        'reply falls back to sourceEventId when referencedEventId is empty',
+        () async {
+          stubNotifications([
+            makeNotification(
+              notificationType: 'reply',
+              sourceKind: 1,
+              isReferencedVideo: false,
+              sourceEventId: 'reply_event_id',
+              referencedEventId: '',
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as ActorNotification;
+          expect(item.type, equals(NotificationKind.reply));
+          expect(item.targetEventId, equals('reply_event_id'));
+        },
+      );
+
       test('comment maps to comment', () async {
         stubNotifications([
           makeNotification(notificationType: 'comment', sourceKind: 1),

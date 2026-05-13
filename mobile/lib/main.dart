@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io'
     if (dart.library.html) 'package:openvine/utils/platform_io_web.dart'
     as io;
@@ -76,6 +77,7 @@ import 'package:openvine/services/deep_link_service.dart';
 import 'package:openvine/services/locale_preference_service.dart';
 import 'package:openvine/services/logging_config_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart' show HttpMethod;
+import 'package:openvine/services/notification_target_resolver.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/seed_data_preload_service.dart';
@@ -135,7 +137,11 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     title,
     body,
     details,
-    payload: data['referencedEventId'] as String?,
+    payload: jsonEncode({
+      'referencedEventId': data['referencedEventId'],
+      // FCM payload uses 'type', not 'notificationType'
+      'notificationType': data['type'],
+    }),
   );
 }
 
@@ -181,6 +187,63 @@ Future<void> _runTimedStartupTask({
   } finally {
     StartupPerformanceService.instance.completePhase(phaseName);
   }
+}
+
+/// Resolves [referencedEventId] from a push notification payload to a video
+/// event ID, then pushes a [DeepLink] into [deepLinkService].
+///
+/// For `notificationType == "reply"` (and other comment-type notifications),
+/// [referencedEventId] is the ID of a Kind 1111 comment event, not a video.
+/// [NotificationTargetResolver] fetches that event from the relay, walks its
+/// NIP-22 `E` / NIP-10 `e` tags, and returns the root video event ID.
+///
+/// For video-type events the resolver returns the same ID unchanged.
+Future<void> _resolveAndPushNotificationDeepLink({
+  required String referencedEventId,
+  required String? notificationType,
+  required ProviderContainer container,
+}) async {
+  final deepLinkService = container.read(deepLinkServiceProvider);
+  final autoOpenComments = notificationType == 'reply';
+
+  String? videoEventId;
+  try {
+    videoEventId = await NotificationTargetResolver(
+      videoEventService: container.read(videoEventServiceProvider),
+      nostrService: container.read(nostrServiceProvider),
+    ).resolveVideoEventIdFromNotificationTarget(referencedEventId);
+  } catch (e) {
+    Log.error(
+      'Failed to resolve notification target: $e',
+      name: 'main',
+      category: LogCategory.system,
+    );
+  }
+
+  if (videoEventId == null) {
+    Log.warning(
+      'Could not resolve notification target to a video, '
+      'referencedEventId=$referencedEventId type=$notificationType',
+      name: 'main',
+      category: LogCategory.system,
+    );
+    return;
+  }
+
+  Log.info(
+    'Resolved notification target: $referencedEventId → $videoEventId '
+    '(type=$notificationType, autoOpenComments=$autoOpenComments)',
+    name: 'main',
+    category: LogCategory.system,
+  );
+
+  deepLinkService.pushLink(
+    DeepLink(
+      type: DeepLinkType.video,
+      videoRef: videoEventId,
+      autoOpenComments: autoOpenComments,
+    ),
+  );
 }
 
 StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
@@ -378,10 +441,20 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
         final referencedEventId =
             initialMessage.data['referencedEventId'] as String?;
         if (referencedEventId != null) {
+          // FCM payload uses 'type', not 'notificationType'
+          final notificationType = initialMessage.data['type'] as String?;
           Log.info(
-            'App launched from push notification, target: $referencedEventId',
+            'App launched from push notification, target: $referencedEventId '
+            '(type: $notificationType)',
             name: 'main',
             category: LogCategory.system,
+          );
+          unawaited(
+            _resolveAndPushNotificationDeepLink(
+              referencedEventId: referencedEventId,
+              notificationType: notificationType,
+              container: container,
+            ),
           );
         }
       }
@@ -390,11 +463,20 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
       FirebaseMessaging.onMessageOpenedApp.listen((message) {
         final referencedEventId = message.data['referencedEventId'] as String?;
         if (referencedEventId != null) {
+          // FCM payload uses 'type', not 'notificationType'
+          final notificationType = message.data['type'] as String?;
           Log.info(
             'Push notification tapped (background), '
-            'target: $referencedEventId',
+            'target: $referencedEventId (type: $notificationType)',
             name: 'main',
             category: LogCategory.system,
+          );
+          unawaited(
+            _resolveAndPushNotificationDeepLink(
+              referencedEventId: referencedEventId,
+              notificationType: notificationType,
+              container: container,
+            ),
           );
         }
       });
@@ -1050,7 +1132,61 @@ class _DivineAppState extends ConsumerState<DivineApp> {
     );
 
     // Initialize the deep link service for video content
-    ref.read(deepLinkServiceProvider).initialize();
+    final deepLinkService = ref.read(deepLinkServiceProvider);
+    deepLinkService.initialize();
+
+    // Route local notification taps (background-built via flutter_local_notifications)
+    // through the same deep-link stream so the build() listener handles navigation.
+    ref.read(notificationServiceProvider).onNotificationTap =
+        (
+          referencedEventId,
+          notificationType,
+        ) {
+          Log.info(
+            '🔔 Local notification tap: eventId=$referencedEventId '
+            'type=$notificationType',
+            name: 'DeepLinkHandler',
+            category: LogCategory.ui,
+          );
+          unawaited(
+            NotificationTargetResolver(
+                  videoEventService: ref.read(videoEventServiceProvider),
+                  nostrService: ref.read(nostrServiceProvider),
+                )
+                .resolveVideoEventIdFromNotificationTarget(referencedEventId)
+                .then((videoEventId) {
+                  if (videoEventId == null) {
+                    Log.warning(
+                      'Could not resolve local notification target to a video, '
+                      'referencedEventId=$referencedEventId type=$notificationType',
+                      name: 'DeepLinkHandler',
+                      category: LogCategory.ui,
+                    );
+                    return;
+                  }
+                  Log.info(
+                    'Resolved local notification target: '
+                    '$referencedEventId → $videoEventId',
+                    name: 'DeepLinkHandler',
+                    category: LogCategory.ui,
+                  );
+                  deepLinkService.pushLink(
+                    DeepLink(
+                      type: DeepLinkType.video,
+                      videoRef: videoEventId,
+                      autoOpenComments: notificationType == 'reply',
+                    ),
+                  );
+                })
+                .catchError((Object e) {
+                  Log.error(
+                    'Failed to resolve local notification target: $e',
+                    name: 'DeepLinkHandler',
+                    category: LogCategory.ui,
+                  );
+                }),
+          );
+        };
 
     // Initialize the deep link service for password reset
     ref.read(passwordResetListenerProvider).initialize();
@@ -1177,7 +1313,8 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                   deepLink.videoRef!,
                 );
                 Log.info(
-                  '📱 Navigating to video: $targetPath',
+                  '📱 Navigating to video: $targetPath'
+                  '${deepLink.autoOpenComments ? " (open comments)" : ""}',
                   name: 'DeepLinkHandler',
                   category: LogCategory.ui,
                 );
@@ -1185,17 +1322,20 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                   // Skip if already showing this video (getInitialLink
                   // and uriLinkStream can both fire for the same URL).
                   if (currentLocation == targetPath) break;
+                  final routeExtra = deepLink.autoOpenComments
+                      ? const VideoDetailRouteExtra(autoOpenComments: true)
+                      : null;
                   final isReplacingExistingVideoRoute = currentLocation
                       .startsWith('${VideoDetailScreen.basePath}/');
                   if (isReplacingExistingVideoRoute) {
                     // When another shared video is opened while a shared
                     // video route is already visible, replace the current
                     // detail route instead of stacking it.
-                    router.go(targetPath);
+                    router.go(targetPath, extra: routeExtra);
                   } else {
                     // Keep the home route underneath the first shared video
                     // so back navigation returns to the main screen.
-                    router.push(targetPath);
+                    router.push(targetPath, extra: routeExtra);
                   }
                   Log.info(
                     '✅ Navigation completed to: $targetPath',

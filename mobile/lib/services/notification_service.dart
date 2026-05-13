@@ -1,6 +1,8 @@
 // ABOUTME: Service for showing user notifications about upload status and publishing
 // ABOUTME: Handles local notifications and in-app messages for video processing updates
 
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -109,6 +111,15 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
   bool _pluginInitialized = false;
+
+  /// Optional callback invoked when the user taps a local notification.
+  ///
+  /// The callback receives two arguments: the [referencedEventId] (Nostr event
+  /// ID of the content the notification is about) and [notificationType] (e.g.
+  /// `"reply"`, `"reaction"`, `"repost"`, `"zap"`, `"follow"`).  Either value
+  /// may be null if the payload doesn't carry that field.
+  void Function(String referencedEventId, String? notificationType)?
+  onNotificationTap;
 
   /// List of recent notifications
   List<AppNotification> get notifications => List.unmodifiable(_notifications);
@@ -415,26 +426,40 @@ class NotificationService {
   }
 
   /// Handle notification tap
-  ///
-  /// TODO: Implement navigation based on notification action:
-  /// - 'open_feed': Navigate to home feed screen
-  /// - 'open_uploads': Navigate to uploads screen
-  /// - 'retry_upload': Navigate to failed upload and show retry UI
-  /// - 'show_progress': Navigate to upload progress screen
   void _onNotificationTapped(NotificationResponse response) {
+    _handleNotificationTapPayload(response.payload);
+  }
+
+  /// Parses [payload] and invokes [onNotificationTap] when a valid
+  /// [referencedEventId] can be extracted.
+  ///
+  /// Exposed for testing; production callers should use
+  /// [_onNotificationTapped] or configure [onNotificationTap] instead.
+  @visibleForTesting
+  void handleNotificationTapPayload(String? payload) =>
+      _handleNotificationTapPayload(payload);
+
+  void _handleNotificationTapPayload(String? payload) {
     Log.debug(
-      'Notification tapped: ${response.payload}',
+      'Notification tapped: $payload',
       name: 'NotificationService',
       category: LogCategory.system,
     );
-    // TODO: Handle notification actions (navigate to relevant screen)
-    // Example implementation:
-    // final data = jsonDecode(response.payload ?? '{}');
-    // final action = data['action'];
-    // switch (action) {
-    //   case 'open_feed': navigatorKey.currentState?.pushNamed('/feed');
-    //   case 'retry_upload': navigatorKey.currentState?.pushNamed('/uploads');
-    // }
+
+    if (payload == null || payload.isEmpty) return;
+
+    try {
+      final data = jsonDecode(payload) as Map<String, dynamic>;
+      final referencedEventId = data['referencedEventId'] as String?;
+      final notificationType = data['notificationType'] as String?;
+      if (referencedEventId != null && referencedEventId.isNotEmpty) {
+        onNotificationTap?.call(referencedEventId, notificationType);
+      }
+    } catch (_) {
+      // Legacy payloads were bare event IDs (plain strings, not JSON).
+      // Treat the whole payload as a referencedEventId with unknown type.
+      onNotificationTap?.call(payload, null);
+    }
   }
 
   /// Send a local notification with title and body

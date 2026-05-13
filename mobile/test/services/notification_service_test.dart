@@ -1,6 +1,8 @@
 // ABOUTME: Tests for NotificationService permission handling and local notification display
 // ABOUTME: Verifies platform-specific permission requests and notification sending functionality
 
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/notification_service.dart';
 
@@ -225,6 +227,104 @@ void main() {
       expect(
         service.notifications.first.type,
         equals(NotificationType.uploadFailed),
+      );
+    });
+  });
+
+  group('NotificationService.onNotificationTap', () {
+    late NotificationService service;
+
+    setUp(() {
+      service = NotificationService();
+    });
+
+    tearDown(() {
+      service.dispose();
+    });
+
+    // The FCM data map from divine-push-service uses 'type' (not 'notificationType').
+    // _firebaseMessagingBackgroundHandler re-encodes it into our internal JSON
+    // payload as 'notificationType' so the local notification tap handler can
+    // read it back with the consistent internal key name.
+    // See: docs/superpowers/specs/2026-04-07-push-notifications-design.md
+    test('invokes callback with eventId and type from JSON payload', () {
+      String? capturedId;
+      String? capturedType;
+      service.onNotificationTap = (id, type) {
+        capturedId = id;
+        capturedType = type;
+      };
+
+      service.handleNotificationTapPayload(
+        jsonEncode({
+          'referencedEventId': 'abc123',
+          'notificationType': 'reply',
+        }),
+      );
+
+      expect(capturedId, equals('abc123'));
+      expect(capturedType, equals('reply'));
+    });
+
+    test('invokes callback with null type when notificationType missing', () {
+      String? capturedId;
+      String? capturedType;
+      service.onNotificationTap = (id, type) {
+        capturedId = id;
+        capturedType = type;
+      };
+
+      service.handleNotificationTapPayload(
+        jsonEncode({'referencedEventId': 'def456'}),
+      );
+
+      expect(capturedId, equals('def456'));
+      expect(capturedType, isNull);
+    });
+
+    test('handles legacy bare event-ID payload (non-JSON)', () {
+      String? capturedId;
+      String? capturedType;
+      service.onNotificationTap = (id, type) {
+        capturedId = id;
+        capturedType = type;
+      };
+
+      service.handleNotificationTapPayload('legacyEventId999');
+
+      expect(capturedId, equals('legacyEventId999'));
+      expect(capturedType, isNull);
+    });
+
+    test('does not invoke callback when payload is null', () {
+      var called = false;
+      service.onNotificationTap = (id, type) => called = true;
+
+      service.handleNotificationTapPayload(null);
+
+      expect(called, isFalse);
+    });
+
+    test('does not invoke callback when referencedEventId is absent', () {
+      var called = false;
+      service.onNotificationTap = (id, type) => called = true;
+
+      service.handleNotificationTapPayload(
+        jsonEncode({'notificationType': 'reaction'}),
+      );
+
+      expect(called, isFalse);
+    });
+
+    test('no-ops gracefully when onNotificationTap is not set', () {
+      expect(
+        () => service.handleNotificationTapPayload(
+          jsonEncode({
+            'referencedEventId': 'abc',
+            'notificationType': 'reply',
+          }),
+        ),
+        returnsNormally,
       );
     });
   });

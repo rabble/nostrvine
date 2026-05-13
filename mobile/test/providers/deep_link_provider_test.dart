@@ -121,4 +121,58 @@ void main() {
       expect(receivedB, hasLength(1));
     },
   );
+
+  group('DeepLink.autoOpenComments', () {
+    test('defaults to false', () {
+      const link = DeepLink(type: DeepLinkType.video, videoRef: 'abc');
+      expect(link.autoOpenComments, isFalse);
+    });
+
+    test('can be set to true', () {
+      const link = DeepLink(
+        type: DeepLinkType.video,
+        videoRef: 'abc',
+        autoOpenComments: true,
+      );
+      expect(link.autoOpenComments, isTrue);
+    });
+
+    test('toString includes autoOpenComments when true', () {
+      const link = DeepLink(
+        type: DeepLinkType.video,
+        videoRef: 'abc',
+        autoOpenComments: true,
+      );
+      expect(link.toString(), contains('autoOpenComments: true'));
+    });
+
+    test('toString omits autoOpenComments when false', () {
+      const link = DeepLink(type: DeepLinkType.video, videoRef: 'abc');
+      expect(link.toString(), isNot(contains('autoOpenComments')));
+    });
+  });
+
+  group('DeepLinkService.pushLink', () {
+    test('emits the link on linkStream', () async {
+      final service = DeepLinkService();
+      addTearDown(service.dispose);
+
+      final received = <DeepLink>[];
+      final sub = service.linkStream.listen(received.add);
+      addTearDown(sub.cancel);
+
+      const link = DeepLink(
+        type: DeepLinkType.video,
+        videoRef: 'test-event-id',
+        autoOpenComments: true,
+      );
+      service.pushLink(link);
+
+      await Future<void>.delayed(Duration.zero);
+
+      expect(received, hasLength(1));
+      expect(received.first.videoRef, equals('test-event-id'));
+      expect(received.first.autoOpenComments, isTrue);
+    });
+  });
 }

@@ -28,6 +28,7 @@ class DeepLink {
     this.searchTerm,
     this.inviteCode,
     this.index,
+    this.autoOpenComments = false,
   });
 
   final DeepLinkType type;
@@ -43,12 +44,17 @@ class DeepLink {
   final String? inviteCode;
   final int? index; // Optional video index for feed view
 
+  /// When true the video detail screen should open the comments section
+  /// automatically (e.g. navigating from a reply notification).
+  final bool autoOpenComments;
+
   @override
   String toString() {
     final indexStr = index != null ? ', index: $index' : '';
     switch (type) {
       case DeepLinkType.video:
-        return 'DeepLink(type: video, videoRef: $videoRef)';
+        final commentsStr = autoOpenComments ? ', autoOpenComments: true' : '';
+        return 'DeepLink(type: video, videoRef: $videoRef$commentsStr)';
       case DeepLinkType.profile:
         return 'DeepLink(type: profile, npub: $npub$indexStr)';
       case DeepLinkType.hashtag:
@@ -251,5 +257,15 @@ class DeepLinkService {
   void dispose() {
     _subscription?.cancel();
     _controller.close();
+  }
+
+  /// Programmatically push a [DeepLink] into the stream.
+  ///
+  /// Use this when a navigation intent is received outside of the OS
+  /// universal-link / custom-scheme channel (e.g. from an FCM payload or a
+  /// local notification tap) so that the same [deepLinksProvider] listener in
+  /// the widget tree can handle it uniformly.
+  void pushLink(DeepLink link) {
+    _controller.add(link);
   }
 }

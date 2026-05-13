@@ -826,8 +826,14 @@ class NotificationRepository {
     NotificationKind mapped,
     RelayNotification n,
   ) => switch (mapped) {
-    NotificationKind.likeComment ||
-    NotificationKind.reply => n.referencedEventId,
+    NotificationKind.likeComment || NotificationKind.reply =>
+      // Prefer the referenced (parent) event ID. Fall back to the source
+      // event ID (the reply event itself) when the server omits
+      // referenced_event_id — both carry NIP-22 E-tags the resolver can
+      // walk to find the root video.
+      n.referencedEventId?.isNotEmpty == true
+          ? n.referencedEventId
+          : (n.sourceEventId.isNotEmpty ? n.sourceEventId : null),
     NotificationKind.mention =>
       n.sourceEventId.isNotEmpty ? n.sourceEventId : null,
     _ => null,
