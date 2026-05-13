@@ -4,7 +4,12 @@ import 'dart:io';
 
 import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/foundation.dart'
-    show ValueListenable, kIsWeb, visibleForTesting;
+    show
+        TargetPlatform,
+        ValueListenable,
+        defaultTargetPlatform,
+        kIsWeb,
+        visibleForTesting;
 import 'package:flutter/widgets.dart';
 import 'package:infinite_video_feed/src/models/builders.dart';
 import 'package:infinite_video_feed/src/models/video_error_type.dart';
@@ -63,6 +68,7 @@ class InfiniteVideoFeed extends StatefulWidget {
       (!kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS));
 
   static bool? _isSupportedOverrideForTesting;
+  static TargetPlatform? _targetPlatformOverrideForTesting;
 
   // coverage:ignore-start
   // Test hook used by app-layer widget tests outside this package.
@@ -74,6 +80,18 @@ class InfiniteVideoFeed extends StatefulWidget {
   @visibleForTesting
   static set debugIsSupportedOverride(bool? value) {
     _isSupportedOverrideForTesting = value;
+  }
+
+  /// Overrides the platform used by Android-specific feed behavior in tests.
+  ///
+  /// Set to `null` to clear the override.
+  @visibleForTesting
+  static TargetPlatform? get debugTargetPlatformOverride =>
+      _targetPlatformOverrideForTesting;
+
+  @visibleForTesting
+  static set debugTargetPlatformOverride(TargetPlatform? value) {
+    _targetPlatformOverrideForTesting = value;
   }
   // coverage:ignore-end
 
@@ -223,6 +241,10 @@ class InfiniteVideoFeed extends StatefulWidget {
 /// [currentIndex] for owning widgets that need to drive the feed
 /// imperatively.
 class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
+  TargetPlatform get _targetPlatform =>
+      InfiniteVideoFeed._targetPlatformOverrideForTesting ??
+      defaultTargetPlatform;
+
   static const _logName = 'InfiniteVideoFeed';
   static const _loopEndThreshold = Duration(seconds: 1);
   static const _loopStartThreshold = Duration(seconds: 1);
@@ -670,9 +692,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       // unmount or a rapid re-init for the same index. Both are observable in
       // production, but not reproducible in package widget tests without
       // microsecond-precise control over native platform-channel timing.
-      _log(
-        'Abort stale init at index $index (${video.id}) during $step',
-      );
+      _log('Abort stale init at index $index (${video.id}) during $step');
       if (identical(_controllers[index], controller)) {
         _controllers.remove(index);
       }
@@ -1102,6 +1122,8 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
 
         final hasVideoSize =
             controller != null && controller.state.videoHeight != 0;
+        final shouldShowLoading =
+            !hasError && _shouldShowLoadingLayer(controller: controller);
 
         return Stack(
           fit: StackFit.expand,
@@ -1109,8 +1131,12 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
             // Loading layer — shown while the video surface is not yet
             // available. Removed once the first frame is rendered so the
             // widget (and any timers it owns) are properly disposed.
-            if (!hasError &&
-                (!hasVideoSize || !controller.state.isFirstFrameRendered))
+            //
+            // Android feed fallback: when the native backend reaches
+            // ready/playing with known dimensions but never delivers the
+            // first-frame callback, the thumbnail can otherwise remain
+            // permanently layered above the live video.
+            if (shouldShowLoading)
               ?widget.loadingBuilder?.call(
                 context,
                 index,
@@ -1142,5 +1168,21 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
         );
       },
     );
+  }
+
+  bool _shouldShowLoadingLayer({
+    required DivineVideoPlayerController? controller,
+  }) {
+    if (controller == null) return true;
+
+    final state = controller.state;
+    final hasVideoSize = state.videoHeight != 0;
+    if (!hasVideoSize) return true;
+    if (state.isFirstFrameRendered) return false;
+
+    final allowAndroidFallback =
+        _targetPlatform == TargetPlatform.android &&
+        (state.isPlaying || state.status.isReady);
+    return !allowAndroidFallback;
   }
 }
