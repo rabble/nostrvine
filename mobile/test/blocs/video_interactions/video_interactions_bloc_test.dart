@@ -1181,7 +1181,13 @@ void main() {
             repostCount: 5,
           ),
         ],
-        errors: () => [isA<Exception>()],
+        errors: () => [
+          isA<Reportable<Object>>().having(
+            (r) => r.unwrap(),
+            'unwrap',
+            isA<Exception>(),
+          ),
+        ],
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
