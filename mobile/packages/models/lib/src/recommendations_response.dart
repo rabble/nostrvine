@@ -8,7 +8,11 @@ import 'package:models/src/video_stats.dart';
 @immutable
 class RecommendationsResponse {
   /// Creates a new [RecommendationsResponse].
-  const RecommendationsResponse({required this.videos, required this.source});
+  const RecommendationsResponse({
+    required this.videos,
+    required this.source,
+    this.rawBody,
+  });
 
   /// The recommended videos.
   final List<VideoStats> videos;
@@ -18,6 +22,9 @@ class RecommendationsResponse {
   /// Possible values: `"personalized"`, `"popular"`, `"recent"`,
   /// or `"error"`.
   final String source;
+
+  /// The raw JSON response body from the API, if available.
+  final String? rawBody;
 
   /// Whether recommendations are personalized (vs fallback).
   bool get isPersonalized => source == 'personalized';
