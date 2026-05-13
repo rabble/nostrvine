@@ -2634,6 +2634,57 @@ void main() {
       );
     });
 
+    group('getV2PopularVideos', () {
+      test(
+        'classic mode requests weekly popular imported Vine videos',
+        () async {
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer((_) async => http.Response('[]', 200));
+
+          await client.getV2PopularVideos(
+            variant: PopularVideosVariant.classic,
+          );
+
+          final uri =
+              verify(
+                    () => mockHttpClient.get(
+                      captureAny(),
+                      headers: any(named: 'headers'),
+                    ),
+                  ).captured.single
+                  as Uri;
+          expect(uri.path, equals('/api/v2/videos'));
+          expect(uri.queryParameters['sort'], equals('popular'));
+          expect(uri.queryParameters['period'], equals('week'));
+          expect(uri.queryParameters['platform'], equals('vine'));
+          expect(uri.queryParameters.containsKey('exclude_platform'), isFalse);
+        },
+      );
+
+      test('native mode requests now-popular non-Vine videos', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('[]', 200));
+
+        await client.getV2PopularVideos(variant: PopularVideosVariant.native);
+
+        final uri =
+            verify(
+                  () => mockHttpClient.get(
+                    captureAny(),
+                    headers: any(named: 'headers'),
+                  ),
+                ).captured.single
+                as Uri;
+        expect(uri.path, equals('/api/v2/videos'));
+        expect(uri.queryParameters['sort'], equals('popular'));
+        expect(uri.queryParameters['period'], equals('now'));
+        expect(uri.queryParameters['exclude_platform'], equals('vine'));
+        expect(uri.queryParameters.containsKey('platform'), isFalse);
+      });
+    });
+
     group('getClassicVines', () {
       const validResponseBody =
           '''

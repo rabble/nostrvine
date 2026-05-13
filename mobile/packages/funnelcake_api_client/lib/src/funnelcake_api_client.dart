@@ -12,6 +12,15 @@ import 'package:meta/meta.dart';
 import 'package:models/models.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 
+/// Source split for the v2 popular feed.
+enum PopularVideosVariant {
+  /// New/native Divine videos, excluding imported Vine archive items.
+  native,
+
+  /// Imported classic Vine archive items only.
+  classic,
+}
+
 /// HTTP client for the Funnelcake REST API.
 ///
 /// Funnelcake provides a ClickHouse-backed analytics API that offers
@@ -459,6 +468,66 @@ class FunnelcakeApiClient {
       rethrow;
     } catch (e) {
       throw FunnelcakeException('Failed to fetch watching videos: $e');
+    }
+  }
+
+  /// Fetches the v2 popular feed filtered to native Divine or classic Vine
+  /// imports.
+  ///
+  /// Native mode maps to `sort=popular&period=now&exclude_platform=vine`;
+  /// classic mode maps to `sort=popular&period=week&platform=vine`.
+  Future<List<VideoStats>> getV2PopularVideos({
+    required PopularVideosVariant variant,
+    int limit = 50,
+    int? before,
+  }) async {
+    if (!isAvailable) {
+      throw const FunnelcakeNotConfiguredException();
+    }
+
+    final queryParams = _videoQueryParameters({
+      'sort': 'popular',
+      'period': variant == PopularVideosVariant.classic ? 'week' : 'now',
+      'limit': limit.toString(),
+    });
+    if (variant == PopularVideosVariant.classic) {
+      queryParams['platform'] = 'vine';
+    } else {
+      queryParams['exclude_platform'] = 'vine';
+    }
+    if (before != null) {
+      queryParams['before'] = before.toString();
+    }
+
+    final uri = Uri.parse(
+      '$_baseUrl/api/v2/videos',
+    ).replace(queryParameters: queryParams);
+
+    try {
+      final response = await _get(uri);
+
+      if (response.statusCode == 200) {
+        final (:items, hasMore: _, nextCursor: _) = _unwrapListResponse(
+          jsonDecode(response.body),
+        );
+
+        return items
+            .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
+            .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
+            .toList();
+      }
+
+      throw FunnelcakeApiException(
+        message: 'Failed to fetch v2 popular videos',
+        statusCode: response.statusCode,
+        url: uri.toString(),
+      );
+    } on TimeoutException {
+      throw FunnelcakeTimeoutException(uri.toString());
+    } on FunnelcakeException {
+      rethrow;
+    } catch (e) {
+      throw FunnelcakeException('Failed to fetch v2 popular videos: $e');
     }
   }
 

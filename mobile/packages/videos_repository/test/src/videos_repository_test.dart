@@ -84,6 +84,7 @@ void main() {
     setUpAll(() {
       registerFallbackValue(<Filter>[]);
       registerFallbackValue(LeaderboardPeriod.week);
+      registerFallbackValue(PopularVideosVariant.classic);
     });
 
     test('can be instantiated', () {
@@ -3825,6 +3826,87 @@ void main() {
             );
           },
         );
+      });
+
+      group('with v2 popular variant', () {
+        late MockFunnelcakeApiClient mockFunnelcakeClient;
+
+        setUp(() {
+          mockFunnelcakeClient = MockFunnelcakeApiClient();
+        });
+
+        test('calls v2 API for classic popular videos', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getV2PopularVideos(
+              variant: any(named: 'variant'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              _createVideoStats(
+                id: 'classic-popular',
+                pubkey: 'classic-pubkey',
+                dTag: 'classic-dtag',
+                videoUrl: 'https://example.com/classic.mp4',
+              ),
+            ],
+          );
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repositoryWithApi.getPopularVideos(
+            variant: PopularVideosVariant.classic,
+          );
+
+          expect(result.single.id, equals('classic-popular'));
+          verify(
+            () => mockFunnelcakeClient.getV2PopularVideos(
+              variant: PopularVideosVariant.classic,
+              limit: 25,
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockFunnelcakeClient.getWatchingVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          );
+        });
+
+        test('calls v2 API for native popular videos', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getV2PopularVideos(
+              variant: any(named: 'variant'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((_) async => <VideoStats>[]);
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          await repositoryWithApi.getPopularVideos(
+            variant: PopularVideosVariant.native,
+            limit: 10,
+            until: 1704067200,
+          );
+
+          verify(
+            () => mockFunnelcakeClient.getV2PopularVideos(
+              variant: PopularVideosVariant.native,
+              limit: 10,
+              before: 1704067200,
+            ),
+          ).called(1);
+        });
       });
     });
 

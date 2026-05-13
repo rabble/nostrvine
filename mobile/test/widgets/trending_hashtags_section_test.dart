@@ -17,6 +17,7 @@ void main() {
     Widget buildTestWidget({
       List<String> hashtags = const [],
       bool isLoading = false,
+      Widget? leading,
       void Function(String)? onHashtagTap,
     }) {
       return MaterialApp(
@@ -26,6 +27,7 @@ void main() {
           body: TrendingHashtagsSection(
             hashtags: hashtags,
             isLoading: isLoading,
+            leading: leading,
             onHashtagTap:
                 onHashtagTap ??
                 (hashtag) {
@@ -84,6 +86,29 @@ void main() {
       // Verify it's horizontal
       final listView = tester.widget<ListView>(listViewFinder);
       expect(listView.scrollDirection, Axis.horizontal);
+    });
+
+    testWidgets('renders leading control before trending hashtags', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          leading: const SizedBox(
+            key: Key('popular-source-toggle'),
+            width: 120,
+            child: Text('New'),
+          ),
+          hashtags: ['art'],
+        ),
+      );
+
+      final toggleTopLeft = tester.getTopLeft(
+        find.byKey(const Key('popular-source-toggle')),
+      );
+      final titleTopLeft = tester.getTopLeft(find.text('Trending'));
+
+      expect(toggleTopLeft.dx, lessThan(titleTopLeft.dx));
+      expect(find.text('#art'), findsOneWidget);
     });
 
     testWidgets('tapping hashtag calls onHashtagTap callback', (tester) async {

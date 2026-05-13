@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
@@ -321,9 +322,96 @@ class _PopularVideosTrendingContentState
             key: headerKey,
             hashtags: hashtags,
             isLoading: !TopHashtagsService.instance.isLoaded,
+            leading: const _PopularFeedVariantToggle(),
           ),
         ),
       ],
+    );
+  }
+}
+
+class _PopularFeedVariantToggle extends ConsumerWidget {
+  const _PopularFeedVariantToggle();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selected = ref.watch(popularVideosVariantProvider);
+
+    return Semantics(
+      label: 'Popular feed source',
+      child: Container(
+        key: const Key('popular-feed-variant-toggle'),
+        height: 32,
+        padding: const EdgeInsets.all(2),
+        decoration: BoxDecoration(
+          color: VineTheme.surfaceContainer,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: VineTheme.outlineMuted),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _PopularFeedVariantButton(
+              label: 'New',
+              variant: PopularVideosVariant.native,
+              selected: selected == PopularVideosVariant.native,
+            ),
+            _PopularFeedVariantButton(
+              label: 'Classic',
+              variant: PopularVideosVariant.classic,
+              selected: selected == PopularVideosVariant.classic,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PopularFeedVariantButton extends ConsumerWidget {
+  const _PopularFeedVariantButton({
+    required this.label,
+    required this.variant,
+    required this.selected,
+  });
+
+  final String label;
+  final PopularVideosVariant variant;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          if (selected) return;
+          ref.read(popularVideosVariantProvider.notifier).state = variant;
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          height: 28,
+          constraints: const BoxConstraints(minWidth: 54),
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: selected ? VineTheme.vineGreen : VineTheme.transparent,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: VineTheme.labelMediumFont(
+              color: selected
+                  ? VineTheme.primaryDarkGreen
+                  : VineTheme.onSurfaceMuted55,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

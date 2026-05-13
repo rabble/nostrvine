@@ -16,6 +16,7 @@ class TrendingHashtagsSection extends StatelessWidget {
     required this.hashtags,
     super.key,
     this.isLoading = false,
+    this.leading,
     this.onHashtagTap,
   });
 
@@ -24,6 +25,9 @@ class TrendingHashtagsSection extends StatelessWidget {
 
   /// Whether hashtags are still loading
   final bool isLoading;
+
+  /// Optional fixed control rendered to the left of the scrolling hashtags.
+  final Widget? leading;
 
   /// Optional callback when a hashtag is tapped.
   /// If not provided, defaults to navigating via goHashtag.
@@ -35,9 +39,24 @@ class TrendingHashtagsSection extends StatelessWidget {
       color: VineTheme.backgroundColor,
       child: SizedBox(
         height: 52,
-        child: hashtags.isEmpty
-            ? const _HashtagLoadingPlaceholder()
-            : _HashtagChipList(hashtags: hashtags, onHashtagTap: onHashtagTap),
+        child: Row(
+          children: [
+            if (leading != null)
+              Padding(
+                padding: const EdgeInsetsDirectional.only(start: 12, end: 6),
+                child: Center(child: leading),
+              ),
+            Expanded(
+              child: hashtags.isEmpty
+                  ? const _HashtagLoadingPlaceholder()
+                  : _HashtagChipList(
+                      hashtags: hashtags,
+                      leadingInset: leading == null ? 16 : 0,
+                      onHashtagTap: onHashtagTap,
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -61,9 +80,14 @@ class _HashtagLoadingPlaceholder extends StatelessWidget {
 
 /// Horizontal scrollable list of tappable hashtag chips.
 class _HashtagChipList extends StatelessWidget {
-  const _HashtagChipList({required this.hashtags, this.onHashtagTap});
+  const _HashtagChipList({
+    required this.hashtags,
+    required this.leadingInset,
+    this.onHashtagTap,
+  });
 
   final List<String> hashtags;
+  final double leadingInset;
   final void Function(String hashtag)? onHashtagTap;
 
   @override
@@ -75,8 +99,8 @@ class _HashtagChipList extends StatelessWidget {
       data: MediaQuery.of(context).copyWith(textScaler: textScaler),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.only(
-          left: 16,
+        padding: EdgeInsets.only(
+          left: leadingInset,
           right: 16,
           top: 12,
           bottom: 12,

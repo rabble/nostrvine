@@ -702,15 +702,42 @@ class VideosRepository {
     int? until,
     int? offset,
     LeaderboardPeriod? period,
+    PopularVideosVariant? variant,
     int fetchMultiplier = 4,
     bool skipCache = false,
   }) async {
-    final cacheKey = period == null ? 'popular' : 'popular:${period.wireValue}';
+    final cacheKey = variant != null
+        ? 'popular:v2:${variant.name}'
+        : period == null
+        ? 'popular'
+        : 'popular:${period.wireValue}';
 
     // Return in-memory cached result when available (initial page only).
     if (!skipCache && until == null && offset == null) {
       final cached = _inMemoryFeedCache?.get(cacheKey);
       if (cached != null) return cached.videos;
+    }
+
+    // v2 platform-filtered popular feed path. Funnelcake-only: no relay
+    // fallback because relays do not expose server-controlled platform fields.
+    if (variant != null) {
+      if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
+        return const [];
+      }
+      try {
+        final stats = await _funnelcakeApiClient.getV2PopularVideos(
+          variant: variant,
+          limit: limit,
+          before: until,
+        );
+        final videos = _transformVideoStats(stats, sortByCreatedAt: false);
+        if (until == null && offset == null) {
+          _inMemoryFeedCache?.set(cacheKey, HomeFeedResult(videos: videos));
+        }
+        return videos;
+      } on FunnelcakeException {
+        return const [];
+      }
     }
 
     // Period-windowed leaderboard path. Funnelcake-only — no NIP-50 fallback,

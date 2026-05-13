@@ -2,6 +2,8 @@
 // ABOUTME: Uses VideosRepository which tries Funnelcake, NIP-50, then
 // ABOUTME: client-side engagement sorting as fallbacks.
 
+import 'package:flutter_riverpod/legacy.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
@@ -15,6 +17,11 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 part 'popular_videos_feed_provider.g.dart';
+
+/// Selected source for the Popular tab's v2 feed.
+final popularVideosVariantProvider = StateProvider<PopularVideosVariant>(
+  (ref) => PopularVideosVariant.native,
+);
 
 /// Popular Videos feed provider - shows trending videos by recent engagement.
 ///
@@ -41,11 +48,14 @@ class PopularVideosFeed extends _$PopularVideosFeed {
     // Watch blocklist version — rebuilds when block/unblock actions occur.
     ref.watch(blocklistVersionProvider);
 
+    // Watch the user-selected native/classic split.
+    final variant = ref.watch(popularVideosVariantProvider);
+
     // Watch appReady gate
     final isAppReady = ref.watch(appReadyProvider);
 
     Log.info(
-      'PopularVideosFeed: Building (appReady: $isAppReady)',
+      'PopularVideosFeed: Building (appReady: $isAppReady, variant: ${variant.name})',
       name: 'PopularVideosFeedProvider',
       category: LogCategory.video,
     );
@@ -61,14 +71,15 @@ class PopularVideosFeed extends _$PopularVideosFeed {
       return const VideoFeedState(videos: [], hasMoreContent: true);
     }
 
-    return _loadFirstPage();
+    return _loadFirstPage(variant);
   }
 
-  Future<VideoFeedState> _loadFirstPage() async {
+  Future<VideoFeedState> _loadFirstPage(PopularVideosVariant variant) async {
     try {
       final videosRepository = ref.read(videosRepositoryProvider);
       final videos = await videosRepository.getPopularVideos(
         limit: AppConstants.paginationBatchSize,
+        variant: variant,
       );
 
       if (!ref.mounted) {
@@ -126,9 +137,11 @@ class PopularVideosFeed extends _$PopularVideosFeed {
 
     try {
       final videosRepository = ref.read(videosRepositoryProvider);
+      final variant = ref.read(popularVideosVariantProvider);
       final newVideos = await videosRepository.getPopularVideos(
         limit: 50,
         until: _nextCursor,
+        variant: variant,
       );
 
       if (!ref.mounted) return;
@@ -203,12 +216,13 @@ class PopularVideosFeed extends _$PopularVideosFeed {
     );
 
     _nextCursor = null;
+    final variant = ref.read(popularVideosVariantProvider);
 
     await staleWhileRevalidate(
       getCurrentState: () => state,
       isMounted: () => ref.mounted,
       setState: (s) => state = s,
-      fetchFresh: _loadFirstPage,
+      fetchFresh: () => _loadFirstPage(variant),
     );
   }
 
