@@ -838,10 +838,7 @@ class VideoEventPublisher {
         tags.add(['expiration', expirationTimestamp.toString()]);
       }
 
-      // Add Divine collaborator-marked p-tags for this NIP-71 video event.
-      for (final pubkey in collaboratorPubkeys) {
-        tags.add(buildCollaboratorPTag(pubkey));
-      }
+      tags.addAll(buildCollaboratorPTags(collaboratorPubkeys));
 
       // Add Inspired By a-tag (specific video reference)
       if (inspiredByAddressableId != null) {

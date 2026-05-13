@@ -11,3 +11,12 @@ List<String> buildCollaboratorPTag(String pubkey) => [
   collaboratorInviteRelayHint,
   'collaborator',
 ];
+
+/// Builds Divine collaborator-marked `p` tags for each [pubkey].
+///
+/// Equivalent to `pubkeys.map(buildCollaboratorPTag).toList()`. Accepts any
+/// [Iterable] so callers can pass a `List`, a `Set`, or another iterable
+/// without converting.
+List<List<String>> buildCollaboratorPTags(Iterable<String> pubkeys) => [
+  for (final pubkey in pubkeys) buildCollaboratorPTag(pubkey),
+];

@@ -1562,10 +1562,7 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
         tags.add(['alt', widget.video.altText!]);
       }
 
-      // Add collaborator p-tags
-      for (final pubkey in _collaboratorPubkeys) {
-        tags.add(buildCollaboratorPTag(pubkey));
-      }
+      tags.addAll(buildCollaboratorPTags(_collaboratorPubkeys));
 
       // Add inspired-by a-tag (video reference)
       if (_inspiredByVideo != null) {
