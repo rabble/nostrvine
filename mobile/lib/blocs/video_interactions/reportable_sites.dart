@@ -11,9 +11,9 @@
 /// Crashlytics dashboard groups them by stable identifier rather than
 /// inline string literals.
 abstract class VideoInteractionsReportableSites {
-  /// Generic catch in `VideoInteractionsBloc._publishLike`.
+  /// Unexpected failure on the kind-7 (like) / kind-5 (unlike) publish path.
   static const String publishLike = '_publishLike';
 
-  /// Generic catch in `VideoInteractionsBloc._publishRepost`.
+  /// Unexpected failure on the kind-16 (repost) / kind-5 (unrepost) publish path.
   static const String publishRepost = '_publishRepost';
 }

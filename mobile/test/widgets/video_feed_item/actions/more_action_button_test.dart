@@ -9,7 +9,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/video_feed_item/actions/more_action_button.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 
@@ -18,21 +17,17 @@ import '../../../helpers/test_provider_overrides.dart';
 class _MockVideoInteractionsBloc extends Mock
     implements VideoInteractionsBloc {}
 
-class _MockVideoEventService extends Mock implements VideoEventService {}
-
 class _MockRepostsRepository extends Mock implements RepostsRepository {}
 
 void main() {
   late VideoEvent testVideo;
   late VideoInteractionsBloc mockBloc;
-  late VideoEventService mockVideoEventService;
   late RepostsRepository mockRepostsRepository;
 
   setUp(() {
     mockBloc = _MockVideoInteractionsBloc();
     when(() => mockBloc.state).thenReturn(const VideoInteractionsState());
     when(() => mockBloc.stream).thenAnswer((_) => const Stream.empty());
-    mockVideoEventService = _MockVideoEventService();
     mockRepostsRepository = _MockRepostsRepository();
     when(
       () => mockRepostsRepository.fetchEventReposters(
@@ -57,7 +52,6 @@ void main() {
       await tester.pumpWidget(
         testMaterialApp(
           additionalOverrides: [
-            videoEventServiceProvider.overrideWithValue(mockVideoEventService),
             repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
           ],
           home: BlocProvider<VideoInteractionsBloc>.value(
@@ -84,7 +78,6 @@ void main() {
       await tester.pumpWidget(
         testMaterialApp(
           additionalOverrides: [
-            videoEventServiceProvider.overrideWithValue(mockVideoEventService),
             repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
           ],
           home: BlocProvider<VideoInteractionsBloc>.value(
@@ -104,7 +97,6 @@ void main() {
       await tester.pumpWidget(
         testMaterialApp(
           additionalOverrides: [
-            videoEventServiceProvider.overrideWithValue(mockVideoEventService),
             repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
           ],
           home: BlocProvider<VideoInteractionsBloc>.value(
