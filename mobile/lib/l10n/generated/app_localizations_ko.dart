@@ -790,16 +790,16 @@ class AppLocalizationsKo extends AppLocalizations {
       '프로필 사진 업로드는 아직 웹에서 사용할 수 없어요. iOS나 Android 앱을 사용하거나 이미지 URL을 붙여넣어 주세요.';
 
   @override
-  String get profileSetupBannerSectionTitle => '배너';
+  String get profileSetupBannerSectionTitle => 'Banner';
 
   @override
-  String get profileSetupBannerUploadButton => '사진 업로드';
+  String get profileSetupBannerUploadButton => 'Upload photo';
 
   @override
-  String get profileSetupBannerClearButton => '배너 지우기';
+  String get profileSetupBannerClearButton => 'Clear banner';
 
   @override
-  String get profileSetupBannerUploadSuccess => '배너가 업데이트되었어요';
+  String get profileSetupBannerUploadSuccess => 'Banner updated';
 
   @override
   String get profileSetupUsernameChecking => '사용 가능 여부 확인 중...';
@@ -1116,7 +1116,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => '영상 편집';
 
   @override
-  String get videoPlayerTapHint => '탭하여 재생하거나 일시정지하세요. 이중 탭으로 좋아요.';
+  String get videoPlayerTapHint => 'Tap to play or pause. Double tap to like.';
 
   @override
   String get videoSettingsMenuOpen => '재생 설정 열기';
@@ -2197,7 +2197,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get notificationSettingsAllMarkedAsRead => '모든 알림을 읽음으로 표시했어요';
 
   @override
-  String get notificationSettingsMarkAllAsReadFailed => '모두 읽음으로 표시하지 못했어요';
+  String get notificationSettingsMarkAllAsReadFailed =>
+      'Failed to mark all as read';
 
   @override
   String get notificationSettingsResetToDefaults => '설정이 기본값으로 되돌아갔어요';
@@ -2489,7 +2490,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get authCreateNewAccount => '새 Divine 계정 만들기';
 
   @override
-  String get authSignInDifferentAccount => '기존 계정으로 로그인';
+  String get authSignInDifferentAccount => '다른 계정으로 로그인';
 
   @override
   String get authSignBackIn => '다시 로그인';
@@ -4103,7 +4104,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String userPickerRemoveSelectionSemantics(String name) {
-    return '$name 제거';
+    return 'Remove $name';
   }
 
   @override
@@ -4431,11 +4432,10 @@ class AppLocalizationsKo extends AppLocalizations {
       'General concerns about minors\' safety';
 
   @override
-  String get reportReasonCsam => 'Child Sexual Abuse';
+  String get reportReasonCsam => '아동 안전 위반';
 
   @override
-  String get reportReasonCsamSubtitle =>
-      'Content depicting sexual abuse of minors';
+  String get reportReasonCsamSubtitle => '미성년자를 착취하거나 위험에 빠뜨리는 콘텐츠';
 
   @override
   String get reportReasonUnderageUser => 'User Appears Under 16';
@@ -5521,10 +5521,10 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoMetadataEditCoverFailedSnackbar =>
-      '커버를 업데이트하지 못했습니다. 다시 시도하세요.';
+      'Couldn\'t update the cover. Try again.';
 
   @override
-  String get videoMetadataEditCoverSuccessAnnouncement => '커버 업데이트됨';
+  String get videoMetadataEditCoverSuccessAnnouncement => 'Cover updated';
 
   @override
   String get videoMetadataTags => '태그';
@@ -6922,21 +6922,22 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorSplitSelectedClipSemanticLabel => '선택한 클립 분할';
 
   @override
-  String get videoEditorExtractAudioLabel => '오디오 추출';
+  String get videoEditorExtractAudioLabel => 'Extract Audio';
 
   @override
-  String get videoEditorClipAudioTitle => '클립 오디오';
+  String get videoEditorClipAudioTitle => 'Clip Audio';
 
   @override
   String get videoEditorExtractAudioFromClipSemanticLabel =>
-      '클립에서 오디오를 추출하고 원본을 음소거';
+      'Extract audio from clip and mute original';
 
   @override
   String get videoEditorExtractAudioNoLocalFile =>
-      '오디오를 추출할 수 없습니다: 클립이 로컬에서 사용할 수 없습니다.';
+      'Cannot extract audio: clip is not locally available.';
 
   @override
-  String get videoEditorExtractAudioFailed => '오디오를 추출할 수 없었습니다. 다시 시도해 주세요.';
+  String get videoEditorExtractAudioFailed =>
+      'Could not extract audio. Please try again.';
 
   @override
   String get videoEditorSpeedLabel => '속도';
@@ -7850,29 +7851,31 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileEditGetVerifiedSubtitle => '소셜 미디어 계정을 연결해서 진짜 너인 걸 알려줘.';
 
   @override
-  String get videoMetadataEditCoverTitle => '커버 편집';
+  String get videoMetadataEditCoverTitle => 'Edit cover';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => '커버 편집기 닫기';
+  String get videoMetadataEditCoverCloseSemanticLabel => 'Close cover editor';
 
   @override
-  String get videoMetadataEditCoverConfirmSemanticLabel => '커버 선택 확인';
+  String get videoMetadataEditCoverConfirmSemanticLabel =>
+      'Confirm cover selection';
 
   @override
-  String get videoMetadataEditCoverStripSemanticLabel => '커버 프레임 선택을 위해 동영상 탐색';
+  String get videoMetadataEditCoverStripSemanticLabel =>
+      'Seek through video to select cover frame';
 
   @override
-  String get videoMetadataTagsPickerSearchHint => '태그 검색 또는 추가';
+  String get videoMetadataTagsPickerSearchHint => 'Search or add tags';
 
   @override
   String get videoMetadataTagsPickerEmptyHint =>
-      '사람들이 동영상을 발견할 수 있도록 태그를 추가하세요';
+      'Add tags to help people discover your video';
 
   @override
-  String get videoMetadataTagsPickerNoResults => '일치하는 태그 없음';
+  String get videoMetadataTagsPickerNoResults => 'No matching tags';
 
   @override
   String videoMetadataTagsPickerAddTag(String tag) {
-    return '\"#$tag\" 추가';
+    return 'Add \"#$tag\"';
   }
 }

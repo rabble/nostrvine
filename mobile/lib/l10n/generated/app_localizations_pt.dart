@@ -862,13 +862,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get profileSetupBannerSectionTitle => 'Banner';
 
   @override
-  String get profileSetupBannerUploadButton => 'Enviar foto';
+  String get profileSetupBannerUploadButton => 'Upload photo';
 
   @override
-  String get profileSetupBannerClearButton => 'Remover banner';
+  String get profileSetupBannerClearButton => 'Clear banner';
 
   @override
-  String get profileSetupBannerUploadSuccess => 'Banner atualizado';
+  String get profileSetupBannerUploadSuccess => 'Banner updated';
 
   @override
   String get profileSetupUsernameChecking => 'Verificando disponibilidade...';
@@ -1201,8 +1201,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'Editar vídeo';
 
   @override
-  String get videoPlayerTapHint =>
-      'Toque para reproduzir ou pausar. Toque duplo para curtir.';
+  String get videoPlayerTapHint => 'Tap to play or pause. Double tap to like.';
 
   @override
   String get videoSettingsMenuOpen => 'Abrir configurações de reprodução';
@@ -2323,7 +2322,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get notificationSettingsMarkAllAsReadFailed =>
-      'Falha ao marcar todas como lidas';
+      'Failed to mark all as read';
 
   @override
   String get notificationSettingsResetToDefaults =>
@@ -2628,7 +2627,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get authCreateNewAccount => 'Criar uma nova conta Divine';
 
   @override
-  String get authSignInDifferentAccount => 'Entrar com uma conta existente';
+  String get authSignInDifferentAccount => 'Entrar com outra conta';
 
   @override
   String get authSignBackIn => 'Entrar de novo';
@@ -4316,7 +4315,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String userPickerRemoveSelectionSemantics(String name) {
-    return 'Remover $name';
+    return 'Remove $name';
   }
 
   @override
@@ -4659,11 +4658,11 @@ class AppLocalizationsPt extends AppLocalizations {
       'General concerns about minors\' safety';
 
   @override
-  String get reportReasonCsam => 'Child Sexual Abuse';
+  String get reportReasonCsam => 'Violação de segurança infantil';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Content depicting sexual abuse of minors';
+      'Conteúdo que explora ou coloca menores em perigo';
 
   @override
   String get reportReasonUnderageUser => 'User Appears Under 16';
@@ -5766,10 +5765,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get videoMetadataEditCoverFailedSnackbar =>
-      'Não foi possível atualizar a capa. Tente novamente.';
+      'Couldn\'t update the cover. Try again.';
 
   @override
-  String get videoMetadataEditCoverSuccessAnnouncement => 'Capa atualizada';
+  String get videoMetadataEditCoverSuccessAnnouncement => 'Cover updated';
 
   @override
   String get videoMetadataTags => 'Tags';
@@ -7228,22 +7227,22 @@ class AppLocalizationsPt extends AppLocalizations {
       'Dividir clipe selecionado';
 
   @override
-  String get videoEditorExtractAudioLabel => 'Extrair áudio';
+  String get videoEditorExtractAudioLabel => 'Extract Audio';
 
   @override
-  String get videoEditorClipAudioTitle => 'Áudio do clip';
+  String get videoEditorClipAudioTitle => 'Clip Audio';
 
   @override
   String get videoEditorExtractAudioFromClipSemanticLabel =>
-      'Extrair áudio do clipe e silenciar o original';
+      'Extract audio from clip and mute original';
 
   @override
   String get videoEditorExtractAudioNoLocalFile =>
-      'Não é possível extrair o áudio: o clipe não está disponível localmente.';
+      'Cannot extract audio: clip is not locally available.';
 
   @override
   String get videoEditorExtractAudioFailed =>
-      'Não foi possível extrair o áudio. Por favor, tente novamente.';
+      'Could not extract audio. Please try again.';
 
   @override
   String get videoEditorSpeedLabel => 'Velocidade';
@@ -8185,32 +8184,31 @@ class AppLocalizationsPt extends AppLocalizations {
       'Conecte suas redes sociais para que as pessoas saibam que é você mesmo.';
 
   @override
-  String get videoMetadataEditCoverTitle => 'Editar capa';
+  String get videoMetadataEditCoverTitle => 'Edit cover';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel =>
-      'Fechar editor de capa';
+  String get videoMetadataEditCoverCloseSemanticLabel => 'Close cover editor';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Confirmar seleção de capa';
+      'Confirm cover selection';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
-      'Percorra o vídeo para selecionar o quadro de capa';
+      'Seek through video to select cover frame';
 
   @override
-  String get videoMetadataTagsPickerSearchHint => 'Pesquisar ou adicionar tags';
+  String get videoMetadataTagsPickerSearchHint => 'Search or add tags';
 
   @override
   String get videoMetadataTagsPickerEmptyHint =>
-      'Adiciona tags para que outros descubram o teu vídeo';
+      'Add tags to help people discover your video';
 
   @override
-  String get videoMetadataTagsPickerNoResults => 'Sem tags correspondentes';
+  String get videoMetadataTagsPickerNoResults => 'No matching tags';
 
   @override
   String videoMetadataTagsPickerAddTag(String tag) {
-    return 'Adicionar «#$tag»';
+    return 'Add \"#$tag\"';
   }
 }

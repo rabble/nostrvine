@@ -880,13 +880,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileSetupBannerSectionTitle => 'Banner';
 
   @override
-  String get profileSetupBannerUploadButton => 'Încarcă fotografie';
+  String get profileSetupBannerUploadButton => 'Upload photo';
 
   @override
-  String get profileSetupBannerClearButton => 'Șterge bannerul';
+  String get profileSetupBannerClearButton => 'Clear banner';
 
   @override
-  String get profileSetupBannerUploadSuccess => 'Banner actualizat';
+  String get profileSetupBannerUploadSuccess => 'Banner updated';
 
   @override
   String get profileSetupUsernameChecking => 'Se verifică disponibilitatea...';
@@ -1217,8 +1217,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'Editează videoclipul';
 
   @override
-  String get videoPlayerTapHint =>
-      'Atinge pentru a reda sau întrerupe. Atinge de două ori pentru a aprecia.';
+  String get videoPlayerTapHint => 'Tap to play or pause. Double tap to like.';
 
   @override
   String get videoSettingsMenuOpen => 'Deschide setările de redare';
@@ -2387,7 +2386,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get notificationSettingsMarkAllAsReadFailed =>
-      'Marcarea tuturor ca citite a eșuat';
+      'Failed to mark all as read';
 
   @override
   String get notificationSettingsResetToDefaults =>
@@ -2694,7 +2693,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get authCreateNewAccount => 'Creează un cont Divine nou';
 
   @override
-  String get authSignInDifferentAccount => 'Autentifică-te cu un cont existent';
+  String get authSignInDifferentAccount => 'Autentifică-te cu un alt cont';
 
   @override
   String get authSignBackIn => 'Reautentifică-te';
@@ -4414,7 +4413,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String userPickerRemoveSelectionSemantics(String name) {
-    return 'Elimină $name';
+    return 'Remove $name';
   }
 
   @override
@@ -4758,11 +4757,11 @@ class AppLocalizationsRo extends AppLocalizations {
       'General concerns about minors\' safety';
 
   @override
-  String get reportReasonCsam => 'Child Sexual Abuse';
+  String get reportReasonCsam => 'Încălcarea siguranței copiilor';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Content depicting sexual abuse of minors';
+      'Conținut care exploatează sau pune în pericol minorii';
 
   @override
   String get reportReasonUnderageUser => 'User Appears Under 16';
@@ -5880,11 +5879,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get videoMetadataEditCoverFailedSnackbar =>
-      'Coperta nu a putut fi actualizată. Încearcă din nou.';
+      'Couldn\'t update the cover. Try again.';
 
   @override
-  String get videoMetadataEditCoverSuccessAnnouncement =>
-      'Coperta a fost actualizată';
+  String get videoMetadataEditCoverSuccessAnnouncement => 'Cover updated';
 
   @override
   String get videoMetadataTags => 'Etichete';
@@ -7352,22 +7350,22 @@ class AppLocalizationsRo extends AppLocalizations {
       'Împarte clipul selectat';
 
   @override
-  String get videoEditorExtractAudioLabel => 'Extrage audio';
+  String get videoEditorExtractAudioLabel => 'Extract Audio';
 
   @override
-  String get videoEditorClipAudioTitle => 'Audio clip';
+  String get videoEditorClipAudioTitle => 'Clip Audio';
 
   @override
   String get videoEditorExtractAudioFromClipSemanticLabel =>
-      'Extrage audio din clip și dezactivează sunetul originalului';
+      'Extract audio from clip and mute original';
 
   @override
   String get videoEditorExtractAudioNoLocalFile =>
-      'Nu se poate extrage audio: clipul nu este disponibil local.';
+      'Cannot extract audio: clip is not locally available.';
 
   @override
   String get videoEditorExtractAudioFailed =>
-      'Nu s-a putut extrage audio. Vă rugăm să încercați din nou.';
+      'Could not extract audio. Please try again.';
 
   @override
   String get videoEditorSpeedLabel => 'Viteză';
@@ -8317,32 +8315,31 @@ class AppLocalizationsRo extends AppLocalizations {
       'Conectează-ți conturile de social media ca lumea să știe că ești tu.';
 
   @override
-  String get videoMetadataEditCoverTitle => 'Editează coperta';
+  String get videoMetadataEditCoverTitle => 'Edit cover';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel =>
-      'Închide editorul de copertă';
+  String get videoMetadataEditCoverCloseSemanticLabel => 'Close cover editor';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Confirmă selecția copertei';
+      'Confirm cover selection';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
-      'Parcurge videoclipul pentru a selecta cadrul copertei';
+      'Seek through video to select cover frame';
 
   @override
-  String get videoMetadataTagsPickerSearchHint => 'Caută sau adaugă etichete';
+  String get videoMetadataTagsPickerSearchHint => 'Search or add tags';
 
   @override
   String get videoMetadataTagsPickerEmptyHint =>
-      'Adaugă etichete pentru ca alții să-ți descopere videoclipul';
+      'Add tags to help people discover your video';
 
   @override
-  String get videoMetadataTagsPickerNoResults => 'Nicio etichetă potrivită';
+  String get videoMetadataTagsPickerNoResults => 'No matching tags';
 
   @override
   String videoMetadataTagsPickerAddTag(String tag) {
-    return 'Adaugă „#$tag\"';
+    return 'Add \"#$tag\"';
   }
 }

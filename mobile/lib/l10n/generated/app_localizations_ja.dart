@@ -788,16 +788,16 @@ class AppLocalizationsJa extends AppLocalizations {
       'プロフィール画像のアップロードは、まだWebでは使えないよ。iOSかAndroidのアプリを使うか、画像URLを貼り付けてね。';
 
   @override
-  String get profileSetupBannerSectionTitle => 'バナー';
+  String get profileSetupBannerSectionTitle => 'Banner';
 
   @override
-  String get profileSetupBannerUploadButton => '写真をアップロード';
+  String get profileSetupBannerUploadButton => 'Upload photo';
 
   @override
-  String get profileSetupBannerClearButton => 'バナーをクリア';
+  String get profileSetupBannerClearButton => 'Clear banner';
 
   @override
-  String get profileSetupBannerUploadSuccess => 'バナーを更新したよ';
+  String get profileSetupBannerUploadSuccess => 'Banner updated';
 
   @override
   String get profileSetupUsernameChecking => '使えるか確認中...';
@@ -1108,7 +1108,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => '動画を編集';
 
   @override
-  String get videoPlayerTapHint => 'タップで再生・一時停止。ダブルタップでいいね。';
+  String get videoPlayerTapHint => 'Tap to play or pause. Double tap to like.';
 
   @override
   String get videoSettingsMenuOpen => '再生設定を開く';
@@ -2187,7 +2187,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get notificationSettingsAllMarkedAsRead => 'すべての通知を既読にしたよ';
 
   @override
-  String get notificationSettingsMarkAllAsReadFailed => 'すべて既読にできなかったよ';
+  String get notificationSettingsMarkAllAsReadFailed =>
+      'Failed to mark all as read';
 
   @override
   String get notificationSettingsResetToDefaults => '設定を既定値にリセットしたよ';
@@ -2479,7 +2480,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get authCreateNewAccount => '新しい Divine アカウントを作ろう';
 
   @override
-  String get authSignInDifferentAccount => '既存のアカウントでサインイン';
+  String get authSignInDifferentAccount => '別のアカウントでサインイン';
 
   @override
   String get authSignBackIn => 'もう一回サインイン';
@@ -4088,7 +4089,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String userPickerRemoveSelectionSemantics(String name) {
-    return '$nameを削除';
+    return 'Remove $name';
   }
 
   @override
@@ -4416,11 +4417,10 @@ class AppLocalizationsJa extends AppLocalizations {
       'General concerns about minors\' safety';
 
   @override
-  String get reportReasonCsam => 'Child Sexual Abuse';
+  String get reportReasonCsam => '子どもの安全に関する違反';
 
   @override
-  String get reportReasonCsamSubtitle =>
-      'Content depicting sexual abuse of minors';
+  String get reportReasonCsamSubtitle => '未成年者を搾取または危険にさらすコンテンツ';
 
   @override
   String get reportReasonUnderageUser => 'User Appears Under 16';
@@ -5504,10 +5504,10 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get videoMetadataEditCoverFailedSnackbar =>
-      'カバーを更新できませんでした。もう一度お試しください。';
+      'Couldn\'t update the cover. Try again.';
 
   @override
-  String get videoMetadataEditCoverSuccessAnnouncement => 'カバーを更新しました';
+  String get videoMetadataEditCoverSuccessAnnouncement => 'Cover updated';
 
   @override
   String get videoMetadataTags => 'タグ';
@@ -6899,21 +6899,22 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorSplitSelectedClipSemanticLabel => '選択したクリップを分割';
 
   @override
-  String get videoEditorExtractAudioLabel => '音声を抽出';
+  String get videoEditorExtractAudioLabel => 'Extract Audio';
 
   @override
-  String get videoEditorClipAudioTitle => 'クリップ音声';
+  String get videoEditorClipAudioTitle => 'Clip Audio';
 
   @override
   String get videoEditorExtractAudioFromClipSemanticLabel =>
-      'クリップから音声を抽出してオリジナルをミュート';
+      'Extract audio from clip and mute original';
 
   @override
   String get videoEditorExtractAudioNoLocalFile =>
-      '音声を抽出できません：クリップがローカルで利用できません。';
+      'Cannot extract audio: clip is not locally available.';
 
   @override
-  String get videoEditorExtractAudioFailed => '音声を抽出できませんでした。もう一度お試しください。';
+  String get videoEditorExtractAudioFailed =>
+      'Could not extract audio. Please try again.';
 
   @override
   String get videoEditorSpeedLabel => '速度';
@@ -7827,29 +7828,31 @@ class AppLocalizationsJa extends AppLocalizations {
       'ソーシャルメディアのアカウントをつないで、本物のあなただと伝えよう。';
 
   @override
-  String get videoMetadataEditCoverTitle => 'カバーを編集';
+  String get videoMetadataEditCoverTitle => 'Edit cover';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => 'カバーエディターを閉じる';
+  String get videoMetadataEditCoverCloseSemanticLabel => 'Close cover editor';
 
   @override
-  String get videoMetadataEditCoverConfirmSemanticLabel => 'カバー選択を確認';
+  String get videoMetadataEditCoverConfirmSemanticLabel =>
+      'Confirm cover selection';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
-      'カバーフレームを選択するために動画をシーク';
+      'Seek through video to select cover frame';
 
   @override
-  String get videoMetadataTagsPickerSearchHint => 'タグを検索または追加';
+  String get videoMetadataTagsPickerSearchHint => 'Search or add tags';
 
   @override
-  String get videoMetadataTagsPickerEmptyHint => 'タグを追加して動画を見つけてもらおう';
+  String get videoMetadataTagsPickerEmptyHint =>
+      'Add tags to help people discover your video';
 
   @override
-  String get videoMetadataTagsPickerNoResults => '一致するタグがありません';
+  String get videoMetadataTagsPickerNoResults => 'No matching tags';
 
   @override
   String videoMetadataTagsPickerAddTag(String tag) {
-    return '「#$tag」を追加';
+    return 'Add \"#$tag\"';
   }
 }

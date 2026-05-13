@@ -858,16 +858,16 @@ class AppLocalizationsBg extends AppLocalizations {
       'Качването на профилна снимка все още не е налично в уеб. Използвай приложението за iOS или Android или постави URL на изображение.';
 
   @override
-  String get profileSetupBannerSectionTitle => 'Банер';
+  String get profileSetupBannerSectionTitle => 'Banner';
 
   @override
-  String get profileSetupBannerUploadButton => 'Качи снимка';
+  String get profileSetupBannerUploadButton => 'Upload photo';
 
   @override
-  String get profileSetupBannerClearButton => 'Изчисти банера';
+  String get profileSetupBannerClearButton => 'Clear banner';
 
   @override
-  String get profileSetupBannerUploadSuccess => 'Банерът е обновен';
+  String get profileSetupBannerUploadSuccess => 'Banner updated';
 
   @override
   String get profileSetupUsernameChecking => 'Проверява се наличността...';
@@ -1201,8 +1201,7 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'Редактиране на видео';
 
   @override
-  String get videoPlayerTapHint =>
-      'Докоснете за пускане или пауза. Докоснете два пъти, за да харесате.';
+  String get videoPlayerTapHint => 'Tap to play or pause. Double tap to like.';
 
   @override
   String get videoSettingsMenuOpen => 'Отвори настройките за възпроизвеждане';
@@ -2342,7 +2341,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get notificationSettingsMarkAllAsReadFailed =>
-      'Неуспешно маркиране на всички като прочетени';
+      'Failed to mark all as read';
 
   @override
   String get notificationSettingsResetToDefaults =>
@@ -2649,7 +2648,7 @@ class AppLocalizationsBg extends AppLocalizations {
   String get authCreateNewAccount => 'Създай нов Divine акаунт';
 
   @override
-  String get authSignInDifferentAccount => 'Влез със съществуващ акаунт';
+  String get authSignInDifferentAccount => 'Влез с друг акаунт';
 
   @override
   String get authSignBackIn => 'Влез отново';
@@ -4678,11 +4677,11 @@ class AppLocalizationsBg extends AppLocalizations {
       'General concerns about minors\' safety';
 
   @override
-  String get reportReasonCsam => 'Child Sexual Abuse';
+  String get reportReasonCsam => 'Нарушение на безопасността на детето';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Content depicting sexual abuse of minors';
+      'Съдържание, което експлоатира или застрашава непълнолетни';
 
   @override
   String get reportReasonUnderageUser => 'User Appears Under 16';
@@ -7255,22 +7254,22 @@ class AppLocalizationsBg extends AppLocalizations {
       'Разделете избрания клип';
 
   @override
-  String get videoEditorExtractAudioLabel => 'Извличане на аудио';
+  String get videoEditorExtractAudioLabel => 'Extract Audio';
 
   @override
-  String get videoEditorClipAudioTitle => 'Аудио от клип';
+  String get videoEditorClipAudioTitle => 'Clip Audio';
 
   @override
   String get videoEditorExtractAudioFromClipSemanticLabel =>
-      'Извлечи аудио от клип и заглуши оригинала';
+      'Extract audio from clip and mute original';
 
   @override
   String get videoEditorExtractAudioNoLocalFile =>
-      'Не може да се извлече аудио: клипът не е наличен локално.';
+      'Cannot extract audio: clip is not locally available.';
 
   @override
   String get videoEditorExtractAudioFailed =>
-      'Не можа да се извлече аудио. Моля, опитайте отново.';
+      'Could not extract audio. Please try again.';
 
   @override
   String get videoEditorSpeedLabel => 'Скорост';
@@ -8235,18 +8234,17 @@ class AppLocalizationsBg extends AppLocalizations {
       'Seek through video to select cover frame';
 
   @override
-  String get videoMetadataTagsPickerSearchHint =>
-      'Търсене или добавяне на тагове';
+  String get videoMetadataTagsPickerSearchHint => 'Search or add tags';
 
   @override
   String get videoMetadataTagsPickerEmptyHint =>
-      'Добавете тагове, за да открият хората вашето видео';
+      'Add tags to help people discover your video';
 
   @override
-  String get videoMetadataTagsPickerNoResults => 'Няма съвпадащи тагове';
+  String get videoMetadataTagsPickerNoResults => 'No matching tags';
 
   @override
   String videoMetadataTagsPickerAddTag(String tag) {
-    return 'Добавяне на „#$tag\"';
+    return 'Add \"#$tag\"';
   }
 }

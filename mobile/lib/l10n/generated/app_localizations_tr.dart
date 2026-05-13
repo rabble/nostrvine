@@ -830,16 +830,16 @@ class AppLocalizationsTr extends AppLocalizations {
       'Profil resmi yükleme henüz web\'de kullanılamıyor. iOS ya da Android uygulamasını kullan veya bir görsel URL\'si yapıştır.';
 
   @override
-  String get profileSetupBannerSectionTitle => 'Afiş';
+  String get profileSetupBannerSectionTitle => 'Banner';
 
   @override
-  String get profileSetupBannerUploadButton => 'Fotoğraf yükle';
+  String get profileSetupBannerUploadButton => 'Upload photo';
 
   @override
-  String get profileSetupBannerClearButton => 'Afişi temizle';
+  String get profileSetupBannerClearButton => 'Clear banner';
 
   @override
-  String get profileSetupBannerUploadSuccess => 'Afiş güncellendi';
+  String get profileSetupBannerUploadSuccess => 'Banner updated';
 
   @override
   String get profileSetupUsernameChecking => 'Uygunluk kontrol ediliyor...';
@@ -1163,8 +1163,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'Videoyu düzenle';
 
   @override
-  String get videoPlayerTapHint =>
-      'Oynatmak veya duraklatmak için dokunun. Beğenmek için çift dokunun.';
+  String get videoPlayerTapHint => 'Tap to play or pause. Double tap to like.';
 
   @override
   String get videoSettingsMenuOpen => 'Oynatma ayarlarını aç';
@@ -2285,7 +2284,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get notificationSettingsMarkAllAsReadFailed =>
-      'Tümünü okundu olarak işaretleme başarısız';
+      'Failed to mark all as read';
 
   @override
   String get notificationSettingsResetToDefaults =>
@@ -2588,7 +2587,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get authCreateNewAccount => 'Yeni bir Divine hesabı oluştur';
 
   @override
-  String get authSignInDifferentAccount => 'Mevcut bir hesapla giriş yap';
+  String get authSignInDifferentAccount => 'Farklı bir hesapla giriş yap';
 
   @override
   String get authSignBackIn => 'Tekrar giriş yap';
@@ -4270,7 +4269,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String userPickerRemoveSelectionSemantics(String name) {
-    return '$name kaldır';
+    return 'Remove $name';
   }
 
   @override
@@ -4613,11 +4612,11 @@ class AppLocalizationsTr extends AppLocalizations {
       'General concerns about minors\' safety';
 
   @override
-  String get reportReasonCsam => 'Child Sexual Abuse';
+  String get reportReasonCsam => 'Çocuk Güvenliği İhlali';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Content depicting sexual abuse of minors';
+      'Reşit olmayanları sömüren veya tehlikeye atan içerik';
 
   @override
   String get reportReasonUnderageUser => 'User Appears Under 16';
@@ -5712,10 +5711,10 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoMetadataEditCoverFailedSnackbar =>
-      'Kapak güncellenemedi. Tekrar dene.';
+      'Couldn\'t update the cover. Try again.';
 
   @override
-  String get videoMetadataEditCoverSuccessAnnouncement => 'Kapak güncellendi';
+  String get videoMetadataEditCoverSuccessAnnouncement => 'Cover updated';
 
   @override
   String get videoMetadataTags => 'Etiketler';
@@ -7155,22 +7154,22 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorSplitSelectedClipSemanticLabel => 'Seçili klibi böl';
 
   @override
-  String get videoEditorExtractAudioLabel => 'Sesi çıkar';
+  String get videoEditorExtractAudioLabel => 'Extract Audio';
 
   @override
-  String get videoEditorClipAudioTitle => 'Klip sesi';
+  String get videoEditorClipAudioTitle => 'Clip Audio';
 
   @override
   String get videoEditorExtractAudioFromClipSemanticLabel =>
-      'Klipten sesi çıkar ve orijinali sessize al';
+      'Extract audio from clip and mute original';
 
   @override
   String get videoEditorExtractAudioNoLocalFile =>
-      'Ses çıkarılamıyor: klip yerel olarak kullanılamıyor.';
+      'Cannot extract audio: clip is not locally available.';
 
   @override
   String get videoEditorExtractAudioFailed =>
-      'Ses çıkarılamadı. Lütfen tekrar deneyin.';
+      'Could not extract audio. Please try again.';
 
   @override
   String get videoEditorSpeedLabel => 'Hız';
@@ -8109,32 +8108,31 @@ class AppLocalizationsTr extends AppLocalizations {
       'Sosyal medya hesaplarını bağla ki insanlar gerçekten sen olduğunu bilsin.';
 
   @override
-  String get videoMetadataEditCoverTitle => 'Kapağı düzenle';
+  String get videoMetadataEditCoverTitle => 'Edit cover';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel =>
-      'Kapak düzenleyicisini kapat';
+  String get videoMetadataEditCoverCloseSemanticLabel => 'Close cover editor';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Kapak seçimini onayla';
+      'Confirm cover selection';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
-      'Kapak karesi seçmek için videoda gezin';
+      'Seek through video to select cover frame';
 
   @override
-  String get videoMetadataTagsPickerSearchHint => 'Etiket ara veya ekle';
+  String get videoMetadataTagsPickerSearchHint => 'Search or add tags';
 
   @override
   String get videoMetadataTagsPickerEmptyHint =>
-      'İnsanların videonu keşfetmesi için etiket ekle';
+      'Add tags to help people discover your video';
 
   @override
-  String get videoMetadataTagsPickerNoResults => 'Eşleşen etiket yok';
+  String get videoMetadataTagsPickerNoResults => 'No matching tags';
 
   @override
   String videoMetadataTagsPickerAddTag(String tag) {
-    return '\"#$tag\" ekle';
+    return 'Add \"#$tag\"';
   }
 }

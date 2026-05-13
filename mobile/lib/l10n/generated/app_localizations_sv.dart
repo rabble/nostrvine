@@ -836,13 +836,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get profileSetupBannerSectionTitle => 'Banner';
 
   @override
-  String get profileSetupBannerUploadButton => 'Ladda upp foto';
+  String get profileSetupBannerUploadButton => 'Upload photo';
 
   @override
-  String get profileSetupBannerClearButton => 'Rensa banner';
+  String get profileSetupBannerClearButton => 'Clear banner';
 
   @override
-  String get profileSetupBannerUploadSuccess => 'Banner uppdaterad';
+  String get profileSetupBannerUploadSuccess => 'Banner updated';
 
   @override
   String get profileSetupUsernameChecking => 'Kollar tillgänglighet...';
@@ -1176,8 +1176,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'Redigera video';
 
   @override
-  String get videoPlayerTapHint =>
-      'Tryck för att spela eller pausa. Dubbeltryck för att gilla.';
+  String get videoPlayerTapHint => 'Tap to play or pause. Double tap to like.';
 
   @override
   String get videoSettingsMenuOpen => 'Öppna uppspelningsinställningar';
@@ -2299,7 +2298,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get notificationSettingsMarkAllAsReadFailed =>
-      'Kunde inte markera alla som lästa';
+      'Failed to mark all as read';
 
   @override
   String get notificationSettingsResetToDefaults =>
@@ -2603,7 +2602,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get authCreateNewAccount => 'Skapa ett nytt Divine-konto';
 
   @override
-  String get authSignInDifferentAccount => 'Logga in med ett befintligt konto';
+  String get authSignInDifferentAccount => 'Logga in med ett annat konto';
 
   @override
   String get authSignBackIn => 'Logga in igen';
@@ -4287,7 +4286,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String userPickerRemoveSelectionSemantics(String name) {
-    return 'Ta bort $name';
+    return 'Remove $name';
   }
 
   @override
@@ -4629,11 +4628,11 @@ class AppLocalizationsSv extends AppLocalizations {
       'General concerns about minors\' safety';
 
   @override
-  String get reportReasonCsam => 'Child Sexual Abuse';
+  String get reportReasonCsam => 'Brott mot barns säkerhet';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Content depicting sexual abuse of minors';
+      'Innehåll som utnyttjar eller utsätter minderåriga för fara';
 
   @override
   String get reportReasonUnderageUser => 'User Appears Under 16';
@@ -5732,10 +5731,10 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoMetadataEditCoverFailedSnackbar =>
-      'Det gick inte att uppdatera omslaget. Försök igen.';
+      'Couldn\'t update the cover. Try again.';
 
   @override
-  String get videoMetadataEditCoverSuccessAnnouncement => 'Omslag uppdaterat';
+  String get videoMetadataEditCoverSuccessAnnouncement => 'Cover updated';
 
   @override
   String get videoMetadataTags => 'Taggar';
@@ -7186,22 +7185,22 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoEditorSplitSelectedClipSemanticLabel => 'Dela valt klipp';
 
   @override
-  String get videoEditorExtractAudioLabel => 'Extrahera ljud';
+  String get videoEditorExtractAudioLabel => 'Extract Audio';
 
   @override
-  String get videoEditorClipAudioTitle => 'Klippljud';
+  String get videoEditorClipAudioTitle => 'Clip Audio';
 
   @override
   String get videoEditorExtractAudioFromClipSemanticLabel =>
-      'Extrahera ljud från klipp och tysta originalet';
+      'Extract audio from clip and mute original';
 
   @override
   String get videoEditorExtractAudioNoLocalFile =>
-      'Kan inte extrahera ljud: klippet är inte tillgängligt lokalt.';
+      'Cannot extract audio: clip is not locally available.';
 
   @override
   String get videoEditorExtractAudioFailed =>
-      'Kunde inte extrahera ljud. Försök igen.';
+      'Could not extract audio. Please try again.';
 
   @override
   String get videoEditorSpeedLabel => 'Hastighet';
@@ -8139,32 +8138,31 @@ class AppLocalizationsSv extends AppLocalizations {
       'Koppla dina sociala medier-konton så folk vet att det är du.';
 
   @override
-  String get videoMetadataEditCoverTitle => 'Redigera omslag';
+  String get videoMetadataEditCoverTitle => 'Edit cover';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel =>
-      'Stäng omslagsredigerare';
+  String get videoMetadataEditCoverCloseSemanticLabel => 'Close cover editor';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Bekräfta omslagsval';
+      'Confirm cover selection';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
-      'Sök igenom videon för att välja omslagsbild';
+      'Seek through video to select cover frame';
 
   @override
-  String get videoMetadataTagsPickerSearchHint => 'Sök eller lägg till taggar';
+  String get videoMetadataTagsPickerSearchHint => 'Search or add tags';
 
   @override
   String get videoMetadataTagsPickerEmptyHint =>
-      'Lägg till taggar så att andra hittar din video';
+      'Add tags to help people discover your video';
 
   @override
-  String get videoMetadataTagsPickerNoResults => 'Inga matchande taggar';
+  String get videoMetadataTagsPickerNoResults => 'No matching tags';
 
   @override
   String videoMetadataTagsPickerAddTag(String tag) {
-    return 'Lägg till ”#$tag”';
+    return 'Add \"#$tag\"';
   }
 }

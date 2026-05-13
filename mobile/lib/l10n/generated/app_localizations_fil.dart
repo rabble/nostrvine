@@ -864,13 +864,13 @@ class AppLocalizationsFil extends AppLocalizations {
   String get profileSetupBannerSectionTitle => 'Banner';
 
   @override
-  String get profileSetupBannerUploadButton => 'Mag-upload ng larawan';
+  String get profileSetupBannerUploadButton => 'Upload photo';
 
   @override
-  String get profileSetupBannerClearButton => 'I-clear ang banner';
+  String get profileSetupBannerClearButton => 'Clear banner';
 
   @override
-  String get profileSetupBannerUploadSuccess => 'Na-update ang banner';
+  String get profileSetupBannerUploadSuccess => 'Banner updated';
 
   @override
   String get profileSetupUsernameChecking => 'Tinitingnan ang availability...';
@@ -1203,8 +1203,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'I-edit ang video';
 
   @override
-  String get videoPlayerTapHint =>
-      'I-tap para i-play o i-pause. Mag-double tap para i-like.';
+  String get videoPlayerTapHint => 'Tap to play or pause. Double tap to like.';
 
   @override
   String get videoSettingsMenuOpen => 'Buksan ang playback settings';
@@ -2342,7 +2341,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get notificationSettingsMarkAllAsReadFailed =>
-      'Hindi nagawang markahan lahat bilang nabasa';
+      'Failed to mark all as read';
 
   @override
   String get notificationSettingsResetToDefaults =>
@@ -2649,7 +2648,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get authSignInDifferentAccount =>
-      'Mag-sign in gamit ang umiiral na account';
+      'Mag-sign in gamit ang ibang account';
 
   @override
   String get authSignBackIn => 'Mag-sign in muli';
@@ -4692,11 +4691,11 @@ class AppLocalizationsFil extends AppLocalizations {
       'General concerns about minors\' safety';
 
   @override
-  String get reportReasonCsam => 'Child Sexual Abuse';
+  String get reportReasonCsam => 'Paglabag sa Kaligtasan ng Bata';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Content depicting sexual abuse of minors';
+      'Content na nag-eexploit o naglalagay sa panganib ng mga menor de edad';
 
   @override
   String get reportReasonUnderageUser => 'User Appears Under 16';
@@ -7269,22 +7268,22 @@ class AppLocalizationsFil extends AppLocalizations {
       'I-split ang napiling clip';
 
   @override
-  String get videoEditorExtractAudioLabel => 'I-extract ang Audio';
+  String get videoEditorExtractAudioLabel => 'Extract Audio';
 
   @override
   String get videoEditorClipAudioTitle => 'Clip Audio';
 
   @override
   String get videoEditorExtractAudioFromClipSemanticLabel =>
-      'I-extract ang audio mula sa clip at i-mute ang orihinal';
+      'Extract audio from clip and mute original';
 
   @override
   String get videoEditorExtractAudioNoLocalFile =>
-      'Hindi ma-extract ang audio: hindi available ang clip nang lokal.';
+      'Cannot extract audio: clip is not locally available.';
 
   @override
   String get videoEditorExtractAudioFailed =>
-      'Hindi na-extract ang audio. Pakisubukang muli.';
+      'Could not extract audio. Please try again.';
 
   @override
   String get videoEditorSpeedLabel => 'Bilis';
@@ -8241,17 +8240,17 @@ class AppLocalizationsFil extends AppLocalizations {
       'Seek through video to select cover frame';
 
   @override
-  String get videoMetadataTagsPickerSearchHint => 'Maghanap o magdagdag ng tag';
+  String get videoMetadataTagsPickerSearchHint => 'Search or add tags';
 
   @override
   String get videoMetadataTagsPickerEmptyHint =>
-      'Magdagdag ng tag para matuklasan ang video mo';
+      'Add tags to help people discover your video';
 
   @override
-  String get videoMetadataTagsPickerNoResults => 'Walang tugmang tag';
+  String get videoMetadataTagsPickerNoResults => 'No matching tags';
 
   @override
   String videoMetadataTagsPickerAddTag(String tag) {
-    return 'Idagdag ang \"#$tag\"';
+    return 'Add \"#$tag\"';
   }
 }

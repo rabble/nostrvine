@@ -821,16 +821,16 @@ class AppLocalizationsAm extends AppLocalizations {
       'የመገለጫ ስዕል መስቀል በድር ላይ እስካሁን አይገኝም። የiOS ወይም Android መተግበሪያን ተጠቀም፣ ወይም የምስል URL ለጥፍ።';
 
   @override
-  String get profileSetupBannerSectionTitle => 'ባነር';
+  String get profileSetupBannerSectionTitle => 'Banner';
 
   @override
-  String get profileSetupBannerUploadButton => 'ፎቶ ስቀል';
+  String get profileSetupBannerUploadButton => 'Upload photo';
 
   @override
-  String get profileSetupBannerClearButton => 'ባነርን አጥፋ';
+  String get profileSetupBannerClearButton => 'Clear banner';
 
   @override
-  String get profileSetupBannerUploadSuccess => 'ባነር ተዘመነ';
+  String get profileSetupBannerUploadSuccess => 'Banner updated';
 
   @override
   String get profileSetupUsernameChecking => 'ተገኝነትን በማጣራት ላይ...';
@@ -1155,7 +1155,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'ቪዲዮን ያርትዑ';
 
   @override
-  String get videoPlayerTapHint => 'ለማጫወት ወይም ለማቆም ይንኩ። ለመውደድ ሁለት ጊዜ ይንኩ።';
+  String get videoPlayerTapHint => 'Tap to play or pause. Double tap to like.';
 
   @override
   String get videoSettingsMenuOpen => 'የመልሶ ማጫወቻ ቅንብሮችን ክፈት';
@@ -2262,7 +2262,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get notificationSettingsMarkAllAsReadFailed =>
-      'ሁሉንም እንደተነበቡ ለማመልከት አልተሳካም';
+      'Failed to mark all as read';
 
   @override
   String get notificationSettingsResetToDefaults =>
@@ -2559,7 +2559,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get authCreateNewAccount => 'አዲስ Divine መለያ ይፍጠሩ';
 
   @override
-  String get authSignInDifferentAccount => 'በነባር መለያ ይግቡ';
+  String get authSignInDifferentAccount => 'በተለየ መለያ ይግቡ';
 
   @override
   String get authSignBackIn => 'ተመልሰው ይግቡ';
@@ -4527,11 +4527,10 @@ class AppLocalizationsAm extends AppLocalizations {
       'General concerns about minors\' safety';
 
   @override
-  String get reportReasonCsam => 'Child Sexual Abuse';
+  String get reportReasonCsam => 'የልጅ ደህንነት ጥሰት';
 
   @override
-  String get reportReasonCsamSubtitle =>
-      'Content depicting sexual abuse of minors';
+  String get reportReasonCsamSubtitle => 'ህፃናትን የሚበዘብዝ ወይም አደጋ ላይ የሚጥል ይዘት';
 
   @override
   String get reportReasonUnderageUser => 'User Appears Under 16';
@@ -7039,21 +7038,22 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorSplitSelectedClipSemanticLabel => 'የተመረጠውን ቅንጥብ ክፈል።';
 
   @override
-  String get videoEditorExtractAudioLabel => 'ኦዲዮ ያውጡ';
+  String get videoEditorExtractAudioLabel => 'Extract Audio';
 
   @override
-  String get videoEditorClipAudioTitle => 'ክሊፕ ኦዲዮ';
+  String get videoEditorClipAudioTitle => 'Clip Audio';
 
   @override
   String get videoEditorExtractAudioFromClipSemanticLabel =>
-      'ከቅንጥብ ኦዲዮ ያውጡ እና ኦሪጅናሉን ያጥፉ';
+      'Extract audio from clip and mute original';
 
   @override
   String get videoEditorExtractAudioNoLocalFile =>
-      'ድምፅ ማዎጣት አልተቻለም፤ ቅንጥቡ በሀገር ዉስጥ አይገኝም።';
+      'Cannot extract audio: clip is not locally available.';
 
   @override
-  String get videoEditorExtractAudioFailed => 'ድምፅ ማዎጣት አልተቻለም። እንደገና ሞክር።';
+  String get videoEditorExtractAudioFailed =>
+      'Could not extract audio. Please try again.';
 
   @override
   String get videoEditorSpeedLabel => 'ፍጥነት';
@@ -7986,16 +7986,17 @@ class AppLocalizationsAm extends AppLocalizations {
       'Seek through video to select cover frame';
 
   @override
-  String get videoMetadataTagsPickerSearchHint => 'መለያዎችን ይፈልጉ ወይም ያክሉ';
+  String get videoMetadataTagsPickerSearchHint => 'Search or add tags';
 
   @override
-  String get videoMetadataTagsPickerEmptyHint => 'ሰዎች ቪዲዮዎን እንዲያገኙ መለያዎችን ያክሉ';
+  String get videoMetadataTagsPickerEmptyHint =>
+      'Add tags to help people discover your video';
 
   @override
-  String get videoMetadataTagsPickerNoResults => 'ተዛማጅ መለያዎች የሉም';
+  String get videoMetadataTagsPickerNoResults => 'No matching tags';
 
   @override
   String videoMetadataTagsPickerAddTag(String tag) {
-    return '\"#$tag\" ያክሉ';
+    return 'Add \"#$tag\"';
   }
 }

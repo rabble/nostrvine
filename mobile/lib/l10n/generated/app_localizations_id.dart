@@ -835,13 +835,13 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileSetupBannerSectionTitle => 'Banner';
 
   @override
-  String get profileSetupBannerUploadButton => 'Unggah foto';
+  String get profileSetupBannerUploadButton => 'Upload photo';
 
   @override
-  String get profileSetupBannerClearButton => 'Hapus banner';
+  String get profileSetupBannerClearButton => 'Clear banner';
 
   @override
-  String get profileSetupBannerUploadSuccess => 'Banner diperbarui';
+  String get profileSetupBannerUploadSuccess => 'Banner updated';
 
   @override
   String get profileSetupUsernameChecking => 'Mengecek ketersediaan...';
@@ -1161,8 +1161,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'Ubah video';
 
   @override
-  String get videoPlayerTapHint =>
-      'Ketuk untuk memutar atau menjeda. Ketuk dua kali untuk menyukai.';
+  String get videoPlayerTapHint => 'Tap to play or pause. Double tap to like.';
 
   @override
   String get videoSettingsMenuOpen => 'Buka pengaturan pemutaran';
@@ -2278,7 +2277,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get notificationSettingsMarkAllAsReadFailed =>
-      'Gagal menandai semua sudah dibaca';
+      'Failed to mark all as read';
 
   @override
   String get notificationSettingsResetToDefaults =>
@@ -2581,7 +2580,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get authCreateNewAccount => 'Buat akun Divine baru';
 
   @override
-  String get authSignInDifferentAccount => 'Masuk dengan akun yang sudah ada';
+  String get authSignInDifferentAccount => 'Masuk dengan akun yang berbeda';
 
   @override
   String get authSignBackIn => 'Masuk kembali';
@@ -4261,7 +4260,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String userPickerRemoveSelectionSemantics(String name) {
-    return 'Hapus $name';
+    return 'Remove $name';
   }
 
   @override
@@ -4604,11 +4603,11 @@ class AppLocalizationsId extends AppLocalizations {
       'General concerns about minors\' safety';
 
   @override
-  String get reportReasonCsam => 'Child Sexual Abuse';
+  String get reportReasonCsam => 'Pelanggaran Keamanan Anak';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Content depicting sexual abuse of minors';
+      'Konten yang mengeksploitasi atau membahayakan anak di bawah umur';
 
   @override
   String get reportReasonUnderageUser => 'User Appears Under 16';
@@ -5707,10 +5706,10 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get videoMetadataEditCoverFailedSnackbar =>
-      'Tidak dapat memperbarui sampul. Coba lagi.';
+      'Couldn\'t update the cover. Try again.';
 
   @override
-  String get videoMetadataEditCoverSuccessAnnouncement => 'Sampul diperbarui';
+  String get videoMetadataEditCoverSuccessAnnouncement => 'Cover updated';
 
   @override
   String get videoMetadataTags => 'Tag';
@@ -7157,22 +7156,22 @@ class AppLocalizationsId extends AppLocalizations {
       'Bagi klip yang dipilih';
 
   @override
-  String get videoEditorExtractAudioLabel => 'Ekstrak audio';
+  String get videoEditorExtractAudioLabel => 'Extract Audio';
 
   @override
-  String get videoEditorClipAudioTitle => 'Audio klip';
+  String get videoEditorClipAudioTitle => 'Clip Audio';
 
   @override
   String get videoEditorExtractAudioFromClipSemanticLabel =>
-      'Ekstrak audio dari klip dan bisukan aslinya';
+      'Extract audio from clip and mute original';
 
   @override
   String get videoEditorExtractAudioNoLocalFile =>
-      'Tidak dapat mengekstrak audio: klip tidak tersedia secara lokal.';
+      'Cannot extract audio: clip is not locally available.';
 
   @override
   String get videoEditorExtractAudioFailed =>
-      'Tidak dapat mengekstrak audio. Silakan coba lagi.';
+      'Could not extract audio. Please try again.';
 
   @override
   String get videoEditorSpeedLabel => 'Kecepatan';
@@ -8110,31 +8109,31 @@ class AppLocalizationsId extends AppLocalizations {
       'Hubungkan akun media sosialmu biar orang tahu ini memang kamu.';
 
   @override
-  String get videoMetadataEditCoverTitle => 'Edit sampul';
+  String get videoMetadataEditCoverTitle => 'Edit cover';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => 'Tutup editor sampul';
+  String get videoMetadataEditCoverCloseSemanticLabel => 'Close cover editor';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Konfirmasi pilihan sampul';
+      'Confirm cover selection';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
-      'Gulir video untuk memilih bingkai sampul';
+      'Seek through video to select cover frame';
 
   @override
-  String get videoMetadataTagsPickerSearchHint => 'Cari atau tambahkan tag';
+  String get videoMetadataTagsPickerSearchHint => 'Search or add tags';
 
   @override
   String get videoMetadataTagsPickerEmptyHint =>
-      'Tambahkan tag agar orang menemukan videomu';
+      'Add tags to help people discover your video';
 
   @override
-  String get videoMetadataTagsPickerNoResults => 'Tidak ada tag yang cocok';
+  String get videoMetadataTagsPickerNoResults => 'No matching tags';
 
   @override
   String videoMetadataTagsPickerAddTag(String tag) {
-    return 'Tambahkan \"#$tag\"';
+    return 'Add \"#$tag\"';
   }
 }

@@ -859,16 +859,16 @@ class AppLocalizationsPl extends AppLocalizations {
       'Przesyłanie zdjęcia profilowego nie jest jeszcze dostępne w wersji webowej. Użyj aplikacji na iOS lub Androida albo wklej URL obrazu.';
 
   @override
-  String get profileSetupBannerSectionTitle => 'Baner';
+  String get profileSetupBannerSectionTitle => 'Banner';
 
   @override
-  String get profileSetupBannerUploadButton => 'Prześlij zdjęcie';
+  String get profileSetupBannerUploadButton => 'Upload photo';
 
   @override
-  String get profileSetupBannerClearButton => 'Wyczyść baner';
+  String get profileSetupBannerClearButton => 'Clear banner';
 
   @override
-  String get profileSetupBannerUploadSuccess => 'Baner zaktualizowany';
+  String get profileSetupBannerUploadSuccess => 'Banner updated';
 
   @override
   String get profileSetupUsernameChecking => 'Sprawdzanie dostępności...';
@@ -1204,8 +1204,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'Edytuj film';
 
   @override
-  String get videoPlayerTapHint =>
-      'Dotknij, aby odtworzyć lub wstrzymać. Dotknij dwukrotnie, aby polubić.';
+  String get videoPlayerTapHint => 'Tap to play or pause. Double tap to like.';
 
   @override
   String get videoSettingsMenuOpen => 'Otwórz ustawienia odtwarzania';
@@ -2375,7 +2374,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get notificationSettingsMarkAllAsReadFailed =>
-      'Nie udało się oznaczyć wszystkich jako przeczytane';
+      'Failed to mark all as read';
 
   @override
   String get notificationSettingsResetToDefaults =>
@@ -2678,7 +2677,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get authCreateNewAccount => 'Utwórz nowe konto Divine';
 
   @override
-  String get authSignInDifferentAccount => 'Zaloguj się na istniejące konto';
+  String get authSignInDifferentAccount => 'Zaloguj się na inne konto';
 
   @override
   String get authSignBackIn => 'Zaloguj się z powrotem';
@@ -4397,7 +4396,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String userPickerRemoveSelectionSemantics(String name) {
-    return 'Usuń $name';
+    return 'Remove $name';
   }
 
   @override
@@ -4743,11 +4742,11 @@ class AppLocalizationsPl extends AppLocalizations {
       'General concerns about minors\' safety';
 
   @override
-  String get reportReasonCsam => 'Child Sexual Abuse';
+  String get reportReasonCsam => 'Naruszenie bezpieczeństwa dzieci';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Content depicting sexual abuse of minors';
+      'Treści wykorzystujące lub narażające nieletnich';
 
   @override
   String get reportReasonUnderageUser => 'User Appears Under 16';
@@ -5866,11 +5865,10 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get videoMetadataEditCoverFailedSnackbar =>
-      'Nie udało się zaktualizować okładki. Spróbuj ponownie.';
+      'Couldn\'t update the cover. Try again.';
 
   @override
-  String get videoMetadataEditCoverSuccessAnnouncement =>
-      'Zaktualizowano okładkę';
+  String get videoMetadataEditCoverSuccessAnnouncement => 'Cover updated';
 
   @override
   String get videoMetadataTags => 'Tagi';
@@ -7335,22 +7333,22 @@ class AppLocalizationsPl extends AppLocalizations {
       'Podziel wybrany klip';
 
   @override
-  String get videoEditorExtractAudioLabel => 'Wyodrębnij dźwięk';
+  String get videoEditorExtractAudioLabel => 'Extract Audio';
 
   @override
-  String get videoEditorClipAudioTitle => 'Dźwięk klipu';
+  String get videoEditorClipAudioTitle => 'Clip Audio';
 
   @override
   String get videoEditorExtractAudioFromClipSemanticLabel =>
-      'Wyodrębnij dźwięk z klipu i wycisz oryginał';
+      'Extract audio from clip and mute original';
 
   @override
   String get videoEditorExtractAudioNoLocalFile =>
-      'Nie można wyodrębnić audio: klip nie jest dostępny lokalnie.';
+      'Cannot extract audio: clip is not locally available.';
 
   @override
   String get videoEditorExtractAudioFailed =>
-      'Nie udało się wyodrębnić audio. Spróbuj ponownie.';
+      'Could not extract audio. Please try again.';
 
   @override
   String get videoEditorSpeedLabel => 'Prędkość';
@@ -8292,32 +8290,31 @@ class AppLocalizationsPl extends AppLocalizations {
       'Połącz swoje konta w mediach społecznościowych, żeby ludzie wiedzieli, że to naprawdę ty.';
 
   @override
-  String get videoMetadataEditCoverTitle => 'Edytuj okładkę';
+  String get videoMetadataEditCoverTitle => 'Edit cover';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel =>
-      'Zamknij edytor okładki';
+  String get videoMetadataEditCoverCloseSemanticLabel => 'Close cover editor';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Potwierdź wybór okładki';
+      'Confirm cover selection';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
-      'Przewijaj wideo, aby wybrać klatkę okładki';
+      'Seek through video to select cover frame';
 
   @override
-  String get videoMetadataTagsPickerSearchHint => 'Szukaj lub dodaj tagi';
+  String get videoMetadataTagsPickerSearchHint => 'Search or add tags';
 
   @override
   String get videoMetadataTagsPickerEmptyHint =>
-      'Dodaj tagi, aby inni odkryli Twój film';
+      'Add tags to help people discover your video';
 
   @override
-  String get videoMetadataTagsPickerNoResults => 'Brak pasujących tagów';
+  String get videoMetadataTagsPickerNoResults => 'No matching tags';
 
   @override
   String videoMetadataTagsPickerAddTag(String tag) {
-    return 'Dodaj „#$tag\"';
+    return 'Add \"#$tag\"';
   }
 }

@@ -852,13 +852,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileSetupBannerSectionTitle => 'Banner';
 
   @override
-  String get profileSetupBannerUploadButton => 'Foto uploaden';
+  String get profileSetupBannerUploadButton => 'Upload photo';
 
   @override
-  String get profileSetupBannerClearButton => 'Banner wissen';
+  String get profileSetupBannerClearButton => 'Clear banner';
 
   @override
-  String get profileSetupBannerUploadSuccess => 'Banner bijgewerkt';
+  String get profileSetupBannerUploadSuccess => 'Banner updated';
 
   @override
   String get profileSetupUsernameChecking => 'Beschikbaarheid controleren...';
@@ -1190,8 +1190,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'Video bewerken';
 
   @override
-  String get videoPlayerTapHint =>
-      'Tik om af te spelen of te pauzeren. Dubbel tikken om te liken.';
+  String get videoPlayerTapHint => 'Tap to play or pause. Double tap to like.';
 
   @override
   String get videoSettingsMenuOpen => 'Afspeelinstellingen openen';
@@ -2311,7 +2310,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get notificationSettingsMarkAllAsReadFailed =>
-      'Alles als gelezen markeren mislukt';
+      'Failed to mark all as read';
 
   @override
   String get notificationSettingsResetToDefaults =>
@@ -2616,7 +2615,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get authCreateNewAccount => 'Nieuw Divine-account aanmaken';
 
   @override
-  String get authSignInDifferentAccount => 'Inloggen met een bestaand account';
+  String get authSignInDifferentAccount => 'Inloggen met een ander account';
 
   @override
   String get authSignBackIn => 'Opnieuw inloggen';
@@ -4305,7 +4304,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String userPickerRemoveSelectionSemantics(String name) {
-    return '$name verwijderen';
+    return 'Remove $name';
   }
 
   @override
@@ -4649,11 +4648,11 @@ class AppLocalizationsNl extends AppLocalizations {
       'General concerns about minors\' safety';
 
   @override
-  String get reportReasonCsam => 'Child Sexual Abuse';
+  String get reportReasonCsam => 'Schending kinderveiligheid';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Content depicting sexual abuse of minors';
+      'Content die minderjarigen uitbuit of in gevaar brengt';
 
   @override
   String get reportReasonUnderageUser => 'User Appears Under 16';
@@ -5755,10 +5754,10 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get videoMetadataEditCoverFailedSnackbar =>
-      'Kan de cover niet bijwerken. Probeer het opnieuw.';
+      'Couldn\'t update the cover. Try again.';
 
   @override
-  String get videoMetadataEditCoverSuccessAnnouncement => 'Omslag bijgewerkt';
+  String get videoMetadataEditCoverSuccessAnnouncement => 'Cover updated';
 
   @override
   String get videoMetadataTags => 'Tags';
@@ -7217,22 +7216,22 @@ class AppLocalizationsNl extends AppLocalizations {
       'Geselecteerde clip splitsen';
 
   @override
-  String get videoEditorExtractAudioLabel => 'Audio extraheren';
+  String get videoEditorExtractAudioLabel => 'Extract Audio';
 
   @override
-  String get videoEditorClipAudioTitle => 'Clip-audio';
+  String get videoEditorClipAudioTitle => 'Clip Audio';
 
   @override
   String get videoEditorExtractAudioFromClipSemanticLabel =>
-      'Audio uit clip extraheren en origineel dempen';
+      'Extract audio from clip and mute original';
 
   @override
   String get videoEditorExtractAudioNoLocalFile =>
-      'Kan audio niet extraheren: clip is niet lokaal beschikbaar.';
+      'Cannot extract audio: clip is not locally available.';
 
   @override
   String get videoEditorExtractAudioFailed =>
-      'Kon audio niet extraheren. Probeer het opnieuw.';
+      'Could not extract audio. Please try again.';
 
   @override
   String get videoEditorSpeedLabel => 'Snelheid';
@@ -8174,31 +8173,31 @@ class AppLocalizationsNl extends AppLocalizations {
       'Koppel je social-media-accounts zodat mensen weten dat jij het bent.';
 
   @override
-  String get videoMetadataEditCoverTitle => 'Omslag bewerken';
+  String get videoMetadataEditCoverTitle => 'Edit cover';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => 'Omslageditor sluiten';
+  String get videoMetadataEditCoverCloseSemanticLabel => 'Close cover editor';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Omslagselectie bevestigen';
+      'Confirm cover selection';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
-      'Door video scrollen om omslagframe te selecteren';
+      'Seek through video to select cover frame';
 
   @override
-  String get videoMetadataTagsPickerSearchHint => 'Tags zoeken of toevoegen';
+  String get videoMetadataTagsPickerSearchHint => 'Search or add tags';
 
   @override
   String get videoMetadataTagsPickerEmptyHint =>
-      'Voeg tags toe zodat anderen je video ontdekken';
+      'Add tags to help people discover your video';
 
   @override
-  String get videoMetadataTagsPickerNoResults => 'Geen overeenkomende tags';
+  String get videoMetadataTagsPickerNoResults => 'No matching tags';
 
   @override
   String videoMetadataTagsPickerAddTag(String tag) {
-    return '«#$tag» toevoegen';
+    return 'Add \"#$tag\"';
   }
 }
