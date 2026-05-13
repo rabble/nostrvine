@@ -437,7 +437,7 @@ void main() {
           requestedOffsets.add(offset);
           if (offset == 0) {
             return _nativePage(
-              [_video('popular-initial')],
+              initialRawVideos,
               consumedItemCount: initialRawVideos.length,
               nextOffset: initialRawVideos.length,
             );
@@ -494,76 +494,41 @@ void main() {
       },
     );
 
-    test(
-      'popular videos continues with legacy pagination after first-page fallback',
-      () async {
-        when(
-          () => mockVideosRepository.getNativePopularVideosPage(
-            limit: any(named: 'limit'),
-            offset: any(named: 'offset'),
-            skipCache: any(named: 'skipCache'),
+    test('popular videos does not fall back to legacy popular', () async {
+      when(
+        () => mockVideosRepository.getNativePopularVideosPage(
+          limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
+          skipCache: any(named: 'skipCache'),
+        ),
+      ).thenThrow(StateError('native popular unavailable'));
+
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+          appReadyProvider.overrideWithValue(true),
+          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+          contentBlocklistRepositoryProvider.overrideWithValue(
+            mockBlocklistRepository,
           ),
-        ).thenAnswer(
-          (_) async => NativePopularVideosPage(
-            videos: [_video('popular-fallback-initial', createdAt: 2_000)],
-            consumedItemCount: AppConstants.paginationBatchSize,
-            legacyUntil: 1_999,
-            usesLegacyPopularFallback: true,
-          ),
-        );
+          videosRepositoryProvider.overrideWithValue(mockVideosRepository),
+          nostrServiceProvider.overrideWithValue(mockNostrClient),
+        ],
+      );
+      addTearDown(container.dispose);
 
-        when(
-          () => mockVideosRepository.getPopularVideos(
-            limit: any(named: 'limit'),
-            until: any(named: 'until'),
-          ),
-        ).thenAnswer(
-          (_) async => [_video('popular-fallback-more', createdAt: 1_500)],
-        );
+      final state = await container.read(popularVideosFeedProvider.future);
 
-        final container = ProviderContainer(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-            appReadyProvider.overrideWithValue(true),
-            videoEventServiceProvider.overrideWithValue(mockVideoEventService),
-            contentBlocklistRepositoryProvider.overrideWithValue(
-              mockBlocklistRepository,
-            ),
-            videosRepositoryProvider.overrideWithValue(mockVideosRepository),
-            nostrServiceProvider.overrideWithValue(mockNostrClient),
-          ],
-        );
-        addTearDown(container.dispose);
-
-        final subscription = container.listen(
-          popularVideosFeedProvider,
-          (_, _) {},
-        );
-        addTearDown(subscription.close);
-
-        final initialState = await container.read(
-          popularVideosFeedProvider.future,
-        );
-        expect(initialState.videos.map((video) => video.id), [
-          'popular-fallback-initial',
-        ]);
-
-        await container.read(popularVideosFeedProvider.notifier).loadMore();
-
-        final state = container.read(popularVideosFeedProvider).value;
-        expect(state, isNotNull);
-        expect(state!.videos.map((video) => video.id), [
-          'popular-fallback-initial',
-          'popular-fallback-more',
-        ]);
-        verify(
-          () => mockVideosRepository.getPopularVideos(
-            limit: AppConstants.paginationBatchSize,
-            until: 1_999,
-          ),
-        ).called(1);
-      },
-    );
+      expect(state.videos, isEmpty);
+      expect(state.hasMoreContent, isFalse);
+      expect(state.error, contains('native popular unavailable'));
+      verifyNever(
+        () => mockVideosRepository.getPopularVideos(
+          limit: any(named: 'limit'),
+          until: any(named: 'until'),
+        ),
+      );
+    });
 
     test(
       'for you keeps existing videos visible while refresh is in flight',

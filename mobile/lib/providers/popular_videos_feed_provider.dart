@@ -25,9 +25,8 @@ final popularVideosVariantProvider = StateProvider<PopularVideosVariant>(
 
 /// Popular Videos feed provider - shows trending videos by recent engagement.
 ///
-/// Delegates native fetching to [VideosRepository.getNativePopularVideos], which
-/// uses the native-only leaderboard and falls back through the legacy popular
-/// feed path when Funnelcake is unavailable.
+/// Delegates video fetching to [VideosRepository.getNativePopularVideos], which
+/// uses the new divine video leaderboard.
 ///
 /// Rebuilds when:
 /// - Pull to refresh
@@ -230,12 +229,6 @@ class PopularVideosFeed extends _$PopularVideosFeed {
           limit: AppConstants.paginationBatchSize,
           offset: offset,
         ),
-      _LegacyPopularCursor(:final until) => _buildLegacyPage(
-        videos: await videosRepository.getPopularVideos(
-          limit: AppConstants.paginationBatchSize,
-          until: until,
-        ),
-      ),
       _ClassicPopularCursor(:final until) => _buildClassicPage(
         videos: await videosRepository.getPopularVideos(
           limit: AppConstants.paginationBatchSize,
@@ -295,21 +288,14 @@ class PopularVideosFeed extends _$PopularVideosFeed {
     PopularVideosVariant variant,
     NativePopularVideosPage page,
   ) {
-    if (variant == PopularVideosVariant.classic) {
-      return _ClassicPopularCursor(until: page.legacyUntil);
-    }
-    return page.usesLegacyPopularFallback
-        ? _LegacyPopularCursor(until: page.legacyUntil)
-        : _NativePopularCursor(offset: page.nextOffset ?? 0);
-  }
-
-  NativePopularVideosPage _buildLegacyPage({required List<VideoEvent> videos}) {
-    return NativePopularVideosPage(
-      videos: videos,
-      consumedItemCount: videos.length,
-      legacyUntil: videos.isEmpty ? null : getOldestTimestamp(videos),
-      usesLegacyPopularFallback: true,
-    );
+    return switch (variant) {
+      PopularVideosVariant.native => _NativePopularCursor(
+        offset: page.nextOffset ?? page.videos.length,
+      ),
+      PopularVideosVariant.classic => _ClassicPopularCursor(
+        until: page.legacyUntil,
+      ),
+    };
   }
 
   NativePopularVideosPage _buildClassicPage({
@@ -374,12 +360,6 @@ class _NativePopularCursor extends _PopularFeedCursor {
   const _NativePopularCursor({required this.offset});
 
   final int offset;
-}
-
-class _LegacyPopularCursor extends _PopularFeedCursor {
-  const _LegacyPopularCursor({required this.until});
-
-  final int? until;
 }
 
 class _ClassicPopularCursor extends _PopularFeedCursor {

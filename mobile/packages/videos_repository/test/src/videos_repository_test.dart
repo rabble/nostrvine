@@ -3038,80 +3038,47 @@ void main() {
         );
       });
 
-      test(
-        'falls back to existing popular path when native endpoint fails',
-        () async {
-          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-          when(
-            () => mockFunnelcakeClient.getNativePopularVideos(
-              limit: any(named: 'limit'),
-              offset: any(named: 'offset'),
-            ),
-          ).thenThrow(const FunnelcakeException('Network error'));
-          when(
-            () => mockFunnelcakeClient.getWatchingVideos(
-              limit: any(named: 'limit'),
-              before: any(named: 'before'),
-            ),
-          ).thenAnswer(
-            (_) async => [
-              _createVideoStats(
-                id: 'fallback-popular-1',
-                pubkey: 'pubkey-1',
-                dTag: 'fallback-dtag-1',
-                videoUrl: 'https://example.com/fallback.mp4',
-              ),
-            ],
-          );
+      test('throws when native endpoint fails', () async {
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getNativePopularVideos(
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+          ),
+        ).thenThrow(const FunnelcakeException('Network error'));
 
-          final repositoryWithApi = VideosRepository(
-            nostrClient: mockNostrClient,
-            funnelcakeApiClient: mockFunnelcakeClient,
-          );
+        final repositoryWithApi = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
 
-          final result = await repositoryWithApi.getNativePopularVideos(
-            limit: 1,
-          );
+        expect(
+          () => repositoryWithApi.getNativePopularVideos(limit: 1),
+          throwsA(isA<FunnelcakeException>()),
+        );
+        verify(
+          () => mockFunnelcakeClient.getNativePopularVideos(limit: 1),
+        ).called(1);
+        verifyNever(
+          () => mockFunnelcakeClient.getWatchingVideos(
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        );
+      });
 
-          expect(result, hasLength(1));
-          expect(result.first.id, equals('fallback-popular-1'));
-          verify(
-            () => mockFunnelcakeClient.getNativePopularVideos(limit: 1),
-          ).called(1);
-          verify(
-            () => mockFunnelcakeClient.getWatchingVideos(limit: 1),
-          ).called(1);
-        },
-      );
-
-      test(
-        'falls back to existing popular path when native API client is absent',
-        () async {
-          final fallbackEvent = _createVideoEvent(
-            id: 'native-fallback-without-api',
-            pubkey: 'fallback-pubkey',
-            videoUrl: 'https://example.com/native-fallback.mp4',
-            createdAt: 1704067200,
-          );
-          when(
-            () => mockNostrClient.queryEvents(
-              any(),
-              useCache: any(named: 'useCache'),
-            ),
-          ).thenAnswer((_) async => [fallbackEvent]);
-
-          final result = await repository.getNativePopularVideos(limit: 1);
-
-          expect(result, hasLength(1));
-          expect(result.first.id, equals('native-fallback-without-api'));
-          verify(
-            () => mockNostrClient.queryEvents(
-              any(),
-              useCache: any(named: 'useCache'),
-            ),
-          ).called(1);
-        },
-      );
+      test('throws when native API client is absent', () async {
+        expect(
+          () => repository.getNativePopularVideos(limit: 1),
+          throwsA(isA<FunnelcakeException>()),
+        );
+        verifyNever(
+          () => mockNostrClient.queryEvents(
+            any(),
+            useCache: any(named: 'useCache'),
+          ),
+        );
+      });
 
       test(
         'getNativePopularVideosPage preserves raw item count '
@@ -3154,7 +3121,7 @@ void main() {
           expect(result.videos.map((video) => video.id), ['native-visible-1']);
           expect(result.consumedItemCount, 2);
           expect(result.nextOffset, 27);
-          expect(result.usesLegacyPopularFallback, isFalse);
+          expect(result.videos.map((video) => video.id), ['native-visible-1']);
         },
       );
 

@@ -690,8 +690,8 @@ class VideosRepository {
     return page.videos;
   }
 
-  /// Fetches native diVine videos from the popular leaderboard plus the
-  /// pagination metadata needed to continue the same source cleanly.
+  /// Fetches new divine videos from the popular leaderboard plus the pagination
+  /// metadata needed to continue the same source cleanly.
   Future<NativePopularVideosPage> getNativePopularVideosPage({
     int limit = _defaultLimit,
     int offset = 0,
@@ -738,22 +738,12 @@ class VideosRepository {
           nextOffset: offset + videoStats.length,
         );
       } on FunnelcakeException {
-        if (offset > 0) rethrow;
+        rethrow;
       }
     }
 
-    if (offset > 0) {
-      throw const FunnelcakeException(
-        'Native popular pagination is unavailable after the first page.',
-      );
-    }
-
-    final videos = await getPopularVideos(limit: limit, skipCache: skipCache);
-    return NativePopularVideosPage(
-      videos: videos,
-      consumedItemCount: videos.length,
-      legacyUntil: _cursorBeforeOldestVideoEvents(videos),
-      usesLegacyPopularFallback: true,
+    throw const FunnelcakeException(
+      'Native popular videos require the Funnelcake leaderboard endpoint.',
     );
   }
 
@@ -1328,14 +1318,6 @@ class VideosRepository {
     if (stats.isEmpty) return null;
     final oldest = stats
         .map((stat) => stat.createdAt.millisecondsSinceEpoch ~/ 1000)
-        .reduce((a, b) => a < b ? a : b);
-    return oldest - 1;
-  }
-
-  int? _cursorBeforeOldestVideoEvents(List<VideoEvent> videos) {
-    if (videos.isEmpty) return null;
-    final oldest = videos
-        .map((video) => video.createdAt)
         .reduce((a, b) => a < b ? a : b);
     return oldest - 1;
   }

@@ -12,8 +12,6 @@ class NativePopularVideosPage extends Equatable {
     required this.videos,
     this.consumedItemCount,
     this.nextOffset,
-    this.legacyUntil,
-    this.usesLegacyPopularFallback = false,
   });
 
   /// Videos for the requested page.
@@ -25,18 +23,10 @@ class NativePopularVideosPage extends Equatable {
   /// Next raw leaderboard offset to request when using the native endpoint.
   final int? nextOffset;
 
-  /// Legacy timestamp cursor when the first page fell back to getPopularVideos.
-  final int? legacyUntil;
-
-  /// Whether this page came from the legacy popular fallback path.
-  final bool usesLegacyPopularFallback;
-
   @override
   List<Object?> get props => [
     videos,
     consumedItemCount,
     nextOffset,
-    legacyUntil,
-    usesLegacyPopularFallback,
   ];
 }

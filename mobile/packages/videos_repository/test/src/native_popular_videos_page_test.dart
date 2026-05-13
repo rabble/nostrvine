@@ -20,24 +20,18 @@ void main() {
         videos: [video],
         consumedItemCount: 3,
         nextOffset: 28,
-        legacyUntil: 999,
-        usesLegacyPopularFallback: true,
       );
 
       expect(page.videos, [video]);
       expect(page.consumedItemCount, 3);
       expect(page.nextOffset, 28);
-      expect(page.legacyUntil, 999);
-      expect(page.usesLegacyPopularFallback, isTrue);
     });
 
-    test('defaults usesLegacyPopularFallback to false', () {
+    test('defaults pagination metadata to null', () {
       final page = NativePopularVideosPage(videos: [createVideo('v1')]);
 
-      expect(page.usesLegacyPopularFallback, isFalse);
       expect(page.consumedItemCount, isNull);
       expect(page.nextOffset, isNull);
-      expect(page.legacyUntil, isNull);
     });
 
     test('supports equality', () {
@@ -58,8 +52,6 @@ void main() {
         [video],
         1,
         2,
-        null,
-        false,
       ]);
     });
   });

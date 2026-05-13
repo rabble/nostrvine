@@ -10,9 +10,8 @@ part of 'popular_videos_feed_provider.dart';
 // ignore_for_file: type=lint, type=warning
 /// Popular Videos feed provider - shows trending videos by recent engagement.
 ///
-/// Delegates native fetching to [VideosRepository.getNativePopularVideos], which
-/// uses the native-only leaderboard and falls back through the legacy popular
-/// feed path when Funnelcake is unavailable.
+/// Delegates video fetching to [VideosRepository.getNativePopularVideos], which
+/// uses the new divine video leaderboard.
 ///
 /// Rebuilds when:
 /// - Pull to refresh
@@ -24,9 +23,8 @@ const popularVideosFeedProvider = PopularVideosFeedProvider._();
 
 /// Popular Videos feed provider - shows trending videos by recent engagement.
 ///
-/// Delegates native fetching to [VideosRepository.getNativePopularVideos], which
-/// uses the native-only leaderboard and falls back through the legacy popular
-/// feed path when Funnelcake is unavailable.
+/// Delegates video fetching to [VideosRepository.getNativePopularVideos], which
+/// uses the new divine video leaderboard.
 ///
 /// Rebuilds when:
 /// - Pull to refresh
@@ -36,9 +34,8 @@ final class PopularVideosFeedProvider
     extends $AsyncNotifierProvider<PopularVideosFeed, VideoFeedState> {
   /// Popular Videos feed provider - shows trending videos by recent engagement.
   ///
-  /// Delegates native fetching to [VideosRepository.getNativePopularVideos], which
-  /// uses the native-only leaderboard and falls back through the legacy popular
-  /// feed path when Funnelcake is unavailable.
+  /// Delegates video fetching to [VideosRepository.getNativePopularVideos], which
+  /// uses the new divine video leaderboard.
   ///
   /// Rebuilds when:
   /// - Pull to refresh
@@ -63,13 +60,12 @@ final class PopularVideosFeedProvider
   PopularVideosFeed create() => PopularVideosFeed();
 }
 
-String _$popularVideosFeedHash() => r'aa6a291e44b183beda1aaf824e937f6e199d2026';
+String _$popularVideosFeedHash() => r'8ecdbfafa89d73f4f012093daf3c20c050670c47';
 
 /// Popular Videos feed provider - shows trending videos by recent engagement.
 ///
-/// Delegates native fetching to [VideosRepository.getNativePopularVideos], which
-/// uses the native-only leaderboard and falls back through the legacy popular
-/// feed path when Funnelcake is unavailable.
+/// Delegates video fetching to [VideosRepository.getNativePopularVideos], which
+/// uses the new divine video leaderboard.
 ///
 /// Rebuilds when:
 /// - Pull to refresh
