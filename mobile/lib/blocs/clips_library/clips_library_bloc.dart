@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/gallery_save_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 part 'clips_library_event.dart';
@@ -22,19 +23,73 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
   ClipsLibraryBloc({
     required ClipLibraryService clipLibraryService,
     required GallerySaveService gallerySaveService,
+    required SharedPreferences sharedPreferences,
   }) : _clipLibraryService = clipLibraryService,
        _gallerySaveService = gallerySaveService,
-       super(const ClipsLibraryState()) {
+       _sharedPreferences = sharedPreferences,
+       super(
+         ClipsLibraryState(
+           clipSort: _readPersistedSort(sharedPreferences),
+         ),
+       ) {
     on<ClipsLibraryLoadRequested>(_onLoadRequested, transformer: droppable());
     on<ClipsLibraryToggleSelection>(_onToggleSelection);
     on<ClipsLibraryClearSelection>(_onClearSelection);
     on<ClipsLibraryDeleteSelected>(_onDeleteSelected, transformer: droppable());
     on<ClipsLibraryDeleteClip>(_onDeleteClip, transformer: droppable());
     on<ClipsLibrarySaveToGallery>(_onSaveToGallery, transformer: droppable());
+    on<ClipsLibrarySortChanged>(_onSortChanged);
+    on<ClipsLibraryEnterSelectionMode>(_onEnterSelectionMode);
+    on<ClipsLibraryExitSelectionMode>(_onExitSelectionMode);
+    on<ClipsLibraryAutoOpenSelectionMode>(_onAutoOpenSelectionMode);
   }
+
+  /// SharedPreferences key for the persisted [ClipSort] selection.
+  static const _sortPrefsKey = 'library_clip_sort';
 
   final ClipLibraryService _clipLibraryService;
   final GallerySaveService _gallerySaveService;
+  final SharedPreferences _sharedPreferences;
+
+  static ClipSort _readPersistedSort(SharedPreferences prefs) {
+    final saved = prefs.getString(_sortPrefsKey);
+    if (saved == null) return ClipSort.newestCreation;
+    return ClipSort.fromPersistenceKey(saved);
+  }
+
+  /// Returns [clips] sorted according to [sort]. Pure — does not
+  /// mutate the input list.
+  static List<DivineVideoClip> _applySort(
+    List<DivineVideoClip> clips,
+    ClipSort sort,
+  ) {
+    final sorted = List<DivineVideoClip>.from(clips);
+    switch (sort) {
+      case ClipSort.newestCreation:
+        sorted.sort((a, b) => b.recordedAt.compareTo(a.recordedAt));
+      case ClipSort.oldestCreation:
+        sorted.sort((a, b) => a.recordedAt.compareTo(b.recordedAt));
+      case ClipSort.longestClip:
+        sorted.sort((a, b) => b.duration.compareTo(a.duration));
+      case ClipSort.shortestClip:
+        sorted.sort((a, b) => a.duration.compareTo(b.duration));
+      case ClipSort.squareFirst:
+        sorted.sort((a, b) {
+          final aRank = a.targetAspectRatio == .square ? 0 : 1;
+          final bRank = b.targetAspectRatio == .square ? 0 : 1;
+          if (aRank != bRank) return aRank.compareTo(bRank);
+          return b.recordedAt.compareTo(a.recordedAt);
+        });
+      case ClipSort.verticalFirst:
+        sorted.sort((a, b) {
+          final aRank = a.targetAspectRatio == .vertical ? 0 : 1;
+          final bRank = b.targetAspectRatio == .vertical ? 0 : 1;
+          if (aRank != bRank) return aRank.compareTo(bRank);
+          return b.recordedAt.compareTo(a.recordedAt);
+        });
+    }
+    return sorted;
+  }
 
   Future<void> _onLoadRequested(
     ClipsLibraryLoadRequested event,
@@ -69,7 +124,9 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         state.copyWith(
           status: ClipsLibraryStatus.loaded,
           clips: clips,
+          sortedClips: _applySort(clips, state.clipSort),
           selectedClipIds: preSelectedIds,
+          preSelectedIds: event.preSelectedIds,
           disabledClipIds: event.disabledClipIds,
           selectedDuration: preSelectedDuration,
         ),
@@ -163,6 +220,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         state.copyWith(
           status: ClipsLibraryStatus.loaded,
           clips: clips,
+          sortedClips: _applySort(clips, state.clipSort),
           selectedClipIds: const {},
           selectedDuration: Duration.zero,
           lastDeletedCount: deletedCount,
@@ -209,6 +267,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         state.copyWith(
           status: ClipsLibraryStatus.loaded,
           clips: clips,
+          sortedClips: _applySort(clips, state.clipSort),
           selectedClipIds: selectedIds,
           selectedDuration: selectedDuration,
           lastDeletedCount: 1,
@@ -302,7 +361,12 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
     try {
       final recovered = await _clipLibraryService.recoverMissingAssets(clips);
       if (!identical(recovered, clips) && !isClosed) {
-        add(ClipsLibraryLoadRequested(preSelectedIds: state.selectedClipIds));
+        add(
+          ClipsLibraryLoadRequested(
+            preSelectedIds: state.preSelectedIds,
+            disabledClipIds: state.disabledClipIds,
+          ),
+        );
       }
     } catch (e, stackTrace) {
       Log.error(
@@ -312,5 +376,70 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
       );
       addError(e, stackTrace);
     }
+  }
+
+  Future<void> _onSortChanged(
+    ClipsLibrarySortChanged event,
+    Emitter<ClipsLibraryState> emit,
+  ) async {
+    if (event.sort == state.clipSort) return;
+    try {
+      await _sharedPreferences.setString(
+        _sortPrefsKey,
+        event.sort.persistenceKey,
+      );
+    } catch (e, stackTrace) {
+      Log.warning(
+        '📚 Failed to persist clip sort: $e',
+        name: 'ClipsLibraryBloc',
+        category: LogCategory.video,
+      );
+      addError(e, stackTrace);
+    }
+    emit(
+      state.copyWith(
+        clipSort: event.sort,
+        sortedClips: _applySort(state.clips, event.sort),
+      ),
+    );
+  }
+
+  void _onEnterSelectionMode(
+    ClipsLibraryEnterSelectionMode event,
+    Emitter<ClipsLibraryState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        isLibrarySelectionMode: true,
+        didAutoOpenSelectionMode: false,
+      ),
+    );
+  }
+
+  void _onExitSelectionMode(
+    ClipsLibraryExitSelectionMode event,
+    Emitter<ClipsLibraryState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        isLibrarySelectionMode: false,
+        didAutoOpenSelectionMode: false,
+        selectedClipIds: const {},
+        selectedDuration: Duration.zero,
+      ),
+    );
+  }
+
+  void _onAutoOpenSelectionMode(
+    ClipsLibraryAutoOpenSelectionMode event,
+    Emitter<ClipsLibraryState> emit,
+  ) {
+    if (state.isLibrarySelectionMode) return;
+    emit(
+      state.copyWith(
+        isLibrarySelectionMode: true,
+        didAutoOpenSelectionMode: true,
+      ),
+    );
   }
 }

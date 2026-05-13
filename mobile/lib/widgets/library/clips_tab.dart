@@ -59,31 +59,40 @@ class ClipsTab extends StatelessWidget {
           return Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    context.l10n.libraryCouldNotLoadClips,
-                    textAlign: TextAlign.center,
-                    style: VineTheme.titleMediumFont(),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    context.l10n.libraryOpenErrorDescription,
-                    textAlign: TextAlign.center,
-                    style: VineTheme.bodyLargeFont(
-                      color: VineTheme.secondaryText,
+              child: SafeArea(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      context.l10n.libraryCouldNotLoadClips,
+                      textAlign: TextAlign.center,
+                      style: VineTheme.titleMediumFont(),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  DivineButton(
-                    label: context.l10n.searchTryAgain,
-                    type: DivineButtonType.secondary,
-                    onPressed: () => context.read<ClipsLibraryBloc>().add(
-                      const ClipsLibraryLoadRequested(),
+                    const SizedBox(height: 12),
+                    Text(
+                      context.l10n.libraryOpenErrorDescription,
+                      textAlign: TextAlign.center,
+                      style: VineTheme.bodyLargeFont(
+                        color: VineTheme.secondaryText,
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 24),
+                    DivineButton(
+                      label: context.l10n.searchTryAgain,
+                      type: DivineButtonType.secondary,
+                      onPressed: () {
+                        final bloc = context.read<ClipsLibraryBloc>();
+                        final s = bloc.state;
+                        bloc.add(
+                          ClipsLibraryLoadRequested(
+                            preSelectedIds: s.preSelectedIds,
+                            disabledClipIds: s.disabledClipIds,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
           );

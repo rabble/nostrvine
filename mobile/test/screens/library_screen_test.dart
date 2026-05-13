@@ -13,6 +13,7 @@ import 'package:openvine/l10n/generated/app_localizations_en.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
@@ -39,6 +40,7 @@ void main() {
     late _MockGallerySaveService mockGallerySaveService;
     late _MockClipLibraryService mockClipLibraryService;
     late _MockDraftStorageService mockDraftStorageService;
+    late SharedPreferences sharedPreferences;
 
     setUpAll(() {
       registerFallbackValue(<DivineVideoClip>[]);
@@ -46,6 +48,7 @@ void main() {
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
+      sharedPreferences = await SharedPreferences.getInstance();
       mockGallerySaveService = _MockGallerySaveService();
       mockClipLibraryService = _MockClipLibraryService();
       mockDraftStorageService = _MockDraftStorageService();
@@ -66,6 +69,7 @@ void main() {
     }) {
       return ProviderScope(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           gallerySaveServiceProvider.overrideWithValue(mockGallerySaveService),
           clipLibraryServiceProvider.overrideWithValue(mockClipLibraryService),
           draftStorageServiceProvider.overrideWithValue(
@@ -254,6 +258,7 @@ void main() {
           await tester.pumpWidget(
             ProviderScope(
               overrides: [
+                sharedPreferencesProvider.overrideWithValue(sharedPreferences),
                 gallerySaveServiceProvider.overrideWithValue(
                   mockGallerySaveService,
                 ),
@@ -330,6 +335,7 @@ void main() {
           await tester.pumpWidget(
             ProviderScope(
               overrides: [
+                sharedPreferencesProvider.overrideWithValue(sharedPreferences),
                 gallerySaveServiceProvider.overrideWithValue(
                   mockGallerySaveService,
                 ),

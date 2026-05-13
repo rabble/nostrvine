@@ -171,9 +171,14 @@ void main() {
       expect(state.props, [
         ClipsLibraryStatus.loaded,
         [clip1],
+        const <DivineVideoClip>[],
         {'clip1'},
         const <String>{},
+        const <String>{},
         const Duration(seconds: 5),
+        ClipSort.newestCreation,
+        false,
+        false,
         const GallerySaveResultSuccess(successCount: 1, failureCount: 0),
         1,
       ]);

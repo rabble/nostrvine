@@ -14,24 +14,15 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/widgets/library/library.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 enum LibraryTabsMode { allTabs, clipsOnly }
-
-enum _LibraryClipSort {
-  newestCreation,
-  oldestCreation,
-  longestClip,
-  shortestClip,
-  squareFirst,
-  verticalFirst,
-}
 
 class LibraryScreen extends ConsumerStatefulWidget {
   /// Route name for drafts path.
@@ -97,27 +88,23 @@ class LibraryScreen extends ConsumerStatefulWidget {
 
 class _LibraryScreenState extends ConsumerState<LibraryScreen>
     with SingleTickerProviderStateMixin {
-  static const _libraryClipSortPrefsKey = 'library_clip_sort';
-
   late final TabController _tabController;
   late int _activeTabIndex;
-  _LibraryClipSort _clipSort = _LibraryClipSort.newestCreation;
-  bool _isLibrarySelectionMode = false;
-  bool _didAutoOpenSelectionMode = false;
+  ClipsLibraryBloc? _clipsBloc;
 
   bool get _isClipsOnlyMode =>
       widget.selectionMode || widget.tabsMode == LibraryTabsMode.clipsOnly;
 
-  bool get _isSelectionEnabled =>
-      widget.selectionMode || _isLibrarySelectionMode;
-
   bool get _shouldAutoOpenSelectionMode =>
       !widget.selectionMode && widget.tabsMode == LibraryTabsMode.clipsOnly;
 
-  bool get _isSelectionModeLockedToCloseOnly =>
+  bool _isSelectionEnabled(ClipsLibraryState state) =>
+      widget.selectionMode || state.isLibrarySelectionMode;
+
+  bool _isSelectionModeLockedToCloseOnly(ClipsLibraryState state) =>
       _shouldAutoOpenSelectionMode &&
-      _didAutoOpenSelectionMode &&
-      _isLibrarySelectionMode;
+      state.didAutoOpenSelectionMode &&
+      state.isLibrarySelectionMode;
 
   @override
   void initState() {
@@ -131,7 +118,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
       initialIndex: initialIndex,
       vsync: this,
     )..addListener(_onTabChanged);
-    _restoreSavedClipSort();
 
     Log.info(
       '📚 ClipLibrary opened (selectionMode: ${widget.selectionMode})',
@@ -153,26 +139,17 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     setState(() {
       _activeTabIndex = _tabController.index;
     });
-  }
 
-  Future<void> _restoreSavedClipSort() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedSortName = prefs.getString(_libraryClipSortPrefsKey);
-    if (savedSortName == null || !mounted) return;
-
-    final savedSort = _LibraryClipSort.values.where(
-      (value) => value.name == savedSortName,
-    );
-    if (savedSort.isEmpty || savedSort.first == _clipSort) return;
-
-    setState(() {
-      _clipSort = savedSort.first;
-    });
-  }
-
-  Future<void> _saveClipSortPreference(_LibraryClipSort sort) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_libraryClipSortPrefsKey, sort.name);
+    final clipsBloc = _clipsBloc;
+    if (clipsBloc == null) return;
+    final clipsState = clipsBloc.state;
+    final isClipsTabActive = _isClipsOnlyMode || _tabController.index == 1;
+    if (!widget.selectionMode &&
+        !_isClipsOnlyMode &&
+        clipsState.isLibrarySelectionMode &&
+        !isClipsTabActive) {
+      clipsBloc.add(const ClipsLibraryExitSelectionMode());
+    }
   }
 
   void _showSnackBar(
@@ -190,86 +167,52 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     );
   }
 
-  List<DivineVideoClip> _sortedClips(List<DivineVideoClip> clips) {
-    final sorted = List<DivineVideoClip>.from(clips);
-    switch (_clipSort) {
-      case _LibraryClipSort.newestCreation:
-        sorted.sort((a, b) => b.recordedAt.compareTo(a.recordedAt));
-      case _LibraryClipSort.oldestCreation:
-        sorted.sort((a, b) => a.recordedAt.compareTo(b.recordedAt));
-      case _LibraryClipSort.longestClip:
-        sorted.sort((a, b) => b.duration.compareTo(a.duration));
-      case _LibraryClipSort.shortestClip:
-        sorted.sort((a, b) => a.duration.compareTo(b.duration));
-      case _LibraryClipSort.squareFirst:
-        sorted.sort((a, b) {
-          final aRank = a.targetAspectRatio == .square ? 0 : 1;
-          final bRank = b.targetAspectRatio == .square ? 0 : 1;
-          if (aRank != bRank) {
-            return aRank.compareTo(bRank);
-          }
-          return b.recordedAt.compareTo(a.recordedAt);
-        });
-      case _LibraryClipSort.verticalFirst:
-        sorted.sort((a, b) {
-          final aRank = a.targetAspectRatio == .vertical ? 0 : 1;
-          final bRank = b.targetAspectRatio == .vertical ? 0 : 1;
-          if (aRank != bRank) {
-            return aRank.compareTo(bRank);
-          }
-          return b.recordedAt.compareTo(a.recordedAt);
-        });
-    }
-    return sorted;
-  }
-
-  Future<void> _openSortMenu(BuildContext context) async {
+  Future<void> _openSortMenu(
+    BuildContext context,
+    ClipsLibraryBloc clipsBloc,
+    ClipSort currentSort,
+  ) async {
     final selected = await VineBottomSheetSelectionMenu.show(
       context: context,
-      selectedValue: _clipSort.name,
+      selectedValue: currentSort.persistenceKey,
       options: [
         VineBottomSheetSelectionOptionData(
           label: context.l10n.librarySortNewestCreation,
-          value: 'newestCreation',
+          value: ClipSort.newestCreation.persistenceKey,
           leadingIcon: .arrowFatLineDown,
         ),
         VineBottomSheetSelectionOptionData(
           label: context.l10n.librarySortOldestCreation,
-          value: 'oldestCreation',
+          value: ClipSort.oldestCreation.persistenceKey,
           leadingIcon: .arrowFatLineUp,
         ),
         VineBottomSheetSelectionOptionData(
           label: context.l10n.librarySortLongestClip,
-          value: 'longestClip',
+          value: ClipSort.longestClip.persistenceKey,
           leadingIcon: .arrowUp,
         ),
         VineBottomSheetSelectionOptionData(
           label: context.l10n.librarySortShortestClip,
-          value: 'shortestClip',
+          value: ClipSort.shortestClip.persistenceKey,
           leadingIcon: .arrowDown,
         ),
         VineBottomSheetSelectionOptionData(
           label: context.l10n.librarySortSquareFirst,
-          value: 'squareFirst',
+          value: ClipSort.squareFirst.persistenceKey,
           leadingIcon: .cropSquare,
         ),
         VineBottomSheetSelectionOptionData(
           label: context.l10n.librarySortVerticalFirst,
-          value: 'verticalFirst',
+          value: ClipSort.verticalFirst.persistenceKey,
           leadingIcon: .cropPortrait,
         ),
       ],
     );
 
-    if (selected == null || !context.mounted) return;
-
-    setState(() {
-      _clipSort = _LibraryClipSort.values.firstWhere(
-        (value) => value.name == selected,
-        orElse: () => .newestCreation,
-      );
-    });
-    await _saveClipSortPreference(_clipSort);
+    if (selected == null) return;
+    clipsBloc.add(
+      ClipsLibrarySortChanged(ClipSort.fromPersistenceKey(selected)),
+    );
   }
 
   Future<void> _createVideoFromSelected(
@@ -311,10 +254,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   }
 
   void _exitLibrarySelectionMode(ClipsLibraryBloc clipsBloc) {
-    setState(() {
-      _isLibrarySelectionMode = false;
-    });
-    clipsBloc.add(const ClipsLibraryClearSelection());
+    clipsBloc.add(const ClipsLibraryExitSelectionMode());
   }
 
   Future<void> _confirmDeleteSelectedClips(
@@ -367,6 +307,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
             return ClipsLibraryBloc(
               clipLibraryService: clipLibraryService,
               gallerySaveService: gallerySaveService,
+              sharedPreferences: ref.read(sharedPreferencesProvider),
             )..add(
               ClipsLibraryLoadRequested(
                 preSelectedIds: editorClipIds,
@@ -387,21 +328,21 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
       child: Builder(
         builder: (context) {
           final clipsBloc = context.read<ClipsLibraryBloc>();
+          _clipsBloc = clipsBloc;
 
           return MultiBlocListener(
             listeners: [
               BlocListener<ClipsLibraryBloc, ClipsLibraryState>(
                 listenWhen: (prev, curr) =>
                     _shouldAutoOpenSelectionMode &&
-                    !_didAutoOpenSelectionMode &&
+                    !curr.didAutoOpenSelectionMode &&
                     prev.selectedClipIds.isEmpty &&
                     curr.selectedClipIds.isNotEmpty,
                 listener: (context, state) {
-                  if (!mounted || _isLibrarySelectionMode) return;
-                  setState(() {
-                    _isLibrarySelectionMode = true;
-                    _didAutoOpenSelectionMode = true;
-                  });
+                  if (!mounted || state.isLibrarySelectionMode) return;
+                  context.read<ClipsLibraryBloc>().add(
+                    const ClipsLibraryAutoOpenSelectionMode(),
+                  );
                 },
               ),
               BlocListener<ClipsLibraryBloc, ClipsLibraryState>(
@@ -463,18 +404,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
               builder: (context, clipsState) {
                 final isClipsTabActive =
                     _isClipsOnlyMode || _activeTabIndex == 1;
+                final isLibrarySelectionMode =
+                    clipsState.isLibrarySelectionMode;
+                final selectionLockedToCloseOnly =
+                    _isSelectionModeLockedToCloseOnly(clipsState);
+                final selectionEnabled = _isSelectionEnabled(clipsState);
 
-                if (!widget.selectionMode &&
-                    !_isClipsOnlyMode &&
-                    _isLibrarySelectionMode &&
-                    !isClipsTabActive) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (!mounted || !_isLibrarySelectionMode) return;
-                    _exitLibrarySelectionMode(clipsBloc);
-                  });
-                }
-
-                final sortedClips = _sortedClips(clipsState.clips);
+                final sortedClips = clipsState.sortedClips;
                 final targetAspectRatio =
                     widget.selectionMode && editorClips.isNotEmpty
                     ? editorClips.first.targetAspectRatio.value
@@ -492,70 +428,77 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                   children: [
                     Material(
                       color: VineTheme.onPrimary,
-                      child: Column(
-                        children: [
-                          if (!widget.selectionMode)
-                            _LibraryToolbar(
-                              isLibrarySelectionMode: _isLibrarySelectionMode,
-                              canExitSelectionMode:
-                                  !_isSelectionModeLockedToCloseOnly,
-                              isClipsTabActive: isClipsTabActive,
-                              onLeadingPressed: () {
-                                if (_isLibrarySelectionMode &&
-                                    !_isSelectionModeLockedToCloseOnly) {
-                                  _exitLibrarySelectionMode(clipsBloc);
-                                  return;
-                                }
-                                if (context.canPop()) {
-                                  context.pop();
-                                } else {
-                                  context.go(VideoFeedPage.pathForIndex(0));
-                                }
-                              },
-                              onOpenSortMenu: () => _openSortMenu(context),
-                              onEnterSelectionMode: () => setState(
-                                () => _isLibrarySelectionMode = true,
+                      child: SafeArea(
+                        bottom: false,
+                        child: Column(
+                          children: [
+                            if (!widget.selectionMode)
+                              _LibraryToolbar(
+                                isLibrarySelectionMode: isLibrarySelectionMode,
+                                canExitSelectionMode:
+                                    !selectionLockedToCloseOnly,
+                                isClipsTabActive: isClipsTabActive,
+                                onLeadingPressed: () {
+                                  if (isLibrarySelectionMode &&
+                                      !selectionLockedToCloseOnly) {
+                                    _exitLibrarySelectionMode(clipsBloc);
+                                    return;
+                                  }
+                                  if (context.canPop()) {
+                                    context.pop();
+                                  } else {
+                                    context.go(VideoFeedPage.pathForIndex(0));
+                                  }
+                                },
+                                onOpenSortMenu: () => _openSortMenu(
+                                  context,
+                                  clipsBloc,
+                                  clipsState.clipSort,
+                                ),
+                                onEnterSelectionMode: () => clipsBloc.add(
+                                  const ClipsLibraryEnterSelectionMode(),
+                                ),
+                                onDeleteSelectedClips:
+                                    clipsState.selectedClipIds.isNotEmpty
+                                    ? () => _confirmDeleteSelectedClips(
+                                        context,
+                                        clipsBloc,
+                                        clipsState.selectedClipIds.length,
+                                      )
+                                    : null,
                               ),
-                              onDeleteSelectedClips:
-                                  clipsState.selectedClipIds.isNotEmpty
-                                  ? () => _confirmDeleteSelectedClips(
-                                      context,
-                                      clipsBloc,
-                                      clipsState.selectedClipIds.length,
-                                    )
-                                  : null,
+                            Expanded(
+                              child: _LibraryContent(
+                                isClipsOnlyMode: _isClipsOnlyMode,
+                                tabController: _tabController,
+                                selectionMode: widget.selectionMode,
+                                scrollController: widget.scrollController,
+                                targetAspectRatio: targetAspectRatio,
+                                sortedClips: sortedClips,
+                                selectionEnabled: selectionEnabled,
+                                onCreateVideo: () => _createVideoFromSelected(
+                                  context,
+                                  selectedClips: clipsState.selectedClips,
+                                  clipsBloc: clipsBloc,
+                                ),
+                              ),
                             ),
-                          Expanded(
-                            child: _LibraryContent(
-                              isClipsOnlyMode: _isClipsOnlyMode,
-                              tabController: _tabController,
-                              selectionMode: widget.selectionMode,
-                              scrollController: widget.scrollController,
-                              targetAspectRatio: targetAspectRatio,
-                              sortedClips: sortedClips,
-                              selectionEnabled: _isSelectionEnabled,
-                              onCreateVideo: () => _createVideoFromSelected(
+                            _CreateVideoBar(
+                              visible:
+                                  !widget.selectionMode &&
+                                  selectionEnabled &&
+                                  (_activeTabIndex == 1 ||
+                                      widget.tabsMode ==
+                                          LibraryTabsMode.clipsOnly) &&
+                                  clipsState.selectedClipIds.isNotEmpty,
+                              onPressed: () => _createVideoFromSelected(
                                 context,
                                 selectedClips: clipsState.selectedClips,
                                 clipsBloc: clipsBloc,
                               ),
                             ),
-                          ),
-                          _CreateVideoBar(
-                            visible:
-                                !widget.selectionMode &&
-                                _isSelectionEnabled &&
-                                (_activeTabIndex == 1 ||
-                                    widget.tabsMode ==
-                                        LibraryTabsMode.clipsOnly) &&
-                                clipsState.selectedClipIds.isNotEmpty,
-                            onPressed: () => _createVideoFromSelected(
-                              context,
-                              selectedClips: clipsState.selectedClips,
-                              clipsBloc: clipsBloc,
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                     if (clipsState.isDeleting ||
@@ -765,13 +708,18 @@ class _CreateVideoBar extends StatelessWidget {
         ),
       ),
       child: visible
-          ? Container(
-              padding: const EdgeInsets.all(16),
-              color: VineTheme.onPrimary,
-              child: DivineButton(
-                expanded: true,
-                label: context.l10n.libraryCreateVideo,
-                onPressed: onPressed,
+          ? SafeArea(
+              top: false,
+              child: ColoredBox(
+                color: VineTheme.onPrimary,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: DivineButton(
+                    expanded: true,
+                    label: context.l10n.libraryCreateVideo,
+                    onPressed: onPressed,
+                  ),
+                ),
               ),
             )
           : const SizedBox.shrink(),

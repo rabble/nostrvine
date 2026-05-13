@@ -3,6 +3,44 @@
 
 part of 'clips_library_bloc.dart';
 
+/// Sort order for clips in the library grid.
+///
+/// The string returned by [persistenceKey] is the stable identifier
+/// stored in [SharedPreferences] — never use [Enum.name] for
+/// persistence, since renaming an enum value would silently invalidate
+/// every saved preference.
+enum ClipSort {
+  newestCreation,
+  oldestCreation,
+  longestClip,
+  shortestClip,
+  squareFirst,
+  verticalFirst
+  ;
+
+  static const _persistenceKeys = <ClipSort, String>{
+    ClipSort.newestCreation: 'newest_creation',
+    ClipSort.oldestCreation: 'oldest_creation',
+    ClipSort.longestClip: 'longest_clip',
+    ClipSort.shortestClip: 'shortest_clip',
+    ClipSort.squareFirst: 'square_first',
+    ClipSort.verticalFirst: 'vertical_first',
+  };
+
+  /// Stable string used to persist this sort in [SharedPreferences].
+  String get persistenceKey => _persistenceKeys[this]!;
+
+  /// Parses [key] back to a [ClipSort], falling back to
+  /// [ClipSort.newestCreation] when the key is unknown (e.g. from a
+  /// future build that wrote a value this build doesn't recognize).
+  static ClipSort fromPersistenceKey(String key) {
+    for (final entry in _persistenceKeys.entries) {
+      if (entry.value == key) return entry.key;
+    }
+    return ClipSort.newestCreation;
+  }
+}
+
 /// Operation status for clips library actions.
 enum ClipsLibraryStatus {
   /// Initial state, no operation in progress.
@@ -70,9 +108,14 @@ final class ClipsLibraryState extends Equatable {
   const ClipsLibraryState({
     this.status = ClipsLibraryStatus.initial,
     this.clips = const [],
+    this.sortedClips = const [],
     this.selectedClipIds = const {},
     this.disabledClipIds = const {},
+    this.preSelectedIds = const {},
     this.selectedDuration = Duration.zero,
+    this.clipSort = ClipSort.newestCreation,
+    this.isLibrarySelectionMode = false,
+    this.didAutoOpenSelectionMode = false,
     this.lastGallerySaveResult,
     this.lastDeletedCount,
   });
@@ -80,8 +123,11 @@ final class ClipsLibraryState extends Equatable {
   /// Current operation status.
   final ClipsLibraryStatus status;
 
-  /// All available clips.
+  /// All available clips, in their original load order.
   final List<DivineVideoClip> clips;
+
+  /// [clips] sorted by the current [clipSort] for display.
+  final List<DivineVideoClip> sortedClips;
 
   /// IDs of currently selected clips.
   final Set<String> selectedClipIds;
@@ -89,8 +135,28 @@ final class ClipsLibraryState extends Equatable {
   /// IDs of clips already in the editor that cannot be toggled.
   final Set<String> disabledClipIds;
 
+  /// IDs that should be marked selected after the next reload (e.g.
+  /// the editor's current clip set). Stored so background reloads
+  /// (asset recovery, retry-on-error) preserve the original
+  /// selection intent.
+  final Set<String> preSelectedIds;
+
   /// Total duration of selected clips.
   final Duration selectedDuration;
+
+  /// Active sort order for [sortedClips]. Persisted via
+  /// [SharedPreferences] using [ClipSort.persistenceKey].
+  final ClipSort clipSort;
+
+  /// Whether the library UI is currently in multi-select mode (the
+  /// non-`selectionMode` screen entry-point can toggle this on/off).
+  final bool isLibrarySelectionMode;
+
+  /// Whether [isLibrarySelectionMode] was entered automatically by
+  /// the auto-open BlocListener rather than a manual user action.
+  /// The toolbar uses this to lock the close button when the screen
+  /// is opened in clips-only mode and the first selection arrives.
+  final bool didAutoOpenSelectionMode;
 
   /// Result of the last gallery save operation (for UI feedback).
   final GallerySaveResult? lastGallerySaveResult;
@@ -117,9 +183,14 @@ final class ClipsLibraryState extends Equatable {
   ClipsLibraryState copyWith({
     ClipsLibraryStatus? status,
     List<DivineVideoClip>? clips,
+    List<DivineVideoClip>? sortedClips,
     Set<String>? selectedClipIds,
     Set<String>? disabledClipIds,
+    Set<String>? preSelectedIds,
     Duration? selectedDuration,
+    ClipSort? clipSort,
+    bool? isLibrarySelectionMode,
+    bool? didAutoOpenSelectionMode,
     GallerySaveResult? lastGallerySaveResult,
     int? lastDeletedCount,
     bool clearGallerySaveResult = false,
@@ -128,9 +199,16 @@ final class ClipsLibraryState extends Equatable {
     return ClipsLibraryState(
       status: status ?? this.status,
       clips: clips ?? this.clips,
+      sortedClips: sortedClips ?? this.sortedClips,
       selectedClipIds: selectedClipIds ?? this.selectedClipIds,
       disabledClipIds: disabledClipIds ?? this.disabledClipIds,
+      preSelectedIds: preSelectedIds ?? this.preSelectedIds,
       selectedDuration: selectedDuration ?? this.selectedDuration,
+      clipSort: clipSort ?? this.clipSort,
+      isLibrarySelectionMode:
+          isLibrarySelectionMode ?? this.isLibrarySelectionMode,
+      didAutoOpenSelectionMode:
+          didAutoOpenSelectionMode ?? this.didAutoOpenSelectionMode,
       lastGallerySaveResult: clearGallerySaveResult
           ? null
           : (lastGallerySaveResult ?? this.lastGallerySaveResult),
@@ -144,9 +222,14 @@ final class ClipsLibraryState extends Equatable {
   List<Object?> get props => [
     status,
     clips,
+    sortedClips,
     selectedClipIds,
     disabledClipIds,
+    preSelectedIds,
     selectedDuration,
+    clipSort,
+    isLibrarySelectionMode,
+    didAutoOpenSelectionMode,
     lastGallerySaveResult,
     lastDeletedCount,
   ];

@@ -67,3 +67,33 @@ final class ClipsLibraryDeleteClip extends ClipsLibraryEvent {
 final class ClipsLibrarySaveToGallery extends ClipsLibraryEvent {
   const ClipsLibrarySaveToGallery();
 }
+
+/// Event to change the active clip sort order. The new sort is
+/// persisted to [SharedPreferences] using [ClipSort.persistenceKey].
+final class ClipsLibrarySortChanged extends ClipsLibraryEvent {
+  const ClipsLibrarySortChanged(this.sort);
+
+  /// The new sort order to apply.
+  final ClipSort sort;
+
+  @override
+  List<Object?> get props => [sort];
+}
+
+/// Event to manually enter multi-select mode (toolbar "Select" button).
+final class ClipsLibraryEnterSelectionMode extends ClipsLibraryEvent {
+  const ClipsLibraryEnterSelectionMode();
+}
+
+/// Event to exit multi-select mode and clear current selection.
+final class ClipsLibraryExitSelectionMode extends ClipsLibraryEvent {
+  const ClipsLibraryExitSelectionMode();
+}
+
+/// Event to enter multi-select mode automatically as a result of
+/// the first selection arriving in clips-only mode. Sets
+/// [ClipsLibraryState.didAutoOpenSelectionMode] so the toolbar can
+/// lock the close button accordingly.
+final class ClipsLibraryAutoOpenSelectionMode extends ClipsLibraryEvent {
+  const ClipsLibraryAutoOpenSelectionMode();
+}

@@ -9,6 +9,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockClipLibraryService extends Mock implements ClipLibraryService {}
 
@@ -24,6 +25,7 @@ void main() {
   group(ClipsLibraryBloc, () {
     late _MockClipLibraryService mockClipLibraryService;
     late _MockGallerySaveService mockGallerySaveService;
+    late SharedPreferences sharedPreferences;
 
     DivineVideoClip createClip({
       String? id,
@@ -41,9 +43,11 @@ void main() {
       );
     }
 
-    setUp(() {
+    setUp(() async {
       mockClipLibraryService = _MockClipLibraryService();
       mockGallerySaveService = _MockGallerySaveService();
+      SharedPreferences.setMockInitialValues({});
+      sharedPreferences = await SharedPreferences.getInstance();
 
       // Stub recoverMissingAssets so the unawaited background recovery
       // triggered by clips with null ghostFramePath doesn't throw.
@@ -55,6 +59,7 @@ void main() {
     ClipsLibraryBloc createBloc() => ClipsLibraryBloc(
       clipLibraryService: mockClipLibraryService,
       gallerySaveService: mockGallerySaveService,
+      sharedPreferences: sharedPreferences,
     );
 
     test('initial state is correct', () {
