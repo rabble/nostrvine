@@ -171,9 +171,16 @@ void main() {
         // Generic failure snackbar should appear.
         expect(find.byType(SnackBar), findsOneWidget);
 
-        // The snackbar text must start with 'Failed to update video'.
+        // The snackbar text must contain the localized failure prefix.
+        // shareMenuFailedToUpdateVideo takes an error arg; matching on the
+        // prefix ensures the localized key is used rather than a raw string.
+        const publishFailureMessage = 'Failed to publish updated event';
         expect(
-          find.textContaining('Failed to update video'),
+          find.textContaining(
+            l10n.shareMenuFailedToUpdateVideo(
+              'Exception: $publishFailureMessage',
+            ),
+          ),
           findsOneWidget,
         );
 
@@ -195,9 +202,14 @@ void main() {
         // Generic failure snackbar should appear.
         expect(find.byType(SnackBar), findsOneWidget);
 
-        // The snackbar text must start with 'Failed to update video'.
+        // The snackbar text must contain the localized failure prefix.
+        const publishFailureMessage = 'Failed to publish updated event';
         expect(
-          find.textContaining('Failed to update video'),
+          find.textContaining(
+            l10n.shareMenuFailedToUpdateVideo(
+              'Exception: $publishFailureMessage',
+            ),
+          ),
           findsOneWidget,
         );
 

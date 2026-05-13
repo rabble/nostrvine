@@ -111,9 +111,7 @@ class AccountDeletionService {
           category: LogCategory.system,
         );
         return DeleteAccountResult.failure(
-          sentEvent is PublishNoRelays
-              ? 'No relays connected — deletion request not sent'
-              : 'Failed to publish deletion request to relays',
+          'Failed to publish deletion request to relays',
         );
       }
 

@@ -243,7 +243,7 @@ void main() {
     });
 
     test(
-      'deleteAccount returns failure with no-relays message when PublishNoRelays',
+      'deleteAccount returns generic publish-failure message when PublishNoRelays',
       () async {
         // Arrange
         final expectedEvent = createTestEvent(
@@ -272,7 +272,7 @@ void main() {
 
         // Assert
         expect(result.success, isFalse);
-        expect(result.error, contains('No relays connected'));
+        expect(result.error, contains('Failed to publish'));
       },
     );
 
