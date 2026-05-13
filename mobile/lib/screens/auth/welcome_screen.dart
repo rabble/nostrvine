@@ -259,7 +259,9 @@ class _NewUserLayout extends StatelessWidget {
             style: TextButton.styleFrom(
               foregroundColor: VineTheme.whiteText,
             ),
-            onPressed: () => context.push(MinorAccountReviewScreen.pathFor()),
+            onPressed: () => context.push(
+              MinorAccountReviewScreen.pathFor(),
+            ),
             child: Text(context.l10n.minorAccountReviewWelcomeCta),
           ),
         ],

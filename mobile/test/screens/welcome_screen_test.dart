@@ -17,6 +17,7 @@ import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
+import 'package:openvine/screens/minor_account_review_screen.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/auth/auth_hero_section.dart';
@@ -134,6 +135,11 @@ void main() {
                 ),
               ],
             ),
+            GoRoute(
+              path: MinorAccountReviewScreen.welcomePath,
+              builder: (context, state) =>
+                  const Scaffold(body: Text('Family Guide Page')),
+            ),
           ],
         ),
       ),
@@ -244,6 +250,23 @@ void main() {
         verify(() => mockAuthService.acceptTerms()).called(1);
         expect(find.text('Sign in'), findsOneWidget);
       });
+
+      testWidgets(
+        'tapping under-16 link navigates to the public family guide',
+        (
+          tester,
+        ) async {
+          await tester.pumpWidget(createTestWidget());
+          await tester.pumpAndSettle();
+
+          await tester.tap(
+            find.text("Not 16 yet? That's OK. Here's what you can do."),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('Family Guide Page'), findsOneWidget);
+        },
+      );
 
       testWidgets('shows error when lastError is set', (tester) async {
         await tester.binding.setSurfaceSize(const Size(800, 1200));

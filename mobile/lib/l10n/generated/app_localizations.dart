@@ -13431,7 +13431,7 @@ abstract class AppLocalizations {
   /// No description provided for @minorAccountReviewWelcomeBody.
   ///
   /// In en, this message translates to:
-  /// **'Rules for people under 16 vary depending on where you live. At Divine, we want families to talk it through together and decide what healthy social media use looks like.'**
+  /// **'If you clicked through to this page instead of just picking the answer that got you in, that matters. It shows honesty, backbone, and real care for the people around you.\n\nRules for people under 16 vary depending on where you live. At Divine, we want families to talk it through together and decide what healthy social media use looks like.'**
   String get minorAccountReviewWelcomeBody;
 
   /// No description provided for @minorAccountReviewModerationTitle.
@@ -13698,6 +13698,30 @@ abstract class AppLocalizations {
   /// **'You can come back and create your own account with a quick step where a parent or guardian confirms they know about it.'**
   String get minorAccountReviewUnder13ComeBackBody;
 
+  /// No description provided for @minorAccountReviewUnder13HonestyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Why we won\'t tell you to just click back'**
+  String get minorAccountReviewUnder13HonestyTitle;
+
+  /// No description provided for @minorAccountReviewUnder13HonestyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A lot of the internet is set up to reward people for saying whatever gets them through the gate. We don\'t think that\'s great. Yes, you could go back and say you\'re older than you are, but that wouldn\'t be honest, and we\'re not going to coach you into lying to get what you want.'**
+  String get minorAccountReviewUnder13HonestyBody;
+
+  /// No description provided for @minorAccountReviewUnder13LegalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Why the answer is still no'**
+  String get minorAccountReviewUnder13LegalTitle;
+
+  /// No description provided for @minorAccountReviewUnder13LegalBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'re trying to help young people use Divine in ways that are healthy and positive for them and the people around them. We also have to follow laws that are different in different places. So, if you\'re under 13, the answer is that you can\'t have your own account today.'**
+  String get minorAccountReviewUnder13LegalBody;
+
   /// No description provided for @minorAccountReviewTeenBody.
   ///
   /// In en, this message translates to:
@@ -13713,14 +13737,32 @@ abstract class AppLocalizations {
   /// No description provided for @minorAccountReviewParentConsentBody.
   ///
   /// In en, this message translates to:
-  /// **'A parent or guardian should email Divine support with a short private video so our team can review the account and help with next steps.\n\nIf parent or guardian contact is not possible or would put someone at risk, email Divine support and let us know.'**
+  /// **'A parent or guardian should email Divine support with a short private video. Our team will review it and help with next steps.\n\nIf parent or guardian contact is not possible or would put someone at risk, email Divine support and let us know.'**
   String get minorAccountReviewParentConsentBody;
 
   /// No description provided for @minorAccountReviewParentConsentPauseNote.
   ///
   /// In en, this message translates to:
-  /// **'This is a pause, not a dead end. The account is not active until Divine support reviews the video.'**
+  /// **'This is a pause while the Divine support team reviews the video. If it is approved, they will guide you through setting up the new account.'**
   String get minorAccountReviewParentConsentPauseNote;
+
+  /// No description provided for @minorAccountReviewParentConsentHonestyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Why we\'re asking instead of hinting that you should lie'**
+  String get minorAccountReviewParentConsentHonestyTitle;
+
+  /// No description provided for @minorAccountReviewParentConsentHonestyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A lot of the internet quietly teaches people to click whatever answer gets them in. We think that stinks. Yes, someone could go back and claim they\'re 16 or older, but that would be lying about their age. We\'re trying to help teens use Divine in a way that\'s healthy and positive for them and the people around them. We also have to follow the law, and those rules are different depending on where someone lives. So instead of pretending the rules do not exist, we ask for a parent or guardian to be part of the process.'**
+  String get minorAccountReviewParentConsentHonestyBody;
+
+  /// No description provided for @minorAccountReviewParentConsentLegalBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We also have to follow the law, and those rules are different depending on where someone lives. So instead of pretending the rules do not exist, we ask for a parent or guardian to be part of the process.'**
+  String get minorAccountReviewParentConsentLegalBody;
 
   /// No description provided for @minorAccountReviewParentConsentChecklist.
   ///

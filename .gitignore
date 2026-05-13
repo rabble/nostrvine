@@ -162,6 +162,7 @@ mobile/test/goldens/screens/live/
 
 # Local-only zsp publish config (per-machine APK paths)
 mobile/zapstore.yaml
+mobile/macos/Runner/Configs/LocalRelease.xcconfig
 
 # Superpowers local scratch (not docs/superpowers/)
 .superpowers/
