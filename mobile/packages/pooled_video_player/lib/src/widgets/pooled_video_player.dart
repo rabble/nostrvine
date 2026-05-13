@@ -140,21 +140,20 @@ class PooledVideoPlayer extends StatelessWidget {
                       onRetry: () => feedController.retryLoad(index),
                     )
               else ...[
-                /// Thumbnail / spinner shown until the first frame.
-                loadingBuilder?.call(context) ??
-                    _DefaultLoadingState(thumbnailUrl: thumbnailUrl),
-
-                /// Video texture, hidden when off-screen to avoid
-                /// media_kit texture bleeding during page transitions.
                 if (videoController != null && player != null)
-                  Opacity(
-                    opacity: isActive ? 1 : 0,
-                    child: _RevealVideoAfterFirstFrame(
-                      videoController: videoController,
-                      readyForFallback: loadState == LoadState.ready,
-                      child: videoBuilder(context, videoController, player),
-                    ),
-                  ),
+                  _FirstFrameVisibilityGate(
+                    isActive: isActive,
+                    videoController: videoController,
+                    readyForFallback: loadState == LoadState.ready,
+                    loading:
+                        loadingBuilder?.call(context) ??
+                        _DefaultLoadingState(thumbnailUrl: thumbnailUrl),
+                    child: videoBuilder(context, videoController, player),
+                  )
+                else
+                  /// Thumbnail / spinner shown until the player exists.
+                  loadingBuilder?.call(context) ??
+                      _DefaultLoadingState(thumbnailUrl: thumbnailUrl),
               ],
 
               /// Consumer-provided overlay (controls, progress bar, etc.).
@@ -167,24 +166,27 @@ class PooledVideoPlayer extends StatelessWidget {
   }
 }
 
-class _RevealVideoAfterFirstFrame extends StatefulWidget {
-  const _RevealVideoAfterFirstFrame({
+class _FirstFrameVisibilityGate extends StatefulWidget {
+  const _FirstFrameVisibilityGate({
+    required this.isActive,
     required this.videoController,
     required this.readyForFallback,
+    required this.loading,
     required this.child,
   });
 
+  final bool isActive;
   final VideoController videoController;
   final bool readyForFallback;
+  final Widget loading;
   final Widget child;
 
   @override
-  State<_RevealVideoAfterFirstFrame> createState() =>
-      _RevealVideoAfterFirstFrameState();
+  State<_FirstFrameVisibilityGate> createState() =>
+      _FirstFrameVisibilityGateState();
 }
 
-class _RevealVideoAfterFirstFrameState
-    extends State<_RevealVideoAfterFirstFrame> {
+class _FirstFrameVisibilityGateState extends State<_FirstFrameVisibilityGate> {
   bool _hasRenderedFirstFrame = false;
   bool _revealedByTimeout = false;
 
@@ -227,7 +229,7 @@ class _RevealVideoAfterFirstFrameState
   }
 
   @override
-  void didUpdateWidget(covariant _RevealVideoAfterFirstFrame oldWidget) {
+  void didUpdateWidget(covariant _FirstFrameVisibilityGate oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!identical(oldWidget.videoController, widget.videoController)) {
       _stopListeningToTextureId(oldWidget.videoController);
@@ -384,12 +386,24 @@ class _RevealVideoAfterFirstFrameState
         widget.readyForFallback &&
         (_hasDecodedFrames || _revealedByTimeout) &&
         (_hasRenderedFirstFrame || _revealedByTimeout);
+    final shouldShowLoading = !widget.isActive || !shouldReveal;
 
-    return AnimatedOpacity(
-      duration: const Duration(milliseconds: 120),
-      curve: Curves.easeOut,
-      opacity: shouldReveal ? 1 : 0,
-      child: widget.child,
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (shouldShowLoading) widget.loading,
+        Opacity(
+          // Keep the texture alive off-screen for preloading, but hide it to
+          // avoid media_kit texture bleeding during page transitions.
+          opacity: widget.isActive ? 1 : 0,
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 120),
+            curve: Curves.easeOut,
+            opacity: shouldReveal ? 1 : 0,
+            child: widget.child,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -437,11 +451,7 @@ class _DefaultErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.error_outline,
-              color: Color(0xB3FFFFFF),
-              size: 48,
-            ),
+            const Icon(Icons.error_outline, color: Color(0xB3FFFFFF), size: 48),
             const SizedBox(height: 16),
             const Text(
               'Failed to load video',
