@@ -1708,7 +1708,7 @@ void main() {
 
       test(
         'acceptRealtime by-id guard fires when existing row has empty '
-        'sourceEventIds (pins the deliberate WS → WS fallback at line 258)',
+        'sourceEventIds',
         () async {
           // Pins the by-id dedupe gate that survives below the
           // `_snapshotContainsSourceEventId` checks. The gate fires when
