@@ -480,6 +480,46 @@ const _knownUntranslatedDebt = {
   // Translators will pick this up in a follow-up pass; until then non-English
   // locales fall back to the English source.
   'feedLoadingMore',
+  // Added while iterating on the under-16 review flow and adjacent editor /
+  // profile / accessibility strings. Existing locales fall back to English
+  // until the next translation pass.
+  'bugReportAttachImages',
+  'bugReportImagesCount',
+  'bugReportRemoveImage',
+  'bugReportUploadFailed',
+  'minorAccountReviewParentConsentHonestyBody',
+  'minorAccountReviewParentConsentHonestyTitle',
+  'minorAccountReviewParentConsentLegalBody',
+  'minorAccountReviewUnder13HonestyBody',
+  'minorAccountReviewUnder13HonestyTitle',
+  'minorAccountReviewUnder13LegalBody',
+  'minorAccountReviewUnder13LegalTitle',
+  'notificationSettingsMarkAllAsReadFailed',
+  'profileChipTapHint',
+  'profileSetupBannerClearButton',
+  'profileSetupBannerSectionTitle',
+  'profileSetupBannerUploadButton',
+  'profileSetupBannerUploadSuccess',
+  'userPickerRemoveSelectionSemantics',
+  'videoCollaboratorPendingDecoration',
+  'videoCollaboratorPendingSemanticLabel',
+  'videoCollaboratorWithPendingSuffix',
+  'videoEditorClipAudioTitle',
+  'videoEditorExtractAudioFailed',
+  'videoEditorExtractAudioFromClipSemanticLabel',
+  'videoEditorExtractAudioLabel',
+  'videoEditorExtractAudioNoLocalFile',
+  'videoMetadataEditCoverCloseSemanticLabel',
+  'videoMetadataEditCoverConfirmSemanticLabel',
+  'videoMetadataEditCoverFailedSnackbar',
+  'videoMetadataEditCoverStripSemanticLabel',
+  'videoMetadataEditCoverSuccessAnnouncement',
+  'videoMetadataEditCoverTitle',
+  'videoMetadataTagsPickerAddTag',
+  'videoMetadataTagsPickerEmptyHint',
+  'videoMetadataTagsPickerNoResults',
+  'videoMetadataTagsPickerSearchHint',
+  'videoPlayerTapHint',
 };
 
 Map<String, Object?> _readArb(File file) {
