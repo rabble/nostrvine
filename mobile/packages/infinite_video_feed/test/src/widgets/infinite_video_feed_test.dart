@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:divine_video_player/divine_video_player.dart';
-import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -33,7 +32,6 @@ void main() {
   late _MockMediaCacheManager cache;
 
   setUp(() {
-    InfiniteVideoFeed.debugTargetPlatformOverride = null;
     cache = _MockMediaCacheManager();
     // Stub all cache checks to return null — nothing is cached in tests.
     when(() => cache.getCachedFileSync(any())).thenReturn(null);
@@ -47,10 +45,6 @@ void main() {
     when(
       () => cache.cacheFileCancellable(any(), key: any(named: 'key')),
     ).thenReturn(mockCancellable);
-  });
-
-  tearDown(() {
-    InfiniteVideoFeed.debugTargetPlatformOverride = null;
   });
 
   group(InfiniteVideoFeed, () {
@@ -273,7 +267,6 @@ void main() {
       testWidgets('shows loading while first frame is not rendered', (
         tester,
       ) async {
-        InfiniteVideoFeed.debugTargetPlatformOverride = TargetPlatform.iOS;
         DivineVideoPlayerController.resetIdCounterForTesting();
         const globalChannel = MethodChannel('divine_video_player');
         const playerChannel = MethodChannel('divine_video_player/player_0');
@@ -350,174 +343,6 @@ void main() {
           null,
         );
       });
-
-      testWidgets(
-        'uses the default platform when no test override is set',
-        (tester) async {
-          DivineVideoPlayerController.resetIdCounterForTesting();
-          const globalChannel = MethodChannel('divine_video_player');
-          const playerChannel = MethodChannel('divine_video_player/player_0');
-          const eventChannelName = 'divine_video_player/player_0/events';
-          const methodCodec = StandardMethodCodec();
-
-          tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-            globalChannel,
-            (call) async {
-              if (call.method == 'create') return <Object?, Object?>{};
-              return null;
-            },
-          );
-          tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-            playerChannel,
-            (_) async => null,
-          );
-          tester.binding.defaultBinaryMessenger.setMockMessageHandler(
-            eventChannelName,
-            (message) async {
-              final call = methodCodec.decodeMethodCall(message);
-              if (call.method == 'listen') {
-                scheduleMicrotask(() async {
-                  await tester.binding.defaultBinaryMessenger
-                      .handlePlatformMessage(
-                        eventChannelName,
-                        methodCodec.encodeSuccessEnvelope(<Object?, Object?>{
-                          'status': 'ready',
-                          'videoWidth': 1280,
-                          'videoHeight': 720,
-                          'isFirstFrameRendered': false,
-                        }),
-                        (_) {},
-                      );
-                });
-              }
-              return methodCodec.encodeSuccessEnvelope(null);
-            },
-          );
-
-          await tester.pumpWidget(
-            _wrapFeed(
-              InfiniteVideoFeed(
-                videos: [_makeVideo('default_platform_without_override')],
-                cache: cache,
-                prefetchCount: 0,
-                preloadGracePeriod: Duration.zero,
-                loadingBuilder: (_, _, {required isSquare}) =>
-                    const Text('loading'),
-                videoBuilder: (_, _, _) => const Text('video'),
-              ),
-            ),
-          );
-
-          await tester.pump();
-          await tester.pump();
-
-          expect(find.text('video'), findsOneWidget);
-          if (defaultTargetPlatform == TargetPlatform.android) {
-            expect(find.text('loading'), findsNothing);
-          } else {
-            expect(find.text('loading'), findsOneWidget);
-          }
-
-          await tester.pumpWidget(const SizedBox.shrink());
-          await tester.pumpAndSettle();
-
-          tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-            globalChannel,
-            null,
-          );
-          tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-            playerChannel,
-            null,
-          );
-          tester.binding.defaultBinaryMessenger.setMockMessageHandler(
-            eventChannelName,
-            null,
-          );
-        },
-      );
-
-      testWidgets(
-        'hides loading on Android when ready without first-frame callback',
-        (tester) async {
-          InfiniteVideoFeed.debugTargetPlatformOverride =
-              TargetPlatform.android;
-          DivineVideoPlayerController.resetIdCounterForTesting();
-          const globalChannel = MethodChannel('divine_video_player');
-          const playerChannel = MethodChannel('divine_video_player/player_0');
-          const eventChannelName = 'divine_video_player/player_0/events';
-          const methodCodec = StandardMethodCodec();
-
-          tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-            globalChannel,
-            (call) async {
-              if (call.method == 'create') return <Object?, Object?>{};
-              return null;
-            },
-          );
-          tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-            playerChannel,
-            (_) async => null,
-          );
-          tester.binding.defaultBinaryMessenger.setMockMessageHandler(
-            eventChannelName,
-            (message) async {
-              final call = methodCodec.decodeMethodCall(message);
-              if (call.method == 'listen') {
-                scheduleMicrotask(() async {
-                  await tester.binding.defaultBinaryMessenger
-                      .handlePlatformMessage(
-                        eventChannelName,
-                        methodCodec.encodeSuccessEnvelope(<Object?, Object?>{
-                          'status': 'ready',
-                          'videoWidth': 1280,
-                          'videoHeight': 720,
-                          'isFirstFrameRendered': false,
-                        }),
-                        (_) {},
-                      );
-                });
-              }
-              return methodCodec.encodeSuccessEnvelope(null);
-            },
-          );
-
-          await tester.pumpWidget(
-            _wrapFeed(
-              InfiniteVideoFeed(
-                videos: [_makeVideo('android_ready_without_first_frame')],
-                cache: cache,
-                prefetchCount: 0,
-                preloadGracePeriod: Duration.zero,
-                loadingBuilder: (_, _, {required isSquare}) =>
-                    const Text('loading'),
-                videoBuilder: (_, _, _) => const Text('video'),
-              ),
-            ),
-          );
-
-          await tester.pump();
-          await tester.pump();
-
-          expect(find.text('loading'), findsNothing);
-          expect(find.text('video'), findsOneWidget);
-
-          await tester.pumpWidget(const SizedBox.shrink());
-          await tester.pumpAndSettle();
-
-          tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-            globalChannel,
-            null,
-          );
-          tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-            playerChannel,
-            null,
-          );
-          tester.binding.defaultBinaryMessenger.setMockMessageHandler(
-            eventChannelName,
-            null,
-          );
-        },
-      );
 
       testWidgets('renders default VideoItemWidget when video size is ready', (
         tester,
