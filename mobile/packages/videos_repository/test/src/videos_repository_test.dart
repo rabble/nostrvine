@@ -3907,6 +3907,28 @@ void main() {
             ),
           ).called(1);
         });
+
+        test('returns empty list when v2 API throws', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getV2PopularVideos(
+              variant: any(named: 'variant'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenThrow(const FunnelcakeException('Network error'));
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repositoryWithApi.getPopularVideos(
+            variant: PopularVideosVariant.native,
+          );
+
+          expect(result, isEmpty);
+        });
       });
     });
 
