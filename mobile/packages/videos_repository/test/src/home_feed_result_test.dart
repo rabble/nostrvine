@@ -20,6 +20,7 @@ void main() {
       expect(result.videos, hasLength(1));
       expect(result.videoListSources, isEmpty);
       expect(result.listOnlyVideoIds, isEmpty);
+      expect(result.consumedItemCount, isNull);
     });
 
     test('can be instantiated with all fields', () {
@@ -29,11 +30,13 @@ void main() {
           'v1': {'list-a'},
         },
         listOnlyVideoIds: const {'v1'},
+        consumedItemCount: 5,
       );
 
       expect(result.videos, hasLength(1));
       expect(result.videoListSources, hasLength(1));
       expect(result.listOnlyVideoIds, contains('v1'));
+      expect(result.consumedItemCount, 5);
     });
 
     test('empty constructor defaults', () {
@@ -106,6 +109,15 @@ void main() {
       expect(result1, isNot(equals(result2)));
     });
 
+    test('inequality when consumedItemCount differs', () {
+      final video = createVideo(id: 'v1');
+
+      final result1 = HomeFeedResult(videos: [video], consumedItemCount: 1);
+      final result2 = HomeFeedResult(videos: [video], consumedItemCount: 2);
+
+      expect(result1, isNot(equals(result2)));
+    });
+
     test('rawResponseBody defaults to null', () {
       const result = HomeFeedResult(videos: []);
 
@@ -149,13 +161,15 @@ void main() {
         videos: [video],
         videoListSources: sources,
         listOnlyVideoIds: listOnly,
+        consumedItemCount: 7,
         rawResponseBody: '{"videos":[]}',
       );
 
-      expect(result.props, hasLength(3));
+      expect(result.props, hasLength(4));
       expect(result.props[0], equals([video]));
       expect(result.props[1], equals(sources));
       expect(result.props[2], equals(listOnly));
+      expect(result.props[3], 7);
     });
   });
 }
