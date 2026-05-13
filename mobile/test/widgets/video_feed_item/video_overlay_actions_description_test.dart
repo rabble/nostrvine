@@ -13,7 +13,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
-import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:reposts_repository/reposts_repository.dart';
@@ -26,19 +25,15 @@ AppLocalizations _l10n(WidgetTester tester) =>
 class _MockVideoInteractionsBloc extends Mock
     implements VideoInteractionsBloc {}
 
-class _MockVideoEventService extends Mock implements VideoEventService {}
-
 class _MockRepostsRepository extends Mock implements RepostsRepository {}
 
 void main() {
   late _MockVideoInteractionsBloc mockInteractionsBloc;
-  late _MockVideoEventService mockVideoEventService;
   late _MockRepostsRepository mockRepostsRepository;
   late VideoEvent testVideo;
 
   setUp(() {
     mockInteractionsBloc = _MockVideoInteractionsBloc();
-    mockVideoEventService = _MockVideoEventService();
     mockRepostsRepository = _MockRepostsRepository();
 
     when(
@@ -70,7 +65,6 @@ void main() {
     await tester.pumpWidget(
       testProviderScope(
         additionalOverrides: [
-          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
         ],
         child: MaterialApp(
@@ -111,7 +105,6 @@ void main() {
     await tester.pumpWidget(
       testProviderScope(
         additionalOverrides: [
-          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
         ],
         child: MaterialApp(
@@ -148,7 +141,7 @@ void main() {
     await tester.pumpWidget(
       testProviderScope(
         additionalOverrides: [
-          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+          repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
           userProfileReactiveProvider.overrideWith((ref, pubkey) async* {
             yield UserProfile(
               pubkey: pubkey,
@@ -194,7 +187,7 @@ void main() {
       await tester.pumpWidget(
         testProviderScope(
           additionalOverrides: [
-            videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+            repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
             userProfileReactiveProvider.overrideWith((ref, pubkey) async* {
               yield UserProfile(
                 pubkey: pubkey,
@@ -243,7 +236,7 @@ void main() {
       await tester.pumpWidget(
         testProviderScope(
           additionalOverrides: [
-            videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+            repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
           ],
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,

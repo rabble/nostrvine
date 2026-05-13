@@ -21,7 +21,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/screens/feed/feed_video_overlay.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
-import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/scroll_driven_opacity.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
@@ -45,8 +44,6 @@ class _MockPlayerState extends Mock implements PlayerState {}
 
 class _MockCuratedListRepository extends Mock
     implements CuratedListRepository {}
-
-class _MockVideoEventService extends Mock implements VideoEventService {}
 
 class _MockRepostsRepository extends Mock implements RepostsRepository {}
 
@@ -109,7 +106,6 @@ void main() {
     late PlayerStream mockStream;
     late PlayerState mockPlayerState;
     late CuratedListRepository mockCuratedListRepository;
-    late VideoEventService mockVideoEventService;
     late RepostsRepository mockRepostsRepository;
     late VideosRepository mockVideosRepository;
     late MockProfileRepository mockProfileRepository;
@@ -135,7 +131,6 @@ void main() {
       mockStream = _MockPlayerStream();
       mockPlayerState = _MockPlayerState();
       mockCuratedListRepository = _MockCuratedListRepository();
-      mockVideoEventService = _MockVideoEventService();
       mockRepostsRepository = _MockRepostsRepository();
       mockVideosRepository = _MockVideosRepository();
       mockProfileRepository = createMockProfileRepository();
@@ -220,7 +215,6 @@ void main() {
           curatedListRepositoryProvider.overrideWithValue(
             mockCuratedListRepository,
           ),
-          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
           videosRepositoryProvider.overrideWithValue(mockVideosRepository),
           ...?additionalOverrides,
