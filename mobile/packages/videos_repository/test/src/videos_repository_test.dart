@@ -8749,6 +8749,7 @@ void main() {
           (_) async => RecommendationsResponse(
             videos: [recommended],
             source: 'personalized',
+            rawBody: '{"videos":[{"id":"recommended-video"}]}',
           ),
         );
 
@@ -8766,6 +8767,10 @@ void main() {
         expect(result.videos.single.id, equals('recommended-video'));
         expect(result.videoListSources, isEmpty);
         expect(result.listOnlyVideoIds, isEmpty);
+        expect(
+          result.rawResponseBody,
+          equals('{"videos":[{"id":"recommended-video"}]}'),
+        );
         verify(
           () => mockFunnelcakeClient.getRecommendations(
             pubkey: 'user-pubkey',
@@ -8833,8 +8838,10 @@ void main() {
               category: any(named: 'category'),
             ),
           ).thenAnswer(
-            (_) async =>
-                const RecommendationsResponse(videos: [], source: 'popular'),
+            (_) async => const RecommendationsResponse(
+              videos: [],
+              source: 'popular',
+            ),
           );
           when(
             () => mockFunnelcakeClient.getWatchingVideos(

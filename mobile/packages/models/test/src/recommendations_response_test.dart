@@ -9,6 +9,17 @@ void main() {
 
         expect(response.videos, isEmpty);
         expect(response.source, equals('popular'));
+        expect(response.rawBody, isNull);
+      });
+
+      test('creates instance with raw body', () {
+        const response = RecommendationsResponse(
+          videos: [],
+          source: 'personalized',
+          rawBody: '{"videos":[]}',
+        );
+
+        expect(response.rawBody, equals('{"videos":[]}'));
       });
     });
 

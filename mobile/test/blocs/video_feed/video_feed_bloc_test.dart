@@ -383,7 +383,10 @@ void main() {
         act: (bloc) => bloc.add(const VideoFeedStarted()),
         expect: () => [
           const VideoFeedState(),
-          const VideoFeedState(status: VideoFeedStatus.success, hasMore: false),
+          const VideoFeedState(
+            status: VideoFeedStatus.success,
+            hasMore: false,
+          ),
         ],
       );
 
@@ -2058,7 +2061,9 @@ void main() {
               until: any(named: 'until'),
               skipCache: any(named: 'skipCache'),
             ),
-          ).thenAnswer((_) async => HomeFeedResult(videos: recommendedVideos));
+          ).thenAnswer(
+            (_) async => HomeFeedResult(videos: recommendedVideos),
+          );
         },
         build: createBlocWithCache,
         act: (bloc) => bloc.add(const VideoFeedStarted()),

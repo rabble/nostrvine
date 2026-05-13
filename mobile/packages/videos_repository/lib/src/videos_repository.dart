@@ -1949,7 +1949,10 @@ class VideosRepository {
       );
     }
 
-    return HomeFeedResult(videos: videos);
+    return HomeFeedResult(
+      videos: videos,
+      rawResponseBody: response.rawBody,
+    );
   }
 
   /// Fetches personalized video recommendations.
