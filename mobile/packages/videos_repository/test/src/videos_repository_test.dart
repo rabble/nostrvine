@@ -3090,6 +3090,35 @@ void main() {
         },
       );
 
+      test(
+        'falls back to existing popular path when native API client is absent',
+        () async {
+          final fallbackEvent = _createVideoEvent(
+            id: 'native-fallback-without-api',
+            pubkey: 'fallback-pubkey',
+            videoUrl: 'https://example.com/native-fallback.mp4',
+            createdAt: 1704067200,
+          );
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) async => [fallbackEvent]);
+
+          final result = await repository.getNativePopularVideos(limit: 1);
+
+          expect(result, hasLength(1));
+          expect(result.first.id, equals('native-fallback-without-api'));
+          verify(
+            () => mockNostrClient.queryEvents(
+              any(),
+              useCache: any(named: 'useCache'),
+            ),
+          ).called(1);
+        },
+      );
+
       test('caches first native popular page only', () async {
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(
