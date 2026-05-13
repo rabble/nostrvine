@@ -72,7 +72,9 @@ void main() {
         when(
           () => mockPicker.pickMultiImage(
             maxWidth: any(named: 'maxWidth'),
+            maxHeight: any(named: 'maxHeight'),
             imageQuality: any(named: 'imageQuality'),
+            requestFullMetadata: any(named: 'requestFullMetadata'),
           ),
         ).thenAnswer((_) async => pickedFiles);
 
@@ -100,7 +102,9 @@ void main() {
         when(
           () => mockPicker.pickMultiImage(
             maxWidth: any(named: 'maxWidth'),
+            maxHeight: any(named: 'maxHeight'),
             imageQuality: any(named: 'imageQuality'),
+            requestFullMetadata: any(named: 'requestFullMetadata'),
           ),
         ).thenThrow(Exception('picker failed'));
 
@@ -127,7 +131,9 @@ void main() {
         when(
           () => mockPicker.pickMultiImage(
             maxWidth: any(named: 'maxWidth'),
+            maxHeight: any(named: 'maxHeight'),
             imageQuality: any(named: 'imageQuality'),
+            requestFullMetadata: any(named: 'requestFullMetadata'),
           ),
         ).thenAnswer((_) async => fourFiles);
 
@@ -156,7 +162,9 @@ void main() {
         when(
           () => mockPicker.pickMultiImage(
             maxWidth: any(named: 'maxWidth'),
+            maxHeight: any(named: 'maxHeight'),
             imageQuality: any(named: 'imageQuality'),
+            requestFullMetadata: any(named: 'requestFullMetadata'),
           ),
         ).thenAnswer((_) async => threeFiles);
 
@@ -178,7 +186,9 @@ void main() {
         when(
           () => mockPicker.pickMultiImage(
             maxWidth: any(named: 'maxWidth'),
+            maxHeight: any(named: 'maxHeight'),
             imageQuality: any(named: 'imageQuality'),
+            requestFullMetadata: any(named: 'requestFullMetadata'),
           ),
         ).thenAnswer((_) async => twoFiles);
 
@@ -244,7 +254,9 @@ void main() {
         when(
           () => mockPicker.pickMultiImage(
             maxWidth: any(named: 'maxWidth'),
+            maxHeight: any(named: 'maxHeight'),
             imageQuality: any(named: 'imageQuality'),
+            requestFullMetadata: any(named: 'requestFullMetadata'),
           ),
         ).thenAnswer((_) async => pickedFiles);
 

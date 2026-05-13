@@ -112,4 +112,20 @@ void main() {
       }
     });
   });
+
+  group('ImageUploadPolicy picker hints', () {
+    test('banner max width exceeds max height (wide hero)', () {
+      expect(
+        ImageUploadPolicy.profileBannerPickerMaxWidth,
+        greaterThan(ImageUploadPolicy.profileBannerPickerMaxHeight),
+      );
+    });
+
+    test('bug report picker uses square cap', () {
+      expect(
+        ImageUploadPolicy.bugReportAttachmentPickerMaxWidth,
+        ImageUploadPolicy.bugReportAttachmentPickerMaxHeight,
+      );
+    });
+  });
 }

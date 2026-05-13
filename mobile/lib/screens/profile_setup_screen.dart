@@ -24,6 +24,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
 import 'package:openvine/screens/apps/web_iframe_sandbox_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
+import 'package:openvine/services/image_upload_validation.dart';
 import 'package:openvine/utils/nostr_apps_platform_support.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/nostr_info_sheet_content.dart';
@@ -1357,9 +1358,9 @@ class _ProfileSetupScreenViewState
     try {
       return await _picker.pickImage(
         source: source,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 85,
+        maxWidth: ImageUploadPolicy.profileAvatarPickerMaxWidth,
+        maxHeight: ImageUploadPolicy.profileAvatarPickerMaxHeight,
+        imageQuality: ImageUploadPolicy.profileAvatarPickerImageQuality,
         requestFullMetadata: false,
       );
     } catch (e) {
@@ -1395,7 +1396,16 @@ class _ProfileSetupScreenViewState
 
       final typeGroup = XTypeGroup(
         label: context.l10n.profileSetupImagesTypeGroup,
-        extensions: const <String>['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'],
+        extensions: const <String>[
+          'jpg',
+          'jpeg',
+          'png',
+          'gif',
+          'webp',
+          'bmp',
+          'heic',
+          'heif',
+        ],
       );
 
       final file = await openFile(acceptedTypeGroups: <XTypeGroup>[typeGroup]);
@@ -1773,8 +1783,9 @@ class _BannerActionRow extends StatelessWidget {
     try {
       picked = await picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 1500,
-        imageQuality: 85,
+        maxWidth: ImageUploadPolicy.profileBannerPickerMaxWidth,
+        maxHeight: ImageUploadPolicy.profileBannerPickerMaxHeight,
+        imageQuality: ImageUploadPolicy.profileBannerPickerImageQuality,
         requestFullMetadata: false,
       );
     } catch (e) {

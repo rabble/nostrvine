@@ -34,6 +34,23 @@ abstract final class ImageUploadPolicy {
     ImageUploadKind.videoThumbnail => kProfileImageUploadMaxBytes,
     ImageUploadKind.bugReportAttachment => kProfileImageUploadMaxBytes,
   };
+
+  // --- `image_picker` downscaling hints (keep in sync with call sites) ---
+
+  /// Square cap for profile avatar picks (gallery / camera / web).
+  static const double profileAvatarPickerMaxWidth = 1024;
+  static const double profileAvatarPickerMaxHeight = 1024;
+  static const int profileAvatarPickerImageQuality = 85;
+
+  /// Wide cap for profile banner picks (matches PR #4232 / issue #4272 notes).
+  static const double profileBannerPickerMaxWidth = 1500;
+  static const double profileBannerPickerMaxHeight = 500;
+  static const int profileBannerPickerImageQuality = 85;
+
+  /// Cap for bug-report multi-image picks (mobile).
+  static const double bugReportAttachmentPickerMaxWidth = 1920;
+  static const double bugReportAttachmentPickerMaxHeight = 1920;
+  static const int bugReportAttachmentPickerImageQuality = 80;
 }
 
 /// Outcome of [validateImageBytes] / [validateImageFile].
