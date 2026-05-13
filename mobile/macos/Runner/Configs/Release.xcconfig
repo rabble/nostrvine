@@ -10,3 +10,6 @@ PROVISIONING_PROFILE_SPECIFIER =
 // Enable hardened runtime for notarization
 ENABLE_HARDENED_RUNTIME = YES
 OTHER_CODE_SIGN_FLAGS = --timestamp --options=runtime
+
+// Optional local-only override for unsigned/dev macOS builds.
+#include? "LocalRelease.xcconfig"

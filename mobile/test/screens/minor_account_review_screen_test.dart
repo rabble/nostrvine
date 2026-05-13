@@ -10,7 +10,7 @@ import 'package:openvine/screens/minor_account_review_under13_screen.dart';
 
 void main() {
   group('MinorAccountReviewScreen', () {
-    testWidgets('shows the original welcome-entry family guidance copy', (
+    testWidgets('shows the welcome-entry family guidance copy', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -27,9 +27,21 @@ void main() {
 
       expect(find.text('Family guide'), findsOneWidget);
       expect(find.text("Not 16 yet? That's OK."), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('More for families'),
+        200,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.pumpAndSettle();
       expect(find.text('More for families'), findsOneWidget);
-      expect(find.text("Read Divine's kids policy"), findsOneWidget);
-      expect(find.text('Get family guides and tips'), findsOneWidget);
+      expect(
+        find.text("Read Divine's kids policy", skipOffstage: false),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Get family guides and tips', skipOffstage: false),
+        findsOneWidget,
+      );
       expect(
         find.text(
           'If you are 16 or older and got sent here by mistake, contact Divine support so a real person can review it.',
@@ -103,6 +115,20 @@ void main() {
         find.text('When you turn 13'),
         findsOneWidget,
       );
+      expect(
+        find.text("Why we won't tell you to just click back"),
+        findsOneWidget,
+      );
+      await tester.scrollUntilVisible(
+        find.text('Why the answer is still no'),
+        200,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Why the answer is still no'),
+        findsOneWidget,
+      );
       expect(find.text('Close', skipOffstage: false), findsOneWidget);
       expect(find.text('Email Divine support'), findsNothing);
     });
@@ -124,10 +150,20 @@ void main() {
       );
       expect(
         find.text(
-          'This is a pause, not a dead end. The account is not active until Divine support reviews the video.',
+          'A parent or guardian should email Divine support with a short private video. Our team will review it and help with next steps.\n\nIf parent or guardian contact is not possible or would put someone at risk, email Divine support and let us know.',
         ),
         findsOneWidget,
       );
+      expect(
+        find.text("Why we're asking instead of hinting that you should lie"),
+        findsOneWidget,
+      );
+      await tester.scrollUntilVisible(
+        find.text('What the video should show'),
+        200,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.pumpAndSettle();
       expect(find.text('What the video should show'), findsOneWidget);
       await tester.scrollUntilVisible(
         find.text('How to send it'),

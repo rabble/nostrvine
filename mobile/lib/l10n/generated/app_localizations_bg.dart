@@ -7381,6 +7381,22 @@ class AppLocalizationsBg extends AppLocalizations {
       'You can come back and create your own account with a quick step where a parent or guardian confirms they know about it.';
 
   @override
+  String get minorAccountReviewUnder13HonestyTitle =>
+      'Why we won\'t tell you to just click back';
+
+  @override
+  String get minorAccountReviewUnder13HonestyBody =>
+      'A lot of the internet is set up to reward people for saying whatever gets them through the gate. We don\'t think that\'s great. Yes, you could go back and say you\'re older than you are, but that wouldn\'t be honest, and we\'re not going to coach you into lying to get what you want.';
+
+  @override
+  String get minorAccountReviewUnder13LegalTitle =>
+      'Why the answer is still no';
+
+  @override
+  String get minorAccountReviewUnder13LegalBody =>
+      'We\'re trying to help young people use Divine in ways that are healthy and positive for them and the people around them. We also have to follow laws that are different in different places. So, if you\'re under 13, the answer is that you can\'t have your own account today.';
+
+  @override
   String get minorAccountReviewTeenBody =>
       'If this account belongs to someone 13 to 15, use the moderation message or support path to follow the parental consent instructions.';
 
@@ -7395,6 +7411,18 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get minorAccountReviewParentConsentPauseNote =>
       'This is a pause, not a dead end. The account is not active until Divine support reviews the video.';
+
+  @override
+  String get minorAccountReviewParentConsentHonestyTitle =>
+      'Why we\'re asking instead of hinting that you should lie';
+
+  @override
+  String get minorAccountReviewParentConsentHonestyBody =>
+      'A lot of the internet quietly teaches people to click whatever answer gets them in. We think that stinks. Yes, someone could go back and claim they\'re 16 or older, but that would be lying about their age. We\'re trying to help teens use Divine in a way that\'s healthy and positive for them and the people around them. We also have to follow the law, and those rules are different depending on where someone lives. So instead of pretending the rules do not exist, we ask for a parent or guardian to be part of the process.';
+
+  @override
+  String get minorAccountReviewParentConsentLegalBody =>
+      'We also have to follow the law, and those rules are different depending on where someone lives. So instead of pretending the rules do not exist, we ask for a parent or guardian to be part of the process.';
 
   @override
   String get minorAccountReviewParentConsentChecklist =>

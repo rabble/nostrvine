@@ -105,33 +105,6 @@ class _WelcomeEntryView extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  l10n.minorAccountReviewLearnMoreTitle,
-                  style: VineTheme.titleMediumFont(),
-                ),
-                const SizedBox(height: 12),
-                DivineButton(
-                  label: l10n.minorAccountReviewKidsPolicyCta,
-                  type: DivineButtonType.secondary,
-                  expanded: true,
-                  onPressed: () => _openExternalPage(
-                    context,
-                    AppConstants.kidsPolicyUrl,
-                    'divine.video/kids',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                DivineButton(
-                  label: l10n.minorAccountReviewFamilyResourcesCta,
-                  type: DivineButtonType.secondary,
-                  expanded: true,
-                  onPressed: () => _openExternalPage(
-                    context,
-                    AppConstants.familyResourcesUrl,
-                    'divine.video/family',
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Text(
                   l10n.minorAccountReviewChooseAgeBandTitle,
                   style: VineTheme.titleMediumFont(),
                 ),
@@ -156,6 +129,33 @@ class _WelcomeEntryView extends StatelessWidget {
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  l10n.minorAccountReviewLearnMoreTitle,
+                  style: VineTheme.titleMediumFont(),
+                ),
+                const SizedBox(height: 12),
+                DivineButton(
+                  label: l10n.minorAccountReviewKidsPolicyCta,
+                  type: DivineButtonType.secondary,
+                  expanded: true,
+                  onPressed: () => _openExternalPage(
+                    context,
+                    AppConstants.kidsPolicyUrl,
+                    'divine.video/kids',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                DivineButton(
+                  label: l10n.minorAccountReviewFamilyResourcesCta,
+                  type: DivineButtonType.secondary,
+                  expanded: true,
+                  onPressed: () => _openExternalPage(
+                    context,
+                    AppConstants.familyResourcesUrl,
+                    'divine.video/family',
+                  ),
                 ),
               ],
             ),

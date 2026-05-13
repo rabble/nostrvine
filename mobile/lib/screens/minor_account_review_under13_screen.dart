@@ -40,8 +40,9 @@ class MinorAccountReviewUnder13Screen extends StatelessWidget {
                 _CalloutCard(
                   title: context.l10n.minorAccountReviewUnder13FamilyTitle,
                   body: context.l10n.minorAccountReviewUnder13FamilyBody,
-                  backgroundColor: VineTheme.accentPinkBackground,
-                  borderColor: VineTheme.accentPink,
+                  backgroundColor: VineTheme.inverseSurface,
+                  borderColor: VineTheme.inverseOnSurface,
+                  textColor: VineTheme.inverseOnSurface,
                 ),
                 const SizedBox(height: 16),
                 _CalloutCard(
@@ -49,6 +50,23 @@ class MinorAccountReviewUnder13Screen extends StatelessWidget {
                   body: context.l10n.minorAccountReviewUnder13ComeBackBody,
                   backgroundColor: VineTheme.surfaceContainer,
                   borderColor: VineTheme.outlineVariant,
+                  textColor: VineTheme.onSurface,
+                ),
+                const SizedBox(height: 16),
+                _CalloutCard(
+                  title: context.l10n.minorAccountReviewUnder13HonestyTitle,
+                  body: context.l10n.minorAccountReviewUnder13HonestyBody,
+                  backgroundColor: VineTheme.accentLimeBackground,
+                  borderColor: VineTheme.accentLime,
+                  textColor: VineTheme.onSurface,
+                ),
+                const SizedBox(height: 16),
+                _CalloutCard(
+                  title: context.l10n.minorAccountReviewUnder13LegalTitle,
+                  body: context.l10n.minorAccountReviewUnder13LegalBody,
+                  backgroundColor: VineTheme.surfaceContainer,
+                  borderColor: VineTheme.outlineVariant,
+                  textColor: VineTheme.onSurface,
                 ),
                 const SizedBox(height: 24),
                 DivineButton(
@@ -77,12 +95,14 @@ class _CalloutCard extends StatelessWidget {
     required this.body,
     required this.backgroundColor,
     required this.borderColor,
+    required this.textColor,
   });
 
   final String title;
   final String body;
   final Color backgroundColor;
   final Color borderColor;
+  final Color textColor;
 
   @override
   Widget build(BuildContext context) {
@@ -96,11 +116,11 @@ class _CalloutCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: VineTheme.titleMediumFont()),
+          Text(title, style: VineTheme.titleMediumFont(color: textColor)),
           const SizedBox(height: 8),
           Text(
             body,
-            style: VineTheme.bodyMediumFont(color: VineTheme.onSurface),
+            style: VineTheme.bodyMediumFont(color: textColor),
           ),
         ],
       ),

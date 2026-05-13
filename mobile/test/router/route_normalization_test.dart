@@ -43,6 +43,21 @@ void main() {
       expect(shouldSkipRouteNormalization('/home/0'), isFalse);
     });
 
+    test('skips public minor account review routes', () {
+      expect(
+        shouldSkipRouteNormalization('/account-review/welcome'),
+        isTrue,
+      );
+      expect(
+        shouldSkipRouteNormalization('/account-review/parent-consent'),
+        isTrue,
+      );
+      expect(
+        shouldSkipRouteNormalization('/account-review/under-13'),
+        isTrue,
+      );
+    });
+
     test('skips video engagement list routes', () {
       // parseRoute/buildRoute don't know about /likers and /reposters
       // sub-routes, so without skipping the normalizer would rewrite them

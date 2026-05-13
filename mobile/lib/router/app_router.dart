@@ -189,10 +189,16 @@ String? _moderationConversationId(
 final goRouterProvider = Provider<GoRouter>((ref) {
   // Use ref.read to avoid recreating the router on auth state changes
   final authService = ref.read(authServiceProvider);
-  ref.watch(currentMinorAccountReviewStatusProvider);
 
-  // Convert auth state stream to a Listenable for GoRouter
-  final authListenable = _StreamListenable(authService.authStateStream);
+  // Keep one router instance alive; drive redirect reevaluation through a
+  // dedicated listenable instead of rebuilding GoRouter when app state changes.
+  final refreshListenable = _RouterRefreshListenable(
+    authService.authStateStream,
+  );
+  ref.listen(currentMinorAccountReviewStatusProvider, (previous, next) {
+    refreshListenable.refresh();
+  });
+  ref.onDispose(refreshListenable.dispose);
 
   final router = GoRouter(
     navigatorKey: NavigatorKeys.root,
@@ -200,7 +206,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: WelcomeScreen.path,
     observers: _buildRouterObservers(),
     // Refresh router when auth state changes
-    refreshListenable: authListenable,
+    refreshListenable: refreshListenable,
     errorBuilder: (context, state) => RouteErrorScreen(
       message: context.l10n.routeUnknownPath,
     ),
@@ -1350,10 +1356,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     ],
   );
 
-  ref.onDispose(() {
-    router.dispose();
-    authListenable.dispose();
-  });
+  ref.onDispose(router.dispose);
 
   return router;
 });
@@ -1449,12 +1452,14 @@ int tabIndexFromLocation(String loc) {
 
 /// Adapts a [Stream] to a [ChangeNotifier] for use with GoRouter's
 /// `refreshListenable`.
-class _StreamListenable extends ChangeNotifier {
-  _StreamListenable(Stream<dynamic> stream) {
+class _RouterRefreshListenable extends ChangeNotifier {
+  _RouterRefreshListenable(Stream<dynamic> stream) {
     _subscription = stream.listen((_) => notifyListeners());
   }
 
   late final StreamSubscription<dynamic> _subscription;
+
+  void refresh() => notifyListeners();
 
   @override
   void dispose() {

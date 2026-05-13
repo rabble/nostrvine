@@ -63,19 +63,13 @@ class MinorAccountReviewParentConsentScreen extends ConsumerWidget {
                   style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
                 ),
                 const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: VineTheme.accentLimeBackground,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: VineTheme.accentLime.withValues(alpha: .35),
-                    ),
-                  ),
-                  child: Text(
-                    context.l10n.minorAccountReviewParentConsentPauseNote,
-                    style: VineTheme.bodyMediumFont(color: VineTheme.onSurface),
-                  ),
+                _InfoCard(
+                  title:
+                      context.l10n.minorAccountReviewParentConsentHonestyTitle,
+                  body: context.l10n.minorAccountReviewParentConsentHonestyBody,
+                  backgroundColor: VineTheme.inverseSurface,
+                  borderColor: VineTheme.inverseOnSurface,
+                  textColor: VineTheme.inverseOnSurface,
                 ),
                 const SizedBox(height: 16),
                 _ChecklistCard(
@@ -131,6 +125,47 @@ class MinorAccountReviewParentConsentScreen extends ConsumerWidget {
         ),
       );
     }
+  }
+}
+
+class _InfoCard extends StatelessWidget {
+  const _InfoCard({
+    required this.body,
+    required this.backgroundColor,
+    required this.borderColor,
+    required this.textColor,
+    this.title,
+  });
+
+  final String? title;
+  final String body;
+  final Color backgroundColor;
+  final Color borderColor;
+  final Color textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderColor.withValues(alpha: .35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (title != null) ...[
+            Text(title!, style: VineTheme.titleMediumFont(color: textColor)),
+            const SizedBox(height: 8),
+          ],
+          Text(
+            body,
+            style: VineTheme.bodyMediumFont(color: textColor),
+          ),
+        ],
+      ),
+    );
   }
 }
 
