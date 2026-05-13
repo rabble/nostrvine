@@ -1086,6 +1086,8 @@ void main() {
       await _openSettingsMenu(tester);
       await tester.tap(find.bySemanticsLabel('Enable auto advance'));
       await tester.pump();
+      await tester.tapAt(Offset.zero);
+      await tester.pump();
 
       await tester.tap(find.byType(LikeActionButton).first);
       await tester.pump();

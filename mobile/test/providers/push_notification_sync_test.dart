@@ -2,14 +2,12 @@
 // ABOUTME: Verifies firebase permission races don't escape the async listener.
 
 import 'dart:async';
-import 'dart:io';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hive_ce/hive.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
@@ -40,6 +38,55 @@ class _MockNotificationService extends Mock implements NotificationService {}
 class _FakeEvent extends Fake implements Event {}
 
 class _MockEvent extends Mock implements Event {}
+
+class _FakeNotificationPreferencesStore
+    implements NotificationPreferencesStore {
+  NotificationPreferences? savedPreferences;
+  final dirtyPreferencesByPubkey = <String, NotificationPreferences>{};
+  final _clearWaitersByPubkey = <String, List<Completer<void>>>{};
+
+  Future<void> waitForClear(String pubkey) {
+    if (!dirtyPreferencesByPubkey.containsKey(pubkey)) {
+      return Future<void>.value();
+    }
+
+    final completer = Completer<void>();
+    _clearWaitersByPubkey.putIfAbsent(pubkey, () => []).add(completer);
+    return completer.future;
+  }
+
+  @override
+  Future<NotificationPreferences> loadPreferences() async {
+    return savedPreferences ?? const NotificationPreferences();
+  }
+
+  @override
+  Future<void> savePreferences(NotificationPreferences preferences) async {
+    savedPreferences = preferences;
+  }
+
+  @override
+  Future<void> markDirty(
+    String pubkey,
+    NotificationPreferences preferences,
+  ) async {
+    dirtyPreferencesByPubkey[pubkey] = preferences;
+  }
+
+  @override
+  Future<NotificationPreferences?> loadDirty(String pubkey) async {
+    return dirtyPreferencesByPubkey[pubkey];
+  }
+
+  @override
+  Future<void> clearDirty(String pubkey) async {
+    dirtyPreferencesByPubkey.remove(pubkey);
+    final waiters = _clearWaitersByPubkey.remove(pubkey) ?? const [];
+    for (final waiter in waiters) {
+      if (!waiter.isCompleted) waiter.complete();
+    }
+  }
+}
 
 class _ConfiguredEnvironmentConfig extends EnvironmentConfig {
   const _ConfiguredEnvironmentConfig({
@@ -86,12 +133,12 @@ NostrIdentity _identity(String pubkey) =>
     KeycastNostrIdentity(pubkey: pubkey, rpcSigner: _MockNostrSigner());
 
 void main() {
-  late Directory hiveDir;
   late _MockFirebaseMessaging messaging;
   late _MockAuthService authService;
   late _MockPushNotificationService pushService;
   late _MockNostrClient nostrClient;
   late _MockNostrClient defaultCleanupClient;
+  late _FakeNotificationPreferencesStore preferenceStore;
   late StreamController<AuthState> authStateController;
   BeforeSessionTeardownCallback? beforeSessionTeardownCallback;
 
@@ -110,15 +157,6 @@ void main() {
     registerFallbackValue(const NotificationPreferences());
     registerFallbackValue(_FakeEvent());
     registerFallbackValue(_identity(pubkeyA));
-    hiveDir = Directory.systemTemp.createTempSync(
-      'push_notification_sync_test_',
-    );
-    Hive.init(hiveDir.path);
-  });
-
-  tearDownAll(() async {
-    await Hive.close();
-    hiveDir.deleteSync(recursive: true);
   });
 
   setUp(() {
@@ -127,6 +165,7 @@ void main() {
     pushService = _MockPushNotificationService();
     nostrClient = _MockNostrClient();
     defaultCleanupClient = _MockNostrClient();
+    preferenceStore = _FakeNotificationPreferencesStore();
     authStateController = StreamController<AuthState>.broadcast();
 
     when(
@@ -205,6 +244,7 @@ void main() {
         firebaseMessagingProvider.overrideWithValue(messaging),
         authServiceProvider.overrideWithValue(authService),
         pushNotificationServiceProvider.overrideWithValue(pushService),
+        notificationPreferencesStoreProvider.overrideWithValue(preferenceStore),
         nostrSessionProvider.overrideWith(
           () =>
               nostrSession ??
@@ -308,6 +348,9 @@ void main() {
           overrides: [
             firebaseMessagingProvider.overrideWithValue(messaging),
             authServiceProvider.overrideWithValue(authService),
+            notificationPreferencesStoreProvider.overrideWithValue(
+              preferenceStore,
+            ),
             notificationServiceProvider.overrideWithValue(
               _MockNotificationService(),
             ),
@@ -1293,6 +1336,9 @@ void main() {
           overrides: [
             firebaseMessagingProvider.overrideWithValue(messaging),
             authServiceProvider.overrideWithValue(authService),
+            notificationPreferencesStoreProvider.overrideWithValue(
+              preferenceStore,
+            ),
             notificationServiceProvider.overrideWithValue(
               _MockNotificationService(),
             ),
@@ -1362,6 +1408,9 @@ void main() {
           overrides: [
             firebaseMessagingProvider.overrideWithValue(messaging),
             authServiceProvider.overrideWithValue(authService),
+            notificationPreferencesStoreProvider.overrideWithValue(
+              preferenceStore,
+            ),
             notificationServiceProvider.overrideWithValue(
               _MockNotificationService(),
             ),
@@ -1436,6 +1485,9 @@ void main() {
           overrides: [
             firebaseMessagingProvider.overrideWithValue(messaging),
             authServiceProvider.overrideWithValue(authService),
+            notificationPreferencesStoreProvider.overrideWithValue(
+              preferenceStore,
+            ),
             notificationServiceProvider.overrideWithValue(
               _MockNotificationService(),
             ),
@@ -1524,6 +1576,9 @@ void main() {
           overrides: [
             firebaseMessagingProvider.overrideWithValue(messaging),
             authServiceProvider.overrideWithValue(authService),
+            notificationPreferencesStoreProvider.overrideWithValue(
+              preferenceStore,
+            ),
             notificationServiceProvider.overrideWithValue(
               _MockNotificationService(),
             ),
@@ -1612,6 +1667,9 @@ void main() {
           overrides: [
             firebaseMessagingProvider.overrideWithValue(messaging),
             authServiceProvider.overrideWithValue(authService),
+            notificationPreferencesStoreProvider.overrideWithValue(
+              preferenceStore,
+            ),
             notificationServiceProvider.overrideWithValue(
               _MockNotificationService(),
             ),
@@ -1651,6 +1709,9 @@ void main() {
           overrides: [
             firebaseMessagingProvider.overrideWithValue(messaging),
             authServiceProvider.overrideWithValue(authService),
+            notificationPreferencesStoreProvider.overrideWithValue(
+              preferenceStore,
+            ),
             notificationServiceProvider.overrideWithValue(
               _MockNotificationService(),
             ),
@@ -1677,9 +1738,15 @@ void main() {
       'publishes queued preferences when matching session becomes ready',
       () async {
         const prefs = NotificationPreferences(commentsEnabled: false);
+        final published = Completer<NotificationPreferences>();
         when(
           () => pushService.updatePreferences(any()),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((invocation) async {
+          final preferences =
+              invocation.positionalArguments.single as NotificationPreferences;
+          if (!published.isCompleted) published.complete(preferences);
+          return true;
+        });
 
         final nostrSession = _TestNostrSession(
           const NostrSessionReadiness.signedOut(),
@@ -1688,6 +1755,9 @@ void main() {
           overrides: [
             firebaseMessagingProvider.overrideWithValue(messaging),
             authServiceProvider.overrideWithValue(authService),
+            notificationPreferencesStoreProvider.overrideWithValue(
+              preferenceStore,
+            ),
             nostrSessionProvider.overrideWith(() => nostrSession),
             pushNotificationServiceProvider.overrideWith((ref) {
               final readiness = ref.watch(nostrSessionProvider);
@@ -1716,10 +1786,14 @@ void main() {
             client: nostrClient,
           ),
         );
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+        expect(await published.future, prefs);
+        await preferenceStore.waitForClear(pubkeyA);
 
         verify(() => pushService.updatePreferences(prefs)).called(1);
+        expect(
+          preferenceStore.dirtyPreferencesByPubkey,
+          isNot(contains(pubkeyA)),
+        );
       },
     );
 
@@ -1727,9 +1801,15 @@ void main() {
       'publishes queued preferences without push sync listener mounted',
       () async {
         const prefs = NotificationPreferences(commentsEnabled: false);
+        final published = Completer<NotificationPreferences>();
         when(
           () => pushService.updatePreferences(any()),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((invocation) async {
+          final preferences =
+              invocation.positionalArguments.single as NotificationPreferences;
+          if (!published.isCompleted) published.complete(preferences);
+          return true;
+        });
 
         final nostrSession = _TestNostrSession(
           const NostrSessionReadiness.signedOut(),
@@ -1738,6 +1818,9 @@ void main() {
           overrides: [
             firebaseMessagingProvider.overrideWithValue(messaging),
             authServiceProvider.overrideWithValue(authService),
+            notificationPreferencesStoreProvider.overrideWithValue(
+              preferenceStore,
+            ),
             nostrSessionProvider.overrideWith(() => nostrSession),
             pushNotificationServiceProvider.overrideWith((ref) {
               final readiness = ref.watch(nostrSessionProvider);
@@ -1762,10 +1845,14 @@ void main() {
             client: nostrClient,
           ),
         );
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+        expect(await published.future, prefs);
+        await preferenceStore.waitForClear(pubkeyA);
 
         verify(() => pushService.updatePreferences(prefs)).called(1);
+        expect(
+          preferenceStore.dirtyPreferencesByPubkey,
+          isNot(contains(pubkeyA)),
+        );
       },
     );
 
@@ -1773,9 +1860,15 @@ void main() {
       'queues preferences when push service exists before matching readiness',
       () async {
         const prefs = NotificationPreferences(commentsEnabled: false);
+        final published = Completer<NotificationPreferences>();
         when(
           () => pushService.updatePreferences(any()),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((invocation) async {
+          final preferences =
+              invocation.positionalArguments.single as NotificationPreferences;
+          if (!published.isCompleted) published.complete(preferences);
+          return true;
+        });
 
         final nostrSession = _TestNostrSession(
           const NostrSessionReadiness.signedOut(),
@@ -1784,6 +1877,9 @@ void main() {
           overrides: [
             firebaseMessagingProvider.overrideWithValue(messaging),
             authServiceProvider.overrideWithValue(authService),
+            notificationPreferencesStoreProvider.overrideWithValue(
+              preferenceStore,
+            ),
             nostrSessionProvider.overrideWith(() => nostrSession),
             pushNotificationServiceProvider.overrideWithValue(pushService),
           ],
@@ -1805,10 +1901,14 @@ void main() {
             client: nostrClient,
           ),
         );
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+        expect(await published.future, prefs);
+        await preferenceStore.waitForClear(pubkeyA);
 
         verify(() => pushService.updatePreferences(prefs)).called(1);
+        expect(
+          preferenceStore.dirtyPreferencesByPubkey,
+          isNot(contains(pubkeyA)),
+        );
       },
     );
 
@@ -1816,9 +1916,15 @@ void main() {
       'keeps dirty preferences for original pubkey when another identity becomes known',
       () async {
         const prefs = NotificationPreferences(commentsEnabled: false);
+        final published = Completer<NotificationPreferences>();
         when(
           () => pushService.updatePreferences(any()),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((invocation) async {
+          final preferences =
+              invocation.positionalArguments.single as NotificationPreferences;
+          if (!published.isCompleted) published.complete(preferences);
+          return true;
+        });
 
         final nostrSession = _TestNostrSession(
           const NostrSessionReadiness.identityKnown(pubkey: pubkeyA),
@@ -1827,6 +1933,9 @@ void main() {
           overrides: [
             firebaseMessagingProvider.overrideWithValue(messaging),
             authServiceProvider.overrideWithValue(authService),
+            notificationPreferencesStoreProvider.overrideWithValue(
+              preferenceStore,
+            ),
             nostrSessionProvider.overrideWith(() => nostrSession),
             pushNotificationServiceProvider.overrideWithValue(pushService),
           ],
@@ -1844,6 +1953,7 @@ void main() {
           const NostrSessionReadiness.identityKnown(pubkey: pubkeyB),
         );
         await Future<void>.delayed(Duration.zero);
+        expect(preferenceStore.dirtyPreferencesByPubkey[pubkeyA], prefs);
 
         when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
         when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
@@ -1853,10 +1963,14 @@ void main() {
             client: nostrClient,
           ),
         );
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+        expect(await published.future, prefs);
+        await preferenceStore.waitForClear(pubkeyA);
 
         verify(() => pushService.updatePreferences(prefs)).called(1);
+        expect(
+          preferenceStore.dirtyPreferencesByPubkey,
+          isNot(contains(pubkeyA)),
+        );
       },
     );
 
@@ -1864,9 +1978,15 @@ void main() {
       'keeps dirty preferences for original pubkey across sign out',
       () async {
         const prefs = NotificationPreferences(commentsEnabled: false);
+        final published = Completer<NotificationPreferences>();
         when(
           () => pushService.updatePreferences(any()),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((invocation) async {
+          final preferences =
+              invocation.positionalArguments.single as NotificationPreferences;
+          if (!published.isCompleted) published.complete(preferences);
+          return true;
+        });
 
         final nostrSession = _TestNostrSession(
           const NostrSessionReadiness.identityKnown(pubkey: pubkeyA),
@@ -1875,6 +1995,9 @@ void main() {
           overrides: [
             firebaseMessagingProvider.overrideWithValue(messaging),
             authServiceProvider.overrideWithValue(authService),
+            notificationPreferencesStoreProvider.overrideWithValue(
+              preferenceStore,
+            ),
             nostrSessionProvider.overrideWith(() => nostrSession),
             pushNotificationServiceProvider.overrideWithValue(pushService),
           ],
@@ -1890,6 +2013,7 @@ void main() {
 
         nostrSession.setReadiness(const NostrSessionReadiness.signedOut());
         await Future<void>.delayed(Duration.zero);
+        expect(preferenceStore.dirtyPreferencesByPubkey[pubkeyA], prefs);
 
         nostrSession.setReadiness(
           NostrSessionReadiness.nostrReady(
@@ -1897,10 +2021,14 @@ void main() {
             client: nostrClient,
           ),
         );
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+        expect(await published.future, prefs);
+        await preferenceStore.waitForClear(pubkeyA);
 
         verify(() => pushService.updatePreferences(prefs)).called(1);
+        expect(
+          preferenceStore.dirtyPreferencesByPubkey,
+          isNot(contains(pubkeyA)),
+        );
       },
     );
 
@@ -1919,6 +2047,9 @@ void main() {
           overrides: [
             firebaseMessagingProvider.overrideWithValue(messaging),
             authServiceProvider.overrideWithValue(authService),
+            notificationPreferencesStoreProvider.overrideWithValue(
+              preferenceStore,
+            ),
             nostrSessionProvider.overrideWith(() => nostrSession),
             pushNotificationServiceProvider.overrideWith((ref) {
               final readiness = ref.watch(nostrSessionProvider);
@@ -1954,6 +2085,7 @@ void main() {
 
         expect(unhandled, isEmpty);
         verify(() => pushService.updatePreferences(prefs)).called(1);
+        expect(preferenceStore.dirtyPreferencesByPubkey[pubkeyA], prefs);
       },
     );
 
@@ -1984,15 +2116,13 @@ void main() {
         );
 
         verify(() => pushService.updatePreferences(prefs)).called(1);
+        expect(preferenceStore.dirtyPreferencesByPubkey[pubkeyA], prefs);
       },
     );
 
     test(
       'retries dirty preferences on startup readiness after publish failure',
       () async {
-        final box = await NotificationPreferencesService.openBox();
-        await box.clear();
-
         const prefs = NotificationPreferences(commentsEnabled: false);
         var attempts = 0;
         when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
@@ -2024,6 +2154,7 @@ void main() {
         await Future<void>.delayed(Duration.zero);
 
         expect(attempts, equals(2));
+        expect(preferenceStore.dirtyPreferencesByPubkey[pubkeyA], prefs);
         firstContainer.dispose();
 
         final secondContainer = buildContainer(
@@ -2036,10 +2167,13 @@ void main() {
         );
         addTearDown(secondContainer.dispose);
         secondContainer.read(pushNotificationSyncProvider);
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+        await preferenceStore.waitForClear(pubkeyA);
 
         expect(attempts, equals(3));
+        expect(
+          preferenceStore.dirtyPreferencesByPubkey,
+          isNot(contains(pubkeyA)),
+        );
       },
     );
 

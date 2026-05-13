@@ -7,25 +7,29 @@ import 'package:hive_ce/hive.dart';
 import 'package:openvine/models/notification_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-class NotificationPreferencesService {
-  NotificationPreferencesService({
+abstract interface class NotificationPreferencesStore {
+  Future<NotificationPreferences> loadPreferences();
+  Future<void> savePreferences(NotificationPreferences preferences);
+  Future<void> markDirty(
+    String pubkey,
+    NotificationPreferences preferences,
+  );
+  Future<NotificationPreferences?> loadDirty(String pubkey);
+  Future<void> clearDirty(String pubkey);
+}
+
+class HiveNotificationPreferencesStore implements NotificationPreferencesStore {
+  const HiveNotificationPreferencesStore({
     required Future<Box<dynamic>> Function() openBox,
-    required String? Function() currentPubkey,
-    required Future<bool> Function(String pubkey, NotificationPreferences prefs)
-    publishPreferences,
-  }) : _openBox = openBox,
-       _currentPubkey = currentPubkey,
-       _publishPreferences = publishPreferences;
+  }) : _openBox = openBox;
 
   final Future<Box<dynamic>> Function() _openBox;
-  final String? Function() _currentPubkey;
-  final Future<bool> Function(String pubkey, NotificationPreferences prefs)
-  _publishPreferences;
 
   static const _boxName = 'notifications';
   static const _prefsKey = 'push_preferences';
   static const _dirtyPrefix = 'push_preferences_dirty_';
 
+  @override
   Future<NotificationPreferences> loadPreferences() async {
     try {
       final box = await _openBox();
@@ -53,10 +57,11 @@ class NotificationPreferencesService {
     }
   }
 
-  Future<void> updatePreferences(NotificationPreferences prefs) async {
+  @override
+  Future<void> savePreferences(NotificationPreferences preferences) async {
     try {
       final box = await _openBox();
-      await box.put(_prefsKey, jsonEncode(prefs.toJson()));
+      await box.put(_prefsKey, jsonEncode(preferences.toJson()));
     } on Object catch (error) {
       Log.warning(
         'Failed to persist push notification preferences: $error',
@@ -64,31 +69,16 @@ class NotificationPreferencesService {
         category: LogCategory.system,
       );
     }
-
-    final pubkey = _currentPubkey();
-    if (pubkey == null) return;
-
-    await _markDirty(pubkey, prefs);
-    final published = await _publishPreferences(pubkey, prefs);
-    if (published) {
-      await _clearDirty(pubkey);
-    }
   }
 
-  Future<void> syncPendingPreferencesForPubkey(String pubkey) async {
-    final prefs = await _loadDirty(pubkey);
-    if (prefs == null) return;
-
-    final published = await _publishPreferences(pubkey, prefs);
-    if (published) {
-      await _clearDirty(pubkey);
-    }
-  }
-
-  Future<void> _markDirty(String pubkey, NotificationPreferences prefs) async {
+  @override
+  Future<void> markDirty(
+    String pubkey,
+    NotificationPreferences preferences,
+  ) async {
     try {
       final box = await _openBox();
-      await box.put(_dirtyKey(pubkey), jsonEncode(prefs.toJson()));
+      await box.put(_dirtyKey(pubkey), jsonEncode(preferences.toJson()));
     } on Object catch (error) {
       Log.warning(
         'Failed to mark push notification preferences dirty: $error',
@@ -98,7 +88,8 @@ class NotificationPreferencesService {
     }
   }
 
-  Future<NotificationPreferences?> _loadDirty(String pubkey) async {
+  @override
+  Future<NotificationPreferences?> loadDirty(String pubkey) async {
     try {
       final box = await _openBox();
       final stored = box.get(_dirtyKey(pubkey)) as String?;
@@ -116,7 +107,8 @@ class NotificationPreferencesService {
     }
   }
 
-  Future<void> _clearDirty(String pubkey) async {
+  @override
+  Future<void> clearDirty(String pubkey) async {
     try {
       final box = await _openBox();
       await box.delete(_dirtyKey(pubkey));
@@ -129,7 +121,50 @@ class NotificationPreferencesService {
     }
   }
 
-  static String _dirtyKey(String pubkey) => '$_dirtyPrefix$pubkey';
-
   static Future<Box<dynamic>> openBox() => Hive.openBox<dynamic>(_boxName);
+
+  static String _dirtyKey(String pubkey) => '$_dirtyPrefix$pubkey';
+}
+
+class NotificationPreferencesService {
+  NotificationPreferencesService({
+    required NotificationPreferencesStore store,
+    required String? Function() currentPubkey,
+    required Future<bool> Function(String pubkey, NotificationPreferences prefs)
+    publishPreferences,
+  }) : _store = store,
+       _currentPubkey = currentPubkey,
+       _publishPreferences = publishPreferences;
+
+  final NotificationPreferencesStore _store;
+  final String? Function() _currentPubkey;
+  final Future<bool> Function(String pubkey, NotificationPreferences prefs)
+  _publishPreferences;
+
+  Future<NotificationPreferences> loadPreferences() async {
+    return _store.loadPreferences();
+  }
+
+  Future<void> updatePreferences(NotificationPreferences prefs) async {
+    await _store.savePreferences(prefs);
+
+    final pubkey = _currentPubkey();
+    if (pubkey == null) return;
+
+    await _store.markDirty(pubkey, prefs);
+    final published = await _publishPreferences(pubkey, prefs);
+    if (published) {
+      await _store.clearDirty(pubkey);
+    }
+  }
+
+  Future<NotificationPreferences?> loadDirtyPreferencesForPubkey(
+    String pubkey,
+  ) {
+    return _store.loadDirty(pubkey);
+  }
+
+  Future<void> clearDirtyPreferencesForPubkey(String pubkey) {
+    return _store.clearDirty(pubkey);
+  }
 }

@@ -298,10 +298,62 @@ class _QueuedNotificationPreferencesNotifier
     extends Notifier<_QueuedNotificationPreferences?> {
   @override
   _QueuedNotificationPreferences? build() {
+    var disposed = false;
+    var drainGeneration = 0;
+
+    ref.onDispose(() {
+      disposed = true;
+      drainGeneration += 1;
+    });
+
+    bool isReadyForPubkey(String pubkey) {
+      if (disposed) return false;
+
+      final authService = ref.read(authServiceProvider);
+      if (authService.currentIdentity?.pubkey != pubkey) {
+        return false;
+      }
+
+      final readiness = ref.read(nostrSessionProvider);
+      return readiness.isReadyForActiveClient && readiness.pubkey == pubkey;
+    }
+
     Future<void> drainDirtyPreferences(String pubkey) async {
-      await ref
-          .read(notificationPreferencesServiceProvider)
-          .syncPendingPreferencesForPubkey(pubkey);
+      final generation = ++drainGeneration;
+      try {
+        final preferencesService = ref.read(
+          notificationPreferencesServiceProvider,
+        );
+        final prefs = await preferencesService.loadDirtyPreferencesForPubkey(
+          pubkey,
+        );
+        if (prefs == null || disposed || generation != drainGeneration) return;
+        if (!isReadyForPubkey(pubkey)) return;
+
+        final pushService = ref.read(pushNotificationServiceProvider);
+        if (pushService == null) return;
+
+        final published = await _updateNotificationPreferencesSafely(
+          pushService,
+          prefs,
+        );
+        if (!published || disposed || generation != drainGeneration) return;
+        if (!isReadyForPubkey(pubkey)) return;
+        if (!identical(
+          ref.read(pushNotificationServiceProvider),
+          pushService,
+        )) {
+          return;
+        }
+
+        await preferencesService.clearDirtyPreferencesForPubkey(pubkey);
+      } catch (e) {
+        Log.warning(
+          'Push notification preference drain failed: $e',
+          name: 'PushNotificationSync',
+          category: LogCategory.system,
+        );
+      }
     }
 
     void handleReadiness(NostrSessionReadiness readiness) {
@@ -353,7 +405,7 @@ final notificationPreferencesServiceProvider =
       final authService = ref.watch(authServiceProvider);
 
       return NotificationPreferencesService(
-        openBox: NotificationPreferencesService.openBox,
+        store: ref.watch(notificationPreferencesStoreProvider),
         currentPubkey: () => authService.currentIdentity?.pubkey,
         publishPreferences: (pubkey, prefs) {
           if (authService.currentIdentity?.pubkey != pubkey) {
@@ -379,6 +431,13 @@ final notificationPreferencesServiceProvider =
           ref.read(_queuedNotificationPreferencesProvider.notifier).clear();
           return _updateNotificationPreferencesSafely(pushService, prefs);
         },
+      );
+    });
+
+final notificationPreferencesStoreProvider =
+    Provider<NotificationPreferencesStore>((ref) {
+      return const HiveNotificationPreferencesStore(
+        openBox: HiveNotificationPreferencesStore.openBox,
       );
     });
 

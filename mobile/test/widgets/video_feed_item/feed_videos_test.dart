@@ -253,6 +253,9 @@ Future<void> _pumpFeedVideos(
       ),
     ),
   );
+  // InfiniteVideoFeed starts a first-frame grace timer for the initial item.
+  // Drain it here so overlay-only tests do not leave pending timers behind.
+  await tester.pump(const Duration(seconds: 3));
 }
 
 // ---------------------------------------------------------------------------
