@@ -168,7 +168,11 @@ final firebaseOnMessageProvider = Provider<Stream<RemoteMessage>>(
 );
 
 final notificationServiceProvider = Provider<NotificationService>(
-  (ref) => NotificationService(),
+  (ref) {
+    final service = NotificationService();
+    ref.onDispose(service.dispose);
+    return service;
+  },
 );
 
 final collaboratorResponseServiceProvider =

@@ -27,6 +27,16 @@ class NotificationTapEvent {
 
   final String referencedEventId;
   final String? notificationType;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is NotificationTapEvent &&
+          referencedEventId == other.referencedEventId &&
+          notificationType == other.notificationType;
+
+  @override
+  int get hashCode => Object.hash(referencedEventId, notificationType);
 }
 
 /// Push-notification kind values as they appear in the FCM payload `type` field
@@ -134,8 +144,7 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
   bool _pluginInitialized = false;
-  final StreamController<NotificationTapEvent> _notificationTapController =
-      StreamController<NotificationTapEvent>.broadcast();
+  StreamController<NotificationTapEvent>? _notificationTapController;
 
   /// List of recent notifications
   List<AppNotification> get notifications => List.unmodifiable(_notifications);
@@ -145,7 +154,9 @@ class NotificationService {
 
   /// Stream of local-notification taps emitted after payload parsing.
   Stream<NotificationTapEvent> get notificationTapStream =>
-      _notificationTapController.stream;
+      (_notificationTapController ??=
+              StreamController<NotificationTapEvent>.broadcast())
+          .stream;
 
   /// Initialize notification service
   ///
@@ -497,8 +508,9 @@ class NotificationService {
   }
 
   void _emitNotificationTap(NotificationTapEvent event) {
-    if (_disposed || _notificationTapController.isClosed) return;
-    _notificationTapController.add(event);
+    final controller = _notificationTapController;
+    if (_disposed || controller == null || controller.isClosed) return;
+    controller.add(event);
   }
 
   /// Send a local notification with title and body
@@ -742,7 +754,7 @@ class NotificationService {
     if (_disposed) return;
 
     _disposed = true;
-    _notificationTapController.close();
+    _notificationTapController?.close();
     _notifications.clear();
   }
 

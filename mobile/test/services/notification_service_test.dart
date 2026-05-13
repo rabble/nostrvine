@@ -334,4 +334,25 @@ void main() {
       );
     });
   });
+
+  group('NotificationTapEvent', () {
+    test('uses value equality for event comparisons', () {
+      const first = NotificationTapEvent(
+        referencedEventId: 'abc123',
+        notificationType: 'reply',
+      );
+      const second = NotificationTapEvent(
+        referencedEventId: 'abc123',
+        notificationType: 'reply',
+      );
+      const third = NotificationTapEvent(
+        referencedEventId: 'xyz789',
+        notificationType: 'reply',
+      );
+
+      expect(first, equals(second));
+      expect(first.hashCode, equals(second.hashCode));
+      expect(first, isNot(equals(third)));
+    });
+  });
 }
