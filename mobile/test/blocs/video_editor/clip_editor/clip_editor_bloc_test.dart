@@ -11,10 +11,33 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 class _MockAudioExtractionService extends Mock
     implements AudioExtractionService {}
+
+class _MockPathProviderPlatform extends Fake
+    with MockPlatformInterfaceMixin
+    implements PathProviderPlatform {
+  @override
+  Future<String?> getApplicationDocumentsPath() async => '/documents';
+}
+
+class _MockSplitProVideoEditor extends ProVideoEditor {
+  @override
+  Stream<dynamic> initializeStream() => const Stream.empty();
+
+  @override
+  Future<String> renderVideoToFile(
+    String outputPath,
+    VideoRenderData renderData, {
+    NativeLogLevel? nativeLogLevel,
+  }) async {
+    return outputPath;
+  }
+}
 
 DivineVideoClip _createClip({
   String id = 'clip-1',
@@ -94,8 +117,14 @@ void main() {
   group(ClipEditorBloc, () {
     late List<DivineVideoClip> twoClips;
     late List<DivineVideoClip> threeClips;
+    late PathProviderPlatform originalPathProviderInstance;
+    late ProVideoEditor originalProVideoEditor;
 
     setUp(() {
+      originalPathProviderInstance = PathProviderPlatform.instance;
+      originalProVideoEditor = ProVideoEditor.instance;
+      PathProviderPlatform.instance = _MockPathProviderPlatform();
+      ProVideoEditor.instance = _MockSplitProVideoEditor();
       twoClips = [
         _createClip(id: 'a', duration: const Duration(seconds: 2)),
         _createClip(id: 'b'),
@@ -105,6 +134,11 @@ void main() {
         _createClip(id: 'b', duration: const Duration(seconds: 1)),
         _createClip(id: 'c'),
       ];
+    });
+
+    tearDown(() {
+      PathProviderPlatform.instance = originalPathProviderInstance;
+      ProVideoEditor.instance = originalProVideoEditor;
     });
 
     ClipEditorBloc buildBloc({
