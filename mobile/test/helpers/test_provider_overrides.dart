@@ -151,6 +151,11 @@ MockNostrClient createMockNostrService() {
   // Tests that need the ready transition should override this in their own
   // setUp via Completer<void>.future — see is_nostr_ready_provider_test.dart.
   when(() => mockNostr.ready).thenAnswer((_) => Completer<void>().future);
+  // Match the stubbed `ready` (a Completer that never completes): the
+  // synchronous gate isReadyResolved reads isCompleted on the same
+  // completer, so it must be false by default. Tests that exercise the
+  // "settled but hasKeys still false" path override this to true.
+  when(() => mockNostr.isReadyResolved).thenReturn(false);
   return mockNostr;
 }
 
