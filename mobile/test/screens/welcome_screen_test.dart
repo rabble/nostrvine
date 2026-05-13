@@ -176,7 +176,10 @@ void main() {
           await tester.pumpAndSettle();
 
           final createButton = find.text('Create a new Divine account');
-          final loginButton = find.text('Sign in with a different account');
+          final loginButton = find.widgetWithText(
+            DivineButton,
+            'Sign in with an existing account',
+          );
           final under16Link = find.text(
             "Not 16 yet? That's OK. Here's what you can do.",
           );
