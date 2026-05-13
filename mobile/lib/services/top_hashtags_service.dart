@@ -1,5 +1,5 @@
-// ABOUTME: Service for loading and managing top 1000 hashtags from JSON file
-// ABOUTME: Provides curated popular hashtags list for discovery and exploration
+// ABOUTME: Service for loading and managing current popular hashtags from JSON.
+// ABOUTME: Provides popular hashtag suggestions for discovery and exploration.
 
 import 'dart:convert';
 import 'package:flutter/services.dart';
@@ -34,28 +34,28 @@ class TopHashtagsService {
   static TopHashtagsService get instance => _instance;
 
   /// Default fallback hashtags shown when loading fails or is slow.
-  /// These are popular hashtags that provide immediate discoverability.
+  /// These mirror the top current suggestions from the bundled JSON asset.
   static const List<String> defaultHashtags = [
-    'cats',
-    'dogs',
-    'music',
-    'art',
-    'nature',
-    'food',
-    'travel',
     'funny',
-    'dance',
-    'gaming',
-    'bitcoin',
-    'nostr',
-    'photography',
-    'fitness',
     'comedy',
-    'animals',
-    'sunset',
-    'coffee',
-    'tech',
-    'fashion',
+    'lol',
+    'viral',
+    'fyp',
+    'warsaw',
+    'poland',
+    'humor',
+    'traveltelly',
+    'skit',
+    'trending',
+    'travel',
+    'art',
+    'popular',
+    'lnic',
+    'music',
+    'europe',
+    'dog',
+    'latenightinsomniacsclub',
+    'sitcom',
   ];
 
   List<HashtagData>? _topHashtags;
@@ -80,7 +80,7 @@ class TopHashtagsService {
 
     try {
       Log.info(
-        '🏷️ Loading top 1000 hashtags from JSON file',
+        '🏷️ Loading current popular hashtags from JSON file',
         name: 'TopHashtagsService',
         category: LogCategory.storage,
       );

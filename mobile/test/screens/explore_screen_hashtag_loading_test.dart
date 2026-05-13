@@ -60,6 +60,19 @@ void main() {
       expect(top100.length, equals(100));
     });
 
+    test(
+      'bundled popular hashtags use current API-derived suggestions',
+      () async {
+        final service = TopHashtagsService.instance;
+        await service.loadTopHashtags();
+
+        final topHashtags = service.getTopHashtags(limit: 5);
+
+        expect(topHashtags, equals(['funny', 'comedy', 'lol', 'viral', 'fyp']));
+        expect(topHashtags, isNot(contains('vine')));
+      },
+    );
+
     test('getTopHashtags returns empty list before loading', () {
       // Create fresh service instance would normally need a reset mechanism
       // For now, test the guard condition
@@ -73,7 +86,7 @@ void main() {
       final service = TopHashtagsService.instance;
       await service.loadTopHashtags();
 
-      // Search for common hashtag (from top 1000 list)
+      // Search for common hashtag (from bundled popular hashtag list)
       final results = service.searchHashtags('funny', limit: 10);
 
       expect(results, isNotEmpty, reason: 'Should find funny hashtag');
@@ -84,7 +97,7 @@ void main() {
       final service = TopHashtagsService.instance;
       await service.loadTopHashtags();
 
-      // Search with prefix (from top 1000 list)
+      // Search with prefix (from bundled popular hashtag list)
       final results = service.searchHashtags('fun', limit: 10);
 
       expect(
