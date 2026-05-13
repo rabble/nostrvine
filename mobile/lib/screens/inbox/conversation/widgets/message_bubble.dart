@@ -28,7 +28,7 @@ final _emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
 /// string — the shape `VideoSharingService` uses to embed the title in
 /// the share-message body (`"<title>"`). The bubble drops this line so
 /// the title isn't duplicated alongside the overlay-footer rendering.
-final _quotedTitleRegex = RegExp(r'^"[^"]*"$');
+final _quotedTitleRegex = RegExp(r'^".*"$');
 
 /// Width of the video share card thumbnail (also used to cap the
 /// surrounding bubble's max width so the bubble doesn't grow wider
@@ -137,8 +137,12 @@ class MessageBubble extends StatelessWidget {
             ? AlignmentDirectional.centerEnd
             : AlignmentDirectional.centerStart,
         child: Semantics(
-          hint: isSent ? 'Sent message' : 'Received message',
-          onLongPressHint: onLongPress != null ? 'Message actions' : null,
+          hint: isSent
+              ? context.l10n.dmMessageBubbleSentHint
+              : context.l10n.dmMessageBubbleReceivedHint,
+          onLongPressHint: onLongPress != null
+              ? context.l10n.dmMessageBubbleLongPressHint
+              : null,
           child: GestureDetector(
             onLongPress: onLongPress,
             child: Container(

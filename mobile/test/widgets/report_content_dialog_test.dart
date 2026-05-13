@@ -90,6 +90,18 @@ void main() {
     ).thenAnswer((_) async => true);
   });
 
+  group('$ReportContentDialog constructor', () {
+    test(
+      'throws when neither a video nor message identifiers are provided',
+      () {
+        expect(
+          ReportContentDialog.new,
+          throwsA(isA<ArgumentError>()),
+        );
+      },
+    );
+  });
+
   group('$ReportContentDialog rendering', () {
     Widget buildSubject() => ProviderScope(
       overrides: [
@@ -796,7 +808,7 @@ void main() {
                 builder: (context) => ElevatedButton(
                   onPressed: () => showDialog<void>(
                     context: context,
-                    builder: (_) => const Material(
+                    builder: (_) => Material(
                       child: ReportContentDialog(
                         eventId: testMessageId,
                         authorPubkey: testSenderPubkey,

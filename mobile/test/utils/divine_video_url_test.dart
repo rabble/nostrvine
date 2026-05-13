@@ -2,6 +2,24 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/utils/divine_video_url.dart';
 
 void main() {
+  group('divineVideoUrlLineRegex', () {
+    test('matches a standalone canonical divine.video URL line', () {
+      expect(
+        divineVideoUrlLineRegex.hasMatch('https://divine.video/video/abc123'),
+        isTrue,
+      );
+    });
+
+    test('rejects surrounding non-URL text on the same line', () {
+      expect(
+        divineVideoUrlLineRegex.hasMatch(
+          'watch https://divine.video/video/abc123 now',
+        ),
+        isFalse,
+      );
+    });
+  });
+
   group('tryExtractDivineVideoUrl', () {
     const validId = 'abc123def456';
 

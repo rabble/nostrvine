@@ -5401,6 +5401,15 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dmMessageInputHint => 'Say something…';
 
   @override
+  String get dmMessageBubbleSentHint => 'Sent message';
+
+  @override
+  String get dmMessageBubbleReceivedHint => 'Received message';
+
+  @override
+  String get dmMessageBubbleLongPressHint => 'Message actions';
+
+  @override
   String get dmMessageActionCopyText => 'Copy text';
 
   @override

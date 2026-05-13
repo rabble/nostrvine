@@ -775,6 +775,28 @@ void main() {
           expect(find.text('"Test Vine Title"'), findsNothing);
         },
       );
+
+      testWidgets(
+        'drops a quoted title line even when the title itself contains '
+        'embedded quotes',
+        (tester) async {
+          when(
+            () => mockVideoEventService.getVideoById('abc123'),
+          ).thenReturn(testVideo);
+
+          await tester.pumpWidget(
+            buildWithVideoMessage(
+              message:
+                  '"Watch "Inception" trailer"\n\n'
+                  'https://divine.video/video/abc123',
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.byType(VideoThumbnailWidget), findsOneWidget);
+          expect(find.text('"Watch "Inception" trailer"'), findsNothing);
+        },
+      );
     });
 
     group('long-press', () {

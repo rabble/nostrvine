@@ -2894,6 +2894,18 @@
   "@dmMessageInputHint": {
     "description": "Placeholder text shown inside the compose field at the bottom of a DM conversation when the user hasn't typed anything yet."
   },
+  "dmMessageBubbleSentHint": "Sent message",
+  "@dmMessageBubbleSentHint": {
+    "description": "Accessibility hint announcing that a direct message bubble was sent by the current user"
+  },
+  "dmMessageBubbleReceivedHint": "Received message",
+  "@dmMessageBubbleReceivedHint": {
+    "description": "Accessibility hint announcing that a direct message bubble was received from another user"
+  },
+  "dmMessageBubbleLongPressHint": "Message actions",
+  "@dmMessageBubbleLongPressHint": {
+    "description": "Accessibility hint announcing that a direct message bubble supports a long-press action menu"
+  },
   "dmMessageActionCopyText": "Copy text",
   "@dmMessageActionCopyText": {
     "description": "Long-press menu action on a DM bubble that copies the message's plaintext content to the clipboard."

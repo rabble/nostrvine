@@ -10,6 +10,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
+import 'package:openvine/utils/divine_video_url.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -157,14 +158,6 @@ class ConversationTile extends ConsumerWidget {
   }
 }
 
-/// Matches the canonical shareable URL produced by `ShareService.generateWebLink`
-/// (`https://divine.video/video/<id>`). Used to detect a shared-video DM so
-/// the tile can swap the noisy URL for an inline camera icon.
-final RegExp _divineVideoUrlPattern = RegExp(
-  r'^https?://(www\.)?divine\.video/video/',
-  caseSensitive: false,
-);
-
 class _PreviewPayload {
   const _PreviewPayload({required this.text, required this.isDivineVideoShare});
 
@@ -192,10 +185,10 @@ _PreviewPayload _previewPayload(BuildContext context, String content) {
       .map((line) => line.trim())
       .where((line) => line.isNotEmpty)
       .toList();
-  final isDivineVideoShare = lines.any(_divineVideoUrlPattern.hasMatch);
+  final isDivineVideoShare = lines.any(divineVideoUrlLineRegex.hasMatch);
   if (isDivineVideoShare) {
     final nonUrlLines = lines
-        .where((line) => !_divineVideoUrlPattern.hasMatch(line))
+        .where((line) => !divineVideoUrlLineRegex.hasMatch(line))
         .toList();
     return _PreviewPayload(
       text: nonUrlLines.join('\n'),

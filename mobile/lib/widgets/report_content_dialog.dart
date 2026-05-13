@@ -25,7 +25,7 @@ import 'package:url_launcher/url_launcher.dart';
 /// );
 /// ```
 class ReportContentDialog extends ConsumerStatefulWidget {
-  const ReportContentDialog({
+  ReportContentDialog({
     super.key,
     this.video,
     this.eventId,
@@ -34,10 +34,13 @@ class ReportContentDialog extends ConsumerStatefulWidget {
     this.moderationEventLabel = 'Event',
     this.isFromShareMenu = false,
     this.draggableController,
-  }) : assert(
-         video != null || (eventId != null && authorPubkey != null),
-         'Provide either a video or both eventId and authorPubkey.',
-       );
+  }) {
+    if (video == null && (eventId == null || authorPubkey == null)) {
+      throw ArgumentError(
+        'Provide either a video or both eventId and authorPubkey.',
+      );
+    }
+  }
 
   /// The video being reported. When non-null, [eventId] / [authorPubkey]
   /// fall back to `video.id` / `video.pubkey`.

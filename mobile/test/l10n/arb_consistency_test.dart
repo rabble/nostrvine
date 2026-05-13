@@ -392,6 +392,9 @@ const _knownUntranslatedDebt = {
   // pass; until then non-English locales fall back to the English
   // source.
   'dmMessageInputHint',
+  'dmMessageBubbleSentHint',
+  'dmMessageBubbleReceivedHint',
+  'dmMessageBubbleLongPressHint',
   'dmMessageActionCopyText',
   'dmMessageActionCopyVideoUrl',
   'dmMessageActionDeleteForEveryone',

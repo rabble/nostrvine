@@ -13,6 +13,12 @@ final divineVideoUrlRegex = RegExp(
   caseSensitive: false,
 );
 
+/// Matches a line whose entire content is a canonical divine.video share URL.
+final divineVideoUrlLineRegex = RegExp(
+  r'^https?://(?:www\.)?divine\.video/video/[\w-]+$',
+  caseSensitive: false,
+);
+
 /// Returns the full divine.video URL contained in [content], or null if
 /// the message body doesn't include one.
 String? tryExtractDivineVideoUrl(String content) =>

@@ -9488,6 +9488,24 @@ abstract class AppLocalizations {
   /// **'Say something…'**
   String get dmMessageInputHint;
 
+  /// Accessibility hint announcing that a direct message bubble was sent by the current user
+  ///
+  /// In en, this message translates to:
+  /// **'Sent message'**
+  String get dmMessageBubbleSentHint;
+
+  /// Accessibility hint announcing that a direct message bubble was received from another user
+  ///
+  /// In en, this message translates to:
+  /// **'Received message'**
+  String get dmMessageBubbleReceivedHint;
+
+  /// Accessibility hint announcing that a direct message bubble supports a long-press action menu
+  ///
+  /// In en, this message translates to:
+  /// **'Message actions'**
+  String get dmMessageBubbleLongPressHint;
+
   /// Long-press menu action on a DM bubble that copies the message's plaintext content to the clipboard.
   ///
   /// In en, this message translates to:
