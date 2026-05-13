@@ -192,6 +192,55 @@ Future<void> _runTimedStartupTask({
   }
 }
 
+/// Describes the router action to take when navigating to a video deep link.
+@visibleForTesting
+enum VideoDeepLinkNavAction {
+  /// Navigate to the route, keeping the current route in the back stack.
+  push,
+
+  /// Replace the current route in-place (already on a video route).
+  go,
+
+  /// Re-trigger the current route with [autoOpenComments] set to `true`.
+  ///
+  /// Used when the user is already on the target video but a reply
+  /// notification tap needs the comments sheet to open.
+  goSameRouteWithComments,
+
+  /// The router is already on the target route with nothing new to do.
+  skip,
+}
+
+/// Determines which router action to take for a video deep-link navigation
+/// given the current router location and the incoming [DeepLink].
+///
+/// Extracted for testability — the caller executes the action; this function
+/// only decides what action that should be.
+@visibleForTesting
+VideoDeepLinkNavAction resolveVideoDeepLinkNavAction({
+  required String currentLocation,
+  required String targetPath,
+  required bool autoOpenComments,
+}) {
+  if (currentLocation == targetPath) {
+    // Already on the exact target route.
+    if (autoOpenComments) {
+      // Reply notification tap while the video is already visible — retrigger
+      // the route with autoOpenComments so the comments sheet opens.
+      return VideoDeepLinkNavAction.goSameRouteWithComments;
+    }
+    // Duplicate navigation with nothing new to do (e.g. getInitialLink +
+    // uriLinkStream both fire for the same URL). Safe to skip.
+    return VideoDeepLinkNavAction.skip;
+  }
+  if (currentLocation.startsWith('${VideoDetailScreen.basePath}/')) {
+    // A different video is already showing — replace it in-place.
+    return VideoDeepLinkNavAction.go;
+  }
+  // Coming from a non-video route — push so back returns home.
+  return VideoDeepLinkNavAction.push;
+}
+
 /// Normalises the raw FCM [RemoteMessage.data] map into the two fields the
 /// app cares about, translating the wire key `'type'` to `notificationType`
 /// so the rest of the app never has to know which key the FCM server uses.
@@ -1306,23 +1355,30 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                   category: LogCategory.ui,
                 );
                 try {
-                  // Skip if already showing this video (getInitialLink
-                  // and uriLinkStream can both fire for the same URL).
-                  if (currentLocation == targetPath) break;
                   final routeExtra = deepLink.autoOpenComments
                       ? const VideoDetailRouteExtra(autoOpenComments: true)
                       : null;
-                  final isReplacingExistingVideoRoute = currentLocation
-                      .startsWith('${VideoDetailScreen.basePath}/');
-                  if (isReplacingExistingVideoRoute) {
-                    // When another shared video is opened while a shared
-                    // video route is already visible, replace the current
-                    // detail route instead of stacking it.
-                    router.go(targetPath, extra: routeExtra);
-                  } else {
-                    // Keep the home route underneath the first shared video
-                    // so back navigation returns to the main screen.
-                    router.push(targetPath, extra: routeExtra);
+                  final action = resolveVideoDeepLinkNavAction(
+                    currentLocation: currentLocation,
+                    targetPath: targetPath,
+                    autoOpenComments: deepLink.autoOpenComments,
+                  );
+                  switch (action) {
+                    case VideoDeepLinkNavAction.skip:
+                      break;
+                    case VideoDeepLinkNavAction.goSameRouteWithComments:
+                      // Already on the video — retrigger so the comments
+                      // sheet opens in response to a reply notification tap.
+                      router.go(targetPath, extra: routeExtra);
+                    case VideoDeepLinkNavAction.go:
+                      // When another shared video is opened while a shared
+                      // video route is already visible, replace the current
+                      // detail route instead of stacking it.
+                      router.go(targetPath, extra: routeExtra);
+                    case VideoDeepLinkNavAction.push:
+                      // Keep the home route underneath the first shared video
+                      // so back navigation returns to the main screen.
+                      router.push(targetPath, extra: routeExtra);
                   }
                   Log.info(
                     '✅ Navigation completed to: $targetPath',

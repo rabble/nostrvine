@@ -468,6 +468,10 @@ class NotificationService {
     } catch (_) {
       // Legacy payloads were bare event IDs (plain strings, not JSON).
       // Treat the whole payload as a referencedEventId with unknown type.
+      // TODO(#4329): Remove this fallback once all clients have been emitting
+      // JSON payloads (referencedEventId + notificationType) for at least one
+      // full app-store release cycle and telemetry confirms this path is
+      // never reached. See issue for the full removal plan.
       onNotificationTap?.call(payload, null);
     }
   }
