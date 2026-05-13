@@ -1093,8 +1093,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: VideoMetadataEditScreen.path,
         name: VideoMetadataEditScreen.routeName,
-        builder: (_, st) {
-          final video = st.extra as VideoEvent;
+        builder: (ctx, st) {
+          final video = st.extra as VideoEvent?;
+          if (video == null) {
+            return RouteErrorScreen(message: ctx.l10n.routeInvalidVideoId);
+          }
           return VideoMetadataEditScreen(video: video);
         },
       ),
