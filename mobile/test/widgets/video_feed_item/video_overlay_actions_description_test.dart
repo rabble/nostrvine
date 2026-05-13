@@ -16,6 +16,7 @@ import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
+import 'package:reposts_repository/reposts_repository.dart';
 
 import '../../helpers/test_provider_overrides.dart';
 
@@ -27,14 +28,18 @@ class _MockVideoInteractionsBloc extends Mock
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
 
+class _MockRepostsRepository extends Mock implements RepostsRepository {}
+
 void main() {
   late _MockVideoInteractionsBloc mockInteractionsBloc;
   late _MockVideoEventService mockVideoEventService;
+  late _MockRepostsRepository mockRepostsRepository;
   late VideoEvent testVideo;
 
   setUp(() {
     mockInteractionsBloc = _MockVideoInteractionsBloc();
     mockVideoEventService = _MockVideoEventService();
+    mockRepostsRepository = _MockRepostsRepository();
 
     when(
       () => mockInteractionsBloc.stream,
@@ -43,7 +48,10 @@ void main() {
       () => mockInteractionsBloc.state,
     ).thenReturn(const VideoInteractionsState());
     when(
-      () => mockVideoEventService.getRepostersForVideo(any()),
+      () => mockRepostsRepository.fetchEventReposters(
+        eventId: any(named: 'eventId'),
+        addressableId: any(named: 'addressableId'),
+      ),
     ).thenAnswer((_) async => const <String>[]);
 
     testVideo = VideoEvent(
@@ -63,6 +71,7 @@ void main() {
       testProviderScope(
         additionalOverrides: [
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+          repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -103,6 +112,7 @@ void main() {
       testProviderScope(
         additionalOverrides: [
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+          repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,

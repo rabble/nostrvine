@@ -49,7 +49,7 @@ class MetadataExpandedSheet extends StatelessWidget {
   static void show(BuildContext context, VideoEvent video) {
     final interactionsBloc = context.read<VideoInteractionsBloc>();
     final container = ProviderScope.containerOf(context, listen: false);
-    final videoEventService = container.read(videoEventServiceProvider);
+    final repostsRepository = container.read(repostsRepositoryProvider);
 
     context.showVideoPausingVineBottomSheet<void>(
       showHeader: false,
@@ -59,8 +59,9 @@ class MetadataExpandedSheet extends StatelessWidget {
           BlocProvider<VideoInteractionsBloc>.value(value: interactionsBloc),
           BlocProvider<VideoRepostersCubit>(
             create: (_) => VideoRepostersCubit(
-              videoEventService: videoEventService,
+              repostsRepository: repostsRepository,
               videoId: video.id,
+              addressableId: video.addressableId,
             ),
           ),
         ],

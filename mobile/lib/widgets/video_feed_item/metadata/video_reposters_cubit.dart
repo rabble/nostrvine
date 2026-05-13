@@ -1,9 +1,11 @@
 // ABOUTME: Cubit for fetching pubkeys of users who reposted a video.
-// ABOUTME: Queries relay for Kind 16 repost events referencing the video ID.
+// ABOUTME: Delegates to RepostsRepository.fetchEventReposters so the metadata
+// ABOUTME: sheet's "Reposted by" chips match the engagement-list screen
+// ABOUTME: (Kind 6+16, Kind 5 deletion filter, dual e+a tag query).
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:openvine/services/video_event_service.dart';
+import 'package:reposts_repository/reposts_repository.dart';
 
 /// State for [VideoRepostersCubit].
 class VideoRepostersState extends Equatable {
@@ -21,21 +23,26 @@ class VideoRepostersState extends Equatable {
 
 /// Fetches the pubkeys of users who reposted a video.
 ///
-/// Queries the relay for Kind 16 (NIP-18 generic repost) events that
-/// reference the video ID. Uses [VideoEventService.getRepostersForVideo]
-/// which has a 5-second timeout.
+/// Queries Nostr relays via [RepostsRepository.fetchEventReposters] for NIP-18
+/// repost events (kind 6 and kind 16) that reference the target event. When
+/// the video has an addressable identifier (Kind 30000+ events with a d-tag),
+/// the query merges results across both the `e` and `a` tags so addressable
+/// reposts aren't missed.
 class VideoRepostersCubit extends Cubit<VideoRepostersState> {
   VideoRepostersCubit({
-    required VideoEventService videoEventService,
+    required RepostsRepository repostsRepository,
     required String videoId,
-  }) : _videoEventService = videoEventService,
+    String? addressableId,
+  }) : _repostsRepository = repostsRepository,
        _videoId = videoId,
+       _addressableId = addressableId,
        super(const VideoRepostersState()) {
     _fetch();
   }
 
-  final VideoEventService _videoEventService;
+  final RepostsRepository _repostsRepository;
   final String _videoId;
+  final String? _addressableId;
 
   Future<void> _fetch() async {
     if (_videoId.isEmpty) {
@@ -44,7 +51,10 @@ class VideoRepostersCubit extends Cubit<VideoRepostersState> {
       return;
     }
     try {
-      final pubkeys = await _videoEventService.getRepostersForVideo(_videoId);
+      final pubkeys = await _repostsRepository.fetchEventReposters(
+        eventId: _videoId,
+        addressableId: _addressableId,
+      );
       if (isClosed) return;
       emit(VideoRepostersState(pubkeys: pubkeys, isLoading: false));
     } catch (e, stackTrace) {
