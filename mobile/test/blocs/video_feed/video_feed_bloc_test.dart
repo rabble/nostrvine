@@ -1753,9 +1753,10 @@ void main() {
           await Future<void>.delayed(Duration.zero);
           hashtagSubject.add([]);
         },
-        // Startup no longer fills Following from saved hashtags; extra states
-        // precede the hashtag-list refresh that clears then restores CTA.
-        skip: 3,
+        // Startup: loading + success (videos from seeded hashtag labels), then
+        // hashtag clear: success (empty, no error) + CTA. Skip the first two
+        // so we assert only the refresh tail.
+        skip: 2,
         expect: () => [
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
