@@ -46,6 +46,7 @@ import 'package:openvine/widgets/video_feed_item/paused_video_play_overlay.dart'
 import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_author_info_section.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
+import 'package:openvine/widgets/video_feed_item/video_interactions_bloc_key.dart';
 import 'package:openvine/widgets/video_feed_item/video_player_subtitle_layer.dart';
 import 'package:openvine/widgets/web_video_auth_header_provider.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
@@ -986,12 +987,9 @@ class _PooledFullscreenItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // ref.watch + record key: see video_feed_page.dart for rationale.
-    // Without this, a fullscreen entry that mounts during the auth-flip
-    // window (warm-up materialized providers pre-auth, then provider
-    // graph rebuilds) snapshots a stale LikesRepository whose underlying
-    // Nostr instance has an empty cached pubkey — every sendLike then
-    // throws StateError. See #3503.
+    // ref.watch + record key: repository identity swaps and feed-cell reuse
+    // must both recreate the per-video bloc so counts never leak between
+    // videos. See #3503.
     final likesRepository = ref.watch(likesRepositoryProvider);
     final commentsRepository = ref.watch(commentsRepositoryProvider);
     final repostsRepository = ref.watch(repostsRepositoryProvider);
@@ -1002,7 +1000,13 @@ class _PooledFullscreenItem extends ConsumerWidget {
     final addressableId = video.addressableId;
 
     return BlocProvider<VideoInteractionsBloc>(
-      key: ValueKey((likesRepository, commentsRepository, repostsRepository)),
+      key: videoInteractionsBlocKey(
+        likesRepository: likesRepository,
+        commentsRepository: commentsRepository,
+        repostsRepository: repostsRepository,
+        video: video,
+        includeVideoReplies: showVideoReplies,
+      ),
       create: (_) =>
           VideoInteractionsBloc(
               eventId: video.id,
@@ -1054,13 +1058,19 @@ class _WebFullscreenItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // See _PooledFullscreenItem.build for the rationale on watch + key. #3503.
+    // See _PooledFullscreenItem.build for the watch + key rationale. #3503.
     final likesRepository = ref.watch(likesRepositoryProvider);
     final commentsRepository = ref.watch(commentsRepositoryProvider);
     final repostsRepository = ref.watch(repostsRepositoryProvider);
+    final addressableId = video.addressableId;
 
     return BlocProvider<VideoInteractionsBloc>(
-      key: ValueKey((likesRepository, commentsRepository, repostsRepository)),
+      key: videoInteractionsBlocKey(
+        likesRepository: likesRepository,
+        commentsRepository: commentsRepository,
+        repostsRepository: repostsRepository,
+        video: video,
+      ),
       create: (_) =>
           VideoInteractionsBloc(
               eventId: video.id,
@@ -1068,7 +1078,7 @@ class _WebFullscreenItem extends ConsumerWidget {
               likesRepository: likesRepository,
               commentsRepository: commentsRepository,
               repostsRepository: repostsRepository,
-              addressableId: video.addressableId,
+              addressableId: addressableId,
               initialLikeCount: video.nostrLikeCount != null
                   ? video.totalLikes
                   : null,

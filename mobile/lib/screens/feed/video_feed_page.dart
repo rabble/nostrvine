@@ -39,6 +39,7 @@ import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
 import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart';
+import 'package:openvine/widgets/video_feed_item/video_interactions_bloc_key.dart';
 import 'package:openvine/widgets/web_video_auth_header_provider.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
 import 'package:openvine/widgets/web_video_player.dart';
@@ -954,12 +955,9 @@ class _PooledVideoFeedItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // ref.watch + record key: when any of these provider instances is
-    // rebuilt (auth flip / sign-out / account switch) the BlocProvider's
-    // key changes, the stale bloc is closed, and the new one's create:
-    // captures the fresh repository chain. Records compare structurally
-    // (per-field ==), and these classes don't override == — so equality
-    // falls through to identity, which is what we want. See #3503.
+    // ref.watch + record key: repository identity swaps and feed-cell reuse
+    // must both recreate the per-video bloc so counts never leak between
+    // videos. See #3503.
     final likesRepository = ref.watch(likesRepositoryProvider);
     final commentsRepository = ref.watch(commentsRepositoryProvider);
     final repostsRepository = ref.watch(repostsRepositoryProvider);
@@ -971,7 +969,13 @@ class _PooledVideoFeedItem extends ConsumerWidget {
     final addressableId = video.addressableId;
 
     return BlocProvider<VideoInteractionsBloc>(
-      key: ValueKey((likesRepository, commentsRepository, repostsRepository)),
+      key: videoInteractionsBlocKey(
+        likesRepository: likesRepository,
+        commentsRepository: commentsRepository,
+        repostsRepository: repostsRepository,
+        video: video,
+        includeVideoReplies: showVideoReplies,
+      ),
       create: (_) =>
           VideoInteractionsBloc(
               eventId: video.id,
@@ -1023,13 +1027,19 @@ class _WebVideoFeedItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // See _PooledVideoFeedItem.build for the rationale on watch + key. #3503.
+    // See _PooledVideoFeedItem.build for the watch + key rationale. #3503.
     final likesRepository = ref.watch(likesRepositoryProvider);
     final commentsRepository = ref.watch(commentsRepositoryProvider);
     final repostsRepository = ref.watch(repostsRepositoryProvider);
+    final addressableId = video.addressableId;
 
     return BlocProvider<VideoInteractionsBloc>(
-      key: ValueKey((likesRepository, commentsRepository, repostsRepository)),
+      key: videoInteractionsBlocKey(
+        likesRepository: likesRepository,
+        commentsRepository: commentsRepository,
+        repostsRepository: repostsRepository,
+        video: video,
+      ),
       create: (_) =>
           VideoInteractionsBloc(
               eventId: video.id,
@@ -1037,7 +1047,7 @@ class _WebVideoFeedItem extends ConsumerWidget {
               likesRepository: likesRepository,
               commentsRepository: commentsRepository,
               repostsRepository: repostsRepository,
-              addressableId: video.addressableId,
+              addressableId: addressableId,
               initialLikeCount: video.nostrLikeCount != null
                   ? video.totalLikes
                   : null,
