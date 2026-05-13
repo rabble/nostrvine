@@ -16,6 +16,16 @@ enum NotificationType {
   processingStarted,
 }
 
+/// Push-notification kind values as they appear in the FCM payload `type` field
+/// and in the local-notification JSON payload `notificationType` field.
+///
+/// Use these constants instead of bare string literals so that the routing
+/// policy (e.g. "open comments for replies") is defined in one place.
+abstract final class NotificationKind {
+  /// The originating notification was a reply to one of the user's videos.
+  static const String reply = 'reply';
+}
+
 /// Notification data structure
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class AppNotification {

@@ -77,6 +77,8 @@ import 'package:openvine/services/deep_link_service.dart';
 import 'package:openvine/services/locale_preference_service.dart';
 import 'package:openvine/services/logging_config_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart' show HttpMethod;
+import 'package:openvine/services/notification_service.dart'
+    show NotificationKind;
 import 'package:openvine/services/notification_target_resolver.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
@@ -139,7 +141,8 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     details,
     payload: jsonEncode({
       'referencedEventId': data['referencedEventId'],
-      // FCM payload uses 'type', not 'notificationType'
+      // Normalise at the boundary: FCM wire key is 'type'; the internal
+      // payload (read by NotificationService) uses 'notificationType'.
       'notificationType': data['type'],
     }),
   );
@@ -189,6 +192,25 @@ Future<void> _runTimedStartupTask({
   }
 }
 
+/// Normalises the raw FCM [RemoteMessage.data] map into the two fields the
+/// app cares about, translating the wire key `'type'` to `notificationType`
+/// so the rest of the app never has to know which key the FCM server uses.
+///
+/// Returns `null` when the payload carries no `referencedEventId`.
+({String referencedEventId, String? notificationType})? _parseFcmPayload(
+  Map<String, dynamic> data,
+) {
+  final referencedEventId = data['referencedEventId'] as String?;
+  if (referencedEventId == null || referencedEventId.isEmpty) return null;
+  // FCM wire payload uses the key 'type'; local-notification JSON uses
+  // 'notificationType'. Normalise here so callers see one shape.
+  final notificationType = data['type'] as String?;
+  return (
+    referencedEventId: referencedEventId,
+    notificationType: notificationType,
+  );
+}
+
 /// Resolves [referencedEventId] from a push notification payload to a video
 /// event ID, then pushes a [DeepLink] into [deepLinkService].
 ///
@@ -204,7 +226,7 @@ Future<void> _resolveAndPushNotificationDeepLink({
   required ProviderContainer container,
 }) async {
   final deepLinkService = container.read(deepLinkServiceProvider);
-  final autoOpenComments = notificationType == 'reply';
+  final autoOpenComments = notificationType == NotificationKind.reply;
 
   String? videoEventId;
   try {
@@ -438,21 +460,19 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
       final initialMessage = await FirebaseMessaging.instance
           .getInitialMessage();
       if (initialMessage != null) {
-        final referencedEventId =
-            initialMessage.data['referencedEventId'] as String?;
-        if (referencedEventId != null) {
-          // FCM payload uses 'type', not 'notificationType'
-          final notificationType = initialMessage.data['type'] as String?;
+        final parsed = _parseFcmPayload(initialMessage.data);
+        if (parsed != null) {
           Log.info(
-            'App launched from push notification, target: $referencedEventId '
-            '(type: $notificationType)',
+            'App launched from push notification, '
+            'target: ${parsed.referencedEventId} '
+            '(type: ${parsed.notificationType})',
             name: 'main',
             category: LogCategory.system,
           );
           unawaited(
             _resolveAndPushNotificationDeepLink(
-              referencedEventId: referencedEventId,
-              notificationType: notificationType,
+              referencedEventId: parsed.referencedEventId,
+              notificationType: parsed.notificationType,
               container: container,
             ),
           );
@@ -461,20 +481,19 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
 
       // Handle taps on notifications while app is in background
       FirebaseMessaging.onMessageOpenedApp.listen((message) {
-        final referencedEventId = message.data['referencedEventId'] as String?;
-        if (referencedEventId != null) {
-          // FCM payload uses 'type', not 'notificationType'
-          final notificationType = message.data['type'] as String?;
+        final parsed = _parseFcmPayload(message.data);
+        if (parsed != null) {
           Log.info(
             'Push notification tapped (background), '
-            'target: $referencedEventId (type: $notificationType)',
+            'target: ${parsed.referencedEventId} '
+            '(type: ${parsed.notificationType})',
             name: 'main',
             category: LogCategory.system,
           );
           unawaited(
             _resolveAndPushNotificationDeepLink(
-              referencedEventId: referencedEventId,
-              notificationType: notificationType,
+              referencedEventId: parsed.referencedEventId,
+              notificationType: parsed.notificationType,
               container: container,
             ),
           );
@@ -1137,56 +1156,24 @@ class _DivineAppState extends ConsumerState<DivineApp> {
 
     // Route local notification taps (background-built via flutter_local_notifications)
     // through the same deep-link stream so the build() listener handles navigation.
-    ref.read(notificationServiceProvider).onNotificationTap =
-        (
-          referencedEventId,
-          notificationType,
-        ) {
-          Log.info(
-            '🔔 Local notification tap: eventId=$referencedEventId '
-            'type=$notificationType',
-            name: 'DeepLinkHandler',
-            category: LogCategory.ui,
-          );
-          unawaited(
-            NotificationTargetResolver(
-                  videoEventService: ref.read(videoEventServiceProvider),
-                  nostrService: ref.read(nostrServiceProvider),
-                )
-                .resolveVideoEventIdFromNotificationTarget(referencedEventId)
-                .then((videoEventId) {
-                  if (videoEventId == null) {
-                    Log.warning(
-                      'Could not resolve local notification target to a video, '
-                      'referencedEventId=$referencedEventId type=$notificationType',
-                      name: 'DeepLinkHandler',
-                      category: LogCategory.ui,
-                    );
-                    return;
-                  }
-                  Log.info(
-                    'Resolved local notification target: '
-                    '$referencedEventId → $videoEventId',
-                    name: 'DeepLinkHandler',
-                    category: LogCategory.ui,
-                  );
-                  deepLinkService.pushLink(
-                    DeepLink(
-                      type: DeepLinkType.video,
-                      videoRef: videoEventId,
-                      autoOpenComments: notificationType == 'reply',
-                    ),
-                  );
-                })
-                .catchError((Object e) {
-                  Log.error(
-                    'Failed to resolve local notification target: $e',
-                    name: 'DeepLinkHandler',
-                    category: LogCategory.ui,
-                  );
-                }),
-          );
-        };
+    final container = ProviderScope.containerOf(context);
+    ref
+        .read(notificationServiceProvider)
+        .onNotificationTap = (referencedEventId, notificationType) {
+      Log.info(
+        '🔔 Local notification tap: eventId=$referencedEventId '
+        'type=$notificationType',
+        name: 'DeepLinkHandler',
+        category: LogCategory.ui,
+      );
+      unawaited(
+        _resolveAndPushNotificationDeepLink(
+          referencedEventId: referencedEventId,
+          notificationType: notificationType,
+          container: container,
+        ),
+      );
+    };
 
     // Initialize the deep link service for password reset
     ref.read(passwordResetListenerProvider).initialize();
