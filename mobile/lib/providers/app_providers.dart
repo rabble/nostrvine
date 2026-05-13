@@ -346,7 +346,10 @@ class _QueuedNotificationPreferencesNotifier
           return;
         }
 
-        await preferencesService.clearDirtyPreferencesForPubkey(pubkey);
+        await preferencesService.clearDirtyPreferencesForPubkeyIfMatches(
+          pubkey,
+          prefs,
+        );
       } catch (e) {
         Log.warning(
           'Push notification preference drain failed: $e',

@@ -16,6 +16,10 @@ abstract interface class NotificationPreferencesStore {
   );
   Future<NotificationPreferences?> loadDirty(String pubkey);
   Future<void> clearDirty(String pubkey);
+  Future<void> clearDirtyIfMatches(
+    String pubkey,
+    NotificationPreferences preferences,
+  );
 }
 
 class HiveNotificationPreferencesStore implements NotificationPreferencesStore {
@@ -121,6 +125,30 @@ class HiveNotificationPreferencesStore implements NotificationPreferencesStore {
     }
   }
 
+  @override
+  Future<void> clearDirtyIfMatches(
+    String pubkey,
+    NotificationPreferences preferences,
+  ) async {
+    try {
+      final box = await _openBox();
+      final stored = box.get(_dirtyKey(pubkey)) as String?;
+      if (stored == null) return;
+
+      final json = jsonDecode(stored) as Map<String, dynamic>;
+      final currentPreferences = NotificationPreferences.fromJson(json);
+      if (currentPreferences == preferences) {
+        await box.delete(_dirtyKey(pubkey));
+      }
+    } on Object catch (error) {
+      Log.warning(
+        'Failed to conditionally clear dirty push notification preferences: $error',
+        name: 'NotificationPreferencesService',
+        category: LogCategory.system,
+      );
+    }
+  }
+
   static Future<Box<dynamic>> openBox() => Hive.openBox<dynamic>(_boxName);
 
   static String _dirtyKey(String pubkey) => '$_dirtyPrefix$pubkey';
@@ -154,7 +182,7 @@ class NotificationPreferencesService {
     await _store.markDirty(pubkey, prefs);
     final published = await _publishPreferences(pubkey, prefs);
     if (published) {
-      await _store.clearDirty(pubkey);
+      await _store.clearDirtyIfMatches(pubkey, prefs);
     }
   }
 
@@ -164,7 +192,10 @@ class NotificationPreferencesService {
     return _store.loadDirty(pubkey);
   }
 
-  Future<void> clearDirtyPreferencesForPubkey(String pubkey) {
-    return _store.clearDirty(pubkey);
+  Future<void> clearDirtyPreferencesForPubkeyIfMatches(
+    String pubkey,
+    NotificationPreferences preferences,
+  ) {
+    return _store.clearDirtyIfMatches(pubkey, preferences);
   }
 }

@@ -86,6 +86,16 @@ class _FakeNotificationPreferencesStore
       if (!waiter.isCompleted) waiter.complete();
     }
   }
+
+  @override
+  Future<void> clearDirtyIfMatches(
+    String pubkey,
+    NotificationPreferences preferences,
+  ) async {
+    if (dirtyPreferencesByPubkey[pubkey] == preferences) {
+      await clearDirty(pubkey);
+    }
+  }
 }
 
 class _ConfiguredEnvironmentConfig extends EnvironmentConfig {
@@ -2117,6 +2127,42 @@ void main() {
 
         verify(() => pushService.updatePreferences(prefs)).called(1);
         expect(preferenceStore.dirtyPreferencesByPubkey[pubkeyA], prefs);
+      },
+    );
+
+    test(
+      'keeps newer dirty preferences after stale direct publish succeeds',
+      () async {
+        const publishedPrefs = NotificationPreferences(commentsEnabled: false);
+        const newerPrefs = NotificationPreferences(likesEnabled: false);
+        when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
+        when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
+        when(() => pushService.updatePreferences(any())).thenAnswer((
+          invocation,
+        ) async {
+          final preferences =
+              invocation.positionalArguments.single as NotificationPreferences;
+          if (preferences == publishedPrefs) {
+            await preferenceStore.markDirty(pubkeyA, newerPrefs);
+          }
+          return true;
+        });
+
+        final container = buildContainer(
+          nostrSession: _TestNostrSession(
+            NostrSessionReadiness.nostrReady(
+              pubkey: pubkeyA,
+              client: nostrClient,
+            ),
+          ),
+        );
+
+        await container
+            .read(notificationPreferencesServiceProvider)
+            .updatePreferences(publishedPrefs);
+
+        verify(() => pushService.updatePreferences(publishedPrefs)).called(1);
+        expect(preferenceStore.dirtyPreferencesByPubkey[pubkeyA], newerPrefs);
       },
     );
 
