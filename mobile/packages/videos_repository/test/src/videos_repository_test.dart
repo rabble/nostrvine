@@ -3080,13 +3080,11 @@ void main() {
           verify(
             () => mockFunnelcakeClient.getNativePopularVideos(
               limit: 1,
-              offset: 0,
             ),
           ).called(1);
           verify(
             () => mockFunnelcakeClient.getWatchingVideos(
               limit: 1,
-              before: null,
             ),
           ).called(1);
         },
