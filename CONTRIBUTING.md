@@ -304,6 +304,10 @@ Requirements:
   you verified it.
 - End with a clean `git status`.
 - Rebase on `origin/main` before pushing.
+- Each PR should address a single GitHub issue whenever possible. Assign that
+  issue to yourself before starting work and keep it assigned throughout the
+  review cycle. This prevents duplicate work and makes it clear who is driving
+  the fix.
 
 Before opening a PR, ask yourself:
 
