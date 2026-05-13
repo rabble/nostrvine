@@ -1792,13 +1792,24 @@ class VideosRepository {
     return _funnelcakeApiClient.getBulkVideoStats(eventIds);
   }
 
-  /// Fetches personalized video recommendations for the home For You feed.
+  /// Fetches the initial For You page from recommendations, then paginates
+  /// with popular videos once the personalized page is exhausted.
   Future<HomeFeedResult> getRecommendedVideos({
     required String? userPubkey,
     int limit = _defaultLimit,
     int? until,
     bool skipCache = false,
   }) async {
+    if (until != null) {
+      return HomeFeedResult(
+        videos: await getPopularVideos(
+          limit: limit,
+          until: until,
+          skipCache: skipCache,
+        ),
+      );
+    }
+
     final effectiveUserPubkey =
         userPubkey ??
         (_nostrClient.publicKey.isNotEmpty ? _nostrClient.publicKey : null);
@@ -1829,10 +1840,7 @@ class VideosRepository {
       );
     }
 
-    return HomeFeedResult(
-      videos: videos,
-      rawResponseBody: response.rawBody,
-    );
+    return HomeFeedResult(videos: videos);
   }
 
   /// Fetches personalized video recommendations.

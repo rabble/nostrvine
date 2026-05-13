@@ -383,10 +383,7 @@ void main() {
         act: (bloc) => bloc.add(const VideoFeedStarted()),
         expect: () => [
           const VideoFeedState(),
-          const VideoFeedState(
-            status: VideoFeedStatus.success,
-            hasMore: false,
-          ),
+          const VideoFeedState(status: VideoFeedStatus.success, hasMore: false),
         ],
       );
 
@@ -570,6 +567,62 @@ void main() {
     });
 
     group('VideoFeedLoadMoreRequested', () {
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'uses recommendations pagination path for forYou mode',
+        setUp: () {
+          final moreVideos = createTestVideos(
+            2,
+            startTimestamp: 1000,
+            idPrefix: 'recommended',
+          );
+
+          when(
+            () => mockVideosRepository.getRecommendedVideos(
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer((_) async => HomeFeedResult(videos: moreVideos));
+        },
+        build: createBloc,
+        seed: () => VideoFeedState(
+          status: VideoFeedStatus.success,
+          videos: createTestVideos(pageSize, startTimestamp: 2000),
+        ),
+        act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
+        expect: () => [
+          isA<VideoFeedState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<VideoFeedState>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', false)
+              .having((s) => s.videos.length, 'videos count', pageSize + 2)
+              .having((s) => s.hasMore, 'hasMore', true),
+        ],
+        verify: (_) {
+          verify(
+            () => mockVideosRepository.getRecommendedVideos(
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: 1995,
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          );
+        },
+      );
+
       blocTest<VideoFeedBloc, VideoFeedState>(
         'appends new videos to existing list',
         setUp: () {
@@ -2005,9 +2058,7 @@ void main() {
               until: any(named: 'until'),
               skipCache: any(named: 'skipCache'),
             ),
-          ).thenAnswer(
-            (_) async => HomeFeedResult(videos: recommendedVideos),
-          );
+          ).thenAnswer((_) async => HomeFeedResult(videos: recommendedVideos));
         },
         build: createBlocWithCache,
         act: (bloc) => bloc.add(const VideoFeedStarted()),
