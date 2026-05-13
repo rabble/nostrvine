@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
@@ -34,12 +33,12 @@ void main() {
     final mockKeyStorage = _MockSecureKeyStorage();
     final secureStorage = MockSecureStorage();
 
-    when(() => mockKeyStorage.initialize()).thenAnswer((_) async {});
-    when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
-    when(() => mockKeyStorage.getKeyContainer()).thenAnswer((_) async => null);
-    when(() => mockKeyStorage.clearCache()).thenReturn(null);
-    when(() => mockKeyStorage.dispose()).thenReturn(null);
-    when(() => mockKeyStorage.deleteKeys()).thenAnswer((_) async {});
+    when(mockKeyStorage.initialize).thenAnswer((_) async {});
+    when(mockKeyStorage.hasKeys).thenAnswer((_) async => false);
+    when(mockKeyStorage.getKeyContainer).thenAnswer((_) async => null);
+    when(mockKeyStorage.clearCache).thenReturn(null);
+    when(mockKeyStorage.dispose).thenReturn(null);
+    when(mockKeyStorage.deleteKeys).thenAnswer((_) async {});
     when(
       () => mockKeyStorage.storeIdentityKeyContainer(any(), any()),
     ).thenAnswer((_) async {});
