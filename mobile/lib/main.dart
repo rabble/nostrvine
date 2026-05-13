@@ -78,7 +78,7 @@ import 'package:openvine/services/locale_preference_service.dart';
 import 'package:openvine/services/logging_config_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart' show HttpMethod;
 import 'package:openvine/services/notification_service.dart'
-    show NotificationKind;
+    show NotificationPayloadKind, NotificationTapEvent;
 import 'package:openvine/services/notification_target_resolver.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
@@ -275,7 +275,7 @@ Future<void> _resolveAndPushNotificationDeepLink({
   required ProviderContainer container,
 }) async {
   final deepLinkService = container.read(deepLinkServiceProvider);
-  final autoOpenComments = notificationType == NotificationKind.reply;
+  final autoOpenComments = notificationType == NotificationPayloadKind.reply;
 
   String? videoEventId;
   try {
@@ -1170,6 +1170,7 @@ class DivineApp extends ConsumerStatefulWidget {
 class _DivineAppState extends ConsumerState<DivineApp> {
   bool _backgroundInitDone = false;
   StreamSubscription<void>? _shakeSubscription;
+  StreamSubscription<NotificationTapEvent>? _notificationTapSubscription;
 
   @override
   void initState() {
@@ -1188,6 +1189,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
 
   @override
   void dispose() {
+    _notificationTapSubscription?.cancel();
     _shakeSubscription?.cancel();
     super.dispose();
   }
@@ -1206,23 +1208,25 @@ class _DivineAppState extends ConsumerState<DivineApp> {
     // Route local notification taps (background-built via flutter_local_notifications)
     // through the same deep-link stream so the build() listener handles navigation.
     final container = ProviderScope.containerOf(context);
-    ref
+    _notificationTapSubscription?.cancel();
+    _notificationTapSubscription = ref
         .read(notificationServiceProvider)
-        .onNotificationTap = (referencedEventId, notificationType) {
-      Log.info(
-        '🔔 Local notification tap: eventId=$referencedEventId '
-        'type=$notificationType',
-        name: 'DeepLinkHandler',
-        category: LogCategory.ui,
-      );
-      unawaited(
-        _resolveAndPushNotificationDeepLink(
-          referencedEventId: referencedEventId,
-          notificationType: notificationType,
-          container: container,
-        ),
-      );
-    };
+        .notificationTapStream
+        .listen((tapEvent) {
+          Log.info(
+            '🔔 Local notification tap: eventId=${tapEvent.referencedEventId} '
+            'type=${tapEvent.notificationType}',
+            name: 'DeepLinkHandler',
+            category: LogCategory.ui,
+          );
+          unawaited(
+            _resolveAndPushNotificationDeepLink(
+              referencedEventId: tapEvent.referencedEventId,
+              notificationType: tapEvent.notificationType,
+              container: container,
+            ),
+          );
+        });
 
     // Initialize the deep link service for password reset
     ref.read(passwordResetListenerProvider).initialize();

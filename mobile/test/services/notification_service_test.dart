@@ -231,7 +231,7 @@ void main() {
     });
   });
 
-  group('NotificationService.onNotificationTap', () {
+  group('NotificationService.notificationTapStream', () {
     late NotificationService service;
 
     setUp(() {
@@ -247,13 +247,10 @@ void main() {
     // payload as 'notificationType' so the local notification tap handler can
     // read it back with the consistent internal key name.
     // See: docs/superpowers/specs/2026-04-07-push-notifications-design.md
-    test('invokes callback with eventId and type from JSON payload', () {
-      String? capturedId;
-      String? capturedType;
-      service.onNotificationTap = (id, type) {
-        capturedId = id;
-        capturedType = type;
-      };
+    test('emits eventId and type from JSON payload', () async {
+      final events = <NotificationTapEvent>[];
+      final sub = service.notificationTapStream.listen(events.add);
+      addTearDown(sub.cancel);
 
       service.handleNotificationTapPayload(
         jsonEncode({
@@ -262,61 +259,70 @@ void main() {
         }),
       );
 
-      expect(capturedId, equals('abc123'));
-      expect(capturedType, equals('reply'));
+      await Future<void>.delayed(Duration.zero);
+
+      expect(events, hasLength(1));
+      expect(events.single.referencedEventId, equals('abc123'));
+      expect(events.single.notificationType, equals('reply'));
     });
 
-    test('invokes callback with null type when notificationType missing', () {
-      String? capturedId;
-      String? capturedType;
-      service.onNotificationTap = (id, type) {
-        capturedId = id;
-        capturedType = type;
-      };
+    test('emits null type when notificationType missing', () async {
+      final events = <NotificationTapEvent>[];
+      final sub = service.notificationTapStream.listen(events.add);
+      addTearDown(sub.cancel);
 
       service.handleNotificationTapPayload(
         jsonEncode({'referencedEventId': 'def456'}),
       );
 
-      expect(capturedId, equals('def456'));
-      expect(capturedType, isNull);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(events, hasLength(1));
+      expect(events.single.referencedEventId, equals('def456'));
+      expect(events.single.notificationType, isNull);
     });
 
-    test('handles legacy bare event-ID payload (non-JSON)', () {
-      String? capturedId;
-      String? capturedType;
-      service.onNotificationTap = (id, type) {
-        capturedId = id;
-        capturedType = type;
-      };
+    test('handles legacy bare event-ID payload (non-JSON)', () async {
+      final events = <NotificationTapEvent>[];
+      final sub = service.notificationTapStream.listen(events.add);
+      addTearDown(sub.cancel);
 
       service.handleNotificationTapPayload('legacyEventId999');
 
-      expect(capturedId, equals('legacyEventId999'));
-      expect(capturedType, isNull);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(events, hasLength(1));
+      expect(events.single.referencedEventId, equals('legacyEventId999'));
+      expect(events.single.notificationType, isNull);
     });
 
-    test('does not invoke callback when payload is null', () {
-      var called = false;
-      service.onNotificationTap = (id, type) => called = true;
+    test('does not emit when payload is null', () async {
+      final events = <NotificationTapEvent>[];
+      final sub = service.notificationTapStream.listen(events.add);
+      addTearDown(sub.cancel);
 
       service.handleNotificationTapPayload(null);
 
-      expect(called, isFalse);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(events, isEmpty);
     });
 
-    test('does not invoke callback when referencedEventId is absent', () {
-      var called = false;
-      service.onNotificationTap = (id, type) => called = true;
+    test('does not emit when referencedEventId is absent', () async {
+      final events = <NotificationTapEvent>[];
+      final sub = service.notificationTapStream.listen(events.add);
+      addTearDown(sub.cancel);
 
       service.handleNotificationTapPayload(
         jsonEncode({'notificationType': 'reaction'}),
       );
 
-      expect(called, isFalse);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(events, isEmpty);
     });
 
-    test('no-ops gracefully when onNotificationTap is not set', () {
+    test('no-ops gracefully when the stream has no listeners', () {
       expect(
         () => service.handleNotificationTapPayload(
           jsonEncode({

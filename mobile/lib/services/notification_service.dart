@@ -1,6 +1,7 @@
 // ABOUTME: Service for showing user notifications about upload status and publishing
 // ABOUTME: Handles local notifications and in-app messages for video processing updates
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -16,12 +17,24 @@ enum NotificationType {
   processingStarted,
 }
 
+/// Normalized notification-tap payload emitted by [NotificationService].
+@immutable
+class NotificationTapEvent {
+  const NotificationTapEvent({
+    required this.referencedEventId,
+    required this.notificationType,
+  });
+
+  final String referencedEventId;
+  final String? notificationType;
+}
+
 /// Push-notification kind values as they appear in the FCM payload `type` field
 /// and in the local-notification JSON payload `notificationType` field.
 ///
 /// Use these constants instead of bare string literals so that the routing
 /// policy (e.g. "open comments for replies") is defined in one place.
-abstract final class NotificationKind {
+abstract final class NotificationPayloadKind {
   /// The originating notification was a reply to one of the user's videos.
   static const String reply = 'reply';
 }
@@ -121,21 +134,18 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
   bool _pluginInitialized = false;
-
-  /// Optional callback invoked when the user taps a local notification.
-  ///
-  /// The callback receives two arguments: the [referencedEventId] (Nostr event
-  /// ID of the content the notification is about) and [notificationType] (e.g.
-  /// `"reply"`, `"reaction"`, `"repost"`, `"zap"`, `"follow"`).  Either value
-  /// may be null if the payload doesn't carry that field.
-  void Function(String referencedEventId, String? notificationType)?
-  onNotificationTap;
+  final StreamController<NotificationTapEvent> _notificationTapController =
+      StreamController<NotificationTapEvent>.broadcast();
 
   /// List of recent notifications
   List<AppNotification> get notifications => List.unmodifiable(_notifications);
 
   /// Check if notification permissions are granted
   bool get hasPermissions => _permissionsGranted;
+
+  /// Stream of local-notification taps emitted after payload parsing.
+  Stream<NotificationTapEvent> get notificationTapStream =>
+      _notificationTapController.stream;
 
   /// Initialize notification service
   ///
@@ -440,11 +450,11 @@ class NotificationService {
     _handleNotificationTapPayload(response.payload);
   }
 
-  /// Parses [payload] and invokes [onNotificationTap] when a valid
+  /// Parses [payload] and emits a [NotificationTapEvent] when a valid
   /// [referencedEventId] can be extracted.
   ///
   /// Exposed for testing; production callers should use
-  /// [_onNotificationTapped] or configure [onNotificationTap] instead.
+  /// [_onNotificationTapped] or listen to [notificationTapStream].
   @visibleForTesting
   void handleNotificationTapPayload(String? payload) =>
       _handleNotificationTapPayload(payload);
@@ -463,7 +473,12 @@ class NotificationService {
       final referencedEventId = data['referencedEventId'] as String?;
       final notificationType = data['notificationType'] as String?;
       if (referencedEventId != null && referencedEventId.isNotEmpty) {
-        onNotificationTap?.call(referencedEventId, notificationType);
+        _emitNotificationTap(
+          NotificationTapEvent(
+            referencedEventId: referencedEventId,
+            notificationType: notificationType,
+          ),
+        );
       }
     } catch (_) {
       // Legacy payloads were bare event IDs (plain strings, not JSON).
@@ -472,8 +487,18 @@ class NotificationService {
       // JSON payloads (referencedEventId + notificationType) for at least one
       // full app-store release cycle and telemetry confirms this path is
       // never reached. See issue for the full removal plan.
-      onNotificationTap?.call(payload, null);
+      _emitNotificationTap(
+        NotificationTapEvent(
+          referencedEventId: payload,
+          notificationType: null,
+        ),
+      );
     }
+  }
+
+  void _emitNotificationTap(NotificationTapEvent event) {
+    if (_disposed || _notificationTapController.isClosed) return;
+    _notificationTapController.add(event);
   }
 
   /// Send a local notification with title and body
@@ -717,6 +742,7 @@ class NotificationService {
     if (_disposed) return;
 
     _disposed = true;
+    _notificationTapController.close();
     _notifications.clear();
   }
 
