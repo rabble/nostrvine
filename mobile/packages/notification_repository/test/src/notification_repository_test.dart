@@ -1707,6 +1707,68 @@ void main() {
       });
 
       test(
+        'acceptRealtime by-id guard fires when existing row has empty '
+        'sourceEventIds (pins the deliberate WS → WS fallback at line 258)',
+        () async {
+          // Pins the by-id dedupe gate that survives below the
+          // `_snapshotContainsSourceEventId` checks. The gate fires when
+          // the incoming raw's `id` is not represented in any existing
+          // row's `sourceEventIds` (so the cross-path checks can't see
+          // it), but its `id` literally matches an item already in the
+          // snapshot. If a future refactor deletes the by-id gate,
+          // empty-sourceEventIds duplicates would inflate the snapshot
+          // and this test will fail.
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+          });
+          stubNotifications([]);
+          await repository.refresh();
+
+          // First WS arrival with empty sourceEventId — the resulting
+          // row has `sourceEventIds = []`, so the cross-path checks
+          // can't see it on the second arrival.
+          await repository.acceptRealtime(
+            makeNotification(
+              id: 'evt1',
+              sourceEventId: '',
+              notificationType: 'follow',
+              sourceKind: 3,
+              referencedEventId: null,
+              isReferencedVideo: false,
+            ),
+          );
+
+          final firstItems = (await repository.watchSnapshot().first).items;
+          expect(firstItems, hasLength(1));
+          expect(firstItems.single.id, equals('evt1'));
+          expect(firstItems.single.sourceEventIds, isEmpty);
+
+          // Same raw again — only the by-id gate can dedupe this.
+          await repository.acceptRealtime(
+            makeNotification(
+              id: 'evt1',
+              sourceEventId: '',
+              notificationType: 'follow',
+              sourceKind: 3,
+              referencedEventId: null,
+              isReferencedVideo: false,
+            ),
+          );
+
+          final afterItems = (await repository.watchSnapshot().first).items;
+          expect(
+            afterItems,
+            hasLength(1),
+            reason:
+                'Duplicate WS arrival with empty sourceEventId must '
+                'be deduped by the by-id gate; the sourceEventIds-based '
+                'cross-path check cannot see an existing row with empty '
+                'sourceEventIds.',
+          );
+        },
+      );
+
+      test(
         'acceptRealtime dedupes WS arrivals against snapshot sourceEventIds',
         () async {
           stubProfiles({

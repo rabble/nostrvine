@@ -255,15 +255,11 @@ class NotificationRepository {
     if (_snapshotContainsSourceEventId(raw.id)) return;
 
     final newItem = enriched.first;
-    // Same-path (WS → WS) guard, no cross-path responsibility. The
-    // `_snapshotContainsSourceEventId` checks above already dedupe across
-    // the REST ↔ WS boundary via the snapshot's `sourceEventIds` set. This
-    // by-id check catches the residual same-path case: an enriched WS item
-    // whose id collides with a row whose REST payload carried no
-    // `source_event_id` (so its `sourceEventIds` is empty and the
-    // cross-path checks could not see it). Preserves the original by-id
-    // dedupe contract from before PR #4281 introduced typed
-    // `sourceEventIds` as the cross-path identity.
+    // Final by-id dedupe gate (the deliberate WS → WS guard). The
+    // `_snapshotContainsSourceEventId` checks above match on the
+    // snapshot's `sourceEventIds` set; this catches the residual
+    // same-id arrival whose `id` isn't represented in any existing
+    // row's `sourceEventIds`. Preserves the original by-id contract.
     if (current.items.any((n) => n.id == newItem.id)) return;
 
     if (newItem is VideoNotification) {
