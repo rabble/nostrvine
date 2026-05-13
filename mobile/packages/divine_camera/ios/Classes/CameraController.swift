@@ -328,10 +328,18 @@ class CameraController: NSObject {
             // attachAudioToSessionIfNeeded() must run on sessionQueue (it
             // mutates capture-session state); the lock-backed
             // `audioInterrupted` accessor handles cross-queue safety.
+            // Only clear `audioInterrupted` after a successful recovery —
+            // otherwise `captureOutput` would resume appending audio from a
+            // still-broken session and re-introduce the silent-AAC-track
+            // failure this patch eliminates. If recovery fails, keep the
+            // flag set so the next recording continues without audio.
             sessionQueue.async { [weak self] in
                 guard let self = self else { return }
-                _ = self.attachAudioToSessionIfNeeded()
-                self.audioInterrupted = false
+                if self.attachAudioToSessionIfNeeded() {
+                    self.audioInterrupted = false
+                } else {
+                    print("[DivineCameraController] Audio recovery failed; keeping audioInterrupted=true")
+                }
             }
         @unknown default:
             break
