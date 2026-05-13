@@ -867,11 +867,13 @@ void main() {
         expect(uri.path, equals('/api/users/$testPubkey/feed'));
         expect(uri.queryParameters['limit'], equals('50'));
         expect(uri.queryParameters['sort'], equals('recent'));
-        expect(uri.queryParameters['nsfw'], equals('show'));
+        expect(uri.queryParameters.containsKey('nsfw'), isFalse);
         expect(
-          uri.queryParameters['moderation_profile'],
-          equals(FunnelcakeApiClient.defaultModerationProfile),
+          uri.queryParameters.containsKey('moderation_profile'),
+          isFalse,
         );
+        expect(uri.queryParameters.containsKey('content_safety'), isFalse);
+        expect(uri.queryParameters.containsKey('exclude_label'), isFalse);
         expect(uri.queryParameters.containsKey('before'), isFalse);
       });
 
