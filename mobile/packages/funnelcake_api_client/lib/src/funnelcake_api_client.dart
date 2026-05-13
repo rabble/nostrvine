@@ -531,7 +531,7 @@ class FunnelcakeApiClient {
     }
   }
 
-  /// Fetches native diVine videos from the videos leaderboard.
+  /// Fetches new divine videos from the videos leaderboard.
   ///
   /// Uses Funnelcake's leaderboard endpoint with `exclude_platform=vine`
   /// because `/api/v2/videos?sort=popular&exclude_platform=vine` currently

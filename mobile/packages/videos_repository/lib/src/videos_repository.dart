@@ -672,11 +672,11 @@ class VideosRepository {
     return visible.take(limit).toList();
   }
 
-  /// Fetches native diVine videos from the popular leaderboard.
+  /// Fetches new divine videos from the popular leaderboard.
   ///
   /// This powers Explore → Popular. It uses Funnelcake's leaderboard endpoint
   /// with `exclude_platform=vine` so classic Vine archive imports do not occupy
-  /// the default Popular surface while native creators are trying to go viral.
+  /// the default Popular surface while current divine creators try to go viral.
   Future<List<VideoEvent>> getNativePopularVideos({
     int limit = _defaultLimit,
     int offset = 0,
