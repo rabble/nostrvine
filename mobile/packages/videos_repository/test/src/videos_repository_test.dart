@@ -8370,7 +8370,6 @@ void main() {
           () => mockFunnelcakeClient.getRecommendations(
             pubkey: 'user-pubkey',
             limit: 10,
-            fallback: 'popular',
           ),
         ).called(1);
       });
