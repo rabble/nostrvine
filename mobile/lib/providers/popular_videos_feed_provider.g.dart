@@ -10,9 +10,9 @@ part of 'popular_videos_feed_provider.dart';
 // ignore_for_file: type=lint, type=warning
 /// Popular Videos feed provider - shows trending videos by recent engagement.
 ///
-/// Delegates video fetching to [VideosRepository.getPopularVideos], which
-/// implements a 3-tier fallback: Funnelcake REST API → NIP-50 sort:hot →
-/// client-side engagement sorting.
+/// Delegates native fetching to [VideosRepository.getNativePopularVideos], which
+/// uses the native-only leaderboard and falls back through the legacy popular
+/// feed path when Funnelcake is unavailable.
 ///
 /// Rebuilds when:
 /// - Pull to refresh
@@ -24,9 +24,9 @@ const popularVideosFeedProvider = PopularVideosFeedProvider._();
 
 /// Popular Videos feed provider - shows trending videos by recent engagement.
 ///
-/// Delegates video fetching to [VideosRepository.getPopularVideos], which
-/// implements a 3-tier fallback: Funnelcake REST API → NIP-50 sort:hot →
-/// client-side engagement sorting.
+/// Delegates native fetching to [VideosRepository.getNativePopularVideos], which
+/// uses the native-only leaderboard and falls back through the legacy popular
+/// feed path when Funnelcake is unavailable.
 ///
 /// Rebuilds when:
 /// - Pull to refresh
@@ -36,9 +36,9 @@ final class PopularVideosFeedProvider
     extends $AsyncNotifierProvider<PopularVideosFeed, VideoFeedState> {
   /// Popular Videos feed provider - shows trending videos by recent engagement.
   ///
-  /// Delegates video fetching to [VideosRepository.getPopularVideos], which
-  /// implements a 3-tier fallback: Funnelcake REST API → NIP-50 sort:hot →
-  /// client-side engagement sorting.
+  /// Delegates native fetching to [VideosRepository.getNativePopularVideos], which
+  /// uses the native-only leaderboard and falls back through the legacy popular
+  /// feed path when Funnelcake is unavailable.
   ///
   /// Rebuilds when:
   /// - Pull to refresh
@@ -63,13 +63,13 @@ final class PopularVideosFeedProvider
   PopularVideosFeed create() => PopularVideosFeed();
 }
 
-String _$popularVideosFeedHash() => r'ed9368aeb283968fcb2adb1cfcd01ca135d32884';
+String _$popularVideosFeedHash() => r'b84b5be906df65474ad942fe5abd564669fea02b';
 
 /// Popular Videos feed provider - shows trending videos by recent engagement.
 ///
-/// Delegates video fetching to [VideosRepository.getPopularVideos], which
-/// implements a 3-tier fallback: Funnelcake REST API → NIP-50 sort:hot →
-/// client-side engagement sorting.
+/// Delegates native fetching to [VideosRepository.getNativePopularVideos], which
+/// uses the native-only leaderboard and falls back through the legacy popular
+/// feed path when Funnelcake is unavailable.
 ///
 /// Rebuilds when:
 /// - Pull to refresh

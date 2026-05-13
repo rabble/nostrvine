@@ -278,18 +278,19 @@ void main() {
         var requestCount = 0;
 
         when(
-          () => mockVideosRepository.getPopularVideos(
+          () => mockVideosRepository.getNativePopularVideos(
             limit: any(named: 'limit'),
-            until: any(named: 'until'),
-            variant: PopularVideosVariant.native,
-            fetchMultiplier: any(named: 'fetchMultiplier'),
+            offset: any(named: 'offset'),
             skipCache: any(named: 'skipCache'),
           ),
-        ).thenAnswer((_) {
+        ).thenAnswer((invocation) {
           requestCount += 1;
+          final skipCache = invocation.namedArguments[#skipCache] as bool?;
           if (requestCount == 1) {
+            expect(skipCache, isNot(true));
             return Future.value(initialVideos);
           }
+          expect(skipCache, isTrue);
           return refreshCompleter.future;
         });
 
@@ -341,6 +342,193 @@ void main() {
           'popular-refreshed',
         ]);
         expect(finalState.isRefreshing, isFalse);
+        verify(
+          () => mockVideosRepository.getNativePopularVideos(
+            limit: AppConstants.paginationBatchSize,
+            skipCache: true,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'popular videos preserves existing videos when refresh fails',
+      () async {
+        final initialVideos = [_video('popular-initial')];
+        var requestCount = 0;
+
+        when(
+          () => mockVideosRepository.getNativePopularVideos(
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            skipCache: any(named: 'skipCache'),
+          ),
+        ).thenAnswer((invocation) {
+          requestCount += 1;
+          final skipCache = invocation.namedArguments[#skipCache] as bool?;
+          if (requestCount == 1) {
+            return Future.value(initialVideos);
+          }
+          expect(skipCache, isTrue);
+          throw StateError('native refresh failed');
+        });
+
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+            appReadyProvider.overrideWithValue(true),
+            videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              mockBlocklistRepository,
+            ),
+            videosRepositoryProvider.overrideWithValue(mockVideosRepository),
+            nostrServiceProvider.overrideWithValue(mockNostrClient),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final subscription = container.listen(
+          popularVideosFeedProvider,
+          (_, _) {},
+        );
+        addTearDown(subscription.close);
+
+        final initialState = await container.read(
+          popularVideosFeedProvider.future,
+        );
+        expect(initialState.videos.map((video) => video.id), [
+          'popular-initial',
+        ]);
+
+        await container.read(popularVideosFeedProvider.notifier).refresh();
+
+        final finalState = container.read(popularVideosFeedProvider).value;
+        expect(finalState, isNotNull);
+        expect(finalState!.videos.map((video) => video.id), [
+          'popular-initial',
+        ]);
+        expect(finalState.isRefreshing, isFalse);
+        expect(finalState.error, contains('native refresh failed'));
+      },
+    );
+
+    test(
+      'popular videos load more uses raw offset and filters duplicates',
+      () async {
+        final initialRawVideos = [
+          _video('popular-initial'),
+          for (var i = 1; i < AppConstants.paginationBatchSize; i++)
+            _vineArchiveVideo('popular-vine-$i'),
+        ];
+        final loadMoreRawVideos = [
+          _video('popular-initial'),
+          _vineArchiveVideo('popular-vine-more'),
+          _video('popular-more'),
+        ];
+        final requestedOffsets = <int>[];
+
+        when(
+          () => mockVideosRepository.getNativePopularVideos(
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            skipCache: any(named: 'skipCache'),
+          ),
+        ).thenAnswer((invocation) async {
+          final offset = invocation.namedArguments[#offset] as int? ?? 0;
+          requestedOffsets.add(offset);
+          if (offset == 0) return initialRawVideos;
+          if (offset == initialRawVideos.length) return loadMoreRawVideos;
+          throw StateError('unexpected offset $offset');
+        });
+
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+            appReadyProvider.overrideWithValue(true),
+            videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              mockBlocklistRepository,
+            ),
+            videosRepositoryProvider.overrideWithValue(mockVideosRepository),
+            nostrServiceProvider.overrideWithValue(mockNostrClient),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final subscription = container.listen(
+          popularVideosFeedProvider,
+          (_, _) {},
+        );
+        addTearDown(subscription.close);
+
+        final initialState = await container.read(
+          popularVideosFeedProvider.future,
+        );
+        expect(initialState.videos.map((video) => video.id), [
+          'popular-initial',
+        ]);
+        expect(initialState.hasMoreContent, isTrue);
+
+        await container.read(popularVideosFeedProvider.notifier).loadMore();
+
+        final finalState = container.read(popularVideosFeedProvider).value;
+        expect(finalState, isNotNull);
+        expect(finalState!.videos.map((video) => video.id), [
+          'popular-initial',
+          'popular-more',
+        ]);
+        expect(finalState.hasMoreContent, isFalse);
+        expect(finalState.isLoadingMore, isFalse);
+        expect(requestedOffsets, [0, initialRawVideos.length]);
+      },
+    );
+
+    test(
+      'popular videos filters Vine archive rows leaked by native endpoint',
+      () async {
+        final archiveVideo = _video(
+          'popular-vine-archive',
+          rawTags: const {
+            'd': 'seed',
+            'x': '1',
+            'y': '2',
+            'z': '3',
+            'platform': 'vine',
+          },
+        );
+        final nativeVideo = _video('popular-native');
+
+        when(
+          () => mockVideosRepository.getNativePopularVideos(
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            skipCache: any(named: 'skipCache'),
+          ),
+        ).thenAnswer((_) async => [archiveVideo, nativeVideo]);
+
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+            appReadyProvider.overrideWithValue(true),
+            videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              mockBlocklistRepository,
+            ),
+            videosRepositoryProvider.overrideWithValue(mockVideosRepository),
+            nostrServiceProvider.overrideWithValue(mockNostrClient),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final subscription = container.listen(
+          popularVideosFeedProvider,
+          (_, _) {},
+        );
+        addTearDown(subscription.close);
+
+        final state = await container.read(popularVideosFeedProvider.future);
+        expect(state.videos.map((video) => video.id), ['popular-native']);
+        expect(state.hasMoreContent, isFalse);
       },
     );
 
@@ -532,7 +720,15 @@ WatchingVideosResponse _watchingResponse(
   );
 }
 
-VideoEvent _video(String id) {
+VideoEvent _video(
+  String id, {
+  Map<String, String> rawTags = const {
+    'd': 'seed',
+    'x': '1',
+    'y': '2',
+    'z': '3',
+  },
+}) {
   return VideoEvent(
     id: id,
     pubkey: 'author-$id',
@@ -541,8 +737,21 @@ VideoEvent _video(String id) {
     timestamp: DateTime(2026, 3, 17),
     videoUrl: 'https://example.com/$id.mp4',
     thumbnailUrl: 'https://example.com/$id.jpg',
-    rawTags: const {'d': 'seed', 'x': '1', 'y': '2', 'z': '3'},
+    rawTags: rawTags,
     originalLoops: AppConstants.paginationBatchSize,
+  );
+}
+
+VideoEvent _vineArchiveVideo(String id) {
+  return _video(
+    id,
+    rawTags: const {
+      'd': 'seed',
+      'x': '1',
+      'y': '2',
+      'z': '3',
+      'platform': 'vine',
+    },
   );
 }
 

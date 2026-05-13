@@ -669,6 +669,42 @@ class VideosRepository {
     return visible.take(limit).toList();
   }
 
+  /// Fetches native diVine videos from the popular leaderboard.
+  ///
+  /// This powers Explore → Popular. It uses Funnelcake's leaderboard endpoint
+  /// with `exclude_platform=vine` so classic Vine archive imports do not occupy
+  /// the default Popular surface while native creators are trying to go viral.
+  Future<List<VideoEvent>> getNativePopularVideos({
+    int limit = _defaultLimit,
+    int offset = 0,
+    bool skipCache = false,
+  }) async {
+    const cacheKey = 'popular-native';
+
+    if (!skipCache && offset == 0) {
+      final cached = _inMemoryFeedCache?.get(cacheKey);
+      if (cached != null) return cached.videos;
+    }
+
+    if (_funnelcakeApiClient != null && _funnelcakeApiClient.isAvailable) {
+      try {
+        final videoStats = await _funnelcakeApiClient.getNativePopularVideos(
+          limit: limit,
+          offset: offset,
+        );
+        final videos = _transformVideoStats(videoStats, sortByCreatedAt: false);
+        if (!skipCache && offset == 0) {
+          _inMemoryFeedCache?.set(cacheKey, HomeFeedResult(videos: videos));
+        }
+        return videos;
+      } on FunnelcakeException {
+        return getPopularVideos(limit: limit, skipCache: skipCache);
+      }
+    }
+
+    return getPopularVideos(limit: limit, skipCache: skipCache);
+  }
+
   /// Fetches popular videos sorted by engagement score.
   ///
   /// This is the "Popular" feed mode - shows videos ranked by their

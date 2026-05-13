@@ -2982,6 +2982,200 @@ void main() {
       });
     });
 
+    group('getNativePopularVideos', () {
+      late MockFunnelcakeApiClient mockFunnelcakeClient;
+
+      setUp(() {
+        mockFunnelcakeClient = MockFunnelcakeApiClient();
+      });
+
+      test('returns native popular API results in server order', () async {
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getNativePopularVideos(
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            _createVideoStats(
+              id: 'native-popular-1',
+              pubkey: 'pubkey-1',
+              dTag: 'native-dtag-1',
+              videoUrl: 'https://example.com/native1.mp4',
+            ),
+            _createVideoStats(
+              id: 'native-popular-2',
+              pubkey: 'pubkey-2',
+              dTag: 'native-dtag-2',
+              videoUrl: 'https://example.com/native2.mp4',
+            ),
+          ],
+        );
+
+        final repositoryWithApi = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        final result = await repositoryWithApi.getNativePopularVideos(
+          limit: 2,
+          offset: 25,
+        );
+
+        expect(result, hasLength(2));
+        expect(result[0].id, equals('native-popular-1'));
+        expect(result[1].id, equals('native-popular-2'));
+        verify(
+          () => mockFunnelcakeClient.getNativePopularVideos(
+            limit: 2,
+            offset: 25,
+          ),
+        ).called(1);
+        verifyNever(
+          () => mockNostrClient.queryEvents(
+            any(),
+            useCache: any(named: 'useCache'),
+          ),
+        );
+      });
+
+      test(
+        'falls back to existing popular path when native endpoint fails',
+        () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getNativePopularVideos(
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+            ),
+          ).thenThrow(const FunnelcakeException('Network error'));
+          when(
+            () => mockFunnelcakeClient.getWatchingVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              _createVideoStats(
+                id: 'fallback-popular-1',
+                pubkey: 'pubkey-1',
+                dTag: 'fallback-dtag-1',
+                videoUrl: 'https://example.com/fallback.mp4',
+              ),
+            ],
+          );
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repositoryWithApi.getNativePopularVideos(
+            limit: 1,
+          );
+
+          expect(result, hasLength(1));
+          expect(result.first.id, equals('fallback-popular-1'));
+          verify(
+            () => mockFunnelcakeClient.getNativePopularVideos(
+              limit: 1,
+              offset: 0,
+            ),
+          ).called(1);
+          verify(
+            () => mockFunnelcakeClient.getWatchingVideos(
+              limit: 1,
+              before: null,
+            ),
+          ).called(1);
+        },
+      );
+
+      test('caches first native popular page only', () async {
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getNativePopularVideos(
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            _createVideoStats(
+              id: 'cached-native-popular-1',
+              pubkey: 'pubkey-1',
+              dTag: 'cached-native-dtag-1',
+              videoUrl: 'https://example.com/cached-native.mp4',
+            ),
+          ],
+        );
+
+        final feedCache = InMemoryFeedCache();
+        final repositoryWithCache = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+          inMemoryFeedCache: feedCache,
+        );
+
+        await repositoryWithCache.getNativePopularVideos();
+        final cached = await repositoryWithCache.getNativePopularVideos();
+        await repositoryWithCache.getNativePopularVideos(offset: 25);
+
+        verify(
+          () => mockFunnelcakeClient.getNativePopularVideos(
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+          ),
+        ).called(2);
+        expect(cached, hasLength(1));
+        expect(cached.first.id, equals('cached-native-popular-1'));
+      });
+
+      test('does not cache skipCache native popular responses', () async {
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        var callCount = 0;
+        when(
+          () => mockFunnelcakeClient.getNativePopularVideos(
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer((_) async {
+          callCount += 1;
+          return [
+            _createVideoStats(
+              id: 'native-popular-call-$callCount',
+              pubkey: 'pubkey-$callCount',
+              dTag: 'native-dtag-$callCount',
+              videoUrl: 'https://example.com/native-$callCount.mp4',
+            ),
+          ];
+        });
+
+        final feedCache = InMemoryFeedCache();
+        final repositoryWithCache = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+          inMemoryFeedCache: feedCache,
+        );
+
+        final skipped = await repositoryWithCache.getNativePopularVideos(
+          skipCache: true,
+        );
+        final fresh = await repositoryWithCache.getNativePopularVideos();
+        final cached = await repositoryWithCache.getNativePopularVideos();
+
+        expect(skipped.first.id, equals('native-popular-call-1'));
+        expect(fresh.first.id, equals('native-popular-call-2'));
+        expect(cached.first.id, equals('native-popular-call-2'));
+        verify(
+          () => mockFunnelcakeClient.getNativePopularVideos(
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+          ),
+        ).called(2);
+      });
+    });
+
     group('getPopularVideos', () {
       group('Funnelcake API first', () {
         late MockFunnelcakeApiClient mockFunnelcakeClient;

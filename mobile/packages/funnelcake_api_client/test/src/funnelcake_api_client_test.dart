@@ -432,6 +432,155 @@ void main() {
       });
     });
 
+    group('getNativePopularVideos', () {
+      const validResponseBody =
+          '''
+[
+  {
+    "id": "native-popular-1",
+    "pubkey": "$testPubkey",
+    "created_at": 1700000000,
+    "kind": 34236,
+    "d_tag": "native-popular-1",
+    "title": "Native Popular Video",
+    "content": "",
+    "thumbnail": "https://example.com/thumb.jpg",
+    "video_url": "https://example.com/video.mp4",
+    "platform": "divine",
+    "reactions": 5,
+    "comments": 1,
+    "reposts": 0,
+    "engagement_score": 6
+  }
+]
+''';
+
+      test('constructs native-only leaderboard URL', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('[]', 200));
+
+        await client.getNativePopularVideos(limit: 25, offset: 50);
+
+        final captured =
+            verify(
+                  () => mockHttpClient.get(
+                    captureAny(),
+                    headers: any(named: 'headers'),
+                  ),
+                ).captured.first
+                as Uri;
+
+        expect(captured.path, equals('/api/leaderboard/videos'));
+        expect(captured.queryParameters['exclude_platform'], equals('vine'));
+        expect(captured.queryParameters['limit'], equals('25'));
+        expect(captured.queryParameters['offset'], equals('50'));
+        expect(captured.queryParameters['nsfw'], equals('show'));
+        expect(
+          captured.queryParameters['moderation_profile'],
+          equals(FunnelcakeApiClient.defaultModerationProfile),
+        );
+      });
+
+      test('returns videos on successful response', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response(validResponseBody, 200));
+
+        final videos = await client.getNativePopularVideos();
+
+        expect(videos, hasLength(1));
+        expect(videos.first.id, equals('native-popular-1'));
+        expect(videos.first.title, equals('Native Popular Video'));
+        expect(videos.first.rawTags['platform'], equals('divine'));
+      });
+
+      test('parses envelope response shape', () async {
+        const envelope =
+            '''
+{
+  "data": [
+    {
+      "id": "native-popular-env-1",
+      "pubkey": "$testPubkey",
+      "created_at": 1700000000,
+      "kind": 34236,
+      "d_tag": "native-popular-env-1",
+      "title": "Native Popular Envelope Video",
+      "content": "",
+      "thumbnail": "https://example.com/thumb.jpg",
+      "video_url": "https://example.com/video.mp4",
+      "platform": "divine",
+      "reactions": 5,
+      "comments": 1,
+      "reposts": 0,
+      "engagement_score": 6
+    }
+  ],
+  "pagination": {"has_more": true, "next_offset": 25}
+}
+''';
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response(envelope, 200));
+
+        final videos = await client.getNativePopularVideos();
+
+        expect(videos, hasLength(1));
+        expect(videos.first.id, equals('native-popular-env-1'));
+      });
+
+      test('parses live leaderboard entries response shape', () async {
+        const leaderboardEnvelope =
+            '''
+{
+  "period": "alltime",
+  "entries": [
+    {
+      "id": "native-popular-entry-1",
+      "pubkey": "$testPubkey",
+      "created_at": 1700000000,
+      "kind": 34236,
+      "d_tag": "native-popular-entry-1",
+      "title": "Native Popular Entry Video",
+      "thumbnail": "https://example.com/thumb.jpg",
+      "video_url": "https://example.com/video.mp4",
+      "views": 100,
+      "loops": 25
+    }
+  ]
+}
+''';
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response(leaderboardEnvelope, 200));
+
+        final videos = await client.getNativePopularVideos();
+
+        expect(videos, hasLength(1));
+        expect(videos.first.id, equals('native-popular-entry-1'));
+        expect(videos.first.title, equals('Native Popular Entry Video'));
+        expect(videos.first.views, equals(100));
+      });
+
+      test('throws FunnelcakeApiException on non-success response', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('Server error', 500));
+
+        expect(
+          () => client.getNativePopularVideos(),
+          throwsA(
+            isA<FunnelcakeApiException>().having(
+              (e) => e.message,
+              'message',
+              contains('Failed to fetch native popular videos'),
+            ),
+          ),
+        );
+      });
+    });
+
     group('getLeaderboardVideos', () {
       const responseBody =
           '''
@@ -593,9 +742,7 @@ void main() {
       test('returns empty list when entries field is missing', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('{"period":"week"}', 200),
-        );
+        ).thenAnswer((_) async => http.Response('{"period":"week"}', 200));
 
         final videos = await client.getLeaderboardVideos(
           period: LeaderboardPeriod.week,
@@ -626,9 +773,8 @@ void main() {
         );
 
         expect(
-          () => emptyClient.getLeaderboardVideos(
-            period: LeaderboardPeriod.week,
-          ),
+          () =>
+              emptyClient.getLeaderboardVideos(period: LeaderboardPeriod.week),
           throwsA(isA<FunnelcakeNotConfiguredException>()),
         );
 
