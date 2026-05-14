@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/list_search_card.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
@@ -28,20 +32,27 @@ void main() {
     );
   }
 
-  Widget buildSubject({required CuratedList curatedList, VoidCallback? onTap}) {
-    return MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: Scaffold(
-        body: Align(
-          alignment: Alignment.topLeft,
-          child: SizedBox(
-            width: 200,
-            height: 300,
-            child: SingleChildScrollView(
-              child: CuratedListSearchCard(
-                curatedList: curatedList,
-                onTap: onTap ?? () {},
+  Widget buildSubject({
+    required CuratedList curatedList,
+    VoidCallback? onTap,
+    List<dynamic> overrides = const [],
+  }) {
+    return ProviderScope(
+      overrides: overrides.cast(),
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: 200,
+              height: 300,
+              child: SingleChildScrollView(
+                child: CuratedListSearchCard(
+                  curatedList: curatedList,
+                  onTap: onTap ?? () {},
+                ),
               ),
             ),
           ),
@@ -66,6 +77,39 @@ void main() {
         );
 
         expect(find.text('Great videos'), findsOneWidget);
+      });
+
+      testWidgets('linkifies Nostr profile references in descriptions', (
+        tester,
+      ) async {
+        const mentionedPubkey =
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+        final mentionedNpub = NostrKeyUtils.encodePubKey(mentionedPubkey);
+
+        await tester.pumpWidget(
+          buildSubject(
+            curatedList: createList(description: 'by nostr:$mentionedNpub'),
+            overrides: [
+              userProfileReactiveProvider(mentionedPubkey).overrideWith(
+                (ref) => Stream.value(
+                  UserProfile(
+                    pubkey: mentionedPubkey,
+                    displayName: 'Alice',
+                    rawData: const {},
+                    createdAt: DateTime(2026),
+                    eventId:
+                        'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byType(LinkifiedText), findsOneWidget);
+        expect(find.text('by @Alice', findRichText: true), findsOneWidget);
+        expect(find.textContaining('nostr:$mentionedNpub'), findsNothing);
       });
 
       testWidgets('no description when null', (tester) async {

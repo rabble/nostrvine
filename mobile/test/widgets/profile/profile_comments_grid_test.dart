@@ -4,10 +4,15 @@ import 'package:comments_repository/comments_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' show UserProfile;
 import 'package:openvine/blocs/profile_comments/profile_comments_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/profile/profile_comments_grid.dart';
 
 import '../../helpers/go_router.dart';
@@ -25,10 +30,11 @@ const _testRootAuthorPubkey =
 
 Comment _createTextComment({
   required String id,
+  String? content,
   int createdAtSeconds = 1700000000,
 }) => Comment(
   id: id,
-  content: 'Text comment $id',
+  content: content ?? 'Text comment $id',
   authorPubkey: _testAuthorPubkey,
   createdAt: DateTime.fromMillisecondsSinceEpoch(createdAtSeconds * 1000),
   rootEventId: _testRootEventId,
@@ -62,15 +68,22 @@ void main() {
       ).thenAnswer((_) async => null);
     });
 
-    Widget buildSubject({bool isOwnProfile = true, MockGoRouter? goRouter}) {
-      final app = MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        theme: VineTheme.theme,
-        home: Scaffold(
-          body: BlocProvider<ProfileCommentsBloc>.value(
-            value: mockBloc,
-            child: ProfileCommentsGrid(isOwnProfile: isOwnProfile),
+    Widget buildSubject({
+      bool isOwnProfile = true,
+      MockGoRouter? goRouter,
+      List<dynamic> overrides = const [],
+    }) {
+      final app = ProviderScope(
+        overrides: overrides.cast(),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: VineTheme.theme,
+          home: Scaffold(
+            body: BlocProvider<ProfileCommentsBloc>.value(
+              value: mockBloc,
+              child: ProfileCommentsGrid(isOwnProfile: isOwnProfile),
+            ),
           ),
         ),
       );
@@ -173,6 +186,49 @@ void main() {
         expect(find.text('Comments'), findsOneWidget);
         expect(find.text('Text comment t1'), findsOneWidget);
         expect(find.text('Text comment t2'), findsOneWidget);
+      });
+
+      testWidgets('linkifies Nostr profile references in text comments', (
+        tester,
+      ) async {
+        const mentionedPubkey =
+            'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+        final mentionedNpub = NostrKeyUtils.encodePubKey(mentionedPubkey);
+        when(() => mockBloc.state).thenReturn(
+          ProfileCommentsState(
+            status: ProfileCommentsStatus.success,
+            textComments: [
+              _createTextComment(
+                id: 't1',
+                content: 'hi nostr:$mentionedNpub',
+              ),
+            ],
+          ),
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            overrides: [
+              userProfileReactiveProvider(mentionedPubkey).overrideWith(
+                (ref) => Stream.value(
+                  UserProfile(
+                    pubkey: mentionedPubkey,
+                    displayName: 'Alice',
+                    rawData: const {},
+                    createdAt: DateTime(2026),
+                    eventId:
+                        'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byType(ClickableHashtagText), findsOneWidget);
+        expect(find.text('hi @Alice', findRichText: true), findsOneWidget);
+        expect(find.textContaining('nostr:$mentionedNpub'), findsNothing);
       });
 
       testWidgets('both sections when both types exist', (tester) async {

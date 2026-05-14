@@ -210,16 +210,11 @@ class _PreviewOverlay extends ConsumerWidget {
                 children: [
                   const FeedModeSwitch(isPreviewMode: true),
                   VideoOverlayActions(
-                    video: VideoEvent(
-                      id: 'id',
-                      pubkey: publicKey,
-                      timestamp: DateTime.now(),
-                      createdAt: DateTime.now().millisecondsSinceEpoch,
-                      content: metadata.title,
-                      hashtags: metadata.tags.toList(),
-                      originalLikes: 1,
-                      originalComments: 1,
-                      originalReposts: 1,
+                    video: buildVideoMetadataPreviewEvent(
+                      publicKey: publicKey,
+                      title: metadata.title,
+                      description: metadata.description,
+                      tags: metadata.tags,
                     ),
                     isVisible: true,
                     isActive: isActive,
@@ -233,6 +228,30 @@ class _PreviewOverlay extends ConsumerWidget {
       ),
     );
   }
+}
+
+@visibleForTesting
+VideoEvent buildVideoMetadataPreviewEvent({
+  required String publicKey,
+  required String title,
+  required String description,
+  required Set<String> tags,
+  DateTime? now,
+}) {
+  final timestamp = now ?? DateTime.now();
+  final trimmedTitle = title.trim();
+  return VideoEvent(
+    id: 'id',
+    pubkey: publicKey,
+    timestamp: timestamp,
+    createdAt: timestamp.millisecondsSinceEpoch,
+    title: trimmedTitle.isEmpty ? null : trimmedTitle,
+    content: description,
+    hashtags: tags.toList(),
+    originalLikes: 1,
+    originalComments: 1,
+    originalReposts: 1,
+  );
 }
 
 /// Close button positioned at the top-left corner.

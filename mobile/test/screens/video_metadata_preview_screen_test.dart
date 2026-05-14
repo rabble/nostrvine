@@ -66,6 +66,27 @@ void main() {
   });
 
   group(VideoMetadataPreviewScreen, () {
+    test('preview event maps title and description to feed render fields', () {
+      final event = buildVideoMetadataPreviewEvent(
+        publicKey:
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        title: 'A title',
+        description:
+            'description with nostr:npub1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq',
+        tags: const {'classic'},
+        now: DateTime.fromMillisecondsSinceEpoch(1234567890000),
+      );
+
+      expect(event.title, equals('A title'));
+      expect(
+        event.content,
+        equals(
+          'description with nostr:npub1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq',
+        ),
+      );
+      expect(event.hashtags, equals(['classic']));
+    });
+
     Widget buildTestWidget({DivineVideoClip? clip}) {
       // Use previewOnly to avoid deep Riverpod dependency chain from
       // the overlay's VideoOverlayActions widget. The overlay is unrelated

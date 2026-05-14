@@ -6,6 +6,7 @@ import 'package:count_formatter/count_formatter.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart' hide AspectRatio;
+import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
 /// Number of portrait card slots to display.
@@ -89,8 +90,8 @@ class _ListDescription extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      description,
+    return LinkifiedText(
+      text: description,
       style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
       maxLines: 2,
       overflow: TextOverflow.ellipsis,

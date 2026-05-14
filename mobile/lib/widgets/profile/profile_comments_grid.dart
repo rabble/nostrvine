@@ -14,6 +14,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
+import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/profile/profile_tab_empty_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_error_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_loading_more_sliver.dart';
@@ -229,13 +230,23 @@ class _ProfileCommentCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    comment.content,
+                  ClickableHashtagText(
+                    text: comment.content,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: VineTheme.whiteText,
                       fontSize: 14,
+                    ),
+                    hashtagStyle: const TextStyle(
+                      color: VineTheme.info,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    mentionStyle: const TextStyle(
+                      color: VineTheme.info,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 4),
