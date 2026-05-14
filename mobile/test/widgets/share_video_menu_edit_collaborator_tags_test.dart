@@ -1,27 +1,27 @@
 // ABOUTME: Regression coverage for collaborator p-tags in the edit-video flow.
 // ABOUTME: Verifies the shared collaborator tag builder contract and that
-// ABOUTME: ShareVideoMenu's edit dialog emits that tag when republishing.
+// ABOUTME: VideoMetadataUpdateService emits that tag when republishing.
 
+import 'dart:ui' show Locale;
+
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:dm_repository/dm_repository.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
-import 'package:openvine/features/feature_flags/models/feature_flag.dart';
-import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
-import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/services/bookmark_service.dart';
+import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
+import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/services/video_metadata_update_service.dart';
 import 'package:openvine/utils/collaborator_tags.dart';
-import 'package:openvine/widgets/share_video_menu.dart';
 
 import '../helpers/test_provider_overrides.dart';
 
-class _MockBookmarkService extends Mock implements BookmarkService {}
+class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
 
 class _MockDmRepository extends Mock implements DmRepository {}
 
@@ -29,11 +29,6 @@ class _MockPersonalEventCacheService extends Mock
     implements PersonalEventCacheService {}
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
-
-class _FakeCuratedListsState extends CuratedListsState {
-  @override
-  Future<List<CuratedList>> build() async => const [];
-}
 
 class _FakeEvent extends Fake implements Event {}
 
@@ -64,14 +59,14 @@ void main() {
       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
   const collaboratorPubkey =
       'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
-  final l10n = lookupAppLocalizations(const Locale('en'));
 
   late MockAuthService mockAuthService;
   late MockNostrClient mockNostrService;
-  late _MockBookmarkService mockBookmarkService;
+  late _MockBlossomUploadService mockBlossomUploadService;
   late _MockDmRepository mockDmRepository;
   late _MockPersonalEventCacheService mockPersonalEventCacheService;
   late _MockVideoEventService mockVideoEventService;
+  late VideoMetadataUpdateService service;
   late List<List<String>> capturedTags;
 
   setUpAll(() {
@@ -82,7 +77,7 @@ void main() {
   setUp(() {
     mockAuthService = createMockAuthService();
     mockNostrService = createMockNostrService();
-    mockBookmarkService = _MockBookmarkService();
+    mockBlossomUploadService = _MockBlossomUploadService();
     mockDmRepository = _MockDmRepository();
     mockPersonalEventCacheService = _MockPersonalEventCacheService();
     mockVideoEventService = _MockVideoEventService();
@@ -117,54 +112,22 @@ void main() {
     ).thenAnswer((_) async => PublishSuccess(event: signedEvent));
 
     when(
-      () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
-    ).thenReturn(false);
-    when(
-      () => mockBookmarkService.getVideoBookmarkSummary(any()),
-    ).thenReturn('Not bookmarked');
-    when(
-      () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
-    ).thenAnswer((_) async => true);
-
-    when(
       () => mockPersonalEventCacheService.cacheUserEvent(any()),
     ).thenReturn(null);
     when(() => mockVideoEventService.updateVideoEvent(any())).thenReturn(null);
-  });
 
-  Widget buildSubject() {
-    return testProviderScope(
-      mockAuthService: mockAuthService,
-      mockNostrService: mockNostrService,
-      additionalOverrides: [
-        bookmarkServiceProvider.overrideWith((ref) => mockBookmarkService),
-        curatedListsStateProvider.overrideWith(_FakeCuratedListsState.new),
-        isFeatureEnabledProvider(
-          FeatureFlag.curatedLists,
-        ).overrideWithValue(false),
-        isFeatureEnabledProvider(
-          FeatureFlag.debugTools,
-        ).overrideWithValue(false),
-        dmRepositoryProvider.overrideWithValue(mockDmRepository),
-        personalEventCacheServiceProvider.overrideWithValue(
-          mockPersonalEventCacheService,
-        ),
-        videoEventServiceProvider.overrideWithValue(mockVideoEventService),
-      ],
-      child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: ShareVideoMenu(
-            video: _testVideo(
-              ownerPubkey: ownerPubkey,
-              collaboratorPubkey: collaboratorPubkey,
-            ),
-          ),
-        ),
+    service = VideoMetadataUpdateService(
+      authService: mockAuthService,
+      blossomService: mockBlossomUploadService,
+      nostrService: mockNostrService,
+      personalEventCache: mockPersonalEventCacheService,
+      videoEventService: mockVideoEventService,
+      collaboratorInviteService: CollaboratorInviteService(
+        dmRepository: mockDmRepository,
+        l10n: lookupAppLocalizations(const Locale('en')),
       ),
     );
-  }
+  });
 
   test('buildCollaboratorPTag emits the exact lowercase collaborator tag', () {
     expect(
@@ -178,28 +141,23 @@ void main() {
     );
   });
 
-  testWidgets(
+  test(
     'edit-video flow republishes collaborator p-tags with lowercase marker',
-    (tester) async {
-      await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
-
-      await tester.dragUntilVisible(
-        find.text(l10n.shareMenuEditVideo),
-        find.byType(ShareVideoMenu),
-        const Offset(0, -120),
+    () async {
+      final editorState = VideoEditorProviderState(
+        collaboratorPubkeys: {collaboratorPubkey},
       );
-      await tester.pumpAndSettle();
 
-      await tester.tap(find.text(l10n.shareMenuEditVideo));
-      await tester.pumpAndSettle();
+      final result = await service.updateVideo(
+        originalVideo: _testVideo(
+          ownerPubkey: ownerPubkey,
+          collaboratorPubkey: collaboratorPubkey,
+        ),
+        editorState: editorState,
+        initialCollaboratorPubkeys: {collaboratorPubkey},
+      );
 
-      await tester.ensureVisible(find.text(l10n.shareMenuUpdate));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text(l10n.shareMenuUpdate));
-      await tester.pumpAndSettle();
-
+      expect(result, isA<VideoUpdateSuccess>());
       expect(
         capturedTags.where((tag) => tag.isNotEmpty && tag.first == 'p'),
         hasLength(1),
