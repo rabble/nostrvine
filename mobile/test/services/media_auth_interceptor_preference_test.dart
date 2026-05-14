@@ -1,5 +1,5 @@
-// ABOUTME: TDD tests for MediaAuthInterceptor respecting AdultContentPreference
-// ABOUTME: Tests neverShow filtering, alwaysShow auto-auth, and askEachTime dialog flow
+// ABOUTME: Tests media auth behavior for adult playback preferences
+// ABOUTME: Covers verified blocking, auto-auth, and verify-on-play behavior
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -45,41 +45,22 @@ void main() {
   });
 
   group('MediaAuthInterceptor - preference handling', () {
-    test('shouldFilterContent returns true when preference is neverShow', () {
-      when(
-        () => mockContentFilterService.adultPlaybackPreference,
-      ).thenReturn(ContentFilterPreference.hide);
-
-      expect(interceptor.shouldFilterContent, isTrue);
-    });
-
     test(
-      'shouldFilterContent returns false when preference is askEachTime',
-      () {
-        when(
-          () => mockContentFilterService.adultPlaybackPreference,
-        ).thenReturn(ContentFilterPreference.warn);
-
-        expect(interceptor.shouldFilterContent, isFalse);
-      },
-    );
-
-    test(
-      'handleUnauthorizedMedia returns null when preference is neverShow',
+      'handleUnauthorizedMedia returns null when verified user preference is hide',
       () async {
-        // Arrange - neverShow means we should hide content
         when(
           () => mockContentFilterService.adultPlaybackPreference,
         ).thenReturn(ContentFilterPreference.hide);
+        when(
+          () => mockAgeVerificationService.isAdultContentVerified,
+        ).thenReturn(true);
 
-        // Act
         final result = await interceptor.handleUnauthorizedMedia(
           context: mockContext,
           sha256Hash: 'abc123',
           category: 'nudity',
         );
 
-        // Assert - returns null immediately, no auth attempt
         expect(result, isNull);
         verifyNever(
           () => mockMediaViewerAuthService.createAuthHeaders(
@@ -91,6 +72,40 @@ void main() {
         verifyNever(
           () => mockAgeVerificationService.verifyAdultContentAccess(any()),
         );
+      },
+    );
+
+    test(
+      'handleUnauthorizedMedia prompts when unverified user preference resolves to hide',
+      () async {
+        when(
+          () => mockContentFilterService.adultPlaybackPreference,
+        ).thenReturn(ContentFilterPreference.hide);
+        when(
+          () => mockAgeVerificationService.isAdultContentVerified,
+        ).thenReturn(false);
+        when(() => mockContext.mounted).thenReturn(true);
+        when(
+          () => mockAgeVerificationService.verifyAdultContentAccess(any()),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockMediaViewerAuthService.createAuthHeaders(
+            sha256Hash: any(named: 'sha256Hash'),
+            url: any(named: 'url'),
+            serverUrl: any(named: 'serverUrl'),
+          ),
+        ).thenAnswer((_) async => {'Authorization': 'Nostr dialogToken'});
+
+        final result = await interceptor.handleUnauthorizedMedia(
+          context: mockContext,
+          sha256Hash: 'abc123',
+          category: 'nudity',
+        );
+
+        expect(result, equals({'Authorization': 'Nostr dialogToken'}));
+        verify(
+          () => mockAgeVerificationService.verifyAdultContentAccess(any()),
+        ).called(1);
       },
     );
 
@@ -139,6 +154,9 @@ void main() {
         when(
           () => mockContentFilterService.adultPlaybackPreference,
         ).thenReturn(ContentFilterPreference.warn);
+        when(
+          () => mockAgeVerificationService.isAdultContentVerified,
+        ).thenReturn(true);
         when(() => mockContext.mounted).thenReturn(true);
         when(
           () => mockAgeVerificationService.verifyAdultContentAccess(any()),
@@ -178,6 +196,9 @@ void main() {
         when(
           () => mockContentFilterService.adultPlaybackPreference,
         ).thenReturn(ContentFilterPreference.warn);
+        when(
+          () => mockAgeVerificationService.isAdultContentVerified,
+        ).thenReturn(true);
         when(() => mockContext.mounted).thenReturn(true);
         when(
           () => mockAgeVerificationService.verifyAdultContentAccess(any()),

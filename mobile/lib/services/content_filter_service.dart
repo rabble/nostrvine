@@ -84,7 +84,7 @@ class ContentFilterService extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      // Run migration from old AdultContentPreference if needed
+      // Run migration from the old adult-content playback integer if needed
       await _migrateFromOldPreferences(prefs);
 
       // Load saved preferences
@@ -206,8 +206,8 @@ class ContentFilterService extends ChangeNotifier {
   /// preference override the current settings UI, derive a single playback
   /// policy from the new per-category source of truth:
   ///
-  /// - all `hide` -> block playback entirely
-  /// - all `show` -> auto-allow once verified
+  /// - all `hide` -> verified users should be blocked
+  /// - all `show` -> verified users can auto-allow
   /// - any mixed state -> require an explicit retry/confirmation path
   ContentFilterPreference get adultPlaybackPreference {
     final preferences = adultCategories.map(getPreference).toSet();
@@ -228,28 +228,25 @@ class ContentFilterService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Migrate from the old [AdultContentPreference] system.
+  /// Migrate from the old `adult_content_preference` integer.
   ///
   /// Maps:
-  /// - alwaysShow → adult categories set to show
-  /// - askEachTime → adult categories set to warn
-  /// - neverShow → adult categories set to hide
+  /// - `0` (alwaysShow) → adult categories set to show
+  /// - `1` (askEachTime) → adult categories set to warn
+  /// - `2` (neverShow) → adult categories set to hide
   Future<void> _migrateFromOldPreferences(SharedPreferences prefs) async {
     // Only migrate once
     if (prefs.getBool(_migratedKey) == true) return;
 
     final oldPreferenceIndex = prefs.getInt('adult_content_preference');
-    if (oldPreferenceIndex != null &&
-        oldPreferenceIndex >= 0 &&
-        oldPreferenceIndex < AdultContentPreference.values.length) {
-      final oldPref = AdultContentPreference.values[oldPreferenceIndex];
+    final newPref = switch (oldPreferenceIndex) {
+      0 => ContentFilterPreference.show,
+      1 => ContentFilterPreference.warn,
+      2 => ContentFilterPreference.hide,
+      _ => null,
+    };
 
-      final newPref = switch (oldPref) {
-        AdultContentPreference.alwaysShow => ContentFilterPreference.show,
-        AdultContentPreference.askEachTime => ContentFilterPreference.warn,
-        AdultContentPreference.neverShow => ContentFilterPreference.hide,
-      };
-
+    if (newPref != null) {
       // Apply to all adult categories
       for (final label in adultCategories) {
         _preferences[label] = newPref;
@@ -257,7 +254,7 @@ class ContentFilterService extends ChangeNotifier {
 
       Log.info(
         'Migrated old adult content preference '
-        '(${oldPref.name}) → ${newPref.name} for adult categories',
+        '($oldPreferenceIndex) → ${newPref.name} for adult categories',
         name: 'ContentFilterService',
         category: LogCategory.system,
       );

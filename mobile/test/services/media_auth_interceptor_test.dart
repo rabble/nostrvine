@@ -124,7 +124,10 @@ void main() {
     test(
       'creates auth header when user confirms adult content access via dialog',
       () async {
-        // Arrange - default askEachTime preference (shouldAutoShowAdultContent=false)
+        // Arrange - warn preference uses the click-through verification path
+        when(
+          () => mockAgeVerificationService.isAdultContentVerified,
+        ).thenReturn(true);
         when(() => mockContext.mounted).thenReturn(true);
         when(
           () => mockAgeVerificationService.verifyAdultContentAccess(any()),

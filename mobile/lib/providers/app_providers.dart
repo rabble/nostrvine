@@ -167,13 +167,11 @@ final firebaseOnMessageProvider = Provider<Stream<RemoteMessage>>(
   (ref) => FirebaseMessaging.onMessage,
 );
 
-final notificationServiceProvider = Provider<NotificationService>(
-  (ref) {
-    final service = NotificationService();
-    ref.onDispose(service.dispose);
-    return service;
-  },
-);
+final notificationServiceProvider = Provider<NotificationService>((ref) {
+  final service = NotificationService();
+  ref.onDispose(service.dispose);
+  return service;
+});
 
 final collaboratorResponseServiceProvider =
     Provider<CollaboratorResponseService>((ref) {
@@ -405,15 +403,11 @@ OutgoingDmRetryService? outgoingDmRetryService(Ref ref) {
     );
   });
 
-  ref.listen<bool>(
-    appForegroundProvider,
-    (_, next) {
-      if (!foregroundController.isClosed) {
-        foregroundController.add(next);
-      }
-    },
-    fireImmediately: true,
-  );
+  ref.listen<bool>(appForegroundProvider, (_, next) {
+    if (!foregroundController.isClosed) {
+      foregroundController.add(next);
+    }
+  }, fireImmediately: true);
 
   ref.onDispose(service.dispose);
   return service;
@@ -1580,7 +1574,6 @@ VideoEventService videoEventService(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
   final subscriptionManager = ref.watch(subscriptionManagerProvider);
   final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
-  final ageVerificationService = ref.watch(ageVerificationServiceProvider);
   final profileRepository = ref.watch(profileRepositoryProvider);
   final videoFilterBuilder = ref.watch(videoFilterBuilderProvider);
   final db = ref.watch(databaseProvider);
@@ -1598,7 +1591,6 @@ VideoEventService videoEventService(Ref ref) {
     videoFilterBuilder: videoFilterBuilder,
   );
   service.setBlocklistRepository(blocklistRepository);
-  service.setAgeVerificationService(ageVerificationService);
   service.setLikesRepository(likesRepository);
   service.setContentFilterService(ref.watch(contentFilterServiceProvider));
   service.setModerationLabelService(moderationLabelService);
@@ -2272,10 +2264,7 @@ PeopleListsRepository peopleListsRepository(Ref ref) {
   final cache = LocalPeopleListsCache(
     openBox: () => Hive.openBox<dynamic>(_peopleListsBoxName),
   );
-  return PeopleListsRepositoryImpl(
-    nostrClient: nostrClient,
-    cache: cache,
-  );
+  return PeopleListsRepositoryImpl(nostrClient: nostrClient, cache: cache);
 }
 
 /// Bookmark service for NIP-51 bookmarks

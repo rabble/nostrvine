@@ -33,7 +33,6 @@ import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/models/content_label.dart';
-import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
@@ -220,7 +219,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   // Optional services for enhanced functionality
   ContentBlocklistRepository? _blocklistRepository;
   StreamSubscription<BlocklistChange>? _blocklistChangesSubscription;
-  AgeVerificationService? _ageVerificationService;
   LikesRepository? _likesRepository;
   ContentFilterService? _contentFilterService;
   ModerationLabelService? _moderationLabelService;
@@ -441,18 +439,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     _authorBuckets[pubkey] = List.of(videos);
   }
 
-  /// Set the age verification service for adult content filtering
-  void setAgeVerificationService(
-    AgeVerificationService ageVerificationService,
-  ) {
-    _ageVerificationService = ageVerificationService;
-    Log.debug(
-      'Age verification service attached to VideoEventService',
-      name: 'VideoEventService',
-      category: LogCategory.video,
-    );
-  }
-
   /// Set the likes repository for fetching live like counts
   void setLikesRepository(LikesRepository likesRepository) {
     _likesRepository = likesRepository;
@@ -506,7 +492,8 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
   /// Returns true if adult content should be filtered from feeds
   bool get shouldFilterAdultContent =>
-      _ageVerificationService?.shouldHideAdultContent ?? false;
+      _contentFilterService?.adultPlaybackPreference ==
+      ContentFilterPreference.hide;
 
   /// Check if an event should be filtered based on adult content settings
   /// Returns true if the event should be filtered OUT (not shown)

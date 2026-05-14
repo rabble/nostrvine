@@ -350,7 +350,7 @@ void main() {
     group('migration from old preferences', () {
       test('migrates alwaysShow to show for adult categories', () async {
         SharedPreferences.setMockInitialValues({
-          // AdultContentPreference.alwaysShow = index 0
+          // Legacy playback preference "alwaysShow" = index 0
           'adult_content_preference': 0,
         });
 
@@ -371,7 +371,7 @@ void main() {
 
       test('migrates askEachTime to warn for adult categories', () async {
         SharedPreferences.setMockInitialValues({
-          // AdultContentPreference.askEachTime = index 1
+          // Legacy playback preference "askEachTime" = index 1
           'adult_content_preference': 1,
         });
 
@@ -390,7 +390,7 @@ void main() {
 
       test('migrates neverShow to hide for adult categories', () async {
         SharedPreferences.setMockInitialValues({
-          // AdultContentPreference.neverShow = index 2
+          // Legacy playback preference "neverShow" = index 2
           'adult_content_preference': 2,
         });
 
