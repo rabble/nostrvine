@@ -91,7 +91,9 @@ void main() {
           () => mockService.updateVideo(
             originalVideo: any(named: 'originalVideo'),
             editorState: any(named: 'editorState'),
-            initialCollaboratorPubkeys: any(named: 'initialCollaboratorPubkeys'),
+            initialCollaboratorPubkeys: any(
+              named: 'initialCollaboratorPubkeys',
+            ),
             newThumbnailFile: any(named: 'newThumbnailFile'),
           ),
         ).thenAnswer(
@@ -135,7 +137,9 @@ void main() {
           () => mockService.updateVideo(
             originalVideo: any(named: 'originalVideo'),
             editorState: any(named: 'editorState'),
-            initialCollaboratorPubkeys: any(named: 'initialCollaboratorPubkeys'),
+            initialCollaboratorPubkeys: any(
+              named: 'initialCollaboratorPubkeys',
+            ),
             newThumbnailFile: any(named: 'newThumbnailFile'),
           ),
         ).thenAnswer(
