@@ -398,6 +398,43 @@ void main() {
         }
       });
 
+      test(
+        'preserves existing adult category preferences during migration',
+        () async {
+          SharedPreferences.setMockInitialValues({
+            // Legacy playback preference "alwaysShow" = index 0
+            'adult_content_preference': 0,
+            'content_filter_prefs':
+                '{"nudity":"hide","sexual":"warn","violence":"hide"}',
+          });
+
+          await ageService.initialize();
+          await ageService.setAdultContentVerified(true);
+
+          final migrationService = ContentFilterService(
+            ageVerificationService: ageService,
+          );
+          await migrationService.initialize();
+
+          expect(
+            migrationService.getPreference(ContentLabel.nudity),
+            equals(ContentFilterPreference.hide),
+          );
+          expect(
+            migrationService.getPreference(ContentLabel.sexual),
+            equals(ContentFilterPreference.warn),
+          );
+          expect(
+            migrationService.getPreference(ContentLabel.porn),
+            equals(ContentFilterPreference.show),
+          );
+          expect(
+            migrationService.getPreference(ContentLabel.violence),
+            equals(ContentFilterPreference.hide),
+          );
+        },
+      );
+
       test('migrates askEachTime to warn for adult categories', () async {
         SharedPreferences.setMockInitialValues({
           // Legacy playback preference "askEachTime" = index 1
