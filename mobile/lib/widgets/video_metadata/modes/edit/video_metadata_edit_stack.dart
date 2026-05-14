@@ -1,29 +1,22 @@
 // ABOUTME: Full-screen scaffold for editing already-published video metadata.
 // ABOUTME: Reuses VideoMetadataFormFields from the capture stack.
 
+import 'dart:io';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart' hide AspectRatio;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
-import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/constants/nip71_migration.dart';
+import 'package:models/models.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_cover_screen.dart';
-import 'package:openvine/services/collaborator_invite_service.dart';
-import 'package:openvine/utils/collaborator_tags.dart';
-import 'package:openvine/widgets/share_video_menu.dart'
-    show extractEngagementCountTags, sendPostPublishCollaboratorInvites;
 import 'package:openvine/widgets/video_metadata/modes/edit/video_metadata_edit_bottom_bar.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_form_fields.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
-import 'package:unified_logger/unified_logger.dart';
 
 /// Full-screen scaffold for editing an already-published [VideoEvent].
 ///
@@ -80,7 +73,7 @@ class _VideoMetadataEditStackContent extends ConsumerStatefulWidget {
 
 class _VideoMetadataEditStackContentState
     extends ConsumerState<_VideoMetadataEditStackContent> {
-  bool _isCoverUpdating = false;
+  String? _pendingThumbnailPath;
 
   @override
   void initState() {
@@ -111,15 +104,14 @@ class _VideoMetadataEditStackContentState
       targetAspectRatio: AspectRatio.vertical,
       originalAspectRatio: null,
     );
-    await Navigator.push<void>(
+    final path = await Navigator.push<String?>(
       context,
-      PageRouteBuilder<void>(
+      PageRouteBuilder<String?>(
         transitionDuration: duration,
         reverseTransitionDuration: duration,
         pageBuilder: (_, _, _) => VideoMetadataCoverScreen(
           clip: clip,
           thumbnailUrl: widget.video.thumbnailUrl,
-          onNetworkCoverReady: _republishWithNewThumbnail,
         ),
         transitionsBuilder: (_, animation, _, child) {
           if (reduceMotion) return child;
@@ -127,204 +119,9 @@ class _VideoMetadataEditStackContentState
         },
       ),
     );
-  }
-
-  Future<void> _republishWithNewThumbnail(String newThumbnailUrl) async {
-    setState(() => _isCoverUpdating = true);
-
-    // Capture l10n eagerly — awaiting the publish round-trip means the
-    // widget may have unmounted by the time the invite service needs it.
-    final inviteL10n = context.l10n;
-
-    try {
-      final editorState = ref.read(videoEditorProvider);
-
-      final authService = ref.read(authServiceProvider);
-      if (!authService.isAuthenticated) {
-        throw Exception('User not authenticated');
-      }
-
-      final tags = <List<String>>[];
-
-      tags.add(['d', widget.video.stableId]);
-
-      final videoUrls = <String>[];
-      for (final tag in widget.video.nostrEventTags) {
-        if (tag.isEmpty || tag[0] != 'imeta') continue;
-        if (tag.length > 1 && tag[1].contains(' ')) {
-          for (var i = 1; i < tag.length; i++) {
-            final spaceIdx = tag[i].indexOf(' ');
-            if (spaceIdx > 0) {
-              final key = tag[i].substring(0, spaceIdx);
-              final value = tag[i].substring(spaceIdx + 1);
-              if (key == 'url' &&
-                  _isHttpUrl(value) &&
-                  !videoUrls.contains(value)) {
-                videoUrls.add(value);
-              }
-            }
-          }
-        } else {
-          for (var i = 1; i < tag.length - 1; i += 2) {
-            if (tag[i] == 'url' &&
-                _isHttpUrl(tag[i + 1]) &&
-                !videoUrls.contains(tag[i + 1])) {
-              videoUrls.add(tag[i + 1]);
-            }
-          }
-        }
-      }
-
-      if (videoUrls.isEmpty && _isHttpUrl(widget.video.videoUrl)) {
-        videoUrls.add(widget.video.videoUrl!);
-      }
-
-      if (videoUrls.isEmpty) {
-        throw Exception('Cannot update video: no valid HTTP video URLs found');
-      }
-
-      final imetaComponents = <String>[];
-      for (final url in videoUrls) {
-        imetaComponents.add('url $url');
-      }
-      imetaComponents.add('m video/mp4');
-
-      imetaComponents.add('image $newThumbnailUrl');
-
-      if (widget.video.blurhash != null) {
-        imetaComponents.add('blurhash ${widget.video.blurhash!}');
-      }
-      if (widget.video.dimensions != null) {
-        imetaComponents.add('dim ${widget.video.dimensions!}');
-      }
-      if (widget.video.sha256 != null) {
-        imetaComponents.add('x ${widget.video.sha256!}');
-      }
-      if (widget.video.fileSize != null) {
-        imetaComponents.add('size ${widget.video.fileSize!}');
-      }
-
-      if (imetaComponents.isNotEmpty) {
-        tags.add(['imeta', ...imetaComponents]);
-      }
-
-      final title = editorState.title.trim();
-      if (title.isNotEmpty) {
-        tags.add(['title', title]);
-      }
-
-      for (final hashtag in editorState.tags) {
-        tags.add(['t', hashtag]);
-      }
-
-      for (final label in editorState.contentWarnings) {
-        tags.add(['l', label.value, 'content-warning']);
-      }
-
-      tags.addAll(extractEngagementCountTags(widget.video.nostrEventTags));
-
-      if (widget.video.publishedAt != null) {
-        tags.add(['published_at', widget.video.publishedAt!]);
-      }
-      if (widget.video.duration != null) {
-        tags.add(['duration', widget.video.duration.toString()]);
-      }
-      if (widget.video.altText != null) {
-        tags.add(['alt', widget.video.altText!]);
-      }
-
-      for (final pubkey in editorState.collaboratorPubkeys) {
-        tags.add(buildCollaboratorPTag(pubkey));
-      }
-
-      if (editorState.inspiredByVideo != null) {
-        tags.add([
-          'a',
-          editorState.inspiredByVideo!.addressableId,
-          editorState.inspiredByVideo!.relayUrl ?? '',
-          'inspired-by',
-        ]);
-      }
-
-      tags.add(['client', 'diVine']);
-
-      if (editorState.allowAudioReuse) {
-        tags.add(['allow_audio_reuse', 'true']);
-      }
-
-      var content = editorState.description.trim();
-      final inspiredByNpub = editorState.inspiredByNpub;
-      if (inspiredByNpub != null && inspiredByNpub.isNotEmpty) {
-        final ibText = '\n\nInspired by nostr:$inspiredByNpub';
-        content = content.isEmpty ? ibText.trim() : '$content$ibText';
-      }
-
-      final event = await authService.createAndSignEvent(
-        kind: NIP71VideoKinds.addressableShortVideo,
-        content: content,
-        tags: tags,
-        createdAt: widget.video.createdAt + 1,
-      );
-
-      if (event == null) {
-        throw Exception('Failed to create updated event');
-      }
-
-      final nostrService = ref.read(nostrServiceProvider);
-      final publishResult = await nostrService.publishEvent(event);
-      if (publishResult is! PublishSuccess) {
-        throw Exception('Failed to publish updated event');
-      }
-      final publishedEvent = publishResult.event;
-
-      final personalEventCache = ref.read(personalEventCacheServiceProvider);
-      personalEventCache.cacheUserEvent(publishedEvent);
-
-      final videoEventService = ref.read(videoEventServiceProvider);
-      final updatedVideoEvent = VideoEvent.fromNostrEvent(publishedEvent);
-      videoEventService.updateVideoEvent(updatedVideoEvent);
-
-      await sendPostPublishCollaboratorInvites(
-        inviteService: CollaboratorInviteService(
-          dmRepository: ref.read(dmRepositoryProvider),
-          l10n: inviteL10n,
-        ),
-        video: updatedVideoEvent,
-        previousCollaboratorPubkeys: widget.initialCollaboratorPubkeys,
-        updatedCollaboratorPubkeys: editorState.collaboratorPubkeys,
-      );
-
-      if (mounted) {
-        context.pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.shareMenuVideoUpdated),
-            backgroundColor: VineTheme.vineGreen,
-          ),
-        );
-      }
-    } catch (e) {
-      Log.error(
-        'Failed to update cover: $e',
-        name: 'VideoMetadataEditStack',
-        category: LogCategory.ui,
-      );
-
-      if (mounted) {
-        setState(() => _isCoverUpdating = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.shareMenuFailedToUpdateVideo('$e')),
-            backgroundColor: VineTheme.error,
-          ),
-        );
-      }
+    if (path != null && mounted) {
+      setState(() => _pendingThumbnailPath = path);
     }
-  }
-
-  static bool _isHttpUrl(String? url) {
-    if (url == null || url.isEmpty) return false;
-    return url.startsWith('http://') || url.startsWith('https://');
   }
 
   @override
@@ -352,7 +149,7 @@ class _VideoMetadataEditStackContentState
                     child: _EditClipPreview(
                       video: widget.video,
                       onEditCover: _openCoverEditor,
-                      isCoverUpdating: _isCoverUpdating,
+                      pendingThumbnailPath: _pendingThumbnailPath,
                     ),
                   ),
                   // Editing is post-publish; expiration cannot be changed.
@@ -366,6 +163,7 @@ class _VideoMetadataEditStackContentState
             child: VideoMetadataEditBottomBar(
               video: widget.video,
               initialCollaboratorPubkeys: widget.initialCollaboratorPubkeys,
+              pendingThumbnailPath: _pendingThumbnailPath,
             ),
           ),
         ],
@@ -380,12 +178,12 @@ class _EditClipPreview extends StatelessWidget {
   const _EditClipPreview({
     required this.video,
     this.onEditCover,
-    this.isCoverUpdating = false,
+    this.pendingThumbnailPath,
   });
 
   final VideoEvent video;
   final VoidCallback? onEditCover;
-  final bool isCoverUpdating;
+  final String? pendingThumbnailPath;
 
   /// Parses "WxH" dimension string into a width/height ratio.
   /// Falls back to 9/16 (vertical) if unavailable or unparseable.
@@ -416,7 +214,12 @@ class _EditClipPreview extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                if (thumbnailUrl != null)
+                if (pendingThumbnailPath != null)
+                  Image.file(
+                    File(pendingThumbnailPath!),
+                    fit: BoxFit.cover,
+                  )
+                else if (thumbnailUrl != null)
                   VineCachedImage(imageUrl: thumbnailUrl)
                 else
                   const ColoredBox(
@@ -437,7 +240,7 @@ class _EditClipPreview extends StatelessWidget {
                         icon: .pencilSimpleLine,
                         type: .ghostSecondary,
                         size: .small,
-                        onPressed: isCoverUpdating ? null : onEditCover,
+                        onPressed: onEditCover,
                       ),
                     ),
                   ),

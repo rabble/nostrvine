@@ -1,6 +1,8 @@
 // ABOUTME: Bottom bar for the full-screen video metadata edit flow.
 // ABOUTME: Handles update (re-publish with createdAt+1) and delete flows.
 
+import 'dart:io';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart' hide AspectRatio;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,11 +30,13 @@ class VideoMetadataEditBottomBar extends ConsumerStatefulWidget {
   const VideoMetadataEditBottomBar({
     required this.video,
     required this.initialCollaboratorPubkeys,
+    this.pendingThumbnailPath,
     super.key,
   });
 
   final VideoEvent video;
   final Set<String> initialCollaboratorPubkeys;
+  final String? pendingThumbnailPath;
 
   @override
   ConsumerState<VideoMetadataEditBottomBar> createState() =>
@@ -113,7 +117,26 @@ class _VideoMetadataEditBottomBarState
       }
       imetaComponents.add('m video/mp4');
 
-      if (widget.video.thumbnailUrl != null) {
+      if (widget.pendingThumbnailPath != null) {
+        // User selected a new cover — upload to Blossom before republishing.
+        final blossomService = ref.read(blossomUploadServiceProvider);
+        final uploadResult = await blossomService.uploadImage(
+          imageFile: File(widget.pendingThumbnailPath!),
+          nostrPubkey: authService.currentPublicKeyHex ?? '',
+        );
+        if (uploadResult.success && uploadResult.cdnUrl != null) {
+          imetaComponents.add('image ${uploadResult.cdnUrl!}');
+        } else {
+          Log.error(
+            'Thumbnail upload failed during video update; keeping original',
+            name: 'VideoMetadataEditBottomBar',
+            category: LogCategory.ui,
+          );
+          if (widget.video.thumbnailUrl != null) {
+            imetaComponents.add('image ${widget.video.thumbnailUrl!}');
+          }
+        }
+      } else if (widget.video.thumbnailUrl != null) {
         imetaComponents.add('image ${widget.video.thumbnailUrl!}');
       }
       if (widget.video.blurhash != null) {
@@ -228,6 +251,9 @@ class _VideoMetadataEditBottomBarState
           .where((r) => !r.success)
           .length;
 
+      if (widget.pendingThumbnailPath != null) {
+        File(widget.pendingThumbnailPath!).delete().ignore();
+      }
       if (mounted) {
         context.pop();
         ScaffoldMessenger.of(context).showSnackBar(

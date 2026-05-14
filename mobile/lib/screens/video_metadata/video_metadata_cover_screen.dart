@@ -11,13 +11,11 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:pro_image_editor/pro_image_editor.dart' hide VideoClip;
-import 'package:pro_image_editor/shared/widgets/auto_image.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:time_formatter/time_formatter.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -40,7 +38,6 @@ class VideoMetadataCoverScreen extends ConsumerStatefulWidget {
   const VideoMetadataCoverScreen({
     required this.clip,
     this.thumbnailUrl,
-    this.onNetworkCoverReady,
     super.key,
   });
 
@@ -49,10 +46,6 @@ class VideoMetadataCoverScreen extends ConsumerStatefulWidget {
 
   /// Optional thumbnail URL shown while the player is not yet ready.
   final String? thumbnailUrl;
-
-  /// Called with the Blossom CDN URL once the background upload completes.
-  /// Only invoked in the edit flow (network clips).
-  final Future<void> Function(String cdnUrl)? onNetworkCoverReady;
 
   @override
   ConsumerState<VideoMetadataCoverScreen> createState() =>
@@ -223,37 +216,9 @@ class _VideoMetadataCoverScreenState
         );
         if (result != null && mounted) {
           if (widget.clip.video.networkUrl != null) {
-            // Published video — pop immediately and upload in background.
-            final blossomService = ref.read(blossomUploadServiceProvider);
-            final authService = ref.read(authServiceProvider);
-            final localPath = result.path;
-            final messenger = ScaffoldMessenger.of(context);
-            messenger.showSnackBar(
-              DivineSnackbarContainer.snackBar(
-                context.l10n.shareMenuCoverUploadingBackground,
-              ),
-            );
-            if (mounted) context.pop();
-            unawaited(() async {
-              try {
-                final uploadResult = await blossomService.uploadImage(
-                  imageFile: File(localPath),
-                  nostrPubkey: authService.currentPublicKeyHex ?? '',
-                );
-                if (uploadResult.success && uploadResult.cdnUrl != null) {
-                  await widget.onNetworkCoverReady?.call(uploadResult.cdnUrl!);
-                }
-              } catch (e, stackTrace) {
-                Log.error(
-                  'Background thumbnail upload failed',
-                  name: 'VideoMetadataCoverScreen',
-                  error: e,
-                  stackTrace: stackTrace,
-                );
-              } finally {
-                File(localPath).delete().ignore();
-              }
-            }());
+            // Published video — return the local path to the caller.
+            // The Blossom upload and republish happen when the user presses Update.
+            Navigator.of(context).pop(result.path);
             return;
           } else {
             // Draft video — update via videoEditorProvider.
@@ -783,12 +748,25 @@ class _SlotImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fallback = thumbnail != null
-        ? AutoImage(
-            thumbnail!,
-            fit: BoxFit.cover,
-            configs: const ProImageEditorConfigs(),
-          )
-        : const ColoredBox(color: VineTheme.surfaceContainerHigh);
+        ? thumbnail!.networkUrl != null
+              ? Image.network(
+                  thumbnail!.networkUrl!,
+                  fit: .cover,
+                  excludeFromSemantics: true,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    return const ColoredBox(
+                      color: VineTheme.surfaceContainerHigh,
+                    );
+                  },
+                )
+              : Image.file(
+                  File(thumbnail!.file!.path),
+                  fit: .cover,
+                  excludeFromSemantics: true,
+                )
+        : const ColoredBox(
+            color: VineTheme.surfaceContainerHigh,
+          );
 
     if (stripThumbnailPath == null) return fallback;
 
