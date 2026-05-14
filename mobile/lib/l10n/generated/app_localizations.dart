@@ -4595,8 +4595,26 @@ abstract class AppLocalizations {
   /// No description provided for @authTermsPrefix.
   ///
   /// In en, this message translates to:
-  /// **'By selecting an option above, you confirm you are at least 16 years old and agree to the '**
+  /// **'By selecting an option below, you confirm you are at least 16 years old and agree to the '**
   String get authTermsPrefix;
+
+  /// Welcome-screen notice above the sign-in / create-account buttons explaining the minimum age for self-signup.
+  ///
+  /// In en, this message translates to:
+  /// **'Divine accounts are for ages 16 and up.'**
+  String get authMinAgeNotice;
+
+  /// Lead-in white text rendered on the welcome screen immediately before the green 'Here are your choices.' link.
+  ///
+  /// In en, this message translates to:
+  /// **'Not 16 yet? That\'s OK. '**
+  String get authUnder16Prefix;
+
+  /// Inline green call-to-action on the welcome screen that opens the family-guidance flow for under-16 users.
+  ///
+  /// In en, this message translates to:
+  /// **'Here are your choices.'**
+  String get authUnder16ChoicesCta;
 
   /// No description provided for @authTermsOfService.
   ///

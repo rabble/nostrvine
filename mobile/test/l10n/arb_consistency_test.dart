@@ -520,6 +520,12 @@ const _knownUntranslatedDebt = {
   'videoMetadataTagsPickerNoResults',
   'videoMetadataTagsPickerSearchHint',
   'videoPlayerTapHint',
+  // Added by the welcome-screen min-age + under-16 inline link redesign.
+  // Translators will pick these up in a follow-up pass; until then non-English
+  // locales fall back to the English source.
+  'authMinAgeNotice',
+  'authUnder16Prefix',
+  'authUnder16ChoicesCta',
 };
 
 Map<String, Object?> _readArb(File file) {

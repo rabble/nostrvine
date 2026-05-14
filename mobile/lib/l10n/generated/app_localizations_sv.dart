@@ -2620,6 +2620,15 @@ class AppLocalizationsSv extends AppLocalizations {
       'Genom att välja ett alternativ ovan bekräftar du att du är minst 16 år gammal och godkänner ';
 
   @override
+  String get authMinAgeNotice => 'Divine accounts are for ages 16 and up.';
+
+  @override
+  String get authUnder16Prefix => 'Not 16 yet? That\'s OK. ';
+
+  @override
+  String get authUnder16ChoicesCta => 'Here are your choices.';
+
+  @override
   String get authTermsOfService => 'Användarvillkor';
 
   @override

@@ -2666,6 +2666,15 @@ class AppLocalizationsFil extends AppLocalizations {
       'Sa pagpili ng opsyon sa itaas, kinukumpirma mo na ikaw ay 16 na taong gulang o mas matanda at sumasang-ayon sa ';
 
   @override
+  String get authMinAgeNotice => 'Divine accounts are for ages 16 and up.';
+
+  @override
+  String get authUnder16Prefix => 'Not 16 yet? That\'s OK. ';
+
+  @override
+  String get authUnder16ChoicesCta => 'Here are your choices.';
+
+  @override
   String get authTermsOfService => 'Terms of Service';
 
   @override

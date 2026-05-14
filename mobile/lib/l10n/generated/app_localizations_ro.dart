@@ -2711,6 +2711,15 @@ class AppLocalizationsRo extends AppLocalizations {
       'Selecționând o opțiune de mai sus, confirmi că ai cel puțin 16 ani și ești de acord cu ';
 
   @override
+  String get authMinAgeNotice => 'Divine accounts are for ages 16 and up.';
+
+  @override
+  String get authUnder16Prefix => 'Not 16 yet? That\'s OK. ';
+
+  @override
+  String get authUnder16ChoicesCta => 'Here are your choices.';
+
+  @override
   String get authTermsOfService => 'Termenii serviciului';
 
   @override

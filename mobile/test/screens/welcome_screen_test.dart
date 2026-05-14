@@ -188,43 +188,57 @@ void main() {
       });
 
       testWidgets(
-        'shows terms notice below the auth buttons and above the under-16 link',
+        'renders min-age notice, under-16 link, and terms above the auth buttons',
         (tester) async {
           await tester.binding.setSurfaceSize(const Size(800, 1200));
           addTearDown(() => tester.binding.setSurfaceSize(null));
           await tester.pumpWidget(createTestWidget());
           await tester.pumpAndSettle();
 
-          final createButton = find.text('Create a new Divine account');
-          final loginButton = find.widgetWithText(
-            DivineButton,
-            'Sign in with an existing account',
+          final minAgeNotice = find.text(
+            'Divine accounts are for ages 16 and up.',
           );
-          final under16Link = find.text(
-            "Not 16 yet? That's OK. Here's what you can do.",
-          );
+          final under16Link = find.byWidgetPredicate((widget) {
+            if (widget is RichText) {
+              final text = widget.text.toPlainText();
+              return text.contains("Not 16 yet? That's OK. ") &&
+                  text.contains('Here are your choices.');
+            }
+            return false;
+          });
           final termsNotice = find.byWidgetPredicate((widget) {
             if (widget is RichText) {
               final text = widget.text.toPlainText();
-              return text.contains('By selecting an option above') &&
+              return text.contains('By selecting an option below') &&
                   text.contains('Terms of Service');
             }
             return false;
           });
+          final createButton = find.widgetWithText(
+            DivineButton,
+            'Create a new Divine account',
+          );
+          final loginButton = find.widgetWithText(
+            DivineButton,
+            'Sign in with an existing account',
+          );
 
+          expect(minAgeNotice, findsOneWidget);
+          expect(under16Link, findsOneWidget);
+          expect(termsNotice, findsOneWidget);
           expect(createButton, findsOneWidget);
           expect(loginButton, findsOneWidget);
-          expect(termsNotice, findsOneWidget);
-          expect(under16Link, findsOneWidget);
 
-          final createBottom = tester.getBottomLeft(createButton).dy;
-          final loginBottom = tester.getBottomLeft(loginButton).dy;
-          final termsTop = tester.getTopLeft(termsNotice).dy;
+          final minAgeTop = tester.getTopLeft(minAgeNotice).dy;
           final under16Top = tester.getTopLeft(under16Link).dy;
+          final termsTop = tester.getTopLeft(termsNotice).dy;
+          final createTop = tester.getTopLeft(createButton).dy;
+          final loginTop = tester.getTopLeft(loginButton).dy;
 
-          expect(termsTop, greaterThan(createBottom));
-          expect(termsTop, greaterThan(loginBottom));
-          expect(under16Top, greaterThan(termsTop));
+          expect(under16Top, greaterThan(minAgeTop));
+          expect(termsTop, greaterThan(under16Top));
+          expect(createTop, greaterThan(termsTop));
+          expect(loginTop, greaterThan(createTop));
         },
       );
 
@@ -255,15 +269,27 @@ void main() {
       });
 
       testWidgets(
-        'tapping under-16 link navigates to the public family guide',
+        'tapping "Here are your choices." navigates to the public family guide',
         (
           tester,
         ) async {
           await tester.pumpWidget(createTestWidget());
           await tester.pumpAndSettle();
 
-          await tester.tap(
-            find.text("Not 16 yet? That's OK. Here's what you can do."),
+          final ctaRichText = find.byWidgetPredicate((widget) {
+            if (widget is RichText) {
+              final text = widget.text.toPlainText();
+              return text.contains("Not 16 yet? That's OK. ") &&
+                  text.contains('Here are your choices.');
+            }
+            return false;
+          });
+          expect(ctaRichText, findsOneWidget);
+
+          // Tap the right edge of the RichText, where the green CTA span sits.
+          final ctaRect = tester.getRect(ctaRichText);
+          await tester.tapAt(
+            Offset(ctaRect.right - 24, ctaRect.center.dy),
           );
           await tester.pumpAndSettle();
 

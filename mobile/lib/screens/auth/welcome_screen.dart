@@ -229,6 +229,16 @@ class _NewUserLayout extends StatelessWidget {
         ],
 
         if (!isLoading) ...[
+          Text(
+            context.l10n.authMinAgeNotice,
+            textAlign: TextAlign.center,
+            style: VineTheme.bodyMediumFont(),
+          ),
+          const SizedBox(height: 8),
+          const _Under16Choices(),
+          const SizedBox(height: 16),
+          const _TermsNotice(),
+          const SizedBox(height: 20),
           DivineButton(
             label: context.l10n.authCreateNewAccount,
             expanded: true,
@@ -236,9 +246,7 @@ class _NewUserLayout extends StatelessWidget {
               const WelcomeCreateAccountRequested(),
             ),
           ),
-
           const SizedBox(height: 12),
-
           DivineButton(
             label: context.l10n.authSignInDifferentAccount,
             expanded: true,
@@ -246,23 +254,6 @@ class _NewUserLayout extends StatelessWidget {
             onPressed: () => context.read<WelcomeBloc>().add(
               const WelcomeLoginOptionsRequested(),
             ),
-          ),
-
-          const SizedBox(height: 20),
-        ],
-        const _TermsNotice(),
-
-        if (!isLoading) ...[
-          const SizedBox(height: 12),
-
-          TextButton(
-            style: TextButton.styleFrom(
-              foregroundColor: VineTheme.whiteText,
-            ),
-            onPressed: () => context.push(
-              MinorAccountReviewScreen.pathFor(),
-            ),
-            child: Text(context.l10n.minorAccountReviewWelcomeCta),
           ),
         ],
 
@@ -584,6 +575,58 @@ class _TermsNoticeState extends State<_TermsNotice> {
           ),
           const TextSpan(text: '.'),
         ],
+      ),
+    );
+  }
+}
+
+/// Inline link that lets under-16 users discover the family-guidance flow.
+///
+/// Renders "Not 16 yet? That's OK." in white, followed by the tappable
+/// "Here are your choices." call-to-action in [VineTheme.vineGreen].
+class _Under16Choices extends StatefulWidget {
+  const _Under16Choices();
+
+  @override
+  State<_Under16Choices> createState() => _Under16ChoicesState();
+}
+
+class _Under16ChoicesState extends State<_Under16Choices> {
+  late final TapGestureRecognizer _ctaRecognizer;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctaRecognizer = TapGestureRecognizer()
+      ..onTap = () => context.push(MinorAccountReviewScreen.pathFor());
+  }
+
+  @override
+  void dispose() {
+    _ctaRecognizer.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label:
+          context.l10n.authUnder16Prefix + context.l10n.authUnder16ChoicesCta,
+      child: RichText(
+        textAlign: TextAlign.center,
+        textScaler: MediaQuery.textScalerOf(context),
+        text: TextSpan(
+          style: VineTheme.bodyMediumFont(),
+          children: [
+            TextSpan(text: context.l10n.authUnder16Prefix),
+            TextSpan(
+              text: context.l10n.authUnder16ChoicesCta,
+              style: VineTheme.bodyMediumFont(color: VineTheme.vineGreen),
+              recognizer: _ctaRecognizer,
+            ),
+          ],
+        ),
       ),
     );
   }
