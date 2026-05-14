@@ -94,6 +94,9 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   /// [_onAutoRefreshRequested] to skip refreshes when data is fresh.
   DateTime? _lastRefreshedAt;
 
+  bool _usesHomeFeedCache(FeedMode mode) =>
+      mode == FeedMode.forYou || mode == FeedMode.following;
+
   /// Handle feed started event.
   ///
   /// Fires [_loadVideos] immediately without waiting for the follow list to
@@ -430,7 +433,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     // Serve cached home feed on first load for instant startup.
     if (_serveCachedHomeFeed &&
         !_cacheServed &&
-        mode == FeedMode.following &&
+        _usesHomeFeedCache(mode) &&
         _sharedPreferences != null) {
       _cacheServed = true;
       final cached = _homeFeedCache.read(_sharedPreferences);
@@ -487,7 +490,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
       await _fetchCreatorProfiles(validVideos, emit);
 
       // Cache the raw response for next cold start (fire-and-forget).
-      if (mode == FeedMode.following &&
+      if (_usesHomeFeedCache(mode) &&
           _sharedPreferences != null &&
           result.rawResponseBody != null) {
         unawaited(

@@ -1991,6 +1991,39 @@ void main() {
       );
 
       blocTest<VideoFeedBloc, VideoFeedState>(
+        'writes forYou raw response body to Home tab cache after fresh fetch',
+        setUp: () {
+          final videos = createTestVideos(3);
+          when(() => mockCache.read(sharedPreferences)).thenReturn(null);
+          when(() => mockCache.write(any(), any())).thenAnswer((_) async {});
+          when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
+          when(
+            () => mockVideosRepository.getRecommendedVideos(
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResult(
+              videos: videos,
+              rawResponseBody: '{"videos":[{"id":"for-you"}]}',
+            ),
+          );
+        },
+        build: createBlocWithCache,
+        act: (bloc) => bloc.add(const VideoFeedStarted()),
+        verify: (_) {
+          verify(
+            () => mockCache.write(
+              sharedPreferences,
+              '{"videos":[{"id":"for-you"}]}',
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
         'does not write cache when rawResponseBody is null',
         setUp: () {
           final videos = createTestVideos(3);
@@ -2042,7 +2075,7 @@ void main() {
       );
 
       blocTest<VideoFeedBloc, VideoFeedState>(
-        'does not serve following cache for forYou mode',
+        'serves cached Home tab data before fresh forYou recommendations',
         setUp: () {
           final cachedVideos = createTestVideos(2, idPrefix: 'cached');
           final recommendedVideos = createTestVideos(
@@ -2053,6 +2086,7 @@ void main() {
           when(
             () => mockCache.read(sharedPreferences),
           ).thenReturn(HomeFeedResult(videos: cachedVideos));
+          when(() => mockCache.write(any(), any())).thenAnswer((_) async {});
           when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
           when(
             () => mockVideosRepository.getRecommendedVideos(
@@ -2071,6 +2105,10 @@ void main() {
           const VideoFeedState(),
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.videos.length, 'cached count', 2)
+              .having((s) => s.videos.first.id, 'first cached id', 'cached-0'),
+          isA<VideoFeedState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'recommended count', 3)
               .having(
                 (s) => s.videos.first.id,
@@ -2079,7 +2117,7 @@ void main() {
               ),
         ],
         verify: (_) {
-          verifyNever(() => mockCache.read(any()));
+          verify(() => mockCache.read(sharedPreferences)).called(1);
         },
       );
 

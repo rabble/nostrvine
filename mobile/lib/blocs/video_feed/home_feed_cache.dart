@@ -17,10 +17,10 @@ const homeFeedCacheTimeKey = 'home_feed_cache_time';
 /// Maximum age of cached home feed before it's considered stale.
 const homeFeedCacheMaxAge = Duration(hours: 1);
 
-/// Reads and writes cached home feed data from SharedPreferences.
+/// Reads and writes cached Home tab feed data from SharedPreferences.
 ///
-/// The cache stores the raw JSON response from the Funnelcake API
-/// so it can be parsed into [HomeFeedResult] on next cold start
+/// The cache stores the latest raw JSON response for a cacheable Home tab
+/// mode so it can be parsed into [HomeFeedResult] on next cold start
 /// without any network request.
 ///
 /// Cache entries older than [homeFeedCacheMaxAge] are ignored.
