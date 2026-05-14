@@ -65,7 +65,7 @@ void main() {
     });
 
     testWidgets(
-      'uses Image.network for Divine-hosted thumbnails to avoid cache-manager stalls',
+      'uses CachedNetworkImage for Divine-hosted thumbnails',
       (tester) async {
         final divineHostedVideo = createTestVideoEvent(
           id: 'test-divine',
@@ -87,8 +87,7 @@ void main() {
           ),
         );
 
-        expect(find.byType(Image), findsOneWidget);
-        expect(find.byType(CachedNetworkImage), findsNothing);
+        expect(find.byType(CachedNetworkImage), findsOneWidget);
       },
     );
 
