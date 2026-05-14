@@ -369,6 +369,35 @@ void main() {
         );
       });
 
+      test('persists migrated adult categories across restart', () async {
+        SharedPreferences.setMockInitialValues({
+          // Legacy playback preference "alwaysShow" = index 0
+          'adult_content_preference': 0,
+        });
+
+        await ageService.initialize();
+        await ageService.setAdultContentVerified(true);
+        final migrationService = ContentFilterService(
+          ageVerificationService: ageService,
+        );
+        await migrationService.initialize();
+
+        final restartedAgeService = AgeVerificationService();
+        await restartedAgeService.initialize();
+        final restartedService = ContentFilterService(
+          ageVerificationService: restartedAgeService,
+        );
+        await restartedService.initialize();
+
+        for (final label in ContentFilterService.adultCategories) {
+          expect(
+            restartedService.getPreference(label),
+            equals(ContentFilterPreference.show),
+            reason: '${label.displayName} should survive restart',
+          );
+        }
+      });
+
       test('migrates askEachTime to warn for adult categories', () async {
         SharedPreferences.setMockInitialValues({
           // Legacy playback preference "askEachTime" = index 1

@@ -247,10 +247,36 @@ class ContentFilterService extends ChangeNotifier {
     };
 
     if (newPref != null) {
+      final persistedPreferences = <String, String>{};
+      final savedPreferencesJson = prefs.getString(_prefsKey);
+      if (savedPreferencesJson != null) {
+        try {
+          final savedPreferences =
+              jsonDecode(savedPreferencesJson) as Map<String, dynamic>;
+          for (final entry in savedPreferences.entries) {
+            final value = entry.value;
+            if (ContentLabel.fromValue(entry.key) != null &&
+                value is String &&
+                _preferenceFromString(value) != null) {
+              persistedPreferences[entry.key] = value;
+            }
+          }
+        } catch (e) {
+          Log.warning(
+            'Ignoring invalid content filter preferences during migration: $e',
+            name: 'ContentFilterService',
+            category: LogCategory.system,
+          );
+        }
+      }
+
       // Apply to all adult categories
       for (final label in adultCategories) {
         _preferences[label] = newPref;
+        persistedPreferences.putIfAbsent(label.value, () => newPref.name);
       }
+
+      await prefs.setString(_prefsKey, jsonEncode(persistedPreferences));
 
       Log.info(
         'Migrated old adult content preference '
