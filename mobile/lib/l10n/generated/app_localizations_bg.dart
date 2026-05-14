@@ -5363,6 +5363,24 @@ class AppLocalizationsBg extends AppLocalizations {
   String get messageExternalLinkDialogOpen => 'Отвори';
 
   @override
+  String get inboxCollabInviteCoPostButton => 'Co-post';
+
+  @override
+  String get inboxCollabInviteNotMineButton => 'Not mine';
+
+  @override
+  String get inboxCollabInvitePreviewTitle => 'Co-post invite';
+
+  @override
+  String inboxCollabInvitePreviewTitleFrom(String displayName) {
+    return 'Co-post invite from $displayName';
+  }
+
+  @override
+  String get inboxCollabInviteTimelineConsequence =>
+      'Co-posting adds this video to your timeline as a collaboration.';
+
+  @override
   String get inboxCollabInviteAcceptButton => 'Приеми';
 
   @override

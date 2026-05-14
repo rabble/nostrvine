@@ -11,7 +11,6 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation/collaborator_invite_actions_cubit.dart';
 import 'package:openvine/blocs/dm/message_requests/message_request_actions_cubit.dart';
 import 'package:openvine/blocs/dm/message_requests/request_preview_cubit.dart';
-import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/collaborator_invite.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/app_router.dart';
@@ -64,8 +63,6 @@ void main() {
     videoDTag: 'skate-loop',
     role: 'Collaborator',
   );
-
-  final l10n = lookupAppLocalizations(const Locale('en'));
 
   group(RequestPreviewView, () {
     late _MockMessageRequestActionsCubit mockActionsCubit;
@@ -214,6 +211,7 @@ void main() {
             ['p', otherPubkey],
             ['role', 'Collaborator'],
             ['title', 'Skate loop'],
+            ['thumb', 'https://cdn.divine.video/thumbs/skate-loop.jpg'],
           ],
         );
 
@@ -229,16 +227,24 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text(l10n.inboxCollabInviteCardTitle), findsOneWidget);
-        expect(find.text(l10n.inboxCollabInviteAcceptButton), findsOneWidget);
-        expect(find.text(l10n.inboxCollabInviteIgnoreButton), findsOneWidget);
+        expect(find.textContaining('Co-post invite'), findsOneWidget);
+        expect(find.text('Co-post'), findsOneWidget);
+        expect(find.text('Not mine'), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('collaborator_invite_thumbnail')),
+          findsOneWidget,
+        );
+        expect(
+          find.text(
+            'Co-posting adds this video to your timeline as a collaboration.',
+          ),
+          findsOneWidget,
+        );
         expect(find.text('You were invited to collaborate.'), findsNothing);
 
-        await tester.ensureVisible(
-          find.text(l10n.inboxCollabInviteIgnoreButton),
-        );
+        await tester.ensureVisible(find.text('Not mine'));
         await tester.pump();
-        await tester.tap(find.text(l10n.inboxCollabInviteIgnoreButton));
+        await tester.tap(find.text('Not mine'));
         await tester.pump();
 
         verify(

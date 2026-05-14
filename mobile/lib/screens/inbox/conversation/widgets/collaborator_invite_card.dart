@@ -10,16 +10,19 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/collaborator_invite.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/services/collaborator_invite_state_store.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 
 class CollaboratorInviteCard extends StatefulWidget {
   const CollaboratorInviteCard({
     required this.invite,
     required this.isSent,
+    this.senderDisplayName,
     super.key,
   });
 
   final CollaboratorInvite invite;
   final bool isSent;
+  final String? senderDisplayName;
 
   @override
   State<CollaboratorInviteCard> createState() => _CollaboratorInviteCardState();
@@ -58,6 +61,7 @@ class _CollaboratorInviteCardState extends State<CollaboratorInviteCard> {
       return _CardChrome(
         invite: widget.invite,
         isSent: true,
+        senderDisplayName: widget.senderDisplayName,
         action: _StatusText(
           label: context.l10n.inboxCollabInviteSentStatus,
           color: VineTheme.onSurfaceMuted,
@@ -74,6 +78,7 @@ class _CollaboratorInviteCardState extends State<CollaboratorInviteCard> {
         return _CardChrome(
           invite: widget.invite,
           isSent: false,
+          senderDisplayName: widget.senderDisplayName,
           action: _InviteActions(
             invite: widget.invite,
             state: inviteState,
@@ -89,11 +94,13 @@ class _CardChrome extends StatelessWidget {
     required this.invite,
     required this.isSent,
     required this.action,
+    this.senderDisplayName,
   });
 
   final CollaboratorInvite invite;
   final bool isSent;
   final Widget action;
+  final String? senderDisplayName;
 
   String _titleText(BuildContext context) {
     final title = invite.title?.trim();
@@ -101,9 +108,23 @@ class _CardChrome extends StatelessWidget {
     return context.l10n.inboxCollabInviteCardUntitledVideo;
   }
 
+  String? get _thumbnailUrl {
+    final value = invite.thumbnailUrl?.trim();
+    return value == null || value.isEmpty ? null : value;
+  }
+
+  String _previewTitle(BuildContext context) {
+    if (isSent) return context.l10n.inboxCollabInviteCardTitle;
+    final name = senderDisplayName?.trim();
+    if (name != null && name.isNotEmpty) {
+      return context.l10n.inboxCollabInvitePreviewTitleFrom(name);
+    }
+    return context.l10n.inboxCollabInvitePreviewTitle;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
+    final thumbnailUrl = _thumbnailUrl;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Align(
@@ -120,42 +141,187 @@ class _CardChrome extends StatelessWidget {
               constraints: BoxConstraints(
                 maxWidth: MediaQuery.sizeOf(context).width * 0.78,
               ),
-              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: VineTheme.surfaceContainerHigh,
                 border: Border.all(color: VineTheme.outlineMuted),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    l10n.inboxCollabInviteCardTitle,
-                    style: VineTheme.labelLargeFont(color: VineTheme.primary),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _titleText(context),
-                    style: VineTheme.titleMediumFont(),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    l10n.inboxCollabInviteCardRoleLabel(invite.role),
-                    style: VineTheme.bodySmallFont(
-                      color: VineTheme.onSurfaceMuted,
+              clipBehavior: Clip.antiAlias,
+              child: thumbnailUrl == null
+                  ? _FallbackInviteContent(
+                      title: _titleText(context),
+                      previewTitle: _previewTitle(context),
+                      action: action,
+                    )
+                  : _ThumbnailInviteContent(
+                      thumbnailUrl: thumbnailUrl,
+                      title: _titleText(context),
+                      previewTitle: _previewTitle(context),
+                      action: action,
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  action,
-                ],
-              ),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ThumbnailInviteContent extends StatelessWidget {
+  const _ThumbnailInviteContent({
+    required this.thumbnailUrl,
+    required this.title,
+    required this.previewTitle,
+    required this.action,
+  });
+
+  final String thumbnailUrl;
+  final String title;
+  final String previewTitle;
+  final Widget action;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AspectRatio(
+          aspectRatio: 9 / 14,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              VineCachedImage(
+                key: const ValueKey('collaborator_invite_thumbnail'),
+                imageUrl: thumbnailUrl,
+                placeholder: (context, url) => const ColoredBox(
+                  color: VineTheme.surfaceContainer,
+                ),
+                errorWidget: (context, url, error) => const ColoredBox(
+                  color: VineTheme.surfaceContainer,
+                ),
+              ),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      VineTheme.backgroundColor.withValues(alpha: 0),
+                      VineTheme.backgroundColor.withValues(alpha: 0.82),
+                    ],
+                  ),
+                ),
+              ),
+              const Center(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: VineTheme.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: Icon(
+                      Icons.play_arrow_rounded,
+                      color: VineTheme.backgroundColor,
+                      size: 32,
+                    ),
+                  ),
+                ),
+              ),
+              PositionedDirectional(
+                start: 12,
+                end: 12,
+                bottom: 12,
+                child: _InviteCopy(
+                  previewTitle: previewTitle,
+                  title: title,
+                  consequence: l10n.inboxCollabInviteTimelineConsequence,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: action,
+        ),
+      ],
+    );
+  }
+}
+
+class _FallbackInviteContent extends StatelessWidget {
+  const _FallbackInviteContent({
+    required this.title,
+    required this.previewTitle,
+    required this.action,
+  });
+
+  final String title;
+  final String previewTitle;
+  final Widget action;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _InviteCopy(
+            previewTitle: previewTitle,
+            title: title,
+            consequence: l10n.inboxCollabInviteTimelineConsequence,
+          ),
+          const SizedBox(height: 16),
+          action,
+        ],
+      ),
+    );
+  }
+}
+
+class _InviteCopy extends StatelessWidget {
+  const _InviteCopy({
+    required this.previewTitle,
+    required this.title,
+    required this.consequence,
+  });
+
+  final String previewTitle;
+  final String title;
+  final String consequence;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          previewTitle,
+          style: VineTheme.labelLargeFont(color: VineTheme.primary),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          title,
+          style: VineTheme.titleMediumFont(),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          consequence,
+          style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
+        ),
+      ],
     );
   }
 }
@@ -221,7 +387,7 @@ class _ActionRow extends StatelessWidget {
       children: [
         Expanded(
           child: DivineButton(
-            label: l10n.inboxCollabInviteAcceptButton,
+            label: l10n.inboxCollabInviteCoPostButton,
             size: DivineButtonSize.small,
             isLoading: isAccepting,
             onPressed: isAccepting
@@ -236,7 +402,7 @@ class _ActionRow extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: DivineButton(
-            label: l10n.inboxCollabInviteIgnoreButton,
+            label: l10n.inboxCollabInviteNotMineButton,
             type: DivineButtonType.secondary,
             size: DivineButtonSize.small,
             onPressed: isAccepting

@@ -160,7 +160,10 @@ class _ProfileContent extends StatelessWidget {
                 displayName: displayName,
                 messageCount: messageCount,
               ),
-              _InvitePreview(messages: messages),
+              _InvitePreview(
+                messages: messages,
+                senderDisplayName: displayName,
+              ),
             ],
           ),
         ),
@@ -170,9 +173,13 @@ class _ProfileContent extends StatelessWidget {
 }
 
 class _InvitePreview extends StatelessWidget {
-  const _InvitePreview({required this.messages});
+  const _InvitePreview({
+    required this.messages,
+    required this.senderDisplayName,
+  });
 
   final List<DmMessage> messages;
+  final String senderDisplayName;
 
   @override
   Widget build(BuildContext context) {
@@ -187,6 +194,7 @@ class _InvitePreview extends StatelessWidget {
       child: CollaboratorInviteCard(
         invite: inviteMessages.first,
         isSent: false,
+        senderDisplayName: senderDisplayName,
       ),
     );
   }

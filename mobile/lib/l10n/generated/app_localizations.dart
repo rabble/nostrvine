@@ -9410,6 +9410,36 @@ abstract class AppLocalizations {
   /// **'Open'**
   String get messageExternalLinkDialogOpen;
 
+  /// Primary action on a collaborator invite card. Accepts the invite and co-posts the video to the recipient's timeline as a collaboration.
+  ///
+  /// In en, this message translates to:
+  /// **'Co-post'**
+  String get inboxCollabInviteCoPostButton;
+
+  /// Secondary action on a collaborator invite card. Ignores the invite because the recipient does not claim the video as their collaboration.
+  ///
+  /// In en, this message translates to:
+  /// **'Not mine'**
+  String get inboxCollabInviteNotMineButton;
+
+  /// Header label shown over the video preview on a collaborator invite card.
+  ///
+  /// In en, this message translates to:
+  /// **'Co-post invite'**
+  String get inboxCollabInvitePreviewTitle;
+
+  /// Header label shown over the video preview on a collaborator invite card when the inviter's display name is known.
+  ///
+  /// In en, this message translates to:
+  /// **'Co-post invite from {displayName}'**
+  String inboxCollabInvitePreviewTitleFrom(String displayName);
+
+  /// Explains what accepting a collaborator invite does.
+  ///
+  /// In en, this message translates to:
+  /// **'Co-posting adds this video to your timeline as a collaboration.'**
+  String get inboxCollabInviteTimelineConsequence;
+
   /// No description provided for @inboxCollabInviteAcceptButton.
   ///
   /// In en, this message translates to:

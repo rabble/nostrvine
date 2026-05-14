@@ -2844,6 +2844,31 @@
   "@messageExternalLinkDialogOpen": {
     "description": "Confirmation button that opens an untrusted external URL from a DM."
   },
+  "inboxCollabInviteCoPostButton": "Co-post",
+  "@inboxCollabInviteCoPostButton": {
+    "description": "Primary action on a collaborator invite card. Accepts the invite and co-posts the video to the recipient's timeline as a collaboration."
+  },
+  "inboxCollabInviteNotMineButton": "Not mine",
+  "@inboxCollabInviteNotMineButton": {
+    "description": "Secondary action on a collaborator invite card. Ignores the invite because the recipient does not claim the video as their collaboration."
+  },
+  "inboxCollabInvitePreviewTitle": "Co-post invite",
+  "@inboxCollabInvitePreviewTitle": {
+    "description": "Header label shown over the video preview on a collaborator invite card."
+  },
+  "inboxCollabInvitePreviewTitleFrom": "Co-post invite from {displayName}",
+  "@inboxCollabInvitePreviewTitleFrom": {
+    "description": "Header label shown over the video preview on a collaborator invite card when the inviter's display name is known.",
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxCollabInviteTimelineConsequence": "Co-posting adds this video to your timeline as a collaboration.",
+  "@inboxCollabInviteTimelineConsequence": {
+    "description": "Explains what accepting a collaborator invite does."
+  },
   "inboxCollabInviteAcceptButton": "Accept",
   "inboxCollabInviteIgnoreButton": "Ignore",
   "inboxCollabInviteAcceptedStatus": "Accepted",

@@ -315,6 +315,7 @@ class _ConversationContent extends StatelessWidget {
                 : _MessageList(
                     messages: selected.messages,
                     currentPubkey: currentPubkey,
+                    senderDisplayName: displayName,
                   ),
         };
       },
@@ -323,10 +324,15 @@ class _ConversationContent extends StatelessWidget {
 }
 
 class _MessageList extends StatelessWidget {
-  const _MessageList({required this.messages, required this.currentPubkey});
+  const _MessageList({
+    required this.messages,
+    required this.currentPubkey,
+    required this.senderDisplayName,
+  });
 
   final List<DmMessage> messages;
   final String currentPubkey;
+  final String senderDisplayName;
 
   Future<void> _onMessageLongPress(
     BuildContext context,
@@ -377,7 +383,11 @@ class _MessageList extends StatelessWidget {
         final isSent = message.senderPubkey == currentPubkey;
         final invite = CollaboratorInviteParser.parse(message);
         if (invite != null) {
-          return CollaboratorInviteCard(invite: invite, isSent: isSent);
+          return CollaboratorInviteCard(
+            invite: invite,
+            isSent: isSent,
+            senderDisplayName: isSent ? null : senderDisplayName,
+          );
         }
 
         // Suppress legacy NIP-04 invite plaintext duplicates (#3559).

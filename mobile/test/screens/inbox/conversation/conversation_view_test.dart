@@ -284,6 +284,69 @@ void main() {
       });
 
       testWidgets(
+        'renders collaborator invite as an inline video preview with co-post actions',
+        (tester) async {
+          const thumbnailUrl = 'https://cdn.divine.video/thumbs/skate-loop.jpg';
+          final message = DmMessage(
+            id: '9999999999999999999999999999999999999999999999999999999999999999',
+            conversationId:
+                'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+            senderPubkey: otherPubkey,
+            content: 'You were invited to collaborate.',
+            createdAt: now.millisecondsSinceEpoch ~/ 1000,
+            giftWrapId:
+                'aaaaaaaabbbbbbbbccccccccddddddddaaaaaaaabbbbbbbbccccccccdddddddd',
+            tags: const [
+              ['divine', 'collab-invite'],
+              [
+                'a',
+                '34236:1122334411223344112233441122334411223344112233441122334411223344:skate-loop',
+                'wss://relay.divine.video',
+              ],
+              ['p', otherPubkey],
+              ['role', 'Collaborator'],
+              ['title', 'Skate loop'],
+              ['thumb', thumbnailUrl],
+            ],
+          );
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationState(
+                status: ConversationStatus.loaded,
+                messages: [message],
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(find.textContaining('Co-post invite'), findsOneWidget);
+          expect(find.textContaining('Skate loop'), findsOneWidget);
+          expect(
+            find.text(
+              'Co-posting adds this video to your timeline as a collaboration.',
+            ),
+            findsOneWidget,
+          );
+          expect(find.text('Co-post'), findsOneWidget);
+          expect(find.text('Not mine'), findsOneWidget);
+          expect(find.text(l10n.inboxCollabInviteAcceptButton), findsNothing);
+          expect(find.text(l10n.inboxCollabInviteIgnoreButton), findsNothing);
+          expect(
+            find.byKey(const ValueKey('collaborator_invite_thumbnail')),
+            findsOneWidget,
+          );
+
+          await tester.tap(find.text('Co-post'));
+          await tester.pump();
+
+          verify(
+            () => mockInviteActionsCubit.acceptInvite(any()),
+          ).called(1);
+        },
+      );
+
+      testWidgets(
         'renders collaborator invite card instead of plaintext invite copy',
         (tester) async {
           final message = DmMessage(
@@ -318,13 +381,13 @@ void main() {
           );
           await tester.pump();
 
-          expect(find.text(l10n.inboxCollabInviteCardTitle), findsOneWidget);
+          expect(find.textContaining('Co-post invite'), findsOneWidget);
           expect(find.textContaining('Skate loop'), findsOneWidget);
-          expect(find.text(l10n.inboxCollabInviteAcceptButton), findsOneWidget);
-          expect(find.text(l10n.inboxCollabInviteIgnoreButton), findsOneWidget);
+          expect(find.text('Co-post'), findsOneWidget);
+          expect(find.text('Not mine'), findsOneWidget);
           expect(find.text('You were invited to collaborate.'), findsNothing);
 
-          await tester.tap(find.text(l10n.inboxCollabInviteAcceptButton));
+          await tester.tap(find.text('Co-post'));
           await tester.pump();
 
           verify(
@@ -476,8 +539,8 @@ void main() {
           expect(find.text(l10n.inboxCollabInviteCardTitle), findsOneWidget);
           expect(find.textContaining('Skate loop'), findsOneWidget);
           expect(find.text(l10n.inboxCollabInviteSentStatus), findsOneWidget);
-          expect(find.text(l10n.inboxCollabInviteAcceptButton), findsNothing);
-          expect(find.text(l10n.inboxCollabInviteIgnoreButton), findsNothing);
+          expect(find.text('Co-post'), findsNothing);
+          expect(find.text('Not mine'), findsNothing);
           expect(find.text('You were invited to collaborate.'), findsNothing);
 
           // Stronger assertion than "no acceptInvite call": sender-side
