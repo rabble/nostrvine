@@ -67,7 +67,7 @@ class MediaCacheConfig {
         maxNrOfCacheObjects: 200,
         connectionTimeout: const Duration(seconds: 10),
         idleTimeout: const Duration(seconds: 30),
-        maxConnectionsPerHost: 6,
+        maxConnectionsPerHost: 20,
         enableSyncManifest: false,
         defaultExtension: '.jpg',
       );

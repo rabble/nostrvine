@@ -66,7 +66,7 @@ void main() {
         expect(config.maxNrOfCacheObjects, 200);
         expect(config.connectionTimeout, const Duration(seconds: 10));
         expect(config.idleTimeout, const Duration(seconds: 30));
-        expect(config.maxConnectionsPerHost, 6);
+        expect(config.maxConnectionsPerHost, 20);
         expect(config.enableSyncManifest, false);
         expect(config.allowBadCertificatesInDebug, true);
       });
