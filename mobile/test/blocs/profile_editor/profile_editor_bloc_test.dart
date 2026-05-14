@@ -13,6 +13,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
+import 'package:openvine/services/mention_resolution_service.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:profile_repository/profile_repository.dart';
 
 class _MockProfileRepository extends Mock implements ProfileRepository {}
@@ -32,6 +34,8 @@ void main() {
     const testAbout = 'Test bio';
     const testUsername = 'testuser';
     const testPicture = 'https://example.com/avatar.png';
+    const alicePubkey =
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
     /// Helper to create a test UserProfile
     UserProfile createTestProfile({String? nip05}) {
@@ -73,12 +77,15 @@ void main() {
       ).thenAnswer((_) async {});
     });
 
-    ProfileEditorBloc createBloc({bool hasExistingProfile = true}) =>
-        ProfileEditorBloc(
-          profileRepository: mockProfileRepository,
-          blossomUploadService: mockBlossomUploadService,
-          hasExistingProfile: hasExistingProfile,
-        );
+    ProfileEditorBloc createBloc({
+      bool hasExistingProfile = true,
+      MentionResolutionService? mentionResolutionService,
+    }) => ProfileEditorBloc(
+      profileRepository: mockProfileRepository,
+      blossomUploadService: mockBlossomUploadService,
+      hasExistingProfile: hasExistingProfile,
+      mentionResolutionService: mentionResolutionService,
+    );
 
     test('initial state is ProfileEditorStatus.initial', () {
       final bloc = createBloc();
@@ -307,6 +314,134 @@ void main() {
                 about: testAbout,
                 picture: testPicture,
                 clearNip05: true,
+              ),
+            ).called(1);
+          },
+        );
+
+        blocTest<ProfileEditorBloc, ProfileEditorState>(
+          'canonicalizes exact bio mentions before publishing profile metadata',
+          setUp: () {
+            final aliceNpub = NostrKeyUtils.encodePubKey(alicePubkey);
+            when(
+              () => mockProfileRepository.searchUsersLocally(
+                query: 'alice',
+                limit: any(named: 'limit'),
+              ),
+            ).thenAnswer(
+              (_) async => [
+                UserProfile(
+                  pubkey: alicePubkey,
+                  name: 'alice',
+                  rawData: const {},
+                  createdAt: DateTime.utc(2026),
+                  eventId: 'event-$alicePubkey',
+                ),
+              ],
+            );
+            when(
+              () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+            ).thenAnswer((_) async => null);
+            when(
+              () => mockProfileRepository.saveProfileEvent(
+                displayName: testDisplayName,
+                about: 'hi nostr:$aliceNpub',
+                picture: testPicture,
+                clearNip05: any(named: 'clearNip05'),
+              ),
+            ).thenAnswer((_) async => createTestProfile());
+          },
+          build: () => createBloc(
+            mentionResolutionService: MentionResolutionService(
+              profileRepository: mockProfileRepository,
+            ),
+          ),
+          act: (bloc) => bloc.add(
+            const ProfileSaved(
+              pubkey: testPubkey,
+              displayName: testDisplayName,
+              about: 'hi @alice',
+              picture: testPicture,
+            ),
+          ),
+          expect: () => [
+            isA<ProfileEditorState>().having(
+              (s) => s.status,
+              'status',
+              ProfileEditorStatus.loading,
+            ),
+            isA<ProfileEditorState>().having(
+              (s) => s.status,
+              'status',
+              ProfileEditorStatus.success,
+            ),
+          ],
+          verify: (_) {
+            final aliceNpub = NostrKeyUtils.encodePubKey(alicePubkey);
+            verify(
+              () => mockProfileRepository.saveProfileEvent(
+                displayName: testDisplayName,
+                about: 'hi nostr:$aliceNpub',
+                picture: testPicture,
+                clearNip05: any(named: 'clearNip05'),
+              ),
+            ).called(1);
+          },
+        );
+
+        blocTest<ProfileEditorBloc, ProfileEditorState>(
+          'preserves unresolved bio text when mention resolution fails',
+          setUp: () {
+            when(
+              () => mockProfileRepository.searchUsersLocally(
+                query: 'alice',
+                limit: any(named: 'limit'),
+              ),
+            ).thenThrow(Exception('lookup unavailable'));
+            when(
+              () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+            ).thenAnswer((_) async => null);
+            when(
+              () => mockProfileRepository.saveProfileEvent(
+                displayName: testDisplayName,
+                about: 'hi @alice',
+                picture: testPicture,
+                clearNip05: any(named: 'clearNip05'),
+              ),
+            ).thenAnswer((_) async => createTestProfile());
+          },
+          build: () => createBloc(
+            mentionResolutionService: MentionResolutionService(
+              profileRepository: mockProfileRepository,
+            ),
+          ),
+          act: (bloc) => bloc.add(
+            const ProfileSaved(
+              pubkey: testPubkey,
+              displayName: testDisplayName,
+              about: 'hi @alice',
+              picture: testPicture,
+            ),
+          ),
+          expect: () => [
+            isA<ProfileEditorState>().having(
+              (s) => s.status,
+              'status',
+              ProfileEditorStatus.loading,
+            ),
+            isA<ProfileEditorState>().having(
+              (s) => s.status,
+              'status',
+              ProfileEditorStatus.success,
+            ),
+          ],
+          verify: (_) {
+            verify(
+              () => mockProfileRepository.saveProfileEvent(
+                displayName: testDisplayName,
+                about: 'hi @alice',
+                picture: testPicture,
+                clearNip05: any(named: 'clearNip05'),
               ),
             ).called(1);
           },

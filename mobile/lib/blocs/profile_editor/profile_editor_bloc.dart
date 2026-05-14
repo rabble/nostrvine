@@ -14,6 +14,7 @@ import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
+import 'package:openvine/services/mention_resolution_service.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:stream_transform/stream_transform.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -49,10 +50,14 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     required ProfileRepository profileRepository,
     required BlossomUploadService blossomUploadService,
     required bool hasExistingProfile,
+    MentionResolutionService? mentionResolutionService,
     String? currentUserPubkey,
   }) : _profileRepository = profileRepository,
        _blossomUploadService = blossomUploadService,
        _hasExistingProfile = hasExistingProfile,
+       _mentionResolutionService =
+           mentionResolutionService ??
+           MentionResolutionService(profileRepository: profileRepository),
        _currentUserPubkey = currentUserPubkey,
        super(const ProfileEditorState()) {
     on<InitialUsernameSet>(_onInitialUsernameSet);
@@ -91,6 +96,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
   final ProfileRepository _profileRepository;
   final BlossomUploadService _blossomUploadService;
   final bool _hasExistingProfile;
+  final MentionResolutionService _mentionResolutionService;
   final String? _currentUserPubkey;
 
   void _onInitialUsernameSet(
@@ -776,7 +782,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     emit(state.copyWith(status: ProfileEditorStatus.loading));
 
     final displayName = event.displayName.trim();
-    final about = (event.about?.trim().isEmpty ?? true) ? null : event.about;
+    final about = await _canonicalizeProfileAbout(event);
 
     // Bloc decides which NIP-05 value to use based on current mode
     final isExternal = state.nip05Mode == Nip05Mode.external_;
@@ -903,6 +909,26 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
           error: profileError,
         ),
       );
+    }
+  }
+
+  Future<String?> _canonicalizeProfileAbout(ProfileSaved event) async {
+    final rawAbout = event.about;
+    if (rawAbout?.trim().isEmpty ?? true) return null;
+
+    try {
+      final result = await _mentionResolutionService.resolveTextMentions(
+        rawText: rawAbout!,
+        currentUserPubkey: event.pubkey,
+      );
+      return result.canonicalText;
+    } on Object catch (error, stackTrace) {
+      Log.error(
+        'Profile bio mention resolution failed: $error',
+        name: 'ProfileEditorBloc',
+      );
+      addError(error, stackTrace);
+      return rawAbout;
     }
   }
 
