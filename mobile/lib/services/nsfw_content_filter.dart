@@ -46,7 +46,7 @@ VideoContentFilter createNsfwFilter(
       // every video carrying it, regardless of user preference. The
       // conservative default is correct for safety labels but is too broad
       // if the server starts emitting discovery/taxonomy labels in the same
-      // field. Track at: TBD (open an issue when this PR lands).
+      // field. Track at: #4364.
       //
       // Conservative default: if the server tagged a video with a label
       // we don't recognize, treat it as a hide signal. The alternative —

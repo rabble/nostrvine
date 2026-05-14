@@ -3,6 +3,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/content_filter_service.dart';
@@ -14,6 +15,22 @@ class MockNostrService extends Mock implements NostrClient {}
 class MockSubscriptionManager extends Mock implements SubscriptionManager {}
 
 class MockContentFilterService extends Mock implements ContentFilterService {}
+
+VideoEvent _buildVideo({
+  required String id,
+  List<String> moderationLabels = const [],
+}) {
+  return VideoEvent(
+    id: id,
+    pubkey: 'f' * 64,
+    createdAt: 1704067200,
+    content: '',
+    timestamp: DateTime.fromMillisecondsSinceEpoch(1704067200 * 1000),
+    title: 'Test Video',
+    videoUrl: 'https://example.com/$id.mp4',
+    moderationLabels: moderationLabels,
+  );
+}
 
 void main() {
   late MockNostrService mockNostrService;
@@ -177,6 +194,60 @@ void main() {
             .filterAdultContentFromExistingVideos();
 
         expect(removedCount, equals(0));
+      },
+    );
+
+    test(
+      'filterVideoList hides videos with unknown sexual-content moderation label',
+      () {
+        when(
+          () => mockContentFilterService.getPreferenceForLabels(any()),
+        ).thenReturn(ContentFilterPreference.show);
+        videoEventService.setContentFilterService(mockContentFilterService);
+
+        final filtered = videoEventService.filterVideoList([
+          _buildVideo(id: '5' * 64, moderationLabels: const ['sexual-content']),
+        ]);
+
+        expect(filtered, isEmpty);
+      },
+    );
+
+    test(
+      'filterVideoList hides videos with any other unknown moderation label',
+      () {
+        when(
+          () => mockContentFilterService.getPreferenceForLabels(any()),
+        ).thenReturn(ContentFilterPreference.show);
+        videoEventService.setContentFilterService(mockContentFilterService);
+
+        final filtered = videoEventService.filterVideoList([
+          _buildVideo(
+            id: '6' * 64,
+            moderationLabels: const ['some-new-server-label'],
+          ),
+        ]);
+
+        expect(filtered, isEmpty);
+      },
+    );
+
+    test(
+      'filterVideoList keeps videos with known moderation labels when preference allows them',
+      () {
+        when(
+          () => mockContentFilterService.getPreferenceForLabels(any()),
+        ).thenReturn(ContentFilterPreference.show);
+        videoEventService.setContentFilterService(mockContentFilterService);
+
+        final video = _buildVideo(
+          id: '7' * 64,
+          moderationLabels: const ['nudity'],
+        );
+
+        final filtered = videoEventService.filterVideoList([video]);
+
+        expect(filtered, [video]);
       },
     );
   });
