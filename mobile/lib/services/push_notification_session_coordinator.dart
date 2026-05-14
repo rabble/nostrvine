@@ -57,6 +57,7 @@ class PushNotificationSessionCoordinator {
 
   final _activeRegistrations = <_PushRegistrationOperation>{};
   StreamSubscription<String>? _tokenRefreshSubscription;
+  Future<NotificationSettings>? _permissionRequestFuture;
   String? _lastReadyPubkey;
   NostrClient? _lastReadyClient;
   PushNotificationService? _lastReadyPushService;
@@ -291,10 +292,7 @@ class PushNotificationSessionCoordinator {
       final current = await _firebaseMessaging.getNotificationSettings();
       if (!_isRegistrationCurrent(operation)) return;
 
-      final settings =
-          current.authorizationStatus == AuthorizationStatus.notDetermined
-          ? await _firebaseMessaging.requestPermission()
-          : current;
+      final settings = await _resolvePermissionSettings(current);
 
       if (!_isRegistrationCurrent(operation)) return;
 
@@ -329,6 +327,27 @@ class PushNotificationSessionCoordinator {
         name: 'PushNotificationSync',
         category: LogCategory.system,
       );
+    }
+  }
+
+  Future<NotificationSettings> _resolvePermissionSettings(
+    NotificationSettings current,
+  ) async {
+    if (current.authorizationStatus != AuthorizationStatus.notDetermined) {
+      return current;
+    }
+
+    final existingRequest = _permissionRequestFuture;
+    if (existingRequest != null) return existingRequest;
+
+    final request = _firebaseMessaging.requestPermission();
+    _permissionRequestFuture = request;
+    try {
+      return await request;
+    } finally {
+      if (identical(_permissionRequestFuture, request)) {
+        _permissionRequestFuture = null;
+      }
     }
   }
 

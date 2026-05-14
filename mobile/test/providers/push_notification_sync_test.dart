@@ -2512,5 +2512,74 @@ void main() {
         expect(unhandled, isEmpty);
       });
     });
+
+    test(
+      'retries current account after overlapping permission request settles',
+      () async {
+        final events = <String>[];
+        final permissionCompleter = Completer<NotificationSettings>();
+        var requestCount = 0;
+        when(
+          () => messaging.getNotificationSettings(),
+        ).thenAnswer((_) async => _settings(AuthorizationStatus.notDetermined));
+        when(
+          () => messaging.requestPermission(
+            alert: any(named: 'alert'),
+            announcement: any(named: 'announcement'),
+            badge: any(named: 'badge'),
+            carPlay: any(named: 'carPlay'),
+            criticalAlert: any(named: 'criticalAlert'),
+            provisional: any(named: 'provisional'),
+            sound: any(named: 'sound'),
+            providesAppNotificationSettings: any(
+              named: 'providesAppNotificationSettings',
+            ),
+          ),
+        ).thenAnswer((_) {
+          requestCount += 1;
+          if (requestCount > 1) {
+            throw PlatformException(
+              code: 'firebase_messaging/unknown',
+              message: 'A request for permissions is already running',
+            );
+          }
+          return permissionCompleter.future;
+        });
+        when(
+          () => pushService.register(any(), isCurrent: any(named: 'isCurrent')),
+        ).thenAnswer((invocation) async {
+          events.add('register ${invocation.positionalArguments.single}');
+        });
+
+        final container = buildContainer();
+        container.read(pushNotificationSyncProvider);
+        final nostrSession =
+            container.read(nostrSessionProvider.notifier) as _TestNostrSession;
+
+        await emitReady(nostrSession, pubkeyA);
+        expect(requestCount, 1);
+
+        when(() => authService.currentIdentity).thenReturn(_identity(pubkeyB));
+        when(() => authService.currentPublicKeyHex).thenReturn(pubkeyB);
+        when(() => nostrClient.publicKey).thenReturn(pubkeyB);
+        authStateController.add(AuthState.authenticated);
+        nostrSession.setReadiness(
+          NostrSessionReadiness.nostrReady(
+            pubkey: pubkeyB,
+            client: nostrClient,
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        permissionCompleter.complete(_settings(AuthorizationStatus.authorized));
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(requestCount, 1);
+        expect(events, ['register $pubkeyB']);
+      },
+    );
   });
 }
