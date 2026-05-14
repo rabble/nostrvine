@@ -161,6 +161,12 @@ class HiveNotificationPreferencesStore implements NotificationPreferencesStore {
   static String _dirtyKey(String pubkey) => '$_dirtyPrefix$pubkey';
 }
 
+enum NotificationPreferencesSyncOutcome {
+  nothingToDrain,
+  publishedAndCleared,
+  stillDirty,
+}
+
 class NotificationPreferencesService {
   NotificationPreferencesService({
     required NotificationPreferencesStore store,
@@ -190,20 +196,28 @@ class NotificationPreferencesService {
     await _publishAndClearDirtyPreferences(pubkey, prefs);
   }
 
-  Future<void> syncDirtyPreferencesForPubkey(String pubkey) async {
+  Future<NotificationPreferencesSyncOutcome> syncDirtyPreferencesForPubkey(
+    String pubkey,
+  ) async {
     final prefs = await _store.loadDirty(pubkey);
-    if (prefs == null) return;
+    if (prefs == null) return NotificationPreferencesSyncOutcome.nothingToDrain;
 
-    await _publishAndClearDirtyPreferences(pubkey, prefs);
+    return _publishAndClearDirtyPreferences(pubkey, prefs);
   }
 
-  Future<void> _publishAndClearDirtyPreferences(
+  Future<NotificationPreferencesSyncOutcome> _publishAndClearDirtyPreferences(
     String pubkey,
     NotificationPreferences preferences,
   ) async {
     final published = await _publishPreferences(pubkey, preferences);
-    if (published) {
-      await _store.clearDirtyIfMatches(pubkey, preferences);
+    if (!published) {
+      return NotificationPreferencesSyncOutcome.stillDirty;
     }
+
+    await _store.clearDirtyIfMatches(pubkey, preferences);
+    final dirty = await _store.loadDirty(pubkey);
+    return dirty == null
+        ? NotificationPreferencesSyncOutcome.publishedAndCleared
+        : NotificationPreferencesSyncOutcome.stillDirty;
   }
 }

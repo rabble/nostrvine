@@ -270,9 +270,11 @@ Future<bool> _updateNotificationPreferencesSafely(
 }
 
 final notificationPreferencesDirtySyncBridgeProvider = Provider<void>((ref) {
+  const maxDirtySyncRetries = 3;
   var disposed = false;
   var drainGeneration = 0;
   final activeDrainPubkeys = <String>{};
+  final retryCountsByPubkey = <String, int>{};
 
   ref.onDispose(() {
     disposed = true;
@@ -297,13 +299,23 @@ final notificationPreferencesDirtySyncBridgeProvider = Provider<void>((ref) {
   Future<void> drainDirtyPreferences(String pubkey) async {
     if (!activeDrainPubkeys.add(pubkey)) return;
     final generation = ++drainGeneration;
+    var shouldRetry = false;
     try {
       final preferencesService = ref.read(
         notificationPreferencesServiceProvider,
       );
       if (!isReadyForPubkey(pubkey)) return;
-      await preferencesService.syncDirtyPreferencesForPubkey(pubkey);
+      final outcome = await preferencesService.syncDirtyPreferencesForPubkey(
+        pubkey,
+      );
       if (disposed || generation != drainGeneration) return;
+      switch (outcome) {
+        case NotificationPreferencesSyncOutcome.publishedAndCleared:
+        case NotificationPreferencesSyncOutcome.nothingToDrain:
+          retryCountsByPubkey.remove(pubkey);
+        case NotificationPreferencesSyncOutcome.stillDirty:
+          shouldRetry = isReadyForPubkey(pubkey);
+      }
     } catch (e) {
       Log.warning(
         'Push notification preference drain failed: $e',
@@ -313,6 +325,15 @@ final notificationPreferencesDirtySyncBridgeProvider = Provider<void>((ref) {
     } finally {
       activeDrainPubkeys.remove(pubkey);
     }
+
+    if (!shouldRetry || disposed) return;
+    final retryCount = retryCountsByPubkey[pubkey] ?? 0;
+    if (retryCount >= maxDirtySyncRetries) return;
+    retryCountsByPubkey[pubkey] = retryCount + 1;
+    Future<void>.microtask(() {
+      if (disposed || !isReadyForPubkey(pubkey)) return;
+      unawaited(drainDirtyPreferences(pubkey));
+    });
   }
 
   void handleReadiness(NostrSessionReadiness readiness) {

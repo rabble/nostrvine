@@ -70,8 +70,9 @@ void main() {
       );
 
       await store.markDirty(pubkey, prefs);
-      await service.syncDirtyPreferencesForPubkey(pubkey);
+      final outcome = await service.syncDirtyPreferencesForPubkey(pubkey);
 
+      expect(outcome, NotificationPreferencesSyncOutcome.publishedAndCleared);
       expect(published, [prefs]);
       expect(await store.loadDirty(pubkey), isNull);
     },
@@ -89,9 +90,25 @@ void main() {
     );
 
     await store.markDirty(pubkey, prefs);
-    await service.syncDirtyPreferencesForPubkey(pubkey);
+    final outcome = await service.syncDirtyPreferencesForPubkey(pubkey);
 
+    expect(outcome, NotificationPreferencesSyncOutcome.stillDirty);
     expect(await store.loadDirty(pubkey), prefs);
+  });
+
+  test('reports nothing to drain when no dirty preferences exist', () async {
+    const pubkey =
+        '1111111111111111111111111111111111111111111111111111111111111111';
+    final store = _MemoryNotificationPreferencesStore();
+    final service = NotificationPreferencesService(
+      store: store,
+      currentPubkey: () => pubkey,
+      publishPreferences: (_, _) async => true,
+    );
+
+    final outcome = await service.syncDirtyPreferencesForPubkey(pubkey);
+
+    expect(outcome, NotificationPreferencesSyncOutcome.nothingToDrain);
   });
 }
 

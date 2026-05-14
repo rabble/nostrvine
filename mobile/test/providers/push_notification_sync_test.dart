@@ -2271,7 +2271,7 @@ void main() {
         }, (error, stack) => unhandled.add(error));
 
         expect(unhandled, isEmpty);
-        verify(() => pushService.updatePreferences(prefs)).called(1);
+        verify(() => pushService.updatePreferences(prefs)).called(4);
         expect(preferenceStore.dirtyPreferencesByPubkey[pubkeyA], prefs);
       },
     );
@@ -2391,6 +2391,43 @@ void main() {
         addTearDown(secondContainer.dispose);
         secondContainer.read(pushNotificationSyncProvider);
         await preferenceStore.waitForClear(pubkeyA);
+
+        expect(attempts, equals(2));
+        expect(
+          preferenceStore.dirtyPreferencesByPubkey,
+          isNot(contains(pubkeyA)),
+        );
+      },
+    );
+
+    test(
+      'retries dirty preferences after same-session publish returns false',
+      () async {
+        const prefs = NotificationPreferences(commentsEnabled: false);
+        var attempts = 0;
+        when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
+        when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
+        when(
+          () => messaging.getNotificationSettings(),
+        ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
+        when(() => pushService.updatePreferences(prefs)).thenAnswer((_) async {
+          attempts += 1;
+          return attempts > 1;
+        });
+        await preferenceStore.markDirty(pubkeyA, prefs);
+
+        final container = buildContainer(
+          nostrSession: _TestNostrSession(
+            NostrSessionReadiness.nostrReady(
+              pubkey: pubkeyA,
+              client: nostrClient,
+            ),
+          ),
+        );
+        container.read(pushNotificationSyncProvider);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
 
         expect(attempts, equals(2));
         expect(
