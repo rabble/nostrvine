@@ -4,11 +4,11 @@
 
 Issue #3129 asks for user mentions in video text overlays so viewers can open the mentioned account. While investigating it, we found the larger gap: mentions need one app-wide pipeline, not separate behavior for comments, video captions, overlays, and profile bios.
 
-Today, comments already have autocomplete and selected mentions are converted from `@displayName` to `nostr:npub...` content, but the published kind 1111 comment does not include generic mention `p` tags. Video publishing emits hashtag `t` tags and collaborator-marked `p` tags, but not generic mention tags. Profile bios render Nostr profile references, but the profile editor does not use a shared mention composer.
+Today, comments already have autocomplete and selected mentions are converted from `@displayName` to `nostr:npub...` content, but the published kind 1111 comment does not include generic mention `p` tags. Video publishing emits hashtag `t` tags and collaborator-marked `p` tags, but not generic mention tags. Profile bios render Nostr profile references, but the profile editor does not canonicalize typed or selected mentions through the same resolution rules.
 
 ## Goals
 
-- Provide one shared mention model, composer, resolver, and tag builder for mention-capable text surfaces.
+- Provide one shared mention parsing, resolution, and tag-building pipeline for mention-capable text surfaces.
 - Support both selected autocomplete mentions and typed-but-unselected `@name` mentions.
 - Resolve selected mentions exactly and resolve typed mentions conservatively.
 - Emit generic mention `p` tags for comments and videos, without confusing them with collaborator tags.
@@ -18,6 +18,7 @@ Today, comments already have autocomplete and selected mentions are converted fr
 ## Non-Goals
 
 - Redesign every text field in the app in one PR.
+- Force comments, captions, overlays, and profile bio editing into one shared UI composer abstraction.
 - Add `p` tags to kind 0 profile metadata events.
 - Invent new Nostr tag semantics.
 - Treat unresolved or ambiguous `@name` text as a mention.
@@ -45,14 +46,18 @@ nostr:npub1...
 
 Kind 0 profile events should keep their current empty tag list unless another profile-specific protocol requirement is introduced later.
 
+## KISS Scope Rule
+
+The unified part of this work is the data pipeline, not the editing UI. Each surface should keep its existing text-field state and suggestion UI unless a tiny adapter is enough. Add a shared UI composer only after two surfaces have the same proven needs and the extraction removes real duplication.
+
 ## Architecture
 
-Add a shared mention module owned by the app layer, because it needs app repositories for profile lookup and UI-friendly composer state. The module has three pieces:
+Add a shared mention module owned by the app layer, because it needs app repositories for profile lookup and app-level publish behavior. The module has three pieces:
 
-1. `MentionComposer`
-   - Tracks the active `@` query, selected mention bindings, and suggestion list.
-   - Replaces selected text with the display label shown to the user.
-   - Can be embedded by comments, video metadata description, and profile bio editing.
+1. `MentionTokenParser`
+   - Finds plain `@name` tokens using the same token family as linkified text.
+   - Excludes email addresses, Nostr IDs, and existing `nostr:npub...` / `nostr:nprofile...` references.
+   - Returns unique typed tokens with source ranges so callers can canonicalize text only where needed.
 
 2. `MentionResolver`
    - Accepts raw text plus selected bindings.
@@ -66,29 +71,31 @@ Add a shared mention module owned by the app layer, because it needs app reposit
    - Emits generic mention `p` tags.
    - Excludes collaborator pubkeys when asked, so video collaborator tags and generic mention tags do not duplicate each other with different roles.
 
+Selected mention bindings are simple data objects owned by each surface's existing state: display label, original token/range when available, and full hex pubkey or npub. Comments can keep their current `CommentInput` autocomplete flow, and other surfaces can add the same behavior incrementally without depending on one shared widget/controller.
+
 ## Surface Integration
 
 ### Comments
 
-`CommentsBloc` should stop owning ad hoc `displayName -> npub` conversion logic. It should use the shared resolver before optimistic insertion and before calling `CommentsRepository.postComment`.
+`CommentsBloc` should stop owning ad hoc `displayName -> npub` conversion logic. It should keep the current comment autocomplete UI, pass selected mention bindings into the shared resolver, then use the resolver output before optimistic insertion and before calling `CommentsRepository.postComment`.
 
 `CommentsRepository.postComment` should accept `mentionedPubkeys`. It should append generic mention `p` tags after the required NIP-22 root/parent `p` tags, deduping against root and parent author tags. This avoids redundant tags while still notifying extra mentioned accounts.
 
 ### Video Caption And Description
 
-`VideoMetadataFormFields` should use the shared composer for the description/caption field. The editor state and `DivineVideoDraft` should persist selected mention bindings or resolved mention pubkeys so autosave/draft restore does not lose them.
+`VideoMetadataFormFields` should keep its existing text-field structure for v1. It can add autocomplete through a small local adapter if that is straightforward; otherwise typed mentions are resolved at publish time. The editor state and `DivineVideoDraft` should persist selected mention bindings or resolved mention pubkeys only when autocomplete is added, so autosave/draft restore does not lose them.
 
 `VideoPublishService` and `VideoEventPublisher` should accept mentioned pubkeys and append generic mention `p` tags in the kind 34236 publish path. Generic mentions should be kept separate from collaborator `p` tags.
 
 ### Video Text Overlays
 
-For #3129, overlay text should feed the same resolver. If embedding the composer into `pro_image_editor` is clean, the text editor should offer autocomplete and store selected bindings alongside the layer metadata. If the underlying `TextLayer` cannot carry extra app metadata cleanly, v1 should still resolve typed overlay text at publish time through the shared resolver so published video events contain generic mention `p` tags.
+For #3129 v1, overlay text should feed the same resolver at publish time. Do not embed autocomplete into `pro_image_editor` or add app metadata to `TextLayer` in this pass. Resolving typed overlay text at publish time is enough for published video events to contain generic mention `p` tags without turning this task into an editor integration project.
 
-Overlay mentions should not change the rendered text unless the user selected a suggestion. Typed unresolved `@name` remains visual text only.
+Overlay mentions should not change the rendered text. Typed unresolved or ambiguous `@name` remains visual text only.
 
 ### Profile Bio
 
-Profile setup/edit bio should use the same mention composer and resolver. Resolved mentions should be canonicalized into `nostr:npub...` inside the `about` text before `ProfileRepository.saveProfileEvent`.
+Profile setup/edit bio should use the shared parser and resolver. It can keep its existing editing UI for v1. Resolved mentions should be canonicalized into `nostr:npub...` inside the `about` text before `ProfileRepository.saveProfileEvent`.
 
 Profile bio rendering already uses linkified text. The shared linkification path should display canonical NIP-27 profile references as friendly tappable `@name` labels when profile data is available, with a full npub/hex fallback handled visually by layout.
 
@@ -99,9 +106,10 @@ No `p` tags should be added to profile kind 0 events.
 Typed resolution should be conservative:
 
 - Match the same plain mention token family used by linkified text, avoiding email addresses and Nostr IDs.
+- Deduplicate tokens before lookup and cap remote lookups to five unique tokens per publish action.
 - Search cached candidate profiles first.
-- Use API search only when local candidates do not produce a unique result.
-- Resolve only exact normalized matches first, then a single high-confidence unique match.
+- Use API search only when local candidates do not produce a unique result, with a two-second total timeout for the resolution pass.
+- Resolve only exact normalized matches on username, display name, npub, or hex pubkey.
 - Leave ambiguous or missing matches unchanged.
 - Never silently resolve to the current user's own pubkey unless the user selected themselves explicitly.
 
@@ -120,7 +128,7 @@ Add focused tests for:
 - Comment publish events include generic mention `p` tags and preserve NIP-22 root/parent tags.
 - Comments bloc passes selected and typed mention pubkeys through to the repository.
 - Video publisher emits generic mention tags while preserving collaborator tags with the `collaborator` marker.
-- Video drafts preserve caption mention data through autosave/restore.
+- Video drafts preserve caption mention data through autosave/restore only if caption autocomplete is included in the implementation.
 - Profile save canonicalizes resolved bio mentions into `nostr:npub...` content and does not add kind 0 tags.
 - Linkified profile bio renders canonical profile references as tappable account links.
 
