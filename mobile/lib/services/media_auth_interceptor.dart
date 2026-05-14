@@ -39,10 +39,14 @@ class MediaAuthInterceptor {
 
       final playbackPreference = _contentFilterService.adultPlaybackPreference;
 
-      // Check if user has chosen to never show adult content.
-      // This now follows the current per-category settings rather than the
-      // deprecated legacy preference key.
-      if (playbackPreference == ContentFilterPreference.hide) {
+      final isAdultContentVerified =
+          _ageVerificationService.isAdultContentVerified;
+
+      // Verified users with all adult categories set to hide should be
+      // blocked immediately. Unverified users still go through the existing
+      // verify-on-play path below.
+      if (isAdultContentVerified &&
+          playbackPreference == ContentFilterPreference.hide) {
         Log.debug(
           '🚫 User preference is to never show adult content',
           name: 'MediaAuthInterceptor',
@@ -51,10 +55,10 @@ class MediaAuthInterceptor {
         return null;
       }
 
-      // Auto-create auth headers when the current settings allow adult content
-      // without a click-through and the user is already verified.
-      if (playbackPreference == ContentFilterPreference.show &&
-          _ageVerificationService.isAdultContentVerified) {
+      // Auto-create auth headers only when the user is already verified and
+      // every adult category is configured to show.
+      if (isAdultContentVerified &&
+          playbackPreference == ContentFilterPreference.show) {
         Log.debug(
           '✅ Auto-showing adult content (user preference: always show)',
           name: 'MediaAuthInterceptor',
@@ -120,9 +124,4 @@ class MediaAuthInterceptor {
 
   /// Check if we can create auth headers (user is authenticated with Nostr)
   bool get canCreateAuthHeaders => _mediaViewerAuthService.canCreateHeaders;
-
-  /// Returns true if adult content should be filtered from feeds entirely
-  bool get shouldFilterContent =>
-      _contentFilterService.adultPlaybackPreference ==
-      ContentFilterPreference.hide;
 }

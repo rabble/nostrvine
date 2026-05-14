@@ -2932,7 +2932,7 @@ final class VideoEventServiceProvider
   }
 }
 
-String _$videoEventServiceHash() => r'fe3844e03b9ba6ecc42983a02175926dfbc40793';
+String _$videoEventServiceHash() => r'5a204c44e3372e78a32beaa8121f28df4121f54a';
 
 /// Hashtag service depends on Video event service and cache service
 
@@ -3738,7 +3738,7 @@ final class MediaAuthInterceptorProvider
 }
 
 String _$mediaAuthInterceptorHash() =>
-    r'214d6a37de9072814c52d22cf97a2c8c643664a8';
+    r'91168d3b391f9274691b22a7c376b1a11ba98833';
 
 /// Blossom upload service (uses user-configured Blossom server)
 
