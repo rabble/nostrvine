@@ -85,11 +85,6 @@ class CacheDaoImpl implements CacheDao {
   }
 
   @override
-  Future<void> deleteAll() async {
-    await _db.delete(_db.cacheEntries).go();
-  }
-
-  @override
   Future<int> totalPayloadBytes() async {
     final result = await _db
         .customSelect(

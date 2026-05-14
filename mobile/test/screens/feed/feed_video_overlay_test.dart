@@ -76,9 +76,6 @@ class _FakeCacheDao implements CacheDao {
   Future<void> deletePrefix(String prefix) async {}
 
   @override
-  Future<void> deleteAll() async {}
-
-  @override
   Future<int> totalPayloadBytes() async => 0;
 
   @override

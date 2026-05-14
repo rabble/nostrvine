@@ -30,9 +30,6 @@ abstract interface class CacheDao {
   /// passing a non-pubkey prefix are responsible for escaping.
   Future<void> deletePrefix(String prefix);
 
-  /// Removes all cached entries.
-  Future<void> deleteAll();
-
   /// Returns the total size of all `payload` strings, in characters.
   ///
   /// Uses `String.length` semantics (UTF-16 code units), suitable as an

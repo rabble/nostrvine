@@ -70,22 +70,6 @@ void main() {
       });
     });
 
-    group('deleteAll', () {
-      test('removes all entries', () async {
-        await dao.write(key: 'user1:home_feed', payload: 'a');
-        await dao.write(key: 'user2:likes', payload: 'b');
-
-        await dao.deleteAll();
-
-        expect(await dao.read('user1:home_feed'), isNull);
-        expect(await dao.read('user2:likes'), isNull);
-      });
-
-      test('is a no-op when store is empty', () async {
-        await expectLater(dao.deleteAll(), completes);
-      });
-    });
-
     group('deletePrefix', () {
       test('is a no-op for an empty store', () async {
         await expectLater(dao.deletePrefix('ghost'), completes);

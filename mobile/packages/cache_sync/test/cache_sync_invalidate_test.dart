@@ -23,22 +23,6 @@ void main() {
     });
   });
 
-  group('CacheSync.invalidateAll', () {
-    test('removes all entries', () async {
-      await dao.write(key: 'user1:home_feed', payload: 'a');
-      await dao.write(key: 'user1:followers', payload: 'b');
-      await dao.write(key: 'user2:home_feed', payload: 'c');
-
-      await CacheSync.invalidateAll();
-
-      expect(dao.length, equals(0));
-    });
-
-    test('is a no-op when store is empty', () async {
-      await expectLater(CacheSync.invalidateAll(), completes);
-    });
-  });
-
   group('CacheSync.invalidatePrefix', () {
     test('is a no-op for an absent prefix', () async {
       await expectLater(CacheSync.invalidatePrefix('ghost'), completes);
@@ -76,10 +60,12 @@ void main() {
       expect(dao.rawRead('wrap_prefixed_inner'), equals('b'));
     });
 
-    test('asserts when prefix is empty', () async {
+    test('throws ArgumentError when prefix is empty', () async {
+      // Runtime-enforced (not debug-only assert) so the empty-prefix
+      // footgun cannot regress in release builds.
       await expectLater(
         () => CacheSync.invalidatePrefix(''),
-        throwsA(isA<AssertionError>()),
+        throwsA(isA<ArgumentError>()),
       );
     });
   });

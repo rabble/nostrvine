@@ -49,11 +49,6 @@ class FakeCacheDao implements CacheDao {
   }
 
   @override
-  Future<void> deleteAll() async {
-    _store.clear();
-  }
-
-  @override
   Future<int> totalPayloadBytes() async =>
       _store.values.fold<int>(0, (sum, e) => sum + e.payload.length);
 

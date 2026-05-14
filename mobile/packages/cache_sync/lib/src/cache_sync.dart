@@ -143,27 +143,22 @@ abstract final class CacheSync {
   /// execution, so passing e.g. `'user_1'` matches the literal key
   /// `'user_1:foo'` and not `'userX1:foo'`.
   ///
-  /// Passing an empty string is a programming error: it would match
-  /// every key in the cache. Use [invalidateAll] for that intent.
+  /// Throws [ArgumentError] when [prefix] is empty: an empty prefix would
+  /// match every key and full-wipe the cache, which is never the intent of
+  /// a *scoped* invalidation call. The guard is runtime-enforced so the
+  /// blast-radius footgun cannot regress in release builds.
   static Future<void> invalidatePrefix(String prefix) {
-    assert(
-      prefix.isNotEmpty,
-      'invalidatePrefix requires a non-empty prefix; '
-      'use invalidateAll() to clear every entry.',
-    );
+    if (prefix.isEmpty) {
+      throw ArgumentError.value(
+        prefix,
+        'prefix',
+        'invalidatePrefix requires a non-empty prefix to avoid wiping '
+            'every cached entry. Pass a pubkey hex or other namespacing '
+            'prefix.',
+      );
+    }
     return _dao.deletePrefix(prefix);
   }
-
-  /// Removes all cached entries.
-  ///
-  /// Use only when no scoped invalidation is possible (e.g. corruption
-  /// recovery). For sign-out / account-switch prefer [invalidatePrefix] so
-  /// other accounts on the same device keep their caches.
-  ///
-  /// ```dart
-  /// await CacheSync.invalidateAll();
-  /// ```
-  static Future<void> invalidateAll() => _dao.deleteAll();
 
   static Future<void> _driveWatchOne<T>({
     required StreamController<CacheResult<T>> controller,

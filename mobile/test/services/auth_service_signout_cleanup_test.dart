@@ -25,7 +25,6 @@ class _MockUserDataCleanupService extends Mock
 /// throw — used to pin that signOut tolerates cache-layer failures.
 class _TrackingCacheDao implements CacheDao {
   final Map<String, String> store = {};
-  int deleteAllCallCount = 0;
   final List<String> deletePrefixCalls = [];
   Object? throwOnDeletePrefix;
 
@@ -55,12 +54,6 @@ class _TrackingCacheDao implements CacheDao {
       throw err;
     }
     store.removeWhere((key, _) => key.startsWith(prefix));
-  }
-
-  @override
-  Future<void> deleteAll() async {
-    deleteAllCallCount++;
-    store.clear();
   }
 
   @override
@@ -202,37 +195,40 @@ void main() {
       // not that pubkey is null (since new identity sets it).
     });
 
-    test('destructive signOut never calls CacheSync.invalidateAll', () async {
-      // AuthService.signOut now invalidates by pubkey prefix only — the
-      // wholesale invalidateAll() call inside the deleteKeys branch is
-      // gone. When no current pubkey is set (this test never authenticates)
-      // no invalidation fires; with a current pubkey, only that pubkey's
-      // entries are deleted (see the authenticated group below).
-      await cacheDao.write(
-        key: 'aa11:my_followers',
-        payload: '{"pubkeys":["a"],"count":1}',
-      );
+    test(
+      'destructive signOut without a current pubkey skips cache invalidation',
+      () async {
+        // AuthService.signOut now invalidates by pubkey prefix only. When
+        // no current pubkey is set (this test never authenticates) the
+        // invalidation block is skipped entirely; with a current pubkey,
+        // only that pubkey's entries are deleted (see the authenticated
+        // group below).
+        await cacheDao.write(
+          key: 'aa11:my_followers',
+          payload: '{"pubkeys":["a"],"count":1}',
+        );
 
-      when(() => mockKeyStorage.deleteKeys()).thenAnswer((_) async => {});
-      when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
-      when(() => mockKeyStorage.initialize()).thenAnswer((_) async => {});
-      final newKeyContainer = SecureKeyContainer.fromNsec(testNsec);
-      when(
-        () => mockKeyStorage.generateAndStoreKeys(
-          biometricPrompt: any(named: 'biometricPrompt'),
-        ),
-      ).thenAnswer((_) async => newKeyContainer);
+        when(() => mockKeyStorage.deleteKeys()).thenAnswer((_) async => {});
+        when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
+        when(() => mockKeyStorage.initialize()).thenAnswer((_) async => {});
+        final newKeyContainer = SecureKeyContainer.fromNsec(testNsec);
+        when(
+          () => mockKeyStorage.generateAndStoreKeys(
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async => newKeyContainer);
 
-      await authService.signOut(deleteKeys: true);
+        await authService.signOut(deleteKeys: true);
 
-      expect(cacheDao.deleteAllCallCount, equals(0));
-      expect(cacheDao.deletePrefixCalls, isEmpty);
-      // Unauthenticated → no current pubkey to scope by → cache survives.
-      expect(cacheDao.store, isNotEmpty);
-    });
+        expect(cacheDao.deletePrefixCalls, isEmpty);
+        // Unauthenticated → no current pubkey to scope by → cache survives.
+        expect(cacheDao.store, isNotEmpty);
+      },
+    );
 
     test(
-      'non-destructive signOut never calls CacheSync.invalidateAll',
+      'non-destructive signOut without a current pubkey skips cache '
+      'invalidation',
       () async {
         await cacheDao.write(
           key: 'aa11:my_followers',
@@ -242,7 +238,6 @@ void main() {
 
         await authService.signOut();
 
-        expect(cacheDao.deleteAllCallCount, equals(0));
         expect(cacheDao.deletePrefixCalls, isEmpty);
         expect(cacheDao.store, isNotEmpty);
       },
@@ -274,7 +269,6 @@ void main() {
           await authService.signOut();
 
           expect(cacheDao.deletePrefixCalls, equals([pubkeyA]));
-          expect(cacheDao.deleteAllCallCount, equals(0));
           expect(cacheDao.store.containsKey('$pubkeyA:my_followers'), isFalse);
           expect(cacheDao.store.containsKey('$pubkeyA:my_following'), isFalse);
           // The headline multi-account assertion: B's cache survives.
@@ -298,7 +292,6 @@ void main() {
           await authService.signOut(deleteKeys: true);
 
           expect(cacheDao.deletePrefixCalls, equals([pubkeyA]));
-          expect(cacheDao.deleteAllCallCount, equals(0));
           expect(cacheDao.store.containsKey('$pubkeyA:my_followers'), isFalse);
           expect(cacheDao.store['$pubkeyB:my_followers'], isNotNull);
         },
