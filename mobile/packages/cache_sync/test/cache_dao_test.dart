@@ -86,6 +86,44 @@ void main() {
       });
     });
 
+    group('deletePrefix', () {
+      test('is a no-op for an empty store', () async {
+        await expectLater(dao.deletePrefix('ghost'), completes);
+      });
+
+      test('removes all entries with the given prefix', () async {
+        await dao.write(key: 'user1:home_feed', payload: 'a');
+        await dao.write(key: 'user1:my_followers', payload: 'b');
+        await dao.write(key: 'user2:home_feed', payload: 'c');
+
+        await dao.deletePrefix('user1');
+
+        expect(await dao.read('user1:home_feed'), isNull);
+        expect(await dao.read('user1:my_followers'), isNull);
+        expect(await dao.read('user2:home_feed'), equals('c'));
+      });
+
+      test('exact-key prefix removes prefixed siblings too', () async {
+        await dao.write(key: 'abc', payload: 'a');
+        await dao.write(key: 'abcdef', payload: 'b');
+
+        await dao.deletePrefix('abc');
+
+        expect(await dao.read('abc'), isNull);
+        expect(await dao.read('abcdef'), isNull);
+      });
+
+      test('non-prefix substring is preserved', () async {
+        await dao.write(key: 'prefixed', payload: 'a');
+        await dao.write(key: 'wrap_prefixed_inner', payload: 'b');
+
+        await dao.deletePrefix('prefix');
+
+        expect(await dao.read('prefixed'), isNull);
+        expect(await dao.read('wrap_prefixed_inner'), equals('b'));
+      });
+    });
+
     group('totalPayloadBytes', () {
       test('returns 0 when store is empty', () async {
         expect(await dao.totalPayloadBytes(), equals(0));

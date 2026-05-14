@@ -126,13 +126,74 @@ abstract final class CacheSync {
   /// Removes the cached entry for [key].
   static Future<void> invalidate(String key) => _dao.delete(key);
 
+  /// Removes all cached entries whose keys start with [prefix].
+  ///
+  /// Account-scoped invalidation: cache keys follow the
+  /// `${pubkeyHex}:${operation}` convention (RFC #4244), so calling
+  /// `invalidatePrefix(pubkeyHex)` at sign-out clears every entry for that
+  /// account without touching other accounts on the same device.
+  ///
+  /// ```dart
+  /// // In AuthService.signOut, after capturing currentPubkey:
+  /// await CacheSync.invalidatePrefix(currentPubkey);
+  /// ```
+  ///
+  /// [prefix] must not contain SQL `LIKE` wildcards (`%`, `_`). Pubkey hex
+  /// is `[0-9a-f]{64}` so the pubkey-prefix convention is safe; callers
+  /// passing other prefixes are responsible for escaping.
+  static Future<void> invalidatePrefix(String prefix) =>
+      _dao.deletePrefix(prefix);
+
   /// Removes all cached entries.
   ///
-  /// Call this at logout / account-switch to ensure no stale data persists:
+  /// Use only when no scoped invalidation is possible (e.g. corruption
+  /// recovery). For sign-out / account-switch prefer [invalidatePrefix] so
+  /// other accounts on the same device keep their caches.
+  ///
   /// ```dart
   /// await CacheSync.invalidateAll();
   /// ```
   static Future<void> invalidateAll() => _dao.deleteAll();
+
+  /// Writes [value] for [key] only when it is newer than the currently
+  /// cached value (or when nothing is cached / the cached payload is
+  /// corrupted).
+  ///
+  /// "Newer" is determined by [versionOf]: a value with a strictly higher
+  /// version replaces an older one. Equal versions are not overwritten.
+  ///
+  /// Intended for replaceable Nostr events (kinds 0, 3, 10000-19999,
+  /// 30000-39999) where `created_at` ordering must be preserved across
+  /// writes from multiple relays. Callers pass
+  /// `versionOf: (event) => event.createdAt`.
+  ///
+  /// Returns `true` when the cache was updated, `false` when the existing
+  /// entry was newer or equal.
+  static Future<bool> writeIfNewer<T>({
+    required String key,
+    required T value,
+    required T Function(String json) fromJson,
+    required String Function(T value) toJson,
+    required int Function(T value) versionOf,
+    Duration? ttl,
+  }) async {
+    final cachedPayload = await _dao.read(key);
+    if (cachedPayload != null && cachedPayload.isNotEmpty) {
+      try {
+        final cachedValue = fromJson(cachedPayload);
+        if (versionOf(cachedValue) >= versionOf(value)) {
+          return false;
+        }
+      } on Object {
+        // Corrupted cached payload — fall through and overwrite.
+      }
+    }
+
+    final payload = toJson(value);
+    if (payload.isEmpty) return false;
+    await _dao.write(key: key, payload: payload, ttl: ttl);
+    return true;
+  }
 
   static Future<void> _driveWatchOne<T>({
     required StreamController<CacheResult<T>> controller,

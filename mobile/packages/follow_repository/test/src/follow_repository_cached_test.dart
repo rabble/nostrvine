@@ -117,7 +117,7 @@ void main() {
 
     test('emits cached then live when cache is populated', () async {
       await dao.write(
-        key: 'my_followers_current-user',
+        key: 'current-user:my_followers',
         payload: const FollowersSnapshot(
           pubkeys: ['cached'],
           count: 1,
@@ -144,7 +144,7 @@ void main() {
 
     test('uses current-user scoped cache key', () async {
       await dao.write(
-        key: 'my_followers_alice',
+        key: 'alice:my_followers',
         payload: const FollowersSnapshot(
           pubkeys: ['alice_cached'],
           count: 1,
@@ -174,7 +174,7 @@ void main() {
       'snapshot',
       () async {
         await dao.write(
-          key: 'my_followers_current-user',
+          key: 'current-user:my_followers',
           payload: const FollowersSnapshot(
             pubkeys: ['disk'],
             count: 1,
@@ -251,7 +251,7 @@ void main() {
     test('emits cached (stale) then live (fresh) — proves CacheSync owns '
         'the single stale/live boundary', () async {
       await dao.write(
-        key: 'my_following_bob',
+        key: 'bob:my_following',
         payload: const FollowingSnapshot(pubkeys: ['disk'], count: 1).toJson(),
       );
       when(() => mockNostrClient.publicKey).thenReturn('bob');
@@ -285,7 +285,7 @@ void main() {
 
     test('uses current-user scoped cache key', () async {
       await dao.write(
-        key: 'my_following_alice',
+        key: 'alice:my_following',
         payload: const FollowingSnapshot(
           pubkeys: ['alice_cached'],
           count: 1,
@@ -336,7 +336,7 @@ void main() {
 
     test('expired cached entry refetches live data', () async {
       await dao.write(
-        key: 'others_followers_target',
+        key: 'target:others_followers',
         payload: const FollowersSnapshot(pubkeys: ['stale'], count: 1).toJson(),
         ttl: const Duration(microseconds: 1),
       );
@@ -361,7 +361,7 @@ void main() {
 
     test('uses cacheFirst policy for fresh cached profile lists', () async {
       await dao.write(
-        key: 'others_followers_target',
+        key: 'target:others_followers',
         payload: const FollowersSnapshot(pubkeys: ['stale'], count: 1).toJson(),
         ttl: const Duration(hours: 1),
       );
@@ -387,7 +387,7 @@ void main() {
 
     test('forceRefresh skips cached emission', () async {
       await dao.write(
-        key: 'others_followers_target',
+        key: 'target:others_followers',
         payload: const FollowersSnapshot(pubkeys: ['stale'], count: 1).toJson(),
       );
 
@@ -410,7 +410,7 @@ void main() {
 
     test('uses pubkey-scoped cache key', () async {
       await dao.write(
-        key: 'others_followers_alice',
+        key: 'alice:others_followers',
         payload: const FollowersSnapshot(
           pubkeys: ['alice_cached'],
           count: 1,
@@ -461,7 +461,7 @@ void main() {
 
     test('uses cacheFirst policy for fresh cached following lists', () async {
       await dao.write(
-        key: 'others_following_target',
+        key: 'target:others_following',
         payload: const FollowingSnapshot(pubkeys: ['stale'], count: 1).toJson(),
         ttl: const Duration(hours: 1),
       );
@@ -489,7 +489,7 @@ void main() {
 
     test('forceRefresh skips cached emission', () async {
       await dao.write(
-        key: 'others_following_target',
+        key: 'target:others_following',
         payload: const FollowingSnapshot(pubkeys: ['stale'], count: 1).toJson(),
       );
 

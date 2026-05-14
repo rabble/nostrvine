@@ -269,12 +269,15 @@ class FollowRepository {
   // repository — changing them invalidates every cached entry on every user's
   // device.
 
-  static String _myFollowersCacheKey(String pubkey) => 'my_followers_$pubkey';
-  static String _myFollowingCacheKey(String pubkey) => 'my_following_$pubkey';
+  // Cache keys follow the `${pubkey}:${operation}` convention (RFC #4244) so
+  // `CacheSync.invalidatePrefix(pubkey)` at sign-out clears every entry for
+  // that account without touching other accounts on the same device.
+  static String _myFollowersCacheKey(String pubkey) => '$pubkey:my_followers';
+  static String _myFollowingCacheKey(String pubkey) => '$pubkey:my_following';
   static String _othersFollowersCacheKey(String pubkey) =>
-      'others_followers_$pubkey';
+      '$pubkey:others_followers';
   static String _othersFollowingCacheKey(String pubkey) =>
-      'others_following_$pubkey';
+      '$pubkey:others_following';
 
   /// Cache-backed stream of the current user's followers.
   ///

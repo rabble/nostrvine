@@ -3192,29 +3192,33 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
       // Multi-account: archive or remove this account's signer info
       final currentPubkey = _currentKeyContainer?.publicKeyHex;
+
+      // Account-scoped CacheSync invalidation. Cache keys follow the
+      // `${pubkey}:${operation}` convention (RFC #4244) so this clears
+      // every entry for the leaving account without touching other
+      // accounts on the same device. Fires on every signOut path:
+      //   - destructive: nostr_settings_screen.dart `signOut(deleteKeys: true)`
+      //     and delete_account_dialog.dart account-deletion flow
+      //   - non-destructive: SettingsAccountCubit switchToAccount / addNewAccount
+      // The cubit previously called CacheSync.invalidateAll() itself; that
+      // call is now removed — AuthService owns invalidation.
+      if (currentPubkey != null) {
+        try {
+          await CacheSync.invalidatePrefix(currentPubkey);
+        } catch (e) {
+          Log.error(
+            'CacheSync.invalidatePrefix failed during signOut: $e',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+        }
+      }
+
       if (deleteKeys) {
         // Destructive sign-out: remove from known accounts and clean up
         if (currentPubkey != null) {
           await _removeFromKnownAccounts(currentPubkey);
           await _clearArchivedSignerInfo(currentPubkey);
-        }
-
-        // Drop every persisted CacheSync row. Cache keys are pubkey-scoped so
-        // a *different* next user could not inherit this user's followers /
-        // following, but the rows would otherwise sit on disk until next
-        // re-login as the same user — destructive sign-out is the canonical
-        // moment to release that disk + close the forensic-readability gap.
-        // Covers `nostr_settings_screen.dart`'s `signOut(deleteKeys: true)`
-        // and `delete_account_dialog.dart`'s account-deletion flow, neither
-        // of which goes through `SettingsAccountCubit`.
-        try {
-          await CacheSync.invalidateAll();
-        } catch (e) {
-          Log.error(
-            'CacheSync.invalidateAll failed during signOut: $e',
-            name: 'AuthService',
-            category: LogCategory.auth,
-          );
         }
 
         Log.debug(
@@ -4444,6 +4448,15 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   @visibleForTesting
   void debugSetIdentity(NostrIdentity? identity) {
     _currentIdentity = identity;
+  }
+
+  /// Test seam that lets unit tests install a [SecureKeyContainer] so
+  /// `signOut`'s account-scoped invalidation (and any other code path
+  /// keyed on the current pubkey) can be exercised without driving the
+  /// full sign-in pipeline.
+  @visibleForTesting
+  void debugSetCurrentKeyContainer(SecureKeyContainer? container) {
+    _currentKeyContainer = container;
   }
 
   /// Check if user has an existing profile (kind 0) on indexer relays.

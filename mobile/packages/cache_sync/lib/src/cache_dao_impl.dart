@@ -69,6 +69,13 @@ class CacheDaoImpl implements CacheDao {
   }
 
   @override
+  Future<void> deletePrefix(String prefix) async {
+    await (_db.delete(
+      _db.cacheEntries,
+    )..where((t) => t.cacheKey.like('$prefix%'))).go();
+  }
+
+  @override
   Future<void> deleteAll() async {
     await _db.delete(_db.cacheEntries).go();
   }
