@@ -126,7 +126,7 @@ void main() {
         semanticsNode.label,
         equals(l10n.profileReportDisplayName(displayName)),
       );
-      expect(semanticsData.hasFlag(ui.SemanticsFlag.isButton), isTrue);
+      expect(semanticsData.flagsCollection.isButton, isTrue);
       expect(semanticsData.hasAction(ui.SemanticsAction.tap), isTrue);
       semantics.dispose();
     });
