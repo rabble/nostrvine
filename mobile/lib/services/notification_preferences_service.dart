@@ -173,14 +173,17 @@ class NotificationPreferencesService {
     required String? Function() currentPubkey,
     required Future<bool> Function(String pubkey, NotificationPreferences prefs)
     publishPreferences,
+    void Function(String pubkey)? onStillDirty,
   }) : _store = store,
        _currentPubkey = currentPubkey,
-       _publishPreferences = publishPreferences;
+       _publishPreferences = publishPreferences,
+       _onStillDirty = onStillDirty;
 
   final NotificationPreferencesStore _store;
   final String? Function() _currentPubkey;
   final Future<bool> Function(String pubkey, NotificationPreferences prefs)
   _publishPreferences;
+  final void Function(String pubkey)? _onStillDirty;
 
   Future<NotificationPreferences> loadPreferences() async {
     return _store.loadPreferences();
@@ -193,7 +196,10 @@ class NotificationPreferencesService {
     if (pubkey == null) return;
 
     await _store.markDirty(pubkey, prefs);
-    await _publishAndClearDirtyPreferences(pubkey, prefs);
+    final outcome = await _publishAndClearDirtyPreferences(pubkey, prefs);
+    if (outcome == NotificationPreferencesSyncOutcome.stillDirty) {
+      _onStillDirty?.call(pubkey);
+    }
   }
 
   Future<NotificationPreferencesSyncOutcome> syncDirtyPreferencesForPubkey(

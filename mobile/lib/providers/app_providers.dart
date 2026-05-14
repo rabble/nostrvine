@@ -269,86 +269,101 @@ Future<bool> _updateNotificationPreferencesSafely(
   }
 }
 
-final notificationPreferencesDirtySyncBridgeProvider = Provider<void>((ref) {
-  const maxDirtySyncRetries = 3;
-  var disposed = false;
-  var drainGeneration = 0;
-  final activeDrainPubkeys = <String>{};
-  final retryCountsByPubkey = <String, int>{};
+final Provider<void Function(String)>
+notificationPreferencesDirtySyncBridgeProvider =
+    Provider<void Function(String)>((ref) {
+      const maxDirtySyncRetries = 3;
+      var disposed = false;
+      var drainGeneration = 0;
+      final activeDrainPubkeys = <String>{};
+      final retryCountsByPubkey = <String, int>{};
 
-  ref.onDispose(() {
-    disposed = true;
-    drainGeneration += 1;
-  });
+      ref.onDispose(() {
+        disposed = true;
+        drainGeneration += 1;
+      });
 
-  bool isReadyForPubkey(String pubkey, {PushNotificationService? pushService}) {
-    if (disposed) return false;
+      bool isReadyForPubkey(
+        String pubkey, {
+        PushNotificationService? pushService,
+      }) {
+        if (disposed) return false;
 
-    final authService = ref.read(authServiceProvider);
-    if (authService.currentIdentity?.pubkey != pubkey) return false;
+        final authService = ref.read(authServiceProvider);
+        if (authService.currentIdentity?.pubkey != pubkey) return false;
 
-    final readiness = ref.read(nostrSessionProvider);
-    if (!readiness.isReadyForActiveClient || readiness.pubkey != pubkey) {
-      return false;
-    }
+        final readiness = ref.read(nostrSessionProvider);
+        if (!readiness.isReadyForActiveClient || readiness.pubkey != pubkey) {
+          return false;
+        }
 
-    return pushService == null ||
-        identical(ref.read(pushNotificationServiceProvider), pushService);
-  }
-
-  Future<void> drainDirtyPreferences(String pubkey) async {
-    if (!activeDrainPubkeys.add(pubkey)) return;
-    final generation = ++drainGeneration;
-    var shouldRetry = false;
-    try {
-      final preferencesService = ref.read(
-        notificationPreferencesServiceProvider,
-      );
-      if (!isReadyForPubkey(pubkey)) return;
-      final outcome = await preferencesService.syncDirtyPreferencesForPubkey(
-        pubkey,
-      );
-      if (disposed || generation != drainGeneration) return;
-      switch (outcome) {
-        case NotificationPreferencesSyncOutcome.publishedAndCleared:
-        case NotificationPreferencesSyncOutcome.nothingToDrain:
-          retryCountsByPubkey.remove(pubkey);
-        case NotificationPreferencesSyncOutcome.stillDirty:
-          shouldRetry = isReadyForPubkey(pubkey);
+        return pushService == null ||
+            identical(ref.read(pushNotificationServiceProvider), pushService);
       }
-    } catch (e) {
-      Log.warning(
-        'Push notification preference drain failed: $e',
-        name: 'PushNotificationSync',
-        category: LogCategory.system,
-      );
-    } finally {
-      activeDrainPubkeys.remove(pubkey);
-    }
 
-    if (!shouldRetry || disposed) return;
-    final retryCount = retryCountsByPubkey[pubkey] ?? 0;
-    if (retryCount >= maxDirtySyncRetries) return;
-    retryCountsByPubkey[pubkey] = retryCount + 1;
-    Future<void>.microtask(() {
-      if (disposed || !isReadyForPubkey(pubkey)) return;
-      unawaited(drainDirtyPreferences(pubkey));
+      Future<void> drainDirtyPreferences(String pubkey) async {
+        if (!activeDrainPubkeys.add(pubkey)) return;
+        final generation = ++drainGeneration;
+        var shouldRetry = false;
+        try {
+          final preferencesService = ref.read(
+            notificationPreferencesServiceProvider,
+          );
+          if (!isReadyForPubkey(pubkey)) return;
+          final outcome = await preferencesService
+              .syncDirtyPreferencesForPubkey(
+                pubkey,
+              );
+          if (disposed || generation != drainGeneration) return;
+          switch (outcome) {
+            case NotificationPreferencesSyncOutcome.publishedAndCleared:
+            case NotificationPreferencesSyncOutcome.nothingToDrain:
+              retryCountsByPubkey.remove(pubkey);
+            case NotificationPreferencesSyncOutcome.stillDirty:
+              shouldRetry = isReadyForPubkey(pubkey);
+          }
+        } catch (e) {
+          Log.warning(
+            'Push notification preference drain failed: $e',
+            name: 'PushNotificationSync',
+            category: LogCategory.system,
+          );
+        } finally {
+          activeDrainPubkeys.remove(pubkey);
+        }
+
+        if (!shouldRetry || disposed) return;
+        final retryCount = retryCountsByPubkey[pubkey] ?? 0;
+        if (retryCount >= maxDirtySyncRetries) return;
+        retryCountsByPubkey[pubkey] = retryCount + 1;
+        Future<void>.microtask(() {
+          if (disposed || !isReadyForPubkey(pubkey)) return;
+          unawaited(drainDirtyPreferences(pubkey));
+        });
+      }
+
+      void scheduleDirtyPreferencesDrain(String pubkey) {
+        if (disposed || !isReadyForPubkey(pubkey)) return;
+        Future<void>.microtask(() {
+          if (disposed || !isReadyForPubkey(pubkey)) return;
+          unawaited(drainDirtyPreferences(pubkey));
+        });
+      }
+
+      void handleReadiness(NostrSessionReadiness readiness) {
+        final readinessPubkey = readiness.pubkey;
+        if (readiness.isReadyForActiveClient && readinessPubkey != null) {
+          unawaited(drainDirtyPreferences(readinessPubkey));
+        }
+      }
+
+      ref.listen<NostrSessionReadiness>(nostrSessionProvider, (_, readiness) {
+        handleReadiness(readiness);
+      });
+
+      Future.microtask(() => handleReadiness(ref.read(nostrSessionProvider)));
+      return scheduleDirtyPreferencesDrain;
     });
-  }
-
-  void handleReadiness(NostrSessionReadiness readiness) {
-    final readinessPubkey = readiness.pubkey;
-    if (readiness.isReadyForActiveClient && readinessPubkey != null) {
-      unawaited(drainDirtyPreferences(readinessPubkey));
-    }
-  }
-
-  ref.listen<NostrSessionReadiness>(nostrSessionProvider, (_, readiness) {
-    handleReadiness(readiness);
-  });
-
-  Future.microtask(() => handleReadiness(ref.read(nostrSessionProvider)));
-});
 
 final notificationPreferencesServiceProvider =
     Provider<NotificationPreferencesService>((ref) {
@@ -357,6 +372,10 @@ final notificationPreferencesServiceProvider =
       return NotificationPreferencesService(
         store: ref.watch(notificationPreferencesStoreProvider),
         currentPubkey: () => authService.currentIdentity?.pubkey,
+        onStillDirty: (pubkey) {
+          if (!ref.mounted) return;
+          ref.read(notificationPreferencesDirtySyncBridgeProvider)(pubkey);
+        },
         publishPreferences: (pubkey, prefs) {
           if (authService.currentIdentity?.pubkey != pubkey) {
             return Future<bool>.value(false);

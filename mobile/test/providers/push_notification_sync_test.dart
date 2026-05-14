@@ -2277,7 +2277,7 @@ void main() {
     );
 
     test(
-      'catches errors from direct preference publish when already ready',
+      'catches errors from direct preference publish retries when already ready',
       () async {
         const prefs = NotificationPreferences(commentsEnabled: false);
         when(
@@ -2301,14 +2301,19 @@ void main() {
               .updatePreferences(prefs),
           completes,
         );
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
 
-        verify(() => pushService.updatePreferences(prefs)).called(1);
+        verify(() => pushService.updatePreferences(prefs)).called(5);
         expect(preferenceStore.dirtyPreferencesByPubkey[pubkeyA], prefs);
       },
     );
 
     test(
-      'keeps newer dirty preferences after stale direct publish succeeds',
+      'retries newer dirty preferences after stale direct publish succeeds',
       () async {
         const publishedPrefs = NotificationPreferences(commentsEnabled: false);
         const newerPrefs = NotificationPreferences(likesEnabled: false);
@@ -2337,14 +2342,21 @@ void main() {
         await container
             .read(notificationPreferencesServiceProvider)
             .updatePreferences(publishedPrefs);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
 
         verify(() => pushService.updatePreferences(publishedPrefs)).called(1);
-        expect(preferenceStore.dirtyPreferencesByPubkey[pubkeyA], newerPrefs);
+        verify(() => pushService.updatePreferences(newerPrefs)).called(1);
+        expect(
+          preferenceStore.dirtyPreferencesByPubkey,
+          isNot(contains(pubkeyA)),
+        );
       },
     );
 
     test(
-      'retries dirty preferences on startup readiness after publish failure',
+      'retries dirty preferences after direct publish failure',
       () async {
         const prefs = NotificationPreferences(commentsEnabled: false);
         var attempts = 0;
@@ -2361,7 +2373,7 @@ void main() {
           return true;
         });
 
-        final firstContainer = buildContainer(
+        final container = buildContainer(
           nostrSession: _TestNostrSession(
             NostrSessionReadiness.nostrReady(
               pubkey: pubkeyA,
@@ -2369,28 +2381,13 @@ void main() {
             ),
           ),
         );
-        addTearDown(firstContainer.dispose);
 
-        await firstContainer
+        await container
             .read(notificationPreferencesServiceProvider)
             .updatePreferences(prefs);
         await Future<void>.delayed(Duration.zero);
-
-        expect(attempts, equals(1));
-        expect(preferenceStore.dirtyPreferencesByPubkey[pubkeyA], prefs);
-        firstContainer.dispose();
-
-        final secondContainer = buildContainer(
-          nostrSession: _TestNostrSession(
-            NostrSessionReadiness.nostrReady(
-              pubkey: pubkeyA,
-              client: nostrClient,
-            ),
-          ),
-        );
-        addTearDown(secondContainer.dispose);
-        secondContainer.read(pushNotificationSyncProvider);
-        await preferenceStore.waitForClear(pubkeyA);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
 
         expect(attempts, equals(2));
         expect(
