@@ -82,6 +82,9 @@ enum ContentLabel {
 
   /// Parse a [ContentLabel] from its NIP-32 [value] string.
   ///
+  /// Normalizes casing, whitespace, and separators before resolving known
+  /// moderation-label aliases to their canonical [ContentLabel] values.
+  ///
   /// Returns `null` if [value] does not match any known label.
   static ContentLabel? fromValue(String? value) {
     if (value == null || value.isEmpty) return null;

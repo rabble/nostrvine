@@ -589,6 +589,8 @@ String? _normalizeModerationLabel(String value) {
       .replaceAll('_', '-')
       .replaceAll(RegExp(r'\s+'), '-');
 
+  // Keep this alias mapping in sync with ContentLabel.fromValue, which is the
+  // canonical app-level moderation label parser.
   switch (normalized) {
     case 'sexual-content':
       return 'sexual';
