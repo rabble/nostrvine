@@ -224,8 +224,25 @@ void main() {
     });
 
     group('Unknown URL Patterns', () {
+      test('ignores internal app route paths', () {
+        const url = '/profile/npub1abc123def456';
+
+        final result = DeepLinkService.parseDeepLink(url);
+
+        expect(result.type, equals(DeepLinkType.unknown));
+      });
+
       test('rejects non-divine.video domain', () {
         const url = 'https://example.com/video/abc123';
+
+        final result = DeepLinkService.parseDeepLink(url);
+
+        expect(result.type, equals(DeepLinkType.unknown));
+      });
+
+      test('rejects wrapped URL on non-divine host', () {
+        const url =
+            'https://slack-redir.net/link?url=https%3A%2F%2Fdivine.video%2Fprofile%2Fnpub1abc123def456';
 
         final result = DeepLinkService.parseDeepLink(url);
 
@@ -422,10 +439,7 @@ void main() {
     group('$DeepLink toString', () {
       test('formats video deep link', () {
         const link = DeepLink(type: DeepLinkType.video, videoRef: 'abc');
-        expect(
-          link.toString(),
-          equals('DeepLink(type: video, videoRef: abc)'),
-        );
+        expect(link.toString(), equals('DeepLink(type: video, videoRef: abc)'));
       });
 
       test('formats profile deep link with index', () {

@@ -95,18 +95,33 @@ class DeepLinkService {
         );
         final deepLink = DeepLinkService.parseDeepLink(initialUri.toString());
         _controller.add(deepLink);
-      }
-
-      // Listen for deep links while app is running
-      _subscription = _appLinks.uriLinkStream.listen((uri) {
-        Log.info(
-          '📱 Received deep link while running: ${redactUriStringForLogs(uri.toString())}',
+      } else {
+        Log.debug(
+          'No initial deep link present at startup',
           name: 'DeepLinkService',
           category: LogCategory.ui,
         );
-        final deepLink = DeepLinkService.parseDeepLink(uri.toString());
-        _controller.add(deepLink);
-      });
+      }
+
+      // Listen for deep links while app is running
+      _subscription = _appLinks.uriLinkStream.listen(
+        (uri) {
+          Log.info(
+            '📱 Received deep link while running: ${redactUriStringForLogs(uri.toString())}',
+            name: 'DeepLinkService',
+            category: LogCategory.ui,
+          );
+          final deepLink = DeepLinkService.parseDeepLink(uri.toString());
+          _controller.add(deepLink);
+        },
+        onError: (Object error, StackTrace stackTrace) {
+          Log.error(
+            'Deep link stream error: $error',
+            name: 'DeepLinkService',
+            category: LogCategory.ui,
+          );
+        },
+      );
     } catch (e) {
       Log.error(
         'Error initializing deep link service: $e',
@@ -136,6 +151,16 @@ class DeepLinkService {
         return const DeepLink(type: DeepLinkType.signerCallback);
       }
 
+      if (_isInternalAppRoute(uri, url)) {
+        Log.debug(
+          'Skipping internal app route during deep-link parse: '
+          '${_describeUriForLogs(uri)}',
+          name: 'DeepLinkService',
+          category: LogCategory.ui,
+        );
+        return const DeepLink(type: DeepLinkType.unknown);
+      }
+
       // Accept divine.video itself plus any subdomain
       // (login.divine.video, staging.divine.video, etc.). Sibling and
       // lookalike hosts like notdivine.video or divine.video.evil.com
@@ -144,8 +169,13 @@ class DeepLinkService {
       final isDivineHost =
           host == 'divine.video' || host.endsWith('.divine.video');
       if (!isDivineHost) {
+        final embeddedUri = _extractEmbeddedUri(uri);
+        final wrappedTargetSuffix = embeddedUri == null
+            ? ''
+            : ', embeddedTarget=${_describeUriForLogs(embeddedUri)}';
         Log.warning(
-          'Ignoring deep link from non-divine.video domain: ${uri.host}',
+          'Ignoring deep link from non-divine host: '
+          '${_describeUriForLogs(uri)}$wrappedTargetSuffix',
           name: 'DeepLinkService',
           category: LogCategory.ui,
         );
@@ -267,5 +297,49 @@ class DeepLinkService {
   /// the widget tree can handle it uniformly.
   void pushLink(DeepLink link) {
     _controller.add(link);
+  }
+
+  static bool _isInternalAppRoute(Uri uri, String rawUrl) {
+    return uri.scheme.isEmpty &&
+        uri.host.isEmpty &&
+        rawUrl.startsWith('/') &&
+        uri.path.startsWith('/');
+  }
+
+  static Uri? _extractEmbeddedUri(Uri uri) {
+    const candidateKeys = <String>[
+      'url',
+      'u',
+      'target',
+      'link',
+      'redirect',
+      'redirect_url',
+      'redirectUrl',
+      'deep_link',
+      'deepLink',
+    ];
+
+    for (final key in candidateKeys) {
+      final value = uri.queryParameters[key];
+      if (value == null || value.isEmpty) continue;
+      final parsed = Uri.tryParse(value);
+      if (parsed == null) continue;
+      if (parsed.hasScheme || parsed.host.isNotEmpty) {
+        return parsed;
+      }
+    }
+
+    return null;
+  }
+
+  static String _describeUriForLogs(Uri uri) {
+    final scheme = uri.scheme.isEmpty ? '(none)' : uri.scheme;
+    final host = uri.host.isEmpty ? '(none)' : uri.host;
+    final primaryRoute = uri.pathSegments.isEmpty
+        ? '(root)'
+        : '/${uri.pathSegments.first}${uri.pathSegments.length > 1 ? '/*' : ''}';
+    final queryKeys = uri.queryParameters.keys.toList()..sort();
+    return 'scheme=$scheme, host=$host, route=$primaryRoute, '
+        'segments=${uri.pathSegments.length}, queryKeys=$queryKeys';
   }
 }
