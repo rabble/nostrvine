@@ -4452,6 +4452,13 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// `signOut`'s account-scoped invalidation (and any other code path
   /// keyed on the current pubkey) can be exercised without driving the
   /// full sign-in pipeline.
+  ///
+  /// **Scope warning**: this only sets `_currentKeyContainer`. It does
+  /// not touch `_authSource`, `_currentIdentity`, signer wiring, auth
+  /// state, or any other field that real sign-in initialises. Safe for
+  /// tests that exercise branches keyed solely on `_currentKeyContainer`
+  /// (e.g. the pubkey-capture step in `signOut`); using it as a general
+  /// "pretend to be signed in" shim will produce inconsistent state.
   @visibleForTesting
   void debugSetCurrentKeyContainer(SecureKeyContainer? container) {
     _currentKeyContainer = container;

@@ -310,11 +310,16 @@ void main() {
 
           await authService.signOut();
 
+          // The invalidation was attempted with the right prefix...
           expect(cacheDao.deletePrefixCalls, equals([pubkeyA]));
+          // ...the throw was swallowed and signOut still completed...
           expect(authService.authState, equals(AuthState.unauthenticated));
-          // Account B's seeded cache survives even though A's invalidation
-          // threw (it never got the chance to run because the throw
-          // happened mid-call).
+          // ...and because the fake throws before any rows are removed,
+          // every seeded entry (A's and B's) is still on disk. This pins
+          // the contract that a failed invalidation leaves the cache in
+          // its pre-call state — no partial cleanup.
+          expect(cacheDao.store['$pubkeyA:my_followers'], isNotNull);
+          expect(cacheDao.store['$pubkeyA:my_following'], isNotNull);
           expect(cacheDao.store['$pubkeyB:my_followers'], isNotNull);
         },
       );
