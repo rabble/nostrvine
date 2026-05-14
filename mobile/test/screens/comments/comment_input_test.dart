@@ -412,6 +412,8 @@ void main() {
           'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
       String? selectedPubkey;
       String? selectedDisplayName;
+      int? selectedStart;
+      int? selectedEnd;
 
       await tester.pumpWidget(
         ProviderScope(
@@ -424,9 +426,11 @@ void main() {
                 mentionSuggestions: const [
                   MentionSuggestion(pubkey: pubkey, displayName: 'GaryVee'),
                 ],
-                onMentionSelected: (pubkey, displayName) {
+                onMentionSelected: (pubkey, displayName, start, end) {
                   selectedPubkey = pubkey;
                   selectedDisplayName = displayName;
+                  selectedStart = start;
+                  selectedEnd = end;
                 },
                 onSubmit: () {},
               ),
@@ -443,6 +447,8 @@ void main() {
       expect(controller.text, '@GaryVee ');
       expect(selectedPubkey, pubkey);
       expect(selectedDisplayName, 'GaryVee');
+      expect(selectedStart, 0);
+      expect(selectedEnd, 8);
     });
   });
 }

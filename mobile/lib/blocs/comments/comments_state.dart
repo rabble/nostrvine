@@ -131,6 +131,7 @@ final class CommentsState extends Equatable {
     this.mentionQuery = '',
     this.mentionSuggestions = const [],
     this.activeMentions = const {},
+    this.activeMentionBindings = const [],
     this.activeEditCommentId,
     this.editInputText = '',
     this.newCommentCount = 0,
@@ -186,6 +187,11 @@ final class CommentsState extends Equatable {
   /// Populated when user selects a mention suggestion; consumed on submit
   /// to canonicalize `@displayName` through [MentionResolutionService].
   final Map<String, String> activeMentions;
+
+  /// Selected mention bindings tied to the visible token range at selection
+  /// time. These prevent deleted or cross-input stale selections from
+  /// publishing mention tags.
+  final List<MentionBinding> activeMentionBindings;
 
   /// ID of the comment currently being edited (null = not editing).
   final String? activeEditCommentId;
@@ -318,6 +324,7 @@ final class CommentsState extends Equatable {
     String? mentionQuery,
     List<MentionSuggestion>? mentionSuggestions,
     Map<String, String>? activeMentions,
+    List<MentionBinding>? activeMentionBindings,
     String? activeEditCommentId,
     String? editInputText,
     int? newCommentCount,
@@ -346,6 +353,8 @@ final class CommentsState extends Equatable {
       mentionQuery: mentionQuery ?? this.mentionQuery,
       mentionSuggestions: mentionSuggestions ?? this.mentionSuggestions,
       activeMentions: activeMentions ?? this.activeMentions,
+      activeMentionBindings:
+          activeMentionBindings ?? this.activeMentionBindings,
       activeEditCommentId: activeEditCommentId ?? this.activeEditCommentId,
       editInputText: editInputText ?? this.editInputText,
       newCommentCount: newCommentCount ?? this.newCommentCount,
@@ -382,6 +391,7 @@ final class CommentsState extends Equatable {
 
   /// Creates a copy with edit mode cleared.
   /// Preserves all other state including vote data and reply state.
+  /// Clears mention state because selected mentions are scoped to one composer.
   CommentsState clearEditMode({
     CommentsStatus? status,
     Map<String, Comment>? commentsById,
@@ -406,9 +416,6 @@ final class CommentsState extends Equatable {
       sortMode: sortMode,
       replyCountsByCommentId:
           replyCountsByCommentId ?? this.replyCountsByCommentId,
-      mentionQuery: mentionQuery,
-      mentionSuggestions: mentionSuggestions,
-      activeMentions: activeMentions,
       newCommentCount: newCommentCount,
     );
   }
@@ -436,6 +443,7 @@ final class CommentsState extends Equatable {
     mentionQuery,
     mentionSuggestions,
     activeMentions,
+    activeMentionBindings,
     activeEditCommentId,
     editInputText,
     newCommentCount,

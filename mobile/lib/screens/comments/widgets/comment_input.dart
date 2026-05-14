@@ -62,8 +62,15 @@ class CommentInput extends StatefulWidget {
   /// Callback fired with the query text after '@'.
   final ValueChanged<String>? onMentionQuery;
 
-  /// Callback fired with (hex pubkey, displayName) when a mention is selected.
-  final void Function(String pubkey, String displayName)? onMentionSelected;
+  /// Callback fired with (hex pubkey, displayName, start, exclusive end) when a
+  /// mention is selected.
+  final void Function(
+    String pubkey,
+    String displayName,
+    int start,
+    int end,
+  )?
+  onMentionSelected;
 
   /// Callback fired when the user wants to record a video comment.
   final VoidCallback? onVideoReplyPressed;
@@ -172,7 +179,12 @@ class _CommentInputState extends State<CommentInput> {
       offset: atIndex + mention.length,
     );
 
-    widget.onMentionSelected?.call(pubkey, displayName);
+    widget.onMentionSelected?.call(
+      pubkey,
+      displayName,
+      atIndex,
+      atIndex + mention.length - 1,
+    );
     widget.onChanged?.call(newText);
   }
 

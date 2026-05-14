@@ -299,16 +299,14 @@ class CommentsRepository {
         ['k', rootEventKind.toString()],
         ['p', rootEventAuthorPubkey],
       ],
-    ];
-    tags.addAll(
-      _buildMentionTags(
+      ..._buildMentionTags(
         mentionedPubkeys: mentionedPubkeys,
         excludedPubkeys: [
           rootEventAuthorPubkey,
-          if (replyToAuthorPubkey != null) replyToAuthorPubkey,
+          ?replyToAuthorPubkey,
         ],
       ),
-    );
+    ];
 
     // Create the event
     final event = Event(

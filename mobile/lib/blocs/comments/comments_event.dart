@@ -179,13 +179,24 @@ final class MentionSearchRequested extends CommentsEvent {
 /// Register a mention mapping (displayName -> full hex pubkey) for resolution
 /// on submit.
 final class MentionRegistered extends CommentsEvent {
-  const MentionRegistered({required this.displayName, required this.pubkey});
+  const MentionRegistered({
+    required this.displayName,
+    required this.pubkey,
+    this.start,
+    this.end,
+  });
 
   /// The display name shown in the text field (e.g. "Alice")
   final String displayName;
 
   /// The full hex pubkey to resolve on submit.
   final String pubkey;
+
+  /// Start offset of the selected visible mention token in the current input.
+  final int? start;
+
+  /// Exclusive end offset of the selected visible mention token.
+  final int? end;
 }
 
 /// Clear mention suggestions (when @ is removed or input dismissed)

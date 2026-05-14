@@ -1196,11 +1196,14 @@ void main() {
         () async {
           Event? capturedEvent;
           const parentCommentId =
-              'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+              'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
+              'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
           const parentAuthorPubkey =
-              'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+              'ffffffffffffffffffffffffffffffff'
+              'ffffffffffffffffffffffffffffffff';
           const mentionedPubkey =
-              '3333333333333333333333333333333333333333333333333333333333333333';
+              '33333333333333333333333333333333'
+              '33333333333333333333333333333333';
 
           when(() => mockNostrClient.publishEvent(any())).thenAnswer((
             inv,

@@ -760,34 +760,39 @@ List<String> _extractVideoPublishTextOverlayStrings(
   if (editorStateHistory.isEmpty) return const [];
 
   final references = _mapReferences(editorStateHistory['references']);
-  final lastLayerState = <String, Map<String, dynamic>>{...references};
   final history = editorStateHistory['history'];
   if (history is! Iterable) return const [];
 
-  for (final historyItem in history) {
-    if (historyItem is! Map) continue;
-    final layers = historyItem['layers'];
-    if (layers is! Iterable) continue;
+  final historyItems = history.toList();
+  final position = editorStateHistory['position'];
+  if (position == -1) return const [];
 
-    for (final rawLayer in layers) {
-      if (rawLayer is! Map) continue;
-      final layer = Map<String, dynamic>.from(rawLayer);
-      final id = layer['id'];
-      final mergedLayer = id is String
-          ? <String, dynamic>{...?lastLayerState[id], ...layer}
-          : layer;
+  final currentIndex =
+      position is int && position >= 0 && position < historyItems.length
+      ? position
+      : historyItems.length - 1;
+  if (currentIndex < 0) return const [];
 
-      final type = mergedLayer['type'];
-      final text = mergedLayer['text'];
-      if ((type == null || type == 'text') &&
-          text is String &&
-          text.trim().isNotEmpty) {
-        overlays.add(text);
-      }
+  final currentHistoryItem = historyItems[currentIndex];
+  if (currentHistoryItem is! Map) return const [];
 
-      if (id is String) {
-        lastLayerState[id] = mergedLayer;
-      }
+  final layers = currentHistoryItem['layers'];
+  if (layers is! Iterable) return const [];
+
+  for (final rawLayer in layers) {
+    if (rawLayer is! Map) continue;
+    final layer = Map<String, dynamic>.from(rawLayer);
+    final id = layer['id'];
+    final mergedLayer = id is String
+        ? <String, dynamic>{...?references[id], ...layer}
+        : layer;
+
+    final type = mergedLayer['type'];
+    final text = mergedLayer['text'];
+    if ((type == null || type == 'text') &&
+        text is String &&
+        text.trim().isNotEmpty) {
+      overlays.add(text);
     }
   }
 

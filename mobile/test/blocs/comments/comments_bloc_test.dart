@@ -16,6 +16,7 @@ import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
+import 'package:openvine/services/mention_resolution_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -793,6 +794,40 @@ void main() {
           ),
         ],
       );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'clears selected mentions when switching reply targets',
+        seed: () => CommentsState(
+          activeReplyCommentId: 'comment1',
+          replyInputText: '@Alice ',
+          activeMentions: {'Alice': validId('alice')},
+          activeMentionBindings: [
+            MentionBinding(
+              display: 'Alice',
+              pubkey: validId('alice'),
+              start: 0,
+              end: 6,
+            ),
+          ],
+        ),
+        build: createBloc,
+        act: (bloc) => bloc.add(const CommentReplyToggled('comment2')),
+        expect: () => [
+          isA<CommentsState>()
+              .having(
+                (s) => s.activeReplyCommentId,
+                'activeReplyCommentId',
+                'comment2',
+              )
+              .having((s) => s.replyInputText, 'replyInputText', '')
+              .having((s) => s.activeMentions, 'activeMentions', isEmpty)
+              .having(
+                (s) => s.activeMentionBindings,
+                'activeMentionBindings',
+                isEmpty,
+              ),
+        ],
+      );
     });
 
     group('CommentSubmitted', () {
@@ -835,7 +870,6 @@ void main() {
               rootEventId: any(named: 'rootEventId'),
               rootEventKind: any(named: 'rootEventKind'),
               rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
-              mentionedPubkeys: const [],
             ),
           ).called(1);
         },
@@ -890,7 +924,6 @@ void main() {
               rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
               replyToEventId: 'parent1',
               replyToAuthorPubkey: 'author1',
-              mentionedPubkeys: const [],
             ),
           ).called(1);
         },
@@ -1204,7 +1237,6 @@ void main() {
               replyToEventId: any(named: 'replyToEventId'),
               replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
               rootAddressableId: any(named: 'rootAddressableId'),
-              mentionedPubkeys: const [],
             ),
           ).called(1);
         },
@@ -2793,14 +2825,32 @@ void main() {
         'adds displayName to hex pubkey mapping in activeMentions',
         build: createBloc,
         act: (bloc) => bloc.add(
-          MentionRegistered(displayName: 'Alice', pubkey: validId('alice')),
+          MentionRegistered(
+            displayName: 'Alice',
+            pubkey: validId('alice'),
+            start: 0,
+            end: 6,
+          ),
         ),
         expect: () => [
-          isA<CommentsState>().having(
-            (s) => s.activeMentions,
-            'activeMentions',
-            {'Alice': validId('alice')},
-          ),
+          isA<CommentsState>()
+              .having(
+                (s) => s.activeMentions,
+                'activeMentions',
+                {'Alice': validId('alice')},
+              )
+              .having(
+                (s) => s.activeMentionBindings,
+                'activeMentionBindings',
+                [
+                  MentionBinding(
+                    display: 'Alice',
+                    pubkey: validId('alice'),
+                    start: 0,
+                    end: 6,
+                  ),
+                ],
+              ),
         ],
       );
 
@@ -2812,11 +2862,17 @@ void main() {
           MentionRegistered(displayName: 'Bob', pubkey: validId('bob')),
         ),
         expect: () => [
-          isA<CommentsState>().having(
-            (s) => s.activeMentions,
-            'activeMentions',
-            {'Alice': validId('alice'), 'Bob': validId('bob')},
-          ),
+          isA<CommentsState>()
+              .having(
+                (s) => s.activeMentions,
+                'activeMentions',
+                {'Alice': validId('alice'), 'Bob': validId('bob')},
+              )
+              .having(
+                (s) => s.activeMentionBindings,
+                'activeMentionBindings',
+                [MentionBinding(display: 'Bob', pubkey: validId('bob'))],
+              ),
         ],
       );
     });
@@ -2930,7 +2986,12 @@ void main() {
           isA<CommentsState>()
               .having((s) => s.commentsById.length, 'commentsById', 1)
               .having((s) => s.mainInputText, 'mainInputText', '')
-              .having((s) => s.activeMentions, 'activeMentions', isEmpty),
+              .having((s) => s.activeMentions, 'activeMentions', isEmpty)
+              .having(
+                (s) => s.activeMentionBindings,
+                'activeMentionBindings',
+                isEmpty,
+              ),
           // Second: reconciliation — placeholder swapped for confirmed id.
           isA<CommentsState>()
               .having((s) => s.commentsById.length, 'commentsById', 1)
@@ -2940,6 +3001,65 @@ void main() {
                 true,
               ),
         ],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'does not publish a selected mention after the visible token is deleted',
+        setUp: () {
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn(validId('currentuser'));
+
+          final postedComment = Comment(
+            id: validId('posted'),
+            content: 'thanks',
+            authorPubkey: validId('currentuser'),
+            createdAt: DateTime.now(),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          when(
+            () => mockCommentsRepository.postComment(
+              content: any(named: 'content'),
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              replyToEventId: any(named: 'replyToEventId'),
+              replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
+              mentionedPubkeys: any(named: 'mentionedPubkeys'),
+            ),
+          ).thenAnswer((_) async => postedComment);
+        },
+        seed: () {
+          final alicePubkey = validId('alice');
+          return CommentsState(
+            mainInputText: 'thanks',
+            activeMentions: {'Alice': alicePubkey},
+            activeMentionBindings: [
+              MentionBinding(
+                display: 'Alice',
+                pubkey: alicePubkey,
+                start: 0,
+                end: 6,
+              ),
+            ],
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const CommentSubmitted()),
+        verify: (_) {
+          final captured = verify(
+            () => mockCommentsRepository.postComment(
+              content: 'thanks',
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              mentionedPubkeys: captureAny(named: 'mentionedPubkeys'),
+            ),
+          )..called(1);
+          expect(captured.captured.single, isEmpty);
+        },
       );
 
       blocTest<CommentsBloc, CommentsState>(
@@ -3058,7 +3178,6 @@ void main() {
               rootEventId: any(named: 'rootEventId'),
               rootEventKind: any(named: 'rootEventKind'),
               rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
-              mentionedPubkeys: const [],
             ),
           ).called(1);
         },
@@ -3769,6 +3888,9 @@ void main() {
           mentionQuery: 'test',
           mentionSuggestions: [MentionSuggestion(pubkey: 'abc')],
           activeMentions: {'Alice': 'npub1alice'},
+          activeMentionBindings: [
+            MentionBinding(display: 'Alice', pubkey: 'npub1alice'),
+          ],
         );
 
         final updated = state.clearActiveReply();
@@ -3776,14 +3898,40 @@ void main() {
         expect(updated.mentionQuery, '');
         expect(updated.mentionSuggestions, isEmpty);
         expect(updated.activeMentions, isEmpty);
+        expect(updated.activeMentionBindings, isEmpty);
       },
     );
+
+    test('clearEditMode clears mention state', () {
+      const state = CommentsState(
+        activeEditCommentId: 'comment1',
+        editInputText: '@Alice ',
+        mentionQuery: 'test',
+        mentionSuggestions: [MentionSuggestion(pubkey: 'abc')],
+        activeMentions: {'Alice': 'npub1alice'},
+        activeMentionBindings: [
+          MentionBinding(display: 'Alice', pubkey: 'npub1alice'),
+        ],
+      );
+
+      final updated = state.clearEditMode();
+
+      expect(updated.activeEditCommentId, isNull);
+      expect(updated.editInputText, '');
+      expect(updated.mentionQuery, '');
+      expect(updated.mentionSuggestions, isEmpty);
+      expect(updated.activeMentions, isEmpty);
+      expect(updated.activeMentionBindings, isEmpty);
+    });
 
     test('copyWith preserves mention fields when not specified', () {
       const state = CommentsState(
         mentionQuery: 'test',
         mentionSuggestions: [MentionSuggestion(pubkey: 'abc')],
         activeMentions: {'Alice': 'npub1alice'},
+        activeMentionBindings: [
+          MentionBinding(display: 'Alice', pubkey: 'npub1alice'),
+        ],
       );
 
       final updated = state.copyWith(mainInputText: 'hello');
@@ -3791,6 +3939,10 @@ void main() {
       expect(updated.mentionQuery, 'test');
       expect(updated.mentionSuggestions.length, 1);
       expect(updated.activeMentions, {'Alice': 'npub1alice'});
+      expect(
+        updated.activeMentionBindings,
+        const [MentionBinding(display: 'Alice', pubkey: 'npub1alice')],
+      );
     });
   });
 

@@ -342,9 +342,16 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
               context.read<CommentsBloc>().add(MentionSearchRequested(query));
             }
           },
-          onMentionSelected: (pubkey, displayName) {
+          onMentionSelected: (pubkey, displayName, start, end) {
             context.read<CommentsBloc>()
-              ..add(MentionRegistered(displayName: displayName, pubkey: pubkey))
+              ..add(
+                MentionRegistered(
+                  displayName: displayName,
+                  pubkey: pubkey,
+                  start: start,
+                  end: end,
+                ),
+              )
               ..add(const MentionSuggestionsCleared());
           },
           onVideoReplyPressed:

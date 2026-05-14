@@ -27,6 +27,19 @@ class MentionBinding {
   final String pubkey;
   final int? start;
   final int? end;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MentionBinding &&
+          runtimeType == other.runtimeType &&
+          display == other.display &&
+          pubkey == other.pubkey &&
+          start == other.start &&
+          end == other.end;
+
+  @override
+  int get hashCode => Object.hash(display, pubkey, start, end);
 }
 
 class MentionResolutionResult {
@@ -134,44 +147,37 @@ class MentionResolutionService {
   ) {
     var text = rawText;
     final pubkeys = <String>{};
-    final rangedReplacements = <_TextReplacement>[];
-    final unrangedBindings = <MentionBinding>[];
+    final replacementsByRange = <String, _TextReplacement>{};
+    final pubkeyByRange = <String, String>{};
+    final occupiedRanges = <_MentionTokenRange>[];
 
-    for (final binding in selectedMentions) {
+    // Later bindings represent newer user selections. Process newest first so
+    // a re-selected token replaces stale bindings for the same visible range.
+    for (final binding in selectedMentions.reversed) {
       final hex = normalizeToHex(binding.pubkey);
       if (hex == null || !NostrKeyUtils.isValidKey(hex)) continue;
-      pubkeys.add(hex);
 
-      final start = binding.start;
-      final end = binding.end;
-      if (start != null &&
-          end != null &&
-          start >= 0 &&
-          end <= rawText.length &&
-          start < end) {
-        rangedReplacements.add(
-          _TextReplacement(
-            start: start,
-            end: end,
-            text: _canonicalReferenceForHex(hex),
-          ),
-        );
-      } else {
-        unrangedBindings.add(binding);
-      }
-    }
-
-    text = _applyReplacements(text, rangedReplacements);
-
-    for (final binding in unrangedBindings) {
-      final hex = normalizeToHex(binding.pubkey);
-      if (hex == null || !NostrKeyUtils.isValidKey(hex)) continue;
-      text = _replaceFirstSelectedToken(
-        text,
-        binding.display,
-        _canonicalReferenceForHex(hex),
+      final range = _currentSelectedTokenRange(
+        rawText,
+        binding,
+        occupiedRanges,
       );
+      if (range == null) {
+        continue;
+      }
+
+      final rangeKey = '${range.start}:${range.end}';
+      replacementsByRange[rangeKey] = _TextReplacement(
+        start: range.start,
+        end: range.end,
+        text: _canonicalReferenceForHex(hex),
+      );
+      pubkeyByRange[rangeKey] = hex;
+      occupiedRanges.add(range);
     }
+
+    text = _applyReplacements(text, replacementsByRange.values.toList());
+    pubkeys.addAll(pubkeyByRange.values);
 
     return _SelectedMentionResult(text: text, pubkeys: pubkeys);
   }
@@ -280,27 +286,66 @@ List<_TypedMention> _extractTypedMentions(String text) {
       .toList();
 }
 
-String _replaceFirstSelectedToken(
+_MentionTokenRange? _currentSelectedTokenRange(
   String text,
-  String display,
-  String replacement,
+  MentionBinding binding,
+  List<_MentionTokenRange> occupiedRanges,
 ) {
-  final token = display.startsWith('@') ? display : '@$display';
-  final tokenIndex = text.indexOf(token);
-  if (tokenIndex >= 0) {
-    return text.replaceRange(
-      tokenIndex,
-      tokenIndex + token.length,
-      replacement,
-    );
+  final start = binding.start;
+  final end = binding.end;
+  if (start != null &&
+      end != null &&
+      start >= 0 &&
+      end <= text.length &&
+      start < end &&
+      _rangeMatchesSelectedToken(text, start, end, binding.display)) {
+    final range = _MentionTokenRange(start: start, end: end);
+    if (!_rangeOverlapsAny(range, occupiedRanges)) return range;
   }
 
-  final displayIndex = text.indexOf(display);
-  if (displayIndex < 0) return text;
-  return text.replaceRange(
-    displayIndex,
-    displayIndex + display.length,
-    replacement,
+  return _findSelectedTokenRange(
+    text,
+    binding.display,
+    occupiedRanges: occupiedRanges,
+  );
+}
+
+bool _rangeMatchesSelectedToken(
+  String text,
+  int start,
+  int end,
+  String display,
+) {
+  final selectedText = text.substring(start, end);
+  final token = display.startsWith('@') ? display : '@$display';
+  return selectedText == token || selectedText == display;
+}
+
+_MentionTokenRange? _findSelectedTokenRange(
+  String text,
+  String display, {
+  required List<_MentionTokenRange> occupiedRanges,
+}) {
+  final token = display.startsWith('@') ? display : '@$display';
+  var searchStart = 0;
+  while (searchStart < text.length) {
+    final index = text.indexOf(token, searchStart);
+    if (index < 0) return null;
+
+    final range = _MentionTokenRange(start: index, end: index + token.length);
+    if (!_rangeOverlapsAny(range, occupiedRanges)) return range;
+    searchStart = index + token.length;
+  }
+
+  return null;
+}
+
+bool _rangeOverlapsAny(
+  _MentionTokenRange range,
+  List<_MentionTokenRange> occupiedRanges,
+) {
+  return occupiedRanges.any(
+    (occupied) => range.start < occupied.end && occupied.start < range.end,
   );
 }
 
@@ -340,6 +385,13 @@ class _SelectedMentionResult {
 
   final String text;
   final Set<String> pubkeys;
+}
+
+class _MentionTokenRange {
+  const _MentionTokenRange({required this.start, required this.end});
+
+  final int start;
+  final int end;
 }
 
 class _TypedResolutionResult {

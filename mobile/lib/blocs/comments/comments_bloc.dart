@@ -284,6 +284,8 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         state.copyWith(
           activeReplyCommentId: event.commentId,
           replyInputText: '',
+          activeMentions: const {},
+          activeMentionBindings: const [],
         ),
       );
     }
@@ -309,6 +311,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     final previousMain = state.mainInputText;
     final previousReply = state.replyInputText;
     final previousMentions = state.activeMentions;
+    final previousMentionBindings = state.activeMentionBindings;
 
     final myPubkey = _authService.currentPublicKeyHex;
     if (myPubkey == null) {
@@ -352,6 +355,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
           commentsById: withPlaceholder,
           mainInputText: '',
           activeMentions: const {},
+          activeMentionBindings: const [],
         ),
       );
     }
@@ -410,6 +414,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
           mainInputText: isReply ? state.mainInputText : previousMain,
           replyInputText: isReply ? previousReply : state.replyInputText,
           activeMentions: previousMentions,
+          activeMentionBindings: previousMentionBindings,
           error: isReply
               ? CommentsError.postReplyFailed
               : CommentsError.postCommentFailed,
@@ -427,14 +432,16 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
       return _ResolvedCommentMentions(canonicalText: text);
     }
 
-    final selectedMentions = state.activeMentions.entries
-        .map(
-          (entry) => MentionBinding(
-            display: entry.key,
-            pubkey: entry.value,
-          ),
-        )
-        .toList();
+    final selectedMentions = state.activeMentionBindings.isNotEmpty
+        ? state.activeMentionBindings
+        : state.activeMentions.entries
+              .map(
+                (entry) => MentionBinding(
+                  display: entry.key,
+                  pubkey: entry.value,
+                ),
+              )
+              .toList();
 
     try {
       final result = await service.resolveTextMentions(
@@ -951,7 +958,21 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
   ) {
     final updatedMentions = Map<String, String>.from(state.activeMentions)
       ..[event.displayName] = event.pubkey;
-    emit(state.copyWith(activeMentions: updatedMentions));
+    final updatedBindings = [
+      ...state.activeMentionBindings,
+      MentionBinding(
+        display: event.displayName,
+        pubkey: event.pubkey,
+        start: event.start,
+        end: event.end,
+      ),
+    ];
+    emit(
+      state.copyWith(
+        activeMentions: updatedMentions,
+        activeMentionBindings: updatedBindings,
+      ),
+    );
   }
 
   void _onMentionSuggestionsCleared(

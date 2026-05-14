@@ -214,6 +214,89 @@ void main() {
         },
       );
 
+      test(
+        'resolves text overlay mentions only from current editor history item',
+        () async {
+          _setupSuccessfulPublish(
+            mockAuthService: mockAuthService,
+            mockUploadManager: mockUploadManager,
+            mockDraftService: mockDraftService,
+            mockVideoEventPublisher: mockVideoEventPublisher,
+          );
+          when(
+            () => mockMentionResolutionService.resolveTextMentions(
+              rawText: any(named: 'rawText'),
+              currentUserPubkey: any(named: 'currentUserPubkey'),
+            ),
+          ).thenAnswer((invocation) async {
+            final rawText = invocation.namedArguments[#rawText] as String;
+            expect(rawText, contains('current @newmention'));
+            expect(rawText, isNot(contains('deleted @oldmention')));
+
+            return const MentionResolutionResult(
+              canonicalText: '',
+              resolvedPubkeys: [overlayMentionPubkey],
+              unresolvedTokens: [],
+            );
+          });
+
+          final draft = _createTestDraft(
+            description: '',
+            editorStateHistory: {
+              'position': 1,
+              'references': {
+                'deleted-layer': TextLayer(
+                  id: 'deleted-layer',
+                  text: 'deleted @oldmention',
+                ).toMap(),
+                'current-layer': TextLayer(
+                  id: 'current-layer',
+                  text: 'current @newmention',
+                ).toMap(),
+              },
+              'history': [
+                {
+                  'layers': [
+                    {'id': 'deleted-layer'},
+                  ],
+                },
+                {
+                  'layers': [
+                    {'id': 'current-layer'},
+                  ],
+                },
+              ],
+            },
+          );
+
+          final result = await service.publishVideo(draft: draft);
+
+          expect(result, isA<PublishSuccess>());
+          verify(
+            () => mockVideoEventPublisher.publishVideoEvent(
+              upload: any(named: 'upload'),
+              title: any(named: 'title'),
+              description: '',
+              hashtags: any(named: 'hashtags'),
+              expirationTimestamp: any(named: 'expirationTimestamp'),
+              allowAudioReuse: any(named: 'allowAudioReuse'),
+              collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
+              mentionedPubkeys: const [overlayMentionPubkey],
+              inspiredByAddressableId: any(named: 'inspiredByAddressableId'),
+              inspiredByRelayUrl: any(named: 'inspiredByRelayUrl'),
+              inspiredByNpub: any(named: 'inspiredByNpub'),
+              selectedAudioEventId: any(named: 'selectedAudioEventId'),
+              selectedAudioRelay: any(named: 'selectedAudioRelay'),
+              language: any(named: 'language'),
+              contentWarning: any(named: 'contentWarning'),
+              thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
+              replyContext: any(named: 'replyContext'),
+              addReplyToFeed: any(named: 'addReplyToFeed'),
+            ),
+          ).called(1);
+        },
+      );
+
       test('publishes without mention tags when resolution fails', () async {
         _setupSuccessfulPublish(
           mockAuthService: mockAuthService,

@@ -86,6 +86,92 @@ void main() {
     );
 
     test(
+      'skips selected bindings whose token is no longer in the text',
+      () async {
+        final result = await service.resolveTextMentions(
+          rawText: 'hi there',
+          selectedMentions: const [
+            MentionBinding(display: 'alice', pubkey: _alicePubkey),
+          ],
+        );
+
+        expect(result.canonicalText, equals('hi there'));
+        expect(result.resolvedPubkeys, isEmpty);
+        expect(result.unresolvedTokens, isEmpty);
+      },
+    );
+
+    test(
+      'skips ranged selected bindings when the range no longer matches',
+      () async {
+        final result = await service.resolveTextMentions(
+          rawText: 'hi xxxx',
+          selectedMentions: const [
+            MentionBinding(
+              display: 'alice',
+              pubkey: _alicePubkey,
+              start: 3,
+              end: 7,
+            ),
+          ],
+        );
+
+        expect(result.canonicalText, equals('hi xxxx'));
+        expect(result.resolvedPubkeys, isEmpty);
+      },
+    );
+
+    test(
+      'uses newest selected binding for the same visible token range',
+      () async {
+        final bobNpub = NostrKeyUtils.encodePubKey(_bobPubkey);
+
+        final result = await service.resolveTextMentions(
+          rawText: 'hi @alice',
+          selectedMentions: const [
+            MentionBinding(
+              display: 'alice',
+              pubkey: _alicePubkey,
+              start: 3,
+              end: 9,
+            ),
+            MentionBinding(
+              display: 'alice',
+              pubkey: _bobPubkey,
+              start: 3,
+              end: 9,
+            ),
+          ],
+        );
+
+        expect(result.canonicalText, equals('hi nostr:$bobNpub'));
+        expect(result.resolvedPubkeys, equals([_bobPubkey]));
+      },
+    );
+
+    test(
+      'keeps selected mention when text is inserted before its old range',
+      () async {
+        final aliceNpub = NostrKeyUtils.encodePubKey(_alicePubkey);
+
+        final result = await service.resolveTextMentions(
+          rawText: 'well hi @alice',
+          selectedMentions: const [
+            MentionBinding(
+              display: 'alice',
+              pubkey: _alicePubkey,
+              start: 3,
+              end: 9,
+            ),
+          ],
+        );
+
+        expect(result.canonicalText, equals('well hi nostr:$aliceNpub'));
+        expect(result.resolvedPubkeys, equals([_alicePubkey]));
+      },
+    );
+
+    test(
       'resolves exact cached typed mentions and excludes emails and URLs',
       () async {
         final aliceNpub = NostrKeyUtils.encodePubKey(_alicePubkey);
