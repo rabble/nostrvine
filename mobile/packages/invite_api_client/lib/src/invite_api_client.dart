@@ -38,6 +38,7 @@ class InviteApiClient {
        _forceOpenOnboarding = forceOpenOnboarding;
 
   static const Duration _defaultTimeout = Duration(seconds: 20);
+  static const int _maxConsumeAttempts = 3;
 
   final String _baseUrl;
   final http.Client _client;
@@ -244,39 +245,48 @@ class InviteApiClient {
     final payload = jsonEncode({'code': normalizedCode});
 
     try {
-      final response = await _client
-          .post(
-            uri,
-            headers: await _headers(
-              url: uri.toString(),
-              method: InviteRequestMethod.post,
-              payload: payload,
-              requiresAuth: signer == null,
-              signer: signer,
-            ),
-            body: payload,
-          )
-          .timeout(_defaultTimeout);
+      for (var attempt = 1; attempt <= _maxConsumeAttempts; attempt++) {
+        final response = await _client
+            .post(
+              uri,
+              headers: await _headers(
+                url: uri.toString(),
+                method: InviteRequestMethod.post,
+                payload: payload,
+                requiresAuth: signer == null,
+                signer: signer,
+              ),
+              body: payload,
+            )
+            .timeout(_defaultTimeout);
 
-      if (response.statusCode != 200) {
-        final alreadyJoined =
-            _parseErrorCode(response.body) ==
-            InviteApiErrorCode.userAlreadyJoined;
-        if (alreadyJoined) {
-          return InviteConsumeResult.fromJson({
-            'result': 'user_already_joined',
-            'code': normalizedCode,
-          });
+        if (response.statusCode != 200) {
+          final alreadyJoined =
+              _parseErrorCode(response.body) ==
+              InviteApiErrorCode.userAlreadyJoined;
+          if (alreadyJoined) {
+            return InviteConsumeResult.fromJson({
+              'result': 'user_already_joined',
+              'code': normalizedCode,
+            });
+          }
+
+          final canRetry =
+              attempt < _maxConsumeAttempts && _isRetryable(response);
+          if (canRetry) {
+            await Future<void>.delayed(_retryDelay(response));
+            continue;
+          }
+
+          throw _requestFailed(
+            message: 'Failed to activate invite code',
+            response: response,
+          );
         }
 
-        throw _requestFailed(
-          message: 'Failed to activate invite code',
-          response: response,
-        );
+        final json = jsonDecode(response.body) as Map<String, dynamic>;
+        return InviteConsumeResult.fromJson(json);
       }
-
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      return InviteConsumeResult.fromJson(json);
     } catch (error) {
       throw _wrapClientException(
         error: error,
@@ -284,6 +294,11 @@ class InviteApiClient {
         failureMessage: 'Failed to activate invite code',
       );
     }
+
+    throw const InviteApiException(
+      'Failed to activate invite code',
+      code: InviteApiErrorCode.clientError,
+    );
   }
 
   Future<InviteStatus> getInviteStatus() async {
@@ -549,6 +564,31 @@ class InviteApiClient {
     return _extractString(body, ['code', 'errorCode', 'error_code']);
   }
 
+  bool _isRetryable(http.Response response) {
+    final retryable = _extractBool(response.body, ['retryable']);
+    if (retryable != null) return retryable;
+
+    final errorCode = _parseErrorCode(response.body);
+    return errorCode == InviteApiErrorCode.tooManyRequests ||
+        errorCode == InviteApiErrorCode.storageError ||
+        errorCode == InviteApiErrorCode.internalError ||
+        response.statusCode >= 500;
+  }
+
+  Duration _retryDelay(http.Response response) {
+    final retryAfterHeader = response.headers['retry-after'];
+    final retryAfterSeconds =
+        int.tryParse(retryAfterHeader ?? '') ??
+        _extractInt(response.body, [
+          'retryAfterSeconds',
+          'retry_after_seconds',
+        ]);
+    if (retryAfterSeconds == null || retryAfterSeconds <= 0) {
+      return Duration.zero;
+    }
+    return Duration(seconds: retryAfterSeconds);
+  }
+
   String? _extractString(String body, List<String> keys) {
     try {
       final decoded = jsonDecode(body);
@@ -557,6 +597,40 @@ class InviteApiClient {
           final value = decoded[key];
           if (value is String && value.isNotEmpty) {
             return value;
+          }
+        }
+      }
+    } on Object catch (_) {
+      // Ignore malformed bodies and fall back to null.
+    }
+    return null;
+  }
+
+  bool? _extractBool(String body, List<String> keys) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map<String, dynamic>) {
+        for (final key in keys) {
+          final value = decoded[key];
+          if (value is bool) return value;
+        }
+      }
+    } on Object catch (_) {
+      // Ignore malformed bodies and fall back to null.
+    }
+    return null;
+  }
+
+  int? _extractInt(String body, List<String> keys) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map<String, dynamic>) {
+        for (final key in keys) {
+          final value = decoded[key];
+          if (value is int) return value;
+          if (value is String) {
+            final parsed = int.tryParse(value);
+            if (parsed != null) return parsed;
           }
         }
       }

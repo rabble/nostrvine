@@ -480,6 +480,43 @@ void main() {
     });
 
     test(
+      'retries retryable consume failures before surfacing an error',
+      () async {
+        var attempts = 0;
+        final retryingClient = InviteApiClient(
+          baseUrl: 'https://invites.divine.video',
+          client: MockClient((request) async {
+            attempts++;
+            if (attempts == 1) {
+              return http.Response(
+                jsonEncode({
+                  'error': 'Another consumption is in progress; retry',
+                  'code': InviteApiErrorCode.tooManyRequests,
+                  'status': 429,
+                  'retryable': true,
+                  'retryAfterSeconds': 0,
+                }),
+                429,
+              );
+            }
+            return http.Response(
+              jsonEncode({
+                'message': 'Welcome to diVine!',
+                'codesAllocated': 5,
+              }),
+              200,
+            );
+          }),
+        );
+
+        final result = await retryingClient.consumeInvite('lele-pons');
+
+        expect(result.codesAllocated, 5);
+        expect(attempts, 2);
+      },
+    );
+
+    test(
       'surfaces consumeInvite timeout failures with a structured code',
       () async {
         when(
