@@ -880,6 +880,12 @@ abstract class AppLocalizations {
   /// **'Unblock {displayName}'**
   String profileUnblockDisplayName(String displayName);
 
+  /// No description provided for @profileReportDisplayName.
+  ///
+  /// In en, this message translates to:
+  /// **'Report {displayName}'**
+  String profileReportDisplayName(String displayName);
+
   /// No description provided for @profileAddToListDisplayName.
   ///
   /// In en, this message translates to:

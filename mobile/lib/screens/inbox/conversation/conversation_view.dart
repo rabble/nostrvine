@@ -62,6 +62,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
         displayName: displayName,
         isFollowing: isFollowing,
         isBlocked: isBlocked,
+        showReport: true,
       ),
       children: const [],
     );
@@ -74,6 +75,9 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
         await ClipboardUtils.copyPubkey(context, npub);
       case MoreSheetResult.unfollow:
         await followRepository.toggleFollow(otherPubkey);
+      case MoreSheetResult.report:
+        if (!mounted) return;
+        await ReportContentDialog.showForUser(context, userPubkey: otherPubkey);
       case MoreSheetResult.blockConfirmed:
         await blocklistRepository.blockUser(
           otherPubkey,
@@ -112,9 +116,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
     final handle = (profileHandle != null && profileHandle.isNotEmpty)
         ? profileHandle
         : (otherPubkey.isNotEmpty
-              ? truncateNpubForDisplay(
-                  NostrKeyUtils.encodePubKey(otherPubkey),
-                )
+              ? truncateNpubForDisplay(NostrKeyUtils.encodePubKey(otherPubkey))
               : '');
 
     return Scaffold(
@@ -165,9 +167,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                         imageUrl: profile?.picture,
                         nip05: profile?.shortDisplayNip05,
                         onViewProfile: () {
-                          final npub = NostrKeyUtils.encodePubKey(
-                            otherPubkey,
-                          );
+                          final npub = NostrKeyUtils.encodePubKey(otherPubkey);
                           context.push('${OtherProfileScreen.path}/$npub');
                         },
                       ),

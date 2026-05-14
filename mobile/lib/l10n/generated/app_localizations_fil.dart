@@ -467,6 +467,11 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
+  String profileReportDisplayName(String displayName) {
+    return 'Report $displayName';
+  }
+
+  @override
   String profileAddToListDisplayName(String displayName) {
     return 'Idagdag si $displayName sa isang list';
   }

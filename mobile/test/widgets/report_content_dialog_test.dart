@@ -82,6 +82,17 @@ void main() {
     ).thenAnswer((_) async => ReportResult.createSuccess('test_report_id'));
 
     when(
+      () => mockReportingService.reportUser(
+        userPubkey: any(named: 'userPubkey'),
+        reason: any(named: 'reason'),
+        details: any(named: 'details'),
+        relatedEventIds: any(named: 'relatedEventIds'),
+      ),
+    ).thenAnswer(
+      (_) async => ReportResult.createSuccess('test_user_report_id'),
+    );
+
+    when(
       () => mockMuteService.muteUser(
         any(),
         reason: any(named: 'reason'),
@@ -100,6 +111,13 @@ void main() {
         );
       },
     );
+
+    test('does not throw when only a userPubkey is provided', () {
+      expect(
+        () => ReportContentDialog(userPubkey: 'pubkey_hex'),
+        returnsNormally,
+      );
+    });
   });
 
   group('$ReportContentDialog rendering', () {
@@ -897,6 +915,169 @@ void main() {
         );
       },
     );
+  });
+
+  group('user report (showForUser path)', () {
+    late MockNostrClient mockNostrClient;
+    late _MockDmRepository mockDmRepository;
+    late _MockModerationLabelService mockModerationLabelService;
+
+    const testUserPubkey =
+        '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738';
+
+    setUp(() {
+      mockNostrClient = createMockNostrService();
+      mockDmRepository = _MockDmRepository();
+      mockModerationLabelService = _MockModerationLabelService();
+
+      when(() => mockNostrClient.publicKey).thenReturn('test_pubkey_hex');
+      when(
+        () => mockModerationLabelService.divineModerationPubkeyHex,
+      ).thenReturn(ModerationLabelService.fallbackModerationPubkeyHex);
+      when(
+        () => mockDmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+        ),
+      ).thenAnswer(
+        (_) async => NIP17SendResult.success(
+          rumorEventId: 'dm_rumor_id',
+          messageEventId: 'dm_event_id',
+          recipientPubkey: ModerationLabelService.fallbackModerationPubkeyHex,
+        ),
+      );
+    });
+
+    Widget buildUserReportSubject() {
+      final router = GoRouter(
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) => Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => showDialog<void>(
+                    context: context,
+                    builder: (_) => Material(
+                      child: ReportContentDialog(
+                        userPubkey: testUserPubkey,
+                        moderationKindLabel: 'User Report',
+                        moderationEventLabel: 'User Pubkey',
+                      ),
+                    ),
+                  ),
+                  child: const Text('Open Report'),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+
+      return testProviderScope(
+        mockNostrService: mockNostrClient,
+        mockModerationLabelService: mockModerationLabelService,
+        additionalOverrides: [
+          contentReportingServiceProvider.overrideWith(
+            (ref) async => mockReportingService,
+          ),
+          contentBlocklistRepositoryProvider.overrideWith(
+            (ref) => mockBlocklistRepository,
+          ),
+          muteServiceProvider.overrideWith((ref) async => mockMuteService),
+          dmRepositoryProvider.overrideWithValue(mockDmRepository),
+        ],
+        child: MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      );
+    }
+
+    Future<void> openAndSubmitUserReport(WidgetTester tester) async {
+      await tester.pumpWidget(buildUserReportSubject());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Open Report'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.reportReasonHarassment));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+      'submission calls reportUser with the user pubkey and skips reportContent',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(800, 1200));
+        await openAndSubmitUserReport(tester);
+
+        verify(
+          () => mockReportingService.reportUser(
+            userPubkey: testUserPubkey,
+            reason: ContentFilterReason.harassment,
+            details: any(named: 'details'),
+            relatedEventIds: any(named: 'relatedEventIds'),
+          ),
+        ).called(1);
+
+        verifyNever(
+          () => mockReportingService.reportContent(
+            eventId: any(named: 'eventId'),
+            authorPubkey: any(named: 'authorPubkey'),
+            reason: any(named: 'reason'),
+            details: any(named: 'details'),
+            additionalContext: any(named: 'additionalContext'),
+            hashtags: any(named: 'hashtags'),
+          ),
+        );
+      },
+    );
+
+    testWidgets(
+      'moderation DM body uses User Report header and the synthetic user_<pubkey> event id',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(800, 1200));
+        await openAndSubmitUserReport(tester);
+
+        final captured = verify(
+          () => mockDmRepository.sendMessage(
+            recipientPubkey: any(named: 'recipientPubkey'),
+            content: captureAny(named: 'content'),
+            replyToId: any(named: 'replyToId'),
+          ),
+        ).captured;
+
+        final dmContent = captured.single as String;
+        expect(
+          dmContent,
+          contains('User Report'),
+          reason: 'header should distinguish user reports from content reports',
+        );
+        expect(
+          dmContent,
+          contains('User Pubkey: user_$testUserPubkey'),
+          reason: 'event-id line should carry the synthetic user_<pubkey> id',
+        );
+        expect(
+          dmContent,
+          isNot(contains('Content Report')),
+          reason: 'content-report header must not leak into user-report body',
+        );
+      },
+    );
+
+    testWidgets('successful user report shows the in-sheet confirmation', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      await openAndSubmitUserReport(tester);
+
+      expect(find.text(l10n.reportReceivedTitle), findsOneWidget);
+    });
   });
 
   group('moderation constants', () {

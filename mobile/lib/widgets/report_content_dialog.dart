@@ -13,7 +13,7 @@ import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// Shows a [VineBottomSheet] for reporting content.
+/// Shows a [VineBottomSheet] for reporting content or a user.
 ///
 /// Usage:
 /// ```dart
@@ -23,6 +23,10 @@ import 'package:url_launcher/url_launcher.dart';
 ///   messageId: message.id,
 ///   senderPubkey: message.senderPubkey,
 /// );
+/// await ReportContentDialog.showForUser(
+///   context,
+///   userPubkey: pubkey,
+/// );
 /// ```
 class ReportContentDialog extends ConsumerStatefulWidget {
   ReportContentDialog({
@@ -30,14 +34,18 @@ class ReportContentDialog extends ConsumerStatefulWidget {
     this.video,
     this.eventId,
     this.authorPubkey,
+    this.userPubkey,
     this.moderationKindLabel = 'Content Report',
     this.moderationEventLabel = 'Event',
     this.isFromShareMenu = false,
     this.draggableController,
   }) {
-    if (video == null && (eventId == null || authorPubkey == null)) {
+    final hasVideo = video != null;
+    final hasContent = eventId != null && authorPubkey != null;
+    final hasUser = userPubkey != null;
+    if (!hasVideo && !hasContent && !hasUser) {
       throw ArgumentError(
-        'Provide either a video or both eventId and authorPubkey.',
+        'Provide a video, both eventId and authorPubkey, or a userPubkey.',
       );
     }
   }
@@ -46,12 +54,20 @@ class ReportContentDialog extends ConsumerStatefulWidget {
   /// fall back to `video.id` / `video.pubkey`.
   final VideoEvent? video;
 
-  /// Event id of the content being reported. Required when [video] is null.
+  /// Event id of the content being reported. Required when [video] is null
+  /// and this is not a user-targeted report.
   final String? eventId;
 
   /// Author pubkey of the content being reported. Required when [video]
-  /// is null.
+  /// is null and this is not a user-targeted report.
   final String? authorPubkey;
+
+  /// Pubkey of the user being reported.
+  ///
+  /// When non-null, the report targets the user (no specific event) and
+  /// the dialog routes through [ContentReportingService.reportUser]
+  /// instead of [ContentReportingService.reportContent].
+  final String? userPubkey;
 
   /// Header used in the moderation DM (e.g. "Content Report", "DM
   /// Message Report"). Internal-only — not user-visible.
@@ -114,6 +130,32 @@ class ReportContentDialog extends ConsumerStatefulWidget {
         .whenComplete(controller.dispose);
   }
 
+  /// Shows the bottom sheet for reporting a user account (e.g. for
+  /// harassment, impersonation, or underage account claims).
+  ///
+  /// Routes submission through [ContentReportingService.reportUser], which
+  /// emits a NIP-56 report with the synthetic `user_<pubkey>` event id.
+  static Future<void> showForUser(
+    BuildContext context, {
+    required String userPubkey,
+  }) {
+    final controller = DraggableScrollableController();
+    return context
+        .showVideoPausingVineBottomSheet<void>(
+          initialChildSize: 0.85,
+          maxChildSize: 0.95,
+          minChildSize: 0.5,
+          draggableController: controller,
+          body: ReportContentDialog(
+            userPubkey: userPubkey,
+            moderationKindLabel: 'User Report',
+            moderationEventLabel: 'User Pubkey',
+            draggableController: controller,
+          ),
+        )
+        .whenComplete(controller.dispose);
+  }
+
   @override
   ConsumerState<ReportContentDialog> createState() =>
       _ReportContentDialogState();
@@ -131,8 +173,16 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   bool _scrollWhenKeyboardOpens = false;
   double _previousViewInsetsBottom = 0;
 
-  String get _eventId => widget.eventId ?? widget.video!.id;
-  String get _authorPubkey => widget.authorPubkey ?? widget.video!.pubkey;
+  bool get _isUserReport => widget.userPubkey != null;
+
+  String get _eventId {
+    final userPubkey = widget.userPubkey;
+    if (userPubkey != null) return 'user_$userPubkey';
+    return widget.eventId ?? widget.video!.id;
+  }
+
+  String get _authorPubkey =>
+      widget.userPubkey ?? widget.authorPubkey ?? widget.video!.pubkey;
 
   @override
   void didChangeDependencies() {
@@ -302,14 +352,21 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
       final reportService = await ref.read(
         contentReportingServiceProvider.future,
       );
-      final result = await reportService.reportContent(
-        eventId: _eventId,
-        authorPubkey: _authorPubkey,
-        reason: _selectedReason!,
-        details: _detailsController.text.trim().isEmpty
-            ? selectedReasonTitle
-            : _detailsController.text.trim(),
-      );
+      final details = _detailsController.text.trim().isEmpty
+          ? selectedReasonTitle
+          : _detailsController.text.trim();
+      final result = _isUserReport
+          ? await reportService.reportUser(
+              userPubkey: widget.userPubkey!,
+              reason: _selectedReason!,
+              details: details,
+            )
+          : await reportService.reportContent(
+              eventId: _eventId,
+              authorPubkey: _authorPubkey,
+              reason: _selectedReason!,
+              details: details,
+            );
 
       if (mounted) {
         if (result.success) {

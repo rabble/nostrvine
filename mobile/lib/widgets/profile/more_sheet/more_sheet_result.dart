@@ -11,6 +11,9 @@ enum MoreSheetResult {
   /// User confirmed unfollow action.
   unfollow,
 
+  /// User tapped report.
+  report,
+
   /// User confirmed block action.
   blockConfirmed,
 

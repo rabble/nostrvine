@@ -1,12 +1,12 @@
 // ABOUTME: Menu widget for the More sheet with profile actions
-// ABOUTME: Copy public key, unfollow, and block/unblock actions
+// ABOUTME: Copy public key, unfollow, report, and block/unblock actions
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/l10n/l10n.dart';
 
-/// Menu widget for the More sheet with copy, unfollow, and block actions.
+/// Menu widget for the More sheet with copy, unfollow, report, and block
+/// actions.
 class MoreSheetMenu extends StatelessWidget {
   /// Creates a More sheet menu.
   const MoreSheetMenu({
@@ -17,6 +17,7 @@ class MoreSheetMenu extends StatelessWidget {
     required this.onUnfollow,
     required this.onBlockTap,
     this.onAddToList,
+    this.onReport,
     super.key,
   });
 
@@ -43,124 +44,84 @@ class MoreSheetMenu extends StatelessWidget {
   /// When null, the action is hidden (used for feature-flag gating).
   final VoidCallback? onAddToList;
 
+  /// Optional callback for the "Report" action.
+  ///
+  /// When null, the action is hidden (e.g. on own profile, where reporting
+  /// yourself is meaningless).
+  final VoidCallback? onReport;
+
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Column(
       key: const ValueKey('menu'),
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Add to list action (curated lists feature flag gated by the caller)
         if (onAddToList != null)
-          InkWell(
-            onTap: onAddToList,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: 16,
-                horizontal: 16,
-              ),
-              child: Row(
-                children: [
-                  SvgPicture.asset(
-                    DivineIconName.listPlus.assetPath,
-                    width: 24,
-                    height: 24,
-                    colorFilter: const ColorFilter.mode(
-                      VineTheme.whiteText,
-                      BlendMode.srcIn,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    context.l10n.profileAddToListDisplayName(displayName),
-                    style: VineTheme.titleMediumFont(),
-                  ),
-                ],
-              ),
-            ),
+          _MoreSheetMenuItem(
+            icon: DivineIconName.listPlus,
+            label: l10n.profileAddToListDisplayName(displayName),
+            onTap: onAddToList!,
           ),
-        // Copy public key action
-        InkWell(
+        _MoreSheetMenuItem(
+          icon: DivineIconName.copy,
+          label: l10n.profileCopyPublicKey,
           onTap: onCopy,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-            child: Row(
-              children: [
-                SvgPicture.asset(
-                  DivineIconName.copy.assetPath,
-                  width: 24,
-                  height: 24,
-                  colorFilter: const ColorFilter.mode(
-                    VineTheme.whiteText,
-                    BlendMode.srcIn,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Text(
-                  context.l10n.profileCopyPublicKey,
-                  style: VineTheme.titleMediumFont(),
-                ),
-              ],
-            ),
-          ),
         ),
-        // Unfollow action (only if following)
         if (isFollowing)
-          InkWell(
+          _MoreSheetMenuItem(
+            icon: DivineIconName.userMinus,
+            label: l10n.profileUnfollowDisplayName(displayName),
             onTap: onUnfollow,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-              child: Row(
-                children: [
-                  SvgPicture.asset(
-                    DivineIconName.userMinus.assetPath,
-                    width: 24,
-                    height: 24,
-                    colorFilter: const ColorFilter.mode(
-                      VineTheme.whiteText,
-                      BlendMode.srcIn,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    context.l10n.profileUnfollowDisplayName(displayName),
-                    style: VineTheme.titleMediumFont(),
-                  ),
-                ],
-              ),
-            ),
           ),
-        // Block/Unblock action
-        InkWell(
+        if (onReport != null)
+          _MoreSheetMenuItem(
+            icon: DivineIconName.flag,
+            label: l10n.profileReportDisplayName(displayName),
+            onTap: onReport!,
+          ),
+        _MoreSheetMenuItem(
+          icon: isBlocked
+              ? DivineIconName.prohibitInset
+              : DivineIconName.prohibit,
+          label: isBlocked
+              ? l10n.profileUnblockDisplayName(displayName)
+              : l10n.profileBlockDisplayName(displayName),
           onTap: onBlockTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-            child: Row(
-              children: [
-                SvgPicture.asset(
-                  isBlocked
-                      ? DivineIconName.prohibitInset.assetPath
-                      : DivineIconName.prohibit.assetPath,
-                  width: 24,
-                  height: 24,
-                  colorFilter: ColorFilter.mode(
-                    isBlocked ? VineTheme.onSurface : VineTheme.error,
-                    BlendMode.srcIn,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Text(
-                  isBlocked
-                      ? context.l10n.profileUnblockDisplayName(displayName)
-                      : context.l10n.profileBlockDisplayName(displayName),
-                  style: VineTheme.titleMediumFont(
-                    color: isBlocked ? VineTheme.onSurface : VineTheme.error,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          color: isBlocked ? VineTheme.onSurface : VineTheme.error,
         ),
       ],
+    );
+  }
+}
+
+class _MoreSheetMenuItem extends StatelessWidget {
+  const _MoreSheetMenuItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.color = VineTheme.whiteText,
+  });
+
+  final DivineIconName icon;
+  final String label;
+  final VoidCallback onTap;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+        child: Row(
+          spacing: 16,
+          children: [
+            DivineIcon(icon: icon, color: color),
+            Text(label, style: VineTheme.titleMediumFont(color: color)),
+          ],
+        ),
+      ),
     );
   }
 }

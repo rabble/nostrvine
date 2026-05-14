@@ -32,6 +32,7 @@ class MoreSheetContent extends StatefulWidget {
     required this.isBlocked,
     this.initialMode = MoreSheetMode.menu,
     this.showAddToList = false,
+    this.showReport = false,
     super.key,
   });
 
@@ -52,6 +53,12 @@ class MoreSheetContent extends StatefulWidget {
 
   /// Whether to show the "Add to list" action (curated-lists feature flag).
   final bool showAddToList;
+
+  /// Whether to show the "Report" action.
+  ///
+  /// Hidden on the current user's own profile, where reporting yourself
+  /// is meaningless.
+  final bool showReport;
 
   @override
   State<MoreSheetContent> createState() => _MoreSheetContentState();
@@ -171,6 +178,9 @@ class _MoreSheetContentState extends State<MoreSheetContent>
       },
       onAddToList: widget.showAddToList
           ? () => Navigator.of(context).pop(MoreSheetResult.addToList)
+          : null,
+      onReport: widget.showReport
+          ? () => Navigator.of(context).pop(MoreSheetResult.report)
           : null,
     );
   }

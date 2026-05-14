@@ -270,6 +270,14 @@
       }
     }
   },
+  "profileReportDisplayName": "Report {displayName}",
+  "@profileReportDisplayName": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
   "profileAddToListDisplayName": "Add {displayName} to a list",
   "@profileAddToListDisplayName": {
     "placeholders": {

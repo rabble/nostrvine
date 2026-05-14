@@ -30,6 +30,7 @@ import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
 import 'package:openvine/widgets/profile/new_people_list_sheet.dart';
 import 'package:openvine/widgets/profile/profile_grid.dart';
 import 'package:openvine/widgets/profile/profile_loading_view.dart';
+import 'package:openvine/widgets/report_content_dialog.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -235,6 +236,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
             isFollowing: isFollowing,
             isBlocked: isBlocked,
             showAddToList: showAddToList,
+            showReport: !isOwnProfile,
           );
         },
       ),
@@ -265,13 +267,15 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
             initialCollaborator: profile,
           );
         } else {
-          await showNewPeopleListSheet(
-            context,
-            initialCollaborator: profile,
-          );
+          await showNewPeopleListSheet(context, initialCollaborator: profile);
         }
       case MoreSheetResult.unfollow:
         await _unfollowUser();
+      case MoreSheetResult.report:
+        await ReportContentDialog.showForUser(
+          context,
+          userPubkey: widget.pubkey,
+        );
       case MoreSheetResult.blockConfirmed:
         context.read<OtherProfileBloc>().add(
           const OtherProfileBlockRequested(),

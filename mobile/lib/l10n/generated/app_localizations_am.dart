@@ -449,6 +449,11 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String profileReportDisplayName(String displayName) {
+    return 'Report $displayName';
+  }
+
+  @override
   String profileAddToListDisplayName(String displayName) {
     return '$displayNameን ወደ ዝርዝር ጨምር';
   }

@@ -445,6 +445,11 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String profileReportDisplayName(String displayName) {
+    return 'Report $displayName';
+  }
+
+  @override
   String profileAddToListDisplayName(String displayName) {
     return '$displayName kişisini listeye ekle';
   }
