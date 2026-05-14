@@ -24,7 +24,7 @@ import 'package:openvine/screens/comments/widgets/video_comment_player.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:openvine/widgets/clickable_hashtag_text.dart';
+import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
 
@@ -417,10 +417,10 @@ class _CommentContent extends StatelessWidget {
       fontSize: isEmoji ? _emojiOnlyFontSize : 14,
       height: isEmoji ? null : 20 / 14,
     );
-    return ClickableHashtagText(
+    return LinkifiedText(
       text: content,
       style: baseStyle,
-      hashtagStyle: baseStyle.copyWith(
+      linkStyle: baseStyle.copyWith(
         color: VineTheme.info,
         fontWeight: FontWeight.w500,
       ),

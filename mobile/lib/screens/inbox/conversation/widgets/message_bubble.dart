@@ -18,7 +18,7 @@ import 'package:openvine/screens/inbox/conversation/widgets/video_link_preview_c
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/utils/divine_video_url.dart';
 import 'package:openvine/utils/string_utils.dart';
-import 'package:openvine/widgets/clickable_hashtag_text.dart';
+import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -270,10 +270,10 @@ class _MessageText extends StatelessWidget {
       decoration: TextDecoration.underline,
       decorationColor: linkColor,
     );
-    return ClickableHashtagText(
+    return LinkifiedText(
       text: message,
       style: defaultStyle,
-      hashtagStyle: referenceStyle,
+      linkStyle: referenceStyle,
       mentionStyle: referenceStyle,
       onUrlTap: (link) => _openLink(context, link),
     );

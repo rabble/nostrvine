@@ -22,7 +22,7 @@ import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/string_utils.dart';
-import 'package:openvine/widgets/clickable_hashtag_text.dart';
+import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/og_viner_badge.dart';
 import 'package:openvine/widgets/special_profile_checkmark.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -505,15 +505,14 @@ class VideoOverlayActions extends ConsumerWidget {
                                         video,
                                       );
                                     },
-                              child: ClickableHashtagText(
+                              child: LinkifiedText(
                                 text: descriptionText,
                                 style: VineTheme.bodySmallFont().copyWith(
                                   shadows: VineTheme.buttonShadows,
                                 ),
-                                hashtagStyle: VineTheme.bodySmallFont()
-                                    .copyWith(
-                                      shadows: VineTheme.buttonShadows,
-                                    ),
+                                linkStyle: VineTheme.bodySmallFont().copyWith(
+                                  shadows: VineTheme.buttonShadows,
+                                ),
                                 maxLines: 3,
                                 overflow: TextOverflow.ellipsis,
                               ),

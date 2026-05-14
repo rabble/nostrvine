@@ -1,4 +1,4 @@
-// ABOUTME: Comprehensive widget test for ClickableHashtagText covering core functionality
+// ABOUTME: Comprehensive widget test for LinkifiedText covering core functionality
 // ABOUTME: Tests hashtag parsing, tap interactions, navigation, styling, and edge cases
 
 import 'package:flutter/gestures.dart';
@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
-import 'package:openvine/widgets/clickable_hashtag_text.dart';
+import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 
 class _MockNavigatorObserver extends Mock implements NavigatorObserver {}
 
@@ -18,7 +18,7 @@ void main() {
     registerFallbackValue(_FakeRoute());
   });
 
-  group('ClickableHashtagText - Comprehensive Tests', () {
+  group('LinkifiedText - Comprehensive Tests', () {
     late _MockNavigatorObserver mockObserver;
 
     setUp(() {
@@ -35,7 +35,7 @@ void main() {
           const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: ClickableHashtagText(text: plainText)),
+            home: Scaffold(body: LinkifiedText(text: plainText)),
           ),
         );
 
@@ -54,7 +54,7 @@ void main() {
           const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: ClickableHashtagText(text: textWithHashtag)),
+            home: Scaffold(body: LinkifiedText(text: textWithHashtag)),
           ),
         );
 
@@ -78,7 +78,7 @@ void main() {
           const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: ClickableHashtagText(text: textWithHashtag)),
+            home: Scaffold(body: LinkifiedText(text: textWithHashtag)),
           ),
         );
 
@@ -112,7 +112,7 @@ void main() {
           const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: ClickableHashtagText(text: textWithHashtags)),
+            home: Scaffold(body: LinkifiedText(text: textWithHashtags)),
           ),
         );
 
@@ -137,7 +137,7 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
-              body: ClickableHashtagText(text: 'Plain text', style: testStyle),
+              body: LinkifiedText(text: 'Plain text', style: testStyle),
             ),
           ),
         );
@@ -154,9 +154,9 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
-              body: ClickableHashtagText(
+              body: LinkifiedText(
                 text: 'Text with #hashtag',
-                hashtagStyle: hashtagStyle,
+                linkStyle: hashtagStyle,
               ),
             ),
           ),
@@ -180,7 +180,7 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
-              body: ClickableHashtagText(text: 'Text with #hashtag'),
+              body: LinkifiedText(text: 'Text with #hashtag'),
             ),
           ),
         );
@@ -209,7 +209,7 @@ void main() {
             home: Scaffold(
               body: SizedBox(
                 width: 200, // Force text wrapping
-                child: ClickableHashtagText(text: longText, maxLines: 2),
+                child: LinkifiedText(text: longText, maxLines: 2),
               ),
             ),
           ),
@@ -232,7 +232,7 @@ void main() {
             supportedLocales: AppLocalizations.supportedLocales,
             navigatorObservers: [mockObserver],
             home: Scaffold(
-              body: ClickableHashtagText(
+              body: LinkifiedText(
                 text: 'Check out #vine',
                 onVideoStateChange: () => callbackCalled = true,
               ),
@@ -265,7 +265,7 @@ void main() {
             supportedLocales: AppLocalizations.supportedLocales,
             navigatorObservers: [mockObserver],
             home: const Scaffold(
-              body: ClickableHashtagText(text: 'Check out #test'),
+              body: LinkifiedText(text: 'Check out #test'),
             ),
           ),
         );
@@ -297,7 +297,7 @@ void main() {
             supportedLocales: AppLocalizations.supportedLocales,
             navigatorObservers: [mockObserver],
             home: Scaffold(
-              body: ClickableHashtagText(
+              body: LinkifiedText(
                 text: '#first and #second hashtags',
                 onVideoStateChange: () {},
               ),
@@ -339,7 +339,7 @@ void main() {
           const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: ClickableHashtagText(text: '')),
+            home: Scaffold(body: LinkifiedText(text: '')),
           ),
         );
 
@@ -352,7 +352,7 @@ void main() {
           const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: ClickableHashtagText(text: '   ')),
+            home: Scaffold(body: LinkifiedText(text: '   ')),
           ),
         );
 
@@ -368,7 +368,7 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
-              body: ClickableHashtagText(text: 'Test #vine_2024 and #test_123'),
+              body: LinkifiedText(text: 'Test #vine_2024 and #test_123'),
             ),
           ),
         );
@@ -387,7 +387,7 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
-              body: ClickableHashtagText(text: '#first#second hashtags'),
+              body: LinkifiedText(text: '#first#second hashtags'),
             ),
           ),
         );
@@ -406,7 +406,7 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
-              body: ClickableHashtagText(
+              body: LinkifiedText(
                 text: 'Visit https://example.com/#anchor not a hashtag',
               ),
             ),
@@ -429,7 +429,7 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
-              body: ClickableHashtagText(text: 'Just a # character'),
+              body: LinkifiedText(text: 'Just a # character'),
             ),
           ),
         );
@@ -456,7 +456,7 @@ void main() {
           const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: ClickableHashtagText(text: textWithHashtags)),
+            home: Scaffold(body: LinkifiedText(text: textWithHashtags)),
           ),
         );
 

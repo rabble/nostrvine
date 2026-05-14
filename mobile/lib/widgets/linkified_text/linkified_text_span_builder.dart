@@ -78,7 +78,7 @@ class LinkifiedTextSpanBuilder {
   /// Display label for video/event references.
   final String? videoLabel;
 
-  /// Builds spans preserving the token precedence from [ClickableHashtagText].
+  /// Builds spans preserving the token precedence from [LinkifiedText].
   List<TextSpan> build() {
     final spans = <TextSpan>[];
     var lastEnd = 0;

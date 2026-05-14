@@ -15,7 +15,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/comments/widgets/comment_item.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:openvine/widgets/clickable_hashtag_text.dart';
+import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 
 import '../../builders/comment_builder.dart';
 
@@ -72,7 +72,7 @@ void main() {
   Text contentText(WidgetTester tester) {
     return tester.widget<Text>(
       find.descendant(
-        of: find.byType(ClickableHashtagText),
+        of: find.byType(LinkifiedText),
         matching: find.byType(Text),
       ),
     );
@@ -96,7 +96,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.byType(ClickableHashtagText), findsOneWidget);
+    expect(find.byType(LinkifiedText), findsOneWidget);
     final fallbackName = UserProfile.defaultDisplayNameFor(_testHexPubkey);
     expect(find.textContaining('@$fallbackName'), findsOneWidget);
   });
@@ -118,7 +118,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.byType(ClickableHashtagText), findsOneWidget);
+    expect(find.byType(LinkifiedText), findsOneWidget);
 
     final text = contentText(tester);
     final textSpan = text.textSpan! as TextSpan;

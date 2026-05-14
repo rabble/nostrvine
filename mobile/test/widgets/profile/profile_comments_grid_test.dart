@@ -12,7 +12,7 @@ import 'package:openvine/blocs/profile_comments/profile_comments_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:openvine/widgets/clickable_hashtag_text.dart';
+import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/profile/profile_comments_grid.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -227,7 +227,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byType(ClickableHashtagText), findsOneWidget);
+        expect(find.byType(LinkifiedText), findsOneWidget);
         expect(find.text('hi @Alice', findRichText: true), findsOneWidget);
         expect(find.textContaining('nostr:$mentionedNpub'), findsNothing);
       });

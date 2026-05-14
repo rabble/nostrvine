@@ -8,7 +8,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/l10n/generated/app_localizations_en.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:openvine/widgets/clickable_hashtag_text.dart';
+import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:url_launcher_platform_interface/link.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
@@ -41,7 +41,7 @@ const _testHexPubkey =
     '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
 void main() {
-  group('ClickableHashtagText', () {
+  group('LinkifiedText', () {
     late UrlLauncherPlatform originalUrlLauncherPlatform;
     late _FakeUrlLauncherPlatform fakeUrlLauncherPlatform;
 
@@ -65,7 +65,7 @@ void main() {
           const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: ClickableHashtagText(text: plainText)),
+            home: Scaffold(body: LinkifiedText(text: plainText)),
           ),
         );
 
@@ -84,7 +84,7 @@ void main() {
             child: MaterialApp(
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(body: ClickableHashtagText(text: textWithLink)),
+              home: Scaffold(body: LinkifiedText(text: textWithLink)),
             ),
           ),
         );
@@ -115,7 +115,7 @@ void main() {
             child: MaterialApp(
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(body: ClickableHashtagText(text: textWithLink)),
+              home: Scaffold(body: LinkifiedText(text: textWithLink)),
             ),
           ),
         );
@@ -142,7 +142,7 @@ void main() {
         const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: ClickableHashtagText(text: plainText)),
+          home: Scaffold(body: LinkifiedText(text: plainText)),
         ),
       );
 
@@ -157,7 +157,7 @@ void main() {
         const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: ClickableHashtagText(text: textWithHashtag)),
+          home: Scaffold(body: LinkifiedText(text: textWithHashtag)),
         ),
       );
 
@@ -173,7 +173,7 @@ void main() {
         const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: ClickableHashtagText(text: textWithHashtags)),
+          home: Scaffold(body: LinkifiedText(text: textWithHashtags)),
         ),
       );
 
@@ -189,7 +189,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: ClickableHashtagText(text: textWithTrailingHashtag),
+            body: LinkifiedText(text: textWithTrailingHashtag),
           ),
         ),
       );
@@ -208,7 +208,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: ClickableHashtagText(text: textWithComplexHashtags),
+            body: LinkifiedText(text: textWithComplexHashtags),
           ),
         ),
       );
@@ -229,7 +229,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: ClickableHashtagText(text: longText, maxLines: 2),
+            body: LinkifiedText(text: longText, maxLines: 2),
           ),
         ),
       );
@@ -243,7 +243,7 @@ void main() {
         const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: ClickableHashtagText(text: '')),
+          home: Scaffold(body: LinkifiedText(text: '')),
         ),
       );
 
@@ -257,7 +257,7 @@ void main() {
         const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: ClickableHashtagText(text: '   ')),
+          home: Scaffold(body: LinkifiedText(text: '   ')),
         ),
       );
 
@@ -287,12 +287,12 @@ void main() {
           MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: ClickableHashtagText(text: testText)),
+            home: Scaffold(body: LinkifiedText(text: testText)),
           ),
         );
 
         // Should not crash
-        expect(find.byType(ClickableHashtagText), findsOneWidget);
+        expect(find.byType(LinkifiedText), findsOneWidget);
 
         // Clear the widget tree before next test
         await tester.pumpWidget(Container());
@@ -307,7 +307,7 @@ void main() {
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: ClickableHashtagText(text: textWithLink)),
+            home: Scaffold(body: LinkifiedText(text: textWithLink)),
           ),
         ),
       );
@@ -339,7 +339,7 @@ void main() {
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: ClickableHashtagText(text: textWithMention)),
+            home: Scaffold(body: LinkifiedText(text: textWithMention)),
           ),
         ),
       );
@@ -368,7 +368,7 @@ void main() {
         const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: ClickableHashtagText(text: textWithEvent)),
+          home: Scaffold(body: LinkifiedText(text: textWithEvent)),
         ),
       );
 
@@ -399,7 +399,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: ClickableHashtagText(
+            body: LinkifiedText(
               text: 'Visit https://example.com',
               onUrlTap: (url) async => tappedUrls.add(url),
             ),
@@ -435,7 +435,7 @@ void main() {
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: ClickableHashtagText(text: textWithMention)),
+            home: Scaffold(body: LinkifiedText(text: textWithMention)),
           ),
         ),
       );
@@ -477,7 +477,7 @@ void main() {
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: ClickableHashtagText(text: textWithMention)),
+            home: Scaffold(body: LinkifiedText(text: textWithMention)),
           ),
         ),
       );

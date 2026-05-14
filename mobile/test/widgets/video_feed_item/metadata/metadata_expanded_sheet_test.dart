@@ -18,7 +18,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/widgets/clickable_hashtag_text.dart';
+import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_badges_row.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_sounds_section.dart';
@@ -254,7 +254,7 @@ void main() {
       );
 
       expect(find.text('Who knew?'), findsOneWidget);
-      expect(find.byType(ClickableHashtagText), findsOneWidget);
+      expect(find.byType(LinkifiedText), findsOneWidget);
     });
 
     testWidgets('still renders the section without title or description', (

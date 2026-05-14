@@ -11,7 +11,7 @@ import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/string_utils.dart';
-import 'package:openvine/widgets/clickable_hashtag_text.dart';
+import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
@@ -178,12 +178,12 @@ class VideoAuthorInfoSection extends ConsumerWidget {
                   onInteracted?.call();
                   MetadataExpandedSheet.show(context, video);
                 },
-                child: ClickableHashtagText(
+                child: LinkifiedText(
                   text: video.displayContent.trim(),
                   style: VineTheme.bodySmallFont().copyWith(
                     shadows: VineTheme.buttonShadows,
                   ),
-                  hashtagStyle: VineTheme.bodySmallFont().copyWith(
+                  linkStyle: VineTheme.bodySmallFont().copyWith(
                     shadows: VineTheme.buttonShadows,
                   ),
                   maxLines: 3,
