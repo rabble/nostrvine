@@ -241,6 +241,7 @@
             }
         }
     },
+    "profileReportDisplayName": "Laporkan {displayName}",
     "profileAddToListDisplayName": "Tambahkan {displayName} ke daftar",
     "profileUserBlockedTitle": "Pengguna Diblokir",
     "profileUserBlockedContent": "Kamu tidak akan melihat konten dari pengguna ini di feed-mu.",

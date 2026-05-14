@@ -426,7 +426,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String profileReportDisplayName(String displayName) {
-    return 'Report $displayName';
+    return '$displayNameを報告';
   }
 
   @override

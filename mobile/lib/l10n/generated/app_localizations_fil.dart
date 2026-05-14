@@ -468,7 +468,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String profileReportDisplayName(String displayName) {
-    return 'Report $displayName';
+    return 'I-report si $displayName';
   }
 
   @override

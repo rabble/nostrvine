@@ -469,7 +469,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String profileReportDisplayName(String displayName) {
-    return 'Report $displayName';
+    return 'Segnala $displayName';
   }
 
   @override

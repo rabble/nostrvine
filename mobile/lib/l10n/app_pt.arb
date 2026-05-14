@@ -241,6 +241,7 @@
             }
         }
     },
+    "profileReportDisplayName": "Denunciar {displayName}",
     "profileAddToListDisplayName": "Adicionar {displayName} a uma lista",
     "profileUserBlockedTitle": "Usuário bloqueado",
     "profileUserBlockedContent": "Você não vai mais ver conteúdo desse usuário no seu feed.",

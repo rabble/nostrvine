@@ -241,6 +241,7 @@
             }
         }
     },
+    "profileReportDisplayName": "Rapportera {displayName}",
     "profileAddToListDisplayName": "Lägg till {displayName} i en lista",
     "profileUserBlockedTitle": "Användare blockerad",
     "profileUserBlockedContent": "Du kommer inte se innehåll från den här användaren i dina flöden.",

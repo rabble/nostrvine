@@ -270,6 +270,7 @@
             }
         }
     },
+    "profileReportDisplayName": "{displayName}ን ሪፖርት አድርግ",
     "profileAddToListDisplayName": "{displayName}ን ወደ ዝርዝር ጨምር",
     "@profileAddToListDisplayName": {
         "placeholders": {

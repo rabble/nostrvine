@@ -241,6 +241,7 @@
             }
         }
     },
+    "profileReportDisplayName": "Zgłoś {displayName}",
     "profileAddToListDisplayName": "Dodaj {displayName} do listy",
     "profileUserBlockedTitle": "Użytkownik zablokowany",
     "profileUserBlockedContent": "Nie będziesz widzieć treści tego użytkownika w swoich kanałach.",

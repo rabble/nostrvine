@@ -448,7 +448,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String profileReportDisplayName(String displayName) {
-    return 'Report $displayName';
+    return 'أبلغ عن $displayName';
   }
 
   @override

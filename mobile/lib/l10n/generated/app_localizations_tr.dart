@@ -446,7 +446,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String profileReportDisplayName(String displayName) {
-    return 'Report $displayName';
+    return '$displayName adlı kullanıcıyı bildir';
   }
 
   @override

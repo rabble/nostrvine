@@ -241,6 +241,7 @@
             }
         }
     },
+    "profileReportDisplayName": "أبلغ عن {displayName}",
     "profileAddToListDisplayName": "أضف {displayName} إلى قائمة",
     "profileUserBlockedTitle": "تم حظر المستخدم",
     "profileUserBlockedContent": "لن ترى محتوى من هذا المستخدم في تغذياتك.",

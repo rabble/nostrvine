@@ -249,6 +249,7 @@
             }
         }
     },
+    "profileReportDisplayName": "Докладвай {displayName}",
     "profileAddToListDisplayName": "Добави {displayName} към списък",
     "@profileAddToListDisplayName": {
         "placeholders": {

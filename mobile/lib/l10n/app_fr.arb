@@ -241,6 +241,7 @@
             }
         }
     },
+    "profileReportDisplayName": "Signaler {displayName}",
     "profileAddToListDisplayName": "Ajouter {displayName} à une liste",
     "profileUserBlockedTitle": "Utilisateur bloqué",
     "profileUserBlockedContent": "Tu ne verras plus son contenu dans tes fils.",

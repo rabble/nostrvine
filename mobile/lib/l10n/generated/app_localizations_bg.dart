@@ -468,7 +468,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String profileReportDisplayName(String displayName) {
-    return 'Report $displayName';
+    return 'Докладвай $displayName';
   }
 
   @override

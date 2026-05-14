@@ -241,6 +241,7 @@
             }
         }
     },
+    "profileReportDisplayName": "{displayName}を報告",
     "profileAddToListDisplayName": "{displayName}をリストに追加",
     "profileUserBlockedTitle": "ブロックしたよ",
     "profileUserBlockedContent": "このユーザーのコンテンツはフィードに出なくなるよ。",

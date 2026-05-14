@@ -241,6 +241,7 @@
             }
         }
     },
+    "profileReportDisplayName": "Raportează-l pe {displayName}",
     "profileAddToListDisplayName": "Adaugă {displayName} la o listă",
     "profileUserBlockedTitle": "Utilizator blocat",
     "profileUserBlockedContent": "Nu vei mai vedea conținut de la acest utilizator în feedurile tale.",

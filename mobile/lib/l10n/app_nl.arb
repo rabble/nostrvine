@@ -241,6 +241,7 @@
             }
         }
     },
+    "profileReportDisplayName": "{displayName} rapporteren",
     "profileAddToListDisplayName": "{displayName} aan een lijst toevoegen",
     "profileUserBlockedTitle": "Gebruiker geblokkeerd",
     "profileUserBlockedContent": "Je ziet geen inhoud meer van deze gebruiker in je feeds.",

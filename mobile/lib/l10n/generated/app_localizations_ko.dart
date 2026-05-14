@@ -427,7 +427,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String profileReportDisplayName(String displayName) {
-    return 'Report $displayName';
+    return '$displayName 신고';
   }
 
   @override

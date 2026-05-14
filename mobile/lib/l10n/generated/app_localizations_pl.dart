@@ -474,7 +474,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String profileReportDisplayName(String displayName) {
-    return 'Report $displayName';
+    return 'Zgłoś $displayName';
   }
 
   @override

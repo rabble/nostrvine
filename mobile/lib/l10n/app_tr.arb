@@ -241,6 +241,7 @@
             }
         }
     },
+    "profileReportDisplayName": "{displayName} adlı kullanıcıyı bildir",
     "profileAddToListDisplayName": "{displayName} kişisini listeye ekle",
     "profileUserBlockedTitle": "Kullanıcı Engellendi",
     "profileUserBlockedContent": "Bu kullanıcının içeriğini artık akışında görmeyeceksin.",

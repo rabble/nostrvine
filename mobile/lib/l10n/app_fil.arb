@@ -102,6 +102,7 @@
     "profileUnfollowDisplayName": "I-unfollow si {displayName}",
     "profileBlockDisplayName": "I-block si {displayName}",
     "profileUnblockDisplayName": "I-unblock si {displayName}",
+    "profileReportDisplayName": "I-report si {displayName}",
     "profileAddToListDisplayName": "Idagdag si {displayName} sa isang list",
     "profileUserBlockedTitle": "Na-block ang User",
     "profileUserBlockedContent": "Hindi mo na makikita ang content ng user na ito sa feed mo.",

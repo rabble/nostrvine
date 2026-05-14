@@ -102,6 +102,7 @@
     "profileUnfollowDisplayName": "{displayName}님 언팔로우",
     "profileBlockDisplayName": "{displayName}님 차단",
     "profileUnblockDisplayName": "{displayName}님 차단 해제",
+    "profileReportDisplayName": "{displayName} 신고",
     "profileAddToListDisplayName": "{displayName}을(를) 목록에 추가",
     "profileUserBlockedTitle": "사용자를 차단했어요",
     "profileUserBlockedContent": "이 사용자의 콘텐츠는 피드에서 보이지 않아요.",
