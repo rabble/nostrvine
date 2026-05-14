@@ -342,6 +342,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     if (!_isTrimmingLayer &&
         !_isTrimmingClip &&
         !_isDraggingLayer &&
+        !_isSeeking &&
         _pendingSeekPosition == null &&
         playerState.position != _lastReportedPosition) {
       _lastReportedPosition = playerState.position;

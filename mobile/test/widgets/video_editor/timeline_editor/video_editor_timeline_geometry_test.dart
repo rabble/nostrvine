@@ -1,0 +1,201 @@
+// ABOUTME: Unit tests for the pure timeline geometry helpers.
+// ABOUTME: Verifies scroll-offset ↔ playback-position conversion symmetry
+// ABOUTME: across single-clip, multi-clip, and empty-clip compositions.
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
+
+DivineVideoClip _clip(String id, int seconds) => DivineVideoClip(
+  id: id,
+  video: EditorVideo.file('/tmp/$id.mp4'),
+  duration: Duration(seconds: seconds),
+  recordedAt: DateTime(2025),
+  targetAspectRatio: .vertical,
+  originalAspectRatio: 9 / 16,
+);
+
+void main() {
+  // Three-clip composition used throughout most tests:
+  //   clip 0 → 2 s, clip 1 → 3 s, clip 2 → 2 s  (total 7 s)
+  // At pixelsPerSecond=52 and clipGap=1 the layout is:
+  //   [0…104 px] gap [105…260 px] gap [261…365 px]
+  //
+  // Position → offset reference table
+  //   pos  0 s  → 0 * 52 + 0 gaps =   0 px
+  //   pos  1 s  → 1 * 52 + 0 gaps =  52 px  (within clip 0)
+  //   pos  2 s  → 2 * 52 + 1 gap  = 105 px  (start of gap after clip 0)
+  //   pos  2.5s → 2.5*52 + 1 gap  = 131 px  (within clip 1)
+  //   pos  5 s  → 5 * 52 + 2 gaps = 262 px  (start of gap after clip 1)
+  //   pos  6 s  → 6 * 52 + 2 gaps = 314 px  (within clip 2)
+
+  final clips = [
+    _clip('c0', 2),
+    _clip('c1', 3),
+    _clip('c2', 2),
+  ];
+  const pps = 52.0;
+  const totalDuration = Duration(seconds: 7);
+
+  group(timelinePositionToScrollOffset, () {
+    test('returns 0 for zero position', () {
+      expect(
+        timelinePositionToScrollOffset(clips, Duration.zero, pps),
+        equals(0.0),
+      );
+    });
+
+    test('no gap offset within first clip', () {
+      expect(
+        timelinePositionToScrollOffset(clips, const Duration(seconds: 1), pps),
+        equals(52.0),
+      );
+    });
+
+    test('adds one gap at the boundary between clip 0 and clip 1', () {
+      expect(
+        timelinePositionToScrollOffset(clips, const Duration(seconds: 2), pps),
+        equals(105.0), // 2 * 52 + 1
+      );
+    });
+
+    test('one gap within clip 1', () {
+      expect(
+        timelinePositionToScrollOffset(
+          clips,
+          const Duration(milliseconds: 2500),
+          pps,
+        ),
+        equals(131.0), // 2.5 * 52 + 1
+      );
+    });
+
+    test('adds two gaps at the boundary between clip 1 and clip 2', () {
+      expect(
+        timelinePositionToScrollOffset(clips, const Duration(seconds: 5), pps),
+        equals(262.0), // 5 * 52 + 2
+      );
+    });
+
+    test('two gaps within clip 2', () {
+      expect(
+        timelinePositionToScrollOffset(clips, const Duration(seconds: 6), pps),
+        equals(314.0), // 6 * 52 + 2
+      );
+    });
+
+    test('empty clip list — no gaps added', () {
+      expect(
+        timelinePositionToScrollOffset([], const Duration(seconds: 3), pps),
+        equals(156.0), // 3 * 52
+      );
+    });
+
+    test('single clip — no gaps', () {
+      expect(
+        timelinePositionToScrollOffset(
+          [_clip('only', 10)],
+          const Duration(seconds: 4),
+          pps,
+        ),
+        equals(208.0), // 4 * 52
+      );
+    });
+  });
+
+  group(timelineScrollOffsetToPosition, () {
+    test('returns zero for zero offset', () {
+      expect(
+        timelineScrollOffsetToPosition(clips, 0.0, pps, totalDuration),
+        equals(Duration.zero),
+      );
+    });
+
+    test('no gap correction within first clip', () {
+      expect(
+        timelineScrollOffsetToPosition(clips, 52.0, pps, totalDuration),
+        equals(const Duration(seconds: 1)),
+      );
+    });
+
+    test('subtracts one gap at clip 0/1 boundary', () {
+      expect(
+        timelineScrollOffsetToPosition(clips, 105.0, pps, totalDuration),
+        equals(const Duration(seconds: 2)),
+      );
+    });
+
+    test('subtracts one gap within clip 1', () {
+      expect(
+        timelineScrollOffsetToPosition(clips, 131.0, pps, totalDuration),
+        equals(const Duration(milliseconds: 2500)),
+      );
+    });
+
+    test('subtracts two gaps at clip 1/2 boundary', () {
+      expect(
+        timelineScrollOffsetToPosition(clips, 262.0, pps, totalDuration),
+        equals(const Duration(seconds: 5)),
+      );
+    });
+
+    test('subtracts two gaps within clip 2', () {
+      expect(
+        timelineScrollOffsetToPosition(clips, 314.0, pps, totalDuration),
+        equals(const Duration(seconds: 6)),
+      );
+    });
+
+    test('clamps negative offsets to Duration.zero', () {
+      expect(
+        timelineScrollOffsetToPosition(clips, -10.0, pps, totalDuration),
+        equals(Duration.zero),
+      );
+    });
+
+    test('clamps offsets beyond end to totalDuration', () {
+      expect(
+        timelineScrollOffsetToPosition(clips, 99999.0, pps, totalDuration),
+        equals(totalDuration),
+      );
+    });
+
+    test('empty clip list — no gap subtraction', () {
+      expect(
+        timelineScrollOffsetToPosition(
+          [],
+          156.0,
+          pps,
+          const Duration(seconds: 10),
+        ),
+        equals(const Duration(seconds: 3)),
+      );
+    });
+  });
+
+  group(
+    'round-trip: scrollOffsetToPosition ∘ positionToScrollOffset == id',
+    () {
+      for (final pos in [
+        Duration.zero,
+        const Duration(seconds: 1),
+        const Duration(seconds: 2),
+        const Duration(milliseconds: 2500),
+        const Duration(seconds: 5),
+        const Duration(seconds: 6),
+      ]) {
+        test('position $pos survives round-trip', () {
+          final offset = timelinePositionToScrollOffset(clips, pos, pps);
+          final recovered = timelineScrollOffsetToPosition(
+            clips,
+            offset,
+            pps,
+            totalDuration,
+          );
+          expect(recovered, equals(pos));
+        });
+      }
+    },
+  );
+}
