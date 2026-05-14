@@ -1,54 +1,53 @@
 // ABOUTME: Tests persistence behavior for push notification preferences.
 // ABOUTME: Verifies dirty retry state survives notification cache cleanup.
 
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hive_ce_flutter/hive_flutter.dart';
+import 'package:hive_ce/hive.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/models/notification_preferences.dart';
 import 'package:openvine/services/notification_preferences_service.dart';
 
+class _MockHiveBox extends Mock implements Box<dynamic> {}
+
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-
-  late Directory testDir;
-
-  setUp(() async {
-    testDir = await Directory.systemTemp.createTemp(
-      'notification_preferences_service_test_',
-    );
-    Hive.init(testDir.path);
-  });
-
-  tearDown(() async {
-    try {
-      await Hive.close();
-    } on PathNotFoundException catch (_) {
-      // Hive may already have removed the lock file during async shutdown.
-    }
-    try {
-      await testDir.delete(recursive: true);
-    } on PathNotFoundException catch (_) {
-      // Hive may already have removed the lock file during async shutdown.
-    }
+  setUpAll(() {
+    registerFallbackValue(<String, dynamic>{});
   });
 
   test('dirty preferences survive notification box cleanup', () async {
     const pubkey =
         '1111111111111111111111111111111111111111111111111111111111111111';
     const prefs = NotificationPreferences(commentsEnabled: false);
-    const store = HiveNotificationPreferencesStore(
-      openBox: HiveNotificationPreferencesStore.openBox,
+    final notificationBox = _MockHiveBox();
+    final dirtyBox = _MockHiveBox();
+    final notificationStorage = <dynamic, dynamic>{};
+    final dirtyStorage = <dynamic, dynamic>{};
+    final store = HiveNotificationPreferencesStore(
+      openBox: () async => notificationBox,
+      openDirtyBox: () async => dirtyBox,
+    );
+    when(() => notificationBox.put(any(), any())).thenAnswer((invocation) {
+      notificationStorage[invocation.positionalArguments[0]] =
+          invocation.positionalArguments[1];
+      return Future<void>.value();
+    });
+    when(() => dirtyBox.put(any(), any())).thenAnswer((invocation) {
+      dirtyStorage[invocation.positionalArguments[0]] =
+          invocation.positionalArguments[1];
+      return Future<void>.value();
+    });
+    when(() => dirtyBox.get(any())).thenAnswer(
+      (invocation) => dirtyStorage[invocation.positionalArguments[0]],
     );
 
     await store.markDirty(pubkey, prefs);
-    final notificationsBox = await Hive.openBox<dynamic>('notifications');
-    await notificationsBox.put('cached_notification', {
+    await notificationBox.put('cached_notification', {
       'id': 'cached_notification',
     });
 
-    await notificationsBox.clear();
+    notificationStorage.clear();
 
     expect(await store.loadDirty(pubkey), prefs);
+    expect(notificationStorage, isEmpty);
   });
 }
