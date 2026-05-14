@@ -5,11 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/services/age_verification_service.dart';
+import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/media_viewer_auth_service.dart';
 
 class MockAgeVerificationService extends Mock
     implements AgeVerificationService {}
+
+class MockContentFilterService extends Mock implements ContentFilterService {}
 
 class MockMediaViewerAuthService extends Mock
     implements MediaViewerAuthService {}
@@ -20,6 +23,7 @@ class FakeBuildContext extends Fake implements BuildContext {}
 
 void main() {
   late MockAgeVerificationService mockAgeVerificationService;
+  late MockContentFilterService mockContentFilterService;
   late MockMediaViewerAuthService mockMediaViewerAuthService;
   late MediaAuthInterceptor interceptor;
   late MockBuildContext mockContext;
@@ -30,10 +34,12 @@ void main() {
 
   setUp(() {
     mockAgeVerificationService = MockAgeVerificationService();
+    mockContentFilterService = MockContentFilterService();
     mockMediaViewerAuthService = MockMediaViewerAuthService();
     mockContext = MockBuildContext();
     interceptor = MediaAuthInterceptor(
       ageVerificationService: mockAgeVerificationService,
+      contentFilterService: mockContentFilterService,
       mediaViewerAuthService: mockMediaViewerAuthService,
     );
   });
@@ -41,8 +47,8 @@ void main() {
   group('MediaAuthInterceptor - preference handling', () {
     test('shouldFilterContent returns true when preference is neverShow', () {
       when(
-        () => mockAgeVerificationService.shouldHideAdultContent,
-      ).thenReturn(true);
+        () => mockContentFilterService.adultPlaybackPreference,
+      ).thenReturn(ContentFilterPreference.hide);
 
       expect(interceptor.shouldFilterContent, isTrue);
     });
@@ -51,8 +57,8 @@ void main() {
       'shouldFilterContent returns false when preference is askEachTime',
       () {
         when(
-          () => mockAgeVerificationService.shouldHideAdultContent,
-        ).thenReturn(false);
+          () => mockContentFilterService.adultPlaybackPreference,
+        ).thenReturn(ContentFilterPreference.warn);
 
         expect(interceptor.shouldFilterContent, isFalse);
       },
@@ -63,8 +69,8 @@ void main() {
       () async {
         // Arrange - neverShow means we should hide content
         when(
-          () => mockAgeVerificationService.shouldHideAdultContent,
-        ).thenReturn(true);
+          () => mockContentFilterService.adultPlaybackPreference,
+        ).thenReturn(ContentFilterPreference.hide);
 
         // Act
         final result = await interceptor.handleUnauthorizedMedia(
@@ -93,10 +99,10 @@ void main() {
       () async {
         // Arrange - alwaysShow preference, already verified
         when(
-          () => mockAgeVerificationService.shouldHideAdultContent,
-        ).thenReturn(false);
+          () => mockContentFilterService.adultPlaybackPreference,
+        ).thenReturn(ContentFilterPreference.show);
         when(
-          () => mockAgeVerificationService.shouldAutoShowAdultContent,
+          () => mockAgeVerificationService.isAdultContentVerified,
         ).thenReturn(true);
         when(
           () => mockMediaViewerAuthService.createAuthHeaders(
@@ -131,14 +137,8 @@ void main() {
       () async {
         // Arrange - askEachTime preference, already verified for age
         when(
-          () => mockAgeVerificationService.shouldHideAdultContent,
-        ).thenReturn(false);
-        when(
-          () => mockAgeVerificationService.shouldAutoShowAdultContent,
-        ).thenReturn(false);
-        when(
-          () => mockAgeVerificationService.shouldAskForAdultContent,
-        ).thenReturn(true);
+          () => mockContentFilterService.adultPlaybackPreference,
+        ).thenReturn(ContentFilterPreference.warn);
         when(() => mockContext.mounted).thenReturn(true);
         when(
           () => mockAgeVerificationService.verifyAdultContentAccess(any()),
@@ -176,14 +176,8 @@ void main() {
       () async {
         // Arrange - askEachTime preference, user declines in dialog
         when(
-          () => mockAgeVerificationService.shouldHideAdultContent,
-        ).thenReturn(false);
-        when(
-          () => mockAgeVerificationService.shouldAutoShowAdultContent,
-        ).thenReturn(false);
-        when(
-          () => mockAgeVerificationService.shouldAskForAdultContent,
-        ).thenReturn(true);
+          () => mockContentFilterService.adultPlaybackPreference,
+        ).thenReturn(ContentFilterPreference.warn);
         when(() => mockContext.mounted).thenReturn(true);
         when(
           () => mockAgeVerificationService.verifyAdultContentAccess(any()),
