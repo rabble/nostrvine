@@ -1776,6 +1776,7 @@ void main() {
           ],
         );
         addTearDown(container.dispose);
+        container.read(notificationPreferencesDirtySyncBridgeProvider);
 
         when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
         when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
@@ -1796,6 +1797,58 @@ void main() {
             client: nostrClient,
           ),
         );
+        expect(await published.future, prefs);
+        await preferenceStore.waitForClear(pubkeyA);
+
+        verify(() => pushService.updatePreferences(prefs)).called(1);
+        expect(
+          preferenceStore.dirtyPreferencesByPubkey,
+          isNot(contains(pubkeyA)),
+        );
+      },
+    );
+
+    test(
+      'drains dirty preferences when bridge is mounted without push sync listener',
+      () async {
+        const prefs = NotificationPreferences(commentsEnabled: false);
+        final published = Completer<NotificationPreferences>();
+        when(
+          () => pushService.updatePreferences(any()),
+        ).thenAnswer((invocation) async {
+          final preferences =
+              invocation.positionalArguments.single as NotificationPreferences;
+          if (!published.isCompleted) published.complete(preferences);
+          return true;
+        });
+
+        await preferenceStore.markDirty(pubkeyA, prefs);
+        when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
+        when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
+
+        final nostrSession = _TestNostrSession(
+          const NostrSessionReadiness.signedOut(),
+        );
+        final container = ProviderContainer(
+          overrides: [
+            authServiceProvider.overrideWithValue(authService),
+            notificationPreferencesStoreProvider.overrideWithValue(
+              preferenceStore,
+            ),
+            nostrSessionProvider.overrideWith(() => nostrSession),
+            pushNotificationServiceProvider.overrideWithValue(pushService),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        container.read(notificationPreferencesDirtySyncBridgeProvider);
+        nostrSession.setReadiness(
+          NostrSessionReadiness.nostrReady(
+            pubkey: pubkeyA,
+            client: nostrClient,
+          ),
+        );
+
         expect(await published.future, prefs);
         await preferenceStore.waitForClear(pubkeyA);
 
@@ -1839,6 +1892,7 @@ void main() {
           ],
         );
         addTearDown(container.dispose);
+        container.read(notificationPreferencesDirtySyncBridgeProvider);
 
         when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
         when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
@@ -1895,6 +1949,7 @@ void main() {
           ],
         );
         addTearDown(container.dispose);
+        container.read(notificationPreferencesDirtySyncBridgeProvider);
 
         when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
         when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
@@ -1951,6 +2006,7 @@ void main() {
           ],
         );
         addTearDown(container.dispose);
+        container.read(notificationPreferencesDirtySyncBridgeProvider);
 
         when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
         when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
@@ -2013,6 +2069,7 @@ void main() {
           ],
         );
         addTearDown(container.dispose);
+        container.read(notificationPreferencesDirtySyncBridgeProvider);
 
         when(() => authService.currentIdentity).thenReturn(_identity(pubkeyA));
         when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
@@ -2178,7 +2235,7 @@ void main() {
         ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
         when(() => pushService.updatePreferences(prefs)).thenAnswer((_) async {
           attempts += 1;
-          if (attempts <= 2) {
+          if (attempts == 1) {
             throw StateError('relay unreachable');
           }
           return true;
@@ -2199,7 +2256,7 @@ void main() {
             .updatePreferences(prefs);
         await Future<void>.delayed(Duration.zero);
 
-        expect(attempts, equals(2));
+        expect(attempts, equals(1));
         expect(preferenceStore.dirtyPreferencesByPubkey[pubkeyA], prefs);
         firstContainer.dispose();
 
@@ -2215,7 +2272,7 @@ void main() {
         secondContainer.read(pushNotificationSyncProvider);
         await preferenceStore.waitForClear(pubkeyA);
 
-        expect(attempts, equals(3));
+        expect(attempts, equals(2));
         expect(
           preferenceStore.dirtyPreferencesByPubkey,
           isNot(contains(pubkeyA)),

@@ -25,11 +25,16 @@ abstract interface class NotificationPreferencesStore {
 class HiveNotificationPreferencesStore implements NotificationPreferencesStore {
   const HiveNotificationPreferencesStore({
     required Future<Box<dynamic>> Function() openBox,
-  }) : _openBox = openBox;
+    Future<Box<dynamic>> Function()? openDirtyBox,
+  }) : _openBox = openBox,
+       _openDirtyBox =
+           openDirtyBox ?? HiveNotificationPreferencesStore.openDirtyBox;
 
   final Future<Box<dynamic>> Function() _openBox;
+  final Future<Box<dynamic>> Function() _openDirtyBox;
 
   static const _boxName = 'notifications';
+  static const _dirtyBoxName = 'push_notification_preferences_dirty';
   static const _prefsKey = 'push_preferences';
   static const _dirtyPrefix = 'push_preferences_dirty_';
 
@@ -81,7 +86,7 @@ class HiveNotificationPreferencesStore implements NotificationPreferencesStore {
     NotificationPreferences preferences,
   ) async {
     try {
-      final box = await _openBox();
+      final box = await _openDirtyBox();
       await box.put(_dirtyKey(pubkey), jsonEncode(preferences.toJson()));
     } on Object catch (error) {
       Log.warning(
@@ -95,7 +100,7 @@ class HiveNotificationPreferencesStore implements NotificationPreferencesStore {
   @override
   Future<NotificationPreferences?> loadDirty(String pubkey) async {
     try {
-      final box = await _openBox();
+      final box = await _openDirtyBox();
       final stored = box.get(_dirtyKey(pubkey)) as String?;
       if (stored == null) return null;
 
@@ -114,7 +119,7 @@ class HiveNotificationPreferencesStore implements NotificationPreferencesStore {
   @override
   Future<void> clearDirty(String pubkey) async {
     try {
-      final box = await _openBox();
+      final box = await _openDirtyBox();
       await box.delete(_dirtyKey(pubkey));
     } on Object catch (error) {
       Log.warning(
@@ -131,7 +136,7 @@ class HiveNotificationPreferencesStore implements NotificationPreferencesStore {
     NotificationPreferences preferences,
   ) async {
     try {
-      final box = await _openBox();
+      final box = await _openDirtyBox();
       final stored = box.get(_dirtyKey(pubkey)) as String?;
       if (stored == null) return;
 
@@ -150,6 +155,8 @@ class HiveNotificationPreferencesStore implements NotificationPreferencesStore {
   }
 
   static Future<Box<dynamic>> openBox() => Hive.openBox<dynamic>(_boxName);
+  static Future<Box<dynamic>> openDirtyBox() =>
+      Hive.openBox<dynamic>(_dirtyBoxName);
 
   static String _dirtyKey(String pubkey) => '$_dirtyPrefix$pubkey';
 }

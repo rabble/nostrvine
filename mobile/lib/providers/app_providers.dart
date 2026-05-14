@@ -262,16 +262,6 @@ final pushNotificationServiceProvider = Provider<PushNotificationService?>((
   return pushService;
 });
 
-class _QueuedNotificationPreferences {
-  const _QueuedNotificationPreferences({
-    required this.pubkey,
-    required this.preferences,
-  });
-
-  final String pubkey;
-  final NotificationPreferences preferences;
-}
-
 Future<bool> _updateNotificationPreferencesSafely(
   PushNotificationService pushService,
   NotificationPreferences preferences,
@@ -288,120 +278,78 @@ Future<bool> _updateNotificationPreferencesSafely(
   }
 }
 
-final _queuedNotificationPreferencesProvider =
-    NotifierProvider<
-      _QueuedNotificationPreferencesNotifier,
-      _QueuedNotificationPreferences?
-    >(_QueuedNotificationPreferencesNotifier.new);
+final notificationPreferencesDirtySyncBridgeProvider = Provider<void>((ref) {
+  var disposed = false;
+  var drainGeneration = 0;
 
-class _QueuedNotificationPreferencesNotifier
-    extends Notifier<_QueuedNotificationPreferences?> {
-  @override
-  _QueuedNotificationPreferences? build() {
-    var disposed = false;
-    var drainGeneration = 0;
+  ref.onDispose(() {
+    disposed = true;
+    drainGeneration += 1;
+  });
 
-    ref.onDispose(() {
-      disposed = true;
-      drainGeneration += 1;
-    });
+  bool isReadyForPubkey(String pubkey, {PushNotificationService? pushService}) {
+    if (disposed) return false;
 
-    bool isReadyForPubkey(String pubkey) {
-      if (disposed) return false;
+    final authService = ref.read(authServiceProvider);
+    if (authService.currentIdentity?.pubkey != pubkey) return false;
 
-      final authService = ref.read(authServiceProvider);
-      if (authService.currentIdentity?.pubkey != pubkey) {
-        return false;
-      }
-
-      final readiness = ref.read(nostrSessionProvider);
-      return readiness.isReadyForActiveClient && readiness.pubkey == pubkey;
+    final readiness = ref.read(nostrSessionProvider);
+    if (!readiness.isReadyForActiveClient || readiness.pubkey != pubkey) {
+      return false;
     }
 
-    Future<void> drainDirtyPreferences(String pubkey) async {
-      final generation = ++drainGeneration;
-      try {
-        final preferencesService = ref.read(
-          notificationPreferencesServiceProvider,
-        );
-        final prefs = await preferencesService.loadDirtyPreferencesForPubkey(
-          pubkey,
-        );
-        if (prefs == null || disposed || generation != drainGeneration) return;
-        if (!isReadyForPubkey(pubkey)) return;
+    return pushService == null ||
+        identical(ref.read(pushNotificationServiceProvider), pushService);
+  }
 
-        final pushService = ref.read(pushNotificationServiceProvider);
-        if (pushService == null) return;
+  Future<void> drainDirtyPreferences(String pubkey) async {
+    final generation = ++drainGeneration;
+    try {
+      final preferencesService = ref.read(
+        notificationPreferencesServiceProvider,
+      );
+      final prefs = await preferencesService.loadDirtyPreferencesForPubkey(
+        pubkey,
+      );
+      if (prefs == null || disposed || generation != drainGeneration) return;
+      if (!isReadyForPubkey(pubkey)) return;
 
-        final published = await _updateNotificationPreferencesSafely(
-          pushService,
-          prefs,
-        );
-        if (!published || disposed || generation != drainGeneration) return;
-        if (!isReadyForPubkey(pubkey)) return;
-        if (!identical(
-          ref.read(pushNotificationServiceProvider),
-          pushService,
-        )) {
-          return;
-        }
+      final pushService = ref.read(pushNotificationServiceProvider);
+      if (pushService == null) return;
 
-        await preferencesService.clearDirtyPreferencesForPubkeyIfMatches(
-          pubkey,
-          prefs,
-        );
-      } catch (e) {
-        Log.warning(
-          'Push notification preference drain failed: $e',
-          name: 'PushNotificationSync',
-          category: LogCategory.system,
-        );
-      }
+      final published = await _updateNotificationPreferencesSafely(
+        pushService,
+        prefs,
+      );
+      if (!published || disposed || generation != drainGeneration) return;
+      if (!isReadyForPubkey(pubkey, pushService: pushService)) return;
+
+      await preferencesService.clearDirtyPreferencesForPubkeyIfMatches(
+        pubkey,
+        prefs,
+      );
+    } catch (e) {
+      Log.warning(
+        'Push notification preference drain failed: $e',
+        name: 'PushNotificationSync',
+        category: LogCategory.system,
+      );
     }
+  }
 
-    void handleReadiness(NostrSessionReadiness readiness) {
-      final queued = state;
-      final readinessPubkey = readiness.pubkey;
-
-      if (readiness.isReadyForActiveClient && readinessPubkey != null) {
-        unawaited(drainDirtyPreferences(readinessPubkey));
-      }
-
-      if (queued == null) {
-        return;
-      }
-
-      if (readiness.phase == NostrSessionPhase.signedOut ||
-          (readinessPubkey != null && readinessPubkey != queued.pubkey)) {
-        state = null;
-        return;
-      }
-
-      if (!readiness.isReadyForActiveClient ||
-          readinessPubkey != queued.pubkey) {
-        return;
-      }
-
-      state = null;
+  void handleReadiness(NostrSessionReadiness readiness) {
+    final readinessPubkey = readiness.pubkey;
+    if (readiness.isReadyForActiveClient && readinessPubkey != null) {
+      unawaited(drainDirtyPreferences(readinessPubkey));
     }
-
-    ref.listen<NostrSessionReadiness>(nostrSessionProvider, (_, readiness) {
-      handleReadiness(readiness);
-    });
-
-    Future.microtask(() => handleReadiness(ref.read(nostrSessionProvider)));
-
-    return null;
   }
 
-  void queue(_QueuedNotificationPreferences preferences) {
-    state = preferences;
-  }
+  ref.listen<NostrSessionReadiness>(nostrSessionProvider, (_, readiness) {
+    handleReadiness(readiness);
+  });
 
-  void clear() {
-    state = null;
-  }
-}
+  Future.microtask(() => handleReadiness(ref.read(nostrSessionProvider)));
+});
 
 final notificationPreferencesServiceProvider =
     Provider<NotificationPreferencesService>((ref) {
@@ -420,18 +368,9 @@ final notificationPreferencesServiceProvider =
           if (pushService == null ||
               !readiness.isReadyForActiveClient ||
               readiness.pubkey != pubkey) {
-            ref
-                .read(_queuedNotificationPreferencesProvider.notifier)
-                .queue(
-                  _QueuedNotificationPreferences(
-                    pubkey: pubkey,
-                    preferences: prefs,
-                  ),
-                );
             return Future<bool>.value(false);
           }
 
-          ref.read(_queuedNotificationPreferencesProvider.notifier).clear();
           return _updateNotificationPreferencesSafely(pushService, prefs);
         },
       );
@@ -1444,10 +1383,7 @@ void zendeskIdentitySync(Ref ref) {
 @Riverpod(keepAlive: true)
 void pushNotificationSync(Ref ref) {
   final authService = ref.watch(authServiceProvider);
-  ref.listen<_QueuedNotificationPreferences?>(
-    _queuedNotificationPreferencesProvider,
-    (_, _) {},
-  );
+  ref.watch(notificationPreferencesDirtySyncBridgeProvider);
 
   _PushRegistrationOperation? activeRegistration;
   String? lastReadyPubkey;

@@ -211,6 +211,7 @@ class _AppShellState extends ConsumerState<AppShell> {
     ref.watch(zendeskIdentitySyncProvider);
 
     // Initialize push notification sync to register FCM token on auth
+    ref.watch(notificationPreferencesDirtySyncBridgeProvider);
     ref.watch(pushNotificationSyncProvider);
 
     // Start block/mute list sync once authenticated (handles post-reinstall login)
