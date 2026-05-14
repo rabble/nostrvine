@@ -77,6 +77,23 @@ void main() {
         },
       );
 
+      testWidgets('preview constructor renders without a video', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          const ProviderScope(
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(body: CommentActionButton.preview()),
+            ),
+          ),
+        );
+
+        expect(find.byType(CommentActionButton), findsOneWidget);
+        expect(find.byType(VideoActionButton), findsOneWidget);
+      });
+
       testWidgets('displays default comment count of 1 in preview mode', (
         tester,
       ) async {

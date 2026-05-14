@@ -33,7 +33,14 @@ class LikeActionButton extends StatelessWidget {
     this.onInteracted,
   });
 
-  final VideoEvent video;
+  const LikeActionButton.preview({
+    super.key,
+    this.onInteracted,
+  }) : video = null,
+       isPreviewMode = true,
+       isOwnVideo = false;
+
+  final VideoEvent? video;
   final bool isPreviewMode;
   final bool isOwnVideo;
   final VoidCallback? onInteracted;
@@ -97,6 +104,7 @@ class _ActionButton extends StatelessWidget {
           _openLikersList(context, video);
           return;
         }
+        if (video == null) return;
         context.read<VideoInteractionsBloc>().add(
           const VideoInteractionsLikeToggled(),
         );

@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:models/models.dart' show VideoEvent;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -209,16 +208,14 @@ class _PreviewOverlay extends ConsumerWidget {
                 fit: StackFit.expand,
                 children: [
                   const FeedModeSwitch(isPreviewMode: true),
-                  VideoOverlayActions(
-                    video: buildVideoMetadataPreviewEvent(
-                      publicKey: publicKey,
+                  VideoOverlayActions.preview(
+                    previewData: VideoOverlayPreviewData(
+                      pubkey: publicKey,
                       title: metadata.title,
                       description: metadata.description,
-                      tags: metadata.tags,
                     ),
                     isVisible: true,
                     isActive: isActive,
-                    isPreviewMode: true,
                   ),
                 ],
               );
@@ -228,30 +225,6 @@ class _PreviewOverlay extends ConsumerWidget {
       ),
     );
   }
-}
-
-@visibleForTesting
-VideoEvent buildVideoMetadataPreviewEvent({
-  required String publicKey,
-  required String title,
-  required String description,
-  required Set<String> tags,
-  DateTime? now,
-}) {
-  final timestamp = now ?? DateTime.now();
-  final trimmedTitle = title.trim();
-  return VideoEvent(
-    id: 'id',
-    pubkey: publicKey,
-    timestamp: timestamp,
-    createdAt: timestamp.millisecondsSinceEpoch,
-    title: trimmedTitle.isEmpty ? null : trimmedTitle,
-    content: description,
-    hashtags: tags.toList(),
-    originalLikes: 1,
-    originalComments: 1,
-    originalReposts: 1,
-  );
 }
 
 /// Close button positioned at the top-left corner.

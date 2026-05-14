@@ -27,13 +27,21 @@ class CommentActionButton extends ConsumerWidget {
     super.key,
   });
 
-  final VideoEvent video;
+  const CommentActionButton.preview({
+    this.onInteracted,
+    super.key,
+  }) : video = null,
+       isPreviewMode = true;
+
+  final VideoEvent? video;
   final bool isPreviewMode;
   final VoidCallback? onInteracted;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (isPreviewMode) return const _ActionButton();
+    final video = this.video;
+    if (video == null) return const SizedBox.shrink();
 
     return BlocSelector<
       VideoInteractionsBloc,

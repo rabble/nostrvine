@@ -14,6 +14,7 @@ import 'package:openvine/models/video_publish/video_publish_provider_state.dart'
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_preview_screen.dart';
+import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -66,25 +67,35 @@ void main() {
   });
 
   group(VideoMetadataPreviewScreen, () {
-    test('preview event maps title and description to feed render fields', () {
-      final event = buildVideoMetadataPreviewEvent(
-        publicKey:
-            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-        title: 'A title',
-        description:
-            'description with nostr:npub1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq',
-        tags: const {'classic'},
-        now: DateTime.fromMillisecondsSinceEpoch(1234567890000),
-      );
-
-      expect(event.title, equals('A title'));
-      expect(
-        event.content,
-        equals(
-          'description with nostr:npub1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq',
+    testWidgets('preview overlay renders metadata without a VideoEvent', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: VideoOverlayActions.preview(
+                previewData: VideoOverlayPreviewData(
+                  pubkey:
+                      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+                  title: 'A title',
+                  description:
+                      'description with nostr:npub1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq',
+                ),
+                isVisible: true,
+                isActive: true,
+              ),
+            ),
+          ),
         ),
       );
-      expect(event.hashtags, equals(['classic']));
+
+      expect(find.text('A title'), findsOneWidget);
+      expect(find.textContaining('description with'), findsOneWidget);
+      expect(find.byType(VideoOverlayActions), findsOneWidget);
     });
 
     Widget buildTestWidget({DivineVideoClip? clip}) {

@@ -57,6 +57,18 @@ VideoControllerParams videoControllerParamsFor(
   return VideoControllerParams.fromVideoEvent(video);
 }
 
+class VideoOverlayPreviewData {
+  const VideoOverlayPreviewData({
+    required this.pubkey,
+    required this.title,
+    required this.description,
+  });
+
+  final String pubkey;
+  final String title;
+  final String description;
+}
+
 /// Video overlay actions widget with working functionality
 class VideoOverlayActions extends ConsumerWidget {
   const VideoOverlayActions({
@@ -77,10 +89,31 @@ class VideoOverlayActions extends ConsumerWidget {
     this.showAutoButton = false,
     this.onInteracted,
     this.omitAuthorBlock = false,
-  });
+  }) : previewData = null;
+
+  const VideoOverlayActions.preview({
+    required this.previewData,
+    required this.isVisible,
+    required this.isActive,
+    super.key,
+    this.subtitleLayer,
+    this.hasBottomNavigation = true,
+    this.contextTitle,
+    this.isFullscreen = false,
+    this.listSources,
+    this.showListAttribution = false,
+    this.isPreviewMode = true,
+    this.showBottomGradient = true,
+    this.topOffset = 8.0,
+    this.overlayOpacity = 1.0,
+    this.showAutoButton = false,
+    this.onInteracted,
+    this.omitAuthorBlock = false,
+  }) : video = null;
 
   final Widget? subtitleLayer;
-  final VideoEvent video;
+  final VideoEvent? video;
+  final VideoOverlayPreviewData? previewData;
   final bool isVisible;
   final bool isActive;
   final bool hasBottomNavigation;
@@ -121,11 +154,19 @@ class VideoOverlayActions extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (!isVisible) return const SizedBox();
+    final video = this.video;
+    final previewData = this.previewData;
+    final authorPubkey = previewData?.pubkey ?? video!.pubkey;
+    final trimmedTitle = previewData?.title.trim() ?? video?.title?.trim();
+    final titleText = trimmedTitle == null || trimmedTitle.isEmpty
+        ? null
+        : trimmedTitle;
+    final descriptionText =
+        previewData?.description.trim() ?? video!.displayContent.trim();
 
     // Check if there's meaningful text content to display
     final hasTextContent =
-        video.content.isNotEmpty ||
-        (video.title != null && video.title!.isNotEmpty);
+        descriptionText.isNotEmpty || (titleText?.isNotEmpty ?? false);
 
     // In fullscreen mode, ensure badges clear the status bar icons
     // (battery, wifi, clock). viewPaddingOf may return 0 if a parent
@@ -184,7 +225,8 @@ class VideoOverlayActions extends ConsumerWidget {
                 ),
               ),
             // Content warning badge below back button area
-            if (video.hasContentWarning &&
+            if (video != null &&
+                video.hasContentWarning &&
                 !shouldShowContentWarningOverlay(
                   contentWarningLabels: video.contentWarningLabels,
                   warnLabels: video.warnLabels,
@@ -222,7 +264,9 @@ class VideoOverlayActions extends ConsumerWidget {
                       ?subtitleLayer,
 
                       // Repost banner (if video is a repost)
-                      if (video.isRepost && video.reposterPubkey != null) ...[
+                      if (video != null &&
+                          video.isRepost &&
+                          video.reposterPubkey != null) ...[
                         VideoRepostHeader(
                           reposterPubkey: video.reposterPubkey!,
                         ),
@@ -232,31 +276,31 @@ class VideoOverlayActions extends ConsumerWidget {
                       Consumer(
                         builder: (context, ref, _) {
                           final profile = ref
-                              .watch(userProfileReactiveProvider(video.pubkey))
+                              .watch(userProfileReactiveProvider(authorPubkey))
                               .value;
                           // Use embedded author data from REST API as fallback
                           // This avoids WebSocket profile fetches for videos
                           // that already have author_name/author_avatar embedded
                           final avatarUrl =
-                              profile?.picture ?? video.authorAvatar;
+                              profile?.picture ?? video?.authorAvatar;
                           final displayName =
                               profile?.bestDisplayName ??
-                              video.authorName ??
-                              UserProfile.generatedNameFor(video.pubkey);
+                              video?.authorName ??
+                              UserProfile.generatedNameFor(authorPubkey);
                           final isOgViner = ref.watch(
                             ogVinerCacheServiceProvider.select(
-                              (service) => service.isOgViner(video.pubkey),
+                              (service) => service.isOgViner(authorPubkey),
                             ),
                           );
 
                           void navigateToProfile() {
                             onInteracted?.call();
                             Log.info(
-                              '👤 User tapped profile: videoId=${video.id}, authorPubkey=${video.pubkey}',
+                              '👤 User tapped profile: videoId=${video?.id ?? "preview"}, authorPubkey=$authorPubkey',
                               name: 'VideoFeedItem',
                               category: LogCategory.ui,
                             );
-                            final npub = normalizeToNpub(video.pubkey);
+                            final npub = normalizeToNpub(authorPubkey);
                             if (npub != null) {
                               context.push(
                                 OtherProfileScreen.pathForNpub(npub),
@@ -285,13 +329,14 @@ class VideoOverlayActions extends ConsumerWidget {
                                       onTap: navigateToProfile,
                                     ),
                                     // Follow button positioned at bottom-right of avatar
-                                    PositionedDirectional(
-                                      start: 31,
-                                      top: 31,
-                                      child: VideoFollowButton(
-                                        pubkey: video.pubkey,
+                                    if (video != null)
+                                      PositionedDirectional(
+                                        start: 31,
+                                        top: 31,
+                                        child: VideoFollowButton(
+                                          pubkey: authorPubkey,
+                                        ),
                                       ),
-                                    ),
                                   ],
                                 ),
                               ),
@@ -335,9 +380,9 @@ class VideoOverlayActions extends ConsumerWidget {
                                       Text(
                                         context.l10n.videoFeedLoopCountLine(
                                           StringUtils.formatCompactNumber(
-                                            video.totalLoops,
+                                            video?.totalLoops ?? 0,
                                           ),
-                                          video.totalLoops,
+                                          video?.totalLoops ?? 0,
                                         ),
                                         style: const TextStyle(
                                           fontFamily: 'Inter',
@@ -355,7 +400,8 @@ class VideoOverlayActions extends ConsumerWidget {
                         },
                       ),
                       // List attribution chip (shown when video is from subscribed curated list)
-                      if (showListAttribution &&
+                      if (video != null &&
+                          showListAttribution &&
                           listSources != null &&
                           listSources!.isNotEmpty) ...[
                         const SizedBox(height: 8),
@@ -404,8 +450,7 @@ class VideoOverlayActions extends ConsumerWidget {
                           height: 2,
                         ), // 2px + 10px from avatar container = 12px total
                         // Title (when present)
-                        if (video.title != null &&
-                            video.title!.trim().isNotEmpty)
+                        if (titleText != null)
                           Semantics(
                             identifier: 'video_title',
                             container: true,
@@ -415,12 +460,17 @@ class VideoOverlayActions extends ConsumerWidget {
                                 context.l10n.videoOverlayOpenMetadataFromTitle,
                             child: GestureDetector(
                               behavior: HitTestBehavior.opaque,
-                              onTap: () {
-                                onInteracted?.call();
-                                MetadataExpandedSheet.show(context, video);
-                              },
+                              onTap: video == null
+                                  ? null
+                                  : () {
+                                      onInteracted?.call();
+                                      MetadataExpandedSheet.show(
+                                        context,
+                                        video,
+                                      );
+                                    },
                               child: Text(
-                                video.displayTitle!.trim(),
+                                titleText,
                                 style: VineTheme.labelMediumFont().copyWith(
                                   shadows: VineTheme.buttonShadows,
                                 ),
@@ -431,13 +481,11 @@ class VideoOverlayActions extends ConsumerWidget {
                           ),
                         // 4 px gap between title and description when both
                         // are present (matches the Figma caption spacing).
-                        if (video.title != null &&
-                            video.title!.trim().isNotEmpty &&
-                            video.content.trim().isNotEmpty)
+                        if (titleText != null && descriptionText.isNotEmpty)
                           const SizedBox(height: 4),
                         // Description (only when actual content exists — the
                         // title has its own row above, so no fallback here).
-                        if (video.content.trim().isNotEmpty)
+                        if (descriptionText.isNotEmpty)
                           Semantics(
                             identifier: 'video_description',
                             container: true,
@@ -448,12 +496,17 @@ class VideoOverlayActions extends ConsumerWidget {
                                 .videoOverlayOpenMetadataFromDescription,
                             child: GestureDetector(
                               behavior: HitTestBehavior.opaque,
-                              onTap: () {
-                                onInteracted?.call();
-                                MetadataExpandedSheet.show(context, video);
-                              },
+                              onTap: video == null
+                                  ? null
+                                  : () {
+                                      onInteracted?.call();
+                                      MetadataExpandedSheet.show(
+                                        context,
+                                        video,
+                                      );
+                                    },
                               child: ClickableHashtagText(
-                                text: video.displayContent.trim(),
+                                text: descriptionText,
                                 style: VineTheme.bodySmallFont().copyWith(
                                   shadows: VineTheme.buttonShadows,
                                 ),
@@ -467,11 +520,11 @@ class VideoOverlayActions extends ConsumerWidget {
                             ),
                           ),
                         // Collaborator avatar row (if video has collaborators)
-                        if (video.hasCollaborators) ...[
+                        if (video != null && video.hasCollaborators) ...[
                           const SizedBox(height: 4),
                           CollaboratorAvatarRow(video: video),
                         ],
-                        if (video.isVideoReply) ...[
+                        if (video != null && video.isVideoReply) ...[
                           const SizedBox(height: 4),
                           VideoReplyParentLink(
                             video: video,
@@ -480,7 +533,7 @@ class VideoOverlayActions extends ConsumerWidget {
                           ),
                         ],
                         // Inspired-by attribution row (if video credits another creator)
-                        if (video.hasInspiredBy) ...[
+                        if (video != null && video.hasInspiredBy) ...[
                           const SizedBox(height: 4),
                           InspiredByAttributionRow(
                             video: video,
@@ -490,7 +543,7 @@ class VideoOverlayActions extends ConsumerWidget {
                       ],
                       // Audio attribution row (all videos)
                       const SizedBox(height: 4),
-                      AudioAttributionRow(video: video),
+                      if (video != null) AudioAttributionRow(video: video),
                       const SizedBox(height: 8),
                     ],
                   ),
@@ -509,13 +562,15 @@ class VideoOverlayActions extends ConsumerWidget {
                 duration: const Duration(milliseconds: 200),
                 child: IgnorePointer(
                   ignoring: false, // Action buttons SHOULD receive taps
-                  child: VideoOverlayActionColumn(
-                    video: video,
-                    isFullscreen: isFullscreen,
-                    isPreviewMode: isPreviewMode,
-                    showAutoButton: showAutoButton,
-                    onInteracted: onInteracted,
-                  ),
+                  child: video == null
+                      ? _PreviewOverlayActionColumn(onInteracted: onInteracted)
+                      : VideoOverlayActionColumn(
+                          video: video,
+                          isFullscreen: isFullscreen,
+                          isPreviewMode: isPreviewMode,
+                          showAutoButton: showAutoButton,
+                          onInteracted: onInteracted,
+                        ),
                 ),
               ),
             ),
@@ -533,6 +588,45 @@ class VideoOverlayActions extends ConsumerWidget {
   ) async {
     await context.showVideoPausingDialog<void>(
       builder: (context) => _ContentWarningDetailsSheet(labels: labels),
+    );
+  }
+}
+
+class _PreviewOverlayActionColumn extends StatelessWidget {
+  const _PreviewOverlayActionColumn({this.onInteracted});
+
+  final VoidCallback? onInteracted;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      spacing: 20,
+      children: [
+        LikeActionButton.preview(onInteracted: onInteracted),
+        CommentActionButton.preview(onInteracted: onInteracted),
+        RepostActionButton.preview(onInteracted: onInteracted),
+        VideoActionButton(
+          icon: .shareFatDuo,
+          semanticIdentifier: 'share_button',
+          semanticLabel: context.l10n.shareVideoLabel,
+          labelWhenZero: context.l10n.videoActionShareLabel,
+          onPressed: onInteracted,
+        ),
+        VideoActionButton(
+          icon: DivineIconName.flag,
+          semanticIdentifier: 'report_button',
+          semanticLabel: context.l10n.videoActionReport,
+          labelWhenZero: context.l10n.videoActionReportLabel,
+          onPressed: onInteracted,
+        ),
+        VideoActionButton(
+          icon: DivineIconName.info,
+          semanticIdentifier: 'more_button',
+          semanticLabel: context.l10n.videoActionMoreOptions,
+          caption: context.l10n.videoActionAboutLabel,
+          onPressed: onInteracted,
+        ),
+      ],
     );
   }
 }

@@ -32,7 +32,14 @@ class RepostActionButton extends StatelessWidget {
     this.onInteracted,
   });
 
-  final VideoEvent video;
+  const RepostActionButton.preview({
+    super.key,
+    this.onInteracted,
+  }) : video = null,
+       isPreviewMode = true,
+       isOwnVideo = false;
+
+  final VideoEvent? video;
   final bool isPreviewMode;
   final bool isOwnVideo;
   final VoidCallback? onInteracted;
@@ -40,6 +47,8 @@ class RepostActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isPreviewMode) return const _ActionButton();
+    final video = this.video;
+    if (video == null) return const SizedBox.shrink();
 
     // Use relay count when available; fall back to video metadata.
     // Don't sum both — Funnelcake's originalReposts already includes
@@ -101,6 +110,7 @@ class _ActionButton extends StatelessWidget {
           _openRepostersList(context, video);
           return;
         }
+        if (video == null) return;
         context.read<VideoInteractionsBloc>().add(
           const VideoInteractionsRepostToggled(),
         );

@@ -128,6 +128,21 @@ void main() {
         },
       );
 
+      testWidgets('preview constructor renders without a video', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: RepostActionButton.preview()),
+          ),
+        );
+
+        expect(find.byType(RepostActionButton), findsOneWidget);
+        expect(find.byType(VideoActionButton), findsOneWidget);
+      });
+
       testWidgets('displays default repost count of 1 in preview mode', (
         tester,
       ) async {
