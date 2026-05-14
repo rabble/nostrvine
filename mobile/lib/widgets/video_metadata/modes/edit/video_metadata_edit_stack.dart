@@ -212,7 +212,6 @@ class _EditClipPreview extends StatelessWidget {
     return Center(
       child: Hero(
         tag: VideoEditorConstants.heroMetaPreviewId,
-        createRectTween: (begin, end) => RectTween(begin: begin, end: end),
         child: SizedBox(
           height: 200,
           width: 200 * ratio,

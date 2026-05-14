@@ -15,7 +15,6 @@ import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
-import 'package:pro_image_editor/pro_image_editor.dart' hide VideoClip;
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:time_formatter/time_formatter.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -321,8 +320,10 @@ class _VideoMetadataCoverScreenState
                   ),
                   _BottomArea(
                     clip: widget.clip,
-                    thumbnail: EditorImage(
-                      file: widget.clip.thumbnailPath,
+                    thumbnail: (
+                      file: widget.clip.thumbnailPath != null
+                          ? File(widget.clip.thumbnailPath!)
+                          : null,
                       networkUrl: widget.thumbnailUrl,
                     ),
                     stripThumbnails: _stripThumbnails,
@@ -522,7 +523,7 @@ class _BottomArea extends StatelessWidget {
   });
 
   final DivineVideoClip clip;
-  final EditorImage? thumbnail;
+  final ({File? file, String? networkUrl})? thumbnail;
   final List<StripThumbnail> stripThumbnails;
   final Duration clipDuration;
   final Duration selectedPosition;
@@ -558,7 +559,7 @@ class _ThumbnailStrip extends StatefulWidget {
   });
 
   final DivineVideoClip clip;
-  final EditorImage? thumbnail;
+  final ({File? file, String? networkUrl})? thumbnail;
   final List<StripThumbnail> stripThumbnails;
   final Duration clipDuration;
   final Duration selectedPosition;
@@ -742,7 +743,7 @@ class _ThumbnailStripState extends State<_ThumbnailStrip> {
 class _SlotImage extends StatelessWidget {
   const _SlotImage({required this.thumbnail, this.stripThumbnailPath});
 
-  final EditorImage? thumbnail;
+  final ({File? file, String? networkUrl})? thumbnail;
   final String? stripThumbnailPath;
 
   @override
@@ -761,7 +762,7 @@ class _SlotImage extends StatelessWidget {
                   ),
                 )
               : Image.file(
-                  File(thumbnail!.file!.path),
+                  thumbnail!.file!,
                   fit: .cover,
                   excludeFromSemantics: true,
                 )

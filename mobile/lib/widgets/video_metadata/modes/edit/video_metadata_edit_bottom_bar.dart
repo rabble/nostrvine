@@ -7,7 +7,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart' hide AspectRatio;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
+import 'package:models/models.dart' show VideoEvent;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -156,7 +156,6 @@ class _VideoMetadataEditBottomBarState
         tags.add(['imeta', ...imetaComponents]);
       }
 
-      // Updated metadata from the editor form.
       final title = editorState.title.trim();
       if (title.isNotEmpty) {
         tags.add(['title', title]);
