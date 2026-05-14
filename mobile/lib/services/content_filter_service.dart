@@ -199,6 +199,24 @@ class ContentFilterService extends ChangeNotifier {
   Map<ContentLabel, ContentFilterPreference> get allPreferences =>
       Map.unmodifiable(_preferences);
 
+  /// Aggregate the adult-category preferences for generic 18+ media playback.
+  ///
+  /// Age-restricted media requests do not tell us whether the server flagged
+  /// the content as nudity, sexual, or porn. To avoid letting a stale legacy
+  /// preference override the current settings UI, derive a single playback
+  /// policy from the new per-category source of truth:
+  ///
+  /// - all `hide` -> block playback entirely
+  /// - all `show` -> auto-allow once verified
+  /// - any mixed state -> require an explicit retry/confirmation path
+  ContentFilterPreference get adultPlaybackPreference {
+    final preferences = adultCategories.map(getPreference).toSet();
+    if (preferences.length == 1) {
+      return preferences.single;
+    }
+    return ContentFilterPreference.warn;
+  }
+
   /// Reset all adult categories to hide.
   ///
   /// Called when the user un-checks age verification.

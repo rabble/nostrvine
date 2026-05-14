@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:openvine/services/age_verification_service.dart';
+import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/media_viewer_auth_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -10,11 +11,14 @@ import 'package:unified_logger/unified_logger.dart';
 class MediaAuthInterceptor {
   MediaAuthInterceptor({
     required AgeVerificationService ageVerificationService,
+    required ContentFilterService contentFilterService,
     required MediaViewerAuthService mediaViewerAuthService,
   }) : _ageVerificationService = ageVerificationService,
+       _contentFilterService = contentFilterService,
        _mediaViewerAuthService = mediaViewerAuthService;
 
   final AgeVerificationService _ageVerificationService;
+  final ContentFilterService _contentFilterService;
   final MediaViewerAuthService _mediaViewerAuthService;
 
   /// Handle 401 unauthorized response from Blossom media server
@@ -33,8 +37,12 @@ class MediaAuthInterceptor {
         category: LogCategory.system,
       );
 
-      // Check if user has chosen to never show adult content
-      if (_ageVerificationService.shouldHideAdultContent) {
+      final playbackPreference = _contentFilterService.adultPlaybackPreference;
+
+      // Check if user has chosen to never show adult content.
+      // This now follows the current per-category settings rather than the
+      // deprecated legacy preference key.
+      if (playbackPreference == ContentFilterPreference.hide) {
         Log.debug(
           '🚫 User preference is to never show adult content',
           name: 'MediaAuthInterceptor',
@@ -43,8 +51,10 @@ class MediaAuthInterceptor {
         return null;
       }
 
-      // Check if user has chosen to always show (and is verified)
-      if (_ageVerificationService.shouldAutoShowAdultContent) {
+      // Auto-create auth headers when the current settings allow adult content
+      // without a click-through and the user is already verified.
+      if (playbackPreference == ContentFilterPreference.show &&
+          _ageVerificationService.isAdultContentVerified) {
         Log.debug(
           '✅ Auto-showing adult content (user preference: always show)',
           name: 'MediaAuthInterceptor',
@@ -113,5 +123,6 @@ class MediaAuthInterceptor {
 
   /// Returns true if adult content should be filtered from feeds entirely
   bool get shouldFilterContent =>
-      _ageVerificationService.shouldHideAdultContent;
+      _contentFilterService.adultPlaybackPreference ==
+      ContentFilterPreference.hide;
 }
