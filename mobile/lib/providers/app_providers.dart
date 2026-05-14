@@ -30,7 +30,6 @@ import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:nostr_client/nostr_client.dart'
     show NostrClient, RelayConnectionStatus, RelayState;
 import 'package:nostr_key_manager/nostr_key_manager.dart';
-import 'package:nostr_sdk/nostr_sdk.dart' show Event;
 import 'package:openvine/config/app_config.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
@@ -91,7 +90,6 @@ import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/nostr_creator_binding_service.dart';
-import 'package:openvine/services/nostr_identity.dart';
 import 'package:openvine/services/notification_preferences_service.dart';
 import 'package:openvine/services/notification_service.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
@@ -103,6 +101,7 @@ import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/push_notification_service.dart';
+import 'package:openvine/services/push_notification_session_coordinator.dart';
 import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
 import 'package:openvine/services/seen_videos_service.dart';
@@ -191,13 +190,6 @@ final collaboratorInviteStateStoreProvider =
       );
     });
 
-/// Compatibility readiness shim for older consumers that only need a boolean.
-/// New signer-dependent side effects should use [nostrSessionProvider] so they
-/// can validate the ready pubkey and client together.
-final isNostrReadyProvider = Provider<bool>((ref) {
-  return ref.watch(nostrSessionProvider).isReadyForActiveClient;
-});
-
 /// Per-video collaborator confirmation status. Returns `null` until
 /// [nostrSessionProvider] has a ready active client, so consumers render a safe
 /// fallback instead of capturing a stale Nostr client.
@@ -281,6 +273,7 @@ Future<bool> _updateNotificationPreferencesSafely(
 final notificationPreferencesDirtySyncBridgeProvider = Provider<void>((ref) {
   var disposed = false;
   var drainGeneration = 0;
+  final activeDrainPubkeys = <String>{};
 
   ref.onDispose(() {
     disposed = true;
@@ -303,37 +296,23 @@ final notificationPreferencesDirtySyncBridgeProvider = Provider<void>((ref) {
   }
 
   Future<void> drainDirtyPreferences(String pubkey) async {
+    if (!activeDrainPubkeys.add(pubkey)) return;
     final generation = ++drainGeneration;
     try {
       final preferencesService = ref.read(
         notificationPreferencesServiceProvider,
       );
-      final prefs = await preferencesService.loadDirtyPreferencesForPubkey(
-        pubkey,
-      );
-      if (prefs == null || disposed || generation != drainGeneration) return;
       if (!isReadyForPubkey(pubkey)) return;
-
-      final pushService = ref.read(pushNotificationServiceProvider);
-      if (pushService == null) return;
-
-      final published = await _updateNotificationPreferencesSafely(
-        pushService,
-        prefs,
-      );
-      if (!published || disposed || generation != drainGeneration) return;
-      if (!isReadyForPubkey(pubkey, pushService: pushService)) return;
-
-      await preferencesService.clearDirtyPreferencesForPubkeyIfMatches(
-        pubkey,
-        prefs,
-      );
+      await preferencesService.syncDirtyPreferencesForPubkey(pubkey);
+      if (disposed || generation != drainGeneration) return;
     } catch (e) {
       Log.warning(
         'Push notification preference drain failed: $e',
         name: 'PushNotificationSync',
         category: LogCategory.system,
       );
+    } finally {
+      activeDrainPubkeys.remove(pubkey);
     }
   }
 
@@ -1319,26 +1298,6 @@ final cawgVerifierClientProvider = Provider<CawgVerifierClient>((ref) {
   return client;
 });
 
-enum _PushRegistrationPhase { beforePushService, mayPublish }
-
-final class _PushRegistrationOperation {
-  _PushRegistrationOperation({
-    required this.pubkey,
-    required this.client,
-    required this.pushService,
-    required this.identity,
-  });
-
-  final String pubkey;
-  final NostrClient client;
-  final PushNotificationService pushService;
-  final NostrIdentity identity;
-  Future<void>? future;
-  Event? deferredCleanupDeregistrationEvent;
-  _PushRegistrationPhase phase = _PushRegistrationPhase.beforePushService;
-  bool cleanupScheduled = false;
-}
-
 /// Provider that sets Zendesk user identity when auth state changes
 /// Watch this provider at app startup to keep Zendesk identity in sync with auth
 @Riverpod(keepAlive: true)
@@ -1385,386 +1344,35 @@ void pushNotificationSync(Ref ref) {
   final authService = ref.watch(authServiceProvider);
   ref.watch(notificationPreferencesDirtySyncBridgeProvider);
 
-  _PushRegistrationOperation? activeRegistration;
-  String? lastReadyPubkey;
-  NostrClient? lastReadyClient;
-  PushNotificationService? lastReadyPushService;
-  NostrIdentity? lastReadyIdentity;
-
-  void invalidateActiveRegistration() {
-    activeRegistration = null;
-  }
-
-  bool isRegistrationCurrent(_PushRegistrationOperation operation) {
-    if (!identical(activeRegistration, operation) ||
-        authService.currentIdentity?.pubkey != operation.pubkey) {
-      return false;
-    }
-
-    final currentReadiness = ref.read(nostrSessionProvider);
-    if (!currentReadiness.isReadyForActiveClient ||
-        currentReadiness.pubkey != operation.pubkey ||
-        !identical(currentReadiness.client, operation.client)) {
-      return false;
-    }
-
-    return identical(
-      ref.read(pushNotificationServiceProvider),
-      operation.pushService,
-    );
-  }
-
-  Future<void> requestPermissionAndRegister(
-    _PushRegistrationOperation operation,
-  ) async {
-    try {
-      final firebaseMessaging = ref.read(firebaseMessagingProvider);
-
-      // Only prompt the user if permission has never been decided. Rapid
-      // auth state changes (account switching, E2E tests) otherwise cause
-      // concurrent `requestPermission` calls, and Firebase throws
-      // `PlatformException([firebase_messaging/unknown] A request for
-      // permissions is already running)` — silently losing FCM registration
-      // in production and failing E2E tests via unhandled async errors.
-      final current = await firebaseMessaging.getNotificationSettings();
-      if (!isRegistrationCurrent(operation)) {
-        return;
-      }
-
-      final settings =
-          current.authorizationStatus == AuthorizationStatus.notDetermined
-          ? await firebaseMessaging.requestPermission()
-          : current;
-
-      if (!isRegistrationCurrent(operation)) {
-        return;
-      }
-
-      if (settings.authorizationStatus == AuthorizationStatus.denied) {
-        Log.info(
-          'Push notification permission denied by user',
-          name: 'PushNotificationSync',
-          category: LogCategory.system,
-        );
-        return;
-      }
-
-      if (!isRegistrationCurrent(operation)) {
-        return;
-      }
-
-      operation.phase = _PushRegistrationPhase.mayPublish;
-      await operation.pushService.register(
-        operation.pubkey,
-        isCurrent: () => isRegistrationCurrent(operation),
+  final coordinator = PushNotificationSessionCoordinator(
+    authService: authService,
+    firebaseMessaging: ref.read(firebaseMessagingProvider),
+    readReadiness: () => ref.read(nostrSessionProvider),
+    readPushService: () => ref.read(pushNotificationServiceProvider),
+    createCleanupClient: (identity) {
+      final factory = ref.read(nostrClientFactoryProvider);
+      return factory(
+        signer: identity,
+        statisticsService: ref.read(relayStatisticsServiceProvider),
+        environmentConfig: ref.read(currentEnvironmentProvider),
+        dbClient: ref.read(appDbClientProvider),
       );
-    } catch (e) {
-      // Push registration is non-critical — a failure must not propagate
-      // out of this async stream listener. If it did, the uncaught error
-      // would reach the test binding's `handleUncaughtError` and fail the
-      // surrounding integration test.
-      Log.warning(
-        'Push notification registration failed: $e',
-        name: 'PushNotificationSync',
-        category: LogCategory.system,
-      );
-    }
-  }
-
-  bool isOutgoingSessionCurrent(
-    String pubkey,
-    NostrClient client,
-    PushNotificationService pushService,
-  ) {
-    final currentReadiness = ref.read(nostrSessionProvider);
-    if (currentReadiness.pubkey != null && currentReadiness.pubkey != pubkey) {
-      return false;
-    }
-
-    if (currentReadiness.isReadyForActiveClient &&
-        !identical(currentReadiness.client, client)) {
-      return false;
-    }
-
-    return identical(pushService, lastReadyPushService);
-  }
-
-  Future<void> deregisterCapturedPubkey(
-    String pubkey,
-    NostrClient client,
-    PushNotificationService pushService,
-    NostrIdentity? signingIdentity,
-    NostrClient? publishClient,
-  ) async {
-    try {
-      await pushService.deregister(
-        pubkey,
-        isCurrent: publishClient == null
-            ? () => isOutgoingSessionCurrent(pubkey, client, pushService)
-            : null,
-        signingIdentity: signingIdentity,
-        publishClient: publishClient,
-      );
-    } catch (e) {
-      // Never let push/deregister errors escape AuthService teardown.
-      Log.warning(
-        'Push notification sync listener failed: $e',
-        name: 'PushNotificationSync',
-        category: LogCategory.system,
-      );
-    }
-  }
-
-  NostrClient createCleanupClient(NostrIdentity identity) {
-    final factory = ref.read(nostrClientFactoryProvider);
-    return factory(
-      signer: identity,
-      statisticsService: ref.read(relayStatisticsServiceProvider),
-      environmentConfig: ref.read(currentEnvironmentProvider),
-      dbClient: ref.read(appDbClientProvider),
-    );
-  }
-
-  Future<void> publishDeregistrationWithCleanupClient(
-    Event deregistrationEvent,
-    PushNotificationService pushService,
-    NostrIdentity identity,
-  ) async {
-    final cleanupClient = createCleanupClient(identity);
-    try {
-      await cleanupClient.initialize();
-      await pushService.publishDeregistrationEvent(
-        deregistrationEvent,
-        publishClient: cleanupClient,
-      );
-    } finally {
-      cleanupClient.dispose();
-    }
-  }
-
-  Future<void> deregisterWithCleanupClient(
-    String pubkey,
-    NostrClient client,
-    PushNotificationService pushService,
-    NostrIdentity identity,
-  ) async {
-    try {
-      if (!isOutgoingSessionCurrent(pubkey, client, pushService)) return;
-      final deregistrationEvent = await pushService
-          .createSignedDeregistrationEvent(
-            pubkey,
-            signingIdentity: identity,
-          );
-      if (deregistrationEvent == null) return;
-
-      await publishDeregistrationWithCleanupClient(
-        deregistrationEvent,
-        pushService,
-        identity,
-      );
-    } catch (e) {
-      Log.warning(
-        'Push notification sync listener failed: $e',
-        name: 'PushNotificationSync',
-        category: LogCategory.system,
-      );
-    }
-  }
-
-  Future<Event?> createDeferredCleanupDeregistrationEvent(
-    _PushRegistrationOperation operation,
-  ) async {
-    try {
-      if (!isOutgoingSessionCurrent(
-        operation.pubkey,
-        operation.client,
-        operation.pushService,
-      )) {
-        return null;
-      }
-      return await operation.pushService.createSignedDeregistrationEvent(
-        operation.pubkey,
-        signingIdentity: operation.identity,
-      );
-    } catch (e) {
-      Log.warning(
-        'Push notification sync listener failed: $e',
-        name: 'PushNotificationSync',
-        category: LogCategory.system,
-      );
-      return null;
-    }
-  }
-
-  void scheduleDeregisterAfterRegistration(
-    _PushRegistrationOperation operation,
-  ) {
-    if (operation.cleanupScheduled) return;
-    final registrationFuture = operation.future;
-    final deregistrationEvent = operation.deferredCleanupDeregistrationEvent;
-    if (registrationFuture == null) return;
-    if (deregistrationEvent == null) return;
-    operation.cleanupScheduled = true;
-    unawaited(
-      (() async {
-        try {
-          await registrationFuture;
-          await publishDeregistrationWithCleanupClient(
-            deregistrationEvent,
-            operation.pushService,
-            operation.identity,
-          );
-        } catch (e) {
-          Log.warning(
-            'Push notification deferred cleanup failed: $e',
-            name: 'PushNotificationSync',
-            category: LogCategory.system,
-          );
-        }
-      })(),
-    );
-  }
-
-  Future<void> deregisterLastReadyPubkey() async {
-    final pubkey = lastReadyPubkey;
-    final client = lastReadyClient;
-    final pushService = lastReadyPushService;
-    final identity = lastReadyIdentity;
-    final operation = activeRegistration;
-    invalidateActiveRegistration();
-    if (pubkey == null || client == null || pushService == null) return;
-    pushService.deactivateRegistration();
-
-    final registrationOperation = operation;
-    if (registrationOperation != null &&
-        registrationOperation.phase == _PushRegistrationPhase.mayPublish) {
-      registrationOperation.deferredCleanupDeregistrationEvent ??=
-          await createDeferredCleanupDeregistrationEvent(registrationOperation);
-    }
-
-    if (operation?.phase != _PushRegistrationPhase.beforePushService) {
-      try {
-        await operation?.future?.timeout(const Duration(seconds: 4));
-      } on TimeoutException catch (e) {
-        Log.warning(
-          'Timed out waiting for push registration before deregistration: $e',
-          name: 'PushNotificationSync',
-          category: LogCategory.system,
-        );
-        if (operation != null &&
-            operation.phase == _PushRegistrationPhase.mayPublish) {
-          scheduleDeregisterAfterRegistration(operation);
-        }
-        return;
-      }
-    }
-
-    if (!isOutgoingSessionCurrent(pubkey, client, pushService)) return;
-
-    if (identity == null) {
-      await deregisterCapturedPubkey(pubkey, client, pushService, null, null);
-      return;
-    }
-
-    final deregistrationEvent = operation?.deferredCleanupDeregistrationEvent;
-    if (deregistrationEvent != null) {
-      try {
-        await publishDeregistrationWithCleanupClient(
-          deregistrationEvent,
-          pushService,
-          identity,
-        );
-      } catch (e) {
-        Log.warning(
-          'Push notification sync listener failed: $e',
-          name: 'PushNotificationSync',
-          category: LogCategory.system,
-        );
-      }
-      return;
-    }
-
-    await deregisterWithCleanupClient(pubkey, client, pushService, identity);
-  }
+    },
+  );
 
   final unregisterBeforeSessionTeardown = authService
-      .registerBeforeSessionTeardownCallback(deregisterLastReadyPubkey);
+      .registerBeforeSessionTeardownCallback(
+        coordinator.deregisterLastReadyPubkey,
+      );
 
   final authStateSubscription = authService.authStateStream.listen((_) {
-    final pubkey = lastReadyPubkey;
-    if (pubkey != null && authService.currentIdentity?.pubkey != pubkey) {
-      lastReadyPubkey = null;
-      lastReadyClient = null;
-      lastReadyPushService = null;
-      lastReadyIdentity = null;
-      invalidateActiveRegistration();
-    }
+    coordinator.handleAuthStateChange();
   });
 
-  void maybeRegister(NostrSessionReadiness readiness) {
-    final readyPubkey = readiness.pubkey;
-    if (!readiness.isReadyForActiveClient || readyPubkey == null) {
-      invalidateActiveRegistration();
-      if (readyPubkey == null ||
-          authService.currentIdentity?.pubkey != readyPubkey ||
-          (lastReadyPubkey != null && lastReadyPubkey != readyPubkey)) {
-        lastReadyPubkey = null;
-        lastReadyClient = null;
-        lastReadyPushService = null;
-        lastReadyIdentity = null;
-      }
-      return;
-    }
-
-    if (authService.currentIdentity?.pubkey != readyPubkey) {
-      lastReadyPubkey = null;
-      lastReadyClient = null;
-      lastReadyPushService = null;
-      lastReadyIdentity = null;
-      invalidateActiveRegistration();
-      return;
-    }
-
-    final pushService = ref.read(pushNotificationServiceProvider);
-    if (pushService == null) {
-      return;
-    }
-    final identity = authService.currentIdentity;
-    if (identity == null || identity.pubkey != readyPubkey) {
-      lastReadyPubkey = null;
-      lastReadyClient = null;
-      lastReadyPushService = null;
-      lastReadyIdentity = null;
-      invalidateActiveRegistration();
-      return;
-    }
-
-    lastReadyPubkey = readyPubkey;
-    lastReadyClient = readiness.client;
-    lastReadyPushService = pushService;
-    lastReadyIdentity = identity;
-    final operation = _PushRegistrationOperation(
-      pubkey: readyPubkey,
-      client: readiness.client!,
-      pushService: pushService,
-      identity: identity,
-    );
-    activeRegistration = operation;
-    final registrationFuture = requestPermissionAndRegister(operation);
-    operation.future = registrationFuture;
-    unawaited(
-      registrationFuture.whenComplete(() {
-        if (identical(activeRegistration, operation)) {
-          activeRegistration = null;
-        }
-      }),
-    );
-  }
-
-  maybeRegister(ref.read(nostrSessionProvider));
+  coordinator.handleReadiness(ref.read(nostrSessionProvider));
 
   ref.listen<NostrSessionReadiness>(nostrSessionProvider, (_, next) {
-    maybeRegister(next);
+    coordinator.handleReadiness(next);
   });
 
   // Set up foreground message handler
@@ -1776,7 +1384,7 @@ void pushNotificationSync(Ref ref) {
   });
 
   ref.onDispose(() {
-    invalidateActiveRegistration();
+    coordinator.dispose();
     unregisterBeforeSessionTeardown();
     authStateSubscription.cancel();
     onMessageSubscription.cancel();

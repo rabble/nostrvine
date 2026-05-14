@@ -50,4 +50,91 @@ void main() {
     expect(await store.loadDirty(pubkey), prefs);
     expect(notificationStorage, isEmpty);
   });
+
+  test(
+    'syncs and clears matching dirty preferences after publish succeeds',
+    () async {
+      const pubkey =
+          '1111111111111111111111111111111111111111111111111111111111111111';
+      const prefs = NotificationPreferences(commentsEnabled: false);
+      final store = _MemoryNotificationPreferencesStore();
+      final published = <NotificationPreferences>[];
+      final service = NotificationPreferencesService(
+        store: store,
+        currentPubkey: () => pubkey,
+        publishPreferences: (publishPubkey, preferences) async {
+          expect(publishPubkey, pubkey);
+          published.add(preferences);
+          return true;
+        },
+      );
+
+      await store.markDirty(pubkey, prefs);
+      await service.syncDirtyPreferencesForPubkey(pubkey);
+
+      expect(published, [prefs]);
+      expect(await store.loadDirty(pubkey), isNull);
+    },
+  );
+
+  test('keeps dirty preferences after publish failure', () async {
+    const pubkey =
+        '1111111111111111111111111111111111111111111111111111111111111111';
+    const prefs = NotificationPreferences(commentsEnabled: false);
+    final store = _MemoryNotificationPreferencesStore();
+    final service = NotificationPreferencesService(
+      store: store,
+      currentPubkey: () => pubkey,
+      publishPreferences: (_, _) async => false,
+    );
+
+    await store.markDirty(pubkey, prefs);
+    await service.syncDirtyPreferencesForPubkey(pubkey);
+
+    expect(await store.loadDirty(pubkey), prefs);
+  });
+}
+
+class _MemoryNotificationPreferencesStore
+    implements NotificationPreferencesStore {
+  NotificationPreferences? preferences;
+  final dirty = <String, NotificationPreferences>{};
+
+  @override
+  Future<NotificationPreferences> loadPreferences() async {
+    return preferences ?? const NotificationPreferences();
+  }
+
+  @override
+  Future<void> savePreferences(NotificationPreferences preferences) async {
+    this.preferences = preferences;
+  }
+
+  @override
+  Future<void> markDirty(
+    String pubkey,
+    NotificationPreferences preferences,
+  ) async {
+    dirty[pubkey] = preferences;
+  }
+
+  @override
+  Future<NotificationPreferences?> loadDirty(String pubkey) async {
+    return dirty[pubkey];
+  }
+
+  @override
+  Future<void> clearDirty(String pubkey) async {
+    dirty.remove(pubkey);
+  }
+
+  @override
+  Future<void> clearDirtyIfMatches(
+    String pubkey,
+    NotificationPreferences preferences,
+  ) async {
+    if (dirty[pubkey] == preferences) {
+      dirty.remove(pubkey);
+    }
+  }
 }

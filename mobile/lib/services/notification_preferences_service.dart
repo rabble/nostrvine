@@ -187,22 +187,23 @@ class NotificationPreferencesService {
     if (pubkey == null) return;
 
     await _store.markDirty(pubkey, prefs);
-    final published = await _publishPreferences(pubkey, prefs);
-    if (published) {
-      await _store.clearDirtyIfMatches(pubkey, prefs);
-    }
+    await _publishAndClearDirtyPreferences(pubkey, prefs);
   }
 
-  Future<NotificationPreferences?> loadDirtyPreferencesForPubkey(
-    String pubkey,
-  ) {
-    return _store.loadDirty(pubkey);
+  Future<void> syncDirtyPreferencesForPubkey(String pubkey) async {
+    final prefs = await _store.loadDirty(pubkey);
+    if (prefs == null) return;
+
+    await _publishAndClearDirtyPreferences(pubkey, prefs);
   }
 
-  Future<void> clearDirtyPreferencesForPubkeyIfMatches(
+  Future<void> _publishAndClearDirtyPreferences(
     String pubkey,
     NotificationPreferences preferences,
-  ) {
-    return _store.clearDirtyIfMatches(pubkey, preferences);
+  ) async {
+    final published = await _publishPreferences(pubkey, preferences);
+    if (published) {
+      await _store.clearDirtyIfMatches(pubkey, preferences);
+    }
   }
 }
