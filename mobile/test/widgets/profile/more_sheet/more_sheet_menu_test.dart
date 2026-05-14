@@ -1,6 +1,8 @@
 // ABOUTME: Widget tests for MoreSheetMenu — verifies which actions render
 // ABOUTME: based on follow / block state and the optional add-to-list/report flags.
 
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
@@ -107,6 +109,26 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tapped, equals(1));
+    });
+
+    testWidgets('Report action exposes button semantics', (tester) async {
+      final semantics = tester.ensureSemantics();
+
+      await tester.pumpWidget(buildSubject(onReport: () {}));
+
+      final reportFinder = find.bySemanticsLabel(
+        l10n.profileReportDisplayName(displayName),
+      );
+      expect(reportFinder, findsOneWidget);
+      final semanticsNode = tester.getSemantics(reportFinder);
+      final semanticsData = semanticsNode.getSemanticsData();
+      expect(
+        semanticsNode.label,
+        equals(l10n.profileReportDisplayName(displayName)),
+      );
+      expect(semanticsData.hasFlag(ui.SemanticsFlag.isButton), isTrue);
+      expect(semanticsData.hasAction(ui.SemanticsAction.tap), isTrue);
+      semantics.dispose();
     });
 
     testWidgets('hides Add to list when onAddToList is null', (tester) async {

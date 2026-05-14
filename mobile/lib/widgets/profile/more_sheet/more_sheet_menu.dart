@@ -110,16 +110,22 @@ class _MoreSheetMenuItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-        child: Row(
-          spacing: 16,
-          children: [
-            DivineIcon(icon: icon, color: color),
-            Text(label, style: VineTheme.titleMediumFont(color: color)),
-          ],
+    return Semantics(
+      button: true,
+      label: label,
+      child: InkWell(
+        onTap: onTap,
+        child: ExcludeSemantics(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Row(
+              spacing: 16,
+              children: [
+                DivineIcon(icon: icon, color: color),
+                Text(label, style: VineTheme.titleMediumFont(color: color)),
+              ],
+            ),
+          ),
         ),
       ),
     );
