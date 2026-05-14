@@ -4445,6 +4445,60 @@ final class ContentDeletionServiceProvider
 String _$contentDeletionServiceHash() =>
     r'595760368d4f392891586c43959ceba01e02bcd5';
 
+/// Service that orchestrates the video-metadata-edit republish flow.
+
+@ProviderFor(videoMetadataUpdateService)
+const videoMetadataUpdateServiceProvider =
+    VideoMetadataUpdateServiceProvider._();
+
+/// Service that orchestrates the video-metadata-edit republish flow.
+
+final class VideoMetadataUpdateServiceProvider
+    extends
+        $FunctionalProvider<
+          VideoMetadataUpdateService,
+          VideoMetadataUpdateService,
+          VideoMetadataUpdateService
+        >
+    with $Provider<VideoMetadataUpdateService> {
+  /// Service that orchestrates the video-metadata-edit republish flow.
+  const VideoMetadataUpdateServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'videoMetadataUpdateServiceProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$videoMetadataUpdateServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<VideoMetadataUpdateService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  VideoMetadataUpdateService create(Ref ref) {
+    return videoMetadataUpdateService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(VideoMetadataUpdateService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<VideoMetadataUpdateService>(value),
+    );
+  }
+}
+
+String _$videoMetadataUpdateServiceHash() =>
+    r'411d6327e9cdd7e14c307357ac64d337d52dc99d';
+
 /// Account Deletion Service for NIP-62 Request to Vanish
 
 @ProviderFor(accountDeletionService)

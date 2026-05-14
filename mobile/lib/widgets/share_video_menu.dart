@@ -5,8 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
-import 'package:openvine/constants/nip71_migration.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/people_lists/models/people_list_entry_point.dart';
@@ -18,10 +17,8 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_edit_screen.dart';
 import 'package:openvine/services/bookmark_service.dart';
-import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
-import 'package:openvine/utils/collaborator_tags.dart';
 import 'package:openvine/utils/delete_failure_localization.dart';
 import 'package:openvine/utils/watermark_text_resolver.dart';
 import 'package:openvine/widgets/add_to_list_dialog.dart';
@@ -30,75 +27,6 @@ import 'package:openvine/widgets/save_original_progress_sheet.dart';
 import 'package:openvine/widgets/watermark_download_progress_sheet.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:unified_logger/unified_logger.dart';
-
-Future<Map<String, CollaboratorInviteResult>>
-sendPostPublishCollaboratorInvites({
-  required CollaboratorInviteService inviteService,
-  required VideoEvent video,
-  required Iterable<String> previousCollaboratorPubkeys,
-  required Iterable<String> updatedCollaboratorPubkeys,
-  String relayHint = collaboratorInviteRelayHint,
-}) async {
-  final previous = previousCollaboratorPubkeys.toSet();
-  final newCollaborators = updatedCollaboratorPubkeys
-      .where((pubkey) => !previous.contains(pubkey))
-      .toSet();
-  if (newCollaborators.isEmpty) return const {};
-
-  final videoAddress =
-      '${NIP71VideoKinds.addressableShortVideo}:${video.pubkey}:${video.stableId}';
-  final results = <String, CollaboratorInviteResult>{};
-  for (final pubkey in newCollaborators) {
-    try {
-      results[pubkey] = await inviteService.sendInvite(
-        collaboratorPubkey: pubkey,
-        creatorPubkey: video.pubkey,
-        videoAddress: videoAddress,
-        title: video.title,
-        thumbnailUrl: video.thumbnailUrl,
-        relayHint: relayHint,
-      );
-    } on Object catch (e, stackTrace) {
-      Log.warning(
-        'Failed to send post-publish collaborator invite: $e\n$stackTrace',
-        name: 'ShareVideoMenu',
-        category: LogCategory.video,
-      );
-      results[pubkey] = CollaboratorInviteResult(
-        success: false,
-        error: e.toString(),
-      );
-    }
-  }
-  return results;
-}
-
-/// Tag names that carry engagement counts on Vine-imported video events.
-///
-/// These are baked into the Nostr event body and must survive a metadata
-/// edit; without that, `originalLoops` / `originalLikes` / `originalComments`
-/// get permanently zeroed on the replacement event.
-/// See [extractEngagementCountTags].
-const _engagementCountTagNames = {
-  'loops',
-  'likes',
-  'reposts',
-  'views',
-  'comments',
-};
-
-/// Returns the subset of [tags] that carry engagement counts (loops, likes,
-/// reposts, views, comments) on Vine-imported video events.
-///
-/// Tags missing a value are skipped — `tag.length >= 2` already implies
-/// the tag is non-empty.
-List<List<String>> extractEngagementCountTags(List<List<String>> tags) {
-  return tags
-      .where(
-        (tag) => tag.length >= 2 && _engagementCountTagNames.contains(tag[0]),
-      )
-      .toList();
-}
 
 class _LoadingIndicator extends StatelessWidget {
   const _LoadingIndicator();

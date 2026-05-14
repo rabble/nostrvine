@@ -8,18 +8,12 @@ import 'package:flutter/material.dart' hide AspectRatio;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show VideoEvent;
-import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
-import 'package:openvine/utils/collaborator_tags.dart';
+import 'package:openvine/services/video_metadata_update_service.dart';
 import 'package:openvine/utils/delete_failure_localization.dart';
-import 'package:openvine/widgets/share_video_menu.dart'
-    show extractEngagementCountTags, sendPostPublishCollaboratorInvites;
 import 'package:unified_logger/unified_logger.dart';
 
 /// Bottom action bar for the video metadata edit screen.
@@ -51,224 +45,37 @@ class _VideoMetadataEditBottomBarState
   Future<void> _updateVideo() async {
     setState(() => _isUpdating = true);
 
-    // Capture l10n eagerly — awaiting the publish round-trip means the
-    // widget may have unmounted by the time the invite service needs it.
-    final inviteL10n = context.l10n;
-
     try {
       final editorState = ref.read(videoEditorProvider);
-
-      final authService = ref.read(authServiceProvider);
-      if (!authService.isAuthenticated) {
-        throw Exception('User not authenticated');
-      }
-
-      final tags = <List<String>>[];
-
-      // Required 'd' tag — must use the same identifier to replace the event.
-      tags.add(['d', widget.video.stableId]);
-
-      // Extract ALL valid HTTP video URLs from the original imeta tag.
-      // The original event may have multiple URL entries (streaming MP4,
-      // HLS, R2 fallback, etc.) which must all be preserved.
-      final videoUrls = <String>[];
-      for (final tag in widget.video.nostrEventTags) {
-        if (tag.isEmpty || tag[0] != 'imeta') continue;
-        if (tag.length > 1 && tag[1].contains(' ')) {
-          // Old imeta format: ['imeta', 'url https://...', 'm video/mp4', ...]
-          for (var i = 1; i < tag.length; i++) {
-            final spaceIdx = tag[i].indexOf(' ');
-            if (spaceIdx > 0) {
-              final key = tag[i].substring(0, spaceIdx);
-              final value = tag[i].substring(spaceIdx + 1);
-              if (key == 'url' &&
-                  _isHttpUrl(value) &&
-                  !videoUrls.contains(value)) {
-                videoUrls.add(value);
-              }
-            }
-          }
-        } else {
-          // New imeta format: ['imeta', 'url', 'https://...', 'm', 'video/mp4', ...]
-          for (var i = 1; i < tag.length - 1; i += 2) {
-            if (tag[i] == 'url' &&
-                _isHttpUrl(tag[i + 1]) &&
-                !videoUrls.contains(tag[i + 1])) {
-              videoUrls.add(tag[i + 1]);
-            }
-          }
-        }
-      }
-
-      // Fallback: nostrEventTags may be empty for events loaded from a JSON
-      // cache that doesn't serialise raw tags — use the single videoUrl.
-      if (videoUrls.isEmpty && _isHttpUrl(widget.video.videoUrl)) {
-        videoUrls.add(widget.video.videoUrl!);
-      }
-
-      if (videoUrls.isEmpty) {
-        throw Exception('Cannot update video: no valid HTTP video URLs found');
-      }
-
-      // Build imeta tag components (preserve all original media URLs).
-      final imetaComponents = <String>[];
-      for (final url in videoUrls) {
-        imetaComponents.add('url $url');
-      }
-      imetaComponents.add('m video/mp4');
-
-      if (widget.pendingThumbnailPath != null) {
-        // User selected a new cover — upload to Blossom before republishing.
-        final blossomService = ref.read(blossomUploadServiceProvider);
-        final uploadResult = await blossomService.uploadImage(
-          imageFile: File(widget.pendingThumbnailPath!),
-          nostrPubkey: authService.currentPublicKeyHex ?? '',
-        );
-        if (uploadResult.success && uploadResult.cdnUrl != null) {
-          imetaComponents.add('image ${uploadResult.cdnUrl!}');
-        } else {
-          Log.error(
-            'Thumbnail upload failed during video update; keeping original',
-            name: 'VideoMetadataEditBottomBar',
-            category: LogCategory.ui,
-          );
-          if (widget.video.thumbnailUrl != null) {
-            imetaComponents.add('image ${widget.video.thumbnailUrl!}');
-          }
-        }
-      } else if (widget.video.thumbnailUrl != null) {
-        imetaComponents.add('image ${widget.video.thumbnailUrl!}');
-      }
-      if (widget.video.blurhash != null) {
-        imetaComponents.add('blurhash ${widget.video.blurhash!}');
-      }
-      if (widget.video.dimensions != null) {
-        imetaComponents.add('dim ${widget.video.dimensions!}');
-      }
-      if (widget.video.sha256 != null) {
-        imetaComponents.add('x ${widget.video.sha256!}');
-      }
-      if (widget.video.fileSize != null) {
-        imetaComponents.add('size ${widget.video.fileSize!}');
-      }
-
-      if (imetaComponents.isNotEmpty) {
-        tags.add(['imeta', ...imetaComponents]);
-      }
-
-      final title = editorState.title.trim();
-      if (title.isNotEmpty) {
-        tags.add(['title', title]);
-      }
-
-      for (final hashtag in editorState.tags) {
-        tags.add(['t', hashtag]);
-      }
-
-      for (final label in editorState.contentWarnings) {
-        tags.add(['l', label.value, 'content-warning']);
-      }
-
-      // Preserve engagement count tags so a metadata edit doesn't zero
-      // originalLoops / originalLikes for Vine-imported videos.
-      tags.addAll(extractEngagementCountTags(widget.video.nostrEventTags));
-
-      if (widget.video.publishedAt != null) {
-        tags.add(['published_at', widget.video.publishedAt!]);
-      }
-      if (widget.video.duration != null) {
-        tags.add(['duration', widget.video.duration.toString()]);
-      }
-      if (widget.video.altText != null) {
-        tags.add(['alt', widget.video.altText!]);
-      }
-
-      for (final pubkey in editorState.collaboratorPubkeys) {
-        tags.add(buildCollaboratorPTag(pubkey));
-      }
-
-      if (editorState.inspiredByVideo != null) {
-        tags.add([
-          'a',
-          editorState.inspiredByVideo!.addressableId,
-          editorState.inspiredByVideo!.relayUrl ?? '',
-          'inspired-by',
-        ]);
-      }
-
-      tags.add(['client', 'diVine']);
-
-      if (editorState.allowAudioReuse) {
-        tags.add(['allow_audio_reuse', 'true']);
-      }
-
-      // Build content with optional NIP-27 inspired-by person reference.
-      var content = editorState.description.trim();
-      final inspiredByNpub = editorState.inspiredByNpub;
-      if (inspiredByNpub != null && inspiredByNpub.isNotEmpty) {
-        final ibText = '\n\nInspired by nostr:$inspiredByNpub';
-        content = content.isEmpty ? ibText.trim() : '$content$ibText';
-      }
-
-      // Use original created_at + 1 so relays treat this as a replacement
-      // while preserving the video's chronological position in feeds.
-      final event = await authService.createAndSignEvent(
-        kind: NIP71VideoKinds.addressableShortVideo,
-        content: content,
-        tags: tags,
-        createdAt: widget.video.createdAt + 1,
+      final service = ref.read(videoMetadataUpdateServiceProvider);
+      final result = await service.updateVideo(
+        originalVideo: widget.video,
+        editorState: editorState,
+        newThumbnailFile: widget.pendingThumbnailPath != null
+            ? File(widget.pendingThumbnailPath!)
+            : null,
+        initialCollaboratorPubkeys: widget.initialCollaboratorPubkeys,
       );
 
-      if (event == null) {
-        throw Exception('Failed to create updated event');
-      }
-
-      final nostrService = ref.read(nostrServiceProvider);
-      final publishResult = await nostrService.publishEvent(event);
-      if (publishResult is! PublishSuccess) {
-        throw Exception('Failed to publish updated event');
-      }
-      final publishedEvent = publishResult.event;
-
-      final personalEventCache = ref.read(personalEventCacheServiceProvider);
-      personalEventCache.cacheUserEvent(publishedEvent);
-
-      final videoEventService = ref.read(videoEventServiceProvider);
-      final updatedVideoEvent = VideoEvent.fromNostrEvent(publishedEvent);
-      videoEventService.updateVideoEvent(updatedVideoEvent);
-
-      final inviteResults = await sendPostPublishCollaboratorInvites(
-        inviteService: CollaboratorInviteService(
-          dmRepository: ref.read(dmRepositoryProvider),
-          l10n: inviteL10n,
-        ),
-        video: updatedVideoEvent,
-        previousCollaboratorPubkeys: widget.initialCollaboratorPubkeys,
-        updatedCollaboratorPubkeys: editorState.collaboratorPubkeys,
-      );
-      final inviteFailures = inviteResults.values
-          .where((r) => !r.success)
-          .length;
-
-      if (widget.pendingThumbnailPath != null) {
-        File(widget.pendingThumbnailPath!).delete().ignore();
-      }
-      if (mounted) {
-        context.pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              inviteFailures == 0
+      if (result is VideoUpdateSuccess) {
+        if (widget.pendingThumbnailPath != null) {
+          File(widget.pendingThumbnailPath!).delete().ignore();
+        }
+        if (mounted) {
+          context.pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            DivineSnackbarContainer.snackBar(
+              result.inviteFailureCount == 0
                   ? context.l10n.shareMenuVideoUpdated
                   : context.l10n.shareMenuVideoUpdatedWithInviteFailures(
-                      inviteFailures,
+                      result.inviteFailureCount,
                     ),
+              error: result.inviteFailureCount > 0,
             ),
-            backgroundColor: inviteFailures == 0
-                ? VineTheme.vineGreen
-                : VineTheme.warning,
-          ),
-        );
+          );
+        }
+      } else if (result is VideoUpdateFailure) {
+        throw result.error;
       }
     } catch (e) {
       Log.error(
@@ -280,9 +87,9 @@ class _VideoMetadataEditBottomBarState
       if (mounted) {
         setState(() => _isUpdating = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.shareMenuFailedToUpdateVideo('$e')),
-            backgroundColor: VineTheme.error,
+          DivineSnackbarContainer.snackBar(
+            context.l10n.shareMenuFailedToUpdateVideo('$e'),
+            error: true,
           ),
         );
       }
@@ -333,9 +140,8 @@ class _VideoMetadataEditBottomBarState
         if (mounted) {
           context.pop();
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(context.l10n.shareMenuVideoDeletionRequested),
-              backgroundColor: VineTheme.vineGreen,
+            DivineSnackbarContainer.snackBar(
+              context.l10n.shareMenuVideoDeletionRequested,
             ),
           );
         }
@@ -343,9 +149,9 @@ class _VideoMetadataEditBottomBarState
         if (mounted) {
           setState(() => _isDeleting = false);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(localizedDeleteFailureMessage(context, result)),
-              backgroundColor: VineTheme.error,
+            DivineSnackbarContainer.snackBar(
+              localizedDeleteFailureMessage(context, result),
+              error: true,
             ),
           );
         }
@@ -360,19 +166,13 @@ class _VideoMetadataEditBottomBarState
       if (mounted) {
         setState(() => _isDeleting = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.shareMenuDeleteFailedGeneric),
-            backgroundColor: VineTheme.error,
+          DivineSnackbarContainer.snackBar(
+            context.l10n.shareMenuDeleteFailedGeneric,
+            error: true,
           ),
         );
       }
     }
-  }
-
-  /// Returns true only for HTTP/HTTPS URLs (excludes local file paths).
-  static bool _isHttpUrl(String? url) {
-    if (url == null || url.isEmpty) return false;
-    return url.startsWith('http://') || url.startsWith('https://');
   }
 
   @override

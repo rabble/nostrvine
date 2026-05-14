@@ -35,6 +35,7 @@ import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/l10n/current_app_l10n.dart';
 import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/models/known_account.dart';
@@ -65,6 +66,7 @@ import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/cawg_verifier_client.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/collaborator_invite_local_state_adapter.dart';
+import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/collaborator_invite_state_store.dart';
 import 'package:openvine/services/collaborator_response_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
@@ -114,6 +116,7 @@ import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_filter_builder.dart';
+import 'package:openvine/services/video_metadata_update_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/services/video_visibility_manager.dart';
 import 'package:openvine/services/view_event_publisher.dart';
@@ -2373,6 +2376,22 @@ Future<ContentDeletionService> contentDeletionService(Ref ref) async {
   await service.initialize();
 
   return service;
+}
+
+/// Service that orchestrates the video-metadata-edit republish flow.
+@riverpod
+VideoMetadataUpdateService videoMetadataUpdateService(Ref ref) {
+  return VideoMetadataUpdateService(
+    authService: ref.watch(authServiceProvider),
+    blossomService: ref.watch(blossomUploadServiceProvider),
+    nostrService: ref.watch(nostrServiceProvider),
+    personalEventCache: ref.watch(personalEventCacheServiceProvider),
+    videoEventService: ref.watch(videoEventServiceProvider),
+    collaboratorInviteService: CollaboratorInviteService(
+      dmRepository: ref.watch(dmRepositoryProvider),
+      l10n: currentAppL10n(ref.read(sharedPreferencesProvider)),
+    ),
+  );
 }
 
 /// Account Deletion Service for NIP-62 Request to Vanish

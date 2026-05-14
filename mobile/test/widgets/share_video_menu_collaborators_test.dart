@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show VideoEvent;
 import 'package:openvine/services/collaborator_invite_service.dart';
-import 'package:openvine/widgets/share_video_menu.dart';
+import 'package:openvine/services/video_metadata_update_service.dart';
 
 class MockCollaboratorInviteService extends Mock
     implements CollaboratorInviteService {}
