@@ -138,11 +138,21 @@ abstract final class CacheSync {
   /// await CacheSync.invalidatePrefix(currentPubkey);
   /// ```
   ///
-  /// [prefix] must not contain SQL `LIKE` wildcards (`%`, `_`). Pubkey hex
-  /// is `[0-9a-f]{64}` so the pubkey-prefix convention is safe; callers
-  /// passing other prefixes are responsible for escaping.
-  static Future<void> invalidatePrefix(String prefix) =>
-      _dao.deletePrefix(prefix);
+  /// [prefix] is matched literally — SQL `LIKE` wildcards (`%`, `_`) and
+  /// the escape character (`\`) in [prefix] are escaped before query
+  /// execution, so passing e.g. `'user_1'` matches the literal key
+  /// `'user_1:foo'` and not `'userX1:foo'`.
+  ///
+  /// Passing an empty string is a programming error: it would match
+  /// every key in the cache. Use [invalidateAll] for that intent.
+  static Future<void> invalidatePrefix(String prefix) {
+    assert(
+      prefix.isNotEmpty,
+      'invalidatePrefix requires a non-empty prefix; '
+      'use invalidateAll() to clear every entry.',
+    );
+    return _dao.deletePrefix(prefix);
+  }
 
   /// Removes all cached entries.
   ///
@@ -155,20 +165,40 @@ abstract final class CacheSync {
   /// ```
   static Future<void> invalidateAll() => _dao.deleteAll();
 
-  /// Writes [value] for [key] only when it is newer than the currently
-  /// cached value (or when nothing is cached / the cached payload is
-  /// corrupted).
+  /// Per-key serialization for [writeIfNewer]. Concurrent callers
+  /// targeting the same [key] queue behind one another so the
+  /// read-compare-write triple is atomic from the caller's perspective.
   ///
-  /// "Newer" is determined by [versionOf]: a value with a strictly higher
-  /// version replaces an older one. Equal versions are not overwritten.
+  /// In-process only — cross-isolate or cross-process callers would still
+  /// race. cache_sync is single-isolate in production.
+  static final Map<String, Future<void>> _writeIfNewerLocks = {};
+
+  /// Writes [value] for [key] only when its version is strictly greater
+  /// than the cached value's (or when nothing is cached, or when the
+  /// cached payload is corrupted).
+  ///
+  /// "Newer" is determined by [versionOf]. Equal or lower versions are
+  /// not overwritten.
   ///
   /// Intended for replaceable Nostr events (kinds 0, 3, 10000-19999,
   /// 30000-39999) where `created_at` ordering must be preserved across
   /// writes from multiple relays. Callers pass
   /// `versionOf: (event) => event.createdAt`.
   ///
-  /// Returns `true` when the cache was updated, `false` when the existing
-  /// entry was newer or equal.
+  /// [versionOf] must be derived from a value the caller has already
+  /// validated against sanity bounds (e.g. clamp `created_at` to
+  /// `now() + 5min`). The helper trusts the version verbatim — a
+  /// far-future version will pin the cache against legitimate later
+  /// writes.
+  ///
+  /// If [toJson] returns an empty string the value is **not** written and
+  /// this method returns `false`. This matches the convention used by
+  /// [watchOne].
+  ///
+  /// Concurrent calls targeting the same [key] are serialized; callers do
+  /// not need their own mutex.
+  ///
+  /// Returns `true` when the cache was updated, `false` otherwise.
   static Future<bool> writeIfNewer<T>({
     required String key,
     required T value,
@@ -177,22 +207,48 @@ abstract final class CacheSync {
     required int Function(T value) versionOf,
     Duration? ttl,
   }) async {
-    final cachedPayload = await _dao.read(key);
-    if (cachedPayload != null && cachedPayload.isNotEmpty) {
-      try {
-        final cachedValue = fromJson(cachedPayload);
-        if (versionOf(cachedValue) >= versionOf(value)) {
-          return false;
-        }
-      } on Object {
-        // Corrupted cached payload — fall through and overwrite.
-      }
-    }
+    // Chain behind any in-flight call on the same key. The read+write
+    // below would otherwise race: two concurrent callers could both see
+    // an older cached value, both pass the version gate, and the slower
+    // writer would overwrite the faster one regardless of versionOf.
+    final priorLock = _writeIfNewerLocks[key];
+    final completer = Completer<void>();
+    _writeIfNewerLocks[key] = completer.future;
 
-    final payload = toJson(value);
-    if (payload.isEmpty) return false;
-    await _dao.write(key: key, payload: payload, ttl: ttl);
-    return true;
+    try {
+      if (priorLock != null) {
+        try {
+          await priorLock;
+        } catch (_) {
+          // Prior caller's failure doesn't gate us.
+        }
+      }
+
+      final cachedPayload = await _dao.read(key);
+      if (cachedPayload != null && cachedPayload.isNotEmpty) {
+        try {
+          final cachedValue = fromJson(cachedPayload);
+          if (versionOf(cachedValue) >= versionOf(value)) {
+            return false;
+          }
+        } catch (_) {
+          // Corrupted cached payload — fall through and overwrite.
+        }
+      }
+
+      final payload = toJson(value);
+      if (payload.isEmpty) return false;
+      await _dao.write(key: key, payload: payload, ttl: ttl);
+      return true;
+    } finally {
+      // Only the tail of the chain clears the map entry; earlier
+      // completers leave the head pointing at the most-recently-queued
+      // caller so subsequent arrivals chain correctly.
+      if (_writeIfNewerLocks[key] == completer.future) {
+        _writeIfNewerLocks.remove(key);
+      }
+      completer.complete();
+    }
   }
 
   static Future<void> _driveWatchOne<T>({

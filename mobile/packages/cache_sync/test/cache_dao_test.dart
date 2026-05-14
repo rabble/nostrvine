@@ -122,6 +122,45 @@ void main() {
         expect(await dao.read('prefixed'), isNull);
         expect(await dao.read('wrap_prefixed_inner'), equals('b'));
       });
+
+      test('treats `_` in prefix as a literal, not a LIKE wildcard', () async {
+        // Without LIKE escaping the SQL pattern `user_1%` would match
+        // `userX1:home` because `_` is a single-char wildcard. The
+        // escape clause must neutralize it.
+        await dao.write(key: 'user_1:home', payload: 'a');
+        await dao.write(key: 'userX1:home', payload: 'b');
+
+        await dao.deletePrefix('user_1');
+
+        expect(await dao.read('user_1:home'), isNull);
+        expect(await dao.read('userX1:home'), equals('b'));
+      });
+
+      test('treats `%` in prefix as a literal, not a LIKE wildcard', () async {
+        // Without LIKE escaping the SQL pattern `pre%fix%` would match
+        // `preXYZfix:home` because `%` is the any-string wildcard.
+        await dao.write(key: 'pre%fix:home', payload: 'a');
+        await dao.write(key: 'preXYZfix:home', payload: 'b');
+
+        await dao.deletePrefix('pre%fix');
+
+        expect(await dao.read('pre%fix:home'), isNull);
+        expect(await dao.read('preXYZfix:home'), equals('b'));
+      });
+
+      test(
+        r'treats `\` in prefix as a literal, not the escape character',
+        () async {
+          // The escape char itself must round-trip cleanly.
+          await dao.write(key: r'wrap\back:home', payload: 'a');
+          await dao.write(key: 'wrap:home', payload: 'b');
+
+          await dao.deletePrefix(r'wrap\back');
+
+          expect(await dao.read(r'wrap\back:home'), isNull);
+          expect(await dao.read('wrap:home'), equals('b'));
+        },
+      );
     });
 
     group('totalPayloadBytes', () {

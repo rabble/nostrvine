@@ -3193,24 +3193,22 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       // Multi-account: archive or remove this account's signer info
       final currentPubkey = _currentKeyContainer?.publicKeyHex;
 
-      // Account-scoped CacheSync invalidation. Cache keys follow the
-      // `${pubkey}:${operation}` convention (RFC #4244) so this clears
-      // every entry for the leaving account without touching other
-      // accounts on the same device. Fires on every signOut path:
-      //   - destructive: nostr_settings_screen.dart `signOut(deleteKeys: true)`
-      //     and delete_account_dialog.dart account-deletion flow
-      //   - non-destructive: SettingsAccountCubit switchToAccount / addNewAccount
-      // The cubit previously called CacheSync.invalidateAll() itself; that
-      // call is now removed — AuthService owns invalidation.
+      // Account-scoped CacheSync invalidation. Cache keys follow
+      // `${pubkey}:${operation}` (RFC #4244), so this clears the
+      // leaving account only and leaves other accounts intact.
+      // Wrapped in try/catch so a cache-layer failure does not abort
+      // the rest of signOut; the failure is forwarded to Crashlytics
+      // so a silent disk-residency regression is visible.
       if (currentPubkey != null) {
         try {
           await CacheSync.invalidatePrefix(currentPubkey);
-        } catch (e) {
+        } catch (e, stack) {
           Log.error(
             'CacheSync.invalidatePrefix failed during signOut: $e',
             name: 'AuthService',
             category: LogCategory.auth,
           );
+          _reportStorageError(e, stack, 'signOut cache invalidation');
         }
       }
 

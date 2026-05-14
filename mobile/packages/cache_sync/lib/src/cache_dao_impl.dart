@@ -70,9 +70,18 @@ class CacheDaoImpl implements CacheDao {
 
   @override
   Future<void> deletePrefix(String prefix) async {
-    await (_db.delete(
-      _db.cacheEntries,
-    )..where((t) => t.cacheKey.like('$prefix%'))).go();
+    // Escape SQL LIKE wildcards (`%`, `_`) and the escape character
+    // itself (`\`) so callers passing non-pubkey prefixes (or future
+    // user-controlled input) cannot accidentally over-delete or
+    // under-delete by including LIKE metacharacters.
+    final escaped = prefix
+        .replaceAll(r'\', r'\\')
+        .replaceAll('%', r'\%')
+        .replaceAll('_', r'\_');
+    await _db.customStatement(
+      r"DELETE FROM cache_entries WHERE cache_key LIKE ?1 || '%' ESCAPE '\'",
+      [escaped],
+    );
   }
 
   @override

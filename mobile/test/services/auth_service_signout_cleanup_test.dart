@@ -20,10 +20,14 @@ class _MockUserDataCleanupService extends Mock
 /// was hit on signOut. `deletePrefixCalls` records the prefix passed for
 /// each `deletePrefix` call so the multi-account assertion can verify
 /// only the leaving pubkey was targeted.
+///
+/// Setting [throwOnDeletePrefix] causes the next `deletePrefix` call to
+/// throw — used to pin that signOut tolerates cache-layer failures.
 class _TrackingCacheDao implements CacheDao {
   final Map<String, String> store = {};
   int deleteAllCallCount = 0;
   final List<String> deletePrefixCalls = [];
+  Object? throwOnDeletePrefix;
 
   @override
   Future<String?> read(String key) async => store[key];
@@ -45,6 +49,11 @@ class _TrackingCacheDao implements CacheDao {
   @override
   Future<void> deletePrefix(String prefix) async {
     deletePrefixCalls.add(prefix);
+    final err = throwOnDeletePrefix;
+    if (err != null) {
+      throwOnDeletePrefix = null;
+      throw err;
+    }
     store.removeWhere((key, _) => key.startsWith(prefix));
   }
 
@@ -291,6 +300,28 @@ void main() {
           expect(cacheDao.deletePrefixCalls, equals([pubkeyA]));
           expect(cacheDao.deleteAllCallCount, equals(0));
           expect(cacheDao.store.containsKey('$pubkeyA:my_followers'), isFalse);
+          expect(cacheDao.store['$pubkeyB:my_followers'], isNotNull);
+        },
+      );
+
+      test(
+        'signOut completes despite a throwing invalidatePrefix',
+        () async {
+          // The cache-layer failure must NOT abort the rest of signOut.
+          // Without the try/catch around CacheSync.invalidatePrefix, a
+          // disk error would short-circuit key cleanup, signer
+          // teardown, and the auth-state transition.
+          cacheDao.throwOnDeletePrefix = StateError(
+            'cache layer simulated failure',
+          );
+
+          await authService.signOut();
+
+          expect(cacheDao.deletePrefixCalls, equals([pubkeyA]));
+          expect(authService.authState, equals(AuthState.unauthenticated));
+          // Account B's seeded cache survives even though A's invalidation
+          // threw (it never got the chance to run because the throw
+          // happened mid-call).
           expect(cacheDao.store['$pubkeyB:my_followers'], isNotNull);
         },
       );

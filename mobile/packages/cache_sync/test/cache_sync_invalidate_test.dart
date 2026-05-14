@@ -75,5 +75,12 @@ void main() {
       expect(dao.rawRead('prefixed'), isNull);
       expect(dao.rawRead('wrap_prefixed_inner'), equals('b'));
     });
+
+    test('asserts when prefix is empty', () async {
+      await expectLater(
+        () => CacheSync.invalidatePrefix(''),
+        throwsA(isA<AssertionError>()),
+      );
+    });
   });
 }
