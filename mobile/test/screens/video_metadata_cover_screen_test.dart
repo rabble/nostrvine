@@ -77,6 +77,17 @@ void main() {
 
     _setHandler(const MethodChannel('pro_video_editor'), (call) async {
       if (call.method == 'getThumbnails') return <Object?>[];
+      if (call.method == 'getMetadata') {
+        return <String, Object?>{
+          'duration': 3000000,
+          'extension': 'mp4',
+          'fileSize': 1024000,
+          'width': 1920,
+          'height': 1080,
+          'rotation': 0,
+          'bitrate': 3000000,
+        };
+      }
       return null;
     });
   });
