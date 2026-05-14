@@ -198,7 +198,7 @@ void main() {
     );
 
     test(
-      'filterVideoList hides videos with unknown sexual-content moderation label',
+      'filterVideoList keeps sexual-content videos when user preference allows sexual content',
       () {
         when(
           () => mockContentFilterService.getPreferenceForLabels(any()),
@@ -209,7 +209,7 @@ void main() {
           _buildVideo(id: '5' * 64, moderationLabels: const ['sexual-content']),
         ]);
 
-        expect(filtered, isEmpty);
+        expect(filtered, hasLength(1));
       },
     );
 
