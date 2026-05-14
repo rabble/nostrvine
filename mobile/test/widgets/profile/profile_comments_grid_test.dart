@@ -14,6 +14,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/profile/profile_comments_grid.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../helpers/go_router.dart';
 
@@ -71,10 +72,10 @@ void main() {
     Widget buildSubject({
       bool isOwnProfile = true,
       MockGoRouter? goRouter,
-      List<dynamic> overrides = const [],
+      List<Override> overrides = const [],
     }) {
       final app = ProviderScope(
-        overrides: overrides.cast(),
+        overrides: overrides,
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,

@@ -8,6 +8,7 @@ import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/list_search_card.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 void main() {
   final now = DateTime(2025, 6, 15);
@@ -35,10 +36,10 @@ void main() {
   Widget buildSubject({
     required CuratedList curatedList,
     VoidCallback? onTap,
-    List<dynamic> overrides = const [],
+    List<Override> overrides = const [],
   }) {
     return ProviderScope(
-      overrides: overrides.cast(),
+      overrides: overrides,
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,

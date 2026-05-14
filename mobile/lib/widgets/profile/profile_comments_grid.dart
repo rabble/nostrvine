@@ -218,6 +218,8 @@ class _ProfileCommentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final baseStyle = VineTheme.bodyMediumFont();
+
     return GestureDetector(
       onTap: () =>
           context.push(VideoDetailScreen.pathForId(comment.rootEventId)),
@@ -234,18 +236,13 @@ class _ProfileCommentCard extends StatelessWidget {
                     text: comment.content,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: VineTheme.whiteText,
-                      fontSize: 14,
-                    ),
-                    hashtagStyle: const TextStyle(
+                    style: baseStyle,
+                    hashtagStyle: baseStyle.copyWith(
                       color: VineTheme.info,
-                      fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),
-                    mentionStyle: const TextStyle(
+                    mentionStyle: baseStyle.copyWith(
                       color: VineTheme.info,
-                      fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -255,9 +252,8 @@ class _ProfileCommentCard extends StatelessWidget {
                       context.l10n,
                       comment.createdAt.millisecondsSinceEpoch ~/ 1000,
                     ),
-                    style: const TextStyle(
+                    style: VineTheme.bodySmallFont(
                       color: VineTheme.onSurfaceMuted,
-                      fontSize: 12,
                     ),
                   ),
                 ],
