@@ -8,7 +8,7 @@ Today, comments already have autocomplete and selected mentions are converted fr
 
 ## Goals
 
-- Provide one shared mention parsing, resolution, and tag-building pipeline for mention-capable text surfaces.
+- Provide one shared mention helper for mention-capable text surfaces.
 - Support both selected autocomplete mentions and typed-but-unselected `@name` mentions.
 - Resolve selected mentions exactly and resolve typed mentions conservatively.
 - Emit generic mention `p` tags for comments and videos, without confusing them with collaborator tags.
@@ -48,28 +48,28 @@ Kind 0 profile events should keep their current empty tag list unless another pr
 
 ## KISS Scope Rule
 
-The unified part of this work is the data pipeline, not the editing UI. Each surface should keep its existing text-field state and suggestion UI unless a tiny adapter is enough. Add a shared UI composer only after two surfaces have the same proven needs and the extraction removes real duplication.
+The unified part of this work is the mention behavior, not a framework. Build one small shared helper and keep helper internals private until a real second public abstraction is needed. Each surface should keep its existing text-field state and suggestion UI unless a tiny adapter is enough.
 
 ## Architecture
 
-Add a shared mention module owned by the app layer, because it needs app repositories for profile lookup and app-level publish behavior. The module has three pieces:
+Add one shared mention helper owned by the app layer, because it needs app repositories for profile lookup and app-level publish behavior. Keep it in one file/class unless implementation proves that is awkward.
 
-1. `MentionTokenParser`
-   - Finds plain `@name` tokens using the same token family as linkified text.
-   - Excludes email addresses, Nostr IDs, and existing `nostr:npub...` / `nostr:nprofile...` references.
-   - Returns unique typed tokens with source ranges so callers can canonicalize text only where needed.
+The helper should expose the smallest API the surfaces need:
 
-2. `MentionResolver`
-   - Accepts raw text plus selected bindings.
-   - Finds typed `@name` tokens that were not explicitly selected.
-   - Resolves typed tokens through cached profiles first, then remote profile search.
-   - Returns canonical text, resolved pubkeys, and unresolved tokens.
-   - Only resolves a typed token when exactly one plausible profile match exists.
+1. Resolve text mentions.
+   - Accept raw text plus selected mention bindings.
+   - Find typed `@name` tokens that were not explicitly selected, using the same token family as linkified text.
+   - Exclude email addresses, Nostr IDs, and existing `nostr:npub...` / `nostr:nprofile...` references.
+   - Resolve typed tokens through cached profiles first, then remote profile search.
+   - Return canonical text, resolved pubkeys, and unresolved tokens.
+   - Only resolve a typed token when exactly one plausible profile match exists.
 
-3. `MentionTagBuilder`
-   - Deduplicates full hex pubkeys.
-   - Emits generic mention `p` tags.
-   - Excludes collaborator pubkeys when asked, so video collaborator tags and generic mention tags do not duplicate each other with different roles.
+2. Build generic mention tags.
+   - Deduplicate full hex pubkeys.
+   - Emit generic mention `p` tags.
+   - Exclude collaborator pubkeys when asked, so video collaborator tags and generic mention tags do not duplicate each other with different roles.
+
+Token parsing and tag construction can be private functions inside the helper. Do not split them into separate public services or packages in v1.
 
 Selected mention bindings are simple data objects owned by each surface's existing state: display label, original token/range when available, and full hex pubkey or npub. Comments can keep their current `CommentInput` autocomplete flow, and other surfaces can add the same behavior incrementally without depending on one shared widget/controller.
 
@@ -95,7 +95,7 @@ Overlay mentions should not change the rendered text. Typed unresolved or ambigu
 
 ### Profile Bio
 
-Profile setup/edit bio should use the shared parser and resolver. It can keep its existing editing UI for v1. Resolved mentions should be canonicalized into `nostr:npub...` inside the `about` text before `ProfileRepository.saveProfileEvent`.
+Profile setup/edit bio should use the shared mention helper. It can keep its existing editing UI for v1. Resolved mentions should be canonicalized into `nostr:npub...` inside the `about` text before `ProfileRepository.saveProfileEvent`.
 
 Profile bio rendering already uses linkified text. The shared linkification path should display canonical NIP-27 profile references as friendly tappable `@name` labels when profile data is available, with a full npub/hex fallback handled visually by layout.
 
@@ -123,8 +123,7 @@ If tag building receives invalid or empty pubkeys, it should skip them and prese
 
 Add focused tests for:
 
-- Mention token parsing, email exclusion, Nostr reference exclusion, dedupe, and invalid pubkey skipping.
-- Resolver behavior for selected mentions, exact typed matches, ambiguous typed matches, lookup failure, and self-match handling.
+- Shared mention helper behavior for selected mentions, typed mention parsing, email exclusion, Nostr reference exclusion, exact typed matches, ambiguous typed matches, lookup failure, self-match handling, dedupe, and invalid pubkey skipping.
 - Comment publish events include generic mention `p` tags and preserve NIP-22 root/parent tags.
 - Comments bloc passes selected and typed mention pubkeys through to the repository.
 - Video publisher emits generic mention tags while preserving collaborator tags with the `collaborator` marker.
