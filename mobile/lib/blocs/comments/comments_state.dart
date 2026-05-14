@@ -182,9 +182,9 @@ final class CommentsState extends Equatable {
   /// Mention suggestions for autocomplete overlay.
   final List<MentionSuggestion> mentionSuggestions;
 
-  /// Active mention mappings: displayName -> npub.
+  /// Active mention mappings: displayName -> full hex pubkey.
   /// Populated when user selects a mention suggestion; consumed on submit
-  /// to convert `@displayName` back to `nostr:npub` in the posted text.
+  /// to canonicalize `@displayName` through [MentionResolutionService].
   final Map<String, String> activeMentions;
 
   /// ID of the comment currently being edited (null = not editing).

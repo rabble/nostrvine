@@ -50,8 +50,8 @@ class MentionOverlay extends ConsumerWidget {
   /// List of mention suggestions to display.
   final List<MentionSuggestion> suggestions;
 
-  /// Callback when a suggestion is selected. Returns (npub, displayName).
-  final void Function(String npub, String displayName) onSelect;
+  /// Callback when a suggestion is selected. Returns (hex pubkey, displayName).
+  final void Function(String pubkey, String displayName) onSelect;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -93,7 +93,7 @@ class MentionOverlay extends ConsumerWidget {
                     cachedProfile?.displayName ??
                     cachedProfile?.name ??
                     npub;
-                onSelect(npub, displayName);
+                onSelect(suggestion.pubkey, displayName);
               },
             );
           },

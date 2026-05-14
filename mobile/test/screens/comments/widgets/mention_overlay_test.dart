@@ -111,4 +111,35 @@ void main() {
     expect(find.text('garyvee@example.com'), findsNothing);
     expect(find.textContaining('npub'), findsOneWidget);
   });
+
+  testWidgets('selecting a suggestion returns its full hex pubkey', (
+    tester,
+  ) async {
+    String? selectedPubkey;
+    String? selectedDisplayName;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: MentionOverlay(
+              suggestions: const [
+                MentionSuggestion(pubkey: pubkey, displayName: 'GaryVee'),
+              ],
+              onSelect: (pubkey, displayName) {
+                selectedPubkey = pubkey;
+                selectedDisplayName = displayName;
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('GaryVee'));
+    await tester.pump();
+
+    expect(selectedPubkey, pubkey);
+    expect(selectedDisplayName, 'GaryVee');
+  });
 }

@@ -3,7 +3,9 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/comments/comments.dart';
 
@@ -402,5 +404,45 @@ void main() {
         }
       },
     );
+
+    testWidgets('selected mention callback receives the hex pubkey', (
+      tester,
+    ) async {
+      const pubkey =
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      String? selectedPubkey;
+      String? selectedDisplayName;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: CommentInput(
+                controller: controller,
+                mentionSuggestions: const [
+                  MentionSuggestion(pubkey: pubkey, displayName: 'GaryVee'),
+                ],
+                onMentionSelected: (pubkey, displayName) {
+                  selectedPubkey = pubkey;
+                  selectedDisplayName = displayName;
+                },
+                onSubmit: () {},
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.enterText(find.byType(TextField), '@gar');
+      await tester.pump();
+      await tester.tap(find.text('GaryVee'));
+      await tester.pump();
+
+      expect(controller.text, '@GaryVee ');
+      expect(selectedPubkey, pubkey);
+      expect(selectedDisplayName, 'GaryVee');
+    });
   });
 }

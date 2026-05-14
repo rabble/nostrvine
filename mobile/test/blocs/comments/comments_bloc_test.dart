@@ -16,6 +16,7 @@ import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -88,6 +89,12 @@ void main() {
       ).thenAnswer((_) async => null);
       when(
         () => mockProfileRepository.searchUsers(
+          query: any(named: 'query'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockProfileRepository.searchUsersLocally(
           query: any(named: 'query'),
           limit: any(named: 'limit'),
         ),
@@ -814,6 +821,7 @@ void main() {
               rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
               replyToEventId: any(named: 'replyToEventId'),
               replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
+              mentionedPubkeys: any(named: 'mentionedPubkeys'),
             ),
           ).thenAnswer((_) async => postedComment);
         },
@@ -827,6 +835,7 @@ void main() {
               rootEventId: any(named: 'rootEventId'),
               rootEventKind: any(named: 'rootEventKind'),
               rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              mentionedPubkeys: const [],
             ),
           ).called(1);
         },
@@ -857,6 +866,7 @@ void main() {
               rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
               replyToEventId: any(named: 'replyToEventId'),
               replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
+              mentionedPubkeys: any(named: 'mentionedPubkeys'),
             ),
           ).thenAnswer((_) async => postedComment);
         },
@@ -880,6 +890,7 @@ void main() {
               rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
               replyToEventId: 'parent1',
               replyToAuthorPubkey: 'author1',
+              mentionedPubkeys: const [],
             ),
           ).called(1);
         },
@@ -926,6 +937,7 @@ void main() {
               rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
               replyToEventId: any(named: 'replyToEventId'),
               replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
+              mentionedPubkeys: any(named: 'mentionedPubkeys'),
             ),
           ).thenThrow(Exception('Network error'));
         },
@@ -961,6 +973,7 @@ void main() {
               rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
               replyToEventId: any(named: 'replyToEventId'),
               replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
+              mentionedPubkeys: any(named: 'mentionedPubkeys'),
             ),
           ).thenThrow(Exception('Network error'));
         },
@@ -1133,6 +1146,7 @@ void main() {
               replyToEventId: any(named: 'replyToEventId'),
               replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
               rootAddressableId: any(named: 'rootAddressableId'),
+              mentionedPubkeys: any(named: 'mentionedPubkeys'),
             ),
           ).thenAnswer((_) async => editedComment);
         },
@@ -1190,6 +1204,7 @@ void main() {
               replyToEventId: any(named: 'replyToEventId'),
               replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
               rootAddressableId: any(named: 'rootAddressableId'),
+              mentionedPubkeys: const [],
             ),
           ).called(1);
         },
@@ -2775,16 +2790,16 @@ void main() {
 
     group('MentionRegistered', () {
       blocTest<CommentsBloc, CommentsState>(
-        'adds displayName to npub mapping in activeMentions',
+        'adds displayName to hex pubkey mapping in activeMentions',
         build: createBloc,
         act: (bloc) => bloc.add(
-          const MentionRegistered(displayName: 'Alice', npub: 'npub1alice'),
+          MentionRegistered(displayName: 'Alice', pubkey: validId('alice')),
         ),
         expect: () => [
           isA<CommentsState>().having(
             (s) => s.activeMentions,
             'activeMentions',
-            {'Alice': 'npub1alice'},
+            {'Alice': validId('alice')},
           ),
         ],
       );
@@ -2792,16 +2807,15 @@ void main() {
       blocTest<CommentsBloc, CommentsState>(
         'accumulates multiple mentions',
         build: createBloc,
-        seed: () =>
-            const CommentsState(activeMentions: {'Alice': 'npub1alice'}),
+        seed: () => CommentsState(activeMentions: {'Alice': validId('alice')}),
         act: (bloc) => bloc.add(
-          const MentionRegistered(displayName: 'Bob', npub: 'npub1bob'),
+          MentionRegistered(displayName: 'Bob', pubkey: validId('bob')),
         ),
         expect: () => [
           isA<CommentsState>().having(
             (s) => s.activeMentions,
             'activeMentions',
-            {'Alice': 'npub1alice', 'Bob': 'npub1bob'},
+            {'Alice': validId('alice'), 'Bob': validId('bob')},
           ),
         ],
       );
@@ -2809,16 +2823,18 @@ void main() {
 
     group('mention conversion on submit', () {
       blocTest<CommentsBloc, CommentsState>(
-        'converts @displayName to nostr:npub in posted text',
+        'resolves selected mentions to canonical content and mentioned pubkeys',
         setUp: () {
           when(() => mockAuthService.isAuthenticated).thenReturn(true);
           when(
             () => mockAuthService.currentPublicKeyHex,
           ).thenReturn(validId('currentuser'));
 
+          final alicePubkey = validId('alice');
+          final aliceNpub = NostrKeyUtils.encodePubKey(alicePubkey);
           final postedComment = Comment(
             id: validId('posted'),
-            content: 'hey nostr:npub1alice what do you think?',
+            content: 'hey nostr:$aliceNpub what do you think?',
             authorPubkey: validId('currentuser'),
             createdAt: DateTime.now(),
             rootEventId: validId('root'),
@@ -2832,22 +2848,41 @@ void main() {
               rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
               replyToEventId: any(named: 'replyToEventId'),
               replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
+              mentionedPubkeys: any(named: 'mentionedPubkeys'),
             ),
           ).thenAnswer((_) async => postedComment);
         },
-        seed: () => const CommentsState(
-          mainInputText: 'hey @Alice what do you think?',
-          activeMentions: {'Alice': 'npub1alice'},
-        ),
+        seed: () {
+          final alicePubkey = validId('alice');
+          return CommentsState(
+            mainInputText: 'hey @Alice what do you think?',
+            activeMentions: {'Alice': alicePubkey},
+          );
+        },
         build: createBloc,
         act: (bloc) => bloc.add(const CommentSubmitted()),
+        expect: () {
+          final alicePubkey = validId('alice');
+          final aliceNpub = NostrKeyUtils.encodePubKey(alicePubkey);
+          return [
+            isA<CommentsState>().having(
+              (s) => s.commentsById.values.single.content,
+              'optimistic content',
+              'hey nostr:$aliceNpub what do you think?',
+            ),
+            isA<CommentsState>(),
+          ];
+        },
         verify: (_) {
+          final alicePubkey = validId('alice');
+          final aliceNpub = NostrKeyUtils.encodePubKey(alicePubkey);
           verify(
             () => mockCommentsRepository.postComment(
-              content: 'hey nostr:npub1alice what do you think?',
+              content: 'hey nostr:$aliceNpub what do you think?',
               rootEventId: any(named: 'rootEventId'),
               rootEventKind: any(named: 'rootEventKind'),
               rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              mentionedPubkeys: [alicePubkey],
             ),
           ).called(1);
         },
@@ -2877,12 +2912,16 @@ void main() {
               rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
               replyToEventId: any(named: 'replyToEventId'),
               replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
+              mentionedPubkeys: any(named: 'mentionedPubkeys'),
             ),
           ).thenAnswer((_) async => postedComment);
         },
         seed: () => const CommentsState(
           mainInputText: 'hey @Alice',
-          activeMentions: {'Alice': 'npub1alice'},
+          activeMentions: {
+            'Alice':
+                'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          },
         ),
         build: createBloc,
         act: (bloc) => bloc.add(const CommentSubmitted()),
@@ -2904,16 +2943,36 @@ void main() {
       );
 
       blocTest<CommentsBloc, CommentsState>(
-        'handles multiple mentions with longest-first replacement',
+        'resolves typed mentions through the mention service',
         setUp: () {
           when(() => mockAuthService.isAuthenticated).thenReturn(true);
           when(
             () => mockAuthService.currentPublicKeyHex,
           ).thenReturn(validId('currentuser'));
 
+          final alicePubkey = validId('alice');
+          when(
+            () => mockProfileRepository.searchUsersLocally(
+              query: 'alice',
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              UserProfile(
+                pubkey: alicePubkey,
+                rawData: const {},
+                createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+                eventId: validId('aliceevent'),
+                name: 'alice',
+                displayName: 'Alice',
+              ),
+            ],
+          );
+
+          final aliceNpub = NostrKeyUtils.encodePubKey(alicePubkey);
           final postedComment = Comment(
             id: validId('posted'),
-            content: 'nostr:npub1ali and nostr:npub1alice',
+            content: 'hey nostr:$aliceNpub',
             authorPubkey: validId('currentuser'),
             createdAt: DateTime.now(),
             rootEventId: validId('root'),
@@ -2927,24 +2986,79 @@ void main() {
               rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
               replyToEventId: any(named: 'replyToEventId'),
               replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
+              mentionedPubkeys: any(named: 'mentionedPubkeys'),
             ),
           ).thenAnswer((_) async => postedComment);
         },
-        seed: () => const CommentsState(
-          mainInputText: '@Ali and @Alice',
-          activeMentions: {'Alice': 'npub1alice', 'Ali': 'npub1ali'},
-        ),
+        seed: () => const CommentsState(mainInputText: 'hey @alice'),
         build: createBloc,
         act: (bloc) => bloc.add(const CommentSubmitted()),
         verify: (_) {
-          // "Alice" (longer) should be replaced first, preventing
-          // "@Ali" from partially matching "@Alice"
+          final alicePubkey = validId('alice');
+          final aliceNpub = NostrKeyUtils.encodePubKey(alicePubkey);
           verify(
             () => mockCommentsRepository.postComment(
-              content: 'nostr:npub1ali and nostr:npub1alice',
+              content: 'hey nostr:$aliceNpub',
               rootEventId: any(named: 'rootEventId'),
               rootEventKind: any(named: 'rootEventKind'),
               rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              mentionedPubkeys: [alicePubkey],
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'does not block publish when typed mention resolution fails',
+        setUp: () {
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn(validId('currentuser'));
+          when(
+            () => mockProfileRepository.searchUsersLocally(
+              query: 'alice',
+              limit: any(named: 'limit'),
+            ),
+          ).thenThrow(Exception('local search failed'));
+
+          final postedComment = Comment(
+            id: validId('posted'),
+            content: 'hey @alice',
+            authorPubkey: validId('currentuser'),
+            createdAt: DateTime.now(),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          when(
+            () => mockCommentsRepository.postComment(
+              content: any(named: 'content'),
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              replyToEventId: any(named: 'replyToEventId'),
+              replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
+              mentionedPubkeys: any(named: 'mentionedPubkeys'),
+            ),
+          ).thenAnswer((_) async => postedComment);
+        },
+        seed: () => const CommentsState(mainInputText: 'hey @alice'),
+        build: createBloc,
+        act: (bloc) => bloc.add(const CommentSubmitted()),
+        verify: (_) {
+          verify(
+            () => mockProfileRepository.searchUsersLocally(
+              query: 'alice',
+              limit: any(named: 'limit'),
+            ),
+          ).called(1);
+          verify(
+            () => mockCommentsRepository.postComment(
+              content: 'hey @alice',
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              mentionedPubkeys: const [],
             ),
           ).called(1);
         },
