@@ -104,6 +104,36 @@ Duration outerPublishTimeoutFor(int relayCount) {
   return derived;
 }
 
+List<List<String>> _buildMentionPTags(
+  Iterable<String> pubkeys, {
+  Iterable<String> excludedPubkeys = const [],
+}) {
+  final excluded = excludedPubkeys
+      .map((pubkey) => pubkey.trim().toLowerCase())
+      .where(NostrHexUtils.isValidPubkey)
+      .toSet();
+  final seen = <String>{};
+  final tags = <List<String>>[];
+
+  for (final pubkey in pubkeys) {
+    final normalizedPubkey = pubkey.trim().toLowerCase();
+    if (!NostrHexUtils.isValidPubkey(normalizedPubkey) ||
+        excluded.contains(normalizedPubkey) ||
+        !seen.add(normalizedPubkey)) {
+      continue;
+    }
+
+    tags.add([
+      'p',
+      normalizedPubkey,
+      collaboratorInviteRelayHint,
+      'mention',
+    ]);
+  }
+
+  return tags;
+}
+
 /// Service for publishing processed videos to Nostr relays
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class VideoEventPublisher {
@@ -454,6 +484,7 @@ class VideoEventPublisher {
     bool allowAudioReuse = false,
     Duration? thumbnailTimestamp,
     List<String> collaboratorPubkeys = const [],
+    List<String> mentionedPubkeys = const [],
     String? inspiredByAddressableId,
     String? inspiredByRelayUrl,
     String? inspiredByNpub,
@@ -476,6 +507,7 @@ class VideoEventPublisher {
       expirationTimestamp: expirationTimestamp,
       allowAudioReuse: allowAudioReuse,
       collaboratorPubkeys: collaboratorPubkeys,
+      mentionedPubkeys: mentionedPubkeys,
       inspiredByAddressableId: inspiredByAddressableId,
       inspiredByRelayUrl: inspiredByRelayUrl,
       inspiredByNpub: inspiredByNpub,
@@ -495,6 +527,7 @@ class VideoEventPublisher {
     int? expirationTimestamp,
     bool allowAudioReuse = false,
     List<String> collaboratorPubkeys = const [],
+    List<String> mentionedPubkeys = const [],
     Duration? thumbnailTimestamp,
     String? inspiredByAddressableId,
     String? inspiredByRelayUrl,
@@ -839,6 +872,12 @@ class VideoEventPublisher {
       }
 
       tags.addAll(buildCollaboratorPTags(collaboratorPubkeys));
+      tags.addAll(
+        _buildMentionPTags(
+          mentionedPubkeys,
+          excludedPubkeys: collaboratorPubkeys,
+        ),
+      );
 
       // Add Inspired By a-tag (specific video reference)
       if (inspiredByAddressableId != null) {

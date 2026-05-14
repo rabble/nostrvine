@@ -4,12 +4,39 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:crypto/crypto.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/relay/relay_pool.dart';
+import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/pending_upload.dart';
+import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_publisher.dart';
+import 'package:openvine/services/video_event_service.dart';
+
+class _MockUploadManager extends Mock implements UploadManager {}
+
+class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockAuthService extends Mock implements AuthService {}
+
+class _MockVideoEventService extends Mock implements VideoEventService {}
+
+class _FakeEvent extends Fake implements Event {}
+
+class _FakeFilter extends Fake implements Filter {}
+
+const _deepEquals = DeepCollectionEquality();
+
+bool _containsTag(List<List<String>> tags, List<String> expected) {
+  return tags.any((tag) => _deepEquals.equals(tag, expected));
+}
 
 /// Helper class to test imeta tag generation logic
 class ImetaTagGenerator {
@@ -448,6 +475,122 @@ void main() {
         urlComponents.first,
         equals('url $regularUrl'),
         reason: 'Should use original CDN URL',
+      );
+    });
+  });
+
+  group('VideoEventPublisher mention tags', () {
+    late _MockUploadManager uploadManager;
+    late _MockNostrClient nostrClient;
+    late _MockAuthService authService;
+    late _MockVideoEventService videoEventService;
+    late VideoEventPublisher publisher;
+    late List<List<String>> capturedTags;
+
+    const testPubkey =
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    const mentionPubkey =
+        'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+
+    setUpAll(() {
+      registerFallbackValue(_FakeEvent());
+      registerFallbackValue(_FakeFilter());
+      registerFallbackValue(<Filter>[]);
+      registerFallbackValue(UploadStatus.pending);
+    });
+
+    setUp(() {
+      uploadManager = _MockUploadManager();
+      nostrClient = _MockNostrClient();
+      authService = _MockAuthService();
+      videoEventService = _MockVideoEventService();
+      capturedTags = [];
+
+      publisher = VideoEventPublisher(
+        uploadManager: uploadManager,
+        nostrService: nostrClient,
+        authService: authService,
+        videoEventService: videoEventService,
+      );
+
+      when(() => nostrClient.isInitialized).thenReturn(true);
+      when(() => nostrClient.configuredRelayCount).thenReturn(1);
+      when(() => nostrClient.connectedRelayCount).thenReturn(1);
+      when(
+        () => nostrClient.configuredRelays,
+      ).thenReturn(['wss://relay.divine.video']);
+      when(
+        () => nostrClient.connectedRelays,
+      ).thenReturn(['wss://relay.divine.video']);
+      when(() => nostrClient.publicKey).thenReturn('');
+
+      when(() => authService.isAuthenticated).thenReturn(true);
+      when(() => authService.currentPublicKeyHex).thenReturn(testPubkey);
+
+      when(
+        () => uploadManager.updateUploadStatus(
+          any(),
+          any(),
+          nostrEventId: any(named: 'nostrEventId'),
+        ),
+      ).thenAnswer((_) async {});
+    });
+
+    PendingUpload createUpload() {
+      return PendingUpload(
+        id: 'upload-id',
+        localVideoPath: '',
+        nostrPubkey: testPubkey,
+        status: UploadStatus.readyToPublish,
+        createdAt: DateTime.now(),
+        videoId: 'video-id',
+        cdnUrl: 'https://cdn.example.com/video.mp4',
+        fallbackUrl: 'https://cdn.example.com/video.mp4',
+      );
+    }
+
+    void stubSignAndPublish() {
+      late Event publishedEvent;
+
+      when(
+        () => authService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedTags = invocation.namedArguments[#tags] as List<List<String>>;
+        publishedEvent = Event(
+          testPubkey,
+          NIP71VideoKinds.getPreferredAddressableKind(),
+          capturedTags,
+          'test content',
+        );
+        return publishedEvent;
+      });
+
+      when(
+        () => nostrClient.publishEvent(any()),
+      ).thenAnswer((_) async => PublishSuccess(event: publishedEvent));
+    }
+
+    test('publishVideoEvent passes generic mention p-tags through', () async {
+      stubSignAndPublish();
+
+      final result = await publisher.publishVideoEvent(
+        upload: createUpload(),
+        mentionedPubkeys: const [mentionPubkey],
+      );
+
+      expect(result, isTrue);
+      expect(
+        _containsTag(capturedTags, const [
+          'p',
+          mentionPubkey,
+          'wss://relay.divine.video',
+          'mention',
+        ]),
+        isTrue,
       );
     });
   });

@@ -45,6 +45,10 @@ void main() {
       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
   const collaboratorPubkey =
       'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+  const mentionPubkey =
+      'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+  const secondMentionPubkey =
+      'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
 
   setUpAll(() {
     registerFallbackValue(_FakeEvent());
@@ -162,6 +166,87 @@ void main() {
           'Collaborator',
         ]),
         isFalse,
+      );
+    },
+  );
+
+  test(
+    'publishes generic mention p-tags while preserving collaborator role tags',
+    () async {
+      stubSignAndPublish();
+
+      final result = await publisher.publishDirectUpload(
+        createUpload(),
+        collaboratorPubkeys: const [collaboratorPubkey],
+        mentionedPubkeys: const [
+          mentionPubkey,
+          collaboratorPubkey,
+          '',
+          'not-a-valid-pubkey',
+          mentionPubkey,
+          secondMentionPubkey,
+        ],
+      );
+
+      expect(result, isTrue);
+      expect(
+        _containsTag(capturedTags, buildCollaboratorPTag(collaboratorPubkey)),
+        isTrue,
+        reason: 'collaborator pubkeys keep the collaborator role marker',
+      );
+      expect(
+        _containsTag(capturedTags, const [
+          'p',
+          mentionPubkey,
+          'wss://relay.divine.video',
+          'mention',
+        ]),
+        isTrue,
+      );
+      expect(
+        _containsTag(capturedTags, const [
+          'p',
+          secondMentionPubkey,
+          'wss://relay.divine.video',
+          'mention',
+        ]),
+        isTrue,
+      );
+      expect(
+        capturedTags
+            .where(
+              (tag) => _deepEquals.equals(tag, const [
+                'p',
+                mentionPubkey,
+                'wss://relay.divine.video',
+                'mention',
+              ]),
+            )
+            .length,
+        equals(1),
+        reason: 'duplicate full hex mention pubkeys are emitted once',
+      );
+      expect(
+        _containsTag(capturedTags, const [
+          'p',
+          collaboratorPubkey,
+          'wss://relay.divine.video',
+          'mention',
+        ]),
+        isFalse,
+        reason: 'collaborator pubkeys are not duplicated as generic mentions',
+      );
+      expect(
+        capturedTags.any((tag) => tag.length > 1 && tag[1].isEmpty),
+        isFalse,
+        reason: 'empty mention pubkeys are skipped',
+      );
+      expect(
+        capturedTags.any(
+          (tag) => tag.length > 1 && tag[1] == 'not-a-valid-pubkey',
+        ),
+        isFalse,
+        reason: 'invalid mention pubkeys are skipped',
       );
     },
   );
