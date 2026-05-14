@@ -22,10 +22,35 @@ const int _deletionKind = EventKind.eventDeletion;
 /// Default limit for comment queries.
 const _defaultLimit = 100;
 
+/// Relay hint used for diVine mention `p` tags.
+const _divineRelayHint = 'wss://relay.divine.video';
+
+final _hexPubkeyPattern = RegExp(r'^[0-9a-fA-F]{64}$');
+
 List<int> _threadKinds({required bool includeVideoReplies}) => [
   _commentKind,
   if (includeVideoReplies) EventKind.videoVertical,
 ];
+
+List<List<String>> _buildMentionTags({
+  required Iterable<String> mentionedPubkeys,
+  required Iterable<String> excludedPubkeys,
+}) {
+  final seenPubkeys = <String>{
+    for (final pubkey in excludedPubkeys) pubkey.trim().toLowerCase(),
+  };
+  final tags = <List<String>>[];
+
+  for (final pubkey in mentionedPubkeys) {
+    final normalizedPubkey = pubkey.trim().toLowerCase();
+    if (!_hexPubkeyPattern.hasMatch(normalizedPubkey)) continue;
+    if (!seenPubkeys.add(normalizedPubkey)) continue;
+
+    tags.add(['p', normalizedPubkey, _divineRelayHint, 'mention']);
+  }
+
+  return tags;
+}
 
 /// Repository for managing comments and video replies on Nostr events.
 ///
@@ -224,6 +249,8 @@ class CommentsRepository {
   ///   to ensure the comment can be found by clients querying either way.
   /// - [replyToEventId]: ID of parent comment (for nested replies)
   /// - [replyToAuthorPubkey]: Public key of parent comment author
+  /// - [mentionedPubkeys]: Optional full hex pubkeys to publish as generic
+  ///   mention `p` tags.
   ///
   /// Returns the created [Comment] with its event ID.
   ///
@@ -237,6 +264,7 @@ class CommentsRepository {
     String? rootAddressableId,
     String? replyToEventId,
     String? replyToAuthorPubkey,
+    List<String> mentionedPubkeys = const [],
   }) async {
     final trimmedContent = content.trim();
     if (trimmedContent.isEmpty) {
@@ -272,6 +300,15 @@ class CommentsRepository {
         ['p', rootEventAuthorPubkey],
       ],
     ];
+    tags.addAll(
+      _buildMentionTags(
+        mentionedPubkeys: mentionedPubkeys,
+        excludedPubkeys: [
+          rootEventAuthorPubkey,
+          if (replyToAuthorPubkey != null) replyToAuthorPubkey,
+        ],
+      ),
+    );
 
     // Create the event
     final event = Event(

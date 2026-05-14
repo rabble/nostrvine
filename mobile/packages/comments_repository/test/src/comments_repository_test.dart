@@ -1142,6 +1142,112 @@ void main() {
         expect(lowercasePTags.first[1], equals(parentAuthorPubkey));
       });
 
+      test('appends mentioned pubkeys after required NIP-22 tags', () async {
+        Event? capturedEvent;
+        const firstMentionPubkey =
+            '1111111111111111111111111111111111111111111111111111111111111111';
+        const secondMentionPubkey =
+            '2222222222222222222222222222222222222222222222222222222222222222';
+
+        when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
+          capturedEvent = inv.positionalArguments.first as Event;
+          return PublishSuccess(event: capturedEvent!);
+        });
+
+        await repository.postComment(
+          content: 'Mentioning @alice and @bob',
+          rootEventId: testRootEventId,
+          rootEventKind: _testRootEventKind,
+          rootEventAuthorPubkey: testRootAuthorPubkey,
+          mentionedPubkeys: const [
+            firstMentionPubkey,
+            secondMentionPubkey,
+          ],
+        );
+
+        expect(capturedEvent, isNotNull);
+        expect(
+          capturedEvent!.tags,
+          equals([
+            ['E', testRootEventId, '', testRootAuthorPubkey],
+            ['K', _testRootEventKind.toString()],
+            ['P', testRootAuthorPubkey],
+            ['e', testRootEventId, '', testRootAuthorPubkey],
+            ['k', _testRootEventKind.toString()],
+            ['p', testRootAuthorPubkey],
+            [
+              'p',
+              firstMentionPubkey,
+              'wss://relay.divine.video',
+              'mention',
+            ],
+            [
+              'p',
+              secondMentionPubkey,
+              'wss://relay.divine.video',
+              'mention',
+            ],
+          ]),
+        );
+      });
+
+      test(
+        'skips invalid mentioned pubkeys and root or parent author duplicates',
+        () async {
+          Event? capturedEvent;
+          const parentCommentId =
+              'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+          const parentAuthorPubkey =
+              'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+          const mentionedPubkey =
+              '3333333333333333333333333333333333333333333333333333333333333333';
+
+          when(() => mockNostrClient.publishEvent(any())).thenAnswer((
+            inv,
+          ) async {
+            capturedEvent = inv.positionalArguments.first as Event;
+            return PublishSuccess(event: capturedEvent!);
+          });
+
+          await repository.postComment(
+            content: 'Reply with mentions',
+            rootEventId: testRootEventId,
+            rootEventKind: _testRootEventKind,
+            rootEventAuthorPubkey: testRootAuthorPubkey,
+            replyToEventId: parentCommentId,
+            replyToAuthorPubkey: parentAuthorPubkey,
+            mentionedPubkeys: const [
+              '',
+              'not-a-pubkey',
+              mentionedPubkey,
+              testRootAuthorPubkey,
+              parentAuthorPubkey,
+              mentionedPubkey,
+            ],
+          );
+
+          expect(capturedEvent, isNotNull);
+          final mentionTags = capturedEvent!.tags
+              .where(
+                (tag) =>
+                    tag.length == 4 &&
+                    tag[0] == 'p' &&
+                    tag[2] == 'wss://relay.divine.video' &&
+                    tag[3] == 'mention',
+              )
+              .toList();
+
+          expect(mentionTags, [
+            [
+              'p',
+              mentionedPubkey,
+              'wss://relay.divine.video',
+              'mention',
+            ],
+          ]);
+        },
+      );
+
       test(
         'posts top-level comment with A/a tags for addressable events',
         () async {
