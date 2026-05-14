@@ -78,6 +78,13 @@ class _VideoMetadataEditStackContentState
   @override
   void initState() {
     super.initState();
+    // IMPORTANT: must use addPostFrameCallback, NOT a direct ref.read() call.
+    // This widget is the *direct child* of the overriding ProviderScope (see
+    // VideoMetadataEditStack.build). During initState the ProviderScope has
+    // not yet mounted its InheritedWidget, so ref.read(videoEditorProvider)
+    // resolves to the outer scope and throws a ProviderNotFoundException.
+    // Deferring to post-frame ensures the override is in the tree before the
+    // notifier is accessed.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       ref

@@ -1956,7 +1956,13 @@
   "shareMenuDeleting": "Deleting...",
   "shareMenuUpdate": "Update",
   "shareMenuChangeCover": "Change Cover",
+  "@shareMenuChangeCover": {
+    "description": "Label for the button that opens the cover-image editor on the video metadata edit screen."
+  },
   "shareMenuCoverUploadingBackground": "Thumbnail is being uploaded in the background",
+  "@shareMenuCoverUploadingBackground": {
+    "description": "Toast/snackbar message shown while the new cover thumbnail is being uploaded after saving video metadata."
+  },
   "shareMenuVideoUpdated": "Video updated successfully",
   "shareMenuVideoUpdatedWithInviteFailures": "Video updated, but {count, plural, =1{1 collaborator invite did not send.} other{{count} collaborator invites did not send.}}",
   "@shareMenuVideoUpdatedWithInviteFailures": {

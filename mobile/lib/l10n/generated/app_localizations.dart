@@ -6482,13 +6482,13 @@ abstract class AppLocalizations {
   /// **'Update'**
   String get shareMenuUpdate;
 
-  /// No description provided for @shareMenuChangeCover.
+  /// Label for the button that opens the cover-image editor on the video metadata edit screen.
   ///
   /// In en, this message translates to:
   /// **'Change Cover'**
   String get shareMenuChangeCover;
 
-  /// No description provided for @shareMenuCoverUploadingBackground.
+  /// Toast/snackbar message shown while the new cover thumbnail is being uploaded after saving video metadata.
   ///
   /// In en, this message translates to:
   /// **'Thumbnail is being uploaded in the background'**

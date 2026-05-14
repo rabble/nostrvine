@@ -419,8 +419,6 @@ class _DeleteButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       identifier: 'delete_button',
-      label: context.l10n.shareMenuDeleteVideo,
-      button: true,
       child: DivineButton(
         onPressed: isDeleting ? null : onTap,
         type: .error,
@@ -442,8 +440,6 @@ class _UpdateButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       identifier: 'update_button',
-      label: context.l10n.shareMenuUpdate,
-      button: true,
       child: DivineButton(
         onPressed: isUpdating ? null : onTap,
         expanded: true,

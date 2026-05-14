@@ -72,9 +72,12 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
   /// When true, [triggerAutosave] is a no-op.
   ///
-  /// Set to true during [initFromPublishedVideo] so that seeding the state
-  /// from an already-published event does not attempt to overwrite an
-  /// autosaved draft.
+  /// Set to `true` by [initFromPublishedVideo] and intentionally never reset.
+  /// The edit flow runs inside an isolated [ProviderScope], so this notifier
+  /// instance is never reused for the capture flow. Draft writes are not
+  /// meaningful in the edit flow — the user is updating a published event, not
+  /// accumulating a new draft — so suppressing autosave for the lifetime of the
+  /// notifier is the correct behaviour.
   bool _suppressAutosave = false;
 
   // === LIFECYCLE ===
@@ -576,9 +579,10 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// autosave after changes. Uses debouncing to batch rapid changes.
   /// Seed state from an already-published [VideoEvent] for editing.
   ///
-  /// Autosave is suppressed so the in-flight seeding does not overwrite a
-  /// pre-existing autosaved draft. Must be called after the notifier is
-  /// created (e.g. from a child widget's [initState]).
+  /// Autosave is suppressed (and remains suppressed for the lifetime of this
+  /// notifier) so that no draft is written while editing an already-published
+  /// event. Must be called after the notifier is created (e.g. from a child
+  /// widget's [State.initState]).
   void initFromPublishedVideo(VideoEvent video) {
     _suppressAutosave = true;
 
