@@ -1565,6 +1565,7 @@
     "shareMenuChangeCover": "Cover ändern",
     "shareMenuCoverUploadingBackground": "Vorschaubild wird im Hintergrund hochgeladen",
     "shareMenuVideoUpdated": "Video erfolgreich aktualisiert",
+    "shareMenuVideoUpdatedWithInviteFailures": "Video aktualisiert, aber {count, plural, =1{1 Mitwirkenden-Einladung wurde nicht gesendet.} other{{count} Mitwirkenden-Einladungen wurden nicht gesendet.}}",
     "shareMenuFailedToUpdateVideo": "Video konnte nicht aktualisiert werden: {error}",
     "@shareMenuFailedToUpdateVideo": {
         "placeholders": {

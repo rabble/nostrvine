@@ -261,8 +261,9 @@ class _VideoMetadataEditBottomBarState
             content: Text(
               inviteFailures == 0
                   ? context.l10n.shareMenuVideoUpdated
-                  : 'Video updated, but $inviteFailures collaborator '
-                        'invite${inviteFailures == 1 ? '' : 's'} did not send.',
+                  : context.l10n.shareMenuVideoUpdatedWithInviteFailures(
+                      inviteFailures,
+                    ),
             ),
             backgroundColor: inviteFailures == 0
                 ? VineTheme.vineGreen

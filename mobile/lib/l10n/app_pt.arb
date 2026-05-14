@@ -1565,6 +1565,7 @@
     "shareMenuChangeCover": "Alterar capa",
     "shareMenuCoverUploadingBackground": "A miniatura está sendo enviada em segundo plano",
     "shareMenuVideoUpdated": "Vídeo atualizado com sucesso",
+    "shareMenuVideoUpdatedWithInviteFailures": "Vídeo atualizado, mas {count, plural, =1{1 convite de colaborador não foi enviado.} other{{count} convites de colaboradores não foram enviados.}}",
     "shareMenuFailedToUpdateVideo": "Falha ao atualizar vídeo: {error}",
     "@shareMenuFailedToUpdateVideo": {
         "placeholders": {

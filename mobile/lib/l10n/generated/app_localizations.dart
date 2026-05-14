@@ -6500,6 +6500,12 @@ abstract class AppLocalizations {
   /// **'Video updated successfully'**
   String get shareMenuVideoUpdated;
 
+  /// Snackbar shown after republishing a video when one or more DM invites to newly added collaborators failed to send. {count} is the number of failed invites (always >= 1).
+  ///
+  /// In en, this message translates to:
+  /// **'Video updated, but {count, plural, =1{1 collaborator invite did not send.} other{{count} collaborator invites did not send.}}'**
+  String shareMenuVideoUpdatedWithInviteFailures(int count);
+
   /// No description provided for @shareMenuFailedToUpdateVideo.
   ///
   /// In en, this message translates to:

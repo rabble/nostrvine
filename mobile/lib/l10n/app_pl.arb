@@ -1565,6 +1565,7 @@
     "shareMenuChangeCover": "Zmień okładkę",
     "shareMenuCoverUploadingBackground": "Miniatura jest przesyłana w tle",
     "shareMenuVideoUpdated": "Film zaktualizowany pomyślnie",
+    "shareMenuVideoUpdatedWithInviteFailures": "Film zaktualizowany, ale {count, plural, =1{1 zaproszenie współpracownika nie zostało wysłane.} other{{count} zaproszeń współpracowników nie zostało wysłanych.}}",
     "shareMenuFailedToUpdateVideo": "Nie udało się zaktualizować filmu: {error}",
     "@shareMenuFailedToUpdateVideo": {
         "placeholders": {

@@ -3672,6 +3672,17 @@ class AppLocalizationsId extends AppLocalizations {
   String get shareMenuVideoUpdated => 'Video berhasil diperbarui';
 
   @override
+  String shareMenuVideoUpdatedWithInviteFailures(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count undangan kolaborator tidak terkirim.',
+      one: '1 undangan kolaborator tidak terkirim.',
+    );
+    return 'Video diperbarui, tetapi $_temp0';
+  }
+
+  @override
   String shareMenuFailedToUpdateVideo(String error) {
     return 'Gagal memperbarui video: $error';
   }

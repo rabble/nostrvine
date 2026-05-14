@@ -3514,6 +3514,17 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareMenuVideoUpdated => '動画を更新したよ';
 
   @override
+  String shareMenuVideoUpdatedWithInviteFailures(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count件のコラボレーター招待が送信されませんでした。',
+      one: '1件のコラボレーター招待が送信されませんでした。',
+    );
+    return '動画を更新しましたが、$_temp0';
+  }
+
+  @override
   String shareMenuFailedToUpdateVideo(String error) {
     return '動画の更新がうまくいかなかった: $error';
   }

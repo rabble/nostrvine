@@ -1555,6 +1555,7 @@
     "shareMenuChangeCover": "تغيير الغلاف",
     "shareMenuCoverUploadingBackground": "يتم رفع الصورة المصغرة في الخلفية",
     "shareMenuVideoUpdated": "تم تحديث الفيديو بنجاح",
+    "shareMenuVideoUpdatedWithInviteFailures": "تم تحديث الفيديو، لكن {count, plural, =1{لم يتم إرسال دعوة متعاون واحدة.} other{لم يتم إرسال {count} دعوات متعاونين.}}",
     "shareMenuFailedToUpdateVideo": "فشل تحديث الفيديو: {error}",
     "@shareMenuFailedToUpdateVideo": {
         "placeholders": {

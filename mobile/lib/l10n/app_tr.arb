@@ -1562,6 +1562,7 @@
     "shareMenuChangeCover": "Kapağı Değiştir",
     "shareMenuCoverUploadingBackground": "Küçük resim arka planda yükleniyor",
     "shareMenuVideoUpdated": "Video başarıyla güncellendi",
+    "shareMenuVideoUpdatedWithInviteFailures": "Video güncellendi, ancak {count, plural, =1{1 katılımcı daveti gönderilmedi.} other{{count} katılımcı daveti gönderilmedi.}}",
     "shareMenuFailedToUpdateVideo": "Video güncellenemedi: {error}",
     "@shareMenuFailedToUpdateVideo": {
         "placeholders": {

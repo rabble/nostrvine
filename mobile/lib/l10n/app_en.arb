@@ -1958,6 +1958,15 @@
   "shareMenuChangeCover": "Change Cover",
   "shareMenuCoverUploadingBackground": "Thumbnail is being uploaded in the background",
   "shareMenuVideoUpdated": "Video updated successfully",
+  "shareMenuVideoUpdatedWithInviteFailures": "Video updated, but {count, plural, =1{1 collaborator invite did not send.} other{{count} collaborator invites did not send.}}",
+  "@shareMenuVideoUpdatedWithInviteFailures": {
+    "description": "Snackbar shown after republishing a video when one or more DM invites to newly added collaborators failed to send. {count} is the number of failed invites (always >= 1).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "shareMenuFailedToUpdateVideo": "Failed to update video: {error}",
   "@shareMenuFailedToUpdateVideo": {
     "placeholders": {

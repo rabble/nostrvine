@@ -974,6 +974,7 @@
     "shareMenuChangeCover": "Palitan ang Cover",
     "shareMenuCoverUploadingBackground": "Ina-upload ang thumbnail sa background",
     "shareMenuVideoUpdated": "Matagumpay na na-update ang video",
+    "shareMenuVideoUpdatedWithInviteFailures": "Na-update ang video, pero {count, plural, =1{1 imbitasyon sa collaborator ang hindi naipadala.} other{{count} mga imbitasyon sa collaborator ang hindi naipadala.}}",
     "shareMenuFailedToUpdateVideo": "Hindi na-update ang video: {error}",
     "shareMenuFailedToDeleteVideo": "Hindi nabura ang video: {error}",
     "shareMenuDeleteVideoQuestion": "Burahin ang Video?",

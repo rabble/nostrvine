@@ -1562,6 +1562,7 @@
     "shareMenuChangeCover": "Ubah Sampul",
     "shareMenuCoverUploadingBackground": "Thumbnail sedang diunggah di latar belakang",
     "shareMenuVideoUpdated": "Video berhasil diperbarui",
+    "shareMenuVideoUpdatedWithInviteFailures": "Video diperbarui, tetapi {count, plural, =1{1 undangan kolaborator tidak terkirim.} other{{count} undangan kolaborator tidak terkirim.}}",
     "shareMenuFailedToUpdateVideo": "Gagal memperbarui video: {error}",
     "@shareMenuFailedToUpdateVideo": {
         "placeholders": {

@@ -1555,6 +1555,7 @@
     "shareMenuChangeCover": "カバーを変更",
     "shareMenuCoverUploadingBackground": "サムネイルをバックグラウンドでアップロード中",
     "shareMenuVideoUpdated": "動画を更新したよ",
+    "shareMenuVideoUpdatedWithInviteFailures": "動画を更新しましたが、{count, plural, =1{1件のコラボレーター招待が送信されませんでした。} other{{count}件のコラボレーター招待が送信されませんでした。}}",
     "shareMenuFailedToUpdateVideo": "動画の更新がうまくいかなかった: {error}",
     "@shareMenuFailedToUpdateVideo": {
         "placeholders": {

@@ -1747,6 +1747,7 @@
     "shareMenuChangeCover": "Смяна на корицата",
     "shareMenuCoverUploadingBackground": "Миниатюрата се качва на заден план",
     "shareMenuVideoUpdated": "Видеото е обновено",
+    "shareMenuVideoUpdatedWithInviteFailures": "Видеото е актуализирано, но {count, plural, =1{1 покана за сътрудник не беше изпратена.} other{{count} покани за сътрудници не бяха изпратени.}}",
     "shareMenuFailedToUpdateVideo": "Не успяхме да обновим видеото: {error}",
     "@shareMenuFailedToUpdateVideo": {
         "placeholders": {

@@ -749,15 +749,16 @@ class _SlotImage extends StatelessWidget {
   Widget build(BuildContext context) {
     final fallback = thumbnail != null
         ? thumbnail!.networkUrl != null
-              ? Image.network(
-                  thumbnail!.networkUrl!,
-                  fit: .cover,
-                  excludeFromSemantics: true,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    return const ColoredBox(
+              ? ExcludeSemantics(
+                  child: VineCachedImage(
+                    imageUrl: thumbnail!.networkUrl!,
+                    placeholder: (_, _) => const ColoredBox(
                       color: VineTheme.surfaceContainerHigh,
-                    );
-                  },
+                    ),
+                    errorWidget: (_, _, _) => const ColoredBox(
+                      color: VineTheme.surfaceContainerHigh,
+                    ),
+                  ),
                 )
               : Image.file(
                   File(thumbnail!.file!.path),
