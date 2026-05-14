@@ -14,8 +14,11 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/language_preference_service.dart';
+import 'package:openvine/services/mention_resolution_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_publisher.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Result of a publish operation.
@@ -92,6 +95,7 @@ class VideoPublishService {
     required this.onProgressChanged,
     this.collaboratorInviteService,
     this.languagePreferenceService,
+    this.mentionResolutionService,
   });
 
   /// Manages background video uploads.
@@ -117,6 +121,9 @@ class VideoPublishService {
 
   /// Language preference for NIP-32 tagging.
   final LanguagePreferenceService? languagePreferenceService;
+
+  /// Resolves typed mentions before publishing Nostr video events.
+  final MentionResolutionService? mentionResolutionService;
 
   /// Tracks the current background upload ID.
   String? _backgroundUploadId;
@@ -179,6 +186,11 @@ class VideoPublishService {
       // Publish Nostr event
       Log.info('📝 Publishing Nostr event...', category: .video);
 
+      final mentionedPubkeys = await _resolveMentionedPubkeys(
+        draft,
+        currentUserPubkey: pubkey,
+      );
+
       final published = await videoEventPublisher.publishVideoEvent(
         upload: pendingUpload,
         title: draft.title,
@@ -190,6 +202,7 @@ class VideoPublishService {
             : null,
         allowAudioReuse: draft.allowAudioReuse,
         collaboratorPubkeys: draft.collaboratorPubkeys.toList(),
+        mentionedPubkeys: mentionedPubkeys,
         inspiredByAddressableId: draft.inspiredByVideo?.addressableId,
         inspiredByRelayUrl: draft.inspiredByVideo?.relayUrl,
         inspiredByNpub: draft.inspiredByNpub,
@@ -225,6 +238,34 @@ class VideoPublishService {
       return PublishSuccess(inviteWarnings: inviteWarnings);
     } catch (e, stackTrace) {
       return _handleUploadError(e, stackTrace, draft);
+    }
+  }
+
+  Future<List<String>> _resolveMentionedPubkeys(
+    DivineVideoDraft draft, {
+    required String currentUserPubkey,
+  }) async {
+    final resolver = mentionResolutionService;
+    if (resolver == null) return const [];
+
+    final rawText = _videoPublishMentionResolutionText(draft);
+    if (!rawText.contains('@')) return const [];
+
+    try {
+      final result = await resolver.resolveTextMentions(
+        rawText: rawText,
+        currentUserPubkey: currentUserPubkey,
+      );
+      return _excludeCollaboratorPubkeys(
+        result.resolvedPubkeys,
+        draft.collaboratorPubkeys,
+      );
+    } catch (error) {
+      Log.warning(
+        'Mention resolution failed during video publish; continuing without mention tags: $error',
+        category: .video,
+      );
+      return const [];
     }
   }
 
@@ -703,4 +744,88 @@ class VideoPublishService {
 
     return 'Something went wrong. Please try again.';
   }
+}
+
+String _videoPublishMentionResolutionText(DivineVideoDraft draft) {
+  return [
+    draft.description,
+    ..._extractVideoPublishTextOverlayStrings(draft.editorStateHistory),
+  ].where((text) => text.trim().isNotEmpty).join('\n');
+}
+
+List<String> _extractVideoPublishTextOverlayStrings(
+  Map<String, dynamic> editorStateHistory,
+) {
+  final overlays = <String>{};
+  if (editorStateHistory.isEmpty) return const [];
+
+  final references = _mapReferences(editorStateHistory['references']);
+  final lastLayerState = <String, Map<String, dynamic>>{...references};
+  final history = editorStateHistory['history'];
+  if (history is! Iterable) return const [];
+
+  for (final historyItem in history) {
+    if (historyItem is! Map) continue;
+    final layers = historyItem['layers'];
+    if (layers is! Iterable) continue;
+
+    for (final rawLayer in layers) {
+      if (rawLayer is! Map) continue;
+      final layer = Map<String, dynamic>.from(rawLayer);
+      final id = layer['id'];
+      final mergedLayer = id is String
+          ? <String, dynamic>{...?lastLayerState[id], ...layer}
+          : layer;
+
+      final type = mergedLayer['type'];
+      final text = mergedLayer['text'];
+      if ((type == null || type == 'text') &&
+          text is String &&
+          text.trim().isNotEmpty) {
+        overlays.add(text);
+      }
+
+      if (id is String) {
+        lastLayerState[id] = mergedLayer;
+      }
+    }
+  }
+
+  return overlays.toList();
+}
+
+Map<String, Map<String, dynamic>> _mapReferences(Object? rawReferences) {
+  if (rawReferences is! Map) return const {};
+
+  final references = <String, Map<String, dynamic>>{};
+  for (final entry in rawReferences.entries) {
+    final key = entry.key;
+    final value = entry.value;
+    if (key is String && value is Map) {
+      references[key] = Map<String, dynamic>.from(value);
+    }
+  }
+  return references;
+}
+
+List<String> _excludeCollaboratorPubkeys(
+  Iterable<String> pubkeys,
+  Iterable<String> collaboratorPubkeys,
+) {
+  final collaborators = collaboratorPubkeys
+      .map(normalizeToHex)
+      .whereType<String>()
+      .where(NostrKeyUtils.isValidKey)
+      .toSet();
+  final seen = <String>{};
+  final result = <String>[];
+
+  for (final pubkey in pubkeys) {
+    final hex = normalizeToHex(pubkey);
+    if (hex == null || !NostrKeyUtils.isValidKey(hex)) continue;
+    if (collaborators.contains(hex) || !seen.add(hex)) continue;
+    result.add(hex);
+  }
+
+  return result;
 }

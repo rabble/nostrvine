@@ -30,11 +30,13 @@ import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/services/cawg_verifier_client.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
+import 'package:openvine/services/mention_resolution_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
 import 'package:openvine/services/nostr_creator_binding_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
+import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Provider for video publish screen state management.
@@ -51,6 +53,14 @@ final videoPublishProvider =
   ),
   extra: const VideoDetailRouteExtra(autoOpenComments: true),
 );
+
+@visibleForTesting
+MentionResolutionService? createVideoPublishMentionResolutionService(
+  ProfileRepository? profileRepository,
+) {
+  if (profileRepository == null) return null;
+  return MentionResolutionService(profileRepository: profileRepository);
+}
 
 /// Manages video publish screen state including playback and position.
 class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
@@ -127,6 +137,9 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       videoEventPublisher: ref.read(videoEventPublisherProvider),
       blossomService: ref.read(blossomUploadServiceProvider),
       draftService: _draftService,
+      mentionResolutionService: createVideoPublishMentionResolutionService(
+        ref.read(profileRepositoryProvider),
+      ),
       collaboratorInviteService: CollaboratorInviteService(
         dmRepository: ref.read(dmRepositoryProvider),
         l10n: currentAppL10n(ref.read(sharedPreferencesProvider)),

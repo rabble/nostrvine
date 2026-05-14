@@ -11,9 +11,11 @@ import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
+import 'package:openvine/services/mention_resolution_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
+import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 // Mock classes
@@ -30,13 +32,24 @@ class MockDraftStorageService extends Mock implements DraftStorageService {}
 class MockCollaboratorInviteService extends Mock
     implements CollaboratorInviteService {}
 
+class MockMentionResolutionService extends Mock
+    implements MentionResolutionService {}
+
 void main() {
+  const descriptionMentionPubkey =
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+  const overlayMentionPubkey =
+      'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+  const collaboratorPubkey =
+      'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+
   late MockUploadManager mockUploadManager;
   late MockAuthService mockAuthService;
   late MockVideoEventPublisher mockVideoEventPublisher;
   late MockBlossomUploadService mockBlossomService;
   late MockDraftStorageService mockDraftService;
   late MockCollaboratorInviteService mockCollaboratorInviteService;
+  late MockMentionResolutionService mockMentionResolutionService;
   late VideoPublishService service;
 
   late List<double> progressChanges;
@@ -62,6 +75,7 @@ void main() {
     mockBlossomService = MockBlossomUploadService();
     mockDraftService = MockDraftStorageService();
     mockCollaboratorInviteService = MockCollaboratorInviteService();
+    mockMentionResolutionService = MockMentionResolutionService();
 
     progressChanges = [];
 
@@ -72,6 +86,7 @@ void main() {
       blossomService: mockBlossomService,
       draftService: mockDraftService,
       collaboratorInviteService: mockCollaboratorInviteService,
+      mentionResolutionService: mockMentionResolutionService,
       onProgressChanged:
           ({required double progress, required String draftId}) =>
               progressChanges.add(progress),
@@ -115,6 +130,132 @@ void main() {
         // Assert
         expect(result, isA<PublishSuccess>());
         verify(() => mockDraftService.deleteDraft(draft.id)).called(1);
+      });
+
+      test(
+        'resolves mentions from description and text overlays before publishing',
+        () async {
+          _setupSuccessfulPublish(
+            mockAuthService: mockAuthService,
+            mockUploadManager: mockUploadManager,
+            mockDraftService: mockDraftService,
+            mockVideoEventPublisher: mockVideoEventPublisher,
+          );
+          when(
+            () => mockMentionResolutionService.resolveTextMentions(
+              rawText: any(named: 'rawText'),
+              currentUserPubkey: any(named: 'currentUserPubkey'),
+            ),
+          ).thenAnswer((invocation) async {
+            final rawText = invocation.namedArguments[#rawText] as String;
+            expect(rawText, contains('caption from @alice'));
+            expect(rawText, contains('overlay by @bob'));
+
+            return const MentionResolutionResult(
+              canonicalText: '',
+              resolvedPubkeys: [
+                descriptionMentionPubkey,
+                overlayMentionPubkey,
+                collaboratorPubkey,
+              ],
+              unresolvedTokens: [],
+            );
+          });
+
+          final draft = _createTestDraft(
+            description: 'caption from @alice',
+            collaboratorPubkeys: {collaboratorPubkey},
+            editorStateHistory: {
+              'position': 0,
+              'references': {
+                'text-layer-1': TextLayer(
+                  id: 'text-layer-1',
+                  text: 'overlay by @bob',
+                ).toMap(),
+              },
+              'history': [
+                {
+                  'layers': [
+                    {'id': 'text-layer-1'},
+                  ],
+                },
+              ],
+            },
+          );
+
+          final result = await service.publishVideo(draft: draft);
+
+          expect(result, isA<PublishSuccess>());
+          verify(
+            () => mockVideoEventPublisher.publishVideoEvent(
+              upload: any(named: 'upload'),
+              title: any(named: 'title'),
+              description: 'caption from @alice',
+              hashtags: any(named: 'hashtags'),
+              expirationTimestamp: any(named: 'expirationTimestamp'),
+              allowAudioReuse: any(named: 'allowAudioReuse'),
+              collaboratorPubkeys: [collaboratorPubkey],
+              mentionedPubkeys: const [
+                descriptionMentionPubkey,
+                overlayMentionPubkey,
+              ],
+              inspiredByAddressableId: any(named: 'inspiredByAddressableId'),
+              inspiredByRelayUrl: any(named: 'inspiredByRelayUrl'),
+              inspiredByNpub: any(named: 'inspiredByNpub'),
+              selectedAudioEventId: any(named: 'selectedAudioEventId'),
+              selectedAudioRelay: any(named: 'selectedAudioRelay'),
+              language: any(named: 'language'),
+              contentWarning: any(named: 'contentWarning'),
+              thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
+              replyContext: any(named: 'replyContext'),
+              addReplyToFeed: any(named: 'addReplyToFeed'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test('publishes without mention tags when resolution fails', () async {
+        _setupSuccessfulPublish(
+          mockAuthService: mockAuthService,
+          mockUploadManager: mockUploadManager,
+          mockDraftService: mockDraftService,
+          mockVideoEventPublisher: mockVideoEventPublisher,
+        );
+        when(
+          () => mockMentionResolutionService.resolveTextMentions(
+            rawText: any(named: 'rawText'),
+            currentUserPubkey: any(named: 'currentUserPubkey'),
+          ),
+        ).thenThrow(Exception('profile search unavailable'));
+
+        final draft = _createTestDraft(description: 'caption from @alice');
+
+        final result = await service.publishVideo(draft: draft);
+
+        expect(result, isA<PublishSuccess>());
+        final captured = verify(
+          () => mockVideoEventPublisher.publishVideoEvent(
+            upload: any(named: 'upload'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            expirationTimestamp: any(named: 'expirationTimestamp'),
+            allowAudioReuse: any(named: 'allowAudioReuse'),
+            collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
+            mentionedPubkeys: captureAny(named: 'mentionedPubkeys'),
+            inspiredByAddressableId: any(named: 'inspiredByAddressableId'),
+            inspiredByRelayUrl: any(named: 'inspiredByRelayUrl'),
+            inspiredByNpub: any(named: 'inspiredByNpub'),
+            selectedAudioEventId: any(named: 'selectedAudioEventId'),
+            selectedAudioRelay: any(named: 'selectedAudioRelay'),
+            language: any(named: 'language'),
+            contentWarning: any(named: 'contentWarning'),
+            thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
+            replyContext: any(named: 'replyContext'),
+            addReplyToFeed: any(named: 'addReplyToFeed'),
+          ),
+        )..called(1);
+        expect(captured.captured.single, isEmpty);
       });
 
       test('collaborator invites are sent after successful publish', () async {
@@ -1251,15 +1392,18 @@ DivineVideoClip _createTestClip() {
 }
 
 DivineVideoDraft _createTestDraft({
+  String description = 'Test description',
+  Map<String, dynamic> editorStateHistory = const {},
   Set<String> collaboratorPubkeys = const {},
 }) {
   return DivineVideoDraft.create(
     clips: [_createTestClip()],
     title: 'Test Video',
-    description: 'Test description',
+    description: description,
     hashtags: {'test', 'video'},
     selectedApproach: 'test',
     id: 'test_draft_id',
+    editorStateHistory: editorStateHistory,
     collaboratorPubkeys: collaboratorPubkeys,
   );
 }
@@ -1313,6 +1457,7 @@ void _setupSuccessfulPublish({
       expirationTimestamp: any(named: 'expirationTimestamp'),
       allowAudioReuse: any(named: 'allowAudioReuse'),
       collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
+      mentionedPubkeys: any(named: 'mentionedPubkeys'),
       inspiredByAddressableId: any(named: 'inspiredByAddressableId'),
       inspiredByRelayUrl: any(named: 'inspiredByRelayUrl'),
       inspiredByNpub: any(named: 'inspiredByNpub'),
@@ -1320,6 +1465,9 @@ void _setupSuccessfulPublish({
       selectedAudioRelay: any(named: 'selectedAudioRelay'),
       language: any(named: 'language'),
       contentWarning: any(named: 'contentWarning'),
+      thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
+      replyContext: any(named: 'replyContext'),
+      addReplyToFeed: any(named: 'addReplyToFeed'),
     ),
   ).thenAnswer((_) async => true);
 }

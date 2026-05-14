@@ -76,6 +76,7 @@ import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/deep_link_service.dart';
 import 'package:openvine/services/locale_preference_service.dart';
 import 'package:openvine/services/logging_config_service.dart';
+import 'package:openvine/services/mention_resolution_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart' show HttpMethod;
 import 'package:openvine/services/notification_service.dart'
     show NotificationPayloadKind, NotificationTapEvent;
@@ -1774,12 +1775,18 @@ class _DivineAppState extends ConsumerState<DivineApp> {
     Future<VideoPublishService> createPublishService({
       required OnProgressChanged onProgress,
     }) async {
+      final profileRepository = ref.read(profileRepositoryProvider);
       return VideoPublishService(
         uploadManager: ref.read(uploadManagerProvider),
         authService: ref.read(authServiceProvider),
         videoEventPublisher: ref.read(videoEventPublisherProvider),
         blossomService: ref.read(blossomUploadServiceProvider),
         draftService: ref.read(draftStorageServiceProvider),
+        mentionResolutionService: profileRepository == null
+            ? null
+            : MentionResolutionService(
+                profileRepository: profileRepository,
+              ),
         collaboratorInviteService: CollaboratorInviteService(
           dmRepository: ref.read(dmRepositoryProvider),
           l10n: currentAppL10n(ref.read(sharedPreferencesProvider)),

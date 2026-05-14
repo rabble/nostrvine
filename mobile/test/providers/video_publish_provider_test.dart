@@ -5,12 +5,17 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/models/video_reply_context.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/services/cawg_verifier_client.dart';
+import 'package:openvine/services/mention_resolution_service.dart';
+import 'package:profile_repository/profile_repository.dart';
+
+class MockProfileRepository extends Mock implements ProfileRepository {}
 
 void main() {
   group('VideoPublishNotifier', () {
@@ -96,6 +101,24 @@ void main() {
       expect(state.publishState, VideoPublishState.error);
       expect(state.errorMessage, 'Test error');
     });
+
+    test(
+      'createVideoPublishMentionResolutionService returns null without profile repository',
+      () {
+        expect(createVideoPublishMentionResolutionService(null), isNull);
+      },
+    );
+
+    test(
+      'createVideoPublishMentionResolutionService creates resolver from profile repository',
+      () {
+        final service = createVideoPublishMentionResolutionService(
+          MockProfileRepository(),
+        );
+
+        expect(service, isA<MentionResolutionService>());
+      },
+    );
 
     test('collaborator invite warning message handles singular failure', () {
       expect(
