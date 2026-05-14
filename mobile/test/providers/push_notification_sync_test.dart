@@ -150,6 +150,7 @@ void main() {
   late _MockNostrClient defaultCleanupClient;
   late _FakeNotificationPreferencesStore preferenceStore;
   late StreamController<AuthState> authStateController;
+  late StreamController<String> defaultTokenRefreshController;
   BeforeSessionTeardownCallback? beforeSessionTeardownCallback;
 
   const pubkeyA =
@@ -177,10 +178,14 @@ void main() {
     defaultCleanupClient = _MockNostrClient();
     preferenceStore = _FakeNotificationPreferencesStore();
     authStateController = StreamController<AuthState>.broadcast();
+    defaultTokenRefreshController = StreamController<String>.broadcast();
 
     when(
       () => authService.authStateStream,
     ).thenAnswer((_) => authStateController.stream);
+    when(
+      () => messaging.onTokenRefresh,
+    ).thenAnswer((_) => defaultTokenRefreshController.stream);
     when(() => authService.authState).thenReturn(AuthState.unauthenticated);
     when(() => authService.currentIdentity).thenReturn(null);
     when(() => authService.currentPublicKeyHex).thenReturn(null);
@@ -243,6 +248,7 @@ void main() {
 
   tearDown(() async {
     await authStateController.close();
+    await defaultTokenRefreshController.close();
   });
 
   ProviderContainer buildContainer({
@@ -1626,6 +1632,120 @@ void main() {
           ),
         );
         verifyNever(() => nostrClient.publishEvent(registrationEvent));
+      },
+    );
+
+    test(
+      'waits for in-flight token refresh registration before deregistering',
+      () async {
+        const encryptedPayload = 'encrypted-refreshed-token';
+        final events = <String>[];
+        final tokenRefreshController = StreamController<String>.broadcast();
+        final registrationPublishCompleter = Completer<PublishResult>();
+        addTearDown(tokenRefreshController.close);
+        final signer = _MockNostrSigner();
+        final identity = KeycastNostrIdentity(
+          pubkey: pubkeyA,
+          rpcSigner: signer,
+        );
+        final registrationEvent = _MockEvent();
+        final deregistrationEvent = _MockEvent();
+        when(
+          () => messaging.getNotificationSettings(),
+        ).thenAnswer((_) async => _settings(AuthorizationStatus.authorized));
+        when(() => messaging.getToken()).thenAnswer((_) async => null);
+        when(
+          () => messaging.onTokenRefresh,
+        ).thenAnswer((_) => tokenRefreshController.stream);
+        when(() => authService.currentIdentity).thenReturn(identity);
+        when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
+        when(() => nostrClient.signer).thenReturn(signer);
+        when(
+          () => signer.nip44Encrypt(pushServicePubkey, any()),
+        ).thenAnswer((_) async => encryptedPayload);
+        when(
+          () => authService.createAndSignEvent(
+            kind: PushNotificationService.pushRegistrationKind,
+            content: encryptedPayload,
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((_) async => registrationEvent);
+        when(() => deregistrationEvent.isSigned).thenReturn(true);
+        when(() => deregistrationEvent.isValid).thenReturn(true);
+        when(
+          () => signer.signEvent(any()),
+        ).thenAnswer((_) async => deregistrationEvent);
+        when(() => nostrClient.publishEvent(registrationEvent)).thenAnswer((
+          _,
+        ) async {
+          events.add('registration publish started');
+          final result = await registrationPublishCompleter.future;
+          events.add('registration publish completed');
+          return result;
+        });
+        when(() => defaultCleanupClient.initialize()).thenAnswer((_) async {});
+        when(() => defaultCleanupClient.dispose()).thenAnswer((_) async {});
+        when(
+          () => defaultCleanupClient.publishEvent(deregistrationEvent),
+        ).thenAnswer((_) async {
+          events.add('deregister');
+          return PublishSuccess(event: deregistrationEvent);
+        });
+
+        final nostrSession = _TestNostrSession(
+          const NostrSessionReadiness.signedOut(),
+        );
+        final container = ProviderContainer(
+          overrides: [
+            firebaseMessagingProvider.overrideWithValue(messaging),
+            authServiceProvider.overrideWithValue(authService),
+            notificationPreferencesStoreProvider.overrideWithValue(
+              preferenceStore,
+            ),
+            notificationServiceProvider.overrideWithValue(
+              _MockNotificationService(),
+            ),
+            currentEnvironmentProvider.overrideWith((_) => pushEnvironment),
+            nostrSessionProvider.overrideWith(() => nostrSession),
+            nostrClientFactoryProvider.overrideWithValue(
+              ({dbClient, environmentConfig, signer, statisticsService}) =>
+                  defaultCleanupClient,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+        container.read(pushNotificationSyncProvider);
+
+        when(() => nostrClient.publicKey).thenReturn(pubkeyA);
+        nostrSession.setReadiness(
+          NostrSessionReadiness.nostrReady(
+            pubkey: pubkeyA,
+            client: nostrClient,
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        tokenRefreshController.add('refreshed-token-during-session');
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        expect(events, ['registration publish started']);
+
+        final teardownFuture = beforeSessionTeardownCallback!();
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        expect(events, ['registration publish started']);
+
+        registrationPublishCompleter.complete(
+          PublishSuccess(event: registrationEvent),
+        );
+        await teardownFuture;
+
+        expect(events, [
+          'registration publish started',
+          'registration publish completed',
+          'deregister',
+        ]);
       },
     );
 

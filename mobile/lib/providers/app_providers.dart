@@ -240,7 +240,6 @@ final pushNotificationServiceProvider = Provider<PushNotificationService?>((
     notificationService: notificationService,
     environmentConfig: envConfig,
     getToken: firebaseMessaging.getToken,
-    onTokenRefresh: firebaseMessaging.onTokenRefresh,
     isCurrent: () {
       final currentReadiness = ref.read(nostrSessionProvider);
       return currentReadiness.isReadyForActiveClient &&

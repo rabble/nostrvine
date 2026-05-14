@@ -55,14 +55,17 @@ class PushNotificationSessionCoordinator {
   final PushServiceReader _readPushService;
   final CleanupClientFactory _createCleanupClient;
 
-  _PushRegistrationOperation? _activeRegistration;
+  final _activeRegistrations = <_PushRegistrationOperation>{};
+  StreamSubscription<String>? _tokenRefreshSubscription;
   String? _lastReadyPubkey;
   NostrClient? _lastReadyClient;
   PushNotificationService? _lastReadyPushService;
   NostrIdentity? _lastReadyIdentity;
 
   void dispose() {
-    _invalidateActiveRegistration();
+    _tokenRefreshSubscription?.cancel();
+    _tokenRefreshSubscription = null;
+    _invalidateActiveRegistrations();
   }
 
   void handleAuthStateChange() {
@@ -72,14 +75,14 @@ class PushNotificationSessionCoordinator {
       _lastReadyClient = null;
       _lastReadyPushService = null;
       _lastReadyIdentity = null;
-      _invalidateActiveRegistration();
+      _invalidateActiveRegistrations();
     }
   }
 
   void handleReadiness(NostrSessionReadiness readiness) {
     final readyPubkey = readiness.pubkey;
     if (!readiness.isReadyForActiveClient || readyPubkey == null) {
-      _invalidateActiveRegistration();
+      _invalidateActiveRegistrations();
       if (readyPubkey == null ||
           _authService.currentIdentity?.pubkey != readyPubkey ||
           (_lastReadyPubkey != null && _lastReadyPubkey != readyPubkey)) {
@@ -96,7 +99,7 @@ class PushNotificationSessionCoordinator {
       _lastReadyClient = null;
       _lastReadyPushService = null;
       _lastReadyIdentity = null;
-      _invalidateActiveRegistration();
+      _invalidateActiveRegistrations();
       return;
     }
 
@@ -108,7 +111,7 @@ class PushNotificationSessionCoordinator {
       _lastReadyClient = null;
       _lastReadyPushService = null;
       _lastReadyIdentity = null;
-      _invalidateActiveRegistration();
+      _invalidateActiveRegistrations();
       return;
     }
 
@@ -116,21 +119,69 @@ class PushNotificationSessionCoordinator {
     _lastReadyClient = readiness.client;
     _lastReadyPushService = pushService;
     _lastReadyIdentity = identity;
-    final operation = _PushRegistrationOperation(
+    _ensureTokenRefreshSubscription();
+    _startRegistrationOperation(
       pubkey: readyPubkey,
       client: readiness.client!,
       pushService: pushService,
       identity: identity,
     );
-    _activeRegistration = operation;
-    final registrationFuture = _requestPermissionAndRegister(operation);
+  }
+
+  void _startRegistrationOperation({
+    required String pubkey,
+    required NostrClient client,
+    required PushNotificationService pushService,
+    required NostrIdentity identity,
+    String? token,
+  }) {
+    final operation = _PushRegistrationOperation(
+      pubkey: pubkey,
+      client: client,
+      pushService: pushService,
+      identity: identity,
+    );
+    _activeRegistrations.add(operation);
+    final registrationFuture = _requestPermissionAndRegister(
+      operation,
+      token: token,
+    );
     operation.future = registrationFuture;
     unawaited(
       registrationFuture.whenComplete(() {
-        if (identical(_activeRegistration, operation)) {
-          _activeRegistration = null;
-        }
+        _activeRegistrations.remove(operation);
       }),
+    );
+  }
+
+  void _ensureTokenRefreshSubscription() {
+    _tokenRefreshSubscription ??= _firebaseMessaging.onTokenRefresh.listen(
+      _handleTokenRefresh,
+    );
+  }
+
+  void _handleTokenRefresh(String token) {
+    final pubkey = _lastReadyPubkey;
+    final client = _lastReadyClient;
+    final pushService = _lastReadyPushService;
+    final identity = _lastReadyIdentity;
+    if (pubkey == null || client == null || pushService == null) return;
+    if (identity == null || _authService.currentIdentity?.pubkey != pubkey) {
+      return;
+    }
+    if (!_isOutgoingSessionCurrent(pubkey, client, pushService)) return;
+
+    Log.info(
+      'FCM token refreshed — re-registering',
+      name: 'PushNotificationSync',
+      category: LogCategory.system,
+    );
+    _startRegistrationOperation(
+      pubkey: pubkey,
+      client: client,
+      pushService: pushService,
+      identity: identity,
+      token: token,
     );
   }
 
@@ -139,31 +190,45 @@ class PushNotificationSessionCoordinator {
     final client = _lastReadyClient;
     final pushService = _lastReadyPushService;
     final identity = _lastReadyIdentity;
-    final operation = _activeRegistration;
-    _invalidateActiveRegistration();
+    final operations = List<_PushRegistrationOperation>.of(
+      _activeRegistrations,
+    );
+    _invalidateActiveRegistrations();
     if (pubkey == null || client == null || pushService == null) return;
     pushService.deactivateRegistration();
 
-    final registrationOperation = operation;
-    if (registrationOperation != null &&
-        registrationOperation.phase == _PushRegistrationPhase.mayPublish) {
-      registrationOperation.deferredCleanupDeregistrationEvent ??=
-          await _createDeferredCleanupDeregistrationEvent(
-            registrationOperation,
-          );
+    Event? deferredCleanupDeregistrationEvent;
+    for (final operation in operations) {
+      if (operation.phase == _PushRegistrationPhase.mayPublish) {
+        deferredCleanupDeregistrationEvent ??=
+            await _createDeferredCleanupDeregistrationEvent(operation);
+        operation.deferredCleanupDeregistrationEvent ??=
+            deferredCleanupDeregistrationEvent;
+      }
     }
 
-    if (operation?.phase != _PushRegistrationPhase.beforePushService) {
+    final operationsToWait = operations
+        .where(
+          (operation) =>
+              operation.phase != _PushRegistrationPhase.beforePushService,
+        )
+        .toList();
+    if (operationsToWait.isNotEmpty) {
       try {
-        await operation?.future?.timeout(const Duration(seconds: 4));
+        await Future.wait(
+          operationsToWait.map(
+            (operation) =>
+                operation.future?.timeout(const Duration(seconds: 4)) ??
+                Future<void>.value(),
+          ),
+        );
       } on TimeoutException catch (e) {
         Log.warning(
           'Timed out waiting for push registration before deregistration: $e',
           name: 'PushNotificationSync',
           category: LogCategory.system,
         );
-        if (operation != null &&
-            operation.phase == _PushRegistrationPhase.mayPublish) {
+        for (final operation in operationsToWait) {
           _scheduleDeregisterAfterRegistration(operation);
         }
         return;
@@ -177,7 +242,7 @@ class PushNotificationSessionCoordinator {
       return;
     }
 
-    final deregistrationEvent = operation?.deferredCleanupDeregistrationEvent;
+    final deregistrationEvent = deferredCleanupDeregistrationEvent;
     if (deregistrationEvent != null) {
       try {
         await _publishDeregistrationWithCleanupClient(
@@ -198,12 +263,12 @@ class PushNotificationSessionCoordinator {
     await _deregisterWithCleanupClient(pubkey, client, pushService, identity);
   }
 
-  void _invalidateActiveRegistration() {
-    _activeRegistration = null;
+  void _invalidateActiveRegistrations() {
+    _activeRegistrations.clear();
   }
 
   bool _isRegistrationCurrent(_PushRegistrationOperation operation) {
-    if (!identical(_activeRegistration, operation) ||
+    if (!_activeRegistrations.contains(operation) ||
         _authService.currentIdentity?.pubkey != operation.pubkey) {
       return false;
     }
@@ -219,8 +284,9 @@ class PushNotificationSessionCoordinator {
   }
 
   Future<void> _requestPermissionAndRegister(
-    _PushRegistrationOperation operation,
-  ) async {
+    _PushRegistrationOperation operation, {
+    String? token,
+  }) async {
     try {
       final current = await _firebaseMessaging.getNotificationSettings();
       if (!_isRegistrationCurrent(operation)) return;
@@ -244,10 +310,19 @@ class PushNotificationSessionCoordinator {
       if (!_isRegistrationCurrent(operation)) return;
 
       operation.phase = _PushRegistrationPhase.mayPublish;
-      await operation.pushService.register(
-        operation.pubkey,
-        isCurrent: () => _isRegistrationCurrent(operation),
-      );
+      bool isCurrent() => _isRegistrationCurrent(operation);
+      if (token == null) {
+        await operation.pushService.register(
+          operation.pubkey,
+          isCurrent: isCurrent,
+        );
+      } else {
+        await operation.pushService.registerToken(
+          operation.pubkey,
+          token,
+          isCurrent: isCurrent,
+        );
+      }
     } catch (e) {
       Log.warning(
         'Push notification registration failed: $e',

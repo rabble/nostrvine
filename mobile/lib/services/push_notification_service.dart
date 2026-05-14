@@ -49,16 +49,13 @@ class PushNotificationService {
     required NotificationService notificationService,
     required EnvironmentConfig environmentConfig,
     required Future<String?> Function() getToken,
-    required Stream<String> onTokenRefresh,
     FutureOr<bool> Function()? isCurrent,
   }) : _authService = authService,
        _nostrClient = nostrClient,
        _notificationService = notificationService,
        _environmentConfig = environmentConfig,
        _getToken = getToken,
-       _isCurrent = isCurrent {
-    _tokenRefreshSubscription = onTokenRefresh.listen(_onTokenRefreshed);
-  }
+       _isCurrent = isCurrent;
 
   final AuthService _authService;
   final NostrClient _nostrClient;
@@ -66,7 +63,6 @@ class PushNotificationService {
   final EnvironmentConfig _environmentConfig;
   final Future<String?> Function() _getToken;
   final FutureOr<bool> Function()? _isCurrent;
-  StreamSubscription<String>? _tokenRefreshSubscription;
   bool _acceptsRegistration = true;
 
   /// Prevents future token registration publishes for this session.
@@ -104,6 +100,25 @@ class PushNotificationService {
       );
       return;
     }
+
+    await _publishRegistration(
+      token,
+      pushServicePubkey,
+      isCurrent: isCurrent,
+    );
+  }
+
+  Future<void> registerToken(
+    String userPubkey,
+    String token, {
+    FutureOr<bool> Function()? isCurrent,
+  }) async {
+    if (kIsWeb) return;
+    if (userPubkey != _authService.currentIdentity?.pubkey) return;
+
+    final pushServicePubkey = _configuredPushServicePubkey();
+    if (pushServicePubkey == null) return;
+    if (!await _isPublishCurrent(isCurrent)) return;
 
     await _publishRegistration(
       token,
@@ -318,13 +333,7 @@ class PushNotificationService {
   }
 
   /// Releases resources held by this service.
-  ///
-  /// Cancels the FCM token refresh subscription. The service should not be
-  /// used after [dispose] is called.
-  void dispose() {
-    _tokenRefreshSubscription?.cancel();
-    _tokenRefreshSubscription = null;
-  }
+  void dispose() {}
 
   // ---------------------------------------------------------------------------
   // Private helpers
@@ -446,33 +455,6 @@ class PushNotificationService {
       return false;
     }
     return isCurrent == null || await isCurrent();
-  }
-
-  void _onTokenRefreshed(String newToken) {
-    Log.info(
-      'FCM token refreshed — re-registering',
-      name: 'PushNotificationService',
-      category: LogCategory.system,
-    );
-    final pushServicePubkey = _configuredPushServicePubkey();
-    if (pushServicePubkey == null) return;
-
-    unawaited(_publishTokenRefreshRegistration(newToken, pushServicePubkey));
-  }
-
-  Future<void> _publishTokenRefreshRegistration(
-    String token,
-    String pushServicePubkey,
-  ) async {
-    try {
-      await _publishRegistration(token, pushServicePubkey);
-    } catch (e) {
-      Log.warning(
-        'Push notification token refresh registration failed: $e',
-        name: 'PushNotificationService',
-        category: LogCategory.system,
-      );
-    }
   }
 
   String? _configuredPushServicePubkey() {

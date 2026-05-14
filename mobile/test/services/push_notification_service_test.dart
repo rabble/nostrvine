@@ -44,7 +44,6 @@ void main() {
   late _MockNostrClient mockNostrClient;
   late _MockNotificationService mockNotificationService;
   late _MockNostrSigner mockNostrSigner;
-  late StreamController<String> tokenRefreshController;
 
   const testPubkey =
       'abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890';
@@ -69,15 +68,10 @@ void main() {
     mockNostrClient = _MockNostrClient();
     mockNotificationService = _MockNotificationService();
     mockNostrSigner = _MockNostrSigner();
-    tokenRefreshController = StreamController<String>.broadcast();
 
     when(() => mockNostrClient.signer).thenReturn(mockNostrSigner);
 
     registerFallbackValue(_FakeEvent());
-  });
-
-  tearDown(() {
-    tokenRefreshController.close();
   });
 
   PushNotificationService buildService({
@@ -90,7 +84,6 @@ void main() {
       notificationService: mockNotificationService,
       environmentConfig: testEnvironment,
       getToken: () async => token,
-      onTokenRefresh: tokenRefreshController.stream,
       isCurrent: isCurrent,
     );
   }
@@ -222,7 +215,6 @@ void main() {
             notificationService: mockNotificationService,
             environmentConfig: placeholderEnvironment,
             getToken: () async => testToken,
-            onTokenRefresh: tokenRefreshController.stream,
           );
 
           await service.register(testPubkey);
@@ -611,7 +603,6 @@ void main() {
             notificationService: mockNotificationService,
             environmentConfig: placeholderEnvironment,
             getToken: () async => testToken,
-            onTokenRefresh: tokenRefreshController.stream,
           );
 
           await service.updatePreferences(prefs);
@@ -776,11 +767,14 @@ void main() {
       });
     });
 
-    group('token refresh', () {
-      test('re-registers when token refreshes', () async {
+    group('registerToken', () {
+      test('publishes provided refreshed token', () async {
         when(
           () => mockNostrSigner.nip44Encrypt(any(), any()),
         ).thenAnswer((_) async => encryptedPayload);
+        when(() => mockAuthService.currentIdentity).thenReturn(
+          KeycastNostrIdentity(pubkey: testPubkey, rpcSigner: mockNostrSigner),
+        );
 
         final fakeEvent = _FakeEvent();
         when(
@@ -797,11 +791,8 @@ void main() {
 
         final service = buildService();
 
-        // Trigger a token refresh
-        tokenRefreshController.add('new-refreshed-token');
-        await Future<void>.delayed(Duration.zero);
+        await service.registerToken(testPubkey, 'new-refreshed-token');
 
-        // The registration call should be triggered by the token refresh
         verify(
           () => mockNostrSigner.nip44Encrypt(
             testEnvironment.pushServicePubkey,
@@ -812,37 +803,27 @@ void main() {
         service.dispose();
       });
 
-      test('drops token refresh registration when session is stale', () async {
-        final service = buildService(isCurrent: () => false);
+      test(
+        'drops refreshed token registration when session is stale',
+        () async {
+          when(() => mockAuthService.currentIdentity).thenReturn(
+            KeycastNostrIdentity(
+              pubkey: testPubkey,
+              rpcSigner: mockNostrSigner,
+            ),
+          );
+          final service = buildService(isCurrent: () => false);
 
-        tokenRefreshController.add('new-refreshed-token');
-        await Future<void>.delayed(Duration.zero);
+          await service.registerToken(testPubkey, 'new-refreshed-token');
 
-        verifyNever(() => mockNostrSigner.nip44Encrypt(any(), any()));
-        service.dispose();
-      });
-
-      test('catches token refresh registration failures', () async {
-        when(
-          () => mockNostrSigner.nip44Encrypt(any(), any()),
-        ).thenThrow(StateError('relay encryption failed'));
-
-        final service = buildService();
-        final unhandled = <Object>[];
-
-        await runZonedGuarded(() async {
-          tokenRefreshController.add('new-refreshed-token');
-          await Future<void>.delayed(Duration.zero);
-          await Future<void>.delayed(Duration.zero);
-        }, (error, stack) => unhandled.add(error));
-
-        expect(unhandled, isEmpty);
-        service.dispose();
-      });
+          verifyNever(() => mockNostrSigner.nip44Encrypt(any(), any()));
+          service.dispose();
+        },
+      );
     });
 
     group('dispose', () {
-      test('cancels token refresh subscription without errors', () {
+      test('completes without errors', () {
         final service = buildService();
         expect(service.dispose, returnsNormally);
       });
