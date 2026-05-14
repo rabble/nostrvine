@@ -590,6 +590,8 @@ String? _normalizeModerationLabel(String value) {
       .replaceAll(RegExp(r'\s+'), '-');
 
   switch (normalized) {
+    case 'sexual-content':
+      return 'sexual';
     case 'pornography':
     case 'explicit':
       return 'porn';

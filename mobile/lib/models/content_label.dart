@@ -85,8 +85,25 @@ enum ContentLabel {
   /// Returns `null` if [value] does not match any known label.
   static ContentLabel? fromValue(String? value) {
     if (value == null || value.isEmpty) return null;
+    final normalized = value
+        .trim()
+        .toLowerCase()
+        .replaceAll('_', '-')
+        .replaceAll(RegExp(r'\s+'), '-');
+
+    final canonicalValue = switch (normalized) {
+      'sexual-content' => 'sexual',
+      'pornography' || 'explicit' => 'porn',
+      'graphic-violence' || 'gore' => 'graphic-media',
+      'nsfw' => 'nudity',
+      'offensive' || 'hate-speech' => 'hate',
+      'recreational-drug' => 'drugs',
+      'weapon' => 'violence',
+      _ => normalized,
+    };
+
     for (final label in ContentLabel.values) {
-      if (label.value == value) return label;
+      if (label.value == canonicalValue) return label;
     }
     return null;
   }

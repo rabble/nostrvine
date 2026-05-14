@@ -1,4 +1,5 @@
 import 'package:models/models.dart';
+import 'package:openvine/models/content_label.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 
 /// Builds the effective moderation label set for a [VideoEvent].
@@ -79,17 +80,5 @@ String? normalizeModerationLabelValue(String? value) {
     return null;
   }
 
-  switch (normalized) {
-    case 'nsfw':
-      return 'nudity';
-    case 'explicit':
-      return 'porn';
-    case 'pornography':
-      return 'porn';
-    case 'graphic-violence':
-    case 'gore':
-      return 'graphic-media';
-    default:
-      return normalized;
-  }
+  return ContentLabel.fromValue(value)?.value ?? normalized;
 }

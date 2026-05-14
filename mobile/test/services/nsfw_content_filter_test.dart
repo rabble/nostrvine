@@ -348,6 +348,28 @@ void main() {
         expect(filter(video), isTrue);
       });
 
+      test(
+        'respects sexual show preference for sexual-content alias',
+        () async {
+          await ageService.initialize();
+          await ageService.setAdultContentVerified(true);
+          await contentFilterService.setPreference(
+            ContentLabel.sexual,
+            ContentFilterPreference.show,
+          );
+
+          final filter = createNsfwFilter(
+            contentFilterService,
+            moderationLabelService: moderationLabelService,
+          );
+          final video = _createVideo(
+            moderationLabels: const ['sexual-content'],
+          );
+
+          expect(filter(video), isFalse);
+        },
+      );
+
       test('does not hide videos with no moderation labels', () {
         final filter = createNsfwFilter(
           contentFilterService,

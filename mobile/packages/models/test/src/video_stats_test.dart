@@ -981,7 +981,7 @@ void main() {
           buildJson(['sexual content', 'graphic media']),
         );
 
-        expect(stats.moderationLabels, contains('sexual-content'));
+        expect(stats.moderationLabels, contains('sexual'));
         expect(stats.moderationLabels, contains('graphic-media'));
       });
 
@@ -1004,6 +1004,14 @@ void main() {
         expect(stats.moderationLabels, contains('porn'));
         expect(stats.moderationLabels, contains('nudity'));
         expect(stats.moderationLabels, contains('graphic-media'));
+      });
+
+      test('maps sexual-content alias to canonical sexual label', () {
+        final stats = VideoStats.fromJson(
+          buildJson(['sexual-content']),
+        );
+
+        expect(stats.moderationLabels, equals(['sexual']));
       });
 
       test('drops empty strings', () {
