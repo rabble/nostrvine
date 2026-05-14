@@ -1,6 +1,7 @@
-// ABOUTME: Expanded video metadata bottom sheet opened by the more button.
-// ABOUTME: Shows title, stats, creator, tags, collaborators, inspired by,
-// ABOUTME: reposted by, and sounds sections. Read-only, no new BLoC needed.
+// ABOUTME: Expanded video metadata bottom sheet opened by the info button.
+// ABOUTME: Header (date + title + badges + description + tags), stats, creator,
+// ABOUTME: collaborators, inspired by, reposted by, sounds, verification.
+// ABOUTME: Read-only, no new BLoC needed.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -8,9 +9,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
+import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
+import 'package:openvine/utils/proofmode_helpers.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_badges_row.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_sounds_section.dart';
@@ -31,7 +34,7 @@ import 'package:time_formatter/time_formatter.dart';
 /// All data is read-only from [VideoEvent] and the existing
 /// [VideoInteractionsBloc] in the widget tree — no new BLoC is created.
 ///
-/// Matches Figma node `12345:71362` ("metadata-expanded").
+/// Matches Figma node `15675:27353` ("metadata-expanded").
 class MetadataExpandedSheet extends StatelessWidget {
   @visibleForTesting
   const MetadataExpandedSheet({required this.video, super.key});
@@ -98,34 +101,36 @@ class _MetadataContent extends StatelessWidget {
         bottom: MediaQuery.paddingOf(context).bottom + 16,
       ),
       children: [
-        _TitleSection(video: video),
+        _HeaderSection(video: video),
         VideoReplyParentLink(
           video: video,
           variant: VideoReplyParentLinkVariant.metadata,
         ),
-        MetadataBadgesRow(video: video),
         MetadataStatsRow(video: video),
-        MetadataVerificationSection(video: video),
         MetadataCreatorSection(pubkey: video.pubkey),
-        MetadataTagsSection(video: video),
         MetadataCollaboratorsSection(video: video),
         MetadataInspiredBySection(video: video),
         MetadataRepostedBySection(video: video),
         MetadataSoundsSection(video: video),
+        MetadataVerificationSection(video: video),
       ],
     );
   }
 }
 
-/// Title, description, and posted-date cluster at the top of the sheet.
+/// Top header block: posted date, title, badges, description, and tags.
 ///
-/// Layout mirrors the Figma frame hierarchy: title and description form
-/// an inner cluster (8 px gap), and the posted date is a sibling
-/// separated by 16 px. The date renders independently of title and
-/// description so classic Vine archives without captions still show
-/// their original Vine-era publish year.
-class _TitleSection extends StatelessWidget {
-  const _TitleSection({required this.video});
+/// Mirrors the Figma frame hierarchy (`15675:27356`):
+/// - Outer column with 16 px gap between date, title cluster, and tags.
+/// - Inner title cluster (8 px gap): title, badges row, description.
+/// - Date renders independently of title/description so classic Vine
+///   archives without captions still show their original publish year.
+///
+/// The visible date drops the localized "Posted on" prefix to match the
+/// Figma copy; the prefix lives on the [Semantics] label so screen
+/// readers still announce it.
+class _HeaderSection extends StatelessWidget {
+  const _HeaderSection({required this.video});
 
   final VideoEvent video;
 
@@ -134,16 +139,30 @@ class _TitleSection extends StatelessWidget {
     final l10n = context.l10n;
     final title = video.displayTitle;
     final description = video.displayContent;
-    final hasTitleOrDescription =
-        (title != null && title.isNotEmpty) || description.isNotEmpty;
 
     final publishedAtSeconds =
         int.tryParse(video.publishedAt ?? '') ?? video.createdAt;
-    final formattedDate = TimeFormatter.formatAbsoluteDate(
+    final formattedDate = TimeFormatter.formatLongDate(
       publishedAtSeconds,
       locale: Localizations.localeOf(context).toString(),
     );
-    final postedDateText = l10n.metadataPostedDateSemantics(formattedDate);
+    final semanticDate = l10n.metadataPostedDateSemantics(formattedDate);
+
+    final hasTitle = title != null && title.isNotEmpty;
+    final hasDescription = description.isNotEmpty;
+    final hasBadges =
+        video.shouldShowProofModeBadge || video.shouldShowNotDivineBadge;
+    final hasTags = video.categories.isNotEmpty || video.allHashtags.isNotEmpty;
+
+    final titleCluster = <Widget>[
+      if (hasTitle) Text(title, style: VineTheme.headlineSmallFont()),
+      if (hasBadges) MetadataBadgesRow(video: video),
+      if (hasDescription)
+        LinkifiedText(
+          text: description,
+          style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+        ),
+    ];
 
     return DecoratedBox(
       decoration: const BoxDecoration(
@@ -153,34 +172,26 @@ class _TitleSection extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: 16,
           children: [
-            if (hasTitleOrDescription) ...[
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                spacing: 8,
-                children: [
-                  if (title != null && title.isNotEmpty)
-                    Text(title, style: VineTheme.titleMediumFont()),
-                  if (description.isNotEmpty)
-                    LinkifiedText(
-                      text: description,
-                      style: VineTheme.bodyLargeFont(
-                        color: VineTheme.onSurfaceVariant,
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 16),
-            ],
             Semantics(
-              label: postedDateText,
-              child: Text(
-                postedDateText,
-                style: VineTheme.labelMediumFont(
-                  color: VineTheme.onSurfaceVariant,
+              label: semanticDate,
+              child: ExcludeSemantics(
+                child: Text(
+                  formattedDate,
+                  style: VineTheme.labelSmallFont(
+                    color: VineTheme.onSurfaceVariant,
+                  ),
                 ),
               ),
             ),
+            if (titleCluster.isNotEmpty)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: 8,
+                children: titleCluster,
+              ),
+            if (hasTags) MetadataTagsSection(video: video),
           ],
         ),
       ),

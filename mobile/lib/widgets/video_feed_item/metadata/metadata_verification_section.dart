@@ -49,6 +49,10 @@ class MetadataVerificationSection extends StatelessWidget {
 }
 
 /// A single check item showing pass/fail status.
+///
+/// Label sits on the left and the status icon on the right with a
+/// `space-between` row layout, matching Figma node `15675:27860`.
+/// A green check marks a passed signal; a muted X marks a missing one.
 class _VerificationCheckItem extends StatelessWidget {
   const _VerificationCheckItem({required this.label, required this.passed});
 
@@ -58,22 +62,19 @@ class _VerificationCheckItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      spacing: 6,
       children: [
-        DivineIcon(
-          icon: passed ? DivineIconName.checkCircle : DivineIconName.prohibit,
-          size: 14,
-          color: passed ? VineTheme.success : VineTheme.onSurfaceMuted,
-        ),
         Expanded(
           child: Text(
             label,
-            style: VineTheme.bodySmallFont(
-              color: passed
-                  ? VineTheme.onSurfaceVariant
-                  : VineTheme.onSurfaceMuted,
+            style: VineTheme.bodyMediumFont(
+              color: passed ? VineTheme.whiteText : VineTheme.onSurfaceMuted,
             ),
           ),
+        ),
+        const SizedBox(width: 8),
+        DivineIcon(
+          icon: passed ? DivineIconName.check : DivineIconName.x,
+          color: passed ? VineTheme.success : VineTheme.onSurfaceMuted,
         ),
       ],
     );

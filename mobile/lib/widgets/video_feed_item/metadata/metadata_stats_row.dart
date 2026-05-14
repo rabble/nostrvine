@@ -108,15 +108,13 @@ class _StatColumn extends StatelessWidget {
       children: [
         Text(
           displayValue,
-          // Figma spec: 20px/28px Bricolage Grotesque 800
-          // titleLargeFont is 22/28 — adjust fontSize to match Figma.
-          style: VineTheme.titleLargeFont().copyWith(fontSize: 20),
+          style: VineTheme.statNumberFont(),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         Text(
           label,
-          style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+          style: VineTheme.labelSmallFont(color: VineTheme.onSurfaceVariant),
         ),
       ],
     );

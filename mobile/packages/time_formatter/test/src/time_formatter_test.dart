@@ -303,6 +303,26 @@ void main() {
       });
     });
 
+    group('formatLongDate', () {
+      test('returns yMMMMd format with full month name', () {
+        final ts = DateTime.utc(2003, 4, 22, 12).millisecondsSinceEpoch ~/ 1000;
+        expect(
+          TimeFormatter.formatLongDate(ts, locale: 'en_US'),
+          equals('April 22, 2003'),
+        );
+      });
+
+      test('honors a non-default locale', () async {
+        await initializeDateFormatting('es');
+        final ts =
+            DateTime.utc(2012, 12, 11, 12).millisecondsSinceEpoch ~/ 1000;
+        final spanish = TimeFormatter.formatLongDate(ts, locale: 'es');
+        final english = TimeFormatter.formatLongDate(ts, locale: 'en_US');
+        expect(spanish, isNot(equals(english)));
+        expect(spanish, contains('2012'));
+      });
+    });
+
     group('formatPreciseDuration', () {
       test('formats zero duration', () {
         expect(

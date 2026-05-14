@@ -113,6 +113,20 @@ abstract class TimeFormatter {
     return DateFormat.yMMMd(locale).format(date);
   }
 
+  /// Formats a Unix timestamp (seconds) into a locale-aware long-form
+  /// absolute date — e.g. "April 22, 2003".
+  ///
+  /// Like [formatAbsoluteDate] but spells out the month name in full.
+  /// Used by surfaces where the date is the primary metadata (video
+  /// info sheet) rather than a compact secondary line.
+  static String formatLongDate(int unixSeconds, {String? locale}) {
+    final date = DateTime.fromMillisecondsSinceEpoch(
+      unixSeconds * 1000,
+      isUtc: true,
+    );
+    return DateFormat.yMMMMd(locale).format(date);
+  }
+
   /// Returns the number of calendar days between [now] and [date].
   static int _calendarDayDiff(DateTime now, DateTime date) {
     final today = DateTime(now.year, now.month, now.day);

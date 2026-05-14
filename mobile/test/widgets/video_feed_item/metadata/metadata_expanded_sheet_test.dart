@@ -188,9 +188,9 @@ void main() {
   }
 
   // ---------------------------------------------------------------------------
-  // Title section
+  // Header section
   // ---------------------------------------------------------------------------
-  group('_TitleSection (via $MetadataExpandedSheet)', () {
+  group('_HeaderSection (via $MetadataExpandedSheet)', () {
     testWidgets('renders fetched parent context for a video reply', (
       tester,
     ) async {
@@ -270,18 +270,12 @@ void main() {
       expect(find.byType(MetadataStatsRow), findsOneWidget);
       // The title text must not appear since the video has no title.
       expect(find.text('Who knew?'), findsNothing);
-      // The date sibling renders even with no title or description.
-      final expectedDate =
-          DateFormat.yMMMd(
-            'en',
-          ).format(
-            DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000, isUtc: true),
-          );
-      final l10n = _l10n(tester);
-      expect(
-        find.text(l10n.metadataPostedDateSemantics(expectedDate)),
-        findsOneWidget,
+      // The date renders even with no title or description. The visible
+      // text is just the date — "Posted on …" is the screen-reader label.
+      final expectedDate = DateFormat.yMMMMd('en').format(
+        DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000, isUtc: true),
       );
+      expect(find.text(expectedDate), findsOneWidget);
     });
 
     testWidgets('renders posted date for a recent post', (tester) async {
@@ -291,17 +285,10 @@ void main() {
         buildSubject(child: MetadataExpandedSheet(video: video)),
       );
 
-      final expectedDate =
-          DateFormat.yMMMd(
-            'en',
-          ).format(
-            DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000, isUtc: true),
-          );
-      final l10n = _l10n(tester);
-      expect(
-        find.text(l10n.metadataPostedDateSemantics(expectedDate)),
-        findsOneWidget,
+      final expectedDate = DateFormat.yMMMMd('en').format(
+        DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000, isUtc: true),
       );
+      expect(find.text(expectedDate), findsOneWidget);
     });
 
     testWidgets('prefers published_at for the visible posted date', (
@@ -318,20 +305,10 @@ void main() {
         buildSubject(child: MetadataExpandedSheet(video: video)),
       );
 
-      final expectedDate =
-          DateFormat.yMMMd(
-            'en',
-          ).format(
-            DateTime.fromMillisecondsSinceEpoch(
-              publishedAt * 1000,
-              isUtc: true,
-            ),
-          );
-      final l10n = _l10n(tester);
-      expect(
-        find.text(l10n.metadataPostedDateSemantics(expectedDate)),
-        findsOneWidget,
+      final expectedDate = DateFormat.yMMMMd('en').format(
+        DateTime.fromMillisecondsSinceEpoch(publishedAt * 1000, isUtc: true),
       );
+      expect(find.text(expectedDate), findsOneWidget);
     });
 
     testWidgets('renders Vine-era date for a classic vine timestamp', (
@@ -352,7 +329,7 @@ void main() {
       expect(find.textContaining('2012'), findsWidgets);
     });
 
-    testWidgets('applies labelMedium typography with onSurfaceVariant color', (
+    testWidgets('applies labelSmall typography with onSurfaceVariant color', (
       tester,
     ) async {
       final video = _makeVideo(title: 'Who knew?');
@@ -361,17 +338,11 @@ void main() {
         buildSubject(child: MetadataExpandedSheet(video: video)),
       );
 
-      final expectedDate =
-          DateFormat.yMMMd(
-            'en',
-          ).format(
-            DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000, isUtc: true),
-          );
-      final l10n = _l10n(tester);
-      final dateText = tester.widget<Text>(
-        find.text(l10n.metadataPostedDateSemantics(expectedDate)),
+      final expectedDate = DateFormat.yMMMMd('en').format(
+        DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000, isUtc: true),
       );
-      expect(dateText.style?.fontSize, equals(12));
+      final dateText = tester.widget<Text>(find.text(expectedDate));
+      expect(dateText.style?.fontSize, equals(11));
       expect(dateText.style?.fontWeight, equals(FontWeight.w600));
       expect(dateText.style?.color, equals(VineTheme.onSurfaceVariant));
     });
@@ -387,19 +358,11 @@ void main() {
           buildSubject(child: MetadataExpandedSheet(video: video)),
         );
 
-        final expectedDate =
-            DateFormat.yMMMd(
-              'en',
-            ).format(
-              DateTime.fromMillisecondsSinceEpoch(
-                1700000000 * 1000,
-                isUtc: true,
-              ),
-            );
-        final l10n = _l10n(tester);
-        final node = tester.getSemantics(
-          find.text(l10n.metadataPostedDateSemantics(expectedDate)),
+        final expectedDate = DateFormat.yMMMMd('en').format(
+          DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000, isUtc: true),
         );
+        final l10n = _l10n(tester);
+        final node = tester.getSemantics(find.text(expectedDate));
         expect(
           node.label,
           contains(l10n.metadataPostedDateSemantics(expectedDate)),
@@ -977,10 +940,10 @@ void main() {
       // and icon enum value.
       final checkIcons = tester
           .widgetList<DivineIcon>(find.byType(DivineIcon))
-          .where((w) => w.icon == DivineIconName.checkCircle);
+          .where((w) => w.icon == DivineIconName.check);
       final failIcons = tester
           .widgetList<DivineIcon>(find.byType(DivineIcon))
-          .where((w) => w.icon == DivineIconName.prohibit);
+          .where((w) => w.icon == DivineIconName.x);
       expect(checkIcons.length, 3);
       expect(failIcons.length, 1);
     });
@@ -1102,11 +1065,11 @@ void main() {
       );
       expect(find.text('Likes'), findsOneWidget);
 
-      // Badges row (Human-Made from verification, not Classic Vine)
+      // Badges row (Human-Made from verification, not Classic Vine).
+      // Tags now live inside the header section, so they're visible
+      // without scrolling.
       expect(find.textContaining('Human-Made'), findsOneWidget);
-
-      // Verification section (video has 'verified_mobile' raw tag)
-      expect(find.text('Verification'), findsOneWidget);
+      expect(find.text('grease'), findsOneWidget);
 
       // Top section labels
       expect(find.text('Creator'), findsOneWidget);
@@ -1117,8 +1080,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Sebastian Heit'), findsOneWidget);
-      // Tags section has no label per Figma — verify chips directly.
-      expect(find.text('grease'), findsOneWidget);
 
       // Scroll further to reveal collaborators
       await tester.drag(listFinder, const Offset(0, -300));
@@ -1127,8 +1088,9 @@ void main() {
       expect(find.text('Collaborators'), findsOneWidget);
       expect(find.text('Josh Musick'), findsOneWidget);
 
-      // Scroll further to reveal remaining sections
-      await tester.drag(listFinder, const Offset(0, -400));
+      // Scroll further to reveal remaining sections including
+      // Verification, which now sits at the very bottom per Figma.
+      await tester.drag(listFinder, const Offset(0, -600));
       await tester.pumpAndSettle();
 
       expect(find.text('Inspired by'), findsOneWidget);
@@ -1137,6 +1099,11 @@ void main() {
       expect(find.text('Improvising'), findsOneWidget);
       expect(find.text('Sounds'), findsOneWidget);
       expect(find.text('Test Sound'), findsOneWidget);
+
+      // Verification section moved to the bottom of the sheet.
+      await tester.drag(listFinder, const Offset(0, -300));
+      await tester.pumpAndSettle();
+      expect(find.text('Verification'), findsOneWidget);
     });
 
     testWidgets('renders only populated sections for sparse video', (

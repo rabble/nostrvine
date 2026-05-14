@@ -1,7 +1,8 @@
-// ABOUTME: Tags section for the metadata expanded sheet.
+// ABOUTME: Tags row for the metadata expanded sheet.
 // ABOUTME: Displays category chips (accent-colored with emoji) and hashtag
-// ABOUTME: chips (green "#" prefix) in a wrapping layout without a section
-// ABOUTME: label, matching Figma node 12345:71463.
+// ABOUTME: chips (green "#" prefix) in a wrapping layout. Rendered inline
+// ABOUTME: inside the header section right below the description, so the
+// ABOUTME: surrounding container owns padding.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -14,13 +15,12 @@ import 'package:openvine/widgets/video_feed_item/metadata/metadata_categories_se
 /// Category chips have accent-colored backgrounds with emoji. Hashtag chips
 /// have a green "#" prefix. Classic Vine videos prepend a "classic" hashtag.
 ///
-/// Unlike other metadata sections, this section has **no label** and **no
-/// bottom border** per Figma spec — chips sit directly between the stats row
-/// and the Creator section.
+/// Rendered inline inside the metadata header section right below the
+/// description, between the description and the stats row.
 ///
 /// Returns [SizedBox.shrink] when the video has no tags and no categories.
 ///
-/// Matches Figma node `12345:71463`.
+/// Matches Figma node `15728:88010`.
 class MetadataTagsSection extends StatelessWidget {
   const MetadataTagsSection({required this.video, super.key});
 
@@ -34,19 +34,14 @@ class MetadataTagsSection extends StatelessWidget {
 
     if (!hasCategories && !hasHashtags) return const SizedBox.shrink();
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          // Category chips first (accent-colored with emoji)
-          for (var i = 0; i < video.categories.length; i++)
-            CategoryChip(categoryName: video.categories[i], index: i),
-          // Then hashtag chips
-          for (final tag in allHashtags) _HashtagChip(tag: tag),
-        ],
-      ),
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (var i = 0; i < video.categories.length; i++)
+          CategoryChip(categoryName: video.categories[i], index: i),
+        for (final tag in allHashtags) _HashtagChip(tag: tag),
+      ],
     );
   }
 }
