@@ -393,6 +393,8 @@ END
     final scopedConversationFilter = ownerPubkey == null
         ? '1 = 1'
         : '(c.owner_pubkey = ? OR c.owner_pubkey IS NULL)';
+    // Legacy conversation rows may still be ownerless, but scoped reads expose
+    // them to the current user alongside that user's messages.
     final latestMessageOwnerFilter = ownerPubkey == null
         ? '1 = 1'
         : '(dm.owner_pubkey = ? OR dm.owner_pubkey IS NULL)';
