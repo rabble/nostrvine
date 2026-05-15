@@ -128,6 +128,8 @@ class _CountRelay extends Relay {
 class _FailingSendRelay extends Relay {
   _FailingSendRelay(String url) : super(url, RelayStatus(url));
 
+  final List<List<dynamic>> sentMessages = [];
+
   @override
   Future<bool> doConnect() async {
     relayStatus.connected = ClientConnected.connected;
@@ -146,6 +148,7 @@ class _FailingSendRelay extends Relay {
     bool queueIfFailed = true,
     bool skipReconnect = false,
   }) async {
+    sentMessages.add(message);
     return false; // Always fail
   }
 }
@@ -481,6 +484,47 @@ void main() {
         tempRelaysCreated,
         isEmpty,
         reason: 'same target URL must not be attempted again as a temp relay',
+      );
+    });
+
+    test('sendEventAwaitOk falls back to a same-URL temp relay when the normal '
+        'target send fails immediately', () async {
+      final relayUrl = 'wss://relay.divine.video';
+      final failing = _FailingSendRelay(relayUrl);
+      final tempRelaysCreated = <String>[];
+      final tempNostr = Nostr(
+        signer,
+        [],
+        (url) => _TrackingTempRelay(url, onCreated: tempRelaysCreated.add),
+      );
+      await tempNostr.refreshPublicKey();
+      await tempNostr.relayPool.add(failing);
+
+      final stopwatch = Stopwatch()..start();
+      final outcome = await tempNostr.relayPool.sendEventAwaitOk(
+        [
+          'EVENT',
+          {'id': 'push-control-event-id', 'kind': 3079},
+        ],
+        eventId: 'push-control-event-id',
+        eventKind: 3079,
+        targetRelays: [relayUrl],
+        tempRelays: [relayUrl],
+        timeout: const Duration(milliseconds: 50),
+      );
+      stopwatch.stop();
+
+      expect(outcome.failed, isTrue);
+      expect(
+        stopwatch.elapsedMilliseconds,
+        lessThan(1000),
+        reason: 'same-URL temp fallback must use the shared publish timeout',
+      );
+      expect(failing.sentMessages, hasLength(1));
+      expect(
+        tempRelaysCreated,
+        contains(relayUrl),
+        reason: 'a failed normal send should not suppress temp relay fallback',
       );
     });
 

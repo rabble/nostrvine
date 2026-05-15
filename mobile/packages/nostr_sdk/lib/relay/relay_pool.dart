@@ -981,8 +981,6 @@ class RelayPool {
         }
       }
 
-      attemptedRelayUrls.add(relay.url);
-
       try {
         // Check if relay requires authentication
         if (relay.relayStatus.alwaysAuth && !relay.relayStatus.authed) {
@@ -1015,6 +1013,7 @@ class RelayPool {
                 );
             if (result) {
               sentTo.add(relay.url);
+              attemptedRelayUrls.add(relay.url);
               onSent?.call(relay.url);
             }
             if (isPushControlEvent) {
@@ -1028,6 +1027,7 @@ class RelayPool {
             log('🔐 Queueing message for authentication: ${message[0]}');
             relay.pendingAuthedMessages.add(message);
             sentTo.add(relay.url);
+            attemptedRelayUrls.add(relay.url);
             onSent?.call(relay.url);
             if (isPushControlEvent) {
               _logPushControlDiagnostic(
@@ -1061,6 +1061,7 @@ class RelayPool {
               );
           if (result) {
             sentTo.add(relay.url);
+            attemptedRelayUrls.add(relay.url);
             onSent?.call(relay.url);
           }
           if (isPushControlEvent) {
