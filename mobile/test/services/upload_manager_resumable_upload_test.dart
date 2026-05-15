@@ -1,3 +1,4 @@
+@Tags(['skip_very_good_optimization'])
 import 'dart:async';
 import 'dart:io';
 
