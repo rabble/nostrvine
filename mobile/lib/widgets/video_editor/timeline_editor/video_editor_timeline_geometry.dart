@@ -42,15 +42,22 @@ Duration timelineScrollOffsetToPosition(
 ) {
   var acc = Duration.zero;
   var gapPixels = 0.0;
-  for (final clip in clips) {
+  for (var i = 0; i < clips.length; i++) {
+    final clip = clips[i];
     final clipEndPx =
         (acc + clip.trimmedDuration).inMicroseconds /
             1_000_000.0 *
             pixelsPerSecond +
         gapPixels;
     if (scrollOffset <= clipEndPx) break;
+    final gapEndPx = clipEndPx + TimelineConstants.clipGap;
+    if (i < clips.length - 1 && scrollOffset < gapEndPx) {
+      return acc + clip.trimmedDuration;
+    }
     acc += clip.trimmedDuration;
-    gapPixels += TimelineConstants.clipGap;
+    if (i < clips.length - 1) {
+      gapPixels += TimelineConstants.clipGap;
+    }
   }
   final seconds = (scrollOffset - gapPixels) / pixelsPerSecond;
   final ms = (seconds * 1000).round().clamp(0, totalDuration.inMilliseconds);

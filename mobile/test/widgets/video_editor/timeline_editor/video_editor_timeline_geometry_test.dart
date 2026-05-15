@@ -133,6 +133,13 @@ void main() {
       );
     });
 
+    test('maps offsets inside the clip 0/1 gap to the shared boundary', () {
+      expect(
+        timelineScrollOffsetToPosition(clips, 104.5, pps, totalDuration),
+        equals(const Duration(seconds: 2)),
+      );
+    });
+
     test('subtracts one gap within clip 1', () {
       expect(
         timelineScrollOffsetToPosition(clips, 131.0, pps, totalDuration),
@@ -143,6 +150,13 @@ void main() {
     test('subtracts two gaps at clip 1/2 boundary', () {
       expect(
         timelineScrollOffsetToPosition(clips, 262.0, pps, totalDuration),
+        equals(const Duration(seconds: 5)),
+      );
+    });
+
+    test('maps offsets inside the clip 1/2 gap to the shared boundary', () {
+      expect(
+        timelineScrollOffsetToPosition(clips, 261.5, pps, totalDuration),
         equals(const Duration(seconds: 5)),
       );
     });
