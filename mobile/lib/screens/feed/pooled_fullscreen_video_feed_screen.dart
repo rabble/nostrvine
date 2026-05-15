@@ -825,6 +825,16 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                   ],
                   style: DiVineAppBarStyle.transparentStyle.copyWith(
                     horizontalPadding: 8,
+                    // With the default 48 px icon button and 8 px
+                    // [horizontalPadding], a 68 px leading slot leaves
+                    // 12 px between the back button's right edge and
+                    // the title text (68 − 8 − 48 = 12).
+                    leadingWidth: 68,
+                    // Figma `title/medium` token (Bricolage Grotesque
+                    // 800, 16 / 24 / 0.15) — overrides the default
+                    // [VineTheme.titleLargeFont] (22) used by the
+                    // shared app bar.
+                    titleStyle: VineTheme.titleMediumFont(),
                   ),
                 ),
                 body: Column(
