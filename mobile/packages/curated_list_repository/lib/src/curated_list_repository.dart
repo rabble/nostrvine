@@ -11,6 +11,11 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:rxdart/rxdart.dart';
 
+/// Filter callback for search surfaces owned by a list author.
+///
+/// Returns `true` when content from [pubkey] should be hidden.
+typedef BlockedCuratedListFilter = bool Function(String pubkey);
+
 /// NIP-51 kind for curated video lists.
 const _curatedListKind = 30005;
 
@@ -34,11 +39,14 @@ class CuratedListRepository {
   CuratedListRepository({
     required NostrClient nostrClient,
     required FunnelcakeApiClient funnelcakeApiClient,
+    BlockedCuratedListFilter? blockFilter,
   }) : _nostrClient = nostrClient,
-       _funnelcakeApiClient = funnelcakeApiClient;
+       _funnelcakeApiClient = funnelcakeApiClient,
+       _blockFilter = blockFilter;
 
   final NostrClient _nostrClient;
   final FunnelcakeApiClient _funnelcakeApiClient;
+  final BlockedCuratedListFilter? _blockFilter;
   final Map<String, CuratedList> _subscribedLists = {};
 
   // BehaviorSubject replays last value to late subscribers, fixing race
@@ -137,6 +145,7 @@ class CuratedListRepository {
         .where(
           (list) =>
               list.isPublic &&
+              !_isBlocked(list.pubkey) &&
               (list.name.toLowerCase().contains(lowerQuery) ||
                   (list.description?.toLowerCase().contains(lowerQuery) ??
                       false) ||
@@ -150,9 +159,7 @@ class CuratedListRepository {
   /// Returns subscribed public lists that contain the given [tag].
   List<CuratedList> getListsByTag(String tag) {
     return _subscribedLists.values
-        .where(
-          (list) => list.isPublic && list.tags.contains(tag.toLowerCase()),
-        )
+        .where((list) => list.isPublic && list.tags.contains(tag.toLowerCase()))
         .toList();
   }
 
@@ -228,14 +235,13 @@ class CuratedListRepository {
     final lowerQuery = query.toLowerCase();
     final excluded = excludeIds ?? const {};
 
-    final events = await _nostrClient.queryEvents(
-      [
-        Filter(kinds: [_curatedListKind], limit: limit),
-      ],
-    );
+    final events = await _nostrClient.queryEvents([
+      Filter(kinds: [_curatedListKind], limit: limit),
+    ]);
 
     final seen = <String, CuratedList>{};
     for (final event in events) {
+      if (_isBlocked(event.pubkey)) continue;
       final list = CuratedListConverter.fromEvent(event);
       if (list == null) continue;
       if (excluded.contains(list.id)) continue;
@@ -258,6 +264,14 @@ class CuratedListRepository {
     }
 
     return seen.values.toList();
+  }
+
+  bool _isBlocked(String? pubkey) {
+    final blockFilter = _blockFilter;
+    if (blockFilter == null || pubkey == null || pubkey.isEmpty) {
+      return false;
+    }
+    return blockFilter(pubkey);
   }
 
   /// Searches both local subscribed lists and relay lists for [query].
@@ -373,9 +387,7 @@ class CuratedListRepository {
     final candidates = list.videoEventIds.take(maxThumbnails).toList();
 
     // Phase 1: Try FunnelCake for each hex ID (parallel HTTP calls).
-    final fcResults = await Future.wait(
-      candidates.map(_tryFunnelcake),
-    );
+    final fcResults = await Future.wait(candidates.map(_tryFunnelcake));
 
     // Phase 2: Collect refs needing relay fallback, batch into one query.
     final needsRelay = <String>[];
@@ -421,9 +433,7 @@ class CuratedListRepository {
   /// individual filters in the same request.
   ///
   /// Returns a map from video ref → thumbnail URL for refs that resolved.
-  Future<Map<String, String?>> _batchRelayThumbnails(
-    List<String> refs,
-  ) async {
+  Future<Map<String, String?>> _batchRelayThumbnails(List<String> refs) async {
     if (refs.isEmpty) return {};
 
     final hexIds = <String>[];
@@ -460,10 +470,7 @@ class CuratedListRepository {
 
     for (final event in events) {
       try {
-        final videoEvent = VideoEvent.fromNostrEvent(
-          event,
-          permissive: true,
-        );
+        final videoEvent = VideoEvent.fromNostrEvent(event, permissive: true);
         final thumb = videoEvent.effectiveThumbnailUrl;
         if (thumb == null) continue;
 
@@ -506,12 +513,7 @@ class CuratedListRepository {
     final pubkey = parts[1];
     final dTag = parts.sublist(2).join(':');
 
-    return Filter(
-      kinds: [kind],
-      authors: [pubkey],
-      d: [dTag],
-      limit: 1,
-    );
+    return Filter(kinds: [kind], authors: [pubkey], d: [dTag], limit: 1);
   }
 
   // ---------------------------------------------------------------------------

@@ -19,6 +19,11 @@ const String _logName = 'people_lists_repository.impl';
 /// Log level for recoverable warnings. `dart:developer`'s convention is 900.
 const int _logLevelWarning = 900;
 
+/// Filter callback for owner-authored people-list search results.
+///
+/// Returns `true` when content from [ownerPubkey] should be hidden.
+typedef BlockedPeopleListOwnerFilter = bool Function(String ownerPubkey);
+
 /// Concrete [PeopleListsRepository] backed by a [NostrClient] and a
 /// [LocalPeopleListsCache].
 ///
@@ -36,11 +41,14 @@ class PeopleListsRepositoryImpl implements PeopleListsRepository {
   PeopleListsRepositoryImpl({
     required NostrClient nostrClient,
     required LocalPeopleListsCache cache,
+    BlockedPeopleListOwnerFilter? blockFilter,
   }) : _nostrClient = nostrClient,
-       _cache = cache;
+       _cache = cache,
+       _blockFilter = blockFilter;
 
   final NostrClient _nostrClient;
   final LocalPeopleListsCache _cache;
+  final BlockedPeopleListOwnerFilter? _blockFilter;
 
   @override
   Stream<List<UserList>> watchLists({required String ownerPubkey}) {
@@ -204,11 +212,9 @@ class PeopleListsRepositoryImpl implements PeopleListsRepository {
 
     final List<Event> events;
     try {
-      events = await _nostrClient.queryEvents(
-        [
-          Filter(kinds: const [Nip51PeopleListCodec.kind], limit: limit),
-        ],
-      );
+      events = await _nostrClient.queryEvents([
+        Filter(kinds: const [Nip51PeopleListCodec.kind], limit: limit),
+      ]);
     } on Object catch (error, stackTrace) {
       developer.log(
         'Failed to query public people lists for "$trimmed"',
@@ -222,6 +228,9 @@ class PeopleListsRepositoryImpl implements PeopleListsRepository {
 
     final seen = <String, PeopleListSearchResult>{};
     for (final event in events) {
+      final blockFilter = _blockFilter;
+      if (blockFilter != null && blockFilter(event.pubkey)) continue;
+
       final list = Nip51PeopleListCodec.decode(event);
       if (list == null) continue;
       if (list.pubkeys.isEmpty) continue;

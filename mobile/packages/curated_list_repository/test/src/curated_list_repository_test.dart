@@ -25,6 +25,9 @@ const _videoEventId2 =
     '2222222222222222222222222222222222222222222222222222222222222222';
 const _videoEventId3 =
     '3333333333333333333333333333333333333333333333333333333333333333';
+const _blockedPubkey =
+    'ffffffffffffffffffffffffffffffff'
+    'ffffffffffffffffffffffffffffffff';
 
 /// Creates a kind 30005 Nostr event with the given [tags] and [content].
 Event _makeEvent({
@@ -90,6 +93,7 @@ void main() {
       String name = 'Test List',
       List<String> videoEventIds = const [],
       String? description,
+      String? pubkey,
       bool isPublic = true,
       List<String> tags = const [],
       PlayOrder playOrder = PlayOrder.chronological,
@@ -100,6 +104,7 @@ void main() {
         videoEventIds: videoEventIds,
         createdAt: now,
         updatedAt: now,
+        pubkey: pubkey,
         description: description,
         isPublic: isPublic,
         tags: tags,
@@ -132,10 +137,7 @@ void main() {
 
     group('subscribedListsStream', () {
       test('emits initial empty list', () async {
-        await expectLater(
-          repository.subscribedListsStream,
-          emits(isEmpty),
-        );
+        await expectLater(repository.subscribedListsStream, emits(isEmpty));
       });
 
       test('emits after setSubscribedLists', () async {
@@ -213,14 +215,8 @@ void main() {
         const addressableCoord = '34236:pubkey123:my-vine';
 
         repository.setSubscribedLists([
-          createList(
-            id: 'list-a',
-            videoEventIds: [eventId, addressableCoord],
-          ),
-          createList(
-            id: 'list-b',
-            videoEventIds: [addressableCoord],
-          ),
+          createList(id: 'list-a', videoEventIds: [eventId, addressableCoord]),
+          createList(id: 'list-b', videoEventIds: [addressableCoord]),
         ]);
 
         final refs = repository.getSubscribedListVideoRefs();
@@ -250,10 +246,7 @@ void main() {
 
         final refs = repository.getSubscribedListVideoRefs();
 
-        expect(
-          () => refs['new-key'] = [],
-          throwsA(isA<UnsupportedError>()),
-        );
+        expect(() => refs['new-key'] = [], throwsA(isA<UnsupportedError>()));
       });
 
       test('returns unmodifiable video ID lists', () {
@@ -276,9 +269,7 @@ void main() {
       });
 
       test('returns null for unknown ID', () {
-        repository.setSubscribedLists([
-          createList(id: 'list-a'),
-        ]);
+        repository.setSubscribedLists([createList(id: 'list-a')]);
 
         expect(repository.getListById('unknown'), isNull);
       });
@@ -399,9 +390,7 @@ void main() {
       });
 
       test('returns true when default list exists', () {
-        repository.setSubscribedLists([
-          createList(id: defaultListId),
-        ]);
+        repository.setSubscribedLists([createList(id: defaultListId)]);
 
         expect(repository.hasDefaultList(), isTrue);
       });
@@ -512,10 +501,7 @@ void main() {
           createList(id: 'c', tags: ['secret'], isPublic: false),
         ]);
 
-        expect(
-          repository.getAllTags(),
-          equals(['cooking', 'dance', 'music']),
-        );
+        expect(repository.getAllTags(), equals(['cooking', 'dance', 'music']));
       });
     });
 
@@ -549,10 +535,7 @@ void main() {
 
       test('returns chronological order', () {
         repository.setSubscribedLists([
-          createList(
-            id: 'list',
-            videoEventIds: ['v1', 'v2', 'v3'],
-          ),
+          createList(id: 'list', videoEventIds: ['v1', 'v2', 'v3']),
         ]);
 
         expect(
@@ -629,17 +612,11 @@ void main() {
       });
 
       test('emits nothing for blank query', () async {
-        await expectLater(
-          repository.searchAllLists(''),
-          emitsDone,
-        );
+        await expectLater(repository.searchAllLists(''), emitsDone);
       });
 
       test('emits nothing for whitespace-only query', () async {
-        await expectLater(
-          repository.searchAllLists('   '),
-          emitsDone,
-        );
+        await expectLater(repository.searchAllLists('   '), emitsDone);
       });
 
       test('emits 4 progressive yields with thumbnails', () async {
@@ -692,9 +669,7 @@ void main() {
           createList(id: 'shared-id', name: 'Dance Local'),
         ]);
 
-        when(() => nostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [],
-        );
+        when(() => nostrClient.queryEvents(any())).thenAnswer((_) async => []);
 
         await repository.searchAllLists('dance').toList();
 
@@ -726,6 +701,68 @@ void main() {
         expect(emissions, hasLength(4));
         // Yield 3: local + relay (no duplicates)
         expect(emissions[2], hasLength(2));
+      });
+
+      test('filters blocked owners from local and relay list search', () async {
+        final blockedRepository = CuratedListRepository(
+          nostrClient: nostrClient,
+          funnelcakeApiClient: funnelcakeApiClient,
+          blockFilter: (pubkey) => pubkey == _blockedPubkey,
+        );
+        addTearDown(blockedRepository.dispose);
+
+        blockedRepository.setSubscribedLists([
+          createList(
+            id: 'allowed-local',
+            name: 'Dance Local',
+            pubkey: _testPubkey,
+          ),
+          createList(
+            id: 'blocked-local',
+            name: 'Dance Hidden',
+            pubkey: _blockedPubkey,
+          ),
+        ]);
+
+        when(() => nostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            Event(
+              _blockedPubkey,
+              30005,
+              [
+                ['d', 'blocked-relay'],
+                ['title', 'Dance Hidden Relay'],
+                ['e', 'video-1'],
+              ],
+              '',
+              createdAt: 1718400000,
+            ),
+            _makeEvent(
+              tags: [
+                ['d', 'allowed-relay'],
+                ['title', 'Dance Relay'],
+                ['e', 'video-1'],
+              ],
+            ),
+          ],
+        );
+
+        final emissions = await blockedRepository
+            .searchAllLists('dance')
+            .toList();
+
+        expect(
+          emissions.last.map((list) => list.id),
+          containsAll(['allowed-local', 'allowed-relay']),
+        );
+        expect(
+          emissions.last.map((list) => list.id),
+          isNot(contains('blocked-local')),
+        );
+        expect(
+          emissions.last.map((list) => list.id),
+          isNot(contains('blocked-relay')),
+        );
       });
 
       test('resolves thumbnails from FunnelCake API', () async {
@@ -1022,25 +1059,16 @@ void main() {
 
       test('filters out private lists from all emissions', () async {
         repository.setSubscribedLists([
-          createList(
-            id: 'private-1',
-            name: 'Dance Secret',
-            isPublic: false,
-          ),
+          createList(id: 'private-1', name: 'Dance Secret', isPublic: false),
           createList(id: 'public-1', name: 'Dance Public'),
         ]);
 
-        when(() => nostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [],
-        );
+        when(() => nostrClient.queryEvents(any())).thenAnswer((_) async => []);
 
         final emissions = await repository.searchAllLists('dance').toList();
 
         for (final emission in emissions) {
-          expect(
-            emission.every((l) => l.id != 'private-1'),
-            isTrue,
-          );
+          expect(emission.every((l) => l.id != 'private-1'), isTrue);
         }
       });
 
@@ -1106,9 +1134,7 @@ void main() {
           createList(id: 'local-1', name: 'Dance Local'),
         ]);
 
-        when(() => nostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [],
-        );
+        when(() => nostrClient.queryEvents(any())).thenAnswer((_) async => []);
 
         final emissions = await repository.searchAllLists('dance').toList();
 
@@ -1130,9 +1156,7 @@ void main() {
         ]);
 
         // FunnelCake: ref1 → thumbnail, ref2 → null, ref3 → throws
-        when(
-          () => funnelcakeApiClient.getVideoStats(_videoEventId),
-        ).thenAnswer(
+        when(() => funnelcakeApiClient.getVideoStats(_videoEventId)).thenAnswer(
           (_) async => VideoStats(
             id: _videoEventId,
             pubkey: _testPubkey,
@@ -1192,9 +1216,7 @@ void main() {
           createList(id: 'local-1', name: 'Dance Local'),
         ]);
 
-        when(() => nostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [],
-        );
+        when(() => nostrClient.queryEvents(any())).thenAnswer((_) async => []);
 
         final emissions = await repository.searchAllLists('dance').toList();
 
@@ -1217,11 +1239,7 @@ void main() {
 
       test('returns single list name', () {
         repository.setSubscribedLists([
-          createList(
-            id: 'a',
-            name: 'My Favorites',
-            videoEventIds: ['v1'],
-          ),
+          createList(id: 'a', name: 'My Favorites', videoEventIds: ['v1']),
         ]);
 
         expect(
@@ -1250,10 +1268,7 @@ void main() {
           createList(id: 'd', name: 'D', videoEventIds: ['v1']),
         ]);
 
-        expect(
-          repository.getVideoListSummary('v1'),
-          equals('In 4 lists'),
-        );
+        expect(repository.getVideoListSummary('v1'), equals('In 4 lists'));
       });
     });
   });

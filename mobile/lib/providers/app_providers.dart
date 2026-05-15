@@ -1794,9 +1794,18 @@ FollowRepository followRepository(Ref ref) {
 /// until the repository owns its own persistence (Phase 1b).
 @Riverpod(keepAlive: true)
 CuratedListRepository curatedListRepository(Ref ref) {
+  final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
+  final flagService = ref.watch(featureFlagServiceProvider);
+  final engine = ref.watch(contentPolicyEngineProvider);
+
+  final blockFilter = flagService.isEnabled(FeatureFlag.contentPolicyV2)
+      ? createPolicyEngineFilter(engine, () => blocklistRepository.currentState)
+      : createBlocklistFilter(blocklistRepository);
+
   final repository = CuratedListRepository(
     nostrClient: ref.watch(nostrServiceProvider),
     funnelcakeApiClient: ref.watch(funnelcakeApiClientProvider),
+    blockFilter: blockFilter,
   );
 
   // Bridge: push curated list updates from legacy service into repository
@@ -2303,7 +2312,19 @@ PeopleListsRepository peopleListsRepository(Ref ref) {
   final cache = LocalPeopleListsCache(
     openBox: () => Hive.openBox<dynamic>(_peopleListsBoxName),
   );
-  return PeopleListsRepositoryImpl(nostrClient: nostrClient, cache: cache);
+  final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
+  final flagService = ref.watch(featureFlagServiceProvider);
+  final engine = ref.watch(contentPolicyEngineProvider);
+
+  final blockFilter = flagService.isEnabled(FeatureFlag.contentPolicyV2)
+      ? createPolicyEngineFilter(engine, () => blocklistRepository.currentState)
+      : createBlocklistFilter(blocklistRepository);
+
+  return PeopleListsRepositoryImpl(
+    nostrClient: nostrClient,
+    cache: cache,
+    blockFilter: blockFilter,
+  );
 }
 
 /// Bookmark service for NIP-51 bookmarks
