@@ -3151,7 +3151,7 @@ final class CuratedListRepositoryProvider
 }
 
 String _$curatedListRepositoryHash() =>
-    r'21aee8babc20a3b93a38c41c1905e0f04f1d877a';
+    r'230cebbd57db166644b05510b23987fe7fa5547e';
 
 /// Provider for HashtagRepository instance.
 ///
@@ -4246,7 +4246,7 @@ final class PeopleListsRepositoryProvider
 }
 
 String _$peopleListsRepositoryHash() =>
-    r'1b80c4d4b9229393068846048b6596a0c1688e45';
+    r'5d1d88d9b9cd3b3feee51edd95eb8db9dfbf2371';
 
 /// Bookmark service for NIP-51 bookmarks
 
@@ -4996,7 +4996,7 @@ final class VideosRepositoryProvider
   }
 }
 
-String _$videosRepositoryHash() => r'5be6c793ce13803c1740fffa7301be0cfca6028d';
+String _$videosRepositoryHash() => r'23565018788d961099e00b121cd79a285476e56e';
 
 /// Provider for LikesRepository instance
 ///

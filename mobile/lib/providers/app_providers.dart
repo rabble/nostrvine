@@ -137,6 +137,20 @@ ContentPolicyEngine contentPolicyEngine(Ref ref) {
   return ContentPolicyEngine.defaultRules();
 }
 
+BlockedVideoFilter _createBlockedAuthorFilter(Ref ref) {
+  final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
+  final flagService = ref.watch(featureFlagServiceProvider);
+  if (flagService.isEnabled(FeatureFlag.contentPolicyV2)) {
+    final engine = ref.watch(contentPolicyEngineProvider);
+    return createPolicyEngineFilter(
+      engine,
+      () => blocklistRepository.currentState,
+    );
+  }
+
+  return createBlocklistFilter(blocklistRepository);
+}
+
 final nostrAppDirectoryServiceProvider = Provider<NostrAppDirectoryService>((
   ref,
 ) {
@@ -1794,18 +1808,10 @@ FollowRepository followRepository(Ref ref) {
 /// until the repository owns its own persistence (Phase 1b).
 @Riverpod(keepAlive: true)
 CuratedListRepository curatedListRepository(Ref ref) {
-  final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
-  final flagService = ref.watch(featureFlagServiceProvider);
-  final engine = ref.watch(contentPolicyEngineProvider);
-
-  final blockFilter = flagService.isEnabled(FeatureFlag.contentPolicyV2)
-      ? createPolicyEngineFilter(engine, () => blocklistRepository.currentState)
-      : createBlocklistFilter(blocklistRepository);
-
   final repository = CuratedListRepository(
     nostrClient: ref.watch(nostrServiceProvider),
     funnelcakeApiClient: ref.watch(funnelcakeApiClientProvider),
-    blockFilter: blockFilter,
+    blockFilter: _createBlockedAuthorFilter(ref),
   );
 
   // Bridge: push curated list updates from legacy service into repository
@@ -2312,18 +2318,11 @@ PeopleListsRepository peopleListsRepository(Ref ref) {
   final cache = LocalPeopleListsCache(
     openBox: () => Hive.openBox<dynamic>(_peopleListsBoxName),
   );
-  final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
-  final flagService = ref.watch(featureFlagServiceProvider);
-  final engine = ref.watch(contentPolicyEngineProvider);
-
-  final blockFilter = flagService.isEnabled(FeatureFlag.contentPolicyV2)
-      ? createPolicyEngineFilter(engine, () => blocklistRepository.currentState)
-      : createBlocklistFilter(blocklistRepository);
 
   return PeopleListsRepositoryImpl(
     nostrClient: nostrClient,
     cache: cache,
-    blockFilter: blockFilter,
+    blockFilter: _createBlockedAuthorFilter(ref),
   );
 }
 
@@ -2596,7 +2595,6 @@ VideoLocalStorage videoLocalStorage(Ref ref) {
 VideosRepository videosRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
   final localStorage = ref.watch(videoLocalStorageProvider);
-  final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
   final contentFilterService = ref.watch(contentFilterServiceProvider);
   final moderationLabelService = ref.watch(moderationLabelServiceProvider);
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
@@ -2604,22 +2602,16 @@ VideosRepository videosRepository(Ref ref) {
   final feedAspectRatioPreference = ref.watch(
     feedAspectRatioPreferenceServiceProvider,
   );
-  final flagService = ref.watch(featureFlagServiceProvider);
-  final engine = ref.watch(contentPolicyEngineProvider);
 
   final nsfwFilter = createNsfwFilter(
     contentFilterService,
     moderationLabelService: moderationLabelService,
   );
 
-  final blockFilter = flagService.isEnabled(FeatureFlag.contentPolicyV2)
-      ? createPolicyEngineFilter(engine, () => blocklistRepository.currentState)
-      : createBlocklistFilter(blocklistRepository);
-
   return VideosRepository(
     nostrClient: nostrClient,
     localStorage: localStorage,
-    blockFilter: blockFilter,
+    blockFilter: _createBlockedAuthorFilter(ref),
     contentFilter: (video) =>
         nsfwFilter(video) ||
         (divineHostFilterService.showDivineHostedOnly &&
