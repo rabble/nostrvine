@@ -51,11 +51,12 @@ void main() {
 }
 
 Widget _scenarioColumn({required double textScaleFactor}) {
+  final now = DateTime.now().toUtc();
   final actorNotification = ActorNotification(
     id: 'follow-1',
     type: NotificationKind.follow,
     actor: _alice,
-    timestamp: DateTime.utc(2026, 5, 15, 12),
+    timestamp: now.subtract(const Duration(hours: 11)),
   );
   final videoNotification = VideoNotification(
     id: 'comment-1',
@@ -64,7 +65,7 @@ Widget _scenarioColumn({required double textScaleFactor}) {
         '1111111111111111111111111111111111111111111111111111111111111111',
     actors: const [_alice, _bob],
     totalCount: 2,
-    timestamp: DateTime.utc(2026, 5, 15, 12),
+    timestamp: now.subtract(const Duration(hours: 11)),
     videoTitle: 'A longer title that exercises the responsive row layout',
     commentText:
         'This is a longer preview comment that should still render cleanly.',
