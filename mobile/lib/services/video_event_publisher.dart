@@ -192,14 +192,16 @@ class VideoEventPublisher {
       return eventMap;
     }
 
-    final sanitizedTags = rawTags.map((rawTag) {
-      if (rawTag is! List) {
-        return rawTag;
-      }
+    final sanitizedTags = rawTags
+        .map((rawTag) {
+          if (rawTag is! List) {
+            return rawTag;
+          }
 
-      final tagParts = rawTag.map((part) => part.toString()).toList();
-      return sanitizeTagForLog(tagParts);
-    }).toList(growable: false);
+          final tagParts = rawTag.map((part) => part.toString()).toList();
+          return sanitizeTagForLog(tagParts);
+        })
+        .toList(growable: false);
 
     return <String, dynamic>{...eventMap, 'tags': sanitizedTags};
   }

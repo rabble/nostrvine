@@ -5099,10 +5099,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   /// Sanitizes event tags for log output: redacts sensitive tag values and
   /// truncates long parts to keep log lines manageable.
   String _formatEventTagsForLog(List<List<String>> tags) {
-    return tags
-        .map(sanitizeTagForLog)
-        .toList(growable: false)
-        .toString();
+    return tags.map(sanitizeTagForLog).toList(growable: false).toString();
   }
 
   /// Generate deterministic subscription ID based on subscription parameters
