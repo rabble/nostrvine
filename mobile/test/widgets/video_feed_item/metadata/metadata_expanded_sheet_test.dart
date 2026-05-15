@@ -188,9 +188,9 @@ void main() {
   }
 
   // ---------------------------------------------------------------------------
-  // Header section
+  // Overview section
   // ---------------------------------------------------------------------------
-  group('_HeaderSection (via $MetadataExpandedSheet)', () {
+  group('_OverviewSection (via $MetadataExpandedSheet)', () {
     testWidgets('renders fetched parent context for a video reply', (
       tester,
     ) async {

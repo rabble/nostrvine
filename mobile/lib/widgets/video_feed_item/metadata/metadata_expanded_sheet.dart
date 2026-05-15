@@ -101,7 +101,7 @@ class _MetadataContent extends StatelessWidget {
         bottom: MediaQuery.paddingOf(context).bottom + 16,
       ),
       children: [
-        _HeaderSection(video: video),
+        _OverviewSection(video: video),
         VideoReplyParentLink(
           video: video,
           variant: VideoReplyParentLinkVariant.metadata,
@@ -118,7 +118,7 @@ class _MetadataContent extends StatelessWidget {
   }
 }
 
-/// Top header block: posted date, title, badges, description, and tags.
+/// First content section: posted date, title, badges, description, tags.
 ///
 /// Mirrors the Figma frame hierarchy (`15675:27356`):
 /// - Outer column with 16 px gap between date, title cluster, and tags.
@@ -126,11 +126,16 @@ class _MetadataContent extends StatelessWidget {
 /// - Date renders independently of title/description so classic Vine
 ///   archives without captions still show their original publish year.
 ///
-/// The visible date drops the localized "Posted on" prefix to match the
-/// Figma copy; the prefix lives on the [Semantics] label so screen
-/// readers still announce it.
-class _HeaderSection extends StatelessWidget {
-  const _HeaderSection({required this.video});
+/// Visually distinct from the sheet's drag-handle chrome above it —
+/// the separator line is provided by [_SheetHeaderSeparator] so this
+/// stays a regular labeled-less section in the scroll body, not part
+/// of the sheet header.
+///
+/// The visible date drops the localized "Posted on" prefix to match
+/// the Figma copy; the prefix lives on the [Semantics] label so
+/// screen readers still announce it.
+class _OverviewSection extends StatelessWidget {
+  const _OverviewSection({required this.video});
 
   final VideoEvent video;
 
@@ -164,36 +169,31 @@ class _HeaderSection extends StatelessWidget {
         ),
     ];
 
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: VineTheme.outlineDisabled)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: 16,
-          children: [
-            Semantics(
-              label: semanticDate,
-              child: ExcludeSemantics(
-                child: Text(
-                  formattedDate,
-                  style: VineTheme.labelSmallFont(
-                    color: VineTheme.onSurfaceVariant,
-                  ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 16,
+        children: [
+          Semantics(
+            label: semanticDate,
+            child: ExcludeSemantics(
+              child: Text(
+                formattedDate,
+                style: VineTheme.labelSmallFont(
+                  color: VineTheme.onSurfaceVariant,
                 ),
               ),
             ),
-            if (titleCluster.isNotEmpty)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                spacing: 8,
-                children: titleCluster,
-              ),
-            if (hasTags) MetadataTagsSection(video: video),
-          ],
-        ),
+          ),
+          if (titleCluster.isNotEmpty)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 8,
+              children: titleCluster,
+            ),
+          if (hasTags) MetadataTagsSection(video: video),
+        ],
       ),
     );
   }

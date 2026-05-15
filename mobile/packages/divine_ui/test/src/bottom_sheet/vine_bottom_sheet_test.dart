@@ -251,6 +251,60 @@ void main() {
       },
     );
 
+    testWidgets(
+      'showHeader: false renders a 1 px divider below the drag handle '
+      'when showHeaderDivider is true',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: VineBottomSheet(
+                showHeader: false,
+                body: Text('Content'),
+              ),
+            ),
+          ),
+        );
+
+        // The chrome divider is a 1 px Container in 5 % white alpha —
+        // gated by showHeaderDivider, which defaults to true.
+        expect(
+          find.byWidgetPredicate((w) {
+            if (w is! Container) return false;
+            return w.color == VineTheme.outlineDisabled &&
+                w.constraints?.maxHeight == 1;
+          }),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'showHeader: false omits the divider when showHeaderDivider is false',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: VineBottomSheet(
+                showHeader: false,
+                showHeaderDivider: false,
+                body: Text('Content'),
+              ),
+            ),
+          ),
+        );
+
+        expect(
+          find.byWidgetPredicate((w) {
+            if (w is! Container) return false;
+            return w.color == VineTheme.outlineDisabled &&
+                w.constraints?.maxHeight == 1;
+          }),
+          findsNothing,
+        );
+      },
+    );
+
     testWidgets('hides header in fixed mode when showHeader is false', (
       tester,
     ) async {

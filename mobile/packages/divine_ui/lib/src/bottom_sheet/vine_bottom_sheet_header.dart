@@ -126,7 +126,7 @@ class VineBottomSheetHeader extends StatelessWidget {
           const Divider(
             height: 2,
             thickness: 2,
-            color: VineTheme.outlinedDisabled,
+            color: VineTheme.outlineDisabled,
           ),
       ],
     );

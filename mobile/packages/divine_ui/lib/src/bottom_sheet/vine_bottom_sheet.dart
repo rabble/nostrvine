@@ -396,14 +396,27 @@ class VineBottomSheet extends StatelessWidget {
 }
 
 /// Standalone drag handle shown when [VineBottomSheet.showHeader] is false.
+///
+/// When [showDivider] is true, a 1 px divider is appended below the
+/// handle padding so the sheet's drag-handle chrome remains visually
+/// distinct from the content even when the content scrolls underneath.
 class _HeaderlessDragHandle extends StatelessWidget {
-  const _HeaderlessDragHandle();
+  const _HeaderlessDragHandle({required this.showDivider});
+
+  final bool showDivider;
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.only(top: 8, bottom: 20),
-      child: Center(child: VineBottomSheetDragHandle()),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(top: 8, bottom: 20),
+          child: Center(child: VineBottomSheetDragHandle()),
+        ),
+        if (showDivider) Container(height: 1, color: VineTheme.outlineDisabled),
+      ],
     );
   }
 }
@@ -467,8 +480,10 @@ class _ScrollableContent extends StatelessWidget {
             trailingAction: headerTrailingAction,
           )
         else if (showDragHandle)
-          // Drag handle only — content manages its own layout below
-          const _HeaderlessDragHandle(),
+          // Drag handle only — content manages its own layout below.
+          // The divider is rendered inside _HeaderlessDragHandle (gated
+          // by showHeaderDivider) so it stays pinned to the chrome.
+          _HeaderlessDragHandle(showDivider: showHeaderDivider),
 
         // Scrollable content area (contentTitle is first element inside)
         Expanded(
@@ -501,7 +516,7 @@ class _ScrollableContent extends StatelessWidget {
               ),
         ),
         if (bottomInput != null)
-          const Divider(height: 2, color: VineTheme.outlinedDisabled),
+          const Divider(height: 2, color: VineTheme.outlineDisabled),
 
         // Optional bottom input
         if (bottomInput != null)
@@ -574,8 +589,8 @@ class _FixedContent extends StatelessWidget {
               trailingAction: headerTrailingAction,
             )
           else if (showDragHandle)
-            // Drag handle only
-            const _HeaderlessDragHandle(),
+            // Drag handle only — divider gated by showHeaderDivider.
+            _HeaderlessDragHandle(showDivider: showHeaderDivider),
 
           // Fixed content area with minimum height for menu entries (2 × 56px)
           Flexible(
@@ -610,7 +625,7 @@ class _FixedContent extends StatelessWidget {
           ),
 
           if (bottomInput != null)
-            const Divider(height: 2, color: VineTheme.outlinedDisabled),
+            const Divider(height: 2, color: VineTheme.outlineDisabled),
 
           // Optional bottom input
           if (bottomInput != null)
