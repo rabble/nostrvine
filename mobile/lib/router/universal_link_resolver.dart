@@ -38,7 +38,10 @@ String? divineUrlToPushRoute(Uri uri) {
     case DeepLinkType.search:
       final term = deepLink.searchTerm;
       if (term == null || term.isEmpty) return null;
-      return SearchResultsPage.pathForQuery(term);
+      return SearchResultsPage.pathForQuery(
+        term,
+        requestFocusOnMount: false,
+      );
     case DeepLinkType.invite:
     case DeepLinkType.signerCallback:
     case DeepLinkType.unknown:

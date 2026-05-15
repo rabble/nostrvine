@@ -92,12 +92,20 @@ void main() {
   // string passed to pathForTag/pathForQuery" — can be exercised without
   // pulling in the full app provider graph.
   group('Path-parameter round-trip (#3413)', () {
-    Future<({String? capturedTag, String? capturedQuery})> navigateAndCapture(
+    Future<
+      ({
+        String? capturedTag,
+        String? capturedQuery,
+        bool? requestFocusOnMount,
+      })
+    >
+    navigateAndCapture(
       WidgetTester tester,
       String location,
     ) async {
       String? capturedTag;
       String? capturedQuery;
+      bool? requestFocusOnMount;
 
       final router = GoRouter(
         initialLocation: '/',
@@ -117,6 +125,10 @@ void main() {
             path: SearchResultsPage.path,
             builder: (ctx, st) {
               capturedQuery = st.pathParameters['query'];
+              requestFocusOnMount =
+                  SearchResultsPage.requestFocusOnMountForRoute(
+                    st.uri,
+                  );
               return const SizedBox.shrink();
             },
           ),
@@ -128,7 +140,11 @@ void main() {
       router.go(location);
       await tester.pumpAndSettle();
 
-      return (capturedTag: capturedTag, capturedQuery: capturedQuery);
+      return (
+        capturedTag: capturedTag,
+        capturedQuery: capturedQuery,
+        requestFocusOnMount: requestFocusOnMount,
+      );
     }
 
     testWidgets(
@@ -165,7 +181,10 @@ void main() {
         const original = '100%';
         final result = await navigateAndCapture(
           tester,
-          SearchResultsPage.pathForQuery(original),
+          SearchResultsPage.pathForQuery(
+            original,
+            requestFocusOnMount: false,
+          ),
         );
 
         expect(tester.takeException(), isNull);
@@ -179,11 +198,50 @@ void main() {
         const original = '50% off deals';
         final result = await navigateAndCapture(
           tester,
-          SearchResultsPage.pathForQuery(original),
+          SearchResultsPage.pathForQuery(
+            original,
+            requestFocusOnMount: false,
+          ),
         );
 
         expect(tester.takeException(), isNull);
         expect(result.capturedQuery, equals(original));
+      },
+    );
+
+    testWidgets(
+      'pathForQuery can opt a prefilled route into mount focus',
+      (tester) async {
+        const original = 'alice';
+        final result = await navigateAndCapture(
+          tester,
+          SearchResultsPage.pathForQuery(
+            original,
+            requestFocusOnMount: true,
+          ),
+        );
+
+        expect(tester.takeException(), isNull);
+        expect(result.capturedQuery, equals(original));
+        expect(result.requestFocusOnMount, isTrue);
+      },
+    );
+
+    testWidgets(
+      'pathForQuery keeps a prefilled route unfocused when not opted in',
+      (tester) async {
+        const original = 'alice';
+        final result = await navigateAndCapture(
+          tester,
+          SearchResultsPage.pathForQuery(
+            original,
+            requestFocusOnMount: false,
+          ),
+        );
+
+        expect(tester.takeException(), isNull);
+        expect(result.capturedQuery, equals(original));
+        expect(result.requestFocusOnMount, isFalse);
       },
     );
   });
@@ -250,6 +308,22 @@ void main() {
         searchRegion.contains('Uri.decodeComponent'),
         isFalse,
         reason: 'Search-results builder must not double-decode. $guard',
+      );
+      expect(
+        searchRegion.contains('requestFocusOnMount:'),
+        isTrue,
+        reason:
+            'Search-results builder must forward route-level focus intent '
+            'instead of relying on widget defaults.',
+      );
+      expect(
+        searchRegion.contains(
+          'SearchResultsPage.requestFocusOnMountForRoute(',
+        ),
+        isTrue,
+        reason:
+            'Search-results builder must derive focus from the routed URI so '
+            'Explore, mentions, and deep links can express distinct intent.',
       );
     });
   });

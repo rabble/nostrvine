@@ -110,7 +110,9 @@ class _SelectableLinkifiedTextState
   }
 
   void _navigateToSearch(BuildContext context, String username) {
-    context.go(SearchResultsPage.pathForQuery(username));
+    context.go(
+      SearchResultsPage.pathForQuery(username, requestFocusOnMount: false),
+    );
   }
 
   Future<void> _handleUrlTap(String rawUrl) async {

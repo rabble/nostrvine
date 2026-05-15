@@ -18,7 +18,7 @@ import 'package:openvine/screens/search_results/widgets/search_results_app_bar.d
 class SearchResultsPage extends ConsumerWidget {
   const SearchResultsPage({
     this.initialQuery,
-    this.requestFocusOnMount = true,
+    this.requestFocusOnMount = false,
     super.key,
   });
 
@@ -34,9 +34,22 @@ class SearchResultsPage extends ConsumerWidget {
   /// Route path pattern for GoRouter.
   static const path = '$pathPrefix/:query';
 
-  /// Build a path with the given query.
-  static String pathForQuery(String query) =>
-      '$pathPrefix/${Uri.encodeComponent(query)}';
+  /// Query parameter used to opt a prefilled route into mount focus.
+  static const requestFocusQueryParameter = 'focus';
+
+  /// Build a path with the given query and explicit mount-focus intent.
+  static String pathForQuery(
+    String query, {
+    required bool requestFocusOnMount,
+  }) {
+    final encodedQuery = Uri.encodeComponent(query);
+    if (!requestFocusOnMount) return '$pathPrefix/$encodedQuery';
+    return '$pathPrefix/$encodedQuery?$requestFocusQueryParameter=1';
+  }
+
+  /// Returns whether a routed prefilled search should claim keyboard focus.
+  static bool requestFocusOnMountForRoute(Uri uri) =>
+      uri.queryParameters[requestFocusQueryParameter] == '1';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

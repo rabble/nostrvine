@@ -487,7 +487,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, st) {
           // See note above: do not double-decode path parameters.
           final query = st.pathParameters['query'] ?? '';
-          return SearchResultsPage(initialQuery: query);
+          return SearchResultsPage(
+            initialQuery: query,
+            requestFocusOnMount: SearchResultsPage.requestFocusOnMountForRoute(
+              st.uri,
+            ),
+          );
         },
       ),
 

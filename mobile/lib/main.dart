@@ -1485,6 +1485,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
               if (deepLink.searchTerm != null) {
                 final targetPath = SearchResultsPage.pathForQuery(
                   deepLink.searchTerm!,
+                  requestFocusOnMount: false,
                 );
                 Log.info(
                   '📱 Navigating to search: $targetPath',

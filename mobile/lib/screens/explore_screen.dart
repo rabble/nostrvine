@@ -279,7 +279,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     _searchDebounce = Timer(const Duration(milliseconds: 300), () {
       if (!mounted) return;
       _searchController.clear();
-      context.push(SearchResultsPage.pathForQuery(query));
+      context.push(
+        SearchResultsPage.pathForQuery(query, requestFocusOnMount: true),
+      );
     });
   }
 

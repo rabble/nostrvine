@@ -15,18 +15,19 @@ import 'package:openvine/screens/search_results/widgets/search_filter_pill.dart'
 class SearchResultsAppBar extends StatefulWidget {
   const SearchResultsAppBar({
     required this.initialQuery,
-    this.requestFocusOnMount = true,
+    this.requestFocusOnMount = false,
     super.key,
   });
 
   /// Pre-filled search text.
   final String initialQuery;
 
-  /// When true, the search field claims focus after the first frame.
+  /// When true, a prefilled search field claims focus after the first frame.
   ///
-  /// This is the canonical focus contract for Explore -> Search Results:
-  /// route transitions triggered during typing must transfer keyboard focus to
-  /// the destination field rather than relying on `initialQuery` heuristics.
+  /// Route call sites must opt in explicitly so prefilled destinations like
+  /// mention taps and search deep links can keep the keyboard dismissed.
+  ///
+  /// Empty-query mounts still request focus by default.
   final bool requestFocusOnMount;
 
   @override
@@ -48,7 +49,7 @@ class _SearchResultsAppBarState extends State<SearchResultsAppBar> {
       _controller.text = widget.initialQuery;
     }
 
-    if (widget.requestFocusOnMount) {
+    if (widget.requestFocusOnMount || widget.initialQuery.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _focusNode.requestFocus();
       });

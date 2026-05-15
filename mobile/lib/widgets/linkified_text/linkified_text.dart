@@ -129,7 +129,9 @@ class _LinkifiedTextState extends ConsumerState<LinkifiedText> {
 
   void _navigateToSearch(BuildContext context, String username) {
     widget.onVideoStateChange?.call();
-    context.go(SearchResultsPage.pathForQuery(username));
+    context.go(
+      SearchResultsPage.pathForQuery(username, requestFocusOnMount: false),
+    );
   }
 
   Future<void> _handleUrlTap(String rawUrl) async {

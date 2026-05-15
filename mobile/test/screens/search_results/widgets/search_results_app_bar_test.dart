@@ -57,7 +57,7 @@ void main() {
 
     Widget createTestWidget({
       String initialQuery = 'test',
-      bool requestFocusOnMount = true,
+      bool requestFocusOnMount = false,
     }) {
       return testMaterialApp(
         home: MultiBlocProvider(
@@ -96,9 +96,21 @@ void main() {
     });
 
     testWidgets(
-      'requests focus for a prefilled query when mounted from a route push',
+      'keeps keyboard dismissed for a prefilled query by default',
       (tester) async {
         await tester.pumpWidget(createTestWidget());
+        await tester.pump();
+
+        final textField = tester.widget<TextField>(find.byType(TextField));
+
+        expect(textField.focusNode?.hasFocus, isFalse);
+      },
+    );
+
+    testWidgets(
+      'requests focus for a prefilled query when the route opts in',
+      (tester) async {
+        await tester.pumpWidget(createTestWidget(requestFocusOnMount: true));
         await tester.pump();
 
         final textField = tester.widget<TextField>(find.byType(TextField));
@@ -107,13 +119,15 @@ void main() {
       },
     );
 
-    testWidgets('can opt out of mount focus', (tester) async {
-      await tester.pumpWidget(createTestWidget(requestFocusOnMount: false));
+    testWidgets('still focuses the empty query state', (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(initialQuery: ''),
+      );
       await tester.pump();
 
       final textField = tester.widget<TextField>(find.byType(TextField));
 
-      expect(textField.focusNode?.hasFocus, isFalse);
+      expect(textField.focusNode?.hasFocus, isTrue);
     });
   });
 }
