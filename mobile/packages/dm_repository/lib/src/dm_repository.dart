@@ -1104,6 +1104,182 @@ class DmRepository {
     return result;
   }
 
+  /// Re-publish both gift wraps for a stored rumor whose recipient
+  /// publish previously failed.
+  ///
+  /// Used by `OutgoingDmRetryService`'s strategy-table dispatch for
+  /// rows in `recipient_wrap_status == failed`. Re-publishing the
+  /// rumor against a relay that already accepted the original wire
+  /// copy is safe: NIP-17 receiver-side dedup keys on the rumor id
+  /// (preserved verbatim via `rumor_event_json`), so the receiver sees
+  /// one logical message even when the wire copy was sent twice.
+  ///
+  /// Looks up the queue row for [rumorId] (must have been enqueued by
+  /// [sendMessage] / [sendGroupMessage]), rebuilds the rumor from the
+  /// stored JSON, calls [NIP17MessageService.sendRumor], and
+  /// transitions the queue row by outcome:
+  ///
+  /// - Full success: delete the row in the same transaction that
+  ///   inserts `direct_messages`. Same atomicity contract as
+  ///   [sendMessage]'s happy path.
+  /// - Partial success (recipient sent, self failed): mark recipient
+  ///   `sent` and self `failed` so the next sweep replays only the
+  ///   missing self-wrap via [recoverSelfWrap].
+  /// - Recipient failure: re-mark both wraps `failed` so the row
+  ///   stays retryable.
+  ///
+  /// Idempotent: if the row's `recipientWrapStatus` is already
+  /// [OutgoingWrapStatus.sent] (a concurrent recovery raced ahead or
+  /// the row was already mid-recovery), defers to [recoverSelfWrap]
+  /// so the recipient wrap is never republished.
+  ///
+  /// Returns the underlying [NIP17SendResult] so callers can chain a
+  /// per-rumor recovery and aggregate the result.
+  ///
+  /// Throws [StateError] if the repository or its queue DAO are not
+  /// wired in. Throws [ArgumentError] if no row exists for [rumorId]
+  /// or the row belongs to a different account.
+  Future<NIP17SendResult> recoverFullSend({required String rumorId}) async {
+    _assertInitialized();
+    final dao = _outgoingDmsDao;
+    if (dao == null) {
+      throw StateError(
+        'recoverFullSend requires the outgoing_dms queue DAO; '
+        'wire OutgoingDmsDao into DmRepository before calling.',
+      );
+    }
+    final row = await dao.getById(rumorId);
+    if (row == null) {
+      throw ArgumentError.value(
+        rumorId,
+        'rumorId',
+        'no queued outgoing DM with this id',
+      );
+    }
+    if (row.ownerPubkey != _userPubkey) {
+      throw ArgumentError.value(
+        rumorId,
+        'rumorId',
+        'queue row belongs to a different account',
+      );
+    }
+
+    // Idempotent guard: if a concurrent recovery (or the original
+    // send's partial-success path) already promoted the recipient
+    // wrap to sent, defer to recoverSelfWrap so the recipient wrap
+    // is never republished. The two recovery primitives share the
+    // same per-row state machine; this branch keeps them composable.
+    if (row.recipientWrapStatus == OutgoingWrapStatus.sent) {
+      return recoverSelfWrap(rumorId: rumorId);
+    }
+
+    final Event rumor;
+    try {
+      final json = jsonDecode(row.rumorEventJson) as Map<String, dynamic>;
+      rumor = Event.fromJson(json);
+    } on Object catch (e, stackTrace) {
+      Log.error(
+        'Failed to parse rumor JSON for $rumorId: $e',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      // Mark both wraps failed with the parse error so the row stays
+      // visible to the retry sweep with a record of why this attempt
+      // produced no publish.
+      await _finalizeAfterRecipientFailure(
+        outgoingDao: dao,
+        rumorId: rumorId,
+        errorMessage: 'rumor JSON parse failed: $e',
+      );
+      return NIP17SendResult.failure('rumor JSON parse failed: $e');
+    }
+
+    final result = await _messageService!.sendRumor(
+      rumorEvent: rumor,
+      recipientPubkey: row.recipientPubkey,
+    );
+
+    if (result.success) {
+      // Mirror sendMessage's happy-path transaction: persist
+      // direct_messages + conversation upsert + queue finalize
+      // atomically so a watcher never sees a window where the message
+      // is in neither table, and so a partial delivery preserves the
+      // retry row.
+      try {
+        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+        final participants = [_userPubkey, row.recipientPubkey]..sort();
+        await _conversationsDao.runInTransaction(() async {
+          await _directMessagesDao.insertMessage(
+            id: result.rumorEventId!,
+            conversationId: row.conversationId,
+            senderPubkey: _userPubkey,
+            content: row.content,
+            createdAt: now,
+            giftWrapId: result.messageEventId!,
+            messageKind: row.messageKind,
+            replyToId: row.replyToId,
+            ownerPubkey: _userPubkey,
+          );
+
+          final existing = await _conversationsDao.getConversation(
+            row.conversationId,
+            ownerPubkey: _userPubkey,
+          );
+          // Mirror sendMessage: once we successfully publish a NIP-17
+          // message ourselves, mark the conversation NIP-17 so the
+          // legacy NIP-04 fallback path doesn't fire on future sends.
+          final nextProtocol = existing?.dmProtocol ?? 'nip17';
+          await _conversationsDao.upsertConversation(
+            id: row.conversationId,
+            participantPubkeys: jsonEncode(participants),
+            isGroup: false,
+            createdAt: existing?.createdAt ?? now,
+            lastMessageContent: row.content,
+            lastMessageTimestamp: now,
+            lastMessageSenderPubkey: _userPubkey,
+            currentUserHasSent: true,
+            ownerPubkey: _userPubkey,
+            dmProtocol: nextProtocol,
+          );
+
+          await _finalizeAfterRecipientSuccess(
+            outgoingDao: dao,
+            rumorId: rumorId,
+            result: result,
+          );
+        });
+
+        Log.debug(
+          'Recovered full send and persisted locally in conversation '
+          '${row.conversationId}',
+          category: LogCategory.system,
+        );
+      } on Object catch (e, stackTrace) {
+        Log.error(
+          'Failed to persist recovered send locally for $rumorId: $e',
+          category: LogCategory.system,
+          error: e,
+          stackTrace: stackTrace,
+        );
+        // Publish landed but local persistence failed — degraded
+        // state. Don't rethrow: the caller still gets the success
+        // result. The retry sweep will not pick this row up again
+        // because the publish succeeded; missing local persistence
+        // surfaces only as a sender-side gap until the self-wrap
+        // arrives via the receive pipeline.
+      }
+    } else {
+      await _finalizeAfterRecipientFailure(
+        outgoingDao: dao,
+        rumorId: rumorId,
+        errorMessage: result.error ?? 'Unknown publish failure',
+      );
+    }
+
+    return result;
+  }
+
   /// Apply the queue-row transition for a successful per-recipient
   /// rumor publish. Shared between [sendMessage] and [sendGroupMessage]
   /// so both call sites agree on the partial-vs-full delivery
