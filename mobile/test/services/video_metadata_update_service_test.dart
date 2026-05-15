@@ -96,8 +96,7 @@ void main() {
       capturedTags = List<List<String>>.from(
         invocation.namedArguments[#tags] as List<List<String>>,
       );
-      capturedCreatedAt =
-          invocation.namedArguments[#createdAt] as int? ?? 0;
+      capturedCreatedAt = invocation.namedArguments[#createdAt] as int? ?? 0;
       signedEvent = Event(
         _ownerPubkey,
         NIP71VideoKinds.addressableShortVideo,
@@ -235,9 +234,16 @@ void main() {
         );
 
         expect(result, isA<VideoUpdateSuccess>());
-        final engagementTagNames = {'loops', 'likes', 'reposts', 'views', 'comments'};
-        final engagementTags =
-            capturedTags.where((t) => t.isNotEmpty && engagementTagNames.contains(t.first));
+        final engagementTagNames = {
+          'loops',
+          'likes',
+          'reposts',
+          'views',
+          'comments',
+        };
+        final engagementTags = capturedTags.where(
+          (t) => t.isNotEmpty && engagementTagNames.contains(t.first),
+        );
         expect(engagementTags, isEmpty);
       });
     });
