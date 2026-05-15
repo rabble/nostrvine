@@ -67,6 +67,9 @@ class MediaCacheConfig {
         maxNrOfCacheObjects: 200,
         connectionTimeout: const Duration(seconds: 10),
         idleTimeout: const Duration(seconds: 30),
+        // Raised from 6 → 20: profile grids load 20+ thumbnails concurrently
+        // from the same CDN host; 6 caused head-of-line blocking that left
+        // thumbnails black until earlier slots freed up (#4330).
         maxConnectionsPerHost: 20,
         enableSyncManifest: false,
         defaultExtension: '.jpg',
