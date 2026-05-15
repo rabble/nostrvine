@@ -788,6 +788,32 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                     )
                   : null;
 
+              final appBar = DiVineAppBar(
+                title: widget.contextTitle ?? '',
+                showBackButton: true,
+                onBackPressed: () => _handleBack(context),
+                backgroundMode: DiVineAppBarBackgroundMode.transparent,
+                forceMaterialTransparency: true,
+                // Stretch the back-button tap target to the full
+                // leading slot. The fullscreen feed sits over playing
+                // video so a small icon hit-target is easy to miss.
+                expandLeadingHitArea: true,
+                customActions: const [FeedSettingsMenu()],
+                style: DiVineAppBarStyle.transparentStyle.copyWith(
+                  horizontalPadding: 12,
+                  // With the default 48 px icon button and 12 px
+                  // [horizontalPadding], a 72 px leading slot leaves
+                  // 12 px between the back button's right edge and
+                  // the title text (72 − 12 − 48 = 12).
+                  leadingWidth: 72,
+                  // Figma `title/medium` token (Bricolage Grotesque
+                  // 800, 16 / 24 / 0.15) — overrides the default
+                  // [VineTheme.titleLargeFont] (22) used by the
+                  // shared app bar.
+                  titleStyle: VineTheme.titleMediumFont(),
+                ),
+              );
+
               return Scaffold(
                 // Match the comment bar's [VineTheme.surfaceBackground]
                 // (= [VineTheme.navGreen]) so anything peeking around
@@ -806,30 +832,22 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                 // that letterbox no longer exists and the carve-out is
                 // moot.
                 extendBodyBehindAppBar: true,
-                appBar: DiVineAppBar(
-                  title: widget.contextTitle ?? '',
-                  showBackButton: true,
-                  onBackPressed: () => _handleBack(context),
-                  backgroundMode: DiVineAppBarBackgroundMode.transparent,
-                  forceMaterialTransparency: true,
-                  // Stretch the back-button tap target to the full
-                  // leading slot. The fullscreen feed sits over playing
-                  // video so a small icon hit-target is easy to miss.
-                  expandLeadingHitArea: true,
-                  customActions: const [FeedSettingsMenu()],
-                  style: DiVineAppBarStyle.transparentStyle.copyWith(
-                    horizontalPadding: 12,
-                    // With the default 48 px icon button and 12 px
-                    // [horizontalPadding], a 72 px leading slot leaves
-                    // 12 px between the back button's right edge and
-                    // the title text (72 − 12 − 48 = 12).
-                    leadingWidth: 72,
-                    // Figma `title/medium` token (Bricolage Grotesque
-                    // 800, 16 / 24 / 0.15) — overrides the default
-                    // [VineTheme.titleLargeFont] (22) used by the
-                    // shared app bar.
-                    titleStyle: VineTheme.titleMediumFont(),
-                  ),
+                // Wrap the AppBar in a [TextFieldTapRegion] so taps on
+                // the back button / title / [FeedSettingsMenu] popover
+                // trigger don't dismiss the inline composer's keyboard.
+                // That lets users toggle playback (mute, captions, ...)
+                // mid-comment without losing what they're typing.
+                // [TapRegion] is independent of the gesture arena, so
+                // the back button and the More popover still fire their
+                // own handlers — only the "tap outside" unfocus
+                // callback is suppressed for taps inside this region.
+                // The popover's pill content is wrapped in its own
+                // [TextFieldTapRegion] inside [_FeedSettingsOverlay] so
+                // taps on the playback controls (which render outside
+                // this widget tree via [OverlayPortal]) are covered too.
+                appBar: PreferredSize(
+                  preferredSize: appBar.preferredSize,
+                  child: TextFieldTapRegion(child: appBar),
                 ),
                 body: Column(
                   children: [

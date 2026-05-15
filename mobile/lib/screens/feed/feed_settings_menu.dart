@@ -95,25 +95,37 @@ class _FeedSettingsOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: onClose,
+    // Wrap the *entire* overlay in a [TextFieldTapRegion]. While the
+    // popover is open, every tap inside it — the pill (toggling
+    // mute / captions / ...), the empty backdrop (which fires
+    // [onClose] to dismiss the popover), and the area behind the
+    // popover's X-button trigger in the app bar that the backdrop
+    // catcher overlays — is treated as part of the focused
+    // TextField's tap-region group. That keeps the inline comment
+    // composer's keyboard up while the user adjusts playback, and
+    // lets them close the popover (via X or backdrop tap) without
+    // also losing the keyboard.
+    return TextFieldTapRegion(
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onClose,
+            ),
           ),
-        ),
-        CompositedTransformFollower(
-          link: link,
-          targetAnchor: Alignment.bottomRight,
-          followerAnchor: Alignment.topRight,
-          offset: const Offset(0, 16),
-          child: const Material(
-            color: VineTheme.transparent,
-            child: FeedPlaybackTogglesPill(),
+          CompositedTransformFollower(
+            link: link,
+            targetAnchor: Alignment.bottomRight,
+            followerAnchor: Alignment.topRight,
+            offset: const Offset(0, 16),
+            child: const Material(
+              color: VineTheme.transparent,
+              child: FeedPlaybackTogglesPill(),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
