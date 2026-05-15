@@ -70,6 +70,27 @@ void main() {
         expect(config.enableSyncManifest, false);
         expect(config.allowBadCertificatesInDebug, true);
       });
+
+      test(
+        'maxConnectionsPerHost accommodates full profile grid concurrent loads',
+        () {
+          // A profile grid can display up to 20 thumbnails simultaneously,
+          // all fetched from the same CDN host.  When this value was 6, later
+          // slots in the grid stalled behind earlier requests (head-of-line
+          // blocking), leaving those tiles black until a connection freed up
+          // (#4330).  This lower-bound assertion ensures any future reduction
+          // is a deliberate, visible change rather than an accidental
+          // regression.
+          const config = MediaCacheConfig.image(cacheKey: 'test');
+          expect(
+            config.maxConnectionsPerHost,
+            greaterThanOrEqualTo(20),
+            reason:
+                'must be >= maximum simultaneously visible tiles in a '
+                'profile grid to prevent head-of-line blocking',
+          );
+        },
+      );
     });
 
     group('presets comparison', () {
