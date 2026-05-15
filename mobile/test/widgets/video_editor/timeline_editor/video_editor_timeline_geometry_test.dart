@@ -85,6 +85,13 @@ void main() {
       );
     });
 
+    test('does not add a trailing gap at total duration', () {
+      expect(
+        timelinePositionToScrollOffset(clips, totalDuration, pps),
+        equals(366.0), // 7 * 52 + 2
+      );
+    });
+
     test('empty clip list — no gaps added', () {
       expect(
         timelinePositionToScrollOffset([], const Duration(seconds: 3), pps),
@@ -161,6 +168,13 @@ void main() {
       );
     });
 
+    test('maps the exact end offset back to total duration', () {
+      expect(
+        timelineScrollOffsetToPosition(clips, 366.0, pps, totalDuration),
+        equals(totalDuration),
+      );
+    });
+
     test('empty clip list — no gap subtraction', () {
       expect(
         timelineScrollOffsetToPosition(
@@ -184,6 +198,7 @@ void main() {
         const Duration(milliseconds: 2500),
         const Duration(seconds: 5),
         const Duration(seconds: 6),
+        totalDuration,
       ]) {
         test('position $pos survives round-trip', () {
           final offset = timelinePositionToScrollOffset(clips, pos, pps);

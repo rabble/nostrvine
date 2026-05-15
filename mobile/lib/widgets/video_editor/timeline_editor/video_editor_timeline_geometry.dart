@@ -19,10 +19,13 @@ double timelinePositionToScrollOffset(
 ) {
   var acc = Duration.zero;
   var gapPixels = 0.0;
-  for (final clip in clips) {
+  for (var i = 0; i < clips.length; i++) {
+    final clip = clips[i];
     if (acc + clip.trimmedDuration > position) break;
     acc += clip.trimmedDuration;
-    gapPixels += TimelineConstants.clipGap;
+    if (i < clips.length - 1) {
+      gapPixels += TimelineConstants.clipGap;
+    }
   }
   return position.inMicroseconds / 1_000_000.0 * pixelsPerSecond + gapPixels;
 }
