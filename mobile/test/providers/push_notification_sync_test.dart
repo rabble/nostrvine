@@ -35,7 +35,10 @@ class _MockNostrSigner extends Mock implements NostrSigner {}
 
 class _MockNotificationService extends Mock implements NotificationService {}
 
-class _FakeEvent extends Fake implements Event {}
+class _FakeEvent extends Fake implements Event {
+  @override
+  String get id => 'fake-event-id';
+}
 
 class _MockEvent extends Mock implements Event {}
 
@@ -142,6 +145,13 @@ NotificationSettings _settings(AuthorizationStatus status) =>
 NostrIdentity _identity(String pubkey) =>
     KeycastNostrIdentity(pubkey: pubkey, rpcSigner: _MockNostrSigner());
 
+PublishOutcome _acceptedOutcome(Event event, String relayUrl) => PublishOutcome(
+  eventId: event.id,
+  acceptedBy: [relayUrl],
+  rejectedBy: const {},
+  noResponseFrom: const [],
+);
+
 void main() {
   late _MockFirebaseMessaging messaging;
   late _MockAuthService authService;
@@ -168,6 +178,8 @@ void main() {
     registerFallbackValue(const NotificationPreferences());
     registerFallbackValue(_FakeEvent());
     registerFallbackValue(_identity(pubkeyA));
+    registerFallbackValue(<String>[]);
+    registerFallbackValue(Duration.zero);
   });
 
   setUp(() {
@@ -242,8 +254,17 @@ void main() {
     when(() => defaultCleanupClient.initialize()).thenAnswer((_) async {});
     when(() => defaultCleanupClient.dispose()).thenAnswer((_) async {});
     when(
-      () => defaultCleanupClient.publishEvent(any()),
-    ).thenAnswer((_) async => PublishSuccess(event: _FakeEvent()));
+      () => defaultCleanupClient.publishEventAwaitOk(
+        any(),
+        targetRelays: any(named: 'targetRelays'),
+        timeout: any(named: 'timeout'),
+      ),
+    ).thenAnswer(
+      (invocation) async => _acceptedOutcome(
+        invocation.positionalArguments.single as Event,
+        pushEnvironment.relayUrl,
+      ),
+    );
   });
 
   tearDown(() async {
@@ -354,8 +375,14 @@ void main() {
           ),
         ).thenAnswer((_) async => event);
         when(
-          () => nostrClient.publishEvent(event),
-        ).thenAnswer((_) async => PublishSuccess(event: event));
+          () => nostrClient.publishEventAwaitOk(
+            event,
+            targetRelays: any(named: 'targetRelays'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer(
+          (_) async => _acceptedOutcome(event, pushEnvironment.relayUrl),
+        );
 
         final nostrSession = _TestNostrSession(
           const NostrSessionReadiness.signedOut(),
@@ -392,7 +419,13 @@ void main() {
         await Future<void>.delayed(Duration.zero);
         await Future<void>.delayed(Duration.zero);
 
-        verifyNever(() => nostrClient.publishEvent(any()));
+        verifyNever(
+          () => nostrClient.publishEventAwaitOk(
+            any(),
+            targetRelays: any(named: 'targetRelays'),
+            timeout: any(named: 'timeout'),
+          ),
+        );
       },
     );
 
@@ -1338,12 +1371,19 @@ void main() {
         ).thenAnswer((_) => tokenRefreshController.stream);
         when(() => authService.currentIdentity).thenReturn(identity);
         when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
+        when(() => event.id).thenReturn('same-pubkey-deregistration-event-id');
         when(() => event.isSigned).thenReturn(true);
         when(() => event.isValid).thenReturn(true);
         when(() => signer.signEvent(any())).thenAnswer((_) async => event);
         when(
-          () => nostrClient.publishEvent(event),
-        ).thenAnswer((_) async => PublishSuccess(event: event));
+          () => defaultCleanupClient.publishEventAwaitOk(
+            event,
+            targetRelays: [pushEnvironment.relayUrl],
+            timeout: const Duration(seconds: 5),
+          ),
+        ).thenAnswer(
+          (_) async => _acceptedOutcome(event, pushEnvironment.relayUrl),
+        );
 
         final nostrSession = _TestNostrSession(
           const NostrSessionReadiness.signedOut(),
@@ -1387,7 +1427,13 @@ void main() {
         await beforeSessionTeardownCallback!();
 
         verify(() => signer.signEvent(any())).called(1);
-        verify(() => defaultCleanupClient.publishEvent(event)).called(1);
+        verify(
+          () => defaultCleanupClient.publishEventAwaitOk(
+            event,
+            targetRelays: [pushEnvironment.relayUrl],
+            timeout: const Duration(seconds: 5),
+          ),
+        ).called(1);
       },
     );
 
@@ -1410,12 +1456,21 @@ void main() {
         ).thenAnswer((_) => tokenRefreshController.stream);
         when(() => authService.currentIdentity).thenReturn(identity);
         when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
+        when(
+          () => event.id,
+        ).thenReturn('captured-pubkey-deregistration-event-id');
         when(() => event.isSigned).thenReturn(true);
         when(() => event.isValid).thenReturn(true);
         when(() => signer.signEvent(any())).thenAnswer((_) async => event);
         when(
-          () => nostrClient.publishEvent(event),
-        ).thenAnswer((_) async => PublishSuccess(event: event));
+          () => defaultCleanupClient.publishEventAwaitOk(
+            event,
+            targetRelays: [pushEnvironment.relayUrl],
+            timeout: const Duration(seconds: 5),
+          ),
+        ).thenAnswer(
+          (_) async => _acceptedOutcome(event, pushEnvironment.relayUrl),
+        );
 
         final nostrSession = _TestNostrSession(
           const NostrSessionReadiness.signedOut(),
@@ -1457,7 +1512,13 @@ void main() {
         await beforeSessionTeardownCallback!();
 
         verify(() => signer.signEvent(any())).called(1);
-        verify(() => defaultCleanupClient.publishEvent(event)).called(1);
+        verify(
+          () => defaultCleanupClient.publishEventAwaitOk(
+            event,
+            targetRelays: [pushEnvironment.relayUrl],
+            timeout: const Duration(seconds: 5),
+          ),
+        ).called(1);
       },
     );
 
@@ -1481,12 +1542,21 @@ void main() {
         ).thenAnswer((_) => tokenRefreshController.stream);
         when(() => authService.currentIdentity).thenReturn(identity);
         when(() => authService.currentPublicKeyHex).thenReturn(pubkeyA);
+        when(
+          () => event.id,
+        ).thenReturn('direct-cleanup-deregistration-event-id');
         when(() => event.isSigned).thenReturn(true);
         when(() => event.isValid).thenReturn(true);
         when(() => signer.signEvent(any())).thenAnswer((_) async => event);
         when(
-          () => cleanupClient.publishEvent(event),
-        ).thenAnswer((_) async => PublishSuccess(event: event));
+          () => cleanupClient.publishEventAwaitOk(
+            event,
+            targetRelays: [pushEnvironment.relayUrl],
+            timeout: const Duration(seconds: 5),
+          ),
+        ).thenAnswer(
+          (_) async => _acceptedOutcome(event, pushEnvironment.relayUrl),
+        );
         final initializeCompleter = Completer<void>();
         when(cleanupClient.initialize).thenAnswer(
           (_) => initializeCompleter.future,
@@ -1534,14 +1604,32 @@ void main() {
 
         verify(() => signer.signEvent(any())).called(1);
         verify(cleanupClient.initialize).called(1);
-        verifyNever(() => cleanupClient.publishEvent(event));
+        verifyNever(
+          () => cleanupClient.publishEventAwaitOk(
+            event,
+            targetRelays: [pushEnvironment.relayUrl],
+            timeout: const Duration(seconds: 5),
+          ),
+        );
 
         initializeCompleter.complete();
         await teardownFuture;
 
-        verify(() => cleanupClient.publishEvent(event)).called(1);
+        verify(
+          () => cleanupClient.publishEventAwaitOk(
+            event,
+            targetRelays: [pushEnvironment.relayUrl],
+            timeout: const Duration(seconds: 5),
+          ),
+        ).called(1);
         verify(cleanupClient.dispose).called(1);
-        verifyNever(() => nostrClient.publishEvent(event));
+        verifyNever(
+          () => nostrClient.publishEventAwaitOk(
+            event,
+            targetRelays: any(named: 'targetRelays'),
+            timeout: any(named: 'timeout'),
+          ),
+        );
       },
     );
 
@@ -1576,14 +1664,29 @@ void main() {
             tags: any(named: 'tags'),
           ),
         ).thenAnswer((_) async => registrationEvent);
+        when(
+          () => registrationEvent.id,
+        ).thenReturn('teardown-registration-event-id');
+        when(
+          () => deregistrationEvent.id,
+        ).thenReturn('teardown-deregistration-event-id');
         when(() => deregistrationEvent.isSigned).thenReturn(true);
         when(() => deregistrationEvent.isValid).thenReturn(true);
         when(
           () => signer.signEvent(any()),
         ).thenAnswer((_) async => deregistrationEvent);
         when(
-          () => nostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => PublishSuccess(event: _FakeEvent()));
+          () => nostrClient.publishEventAwaitOk(
+            any(),
+            targetRelays: any(named: 'targetRelays'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer(
+          (invocation) async => _acceptedOutcome(
+            invocation.positionalArguments.single as Event,
+            pushEnvironment.relayUrl,
+          ),
+        );
 
         final nostrSession = _TestNostrSession(
           const NostrSessionReadiness.signedOut(),
@@ -1631,7 +1734,13 @@ void main() {
             tags: any(named: 'tags'),
           ),
         );
-        verifyNever(() => nostrClient.publishEvent(registrationEvent));
+        verifyNever(
+          () => nostrClient.publishEventAwaitOk(
+            registrationEvent,
+            targetRelays: any(named: 'targetRelays'),
+            timeout: any(named: 'timeout'),
+          ),
+        );
       },
     );
 
@@ -1641,7 +1750,7 @@ void main() {
         const encryptedPayload = 'encrypted-refreshed-token';
         final events = <String>[];
         final tokenRefreshController = StreamController<String>.broadcast();
-        final registrationPublishCompleter = Completer<PublishResult>();
+        final registrationPublishCompleter = Completer<PublishOutcome>();
         addTearDown(tokenRefreshController.close);
         final signer = _MockNostrSigner();
         final identity = KeycastNostrIdentity(
@@ -1670,14 +1779,24 @@ void main() {
             tags: any(named: 'tags'),
           ),
         ).thenAnswer((_) async => registrationEvent);
+        when(
+          () => registrationEvent.id,
+        ).thenReturn('in-flight-registration-event-id');
+        when(
+          () => deregistrationEvent.id,
+        ).thenReturn('in-flight-deregistration-event-id');
         when(() => deregistrationEvent.isSigned).thenReturn(true);
         when(() => deregistrationEvent.isValid).thenReturn(true);
         when(
           () => signer.signEvent(any()),
         ).thenAnswer((_) async => deregistrationEvent);
-        when(() => nostrClient.publishEvent(registrationEvent)).thenAnswer((
-          _,
-        ) async {
+        when(
+          () => nostrClient.publishEventAwaitOk(
+            registrationEvent,
+            targetRelays: [pushEnvironment.relayUrl],
+            timeout: const Duration(seconds: 5),
+          ),
+        ).thenAnswer((_) async {
           events.add('registration publish started');
           final result = await registrationPublishCompleter.future;
           events.add('registration publish completed');
@@ -1686,10 +1805,17 @@ void main() {
         when(() => defaultCleanupClient.initialize()).thenAnswer((_) async {});
         when(() => defaultCleanupClient.dispose()).thenAnswer((_) async {});
         when(
-          () => defaultCleanupClient.publishEvent(deregistrationEvent),
+          () => defaultCleanupClient.publishEventAwaitOk(
+            deregistrationEvent,
+            targetRelays: [pushEnvironment.relayUrl],
+            timeout: const Duration(seconds: 5),
+          ),
         ).thenAnswer((_) async {
           events.add('deregister');
-          return PublishSuccess(event: deregistrationEvent);
+          return _acceptedOutcome(
+            deregistrationEvent,
+            pushEnvironment.relayUrl,
+          );
         });
 
         final nostrSession = _TestNostrSession(
@@ -1737,7 +1863,7 @@ void main() {
         expect(events, ['registration publish started']);
 
         registrationPublishCompleter.complete(
-          PublishSuccess(event: registrationEvent),
+          _acceptedOutcome(registrationEvent, pushEnvironment.relayUrl),
         );
         await teardownFuture;
 
