@@ -43,6 +43,8 @@ class PushNotificationService {
   /// Number of days until a registration event expires.
   static const pushTokenExpirationDays = 90;
 
+  static const _pushControlPublishTimeout = Duration(seconds: 5);
+
   PushNotificationService({
     required AuthService authService,
     required NostrClient nostrClient,
@@ -221,21 +223,11 @@ class PushNotificationService {
     Event event, {
     NostrClient? publishClient,
   }) async {
-    final published = await (publishClient ?? _nostrClient).publishEvent(event);
-    final failureReason = published.failureReason;
-    if (failureReason != null) {
-      Log.error(
-        'Failed to publish deregistration event: $failureReason',
-        name: 'PushNotificationService',
-        category: LogCategory.system,
-      );
-    } else {
-      Log.info(
-        'Push notification deregistration published',
-        name: 'PushNotificationService',
-        category: LogCategory.system,
-      );
-    }
+    await _publishPushControlEvent(
+      event,
+      'deregistration',
+      publishClient: publishClient,
+    );
   }
 
   List<List<String>> _deregistrationTags(String pushServicePubkey) => [
@@ -293,23 +285,7 @@ class PushNotificationService {
     }
     if (!await _isPublishCurrent(null)) return false;
 
-    final published = await _nostrClient.publishEvent(event);
-    final failureReason = published.failureReason;
-    if (failureReason != null) {
-      Log.error(
-        'Failed to publish preferences event: $failureReason',
-        name: 'PushNotificationService',
-        category: LogCategory.system,
-      );
-      return false;
-    } else {
-      Log.info(
-        'Push notification preferences updated',
-        name: 'PushNotificationService',
-        category: LogCategory.system,
-      );
-      return true;
-    }
+    return _publishPushControlEvent(event, 'preferences');
   }
 
   /// Handles a foreground FCM message by displaying a local notification.
@@ -390,21 +366,39 @@ class PushNotificationService {
     }
     if (!await _isPublishCurrent(isCurrent)) return;
 
-    final published = await _nostrClient.publishEvent(event);
-    final failureReason = published.failureReason;
-    if (failureReason != null) {
-      Log.error(
-        'Failed to publish registration event: $failureReason',
+    await _publishPushControlEvent(event, 'registration');
+  }
+
+  Future<bool> _publishPushControlEvent(
+    Event event,
+    String action, {
+    NostrClient? publishClient,
+  }) async {
+    final relayUrl = _environmentConfig.relayUrl;
+    final outcome = await (publishClient ?? _nostrClient).publishEventAwaitOk(
+      event,
+      targetRelays: [relayUrl],
+      timeout: _pushControlPublishTimeout,
+    );
+
+    final outcomeDetails =
+        'eventId=${event.id}, relay=$relayUrl, acceptedBy=${outcome.acceptedBy}, '
+        'rejectedBy=${outcome.rejectedBy}, noResponseFrom=${outcome.noResponseFrom}';
+
+    if (outcome.confirmed) {
+      Log.info(
+        'Push notification $action accepted by relay: $outcomeDetails',
         name: 'PushNotificationService',
         category: LogCategory.system,
       );
     } else {
-      Log.info(
-        'Push notification registration published',
+      Log.error(
+        'Push notification $action not accepted by relay: $outcomeDetails',
         name: 'PushNotificationService',
         category: LogCategory.system,
       );
     }
+    return outcome.confirmed;
   }
 
   Future<Event?> _createAndSignEventWithIdentity(
