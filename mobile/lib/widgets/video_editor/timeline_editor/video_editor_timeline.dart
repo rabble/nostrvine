@@ -689,11 +689,29 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
     );
     if (newPps == _pixelsPerSecond) return;
 
-    final ratio = newPps / _pixelsPerSecond;
+    // Anchor the zoom on the current playback position so inter-clip gaps
+    // (which stay 1 px regardless of pixelsPerSecond) don't drift the
+    // viewport off the playhead. Multiplying the raw scroll offset by the
+    // zoom ratio would over-shoot by `clipsPassed × clipGap × (ratio - 1)`
+    // px once the playhead is past clip 0.
+    final clips = context.read<ClipEditorBloc>().state.clips;
+    final anchorPosition = _scrollController.hasClients
+        ? timelineScrollOffsetToPosition(
+            clips,
+            _scrollController.offset,
+            _pixelsPerSecond,
+            _totalDuration,
+          )
+        : Duration.zero;
+
     setState(() => _pixelsPerSecond = newPps);
 
     if (_scrollController.hasClients) {
-      final newOffset = _scrollController.offset * ratio;
+      final newOffset = timelinePositionToScrollOffset(
+        clips,
+        anchorPosition,
+        newPps,
+      );
       _scrollController.jumpTo(
         newOffset.clamp(0, _scrollController.position.maxScrollExtent),
       );
@@ -705,12 +723,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
   /// Derives the time at the playhead from scroll offset.
   void _updatePlayheadTime() {
     if (!_scrollController.hasClients) return;
-    _playheadPosition.value = timelineScrollOffsetToPosition(
-      context.read<ClipEditorBloc>().state.clips,
-      _scrollController.offset,
-      _pixelsPerSecond,
-      _totalDuration,
-    );
+    _playheadPosition.value = _scrollOffsetToPosition(_scrollController.offset);
   }
 
   /// Converts a composite playback [position] to the corresponding scroll
@@ -725,6 +738,16 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
         context.read<ClipEditorBloc>().state.clips,
         position,
         _pixelsPerSecond,
+      );
+
+  /// Inverse of [_positionToScrollOffset]: maps a [scrollOffset] back to a
+  /// composite playback position, clamped to the current total duration.
+  Duration _scrollOffsetToPosition(double scrollOffset) =>
+      timelineScrollOffsetToPosition(
+        context.read<ClipEditorBloc>().state.clips,
+        scrollOffset,
+        _pixelsPerSecond,
+        _totalDuration,
       );
 
   void _syncScrollToPosition(
@@ -749,12 +772,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
     if (!force && now - _lastSeekMs < _seekThrottleMs) return;
     _lastSeekMs = now;
 
-    final position = timelineScrollOffsetToPosition(
-      context.read<ClipEditorBloc>().state.clips,
-      _scrollController.offset,
-      _pixelsPerSecond,
-      _totalDuration,
-    );
+    final position = _scrollOffsetToPosition(_scrollController.offset);
     context.read<VideoEditorMainBloc>().add(VideoEditorSeekRequested(position));
   }
 }

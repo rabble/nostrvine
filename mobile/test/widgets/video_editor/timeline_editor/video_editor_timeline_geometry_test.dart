@@ -198,4 +198,63 @@ void main() {
       }
     },
   );
+
+  // Regression for the pinch-zoom drift fix in `_updatePinchZoom`.
+  //
+  // Old bug: zoom preserved scroll by `_scrollController.offset * ratio`,
+  // which over-shoots by `clipsPassed × clipGap × (ratio - 1)` px once the
+  // playhead is past clip 0 (gaps stay 1 px, they don't scale with pps).
+  //
+  // New behavior re-anchors through the gap-aware helpers: derive the
+  // current playback position at the old pps, then map it back to a scroll
+  // offset at the new pps. The composite position must remain stable.
+  group('pinch-zoom anchoring keeps playhead position stable', () {
+    const newPps = 104.0; // 2× zoom-in
+
+    for (final pos in [
+      const Duration(milliseconds: 2500), // inside clip 1
+      const Duration(seconds: 5), // boundary clip 1/2
+      const Duration(seconds: 6), // inside clip 2
+    ]) {
+      test('position $pos stays centered across pps change', () {
+        // Simulate the playhead sitting at `pos` at the old pps.
+        final oldOffset = timelinePositionToScrollOffset(clips, pos, pps);
+
+        // What the new gap-aware pinch logic would jump to:
+        final anchorPosition = timelineScrollOffsetToPosition(
+          clips,
+          oldOffset,
+          pps,
+          totalDuration,
+        );
+        final newOffset = timelinePositionToScrollOffset(
+          clips,
+          anchorPosition,
+          newPps,
+        );
+
+        // The recovered position at the new pps must match the original.
+        final recovered = timelineScrollOffsetToPosition(
+          clips,
+          newOffset,
+          newPps,
+          totalDuration,
+        );
+        expect(recovered, equals(pos));
+
+        // Sanity: the naive `oldOffset * ratio` path drifts (proving the
+        // gap-aware re-anchor is doing real work past clip 0).
+        const ratio = newPps / pps;
+        final naiveOffset = oldOffset * ratio;
+        expect(
+          naiveOffset,
+          isNot(equals(newOffset)),
+          reason:
+              'Past clip 0 the naive scroll-rescale must differ from the '
+              'gap-aware anchoring; otherwise the regression would be '
+              'silently lost.',
+        );
+      });
+    }
+  });
 }
