@@ -137,6 +137,12 @@ List<List<String>> _buildMentionPTags(
 /// Service for publishing processed videos to Nostr relays
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class VideoEventPublisher {
+  static const Set<String> _redactedTagNames = {
+    'proofmode',
+    'device_attestation',
+  };
+  static const int _maxLoggedTagPartLength = 180;
+
   VideoEventPublisher({
     required UploadManager uploadManager,
     required NostrClient nostrService,
@@ -184,6 +190,46 @@ class VideoEventPublisher {
   /// this getter has no side effects.
   Duration get currentOuterPublishTimeout =>
       outerPublishTimeoutFor(_nostrService.configuredRelayCount);
+
+  List<String> _sanitizeTagForLog(List<String> tag) {
+    if (tag.isEmpty) {
+      return tag;
+    }
+
+    final tagName = tag.first;
+    if (_redactedTagNames.contains(tagName)) {
+      return <String>[tagName, '[FILTERED_FROM_LOGS]'];
+    }
+
+    return <String>[
+      tagName,
+      ...tag.skip(1).map((part) {
+        if (part.length <= _maxLoggedTagPartLength) {
+          return part;
+        }
+
+        return '${part.substring(0, _maxLoggedTagPartLength)}...(truncated)';
+      }),
+    ];
+  }
+
+  Map<String, dynamic> _sanitizeEventJsonForLog(Map<String, dynamic> eventMap) {
+    final rawTags = eventMap['tags'];
+    if (rawTags is! List) {
+      return eventMap;
+    }
+
+    final sanitizedTags = rawTags.map((rawTag) {
+      if (rawTag is! List) {
+        return rawTag;
+      }
+
+      final tagParts = rawTag.map((part) => part.toString()).toList();
+      return _sanitizeTagForLog(tagParts);
+    }).toList(growable: false);
+
+    return <String, dynamic>{...eventMap, 'tags': sanitizedTags};
+  }
 
   void _addReplyTags(List<List<String>> tags, VideoReplyContext context) {
     tags
@@ -319,8 +365,9 @@ class VideoEventPublisher {
         category: LogCategory.video,
       );
       for (final tag in event.tags) {
+        final sanitizedTag = _sanitizeTagForLog(tag);
         Log.info(
-          '    - ${tag.join(", ")}',
+          '    - ${sanitizedTag.join(", ")}',
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );
@@ -343,7 +390,7 @@ class VideoEventPublisher {
 
       // Log the raw JSON representation
       try {
-        final eventMap = event.toJson();
+        final eventMap = _sanitizeEventJsonForLog(event.toJson());
         final jsonStr = jsonEncode(eventMap);
         Log.info(
           '📋 FULL EVENT JSON:',

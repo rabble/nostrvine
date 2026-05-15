@@ -2236,7 +2236,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         }
 
         Log.verbose(
-          'Direct event tags: ${event.tags}',
+          'Direct event tags: ${_formatEventTagsForLog(event.tags)}',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
@@ -5093,6 +5093,36 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     unsubscribeFromVideoFeed();
     unawaited(_removedVideoIdsController.close());
     super.dispose();
+  }
+
+  /// Generate deterministic subscription ID based on subscription parameters
+  String _formatEventTagsForLog(List<List<String>> tags) {
+    const redactedTagNames = {'proofmode', 'device_attestation'};
+    const maxLoggedTagPartLength = 180;
+
+    final sanitizedTags = tags.map((tag) {
+      if (tag.isEmpty) {
+        return tag;
+      }
+
+      final tagName = tag.first;
+      if (redactedTagNames.contains(tagName)) {
+        return <String>[tagName, '[FILTERED_FROM_LOGS]'];
+      }
+
+      return <String>[
+        tagName,
+        ...tag.skip(1).map((part) {
+          if (part.length <= maxLoggedTagPartLength) {
+            return part;
+          }
+
+          return '${part.substring(0, maxLoggedTagPartLength)}...(truncated)';
+        }),
+      ];
+    }).toList(growable: false);
+
+    return sanitizedTags.toString();
   }
 
   /// Generate deterministic subscription ID based on subscription parameters
