@@ -231,6 +231,85 @@ void main() {
           expect(result!.currentUserHasSent, isTrue);
         },
       );
+
+      test(
+        'preserves existing nullable fields when conflict update omits them',
+        () async {
+          await dao.upsertConversation(
+            id: 'conv_1',
+            participantPubkeys: '["pubkey_a","pubkey_b"]',
+            isGroup: true,
+            createdAt: 1700000000,
+            subject: 'Original Subject',
+            ownerPubkey: 'owner_a',
+            dmProtocol: 'nip04',
+          );
+
+          await dao.upsertConversation(
+            id: 'conv_1',
+            participantPubkeys: '["pubkey_a","pubkey_b","pubkey_c"]',
+            isGroup: true,
+            createdAt: 1700000100,
+          );
+
+          final result = await dao.getConversation('conv_1');
+          expect(result, isNotNull);
+          expect(result!.subject, equals('Original Subject'));
+          expect(result.ownerPubkey, equals('owner_a'));
+          expect(result.dmProtocol, equals('nip04'));
+        },
+      );
+
+      test(
+        'overwrites nullable fields when conflict update provides values',
+        () async {
+          await dao.upsertConversation(
+            id: 'conv_1',
+            participantPubkeys: '["pubkey_a","pubkey_b"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            subject: 'Original Subject',
+            ownerPubkey: 'owner_a',
+            dmProtocol: 'nip04',
+          );
+
+          await dao.upsertConversation(
+            id: 'conv_1',
+            participantPubkeys: '["pubkey_a","pubkey_b"]',
+            isGroup: false,
+            createdAt: 1700000100,
+            subject: 'Updated Subject',
+            ownerPubkey: 'owner_b',
+            dmProtocol: 'nip17',
+          );
+
+          final result = await dao.getConversation('conv_1');
+          expect(result, isNotNull);
+          expect(result!.subject, equals('Updated Subject'));
+          expect(result.ownerPubkey, equals('owner_b'));
+          expect(result.dmProtocol, equals('nip17'));
+        },
+      );
+
+      test('preserves original createdAt on conflict update', () async {
+        await dao.upsertConversation(
+          id: 'conv_1',
+          participantPubkeys: '["pubkey_a","pubkey_b"]',
+          isGroup: false,
+          createdAt: 1700000000,
+        );
+
+        await dao.upsertConversation(
+          id: 'conv_1',
+          participantPubkeys: '["pubkey_a","pubkey_b"]',
+          isGroup: false,
+          createdAt: 1700000100,
+        );
+
+        final result = await dao.getConversation('conv_1');
+        expect(result, isNotNull);
+        expect(result!.createdAt, equals(1700000000));
+      });
     });
 
     group('getAllConversations', () {
