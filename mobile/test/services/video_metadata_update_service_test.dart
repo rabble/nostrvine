@@ -1,6 +1,7 @@
 // ABOUTME: Unit tests for VideoMetadataUpdateService.
 // ABOUTME: Covers auth guard, video-URL guard, engagement-tag preservation,
-// ABOUTME: createdAt bumping, successful publish, and thumbnail fallback.
+// ABOUTME: createdAt bumping, successful publish, publish failure, and
+// ABOUTME: invite failure surfaced via inviteFailureCount.
 
 import 'dart:ui' show Locale;
 
@@ -281,6 +282,121 @@ void main() {
 
         verify(() => mockVideoEventService.updateVideoEvent(any())).called(1);
       });
+    });
+
+    group('publish failure', () {
+      test('returns VideoUpdateFailure when publishEvent does not succeed',
+          () async {
+        when(
+          () => mockNostrService.publishEvent(any()),
+        ).thenAnswer((_) async => const PublishNoRelays());
+
+        final result = await service.updateVideo(
+          originalVideo: _testVideo(),
+          editorState: VideoEditorProviderState(),
+          initialCollaboratorPubkeys: const {},
+        );
+
+        expect(result, isA<VideoUpdateFailure>());
+        verifyNever(
+          () => mockPersonalEventCacheService.cacheUserEvent(any()),
+        );
+        verifyNever(() => mockVideoEventService.updateVideoEvent(any()));
+      });
+
+      test(
+        'returns VideoUpdateFailure when createAndSignEvent throws',
+        () async {
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+              createdAt: any(named: 'createdAt'),
+            ),
+          ).thenThrow(Exception('signing failed'));
+
+          final result = await service.updateVideo(
+            originalVideo: _testVideo(),
+            editorState: VideoEditorProviderState(),
+            initialCollaboratorPubkeys: const {},
+          );
+
+          expect(result, isA<VideoUpdateFailure>());
+          verifyNever(() => mockNostrService.publishEvent(any()));
+        },
+      );
+    });
+
+    group('invite failure', () {
+      const newCollaborator =
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+
+      test(
+        'returns VideoUpdateSuccess with inviteFailureCount > 0 when DM '
+        'send fails for a newly added collaborator',
+        () async {
+          when(
+            () => mockDmRepository.sendMessage(
+              recipientPubkey: any(named: 'recipientPubkey'),
+              content: any(named: 'content'),
+              additionalTags: any(named: 'additionalTags'),
+              skipNip04Fallback: any(named: 'skipNip04Fallback'),
+            ),
+          ).thenAnswer(
+            (_) async => const NIP17SendResult.failure('relay unreachable'),
+          );
+
+          final editorState = VideoEditorProviderState(
+            collaboratorPubkeys: const {newCollaborator},
+          );
+
+          final result = await service.updateVideo(
+            originalVideo: _testVideo(),
+            editorState: editorState,
+            initialCollaboratorPubkeys: const {},
+          );
+
+          expect(result, isA<VideoUpdateSuccess>());
+          expect(
+            (result as VideoUpdateSuccess).inviteFailureCount,
+            equals(1),
+          );
+          verify(
+            () => mockDmRepository.sendMessage(
+              recipientPubkey: newCollaborator,
+              content: any(named: 'content'),
+              additionalTags: any(named: 'additionalTags'),
+              skipNip04Fallback: any(named: 'skipNip04Fallback'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'returns inviteFailureCount = 0 when no new collaborators were added',
+        () async {
+          final result = await service.updateVideo(
+            originalVideo: _testVideo(),
+            editorState: VideoEditorProviderState(),
+            initialCollaboratorPubkeys: const {},
+          );
+
+          expect(result, isA<VideoUpdateSuccess>());
+          expect(
+            (result as VideoUpdateSuccess).inviteFailureCount,
+            equals(0),
+          );
+          verifyNever(
+            () => mockDmRepository.sendMessage(
+              recipientPubkey: any(named: 'recipientPubkey'),
+              content: any(named: 'content'),
+              additionalTags: any(named: 'additionalTags'),
+              skipNip04Fallback: any(named: 'skipNip04Fallback'),
+            ),
+          );
+        },
+      );
     });
   });
 }
