@@ -1152,6 +1152,10 @@ class _WebFullscreenItem extends ConsumerWidget {
             // same bottom anchor as the author info below and the two
             // cannot vertically drift apart.
             omitActionColumn: true,
+            // Top-of-screen scrim so the transparent app bar's white
+            // title / back button / More popover stay readable over
+            // light video frames.
+            showTopGradient: true,
           ),
           // 20 px above the Stack bottom (= comment-bar top). See
           // _PooledFullscreenItemContent.build for why we drop the
@@ -1458,6 +1462,11 @@ class _PooledFullscreenItemContentState
                         // keeps "About" vertically aligned with the
                         // bottom of the caption block.
                         omitActionColumn: true,
+                        // Top-of-screen scrim so the transparent app
+                        // bar's white title / back button / More
+                        // popover stay readable over light video
+                        // frames.
+                        showTopGradient: true,
                       );
                     },
                   ),
