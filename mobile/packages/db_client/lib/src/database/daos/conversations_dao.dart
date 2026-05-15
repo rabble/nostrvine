@@ -393,12 +393,10 @@ END
     final scopedConversationFilter = ownerPubkey == null
         ? '1 = 1'
         : '(c.owner_pubkey = ? OR c.owner_pubkey IS NULL)';
-    const latestMessageOwnerFilter = '''
-((c.owner_pubkey IS NULL AND dm.owner_pubkey IS NULL) OR
- dm.owner_pubkey = c.owner_pubkey OR
- dm.owner_pubkey IS NULL)
-''';
-    const latestPreviewContentSubquery =
+    final latestMessageOwnerFilter = ownerPubkey == null
+        ? '1 = 1'
+        : '(dm.owner_pubkey = ? OR dm.owner_pubkey IS NULL)';
+    final latestPreviewContentSubquery =
         '''
 SELECT $_latestMessagePreviewCase
 FROM direct_messages dm
@@ -408,7 +406,7 @@ WHERE dm.conversation_id = c.id
 ORDER BY dm.created_at DESC, dm.id DESC
 LIMIT 1
 ''';
-    const latestTimestampSubquery =
+    final latestTimestampSubquery =
         '''
 SELECT dm.created_at
 FROM direct_messages dm
@@ -418,7 +416,7 @@ WHERE dm.conversation_id = c.id
 ORDER BY dm.created_at DESC, dm.id DESC
 LIMIT 1
 ''';
-    const latestSenderSubquery =
+    final latestSenderSubquery =
         '''
 SELECT dm.sender_pubkey
 FROM direct_messages dm
@@ -445,7 +443,17 @@ LIMIT 1
               COALESCE(($latestSenderSubquery), '')
         )
       ''',
-      variables: [if (ownerPubkey != null) Variable(ownerPubkey)],
+      variables: [
+        if (ownerPubkey != null) ...[
+          Variable(ownerPubkey),
+          Variable(ownerPubkey),
+          Variable(ownerPubkey),
+          Variable(ownerPubkey),
+          Variable(ownerPubkey),
+          Variable(ownerPubkey),
+          Variable(ownerPubkey),
+        ],
+      ],
       updates: {attachedDatabase.conversations},
       updateKind: UpdateKind.update,
     );

@@ -1074,6 +1074,43 @@ void main() {
         expect(convA!.lastMessageContent, equals('fresh a'));
         expect(convB!.lastMessageContent, equals('stale b'));
       });
+
+      test(
+        'backfills legacy ownerless conversations from scoped owner messages',
+        () async {
+          await dao.upsertConversation(
+            id: 'conv_legacy',
+            participantPubkeys: '["$userA","$userB"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            lastMessageContent: 'stale legacy preview',
+            lastMessageTimestamp: 1700000001,
+            lastMessageSenderPubkey: userA,
+          );
+          await database.directMessagesDao.insertMessage(
+            id: 'msg_legacy',
+            conversationId: 'conv_legacy',
+            senderPubkey: userB,
+            content: 'fresh legacy message',
+            createdAt: 1700000002,
+            giftWrapId: 'gw_legacy',
+            ownerPubkey: userA,
+          );
+
+          final updated = await dao.backfillLatestMessagePreviews(
+            ownerPubkey: userA,
+          );
+
+          expect(updated, equals(1));
+          final conv = await dao.getConversation(
+            'conv_legacy',
+            ownerPubkey: userA,
+          );
+          expect(conv!.lastMessageContent, equals('fresh legacy message'));
+          expect(conv.lastMessageTimestamp, equals(1700000002));
+          expect(conv.lastMessageSenderPubkey, equals(userB));
+        },
+      );
     });
   });
 }

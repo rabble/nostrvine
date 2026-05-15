@@ -8795,7 +8795,11 @@ void main() {
           messageService: mockMessageService,
         );
 
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await untilCalled(
+          () => mockConversationsDao.backfillLatestMessagePreviews(
+            ownerPubkey: _validPubkeyA,
+          ),
+        );
 
         verify(
           () => mockConversationsDao.backfillLatestMessagePreviews(
