@@ -1161,10 +1161,12 @@ class _WebFullscreenItem extends ConsumerWidget {
             child: AnimatedOpacity(
               opacity: isActive ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 200),
-              child: VideoOverlayActionColumn(
-                video: video,
-                isFullscreen: true,
-                onInteracted: onInteracted,
+              child: KeyboardAwareTopFade(
+                child: VideoOverlayActionColumn(
+                  video: video,
+                  isFullscreen: true,
+                  onInteracted: onInteracted,
+                ),
               ),
             ),
           ),
@@ -1381,89 +1383,96 @@ class _PooledFullscreenItemContentState
                 },
               );
             }
-            return MediaQuery(
-              data: MediaQueryData.fromView(View.of(context)),
-              child: FeedAutoAdvanceCompletionListener(
-                player: player,
-                isEnabled: widget.isActive && widget.isAutoAdvanceActive,
-                onCompleted: widget.onAutoAdvanceCompleted ?? () {},
-                child: Stack(
-                  children: [
-                    if (player != null)
-                      PausedVideoPlayOverlay(
+            // No `MediaQuery(data: MediaQueryData.fromView(...))` wrap
+            // here: `MediaQueryData.fromView` is a *snapshot* taken when
+            // this builder runs, so the subtree wouldn't see live
+            // `viewInsets` updates when the soft keyboard slides up or
+            // down. That breaks any descendant that needs to react to
+            // the keyboard (e.g. [KeyboardAwareTopFade]). The inherited
+            // MediaQuery from above is already correct — Scaffold only
+            // modifies `padding`, not `viewInsets`.
+            return FeedAutoAdvanceCompletionListener(
+              player: player,
+              isEnabled: widget.isActive && widget.isAutoAdvanceActive,
+              onCompleted: widget.onAutoAdvanceCompleted ?? () {},
+              child: Stack(
+                children: [
+                  if (player != null)
+                    PausedVideoPlayOverlay(
+                      player: player,
+                      firstFrameFuture:
+                          videoController?.waitUntilFirstFrameRendered,
+                      isVisible: widget.isActive,
+                    ),
+                  ValueListenableBuilder<double>(
+                    valueListenable: widget.pagePosition,
+                    builder: (context, page, _) {
+                      final distance = (page - widget.index).abs().clamp(
+                        0.0,
+                        1.0,
+                      );
+                      return VideoOverlayActions(
+                        video: video,
+                        // isVisible:true — scroll opacity handles fading;
+                        // the hard-cut guard is not needed in fullscreen.
+                        isVisible: true,
+                        isActive: widget.isActive,
+                        overlayOpacity: scrollDrivenOpacity(distance),
+                        hasBottomNavigation: false,
+                        contextTitle: widget.contextTitle,
+                        isFullscreen: true,
+                        topOffset: widget.isOwnVideo ? 64 : 8,
+                        onInteracted: widget.onInteracted,
+                        // The shared [VideoAuthorInfoSection] below renders
+                        // the author block + inline caption pill, matching
+                        // the home feed overlay exactly. Suppress the
+                        // legacy inline column so they don't double up.
+                        omitAuthorBlock: true,
+                        // The action column lives in this widget's outer
+                        // Stack alongside the author info so both are
+                        // anchored to the same Stack bottom — matches the
+                        // home feed pattern in [FeedVideoOverlay] and
+                        // keeps "About" vertically aligned with the
+                        // bottom of the caption block.
+                        omitActionColumn: true,
+                      );
+                    },
+                  ),
+                  // Bottom-left metadata container — author avatar/name,
+                  // optional inline caption pill, and title/description.
+                  // 20 px above the Stack bottom (= comment-bar top). No
+                  // `viewPadding.bottom` term: the [InlineCommentComposerBar]
+                  // already absorbs the device home-indicator inset, so
+                  // adding it here would double-pad. The home feed's
+                  // matching `bottom: 20 + safeAreaBottom` line works
+                  // because there the inherited `viewPadding.bottom`
+                  // collapses to 0 below the [VineBottomNav]'s `SafeArea`.
+                  PositionedDirectional(
+                    bottom: 20,
+                    start: 16,
+                    end: 80,
+                    child: AnimatedOpacity(
+                      opacity: widget.isActive ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 200),
+                      child: VideoAuthorInfoSection(
+                        video: video,
+                        hasTextContent:
+                            video.content.isNotEmpty ||
+                            (video.title != null && video.title!.isNotEmpty),
                         player: player,
-                        firstFrameFuture:
-                            videoController?.waitUntilFirstFrameRendered,
-                        isVisible: widget.isActive,
-                      ),
-                    ValueListenableBuilder<double>(
-                      valueListenable: widget.pagePosition,
-                      builder: (context, page, _) {
-                        final distance = (page - widget.index).abs().clamp(
-                          0.0,
-                          1.0,
-                        );
-                        return VideoOverlayActions(
-                          video: video,
-                          // isVisible:true — scroll opacity handles fading;
-                          // the hard-cut guard is not needed in fullscreen.
-                          isVisible: true,
-                          isActive: widget.isActive,
-                          overlayOpacity: scrollDrivenOpacity(distance),
-                          hasBottomNavigation: false,
-                          contextTitle: widget.contextTitle,
-                          isFullscreen: true,
-                          topOffset: widget.isOwnVideo ? 64 : 8,
-                          onInteracted: widget.onInteracted,
-                          // The shared [VideoAuthorInfoSection] below renders
-                          // the author block + inline caption pill, matching
-                          // the home feed overlay exactly. Suppress the
-                          // legacy inline column so they don't double up.
-                          omitAuthorBlock: true,
-                          // The action column lives in this widget's outer
-                          // Stack alongside the author info so both are
-                          // anchored to the same Stack bottom — matches the
-                          // home feed pattern in [FeedVideoOverlay] and
-                          // keeps "About" vertically aligned with the
-                          // bottom of the caption block.
-                          omitActionColumn: true,
-                        );
-                      },
-                    ),
-                    // Bottom-left metadata container — author avatar/name,
-                    // optional inline caption pill, and title/description.
-                    // 20 px above the Stack bottom (= comment-bar top). No
-                    // `viewPadding.bottom` term: the [InlineCommentComposerBar]
-                    // already absorbs the device home-indicator inset, so
-                    // adding it here would double-pad. The home feed's
-                    // matching `bottom: 20 + safeAreaBottom` line works
-                    // because there the inherited `viewPadding.bottom`
-                    // collapses to 0 below the [VineBottomNav]'s `SafeArea`.
-                    PositionedDirectional(
-                      bottom: 20,
-                      start: 16,
-                      end: 80,
-                      child: AnimatedOpacity(
-                        opacity: widget.isActive ? 1.0 : 0.0,
-                        duration: const Duration(milliseconds: 200),
-                        child: VideoAuthorInfoSection(
-                          video: video,
-                          hasTextContent:
-                              video.content.isNotEmpty ||
-                              (video.title != null && video.title!.isNotEmpty),
-                          player: player,
-                          onInteracted: widget.onInteracted,
-                        ),
+                        onInteracted: widget.onInteracted,
                       ),
                     ),
-                    // Action column — sibling of the author info, both
-                    // anchored to the same Stack bottom at `bottom: 20`.
-                    PositionedDirectional(
-                      bottom: 20,
-                      end: 12,
-                      child: AnimatedOpacity(
-                        opacity: widget.isActive ? 1.0 : 0.0,
-                        duration: const Duration(milliseconds: 200),
+                  ),
+                  // Action column — sibling of the author info, both
+                  // anchored to the same Stack bottom at `bottom: 20`.
+                  PositionedDirectional(
+                    bottom: 20,
+                    end: 12,
+                    child: AnimatedOpacity(
+                      opacity: widget.isActive ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 200),
+                      child: KeyboardAwareTopFade(
                         child: VideoOverlayActionColumn(
                           video: video,
                           isFullscreen: true,
@@ -1471,11 +1480,11 @@ class _PooledFullscreenItemContentState
                         ),
                       ),
                     ),
-                    Positioned.fill(
-                      child: DoubleTapHeartOverlay(trigger: _heartTrigger),
-                    ),
-                  ],
-                ),
+                  ),
+                  Positioned.fill(
+                    child: DoubleTapHeartOverlay(trigger: _heartTrigger),
+                  ),
+                ],
               ),
             );
           },
@@ -1604,3 +1613,92 @@ VideoErrorType? _toFeedErrorType(pvp.VideoErrorType? t) => switch (t) {
   pvp.VideoErrorType.notFound => VideoErrorType.notFound,
   pvp.VideoErrorType.generic => VideoErrorType.generic,
 };
+
+/// Wraps the right-side action column so that its top fades to
+/// transparent whenever the soft keyboard is on screen.
+///
+/// When the inline comment composer pulls the keyboard up,
+/// [Scaffold.resizeToAvoidBottomInset] shrinks the body and the action
+/// column slides up toward the transparent app bar — the Like button
+/// can end up sitting under the More popover and the back button. The
+/// [ShaderMask] erases the top of the column with a [BlendMode.dstIn]
+/// gradient: fully transparent through the top 20 %, then a linear
+/// fade to fully opaque at the bottom edge. Pass-through when no keyboard is visible
+/// so we don't pay the save-layer cost on the steady-state feed.
+///
+/// We can't read keyboard visibility from `MediaQuery.viewInsetsOf` here
+/// because Scaffold's `resizeToAvoidBottomInset: true` (the default)
+/// strips `viewInsets.bottom` from the body's MediaQuery (it has already
+/// shrunk the body to avoid the keyboard, so "the body shouldn't need to
+/// know"). Reading the inset off the [FlutterView] via [WidgetsBinding]
+/// — combined with [WidgetsBindingObserver.didChangeMetrics] — is the
+/// supported escape hatch.
+@visibleForTesting
+class KeyboardAwareTopFade extends StatefulWidget {
+  @visibleForTesting
+  const KeyboardAwareTopFade({required this.child, super.key});
+
+  final Widget child;
+
+  @override
+  State<KeyboardAwareTopFade> createState() => _KeyboardAwareTopFadeState();
+}
+
+class _KeyboardAwareTopFadeState extends State<KeyboardAwareTopFade>
+    with WidgetsBindingObserver {
+  bool _keyboardVisible = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _refreshKeyboardVisibility();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    _refreshKeyboardVisibility();
+  }
+
+  void _refreshKeyboardVisibility() {
+    if (!mounted) return;
+    final visible = View.of(context).viewInsets.bottom > 0;
+    if (visible != _keyboardVisible) {
+      setState(() => _keyboardVisible = visible);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_keyboardVisible) return widget.child;
+
+    return ShaderMask(
+      blendMode: BlendMode.dstIn,
+      shaderCallback: (Rect bounds) {
+        return const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          // Only the alpha matters with BlendMode.dstIn — the
+          // gradient's colors are otherwise irrelevant. The opaque
+          // colour at the bottom keeps the column fully visible;
+          // transparent at the top erases the part that would
+          // collide with the AppBar.
+          colors: [Colors.transparent, VineTheme.whiteText],
+          stops: [0.2, 1.0],
+        ).createShader(bounds);
+      },
+      child: widget.child,
+    );
+  }
+}
