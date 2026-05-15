@@ -194,6 +194,12 @@ internal class DivineVideoPlayerInstance(
      * Vivo/Android 16 compositor events), at the cost of the
      * residual #3416 race window between
      * `ImageReaderSurfaceProducer.onImage` and `FlutterJNI` detach.
+     *
+     * The Kotlin parameter default is `false` so unit tests can
+     * exercise the `SurfaceProducer.Callback` contract without
+     * mocking the legacy `createSurfaceTexture()` path; production
+     * always overrides via Dart's `true` default through the
+     * MethodChannel.
      */
     fun enableTextureOutput(
         registry: TextureRegistry,
