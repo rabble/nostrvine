@@ -486,6 +486,9 @@ void main() {
       testWidgets(
         'renders collaborator invite video inline without navigating away',
         (tester) async {
+          await tester.binding.setSurfaceSize(const Size(1800, 1200));
+          addTearDown(() => tester.binding.setSurfaceSize(null));
+
           final mockGoRouter = MockGoRouter();
           when(() => mockGoRouter.push(any())).thenAnswer((_) async => null);
           when(
@@ -543,6 +546,11 @@ void main() {
             find.text(l10n.inboxCollabInviteNotMineButton),
             findsOneWidget,
           );
+          final playerSize = tester.getSize(
+            find.byKey(const ValueKey('collaborator_invite_inline_player')),
+          );
+          expect(playerSize.width, lessThanOrEqualTo(420));
+          expect(playerSize.height, lessThanOrEqualTo(748));
 
           verifyNever(() => mockGoRouter.push(any()));
         },

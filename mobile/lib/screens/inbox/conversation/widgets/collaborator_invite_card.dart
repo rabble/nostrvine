@@ -1,6 +1,8 @@
 // ABOUTME: Card UI for structured collaborator invite direct messages.
 // ABOUTME: Keeps invite plaintext fallback hidden and exposes accept/ignore.
 
+import 'dart:math' as math;
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -15,6 +17,9 @@ import 'package:openvine/screens/comments/widgets/video_comment_player.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/video_link_preview_cubit.dart';
 import 'package:openvine/services/collaborator_invite_state_store.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
+
+const double _collaboratorInviteMaxCardWidth = 420;
+const double _collaboratorInviteMaxViewportHeightFraction = 0.62;
 
 class CollaboratorInviteCard extends StatefulWidget {
   const CollaboratorInviteCard({
@@ -128,6 +133,18 @@ class _CardChrome extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final viewportSize = MediaQuery.sizeOf(context);
+    final maxViewportWidth = viewportSize.width * 0.78;
+    final maxVisibleVideoWidth =
+        viewportSize.height *
+        _collaboratorInviteMaxViewportHeightFraction *
+        9 /
+        16;
+    final maxCardWidth = math.min(
+      math.min(maxViewportWidth, _collaboratorInviteMaxCardWidth),
+      maxVisibleVideoWidth,
+    );
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Align(
@@ -136,7 +153,7 @@ class _CardChrome extends ConsumerWidget {
             : AlignmentDirectional.centerStart,
         child: Container(
           constraints: BoxConstraints(
-            maxWidth: MediaQuery.sizeOf(context).width * 0.78,
+            maxWidth: maxCardWidth,
           ),
           decoration: BoxDecoration(
             color: VineTheme.surfaceContainerHigh,
