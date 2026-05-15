@@ -59,6 +59,11 @@ void main() {
         ),
         findsOneWidget,
       );
+
+      // Dispose the page and advance past debounce windows owned by the
+      // search blocs so no pending timers leak across tests.
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(milliseconds: 400));
     });
   });
 }
