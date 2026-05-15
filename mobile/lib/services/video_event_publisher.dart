@@ -29,6 +29,7 @@ import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/collaborator_tags.dart';
+import 'package:openvine/utils/log_tag_sanitizer.dart';
 import 'package:openvine/utils/proofmode_publishing_helpers.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -137,12 +138,6 @@ List<List<String>> _buildMentionPTags(
 /// Service for publishing processed videos to Nostr relays
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class VideoEventPublisher {
-  static const Set<String> _redactedTagNames = {
-    'proofmode',
-    'device_attestation',
-  };
-  static const int _maxLoggedTagPartLength = 180;
-
   VideoEventPublisher({
     required UploadManager uploadManager,
     required NostrClient nostrService,
@@ -191,28 +186,6 @@ class VideoEventPublisher {
   Duration get currentOuterPublishTimeout =>
       outerPublishTimeoutFor(_nostrService.configuredRelayCount);
 
-  List<String> _sanitizeTagForLog(List<String> tag) {
-    if (tag.isEmpty) {
-      return tag;
-    }
-
-    final tagName = tag.first;
-    if (_redactedTagNames.contains(tagName)) {
-      return <String>[tagName, '[FILTERED_FROM_LOGS]'];
-    }
-
-    return <String>[
-      tagName,
-      ...tag.skip(1).map((part) {
-        if (part.length <= _maxLoggedTagPartLength) {
-          return part;
-        }
-
-        return '${part.substring(0, _maxLoggedTagPartLength)}...(truncated)';
-      }),
-    ];
-  }
-
   Map<String, dynamic> _sanitizeEventJsonForLog(Map<String, dynamic> eventMap) {
     final rawTags = eventMap['tags'];
     if (rawTags is! List) {
@@ -225,7 +198,7 @@ class VideoEventPublisher {
       }
 
       final tagParts = rawTag.map((part) => part.toString()).toList();
-      return _sanitizeTagForLog(tagParts);
+      return sanitizeTagForLog(tagParts);
     }).toList(growable: false);
 
     return <String, dynamic>{...eventMap, 'tags': sanitizedTags};
@@ -365,7 +338,7 @@ class VideoEventPublisher {
         category: LogCategory.video,
       );
       for (final tag in event.tags) {
-        final sanitizedTag = _sanitizeTagForLog(tag);
+        final sanitizedTag = sanitizeTagForLog(tag);
         Log.info(
           '    - ${sanitizedTag.join(", ")}',
           name: 'VideoEventPublisher',
