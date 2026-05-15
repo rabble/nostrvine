@@ -11,6 +11,7 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:db_client/db_client.dart';
 import 'package:dm_repository/src/dm_decryption_worker.dart';
+import 'package:dm_repository/src/dm_repository_reportable_sites.dart';
 import 'package:dm_repository/src/dm_sync_state.dart';
 import 'package:dm_repository/src/nip17_message_service.dart';
 import 'package:flutter/foundation.dart';
@@ -41,6 +42,27 @@ typedef RumorDecryptor = Future<Event?> Function(Nostr nostr, Event giftWrap);
 typedef Nip04Decryptor =
     Future<String?> Function(String peerPubkey, String ciphertext);
 
+/// Forwarder for DAO-bookkeeping failures inside [DmRepository].
+///
+/// The repository swallows these failures after [Log.error] to keep the
+/// recovery primitive idempotent on doubly-degraded paths (publish
+/// landed, bookkeeping write failed — see #4127). Wiring an
+/// implementation routes the same signal to Crashlytics without
+/// crossing the `dm_repository` → app package boundary.
+///
+/// [site] is one of `DmRepositoryReportableSites`'s constants and is
+/// used as the Crashlytics `reason:` suffix so the dashboard aggregates
+/// per swallow site.
+///
+/// Implementations MUST NOT throw — the repository invokes after the
+/// existing `Log.error` and any throw would defeat the swallow.
+typedef DmRepositoryErrorReporter =
+    void Function(
+      Object error,
+      StackTrace stackTrace, {
+      required String site,
+    });
+
 /// Supported NIP-17 rumor event kinds.
 const Set<int> _supportedDmKinds = {
   EventKind.privateDirectMessage, // 14
@@ -64,6 +86,12 @@ const Set<int> _supportedDmKinds = {
 /// disposed when the user logs out.
 class DmRepository {
   /// Creates a [DmRepository] with the given dependencies.
+  ///
+  /// [errorReporter] is invoked from each DAO-bookkeeping swallow site
+  /// (see [DmRepositoryErrorReporter] and `DmRepositoryReportableSites`)
+  /// after the in-repo [Log.error] call. Defaults to `null` so existing
+  /// test fixtures keep working without rewiring; production wires it
+  /// through `dmRepositoryProvider` to forward to Crashlytics.
   DmRepository({
     required NostrClient nostrClient,
     required DirectMessagesDao directMessagesDao,
@@ -75,6 +103,7 @@ class DmRepository {
     NostrSigner? signer,
     RumorDecryptor? rumorDecryptor,
     Nip04Decryptor? nip04Decryptor,
+    DmRepositoryErrorReporter? errorReporter,
   }) : _nostrClient = nostrClient,
        _directMessagesDao = directMessagesDao,
        _conversationsDao = conversationsDao,
@@ -84,7 +113,8 @@ class DmRepository {
        _userPubkey = userPubkey ?? '',
        _signer = signer,
        _rumorDecryptor = rumorDecryptor ?? GiftWrapUtil.getRumorEvent,
-       _nip04Decryptor = nip04Decryptor;
+       _nip04Decryptor = nip04Decryptor,
+       _errorReporter = errorReporter;
 
   final NostrClient _nostrClient;
   final DirectMessagesDao _directMessagesDao;
@@ -104,6 +134,7 @@ class DmRepository {
   NostrSigner? _signer;
   RumorDecryptor _rumorDecryptor;
   Nip04Decryptor? _nip04Decryptor;
+  final DmRepositoryErrorReporter? _errorReporter;
 
   StreamSubscription<Event>? _giftWrapSubscription;
   Timer? _reconnectTimer;
@@ -934,6 +965,11 @@ class DmRepository {
           error: e,
           stackTrace: stackTrace,
         );
+        _errorReporter?.call(
+          e,
+          stackTrace,
+          site: DmRepositoryReportableSites.sendMessageOuterTransaction,
+        );
         // Don't rethrow — the message was published successfully.
         // Local persistence failure is a degraded state, not a send failure.
       }
@@ -1022,6 +1058,11 @@ class DmRepository {
         error: e,
         stackTrace: stackTrace,
       );
+      _errorReporter?.call(
+        e,
+        stackTrace,
+        site: DmRepositoryReportableSites.recoverSelfWrapRumorJsonParse,
+      );
       // Mark the self-wrap status failed so the row surfaces in the
       // next retry sweep with a record of the parse failure.
       try {
@@ -1030,7 +1071,20 @@ class DmRepository {
           status: OutgoingWrapStatus.failed,
           lastError: 'rumor JSON parse failed: $e',
         );
-      } on Object {
+      } on Object catch (markError, markStack) {
+        Log.error(
+          'Failed to mark self-wrap failed after JSON parse error for '
+          '$rumorId: $markError',
+          category: LogCategory.system,
+          error: markError,
+          stackTrace: markStack,
+        );
+        _errorReporter?.call(
+          markError,
+          markStack,
+          site: DmRepositoryReportableSites
+              .recoverSelfWrapMarkFailedAfterJsonParse,
+        );
         // Swallow — caller still gets the failure result below.
       }
       return NIP17SendResult.failure('rumor JSON parse failed: $e');
@@ -1051,6 +1105,11 @@ class DmRepository {
           error: e,
           stackTrace: stackTrace,
         );
+        _errorReporter?.call(
+          e,
+          stackTrace,
+          site: DmRepositoryReportableSites.recoverSelfWrapDeleteAfterPublish,
+        );
         // Publish landed but the row is still here. Mark
         // self_wrap_status=sent with the published event id so the next
         // recovery sweep short-circuits via the idempotent guard above
@@ -1068,6 +1127,12 @@ class DmRepository {
             category: LogCategory.system,
             error: markError,
             stackTrace: markStack,
+          );
+          _errorReporter?.call(
+            markError,
+            markStack,
+            site: DmRepositoryReportableSites
+                .recoverSelfWrapBookkeepingDoubleFailure,
           );
           // Both bookkeeping writes failed. The row stays
           // `recipient: sent / self: failed` and the next sweep
@@ -1090,6 +1155,12 @@ class DmRepository {
           category: LogCategory.system,
           error: e,
           stackTrace: stackTrace,
+        );
+        _errorReporter?.call(
+          e,
+          stackTrace,
+          site: DmRepositoryReportableSites
+              .recoverSelfWrapMarkFailedAfterPublishFailure,
         );
         // Don't rethrow — caller already gets the failure result.
       }
@@ -1150,6 +1221,11 @@ class DmRepository {
         category: LogCategory.system,
         error: e,
         stackTrace: stackTrace,
+      );
+      _errorReporter?.call(
+        e,
+        stackTrace,
+        site: DmRepositoryReportableSites.finalizeAfterRecipientFailure,
       );
       // Don't rethrow — caller already gets the failure result. The
       // queue row stays retryable and the next sweep can pick it up.

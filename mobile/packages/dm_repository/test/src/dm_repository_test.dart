@@ -73,6 +73,15 @@ class _FakeDmSyncState implements DmSyncState {
   }
 }
 
+/// Records each invocation of a [DmRepositoryErrorReporter] so tests can
+/// assert which swallow site emitted.
+class _ReporterCall {
+  _ReporterCall(this.error, this.stackTrace, this.site);
+  final Object error;
+  final StackTrace stackTrace;
+  final String site;
+}
+
 // Valid 64-character hex pubkeys for testing
 const _validPubkeyA =
     'a1b2c3d4e5f6789012345678901234567890abcdef1234567890123456789012';
@@ -98,6 +107,7 @@ void main() {
     late _MockNIP17MessageService mockMessageService;
     late _MockDirectMessagesDao mockDirectMessagesDao;
     late _MockConversationsDao mockConversationsDao;
+    late List<_ReporterCall> reporterCalls;
 
     setUpAll(() {
       registerFallbackValue(_FakeEvent());
@@ -110,6 +120,7 @@ void main() {
       mockMessageService = _MockNIP17MessageService();
       mockDirectMessagesDao = _MockDirectMessagesDao();
       mockConversationsDao = _MockConversationsDao();
+      reporterCalls = <_ReporterCall>[];
 
       // Stub relay properties used by startListening() log.
       when(() => mockNostrClient.connectedRelayCount).thenReturn(3);
@@ -189,6 +200,7 @@ void main() {
       Nip04Decryptor? nip04Decryptor,
       DmSyncState? syncState,
       OutgoingDmsDao? outgoingDmsDao,
+      bool wireErrorReporter = true,
     }) {
       return DmRepository(
         nostrClient: mockNostrClient,
@@ -201,6 +213,11 @@ void main() {
         rumorDecryptor: rumorDecryptor,
         nip04Decryptor: nip04Decryptor,
         syncState: syncState,
+        errorReporter: wireErrorReporter
+            ? (error, stackTrace, {required site}) {
+                reporterCalls.add(_ReporterCall(error, stackTrace, site));
+              }
+            : null,
       );
     }
 
@@ -7888,6 +7905,105 @@ void main() {
           verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
         },
       );
+
+      test(
+        'on publish failure: when markRecipientWrapStatus throws inside '
+        '_finalizeAfterRecipientFailure, the swallow is reported and '
+        'the failure result still surfaces',
+        () async {
+          stubSendRumor(
+            (_, _) async => const NIP17SendResult.failure('relay unavailable'),
+          );
+          when(
+            () => mockOutgoingDmsDao.markRecipientWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              eventId: any(named: 'eventId'),
+              lastError: any(named: 'lastError'),
+            ),
+          ).thenThrow(Exception('drift busy'));
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'this will fail',
+          );
+
+          expect(result.success, isFalse);
+          expect(reporterCalls, hasLength(1));
+          expect(
+            reporterCalls.single.site,
+            equals(
+              DmRepositoryReportableSites.finalizeAfterRecipientFailure,
+            ),
+          );
+        },
+      );
+
+      test(
+        'on publish success: when local persistence inside the outer '
+        'transaction throws, the swallow is reported and the publish '
+        'success result still surfaces',
+        () async {
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+          // Force the outer try/catch in sendMessage by failing the
+          // local insertMessage inside the transaction.
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+            ),
+          ).thenThrow(Exception('drift busy'));
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'local persistence will fail',
+          );
+
+          // Publish succeeded — caller still sees success even though
+          // local persistence threw.
+          expect(result.success, isTrue);
+          expect(reporterCalls, hasLength(1));
+          expect(
+            reporterCalls.single.site,
+            equals(
+              DmRepositoryReportableSites.sendMessageOuterTransaction,
+            ),
+          );
+        },
+      );
     });
 
     group('sendGroupMessage with outgoing_dms queue wired in', () {
@@ -8404,6 +8520,17 @@ void main() {
               eventId: _giftWrapEventId2,
             ),
           ).called(1);
+
+          // The swallowed deleteById failure is reported via the
+          // errorReporter so production has a Crashlytics signal even
+          // though the recovery path returned success.
+          expect(reporterCalls, hasLength(1));
+          expect(
+            reporterCalls.single.site,
+            equals(
+              DmRepositoryReportableSites.recoverSelfWrapDeleteAfterPublish,
+            ),
+          );
         },
       );
 
@@ -8451,6 +8578,15 @@ void main() {
           // idempotent on receive (NIP-17 dedup keys), so the
           // doubly-degraded path is safe.
           expect(result.success, isTrue);
+
+          // Both swallowed failures surface via the errorReporter so
+          // the doubly-degraded path is visible in Crashlytics. The
+          // recovery path is "safe via NIP-17 dedup" only because we
+          // now measure the rate at which it fires.
+          expect(reporterCalls.map((c) => c.site), <String>[
+            DmRepositoryReportableSites.recoverSelfWrapDeleteAfterPublish,
+            DmRepositoryReportableSites.recoverSelfWrapBookkeepingDoubleFailure,
+          ]);
         },
       );
 
@@ -8618,6 +8754,104 @@ void main() {
           verifyNever(
             () => mockMessageService.publishSelfWrap(
               rumorEvent: any(named: 'rumorEvent'),
+            ),
+          );
+
+          // Programming-invariant violation (we wrote that JSON) is
+          // reported even though the recovery returned a non-throwing
+          // failure result.
+          expect(reporterCalls, hasLength(1));
+          expect(
+            reporterCalls.single.site,
+            equals(DmRepositoryReportableSites.recoverSelfWrapRumorJsonParse),
+          );
+        },
+      );
+
+      test(
+        'on rumor JSON parse failure: when the salvage markSelfWrapStatus '
+        'also throws, reports both the parse failure and the salvage '
+        'failure and still returns a non-throwing failure result',
+        () async {
+          final corruptedRow = OutgoingDm(
+            id: _rumorEventId,
+            conversationId: 'conv',
+            recipientPubkey: _validPubkeyB,
+            content: 'queued message',
+            createdAt: 1700000000,
+            rumorEventJson: 'this is not json',
+            recipientWrapStatus: OutgoingWrapStatus.sent,
+            selfWrapStatus: OutgoingWrapStatus.failed,
+            queuedAt: DateTime.fromMillisecondsSinceEpoch(0),
+            ownerPubkey: _validPubkeyA,
+          );
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => corruptedRow);
+          when(
+            () => mockOutgoingDmsDao.markSelfWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              eventId: any(named: 'eventId'),
+              lastError: any(named: 'lastError'),
+            ),
+          ).thenThrow(Exception('drift busy'));
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.recoverSelfWrap(
+            rumorId: _rumorEventId,
+          );
+
+          expect(result.success, isFalse);
+          expect(reporterCalls.map((c) => c.site), <String>[
+            DmRepositoryReportableSites.recoverSelfWrapRumorJsonParse,
+            DmRepositoryReportableSites.recoverSelfWrapMarkFailedAfterJsonParse,
+          ]);
+        },
+      );
+
+      test(
+        'on self-wrap publish failure: when the salvage markSelfWrapStatus '
+        'throws, reports the salvage failure and still returns the '
+        'publish-failure result',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          when(
+            () => mockMessageService.publishSelfWrap(
+              rumorEvent: any(named: 'rumorEvent'),
+            ),
+          ).thenAnswer(
+            (_) async => const NIP17SendResult.failure('relay timeout'),
+          );
+          when(
+            () => mockOutgoingDmsDao.markSelfWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              eventId: any(named: 'eventId'),
+              lastError: any(named: 'lastError'),
+            ),
+          ).thenThrow(Exception('drift busy'));
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.recoverSelfWrap(
+            rumorId: _rumorEventId,
+          );
+
+          expect(result.success, isFalse);
+          expect(reporterCalls, hasLength(1));
+          expect(
+            reporterCalls.single.site,
+            equals(
+              DmRepositoryReportableSites
+                  .recoverSelfWrapMarkFailedAfterPublishFailure,
             ),
           );
         },
