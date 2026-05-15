@@ -285,24 +285,26 @@ void main() {
     });
 
     group('publish failure', () {
-      test('returns VideoUpdateFailure when publishEvent does not succeed',
-          () async {
-        when(
-          () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => const PublishNoRelays());
+      test(
+        'returns VideoUpdateFailure when publishEvent does not succeed',
+        () async {
+          when(
+            () => mockNostrService.publishEvent(any()),
+          ).thenAnswer((_) async => const PublishNoRelays());
 
-        final result = await service.updateVideo(
-          originalVideo: _testVideo(),
-          editorState: VideoEditorProviderState(),
-          initialCollaboratorPubkeys: const {},
-        );
+          final result = await service.updateVideo(
+            originalVideo: _testVideo(),
+            editorState: VideoEditorProviderState(),
+            initialCollaboratorPubkeys: const {},
+          );
 
-        expect(result, isA<VideoUpdateFailure>());
-        verifyNever(
-          () => mockPersonalEventCacheService.cacheUserEvent(any()),
-        );
-        verifyNever(() => mockVideoEventService.updateVideoEvent(any()));
-      });
+          expect(result, isA<VideoUpdateFailure>());
+          verifyNever(
+            () => mockPersonalEventCacheService.cacheUserEvent(any()),
+          );
+          verifyNever(() => mockVideoEventService.updateVideoEvent(any()));
+        },
+      );
 
       test(
         'returns VideoUpdateFailure when createAndSignEvent throws',
