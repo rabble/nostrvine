@@ -4411,6 +4411,7 @@ void main() {
               currentUserHasSent: any(named: 'currentUserHasSent'),
               ownerPubkey: any(named: 'ownerPubkey'),
               dmProtocol: any(named: 'dmProtocol'),
+              forceUpdateLastMessage: any(named: 'forceUpdateLastMessage'),
             ),
           ).thenAnswer((_) async {});
 
@@ -5807,6 +5808,7 @@ void main() {
             currentUserHasSent: any(named: 'currentUserHasSent'),
             ownerPubkey: any(named: 'ownerPubkey'),
             dmProtocol: any(named: 'dmProtocol'),
+            forceUpdateLastMessage: any(named: 'forceUpdateLastMessage'),
           ),
         ).thenAnswer((_) async {});
 
@@ -6070,6 +6072,7 @@ void main() {
               currentUserHasSent: any(named: 'currentUserHasSent'),
               ownerPubkey: any(named: 'ownerPubkey'),
               dmProtocol: any(named: 'dmProtocol'),
+              forceUpdateLastMessage: any(named: 'forceUpdateLastMessage'),
             ),
           ).thenAnswer((_) async {});
 
@@ -6088,6 +6091,7 @@ void main() {
               currentUserHasSent: any(named: 'currentUserHasSent'),
               ownerPubkey: any(named: 'ownerPubkey'),
               dmProtocol: any(named: 'dmProtocol'),
+              forceUpdateLastMessage: true,
             ),
           ).called(1);
         },
@@ -6178,6 +6182,7 @@ void main() {
               currentUserHasSent: any(named: 'currentUserHasSent'),
               ownerPubkey: any(named: 'ownerPubkey'),
               dmProtocol: any(named: 'dmProtocol'),
+              forceUpdateLastMessage: any(named: 'forceUpdateLastMessage'),
             ),
           ).thenAnswer((_) async {});
 
@@ -6196,6 +6201,7 @@ void main() {
               currentUserHasSent: any(named: 'currentUserHasSent'),
               ownerPubkey: any(named: 'ownerPubkey'),
               dmProtocol: any(named: 'dmProtocol'),
+              forceUpdateLastMessage: true,
             ),
           ).called(1);
         },
@@ -8713,6 +8719,7 @@ void main() {
                 currentUserHasSent: any(named: 'currentUserHasSent'),
                 ownerPubkey: any(named: 'ownerPubkey'),
                 dmProtocol: any(named: 'dmProtocol'),
+                forceUpdateLastMessage: any(named: 'forceUpdateLastMessage'),
               ),
             ).thenAnswer((_) async {});
 

@@ -25,6 +25,19 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
 
   /// Upsert a conversation (create or update last-message metadata).
   ///
+  /// When [forceUpdateLastMessage] is `false` (the default), the three
+  /// last-message columns (`last_message_content`, `last_message_timestamp`,
+  /// `last_message_sender_pubkey`) are **only** updated on conflict if the
+  /// incoming [lastMessageTimestamp] is strictly greater than the stored one.
+  /// This prevents out-of-order gift-wrap arrivals (e.g. during backfill)
+  /// from overwriting a newer denormalized preview with stale data — which
+  /// was the root cause of the drift described in issue #4296.
+  ///
+  /// Pass `forceUpdateLastMessage: true` only when the caller explicitly
+  /// needs to overwrite the preview regardless of order, for example when
+  /// refreshing the conversation preview after a message deletion (where
+  /// the replacement message is by definition the newest *remaining* one).
+  ///
   /// Throws:
   ///
   /// * [InvalidDataException] if a column constraint is violated.
@@ -41,22 +54,84 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
     bool currentUserHasSent = false,
     String? ownerPubkey,
     String? dmProtocol,
-  }) {
-    return into(conversations).insertOnConflictUpdate(
-      ConversationsCompanion.insert(
-        id: id,
-        participantPubkeys: participantPubkeys,
-        isGroup: Value(isGroup),
-        createdAt: createdAt,
-        lastMessageContent: Value(lastMessageContent),
-        lastMessageTimestamp: Value(lastMessageTimestamp),
-        lastMessageSenderPubkey: Value(lastMessageSenderPubkey),
-        subject: Value(subject),
-        isRead: Value(isRead),
-        currentUserHasSent: Value(currentUserHasSent),
-        ownerPubkey: Value(ownerPubkey),
-        dmProtocol: Value(dmProtocol),
-      ),
+    bool forceUpdateLastMessage = false,
+  }) async {
+    if (forceUpdateLastMessage) {
+      // Unconditional path — caller asserts correctness of the preview.
+      await into(conversations).insertOnConflictUpdate(
+        ConversationsCompanion.insert(
+          id: id,
+          participantPubkeys: participantPubkeys,
+          isGroup: Value(isGroup),
+          createdAt: createdAt,
+          lastMessageContent: Value(lastMessageContent),
+          lastMessageTimestamp: Value(lastMessageTimestamp),
+          lastMessageSenderPubkey: Value(lastMessageSenderPubkey),
+          subject: Value(subject),
+          isRead: Value(isRead),
+          currentUserHasSent: Value(currentUserHasSent),
+          ownerPubkey: Value(ownerPubkey),
+          dmProtocol: Value(dmProtocol),
+        ),
+      );
+      return;
+    }
+
+    // Conditional path — only update last-message preview columns when the
+    // incoming timestamp is newer than whatever is already stored.
+    // Other fields (participants, flags, protocol) are always updated.
+    //
+    // The CASE expression uses COALESCE so that a NULL stored timestamp is
+    // treated as 0, meaning any real timestamp beats it.
+    await customInsert(
+      '''
+      INSERT INTO conversations (
+        id, participant_pubkeys, is_group, created_at,
+        last_message_content, last_message_timestamp, last_message_sender_pubkey,
+        subject, is_read, current_user_has_sent, owner_pubkey, dm_protocol
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        participant_pubkeys = excluded.participant_pubkeys,
+        is_group = excluded.is_group,
+        subject = COALESCE(excluded.subject, subject),
+        is_read = excluded.is_read,
+        current_user_has_sent = CASE
+          WHEN excluded.current_user_has_sent = 1 THEN 1
+          ELSE current_user_has_sent
+        END,
+        owner_pubkey = COALESCE(excluded.owner_pubkey, owner_pubkey),
+        dm_protocol = COALESCE(excluded.dm_protocol, dm_protocol),
+        last_message_timestamp = CASE
+          WHEN excluded.last_message_timestamp > COALESCE(last_message_timestamp, 0)
+            THEN excluded.last_message_timestamp
+          ELSE last_message_timestamp
+        END,
+        last_message_content = CASE
+          WHEN excluded.last_message_timestamp > COALESCE(last_message_timestamp, 0)
+            THEN excluded.last_message_content
+          ELSE last_message_content
+        END,
+        last_message_sender_pubkey = CASE
+          WHEN excluded.last_message_timestamp > COALESCE(last_message_timestamp, 0)
+            THEN excluded.last_message_sender_pubkey
+          ELSE last_message_sender_pubkey
+        END
+      ''',
+      variables: [
+        Variable.withString(id),
+        Variable.withString(participantPubkeys),
+        Variable.withBool(isGroup),
+        Variable.withInt(createdAt),
+        Variable(lastMessageContent),
+        Variable(lastMessageTimestamp),
+        Variable(lastMessageSenderPubkey),
+        Variable(subject),
+        Variable.withBool(isRead),
+        Variable.withBool(currentUserHasSent),
+        Variable(ownerPubkey),
+        Variable(dmProtocol),
+      ],
+      updates: {conversations},
     );
   }
 

@@ -1422,7 +1422,9 @@ class DmRepository {
     if (conversation == null) return;
 
     if (remaining.isEmpty) {
-      // All messages deleted — clear the preview.
+      // All messages deleted — clear the preview. Force the update so the
+      // conditional timestamp check in upsertConversation does not block
+      // a null timestamp from overwriting the existing value.
       await _conversationsDao.upsertConversation(
         id: conversationId,
         participantPubkeys: conversation.participantPubkeys,
@@ -1438,6 +1440,7 @@ class DmRepository {
         currentUserHasSent: conversation.currentUserHasSent,
         ownerPubkey: conversation.ownerPubkey,
         dmProtocol: conversation.dmProtocol,
+        forceUpdateLastMessage: true,
       );
     } else {
       final latest = remaining.first;
@@ -1445,6 +1448,9 @@ class DmRepository {
           ? _filePreviewText(latest.fileType)
           : latest.content;
 
+      // Force the update: after a deletion the replacement message is the
+      // newest *remaining* one, but its timestamp may be older than the
+      // deleted message that was previously shown.
       await _conversationsDao.upsertConversation(
         id: conversationId,
         participantPubkeys: conversation.participantPubkeys,
@@ -1456,6 +1462,7 @@ class DmRepository {
         currentUserHasSent: conversation.currentUserHasSent,
         ownerPubkey: conversation.ownerPubkey,
         dmProtocol: conversation.dmProtocol,
+        forceUpdateLastMessage: true,
       );
     }
   }
@@ -1670,12 +1677,21 @@ class DmRepository {
         .asyncMap(_overlayLatestMessages);
   }
 
-  /// Replaces each row's denormalized last-message fields with the actual
-  /// latest message from `direct_messages`, then re-sorts by that
-  /// timestamp. The conversations table's `lastMessageContent` /
-  /// `lastMessageTimestamp` columns can drift out of sync (e.g. an older
-  /// gift wrap arriving after a newer one writes back during backfill),
-  /// so the messages table is the source of truth for the inbox preview.
+  /// Overlays each conversation row with the actual latest message from
+  /// `direct_messages` using a single batched query, then re-sorts by that
+  /// timestamp.
+  ///
+  /// This is a read-path safety net for existing user databases that may
+  /// contain stale `lastMessageContent` / `lastMessageTimestamp` values
+  /// written by app versions prior to the write-path fix in
+  /// `upsertConversation`. New writes are protected by that fix and will
+  /// never drift, but already-stale rows need this correction until a
+  /// backfill migration repairs them.
+  ///
+  // TODO(perf4407): Remove this method and the two asyncMap calls above once
+  // a one-time backfill migration has shipped that corrects any stale
+  // conversation rows in existing user databases.
+  // Tracking: divinevideo/divine-mobile#4407.
   Future<List<DmConversation>> _overlayLatestMessages(
     List<ConversationRow> rows,
   ) async {

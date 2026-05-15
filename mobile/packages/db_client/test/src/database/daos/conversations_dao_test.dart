@@ -105,6 +105,132 @@ void main() {
         expect(result!.isGroup, isTrue);
         expect(result.subject, equals('Group Chat'));
       });
+
+      test(
+        'does not overwrite newer preview with older timestamp (out-of-order '
+        'gift-wrap protection)',
+        () async {
+          // Simulate newer message arriving first.
+          await dao.upsertConversation(
+            id: 'conv_1',
+            participantPubkeys: '["pubkey_a","pubkey_b"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            lastMessageContent: 'Newer message',
+            lastMessageTimestamp: 1700000200,
+            lastMessageSenderPubkey: 'pubkey_b',
+          );
+
+          // Out-of-order older message arrives — must NOT overwrite preview.
+          await dao.upsertConversation(
+            id: 'conv_1',
+            participantPubkeys: '["pubkey_a","pubkey_b"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            lastMessageContent: 'Older stale message',
+            lastMessageTimestamp: 1700000100,
+            lastMessageSenderPubkey: 'pubkey_a',
+          );
+
+          final result = await dao.getConversation('conv_1');
+          expect(result, isNotNull);
+          expect(result!.lastMessageContent, equals('Newer message'));
+          expect(result.lastMessageTimestamp, equals(1700000200));
+          expect(result.lastMessageSenderPubkey, equals('pubkey_b'));
+        },
+      );
+
+      test(
+        'updates preview when new timestamp is strictly newer',
+        () async {
+          await dao.upsertConversation(
+            id: 'conv_1',
+            participantPubkeys: '["pubkey_a","pubkey_b"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            lastMessageContent: 'First message',
+            lastMessageTimestamp: 1700000100,
+            lastMessageSenderPubkey: 'pubkey_a',
+          );
+
+          await dao.upsertConversation(
+            id: 'conv_1',
+            participantPubkeys: '["pubkey_a","pubkey_b"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            lastMessageContent: 'Second message',
+            lastMessageTimestamp: 1700000200,
+            lastMessageSenderPubkey: 'pubkey_b',
+          );
+
+          final result = await dao.getConversation('conv_1');
+          expect(result, isNotNull);
+          expect(result!.lastMessageContent, equals('Second message'));
+          expect(result.lastMessageTimestamp, equals(1700000200));
+          expect(result.lastMessageSenderPubkey, equals('pubkey_b'));
+        },
+      );
+
+      test(
+        'forceUpdateLastMessage overwrites even with older timestamp',
+        () async {
+          // Simulate newer preview already stored.
+          await dao.upsertConversation(
+            id: 'conv_1',
+            participantPubkeys: '["pubkey_a","pubkey_b"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            lastMessageContent: 'Newer message',
+            lastMessageTimestamp: 1700000200,
+            lastMessageSenderPubkey: 'pubkey_b',
+          );
+
+          // Force refresh with older-but-correct remaining message
+          // (post-delete).
+          await dao.upsertConversation(
+            id: 'conv_1',
+            participantPubkeys: '["pubkey_a","pubkey_b"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            lastMessageContent: 'Remaining older message',
+            lastMessageTimestamp: 1700000100,
+            lastMessageSenderPubkey: 'pubkey_a',
+            forceUpdateLastMessage: true,
+          );
+
+          final result = await dao.getConversation('conv_1');
+          expect(result, isNotNull);
+          expect(result!.lastMessageContent, equals('Remaining older message'));
+          expect(result.lastMessageTimestamp, equals(1700000100));
+          expect(result.lastMessageSenderPubkey, equals('pubkey_a'));
+        },
+      );
+
+      test(
+        'currentUserHasSent is only ever flipped true, never back to false',
+        () async {
+          await dao.upsertConversation(
+            id: 'conv_1',
+            participantPubkeys: '["pubkey_a","pubkey_b"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            currentUserHasSent: true,
+          );
+
+          // Incoming message from other party with currentUserHasSent: false
+          // must not clear the existing true value.
+          await dao.upsertConversation(
+            id: 'conv_1',
+            participantPubkeys: '["pubkey_a","pubkey_b"]',
+            isGroup: false,
+            createdAt: 1700000000,
+          );
+
+          final result = await dao.getConversation('conv_1');
+          expect(result, isNotNull);
+          expect(result!.currentUserHasSent, isTrue);
+        },
+      );
     });
 
     group('getAllConversations', () {
