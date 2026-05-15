@@ -225,6 +225,7 @@ class Nostr {
     return _pool.sendEventAwaitOk(
       ["EVENT", event.toJson()],
       eventId: event.id,
+      eventKind: event.kind,
       tempRelays: tempRelays,
       targetRelays: targetRelays,
       timeout: timeout,

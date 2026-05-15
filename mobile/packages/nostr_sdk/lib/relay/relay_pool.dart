@@ -105,6 +105,31 @@ class RelayPool {
   List<MapEntry<String, Relay>> _cacheRelayEntriesSnapshot() =>
       _cacheRelays.entries.toList(growable: false);
 
+  bool _isPushControlKind(int? kind) =>
+      kind == 3079 || kind == 3080 || kind == 3083;
+
+  int? _eventKindFromMessage(List<dynamic> message) {
+    if (message.length < 2 || message[0] != 'EVENT' || message[1] is! Map) {
+      return null;
+    }
+    final kind = (message[1] as Map)['kind'];
+    if (kind is int) return kind;
+    if (kind is num) return kind.toInt();
+    return null;
+  }
+
+  String? _eventIdFromMessage(List<dynamic> message) {
+    if (message.length < 2 || message[0] != 'EVENT' || message[1] is! Map) {
+      return null;
+    }
+    final id = (message[1] as Map)['id'];
+    return id is String ? id : null;
+  }
+
+  void _logPushControlDiagnostic(String message) {
+    log('📲 Push control relay diagnostic: $message');
+  }
+
   Future<bool> add(
     Relay relay, {
     bool autoSubscribe = false,
@@ -394,8 +419,20 @@ class RelayPool {
         if (publishTracker != null) {
           if (success) {
             publishTracker.onAccepted(relay.url);
+            if (publishTracker.isPushControlEvent) {
+              _logPushControlDiagnostic(
+                'OK accepted kind=${publishTracker.eventKind} '
+                'eventId=$eventId relay=${relay.url}',
+              );
+            }
           } else {
             publishTracker.onRejected(relay.url, message);
+            if (publishTracker.isPushControlEvent) {
+              _logPushControlDiagnostic(
+                'OK rejected kind=${publishTracker.eventKind} '
+                'eventId=$eventId relay=${relay.url} reason=$message',
+              );
+            }
           }
         }
 
@@ -896,10 +933,26 @@ class RelayPool {
     List<String>? targetRelays,
   }) async {
     final sentTo = <String>[];
+    final eventKind = _eventKindFromMessage(message);
+    final eventId = _eventIdFromMessage(message);
+    final isPushControlEvent = _isPushControlKind(eventKind);
+
+    if (isPushControlEvent) {
+      _logPushControlDiagnostic(
+        'send start kind=$eventKind eventId=$eventId '
+        'targetRelays=$targetRelays tempRelays=$tempRelays',
+      );
+    }
 
     for (final relay in _relaysSnapshot()) {
       if (message[0] == "EVENT") {
         if (!relay.relayStatus.writeAccess) {
+          if (isPushControlEvent) {
+            _logPushControlDiagnostic(
+              'send skipped kind=$eventKind eventId=$eventId relay=${relay.url} '
+              'reason=writeAccessDisabled',
+            );
+          }
           continue;
         }
       }
@@ -944,11 +997,22 @@ class RelayPool {
             if (result) {
               sentTo.add(relay.url);
             }
+            if (isPushControlEvent) {
+              _logPushControlDiagnostic(
+                'auth-trigger send kind=$eventKind eventId=$eventId '
+                'relay=${relay.url} sent=$result',
+              );
+            }
             // Don't queue this message since we're sending it
           } else {
             log('🔐 Queueing message for authentication: ${message[0]}');
             relay.pendingAuthedMessages.add(message);
             sentTo.add(relay.url);
+            if (isPushControlEvent) {
+              _logPushControlDiagnostic(
+                'queued for auth kind=$eventKind eventId=$eventId relay=${relay.url}',
+              );
+            }
           }
           log(
             '🔐 Pending authed messages count: ${relay.pendingAuthedMessages.length}',
@@ -977,8 +1041,18 @@ class RelayPool {
           if (result) {
             sentTo.add(relay.url);
           }
+          if (isPushControlEvent) {
+            _logPushControlDiagnostic(
+              'send kind=$eventKind eventId=$eventId relay=${relay.url} sent=$result',
+            );
+          }
         }
       } catch (err) {
+        if (isPushControlEvent) {
+          _logPushControlDiagnostic(
+            'send error kind=$eventKind eventId=$eventId relay=${relay.url} error=$err',
+          );
+        }
         log(err.toString());
         relay.relayStatus.onError();
       }
@@ -1005,7 +1079,18 @@ class RelayPool {
         if (result) {
           sentTo.add(tempRelay.url);
         }
+        if (isPushControlEvent) {
+          _logPushControlDiagnostic(
+            'temp send kind=$eventKind eventId=$eventId relay=${tempRelay.url} sent=$result',
+          );
+        }
       }
+    }
+
+    if (isPushControlEvent) {
+      _logPushControlDiagnostic(
+        'send complete kind=$eventKind eventId=$eventId sentTo=$sentTo',
+      );
     }
 
     return sentTo;
@@ -1026,6 +1111,7 @@ class RelayPool {
   Future<PublishOutcome> sendEventAwaitOk(
     List<dynamic> message, {
     required String eventId,
+    int? eventKind,
     List<String>? tempRelays,
     List<String>? targetRelays,
     Duration timeout = const Duration(seconds: 15),
@@ -1038,6 +1124,7 @@ class RelayPool {
     }
     final tracker = PublishTracker(
       eventId: eventId,
+      eventKind: eventKind ?? _eventKindFromMessage(message),
       expectedRelays: <String>{},
       timeout: timeout,
     );
@@ -1055,7 +1142,17 @@ class RelayPool {
     }
 
     unawaited(
-      tracker.future.whenComplete(() => _pendingPublishes.remove(eventId)),
+      tracker.future
+          .then((outcome) {
+            if (tracker.isPushControlEvent) {
+              _logPushControlDiagnostic(
+                'OK outcome kind=${tracker.eventKind} eventId=$eventId '
+                'acceptedBy=${outcome.acceptedBy} rejectedBy=${outcome.rejectedBy} '
+                'noResponseFrom=${outcome.noResponseFrom}',
+              );
+            }
+          })
+          .whenComplete(() => _pendingPublishes.remove(eventId)),
     );
     return tracker.future;
   }

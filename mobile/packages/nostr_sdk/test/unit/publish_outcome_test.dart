@@ -86,5 +86,50 @@ void main() {
         expect(outcome.noResponseFrom, equals(['wss://only.example']));
       });
     });
+
+    group('push control diagnostics metadata', () {
+      test(
+        'marks push registration, deregistration, and preferences kinds',
+        () {
+          for (final kind in [3079, 3080, 3083]) {
+            final tracker = PublishTracker(
+              eventId: 'push-control-$kind',
+              eventKind: kind,
+              expectedRelays: {'wss://relay.divine.video'},
+              timeout: const Duration(seconds: 30),
+            );
+
+            expect(tracker.isPushControlEvent, isTrue);
+            tracker.cancel();
+          }
+        },
+      );
+
+      test('does not mark unrelated event kinds as push control events', () {
+        final tracker = PublishTracker(
+          eventId: 'note-1',
+          eventKind: 1,
+          expectedRelays: {'wss://relay.divine.video'},
+          timeout: const Duration(seconds: 30),
+        );
+
+        expect(tracker.isPushControlEvent, isFalse);
+        tracker.cancel();
+      });
+
+      test('propagates event kind to publish outcome', () async {
+        final tracker = PublishTracker(
+          eventId: 'push-control-accepted',
+          eventKind: 3079,
+          expectedRelays: {'wss://relay.divine.video'},
+          timeout: const Duration(seconds: 30),
+        );
+
+        tracker.onAccepted('wss://relay.divine.video');
+        final outcome = await tracker.future;
+
+        expect(outcome.eventKind, equals(3079));
+      });
+    });
   });
 }

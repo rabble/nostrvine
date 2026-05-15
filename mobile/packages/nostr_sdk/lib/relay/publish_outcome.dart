@@ -10,6 +10,7 @@ import 'dart:async';
 class PublishOutcome {
   const PublishOutcome({
     required this.eventId,
+    this.eventKind,
     required this.acceptedBy,
     required this.rejectedBy,
     required this.noResponseFrom,
@@ -17,6 +18,9 @@ class PublishOutcome {
 
   /// The id of the event that was published.
   final String eventId;
+
+  /// The event kind that was published, when known.
+  final int? eventKind;
 
   /// Relay URLs that returned `OK true`.
   final List<String> acceptedBy;
@@ -62,6 +66,7 @@ class PublishOutcome {
 class PublishTracker {
   PublishTracker({
     required this.eventId,
+    this.eventKind,
     required this.expectedRelays,
     required Duration timeout,
   }) {
@@ -70,6 +75,12 @@ class PublishTracker {
 
   /// The event id we are waiting on.
   final String eventId;
+
+  /// The event kind we are waiting on, when known.
+  final int? eventKind;
+
+  bool get isPushControlEvent =>
+      eventKind == 3079 || eventKind == 3080 || eventKind == 3083;
 
   /// Relay URLs we expect responses from.
   final Set<String> expectedRelays;
@@ -127,6 +138,7 @@ class PublishTracker {
     _completer.complete(
       PublishOutcome(
         eventId: eventId,
+        eventKind: eventKind,
         acceptedBy: _accepted.toList(growable: false),
         rejectedBy: Map<String, String>.unmodifiable(_rejected),
         noResponseFrom: noResponse,
@@ -143,6 +155,7 @@ class PublishTracker {
       _completer.complete(
         PublishOutcome(
           eventId: eventId,
+          eventKind: eventKind,
           acceptedBy: _accepted.toList(growable: false),
           rejectedBy: Map<String, String>.unmodifiable(_rejected),
           noResponseFrom: expectedRelays.toList(growable: false),
