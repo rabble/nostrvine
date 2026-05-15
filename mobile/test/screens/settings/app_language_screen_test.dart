@@ -63,7 +63,8 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Español'));
+      await findLocaleTile(tester, 'Español');
+      await tester.tap(find.widgetWithText(ListTile, 'Español'));
       await tester.pumpAndSettle();
 
       verify(() => localeCubit.setLocale('es')).called(1);

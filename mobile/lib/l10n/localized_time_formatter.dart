@@ -1,6 +1,7 @@
 // ABOUTME: Locale-aware wrapper around TimeFormatter.
 // ABOUTME: Maps TimeFormatter output to l10n strings from ARB.
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
@@ -17,7 +18,7 @@ abstract class LocalizedTimeFormatter {
   ///
   /// Examples: "now", "3m", "2h", "3d", "2w", "1mo", "1y"
   static String formatRelative(AppLocalizations l10n, int unixSeconds) {
-    final now = DateTime.now();
+    final now = clock.now();
     final then = DateTime.fromMillisecondsSinceEpoch(
       unixSeconds * 1000,
       isUtc: true,
@@ -48,7 +49,7 @@ abstract class LocalizedTimeFormatter {
   ///
   /// Examples: "Now", "3m ago", "2h ago"
   static String formatRelativeVerbose(AppLocalizations l10n, int unixSeconds) {
-    final now = DateTime.now();
+    final now = clock.now();
     final then = DateTime.fromMillisecondsSinceEpoch(
       unixSeconds * 1000,
       isUtc: true,
@@ -70,7 +71,7 @@ abstract class LocalizedTimeFormatter {
     int unixSeconds, {
     String? locale,
   }) {
-    final now = DateTime.now();
+    final now = clock.now();
     final date = DateTime.fromMillisecondsSinceEpoch(
       unixSeconds * 1000,
       isUtc: true,
@@ -92,7 +93,7 @@ abstract class LocalizedTimeFormatter {
     int unixSeconds, {
     String? locale,
   }) {
-    final now = DateTime.now();
+    final now = clock.now();
     final date = DateTime.fromMillisecondsSinceEpoch(
       unixSeconds * 1000,
       isUtc: true,
@@ -123,7 +124,7 @@ abstract class LocalizedTimeFormatter {
     String? locale,
     bool use24Hour = false,
   }) {
-    final now = DateTime.now();
+    final now = clock.now();
     final date = DateTime.fromMillisecondsSinceEpoch(
       unixSeconds * 1000,
       isUtc: true,
@@ -172,7 +173,7 @@ abstract class LocalizedTimeFormatter {
     String? locale,
     BuildContext? context,
   }) {
-    final now = DateTime.now();
+    final now = clock.now();
     final localTimestamp = timestamp.toLocal();
     final difference = now.difference(localTimestamp);
 

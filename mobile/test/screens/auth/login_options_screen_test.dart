@@ -277,12 +277,21 @@ void main() {
       testWidgets(
         'info sheet includes browser-extension entry when NIP-07 is available',
         (tester) async {
+          await tester.binding.setSurfaceSize(const Size(800, 1200));
+          addTearDown(() => tester.binding.setSurfaceSize(null));
           when(() => mockAuthService.isNip07Available).thenReturn(true);
 
           await tester.pumpWidget(createTestWidget());
           await tester.pumpAndSettle();
 
           await tester.tap(find.byIcon(Icons.info_outline));
+          await tester.pumpAndSettle();
+
+          await tester.scrollUntilVisible(
+            find.text('Browser Extension'),
+            120,
+            scrollable: find.byType(Scrollable).last,
+          );
           await tester.pumpAndSettle();
 
           expect(find.text('Browser Extension'), findsOneWidget);

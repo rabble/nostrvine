@@ -1,6 +1,7 @@
 // ABOUTME: Golden tests for notification rows, covering the default and
 // ABOUTME: large-text layouts that were stabilized for issues #4206 and #3387.
 
+import 'package:clock/clock.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -20,6 +21,9 @@ const _bob = ActorInfo(
   displayName: 'Bob',
 );
 
+final _goldenNow = DateTime.utc(2026, 5, 15, 23);
+final _notificationTimestamp = DateTime.utc(2026, 5, 15, 12);
+
 void main() {
   group('Notification row goldens', () {
     setUpAll(() async {
@@ -27,36 +31,39 @@ void main() {
     });
 
     testGoldens('notification rows render default layout', (tester) async {
-      await tester.pumpWidgetBuilder(
-        _scenarioColumn(textScaleFactor: 1),
-        wrapper: _appWrapper,
-        surfaceSize: const Size(420, 560),
-      );
-      await tester.pumpAndSettle();
+      await withClock(Clock(() => _goldenNow), () async {
+        await tester.pumpWidgetBuilder(
+          _scenarioColumn(textScaleFactor: 1),
+          wrapper: _appWrapper,
+          surfaceSize: const Size(420, 560),
+        );
+        await tester.pumpAndSettle();
 
-      await screenMatchesGolden(tester, 'notification_rows_default');
+        await screenMatchesGolden(tester, 'notification_rows_default');
+      });
     });
 
     testGoldens('notification rows render max-font layout', (tester) async {
-      await tester.pumpWidgetBuilder(
-        _scenarioColumn(textScaleFactor: 2),
-        wrapper: _appWrapper,
-        surfaceSize: const Size(420, 760),
-      );
-      await tester.pumpAndSettle();
+      await withClock(Clock(() => _goldenNow), () async {
+        await tester.pumpWidgetBuilder(
+          _scenarioColumn(textScaleFactor: 2),
+          wrapper: _appWrapper,
+          surfaceSize: const Size(420, 1200),
+        );
+        await tester.pumpAndSettle();
 
-      await screenMatchesGolden(tester, 'notification_rows_max_font');
+        await screenMatchesGolden(tester, 'notification_rows_max_font');
+      });
     });
   });
 }
 
 Widget _scenarioColumn({required double textScaleFactor}) {
-  final now = DateTime.now().toUtc();
   final actorNotification = ActorNotification(
     id: 'follow-1',
     type: NotificationKind.follow,
     actor: _alice,
-    timestamp: now.subtract(const Duration(hours: 11)),
+    timestamp: _notificationTimestamp,
   );
   final videoNotification = VideoNotification(
     id: 'comment-1',
@@ -65,7 +72,7 @@ Widget _scenarioColumn({required double textScaleFactor}) {
         '1111111111111111111111111111111111111111111111111111111111111111',
     actors: const [_alice, _bob],
     totalCount: 2,
-    timestamp: now.subtract(const Duration(hours: 11)),
+    timestamp: _notificationTimestamp,
     videoTitle: 'A longer title that exercises the responsive row layout',
     commentText:
         'This is a longer preview comment that should still render cleanly.',

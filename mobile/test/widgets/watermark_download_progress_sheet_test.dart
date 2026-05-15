@@ -82,6 +82,15 @@ void main() {
     );
   }
 
+  Future<void> pumpSheet(
+    WidgetTester tester, {
+    required VideoEvent video,
+  }) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(buildTestWidget(video: video));
+  }
+
   group('showWatermarkDownloadSheet', () {
     testWidgets('shows progress indicator while downloading', (tester) async {
       final neverComplete = Completer<WatermarkDownloadResult>();
@@ -100,7 +109,7 @@ void main() {
         return neverComplete.future;
       });
 
-      await tester.pumpWidget(buildTestWidget(video: _createTestVideo()));
+      await pumpSheet(tester, video: _createTestVideo());
       await tester.tap(find.text('Show Sheet'));
       await tester.pump();
 
@@ -133,7 +142,7 @@ void main() {
         return neverComplete.future;
       });
 
-      await tester.pumpWidget(buildTestWidget(video: _createTestVideo()));
+      await pumpSheet(tester, video: _createTestVideo());
       await tester.tap(find.text('Show Sheet'));
       await tester.pump();
 
@@ -152,7 +161,7 @@ void main() {
         ),
       ).thenAnswer((_) async => const WatermarkDownloadSuccess('/tmp/v.mp4'));
 
-      await tester.pumpWidget(buildTestWidget(video: _createTestVideo()));
+      await pumpSheet(tester, video: _createTestVideo());
       await tester.tap(find.text('Show Sheet'));
       await tester.pumpAndSettle();
 
@@ -173,7 +182,7 @@ void main() {
         ),
       ).thenAnswer((_) async => const WatermarkDownloadPermissionDenied());
 
-      await tester.pumpWidget(buildTestWidget(video: _createTestVideo()));
+      await pumpSheet(tester, video: _createTestVideo());
       await tester.tap(find.text('Show Sheet'));
       await tester.pumpAndSettle();
 
@@ -196,7 +205,7 @@ void main() {
         (_) async => const WatermarkDownloadFailure('Network error'),
       );
 
-      await tester.pumpWidget(buildTestWidget(video: _createTestVideo()));
+      await pumpSheet(tester, video: _createTestVideo());
       await tester.tap(find.text('Show Sheet'));
       await tester.pumpAndSettle();
 
@@ -232,7 +241,7 @@ void main() {
           return const WatermarkDownloadSuccess('/tmp/v.mp4');
         });
 
-        await tester.pumpWidget(buildTestWidget(video: _createTestVideo()));
+        await pumpSheet(tester, video: _createTestVideo());
         await tester.tap(find.text('Show Sheet'));
         await tester.pumpAndSettle();
 
@@ -297,7 +306,7 @@ void main() {
           return retryCompleter.future;
         });
 
-        await tester.pumpWidget(buildTestWidget(video: _createTestVideo()));
+        await pumpSheet(tester, video: _createTestVideo());
         await tester.tap(find.text('Show Sheet'));
         await tester.pumpAndSettle();
 
@@ -336,7 +345,7 @@ void main() {
         (_) async => const WatermarkDownloadFailure('Network error'),
       );
 
-      await tester.pumpWidget(buildTestWidget(video: _createTestVideo()));
+      await pumpSheet(tester, video: _createTestVideo());
       await tester.tap(find.text('Show Sheet'));
       await tester.pumpAndSettle();
 

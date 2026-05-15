@@ -133,18 +133,38 @@ void main() {
     );
   }
 
+  Future<void> pumpVerificationScreen(
+    WidgetTester tester, {
+    String? deviceCode,
+    String? verifier,
+    String? email,
+    String? token,
+    EmailVerificationState initialState = const EmailVerificationState(),
+  }) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      createTestWidget(
+        deviceCode: deviceCode,
+        verifier: verifier,
+        email: email,
+        token: token,
+        initialState: initialState,
+      ),
+    );
+  }
+
   group(EmailVerificationScreen, () {
     group('polling mode', () {
       testWidgets('renders polling content with email', (tester) async {
-        await tester.pumpWidget(
-          createTestWidget(
-            deviceCode: 'test-device-code',
-            verifier: 'test-verifier',
-            email: 'user@example.com',
-            initialState: const EmailVerificationState(
-              status: EmailVerificationStatus.polling,
-              pendingEmail: 'user@example.com',
-            ),
+        await pumpVerificationScreen(
+          tester,
+          deviceCode: 'test-device-code',
+          verifier: 'test-verifier',
+          email: 'user@example.com',
+          initialState: const EmailVerificationState(
+            status: EmailVerificationStatus.polling,
+            pendingEmail: 'user@example.com',
           ),
         );
         await tester.pump();
@@ -155,15 +175,14 @@ void main() {
       });
 
       testWidgets('renders Open email app button', (tester) async {
-        await tester.pumpWidget(
-          createTestWidget(
-            deviceCode: 'test-device-code',
-            verifier: 'test-verifier',
-            email: 'user@example.com',
-            initialState: const EmailVerificationState(
-              status: EmailVerificationStatus.polling,
-              pendingEmail: 'user@example.com',
-            ),
+        await pumpVerificationScreen(
+          tester,
+          deviceCode: 'test-device-code',
+          verifier: 'test-verifier',
+          email: 'user@example.com',
+          initialState: const EmailVerificationState(
+            status: EmailVerificationStatus.polling,
+            pendingEmail: 'user@example.com',
           ),
         );
         await tester.pump();
@@ -175,15 +194,14 @@ void main() {
       });
 
       testWidgets('renders close button', (tester) async {
-        await tester.pumpWidget(
-          createTestWidget(
-            deviceCode: 'test-device-code',
-            verifier: 'test-verifier',
-            email: 'user@example.com',
-            initialState: const EmailVerificationState(
-              status: EmailVerificationStatus.polling,
-              pendingEmail: 'user@example.com',
-            ),
+        await pumpVerificationScreen(
+          tester,
+          deviceCode: 'test-device-code',
+          verifier: 'test-verifier',
+          email: 'user@example.com',
+          initialState: const EmailVerificationState(
+            status: EmailVerificationStatus.polling,
+            pendingEmail: 'user@example.com',
           ),
         );
         await tester.pump();
@@ -192,15 +210,14 @@ void main() {
       });
 
       testWidgets('renders verification link instruction text', (tester) async {
-        await tester.pumpWidget(
-          createTestWidget(
-            deviceCode: 'test-device-code',
-            verifier: 'test-verifier',
-            email: 'user@example.com',
-            initialState: const EmailVerificationState(
-              status: EmailVerificationStatus.polling,
-              pendingEmail: 'user@example.com',
-            ),
+        await pumpVerificationScreen(
+          tester,
+          deviceCode: 'test-device-code',
+          verifier: 'test-verifier',
+          email: 'user@example.com',
+          initialState: const EmailVerificationState(
+            status: EmailVerificationStatus.polling,
+            pendingEmail: 'user@example.com',
           ),
         );
         await tester.pump();
@@ -369,14 +386,13 @@ void main() {
 
     group('interactions', () {
       testWidgets('calls stopPolling on dispose', (tester) async {
-        await tester.pumpWidget(
-          createTestWidget(
-            deviceCode: 'test-device-code',
-            verifier: 'test-verifier',
-            initialState: const EmailVerificationState(
-              status: EmailVerificationStatus.polling,
-              pendingEmail: 'user@example.com',
-            ),
+        await pumpVerificationScreen(
+          tester,
+          deviceCode: 'test-device-code',
+          verifier: 'test-verifier',
+          initialState: const EmailVerificationState(
+            status: EmailVerificationStatus.polling,
+            pendingEmail: 'user@example.com',
           ),
         );
         await tester.pump();
@@ -398,14 +414,13 @@ void main() {
           // contract that the screen's own dispose() cancels polling, so a
           // future refactor that drops the GoRouter teardown path still
           // keeps zombie timers from surviving the screen.
-          await tester.pumpWidget(
-            createTestWidget(
-              deviceCode: 'test-device-code',
-              verifier: 'test-verifier',
-              initialState: const EmailVerificationState(
-                status: EmailVerificationStatus.polling,
-                pendingEmail: 'user@example.com',
-              ),
+          await pumpVerificationScreen(
+            tester,
+            deviceCode: 'test-device-code',
+            verifier: 'test-verifier',
+            initialState: const EmailVerificationState(
+              status: EmailVerificationStatus.polling,
+              pendingEmail: 'user@example.com',
             ),
           );
           await tester.pump();
