@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
+import 'package:openvine/blocs/list_search/list_search_bloc.dart';
 import 'package:openvine/blocs/search_results_filter/search_results_filter.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
@@ -25,18 +26,23 @@ class _MockHashtagSearchBloc
     extends MockBloc<HashtagSearchEvent, HashtagSearchState>
     implements HashtagSearchBloc {}
 
+class _MockListSearchBloc extends MockBloc<ListSearchEvent, ListSearchState>
+    implements ListSearchBloc {}
+
 void main() {
   group(SearchResultsAppBar, () {
     late _MockSearchResultsFilterCubit mockFilterCubit;
     late _MockUserSearchBloc mockUserSearchBloc;
     late _MockVideoSearchBloc mockVideoSearchBloc;
     late _MockHashtagSearchBloc mockHashtagSearchBloc;
+    late _MockListSearchBloc mockListSearchBloc;
 
     setUp(() {
       mockFilterCubit = _MockSearchResultsFilterCubit();
       mockUserSearchBloc = _MockUserSearchBloc();
       mockVideoSearchBloc = _MockVideoSearchBloc();
       mockHashtagSearchBloc = _MockHashtagSearchBloc();
+      mockListSearchBloc = _MockListSearchBloc();
 
       when(() => mockFilterCubit.state).thenReturn(SearchResultsFilter.all);
       when(() => mockUserSearchBloc.state).thenReturn(const UserSearchState());
@@ -46,9 +52,13 @@ void main() {
       when(
         () => mockHashtagSearchBloc.state,
       ).thenReturn(const HashtagSearchState());
+      when(() => mockListSearchBloc.state).thenReturn(const ListSearchState());
     });
 
-    Widget createTestWidget() {
+    Widget createTestWidget({
+      String initialQuery = 'test',
+      bool requestFocusOnMount = true,
+    }) {
       return testMaterialApp(
         home: MultiBlocProvider(
           providers: [
@@ -58,9 +68,13 @@ void main() {
             BlocProvider<UserSearchBloc>.value(value: mockUserSearchBloc),
             BlocProvider<VideoSearchBloc>.value(value: mockVideoSearchBloc),
             BlocProvider<HashtagSearchBloc>.value(value: mockHashtagSearchBloc),
+            BlocProvider<ListSearchBloc>.value(value: mockListSearchBloc),
           ],
-          child: const Scaffold(
-            body: SearchResultsAppBar(initialQuery: 'test'),
+          child: Scaffold(
+            body: SearchResultsAppBar(
+              initialQuery: initialQuery,
+              requestFocusOnMount: requestFocusOnMount,
+            ),
           ),
         ),
         mockAuthService: createMockAuthService(),
@@ -79,6 +93,27 @@ void main() {
       await tester.pump();
 
       expect(find.text('test'), findsOneWidget);
+    });
+
+    testWidgets(
+      'requests focus for a prefilled query when mounted from a route push',
+      (tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pump();
+
+        final textField = tester.widget<TextField>(find.byType(TextField));
+
+        expect(textField.focusNode?.hasFocus, isTrue);
+      },
+    );
+
+    testWidgets('can opt out of mount focus', (tester) async {
+      await tester.pumpWidget(createTestWidget(requestFocusOnMount: false));
+      await tester.pump();
+
+      final textField = tester.widget<TextField>(find.byType(TextField));
+
+      expect(textField.focusNode?.hasFocus, isFalse);
     });
   });
 }
