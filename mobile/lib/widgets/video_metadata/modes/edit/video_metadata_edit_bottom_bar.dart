@@ -42,7 +42,10 @@ class _VideoMetadataEditBottomBarState
   bool _isUpdating = false;
   bool _isDeleting = false;
 
+  bool get _isBusy => _isUpdating || _isDeleting;
+
   Future<void> _updateVideo() async {
+    if (_isBusy) return;
     setState(() => _isUpdating = true);
 
     try {
@@ -97,6 +100,7 @@ class _VideoMetadataEditBottomBarState
   }
 
   Future<void> _confirmDelete() async {
+    if (_isBusy) return;
     final confirmed = await VineBottomSheetPrompt.show<bool>(
       context: context,
       sticker: DivineStickerName.alert,
@@ -115,6 +119,7 @@ class _VideoMetadataEditBottomBarState
   }
 
   Future<void> _deleteVideo() async {
+    if (_isBusy) return;
     setState(() => _isDeleting = true);
 
     try {
@@ -191,12 +196,14 @@ class _VideoMetadataEditBottomBarState
             Expanded(
               child: _DeleteButton(
                 onTap: _confirmDelete,
+                isBusy: _isBusy,
                 isDeleting: _isDeleting,
               ),
             ),
             Expanded(
               child: _UpdateButton(
                 onTap: _updateVideo,
+                isBusy: _isBusy,
                 isUpdating: _isUpdating,
               ),
             ),
@@ -209,9 +216,14 @@ class _VideoMetadataEditBottomBarState
 
 /// Outlined button to delete the video.
 class _DeleteButton extends StatelessWidget {
-  const _DeleteButton({required this.onTap, required this.isDeleting});
+  const _DeleteButton({
+    required this.onTap,
+    required this.isBusy,
+    required this.isDeleting,
+  });
 
   final VoidCallback onTap;
+  final bool isBusy;
   final bool isDeleting;
 
   @override
@@ -219,7 +231,7 @@ class _DeleteButton extends StatelessWidget {
     return Semantics(
       identifier: 'delete_button',
       child: DivineButton(
-        onPressed: isDeleting ? null : onTap,
+        onPressed: isBusy ? null : onTap,
         type: .error,
         label: context.l10n.shareMenuDeleteVideo,
         isLoading: isDeleting,
@@ -230,9 +242,14 @@ class _DeleteButton extends StatelessWidget {
 
 /// Filled button to publish the updated video metadata.
 class _UpdateButton extends StatelessWidget {
-  const _UpdateButton({required this.onTap, required this.isUpdating});
+  const _UpdateButton({
+    required this.onTap,
+    required this.isBusy,
+    required this.isUpdating,
+  });
 
   final VoidCallback onTap;
+  final bool isBusy;
   final bool isUpdating;
 
   @override
@@ -240,7 +257,7 @@ class _UpdateButton extends StatelessWidget {
     return Semantics(
       identifier: 'update_button',
       child: DivineButton(
-        onPressed: isUpdating ? null : onTap,
+        onPressed: isBusy ? null : onTap,
         expanded: true,
         label: context.l10n.shareMenuUpdate,
         isLoading: isUpdating,
