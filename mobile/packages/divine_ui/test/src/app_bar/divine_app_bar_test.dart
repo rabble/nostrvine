@@ -19,6 +19,7 @@ void main() {
       VoidCallback? onMenuPressed,
       IconSource? leadingIcon,
       VoidCallback? onLeadingPressed,
+      bool expandLeadingHitArea = false,
       List<DiVineAppBarAction> actions = const [],
       List<Widget> customActions = const [],
       DiVineAppBarBackgroundMode backgroundMode =
@@ -44,6 +45,7 @@ void main() {
             onMenuPressed: onMenuPressed,
             leadingIcon: leadingIcon,
             onLeadingPressed: onLeadingPressed,
+            expandLeadingHitArea: expandLeadingHitArea,
             actions: actions,
             customActions: customActions,
             backgroundMode: backgroundMode,
@@ -262,6 +264,65 @@ void main() {
 
         expect(find.byType(DiVineAppBarIconButton), findsNothing);
       });
+
+      testWidgets(
+        'expandLeadingHitArea routes taps in the empty part of the '
+        'leading slot to onBackPressed',
+        (tester) async {
+          var pressed = false;
+          await tester.pumpWidget(
+            buildTestWidget(
+              title: 'Test',
+              showBackButton: true,
+              onBackPressed: () => pressed = true,
+              expandLeadingHitArea: true,
+              style: DiVineAppBarStyle.transparentStyle.copyWith(
+                horizontalPadding: 12,
+                leadingWidth: 72,
+              ),
+            ),
+          );
+
+          // Tap inside the slot but outside the visible 48 × 48 icon
+          // button (which lives at x ∈ [12, 60]).
+          final iconButtonRect = tester.getRect(
+            find.byType(DiVineAppBarIconButton),
+          );
+          final tapPoint = Offset(
+            iconButtonRect.right + 4,
+            iconButtonRect.center.dy,
+          );
+          await tester.tapAt(tapPoint);
+          expect(pressed, isTrue);
+        },
+      );
+
+      testWidgets(
+        'default behavior: taps outside the visible button do NOT fire '
+        'onBackPressed',
+        (tester) async {
+          var pressed = false;
+          await tester.pumpWidget(
+            buildTestWidget(
+              title: 'Test',
+              showBackButton: true,
+              onBackPressed: () => pressed = true,
+              style: DiVineAppBarStyle.transparentStyle.copyWith(
+                horizontalPadding: 12,
+                leadingWidth: 72,
+              ),
+            ),
+          );
+
+          final iconButtonRect = tester.getRect(
+            find.byType(DiVineAppBarIconButton),
+          );
+          await tester.tapAt(
+            Offset(iconButtonRect.right + 4, iconButtonRect.center.dy),
+          );
+          expect(pressed, isFalse);
+        },
+      );
     });
 
     group('actions', () {

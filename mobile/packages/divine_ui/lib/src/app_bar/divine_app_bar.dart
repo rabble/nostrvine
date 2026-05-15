@@ -68,6 +68,7 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.leadingIcon,
     this.onLeadingPressed,
     this.leadingActionSemanticLabel = 'Leading action',
+    this.expandLeadingHitArea = false,
     this.actions = const [],
     this.customActions = const [],
     this.backgroundMode = DiVineAppBarBackgroundMode.solid,
@@ -205,6 +206,16 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// Defaults to `'Leading action'`. Pass a localized string to override.
   final String leadingActionSemanticLabel;
 
+  /// When `true`, the entire leading slot becomes the tap target
+  /// for the back / menu / leading button — useful on app bars
+  /// over busy backgrounds where the smaller button is easy to
+  /// miss. The visible button still renders at its configured size
+  /// and position; only the hit-test surface expands.
+  ///
+  /// Defaults to `false` so existing call sites keep the historical
+  /// "tap only on the visible button" behavior.
+  final bool expandLeadingHitArea;
+
   /// Action buttons displayed on the right side.
   ///
   /// Defaults to an empty list.
@@ -304,6 +315,7 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
               onLeadingPressed: onLeadingPressed,
               leadingActionSemanticLabel: leadingActionSemanticLabel,
               style: effectiveStyle,
+              expandHitArea: expandLeadingHitArea,
             )
           : null,
       title: DiVineAppBarTitle(

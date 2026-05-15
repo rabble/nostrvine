@@ -812,24 +812,18 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                   onBackPressed: () => _handleBack(context),
                   backgroundMode: DiVineAppBarBackgroundMode.transparent,
                   forceMaterialTransparency: true,
-                  // Back button sits 8 px from the left edge of the screen
-                  // (4 px tighter than the previous 12). The More popover on
-                  // the trailing side keeps its 12 px gap by wrapping the
-                  // FeedSettingsMenu in an extra `end: 4` padding inside the
-                  // customActions slot.
-                  customActions: const [
-                    Padding(
-                      padding: EdgeInsetsDirectional.only(end: 4),
-                      child: FeedSettingsMenu(),
-                    ),
-                  ],
+                  // Stretch the back-button tap target to the full
+                  // leading slot. The fullscreen feed sits over playing
+                  // video so a small icon hit-target is easy to miss.
+                  expandLeadingHitArea: true,
+                  customActions: const [FeedSettingsMenu()],
                   style: DiVineAppBarStyle.transparentStyle.copyWith(
-                    horizontalPadding: 8,
-                    // With the default 48 px icon button and 8 px
-                    // [horizontalPadding], a 68 px leading slot leaves
+                    horizontalPadding: 12,
+                    // With the default 48 px icon button and 12 px
+                    // [horizontalPadding], a 72 px leading slot leaves
                     // 12 px between the back button's right edge and
-                    // the title text (68 − 8 − 48 = 12).
-                    leadingWidth: 68,
+                    // the title text (72 − 12 − 48 = 12).
+                    leadingWidth: 72,
                     // Figma `title/medium` token (Bricolage Grotesque
                     // 800, 16 / 24 / 0.15) — overrides the default
                     // [VineTheme.titleLargeFont] (22) used by the

@@ -24,6 +24,7 @@ class DiVineAppBarLeading extends StatelessWidget {
     this.menuButtonSemanticLabel = 'Open menu',
     this.menuButtonTooltip = 'Menu',
     this.leadingActionSemanticLabel = 'Leading action',
+    this.expandHitArea = false,
     super.key,
   });
 
@@ -77,6 +78,13 @@ class DiVineAppBarLeading extends StatelessWidget {
   /// Style configuration.
   final DiVineAppBarStyle style;
 
+  /// When `true`, the entire leading slot becomes the tap target
+  /// instead of just the visible icon button — useful for app bars
+  /// over busy backgrounds where the smaller button is easier to
+  /// miss. The visible button still renders at its configured size
+  /// and position; only the hit-test surface expands.
+  final bool expandHitArea;
+
   /// Asset path for the back button icon.
   static const String backIconAsset = 'assets/icon/CaretLeft.svg';
 
@@ -92,6 +100,7 @@ class DiVineAppBarLeading extends StatelessWidget {
         semanticLabel: backButtonSemanticLabel ?? 'Go back',
         tooltip: backButtonSemanticLabel == null ? backButtonTooltip : null,
         style: style,
+        expandHitArea: expandHitArea,
       );
       if (backButtonHeroTag != null) {
         return Hero(tag: backButtonHeroTag!, child: button);
@@ -106,6 +115,7 @@ class DiVineAppBarLeading extends StatelessWidget {
         semanticLabel: menuButtonSemanticLabel,
         tooltip: menuButtonTooltip,
         style: style,
+        expandHitArea: expandHitArea,
       );
     }
 
@@ -115,6 +125,7 @@ class DiVineAppBarLeading extends StatelessWidget {
         onPressed: onLeadingPressed,
         semanticLabel: leadingActionSemanticLabel,
         style: style,
+        expandHitArea: expandHitArea,
       );
     }
 
@@ -129,6 +140,7 @@ class _LeadingIconButton extends StatelessWidget {
     required this.onPressed,
     required this.semanticLabel,
     required this.style,
+    required this.expandHitArea,
     this.tooltip,
   });
 
@@ -137,10 +149,11 @@ class _LeadingIconButton extends StatelessWidget {
   final String semanticLabel;
   final String? tooltip;
   final DiVineAppBarStyle style;
+  final bool expandHitArea;
 
   @override
   Widget build(BuildContext context) {
-    return Align(
+    final visibleButton = Align(
       alignment: AlignmentDirectional.centerStart,
       child: Padding(
         padding: EdgeInsetsDirectional.only(start: style.horizontalPadding),
@@ -157,6 +170,19 @@ class _LeadingIconButton extends StatelessWidget {
           borderRadius: style.iconButtonBorderRadius,
         ),
       ),
+    );
+
+    if (!expandHitArea) return visibleButton;
+
+    // Stretch the tap target to the whole leading slot. The inner
+    // [DiVineAppBarIconButton] keeps its semantics for screen readers
+    // but [AbsorbPointer] stops it from receiving pointer events, so
+    // taps don't double-fire and the outer [GestureDetector] is the
+    // single source of truth for hit testing.
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onPressed,
+      child: AbsorbPointer(child: visibleButton),
     );
   }
 }
