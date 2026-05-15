@@ -123,6 +123,25 @@ void main() {
     });
 
     testWidgets(
+      'configures the field to grow from 1 to 5 lines on long input, '
+      'matching the comments-sheet composer',
+      (tester) async {
+        await tester.pumpWidget(buildBar());
+
+        final field = tester.widget<TextField>(
+          find.descendant(
+            of: find.bySemanticsIdentifier('inline_comment_composer_field'),
+            matching: find.byType(TextField),
+          ),
+        );
+
+        expect(field.minLines, 1);
+        expect(field.maxLines, 5);
+        expect(field.keyboardType, TextInputType.multiline);
+      },
+    );
+
+    testWidgets(
       'still hides the send button when the field only has whitespace',
       (tester) async {
         await tester.pumpWidget(buildBar());

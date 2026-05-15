@@ -24,11 +24,6 @@ import 'package:openvine/l10n/l10n.dart';
 class InlineCommentComposerBar extends StatefulWidget {
   const InlineCommentComposerBar({super.key});
 
-  /// Content height above the safe-area bottom inset. Matches
-  /// `VineBottomNav._kTabSlotHeight` so the comment-bar variant of the
-  /// fullscreen feed lines up with the home-feed nav vertically.
-  static const double contentHeight = 72.0;
-
   @override
   State<InlineCommentComposerBar> createState() =>
       _InlineCommentComposerBarState();
@@ -117,19 +112,20 @@ class _InlineCommentComposerBarState extends State<InlineCommentComposerBar> {
                   MediaQuery.viewInsetsOf(context).bottom,
             ),
           ),
-          child: SizedBox(
-            height: InlineCommentComposerBar.contentHeight,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
-              child: _ComposerField(
-                controller: _controller,
-                focusNode: _focusNode,
-                hasText: _hasText,
-                onSubmit: _handleSubmit,
-              ),
+          // Outer pill spacing mirrors the comments-sheet `CommentInput`
+          // (`start: 16, end: 16, top: 16, bottom: 8`) so the inline
+          // composer's vertical rhythm — and its 1-to-5-line growth —
+          // matches exactly. The bar's intrinsic height is no longer
+          // fixed: the pill inside grows with the text field's
+          // `minLines: 1, maxLines: 5` and the surrounding Column resizes
+          // accordingly.
+          child: Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 16, 16, 8),
+            child: _ComposerField(
+              controller: _controller,
+              focusNode: _focusNode,
+              hasText: _hasText,
+              onSubmit: _handleSubmit,
             ),
           ),
         ),
@@ -158,47 +154,68 @@ class _ComposerField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Pill geometry mirrors `CommentInput` in the comments-sheet
+    // composer at `lib/screens/comments/widgets/comment_input.dart`:
+    // a 20-radius DecoratedBox with `minHeight: 48`, a Row aligned to
+    // [CrossAxisAlignment.end] so the send button stays anchored at
+    // the bottom of the pill as the text field grows multi-line, and
+    // a TextField with `TextInputType.multiline` + `minLines: 1,
+    // maxLines: 5` so long comments wrap up to five lines inside the
+    // pill instead of being clipped to a single line.
     return DecoratedBox(
       decoration: BoxDecoration(
         color: VineTheme.iconButtonBackground,
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsetsDirectional.only(start: 16, end: 8),
-              child: Semantics(
-                identifier: 'inline_comment_composer_field',
-                textField: true,
-                label: context.l10n.videoOverlayCommentBarSemanticLabel,
-                child: TextField(
-                  controller: controller,
-                  focusNode: focusNode,
-                  textInputAction: TextInputAction.send,
-                  onSubmitted: (_) => onSubmit(),
-                  // Tap anywhere outside the field (the video, the action
-                  // column, the app bar) dismisses the keyboard — matches
-                  // the DM ConversationView convention.
-                  onTapOutside: (_) =>
-                      FocusManager.instance.primaryFocus?.unfocus(),
-                  cursorColor: VineTheme.tabIndicatorGreen,
-                  style: VineTheme.bodyLargeFont(),
-                  decoration: InputDecoration(
-                    hintText: context.l10n.videoOverlayCommentBarHint,
-                    hintStyle: VineTheme.bodyLargeFont(
-                      color: VineTheme.onSurfaceMuted55,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 48),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsetsDirectional.only(
+                  start: 16,
+                  end: 8,
+                  top: 14,
+                  bottom: 14,
+                ),
+                child: Semantics(
+                  identifier: 'inline_comment_composer_field',
+                  textField: true,
+                  label: context.l10n.videoOverlayCommentBarSemanticLabel,
+                  child: TextField(
+                    controller: controller,
+                    focusNode: focusNode,
+                    keyboardType: TextInputType.multiline,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) => onSubmit(),
+                    // Tap anywhere outside the field (the video, the
+                    // action column, the app bar) dismisses the
+                    // keyboard — matches the DM ConversationView
+                    // convention.
+                    onTapOutside: (_) =>
+                        FocusManager.instance.primaryFocus?.unfocus(),
+                    cursorColor: VineTheme.tabIndicatorGreen,
+                    style: VineTheme.bodyLargeFont(),
+                    decoration: InputDecoration(
+                      hintText: context.l10n.videoOverlayCommentBarHint,
+                      hintStyle: VineTheme.bodyLargeFont(
+                        color: VineTheme.onSurfaceMuted55,
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.zero,
+                      isDense: true,
                     ),
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.zero,
-                    isDense: true,
+                    minLines: 1,
+                    maxLines: 5,
                   ),
                 ),
               ),
             ),
-          ),
-          if (hasText) _SendButton(onPressed: onSubmit),
-        ],
+            if (hasText) _SendButton(onPressed: onSubmit),
+          ],
+        ),
       ),
     );
   }
@@ -212,7 +229,11 @@ class _SendButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsetsDirectional.only(end: 4),
+      // `bottom: 4` floats the button 4 px above the pill's bottom
+      // edge so it stays anchored to the bottom-right corner with a
+      // consistent inset when the pill grows multi-line (matches
+      // `_SendButton` in the comments-sheet composer).
+      padding: const EdgeInsetsDirectional.only(end: 4, bottom: 4),
       child: Semantics(
         identifier: 'inline_comment_composer_send_button',
         button: true,
