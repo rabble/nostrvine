@@ -1615,7 +1615,7 @@ VideoErrorType? _toFeedErrorType(pvp.VideoErrorType? t) => switch (t) {
 };
 
 /// Wraps the right-side action column so that its top fades to
-/// transparent whenever the soft keyboard is on screen.
+/// transparent while the soft keyboard is on screen.
 ///
 /// When the inline comment composer pulls the keyboard up,
 /// [Scaffold.resizeToAvoidBottomInset] shrinks the body and the action
@@ -1623,16 +1623,32 @@ VideoErrorType? _toFeedErrorType(pvp.VideoErrorType? t) => switch (t) {
 /// can end up sitting under the More popover and the back button. The
 /// [ShaderMask] erases the top of the column with a [BlendMode.dstIn]
 /// gradient: fully transparent through the top 20 %, then a linear
-/// fade to fully opaque at the bottom edge. Pass-through when no keyboard is visible
-/// so we don't pay the save-layer cost on the steady-state feed.
+/// fade to fully opaque at the bottom edge. The mask snaps on when
+/// the keyboard begins to show, and fades out linearly over 100 ms
+/// the moment the keyboard begins to hide, then drops the ShaderMask
+/// wrapper entirely so the steady-state feed doesn't carry a save
+/// layer.
 ///
-/// We can't read keyboard visibility from `MediaQuery.viewInsetsOf` here
-/// because Scaffold's `resizeToAvoidBottomInset: true` (the default)
-/// strips `viewInsets.bottom` from the body's MediaQuery (it has already
-/// shrunk the body to avoid the keyboard, so "the body shouldn't need to
-/// know"). Reading the inset off the [FlutterView] via [WidgetsBinding]
-/// — combined with [WidgetsBindingObserver.didChangeMetrics] — is the
-/// supported escape hatch.
+/// The trigger is the *direction* of `viewInsets.bottom`, not whether
+/// it's zero. On iOS and Android the platform animates the keyboard
+/// inset over the OS's own animation curve (~250 ms) and Flutter
+/// fires [WidgetsBindingObserver.didChangeMetrics] each frame.
+/// "First decrease after a steady non-zero" is the start of the hide
+/// animation, "first rise from zero" is the start of the show
+/// animation — that lines the column fade up with the platform
+/// keyboard animation in parallel rather than running it sequentially
+/// after the keyboard is already gone.
+///
+/// Focus alone isn't a usable signal: on macOS / desktop a text
+/// input can take focus by click without the platform keyboard ever
+/// appearing, so a focus-driven mask would activate when the column
+/// hasn't actually slid up.
+///
+/// We read the inset off the [FlutterView] rather than `MediaQuery`
+/// because Scaffold's `resizeToAvoidBottomInset: true` strips
+/// `viewInsets.bottom` from the body's MediaQuery (the body has
+/// already shrunk to avoid the keyboard, so "the body shouldn't need
+/// to know").
 @visibleForTesting
 class KeyboardAwareTopFade extends StatefulWidget {
   @visibleForTesting
@@ -1645,60 +1661,123 @@ class KeyboardAwareTopFade extends StatefulWidget {
 }
 
 class _KeyboardAwareTopFadeState extends State<KeyboardAwareTopFade>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
+  /// Linear fade-out applied to the mask when the keyboard begins to
+  /// hide. Picked to overlap the platform keyboard's dismiss
+  /// animation (~250 ms) — the column is fully unmasked well before
+  /// the keyboard finishes sliding off-screen. The fade-in is
+  /// instantaneous because the AppBar collision happens immediately
+  /// as the column slides up.
+  static const Duration _fadeOutDuration = Duration(milliseconds: 100);
+
+  /// Last sampled keyboard inset, used to infer the direction of
+  /// change between [didChangeMetrics] frames.
+  double _lastInset = 0;
+
+  /// Whether the keyboard is currently visible (or animating in).
+  /// Flips back to `false` the moment the inset starts decreasing
+  /// from a non-zero value.
   bool _keyboardVisible = false;
+
+  late final AnimationController _maskStrength;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _maskStrength = AnimationController(
+      vsync: this,
+      duration: _fadeOutDuration,
+      value: 0,
+    )..addStatusListener(_onMaskStatusChanged);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _refreshKeyboardVisibility();
+    // Sync initial state in case the keyboard is already up when
+    // this widget mounts (rare — screen recreated mid-animation).
+    final inset = View.of(context).viewInsets.bottom;
+    if (inset > 0 && !_keyboardVisible) {
+      _lastInset = inset;
+      _keyboardVisible = true;
+      _maskStrength.value = 1;
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _maskStrength
+      ..removeStatusListener(_onMaskStatusChanged)
+      ..dispose();
     super.dispose();
   }
 
   @override
   void didChangeMetrics() {
-    _refreshKeyboardVisibility();
+    if (!mounted) return;
+    final inset = View.of(context).viewInsets.bottom;
+    final previous = _lastInset;
+    _lastInset = inset;
+
+    if (_keyboardVisible) {
+      // Already up — only react to the first decrease, which is the
+      // start of the hide animation. Subsequent decreasing frames
+      // during the same animation no-op.
+      if (inset < previous) {
+        setState(() => _keyboardVisible = false);
+        _maskStrength.reverse();
+      }
+    } else {
+      // Hidden — any rise from a lower value into the positive range
+      // is the start of the show animation. Snap the mask on so the
+      // column is masked by the time it finishes sliding up.
+      if (inset > previous && inset > 0) {
+        setState(() => _keyboardVisible = true);
+        _maskStrength.value = 1;
+      }
+    }
   }
 
-  void _refreshKeyboardVisibility() {
-    if (!mounted) return;
-    final visible = View.of(context).viewInsets.bottom > 0;
-    if (visible != _keyboardVisible) {
-      setState(() => _keyboardVisible = visible);
+  void _onMaskStatusChanged(AnimationStatus status) {
+    // Drop the ShaderMask wrapper once the fade-out completes so the
+    // steady-state feed isn't paying for an idle save layer.
+    if (status == AnimationStatus.dismissed && mounted) {
+      setState(() {});
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (!_keyboardVisible) return widget.child;
+    if (_maskStrength.value == 0) return widget.child;
 
-    return ShaderMask(
-      blendMode: BlendMode.dstIn,
-      shaderCallback: (Rect bounds) {
-        return const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          // Only the alpha matters with BlendMode.dstIn — the
-          // gradient's colors are otherwise irrelevant. The opaque
-          // colour at the bottom keeps the column fully visible;
-          // transparent at the top erases the part that would
-          // collide with the AppBar.
-          colors: [Colors.transparent, VineTheme.whiteText],
-          stops: [0.2, 1.0],
-        ).createShader(bounds);
-      },
+    return AnimatedBuilder(
+      animation: _maskStrength,
       child: widget.child,
+      builder: (context, child) {
+        // Only the alpha matters with BlendMode.dstIn. Interpolating the
+        // top stop between opaque-white (no fade) and transparent
+        // (full fade) lets a single animation value drive the strength
+        // of the mask without changing the gradient shape.
+        final topColor = Color.lerp(
+          VineTheme.whiteText,
+          Colors.transparent,
+          _maskStrength.value,
+        )!;
+        return ShaderMask(
+          blendMode: BlendMode.dstIn,
+          shaderCallback: (Rect bounds) {
+            return LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [topColor, VineTheme.whiteText],
+              stops: const [0.2, 1.0],
+            ).createShader(bounds);
+          },
+          child: child,
+        );
+      },
     );
   }
 }
