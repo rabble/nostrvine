@@ -141,7 +141,7 @@ class VideoEvent {
       final tagValue = (tag.length > 1) ? tag[1] : '';
 
       developer.log(
-        '🔍 DEBUG: Tag [$i]: $tagName = "$tagValue" (${tag.length} elements)',
+        '🔍 DEBUG: Tag [$i]: $tagName (${tag.length} elements)',
         name: 'VideoEvent',
       );
 
@@ -606,9 +606,14 @@ class VideoEvent {
       developer.log('🔍 Event Pubkey: ${event.pubkey}', name: 'VideoEvent');
       developer.log('🔍 Thumbnail URL: $thumbnailUrl', name: 'VideoEvent');
       developer.log('🔍 Video URL: $videoUrl', name: 'VideoEvent');
-      developer.log('🔍 Full Event Tags JSON:', name: 'VideoEvent');
+      developer.log('🔍 Event tag summary:', name: 'VideoEvent');
       for (var i = 0; i < event.tags.length; i++) {
-        developer.log('🔍   Tag[$i]: ${event.tags[i]}', name: 'VideoEvent');
+        final tag = event.tags[i];
+        final tagName = tag.isNotEmpty ? tag.first : '<empty>';
+        developer.log(
+          '🔍   Tag[$i]: $tagName (${tag.length} elements)',
+          name: 'VideoEvent',
+        );
       }
       developer.log('🔍 Event Content: ${event.content}', name: 'VideoEvent');
       developer.log(
