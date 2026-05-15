@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
+import 'package:openvine/observability/reportable_error.dart';
 
 class _MockDmRepository extends Mock implements DmRepository {}
 
@@ -1448,7 +1449,13 @@ void main() {
                 equals([rumorId1]),
               ),
         ],
-        errors: () => [isA<StateError>()],
+        errors: () => [
+          isA<Reportable<Object>>().having(
+            (r) => r.unwrap(),
+            'unwrap',
+            isA<StateError>(),
+          ),
+        ],
       );
 
       blocTest<ConversationBloc, ConversationState>(

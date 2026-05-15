@@ -10,6 +10,7 @@ import 'package:dm_repository/dm_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 import 'package:models/models.dart';
+import 'package:openvine/observability/reportable_error.dart';
 import 'package:uuid/uuid.dart';
 
 part 'conversation_event.dart';
@@ -235,7 +236,10 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     }
 
     if (lastError != null) {
-      addError(lastError, lastStackTrace);
+      addError(
+        Reportable(lastError, context: '_onSelfWrapRecoveryRequested'),
+        lastStackTrace,
+      );
     }
 
     if (stillFailing.isEmpty) {

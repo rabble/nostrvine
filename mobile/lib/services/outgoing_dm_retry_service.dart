@@ -7,6 +7,8 @@ import 'dart:async';
 import 'package:db_client/db_client.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:meta/meta.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:openvine/services/outgoing_dm_retry_service_reportable_sites.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Backoff configuration for [OutgoingDmRetryService].
@@ -69,12 +71,14 @@ class OutgoingDmRetryService {
     required Stream<bool> appForegroundStream,
     OutgoingDmRetryConfig retryConfig = const OutgoingDmRetryConfig(),
     DateTime Function() now = DateTime.now,
+    CrashReportingService? crashReporting,
   }) : _dmRepository = dmRepository,
        _dao = outgoingDmsDao,
        _userPubkey = userPubkey,
        _appForegroundStream = appForegroundStream,
        _retryConfig = retryConfig,
-       _now = now;
+       _now = now,
+       _crashReporting = crashReporting ?? CrashReportingService.instance;
 
   final DmRepository _dmRepository;
   final OutgoingDmsDao _dao;
@@ -82,6 +86,7 @@ class OutgoingDmRetryService {
   final Stream<bool> _appForegroundStream;
   final OutgoingDmRetryConfig _retryConfig;
   final DateTime Function() _now;
+  final CrashReportingService _crashReporting;
 
   StreamSubscription<bool>? _foregroundSubscription;
   bool _isInitialized = false;
@@ -217,6 +222,14 @@ class OutgoingDmRetryService {
                 error: e,
                 stackTrace: stackTrace,
               );
+              unawaited(
+                _crashReporting.recordError(
+                  e,
+                  stackTrace,
+                  reason: OutgoingDmRetryServiceReportableSites
+                      .perRowUnexpectedThrow,
+                ),
+              );
             }
           }
         } else if (row.recipientWrapStatus == OutgoingWrapStatus.failed) {
@@ -244,6 +257,13 @@ class OutgoingDmRetryService {
         category: LogCategory.system,
         error: e,
         stackTrace: stackTrace,
+      );
+      unawaited(
+        _crashReporting.recordError(
+          e,
+          stackTrace,
+          reason: OutgoingDmRetryServiceReportableSites.sweepTopLevel,
+        ),
       );
     } finally {
       _isSweeping = false;

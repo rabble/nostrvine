@@ -71,6 +71,7 @@ import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/crosspost_api_client.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/divine_host_filter_service.dart';
@@ -2468,6 +2469,15 @@ DmRepository dmRepository(Ref ref) {
     conversationsDao: db.conversationsDao,
     outgoingDmsDao: db.outgoingDmsDao,
     syncState: DmSyncState(prefs),
+    errorReporter: (error, stackTrace, {required site}) {
+      unawaited(
+        CrashReportingService.instance.recordError(
+          error,
+          stackTrace,
+          reason: 'DmRepository.$site',
+        ),
+      );
+    },
   );
 
   ref.onDispose(repository.stopListening);

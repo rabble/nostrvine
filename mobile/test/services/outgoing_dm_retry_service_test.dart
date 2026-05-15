@@ -10,11 +10,16 @@ import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show NIP17SendResult;
+import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/outgoing_dm_retry_service.dart';
+import 'package:openvine/services/outgoing_dm_retry_service_reportable_sites.dart';
 
 class _MockDmRepository extends Mock implements DmRepository {}
 
 class _MockOutgoingDmsDao extends Mock implements OutgoingDmsDao {}
+
+class _MockCrashReportingService extends Mock
+    implements CrashReportingService {}
 
 const _ownerPubkey =
     '0000000000000000000000000000000000000000000000000000000000000001';
@@ -61,6 +66,10 @@ void main() {
   late _MockOutgoingDmsDao dao;
   late StreamController<bool> foregroundController;
 
+  setUpAll(() {
+    registerFallbackValue(StackTrace.empty);
+  });
+
   setUp(() {
     dmRepository = _MockDmRepository();
     dao = _MockOutgoingDmsDao();
@@ -83,6 +92,7 @@ void main() {
   OutgoingDmRetryService buildService({
     OutgoingDmRetryConfig retryConfig = const OutgoingDmRetryConfig(),
     DateTime Function()? now,
+    CrashReportingService? crashReporting,
   }) {
     return OutgoingDmRetryService(
       dmRepository: dmRepository,
@@ -91,6 +101,7 @@ void main() {
       appForegroundStream: foregroundController.stream,
       retryConfig: retryConfig,
       now: now ?? () => DateTime.utc(2026, 5, 10, 12),
+      crashReporting: crashReporting,
     );
   }
 
@@ -629,6 +640,76 @@ void main() {
             () => dao.getRetryableForOwner(
               ownerPubkey: _otherOwner,
               maxRetries: any(named: 'maxRetries'),
+            ),
+          ).called(1);
+        },
+      );
+    });
+
+    group('crash reporting', () {
+      late _MockCrashReportingService crashReporting;
+
+      setUp(() {
+        crashReporting = _MockCrashReportingService();
+        when(
+          () => crashReporting.recordError(
+            any<dynamic>(),
+            any<StackTrace?>(),
+            reason: any(named: 'reason'),
+          ),
+        ).thenAnswer((_) async {});
+      });
+
+      test(
+        'per-row recoverSelfWrap throw reports to CrashReportingService',
+        () async {
+          final row = _row(
+            id: 'rumor-boom',
+            recipient: OutgoingWrapStatus.sent,
+            self: OutgoingWrapStatus.failed,
+          );
+          when(
+            () => dao.getRetryableForOwner(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenAnswer((_) async => [row]);
+          when(
+            () => dmRepository.recoverSelfWrap(rumorId: any(named: 'rumorId')),
+          ).thenThrow(Exception('drift busy'));
+
+          final service = buildService(crashReporting: crashReporting);
+          await service.sweep();
+
+          verify(
+            () => crashReporting.recordError(
+              any<dynamic>(),
+              any<StackTrace?>(),
+              reason:
+                  OutgoingDmRetryServiceReportableSites.perRowUnexpectedThrow,
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'sweep-level throw reports to CrashReportingService',
+        () async {
+          when(
+            () => dao.getRetryableForOwner(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenThrow(Exception('drift connection lost'));
+
+          final service = buildService(crashReporting: crashReporting);
+          await service.sweep();
+
+          verify(
+            () => crashReporting.recordError(
+              any<dynamic>(),
+              any<StackTrace?>(),
+              reason: OutgoingDmRetryServiceReportableSites.sweepTopLevel,
             ),
           ).called(1);
         },
