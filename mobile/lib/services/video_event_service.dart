@@ -2410,7 +2410,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
             category: LogCategory.video,
           );
           Log.verbose(
-            '  - Tags: ${event.tags}',
+            '  - Tags: ${_formatEventTagsForLog(event.tags)}',
             name: 'VideoEventService',
             category: LogCategory.video,
           );

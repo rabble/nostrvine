@@ -124,12 +124,7 @@ List<List<String>> _buildMentionPTags(
       continue;
     }
 
-    tags.add([
-      'p',
-      normalizedPubkey,
-      collaboratorInviteRelayHint,
-      'mention',
-    ]);
+    tags.add(['p', normalizedPubkey, collaboratorInviteRelayHint, 'mention']);
   }
 
   return tags;
@@ -186,26 +181,6 @@ class VideoEventPublisher {
   Duration get currentOuterPublishTimeout =>
       outerPublishTimeoutFor(_nostrService.configuredRelayCount);
 
-  Map<String, dynamic> _sanitizeEventJsonForLog(Map<String, dynamic> eventMap) {
-    final rawTags = eventMap['tags'];
-    if (rawTags is! List) {
-      return eventMap;
-    }
-
-    final sanitizedTags = rawTags
-        .map((rawTag) {
-          if (rawTag is! List) {
-            return rawTag;
-          }
-
-          final tagParts = rawTag.map((part) => part.toString()).toList();
-          return sanitizeTagForLog(tagParts);
-        })
-        .toList(growable: false);
-
-    return <String, dynamic>{...eventMap, 'tags': sanitizedTags};
-  }
-
   void _addReplyTags(List<List<String>> tags, VideoReplyContext context) {
     tags
       ..add(['E', context.rootEventId, '', context.rootAuthorPubkey])
@@ -227,10 +202,7 @@ class VideoEventPublisher {
           context.parentAuthorPubkey ?? context.rootAuthorPubkey,
         ])
         ..add(['k', EventKind.comment.toString()])
-        ..add([
-          'p',
-          context.parentAuthorPubkey ?? context.rootAuthorPubkey,
-        ]);
+        ..add(['p', context.parentAuthorPubkey ?? context.rootAuthorPubkey]);
       return;
     }
 
@@ -365,7 +337,7 @@ class VideoEventPublisher {
 
       // Log the raw JSON representation
       try {
-        final eventMap = _sanitizeEventJsonForLog(event.toJson());
+        final eventMap = sanitizeEventJsonForLog(event.toJson());
         final jsonStr = jsonEncode(eventMap);
         Log.info(
           '📋 FULL EVENT JSON:',
@@ -609,12 +581,10 @@ class VideoEventPublisher {
       if (replyContext != null) {
         _addReplyTags(tags, replyContext);
         if (addReplyToFeed) {
-          tags.add(
-            const [
-              videoReplyVisibilityTagName,
-              videoReplyVisibilityFeedValue,
-            ],
-          );
+          tags.add(const [
+            videoReplyVisibilityTagName,
+            videoReplyVisibilityFeedValue,
+          ]);
         }
       }
 
