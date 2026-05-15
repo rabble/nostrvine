@@ -62,17 +62,17 @@ class _VideoMetadataEditBottomBarState
           File(widget.pendingThumbnailPath!).delete().ignore();
         }
         if (mounted) {
-          context.pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            DivineSnackbarContainer.snackBar(
-              result.inviteFailureCount == 0
-                  ? context.l10n.shareMenuVideoUpdated
-                  : context.l10n.shareMenuVideoUpdatedWithInviteFailures(
-                      result.inviteFailureCount,
-                    ),
-              error: result.inviteFailureCount > 0,
-            ),
+          final messenger = ScaffoldMessenger.of(context);
+          final snackBar = DivineSnackbarContainer.snackBar(
+            result.inviteFailureCount == 0
+                ? context.l10n.shareMenuVideoUpdated
+                : context.l10n.shareMenuVideoUpdatedWithInviteFailures(
+                    result.inviteFailureCount,
+                  ),
+            error: result.inviteFailureCount > 0,
           );
+          context.pop();
+          messenger.showSnackBar(snackBar);
         }
       } else if (result is VideoUpdateFailure) {
         throw result.error;
@@ -138,12 +138,12 @@ class _VideoMetadataEditBottomBarState
         );
 
         if (mounted) {
-          context.pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            DivineSnackbarContainer.snackBar(
-              context.l10n.shareMenuVideoDeletionRequested,
-            ),
+          final messenger = ScaffoldMessenger.of(context);
+          final snackBar = DivineSnackbarContainer.snackBar(
+            context.l10n.shareMenuVideoDeletionRequested,
           );
+          context.pop();
+          messenger.showSnackBar(snackBar);
         }
       } else {
         if (mounted) {
