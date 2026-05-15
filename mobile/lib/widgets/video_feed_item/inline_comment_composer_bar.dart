@@ -220,17 +220,42 @@ class _SendButton extends StatelessWidget {
         child: SizedBox.square(
           dimension: 40,
           child: DecoratedBox(
-            decoration: const BoxDecoration(
-              color: VineTheme.tabIndicatorGreen,
-              shape: BoxShape.circle,
+            // Spec: Figma node 2018:29838 ("primary"). Native size is
+            // 48 with 20 radius / 32 icon / 8 padding. The composition
+            // at node 14368:75902 scales it to a 40 px slot at
+            // 40 / 48 = 0.833 × — radius becomes 16.667, icon becomes
+            // 26.667. The 20 / 48 = 41.7 % radius ratio is a heavily
+            // rounded rectangle, not a circle (a circle would need
+            // 50 %). Background is `primary/primary` (#27C58B =
+            // [VineTheme.primary]). Two stacked sub-pixel drop shadows
+            // give a faint elevation cue against the pill.
+            decoration: BoxDecoration(
+              color: VineTheme.primary,
+              borderRadius: BorderRadius.circular(16.667),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x1A000000),
+                  offset: Offset(0.333, 0.333),
+                  blurRadius: 0.25,
+                ),
+                BoxShadow(
+                  color: Color(0x1A000000),
+                  offset: Offset(0.833, 0.833),
+                  blurRadius: 0.417,
+                ),
+              ],
             ),
             child: IconButton(
               onPressed: onPressed,
               padding: EdgeInsets.zero,
-              icon: const Icon(
-                Icons.arrow_upward,
-                color: VineTheme.whiteText,
-                size: 20,
+              icon: const DivineIcon(
+                icon: DivineIconName.arrowUp,
+                // The Figma vector at node 2018:29838 fills with
+                // `primary/on-primary` (#003824 = dark green), the
+                // M3-convention contrast color on a primary surface —
+                // NOT white. Tested against the rendered Figma asset.
+                color: VineTheme.onPrimaryButton,
+                size: 26.667,
               ),
             ),
           ),
