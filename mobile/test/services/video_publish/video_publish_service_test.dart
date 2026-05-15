@@ -382,6 +382,56 @@ void main() {
       });
 
       test(
+        'collaborator invites include the uploaded thumbnail URL',
+        () async {
+          const thumbnailUrl = 'https://cdn.divine.video/thumbs/test_video.jpg';
+          final readyUpload = _createPendingUpload(
+            status: UploadStatus.readyToPublish,
+            thumbnailPath: thumbnailUrl,
+          );
+          _setupSuccessfulPublish(
+            mockAuthService: mockAuthService,
+            mockUploadManager: mockUploadManager,
+            mockDraftService: mockDraftService,
+            mockVideoEventPublisher: mockVideoEventPublisher,
+            readyUpload: readyUpload,
+          );
+          when(
+            () => mockCollaboratorInviteService.sendInvites(
+              collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
+              creatorPubkey: any(named: 'creatorPubkey'),
+              videoAddress: any(named: 'videoAddress'),
+              title: any(named: 'title'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              relayHint: any(named: 'relayHint'),
+            ),
+          ).thenAnswer(
+            (_) async => const CollaboratorInviteBatchResult(results: {}),
+          );
+
+          final draft = _createTestDraft(
+            collaboratorPubkeys: {
+              'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+            },
+          );
+
+          final result = await service.publishVideo(draft: draft);
+
+          expect(result, isA<PublishSuccess>());
+          verify(
+            () => mockCollaboratorInviteService.sendInvites(
+              collaboratorPubkeys: draft.collaboratorPubkeys,
+              creatorPubkey: 'test_pubkey',
+              videoAddress: '34236:test_pubkey:test_video_id',
+              title: 'Test Video',
+              thumbnailUrl: thumbnailUrl,
+              relayHint: 'wss://relay.divine.video',
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
         'publishes video event before sending collaborator invites',
         () async {
           _setupSuccessfulPublish(
@@ -550,11 +600,17 @@ void main() {
         () async {
           const collaboratorPubkey =
               'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+          const thumbnailUrl = 'https://cdn.divine.video/thumbs/test_video.jpg';
+          final readyUpload = _createPendingUpload(
+            status: UploadStatus.readyToPublish,
+            thumbnailPath: thumbnailUrl,
+          );
           _setupSuccessfulPublish(
             mockAuthService: mockAuthService,
             mockUploadManager: mockUploadManager,
             mockDraftService: mockDraftService,
             mockVideoEventPublisher: mockVideoEventPublisher,
+            readyUpload: readyUpload,
           );
           when(
             () => mockCollaboratorInviteService.sendInvites(
@@ -595,6 +651,7 @@ void main() {
             '34236:test_pubkey:test_video_id',
           );
           expect(success.inviteWarnings.single.title, 'Test Video');
+          expect(success.inviteWarnings.single.thumbnailUrl, thumbnailUrl);
           expect(
             success.inviteWarnings.single.relayHint,
             'wss://relay.divine.video',
@@ -1494,6 +1551,7 @@ DivineVideoDraft _createTestDraft({
 PendingUpload _createPendingUpload({
   required UploadStatus status,
   String? errorMessage,
+  String? thumbnailPath,
 }) {
   return PendingUpload(
     id: 'test_upload_id',
@@ -1505,6 +1563,7 @@ PendingUpload _createPendingUpload({
     uploadProgress: status == UploadStatus.readyToPublish ? 1.0 : 0.5,
     videoId: 'test_video_id',
     cdnUrl: 'https://test.cdn/video.mp4',
+    thumbnailPath: thumbnailPath,
   );
 }
 
@@ -1513,7 +1572,13 @@ void _setupSuccessfulPublish({
   required MockUploadManager mockUploadManager,
   required MockDraftStorageService mockDraftService,
   required MockVideoEventPublisher mockVideoEventPublisher,
+  PendingUpload? readyUpload,
 }) {
+  final upload =
+      readyUpload ??
+      _createPendingUpload(
+        status: UploadStatus.readyToPublish,
+      );
   when(() => mockAuthService.isAuthenticated).thenReturn(true);
   when(() => mockAuthService.currentPublicKeyHex).thenReturn('test_pubkey');
   when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
@@ -1526,11 +1591,11 @@ void _setupSuccessfulPublish({
       onProgress: any(named: 'onProgress'),
     ),
   ).thenAnswer(
-    (_) async => _createPendingUpload(status: UploadStatus.readyToPublish),
+    (_) async => upload,
   );
   when(
     () => mockUploadManager.getUpload(any()),
-  ).thenReturn(_createPendingUpload(status: UploadStatus.readyToPublish));
+  ).thenReturn(upload);
   when(
     () => mockVideoEventPublisher.publishVideoEvent(
       upload: any(named: 'upload'),

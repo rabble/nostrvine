@@ -285,6 +285,7 @@ class VideoPublishService {
 
     final videoKind = NIP71VideoKinds.getPreferredAddressableKind();
     final videoAddress = '$videoKind:$creatorPubkey:$videoId';
+    final thumbnailUrl = _uploadedThumbnailUrl(upload);
     const relayHint = 'wss://relay.divine.video';
 
     try {
@@ -293,6 +294,7 @@ class VideoPublishService {
         creatorPubkey: creatorPubkey,
         videoAddress: videoAddress,
         title: draft.title,
+        thumbnailUrl: thumbnailUrl,
         relayHint: relayHint,
       );
       if (result.hasFailures) {
@@ -309,6 +311,7 @@ class VideoPublishService {
               creatorPubkey: creatorPubkey,
               videoAddress: videoAddress,
               title: draft.title,
+              thumbnailUrl: thumbnailUrl,
               relayHint: relayHint,
               error: entry.value.error,
             ),
@@ -326,6 +329,7 @@ class VideoPublishService {
               creatorPubkey: creatorPubkey,
               videoAddress: videoAddress,
               title: draft.title,
+              thumbnailUrl: thumbnailUrl,
               relayHint: relayHint,
               error: e.toString(),
             ),
@@ -361,6 +365,15 @@ class VideoPublishService {
       );
       return CollaboratorInviteResult(success: false, error: e.toString());
     }
+  }
+
+  String? _uploadedThumbnailUrl(PendingUpload upload) {
+    final value = upload.thumbnailPath?.trim();
+    if (value == null || value.isEmpty) return null;
+    final uri = Uri.tryParse(value);
+    if (uri == null || !uri.hasScheme || uri.host.isEmpty) return null;
+    if (uri.scheme != 'https' && uri.scheme != 'http') return null;
+    return value;
   }
 
   /// Gets existing upload from background ID, reuses a matching upload
