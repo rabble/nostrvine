@@ -43,17 +43,26 @@ Future<void> _pump(
   VoidCallback? onTap,
   VoidCallback? onProfileTap,
   VoidCallback? onFollowBack,
+  Locale? locale,
+  double textScaleFactor = 1,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
+      locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
-        body: ActorNotificationRow(
-          notification: notification,
-          onTap: onTap ?? () {},
-          onProfileTap: onProfileTap ?? () {},
-          onFollowBack: onFollowBack,
+        body: MediaQuery(
+          data: MediaQueryData(textScaler: TextScaler.linear(textScaleFactor)),
+          child: SizedBox(
+            width: 320,
+            child: ActorNotificationRow(
+              notification: notification,
+              onTap: onTap ?? () {},
+              onProfileTap: onProfileTap ?? () {},
+              onFollowBack: onFollowBack,
+            ),
+          ),
         ),
       ),
     ),
@@ -120,10 +129,7 @@ void main() {
       testWidgets('"{actor} replied to your comment" for reply', (
         tester,
       ) async {
-        await _pump(
-          tester,
-          notification: _actor(type: NotificationKind.reply),
-        );
+        await _pump(tester, notification: _actor(type: NotificationKind.reply));
 
         expect(
           find.textContaining(
@@ -131,6 +137,31 @@ void main() {
           ),
           findsOneWidget,
         );
+      });
+
+      testWidgets(
+        'uses locale-correct single-actor wording for Japanese mention text',
+        (tester) async {
+          await _pump(
+            tester,
+            locale: const Locale('ja'),
+            notification: _actor(type: NotificationKind.mention),
+          );
+
+          expect(find.textContaining('Aliceさんがあなたをメンションしました'), findsOneWidget);
+        },
+      );
+
+      testWidgets('uses locale-correct reply wording for Japanese reply text', (
+        tester,
+      ) async {
+        await _pump(
+          tester,
+          locale: const Locale('ja'),
+          notification: _actor(type: NotificationKind.reply),
+        );
+
+        expect(find.textContaining('Aliceさんがあなたのコメントに返信しました'), findsOneWidget);
       });
 
       testWidgets('Follow back button when not yet following', (tester) async {
@@ -161,16 +192,10 @@ void main() {
           // message text below would re-wrap when the button appears or
           // disappears.
           final avatarRow = find
-              .ancestor(
-                of: find.byType(UserAvatar),
-                matching: find.byType(Row),
-              )
+              .ancestor(of: find.byType(UserAvatar), matching: find.byType(Row))
               .first;
           expect(
-            find.descendant(
-              of: avatarRow,
-              matching: find.byType(DivineButton),
-            ),
+            find.descendant(of: avatarRow, matching: find.byType(DivineButton)),
             findsOneWidget,
           );
         },
@@ -179,12 +204,19 @@ void main() {
       testWidgets('no Follow back button when already following back', (
         tester,
       ) async {
-        await _pump(
-          tester,
-          notification: _actor(isFollowingBack: true),
-        );
+        await _pump(tester, notification: _actor(isFollowingBack: true));
 
         expect(find.text(_l10n.notificationFollowBack), findsNothing);
+      });
+
+      testWidgets('stacks Follow back below the avatar at large text sizes', (
+        tester,
+      ) async {
+        await _pump(tester, notification: _actor(), textScaleFactor: 2);
+
+        final avatar = tester.getTopLeft(find.byType(UserAvatar));
+        final button = tester.getTopLeft(find.byType(DivineButton));
+        expect(button.dy, greaterThan(avatar.dy));
       });
 
       testWidgets('comment text for mention with commentText', (tester) async {
@@ -199,55 +231,49 @@ void main() {
         expect(find.textContaining('Hey check this out'), findsOneWidget);
       });
 
-      testWidgets(
-        'renders $NotificationCommentQuote when commentText is set',
-        (tester) async {
-          await _pump(
-            tester,
-            notification: _actor(
-              type: NotificationKind.reply,
-              commentText: 'I guess xd',
-            ),
-          );
+      testWidgets('renders $NotificationCommentQuote when commentText is set', (
+        tester,
+      ) async {
+        await _pump(
+          tester,
+          notification: _actor(
+            type: NotificationKind.reply,
+            commentText: 'I guess xd',
+          ),
+        );
 
-          expect(find.byType(NotificationCommentQuote), findsOneWidget);
-        },
-      );
+        expect(find.byType(NotificationCommentQuote), findsOneWidget);
+      });
 
-      testWidgets(
-        'timestamp moves to the quote when commentText is present',
-        (tester) async {
-          // The timestamp must anchor to the visual end of the row, so
-          // when a comment quote sits below the message the trailing
-          // relative time goes inside the quote (not on the message
-          // line). This locks the rendering contract that fixes the
-          // "2d sandwiched between message and quote" layout regression.
-          await _pump(
-            tester,
-            notification: _actor(
-              type: NotificationKind.reply,
-              commentText: 'I guess xd',
-            ),
-          );
+      testWidgets('timestamp moves to the quote when commentText is present', (
+        tester,
+      ) async {
+        // The timestamp must anchor to the visual end of the row, so
+        // when a comment quote sits below the message the trailing
+        // relative time goes inside the quote (not on the message
+        // line). This locks the rendering contract that fixes the
+        // "2d sandwiched between message and quote" layout regression.
+        await _pump(
+          tester,
+          notification: _actor(
+            type: NotificationKind.reply,
+            commentText: 'I guess xd',
+          ),
+        );
 
-          final quoteWidget = tester.widget<NotificationCommentQuote>(
-            find.byType(NotificationCommentQuote),
-          );
-          expect(quoteWidget.timestamp, isNotNull);
-          expect(quoteWidget.timestamp, isNotEmpty);
-        },
-      );
+        final quoteWidget = tester.widget<NotificationCommentQuote>(
+          find.byType(NotificationCommentQuote),
+        );
+        expect(quoteWidget.timestamp, isNotNull);
+        expect(quoteWidget.timestamp, isNotEmpty);
+      });
     });
 
     group('interactions', () {
       testWidgets('tap on row fires onTap', (tester) async {
         var tapped = false;
 
-        await _pump(
-          tester,
-          notification: _actor(),
-          onTap: () => tapped = true,
-        );
+        await _pump(tester, notification: _actor(), onTap: () => tapped = true);
 
         await tester.tap(find.byType(ActorNotificationRow));
         await tester.pump();
@@ -268,6 +294,21 @@ void main() {
         await tester.pump();
 
         expect(tapped, isTrue);
+      });
+
+      testWidgets('does not overflow at large text sizes', (tester) async {
+        await _pump(
+          tester,
+          notification: _actor(
+            commentText:
+                'This is a longer quoted comment to exercise the max-font '
+                'layout path.',
+          ),
+          textScaleFactor: 2,
+        );
+        await tester.pump();
+
+        expect(tester.takeException(), isNull);
       });
     });
   });

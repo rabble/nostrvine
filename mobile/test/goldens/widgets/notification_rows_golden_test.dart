@@ -1,0 +1,126 @@
+// ABOUTME: Golden tests for notification rows, covering the default and
+// ABOUTME: large-text layouts that were stabilized for issues #4206 and #3387.
+
+import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:golden_toolkit/golden_toolkit.dart';
+import 'package:models/models.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/notifications/widgets/actor_notification_row.dart';
+import 'package:openvine/notifications/widgets/video_notification_row.dart';
+
+const _alice = ActorInfo(
+  pubkey: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+  displayName: 'Alice',
+);
+
+const _bob = ActorInfo(
+  pubkey: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+  displayName: 'Bob',
+);
+
+void main() {
+  group('Notification row goldens', () {
+    setUpAll(() async {
+      await loadAppFonts();
+    });
+
+    testGoldens('notification rows render default layout', (tester) async {
+      await tester.pumpWidgetBuilder(
+        _scenarioColumn(textScaleFactor: 1),
+        wrapper: _appWrapper,
+        surfaceSize: const Size(420, 560),
+      );
+      await tester.pumpAndSettle();
+
+      await screenMatchesGolden(tester, 'notification_rows_default');
+    });
+
+    testGoldens('notification rows render max-font layout', (tester) async {
+      await tester.pumpWidgetBuilder(
+        _scenarioColumn(textScaleFactor: 2),
+        wrapper: _appWrapper,
+        surfaceSize: const Size(420, 760),
+      );
+      await tester.pumpAndSettle();
+
+      await screenMatchesGolden(tester, 'notification_rows_max_font');
+    });
+  });
+}
+
+Widget _scenarioColumn({required double textScaleFactor}) {
+  final actorNotification = ActorNotification(
+    id: 'follow-1',
+    type: NotificationKind.follow,
+    actor: _alice,
+    timestamp: DateTime.utc(2026, 5, 15, 12),
+  );
+  final videoNotification = VideoNotification(
+    id: 'comment-1',
+    type: NotificationKind.comment,
+    videoEventId:
+        '1111111111111111111111111111111111111111111111111111111111111111',
+    actors: const [_alice, _bob],
+    totalCount: 2,
+    timestamp: DateTime.utc(2026, 5, 15, 12),
+    videoTitle: 'A longer title that exercises the responsive row layout',
+    commentText:
+        'This is a longer preview comment that should still render cleanly.',
+  );
+
+  return Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      _scenario(
+        textScaleFactor: textScaleFactor,
+        child: ActorNotificationRow(
+          notification: actorNotification,
+          onTap: () {},
+          onProfileTap: () {},
+          onFollowBack: () {},
+        ),
+      ),
+      const SizedBox(height: 16),
+      _scenario(
+        textScaleFactor: textScaleFactor,
+        child: VideoNotificationRow(
+          notification: videoNotification,
+          onTap: () {},
+          onProfileTap: () {},
+          onThumbnailTap: () {},
+        ),
+      ),
+    ],
+  );
+}
+
+Widget _scenario({
+  required double textScaleFactor,
+  required Widget child,
+}) {
+  return SizedBox(
+    width: 320,
+    child: MediaQuery(
+      data: MediaQueryData(
+        textScaler: TextScaler.linear(textScaleFactor),
+      ),
+      child: DecoratedBox(
+        decoration: const BoxDecoration(color: VineTheme.backgroundColor),
+        child: child,
+      ),
+    ),
+  );
+}
+
+Widget _appWrapper(Widget child) {
+  return MaterialApp(
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    theme: VineTheme.theme,
+    home: Scaffold(
+      body: Center(child: child),
+    ),
+  );
+}

@@ -43,9 +43,14 @@ class VideoNotificationRow extends StatelessWidget {
   /// Called when the thumbnail on the right is tapped.
   final VoidCallback onThumbnailTap;
 
+  bool _shouldStackThumbnail(BuildContext context) {
+    return MediaQuery.textScalerOf(context).scale(1) > 1.35;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final shouldStackThumbnail = _shouldStackThumbnail(context);
     return Material(
       color: VineTheme.surfaceContainerHigh,
       child: Semantics(
@@ -61,10 +66,7 @@ class VideoNotificationRow extends StatelessWidget {
               ),
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -77,14 +79,18 @@ class VideoNotificationRow extends StatelessWidget {
                     child: _NotificationContent(
                       notification: notification,
                       onProfileTap: onProfileTap,
+                      showInlineThumbnail: shouldStackThumbnail,
+                      onThumbnailTap: onThumbnailTap,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  NotificationVideoThumbnail(
-                    imageUrl: notification.videoThumbnailUrl,
-                    title: notification.videoTitle,
-                    onTap: onThumbnailTap,
-                  ),
+                  if (!shouldStackThumbnail) ...[
+                    const SizedBox(width: 12),
+                    NotificationVideoThumbnail(
+                      imageUrl: notification.videoThumbnailUrl,
+                      title: notification.videoTitle,
+                      onTap: onThumbnailTap,
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -99,10 +105,14 @@ class _NotificationContent extends StatelessWidget {
   const _NotificationContent({
     required this.notification,
     required this.onProfileTap,
+    required this.showInlineThumbnail,
+    required this.onThumbnailTap,
   });
 
   final VideoNotification notification;
   final VoidCallback onProfileTap;
+  final bool showInlineThumbnail;
+  final VoidCallback onThumbnailTap;
 
   bool get _hasComment =>
       notification.commentText != null && notification.commentText!.isNotEmpty;
@@ -145,6 +155,17 @@ class _NotificationContent extends StatelessWidget {
             timestamp: relativeTime,
           ),
         ],
+        if (showInlineThumbnail) ...[
+          const SizedBox(height: 12),
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: NotificationVideoThumbnail(
+              imageUrl: notification.videoThumbnailUrl,
+              title: notification.videoTitle,
+              onTap: onThumbnailTap,
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -170,14 +191,20 @@ class _MessageText extends StatelessWidget {
     final videoTitle = notification.videoTitle;
     final othersCount = notification.totalCount - 1;
 
-    spans.add(
-      TextSpan(
-        text: actors.first.displayName,
-        style: VineTheme.labelLargeFont(),
-      ),
-    );
-
-    if (othersCount > 0) {
+    if (othersCount == 0) {
+      spans.addAll(
+        _localizedActorSentenceSpans(
+          fullText: _messageFor(l10n, type, actors.first.displayName),
+          actorName: actors.first.displayName,
+        ),
+      );
+    } else {
+      spans.add(
+        TextSpan(
+          text: actors.first.displayName,
+          style: VineTheme.labelLargeFont(),
+        ),
+      );
       spans.add(
         TextSpan(
           text: ' ${l10n.notificationAndConnector} ',
@@ -190,21 +217,17 @@ class _MessageText extends StatelessWidget {
           style: VineTheme.labelLargeFont(),
         ),
       );
+      spans.add(
+        TextSpan(
+          text: ' ${_verbFor(l10n, type)}',
+          style: VineTheme.bodyMediumFont(),
+        ),
+      );
     }
-
-    spans.add(
-      TextSpan(
-        text: ' ${_verbFor(l10n, type)}',
-        style: VineTheme.bodyMediumFont(),
-      ),
-    );
 
     if (videoTitle != null && _typeShowsTitle(type)) {
       spans.add(
-        TextSpan(
-          text: ' $videoTitle',
-          style: VineTheme.labelLargeFont(),
-        ),
+        TextSpan(text: ' $videoTitle', style: VineTheme.labelLargeFont()),
       );
     }
 
@@ -259,4 +282,50 @@ String _verbFor(AppLocalizations l10n, NotificationKind type) {
     NotificationKind.mention ||
     NotificationKind.system => '',
   };
+}
+
+String _messageFor(
+  AppLocalizations l10n,
+  NotificationKind type,
+  String actorName,
+) {
+  return switch (type) {
+    NotificationKind.like => l10n.notificationLikedYourVideo(actorName),
+    NotificationKind.likeComment => l10n.notificationLikedYourComment(
+      actorName,
+    ),
+    NotificationKind.comment => l10n.notificationCommentedOnYourVideo(
+      actorName,
+    ),
+    NotificationKind.repost => l10n.notificationRepostedYourVideo(actorName),
+    NotificationKind.reply ||
+    NotificationKind.follow ||
+    NotificationKind.mention ||
+    NotificationKind.system => '',
+  };
+}
+
+List<InlineSpan> _localizedActorSentenceSpans({
+  required String fullText,
+  required String actorName,
+}) {
+  final actorStart = fullText.indexOf(actorName);
+  if (actorName.isEmpty || actorStart < 0) {
+    return [TextSpan(text: fullText, style: VineTheme.bodyMediumFont())];
+  }
+
+  final actorEnd = actorStart + actorName.length;
+  return [
+    if (actorStart > 0)
+      TextSpan(
+        text: fullText.substring(0, actorStart),
+        style: VineTheme.bodyMediumFont(),
+      ),
+    TextSpan(text: actorName, style: VineTheme.labelLargeFont()),
+    if (actorEnd < fullText.length)
+      TextSpan(
+        text: fullText.substring(actorEnd),
+        style: VineTheme.bodyMediumFont(),
+      ),
+  ];
 }

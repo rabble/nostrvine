@@ -59,17 +59,26 @@ Future<void> _pump(
   VoidCallback? onTap,
   VoidCallback? onProfileTap,
   VoidCallback? onThumbnailTap,
+  Locale? locale,
+  double textScaleFactor = 1,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
+      locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
-        body: VideoNotificationRow(
-          notification: notification,
-          onTap: onTap ?? () {},
-          onProfileTap: onProfileTap ?? () {},
-          onThumbnailTap: onThumbnailTap ?? () {},
+        body: MediaQuery(
+          data: MediaQueryData(textScaler: TextScaler.linear(textScaleFactor)),
+          child: SizedBox(
+            width: 320,
+            child: VideoNotificationRow(
+              notification: notification,
+              onTap: onTap ?? () {},
+              onProfileTap: onProfileTap ?? () {},
+              onThumbnailTap: onThumbnailTap ?? () {},
+            ),
+          ),
         ),
       ),
     ),
@@ -96,6 +105,19 @@ void main() {
           findsOneWidget,
         );
       });
+
+      testWidgets(
+        'uses locale-correct single-actor wording for Japanese like text',
+        (tester) async {
+          await _pump(
+            tester,
+            locale: const Locale('ja'),
+            notification: _video(),
+          );
+
+          expect(find.textContaining('Aliceさんがあなたの動画にいいねしました'), findsOneWidget);
+        },
+      );
 
       testWidgets('"{first} and N others" when multi actor', (tester) async {
         await _pump(
@@ -128,93 +150,98 @@ void main() {
         );
       });
 
-      testWidgets(
-        'appends video title for like / comment / repost',
-        (tester) async {
-          await _pump(
-            tester,
-            notification: _video(videoTitle: 'My Cool Vine'),
-          );
+      testWidgets('appends video title for like / comment / repost', (
+        tester,
+      ) async {
+        await _pump(tester, notification: _video(videoTitle: 'My Cool Vine'));
 
-          expect(find.textContaining('My Cool Vine'), findsOneWidget);
-        },
-      );
+        expect(find.textContaining('My Cool Vine'), findsOneWidget);
+      });
 
-      testWidgets(
-        'renders $NotificationCommentQuote when commentText is set',
-        (tester) async {
-          await _pump(
-            tester,
-            notification: _video(
-              type: NotificationKind.comment,
-              commentText: 'Loved this clip!',
-            ),
-          );
+      testWidgets('renders $NotificationCommentQuote when commentText is set', (
+        tester,
+      ) async {
+        await _pump(
+          tester,
+          notification: _video(
+            type: NotificationKind.comment,
+            commentText: 'Loved this clip!',
+          ),
+        );
 
-          // The quote widget renders the body with curly quotes.
-          expect(find.byType(NotificationCommentQuote), findsOneWidget);
-          expect(find.textContaining('Loved this clip!'), findsOneWidget);
-        },
-      );
+        // The quote widget renders the body with curly quotes.
+        expect(find.byType(NotificationCommentQuote), findsOneWidget);
+        expect(find.textContaining('Loved this clip!'), findsOneWidget);
+      });
 
-      testWidgets(
-        'no $NotificationCommentQuote when commentText is null',
-        (tester) async {
-          await _pump(
-            tester,
-            notification: _video(type: NotificationKind.comment),
-          );
+      testWidgets('no $NotificationCommentQuote when commentText is null', (
+        tester,
+      ) async {
+        await _pump(
+          tester,
+          notification: _video(type: NotificationKind.comment),
+        );
 
-          expect(find.byType(NotificationCommentQuote), findsNothing);
-        },
-      );
+        expect(find.byType(NotificationCommentQuote), findsNothing);
+      });
 
-      testWidgets(
-        'timestamp moves to the quote when commentText is present',
-        (tester) async {
-          // The timestamp must anchor to the visual end of the row, so
-          // when a comment quote is rendered the timestamp goes there
-          // instead of the message line. This test asserts the message
-          // line does NOT carry the timestamp suffix while the quote
-          // does.
-          await _pump(
-            tester,
-            notification: _video(
-              type: NotificationKind.comment,
-              commentText: 'Thanks!',
-            ),
-          );
+      testWidgets('timestamp moves to the quote when commentText is present', (
+        tester,
+      ) async {
+        // The timestamp must anchor to the visual end of the row, so
+        // when a comment quote is rendered the timestamp goes there
+        // instead of the message line. This test asserts the message
+        // line does NOT carry the timestamp suffix while the quote
+        // does.
+        await _pump(
+          tester,
+          notification: _video(
+            type: NotificationKind.comment,
+            commentText: 'Thanks!',
+          ),
+        );
 
-          final quoteWidget = tester.widget<NotificationCommentQuote>(
-            find.byType(NotificationCommentQuote),
-          );
-          // The widget owns the timestamp suffix.
-          expect(quoteWidget.timestamp, isNotNull);
-          expect(quoteWidget.timestamp, isNotEmpty);
-        },
-      );
+        final quoteWidget = tester.widget<NotificationCommentQuote>(
+          find.byType(NotificationCommentQuote),
+        );
+        // The widget owns the timestamp suffix.
+        expect(quoteWidget.timestamp, isNotNull);
+        expect(quoteWidget.timestamp, isNotEmpty);
+      });
 
       testWidgets('thumbnail placeholder when videoThumbnailUrl is null', (
         tester,
       ) async {
         await _pump(tester, notification: _video());
 
-        expect(
-          find.byType(NotificationVideoThumbnail),
-          findsOneWidget,
-        );
+        expect(find.byType(NotificationVideoThumbnail), findsOneWidget);
       });
 
       testWidgets('avatar stack for the actors', (tester) async {
         await _pump(
           tester,
-          notification: _video(
-            actors: const [_alice, _bob],
-            totalCount: 2,
-          ),
+          notification: _video(actors: const [_alice, _bob], totalCount: 2),
         );
 
         expect(find.byType(NotificationAvatarStack), findsOneWidget);
+      });
+
+      testWidgets('moves the thumbnail below the text at large font sizes', (
+        tester,
+      ) async {
+        await _pump(
+          tester,
+          notification: _video(
+            videoTitle: 'A fairly long title for max-font testing',
+          ),
+          textScaleFactor: 2,
+        );
+
+        final message = tester.getTopLeft(find.textContaining('Alice'));
+        final thumbnail = tester.getTopLeft(
+          find.byType(NotificationVideoThumbnail),
+        );
+        expect(thumbnail.dy, greaterThan(message.dy));
       });
     });
 
@@ -222,11 +249,7 @@ void main() {
       testWidgets('tap on row fires onTap', (tester) async {
         var tapped = false;
 
-        await _pump(
-          tester,
-          notification: _video(),
-          onTap: () => tapped = true,
-        );
+        await _pump(tester, notification: _video(), onTap: () => tapped = true);
 
         await tester.tap(find.byType(VideoNotificationRow));
         await tester.pump();
@@ -243,9 +266,7 @@ void main() {
           onThumbnailTap: () => tapped = true,
         );
 
-        await tester.tap(
-          find.byType(NotificationVideoThumbnail),
-        );
+        await tester.tap(find.byType(NotificationVideoThumbnail));
         await tester.pump();
 
         expect(tapped, isTrue);
@@ -264,6 +285,23 @@ void main() {
         await tester.pump();
 
         expect(tapped, isTrue);
+      });
+
+      testWidgets('does not overflow at large text sizes', (tester) async {
+        await _pump(
+          tester,
+          notification: _video(
+            type: NotificationKind.comment,
+            videoTitle: 'A fairly long title for max-font layout verification',
+            commentText:
+                'This is a longer comment preview to exercise the stacked '
+                'thumbnail layout path.',
+          ),
+          textScaleFactor: 2,
+        );
+        await tester.pump();
+
+        expect(tester.takeException(), isNull);
       });
     });
   });
