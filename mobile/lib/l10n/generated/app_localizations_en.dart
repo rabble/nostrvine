@@ -5290,11 +5290,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inboxCollabInviteCardTitle => 'Collaborator invite';
 
   @override
-  String inboxCollabInviteCardRoleLabel(String role) {
-    return '$role on this post';
-  }
-
-  @override
   String get inboxCollabInviteCardUntitledVideo => 'Untitled video';
 
   @override
@@ -5328,12 +5323,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get inboxCollabInviteTimelineConsequence =>
       'Co-posting adds this video to your timeline as a collaboration.';
-
-  @override
-  String get inboxCollabInviteAcceptButton => 'Accept';
-
-  @override
-  String get inboxCollabInviteIgnoreButton => 'Ignore';
 
   @override
   String get inboxCollabInviteAcceptedStatus => 'Accepted';

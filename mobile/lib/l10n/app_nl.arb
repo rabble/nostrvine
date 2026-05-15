@@ -2306,19 +2306,14 @@
     "messageExternalLinkDialogTitle": "Externe link openen?",
     "messageExternalLinkDialogBody": "Deze link gaat naar een externe site en is mogelijk niet veilig:\n\n{url}",
     "messageExternalLinkDialogOpen": "Openen",
-    "inboxCollabInviteAcceptButton": "Accepteren",
+    "inboxCollabInviteCoPostButton": "Samen plaatsen",
+    "inboxCollabInviteNotMineButton": "Niet van mij",
+    "inboxCollabInvitePreviewTitle": "Uitnodiging om samen te plaatsen",
+    "inboxCollabInvitePreviewTitleFrom": "Uitnodiging om samen te plaatsen van {displayName}",
+    "inboxCollabInviteTimelineConsequence": "Samen plaatsen voegt deze video als samenwerking toe aan je tijdlijn.",
     "inboxCollabInviteAcceptError": "Accepteren is niet gelukt. Probeer het opnieuw.",
     "inboxCollabInviteAcceptedStatus": "Geaccepteerd",
-    "inboxCollabInviteCardRoleLabel": "{role} bij deze post",
-    "@inboxCollabInviteCardRoleLabel": {
-        "placeholders": {
-            "role": {
-                "type": "String"
-            }
-        }
-    },
     "inboxCollabInviteCardTitle": "Uitnodiging om samen te werken",
-    "inboxCollabInviteIgnoreButton": "Negeren",
     "inboxCollabInviteIgnoredStatus": "Genegeerd",
     "inboxConversationCollabInvitePreview": "Uitnodiging om samen te werken",
     "@inboxConversationCollabInvitePreview": {
@@ -3145,16 +3140,16 @@
     "profileSetupImagesTypeGroup": "afbeeldingen",
     "profileSetupExternalNip05InvalidFormat": "Ongeldig NIP-05-formaat (bijv. naam@domein.com)",
     "profileSetupExternalNip05DivineDomain": "Gebruik het gebruikersnaamveld hierboven voor divine.video",
-"nostrSettingsNip05Address": "NIP-05 address",
-"nostrSettingsNip05AddressSubtitle": "Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.",
-"nostrSettingsNip05AddressHint": "you@example.com",
-"nostrSettingsNip05SaveAction": "Save NIP-05",
-"nostrSettingsNip05Saved": "NIP-05 saved",
-"nostrSettingsNip05SaveFailed": "Couldn't save NIP-05. Please try again.",
-"profileSetupNip05ConfirmTitle": "Use your own NIP-05?",
-"profileSetupNip05ConfirmBody": "NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it's wrong, people can't find you and your verified handle disappears. Continue only if you've set this up.",
-"profileSetupNip05ConfirmContinue": "Continue",
-"profileSetupNip05ConfirmCancel": "Cancel",
+    "nostrSettingsNip05Address": "NIP-05 address",
+    "nostrSettingsNip05AddressSubtitle": "Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.",
+    "nostrSettingsNip05AddressHint": "you@example.com",
+    "nostrSettingsNip05SaveAction": "Save NIP-05",
+    "nostrSettingsNip05Saved": "NIP-05 saved",
+    "nostrSettingsNip05SaveFailed": "Couldn't save NIP-05. Please try again.",
+    "profileSetupNip05ConfirmTitle": "Use your own NIP-05?",
+    "profileSetupNip05ConfirmBody": "NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it's wrong, people can't find you and your verified handle disappears. Continue only if you've set this up.",
+    "profileSetupNip05ConfirmContinue": "Continue",
+    "profileSetupNip05ConfirmCancel": "Cancel",
     "contentWarningReportContentTooltip": "Inhoud rapporteren",
     "contentWarningBlockUserTooltip": "Gebruiker blokkeren",
     "contentWarningBlockedTitle": "Inhoud geblokkeerd",
@@ -3273,8 +3268,12 @@
     "@verifiedAccountChipSemanticLabel": {
         "description": "Screen reader label for a verified-account chip on a user's profile.",
         "placeholders": {
-            "platform": { "type": "String" },
-            "identity": { "type": "String" }
+            "platform": {
+                "type": "String"
+            },
+            "identity": {
+                "type": "String"
+            }
         }
     },
     "profileEditVerifiedAccountsTitle": "Geverifieerde accounts",

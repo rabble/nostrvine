@@ -2305,19 +2305,14 @@
     "messageExternalLinkDialogTitle": "Buka tautan eksternal?",
     "messageExternalLinkDialogBody": "Tautan ini menuju situs eksternal dan mungkin tidak aman:\n\n{url}",
     "messageExternalLinkDialogOpen": "Buka",
-    "inboxCollabInviteAcceptButton": "Terima",
+    "inboxCollabInviteCoPostButton": "Posting bersama",
+    "inboxCollabInviteNotMineButton": "Bukan milik saya",
+    "inboxCollabInvitePreviewTitle": "Undangan posting bersama",
+    "inboxCollabInvitePreviewTitleFrom": "Undangan posting bersama dari {displayName}",
+    "inboxCollabInviteTimelineConsequence": "Posting bersama menambahkan video ini ke timeline Anda sebagai kolaborasi.",
     "inboxCollabInviteAcceptError": "Tidak bisa menerima. Coba lagi.",
     "inboxCollabInviteAcceptedStatus": "Diterima",
-    "inboxCollabInviteCardRoleLabel": "{role} di postingan ini",
-    "@inboxCollabInviteCardRoleLabel": {
-        "placeholders": {
-            "role": {
-                "type": "String"
-            }
-        }
-    },
     "inboxCollabInviteCardTitle": "Undangan kolaborasi",
-    "inboxCollabInviteIgnoreButton": "Abaikan",
     "inboxCollabInviteIgnoredStatus": "Diabaikan",
     "inboxConversationCollabInvitePreview": "Undangan kolaborasi",
     "@inboxConversationCollabInvitePreview": {
@@ -3145,16 +3140,16 @@
     "profileSetupImagesTypeGroup": "gambar",
     "profileSetupExternalNip05InvalidFormat": "Format NIP-05 tidak valid (contoh: nama@domain.com)",
     "profileSetupExternalNip05DivineDomain": "Pakai kolom username di atas untuk divine.video",
-"nostrSettingsNip05Address": "NIP-05 address",
-"nostrSettingsNip05AddressSubtitle": "Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.",
-"nostrSettingsNip05AddressHint": "you@example.com",
-"nostrSettingsNip05SaveAction": "Save NIP-05",
-"nostrSettingsNip05Saved": "NIP-05 saved",
-"nostrSettingsNip05SaveFailed": "Couldn't save NIP-05. Please try again.",
-"profileSetupNip05ConfirmTitle": "Use your own NIP-05?",
-"profileSetupNip05ConfirmBody": "NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it's wrong, people can't find you and your verified handle disappears. Continue only if you've set this up.",
-"profileSetupNip05ConfirmContinue": "Continue",
-"profileSetupNip05ConfirmCancel": "Cancel",
+    "nostrSettingsNip05Address": "NIP-05 address",
+    "nostrSettingsNip05AddressSubtitle": "Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.",
+    "nostrSettingsNip05AddressHint": "you@example.com",
+    "nostrSettingsNip05SaveAction": "Save NIP-05",
+    "nostrSettingsNip05Saved": "NIP-05 saved",
+    "nostrSettingsNip05SaveFailed": "Couldn't save NIP-05. Please try again.",
+    "profileSetupNip05ConfirmTitle": "Use your own NIP-05?",
+    "profileSetupNip05ConfirmBody": "NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it's wrong, people can't find you and your verified handle disappears. Continue only if you've set this up.",
+    "profileSetupNip05ConfirmContinue": "Continue",
+    "profileSetupNip05ConfirmCancel": "Cancel",
     "contentWarningReportContentTooltip": "Laporkan Konten",
     "contentWarningBlockUserTooltip": "Blokir Pengguna",
     "contentWarningBlockedTitle": "Konten Diblokir",
@@ -3273,8 +3268,12 @@
     "@verifiedAccountChipSemanticLabel": {
         "description": "Screen reader label for a verified-account chip on a user's profile.",
         "placeholders": {
-            "platform": { "type": "String" },
-            "identity": { "type": "String" }
+            "platform": {
+                "type": "String"
+            },
+            "identity": {
+                "type": "String"
+            }
         }
     },
     "profileEditVerifiedAccountsTitle": "Akun terverifikasi",

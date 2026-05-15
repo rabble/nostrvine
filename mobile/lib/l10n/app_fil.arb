@@ -216,18 +216,18 @@
     "profileSetupSelectButton": "Piliin",
     "profileSetupUseOwnNip05": "Gamitin ang sarili mong NIP-05 address",
     "profileSetupNip05AddressLabel": "NIP-05 Address",
-"profileSetupExternalNip05InvalidFormat": "Invalid na NIP-05 format (hal. name@domain.com)",
-"profileSetupExternalNip05DivineDomain": "Gamitin ang username field sa itaas para sa divine.video",
-"nostrSettingsNip05Address": "NIP-05 address",
-"nostrSettingsNip05AddressSubtitle": "Gamitin ang divine.video username mo, o ituro ang handle mo sa isang NIP-05 address sa domain na kontrolado mo.",
-"nostrSettingsNip05AddressHint": "you@example.com",
-"nostrSettingsNip05SaveAction": "I-save ang NIP-05",
-"nostrSettingsNip05Saved": "Naisave ang NIP-05",
-"nostrSettingsNip05SaveFailed": "Hindi na-save ang NIP-05. Pakisubukan ulit.",
-"profileSetupNip05ConfirmTitle": "Gamitin ang sarili mong NIP-05?",
-"profileSetupNip05ConfirmBody": "Ini-uugnay ng NIP-05 ang pangalang gaya ng you@yourdomain.com sa iyong Nostr identity. Kailangan mong kontrolado ang domain at naka-host ang verification file sa tamang path. Kapag mali ito, hindi ka mahahanap ng mga tao at mawawala ang verified handle mo. Magpatuloy lang kung na-set up mo na ito.",
-"profileSetupNip05ConfirmContinue": "Magpatuloy",
-"profileSetupNip05ConfirmCancel": "Kanselahin",
+    "profileSetupExternalNip05InvalidFormat": "Invalid NIP-05 format (hal., name@domain.com)",
+    "profileSetupExternalNip05DivineDomain": "Gamitin ang username field sa itaas para sa divine.video",
+    "nostrSettingsNip05Address": "NIP-05 address",
+    "nostrSettingsNip05AddressSubtitle": "Gamitin ang divine.video username mo, o ituro ang handle mo sa isang NIP-05 address sa domain na kontrolado mo.",
+    "nostrSettingsNip05AddressHint": "you@example.com",
+    "nostrSettingsNip05SaveAction": "I-save ang NIP-05",
+    "nostrSettingsNip05Saved": "Naisave ang NIP-05",
+    "nostrSettingsNip05SaveFailed": "Hindi na-save ang NIP-05. Pakisubukan ulit.",
+    "profileSetupNip05ConfirmTitle": "Gamitin ang sarili mong NIP-05?",
+    "profileSetupNip05ConfirmBody": "Ini-uugnay ng NIP-05 ang pangalang gaya ng you@yourdomain.com sa iyong Nostr identity. Kailangan mong kontrolado ang domain at naka-host ang verification file sa tamang path. Kapag mali ito, hindi ka mahahanap ng mga tao at mawawala ang verified handle mo. Magpatuloy lang kung na-set up mo na ito.",
+    "profileSetupNip05ConfirmContinue": "Magpatuloy",
+    "profileSetupNip05ConfirmCancel": "Kanselahin",
     "profileSetupProfilePicturePreview": "Preview ng profile picture",
     "videoMetadataShareReplyToFeedTitle": "Ibahagi rin sa feed ko",
     "videoMetadataShareReplyToFeedSubtitle": "Kapag naka-off, sa thread lang ng komento mananatili ang video na ito.",
@@ -1434,14 +1434,16 @@
     "inboxConversationMuted": "Na-mute ang conversation",
     "inboxConversationUnmuted": "Na-unmute ang conversation",
     "inboxCollabInviteCardTitle": "Imbitasyon bilang collaborator",
-    "inboxCollabInviteCardRoleLabel": "{role} sa post na ito",
     "inboxCollabInviteCardUntitledVideo": "Video na walang pamagat",
     "clickableTextViewVideoLink": "Tingnan ang video",
     "messageExternalLinkDialogTitle": "Buksan ang external na link?",
     "messageExternalLinkDialogBody": "Papunta ang link na ito sa isang external na site at baka hindi ito ligtas:\n\n{url}",
     "messageExternalLinkDialogOpen": "Buksan",
-    "inboxCollabInviteAcceptButton": "Tanggapin",
-    "inboxCollabInviteIgnoreButton": "Balewalain",
+    "inboxCollabInviteCoPostButton": "Co-post",
+    "inboxCollabInviteNotMineButton": "Hindi akin",
+    "inboxCollabInvitePreviewTitle": "Imbitasyon sa co-post",
+    "inboxCollabInvitePreviewTitleFrom": "Imbitasyon sa co-post mula kay {displayName}",
+    "inboxCollabInviteTimelineConsequence": "Idaragdag ng co-posting ang video na ito sa timeline mo bilang collaboration.",
     "inboxCollabInviteAcceptedStatus": "Tinanggap",
     "inboxCollabInviteIgnoredStatus": "Binalewala",
     "inboxCollabInviteAcceptError": "Hindi natanggap. Subukan ulit.",
@@ -1845,19 +1847,19 @@
     "bugReportExpectedBehaviorLabel": "Inaasahang Behavior",
     "bugReportFailedWithError": "Hindi naipadala ang bug report: {error}",
     "bugReportAttachImages": "Attach images",
-  "bugReportImagesCount": "{count} of {max} images selected",
-  "@bugReportImagesCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "max": {
-        "type": "int"
-      }
-    }
-  },
-  "bugReportRemoveImage": "Remove image",
-  "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
+    "bugReportImagesCount": "{count} of {max} images selected",
+    "@bugReportImagesCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "max": {
+                "type": "int"
+            }
+        }
+    },
+    "bugReportRemoveImage": "Remove image",
+    "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
     "userPickerRemoveSelectionSemantics": "Remove {name}",
     "videoMetadataEditCoverFailedSnackbar": "Couldn't update the cover. Try again.",
     "videoMetadataEditCoverSuccessAnnouncement": "Cover updated",
@@ -1865,7 +1867,7 @@
     "videoMetadataEditCoverCloseSemanticLabel": "Close cover editor",
     "videoMetadataEditCoverConfirmSemanticLabel": "Confirm cover selection",
     "videoMetadataEditCoverStripSemanticLabel": "Seek through video to select cover frame",
-  "bugReportSendFailed": "Hindi naipadala ang bug report. Subukan ulit mamaya.",
+    "bugReportSendFailed": "Hindi naipadala ang bug report. Subukan ulit mamaya.",
     "bugReportSendReport": "Ipadala ang Report",
     "bugReportStepsHint": "1. Pumunta sa...\n2. I-tap ang...\n3. Lalabas ang error",
     "bugReportStepsLabel": "Mga Hakbang Para Maulit",
@@ -2009,8 +2011,6 @@
     "safetySettingsWhatYouSee": "ANG NAKIKITA MO",
     "safetySettingsWhatYouPublish": "ANG PINO-POST MO",
     "profileSetupImagesTypeGroup": "mga larawan",
-    "profileSetupExternalNip05InvalidFormat": "Invalid NIP-05 format (hal., name@domain.com)",
-    "profileSetupExternalNip05DivineDomain": "Gamitin ang username field sa itaas para sa divine.video",
     "categoryGalleryNoVideosInCategory": "Walang video sa category na ito",
     "categoriesNoCategoriesAvailable": "Walang available na category",
     "exploreSearchHint": "Maghanap...",

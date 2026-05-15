@@ -1594,19 +1594,14 @@
     "messageExternalLinkDialogTitle": "외부 링크를 열까요?",
     "messageExternalLinkDialogBody": "이 링크는 외부 사이트로 이동하며 안전하지 않을 수 있어요:\n\n{url}",
     "messageExternalLinkDialogOpen": "열기",
-    "inboxCollabInviteAcceptButton": "수락",
+    "inboxCollabInviteCoPostButton": "공동 게시",
+    "inboxCollabInviteNotMineButton": "내 것이 아니에요",
+    "inboxCollabInvitePreviewTitle": "공동 게시 초대",
+    "inboxCollabInvitePreviewTitleFrom": "{displayName}님의 공동 게시 초대",
+    "inboxCollabInviteTimelineConsequence": "공동 게시하면 이 동영상이 협업으로 내 타임라인에 추가됩니다.",
     "inboxCollabInviteAcceptError": "수락하지 못했어요. 다시 시도해 주세요.",
     "inboxCollabInviteAcceptedStatus": "수락됨",
-    "inboxCollabInviteCardRoleLabel": "이 게시물의 {role}",
-    "@inboxCollabInviteCardRoleLabel": {
-        "placeholders": {
-            "role": {
-                "type": "String"
-            }
-        }
-    },
     "inboxCollabInviteCardTitle": "콜라보 초대",
-    "inboxCollabInviteIgnoreButton": "무시",
     "inboxCollabInviteIgnoredStatus": "무시됨",
     "inboxConversationCollabInvitePreview": "콜라보 초대",
     "@inboxConversationCollabInvitePreview": {
@@ -2434,16 +2429,16 @@
     "profileSetupImagesTypeGroup": "이미지",
     "profileSetupExternalNip05InvalidFormat": "잘못된 NIP-05 형식이에요 (예: name@domain.com)",
     "profileSetupExternalNip05DivineDomain": "divine.video는 위의 사용자명 필드를 사용해주세요",
-"nostrSettingsNip05Address": "NIP-05 address",
-"nostrSettingsNip05AddressSubtitle": "Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.",
-"nostrSettingsNip05AddressHint": "you@example.com",
-"nostrSettingsNip05SaveAction": "Save NIP-05",
-"nostrSettingsNip05Saved": "NIP-05 saved",
-"nostrSettingsNip05SaveFailed": "Couldn't save NIP-05. Please try again.",
-"profileSetupNip05ConfirmTitle": "Use your own NIP-05?",
-"profileSetupNip05ConfirmBody": "NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it's wrong, people can't find you and your verified handle disappears. Continue only if you've set this up.",
-"profileSetupNip05ConfirmContinue": "Continue",
-"profileSetupNip05ConfirmCancel": "Cancel",
+    "nostrSettingsNip05Address": "NIP-05 address",
+    "nostrSettingsNip05AddressSubtitle": "Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.",
+    "nostrSettingsNip05AddressHint": "you@example.com",
+    "nostrSettingsNip05SaveAction": "Save NIP-05",
+    "nostrSettingsNip05Saved": "NIP-05 saved",
+    "nostrSettingsNip05SaveFailed": "Couldn't save NIP-05. Please try again.",
+    "profileSetupNip05ConfirmTitle": "Use your own NIP-05?",
+    "profileSetupNip05ConfirmBody": "NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it's wrong, people can't find you and your verified handle disappears. Continue only if you've set this up.",
+    "profileSetupNip05ConfirmContinue": "Continue",
+    "profileSetupNip05ConfirmCancel": "Cancel",
     "contentWarningReportContentTooltip": "콘텐츠 신고",
     "contentWarningBlockUserTooltip": "사용자 차단",
     "contentWarningBlockedTitle": "콘텐츠가 차단됐어요",
@@ -2569,8 +2564,12 @@
     "@verifiedAccountChipSemanticLabel": {
         "description": "Screen reader label for a verified-account chip on a user's profile.",
         "placeholders": {
-            "platform": { "type": "String" },
-            "identity": { "type": "String" }
+            "platform": {
+                "type": "String"
+            },
+            "identity": {
+                "type": "String"
+            }
         }
     },
     "profileEditVerifiedAccountsTitle": "인증된 계정",

@@ -402,13 +402,6 @@ const _knownUntranslatedDebt = {
   'inboxConversationActionsSheetLabel',
   'inboxConversationTileLabel',
   'inboxConversationTileLongPressHint',
-  // Added by the collaborator invite card video-preview pass. English ships;
-  // other locales fall back until the next translation pass.
-  'inboxCollabInviteCoPostButton',
-  'inboxCollabInviteNotMineButton',
-  'inboxCollabInvitePreviewTitle',
-  'inboxCollabInvitePreviewTitleFrom',
-  'inboxCollabInviteTimelineConsequence',
 };
 
 Map<String, Object?> _readArb(File file) {

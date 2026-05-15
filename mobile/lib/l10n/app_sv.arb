@@ -2306,19 +2306,14 @@
     "messageExternalLinkDialogTitle": "Öppna extern länk?",
     "messageExternalLinkDialogBody": "Den här länken går till en extern webbplats och kanske inte är säker:\n\n{url}",
     "messageExternalLinkDialogOpen": "Öppna",
-    "inboxCollabInviteAcceptButton": "Acceptera",
+    "inboxCollabInviteCoPostButton": "Sampublicera",
+    "inboxCollabInviteNotMineButton": "Inte min",
+    "inboxCollabInvitePreviewTitle": "Inbjudan att sampublicera",
+    "inboxCollabInvitePreviewTitleFrom": "Inbjudan att sampublicera från {displayName}",
+    "inboxCollabInviteTimelineConsequence": "Sampublicering lägger till den här videon på din tidslinje som ett samarbete.",
     "inboxCollabInviteAcceptError": "Det gick inte att acceptera. Försök igen.",
     "inboxCollabInviteAcceptedStatus": "Accepterad",
-    "inboxCollabInviteCardRoleLabel": "{role} i det här inlägget",
-    "@inboxCollabInviteCardRoleLabel": {
-        "placeholders": {
-            "role": {
-                "type": "String"
-            }
-        }
-    },
     "inboxCollabInviteCardTitle": "Inbjudan att samarbeta",
-    "inboxCollabInviteIgnoreButton": "Ignorera",
     "inboxCollabInviteIgnoredStatus": "Ignorerad",
     "inboxConversationCollabInvitePreview": "Inbjudan att samarbeta",
     "@inboxConversationCollabInvitePreview": {
@@ -3145,16 +3140,16 @@
     "profileSetupImagesTypeGroup": "bilder",
     "profileSetupExternalNip05InvalidFormat": "Ogiltigt NIP-05-format (t.ex. namn@domän.com)",
     "profileSetupExternalNip05DivineDomain": "Använd användarnamnsfältet ovan för divine.video",
-"nostrSettingsNip05Address": "NIP-05 address",
-"nostrSettingsNip05AddressSubtitle": "Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.",
-"nostrSettingsNip05AddressHint": "you@example.com",
-"nostrSettingsNip05SaveAction": "Save NIP-05",
-"nostrSettingsNip05Saved": "NIP-05 saved",
-"nostrSettingsNip05SaveFailed": "Couldn't save NIP-05. Please try again.",
-"profileSetupNip05ConfirmTitle": "Use your own NIP-05?",
-"profileSetupNip05ConfirmBody": "NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it's wrong, people can't find you and your verified handle disappears. Continue only if you've set this up.",
-"profileSetupNip05ConfirmContinue": "Continue",
-"profileSetupNip05ConfirmCancel": "Cancel",
+    "nostrSettingsNip05Address": "NIP-05 address",
+    "nostrSettingsNip05AddressSubtitle": "Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.",
+    "nostrSettingsNip05AddressHint": "you@example.com",
+    "nostrSettingsNip05SaveAction": "Save NIP-05",
+    "nostrSettingsNip05Saved": "NIP-05 saved",
+    "nostrSettingsNip05SaveFailed": "Couldn't save NIP-05. Please try again.",
+    "profileSetupNip05ConfirmTitle": "Use your own NIP-05?",
+    "profileSetupNip05ConfirmBody": "NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it's wrong, people can't find you and your verified handle disappears. Continue only if you've set this up.",
+    "profileSetupNip05ConfirmContinue": "Continue",
+    "profileSetupNip05ConfirmCancel": "Cancel",
     "contentWarningReportContentTooltip": "Rapportera innehåll",
     "contentWarningBlockUserTooltip": "Blockera användare",
     "contentWarningBlockedTitle": "Innehåll blockerat",
@@ -3273,8 +3268,12 @@
     "@verifiedAccountChipSemanticLabel": {
         "description": "Screen reader label for a verified-account chip on a user's profile.",
         "placeholders": {
-            "platform": { "type": "String" },
-            "identity": { "type": "String" }
+            "platform": {
+                "type": "String"
+            },
+            "identity": {
+                "type": "String"
+            }
         }
     },
     "profileEditVerifiedAccountsTitle": "Verifierade konton",

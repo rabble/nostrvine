@@ -183,6 +183,9 @@ class _ThumbnailInviteContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final thumbnailSemanticLabel = title.trim().isEmpty
+        ? l10n.notificationsVideoThumbnail
+        : l10n.notificationsVideoThumbnailFor(title);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
@@ -192,14 +195,18 @@ class _ThumbnailInviteContent extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              VineCachedImage(
-                key: const ValueKey('collaborator_invite_thumbnail'),
-                imageUrl: thumbnailUrl,
-                placeholder: (context, url) => const ColoredBox(
-                  color: VineTheme.surfaceContainer,
-                ),
-                errorWidget: (context, url, error) => const ColoredBox(
-                  color: VineTheme.surfaceContainer,
+              Semantics(
+                image: true,
+                label: thumbnailSemanticLabel,
+                child: VineCachedImage(
+                  key: const ValueKey('collaborator_invite_thumbnail'),
+                  imageUrl: thumbnailUrl,
+                  placeholder: (context, url) => const ColoredBox(
+                    color: VineTheme.surfaceContainer,
+                  ),
+                  errorWidget: (context, url, error) => const ColoredBox(
+                    color: VineTheme.surfaceContainer,
+                  ),
                 ),
               ),
               DecoratedBox(
@@ -223,8 +230,8 @@ class _ThumbnailInviteContent extends StatelessWidget {
                   child: SizedBox(
                     width: 48,
                     height: 48,
-                    child: Icon(
-                      Icons.play_arrow_rounded,
+                    child: DivineIcon(
+                      icon: DivineIconName.playFill,
                       color: VineTheme.backgroundColor,
                       size: 32,
                     ),

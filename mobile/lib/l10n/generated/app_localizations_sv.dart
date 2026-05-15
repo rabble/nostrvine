@@ -5287,11 +5287,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get inboxCollabInviteCardTitle => 'Inbjudan att samarbeta';
 
   @override
-  String inboxCollabInviteCardRoleLabel(String role) {
-    return '$role i det här inlägget';
-  }
-
-  @override
   String get inboxCollabInviteCardUntitledVideo => 'Video utan titel';
 
   @override
@@ -5309,28 +5304,22 @@ class AppLocalizationsSv extends AppLocalizations {
   String get messageExternalLinkDialogOpen => 'Öppna';
 
   @override
-  String get inboxCollabInviteCoPostButton => 'Co-post';
+  String get inboxCollabInviteCoPostButton => 'Sampublicera';
 
   @override
-  String get inboxCollabInviteNotMineButton => 'Not mine';
+  String get inboxCollabInviteNotMineButton => 'Inte min';
 
   @override
-  String get inboxCollabInvitePreviewTitle => 'Co-post invite';
+  String get inboxCollabInvitePreviewTitle => 'Inbjudan att sampublicera';
 
   @override
   String inboxCollabInvitePreviewTitleFrom(String displayName) {
-    return 'Co-post invite from $displayName';
+    return 'Inbjudan att sampublicera från $displayName';
   }
 
   @override
   String get inboxCollabInviteTimelineConsequence =>
-      'Co-posting adds this video to your timeline as a collaboration.';
-
-  @override
-  String get inboxCollabInviteAcceptButton => 'Acceptera';
-
-  @override
-  String get inboxCollabInviteIgnoreButton => 'Ignorera';
+      'Sampublicering lägger till den här videon på din tidslinje som ett samarbete.';
 
   @override
   String get inboxCollabInviteAcceptedStatus => 'Accepterad';

@@ -2298,19 +2298,14 @@
     "messageExternalLinkDialogTitle": "فتح رابط خارجي؟",
     "messageExternalLinkDialogBody": "هذا الرابط يذهب إلى موقع خارجي وقد لا يكون آمنًا:\n\n{url}",
     "messageExternalLinkDialogOpen": "فتح",
-    "inboxCollabInviteAcceptButton": "قبول",
+    "inboxCollabInviteCoPostButton": "نشر مشترك",
+    "inboxCollabInviteNotMineButton": "ليس لي",
+    "inboxCollabInvitePreviewTitle": "دعوة نشر مشترك",
+    "inboxCollabInvitePreviewTitleFrom": "دعوة نشر مشترك من {displayName}",
+    "inboxCollabInviteTimelineConsequence": "سيضيف النشر المشترك هذا الفيديو إلى يومياتك كتعاون.",
     "inboxCollabInviteAcceptError": "تعذر القبول. حاول مرة أخرى.",
     "inboxCollabInviteAcceptedStatus": "تم القبول",
-    "inboxCollabInviteCardRoleLabel": "{role} على هذا المنشور",
-    "@inboxCollabInviteCardRoleLabel": {
-        "placeholders": {
-            "role": {
-                "type": "String"
-            }
-        }
-    },
     "inboxCollabInviteCardTitle": "دعوة للتعاون",
-    "inboxCollabInviteIgnoreButton": "تجاهل",
     "inboxCollabInviteIgnoredStatus": "تم التجاهل",
     "inboxConversationCollabInvitePreview": "دعوة للتعاون",
     "@inboxConversationCollabInvitePreview": {
@@ -3138,16 +3133,16 @@
     "profileSetupImagesTypeGroup": "صور",
     "profileSetupExternalNip05InvalidFormat": "صيغة NIP-05 غير صالحة (مثال: name@domain.com)",
     "profileSetupExternalNip05DivineDomain": "استخدم حقل اسم المستخدم أعلاه لـ divine.video",
-"nostrSettingsNip05Address": "NIP-05 address",
-"nostrSettingsNip05AddressSubtitle": "Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.",
-"nostrSettingsNip05AddressHint": "you@example.com",
-"nostrSettingsNip05SaveAction": "Save NIP-05",
-"nostrSettingsNip05Saved": "NIP-05 saved",
-"nostrSettingsNip05SaveFailed": "Couldn't save NIP-05. Please try again.",
-"profileSetupNip05ConfirmTitle": "Use your own NIP-05?",
-"profileSetupNip05ConfirmBody": "NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it's wrong, people can't find you and your verified handle disappears. Continue only if you've set this up.",
-"profileSetupNip05ConfirmContinue": "Continue",
-"profileSetupNip05ConfirmCancel": "Cancel",
+    "nostrSettingsNip05Address": "NIP-05 address",
+    "nostrSettingsNip05AddressSubtitle": "Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.",
+    "nostrSettingsNip05AddressHint": "you@example.com",
+    "nostrSettingsNip05SaveAction": "Save NIP-05",
+    "nostrSettingsNip05Saved": "NIP-05 saved",
+    "nostrSettingsNip05SaveFailed": "Couldn't save NIP-05. Please try again.",
+    "profileSetupNip05ConfirmTitle": "Use your own NIP-05?",
+    "profileSetupNip05ConfirmBody": "NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it's wrong, people can't find you and your verified handle disappears. Continue only if you've set this up.",
+    "profileSetupNip05ConfirmContinue": "Continue",
+    "profileSetupNip05ConfirmCancel": "Cancel",
     "contentWarningReportContentTooltip": "الإبلاغ عن المحتوى",
     "contentWarningBlockUserTooltip": "حظر المستخدم",
     "contentWarningBlockedTitle": "تم حظر المحتوى",
@@ -3273,8 +3268,12 @@
     "@verifiedAccountChipSemanticLabel": {
         "description": "Screen reader label for a verified-account chip on a user's profile.",
         "placeholders": {
-            "platform": { "type": "String" },
-            "identity": { "type": "String" }
+            "platform": {
+                "type": "String"
+            },
+            "identity": {
+                "type": "String"
+            }
         }
     },
     "profileEditVerifiedAccountsTitle": "الحسابات الموثّقة",

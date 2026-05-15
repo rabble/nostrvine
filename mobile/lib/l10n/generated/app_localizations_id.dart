@@ -5264,11 +5264,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get inboxCollabInviteCardTitle => 'Undangan kolaborasi';
 
   @override
-  String inboxCollabInviteCardRoleLabel(String role) {
-    return '$role di postingan ini';
-  }
-
-  @override
   String get inboxCollabInviteCardUntitledVideo => 'Video tanpa judul';
 
   @override
@@ -5286,28 +5281,22 @@ class AppLocalizationsId extends AppLocalizations {
   String get messageExternalLinkDialogOpen => 'Buka';
 
   @override
-  String get inboxCollabInviteCoPostButton => 'Co-post';
+  String get inboxCollabInviteCoPostButton => 'Posting bersama';
 
   @override
-  String get inboxCollabInviteNotMineButton => 'Not mine';
+  String get inboxCollabInviteNotMineButton => 'Bukan milik saya';
 
   @override
-  String get inboxCollabInvitePreviewTitle => 'Co-post invite';
+  String get inboxCollabInvitePreviewTitle => 'Undangan posting bersama';
 
   @override
   String inboxCollabInvitePreviewTitleFrom(String displayName) {
-    return 'Co-post invite from $displayName';
+    return 'Undangan posting bersama dari $displayName';
   }
 
   @override
   String get inboxCollabInviteTimelineConsequence =>
-      'Co-posting adds this video to your timeline as a collaboration.';
-
-  @override
-  String get inboxCollabInviteAcceptButton => 'Terima';
-
-  @override
-  String get inboxCollabInviteIgnoreButton => 'Abaikan';
+      'Posting bersama menambahkan video ini ke timeline Anda sebagai kolaborasi.';
 
   @override
   String get inboxCollabInviteAcceptedStatus => 'Diterima';

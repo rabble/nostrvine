@@ -5320,11 +5320,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get inboxCollabInviteCardTitle => 'Convite para colaborar';
 
   @override
-  String inboxCollabInviteCardRoleLabel(String role) {
-    return '$role nesta publicação';
-  }
-
-  @override
   String get inboxCollabInviteCardUntitledVideo => 'Vídeo sem título';
 
   @override
@@ -5342,28 +5337,22 @@ class AppLocalizationsPt extends AppLocalizations {
   String get messageExternalLinkDialogOpen => 'Abrir';
 
   @override
-  String get inboxCollabInviteCoPostButton => 'Co-post';
+  String get inboxCollabInviteCoPostButton => 'Co-publicar';
 
   @override
-  String get inboxCollabInviteNotMineButton => 'Not mine';
+  String get inboxCollabInviteNotMineButton => 'Não é meu';
 
   @override
-  String get inboxCollabInvitePreviewTitle => 'Co-post invite';
+  String get inboxCollabInvitePreviewTitle => 'Convite para co-publicar';
 
   @override
   String inboxCollabInvitePreviewTitleFrom(String displayName) {
-    return 'Co-post invite from $displayName';
+    return 'Convite para co-publicar de $displayName';
   }
 
   @override
   String get inboxCollabInviteTimelineConsequence =>
-      'Co-posting adds this video to your timeline as a collaboration.';
-
-  @override
-  String get inboxCollabInviteAcceptButton => 'Aceitar';
-
-  @override
-  String get inboxCollabInviteIgnoreButton => 'Ignorar';
+      'Co-publicar adiciona este vídeo à sua linha do tempo como uma colaboração.';
 
   @override
   String get inboxCollabInviteAcceptedStatus => 'Aceito';

@@ -2306,19 +2306,14 @@
     "messageExternalLinkDialogTitle": "Deschizi linkul extern?",
     "messageExternalLinkDialogBody": "Acest link duce la un site extern și s-ar putea să nu fie sigur:\n\n{url}",
     "messageExternalLinkDialogOpen": "Deschide",
-    "inboxCollabInviteAcceptButton": "Acceptă",
+    "inboxCollabInviteCoPostButton": "Co-publică",
+    "inboxCollabInviteNotMineButton": "Nu e al meu",
+    "inboxCollabInvitePreviewTitle": "Invitație de co-publicare",
+    "inboxCollabInvitePreviewTitleFrom": "Invitație de co-publicare de la {displayName}",
+    "inboxCollabInviteTimelineConsequence": "Co-publicarea adaugă acest videoclip în cronologia ta ca o colaborare.",
     "inboxCollabInviteAcceptError": "Nu s-a putut accepta. Încearcă din nou.",
     "inboxCollabInviteAcceptedStatus": "Acceptată",
-    "inboxCollabInviteCardRoleLabel": "{role} la această postare",
-    "@inboxCollabInviteCardRoleLabel": {
-        "placeholders": {
-            "role": {
-                "type": "String"
-            }
-        }
-    },
     "inboxCollabInviteCardTitle": "Invitație de colaborare",
-    "inboxCollabInviteIgnoreButton": "Ignoră",
     "inboxCollabInviteIgnoredStatus": "Ignorată",
     "inboxConversationCollabInvitePreview": "Invitație de colaborare",
     "@inboxConversationCollabInvitePreview": {
@@ -3145,16 +3140,16 @@
     "profileSetupImagesTypeGroup": "imagini",
     "profileSetupExternalNip05InvalidFormat": "Format NIP-05 invalid (ex.: nume@domeniu.com)",
     "profileSetupExternalNip05DivineDomain": "Folosește câmpul de nume de utilizator de mai sus pentru divine.video",
-"nostrSettingsNip05Address": "NIP-05 address",
-"nostrSettingsNip05AddressSubtitle": "Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.",
-"nostrSettingsNip05AddressHint": "you@example.com",
-"nostrSettingsNip05SaveAction": "Save NIP-05",
-"nostrSettingsNip05Saved": "NIP-05 saved",
-"nostrSettingsNip05SaveFailed": "Couldn't save NIP-05. Please try again.",
-"profileSetupNip05ConfirmTitle": "Use your own NIP-05?",
-"profileSetupNip05ConfirmBody": "NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it's wrong, people can't find you and your verified handle disappears. Continue only if you've set this up.",
-"profileSetupNip05ConfirmContinue": "Continue",
-"profileSetupNip05ConfirmCancel": "Cancel",
+    "nostrSettingsNip05Address": "NIP-05 address",
+    "nostrSettingsNip05AddressSubtitle": "Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.",
+    "nostrSettingsNip05AddressHint": "you@example.com",
+    "nostrSettingsNip05SaveAction": "Save NIP-05",
+    "nostrSettingsNip05Saved": "NIP-05 saved",
+    "nostrSettingsNip05SaveFailed": "Couldn't save NIP-05. Please try again.",
+    "profileSetupNip05ConfirmTitle": "Use your own NIP-05?",
+    "profileSetupNip05ConfirmBody": "NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it's wrong, people can't find you and your verified handle disappears. Continue only if you've set this up.",
+    "profileSetupNip05ConfirmContinue": "Continue",
+    "profileSetupNip05ConfirmCancel": "Cancel",
     "contentWarningReportContentTooltip": "Raportează conținutul",
     "contentWarningBlockUserTooltip": "Blochează utilizatorul",
     "contentWarningBlockedTitle": "Conținut blocat",
@@ -3273,8 +3268,12 @@
     "@verifiedAccountChipSemanticLabel": {
         "description": "Screen reader label for a verified-account chip on a user's profile.",
         "placeholders": {
-            "platform": { "type": "String" },
-            "identity": { "type": "String" }
+            "platform": {
+                "type": "String"
+            },
+            "identity": {
+                "type": "String"
+            }
         }
     },
     "profileEditVerifiedAccountsTitle": "Conturi verificate",

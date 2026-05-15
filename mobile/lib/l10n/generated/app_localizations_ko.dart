@@ -5084,11 +5084,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get inboxCollabInviteCardTitle => '콜라보 초대';
 
   @override
-  String inboxCollabInviteCardRoleLabel(String role) {
-    return '이 게시물의 $role';
-  }
-
-  @override
   String get inboxCollabInviteCardUntitledVideo => '제목 없는 동영상';
 
   @override
@@ -5106,28 +5101,22 @@ class AppLocalizationsKo extends AppLocalizations {
   String get messageExternalLinkDialogOpen => '열기';
 
   @override
-  String get inboxCollabInviteCoPostButton => 'Co-post';
+  String get inboxCollabInviteCoPostButton => '공동 게시';
 
   @override
-  String get inboxCollabInviteNotMineButton => 'Not mine';
+  String get inboxCollabInviteNotMineButton => '내 것이 아니에요';
 
   @override
-  String get inboxCollabInvitePreviewTitle => 'Co-post invite';
+  String get inboxCollabInvitePreviewTitle => '공동 게시 초대';
 
   @override
   String inboxCollabInvitePreviewTitleFrom(String displayName) {
-    return 'Co-post invite from $displayName';
+    return '$displayName님의 공동 게시 초대';
   }
 
   @override
   String get inboxCollabInviteTimelineConsequence =>
-      'Co-posting adds this video to your timeline as a collaboration.';
-
-  @override
-  String get inboxCollabInviteAcceptButton => '수락';
-
-  @override
-  String get inboxCollabInviteIgnoreButton => '무시';
+      '공동 게시하면 이 동영상이 협업으로 내 타임라인에 추가됩니다.';
 
   @override
   String get inboxCollabInviteAcceptedStatus => '수락됨';

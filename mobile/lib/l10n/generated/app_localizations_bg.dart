@@ -5341,11 +5341,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get inboxCollabInviteCardTitle => 'Покана за сътрудник';
 
   @override
-  String inboxCollabInviteCardRoleLabel(String role) {
-    return '$role на тази публикация';
-  }
-
-  @override
   String get inboxCollabInviteCardUntitledVideo => 'Видео без заглавие';
 
   @override
@@ -5363,28 +5358,22 @@ class AppLocalizationsBg extends AppLocalizations {
   String get messageExternalLinkDialogOpen => 'Отвори';
 
   @override
-  String get inboxCollabInviteCoPostButton => 'Co-post';
+  String get inboxCollabInviteCoPostButton => 'Съвместна публикация';
 
   @override
-  String get inboxCollabInviteNotMineButton => 'Not mine';
+  String get inboxCollabInviteNotMineButton => 'Не е мое';
 
   @override
-  String get inboxCollabInvitePreviewTitle => 'Co-post invite';
+  String get inboxCollabInvitePreviewTitle => 'Покана за съвместна публикация';
 
   @override
   String inboxCollabInvitePreviewTitleFrom(String displayName) {
-    return 'Co-post invite from $displayName';
+    return 'Покана за съвместна публикация от $displayName';
   }
 
   @override
   String get inboxCollabInviteTimelineConsequence =>
-      'Co-posting adds this video to your timeline as a collaboration.';
-
-  @override
-  String get inboxCollabInviteAcceptButton => 'Приеми';
-
-  @override
-  String get inboxCollabInviteIgnoreButton => 'Игнорирайте';
+      'Съвместното публикуване добавя това видео към хронологията ти като сътрудничество.';
 
   @override
   String get inboxCollabInviteAcceptedStatus => 'Прието';

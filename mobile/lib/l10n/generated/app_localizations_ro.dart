@@ -5436,11 +5436,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get inboxCollabInviteCardTitle => 'Invitație de colaborare';
 
   @override
-  String inboxCollabInviteCardRoleLabel(String role) {
-    return '$role la această postare';
-  }
-
-  @override
   String get inboxCollabInviteCardUntitledVideo => 'Videoclip fără titlu';
 
   @override
@@ -5458,28 +5453,22 @@ class AppLocalizationsRo extends AppLocalizations {
   String get messageExternalLinkDialogOpen => 'Deschide';
 
   @override
-  String get inboxCollabInviteCoPostButton => 'Co-post';
+  String get inboxCollabInviteCoPostButton => 'Co-publică';
 
   @override
-  String get inboxCollabInviteNotMineButton => 'Not mine';
+  String get inboxCollabInviteNotMineButton => 'Nu e al meu';
 
   @override
-  String get inboxCollabInvitePreviewTitle => 'Co-post invite';
+  String get inboxCollabInvitePreviewTitle => 'Invitație de co-publicare';
 
   @override
   String inboxCollabInvitePreviewTitleFrom(String displayName) {
-    return 'Co-post invite from $displayName';
+    return 'Invitație de co-publicare de la $displayName';
   }
 
   @override
   String get inboxCollabInviteTimelineConsequence =>
-      'Co-posting adds this video to your timeline as a collaboration.';
-
-  @override
-  String get inboxCollabInviteAcceptButton => 'Acceptă';
-
-  @override
-  String get inboxCollabInviteIgnoreButton => 'Ignoră';
+      'Co-publicarea adaugă acest videoclip în cronologia ta ca o colaborare.';
 
   @override
   String get inboxCollabInviteAcceptedStatus => 'Acceptată';

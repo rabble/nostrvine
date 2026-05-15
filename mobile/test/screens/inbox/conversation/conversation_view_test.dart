@@ -3,6 +3,7 @@
 // ABOUTME: plus the app bar and input bar rendering.
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -320,24 +321,38 @@ void main() {
           );
           await tester.pump();
 
-          expect(find.textContaining('Co-post invite'), findsOneWidget);
+          final previewTitle = l10n.inboxCollabInvitePreviewTitle;
+          expect(find.textContaining(previewTitle), findsOneWidget);
           expect(find.textContaining('Skate loop'), findsOneWidget);
           expect(
-            find.text(
-              'Co-posting adds this video to your timeline as a collaboration.',
-            ),
+            find.text(l10n.inboxCollabInviteTimelineConsequence),
             findsOneWidget,
           );
-          expect(find.text('Co-post'), findsOneWidget);
-          expect(find.text('Not mine'), findsOneWidget);
-          expect(find.text(l10n.inboxCollabInviteAcceptButton), findsNothing);
-          expect(find.text(l10n.inboxCollabInviteIgnoreButton), findsNothing);
+          expect(find.text(l10n.inboxCollabInviteCoPostButton), findsOneWidget);
+          expect(
+            find.text(l10n.inboxCollabInviteNotMineButton),
+            findsOneWidget,
+          );
           expect(
             find.byKey(const ValueKey('collaborator_invite_thumbnail')),
             findsOneWidget,
           );
+          expect(
+            find.bySemanticsLabel(
+              l10n.notificationsVideoThumbnailFor('Skate loop'),
+            ),
+            findsOneWidget,
+          );
+          expect(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is DivineIcon &&
+                  widget.icon == DivineIconName.playFill,
+            ),
+            findsOneWidget,
+          );
 
-          await tester.tap(find.text('Co-post'));
+          await tester.tap(find.text(l10n.inboxCollabInviteCoPostButton));
           await tester.pump();
 
           verify(
@@ -381,13 +396,19 @@ void main() {
           );
           await tester.pump();
 
-          expect(find.textContaining('Co-post invite'), findsOneWidget);
+          expect(
+            find.textContaining(l10n.inboxCollabInvitePreviewTitle),
+            findsOneWidget,
+          );
           expect(find.textContaining('Skate loop'), findsOneWidget);
-          expect(find.text('Co-post'), findsOneWidget);
-          expect(find.text('Not mine'), findsOneWidget);
+          expect(find.text(l10n.inboxCollabInviteCoPostButton), findsOneWidget);
+          expect(
+            find.text(l10n.inboxCollabInviteNotMineButton),
+            findsOneWidget,
+          );
           expect(find.text('You were invited to collaborate.'), findsNothing);
 
-          await tester.tap(find.text('Co-post'));
+          await tester.tap(find.text(l10n.inboxCollabInviteCoPostButton));
           await tester.pump();
 
           verify(

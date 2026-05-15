@@ -5181,11 +5181,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get inboxCollabInviteCardTitle => 'የተባባሪ ግብዣ';
 
   @override
-  String inboxCollabInviteCardRoleLabel(String role) {
-    return '$role በዚህ ልጥፍ ላይ';
-  }
-
-  @override
   String get inboxCollabInviteCardUntitledVideo => 'ርዕስ የሌለው ቪዲዮ';
 
   @override
@@ -5203,28 +5198,22 @@ class AppLocalizationsAm extends AppLocalizations {
   String get messageExternalLinkDialogOpen => 'ክፈት';
 
   @override
-  String get inboxCollabInviteCoPostButton => 'Co-post';
+  String get inboxCollabInviteCoPostButton => 'አብረህ ለጥፍ';
 
   @override
-  String get inboxCollabInviteNotMineButton => 'Not mine';
+  String get inboxCollabInviteNotMineButton => 'የኔ አይደለም';
 
   @override
-  String get inboxCollabInvitePreviewTitle => 'Co-post invite';
+  String get inboxCollabInvitePreviewTitle => 'የጋራ ልጥፍ ግብዣ';
 
   @override
   String inboxCollabInvitePreviewTitleFrom(String displayName) {
-    return 'Co-post invite from $displayName';
+    return 'ከ$displayName የጋራ ልጥፍ ግብዣ';
   }
 
   @override
   String get inboxCollabInviteTimelineConsequence =>
-      'Co-posting adds this video to your timeline as a collaboration.';
-
-  @override
-  String get inboxCollabInviteAcceptButton => 'ተቀበል';
-
-  @override
-  String get inboxCollabInviteIgnoreButton => 'ችላ በል';
+      'አብሮ መለጠፍ ይህን ቪዲዮ እንደ ትብብር ወደ የጊዜ መስመርህ ያክለዋል።';
 
   @override
   String get inboxCollabInviteAcceptedStatus => 'ተቀባይነት አግኝቷል';

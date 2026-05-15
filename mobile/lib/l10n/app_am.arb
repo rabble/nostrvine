@@ -436,16 +436,16 @@
     "profileSetupNip05AddressLabel": "NIP-05 አድራሻ",
     "profileSetupExternalNip05InvalidFormat": "ልክ ያልሆነ NIP-05 ቅርጸት (ለምሳሌ name@domain.com)",
     "profileSetupExternalNip05DivineDomain": "ለdivine.video ከላይ ያለውን የተጠቃሚ ስም መስክ ይጠቀሙ",
-"nostrSettingsNip05Address": "NIP-05 address",
-"nostrSettingsNip05AddressSubtitle": "Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.",
-"nostrSettingsNip05AddressHint": "you@example.com",
-"nostrSettingsNip05SaveAction": "Save NIP-05",
-"nostrSettingsNip05Saved": "NIP-05 saved",
-"nostrSettingsNip05SaveFailed": "Couldn't save NIP-05. Please try again.",
-"profileSetupNip05ConfirmTitle": "Use your own NIP-05?",
-"profileSetupNip05ConfirmBody": "NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it's wrong, people can't find you and your verified handle disappears. Continue only if you've set this up.",
-"profileSetupNip05ConfirmContinue": "Continue",
-"profileSetupNip05ConfirmCancel": "Cancel",
+    "nostrSettingsNip05Address": "NIP-05 address",
+    "nostrSettingsNip05AddressSubtitle": "Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.",
+    "nostrSettingsNip05AddressHint": "you@example.com",
+    "nostrSettingsNip05SaveAction": "Save NIP-05",
+    "nostrSettingsNip05Saved": "NIP-05 saved",
+    "nostrSettingsNip05SaveFailed": "Couldn't save NIP-05. Please try again.",
+    "profileSetupNip05ConfirmTitle": "Use your own NIP-05?",
+    "profileSetupNip05ConfirmBody": "NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it's wrong, people can't find you and your verified handle disappears. Continue only if you've set this up.",
+    "profileSetupNip05ConfirmContinue": "Continue",
+    "profileSetupNip05ConfirmCancel": "Cancel",
     "profileSetupProfilePicturePreview": "የመገለጫ ስዕል ቅድመ እይታ",
     "nostrInfoIntroBuiltOn": "ዳይቪን የተገነባው በNostr ላይ ነው፣",
     "nostrInfoIntroDescription": "ሳንሱርን የሚቋቋም ክፍት ፕሮቶኮል ሰዎች በአንድ ኩባንያ ወይም መድረክ ላይ ሳይመሰረቱ በመስመር ላይ እንዲግባቡ ያስችላቸዋል።",
@@ -2619,22 +2619,16 @@
     "@inboxCollabInviteCardTitle": {
         "description": "Header label on a collaborator invite card in the DM conversation."
     },
-    "inboxCollabInviteCardRoleLabel": "{role} በዚህ ልጥፍ ላይ",
-    "@inboxCollabInviteCardRoleLabel": {
-        "description": "Subtitle on the collaborator invite card describing the offered collaborator role.",
-        "placeholders": {
-            "role": {
-                "type": "String"
-            }
-        }
-    },
     "inboxCollabInviteCardUntitledVideo": "ርዕስ የሌለው ቪዲዮ",
     "clickableTextViewVideoLink": "ቪዲዮውን ይመልከቱ",
     "messageExternalLinkDialogTitle": "ውጫዊ ሊንክ ይክፈቱ?",
     "messageExternalLinkDialogBody": "ይህ ሊንክ ወደ ውጫዊ ድረ-ገጽ ይሄዳል እና ደህንነቱ አልተረጋገጠም:\n\n{url}",
     "messageExternalLinkDialogOpen": "ክፈት",
-    "inboxCollabInviteAcceptButton": "ተቀበል",
-    "inboxCollabInviteIgnoreButton": "ችላ በል",
+    "inboxCollabInviteCoPostButton": "አብረህ ለጥፍ",
+    "inboxCollabInviteNotMineButton": "የኔ አይደለም",
+    "inboxCollabInvitePreviewTitle": "የጋራ ልጥፍ ግብዣ",
+    "inboxCollabInvitePreviewTitleFrom": "ከ{displayName} የጋራ ልጥፍ ግብዣ",
+    "inboxCollabInviteTimelineConsequence": "አብሮ መለጠፍ ይህን ቪዲዮ እንደ ትብብር ወደ የጊዜ መስመርህ ያክለዋል።",
     "inboxCollabInviteAcceptedStatus": "ተቀባይነት አግኝቷል",
     "inboxCollabInviteIgnoredStatus": "ችላ ተብሏል",
     "inboxCollabInviteAcceptError": "መቀበል አልተቻለም። እንደገና ይሞክሩ።",
@@ -3602,8 +3596,12 @@
     "@verifiedAccountChipSemanticLabel": {
         "description": "Screen reader label for a verified-account chip on a user's profile.",
         "placeholders": {
-            "platform": { "type": "String" },
-            "identity": { "type": "String" }
+            "platform": {
+                "type": "String"
+            },
+            "identity": {
+                "type": "String"
+            }
         }
     },
     "profileEditVerifiedAccountsTitle": "የተረጋገጡ መለያዎች",

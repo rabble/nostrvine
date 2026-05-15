@@ -2310,19 +2310,14 @@
     "messageExternalLinkDialogTitle": "¿Abrir enlace externo?",
     "messageExternalLinkDialogBody": "Este enlace lleva a un sitio externo y puede no ser seguro:\n\n{url}",
     "messageExternalLinkDialogOpen": "Abrir",
-    "inboxCollabInviteAcceptButton": "Aceptar",
+    "inboxCollabInviteCoPostButton": "Co-publicar",
+    "inboxCollabInviteNotMineButton": "No es mío",
+    "inboxCollabInvitePreviewTitle": "Invitación para co-publicar",
+    "inboxCollabInvitePreviewTitleFrom": "Invitación para co-publicar de {displayName}",
+    "inboxCollabInviteTimelineConsequence": "Co-publicar añade este video a tu línea de tiempo como colaboración.",
     "inboxCollabInviteAcceptError": "No se pudo aceptar. Inténtalo de nuevo.",
     "inboxCollabInviteAcceptedStatus": "Aceptada",
-    "inboxCollabInviteCardRoleLabel": "{role} en esta publicación",
-    "@inboxCollabInviteCardRoleLabel": {
-        "placeholders": {
-            "role": {
-                "type": "String"
-            }
-        }
-    },
     "inboxCollabInviteCardTitle": "Invitación a colaborar",
-    "inboxCollabInviteIgnoreButton": "Ignorar",
     "inboxCollabInviteIgnoredStatus": "Ignorada",
     "inboxConversationCollabInvitePreview": "Invitación a colaborar",
     "@inboxConversationCollabInvitePreview": {
@@ -3153,16 +3148,16 @@
     "profileSetupImagesTypeGroup": "imágenes",
     "profileSetupExternalNip05InvalidFormat": "Formato NIP-05 inválido (ej., nombre@dominio.com)",
     "profileSetupExternalNip05DivineDomain": "Usá el campo de nombre de usuario de arriba para divine.video",
-"nostrSettingsNip05Address": "NIP-05 address",
-"nostrSettingsNip05AddressSubtitle": "Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.",
-"nostrSettingsNip05AddressHint": "you@example.com",
-"nostrSettingsNip05SaveAction": "Save NIP-05",
-"nostrSettingsNip05Saved": "NIP-05 saved",
-"nostrSettingsNip05SaveFailed": "Couldn't save NIP-05. Please try again.",
-"profileSetupNip05ConfirmTitle": "Use your own NIP-05?",
-"profileSetupNip05ConfirmBody": "NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it's wrong, people can't find you and your verified handle disappears. Continue only if you've set this up.",
-"profileSetupNip05ConfirmContinue": "Continue",
-"profileSetupNip05ConfirmCancel": "Cancel",
+    "nostrSettingsNip05Address": "NIP-05 address",
+    "nostrSettingsNip05AddressSubtitle": "Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.",
+    "nostrSettingsNip05AddressHint": "you@example.com",
+    "nostrSettingsNip05SaveAction": "Save NIP-05",
+    "nostrSettingsNip05Saved": "NIP-05 saved",
+    "nostrSettingsNip05SaveFailed": "Couldn't save NIP-05. Please try again.",
+    "profileSetupNip05ConfirmTitle": "Use your own NIP-05?",
+    "profileSetupNip05ConfirmBody": "NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it's wrong, people can't find you and your verified handle disappears. Continue only if you've set this up.",
+    "profileSetupNip05ConfirmContinue": "Continue",
+    "profileSetupNip05ConfirmCancel": "Cancel",
     "contentWarningReportContentTooltip": "Reportar contenido",
     "contentWarningBlockUserTooltip": "Bloquear usuario",
     "contentWarningBlockedTitle": "Contenido bloqueado",
@@ -3277,8 +3272,12 @@
     "@verifiedAccountChipSemanticLabel": {
         "description": "Screen reader label for a verified-account chip on a user's profile.",
         "placeholders": {
-            "platform": { "type": "String" },
-            "identity": { "type": "String" }
+            "platform": {
+                "type": "String"
+            },
+            "identity": {
+                "type": "String"
+            }
         }
     },
     "profileEditVerifiedAccountsTitle": "Cuentas verificadas",

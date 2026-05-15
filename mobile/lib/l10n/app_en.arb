@@ -2809,15 +2809,6 @@
   "@inboxCollabInviteCardTitle": {
     "description": "Header label on a collaborator invite card in the DM conversation."
   },
-  "inboxCollabInviteCardRoleLabel": "{role} on this post",
-  "@inboxCollabInviteCardRoleLabel": {
-    "description": "Subtitle on the collaborator invite card describing the offered collaborator role.",
-    "placeholders": {
-      "role": {
-        "type": "String"
-      }
-    }
-  },
   "inboxCollabInviteCardUntitledVideo": "Untitled video",
   "@inboxCollabInviteCardUntitledVideo": {
     "description": "Fallback shown as the collaborator invite card title when the invited video has no title. Avoids exposing the raw d-tag identifier."
@@ -2869,8 +2860,6 @@
   "@inboxCollabInviteTimelineConsequence": {
     "description": "Explains what accepting a collaborator invite does."
   },
-  "inboxCollabInviteAcceptButton": "Accept",
-  "inboxCollabInviteIgnoreButton": "Ignore",
   "inboxCollabInviteAcceptedStatus": "Accepted",
   "inboxCollabInviteIgnoredStatus": "Ignored",
   "inboxCollabInviteAcceptError": "Could not accept. Try again.",
@@ -2922,7 +2911,6 @@
   "@dmConversationLoadError": {
     "description": "Error text shown in place of the message list when DmRepository.watchMessages emits an error (e.g. local DB read failure). Distinct from send failures (which use `dmSendFailedMessage`)."
   },
-
   "dmMessageInputHint": "Say something…",
   "@dmMessageInputHint": {
     "description": "Placeholder text shown inside the compose field at the bottom of a DM conversation when the user hasn't typed anything yet."
@@ -2963,7 +2951,10 @@
   "@inboxConversationTileLabel": {
     "description": "Accessibility label for a conversation row in the inbox list, read by screen readers when the row receives focus. Use the other participant's display name.",
     "placeholders": {
-      "displayName": { "type": "String", "example": "Alice" }
+      "displayName": {
+        "type": "String",
+        "example": "Alice"
+      }
     }
   },
   "inboxConversationTileLongPressHint": "Show conversation actions",

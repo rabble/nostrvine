@@ -5067,11 +5067,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get inboxCollabInviteCardTitle => 'コラボ招待';
 
   @override
-  String inboxCollabInviteCardRoleLabel(String role) {
-    return 'この投稿で$role';
-  }
-
-  @override
   String get inboxCollabInviteCardUntitledVideo => '無題の動画';
 
   @override
@@ -5089,28 +5084,22 @@ class AppLocalizationsJa extends AppLocalizations {
   String get messageExternalLinkDialogOpen => '開く';
 
   @override
-  String get inboxCollabInviteCoPostButton => 'Co-post';
+  String get inboxCollabInviteCoPostButton => '共同投稿';
 
   @override
-  String get inboxCollabInviteNotMineButton => 'Not mine';
+  String get inboxCollabInviteNotMineButton => '自分のものではない';
 
   @override
-  String get inboxCollabInvitePreviewTitle => 'Co-post invite';
+  String get inboxCollabInvitePreviewTitle => '共同投稿の招待';
 
   @override
   String inboxCollabInvitePreviewTitleFrom(String displayName) {
-    return 'Co-post invite from $displayName';
+    return '$displayNameからの共同投稿の招待';
   }
 
   @override
   String get inboxCollabInviteTimelineConsequence =>
-      'Co-posting adds this video to your timeline as a collaboration.';
-
-  @override
-  String get inboxCollabInviteAcceptButton => '承認';
-
-  @override
-  String get inboxCollabInviteIgnoreButton => '無視';
+      '共同投稿すると、この動画がコラボレーションとしてあなたのタイムラインに追加されます。';
 
   @override
   String get inboxCollabInviteAcceptedStatus => '承認済み';

@@ -5270,11 +5270,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get inboxCollabInviteCardTitle => 'İşbirliği daveti';
 
   @override
-  String inboxCollabInviteCardRoleLabel(String role) {
-    return 'Bu gönderide $role';
-  }
-
-  @override
   String get inboxCollabInviteCardUntitledVideo => 'Başlıksız video';
 
   @override
@@ -5292,28 +5287,22 @@ class AppLocalizationsTr extends AppLocalizations {
   String get messageExternalLinkDialogOpen => 'Aç';
 
   @override
-  String get inboxCollabInviteCoPostButton => 'Co-post';
+  String get inboxCollabInviteCoPostButton => 'Birlikte paylaş';
 
   @override
-  String get inboxCollabInviteNotMineButton => 'Not mine';
+  String get inboxCollabInviteNotMineButton => 'Benim değil';
 
   @override
-  String get inboxCollabInvitePreviewTitle => 'Co-post invite';
+  String get inboxCollabInvitePreviewTitle => 'Birlikte paylaşma daveti';
 
   @override
   String inboxCollabInvitePreviewTitleFrom(String displayName) {
-    return 'Co-post invite from $displayName';
+    return '$displayName tarafından birlikte paylaşma daveti';
   }
 
   @override
   String get inboxCollabInviteTimelineConsequence =>
-      'Co-posting adds this video to your timeline as a collaboration.';
-
-  @override
-  String get inboxCollabInviteAcceptButton => 'Kabul et';
-
-  @override
-  String get inboxCollabInviteIgnoreButton => 'Yoksay';
+      'Birlikte paylaşmak bu videoyu iş birliği olarak zaman çizelgene ekler.';
 
   @override
   String get inboxCollabInviteAcceptedStatus => 'Kabul edildi';

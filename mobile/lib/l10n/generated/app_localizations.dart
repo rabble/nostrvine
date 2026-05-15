@@ -9374,12 +9374,6 @@ abstract class AppLocalizations {
   /// **'Collaborator invite'**
   String get inboxCollabInviteCardTitle;
 
-  /// Subtitle on the collaborator invite card describing the offered collaborator role.
-  ///
-  /// In en, this message translates to:
-  /// **'{role} on this post'**
-  String inboxCollabInviteCardRoleLabel(String role);
-
   /// Fallback shown as the collaborator invite card title when the invited video has no title. Avoids exposing the raw d-tag identifier.
   ///
   /// In en, this message translates to:
@@ -9439,18 +9433,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Co-posting adds this video to your timeline as a collaboration.'**
   String get inboxCollabInviteTimelineConsequence;
-
-  /// No description provided for @inboxCollabInviteAcceptButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Accept'**
-  String get inboxCollabInviteAcceptButton;
-
-  /// No description provided for @inboxCollabInviteIgnoreButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Ignore'**
-  String get inboxCollabInviteIgnoreButton;
 
   /// No description provided for @inboxCollabInviteAcceptedStatus.
   ///
