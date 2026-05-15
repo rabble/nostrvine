@@ -2782,6 +2782,36 @@ abstract class AppLocalizations {
   /// **'Open video details'**
   String get videoOverlayOpenMetadataFromDescription;
 
+  /// Placeholder shown inside the inline comment field at the bottom of the fullscreen video player (used by Explore, Search, and Profile entry points). Tapping the field opens the keyboard so the user can post a comment without opening the full comments sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Add comment...'**
+  String get videoOverlayCommentBarHint;
+
+  /// Screen-reader label for the inline comment field at the bottom of the fullscreen video player. Action-oriented: describes what the field is for.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a comment'**
+  String get videoOverlayCommentBarSemanticLabel;
+
+  /// Screen-reader label for the send button next to the inline comment field at the bottom of the fullscreen video player.
+  ///
+  /// In en, this message translates to:
+  /// **'Send comment'**
+  String get videoOverlayCommentBarSendLabel;
+
+  /// Snackbar confirmation shown after the user posts a comment from the inline comment field at the bottom of the fullscreen video player.
+  ///
+  /// In en, this message translates to:
+  /// **'Comment posted'**
+  String get videoOverlayCommentPostedSnackbar;
+
+  /// Snackbar shown when posting a comment from the inline comment field fails (e.g. relay unreachable).
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t post comment'**
+  String get videoOverlayCommentPostFailedSnackbar;
+
   /// No description provided for @videoDescriptionLoops.
   ///
   /// In en, this message translates to:

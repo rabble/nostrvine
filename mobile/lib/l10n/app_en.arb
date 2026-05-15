@@ -808,6 +808,26 @@
   "@videoOverlayOpenMetadataFromDescription": {
     "description": "Screen-reader label for the tappable description row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the description text itself — that's already read aloud by the underlying Text widget."
   },
+  "videoOverlayCommentBarHint": "Add comment...",
+  "@videoOverlayCommentBarHint": {
+    "description": "Placeholder shown inside the inline comment field at the bottom of the fullscreen video player (used by Explore, Search, and Profile entry points). Tapping the field opens the keyboard so the user can post a comment without opening the full comments sheet."
+  },
+  "videoOverlayCommentBarSemanticLabel": "Add a comment",
+  "@videoOverlayCommentBarSemanticLabel": {
+    "description": "Screen-reader label for the inline comment field at the bottom of the fullscreen video player. Action-oriented: describes what the field is for."
+  },
+  "videoOverlayCommentBarSendLabel": "Send comment",
+  "@videoOverlayCommentBarSendLabel": {
+    "description": "Screen-reader label for the send button next to the inline comment field at the bottom of the fullscreen video player."
+  },
+  "videoOverlayCommentPostedSnackbar": "Comment posted",
+  "@videoOverlayCommentPostedSnackbar": {
+    "description": "Snackbar confirmation shown after the user posts a comment from the inline comment field at the bottom of the fullscreen video player."
+  },
+  "videoOverlayCommentPostFailedSnackbar": "Couldn't post comment",
+  "@videoOverlayCommentPostFailedSnackbar": {
+    "description": "Snackbar shown when posting a comment from the inline comment field fails (e.g. relay unreachable)."
+  },
   "videoDescriptionLoops": "{count} loops",
   "@videoDescriptionLoops": {
     "placeholders": {

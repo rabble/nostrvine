@@ -1563,6 +1563,21 @@ class AppLocalizationsPl extends AppLocalizations {
       'Otwórz szczegóły filmu';
 
   @override
+  String get videoOverlayCommentBarHint => 'Add comment...';
+
+  @override
+  String get videoOverlayCommentBarSemanticLabel => 'Add a comment';
+
+  @override
+  String get videoOverlayCommentBarSendLabel => 'Send comment';
+
+  @override
+  String get videoOverlayCommentPostedSnackbar => 'Comment posted';
+
+  @override
+  String get videoOverlayCommentPostFailedSnackbar => 'Couldn\'t post comment';
+
+  @override
   String videoDescriptionLoops(String count) {
     return '$count pętli';
   }

@@ -1449,6 +1449,21 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoOverlayOpenMetadataFromDescription => '動画の詳細を開く';
 
   @override
+  String get videoOverlayCommentBarHint => 'Add comment...';
+
+  @override
+  String get videoOverlayCommentBarSemanticLabel => 'Add a comment';
+
+  @override
+  String get videoOverlayCommentBarSendLabel => 'Send comment';
+
+  @override
+  String get videoOverlayCommentPostedSnackbar => 'Comment posted';
+
+  @override
+  String get videoOverlayCommentPostFailedSnackbar => 'Couldn\'t post comment';
+
+  @override
   String videoDescriptionLoops(String count) {
     return '$countループ';
   }

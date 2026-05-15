@@ -14,6 +14,7 @@ import 'package:infinite_video_feed/infinite_video_feed.dart'
     show InfiniteVideoFeed, VideoErrorType;
 import 'package:models/models.dart';
 import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
+import 'package:openvine/blocs/inline_comment_composer/inline_comment_composer_cubit.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
@@ -41,6 +42,7 @@ import 'package:openvine/widgets/pooled_video_metrics_tracker.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
+import 'package:openvine/widgets/video_feed_item/inline_comment_composer_bar.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/paused_video_play_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart';
@@ -62,23 +64,6 @@ import 'package:video_player/video_player.dart';
 @visibleForTesting
 Alignment fullscreenVideoMediaAlignment({required bool isPortrait}) {
   return isPortrait ? Alignment.center : Alignment.topCenter;
-}
-
-@visibleForTesting
-double fullscreenContainedVideoTopInset({
-  required double safeAreaTop,
-  bool isPortrait = false,
-  bool hasHeader = false,
-}) {
-  // When the screen has a context header, the Scaffold no longer extends the
-  // body behind the AppBar (see `extendBodyBehindAppBar: !hasHeader` below),
-  // so the body is already laid out beneath the header — applying a
-  // leaf-level Padding here would double-pad. The leaf-level inset only
-  // applies on the headerless fullscreen feed, where the body extends
-  // behind a transparent AppBar and contained videos need to be pushed
-  // down to avoid overlapping with it.
-  if (hasHeader) return 0;
-  return isPortrait ? 0 : safeAreaTop + DiVineAppBarStyle.defaultStyle.height;
 }
 
 /// Arguments for navigating to PooledFullscreenVideoFeedScreen.
@@ -599,359 +584,401 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider.value(
-      value: _autoAdvanceCubit,
-      child: MultiBlocListener(
-        listeners: [
-          // Sync volume when hardware buttons change system volume.
-          // Also forward to the web feed so the in-pause mute toggle in
-          // the paused overlay reaches WebVideoPlayer instances.
-          BlocListener<VideoVolumeCubit, VideoVolumeState>(
-            listener: (_, state) {
-              _controller?.setVolume(state.volume);
-              _webFeedKey.currentState?.setVolume(state.volume);
-            },
-          ),
-          // Initialize controller when videos first become available
-          BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
-            listenWhen: (prev, curr) =>
-                !prev.hasPooledVideos && curr.hasPooledVideos,
-            listener: (context, state) =>
-                _initializeControllerIfNeeded(triggerRebuild: true),
-          ),
-          // Handle new videos from pagination
-          BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
-            listenWhen: (prev, curr) =>
-                prev.videoUpdateSignature != curr.videoUpdateSignature,
-            listener: (context, state) => _handleVideosChanged(state),
-          ),
-          BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
-            listenWhen: (prev, curr) =>
-                prev.videos.length != curr.videos.length ||
-                prev.isLoadingMore != curr.isLoadingMore ||
-                prev.canLoadMore != curr.canLoadMore,
-            listener: (context, state) => _continuePendingAutoAdvance(state),
-          ),
-          // Open comments sheet once the first video is ready (notification deep-link)
-          if (widget.autoOpenComments)
-            BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
-              listenWhen: (prev, curr) =>
-                  prev.currentVideo == null && curr.currentVideo != null,
-              listener: (context, state) {
-                final video = state.currentVideo;
-                if (video != null) CommentsScreen.show(context, video);
+    // Owned at the screen level so the inline comment composer bar at the
+    // bottom of the Scaffold has a single cubit shared across page swipes —
+    // re-creating it per-item would lose any in-flight publish during a
+    // swipe. Keyed on the comments repository so an auth flip / account
+    // switch closes the cubit and a fresh one captures the new repo
+    // identity (see `rules/state_management.md`).
+    final commentsRepository = ref.watch(commentsRepositoryProvider);
+
+    return BlocProvider<InlineCommentComposerCubit>(
+      key: ValueKey(commentsRepository),
+      create: (_) =>
+          InlineCommentComposerCubit(commentsRepository: commentsRepository),
+      child: BlocProvider.value(
+        value: _autoAdvanceCubit,
+        child: MultiBlocListener(
+          listeners: [
+            // Sync volume when hardware buttons change system volume.
+            // Also forward to the web feed so the in-pause mute toggle in
+            // the paused overlay reaches WebVideoPlayer instances.
+            BlocListener<VideoVolumeCubit, VideoVolumeState>(
+              listener: (_, state) {
+                _controller?.setVolume(state.volume);
+                _webFeedKey.currentState?.setVolume(state.volume);
               },
             ),
-          // Dispatch FullscreenFeedVideoUnavailable when the active video's
-          // playback status becomes notFound. The BLoC owns the HEAD-confirm,
-          // removal, and dedupe logic — this listener is the screen-level
-          // bridge that replaces the per-item post-frame callback.
-          BlocListener<VideoPlaybackStatusCubit, VideoPlaybackStatusState>(
-            listener: (context, state) =>
-                _dispatchVideoUnavailableIfActive(state),
-          ),
-          // Animate the feed when the BLoC signals a pending skip after a
-          // confirmed 404 removal.
-          BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
-            listenWhen: (prev, curr) =>
-                prev.pendingSkipTarget != curr.pendingSkipTarget &&
-                curr.pendingSkipTarget != null,
-            listener: (context, state) {
-              final target = state.pendingSkipTarget;
-              if (target != null) unawaited(_handlePendingSkip(target));
-            },
-          ),
-          // Pop the route when the last visible video has been removed
-          // by deletion (or, soon, block / mute). When `maybePop`
-          // returns false (cold deep-link into the fullscreen with no
-          // parent route in the stack), the BlocBuilder below renders
-          // an explicit `emptyAfterRemoval` branch so the user is not
-          // left looking at a perpetual loading spinner.
-          BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
-            listenWhen: (prev, curr) =>
-                prev.status != curr.status &&
-                curr.status == FullscreenFeedStatus.emptyAfterRemoval,
-            listener: (context, _) {
-              unawaited(Navigator.of(context).maybePop());
-            },
-          ),
-        ],
-        child: BlocBuilder<FullscreenFeedBloc, FullscreenFeedState>(
-          builder: (context, state) {
-            // The BlocListener above tries to pop on this status; when
-            // it can (parent route exists) the route is gone before this
-            // branch renders. When `maybePop` is a no-op, we land here
-            // and show an explicit empty-state with a back button rather
-            // than the loading spinner below.
-            if (state.status == FullscreenFeedStatus.emptyAfterRemoval) {
-              return Scaffold(
-                backgroundColor: VineTheme.backgroundColor,
-                appBar: DiVineAppBar(
-                  title: widget.contextTitle ?? '',
-                  showBackButton: true,
-                  // The BlocListener above already tried `maybePop` and
-                  // failed (otherwise we wouldn't be rendering this
-                  // branch). Keep the same root-route fallback here so
-                  // cold-start deep links never strand the user.
-                  onBackPressed: () => _handleBack(context),
-                  backgroundMode: DiVineAppBarBackgroundMode.transparent,
-                  forceMaterialTransparency: true,
-                ),
-                body: Center(
-                  child: Text(
-                    context.l10n.fullscreenFeedRemovedMessage,
-                    style: VineTheme.bodyMediumFont(),
-                  ),
-                ),
-              );
-            }
-
-            if (state.status == FullscreenFeedStatus.initial ||
-                !state.hasVideos) {
-              return Scaffold(
-                backgroundColor: VineTheme.backgroundColor,
-                appBar: DiVineAppBar(
-                  title: widget.contextTitle ?? '',
-                  showBackButton: true,
-                  onBackPressed: () => _handleBack(context),
-                  backgroundMode: DiVineAppBarBackgroundMode.transparent,
-                  forceMaterialTransparency: true,
-                ),
-                body: const Center(child: BrandedLoadingIndicator(size: 60)),
-              );
-            }
-
-            if (!state.hasPooledVideos) {
-              return Scaffold(
-                backgroundColor: VineTheme.backgroundColor,
-                appBar: DiVineAppBar(
-                  title: widget.contextTitle ?? '',
-                  showBackButton: true,
-                  onBackPressed: () => _handleBack(context),
-                  backgroundMode: DiVineAppBarBackgroundMode.transparent,
-                  forceMaterialTransparency: true,
-                ),
-                body: const Center(
-                  child: Text(
-                    'No videos available',
-                    style: TextStyle(color: VineTheme.whiteText),
-                  ),
-                ),
-              );
-            }
-
-            final authService = ref.watch(authServiceProvider);
-            final currentUserPubkey = authService.currentPublicKeyHex;
-            final isOwnVideo =
-                currentUserPubkey != null &&
-                currentUserPubkey == state.currentVideo?.pubkey;
-
-            // Subscribe to Auto state so items rebuild on toggle/suppress/resume.
-            final autoState = context.watch<FeedAutoAdvanceCubit>().state;
-
-            // Gate the rail + runtime on the user's reduced-motion
-            // preference. When Auto is unavailable,
-            // force it "off" at the view layer regardless of cubit state.
-            final autoAdvanceAvailable = !MediaQuery.disableAnimationsOf(
-              context,
-            );
-            final effectiveAutoActive =
-                autoAdvanceAvailable && autoState.isEffectivelyActive;
-
-            // Wire the NIP-98 auth header provider into WebVideoFeed only
-            // when running on web AND the HLS auth web player flag is on.
-            // When either condition is false, authHeaderProvider stays null
-            // and the legacy VideoPlayerController path is used unchanged.
-            final hlsAuthWebPlayerEnabled = ref.watch(
-              isFeatureEnabledProvider(FeatureFlag.hlsAuthWebPlayer),
-            );
-            final webAuthHeaderProvider = kIsWeb && hlsAuthWebPlayerEnabled
-                ? buildWebVideoAuthHeaderProvider(
-                    ref.watch(mediaViewerAuthServiceProvider),
-                  )
-                : null;
-
-            // When this screen is opened with a context header (Popular
-            // Videos, hashtag, search, liked, etc.) the header is meaningful
-            // chrome and the video must sit beneath it. We let the Scaffold
-            // own the layout (`extendBodyBehindAppBar: false`) instead of
-            // applying a leaf-level Padding inside `_FittedVideoPlayer` —
-            // the leaf approach is fragile around the media_kit `Video`
-            // widget and was unreliable for square Vine reposts whose
-            // baked-in letterbox bars made them appear to "slip under" the
-            // header. Headerless usages keep the TikTok-style edge-to-edge
-            // layout.
-            final hasHeader =
-                widget.contextTitle != null && widget.contextTitle!.isNotEmpty;
-
-            return Scaffold(
-              backgroundColor: VineTheme.backgroundColor,
-              extendBodyBehindAppBar: !hasHeader,
-              appBar: DiVineAppBar(
-                title: widget.contextTitle ?? '',
-                showBackButton: true,
-                onBackPressed: () => _handleBack(context),
-                backgroundMode: DiVineAppBarBackgroundMode.transparent,
-                forceMaterialTransparency: true,
-                // Back button sits 8 px from the left edge of the screen
-                // (4 px tighter than the previous 12). The More popover on
-                // the trailing side keeps its 12 px gap by wrapping the
-                // FeedSettingsMenu in an extra `end: 4` padding inside the
-                // customActions slot.
-                customActions: const [
-                  Padding(
-                    padding: EdgeInsetsDirectional.only(end: 4),
-                    child: FeedSettingsMenu(),
-                  ),
-                ],
-                style: DiVineAppBarStyle.transparentStyle.copyWith(
-                  horizontalPadding: 8,
-                ),
+            // Initialize controller when videos first become available
+            BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
+              listenWhen: (prev, curr) =>
+                  !prev.hasPooledVideos && curr.hasPooledVideos,
+              listener: (context, state) =>
+                  _initializeControllerIfNeeded(triggerRebuild: true),
+            ),
+            // Handle new videos from pagination
+            BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
+              listenWhen: (prev, curr) =>
+                  prev.videoUpdateSignature != curr.videoUpdateSignature,
+              listener: (context, state) => _handleVideosChanged(state),
+            ),
+            BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
+              listenWhen: (prev, curr) =>
+                  prev.videos.length != curr.videos.length ||
+                  prev.isLoadingMore != curr.isLoadingMore ||
+                  prev.canLoadMore != curr.canLoadMore,
+              listener: (context, state) => _continuePendingAutoAdvance(state),
+            ),
+            // Open comments sheet once the first video is ready (notification deep-link)
+            if (widget.autoOpenComments)
+              BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
+                listenWhen: (prev, curr) =>
+                    prev.currentVideo == null && curr.currentVideo != null,
+                listener: (context, state) {
+                  final video = state.currentVideo;
+                  if (video != null) CommentsScreen.show(context, video);
+                },
               ),
-              body:
-                  InfiniteVideoFeed.isSupported &&
-                      ref.watch(isFeatureEnabledProvider(.nativeFeedPlayer))
-                  ? FeedVideos(
-                      key: _feedVideosKey,
-                      videos: state.videos,
-                      contextTitle: widget.contextTitle,
-                      currentIndex: state.currentIndex,
-                      shouldPortraitExpand: false,
-                      hasMore: state.canLoadMore,
-                      isLoadingMore: state.isLoadingMore,
-                      onActiveVideoChanged: (video, index) {
-                        _resumeAutoAdvanceAfterSwipe();
-                        FeedPerformanceTracker().startVideoSwipeTracking(
-                          video.id,
-                        );
-                        context.read<FullscreenFeedBloc>().add(
-                          FullscreenFeedIndexChanged(index),
-                        );
-                        widget.onPageChanged?.call(index);
-                      },
-                      onNearEnd: () {
-                        if (state.canLoadMore) {
-                          _triggerLoadMore();
-                        }
-                      },
-                    )
-                  : kIsWeb
-                  ? WebVideoFeed(
-                      key: _webFeedKey,
-                      videos: state.videos
-                          .where((v) => v.videoUrl != null)
-                          .toList(),
-                      initialIndex: state.currentIndex,
-                      controllerFactory:
-                          widget.webControllerFactory ??
-                          defaultWebVideoPlayerControllerFactory,
-                      authHeaderProvider: webAuthHeaderProvider,
-                      initialVolume: context
-                          .read<VideoVolumeCubit>()
-                          .state
-                          .volume,
-                      onActiveVideoChanged: (video, index) {
-                        _pagePosition.value = index.toDouble();
-                        _resumeAutoAdvanceAfterSwipe();
-                        FeedPerformanceTracker().startVideoSwipeTracking(
-                          video.id,
-                        );
-                        context.read<FullscreenFeedBloc>().add(
-                          FullscreenFeedIndexChanged(index),
-                        );
-                        widget.onPageChanged?.call(index);
-                      },
-                      onCompleted: (_) => _handleAutoAdvanceCompleted(),
-                      onErrored: _handleWebPlayerErrored,
-                      onRequiresAuth: _handleWebPlayerRequiresAuth,
-                      onNearEnd: (index) => _onNearEnd(state, index),
-                      itemBuilder:
-                          (
-                            context,
-                            video,
-                            index, {
-                            required isActive,
-                            controller,
-                          }) {
-                            return _WebFullscreenItem(
-                              video: video,
-                              isActive: isActive,
-                              isOwnVideo: currentUserPubkey == video.pubkey,
-                              controller: controller,
-                              contextTitle: widget.contextTitle,
-                              onInteracted: _suppressAutoAdvance,
-                            );
-                          },
-                    )
-                  : PooledVideoFeed(
-                      key: _feedKey,
-                      videos: state.pooledVideos,
-                      controller: _controller,
-                      initialIndex: state.currentIndex,
-                      onActiveVideoChanged: (video, index) {
-                        _resumeAutoAdvanceAfterSwipe();
-                        FeedPerformanceTracker().startVideoSwipeTracking(
-                          video.id,
-                        );
-                        context.read<FullscreenFeedBloc>().add(
-                          FullscreenFeedIndexChanged(index),
-                        );
-                        widget.onPageChanged?.call(index);
-                      },
-                      onNearEnd: (index) => _onNearEnd(state, index),
-                      nearEndThreshold: 0,
-                      onScrollOffsetChanged: (page) =>
-                          _pagePosition.value = page,
-                      maxLoopDuration: VideoEditorConstants.maxDuration,
-                      itemBuilder:
-                          (context, video, index, {required isActive}) {
-                            if (state.videos.isEmpty) {
-                              debugPrint(
-                                'FullscreenFeed: itemBuilder called with empty '
-                                'state.videos! index=$index, '
-                                'video.id=${video.id}',
-                              );
-                              return const ColoredBox(
-                                color: VineTheme.backgroundColor,
-                              );
-                            }
-                            final originalEvent = state.videos.firstWhere(
-                              (v) => v.id == video.id,
-                              orElse: () {
-                                final clamped = index.clamp(
-                                  0,
-                                  state.videos.length - 1,
-                                );
-                                debugPrint(
-                                  'FullscreenFeed: video ID lookup miss! '
-                                  'video.id=${video.id}, index=$index, '
-                                  'clamped=$clamped, '
-                                  'state.videos.length='
-                                  '${state.videos.length}, '
-                                  'pooledVideos.length='
-                                  '${state.pooledVideos.length}',
-                                );
-                                return state.videos[clamped];
-                              },
-                            );
-                            return _PooledFullscreenItem(
-                              video: originalEvent,
-                              index: index,
-                              isActive: isActive,
-                              pagePosition: _pagePosition,
-                              contextTitle: widget.contextTitle,
-                              trafficSource: widget.trafficSource,
-                              sourceDetail: widget.sourceDetail,
-                              isOwnVideo: isOwnVideo,
-                              isAutoAdvanceActive: effectiveAutoActive,
-                              onInteracted: _suppressAutoAdvance,
-                              onAutoAdvanceCompleted:
-                                  _handleAutoAdvanceCompleted,
-                            );
-                          },
+            // Dispatch FullscreenFeedVideoUnavailable when the active video's
+            // playback status becomes notFound. The BLoC owns the HEAD-confirm,
+            // removal, and dedupe logic — this listener is the screen-level
+            // bridge that replaces the per-item post-frame callback.
+            BlocListener<VideoPlaybackStatusCubit, VideoPlaybackStatusState>(
+              listener: (context, state) =>
+                  _dispatchVideoUnavailableIfActive(state),
+            ),
+            // Animate the feed when the BLoC signals a pending skip after a
+            // confirmed 404 removal.
+            BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
+              listenWhen: (prev, curr) =>
+                  prev.pendingSkipTarget != curr.pendingSkipTarget &&
+                  curr.pendingSkipTarget != null,
+              listener: (context, state) {
+                final target = state.pendingSkipTarget;
+                if (target != null) unawaited(_handlePendingSkip(target));
+              },
+            ),
+            // Pop the route when the last visible video has been removed
+            // by deletion (or, soon, block / mute). When `maybePop`
+            // returns false (cold deep-link into the fullscreen with no
+            // parent route in the stack), the BlocBuilder below renders
+            // an explicit `emptyAfterRemoval` branch so the user is not
+            // left looking at a perpetual loading spinner.
+            BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
+              listenWhen: (prev, curr) =>
+                  prev.status != curr.status &&
+                  curr.status == FullscreenFeedStatus.emptyAfterRemoval,
+              listener: (context, _) {
+                unawaited(Navigator.of(context).maybePop());
+              },
+            ),
+          ],
+          child: BlocBuilder<FullscreenFeedBloc, FullscreenFeedState>(
+            builder: (context, state) {
+              // The BlocListener above tries to pop on this status; when
+              // it can (parent route exists) the route is gone before this
+              // branch renders. When `maybePop` is a no-op, we land here
+              // and show an explicit empty-state with a back button rather
+              // than the loading spinner below.
+              if (state.status == FullscreenFeedStatus.emptyAfterRemoval) {
+                return Scaffold(
+                  backgroundColor: VineTheme.backgroundColor,
+                  appBar: DiVineAppBar(
+                    title: widget.contextTitle ?? '',
+                    showBackButton: true,
+                    // The BlocListener above already tried `maybePop` and
+                    // failed (otherwise we wouldn't be rendering this
+                    // branch). Keep the same root-route fallback here so
+                    // cold-start deep links never strand the user.
+                    onBackPressed: () => _handleBack(context),
+                    backgroundMode: DiVineAppBarBackgroundMode.transparent,
+                    forceMaterialTransparency: true,
+                  ),
+                  body: Center(
+                    child: Text(
+                      context.l10n.fullscreenFeedRemovedMessage,
+                      style: VineTheme.bodyMediumFont(),
                     ),
-            );
-          },
+                  ),
+                );
+              }
+
+              if (state.status == FullscreenFeedStatus.initial ||
+                  !state.hasVideos) {
+                return Scaffold(
+                  backgroundColor: VineTheme.backgroundColor,
+                  appBar: DiVineAppBar(
+                    title: widget.contextTitle ?? '',
+                    showBackButton: true,
+                    onBackPressed: () => _handleBack(context),
+                    backgroundMode: DiVineAppBarBackgroundMode.transparent,
+                    forceMaterialTransparency: true,
+                  ),
+                  body: const Center(child: BrandedLoadingIndicator(size: 60)),
+                );
+              }
+
+              if (!state.hasPooledVideos) {
+                return Scaffold(
+                  backgroundColor: VineTheme.backgroundColor,
+                  appBar: DiVineAppBar(
+                    title: widget.contextTitle ?? '',
+                    showBackButton: true,
+                    onBackPressed: () => _handleBack(context),
+                    backgroundMode: DiVineAppBarBackgroundMode.transparent,
+                    forceMaterialTransparency: true,
+                  ),
+                  body: const Center(
+                    child: Text(
+                      'No videos available',
+                      style: TextStyle(color: VineTheme.whiteText),
+                    ),
+                  ),
+                );
+              }
+
+              final authService = ref.watch(authServiceProvider);
+              final currentUserPubkey = authService.currentPublicKeyHex;
+              final isOwnVideo =
+                  currentUserPubkey != null &&
+                  currentUserPubkey == state.currentVideo?.pubkey;
+
+              // The inline comment composer bar sits at the bottom of the
+              // Scaffold body (inside a Column with `Expanded(child:
+              // feed)`) whenever there's an active video AND a signed-in
+              // user. The bar lives in the body — NOT in
+              // `Scaffold.bottomNavigationBar` — because Scaffold pins
+              // bottomNavigationBar to `size.height - barHeight` and does
+              // not push it above the keyboard. Putting the bar inside
+              // the body lets Scaffold's default `resizeToAvoidBottomInset`
+              // shrink the body when the keyboard opens, which slides the
+              // bar up with it. The feed's MediaQuery is intentionally
+              // left untouched: the home feed's overlays sit at
+              // `bottom: 20 + viewPadding.bottom (= 34) = 54` above the
+              // nav bar, and the fullscreen overlays use the same formula
+              // so the action column / author info land at the same gap
+              // above the comment bar. The bar's own `SafeArea`-style
+              // padding handles the home-indicator visually.
+              final showCommentBar =
+                  currentUserPubkey != null && state.currentVideo != null;
+
+              // Subscribe to Auto state so items rebuild on toggle/suppress/resume.
+              final autoState = context.watch<FeedAutoAdvanceCubit>().state;
+
+              // Gate the rail + runtime on the user's reduced-motion
+              // preference. When Auto is unavailable,
+              // force it "off" at the view layer regardless of cubit state.
+              final autoAdvanceAvailable = !MediaQuery.disableAnimationsOf(
+                context,
+              );
+              final effectiveAutoActive =
+                  autoAdvanceAvailable && autoState.isEffectivelyActive;
+
+              // Wire the NIP-98 auth header provider into WebVideoFeed only
+              // when running on web AND the HLS auth web player flag is on.
+              // When either condition is false, authHeaderProvider stays null
+              // and the legacy VideoPlayerController path is used unchanged.
+              final hlsAuthWebPlayerEnabled = ref.watch(
+                isFeatureEnabledProvider(FeatureFlag.hlsAuthWebPlayer),
+              );
+              final webAuthHeaderProvider = kIsWeb && hlsAuthWebPlayerEnabled
+                  ? buildWebVideoAuthHeaderProvider(
+                      ref.watch(mediaViewerAuthServiceProvider),
+                    )
+                  : null;
+
+              return Scaffold(
+                backgroundColor: VineTheme.backgroundColor,
+                // Always edge-to-edge: the video fills the screen and the
+                // (transparent) AppBar overlays it, matching the home feed.
+                // The previous `extendBodyBehindAppBar: !hasHeader`
+                // exception existed because square Vine reposts (rendered
+                // with `BoxFit.contain`) had their baked-in letterbox
+                // bars "slip under" the transparent header. Since the
+                // missing-dimensions branch in `_PooledFullscreenItemContent`
+                // now treats those videos as portrait (`BoxFit.cover`),
+                // that letterbox no longer exists and the carve-out is
+                // moot.
+                extendBodyBehindAppBar: true,
+                appBar: DiVineAppBar(
+                  title: widget.contextTitle ?? '',
+                  showBackButton: true,
+                  onBackPressed: () => _handleBack(context),
+                  backgroundMode: DiVineAppBarBackgroundMode.transparent,
+                  forceMaterialTransparency: true,
+                  // Back button sits 8 px from the left edge of the screen
+                  // (4 px tighter than the previous 12). The More popover on
+                  // the trailing side keeps its 12 px gap by wrapping the
+                  // FeedSettingsMenu in an extra `end: 4` padding inside the
+                  // customActions slot.
+                  customActions: const [
+                    Padding(
+                      padding: EdgeInsetsDirectional.only(end: 4),
+                      child: FeedSettingsMenu(),
+                    ),
+                  ],
+                  style: DiVineAppBarStyle.transparentStyle.copyWith(
+                    horizontalPadding: 8,
+                  ),
+                ),
+                body: Column(
+                  children: [
+                    Expanded(
+                      child:
+                          InfiniteVideoFeed.isSupported &&
+                              ref.watch(
+                                isFeatureEnabledProvider(.nativeFeedPlayer),
+                              )
+                          ? FeedVideos(
+                              key: _feedVideosKey,
+                              videos: state.videos,
+                              contextTitle: widget.contextTitle,
+                              currentIndex: state.currentIndex,
+                              shouldPortraitExpand: false,
+                              hasMore: state.canLoadMore,
+                              isLoadingMore: state.isLoadingMore,
+                              onActiveVideoChanged: (video, index) {
+                                _resumeAutoAdvanceAfterSwipe();
+                                FeedPerformanceTracker()
+                                    .startVideoSwipeTracking(
+                                      video.id,
+                                    );
+                                context.read<FullscreenFeedBloc>().add(
+                                  FullscreenFeedIndexChanged(index),
+                                );
+                                widget.onPageChanged?.call(index);
+                              },
+                              onNearEnd: () {
+                                if (state.canLoadMore) {
+                                  _triggerLoadMore();
+                                }
+                              },
+                            )
+                          : kIsWeb
+                          ? WebVideoFeed(
+                              key: _webFeedKey,
+                              videos: state.videos
+                                  .where((v) => v.videoUrl != null)
+                                  .toList(),
+                              initialIndex: state.currentIndex,
+                              controllerFactory:
+                                  widget.webControllerFactory ??
+                                  defaultWebVideoPlayerControllerFactory,
+                              authHeaderProvider: webAuthHeaderProvider,
+                              initialVolume: context
+                                  .read<VideoVolumeCubit>()
+                                  .state
+                                  .volume,
+                              onActiveVideoChanged: (video, index) {
+                                _pagePosition.value = index.toDouble();
+                                _resumeAutoAdvanceAfterSwipe();
+                                FeedPerformanceTracker()
+                                    .startVideoSwipeTracking(
+                                      video.id,
+                                    );
+                                context.read<FullscreenFeedBloc>().add(
+                                  FullscreenFeedIndexChanged(index),
+                                );
+                                widget.onPageChanged?.call(index);
+                              },
+                              onCompleted: (_) => _handleAutoAdvanceCompleted(),
+                              onErrored: _handleWebPlayerErrored,
+                              onRequiresAuth: _handleWebPlayerRequiresAuth,
+                              onNearEnd: (index) => _onNearEnd(state, index),
+                              itemBuilder:
+                                  (
+                                    context,
+                                    video,
+                                    index, {
+                                    required isActive,
+                                    controller,
+                                  }) {
+                                    return _WebFullscreenItem(
+                                      video: video,
+                                      isActive: isActive,
+                                      isOwnVideo:
+                                          currentUserPubkey == video.pubkey,
+                                      controller: controller,
+                                      contextTitle: widget.contextTitle,
+                                      onInteracted: _suppressAutoAdvance,
+                                    );
+                                  },
+                            )
+                          : PooledVideoFeed(
+                              key: _feedKey,
+                              videos: state.pooledVideos,
+                              controller: _controller,
+                              initialIndex: state.currentIndex,
+                              onActiveVideoChanged: (video, index) {
+                                _resumeAutoAdvanceAfterSwipe();
+                                FeedPerformanceTracker()
+                                    .startVideoSwipeTracking(
+                                      video.id,
+                                    );
+                                context.read<FullscreenFeedBloc>().add(
+                                  FullscreenFeedIndexChanged(index),
+                                );
+                                widget.onPageChanged?.call(index);
+                              },
+                              onNearEnd: (index) => _onNearEnd(state, index),
+                              nearEndThreshold: 0,
+                              onScrollOffsetChanged: (page) =>
+                                  _pagePosition.value = page,
+                              maxLoopDuration: VideoEditorConstants.maxDuration,
+                              itemBuilder:
+                                  (context, video, index, {required isActive}) {
+                                    if (state.videos.isEmpty) {
+                                      debugPrint(
+                                        'FullscreenFeed: itemBuilder called with empty '
+                                        'state.videos! index=$index, '
+                                        'video.id=${video.id}',
+                                      );
+                                      return const ColoredBox(
+                                        color: VineTheme.backgroundColor,
+                                      );
+                                    }
+                                    final originalEvent = state.videos.firstWhere(
+                                      (v) => v.id == video.id,
+                                      orElse: () {
+                                        final clamped = index.clamp(
+                                          0,
+                                          state.videos.length - 1,
+                                        );
+                                        debugPrint(
+                                          'FullscreenFeed: video ID lookup miss! '
+                                          'video.id=${video.id}, index=$index, '
+                                          'clamped=$clamped, '
+                                          'state.videos.length='
+                                          '${state.videos.length}, '
+                                          'pooledVideos.length='
+                                          '${state.pooledVideos.length}',
+                                        );
+                                        return state.videos[clamped];
+                                      },
+                                    );
+                                    return _PooledFullscreenItem(
+                                      video: originalEvent,
+                                      index: index,
+                                      isActive: isActive,
+                                      pagePosition: _pagePosition,
+                                      contextTitle: widget.contextTitle,
+                                      trafficSource: widget.trafficSource,
+                                      sourceDetail: widget.sourceDetail,
+                                      isOwnVideo: isOwnVideo,
+                                      isAutoAdvanceActive: effectiveAutoActive,
+                                      onInteracted: _suppressAutoAdvance,
+                                      onAutoAdvanceCompleted:
+                                          _handleAutoAdvanceCompleted,
+                                    );
+                                  },
+                            ),
+                    ),
+                    if (showCommentBar) const InlineCommentComposerBar(),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -1097,9 +1124,17 @@ class _WebFullscreenItem extends ConsumerWidget {
             topOffset: isOwnVideo ? 64 : 8,
             onInteracted: onInteracted,
             omitAuthorBlock: true,
+            // See _PooledFullscreenItemContent.build for the rationale —
+            // the action column lives in this outer Stack so it shares the
+            // same bottom anchor as the author info below and the two
+            // cannot vertically drift apart.
+            omitActionColumn: true,
           ),
+          // 20 px above the Stack bottom (= comment-bar top). See
+          // _PooledFullscreenItemContent.build for why we drop the
+          // `viewPadding.bottom` term that the home feed uses.
           PositionedDirectional(
-            bottom: 20 + MediaQuery.viewPaddingOf(context).bottom,
+            bottom: 20,
             start: 16,
             end: 80,
             child: AnimatedOpacity(
@@ -1116,6 +1151,19 @@ class _WebFullscreenItem extends ConsumerWidget {
                         controller: controller!,
                       )
                     : null,
+                onInteracted: onInteracted,
+              ),
+            ),
+          ),
+          PositionedDirectional(
+            bottom: 20,
+            end: 12,
+            child: AnimatedOpacity(
+              opacity: isActive ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              child: VideoOverlayActionColumn(
+                video: video,
+                isFullscreen: true,
                 onInteracted: onInteracted,
               ),
             ),
@@ -1231,9 +1279,13 @@ class _PooledFullscreenItemContentState
   @override
   Widget build(BuildContext context) {
     final video = widget.video;
-    final isPortrait = video.dimensions != null && video.isPortrait;
-    final hasHeader =
-        widget.contextTitle != null && widget.contextTitle!.isNotEmpty;
+    // Match the home feed's policy (see `video_feed_page.dart`): treat
+    // videos without dimensions metadata as portrait so they cover the
+    // available area instead of landscape-letterboxing. Older Vine
+    // reposts arrive without dimensions and were previously rendered
+    // with `BoxFit.contain`, leaving large black bands above and below
+    // the content once the comment bar shrank the available height.
+    final isPortrait = video.dimensions == null || video.isPortrait;
     final overlayLabels = contentWarningOverlayLabels(
       contentWarningLabels: video.contentWarningLabels,
       warnLabels: video.warnLabels,
@@ -1268,7 +1320,6 @@ class _PooledFullscreenItemContentState
                 child: _FittedVideoPlayer(
                   videoController: videoController,
                   isPortrait: isPortrait,
-                  hasHeader: hasHeader,
                   videoWidth: video.width?.toDouble(),
                   videoHeight: video.height?.toDouble(),
                 ),
@@ -1276,7 +1327,6 @@ class _PooledFullscreenItemContentState
           loadingBuilder: (context) => _VideoLoadingPlaceholder(
             thumbnailUrl: video.thumbnailUrl,
             isPortrait: isPortrait,
-            hasHeader: hasHeader,
           ),
           errorBuilder: (context, onRetry, errorType) {
             // Map pooled_video_player.VideoErrorType to the canonical
@@ -1370,16 +1420,27 @@ class _PooledFullscreenItemContentState
                           // the home feed overlay exactly. Suppress the
                           // legacy inline column so they don't double up.
                           omitAuthorBlock: true,
+                          // The action column lives in this widget's outer
+                          // Stack alongside the author info so both are
+                          // anchored to the same Stack bottom — matches the
+                          // home feed pattern in [FeedVideoOverlay] and
+                          // keeps "About" vertically aligned with the
+                          // bottom of the caption block.
+                          omitActionColumn: true,
                         );
                       },
                     ),
                     // Bottom-left metadata container — author avatar/name,
                     // optional inline caption pill, and title/description.
-                    // Positioned to match the home feed overlay's baseline
-                    // (20 px above the safe-area bottom, 16 px from the
-                    // start, 80 px from the end to clear the action column).
+                    // 20 px above the Stack bottom (= comment-bar top). No
+                    // `viewPadding.bottom` term: the [InlineCommentComposerBar]
+                    // already absorbs the device home-indicator inset, so
+                    // adding it here would double-pad. The home feed's
+                    // matching `bottom: 20 + safeAreaBottom` line works
+                    // because there the inherited `viewPadding.bottom`
+                    // collapses to 0 below the [VineBottomNav]'s `SafeArea`.
                     PositionedDirectional(
-                      bottom: 20 + MediaQuery.viewPaddingOf(context).bottom,
+                      bottom: 20,
                       start: 16,
                       end: 80,
                       child: AnimatedOpacity(
@@ -1391,6 +1452,21 @@ class _PooledFullscreenItemContentState
                               video.content.isNotEmpty ||
                               (video.title != null && video.title!.isNotEmpty),
                           player: player,
+                          onInteracted: widget.onInteracted,
+                        ),
+                      ),
+                    ),
+                    // Action column — sibling of the author info, both
+                    // anchored to the same Stack bottom at `bottom: 20`.
+                    PositionedDirectional(
+                      bottom: 20,
+                      end: 12,
+                      child: AnimatedOpacity(
+                        opacity: widget.isActive ? 1.0 : 0.0,
+                        duration: const Duration(milliseconds: 200),
+                        child: VideoOverlayActionColumn(
+                          video: video,
+                          isFullscreen: true,
                           onInteracted: widget.onInteracted,
                         ),
                       ),
@@ -1413,14 +1489,12 @@ class _FittedVideoPlayer extends StatelessWidget {
   const _FittedVideoPlayer({
     required this.videoController,
     this.isPortrait = true,
-    this.hasHeader = false,
     this.videoWidth,
     this.videoHeight,
   });
 
   final VideoController videoController;
   final bool isPortrait;
-  final bool hasHeader;
   final double? videoWidth;
   final double? videoHeight;
 
@@ -1428,16 +1502,11 @@ class _FittedVideoPlayer extends StatelessWidget {
   Widget build(BuildContext context) {
     final boxFit = isPortrait ? BoxFit.cover : BoxFit.contain;
     final alignment = fullscreenVideoMediaAlignment(isPortrait: isPortrait);
-    final topInset = fullscreenContainedVideoTopInset(
-      safeAreaTop: MediaQuery.viewPaddingOf(context).top,
-      isPortrait: isPortrait,
-      hasHeader: hasHeader,
-    );
 
     // Do not set filterQuality to high — on Android the bicubic
     // interpolation causes visible blur on the Texture widget when
     // the video resolution doesn't match the display size exactly.
-    final video = Video(
+    return Video(
       controller: videoController,
       fit: boxFit,
       alignment: alignment,
@@ -1446,11 +1515,6 @@ class _FittedVideoPlayer extends StatelessWidget {
       height: videoHeight,
       fill: const Color(0x00000000),
     );
-    if (topInset == 0) return video;
-    return Padding(
-      padding: EdgeInsets.only(top: topInset),
-      child: video,
-    );
   }
 }
 
@@ -1458,25 +1522,18 @@ class _VideoLoadingPlaceholder extends StatelessWidget {
   const _VideoLoadingPlaceholder({
     this.thumbnailUrl,
     this.isPortrait = true,
-    this.hasHeader = false,
   });
 
   final String? thumbnailUrl;
   final bool isPortrait;
-  final bool hasHeader;
 
   @override
   Widget build(BuildContext context) {
     final boxFit = isPortrait ? BoxFit.cover : BoxFit.contain;
     final alignment = fullscreenVideoMediaAlignment(isPortrait: isPortrait);
-    final topInset = fullscreenContainedVideoTopInset(
-      safeAreaTop: MediaQuery.viewPaddingOf(context).top,
-      isPortrait: isPortrait,
-      hasHeader: hasHeader,
-    );
     final url = thumbnailUrl;
 
-    final placeholder = Stack(
+    return Stack(
       fit: StackFit.expand,
       children: [
         // Thumbnail background (if available)
@@ -1493,11 +1550,6 @@ class _VideoLoadingPlaceholder extends StatelessWidget {
         // Loading indicator overlay
         const _LoadingIndicator(),
       ],
-    );
-    if (topInset == 0) return placeholder;
-    return Padding(
-      padding: EdgeInsets.only(top: topInset),
-      child: placeholder,
     );
   }
 }
