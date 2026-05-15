@@ -56,11 +56,12 @@ class OutgoingDmRetryConfig {
 /// only on a real publish failure so transient repo-not-ready states
 /// don't burn the retry budget.
 ///
-/// **Scope today:** only `recipient: sent / self: failed` rows are
-/// dispatched. `recipient: failed` rows are enumerated and counted in
-/// logs — issue #4240 will add the `recoverFullSend` primitive and
-/// wire it as the second strategy entry. App-killed `pending: pending`
-/// rows are not in this filter (see [OutgoingDmsDao.getStillPendingForOwner]).
+/// **Scope today:** `recipient: sent / self: failed` rows dispatch to
+/// [DmRepository.recoverSelfWrap]; `recipient: failed` rows dispatch
+/// to [DmRepository.recoverFullSend]. App-killed `pending: pending`
+/// rows are not in this filter (see
+/// [OutgoingDmsDao.getStillPendingForOwner]) and remain the concern of
+/// a separate interrupted-send recovery path.
 class OutgoingDmRetryService {
   OutgoingDmRetryService({
     required DmRepository dmRepository,
@@ -143,8 +144,9 @@ class OutgoingDmRetryService {
 
       var processedSelfWrap = 0;
       var failedSelfWrap = 0;
+      var processedFullSend = 0;
+      var failedFullSend = 0;
       var skippedBackoff = 0;
-      var recipientFailedCount = 0;
       var abortedNotReady = false;
 
       for (final row in retryable) {
@@ -220,10 +222,61 @@ class OutgoingDmRetryService {
             }
           }
         } else if (row.recipientWrapStatus == OutgoingWrapStatus.failed) {
-          // State B: recipient publish itself failed. Recovery primitive
-          // lands in #4240; today we only enumerate so we have
-          // production rate-of-occurrence data before designing it.
-          recipientFailedCount++;
+          // State B: recipient publish itself failed. Replay the
+          // full send. NIP-17 receiver-side dedup keys on the rumor
+          // id (preserved across retries via `rumor_event_json`), so
+          // re-publishing is safe even when the original publish
+          // actually landed but the local persist failed.
+          try {
+            final result = await _dmRepository.recoverFullSend(
+              rumorId: row.id,
+            );
+            if (result.success) {
+              // recoverFullSend's success path either deletes the row
+              // (full delivery) or promotes it to
+              // `recipient: sent / self: failed` (partial). Either
+              // way the row exits the recipient-failed filter, so
+              // skip incrementRetry.
+              processedFullSend++;
+            } else {
+              // Publish failed again. recoverFullSend already
+              // re-marked both wraps failed with the new error via
+              // _finalizeAfterRecipientFailure (which writes
+              // lastAttemptAt through the DAO codec). Bump the retry
+              // counter so backoff applies and the row eventually
+              // exits the retryable filter at maxRetries.
+              await _dao.incrementRetry(row.id);
+              failedFullSend++;
+            }
+          } on Object catch (e, stackTrace) {
+            // Same error policy as the recoverSelfWrap dispatch
+            // above. recoverFullSend's contract documents StateError
+            // (repo or DAO not initialized) and ArgumentError (row
+            // missing / foreign owner) as part of its public surface.
+            if (e is StateError) {
+              Log.warning(
+                'repo not ready during sweep; aborting pass: $e',
+                name: 'OutgoingDmRetryService',
+                category: LogCategory.system,
+              );
+              abortedNotReady = true;
+            } else if (e is ArgumentError) {
+              Log.warning(
+                'skipping row ${row.id}: $e',
+                name: 'OutgoingDmRetryService',
+                category: LogCategory.system,
+              );
+            } else {
+              await _dao.incrementRetry(row.id);
+              Log.error(
+                'recoverFullSend threw for ${row.id}: $e',
+                name: 'OutgoingDmRetryService',
+                category: LogCategory.system,
+                error: e,
+                stackTrace: stackTrace,
+              );
+            }
+          }
         }
       }
 
@@ -231,8 +284,9 @@ class OutgoingDmRetryService {
         'sweep complete: '
         'self-wrap-recovered=$processedSelfWrap '
         'self-wrap-failed=$failedSelfWrap '
+        'full-send-recovered=$processedFullSend '
+        'full-send-failed=$failedFullSend '
         'skipped-backoff=$skippedBackoff '
-        'recipient-failed=$recipientFailedCount '
         'aborted-not-ready=$abortedNotReady',
         name: 'OutgoingDmRetryService',
         category: LogCategory.system,

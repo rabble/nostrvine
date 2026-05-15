@@ -1,7 +1,8 @@
 // ABOUTME: Unit tests for OutgoingDmRetryService — pinned contracts:
 // ABOUTME: dispatches recipient: sent / self: failed rows to recoverSelfWrap,
-// ABOUTME: never republishes recipient wraps, applies per-row backoff,
-// ABOUTME: enumerates recipient: failed rows without acting on them.
+// ABOUTME: dispatches recipient: failed rows to recoverFullSend,
+// ABOUTME: never republishes recipient wraps for already-sent rows,
+// ABOUTME: applies per-row backoff.
 
 import 'dart:async';
 
@@ -189,7 +190,8 @@ void main() {
       );
 
       test(
-        'does NOT dispatch recipient: failed rows to recoverSelfWrap',
+        'dispatches recipient: failed rows to recoverFullSend (not '
+        'recoverSelfWrap)',
         () async {
           final row = _row(
             id: 'rumor2',
@@ -202,14 +204,55 @@ void main() {
               maxRetries: any(named: 'maxRetries'),
             ),
           ).thenAnswer((_) async => [row]);
+          when(
+            () => dmRepository.recoverFullSend(rumorId: any(named: 'rumorId')),
+          ).thenAnswer((_) async => _successResult('rumor2'));
 
           final service = buildService();
           await service.sweep();
 
+          verify(
+            () => dmRepository.recoverFullSend(rumorId: 'rumor2'),
+          ).called(1);
+          // recoverSelfWrap is reserved for the recipient-sent / self-failed
+          // case; recipient-failed rows must go through recoverFullSend so
+          // the recipient publish is replayed alongside the self-wrap.
           verifyNever(
             () => dmRepository.recoverSelfWrap(rumorId: any(named: 'rumorId')),
           );
+          // recoverFullSend's success path finalizes the row by either
+          // deleting it (full delivery) or marking recipient sent / self
+          // failed (partial). Either way no retry bump is needed.
           verifyNever(() => dao.incrementRetry(any()));
+        },
+      );
+
+      test(
+        'recoverFullSend publish-failure path bumps incrementRetry once',
+        () async {
+          final row = _row(
+            id: 'rumor2b',
+            recipient: OutgoingWrapStatus.failed,
+            self: OutgoingWrapStatus.failed,
+            retryCount: 1,
+            lastAttemptAt: DateTime.utc(2025),
+          );
+          when(
+            () => dao.getRetryableForOwner(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenAnswer((_) async => [row]);
+          when(
+            () => dmRepository.recoverFullSend(rumorId: any(named: 'rumorId')),
+          ).thenAnswer((_) async => _failureResult('relay still down'));
+
+          await buildService().sweep();
+
+          verify(
+            () => dmRepository.recoverFullSend(rumorId: 'rumor2b'),
+          ).called(1);
+          verify(() => dao.incrementRetry('rumor2b')).called(1);
         },
       );
 
@@ -503,11 +546,16 @@ void main() {
       );
     });
 
-    group('contract: never republishes recipient wraps', () {
-      // Pinning #4106's invariant — the sweep must only ever invoke
-      // recoverSelfWrap, never sendMessage / sendGroupMessage / sendRumor.
+    group('contract: dispatches the correct primitive per row state', () {
+      // Pin the strategy table: recipient: sent / self: failed →
+      // recoverSelfWrap (never republishes recipient); recipient: failed
+      // → recoverFullSend (replays both wraps; safe via NIP-17 receiver
+      // dedup). The sweep must never reach for sendMessage /
+      // sendGroupMessage / sendPrivateMessage which would mint a fresh
+      // rumor and zombify the queue row.
       test(
-        'a full pass over assorted retryable rows only calls recoverSelfWrap',
+        'a full pass over assorted retryable rows dispatches each row to '
+        'the right primitive',
         () async {
           final rows = [
             _row(
@@ -538,9 +586,18 @@ void main() {
             final id = inv.namedArguments[#rumorId] as String;
             return _successResult(id);
           });
+          when(
+            () => dmRepository.recoverFullSend(rumorId: any(named: 'rumorId')),
+          ).thenAnswer((inv) async {
+            final id = inv.namedArguments[#rumorId] as String;
+            return _successResult(id);
+          });
 
           await buildService().sweep();
 
+          // The sweep never mints a fresh rumor via the user-facing send
+          // primitives — that would zombify the queue row by enqueueing a
+          // new one with a different id.
           verifyNever(
             () => dmRepository.sendMessage(
               recipientPubkey: any(named: 'recipientPubkey'),
@@ -553,9 +610,155 @@ void main() {
               content: any(named: 'content'),
             ),
           );
+
+          // Strategy A: recipient: sent / self: failed → recoverSelfWrap.
           verify(() => dmRepository.recoverSelfWrap(rumorId: 'a')).called(1);
           verify(() => dmRepository.recoverSelfWrap(rumorId: 'c')).called(1);
           verifyNever(() => dmRepository.recoverSelfWrap(rumorId: 'b'));
+
+          // Strategy B: recipient: failed → recoverFullSend.
+          verify(() => dmRepository.recoverFullSend(rumorId: 'b')).called(1);
+          verifyNever(() => dmRepository.recoverFullSend(rumorId: 'a'));
+          verifyNever(() => dmRepository.recoverFullSend(rumorId: 'c'));
+        },
+      );
+
+      test(
+        'recoverFullSend is never invoked for rows where recipient is '
+        'already sent',
+        () async {
+          // Any row where recipientWrapStatus == sent must route through
+          // recoverSelfWrap, never recoverFullSend. recoverFullSend's
+          // idempotent guard would defer to recoverSelfWrap internally
+          // anyway, but the dispatcher should not even hand it those
+          // rows — keeps the strategy table readable.
+          final row = _row(
+            id: 'sent-row',
+            recipient: OutgoingWrapStatus.sent,
+            self: OutgoingWrapStatus.failed,
+          );
+          when(
+            () => dao.getRetryableForOwner(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenAnswer((_) async => [row]);
+          when(
+            () => dmRepository.recoverSelfWrap(rumorId: any(named: 'rumorId')),
+          ).thenAnswer((_) async => _successResult('sent-row'));
+
+          await buildService().sweep();
+
+          verifyNever(
+            () => dmRepository.recoverFullSend(rumorId: any(named: 'rumorId')),
+          );
+        },
+      );
+    });
+
+    group('recoverFullSend error handling', () {
+      test(
+        'StateError from recoverFullSend aborts the pass without bumping '
+        'retry',
+        () async {
+          final rows = [
+            _row(
+              id: 'a',
+              recipient: OutgoingWrapStatus.failed,
+              self: OutgoingWrapStatus.failed,
+            ),
+            _row(
+              id: 'b',
+              recipient: OutgoingWrapStatus.failed,
+              self: OutgoingWrapStatus.failed,
+            ),
+          ];
+          when(
+            () => dao.getRetryableForOwner(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenAnswer((_) async => rows);
+          when(
+            () => dmRepository.recoverFullSend(rumorId: 'a'),
+          ).thenThrow(StateError('repo not initialized'));
+
+          await buildService().sweep();
+
+          verify(() => dmRepository.recoverFullSend(rumorId: 'a')).called(1);
+          verifyNever(() => dmRepository.recoverFullSend(rumorId: 'b'));
+          verifyNever(() => dao.incrementRetry(any()));
+        },
+      );
+
+      test(
+        'ArgumentError from recoverFullSend skips the row and continues',
+        () async {
+          final rows = [
+            _row(
+              id: 'a',
+              recipient: OutgoingWrapStatus.failed,
+              self: OutgoingWrapStatus.failed,
+            ),
+            _row(
+              id: 'b',
+              recipient: OutgoingWrapStatus.failed,
+              self: OutgoingWrapStatus.failed,
+            ),
+          ];
+          when(
+            () => dao.getRetryableForOwner(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenAnswer((_) async => rows);
+          when(
+            () => dmRepository.recoverFullSend(rumorId: 'a'),
+          ).thenThrow(ArgumentError.value('a', 'rumorId', 'no queued row'));
+          when(
+            () => dmRepository.recoverFullSend(rumorId: 'b'),
+          ).thenAnswer((_) async => _successResult('b'));
+
+          await buildService().sweep();
+
+          verify(() => dmRepository.recoverFullSend(rumorId: 'a')).called(1);
+          verify(() => dmRepository.recoverFullSend(rumorId: 'b')).called(1);
+          verifyNever(() => dao.incrementRetry('a'));
+        },
+      );
+
+      test(
+        'unexpected throw from recoverFullSend bumps retry and continues',
+        () async {
+          final rows = [
+            _row(
+              id: 'a',
+              recipient: OutgoingWrapStatus.failed,
+              self: OutgoingWrapStatus.failed,
+            ),
+            _row(
+              id: 'b',
+              recipient: OutgoingWrapStatus.failed,
+              self: OutgoingWrapStatus.failed,
+            ),
+          ];
+          when(
+            () => dao.getRetryableForOwner(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenAnswer((_) async => rows);
+          when(
+            () => dmRepository.recoverFullSend(rumorId: 'a'),
+          ).thenThrow(Exception('relay disconnected'));
+          when(
+            () => dmRepository.recoverFullSend(rumorId: 'b'),
+          ).thenAnswer((_) async => _successResult('b'));
+
+          await buildService().sweep();
+
+          verify(() => dao.incrementRetry('a')).called(1);
+          verify(() => dmRepository.recoverFullSend(rumorId: 'b')).called(1);
         },
       );
     });
