@@ -931,11 +931,25 @@ class RelayPool {
     List<dynamic> message, {
     List<String>? tempRelays,
     List<String>? targetRelays,
+    DateTime? deadline,
+    void Function(String relayUrl)? onSent,
   }) async {
     final sentTo = <String>[];
+    final attemptedRelayUrls = <String>{};
     final eventKind = _eventKindFromMessage(message);
     final eventId = _eventIdFromMessage(message);
     final isPushControlEvent = _isPushControlKind(eventKind);
+
+    Duration sendTimeout() {
+      final remaining = deadline?.difference(DateTime.now());
+      if (remaining == null || remaining > perRelaySendTimeout) {
+        return perRelaySendTimeout;
+      }
+      if (remaining.isNegative || remaining == Duration.zero) {
+        return Duration.zero;
+      }
+      return remaining;
+    }
 
     if (isPushControlEvent) {
       _logPushControlDiagnostic(
@@ -945,6 +959,9 @@ class RelayPool {
     }
 
     for (final relay in _relaysSnapshot()) {
+      final timeout = sendTimeout();
+      if (timeout == Duration.zero) break;
+
       if (message[0] == "EVENT") {
         if (!relay.relayStatus.writeAccess) {
           if (isPushControlEvent) {
@@ -963,6 +980,8 @@ class RelayPool {
           continue;
         }
       }
+
+      attemptedRelayUrls.add(relay.url);
 
       try {
         // Check if relay requires authentication
@@ -984,7 +1003,7 @@ class RelayPool {
             var result = await relay
                 .send(message, forceSend: true)
                 .timeout(
-                  perRelaySendTimeout,
+                  timeout,
                   onTimeout: () {
                     log(
                       '⏱️ Per-relay auth-trigger send timeout for ${relay.url} '
@@ -996,6 +1015,7 @@ class RelayPool {
                 );
             if (result) {
               sentTo.add(relay.url);
+              onSent?.call(relay.url);
             }
             if (isPushControlEvent) {
               _logPushControlDiagnostic(
@@ -1008,6 +1028,7 @@ class RelayPool {
             log('🔐 Queueing message for authentication: ${message[0]}');
             relay.pendingAuthedMessages.add(message);
             sentTo.add(relay.url);
+            onSent?.call(relay.url);
             if (isPushControlEvent) {
               _logPushControlDiagnostic(
                 'queued for auth kind=$eventKind eventId=$eventId relay=${relay.url}',
@@ -1028,7 +1049,7 @@ class RelayPool {
           var result = await relay
               .send(message, skipReconnect: true)
               .timeout(
-                perRelaySendTimeout,
+                timeout,
                 onTimeout: () {
                   log(
                     '⏱️ Per-relay send timeout for ${relay.url} '
@@ -1040,6 +1061,7 @@ class RelayPool {
               );
           if (result) {
             sentTo.add(relay.url);
+            onSent?.call(relay.url);
           }
           if (isPushControlEvent) {
             _logPushControlDiagnostic(
@@ -1060,6 +1082,13 @@ class RelayPool {
 
     if (tempRelays != null) {
       for (var tempRelayAddr in tempRelays) {
+        if (attemptedRelayUrls.contains(tempRelayAddr)) {
+          continue;
+        }
+        attemptedRelayUrls.add(tempRelayAddr);
+        final timeout = sendTimeout();
+        if (timeout == Duration.zero) break;
+
         var tempRelay = checkAndGenTempRelay(tempRelayAddr);
         // Same skipReconnect rationale as the main loop above: a fresh
         // tempRelay whose initial connection is still in-flight must not
@@ -1067,7 +1096,7 @@ class RelayPool {
         var result = await tempRelay
             .send(message, skipReconnect: true)
             .timeout(
-              perRelaySendTimeout,
+              timeout,
               onTimeout: () {
                 log(
                   '⏱️ Per-relay send timeout for tempRelay ${tempRelay.url} '
@@ -1078,6 +1107,7 @@ class RelayPool {
             );
         if (result) {
           sentTo.add(tempRelay.url);
+          onSent?.call(tempRelay.url);
         }
         if (isPushControlEvent) {
           _logPushControlDiagnostic(
@@ -1134,8 +1164,9 @@ class RelayPool {
       message,
       tempRelays: tempRelays,
       targetRelays: targetRelays,
+      deadline: DateTime.now().add(timeout),
+      onSent: (relayUrl) => tracker.expectedRelays.add(relayUrl),
     );
-    tracker.expectedRelays.addAll(sentTo);
 
     if (sentTo.isEmpty) {
       tracker.cancel();

@@ -487,7 +487,8 @@ void main() {
       );
 
       test(
-        'attempts explicit target relays even when no pool relay is connected',
+        'attempts explicit target relays without retrying disconnected pool '
+        'relays',
         () async {
           final event = _createTestEvent();
           const targetRelays = ['wss://relay.divine.video'];
@@ -512,7 +513,7 @@ void main() {
           );
 
           expect(outcome.confirmed, isTrue);
-          verify(mockRelayManager.retryDisconnectedRelays).called(1);
+          verifyNever(mockRelayManager.retryDisconnectedRelays);
           verify(
             () => mockNostr.sendEventAwaitOk(
               event,

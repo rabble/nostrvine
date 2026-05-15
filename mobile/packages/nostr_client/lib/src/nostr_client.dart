@@ -375,9 +375,9 @@ class NostrClient {
 
     final hasExplicitTargets = targetRelays != null && targetRelays.isNotEmpty;
 
-    if (_relayManager.connectedRelays.isEmpty) {
+    if (_relayManager.connectedRelays.isEmpty && !hasExplicitTargets) {
       await retryDisconnectedRelays();
-      if (_relayManager.connectedRelays.isEmpty && !hasExplicitTargets) {
+      if (_relayManager.connectedRelays.isEmpty) {
         return rollbackOnFailure(
           PublishOutcome(
             eventId: event.id,

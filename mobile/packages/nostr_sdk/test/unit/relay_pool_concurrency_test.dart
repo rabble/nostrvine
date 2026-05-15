@@ -235,6 +235,18 @@ class _AlwaysHangingRelay extends Relay {
   }
 }
 
+class _TrackingTempRelay extends _SucceedingRelay {
+  _TrackingTempRelay(super.url, {required this.onCreated});
+
+  final void Function(String url) onCreated;
+
+  @override
+  Future<bool> doConnect() async {
+    onCreated(url);
+    return super.doConnect();
+  }
+}
+
 void main() {
   group('RelayPool concurrency', () {
     late Nostr nostr;
@@ -429,6 +441,47 @@ void main() {
       // The hanging relay's send was invoked but did not contribute
       // to sentTo because its future timed out.
       expect(hanging.sentMessages, isNotEmpty);
+    });
+
+    test('sendEventAwaitOk bounds target sends with the requested timeout and '
+        'does not retry the same URL as a temp relay', () async {
+      final relayUrl = 'wss://relay.divine.video';
+      final hanging = _AlwaysHangingRelay(relayUrl);
+      final tempRelaysCreated = <String>[];
+      final tempNostr = Nostr(
+        signer,
+        [],
+        (url) => _TrackingTempRelay(url, onCreated: tempRelaysCreated.add),
+      );
+      await tempNostr.refreshPublicKey();
+      await tempNostr.relayPool.add(hanging);
+
+      final stopwatch = Stopwatch()..start();
+      final outcome = await tempNostr.relayPool.sendEventAwaitOk(
+        [
+          'EVENT',
+          {'id': 'push-control-event-id', 'kind': 3079},
+        ],
+        eventId: 'push-control-event-id',
+        eventKind: 3079,
+        targetRelays: [relayUrl],
+        tempRelays: [relayUrl],
+        timeout: const Duration(milliseconds: 50),
+      );
+      stopwatch.stop();
+
+      expect(outcome.failed, isTrue);
+      expect(
+        stopwatch.elapsedMilliseconds,
+        lessThan(1000),
+        reason: 'requested timeout must bound _sendCollect plus OK waiting',
+      );
+      expect(hanging.sentMessages, hasLength(1));
+      expect(
+        tempRelaysCreated,
+        isEmpty,
+        reason: 'same target URL must not be attempted again as a temp relay',
+      );
     });
 
     test(
