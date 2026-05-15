@@ -4,11 +4,15 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:models/models.dart' hide AspectRatio, LogCategory;
 import 'package:openvine/blocs/dm/conversation/collaborator_invite_actions_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/collaborator_invite.dart';
-import 'package:openvine/screens/video_detail_screen.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/screens/comments/widgets/video_comment_player.dart';
+import 'package:openvine/screens/inbox/conversation/widgets/video_link_preview_cubit.dart';
 import 'package:openvine/services/collaborator_invite_state_store.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
@@ -89,7 +93,7 @@ class _CollaboratorInviteCardState extends State<CollaboratorInviteCard> {
   }
 }
 
-class _CardChrome extends StatelessWidget {
+class _CardChrome extends ConsumerWidget {
   const _CardChrome({
     required this.invite,
     required this.isSent,
@@ -108,7 +112,7 @@ class _CardChrome extends StatelessWidget {
     return context.l10n.inboxCollabInviteCardUntitledVideo;
   }
 
-  String? get _thumbnailUrl {
+  String? get _inviteThumbnailUrl {
     final value = invite.thumbnailUrl?.trim();
     return value == null || value.isEmpty ? null : value;
   }
@@ -123,42 +127,36 @@ class _CardChrome extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final thumbnailUrl = _thumbnailUrl;
+  Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Align(
         alignment: isSent
             ? AlignmentDirectional.centerEnd
             : AlignmentDirectional.centerStart,
-        child: Semantics(
-          button: true,
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () =>
-                context.push(VideoDetailScreen.pathForId(invite.videoAddress)),
-            child: Container(
-              constraints: BoxConstraints(
-                maxWidth: MediaQuery.sizeOf(context).width * 0.78,
-              ),
-              decoration: BoxDecoration(
-                color: VineTheme.surfaceContainerHigh,
-                border: Border.all(color: VineTheme.outlineMuted),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: thumbnailUrl == null
-                  ? _FallbackInviteContent(
-                      title: _titleText(context),
-                      previewTitle: _previewTitle(context),
-                      action: action,
-                    )
-                  : _ThumbnailInviteContent(
-                      thumbnailUrl: thumbnailUrl,
-                      title: _titleText(context),
-                      previewTitle: _previewTitle(context),
-                      action: action,
-                    ),
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.sizeOf(context).width * 0.78,
+          ),
+          decoration: BoxDecoration(
+            color: VineTheme.surfaceContainerHigh,
+            border: Border.all(color: VineTheme.outlineMuted),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: BlocProvider(
+            create: (_) => VideoLinkPreviewCubit(
+              videoStableId: invite.videoDTag,
+              authorPubkey: invite.creatorPubkey,
+              videoKind: invite.videoKind,
+              videoEventService: ref.read(videoEventServiceProvider),
+              nostrClient: ref.read(nostrServiceProvider),
+            ),
+            child: _InviteVideoContent(
+              inviteThumbnailUrl: _inviteThumbnailUrl,
+              title: _titleText(context),
+              previewTitle: _previewTitle(context),
+              action: action,
             ),
           ),
         ),
@@ -167,18 +165,129 @@ class _CardChrome extends StatelessWidget {
   }
 }
 
-class _ThumbnailInviteContent extends StatelessWidget {
-  const _ThumbnailInviteContent({
-    required this.thumbnailUrl,
+class _InviteVideoContent extends StatelessWidget {
+  const _InviteVideoContent({
+    required this.inviteThumbnailUrl,
     required this.title,
     required this.previewTitle,
     required this.action,
   });
 
-  final String thumbnailUrl;
+  final String? inviteThumbnailUrl;
   final String title;
   final String previewTitle;
   final Widget action;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<VideoLinkPreviewCubit, VideoLinkPreviewState>(
+      builder: (context, state) {
+        final resolvedVideo = switch (state) {
+          VideoLinkPreviewResolved(:final video) => video,
+          _ => null,
+        };
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _InvitePreviewSurface(
+              inviteThumbnailUrl: inviteThumbnailUrl,
+              resolvedVideo: resolvedVideo,
+              isLoading: state is VideoLinkPreviewLoading,
+              title: title,
+              previewTitle: previewTitle,
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: action,
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _InvitePreviewSurface extends StatelessWidget {
+  const _InvitePreviewSurface({
+    required this.inviteThumbnailUrl,
+    required this.resolvedVideo,
+    required this.isLoading,
+    required this.title,
+    required this.previewTitle,
+  });
+
+  final String? inviteThumbnailUrl;
+  final VideoEvent? resolvedVideo;
+  final bool isLoading;
+  final String title;
+  final String previewTitle;
+
+  String? get _thumbnailUrl {
+    final resolvedThumbnail = resolvedVideo?.thumbnailUrl?.trim();
+    if (resolvedThumbnail != null && resolvedThumbnail.isNotEmpty) {
+      return resolvedThumbnail;
+    }
+    return inviteThumbnailUrl;
+  }
+
+  String? get _videoUrl {
+    final value = resolvedVideo?.videoUrl?.trim();
+    if (value == null || value.isEmpty) return null;
+    final uri = Uri.tryParse(value);
+    if (uri == null || !uri.hasScheme || uri.host.isEmpty) return null;
+    if (uri.scheme != 'http' && uri.scheme != 'https') return null;
+    return value;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final videoUrl = _videoUrl;
+    final thumbnailUrl = _thumbnailUrl;
+    if (videoUrl != null) {
+      return Stack(
+        children: [
+          VideoCommentPlayer(
+            key: const ValueKey('collaborator_invite_inline_player'),
+            videoUrl: videoUrl,
+            thumbnailUrl: thumbnailUrl,
+          ),
+          PositionedDirectional(
+            start: 12,
+            end: 12,
+            bottom: 12,
+            child: IgnorePointer(
+              child: _InviteGradientCopy(
+                title: title,
+                previewTitle: previewTitle,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return _InviteThumbnailPreview(
+      thumbnailUrl: thumbnailUrl,
+      title: title,
+      previewTitle: previewTitle,
+      isLoading: isLoading,
+    );
+  }
+}
+
+class _InviteThumbnailPreview extends StatelessWidget {
+  const _InviteThumbnailPreview({
+    required this.thumbnailUrl,
+    required this.title,
+    required this.previewTitle,
+    required this.isLoading,
+  });
+
+  final String? thumbnailUrl;
+  final String title;
+  final String previewTitle;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -186,108 +295,155 @@ class _ThumbnailInviteContent extends StatelessWidget {
     final thumbnailSemanticLabel = title.trim().isEmpty
         ? l10n.notificationsVideoThumbnail
         : l10n.notificationsVideoThumbnailFor(title);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
+    return AspectRatio(
+      aspectRatio: 9 / 16,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (thumbnailUrl == null)
+            const ColoredBox(
+              key: ValueKey('collaborator_invite_video_placeholder'),
+              color: VineTheme.surfaceContainer,
+              child: Center(
+                child: DivineIcon(
+                  icon: DivineIconName.videoCamera,
+                  color: VineTheme.onSurfaceMuted,
+                  size: 32,
+                ),
+              ),
+            )
+          else
+            Semantics(
+              image: true,
+              label: thumbnailSemanticLabel,
+              child: VineCachedImage(
+                key: const ValueKey('collaborator_invite_thumbnail'),
+                imageUrl: thumbnailUrl!,
+                placeholder: (context, url) => const ColoredBox(
+                  color: VineTheme.surfaceContainer,
+                ),
+                errorWidget: (context, url, error) => const ColoredBox(
+                  color: VineTheme.surfaceContainer,
+                ),
+              ),
+            ),
+          _InvitePreviewOverlay(
+            showLoading: isLoading,
+            title: title,
+            previewTitle: previewTitle,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InvitePreviewOverlay extends StatelessWidget {
+  const _InvitePreviewOverlay({
+    required this.showLoading,
+    required this.title,
+    required this.previewTitle,
+  });
+
+  final bool showLoading;
+  final String title;
+  final String previewTitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
       children: [
-        AspectRatio(
-          aspectRatio: 9 / 14,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              Semantics(
-                image: true,
-                label: thumbnailSemanticLabel,
-                child: VineCachedImage(
-                  key: const ValueKey('collaborator_invite_thumbnail'),
-                  imageUrl: thumbnailUrl,
-                  placeholder: (context, url) => const ColoredBox(
-                    color: VineTheme.surfaceContainer,
-                  ),
-                  errorWidget: (context, url, error) => const ColoredBox(
-                    color: VineTheme.surfaceContainer,
-                  ),
-                ),
-              ),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      VineTheme.backgroundColor.withValues(alpha: 0),
-                      VineTheme.backgroundColor.withValues(alpha: 0.82),
-                    ],
-                  ),
-                ),
-              ),
-              const Center(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: VineTheme.primary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: SizedBox(
-                    width: 48,
-                    height: 48,
-                    child: DivineIcon(
-                      icon: DivineIconName.playFill,
-                      color: VineTheme.backgroundColor,
-                      size: 32,
-                    ),
-                  ),
-                ),
-              ),
-              PositionedDirectional(
-                start: 12,
-                end: 12,
-                bottom: 12,
-                child: _InviteCopy(
-                  previewTitle: previewTitle,
-                  title: title,
-                  consequence: l10n.inboxCollabInviteTimelineConsequence,
-                ),
-              ),
-            ],
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                VineTheme.backgroundColor.withValues(alpha: 0),
+                VineTheme.backgroundColor.withValues(alpha: 0.82),
+              ],
+            ),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.all(12),
-          child: action,
+        Center(
+          child: showLoading
+              ? const SizedBox.square(
+                  dimension: 32,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: VineTheme.primary,
+                  ),
+                )
+              : const _InvitePlayBadge(),
+        ),
+        PositionedDirectional(
+          start: 12,
+          end: 12,
+          bottom: 12,
+          child: _InviteCopy(
+            previewTitle: previewTitle,
+            title: title,
+            consequence: context.l10n.inboxCollabInviteTimelineConsequence,
+          ),
         ),
       ],
     );
   }
 }
 
-class _FallbackInviteContent extends StatelessWidget {
-  const _FallbackInviteContent({
+class _InviteGradientCopy extends StatelessWidget {
+  const _InviteGradientCopy({
     required this.title,
     required this.previewTitle,
-    required this.action,
   });
 
   final String title;
   final String previewTitle;
-  final Widget action;
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _InviteCopy(
-            previewTitle: previewTitle,
-            title: title,
-            consequence: l10n.inboxCollabInviteTimelineConsequence,
-          ),
-          const SizedBox(height: 16),
-          action,
-        ],
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            VineTheme.backgroundColor.withValues(alpha: 0),
+            VineTheme.backgroundColor.withValues(alpha: 0.72),
+          ],
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.only(top: 48),
+        child: _InviteCopy(
+          previewTitle: previewTitle,
+          title: title,
+          consequence: context.l10n.inboxCollabInviteTimelineConsequence,
+        ),
+      ),
+    );
+  }
+}
+
+class _InvitePlayBadge extends StatelessWidget {
+  const _InvitePlayBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return const DecoratedBox(
+      decoration: BoxDecoration(
+        color: VineTheme.primary,
+        shape: BoxShape.circle,
+      ),
+      child: SizedBox(
+        width: 48,
+        height: 48,
+        child: DivineIcon(
+          icon: DivineIconName.playFill,
+          color: VineTheme.backgroundColor,
+          size: 32,
+        ),
       ),
     );
   }

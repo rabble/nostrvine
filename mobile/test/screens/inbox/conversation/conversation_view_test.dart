@@ -14,11 +14,14 @@ import 'package:openvine/blocs/dm/conversation/collaborator_invite_actions_cubit
 import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/collaborator_invite.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_view.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/widgets.dart';
-import 'package:openvine/screens/video_detail_screen.dart';
+import 'package:openvine/services/video_event_service.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
+import '../../../builders/video_event_builder.dart';
 import '../../../helpers/go_router.dart';
 import '../../../helpers/test_provider_overrides.dart';
 
@@ -29,6 +32,8 @@ class _MockConversationBloc
 class _MockCollaboratorInviteActionsCubit
     extends MockCubit<CollaboratorInviteActionsState>
     implements CollaboratorInviteActionsCubit {}
+
+class _MockVideoEventService extends Mock implements VideoEventService {}
 
 class _MockAuthService extends MockAuthService {
   _MockAuthService(this._pubkey);
@@ -60,6 +65,8 @@ void main() {
   group(ConversationView, () {
     late _MockConversationBloc mockBloc;
     late _MockCollaboratorInviteActionsCubit mockInviteActionsCubit;
+    late _MockVideoEventService mockVideoEventService;
+    late MockNostrClient mockNostrClient;
     late _MockAuthService mockAuthService;
 
     setUpAll(() {
@@ -77,8 +84,11 @@ void main() {
     });
 
     setUp(() {
+      VisibilityDetectorController.instance.updateInterval = Duration.zero;
       mockBloc = _MockConversationBloc();
       mockInviteActionsCubit = _MockCollaboratorInviteActionsCubit();
+      mockVideoEventService = _MockVideoEventService();
+      mockNostrClient = createMockNostrService();
       mockAuthService = _MockAuthService(currentPubkey);
 
       when(() => mockInviteActionsCubit.state).thenReturn(
@@ -90,6 +100,13 @@ void main() {
       when(
         () => mockInviteActionsCubit.ignoreInvite(any()),
       ).thenAnswer((_) async {});
+      when(() => mockVideoEventService.getVideoById(any())).thenReturn(null);
+      when(
+        () => mockVideoEventService.getVideoEventByVineId(any()),
+      ).thenReturn(null);
+      when(
+        () => mockNostrClient.fetchEventById(any()),
+      ).thenAnswer((_) async => null);
     });
 
     Widget buildSubject({
@@ -106,7 +123,9 @@ void main() {
 
       final app = testMaterialApp(
         mockAuthService: mockAuthService,
+        mockNostrService: mockNostrClient,
         additionalOverrides: [
+          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           fetchUserProfileProvider(
             otherPubkey,
           ).overrideWith((ref) async => otherProfile),
@@ -465,10 +484,21 @@ void main() {
       );
 
       testWidgets(
-        'opens collaborator invite video when card is tapped',
+        'renders collaborator invite video inline without navigating away',
         (tester) async {
           final mockGoRouter = MockGoRouter();
           when(() => mockGoRouter.push(any())).thenAnswer((_) async => null);
+          when(
+            () => mockVideoEventService.getVideoEventByVineId('skate-loop'),
+          ).thenReturn(
+            VideoEventBuilder(
+              id: '7777777777777777777777777777777777777777777777777777777777777777',
+              pubkey: otherPubkey,
+              title: 'Skate loop',
+              videoUrl: 'https://cdn.divine.video/videos/skate-loop.mp4',
+              thumbnailUrl: 'https://cdn.divine.video/thumbs/skate-loop.jpg',
+            ).build(),
+          );
 
           final message = DmMessage(
             id: '9999999999999999999999999999999999999999999999999999999999999999',
@@ -502,17 +532,19 @@ void main() {
             ),
           );
           await tester.pump();
-
-          await tester.tap(find.byType(CollaboratorInviteCard));
           await tester.pump();
 
-          verify(
-            () => mockGoRouter.push(
-              VideoDetailScreen.pathForId(
-                '34236:1122334411223344112233441122334411223344112233441122334411223344:skate-loop',
-              ),
-            ),
-          ).called(1);
+          expect(
+            find.byKey(const ValueKey('collaborator_invite_inline_player')),
+            findsOneWidget,
+          );
+          expect(find.text(l10n.inboxCollabInviteCoPostButton), findsOneWidget);
+          expect(
+            find.text(l10n.inboxCollabInviteNotMineButton),
+            findsOneWidget,
+          );
+
+          verifyNever(() => mockGoRouter.push(any()));
         },
       );
 

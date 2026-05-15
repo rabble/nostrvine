@@ -143,6 +143,29 @@ void main() {
         build: createCubit,
         expect: () => [isA<VideoLinkPreviewResolved>()],
       );
+
+      blocTest<VideoLinkPreviewCubit, VideoLinkPreviewState>(
+        'queries invite d-tag with creator and kind when provided',
+        build: () => VideoLinkPreviewCubit(
+          videoStableId: 'skate-loop',
+          authorPubkey: testVideo.pubkey,
+          videoKind: 34235,
+          videoEventService: mockVideoEventService,
+          nostrClient: mockNostrClient,
+        ),
+        expect: () => [isA<VideoLinkPreviewNotFound>()],
+        verify: (_) {
+          final captured =
+              verify(
+                    () => mockNostrClient.queryEvents(captureAny()),
+                  ).captured.single
+                  as List<Filter>;
+          final filter = captured.single;
+          expect(filter.kinds, [34235]);
+          expect(filter.authors, [testVideo.pubkey]);
+          expect(filter.d, ['skate-loop']);
+        },
+      );
     });
 
     group('not found', () {

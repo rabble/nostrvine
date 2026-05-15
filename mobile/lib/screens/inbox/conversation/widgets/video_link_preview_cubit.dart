@@ -47,7 +47,11 @@ class VideoLinkPreviewCubit extends Cubit<VideoLinkPreviewState> {
     required String videoStableId,
     required VideoEventService videoEventService,
     required NostrClient nostrClient,
+    String? authorPubkey,
+    int? videoKind,
   }) : _videoStableId = videoStableId,
+       _authorPubkey = authorPubkey,
+       _videoKind = videoKind,
        _videoEventService = videoEventService,
        _nostrClient = nostrClient,
        super(const VideoLinkPreviewLoading()) {
@@ -57,6 +61,8 @@ class VideoLinkPreviewCubit extends Cubit<VideoLinkPreviewState> {
   }
 
   final String _videoStableId;
+  final String? _authorPubkey;
+  final int? _videoKind;
   final VideoEventService _videoEventService;
   final NostrClient _nostrClient;
 
@@ -79,7 +85,8 @@ class VideoLinkPreviewCubit extends Cubit<VideoLinkPreviewState> {
       if (event == null) {
         final results = await _nostrClient.queryEvents([
           Filter(
-            kinds: const [NIP71VideoKinds.addressableShortVideo],
+            kinds: [_videoKind ?? NIP71VideoKinds.addressableShortVideo],
+            authors: _authorPubkey == null ? null : [_authorPubkey],
             d: [_videoStableId],
             limit: 1,
           ),

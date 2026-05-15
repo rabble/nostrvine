@@ -13,11 +13,13 @@ import 'package:openvine/blocs/dm/message_requests/message_request_actions_cubit
 import 'package:openvine/blocs/dm/message_requests/request_preview_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/collaborator_invite.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/message_requests/request_preview_view.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
+import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
 import '../../../helpers/go_router.dart';
@@ -33,6 +35,8 @@ class _MockRequestPreviewCubit extends MockCubit<RequestPreviewState>
 class _MockCollaboratorInviteActionsCubit
     extends MockCubit<CollaboratorInviteActionsState>
     implements CollaboratorInviteActionsCubit {}
+
+class _MockVideoEventService extends Mock implements VideoEventService {}
 
 class _MockAuthService extends MockAuthService {
   _MockAuthService(this._pubkey) {
@@ -70,6 +74,8 @@ void main() {
     late _MockMessageRequestActionsCubit mockActionsCubit;
     late _MockRequestPreviewCubit mockPreviewCubit;
     late _MockCollaboratorInviteActionsCubit mockInviteActionsCubit;
+    late _MockVideoEventService mockVideoEventService;
+    late MockNostrClient mockNostrClient;
     late _MockAuthService mockAuthService;
     late MockGoRouter mockGoRouter;
     late UserProfile testProfile;
@@ -82,6 +88,8 @@ void main() {
       mockActionsCubit = _MockMessageRequestActionsCubit();
       mockPreviewCubit = _MockRequestPreviewCubit();
       mockInviteActionsCubit = _MockCollaboratorInviteActionsCubit();
+      mockVideoEventService = _MockVideoEventService();
+      mockNostrClient = createMockNostrService();
       mockAuthService = _MockAuthService(currentPubkey);
       mockGoRouter = MockGoRouter();
 
@@ -107,6 +115,13 @@ void main() {
       when(
         () => mockInviteActionsCubit.ignoreInvite(any()),
       ).thenAnswer((_) async {});
+      when(() => mockVideoEventService.getVideoById(any())).thenReturn(null);
+      when(
+        () => mockVideoEventService.getVideoEventByVineId(any()),
+      ).thenReturn(null);
+      when(
+        () => mockNostrClient.fetchEventById(any()),
+      ).thenAnswer((_) async => null);
 
       testProfile = UserProfile(
         pubkey: otherPubkey,
@@ -125,8 +140,10 @@ void main() {
 
       return testMaterialApp(
         mockAuthService: mockAuthService,
+        mockNostrService: mockNostrClient,
         additionalOverrides: [
           goRouterProvider.overrideWithValue(mockGoRouter),
+          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           userProfileReactiveProvider(
             otherPubkey,
           ).overrideWith((ref) => Stream.value(testProfile)),
