@@ -1459,6 +1459,46 @@ void main() {
       );
 
       blocTest<ConversationBloc, ConversationState>(
+        'treats missing queue rows as terminal and clears them from the '
+        'retry set without reporting',
+        setUp: () {
+          when(
+            () => mockDmRepository.recoverSelfWrap(rumorId: rumorId1),
+          ).thenThrow(
+            ArgumentError.value(
+              rumorId1,
+              'rumorId',
+              'no queued outgoing DM with this id',
+            ),
+          );
+        },
+        seed: () => const ConversationState(
+          status: ConversationStatus.loaded,
+          sendStatus: SendStatus.sentPartial,
+          lastPartialSend: PartialSend(rumorIds: [rumorId1]),
+        ),
+        build: buildBloc,
+        act: (bloc) => bloc.add(
+          const ConversationSelfWrapRecoveryRequested(rumorIds: [rumorId1]),
+        ),
+        expect: () => [
+          isA<ConversationState>().having(
+            (s) => s.sendStatus,
+            'sendStatus',
+            SendStatus.sending,
+          ),
+          isA<ConversationState>()
+              .having((s) => s.sendStatus, 'sendStatus', SendStatus.sent)
+              .having(
+                (s) => s.lastPartialSend,
+                'clears terminal retry payload',
+                isNull,
+              ),
+        ],
+        errors: () => const <Object>[],
+      );
+
+      blocTest<ConversationBloc, ConversationState>(
         'is a no-op when rumorIds is empty',
         seed: () => const ConversationState(
           status: ConversationStatus.loaded,

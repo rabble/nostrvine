@@ -226,9 +226,15 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           stillFailing.add(rumorId);
         }
       } on Object catch (e, stackTrace) {
-        // recoverSelfWrap can throw on missing/foreign queue rows or a
-        // missing DAO. Treat each thrown rumor as still-failing so the
-        // user can retry — recording the error for telemetry.
+        if (e is ArgumentError) {
+          // The row was already removed or is no longer valid for this
+          // account. Treat it as terminal and drop it from the retry set.
+          continue;
+        }
+
+        // Missing DAO wiring is an invariant failure; any other throw
+        // is unexpected. Preserve retryability and surface it for
+        // telemetry.
         stillFailing.add(rumorId);
         lastError = e;
         lastStackTrace = stackTrace;
