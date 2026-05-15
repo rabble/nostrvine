@@ -11,8 +11,9 @@
 /// Safe for both NFC and NFD-encoded text: NFC precomposed characters (e.g.
 /// U+00E9 é) contain no combining chars and pass through unchanged.
 String stripZalgo(String text, {int maxCombining = 2}) {
+  final safeText = _replaceLoneSurrogates(text);
   final result = StringBuffer();
-  final runes = text.runes.toList();
+  final runes = safeText.runes.toList();
   var i = 0;
   while (i < runes.length) {
     result.writeCharCode(runes[i]);
@@ -28,6 +29,37 @@ String stripZalgo(String text, {int maxCombining = 2}) {
   }
   return result.toString();
 }
+
+String _replaceLoneSurrogates(String text) {
+  final result = StringBuffer();
+  final codeUnits = text.codeUnits;
+  var i = 0;
+  while (i < codeUnits.length) {
+    final unit = codeUnits[i];
+    if (_isHighSurrogate(unit)) {
+      final hasPair =
+          i + 1 < codeUnits.length && _isLowSurrogate(codeUnits[i + 1]);
+      if (hasPair) {
+        result.write(String.fromCharCodes([unit, codeUnits[i + 1]]));
+        i += 2;
+      } else {
+        result.writeCharCode(0xFFFD);
+        i++;
+      }
+    } else if (_isLowSurrogate(unit)) {
+      result.writeCharCode(0xFFFD);
+      i++;
+    } else {
+      result.writeCharCode(unit);
+      i++;
+    }
+  }
+  return result.toString();
+}
+
+bool _isHighSurrogate(int codeUnit) => codeUnit >= 0xD800 && codeUnit <= 0xDBFF;
+
+bool _isLowSurrogate(int codeUnit) => codeUnit >= 0xDC00 && codeUnit <= 0xDFFF;
 
 bool _isCombining(int cp) =>
     (cp >= 0x0300 && cp <= 0x036F) ||

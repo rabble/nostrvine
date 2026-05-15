@@ -45,10 +45,16 @@ String? classifyRecoverableFlutterError(FlutterErrorDetails details) {
           context.contains('image codec') ||
           context.contains('instantiateImageCodecWithSize'));
 
+  final isLocalFilesystemImageFetch =
+      library == 'dart:_http' &&
+      error.contains('No host specified in URI') &&
+      (error.contains('/var/mobile/') || error.contains('file://'));
+
   if (isImage404 ||
       isMediaHostLookup ||
       isInterruptedMediaDownload ||
-      isInvalidImageData) {
+      isInvalidImageData ||
+      isLocalFilesystemImageFetch) {
     return _recoverableMediaLoadReason;
   }
 

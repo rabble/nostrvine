@@ -61,6 +61,24 @@ void main() {
       );
     });
 
+    test(
+      'classifies local filesystem URI image fetch failures as recoverable',
+      () {
+        final details = FlutterErrorDetails(
+          exception: ArgumentError(
+            'No host specified in URI '
+            '/var/mobile/Containers/Data/Application/app/tmp/thumb.jpg',
+          ),
+          library: 'dart:_http',
+        );
+
+        expect(
+          classifyRecoverableFlutterError(details),
+          'Recoverable media load failure',
+        );
+      },
+    );
+
     test('does not classify unrelated gesture errors as recoverable', () {
       final details = FlutterErrorDetails(
         exception: Exception('GoError: There is nothing to pop.'),

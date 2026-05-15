@@ -82,6 +82,34 @@ void main() {
       },
     );
 
+    test('rejects local filesystem thumbnail paths from relay metadata', () {
+      final nostrEvent = Event(
+        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        34236,
+        [
+          [
+            'thumb',
+            '/var/mobile/Containers/Data/Application/app/tmp/thumb.jpg',
+          ],
+          [
+            'image',
+            'file:///var/mobile/Containers/Data/Application/app/tmp/alt.jpg',
+          ],
+          ['url', 'https://media.divine.video/test/720p.mp4'],
+        ],
+        'Test video',
+        createdAt: 1757385263,
+      );
+
+      final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+      expect(videoEvent.thumbnailUrl, isNull);
+      expect(
+        videoEvent.videoUrl,
+        equals('https://media.divine.video/test/720p.mp4'),
+      );
+    });
+
     test('should accept video URLs from any domain (open protocol)', () {
       // Arrange - test various domains that should all be accepted
       final domains = [

@@ -59,5 +59,11 @@ void main() {
       const input = '\u00E9S\u0300\u0301\u0302i';
       expect(stripZalgo(input), equals('\u00E9S\u0300\u0301i'));
     });
+
+    test('replaces lone surrogate code units before display', () {
+      expect(stripZalgo('bad high \uD83D'), equals('bad high \uFFFD'));
+      expect(stripZalgo('bad low \uDC00'), equals('bad low \uFFFD'));
+      expect(stripZalgo('valid pair 😀'), equals('valid pair 😀'));
+    });
   });
 }

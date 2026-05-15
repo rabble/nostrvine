@@ -263,14 +263,18 @@ class VideoEvent {
                 dimensions ??= value;
               case 'thumb':
                 // Thumbnail URL
-                thumbnailUrl ??= value;
+                if (_isValidRemoteUrl(value)) {
+                  thumbnailUrl ??= value;
+                }
               case 'image':
                 // NIP-92 uses 'image' for thumbnail in imeta
-                thumbnailUrl ??= value;
-                developer.log(
-                  '✅ Set thumbnailUrl from imeta image tag: $value',
-                  name: 'VideoEvent',
-                );
+                if (_isValidRemoteUrl(value)) {
+                  thumbnailUrl ??= value;
+                  developer.log(
+                    '✅ Set thumbnailUrl from imeta image tag: $value',
+                    name: 'VideoEvent',
+                  );
+                }
               case 'blurhash':
                 // Blurhash for progressive loading
                 blurhash ??= value;
@@ -297,7 +301,9 @@ class VideoEvent {
           fileSize = int.tryParse(tagValue);
         case 'thumb':
           // Thumbnail URL - prefer static thumbnails for grid display
-          thumbnailUrl = tagValue as String?;
+          if (_isValidRemoteUrl(tagValue)) {
+            thumbnailUrl = tagValue as String?;
+          }
         case 'preview':
           // Animated GIF preview - store separately, don't use as main
           // thumbnail. GIFs auto-play and would make the grid look chaotic.
@@ -312,7 +318,9 @@ class VideoEvent {
           }
         case 'image':
           // Alternative to 'thumb' tag - some clients use 'image' instead
-          thumbnailUrl ??= tagValue as String?;
+          if (_isValidRemoteUrl(tagValue)) {
+            thumbnailUrl ??= tagValue as String?;
+          }
         case 'd':
           // Replaceable event ID - original vine ID
           vineId = tagValue as String?;
@@ -1495,6 +1503,17 @@ class VideoEvent {
         '🔍 INVALID URL (parse error): $correctedUrl - error: $e',
         name: 'VideoEvent',
       );
+      return false;
+    }
+  }
+
+  static bool _isValidRemoteUrl(String url) {
+    if (url.isEmpty) return false;
+    try {
+      final uri = Uri.parse(url);
+      return (uri.scheme == 'http' || uri.scheme == 'https') &&
+          uri.host.isNotEmpty;
+    } on FormatException {
       return false;
     }
   }
