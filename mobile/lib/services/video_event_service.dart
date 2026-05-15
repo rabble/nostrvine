@@ -45,6 +45,7 @@ import 'package:openvine/services/repost_resolver.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_filter_builder.dart';
 import 'package:openvine/utils/log_batcher.dart';
+import 'package:openvine/utils/log_tag_sanitizer.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:video_event_cache/video_event_cache.dart';
@@ -5095,34 +5096,13 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     super.dispose();
   }
 
-  /// Generate deterministic subscription ID based on subscription parameters
+  /// Sanitizes event tags for log output: redacts sensitive tag values and
+  /// truncates long parts to keep log lines manageable.
   String _formatEventTagsForLog(List<List<String>> tags) {
-    const redactedTagNames = {'proofmode', 'device_attestation'};
-    const maxLoggedTagPartLength = 180;
-
-    final sanitizedTags = tags.map((tag) {
-      if (tag.isEmpty) {
-        return tag;
-      }
-
-      final tagName = tag.first;
-      if (redactedTagNames.contains(tagName)) {
-        return <String>[tagName, '[FILTERED_FROM_LOGS]'];
-      }
-
-      return <String>[
-        tagName,
-        ...tag.skip(1).map((part) {
-          if (part.length <= maxLoggedTagPartLength) {
-            return part;
-          }
-
-          return '${part.substring(0, maxLoggedTagPartLength)}...(truncated)';
-        }),
-      ];
-    }).toList(growable: false);
-
-    return sanitizedTags.toString();
+    return tags
+        .map(sanitizeTagForLog)
+        .toList(growable: false)
+        .toString();
   }
 
   /// Generate deterministic subscription ID based on subscription parameters
