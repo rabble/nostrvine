@@ -15,6 +15,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_cover_screen.dart';
+import 'package:pro_video_editor/core/platform/native_method_channel.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 import '../helpers/go_router.dart';
@@ -26,6 +27,18 @@ class _MockVideoEditorNotifier extends VideoEditorNotifier {
 
   @override
   VideoEditorProviderState build() => _state;
+}
+
+/// Fresh ProVideoEditor-compatible instance for tests.
+///
+/// This routes calls through the mocked `MethodChannel('pro_video_editor')`
+/// while skipping EventChannel subscriptions that are not present in widget
+/// tests. It also prevents order-dependent failures when another test file has
+/// replaced [ProVideoEditor.instance] with a mock that only implements a
+/// subset of methods such as `getWaveform()`.
+class _NoopInitProVideoEditor extends MethodChannelProVideoEditor {
+  @override
+  Stream<dynamic> initializeStream() => const Stream.empty();
 }
 
 DivineVideoClip _createTestClip({String id = 'test-clip'}) {
@@ -57,6 +70,7 @@ void main() {
 
   setUp(() {
     DivineVideoPlayerController.resetIdCounterForTesting();
+    ProVideoEditor.instance = _NoopInitProVideoEditor();
 
     _setHandler(const MethodChannel('plugins.flutter.io/path_provider'), (
       call,
