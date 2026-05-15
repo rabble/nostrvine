@@ -6,6 +6,9 @@ import 'package:openvine/widgets/video_metadata/modes/edit/video_metadata_edit_s
 
 /// Screen entry-point for editing an already-published [VideoEvent].
 ///
+/// TODO(#4390): Switch this route to an ID-based resolver so it can be
+/// deep-linked and restored without relying on GoRouter [extra].
+///
 /// Navigate to this screen by pushing [path] with [extra] set to the
 /// [VideoEvent] to edit:
 /// ```dart

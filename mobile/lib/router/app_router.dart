@@ -1094,6 +1094,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: VideoMetadataEditScreen.path,
         name: VideoMetadataEditScreen.routeName,
         builder: (ctx, st) {
+          // TODO(#4390): Replace this extra-only route with an ID-based resolver
+          // so /video-edit can be reconstructed from URL state.
           final video = st.extra as VideoEvent?;
           if (video == null) {
             return RouteErrorScreen(message: ctx.l10n.routeInvalidVideoId);

@@ -29,6 +29,7 @@ import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
+import 'package:openvine/screens/video_metadata/video_metadata_edit_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 
@@ -388,6 +389,10 @@ void main() {
         final context = parseRoute('/video-editor');
         expect(context.type, RouteType.videoEditor);
       });
+      test('/video-edit parses to RouteType.videoEdit', () {
+        final context = parseRoute('/video-edit');
+        expect(context.type, RouteType.videoEdit);
+      });
     });
 
     group('Edge cases', () {
@@ -449,6 +454,7 @@ void main() {
       'settings': SettingsScreen.path,
       'badges': BadgesScreen.path,
       'relay settings': RelaySettingsScreen.path,
+      'video edit': VideoMetadataEditScreen.path,
       'invites': InvitesScreen.path,
       'people list create': CreatePeopleListPage.path,
       'people list members': '/people-lists/list%3A123',
@@ -484,6 +490,7 @@ void main() {
         RouteType.videoRecorder: VideoRecorderScreen.path,
         RouteType.videoEditor: VideoEditorScreen.path,
         RouteType.videoMetadata: VideoMetadataScreen.path,
+        RouteType.videoEdit: VideoMetadataEditScreen.path,
         RouteType.importKey: KeyImportScreen.path,
         RouteType.invites: InvitesScreen.path,
         RouteType.badges: BadgesScreen.path,

@@ -63,6 +63,7 @@ class BackButtonHandler {
       case RouteType.videoRecorder:
       case RouteType.videoEditor:
       case RouteType.videoMetadata:
+      case RouteType.videoEdit:
         // Pop the video editing flow screens
         _router!.pop();
         return true; // Handled
