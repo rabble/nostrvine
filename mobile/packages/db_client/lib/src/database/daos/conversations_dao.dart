@@ -13,6 +13,20 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
     with _$ConversationsDaoMixin {
   ConversationsDao(super.attachedDatabase);
 
+  static const String _latestMessagePreviewCase = '''
+CASE
+  WHEN dm.message_kind = 15 THEN
+    CASE
+      WHEN dm.file_type IS NULL THEN 'Sent a file'
+      WHEN dm.file_type LIKE 'image/%' THEN 'Sent a photo'
+      WHEN dm.file_type LIKE 'video/%' THEN 'Sent a video'
+      WHEN dm.file_type LIKE 'audio/%' THEN 'Sent an audio message'
+      ELSE 'Sent a file'
+    END
+  ELSE dm.content
+END
+''';
+
   /// Build a filter expression that returns rows owned by [ownerPubkey]
   /// **or** legacy rows with no owner (NULL).
   Expression<bool> _ownedOrLegacy(
@@ -77,49 +91,46 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
 
     return into(conversations).insert(
       row,
-      onConflict: DoUpdate.withExcluded(
-        (old, excl) {
-          // Determine whether the incoming preview columns should win.
-          // When forced, always take the incoming values. Otherwise only
-          // update when the incoming timestamp is strictly newer than the
-          // stored one (NULL stored timestamp counts as 0 via COALESCE).
-          final incomingIsNewer = excl.lastMessageTimestamp.isBiggerThan(
-            coalesce([old.lastMessageTimestamp, const Constant(0)]),
-          );
-          final previewCondition = forceUpdateLastMessage
-              ? const Constant<bool>(true)
-              : incomingIsNewer;
+      onConflict: DoUpdate.withExcluded((old, excl) {
+        // Determine whether the incoming preview columns should win.
+        // When forced, always take the incoming values. Otherwise only
+        // update when the incoming timestamp is strictly newer than the
+        // stored one (NULL stored timestamp counts as 0 via COALESCE).
+        final incomingIsNewer = excl.lastMessageTimestamp.isBiggerThan(
+          coalesce([old.lastMessageTimestamp, const Constant(0)]),
+        );
+        final previewCondition = forceUpdateLastMessage
+            ? const Constant<bool>(true)
+            : incomingIsNewer;
 
-          return ConversationsCompanion.custom(
-            // Always updated.
-            participantPubkeys: excl.participantPubkeys,
-            isGroup: excl.isGroup,
-            isRead: excl.isRead,
-            // Preserve existing non-null value; only update when incoming
-            // value is non-null.
-            subject: coalesce([excl.subject, old.subject]),
-            ownerPubkey: coalesce([excl.ownerPubkey, old.ownerPubkey]),
-            dmProtocol: coalesce([excl.dmProtocol, old.dmProtocol]),
-            // One-way ratchet: never clear true back to false.
-            currentUserHasSent:
-                old.currentUserHasSent | excl.currentUserHasSent,
-            // Preview columns: conditional on timestamp guard.
-            // iif(condition, ifFalse) is called on the ifTrue expression.
-            lastMessageTimestamp: excl.lastMessageTimestamp.iif(
-              previewCondition,
-              old.lastMessageTimestamp,
-            ),
-            lastMessageContent: excl.lastMessageContent.iif(
-              previewCondition,
-              old.lastMessageContent,
-            ),
-            lastMessageSenderPubkey: excl.lastMessageSenderPubkey.iif(
-              previewCondition,
-              old.lastMessageSenderPubkey,
-            ),
-          );
-        },
-      ),
+        return ConversationsCompanion.custom(
+          // Always updated.
+          participantPubkeys: excl.participantPubkeys,
+          isGroup: excl.isGroup,
+          isRead: excl.isRead,
+          // Preserve existing non-null value; only update when incoming
+          // value is non-null.
+          subject: coalesce([excl.subject, old.subject]),
+          ownerPubkey: coalesce([excl.ownerPubkey, old.ownerPubkey]),
+          dmProtocol: coalesce([excl.dmProtocol, old.dmProtocol]),
+          // One-way ratchet: never clear true back to false.
+          currentUserHasSent: old.currentUserHasSent | excl.currentUserHasSent,
+          // Preview columns: conditional on timestamp guard.
+          // iif(condition, ifFalse) is called on the ifTrue expression.
+          lastMessageTimestamp: excl.lastMessageTimestamp.iif(
+            previewCondition,
+            old.lastMessageTimestamp,
+          ),
+          lastMessageContent: excl.lastMessageContent.iif(
+            previewCondition,
+            old.lastMessageContent,
+          ),
+          lastMessageSenderPubkey: excl.lastMessageSenderPubkey.iif(
+            previewCondition,
+            old.lastMessageSenderPubkey,
+          ),
+        );
+      }),
     );
   }
 
@@ -222,10 +233,7 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Get a single conversation by ID.
-  Future<ConversationRow?> getConversation(
-    String id, {
-    String? ownerPubkey,
-  }) {
+  Future<ConversationRow?> getConversation(String id, {String? ownerPubkey}) {
     return (select(conversations)..where(
           (t) => t.id.equals(id) & _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
         ))
@@ -233,10 +241,7 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Watch a single conversation by ID.
-  Stream<ConversationRow?> watchConversation(
-    String id, {
-    String? ownerPubkey,
-  }) {
+  Stream<ConversationRow?> watchConversation(String id, {String? ownerPubkey}) {
     return (select(conversations)..where(
           (t) => t.id.equals(id) & _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
         ))
@@ -250,10 +255,7 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
   /// Throws:
   ///
   /// * [InvalidDataException] if a column constraint is violated.
-  Future<bool> markAsRead(
-    String id, {
-    String? ownerPubkey,
-  }) async {
+  Future<bool> markAsRead(String id, {String? ownerPubkey}) async {
     final rows =
         await (update(conversations)..where(
               (t) =>
@@ -319,10 +321,7 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Delete a conversation by ID.
-  Future<int> deleteConversation(
-    String id, {
-    String? ownerPubkey,
-  }) {
+  Future<int> deleteConversation(String id, {String? ownerPubkey}) {
     return (delete(conversations)..where(
           (t) => t.id.equals(id) & _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
         ))
@@ -330,10 +329,7 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Delete multiple conversations in a single batch.
-  Future<int> deleteMultiple(
-    List<String> ids, {
-    String? ownerPubkey,
-  }) {
+  Future<int> deleteMultiple(List<String> ids, {String? ownerPubkey}) {
     if (ids.isEmpty) return Future.value(0);
     return (delete(conversations)..where(
           (t) => t.id.isIn(ids) & _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
@@ -379,6 +375,77 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
         Variable(userPubkey),
         Variable(userPubkey),
       ],
+      updates: {attachedDatabase.conversations},
+      updateKind: UpdateKind.update,
+    );
+  }
+
+  /// Backfills denormalized latest-message preview columns from
+  /// `direct_messages`.
+  ///
+  /// Fixes stale conversation previews written by app versions prior to the
+  /// write-path timestamp guard in [upsertConversation]. Idempotent: once a
+  /// conversation row matches the newest non-deleted message (or correctly has
+  /// no preview because no messages remain), subsequent runs are no-ops.
+  ///
+  /// Returns the number of conversations updated.
+  Future<int> backfillLatestMessagePreviews({String? ownerPubkey}) {
+    final scopedConversationFilter = ownerPubkey == null
+        ? '1 = 1'
+        : '(c.owner_pubkey = ? OR c.owner_pubkey IS NULL)';
+    const latestMessageOwnerFilter = '''
+((c.owner_pubkey IS NULL AND dm.owner_pubkey IS NULL) OR
+ dm.owner_pubkey = c.owner_pubkey OR
+ dm.owner_pubkey IS NULL)
+''';
+    const latestPreviewContentSubquery =
+        '''
+SELECT $_latestMessagePreviewCase
+FROM direct_messages dm
+WHERE dm.conversation_id = c.id
+  AND dm.is_deleted = 0
+  AND $latestMessageOwnerFilter
+ORDER BY dm.created_at DESC, dm.id DESC
+LIMIT 1
+''';
+    const latestTimestampSubquery =
+        '''
+SELECT dm.created_at
+FROM direct_messages dm
+WHERE dm.conversation_id = c.id
+  AND dm.is_deleted = 0
+  AND $latestMessageOwnerFilter
+ORDER BY dm.created_at DESC, dm.id DESC
+LIMIT 1
+''';
+    const latestSenderSubquery =
+        '''
+SELECT dm.sender_pubkey
+FROM direct_messages dm
+WHERE dm.conversation_id = c.id
+  AND dm.is_deleted = 0
+  AND $latestMessageOwnerFilter
+ORDER BY dm.created_at DESC, dm.id DESC
+LIMIT 1
+''';
+
+    return customUpdate(
+      '''
+      UPDATE conversations AS c
+      SET last_message_content = ($latestPreviewContentSubquery),
+          last_message_timestamp = ($latestTimestampSubquery),
+          last_message_sender_pubkey = ($latestSenderSubquery)
+      WHERE $scopedConversationFilter
+        AND (
+          COALESCE(c.last_message_content, '') !=
+              COALESCE(($latestPreviewContentSubquery), '') OR
+          COALESCE(c.last_message_timestamp, -1) !=
+              COALESCE(($latestTimestampSubquery), -1) OR
+          COALESCE(c.last_message_sender_pubkey, '') !=
+              COALESCE(($latestSenderSubquery), '')
+        )
+      ''',
+      variables: [if (ownerPubkey != null) Variable(ownerPubkey)],
       updates: {attachedDatabase.conversations},
       updateKind: UpdateKind.update,
     );

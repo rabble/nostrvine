@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:db_client/db_client.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nostr_sdk/event_kind.dart';
 
 void main() {
   late AppDatabase database;
@@ -50,10 +51,7 @@ void main() {
         final result = await dao.getConversation('conv_1');
         expect(result, isNotNull);
         expect(result!.id, equals('conv_1'));
-        expect(
-          result.participantPubkeys,
-          equals('["pubkey_a","pubkey_b"]'),
-        );
+        expect(result.participantPubkeys, equals('["pubkey_a","pubkey_b"]'));
         expect(result.isGroup, isFalse);
         expect(result.lastMessageContent, equals('Hello!'));
         expect(result.lastMessageTimestamp, equals(1700000100));
@@ -140,36 +138,33 @@ void main() {
         },
       );
 
-      test(
-        'updates preview when new timestamp is strictly newer',
-        () async {
-          await dao.upsertConversation(
-            id: 'conv_1',
-            participantPubkeys: '["pubkey_a","pubkey_b"]',
-            isGroup: false,
-            createdAt: 1700000000,
-            lastMessageContent: 'First message',
-            lastMessageTimestamp: 1700000100,
-            lastMessageSenderPubkey: 'pubkey_a',
-          );
+      test('updates preview when new timestamp is strictly newer', () async {
+        await dao.upsertConversation(
+          id: 'conv_1',
+          participantPubkeys: '["pubkey_a","pubkey_b"]',
+          isGroup: false,
+          createdAt: 1700000000,
+          lastMessageContent: 'First message',
+          lastMessageTimestamp: 1700000100,
+          lastMessageSenderPubkey: 'pubkey_a',
+        );
 
-          await dao.upsertConversation(
-            id: 'conv_1',
-            participantPubkeys: '["pubkey_a","pubkey_b"]',
-            isGroup: false,
-            createdAt: 1700000000,
-            lastMessageContent: 'Second message',
-            lastMessageTimestamp: 1700000200,
-            lastMessageSenderPubkey: 'pubkey_b',
-          );
+        await dao.upsertConversation(
+          id: 'conv_1',
+          participantPubkeys: '["pubkey_a","pubkey_b"]',
+          isGroup: false,
+          createdAt: 1700000000,
+          lastMessageContent: 'Second message',
+          lastMessageTimestamp: 1700000200,
+          lastMessageSenderPubkey: 'pubkey_b',
+        );
 
-          final result = await dao.getConversation('conv_1');
-          expect(result, isNotNull);
-          expect(result!.lastMessageContent, equals('Second message'));
-          expect(result.lastMessageTimestamp, equals(1700000200));
-          expect(result.lastMessageSenderPubkey, equals('pubkey_b'));
-        },
-      );
+        final result = await dao.getConversation('conv_1');
+        expect(result, isNotNull);
+        expect(result!.lastMessageContent, equals('Second message'));
+        expect(result.lastMessageTimestamp, equals(1700000200));
+        expect(result.lastMessageSenderPubkey, equals('pubkey_b'));
+      });
 
       test(
         'forceUpdateLastMessage overwrites even with older timestamp',
@@ -310,6 +305,33 @@ void main() {
         expect(result, isNotNull);
         expect(result!.createdAt, equals(1700000000));
       });
+
+      test(
+        'covers every mutable conversation column in the conflict contract',
+        () {
+          final schemaColumns = database.conversations.$columns
+              .map((column) => column.$name)
+              .toSet();
+          const immutableColumns = {'id', 'created_at'};
+          const handledColumns = {
+            'participant_pubkeys',
+            'is_group',
+            'last_message_content',
+            'last_message_timestamp',
+            'last_message_sender_pubkey',
+            'subject',
+            'is_read',
+            'current_user_has_sent',
+            'owner_pubkey',
+            'dm_protocol',
+          };
+
+          expect(
+            handledColumns,
+            unorderedEquals(schemaColumns.difference(immutableColumns)),
+          );
+        },
+      );
     });
 
     group('getAllConversations', () {
@@ -881,6 +903,176 @@ void main() {
         expect(updated, equals(1));
         final conv = await dao.getConversation('conv_1');
         expect(conv!.currentUserHasSent, isTrue);
+      });
+    });
+
+    group('backfillLatestMessagePreviews', () {
+      const userA = 'pubkey_a';
+      const userB = 'pubkey_b';
+
+      test(
+        'updates stale preview columns to the newest non-deleted message',
+        () async {
+          await dao.upsertConversation(
+            id: 'conv_1',
+            participantPubkeys: '["$userA","$userB"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            lastMessageContent: 'stale older message',
+            lastMessageTimestamp: 1700000001,
+            lastMessageSenderPubkey: userA,
+            ownerPubkey: userA,
+          );
+          await database.directMessagesDao.insertMessage(
+            id: 'msg_old',
+            conversationId: 'conv_1',
+            senderPubkey: userA,
+            content: 'first',
+            createdAt: 1700000001,
+            giftWrapId: 'gw_old',
+            ownerPubkey: userA,
+          );
+          await database.directMessagesDao.insertMessage(
+            id: 'msg_new',
+            conversationId: 'conv_1',
+            senderPubkey: userB,
+            content: 'latest',
+            createdAt: 1700000002,
+            giftWrapId: 'gw_new',
+            ownerPubkey: userA,
+          );
+
+          final updated = await dao.backfillLatestMessagePreviews(
+            ownerPubkey: userA,
+          );
+
+          expect(updated, equals(1));
+          final conv = await dao.getConversation('conv_1', ownerPubkey: userA);
+          expect(conv!.lastMessageContent, equals('latest'));
+          expect(conv.lastMessageTimestamp, equals(1700000002));
+          expect(conv.lastMessageSenderPubkey, equals(userB));
+        },
+      );
+
+      test('converts file messages to human-readable preview text', () async {
+        await dao.upsertConversation(
+          id: 'conv_1',
+          participantPubkeys: '["$userA","$userB"]',
+          isGroup: false,
+          createdAt: 1700000000,
+          ownerPubkey: userA,
+        );
+        await database.directMessagesDao.insertMessage(
+          id: 'msg_file',
+          conversationId: 'conv_1',
+          senderPubkey: userB,
+          content: 'https://cdn.example.com/video.mp4',
+          createdAt: 1700000002,
+          giftWrapId: 'gw_file',
+          messageKind: EventKind.fileMessage,
+          fileType: 'video/mp4',
+          ownerPubkey: userA,
+        );
+
+        final updated = await dao.backfillLatestMessagePreviews(
+          ownerPubkey: userA,
+        );
+
+        expect(updated, equals(1));
+        final conv = await dao.getConversation('conv_1', ownerPubkey: userA);
+        expect(conv!.lastMessageContent, equals('Sent a video'));
+        expect(conv.lastMessageTimestamp, equals(1700000002));
+        expect(conv.lastMessageSenderPubkey, equals(userB));
+      });
+
+      test(
+        'clears stale preview when no non-deleted messages remain',
+        () async {
+          await dao.upsertConversation(
+            id: 'conv_1',
+            participantPubkeys: '["$userA","$userB"]',
+            isGroup: false,
+            createdAt: 1700000000,
+            lastMessageContent: 'stale preview',
+            lastMessageTimestamp: 1700000002,
+            lastMessageSenderPubkey: userB,
+            ownerPubkey: userA,
+          );
+          await database.directMessagesDao.insertMessage(
+            id: 'msg_deleted',
+            conversationId: 'conv_1',
+            senderPubkey: userB,
+            content: 'latest',
+            createdAt: 1700000002,
+            giftWrapId: 'gw_deleted',
+            ownerPubkey: userA,
+          );
+          await database.directMessagesDao.markMessageDeleted(
+            'msg_deleted',
+            ownerPubkey: userA,
+          );
+
+          final updated = await dao.backfillLatestMessagePreviews(
+            ownerPubkey: userA,
+          );
+
+          expect(updated, equals(1));
+          final conv = await dao.getConversation('conv_1', ownerPubkey: userA);
+          expect(conv!.lastMessageContent, isNull);
+          expect(conv.lastMessageTimestamp, isNull);
+          expect(conv.lastMessageSenderPubkey, isNull);
+        },
+      );
+
+      test('only updates conversations in the requested owner scope', () async {
+        await dao.upsertConversation(
+          id: 'conv_a',
+          participantPubkeys: '["$userA","$userB"]',
+          isGroup: false,
+          createdAt: 1700000000,
+          lastMessageContent: 'stale a',
+          lastMessageTimestamp: 1700000001,
+          lastMessageSenderPubkey: userA,
+          ownerPubkey: userA,
+        );
+        await dao.upsertConversation(
+          id: 'conv_b',
+          participantPubkeys: '["$userA","$userB"]',
+          isGroup: false,
+          createdAt: 1700000000,
+          lastMessageContent: 'stale b',
+          lastMessageTimestamp: 1700000001,
+          lastMessageSenderPubkey: userA,
+          ownerPubkey: userB,
+        );
+        await database.directMessagesDao.insertMessage(
+          id: 'msg_a',
+          conversationId: 'conv_a',
+          senderPubkey: userB,
+          content: 'fresh a',
+          createdAt: 1700000002,
+          giftWrapId: 'gw_a',
+          ownerPubkey: userA,
+        );
+        await database.directMessagesDao.insertMessage(
+          id: 'msg_b',
+          conversationId: 'conv_b',
+          senderPubkey: userB,
+          content: 'fresh b',
+          createdAt: 1700000002,
+          giftWrapId: 'gw_b',
+          ownerPubkey: userB,
+        );
+
+        final updated = await dao.backfillLatestMessagePreviews(
+          ownerPubkey: userA,
+        );
+
+        expect(updated, equals(1));
+        final convA = await dao.getConversation('conv_a', ownerPubkey: userA);
+        final convB = await dao.getConversation('conv_b', ownerPubkey: userB);
+        expect(convA!.lastMessageContent, equals('fresh a'));
+        expect(convB!.lastMessageContent, equals('stale b'));
       });
     });
   });

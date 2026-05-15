@@ -1663,7 +1663,7 @@ class DmRepository {
   Stream<List<DmConversation>> watchAcceptedConversations({int? limit}) {
     return _conversationsDao
         .watchAcceptedConversations(limit: limit, ownerPubkey: _ownerPubkey)
-        .asyncMap(_overlayLatestMessages);
+        .map((rows) => rows.map(_conversationFromRow).toList());
   }
 
   /// Watch conversations where the user has never sent a message.
@@ -1674,48 +1674,7 @@ class DmRepository {
   Stream<List<DmConversation>> watchPotentialRequests() {
     return _conversationsDao
         .watchPotentialRequestConversations(ownerPubkey: _ownerPubkey)
-        .asyncMap(_overlayLatestMessages);
-  }
-
-  /// Overlays each conversation row with the actual latest message from
-  /// `direct_messages` using a single batched query, then re-sorts by that
-  /// timestamp.
-  ///
-  /// This is a read-path safety net for existing user databases that may
-  /// contain stale `lastMessageContent` / `lastMessageTimestamp` values
-  /// written by app versions prior to the write-path fix in
-  /// `upsertConversation`. New writes are protected by that fix and will
-  /// never drift, but already-stale rows need this correction until a
-  /// backfill migration repairs them.
-  ///
-  // TODO(perf4407): Remove this method and the two asyncMap calls above once
-  // a one-time backfill migration has shipped that corrects any stale
-  // conversation rows in existing user databases.
-  // Tracking: divinevideo/divine-mobile#4407.
-  Future<List<DmConversation>> _overlayLatestMessages(
-    List<ConversationRow> rows,
-  ) async {
-    final latestMessages = await _directMessagesDao
-        .getLatestMessagesForConversations(
-          rows.map((row) => row.id),
-          ownerPubkey: _ownerPubkey,
-        );
-    final overlaid = rows.map((row) {
-      final base = _conversationFromRow(row);
-      final latest = latestMessages[row.id];
-      if (latest == null) return base;
-      final preview = latest.messageKind == EventKind.fileMessage
-          ? _filePreviewText(latest.fileType)
-          : latest.content;
-      return base.copyWith(
-        lastMessageContent: preview,
-        lastMessageTimestamp: latest.createdAt,
-        lastMessageSenderPubkey: latest.senderPubkey,
-      );
-    }).toList();
-    return overlaid..sort(
-      (a, b) => b.effectiveTimestamp.compareTo(a.effectiveTimestamp),
-    );
+        .map((rows) => rows.map(_conversationFromRow).toList());
   }
 
   /// Classifies potential request conversations by follow state.
@@ -2002,6 +1961,7 @@ class DmRepository {
     await _mergeDuplicateConversations();
     await _cleanupSelfConversations();
     await _backfillCurrentUserHasSent();
+    await _backfillConversationPreviews();
   }
 
   /// Backfills `currentUserHasSent` for conversations where the column
@@ -2026,6 +1986,31 @@ class DmRepository {
     } on Object catch (e, stackTrace) {
       Log.error(
         'Failed to backfill currentUserHasSent: $e',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// Backfills denormalized latest-message preview columns in conversations.
+  ///
+  /// Fixes stale previews created before the write-path timestamp guard landed,
+  /// after which conversation rows become the source of truth again.
+  Future<void> _backfillConversationPreviews() async {
+    try {
+      final updated = await _conversationsDao.backfillLatestMessagePreviews(
+        ownerPubkey: _ownerPubkey,
+      );
+      if (updated > 0) {
+        Log.info(
+          'Backfilled latest message previews for $updated conversations',
+          category: LogCategory.system,
+        );
+      }
+    } on Object catch (e, stackTrace) {
+      Log.error(
+        'Failed to backfill latest message previews: $e',
         category: LogCategory.system,
         error: e,
         stackTrace: stackTrace,

@@ -133,6 +133,11 @@ void main() {
       when(
         () => mockConversationsDao.backfillCurrentUserHasSent(any()),
       ).thenAnswer((_) async => 0);
+      when(
+        () => mockConversationsDao.backfillLatestMessagePreviews(
+          ownerPubkey: any(named: 'ownerPubkey'),
+        ),
+      ).thenAnswer((_) async => 0);
 
       // Global stub for runInTransaction — executes the callback directly.
       // Stub both <void> and <Null> since Dart infers different type args
@@ -5461,13 +5466,6 @@ void main() {
             ),
           ]),
         );
-        when(
-          () => mockDirectMessagesDao.getLatestMessagesForConversations(
-            any(),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => const {});
-
         final repository = createRepository();
         final conversations = await repository
             .watchAcceptedConversations()
@@ -5479,15 +5477,8 @@ void main() {
       });
 
       test(
-        'overlays the latest message from $DirectMessageRow over the '
-        'denormalized row preview',
+        'uses the conversation row preview as the source of truth',
         () async {
-          // The conversations row carries a stale "first message" preview
-          // (typical when an older gift wrap arrived after a newer one
-          // and stomped the denormalized columns during backfill). The
-          // direct_messages table still has every message, so the inbox
-          // preview should reflect the most recent one — not the stale
-          // column.
           final participants = [_validPubkeyA, _validPubkeyB]..sort();
           final convId = DmRepository.computeConversationId(participants);
 
@@ -5504,31 +5495,12 @@ void main() {
                 isGroup: false,
                 isRead: true,
                 currentUserHasSent: true,
-                createdAt: 1699999000,
-                lastMessageContent: 'Stale: first message ever',
-                lastMessageTimestamp: 1699999000,
-                lastMessageSenderPubkey: _validPubkeyB,
+                createdAt: 1700000000,
+                lastMessageContent: 'Latest reply',
+                lastMessageTimestamp: 1700000500,
+                lastMessageSenderPubkey: _validPubkeyA,
               ),
             ]),
-          );
-          when(
-            () => mockDirectMessagesDao.getLatestMessagesForConversations(
-              any(),
-              ownerPubkey: any(named: 'ownerPubkey'),
-            ),
-          ).thenAnswer(
-            (_) async => {
-              convId: DirectMessageRow(
-                id: _rumorEventId,
-                conversationId: convId,
-                senderPubkey: _validPubkeyA,
-                content: 'Latest reply',
-                createdAt: 1700000500,
-                giftWrapId: _giftWrapEventId,
-                messageKind: EventKind.privateDirectMessage,
-                isDeleted: false,
-              ),
-            },
           );
 
           final repository = createRepository();
@@ -5549,15 +5521,18 @@ void main() {
             conversations.first.lastMessageSenderPubkey,
             equals(_validPubkeyA),
           );
+          verifyNever(
+            () => mockDirectMessagesDao.getLatestMessagesForConversations(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
         },
       );
 
       test(
-        're-sorts conversations by the actual latest message timestamp',
+        'preserves DAO ordering',
         () async {
-          // A and B are stored with DAO-order [A then B] (because the
-          // denormalized lastMessageTimestamp is stale). After overlay, B
-          // has the newer real message and must be listed first.
           final participantsA = [_validPubkeyA, _validPubkeyB]..sort();
           final participantsB = [_validPubkeyA, _validPubkeyC]..sort();
           final convA = DmRepository.computeConversationId(participantsA);
@@ -5577,8 +5552,8 @@ void main() {
                 isRead: true,
                 currentUserHasSent: true,
                 createdAt: 1700000000,
-                lastMessageContent: 'Stale A',
-                lastMessageTimestamp: 1700000200,
+                lastMessageContent: 'B latest',
+                lastMessageTimestamp: 1700000900,
               ),
               ConversationRow(
                 id: convB,
@@ -5587,39 +5562,10 @@ void main() {
                 isRead: true,
                 currentUserHasSent: true,
                 createdAt: 1700000000,
-                lastMessageContent: 'Stale B',
-                lastMessageTimestamp: 1700000100,
+                lastMessageContent: 'A latest',
+                lastMessageTimestamp: 1700000300,
               ),
             ]),
-          );
-          when(
-            () => mockDirectMessagesDao.getLatestMessagesForConversations(
-              any(),
-              ownerPubkey: any(named: 'ownerPubkey'),
-            ),
-          ).thenAnswer(
-            (_) async => {
-              convA: DirectMessageRow(
-                id: 'rumor-A',
-                conversationId: convA,
-                senderPubkey: _validPubkeyB,
-                content: 'A latest',
-                createdAt: 1700000300,
-                giftWrapId: 'wrap-A',
-                messageKind: EventKind.privateDirectMessage,
-                isDeleted: false,
-              ),
-              convB: DirectMessageRow(
-                id: 'rumor-B',
-                conversationId: convB,
-                senderPubkey: _validPubkeyC,
-                content: 'B latest',
-                createdAt: 1700000900,
-                giftWrapId: 'wrap-B',
-                messageKind: EventKind.privateDirectMessage,
-                isDeleted: false,
-              ),
-            },
           );
 
           final repository = createRepository();
@@ -5629,7 +5575,7 @@ void main() {
 
           expect(
             conversations.map((c) => c.id).toList(),
-            equals([convB, convA]),
+            equals([convA, convB]),
           );
         },
       );
@@ -5656,13 +5602,6 @@ void main() {
             ),
           ]),
         );
-        when(
-          () => mockDirectMessagesDao.getLatestMessagesForConversations(
-            any(),
-            ownerPubkey: any(named: 'ownerPubkey'),
-          ),
-        ).thenAnswer((_) async => const {});
-
         final repository = createRepository();
         final requests = await repository.watchPotentialRequests().first;
 
@@ -8822,6 +8761,45 @@ void main() {
         verify(
           () => mockConversationsDao.backfillCurrentUserHasSent(
             _validPubkeyA,
+          ),
+        ).called(1);
+      });
+    });
+
+    group('_backfillConversationPreviews', () {
+      test('runs during post-auth maintenance', () async {
+        when(
+          () => mockConversationsDao.backfillLatestMessagePreviews(
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => 2);
+
+        when(
+          () => mockConversationsDao.getConversation(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        when(
+          () => mockNostrClient.unsubscribe(any()),
+        ).thenAnswer((_) async {});
+
+        DmRepository(
+          nostrClient: mockNostrClient,
+          directMessagesDao: mockDirectMessagesDao,
+          conversationsDao: mockConversationsDao,
+        ).setCredentials(
+          userPubkey: _validPubkeyA,
+          signer: LocalNostrSigner(_validPrivateKey),
+          messageService: mockMessageService,
+        );
+
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        verify(
+          () => mockConversationsDao.backfillLatestMessagePreviews(
+            ownerPubkey: _validPubkeyA,
           ),
         ).called(1);
       });
