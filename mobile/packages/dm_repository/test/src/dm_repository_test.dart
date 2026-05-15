@@ -200,7 +200,6 @@ void main() {
       Nip04Decryptor? nip04Decryptor,
       DmSyncState? syncState,
       OutgoingDmsDao? outgoingDmsDao,
-      bool wireErrorReporter = true,
     }) {
       return DmRepository(
         nostrClient: mockNostrClient,
@@ -213,11 +212,9 @@ void main() {
         rumorDecryptor: rumorDecryptor,
         nip04Decryptor: nip04Decryptor,
         syncState: syncState,
-        errorReporter: wireErrorReporter
-            ? (error, stackTrace, {required site}) {
-                reporterCalls.add(_ReporterCall(error, stackTrace, site));
-              }
-            : null,
+        errorReporter: (error, stackTrace, {required site}) {
+          reporterCalls.add(_ReporterCall(error, stackTrace, site));
+        },
       );
     }
 
