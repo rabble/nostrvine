@@ -487,6 +487,44 @@ void main() {
       );
 
       test(
+        'attempts explicit target relays even when no pool relay is connected',
+        () async {
+          final event = _createTestEvent();
+          const targetRelays = ['wss://relay.divine.video'];
+          const timeout = Duration(seconds: 5);
+          when(() => mockRelayManager.connectedRelays).thenReturn([]);
+          when(
+            mockRelayManager.retryDisconnectedRelays,
+          ).thenAnswer((_) async {});
+          when(
+            () => mockNostr.sendEventAwaitOk(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => accepted(event.id));
+
+          final outcome = await client.publishEventAwaitOk(
+            event,
+            targetRelays: targetRelays,
+            timeout: timeout,
+          );
+
+          expect(outcome.confirmed, isTrue);
+          verify(mockRelayManager.retryDisconnectedRelays).called(1);
+          verify(
+            () => mockNostr.sendEventAwaitOk(
+              event,
+              targetRelays: targetRelays,
+              tempRelays: targetRelays,
+              timeout: timeout,
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
         'removes target events from cache after confirmed deletion',
         () async {
           final mockDbClient = _MockAppDbClient();
