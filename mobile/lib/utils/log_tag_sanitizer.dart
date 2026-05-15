@@ -26,3 +26,27 @@ List<String> sanitizeTagForLog(List<String> tag) {
     }),
   ];
 }
+
+/// Sanitizes an event JSON map for log output.
+///
+/// Redacts privacy-sensitive tag values and truncates oversized tag parts
+/// while preserving non-tag fields exactly as-is.
+Map<String, dynamic> sanitizeEventJsonForLog(Map<String, dynamic> eventMap) {
+  final rawTags = eventMap['tags'];
+  if (rawTags is! List) {
+    return eventMap;
+  }
+
+  final sanitizedTags = rawTags
+      .map((rawTag) {
+        if (rawTag is! List) {
+          return rawTag;
+        }
+
+        final tagParts = rawTag.map((part) => part.toString()).toList();
+        return sanitizeTagForLog(tagParts);
+      })
+      .toList(growable: false);
+
+  return <String, dynamic>{...eventMap, 'tags': sanitizedTags};
+}
