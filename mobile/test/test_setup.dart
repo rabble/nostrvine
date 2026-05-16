@@ -6,7 +6,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'mocks/mock_path_provider_platform.dart';
 
 /// Set up test environment with necessary mocks and platform channel handlers
 void setupTestEnvironment() {
@@ -24,6 +27,12 @@ void setupTestEnvironment() {
   _setupImagePickerMock();
   _registerMocktailFallbacks();
 }
+
+final MockPathProviderPlatform _mockPathProviderPlatform =
+    MockPathProviderPlatform()
+      ..setTemporaryPath('/tmp')
+      ..setApplicationDocumentsPath('/tmp/documents')
+      ..setApplicationSupportPath('/tmp/support');
 
 /// Process-global mocktail fallback values for sealed event types whose
 /// concrete subclasses are constructed at call time (so [any]/[captureAny]
@@ -105,6 +114,8 @@ void _setupSecureStorageMock() {
 }
 
 void _setupPlatformChannelMocks() {
+  PathProviderPlatform.instance = _mockPathProviderPlatform;
+
   // Mock other platform channels that might be needed
 
   // Mock device info

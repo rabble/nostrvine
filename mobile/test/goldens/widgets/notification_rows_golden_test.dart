@@ -1,10 +1,11 @@
+@Tags(['skip_very_good_optimization'])
 // ABOUTME: Layout tests for notification rows, covering the default and
 // ABOUTME: large-text layouts that were stabilized for issues #4206 and #3387.
-
 import 'package:clock/clock.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/notifications/widgets/actor_notification_row.dart';
@@ -26,14 +27,18 @@ final _notificationTimestamp = DateTime.utc(2026, 5, 15, 12);
 
 void main() {
   group('Notification row layouts', () {
-    testWidgets(
+    testGoldens(
       'notification rows render default layout',
-      tags: 'golden',
       (tester) async {
         await withClock(Clock(() => _goldenNow), () async {
-          _setGoldenSurface(tester, const Size(420, 560));
-          await tester.pumpWidget(
-            _appWrapper(_scenarioColumn(textScaleFactor: 1)),
+          await tester.pumpWidgetBuilder(
+            _scenarioColumn(textScaleFactor: 1),
+            wrapper: materialAppWrapper(
+              theme: VineTheme.theme,
+              localizations: AppLocalizations.localizationsDelegates,
+              localeOverrides: AppLocalizations.supportedLocales,
+            ),
+            surfaceSize: const Size(420, 560),
           );
           await tester.pumpAndSettle();
 
@@ -46,22 +51,24 @@ void main() {
             reason: 'Default layout should keep the thumbnail inline.',
           );
           expect(tester.takeException(), isNull);
-          await expectLater(
-            find.byType(MaterialApp),
-            matchesGoldenFile('goldens/notification_rows_default.png'),
-          );
+          await screenMatchesGolden(tester, 'notification_rows_default');
         });
       },
+      tags: 'golden',
     );
 
-    testWidgets(
+    testGoldens(
       'notification rows render max-font layout',
-      tags: 'golden',
       (tester) async {
         await withClock(Clock(() => _goldenNow), () async {
-          _setGoldenSurface(tester, const Size(420, 1200));
-          await tester.pumpWidget(
-            _appWrapper(_scenarioColumn(textScaleFactor: 2)),
+          await tester.pumpWidgetBuilder(
+            _scenarioColumn(textScaleFactor: 2),
+            wrapper: materialAppWrapper(
+              theme: VineTheme.theme,
+              localizations: AppLocalizations.localizationsDelegates,
+              localeOverrides: AppLocalizations.supportedLocales,
+            ),
+            surfaceSize: const Size(420, 1200),
           );
           await tester.pumpAndSettle();
 
@@ -74,21 +81,12 @@ void main() {
             reason: 'Large-text layout should still render the thumbnail.',
           );
           expect(tester.takeException(), isNull);
-          await expectLater(
-            find.byType(MaterialApp),
-            matchesGoldenFile('goldens/notification_rows_max_font.png'),
-          );
+          await screenMatchesGolden(tester, 'notification_rows_max_font');
         });
       },
+      tags: 'golden',
     );
   });
-}
-
-void _setGoldenSurface(WidgetTester tester, Size size) {
-  tester.view.devicePixelRatio = 1;
-  tester.view.physicalSize = size;
-  addTearDown(tester.view.resetDevicePixelRatio);
-  addTearDown(tester.view.resetPhysicalSize);
 }
 
 Widget _scenarioColumn({required double textScaleFactor}) {
@@ -151,17 +149,6 @@ Widget _scenario({
         decoration: const BoxDecoration(color: VineTheme.backgroundColor),
         child: child,
       ),
-    ),
-  );
-}
-
-Widget _appWrapper(Widget child) {
-  return MaterialApp(
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
-    supportedLocales: AppLocalizations.supportedLocales,
-    theme: VineTheme.theme,
-    home: Scaffold(
-      body: Center(child: child),
     ),
   );
 }
