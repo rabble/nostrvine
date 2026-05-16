@@ -96,6 +96,10 @@ MockAuthService createMockAuthService() {
 
   // Stub common auth methods with sensible defaults
   when(() => mockAuth.isAuthenticated).thenReturn(false);
+  when(() => mockAuth.canExportLocalNsec).thenReturn(false);
+  when(
+    () => mockAuth.authenticationSource,
+  ).thenReturn(AuthenticationSource.none);
   when(() => mockAuth.currentPublicKeyHex).thenReturn(null);
   when(() => mockAuth.isNip07Available).thenReturn(false);
 
