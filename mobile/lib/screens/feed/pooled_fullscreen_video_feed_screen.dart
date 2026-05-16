@@ -824,16 +824,18 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
               );
 
               return Scaffold(
-                // Paint the Scaffold with [VineTheme.surfaceContainerHigh]
-                // (`#1A1A1A`, the same neutral dark grey the Messages
-                // inbox uses on its scaffold). This is the canvas
-                // around 1 × 1 / landscape / unknown contain-fit videos
-                // and shows wherever the body leaks — the device's
-                // curved-corner cutouts or the safe-area sliver below
-                // the keyboard. Reads as a clearly distinct surface
-                // from the comment bar's
-                // [VineTheme.surfaceBackground] (`#00150D` dark green).
-                backgroundColor: VineTheme.surfaceContainerHigh,
+                // Paint the Scaffold with [VineTheme.surfaceBackground]
+                // (`#00150D`, the same green the comment bar uses).
+                // This is what shows wherever the Scaffold body leaks
+                // around its content — most importantly the strip
+                // below the soft keyboard (above the home indicator)
+                // and the device's curved-corner cutouts at the
+                // bottom edges. Keeping it green continues the comment
+                // bar's surface visually around the keyboard. The
+                // video item's own [ColoredBox] paints
+                // [VineTheme.surfaceContainerHigh] on top of this so
+                // the video area itself reads as a darker canvas.
+                backgroundColor: VineTheme.surfaceBackground,
                 // Always edge-to-edge: the video fills the screen and the
                 // (transparent) AppBar overlays it, matching the home feed.
                 // 1 × 1 / landscape / dimensions-less videos are rendered
@@ -1645,27 +1647,57 @@ class _FittedVideoPlayer extends StatelessWidget {
   });
 
   final VideoController videoController;
+
+  /// Metadata-derived hint used until the controller reports the
+  /// actual decoded video's rect. We can't trust the VideoEvent
+  /// dimensions alone: classic Vine reposts arrive with no
+  /// dimensions, and some new posts have stale / incorrect tags.
+  /// The reactive [VideoController.rect] in [build] is the source
+  /// of truth once the first frame lands.
   final bool isPortrait;
+
   final double? videoWidth;
   final double? videoHeight;
 
   @override
   Widget build(BuildContext context) {
-    final boxFit = isPortrait ? BoxFit.cover : BoxFit.contain;
-    final alignment = fullscreenVideoMediaAlignment(isPortrait: isPortrait);
-
-    // Do not set filterQuality to high — on Android the bicubic
-    // interpolation causes visible blur on the Texture widget when
-    // the video resolution doesn't match the display size exactly.
-    return Video(
-      controller: videoController,
-      fit: boxFit,
-      alignment: alignment,
-      controls: null,
-      width: videoWidth,
-      height: videoHeight,
-      fill: const Color(0x00000000),
+    // [VideoController.rect] is a `ValueNotifier<Rect?>` populated
+    // once the platform side reports the texture rect (i.e., once
+    // the video is decoded and known). Listening here lets the
+    // [BoxFit] decision react to the actual aspect ratio: 1 × 1 →
+    // [BoxFit.contain] (centered with bands), portrait (height >
+    // width) → [BoxFit.cover] (fills the screen), landscape →
+    // [BoxFit.contain]. Until `rect` lands we fall back to the
+    // metadata hint in [isPortrait].
+    return ValueListenableBuilder<Rect?>(
+      valueListenable: videoController.rect,
+      builder: (context, rect, _) {
+        final detected = _detectPortrait(rect, fallback: isPortrait);
+        final boxFit = detected ? BoxFit.cover : BoxFit.contain;
+        final alignment = fullscreenVideoMediaAlignment(
+          isPortrait: detected,
+        );
+        // Do not set filterQuality to high — on Android the bicubic
+        // interpolation causes visible blur on the Texture widget
+        // when the video resolution doesn't match the display size
+        // exactly.
+        return Video(
+          controller: videoController,
+          fit: boxFit,
+          alignment: alignment,
+          controls: null,
+          width: videoWidth,
+          height: videoHeight,
+          fill: const Color(0x00000000),
+        );
+      },
     );
+  }
+
+  static bool _detectPortrait(Rect? rect, {required bool fallback}) {
+    if (rect == null) return fallback;
+    if (rect.width <= 0 || rect.height <= 0) return fallback;
+    return rect.height > rect.width;
   }
 }
 
