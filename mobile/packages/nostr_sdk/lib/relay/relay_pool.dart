@@ -17,6 +17,7 @@ import 'client_connected.dart';
 import 'event_filter.dart';
 import 'publish_outcome.dart';
 import 'relay.dart';
+import 'relay_base.dart';
 import 'relay_type.dart';
 
 class RelayPool {
@@ -1230,6 +1231,12 @@ class RelayPool {
 
   Relay checkAndGenTempRelay(String addr) {
     var tempRelay = _tempRelays[addr];
+    if (tempRelay != null && _shouldReplaceTempRelay(tempRelay)) {
+      _tempRelays.remove(addr);
+      unawaited(tempRelay.disconnect());
+      tempRelay.dispose();
+      tempRelay = null;
+    }
     if (tempRelay == null) {
       tempRelay = tempRelayGener(addr);
       tempRelay.onMessage = _onEvent;
@@ -1238,6 +1245,15 @@ class RelayPool {
     }
 
     return tempRelay;
+  }
+
+  bool _shouldReplaceTempRelay(Relay relay) {
+    if (relay.relayStatus.connected == ClientConnected.disconnect) {
+      return true;
+    }
+    return relay.relayStatus.connected == ClientConnected.connected &&
+        relay is RelayBase &&
+        !relay.checkHealth();
   }
 
   List<String> getExtralReadableRelays(

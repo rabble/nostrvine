@@ -297,6 +297,38 @@ class _TrackingTempRelay extends _SucceedingRelay {
   }
 }
 
+class _ConnectionAwareTempRelay extends Relay {
+  _ConnectionAwareTempRelay(String url, {required this.onCreated})
+    : super(url, RelayStatus(url));
+
+  final void Function(_ConnectionAwareTempRelay relay) onCreated;
+  final List<List<dynamic>> sentMessages = [];
+
+  @override
+  Future<bool> doConnect() async {
+    relayStatus.connected = ClientConnected.connected;
+    onCreated(this);
+    return true;
+  }
+
+  @override
+  Future<void> disconnect() async {
+    relayStatus.connected = ClientConnected.disconnect;
+  }
+
+  @override
+  Future<bool> send(
+    List<dynamic> message, {
+    bool? forceSend,
+    bool queueIfFailed = true,
+    bool skipReconnect = false,
+    DateTime? deadline,
+  }) async {
+    sentMessages.add(message);
+    return relayStatus.connected == ClientConnected.connected;
+  }
+}
+
 void main() {
   group('RelayPool concurrency', () {
     late Nostr nostr;
@@ -573,6 +605,49 @@ void main() {
         contains(relayUrl),
         reason: 'a failed normal send should not suppress temp relay fallback',
       );
+    });
+
+    test('sendEventAwaitOk recreates a disconnected cached temp relay before '
+        'deadline-bound fallback send', () async {
+      final relayUrl = 'wss://relay.divine.video';
+      final failing = _FailingSendRelay(relayUrl);
+      final tempRelaysCreated = <_ConnectionAwareTempRelay>[];
+      final tempNostr = Nostr(
+        signer,
+        [],
+        (url) =>
+            _ConnectionAwareTempRelay(url, onCreated: tempRelaysCreated.add),
+      );
+      await tempNostr.refreshPublicKey();
+
+      final staleTempRelay = tempNostr.relayPool.checkAndGenTempRelay(relayUrl);
+      await staleTempRelay.disconnect();
+      await tempNostr.relayPool.add(failing);
+
+      final outcome = await tempNostr.relayPool.sendEventAwaitOk(
+        [
+          'EVENT',
+          {'id': 'recreated-temp-event-id', 'kind': 1},
+        ],
+        eventId: 'recreated-temp-event-id',
+        eventKind: 1,
+        targetRelays: [relayUrl],
+        tempRelays: [relayUrl],
+        timeout: const Duration(milliseconds: 50),
+      );
+
+      expect(outcome.failed, isTrue);
+      expect(
+        tempRelaysCreated,
+        hasLength(2),
+        reason: 'disconnected cached temp relay must be replaced before send',
+      );
+      expect(
+        tempRelaysCreated.first.sentMessages,
+        isEmpty,
+        reason: 'stale disconnected temp relay must not be reused for send',
+      );
+      expect(tempRelaysCreated.last.sentMessages, hasLength(1));
     });
 
     test(
