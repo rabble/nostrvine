@@ -823,17 +823,21 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
               );
 
               return Scaffold(
-                // Match the comment bar's [VineTheme.surfaceBackground]
-                // (= [VineTheme.navGreen]) so anything peeking around
-                // the bar — the device's curved-corner cutouts or the
-                // safe-area sliver below the keyboard — is the same
-                // green as the bar itself, not the default black.
-                backgroundColor: VineTheme.surfaceBackground,
+                // Paint the Scaffold with [VineTheme.cardBackground]
+                // (`#1A1A1A`, the same neutral dark grey the Messages
+                // inbox uses on its scaffold). This is the canvas
+                // around 1 × 1 / landscape / unknown contain-fit videos
+                // and shows wherever the body leaks — the device's
+                // curved-corner cutouts or the safe-area sliver below
+                // the keyboard. Reads as a clearly distinct surface
+                // from the comment bar's
+                // [VineTheme.surfaceBackground] (`#00150D` dark green).
+                backgroundColor: VineTheme.cardBackground,
                 // Always edge-to-edge: the video fills the screen and the
                 // (transparent) AppBar overlays it, matching the home feed.
                 // 1 × 1 / landscape / dimensions-less videos are rendered
                 // with `BoxFit.contain`, so their letterbox bars sit on
-                // the [VineTheme.surfaceBackground] above — the
+                // the [VineTheme.cardBackground] above — the
                 // transparent AppBar reads cleanly against that surface
                 // colour, no carve-out needed.
                 extendBodyBehindAppBar: true,
@@ -1694,18 +1698,19 @@ class _MaybeRoundFeedBottom extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!roundCorners) return child;
-    // Default [NavRoundedShell.innerColor] is
-    // [VineTheme.surfaceBackground] — the same `#00150D` green the
-    // comment bar paints. That's exactly what we want here: on the
-    // fullscreen feed we render contain-fit videos (1 × 1 classics,
-    // landscape, anything without dimensions metadata) which leave
-    // letterbox bands inside the rounded shell. The bands sit on top
-    // of [innerColor], so leaving it at the green default gives the
-    // user the same "video centered on green canvas" reading the
-    // comment bar already establishes. The home feed picks a black
-    // inner explicitly because it only renders portrait covers that
-    // hide the inner colour entirely.
-    return NavRoundedShell(child: child);
+    // Inside the rounded shell, paint
+    // [VineTheme.cardBackground] (`#1A1A1A`) — the same neutral dark
+    // grey the Messages inbox uses. That's the canvas around
+    // contain-fit videos (1 × 1 classics, landscape, anything without
+    // dimensions metadata) which leave letterbox bands the user can
+    // see. The shell's *outer* colour is the comment-bar green
+    // ([VineTheme.surfaceBackground], `#00150D`) by [NavRoundedShell]
+    // construction, so the rounded bottom corners reveal that green
+    // and seam the dark video region into the bar visually.
+    return NavRoundedShell(
+      innerColor: VineTheme.cardBackground,
+      child: child,
+    );
   }
 }
 
