@@ -57,16 +57,14 @@ class MinorAccountReviewParentConsentScreen extends ConsumerWidget {
                   context.l10n.minorAccountReviewParentConsentTitle,
                   style: VineTheme.headlineMediumFont(),
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  context.l10n.minorAccountReviewParentConsentBody,
-                  style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
-                ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
                 _InfoCard(
                   title:
                       context.l10n.minorAccountReviewParentConsentHonestyTitle,
-                  body: context.l10n.minorAccountReviewParentConsentHonestyBody,
+                  body:
+                      '${context.l10n.minorAccountReviewParentConsentHonestyBody}'
+                      '\n\n'
+                      '${context.l10n.minorAccountReviewParentConsentBody}',
                   backgroundColor: VineTheme.inverseSurface,
                   borderColor: VineTheme.inverseOnSurface,
                   textColor: VineTheme.inverseOnSurface,

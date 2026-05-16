@@ -13683,13 +13683,19 @@ abstract class AppLocalizations {
   /// No description provided for @minorAccountReviewUnder13PublicTitle.
   ///
   /// In en, this message translates to:
-  /// **'We\'re sorry — we can\'t give you a Divine account today.'**
+  /// **'We can\'t give you an account yet'**
   String get minorAccountReviewUnder13PublicTitle;
+
+  /// No description provided for @minorAccountReviewUnder13WhyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Here\'s why'**
+  String get minorAccountReviewUnder13WhyTitle;
 
   /// No description provided for @minorAccountReviewUnder13PublicBody.
   ///
   /// In en, this message translates to:
-  /// **'Divine isn\'t built for people under 13. The rules mean we would have to ask for things from your parents that we are not willing to ask for, so we don\'t host accounts for kids your age.'**
+  /// **'Divine isn\'t built for kids under 13 and the social media rules around the world tie our hands.\n\nA lot of things on the internet push you to lie to get what you want, and we hate that. It\'s the wrong lesson for life, and we\'re not going to teach it to you here.'**
   String get minorAccountReviewUnder13PublicBody;
 
   /// No description provided for @minorAccountReviewUnder13FamilyTitle.
@@ -13701,7 +13707,7 @@ abstract class AppLocalizations {
   /// No description provided for @minorAccountReviewUnder13FamilyBody.
   ///
   /// In en, this message translates to:
-  /// **'A parent or guardian can hold the account, do the posting, and you can appear in videos with them. Families enjoying Divine together are welcome.'**
+  /// **'A parent or guardian can hold the account and do the posting, and you can absolutely be in the videos with them. We want families to enjoy Divine in whatever way is right for them.'**
   String get minorAccountReviewUnder13FamilyBody;
 
   /// No description provided for @minorAccountReviewUnder13ComeBackTitle.
@@ -13713,32 +13719,8 @@ abstract class AppLocalizations {
   /// No description provided for @minorAccountReviewUnder13ComeBackBody.
   ///
   /// In en, this message translates to:
-  /// **'You can come back and create your own account with a quick step where a parent or guardian confirms they know about it.'**
+  /// **'You can come back and apply for your own account. Between 13 and 15 you\'ll just need a parent or guardian\'s consent.'**
   String get minorAccountReviewUnder13ComeBackBody;
-
-  /// No description provided for @minorAccountReviewUnder13HonestyTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Why we won\'t tell you to just click back'**
-  String get minorAccountReviewUnder13HonestyTitle;
-
-  /// No description provided for @minorAccountReviewUnder13HonestyBody.
-  ///
-  /// In en, this message translates to:
-  /// **'A lot of the internet is set up to reward people for saying whatever gets them through the gate. We don\'t think that\'s great. Yes, you could go back and say you\'re older than you are, but that wouldn\'t be honest, and we\'re not going to coach you into lying to get what you want.'**
-  String get minorAccountReviewUnder13HonestyBody;
-
-  /// No description provided for @minorAccountReviewUnder13LegalTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Why the answer is still no'**
-  String get minorAccountReviewUnder13LegalTitle;
-
-  /// No description provided for @minorAccountReviewUnder13LegalBody.
-  ///
-  /// In en, this message translates to:
-  /// **'We\'re trying to help young people use Divine in ways that are healthy and positive for them and the people around them. We also have to follow laws that are different in different places. So, if you\'re under 13, the answer is that you can\'t have your own account today.'**
-  String get minorAccountReviewUnder13LegalBody;
 
   /// No description provided for @minorAccountReviewTeenBody.
   ///
@@ -13767,13 +13749,13 @@ abstract class AppLocalizations {
   /// No description provided for @minorAccountReviewParentConsentHonestyTitle.
   ///
   /// In en, this message translates to:
-  /// **'Why we\'re asking instead of hinting that you should lie'**
+  /// **'Why we ask a parent or guardian to be involved'**
   String get minorAccountReviewParentConsentHonestyTitle;
 
   /// No description provided for @minorAccountReviewParentConsentHonestyBody.
   ///
   /// In en, this message translates to:
-  /// **'A lot of the internet quietly teaches people to click whatever answer gets them in. We think that stinks. Yes, someone could go back and claim they\'re 16 or older, but that would be lying about their age. We\'re trying to help teens use Divine in a way that\'s healthy and positive for them and the people around them. We also have to follow the law, and those rules are different depending on where someone lives. So instead of pretending the rules do not exist, we ask for a parent or guardian to be part of the process.'**
+  /// **'Divine has to follow age-related laws around the world. We also know that most technical age gates are imperfect. Rather than pretending the rules don\'t exist or that it\'s cool to lie about your age, we want teens and families to make thoughtful decisions about how best to use Divine. That\'s why, for 13-15 year olds, we ask parents to be part of the account creation process.'**
   String get minorAccountReviewParentConsentHonestyBody;
 
   /// No description provided for @minorAccountReviewParentConsentLegalBody.

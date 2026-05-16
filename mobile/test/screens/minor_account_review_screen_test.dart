@@ -90,9 +90,7 @@ void main() {
       expect(find.text('Family guide'), findsNothing);
     });
 
-    testWidgets('shows the public under-13 support screen copy', (
-      tester,
-    ) async {
+    testWidgets('shows the condensed public under-13 copy', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -103,34 +101,49 @@ void main() {
 
       await tester.pumpAndSettle();
 
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(MinorAccountReviewUnder13Screen)),
+      );
+
       expect(
-        find.text("We're sorry — we can't give you a Divine account today."),
+        find.text(l10n.minorAccountReviewUnder13PublicTitle),
         findsOneWidget,
       );
       expect(
-        find.text('What your family can do instead'),
+        find.text(l10n.minorAccountReviewUnder13WhyTitle),
         findsOneWidget,
       );
       expect(
-        find.text('When you turn 13'),
+        find.text(l10n.minorAccountReviewUnder13PublicBody),
         findsOneWidget,
       );
+      expect(
+        find.text(l10n.minorAccountReviewUnder13FamilyTitle),
+        findsOneWidget,
+      );
+      expect(
+        find.text(l10n.minorAccountReviewUnder13FamilyBody),
+        findsOneWidget,
+      );
+      // Three boxes total: why / family / come-back-at-13.
+      expect(
+        find.text(l10n.minorAccountReviewUnder13ComeBackTitle),
+        findsOneWidget,
+      );
+      expect(
+        find.text(l10n.minorAccountReviewUnder13ComeBackBody),
+        findsOneWidget,
+      );
+      // The honesty / legal cards from the original four-card layout
+      // stay removed.
       expect(
         find.text("Why we won't tell you to just click back"),
-        findsOneWidget,
+        findsNothing,
       );
-      await tester.scrollUntilVisible(
-        find.text('Why the answer is still no'),
-        200,
-        scrollable: find.byType(Scrollable),
-      );
-      await tester.pumpAndSettle();
-      expect(
-        find.text('Why the answer is still no'),
-        findsOneWidget,
-      );
-      expect(find.text('Close', skipOffstage: false), findsOneWidget);
-      expect(find.text('Email Divine support'), findsNothing);
+      expect(find.text('Why the answer is still no'), findsNothing);
+      // No Close button — the user exits via the app bar back arrow or
+      // by closing the app themselves (iOS has no sanctioned quit API).
+      expect(find.text(l10n.commonClose), findsNothing);
     });
 
     testWidgets('shows the public parent-consent screen copy', (tester) async {
@@ -144,18 +157,26 @@ void main() {
 
       await tester.pumpAndSettle();
 
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(MinorAccountReviewParentConsentScreen)),
+      );
+
       expect(
-        find.text('If the account will belong to someone 13 to 15'),
+        find.text(l10n.minorAccountReviewParentConsentTitle),
         findsOneWidget,
       );
+      expect(
+        find.text(l10n.minorAccountReviewParentConsentHonestyTitle),
+        findsOneWidget,
+      );
+      // The two "A parent or guardian should…" sentences moved into the
+      // "why we're asking" balloon, after its paragraph and a gap.
       expect(
         find.text(
-          'A parent or guardian should email Divine support with a short private video. Our team will review it and help with next steps.\n\nIf parent or guardian contact is not possible or would put someone at risk, email Divine support and let us know.',
+          '${l10n.minorAccountReviewParentConsentHonestyBody}'
+          '\n\n'
+          '${l10n.minorAccountReviewParentConsentBody}',
         ),
-        findsOneWidget,
-      );
-      expect(
-        find.text("Why we're asking instead of hinting that you should lie"),
         findsOneWidget,
       );
       await tester.scrollUntilVisible(

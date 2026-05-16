@@ -7524,11 +7524,14 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get minorAccountReviewUnder13PublicTitle =>
-      'We\'re sorry — we can\'t give you a Divine account today.';
+      'We can\'t give you an account yet';
+
+  @override
+  String get minorAccountReviewUnder13WhyTitle => 'Here\'s why';
 
   @override
   String get minorAccountReviewUnder13PublicBody =>
-      'Divine isn\'t built for people under 13. The rules mean we would have to ask for things from your parents that we are not willing to ask for, so we don\'t host accounts for kids your age.';
+      'Divine isn\'t built for kids under 13 and the social media rules around the world tie our hands.\n\nA lot of things on the internet push you to lie to get what you want, and we hate that. It\'s the wrong lesson for life, and we\'re not going to teach it to you here.';
 
   @override
   String get minorAccountReviewUnder13FamilyTitle =>
@@ -7536,30 +7539,14 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get minorAccountReviewUnder13FamilyBody =>
-      'A parent or guardian can hold the account, do the posting, and you can appear in videos with them. Families enjoying Divine together are welcome.';
+      'A parent or guardian can hold the account and do the posting, and you can absolutely be in the videos with them. We want families to enjoy Divine in whatever way is right for them.';
 
   @override
   String get minorAccountReviewUnder13ComeBackTitle => 'When you turn 13';
 
   @override
   String get minorAccountReviewUnder13ComeBackBody =>
-      'You can come back and create your own account with a quick step where a parent or guardian confirms they know about it.';
-
-  @override
-  String get minorAccountReviewUnder13HonestyTitle =>
-      'Why we won\'t tell you to just click back';
-
-  @override
-  String get minorAccountReviewUnder13HonestyBody =>
-      'A lot of the internet is set up to reward people for saying whatever gets them through the gate. We don\'t think that\'s great. Yes, you could go back and say you\'re older than you are, but that wouldn\'t be honest, and we\'re not going to coach you into lying to get what you want.';
-
-  @override
-  String get minorAccountReviewUnder13LegalTitle =>
-      'Why the answer is still no';
-
-  @override
-  String get minorAccountReviewUnder13LegalBody =>
-      'We\'re trying to help young people use Divine in ways that are healthy and positive for them and the people around them. We also have to follow laws that are different in different places. So, if you\'re under 13, the answer is that you can\'t have your own account today.';
+      'You can come back and apply for your own account. Between 13 and 15 you\'ll just need a parent or guardian\'s consent.';
 
   @override
   String get minorAccountReviewTeenBody =>
@@ -7579,11 +7566,11 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get minorAccountReviewParentConsentHonestyTitle =>
-      'Why we\'re asking instead of hinting that you should lie';
+      'Why we ask a parent or guardian to be involved';
 
   @override
   String get minorAccountReviewParentConsentHonestyBody =>
-      'A lot of the internet quietly teaches people to click whatever answer gets them in. We think that stinks. Yes, someone could go back and claim they\'re 16 or older, but that would be lying about their age. We\'re trying to help teens use Divine in a way that\'s healthy and positive for them and the people around them. We also have to follow the law, and those rules are different depending on where someone lives. So instead of pretending the rules do not exist, we ask for a parent or guardian to be part of the process.';
+      'Divine has to follow age-related laws around the world. We also know that most technical age gates are imperfect. Rather than pretending the rules don\'t exist or that it\'s cool to lie about your age, we want teens and families to make thoughtful decisions about how best to use Divine. That\'s why, for 13-15 year olds, we ask parents to be part of the account creation process.';
 
   @override
   String get minorAccountReviewParentConsentLegalBody =>
