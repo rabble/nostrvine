@@ -406,6 +406,15 @@ const _knownUntranslatedDebt = {
   // screen-reader hint. Existing locales fall back to English until the
   // next full translation pass.
   'metadataHashtagChipTapHint',
+  // Added by the inline comment composer bar on the fullscreen video
+  // feed (Explore / Search / Profile playback). Translators will pick
+  // these up in a follow-up pass; until then non-English locales fall
+  // back to the English source.
+  'videoOverlayCommentBarHint',
+  'videoOverlayCommentBarSemanticLabel',
+  'videoOverlayCommentBarSendLabel',
+  'videoOverlayCommentPostedSnackbar',
+  'videoOverlayCommentPostFailedSnackbar',
 };
 
 Map<String, Object?> _readArb(File file) {
