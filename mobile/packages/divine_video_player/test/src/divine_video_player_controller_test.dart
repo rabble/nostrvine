@@ -175,6 +175,36 @@ void main() {
         );
       });
 
+      test(
+        'defaults useLegacySurface to true when useTexture is true',
+        () async {
+          controller = DivineVideoPlayerController(useTexture: true);
+
+          await controller.initialize();
+
+          expect(globalCalls, hasLength(1));
+          expect(
+            globalCalls.first.arguments,
+            containsPair('useLegacySurface', isTrue),
+          );
+        },
+      );
+
+      test('passes explicit useLegacySurface false through create', () async {
+        controller = DivineVideoPlayerController(
+          useTexture: true,
+          useLegacySurface: false,
+        );
+
+        await controller.initialize();
+
+        expect(globalCalls, hasLength(1));
+        expect(
+          globalCalls.first.arguments,
+          containsPair('useLegacySurface', isFalse),
+        );
+      });
+
       test('throws StateError if called twice', () async {
         await initController();
 
