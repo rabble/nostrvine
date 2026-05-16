@@ -2512,6 +2512,12 @@ abstract class AppLocalizations {
   /// **'{name}. Tap to view profile.'**
   String profileChipTapHint(String name);
 
+  /// Screen reader hint announced when a hashtag chip in the metadata sheet is focused. {hashtag} is the hashtag without the leading # prefix.
+  ///
+  /// In en, this message translates to:
+  /// **'#{hashtag}. Tap to view videos with this hashtag.'**
+  String metadataHashtagChipTapHint(String hashtag);
+
   /// No description provided for @listAttributionFallback.
   ///
   /// In en, this message translates to:

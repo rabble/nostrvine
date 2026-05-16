@@ -702,6 +702,15 @@
       }
     }
   },
+  "metadataHashtagChipTapHint": "#{hashtag}. Tap to view videos with this hashtag.",
+  "@metadataHashtagChipTapHint": {
+    "description": "Screen reader hint announced when a hashtag chip in the metadata sheet is focused. {hashtag} is the hashtag without the leading # prefix.",
+    "placeholders": {
+      "hashtag": {
+        "type": "String"
+      }
+    }
+  },
   "listAttributionFallback": "List",
   "shareVideoLabel": "Share video",
   "sharePostSharedWith": "Post shared with {recipientName}",

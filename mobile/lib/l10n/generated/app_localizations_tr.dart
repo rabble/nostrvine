@@ -1380,6 +1380,11 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String metadataHashtagChipTapHint(String hashtag) {
+    return '#$hashtag. Tap to view videos with this hashtag.';
+  }
+
+  @override
   String get listAttributionFallback => 'Liste';
 
   @override

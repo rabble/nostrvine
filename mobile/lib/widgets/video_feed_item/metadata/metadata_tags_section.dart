@@ -7,6 +7,9 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_categories_section.dart'
     show CategoryChip;
 
@@ -46,7 +49,11 @@ class MetadataTagsSection extends StatelessWidget {
   }
 }
 
-/// A single hashtag chip with green "#" prefix and bold tag name.
+/// A single tappable hashtag chip with green "#" prefix and bold tag name.
+///
+/// Tapping dismisses the metadata sheet and pushes the hashtag feed for
+/// [tag], matching the behaviour of hashtag chips elsewhere in the app
+/// (trending row, search results, linkified text).
 class _HashtagChip extends StatelessWidget {
   const _HashtagChip({required this.tag});
 
@@ -54,7 +61,7 @@ class _HashtagChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final chip = Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: VineTheme.surfaceContainer,
@@ -76,5 +83,28 @@ class _HashtagChip extends StatelessWidget {
         ],
       ),
     );
+
+    return Semantics(
+      button: true,
+      label: context.l10n.metadataHashtagChipTapHint(tag),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _navigateToHashtag(context),
+        child: chip,
+      ),
+    );
+  }
+
+  void _navigateToHashtag(BuildContext context) {
+    // Dismiss the metadata sheet first, then navigate from the root
+    // navigator. GoRouter extensions throw when called from inside a modal
+    // bottom sheet (the router is not in the modal's widget tree).
+    // Mirrors the pattern used by user-chip taps in metadata_user_chips.dart.
+    final hostContext = Navigator.of(context, rootNavigator: true).context;
+    Navigator.of(context).pop();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!hostContext.mounted) return;
+      hostContext.pushWithVideoPause(HashtagScreenRouter.pathForTag(tag));
+    });
   }
 }

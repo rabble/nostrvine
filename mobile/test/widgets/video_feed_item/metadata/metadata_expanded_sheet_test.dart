@@ -596,6 +596,36 @@ void main() {
       expect(find.text('🏆'), findsOneWidget);
       expect(find.text('#'), findsNothing);
     });
+
+    testWidgets('hashtag chip exposes a tappable button affordance', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        final video = _makeVideo(hashtags: ['comedy']);
+        await tester.pumpWidget(
+          buildSubject(child: MetadataTagsSection(video: video)),
+        );
+
+        // The chip is wrapped in Semantics(button: true) plus a
+        // GestureDetector with a non-null onTap — proving the tap target
+        // is wired. The actual navigation is exercised by
+        // HashtagScreenRouter's own tests.
+        final node = tester.getSemantics(find.text('comedy'));
+        expect(node.label, contains('comedy'));
+
+        final gesture = tester.widgetList<GestureDetector>(
+          find.ancestor(
+            of: find.text('comedy'),
+            matching: find.byType(GestureDetector),
+          ),
+        );
+        expect(gesture, isNotEmpty);
+        expect(gesture.first.onTap, isNotNull);
+      } finally {
+        semantics.dispose();
+      }
+    });
   });
 
   // ---------------------------------------------------------------------------
