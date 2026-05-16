@@ -17,6 +17,7 @@ void main() {
     late MockCameraService mockCamera;
 
     setUp(() async {
+      TestWidgetsFlutterBinding.ensureInitialized();
       mockCamera = MockCameraService.create(
         onUpdateState: ({forceCameraRebuild}) {},
         onAutoStopped: (_) {},
@@ -71,6 +72,8 @@ void main() {
 
     testWidgets('renders focus point at correct position', (tester) async {
       const cameraSize = Size(400, 600);
+      await tester.binding.setSurfaceSize(cameraSize);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
       await tester.pumpWidget(
         ProviderScope(
           overrides: [

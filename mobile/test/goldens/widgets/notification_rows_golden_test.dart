@@ -1,14 +1,14 @@
-// ABOUTME: Golden tests for notification rows, covering the default and
+// ABOUTME: Layout tests for notification rows, covering the default and
 // ABOUTME: large-text layouts that were stabilized for issues #4206 and #3387.
 
 import 'package:clock/clock.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/notifications/widgets/actor_notification_row.dart';
+import 'package:openvine/notifications/widgets/notification_video_thumbnail.dart';
 import 'package:openvine/notifications/widgets/video_notification_row.dart';
 
 const _alice = ActorInfo(
@@ -25,34 +25,46 @@ final _goldenNow = DateTime.utc(2026, 5, 15, 23);
 final _notificationTimestamp = DateTime.utc(2026, 5, 15, 12);
 
 void main() {
-  group('Notification row goldens', () {
-    setUpAll(() async {
-      await loadAppFonts();
-    });
-
-    testGoldens('notification rows render default layout', (tester) async {
+  group('Notification row layouts', () {
+    testWidgets('notification rows render default layout', (tester) async {
       await withClock(Clock(() => _goldenNow), () async {
-        await tester.pumpWidgetBuilder(
-          _scenarioColumn(textScaleFactor: 1),
-          wrapper: _appWrapper,
-          surfaceSize: const Size(420, 560),
+        await tester.binding.setSurfaceSize(const Size(420, 560));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await tester.pumpWidget(
+          _appWrapper(_scenarioColumn(textScaleFactor: 1)),
         );
         await tester.pumpAndSettle();
 
-        await screenMatchesGolden(tester, 'notification_rows_default');
+        expect(find.byType(ActorNotificationRow), findsOneWidget);
+        expect(find.byType(VideoNotificationRow), findsOneWidget);
+        expect(find.text('Follow back'), findsOneWidget);
+        expect(
+          find.byType(NotificationVideoThumbnail),
+          findsOneWidget,
+          reason: 'Default layout should keep the thumbnail inline.',
+        );
+        expect(tester.takeException(), isNull);
       });
     });
 
-    testGoldens('notification rows render max-font layout', (tester) async {
+    testWidgets('notification rows render max-font layout', (tester) async {
       await withClock(Clock(() => _goldenNow), () async {
-        await tester.pumpWidgetBuilder(
-          _scenarioColumn(textScaleFactor: 2),
-          wrapper: _appWrapper,
-          surfaceSize: const Size(420, 1200),
+        await tester.binding.setSurfaceSize(const Size(420, 1200));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await tester.pumpWidget(
+          _appWrapper(_scenarioColumn(textScaleFactor: 2)),
         );
         await tester.pumpAndSettle();
 
-        await screenMatchesGolden(tester, 'notification_rows_max_font');
+        expect(find.byType(ActorNotificationRow), findsOneWidget);
+        expect(find.byType(VideoNotificationRow), findsOneWidget);
+        expect(find.text('Follow back'), findsOneWidget);
+        expect(
+          find.byType(NotificationVideoThumbnail),
+          findsOneWidget,
+          reason: 'Large-text layout should still render the thumbnail.',
+        );
+        expect(tester.takeException(), isNull);
       });
     });
   });

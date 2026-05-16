@@ -178,9 +178,15 @@ void main() {
     );
   }
 
+  Future<void> setStandardSurface(WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+  }
+
   testWidgets('Settings hub uses General Settings and Content & Safety', (
     tester,
   ) async {
+    await setStandardSurface(tester);
     await tester.pumpWidget(
       wrap(
         const SettingsScreen(),
@@ -201,6 +207,7 @@ void main() {
   });
 
   testWidgets('localizes settings taxonomy for Amharic', (tester) async {
+    await setStandardSurface(tester);
     await tester.pumpWidget(
       wrap(const SettingsScreen(), locale: const Locale('am')),
     );
@@ -253,6 +260,7 @@ void main() {
   testWidgets('General Settings contains integrations and viewing defaults', (
     tester,
   ) async {
+    await setStandardSurface(tester);
     await tester.pumpWidget(
       wrap(
         const GeneralSettingsScreen(),
@@ -266,10 +274,20 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('General Settings'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Bluesky Publishing'),
+      120,
+      scrollable: find.byType(Scrollable),
+    );
     expect(find.text('Bluesky Publishing'), findsOneWidget);
     expect(find.text('Closed Captions'), findsOneWidget);
     expect(find.text('Video Shape'), findsOneWidget);
     expect(find.text('App Language'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Make my audio available for reuse'),
+      120,
+      scrollable: find.byType(Scrollable),
+    );
     expect(find.text('Make my audio available for reuse'), findsOneWidget);
 
     final captionsToggle = find.byWidgetPredicate(
@@ -300,6 +318,7 @@ void main() {
   testWidgets('Content & Safety exposes content filters and account labels', (
     tester,
   ) async {
+    await setStandardSurface(tester);
     await tester.pumpWidget(wrap(const SafetySettingsScreen()));
     await tester.pumpAndSettle();
 
