@@ -146,6 +146,7 @@ void main() {
         wrapper: materialAppWrapper(theme: ThemeData.light()),
         surfaceSize: const Size(450, 1200),
       );
+      addTearDown(() => tester.binding.setSurfaceSize(null));
 
       // Skip pumpAndSettle to avoid animation timeout
       await tester.pump();

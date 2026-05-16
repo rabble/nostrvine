@@ -135,6 +135,7 @@ void main() {
         wrapper: materialAppWrapper(theme: ThemeData.light()),
         surfaceSize: const Size(400, 400),
       );
+      addTearDown(() => tester.binding.setSurfaceSize(null));
 
       await screenMatchesGolden(tester, 'user_avatar_sizes');
     });
