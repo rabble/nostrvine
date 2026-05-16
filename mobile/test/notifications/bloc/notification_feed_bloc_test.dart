@@ -196,7 +196,7 @@ void main() {
       );
 
       blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'emits failure when refresh throws',
+        'emits failure with refreshError when refresh throws and cache is empty',
         setUp: () {
           when(
             () => mockNotificationRepo.refresh(),
@@ -206,7 +206,59 @@ void main() {
         act: (bloc) => bloc.add(NotificationFeedStarted()),
         expect: () => [
           NotificationFeedState(status: NotificationFeedStatus.loading),
-          NotificationFeedState(status: NotificationFeedStatus.failure),
+          NotificationFeedState(
+            status: NotificationFeedStatus.failure,
+            refreshError: true,
+          ),
+        ],
+        errors: () => [isA<Exception>()],
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'stays loaded with refreshError when refresh throws but cache has '
+        'items',
+        setUp: () {
+          when(
+            () => mockNotificationRepo.refresh(),
+          ).thenThrow(Exception('boom'));
+        },
+        build: createBloc,
+        seed: () => NotificationFeedState(
+          status: NotificationFeedStatus.loading,
+          notifications: [
+            ActorNotification(
+              id: 'cached_1',
+              type: NotificationKind.follow,
+              actor: const ActorInfo(
+                pubkey: 'pubkey_cached',
+                displayName: 'Loading…',
+              ),
+              timestamp: DateTime(2026),
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(NotificationFeedStarted()),
+        expect: () => [
+          // The bloc's first emit (loading) deduplicates against the seed
+          // (already loading), so only the post-catch `loaded` state is
+          // surfaced. The cached row is preserved and `refreshError` flips
+          // so the view renders the inline banner instead of the full
+          // failure screen.
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [
+              ActorNotification(
+                id: 'cached_1',
+                type: NotificationKind.follow,
+                actor: const ActorInfo(
+                  pubkey: 'pubkey_cached',
+                  displayName: 'Loading…',
+                ),
+                timestamp: DateTime(2026),
+              ),
+            ],
+            refreshError: true,
+          ),
         ],
         errors: () => [isA<Exception>()],
       );
@@ -296,7 +348,8 @@ void main() {
       );
 
       blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'emits failure when refresh throws',
+        'emits failure with refreshError when refresh throws and cache is '
+        'empty',
         setUp: () {
           when(
             () => mockNotificationRepo.refresh(),
@@ -305,7 +358,54 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(NotificationFeedRefreshed()),
         expect: () => [
-          NotificationFeedState(status: NotificationFeedStatus.failure),
+          NotificationFeedState(
+            status: NotificationFeedStatus.failure,
+            refreshError: true,
+          ),
+        ],
+        errors: () => [isA<Exception>()],
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'stays loaded with refreshError when refresh throws but cache has '
+        'items',
+        setUp: () {
+          when(
+            () => mockNotificationRepo.refresh(),
+          ).thenThrow(Exception('boom'));
+        },
+        build: createBloc,
+        seed: () => NotificationFeedState(
+          status: NotificationFeedStatus.loaded,
+          notifications: [
+            ActorNotification(
+              id: 'cached_1',
+              type: NotificationKind.follow,
+              actor: const ActorInfo(
+                pubkey: 'pubkey_cached',
+                displayName: 'Loading…',
+              ),
+              timestamp: DateTime(2026),
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(NotificationFeedRefreshed()),
+        expect: () => [
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [
+              ActorNotification(
+                id: 'cached_1',
+                type: NotificationKind.follow,
+                actor: const ActorInfo(
+                  pubkey: 'pubkey_cached',
+                  displayName: 'Loading…',
+                ),
+                timestamp: DateTime(2026),
+              ),
+            ],
+            refreshError: true,
+          ),
         ],
         errors: () => [isA<Exception>()],
       );

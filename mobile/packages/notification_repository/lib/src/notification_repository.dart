@@ -3,7 +3,9 @@
 // ABOUTME: notifications by (referencedEventId, kind), and maps actor-anchored
 // ABOUTME: notifications.
 
+import 'dart:async';
 import 'dart:developer' as developer;
+import 'dart:math' as math;
 
 import 'package:db_client/db_client.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
@@ -29,6 +31,26 @@ final RegExp _npubIdentifierPattern = RegExp(
   caseSensitive: false,
 );
 
+/// Retry policy for the first-page notifications fetch.
+///
+/// Retries only transient server faults — HTTP `5xx` and request timeouts
+/// — with full-jitter backoff. Auth (`401`) and client errors (`4xx` other
+/// than 408/429) are caller bugs, not transient, and are surfaced
+/// immediately so the failure UI can fire.
+abstract class _NotificationRetryConfig {
+  /// Number of attempts including the initial call.
+  static const maxAttempts = 3;
+
+  /// Base backoff applied to the i-th retry (0-indexed) as `base * 3^i`.
+  static const baseBackoff = Duration(milliseconds: 200);
+
+  /// Upper bound on a single retry's delay before jitter.
+  static const maxBackoff = Duration(milliseconds: 1500);
+}
+
+/// Number of cached rows hydrated from the DAO on cold start.
+const _hydrationLimit = 50;
+
 /// Repository for fetching, enriching, grouping, and managing
 /// notifications.
 ///
@@ -43,6 +65,12 @@ final RegExp _npubIdentifierPattern = RegExp(
 /// 7. Truncate long comment text
 class NotificationRepository {
   /// Creates a [NotificationRepository].
+  ///
+  /// When [hydrateOnStart] is `true` (default), the repository kicks off a
+  /// best-effort load from [notificationsDao] so the inbox can render
+  /// cached items before the first REST call resolves. Tests pass `false`
+  /// to keep the snapshot at [NotificationPage.empty] for deterministic
+  /// assertions.
   NotificationRepository({
     required FunnelcakeApiClient funnelcakeApiClient,
     required ProfileRepository profileRepository,
@@ -51,12 +79,17 @@ class NotificationRepository {
     BlockedNotificationFilter? blockFilter,
     Future<Map<String, String>> Function(String url, String method)?
     authHeadersProvider,
+    bool hydrateOnStart = true,
   }) : _funnelcakeApiClient = funnelcakeApiClient,
        _profileRepository = profileRepository,
        _notificationsDao = notificationsDao,
        _userPubkey = userPubkey,
        _blockFilter = blockFilter,
-       _authHeadersProvider = authHeadersProvider;
+       _authHeadersProvider = authHeadersProvider {
+    if (hydrateOnStart) {
+      unawaited(_hydrateFromCache());
+    }
+  }
 
   final FunnelcakeApiClient _funnelcakeApiClient;
   final ProfileRepository _profileRepository;
@@ -108,40 +141,37 @@ class NotificationRepository {
   ///
   /// Pass [cursor] to override the stored pagination cursor. On success,
   /// merges the new items into the snapshot — the first page replaces
-  /// the snapshot's items, subsequent pages append.
+  /// the snapshot's items, subsequent pages append. First-page successes
+  /// also write the enriched items through to [NotificationsDao] so a
+  /// later cold-start can hydrate the inbox before the network responds,
+  /// and clear any pending `lastRefreshError` flag on the snapshot.
   ///
-  /// Rethrows any [Exception] (typically a [FunnelcakeException] subtype)
-  /// after structured logging, so callers can drive a failure UI. The
-  /// snapshot is left at its prior value on throw — the [BehaviorSubject]
-  /// preserves it for downstream consumers.
+  /// Transient first-page failures (`5xx`, request timeout) are retried
+  /// per [_NotificationRetryConfig]. On terminal failure the snapshot is
+  /// stamped with `lastRefreshError: true` so the BLoC can keep cached
+  /// items visible alongside an inline error affordance, and the typed
+  /// [FunnelcakeException] is rethrown after structured logging so
+  /// callers can also drive a hard-failure UI when the cache is empty.
   Future<NotificationPage> getNotifications({
     String? cursor,
     String? cursorId,
   }) async {
+    final effectiveCursor = cursor ?? _lastCursor;
+    final effectiveCursorId = cursor != null
+        ? cursorId
+        : cursorId ?? _lastCursorId;
+    final isFirstPage = effectiveCursor == null;
+
     try {
-      final effectiveCursor = cursor ?? _lastCursor;
-      final effectiveCursorId = cursor != null
-          ? cursorId
-          : cursorId ?? _lastCursorId;
-      final requestUrl = _funnelcakeApiClient
-          .notificationsUri(
-            pubkey: _userPubkey,
-            cursor: effectiveCursor,
-            cursorId: effectiveCursorId,
-          )
-          .toString();
-
-      final authHeaders = _authHeadersProvider != null
-          ? await _authHeadersProvider(requestUrl, 'GET')
-          : <String, String>{};
-
-      final response = await _funnelcakeApiClient.getNotifications(
-        pubkey: _userPubkey,
-        cursor: effectiveCursor,
-        cursorId: effectiveCursorId,
-        requestUri: Uri.parse(requestUrl),
-        authHeaders: authHeaders,
-      );
+      final response = isFirstPage
+          ? await _fetchWithRetry(
+              cursor: effectiveCursor,
+              cursorId: effectiveCursorId,
+            )
+          : await _fetchOnce(
+              cursor: effectiveCursor,
+              cursorId: effectiveCursorId,
+            );
 
       _lastCursor = response.nextCursor;
       _lastCursorId = response.nextCursorId;
@@ -155,7 +185,11 @@ class NotificationRepository {
         nextCursorId: response.nextCursorId,
         hasMore: response.hasMore,
       );
-      _emitSnapshotForPage(page, isFirstPage: effectiveCursor == null);
+      _emitSnapshotForPage(page, isFirstPage: isFirstPage);
+
+      if (isFirstPage) {
+        unawaited(_persistSnapshot(items));
+      }
       return page;
     } on Exception catch (e, s) {
       developer.log(
@@ -164,9 +198,262 @@ class NotificationRepository {
         error: e,
         stackTrace: s,
       );
+      if (isFirstPage) {
+        _markRefreshError();
+      }
       rethrow;
     }
   }
+
+  /// Single-attempt fetch — used for paginate-load-more requests where
+  /// retrying could shift `before` past the user-visible boundary.
+  Future<NotificationResponse> _fetchOnce({
+    required String? cursor,
+    required String? cursorId,
+  }) async {
+    final requestUrl = _funnelcakeApiClient
+        .notificationsUri(
+          pubkey: _userPubkey,
+          cursor: cursor,
+          cursorId: cursorId,
+        )
+        .toString();
+    final authHeaders = _authHeadersProvider != null
+        ? await _authHeadersProvider(requestUrl, 'GET')
+        : <String, String>{};
+    return _funnelcakeApiClient.getNotifications(
+      pubkey: _userPubkey,
+      cursor: cursor,
+      cursorId: cursorId,
+      requestUri: Uri.parse(requestUrl),
+      authHeaders: authHeaders,
+    );
+  }
+
+  /// First-page fetch with bounded retry on transient server faults.
+  Future<NotificationResponse> _fetchWithRetry({
+    required String? cursor,
+    required String? cursorId,
+  }) async {
+    Object? lastError;
+    StackTrace? lastStack;
+    for (
+      var attempt = 0;
+      attempt < _NotificationRetryConfig.maxAttempts;
+      attempt++
+    ) {
+      try {
+        return await _fetchOnce(cursor: cursor, cursorId: cursorId);
+      } on Exception catch (e, s) {
+        if (!_isTransient(e) ||
+            attempt == _NotificationRetryConfig.maxAttempts - 1) {
+          rethrow;
+        }
+        lastError = e;
+        lastStack = s;
+        developer.log(
+          'Transient notifications fetch failure '
+          '(attempt ${attempt + 1}/${_NotificationRetryConfig.maxAttempts}): '
+          '$e',
+          name: 'NotificationRepository._fetchWithRetry',
+          error: e,
+          stackTrace: s,
+        );
+        await Future<void>.delayed(_backoffFor(attempt));
+      }
+    }
+    // Unreachable — the loop either returns on success or rethrows on the
+    // final attempt — but the analyzer can't prove that.
+    Error.throwWithStackTrace(
+      lastError ?? StateError('retry exhausted'),
+      lastStack ?? StackTrace.current,
+    );
+  }
+
+  /// Whether [e] is a transient error worth retrying.
+  ///
+  /// Retries timeouts and HTTP `5xx` plus 408/429. Skips `401`/`403`
+  /// (auth) and other `4xx` (caller bug) so failure UI fires immediately.
+  static bool _isTransient(Exception e) {
+    if (e is FunnelcakeTimeoutException) return true;
+    if (e is FunnelcakeApiException) {
+      final status = e.statusCode;
+      if (status == 408 || status == 429) return true;
+      return status >= 500 && status < 600;
+    }
+    return false;
+  }
+
+  /// Computes the delay for the i-th retry (0-indexed) using full jitter
+  /// on top of an exponential schedule, capped at
+  /// [_NotificationRetryConfig.maxBackoff].
+  Duration _backoffFor(int attempt) {
+    final scaled =
+        _NotificationRetryConfig.baseBackoff.inMilliseconds *
+        math.pow(3, attempt).toInt();
+    final capped = math.min(
+      scaled,
+      _NotificationRetryConfig.maxBackoff.inMilliseconds,
+    );
+    final jittered = _jitter.nextInt(capped + 1);
+    return Duration(milliseconds: jittered);
+  }
+
+  /// Stamps the snapshot with `lastRefreshError: true` so the UI can
+  /// render an inline error affordance while keeping cached items.
+  void _markRefreshError() {
+    final current = _snapshot.value;
+    if (current.lastRefreshError) return;
+    _snapshot.add(current.copyWith(lastRefreshError: true));
+  }
+
+  /// Best-effort load of cached rows into the snapshot on construction.
+  ///
+  /// Runs only when the snapshot is still empty (avoids racing the first
+  /// REST response). Cached rows are surfaced as actor-anchored
+  /// placeholders — the next REST/WS arrival replaces them with a fully
+  /// enriched item.
+  Future<void> _hydrateFromCache() async {
+    try {
+      if (_snapshot.value.items.isNotEmpty) return;
+      final rows = await _notificationsDao.getAllNotifications(
+        limit: _hydrationLimit,
+      );
+      if (rows.isEmpty) return;
+      if (_snapshot.value.items.isNotEmpty) return;
+      final items = rows.map(_rowToPlaceholder).toList();
+      _snapshot.add(
+        _snapshot.value.copyWith(
+          items: items,
+          // Hydrated rows are a degraded view; assume more is available
+          // until the first REST refresh resolves.
+          hasMore: true,
+        ),
+      );
+    } on Exception catch (e, s) {
+      developer.log(
+        'Failed to hydrate notifications cache: $e',
+        name: 'NotificationRepository._hydrateFromCache',
+        error: e,
+        stackTrace: s,
+      );
+    }
+  }
+
+  /// Maps a [NotificationRow] into an [ActorNotification] placeholder.
+  ///
+  /// Profile and video metadata aren't refetched here — placeholders are
+  /// always replaced by the next first-page REST emission, so we keep the
+  /// hydration path synchronous and dependency-free.
+  ///
+  /// Video-anchored kinds (`like`, `comment`, `repost`) are coerced to
+  /// [NotificationKind.system] in the placeholder because
+  /// [VideoNotification] requires a non-null `videoEventId` and the
+  /// cached row only carries `targetEventId` (which may be null and isn't
+  /// guaranteed to be a video event). The system row is a transient
+  /// degraded view replaced as soon as REST or WS data arrives.
+  static ActorNotification _rowToPlaceholder(NotificationRow row) {
+    final placeholderKind = _placeholderKindFromCachedType(row.type);
+    return ActorNotification(
+      id: row.id,
+      type: placeholderKind,
+      actor: ActorInfo(pubkey: row.fromPubkey, displayName: 'Loading…'),
+      timestamp: DateTime.fromMillisecondsSinceEpoch(
+        row.timestamp * 1000,
+        isUtc: true,
+      ).toLocal(),
+      isRead: row.isRead,
+      commentText: row.content,
+      targetEventId: row.targetEventId,
+      sourceEventIds: row.targetEventId != null && row.targetEventId!.isNotEmpty
+          ? [row.targetEventId!]
+          : const [],
+    );
+  }
+
+  /// Best-effort cached type → placeholder kind. Always returns a kind
+  /// supported by [ActorNotification]; video-anchored kinds fall back to
+  /// [NotificationKind.system] because the placeholder cannot reconstruct
+  /// a complete [VideoNotification].
+  static NotificationKind _placeholderKindFromCachedType(String type) =>
+      switch (type) {
+        'follow' => NotificationKind.follow,
+        'mention' => NotificationKind.mention,
+        'likeComment' => NotificationKind.likeComment,
+        'reply' => NotificationKind.reply,
+        _ => NotificationKind.system,
+      };
+
+  /// Writes [items] through to [NotificationsDao] so a future cold start
+  /// can hydrate the inbox before the network responds.
+  ///
+  /// Per-item failures are swallowed — the in-memory snapshot is the
+  /// active source of truth; the cache is a fallback, not a critical
+  /// path.
+  Future<void> _persistSnapshot(List<NotificationItem> items) async {
+    try {
+      final rows = items.map(_itemToCacheRow).toList();
+      await _notificationsDao.replaceAll(rows);
+    } on Exception catch (e, s) {
+      developer.log(
+        'Failed to persist notifications cache: $e',
+        name: 'NotificationRepository._persistSnapshot',
+        error: e,
+        stackTrace: s,
+      );
+    }
+  }
+
+  /// Projects an enriched [NotificationItem] into the persistence record
+  /// shape accepted by [NotificationsDao.replaceAll].
+  static NotificationCacheRow _itemToCacheRow(NotificationItem item) {
+    final (fromPubkey, targetEventId, targetPubkey, content) = switch (item) {
+      VideoNotification(
+        :final actors,
+        :final videoEventId,
+        :final commentText,
+      ) =>
+        (
+          actors.isNotEmpty ? actors.first.pubkey : '',
+          videoEventId,
+          null,
+          commentText,
+        ),
+      ActorNotification(
+        :final actor,
+        :final targetEventId,
+        :final commentText,
+      ) =>
+        (actor.pubkey, targetEventId, actor.pubkey, commentText),
+    };
+    return (
+      id: item.id,
+      type: _persistType(item.type),
+      fromPubkey: fromPubkey,
+      timestamp: item.timestamp.toUtc().millisecondsSinceEpoch ~/ 1000,
+      targetEventId: targetEventId,
+      targetPubkey: targetPubkey,
+      content: content,
+      isRead: item.isRead,
+    );
+  }
+
+  /// String form persisted in the `type` column. Inverse of
+  /// [_placeholderKindFromCachedType] (the hydration path drops the
+  /// video-anchored distinction since placeholders can't reconstruct
+  /// `videoEventId`).
+  static String _persistType(NotificationKind kind) => switch (kind) {
+    NotificationKind.like => 'like',
+    NotificationKind.comment => 'comment',
+    NotificationKind.repost => 'repost',
+    NotificationKind.follow => 'follow',
+    NotificationKind.mention => 'mention',
+    NotificationKind.likeComment => 'likeComment',
+    NotificationKind.reply => 'reply',
+    NotificationKind.system => 'system',
+  };
+
+  static final math.Random _jitter = math.Random();
 
   /// Refreshes notifications from the beginning (no cursor).
   Future<NotificationPage> refresh() {

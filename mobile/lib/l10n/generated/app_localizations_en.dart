@@ -4023,6 +4023,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationsRetry => 'Retry';
 
   @override
+  String get notificationsRefreshError =>
+      'Couldn\'t refresh — showing what you have';
+
+  @override
+  String get notificationsRefreshErrorRetry => 'Retry';
+
+  @override
   String get notificationsCheckingNew => 'checking for new notifications';
 
   @override

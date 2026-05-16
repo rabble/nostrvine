@@ -26,9 +26,16 @@ final class NotificationFeedState extends Equatable {
     this.unreadCount = 0,
     this.hasMore = true,
     this.isLoadingMore = false,
+    this.refreshError = false,
   });
 
   /// The current loading status.
+  ///
+  /// `failure` is reserved for the empty-cache hard failure path. When
+  /// the repository surfaces a refresh error but still has cached items
+  /// to show, [status] stays `loaded` and [refreshError] flips to `true`
+  /// instead — the view renders the cached list with an inline error
+  /// affordance rather than a Retry-only blackout.
   final NotificationFeedStatus status;
 
   /// The list of enriched, grouped notification items.
@@ -46,6 +53,15 @@ final class NotificationFeedState extends Equatable {
 
   /// Whether a load-more operation is in progress.
   final bool isLoadingMore;
+
+  /// Whether the most recent first-page refresh failed.
+  ///
+  /// Mirrors `NotificationPage.lastRefreshError` from the repository. The
+  /// view shows an inline banner above the list when this is `true` and
+  /// [notifications] is non-empty; the full failure screen fires only
+  /// when [notifications] is also empty (i.e. cache miss + refresh
+  /// failure).
+  final bool refreshError;
 
   /// Inbox unread badge count, derived from the consolidated visible list.
   ///
@@ -68,6 +84,7 @@ final class NotificationFeedState extends Equatable {
     int? unreadCount,
     bool? hasMore,
     bool? isLoadingMore,
+    bool? refreshError,
   }) {
     return NotificationFeedState(
       status: status ?? this.status,
@@ -75,6 +92,7 @@ final class NotificationFeedState extends Equatable {
       unreadCount: unreadCount ?? this.unreadCount,
       hasMore: hasMore ?? this.hasMore,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      refreshError: refreshError ?? this.refreshError,
     );
   }
 
@@ -85,5 +103,6 @@ final class NotificationFeedState extends Equatable {
     unreadCount,
     hasMore,
     isLoadingMore,
+    refreshError,
   ];
 }

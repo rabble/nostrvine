@@ -3993,6 +3993,13 @@ class AppLocalizationsId extends AppLocalizations {
   String get notificationsRetry => 'Coba Lagi';
 
   @override
+  String get notificationsRefreshError =>
+      'Couldn\'t refresh — showing what you have';
+
+  @override
+  String get notificationsRefreshErrorRetry => 'Retry';
+
+  @override
   String get notificationsCheckingNew => 'mengecek notifikasi baru';
 
   @override

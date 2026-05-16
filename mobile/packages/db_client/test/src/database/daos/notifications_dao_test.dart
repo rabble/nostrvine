@@ -471,5 +471,64 @@ void main() {
         expect(deleted, equals(0));
       });
     });
+
+    group('replaceAll', () {
+      test('replaces existing rows with the new set atomically', () async {
+        await dao.upsertNotification(
+          id: 'stale_1',
+          type: 'like',
+          fromPubkey: testPubkey,
+          timestamp: 1700000000,
+        );
+        await dao.upsertNotification(
+          id: 'stale_2',
+          type: 'follow',
+          fromPubkey: testPubkey,
+          timestamp: 1700000001,
+        );
+
+        await dao.replaceAll([
+          (
+            id: 'fresh_1',
+            type: 'like',
+            fromPubkey: testPubkey,
+            timestamp: 1700000100,
+            targetEventId: testEventId,
+            targetPubkey: null,
+            content: 'liked your video',
+            isRead: false,
+          ),
+          (
+            id: 'fresh_2',
+            type: 'follow',
+            fromPubkey: testPubkey2,
+            timestamp: 1700000101,
+            targetEventId: null,
+            targetPubkey: testPubkey,
+            content: null,
+            isRead: true,
+          ),
+        ]);
+
+        final results = await dao.getAllNotifications();
+        expect(results.map((r) => r.id), equals(['fresh_2', 'fresh_1']));
+        expect(results.firstWhere((r) => r.id == 'fresh_2').isRead, isTrue);
+        expect(results.firstWhere((r) => r.id == 'fresh_1').isRead, isFalse);
+      });
+
+      test('clears the table when called with an empty list', () async {
+        await dao.upsertNotification(
+          id: 'stale_1',
+          type: 'like',
+          fromPubkey: testPubkey,
+          timestamp: 1700000000,
+        );
+
+        await dao.replaceAll([]);
+
+        final results = await dao.getAllNotifications();
+        expect(results, isEmpty);
+      });
+    });
   });
 }

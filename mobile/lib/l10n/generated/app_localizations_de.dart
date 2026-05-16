@@ -4072,6 +4072,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get notificationsRetry => 'Erneut versuchen';
 
   @override
+  String get notificationsRefreshError =>
+      'Couldn\'t refresh — showing what you have';
+
+  @override
+  String get notificationsRefreshErrorRetry => 'Retry';
+
+  @override
   String get notificationsCheckingNew => 'Suche nach neuen Benachrichtigungen';
 
   @override

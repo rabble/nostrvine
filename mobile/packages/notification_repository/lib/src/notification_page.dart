@@ -13,6 +13,7 @@ class NotificationPage extends Equatable {
     this.nextCursor,
     this.nextCursorId,
     this.hasMore = false,
+    this.lastRefreshError = false,
   });
 
   /// Empty page used as a default / error fallback.
@@ -33,6 +34,16 @@ class NotificationPage extends Equatable {
   /// Whether more pages are available.
   final bool hasMore;
 
+  /// Whether the most recent first-page refresh failed after exhausting
+  /// retries.
+  ///
+  /// The repository sets this `true` when `getNotifications(cursor: null)`
+  /// gives up on a transient `5xx`/timeout, and clears it on the next
+  /// successful refresh. UI uses it to render an inline "couldn't refresh"
+  /// banner when cached items are still rendered, or the full failure
+  /// screen when the snapshot is also empty.
+  final bool lastRefreshError;
+
   /// Returns a copy of this page with the given fields replaced.
   NotificationPage copyWith({
     List<NotificationItem>? items,
@@ -40,6 +51,7 @@ class NotificationPage extends Equatable {
     String? nextCursor,
     String? nextCursorId,
     bool? hasMore,
+    bool? lastRefreshError,
   }) {
     return NotificationPage(
       items: items ?? this.items,
@@ -47,6 +59,7 @@ class NotificationPage extends Equatable {
       nextCursor: nextCursor ?? this.nextCursor,
       nextCursorId: nextCursorId ?? this.nextCursorId,
       hasMore: hasMore ?? this.hasMore,
+      lastRefreshError: lastRefreshError ?? this.lastRefreshError,
     );
   }
 
@@ -57,5 +70,6 @@ class NotificationPage extends Equatable {
     nextCursor,
     nextCursorId,
     hasMore,
+    lastRefreshError,
   ];
 }

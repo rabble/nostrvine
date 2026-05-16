@@ -4020,6 +4020,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get notificationsRetry => 'Försök igen';
 
   @override
+  String get notificationsRefreshError =>
+      'Couldn\'t refresh — showing what you have';
+
+  @override
+  String get notificationsRefreshErrorRetry => 'Retry';
+
+  @override
   String get notificationsCheckingNew => 'kollar efter nya aviseringar';
 
   @override

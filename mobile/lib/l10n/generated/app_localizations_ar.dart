@@ -3980,6 +3980,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get notificationsRetry => 'إعادة المحاولة';
 
   @override
+  String get notificationsRefreshError =>
+      'Couldn\'t refresh — showing what you have';
+
+  @override
+  String get notificationsRefreshErrorRetry => 'Retry';
+
+  @override
   String get notificationsCheckingNew => 'جارٍ التحقق من الإشعارات الجديدة';
 
   @override

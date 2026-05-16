@@ -28,6 +28,10 @@ void main() {
   const stableCursorId =
       '1122334411223344112233441122334411223344112233441122334411223344';
 
+  setUpAll(() {
+    registerFallbackValue(<NotificationCacheRow>[]);
+  });
+
   setUp(() {
     funnelcakeApiClient = _MockFunnelcakeApiClient();
     profileRepository = _MockProfileRepository();
@@ -60,11 +64,21 @@ void main() {
     when(
       () => funnelcakeApiClient.getVideoStats(any()),
     ).thenThrow(const FunnelcakeException('no stats'));
+    // Default DAO stubs cover the new hydrate / write-through paths so
+    // existing tests don't need to know about them. Tests exercising the
+    // cache override these explicitly.
+    when(
+      () => notificationsDao.getAllNotifications(limit: any(named: 'limit')),
+    ).thenAnswer((_) async => <NotificationRow>[]);
+    when(
+      () => notificationsDao.replaceAll(any()),
+    ).thenAnswer((_) async {});
     repository = NotificationRepository(
       funnelcakeApiClient: funnelcakeApiClient,
       profileRepository: profileRepository,
       notificationsDao: notificationsDao,
       userPubkey: userPubkey,
+      hydrateOnStart: false,
     );
   });
 
@@ -404,11 +418,13 @@ void main() {
           throwsA(isA<FunnelcakeException>()),
         );
 
-        // BehaviorSubject preserves its prior value across the throw —
-        // the seeded NotificationPage.empty stays as the snapshot value
-        // so downstream consumers don't see a spurious update.
+        // BehaviorSubject preserves its prior items across the throw —
+        // the seeded empty list stays so downstream consumers don't see
+        // spurious item updates — but `lastRefreshError` flips to `true`
+        // so the BLoC can render the inline refresh-error affordance.
         final snapshot = await repository.watchSnapshot().first;
-        expect(snapshot, equals(NotificationPage.empty));
+        expect(snapshot.items, isEmpty);
+        expect(snapshot.lastRefreshError, isTrue);
       });
 
       test('preserves populated snapshot when refresh throws', () async {
@@ -420,13 +436,15 @@ void main() {
         await repository.refresh();
         final populated = await repository.watchSnapshot().first;
         expect(populated.items, hasLength(1));
+        expect(populated.lastRefreshError, isFalse);
 
         // Second refresh throws — the snapshot must keep the populated
-        // page from the first refresh, not revert to empty. This pins
+        // items from the first refresh, not revert to empty. This pins
         // the design contract that lets the BLoC's failure state coexist
         // with previously-loaded data (the BehaviorSubject value the
         // snapshot stream emits to subscribers stays at the populated
-        // page).
+        // page). `lastRefreshError` flips so the view can render the
+        // inline banner.
         when(
           () => funnelcakeApiClient.getNotifications(
             pubkey: any(named: 'pubkey'),
@@ -443,7 +461,8 @@ void main() {
         );
 
         final after = await repository.watchSnapshot().first;
-        expect(after, equals(populated));
+        expect(after.items, equals(populated.items));
+        expect(after.lastRefreshError, isTrue);
       });
 
       test('repeated throws keep snapshot stable', () async {
@@ -466,11 +485,121 @@ void main() {
           throwsA(isA<FunnelcakeException>()),
         );
 
-        // Two consecutive throws must not corrupt the snapshot or leave
-        // the repository in a degraded state — the seeded empty page
-        // remains the live snapshot value.
+        // Two consecutive throws must not corrupt the items list. The
+        // refresh-error flag stays sticky between throws — it only
+        // clears on the next successful refresh.
         final snapshot = await repository.watchSnapshot().first;
-        expect(snapshot, equals(NotificationPage.empty));
+        expect(snapshot.items, isEmpty);
+        expect(snapshot.lastRefreshError, isTrue);
+      });
+
+      test('clears lastRefreshError on next successful refresh', () async {
+        // First call throws — flips lastRefreshError to true.
+        when(
+          () => funnelcakeApiClient.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            cursor: any(named: 'cursor'),
+            requestUri: any(named: 'requestUri'),
+            authHeaders: any(named: 'authHeaders'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenThrow(const FunnelcakeException('network error'));
+
+        await expectLater(
+          repository.getNotifications(),
+          throwsA(isA<FunnelcakeException>()),
+        );
+        expect(
+          (await repository.watchSnapshot().first).lastRefreshError,
+          isTrue,
+        );
+
+        // Second call succeeds — flag clears.
+        stubProfiles({});
+        stubNotifications([]);
+        await repository.refresh();
+        expect(
+          (await repository.watchSnapshot().first).lastRefreshError,
+          isFalse,
+        );
+      });
+
+      test(
+        'retries first-page fetch on transient 5xx and succeeds on second '
+        'attempt',
+        () async {
+          stubProfiles({});
+          var calls = 0;
+          when(
+            () => funnelcakeApiClient.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              cursor: any(named: 'cursor'),
+              requestUri: any(named: 'requestUri'),
+              authHeaders: any(named: 'authHeaders'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async {
+            calls++;
+            if (calls == 1) {
+              throw const FunnelcakeApiException(
+                message: 'Internal server error',
+                statusCode: 500,
+                url: 'https://api.example.com/api/users/x/notifications',
+              );
+            }
+            return const NotificationResponse(
+              notifications: [],
+              unreadCount: 0,
+              hasMore: false,
+            );
+          });
+
+          final page = await repository.getNotifications();
+          expect(page.items, isEmpty);
+          expect(calls, equals(2));
+          expect(
+            (await repository.watchSnapshot().first).lastRefreshError,
+            isFalse,
+          );
+        },
+      );
+
+      test(
+        'does not retry first-page fetch on 4xx — surfaces error immediately',
+        () async {
+          var calls = 0;
+          when(
+            () => funnelcakeApiClient.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              cursor: any(named: 'cursor'),
+              requestUri: any(named: 'requestUri'),
+              authHeaders: any(named: 'authHeaders'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async {
+            calls++;
+            throw const FunnelcakeApiException(
+              message: 'unauthorized',
+              statusCode: 401,
+              url: 'https://api.example.com/api/users/x/notifications',
+            );
+          });
+
+          await expectLater(
+            repository.getNotifications(),
+            throwsA(isA<FunnelcakeApiException>()),
+          );
+          expect(calls, equals(1));
+        },
+      );
+
+      test('persists first-page items to DAO on success', () async {
+        stubProfiles({
+          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+        });
+        stubNotifications([makeNotification()], unreadCount: 1);
+        await repository.refresh();
+        verify(() => notificationsDao.replaceAll(any())).called(1);
       });
 
       test('passes cursor for pagination', () async {
@@ -1315,6 +1444,66 @@ void main() {
           expect(item.commentText, isNull);
         },
       );
+    });
+
+    group('cache hydration', () {
+      test('emits cached rows on construction when DAO has data', () async {
+        final cachedRow = NotificationRow(
+          id: 'cached_1',
+          type: 'like',
+          fromPubkey: 'cached_actor',
+          timestamp: 1700000000,
+          targetEventId: 'cached_event',
+          targetPubkey: null,
+          content: null,
+          isRead: false,
+          cachedAt: DateTime(2026),
+        );
+        when(
+          () =>
+              notificationsDao.getAllNotifications(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => [cachedRow]);
+
+        final hydrated = NotificationRepository(
+          funnelcakeApiClient: funnelcakeApiClient,
+          profileRepository: profileRepository,
+          notificationsDao: notificationsDao,
+          userPubkey: userPubkey,
+        );
+        addTearDown(hydrated.close);
+
+        // Snapshot starts at empty and updates once hydration resolves.
+        // Use emitsThrough so the test is robust to the seeded empty
+        // emission ordering.
+        await expectLater(
+          hydrated.watchSnapshot(),
+          emitsThrough(
+            predicate<NotificationPage>(
+              (p) => p.items.length == 1 && p.items.first.id == 'cached_1',
+              'snapshot contains the hydrated row',
+            ),
+          ),
+        );
+      });
+
+      test('hydration is a no-op when DAO is empty', () async {
+        when(
+          () =>
+              notificationsDao.getAllNotifications(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => <NotificationRow>[]);
+
+        final hydrated = NotificationRepository(
+          funnelcakeApiClient: funnelcakeApiClient,
+          profileRepository: profileRepository,
+          notificationsDao: notificationsDao,
+          userPubkey: userPubkey,
+        );
+        addTearDown(hydrated.close);
+        // Give the unawaited hydration a chance to resolve.
+        await Future<void>.delayed(Duration.zero);
+        final snapshot = await hydrated.watchSnapshot().first;
+        expect(snapshot.items, isEmpty);
+      });
     });
 
     group('refresh', () {

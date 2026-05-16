@@ -3936,6 +3936,13 @@ class AppLocalizationsAm extends AppLocalizations {
   String get notificationsRetry => 'እንደገና ይሞክሩ';
 
   @override
+  String get notificationsRefreshError =>
+      'Couldn\'t refresh — showing what you have';
+
+  @override
+  String get notificationsRefreshErrorRetry => 'Retry';
+
+  @override
   String get notificationsCheckingNew => 'አዲስ ማሳወቂያዎችን በመፈተሽ ላይ';
 
   @override

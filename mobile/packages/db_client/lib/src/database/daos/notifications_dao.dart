@@ -112,4 +112,51 @@ class NotificationsDao extends DatabaseAccessor<AppDatabase>
   Future<int> clearAll() {
     return delete(notifications).go();
   }
+
+  /// Replaces every cached notification with [rows] in a single transaction.
+  ///
+  /// Used by `NotificationRepository` as a write-through cache after a
+  /// successful first-page REST refresh, so subsequent cold launches can
+  /// hydrate the inbox from local storage before the server responds.
+  ///
+  /// Accepts plain Dart records so callers don't need to depend on
+  /// `package:drift` to build the row companions.
+  Future<void> replaceAll(List<NotificationCacheRow> rows) async {
+    final cachedAt = DateTime.now();
+    final companions = rows
+        .map(
+          (r) => NotificationsCompanion.insert(
+            id: r.id,
+            type: r.type,
+            fromPubkey: r.fromPubkey,
+            timestamp: r.timestamp,
+            targetEventId: Value(r.targetEventId),
+            targetPubkey: Value(r.targetPubkey),
+            content: Value(r.content),
+            isRead: Value(r.isRead),
+            cachedAt: cachedAt,
+          ),
+        )
+        .toList();
+    await transaction(() async {
+      await delete(notifications).go();
+      if (companions.isEmpty) return;
+      await batch((b) => b.insertAll(notifications, companions));
+    });
+  }
 }
+
+/// Plain-Dart row payload accepted by [NotificationsDao.replaceAll].
+///
+/// Mirrors the persisted columns so callers can populate the cache
+/// without depending on `package:drift` directly.
+typedef NotificationCacheRow = ({
+  String id,
+  String type,
+  String fromPubkey,
+  int timestamp,
+  String? targetEventId,
+  String? targetPubkey,
+  String? content,
+  bool isRead,
+});

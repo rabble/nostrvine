@@ -86,6 +86,7 @@ class NotificationFeedBloc
         notifications: _applyFollowState(event.page.items),
         unreadCount: event.page.unreadCount,
         hasMore: event.page.hasMore,
+        refreshError: event.page.lastRefreshError,
       ),
     );
   }
@@ -107,7 +108,21 @@ class NotificationFeedBloc
       emit(state.copyWith(status: NotificationFeedStatus.loaded));
     } catch (e, s) {
       addError(e, s);
-      emit(state.copyWith(status: NotificationFeedStatus.failure));
+      // Hard-failure only fires when the cache is also empty — the
+      // repository surfaces `lastRefreshError` on the snapshot, and the
+      // view renders an inline banner on top of cached items in that
+      // case. `state.notifications` already reflects any hydrated cache
+      // because `_onSnapshotChanged` runs before this catch arm if the
+      // repository emitted before throwing.
+      final hasCachedItems = state.notifications.isNotEmpty;
+      emit(
+        state.copyWith(
+          status: hasCachedItems
+              ? NotificationFeedStatus.loaded
+              : NotificationFeedStatus.failure,
+          refreshError: true,
+        ),
+      );
       return;
     }
   }
@@ -140,7 +155,15 @@ class NotificationFeedBloc
       emit(state.copyWith(status: NotificationFeedStatus.loaded));
     } catch (e, s) {
       addError(e, s);
-      emit(state.copyWith(status: NotificationFeedStatus.failure));
+      final hasCachedItems = state.notifications.isNotEmpty;
+      emit(
+        state.copyWith(
+          status: hasCachedItems
+              ? NotificationFeedStatus.loaded
+              : NotificationFeedStatus.failure,
+          refreshError: true,
+        ),
+      );
     }
   }
 

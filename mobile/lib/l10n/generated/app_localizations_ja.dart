@@ -3828,6 +3828,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get notificationsRetry => 'もう一回';
 
   @override
+  String get notificationsRefreshError =>
+      'Couldn\'t refresh — showing what you have';
+
+  @override
+  String get notificationsRefreshErrorRetry => 'Retry';
+
+  @override
   String get notificationsCheckingNew => '新しい通知をチェック中';
 
   @override

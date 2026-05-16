@@ -4138,6 +4138,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get notificationsRetry => 'Reîncearcă';
 
   @override
+  String get notificationsRefreshError =>
+      'Couldn\'t refresh — showing what you have';
+
+  @override
+  String get notificationsRefreshErrorRetry => 'Retry';
+
+  @override
   String get notificationsCheckingNew => 'se verifică notificări noi';
 
   @override

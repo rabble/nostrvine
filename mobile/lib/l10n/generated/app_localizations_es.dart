@@ -4069,6 +4069,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get notificationsRetry => 'Reintentar';
 
   @override
+  String get notificationsRefreshError =>
+      'Couldn\'t refresh — showing what you have';
+
+  @override
+  String get notificationsRefreshErrorRetry => 'Retry';
+
+  @override
   String get notificationsCheckingNew => 'buscando notificaciones nuevas';
 
   @override

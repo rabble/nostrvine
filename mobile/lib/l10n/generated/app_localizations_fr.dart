@@ -4083,6 +4083,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get notificationsRetry => 'Réessayer';
 
   @override
+  String get notificationsRefreshError =>
+      'Couldn\'t refresh — showing what you have';
+
+  @override
+  String get notificationsRefreshErrorRetry => 'Retry';
+
+  @override
   String get notificationsCheckingNew =>
       'vérification des nouvelles notifications';
 

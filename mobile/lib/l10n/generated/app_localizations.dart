@@ -7058,6 +7058,18 @@ abstract class AppLocalizations {
   /// **'Retry'**
   String get notificationsRetry;
 
+  /// Inline banner above the cached notifications list when the most recent refresh failed but cached items are still rendered.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t refresh — showing what you have'**
+  String get notificationsRefreshError;
+
+  /// Retry button label on the notifications refresh-error banner.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get notificationsRefreshErrorRetry;
+
   /// No description provided for @notificationsCheckingNew.
   ///
   /// In en, this message translates to:
