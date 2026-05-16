@@ -59,17 +59,18 @@ internal class DivineVideoPlayerInstance(
     //
     // Two backends are supported and selected per player at
     // [enableTextureOutput] time:
-    //  * [TextureRegistry.SurfaceProducer] (default): Android 14+ ImageReader
+    //  * [TextureRegistry.SurfaceTextureEntry] (default): single-buffer
+    //    SurfaceTexture owned by the player for its full lifetime. No
+    //    surface-recreate callback, but no `ImageReader` either — immune
+    //    to the cross-decoder ghost-frame issue and to the #3416
+    //    `FlutterJNI`-detached `scheduleFrame()` race on engine teardown.
+    //  * [TextureRegistry.SurfaceProducer]: Android 14+ ImageReader
     //    backend. Forwards Surface destroy/recreate events via the
     //    [TextureRegistry.SurfaceProducer.Callback] callback so playback can
     //    survive OEM compositor events (Vivo/Android 16, permission dialogs).
     //    Has a small (3–4) hardcoded buffer pool which can leak a stale
     //    frame across decoder format reprobes — visible as a 1-frame ghost
     //    when many players coexist (the feed). See #3416 / feed flicker.
-    //  * [TextureRegistry.SurfaceTextureEntry] (legacy): single-buffer
-    //    SurfaceTexture. No surface-recreate callback, but no shared pool
-    //    either, so it is immune to the cross-decoder ghost-frame issue.
-    //    Used by callers that render many players at once (the feed).
     //
     // Exactly one of these is non-null after [enableTextureOutput].
     private var surfaceProducer: TextureRegistry.SurfaceProducer? = null
@@ -179,14 +180,13 @@ internal class DivineVideoPlayerInstance(
      * Must be called before any clips are loaded. Returns the texture
      * ID that Dart should pass to the `Texture` widget.
      *
-     * When [useLegacySurface] is `true` (the Dart-side default) this
-     * uses the legacy [TextureRegistry.SurfaceTextureEntry]. Its
-     * surface is owned by the player for its full lifetime, with no
-     * `ImageReader` callback that can fire on a detached `FlutterJNI`
-     * during engine teardown (#3416). It does not deliver
-     * surface-recreate callbacks, so it cannot transparently survive
-     * an OEM compositor event — accepted trade-off given the
-     * codebase's chosen safety posture.
+     * When [useLegacySurface] is `true` (default) this uses the legacy
+     * [TextureRegistry.SurfaceTextureEntry]. Its surface is owned by
+     * the player for its full lifetime, with no `ImageReader` callback
+     * that can fire on a detached `FlutterJNI` during engine teardown
+     * (#3416). It does not deliver surface-recreate callbacks, so it
+     * cannot transparently survive an OEM compositor event — accepted
+     * trade-off given the codebase's chosen safety posture.
      *
      * When [useLegacySurface] is `false` this uses
      * [TextureRegistry.SurfaceProducer] which adds Android 14+
@@ -194,16 +194,12 @@ internal class DivineVideoPlayerInstance(
      * Vivo/Android 16 compositor events), at the cost of the
      * residual #3416 race window between
      * `ImageReaderSurfaceProducer.onImage` and `FlutterJNI` detach.
-     *
-     * The Kotlin parameter default is `false` so unit tests can
-     * exercise the `SurfaceProducer.Callback` contract without
-     * mocking the legacy `createSurfaceTexture()` path; production
-     * always overrides via Dart's `true` default through the
-     * MethodChannel.
+     * No callsite currently opts in — tests pass `false` explicitly
+     * to exercise the `SurfaceProducer.Callback` contract.
      */
     fun enableTextureOutput(
         registry: TextureRegistry,
-        useLegacySurface: Boolean = false,
+        useLegacySurface: Boolean = true,
     ): Long {
         if (useLegacySurface) {
             val entry = registry.createSurfaceTexture()
