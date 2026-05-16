@@ -402,6 +402,10 @@ const _knownUntranslatedDebt = {
   'inboxConversationActionsSheetLabel',
   'inboxConversationTileLabel',
   'inboxConversationTileLongPressHint',
+  // Added by the metadata-sheet redesign for the tappable hashtag chip's
+  // screen-reader hint. Existing locales fall back to English until the
+  // next full translation pass.
+  'metadataHashtagChipTapHint',
 };
 
 Map<String, Object?> _readArb(File file) {
