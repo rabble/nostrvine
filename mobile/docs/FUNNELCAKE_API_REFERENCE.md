@@ -124,6 +124,20 @@ The signed event must be kind 27235 with:
 
 **Note:** These endpoints are conditionally deployed. If NIP-98 is not configured on the relay, these endpoints will return 404.
 
+### Notification REST Host Selection
+
+Notification endpoints are private and use NIP-98, so the `u` tag must match the exact absolute URL sent on the wire, including scheme, host, path, and query string. The app builds that URL from the current environment's relay host, not from an arbitrary saved relay.
+
+Host resolution for notifications must use this order:
+
+1. Current environment relay host, if present in configured relays.
+2. Pinned production relay host (`relay.divine.video`), for production installs that have it configured.
+3. Current environment fallback relay host.
+
+This prevents staging builds from drifting to `https://relay.divine.video/api/users/{pubkey}/notifications` when a tester has `wss://relay.divine.video` persisted in relay settings. If staging Funnelcake logs show feed or recommendation calls but no `/api/users/{pubkey}/notifications` request, first verify the client is resolving notifications to `https://relay.staging.dvines.org` or the current staging API host before debugging backend queries.
+
+Unauthenticated route probes should return Funnelcake `401` with `Missing Authorization header`. A 401 proves the gateway path reaches Funnelcake; it does not prove the app signed the right URL.
+
 ---
 
 ## Common Patterns
