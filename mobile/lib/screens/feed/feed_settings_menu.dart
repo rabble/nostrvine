@@ -7,13 +7,14 @@ import 'package:flutter/material.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_feed_item/feed_playback_toggles_pill.dart';
 
-/// More icon button + playback-controls popover for the home feed top bar.
+/// More icon button + playback-controls popover for feed surfaces.
 ///
-/// Renders a 40 px scrim-15 [DivineIconButton] (48 px tap target) intended
-/// to be placed as the trailing sibling of the feed-mode selector inside the
-/// home feed's top-bar [Row]. Tapping opens a popover anchored 16 px below
-/// the button's bottom-right corner with three scrim-toggled controls:
-/// playback mode (auto-advance), audio mute, and closed captions.
+/// Renders a 40 px scrim-15 [DivineIconButton] (48 px tap target). Used on
+/// the home feed's top bar (as the trailing sibling of the feed-mode
+/// selector) and on the fullscreen video screen (as a `customActions`
+/// entry on its [DiVineAppBar]). Tapping opens a popover anchored 16 px
+/// below the button's bottom-right corner with three scrim-toggled
+/// controls: playback mode (auto-advance), audio mute, and closed captions.
 ///
 /// The popover content is the shared [FeedPlaybackTogglesPill] widget, which
 /// reads and writes app-wide state (`FeedAutoAdvanceCubit`,
