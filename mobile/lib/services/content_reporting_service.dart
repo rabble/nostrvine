@@ -3,6 +3,7 @@
 
 import 'dart:convert';
 
+import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
@@ -89,7 +90,6 @@ class ContentReport {
 class ContentReportingService {
   static const String _reportLabelNamespace = 'social.nos.ontology';
   static const String _reportLabelPrefix = 'NS-';
-  static final RegExp _eventIdPattern = RegExp(r'^[0-9a-f]{64}$');
 
   ContentReportingService({
     required NostrClient nostrService,
@@ -369,7 +369,11 @@ class ContentReportingService {
 
       // NIP-56 requires the report type as the 3rd element of the e/p tags.
       final nip56Type = _toNip56ReportType(reason);
-      final eventTagIds = nip56EventIds ?? [eventId];
+      // Filter at the construction boundary so every report path avoids
+      // emitting synthetic or malformed e tags, not just reportUser().
+      final eventTagIds = (nip56EventIds ?? [eventId])
+          .where(NostrHexUtils.isValidEventId)
+          .toList(growable: false);
       final tags = <List<String>>[
         for (final nip56EventId in eventTagIds) ['e', nip56EventId, nip56Type],
         ['p', authorPubkey, nip56Type],
@@ -460,7 +464,7 @@ class ContentReportingService {
   }
 
   static bool _isValidEventId(String eventId) =>
-      _eventIdPattern.hasMatch(eventId);
+      NostrHexUtils.isValidEventId(eventId);
 
   /// Maps app-level [ContentFilterReason] to the NIP-32 label value used by
   /// downstream moderation UIs.

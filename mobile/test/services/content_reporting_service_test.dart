@@ -18,6 +18,8 @@ class _MockAuthService extends Mock implements AuthService {}
 
 class _FakeEvent extends Fake implements Event {}
 
+String _validEventId(String hexDigit) => List.filled(64, hexDigit).join();
+
 void main() {
   setUpAll(() {
     registerFallbackValue(_FakeEvent());
@@ -131,7 +133,7 @@ void main() {
           pubkey: testPublicKey,
           kind: 1984,
           tags: [
-            ['e', 'ai_video_event_id'],
+            ['e', _validEventId('a')],
             ['p', 'suspicious_author'],
           ],
           content: 'Suspected AI-generated content',
@@ -154,7 +156,7 @@ void main() {
 
         // Act
         final result = await service.reportContent(
-          eventId: 'ai_video_event_id',
+          eventId: _validEventId('a'),
           authorPubkey: 'suspicious_author',
           reason: ContentFilterReason.other,
           details: 'Suspected AI-generated content',
@@ -212,7 +214,7 @@ void main() {
 
       for (final reason in reasons) {
         final result = await service.reportContent(
-          eventId: 'event_${reason.name}',
+          eventId: _validEventId(reason.index.toRadixString(16)),
           authorPubkey: 'author_123',
           reason: reason,
           details: 'Test report for ${reason.name}',
@@ -287,7 +289,7 @@ void main() {
 
       for (final reason in ContentFilterReason.values) {
         await service.reportContent(
-          eventId: 'event_${reason.name}',
+          eventId: _validEventId(reason.index.toRadixString(16)),
           authorPubkey: 'author_${reason.name}',
           reason: reason,
           details: 'Test ${reason.name}',
@@ -368,7 +370,7 @@ void main() {
 
       // Act - This should not throw an exception due to missing switch case
       final result = await service.reportContent(
-        eventId: 'ai_content',
+        eventId: _validEventId('b'),
         authorPubkey: 'ai_creator',
         reason: ContentFilterReason.other,
         details: 'Detected AI generation patterns',
@@ -406,7 +408,7 @@ void main() {
 
       // Act
       final result = await service.reportContent(
-        eventId: 'event_123',
+        eventId: _validEventId('1'),
         authorPubkey: 'author_456',
         reason: ContentFilterReason.spam,
         details: 'Spam content',
@@ -422,46 +424,43 @@ void main() {
       expect(service.reportHistory, isNotEmpty);
     });
 
-    test(
-      'reportContent() saves report locally when PublishNoRelays',
-      () async {
-        // Arrange
-        final reportEvent = createTestEvent(
-          pubkey: testPublicKey,
-          kind: 1984,
-          tags: [],
-          content: 'Spam content',
-        );
+    test('reportContent() saves report locally when PublishNoRelays', () async {
+      // Arrange
+      final reportEvent = createTestEvent(
+        pubkey: testPublicKey,
+        kind: 1984,
+        tags: [],
+        content: 'Spam content',
+      );
 
-        when(
-          () => mockAuthService.createAndSignEvent(
-            kind: any(named: 'kind'),
-            content: any(named: 'content'),
-            tags: any(named: 'tags'),
-          ),
-        ).thenAnswer((_) async => reportEvent);
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => reportEvent);
 
-        when(
-          () => mockNostrService.publishEvent(
-            any(),
-            targetRelays: any(named: 'targetRelays'),
-          ),
-        ).thenAnswer((_) async => const PublishNoRelays());
+      when(
+        () => mockNostrService.publishEvent(
+          any(),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer((_) async => const PublishNoRelays());
 
-        // Act
-        final result = await service.reportContent(
-          eventId: 'event_no_relays',
-          authorPubkey: 'author_456',
-          reason: ContentFilterReason.spam,
-          details: 'Spam content',
-        );
+      // Act
+      final result = await service.reportContent(
+        eventId: _validEventId('2'),
+        authorPubkey: 'author_456',
+        reason: ContentFilterReason.spam,
+        details: 'Spam content',
+      );
 
-        // Assert — report is still saved locally regardless of relay state
-        expect(result.success, isTrue);
-        expect(result.error, isNull);
-        expect(service.reportHistory, isNotEmpty);
-      },
-    );
+      // Assert — report is still saved locally regardless of relay state
+      expect(result.success, isTrue);
+      expect(result.error, isNull);
+      expect(service.reportHistory, isNotEmpty);
+    });
 
     test('reportContent() stores report in history on success', () async {
       // Arrange
@@ -489,7 +488,7 @@ void main() {
 
       // Act
       await service.reportContent(
-        eventId: 'reported_event',
+        eventId: _validEventId('3'),
         authorPubkey: 'bad_actor',
         reason: ContentFilterReason.other,
         details: 'AI detection',
@@ -617,7 +616,7 @@ void main() {
       ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
 
       await service.reportContent(
-        eventId: 'evt_1',
+        eventId: _validEventId('4'),
         authorPubkey: 'author_1',
         reason: ContentFilterReason.spam,
         details: 'test',
@@ -677,17 +676,14 @@ void main() {
       ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
 
       await stagingService.reportContent(
-        eventId: 'evt_relay',
+        eventId: _validEventId('5'),
         authorPubkey: 'author_relay',
         reason: ContentFilterReason.other,
         details: 'relay routing test',
       );
 
       verify(
-        () => mockNostrService.publishEvent(
-          any(),
-          targetRelays: [customRelay],
-        ),
+        () => mockNostrService.publishEvent(any(), targetRelays: [customRelay]),
       ).called(1);
     });
 
@@ -731,8 +727,10 @@ void main() {
         ),
       );
 
+      const validSpamEventId =
+          '6666666666666666666666666666666666666666666666666666666666666666';
       await service.reportContent(
-        eventId: 'evt_spam',
+        eventId: validSpamEventId,
         authorPubkey: 'author_spam',
         reason: ContentFilterReason.spam,
         details: 'Spam content',
@@ -746,7 +744,7 @@ void main() {
 
       // NIP-56: report type is the 3rd element
       expect(eTag, hasLength(3));
-      expect(eTag[1], equals('evt_spam'));
+      expect(eTag[1], equals(validSpamEventId));
       expect(eTag[2], equals('spam'));
 
       expect(pTag, hasLength(3));
@@ -886,6 +884,71 @@ void main() {
       expect(pTag, ['p', reportedPubkey, 'spam']);
     });
 
+    test(
+      'reportContent() omits invalid event ids from emitted e tags',
+      () async {
+        List<List<String>>? capturedTags;
+
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((invocation) async {
+          capturedTags =
+              invocation.namedArguments[#tags] as List<List<String>>?;
+          final event = Event(
+            testPublicKey,
+            EventKind.report,
+            capturedTags ?? [],
+            'test',
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          );
+          event.id = 'test_id';
+          event.sig = 'test_sig';
+          return event;
+        });
+
+        when(
+          () => mockNostrService.publishEvent(
+            any(),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer(
+          (_) async => PublishSuccess(
+            event: Event(
+              testPublicKey,
+              EventKind.report,
+              [],
+              '',
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+          ),
+        );
+
+        await service.reportContent(
+          eventId: 'user_not_a_real_event_id',
+          authorPubkey:
+              'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+          reason: ContentFilterReason.other,
+          details: 'User-only report preserved for local history',
+        );
+
+        expect(capturedTags, isNotNull);
+        // This locks in the follow-up hardening: reportContent() itself now
+        // refuses to publish invalid e tags even if a caller passes one in.
+        expect(capturedTags!.where((t) => t[0] == 'e'), isEmpty);
+
+        final pTag = capturedTags!.singleWhere((t) => t[0] == 'p');
+        expect(pTag, [
+          'p',
+          'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+          'other',
+        ]);
+      },
+    );
+
     test('maps ContentFilterReason to NIP-56 standard types', () async {
       final expectedMappings = {
         ContentFilterReason.spam: 'spam',
@@ -943,7 +1006,7 @@ void main() {
         );
 
         await service.reportContent(
-          eventId: 'evt_${entry.key.name}',
+          eventId: _validEventId(entry.key.index.toRadixString(16)),
           authorPubkey: 'author_${entry.key.name}',
           reason: entry.key,
           details: 'Test ${entry.key.name}',
