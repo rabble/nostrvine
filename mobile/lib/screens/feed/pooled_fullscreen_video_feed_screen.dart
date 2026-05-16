@@ -3,6 +3,7 @@
 // ABOUTME: Uses FullscreenFeedBloc for state management
 
 import 'dart:async';
+import 'dart:ui' as ui;
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, listEquals;
@@ -823,7 +824,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
               );
 
               return Scaffold(
-                // Paint the Scaffold with [VineTheme.cardBackground]
+                // Paint the Scaffold with [VineTheme.surfaceContainerHigh]
                 // (`#1A1A1A`, the same neutral dark grey the Messages
                 // inbox uses on its scaffold). This is the canvas
                 // around 1 × 1 / landscape / unknown contain-fit videos
@@ -832,12 +833,12 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                 // the keyboard. Reads as a clearly distinct surface
                 // from the comment bar's
                 // [VineTheme.surfaceBackground] (`#00150D` dark green).
-                backgroundColor: VineTheme.cardBackground,
+                backgroundColor: VineTheme.surfaceContainerHigh,
                 // Always edge-to-edge: the video fills the screen and the
                 // (transparent) AppBar overlays it, matching the home feed.
                 // 1 × 1 / landscape / dimensions-less videos are rendered
                 // with `BoxFit.contain`, so their letterbox bars sit on
-                // the [VineTheme.cardBackground] above — the
+                // the [VineTheme.surfaceContainerHigh] above — the
                 // transparent AppBar reads cleanly against that surface
                 // colour, no carve-out needed.
                 extendBodyBehindAppBar: true,
@@ -1359,202 +1360,276 @@ class _PooledFullscreenItemContentState
       warnLabels: video.warnLabels,
     );
 
+    final thumbnailUrl = video.thumbnailUrl;
+    final showBlurBackdrop =
+        !isPortrait && thumbnailUrl != null && thumbnailUrl.isNotEmpty;
+
     return FeedAutoAdvancePastErrorListener(
       videoId: video.id,
       isActive: widget.isActive,
       isAutoAdvanceActive: widget.isAutoAdvanceActive,
       onSkipBrokenVideo: widget.onAutoAdvanceCompleted ?? () {},
       child: ColoredBox(
-        color: VineTheme.backgroundColor,
-        child: PooledVideoPlayer(
-          index: widget.index,
-          isActive: widget.isActive,
-          thumbnailUrl: video.thumbnailUrl,
-          enableTapToPause: widget.isActive,
-          onTap: _handlePlayerTap,
-          onDoubleTap: _handleDoubleTapLike,
-          videoBuilder: (context, videoController, player) =>
-              PooledVideoMetricsTracker(
-                key: ValueKey('metrics-${video.id}'),
-                video: video,
-                player: player,
-                isActive: widget.isActive,
-                trafficSource: widget.trafficSource,
-                sourceDetail: widget.sourceDetail,
-                child: _FittedVideoPlayer(
-                  videoController: videoController,
-                  isPortrait: isPortrait,
-                  videoWidth: video.width?.toDouble(),
-                  videoHeight: video.height?.toDouble(),
-                ),
+        // [VineTheme.surfaceContainerHigh] (`#000A06`) — the canvas
+        // colour we want behind contain-fit videos (1 × 1 / landscape
+        // / dimensions-less). The previous `VineTheme.backgroundColor`
+        // (`#000000`) was overpainting the Scaffold + NavRoundedShell
+        // background here, so the surrounding letterbox bands always
+        // rendered pure black regardless of what the outer surfaces
+        // were set to.
+        color: VineTheme.surfaceContainerHigh,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Blurred thumbnail backdrop for contain-fit videos. The
+            // thumbnail fills the screen (BoxFit.cover) and is heavily
+            // blurred, so 1 × 1 / landscape sources are surrounded by
+            // a diffused colour-cloud derived from their own first
+            // frame — much closer to the Instagram / TikTok "blurred
+            // poster" look than a flat dark surface. One image decode
+            // + one GPU blur pass, no ongoing cost. Portrait videos
+            // cover the screen entirely and would never reveal the
+            // backdrop, so we skip it for them.
+            if (showBlurBackdrop)
+              Positioned.fill(
+                child: _BlurredVideoBackdrop(url: thumbnailUrl),
               ),
-          loadingBuilder: (context) => _VideoLoadingPlaceholder(
-            thumbnailUrl: video.thumbnailUrl,
-            isPortrait: isPortrait,
-          ),
-          errorBuilder: (context, onRetry, errorType) {
-            // Map pooled_video_player.VideoErrorType to the canonical
-            // infinite_video_feed.VideoErrorType used by playbackStatusFromError
-            // and PooledVideoErrorOverlay.
-            final feedErrorType = _toFeedErrorType(errorType);
-            // Dedupe at the call site so rebuilds don't schedule a
-            // post-frame callback every frame. See _lastReportedError doc.
-            if (_lastReportedError != feedErrorType) {
-              _lastReportedError = feedErrorType;
-              // Capture the cubit eagerly so the post-frame callback doesn't
-              // walk the ancestor tree on a potentially-deactivated element.
-              final cubit = context.read<VideoPlaybackStatusCubit>();
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (!mounted) return;
-                cubit.report(video.id, playbackStatusFromError(feedErrorType));
-              });
-            }
-            return PooledVideoErrorOverlay(
-              video: video,
-              onRetry: onRetry,
-              errorType: feedErrorType,
-            );
-          },
-          overlayBuilder: (context, videoController, player, feedController) {
-            final playbackStatus = context.select(
-              (VideoPlaybackStatusCubit cubit) =>
-                  cubit.state.statusFor(video.id),
-            );
-            if (playbackStatus == PlaybackStatus.forbidden ||
-                playbackStatus == PlaybackStatus.ageRestricted) {
-              return ModeratedContentOverlay(
-                status: playbackStatus,
-                onSkip: () => _skipToNextVideo(context),
-                onVerifyAge: playbackStatus == PlaybackStatus.ageRestricted
-                    ? () => _verifyAgeForVideo(context, video)
-                    : null,
-              );
-            }
-            if (showContentWarningOverlay && !_contentWarningRevealed) {
-              return ContentWarningBlurOverlay(
-                labels: overlayLabels,
-                onReveal: () => setState(() {
-                  _contentWarningRevealed = true;
-                }),
-                onHideSimilar: () {
-                  hideContentWarningsLikeThese(
-                    context: context,
-                    ref: ref,
-                    labels: overlayLabels,
-                  );
-                },
-              );
-            }
-            // No `MediaQuery(data: MediaQueryData.fromView(...))` wrap
-            // here: `MediaQueryData.fromView` is a *snapshot* taken when
-            // this builder runs, so the subtree wouldn't see live
-            // `viewInsets` updates when the soft keyboard slides up or
-            // down. That breaks any descendant that needs to react to
-            // the keyboard (e.g. [KeyboardAwareTopFade]). The inherited
-            // MediaQuery from above is already correct — Scaffold only
-            // modifies `padding`, not `viewInsets`.
-            return FeedAutoAdvanceCompletionListener(
-              player: player,
-              isEnabled: widget.isActive && widget.isAutoAdvanceActive,
-              onCompleted: widget.onAutoAdvanceCompleted ?? () {},
-              child: Stack(
-                children: [
-                  if (player != null)
-                    PausedVideoPlayOverlay(
-                      player: player,
-                      firstFrameFuture:
-                          videoController?.waitUntilFirstFrameRendered,
-                      isVisible: widget.isActive,
+            PooledVideoPlayer(
+              index: widget.index,
+              isActive: widget.isActive,
+              thumbnailUrl: video.thumbnailUrl,
+              enableTapToPause: widget.isActive,
+              onTap: _handlePlayerTap,
+              onDoubleTap: _handleDoubleTapLike,
+              videoBuilder: (context, videoController, player) =>
+                  PooledVideoMetricsTracker(
+                    key: ValueKey('metrics-${video.id}'),
+                    video: video,
+                    player: player,
+                    isActive: widget.isActive,
+                    trafficSource: widget.trafficSource,
+                    sourceDetail: widget.sourceDetail,
+                    child: _FittedVideoPlayer(
+                      videoController: videoController,
+                      isPortrait: isPortrait,
+                      videoWidth: video.width?.toDouble(),
+                      videoHeight: video.height?.toDouble(),
                     ),
-                  ValueListenableBuilder<double>(
-                    valueListenable: widget.pagePosition,
-                    builder: (context, page, _) {
-                      final distance = (page - widget.index).abs().clamp(
-                        0.0,
-                        1.0,
-                      );
-                      return VideoOverlayActions(
-                        video: video,
-                        // isVisible:true — scroll opacity handles fading;
-                        // the hard-cut guard is not needed in fullscreen.
-                        isVisible: true,
-                        isActive: widget.isActive,
-                        overlayOpacity: scrollDrivenOpacity(distance),
-                        hasBottomNavigation: false,
-                        contextTitle: widget.contextTitle,
-                        isFullscreen: true,
-                        topOffset: widget.isOwnVideo ? 64 : 8,
-                        onInteracted: widget.onInteracted,
-                        // The shared [VideoAuthorInfoSection] below renders
-                        // the author block + inline caption pill, matching
-                        // the home feed overlay exactly. Suppress the
-                        // legacy inline column so they don't double up.
-                        omitAuthorBlock: true,
-                        // The action column lives in this widget's outer
-                        // Stack alongside the author info so both are
-                        // anchored to the same Stack bottom — matches the
-                        // home feed pattern in [FeedVideoOverlay] and
-                        // keeps "About" vertically aligned with the
-                        // bottom of the caption block.
-                        omitActionColumn: true,
-                        // Top-of-screen scrim so the transparent app
-                        // bar's white title / back button / More
-                        // popover stay readable over light video
-                        // frames.
-                        showTopGradient: true,
+                  ),
+              loadingBuilder: (context) => _VideoLoadingPlaceholder(
+                thumbnailUrl: video.thumbnailUrl,
+                isPortrait: isPortrait,
+              ),
+              errorBuilder: (context, onRetry, errorType) {
+                // Map pooled_video_player.VideoErrorType to the canonical
+                // infinite_video_feed.VideoErrorType used by playbackStatusFromError
+                // and PooledVideoErrorOverlay.
+                final feedErrorType = _toFeedErrorType(errorType);
+                // Dedupe at the call site so rebuilds don't schedule a
+                // post-frame callback every frame. See _lastReportedError doc.
+                if (_lastReportedError != feedErrorType) {
+                  _lastReportedError = feedErrorType;
+                  // Capture the cubit eagerly so the post-frame callback doesn't
+                  // walk the ancestor tree on a potentially-deactivated element.
+                  final cubit = context.read<VideoPlaybackStatusCubit>();
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (!mounted) return;
+                    cubit.report(
+                      video.id,
+                      playbackStatusFromError(feedErrorType),
+                    );
+                  });
+                }
+                return PooledVideoErrorOverlay(
+                  video: video,
+                  onRetry: onRetry,
+                  errorType: feedErrorType,
+                );
+              },
+              overlayBuilder: (context, videoController, player, feedController) {
+                final playbackStatus = context.select(
+                  (VideoPlaybackStatusCubit cubit) =>
+                      cubit.state.statusFor(video.id),
+                );
+                if (playbackStatus == PlaybackStatus.forbidden ||
+                    playbackStatus == PlaybackStatus.ageRestricted) {
+                  return ModeratedContentOverlay(
+                    status: playbackStatus,
+                    onSkip: () => _skipToNextVideo(context),
+                    onVerifyAge: playbackStatus == PlaybackStatus.ageRestricted
+                        ? () => _verifyAgeForVideo(context, video)
+                        : null,
+                  );
+                }
+                if (showContentWarningOverlay && !_contentWarningRevealed) {
+                  return ContentWarningBlurOverlay(
+                    labels: overlayLabels,
+                    onReveal: () => setState(() {
+                      _contentWarningRevealed = true;
+                    }),
+                    onHideSimilar: () {
+                      hideContentWarningsLikeThese(
+                        context: context,
+                        ref: ref,
+                        labels: overlayLabels,
                       );
                     },
-                  ),
-                  // Bottom-left metadata container — author avatar/name,
-                  // optional inline caption pill, and title/description.
-                  // 20 px above the Stack bottom (= comment-bar top). No
-                  // `viewPadding.bottom` term: the [InlineCommentComposerBar]
-                  // already absorbs the device home-indicator inset, so
-                  // adding it here would double-pad. The home feed's
-                  // matching `bottom: 20 + safeAreaBottom` line works
-                  // because there the inherited `viewPadding.bottom`
-                  // collapses to 0 below the [VineBottomNav]'s `SafeArea`.
-                  PositionedDirectional(
-                    bottom: 20,
-                    start: 16,
-                    end: 80,
-                    child: AnimatedOpacity(
-                      opacity: widget.isActive ? 1.0 : 0.0,
-                      duration: const Duration(milliseconds: 200),
-                      child: VideoAuthorInfoSection(
-                        video: video,
-                        hasTextContent:
-                            video.content.isNotEmpty ||
-                            (video.title != null && video.title!.isNotEmpty),
-                        player: player,
-                        onInteracted: widget.onInteracted,
+                  );
+                }
+                // No `MediaQuery(data: MediaQueryData.fromView(...))` wrap
+                // here: `MediaQueryData.fromView` is a *snapshot* taken when
+                // this builder runs, so the subtree wouldn't see live
+                // `viewInsets` updates when the soft keyboard slides up or
+                // down. That breaks any descendant that needs to react to
+                // the keyboard (e.g. [KeyboardAwareTopFade]). The inherited
+                // MediaQuery from above is already correct — Scaffold only
+                // modifies `padding`, not `viewInsets`.
+                return FeedAutoAdvanceCompletionListener(
+                  player: player,
+                  isEnabled: widget.isActive && widget.isAutoAdvanceActive,
+                  onCompleted: widget.onAutoAdvanceCompleted ?? () {},
+                  child: Stack(
+                    children: [
+                      if (player != null)
+                        PausedVideoPlayOverlay(
+                          player: player,
+                          firstFrameFuture:
+                              videoController?.waitUntilFirstFrameRendered,
+                          isVisible: widget.isActive,
+                        ),
+                      ValueListenableBuilder<double>(
+                        valueListenable: widget.pagePosition,
+                        builder: (context, page, _) {
+                          final distance = (page - widget.index).abs().clamp(
+                            0.0,
+                            1.0,
+                          );
+                          return VideoOverlayActions(
+                            video: video,
+                            // isVisible:true — scroll opacity handles fading;
+                            // the hard-cut guard is not needed in fullscreen.
+                            isVisible: true,
+                            isActive: widget.isActive,
+                            overlayOpacity: scrollDrivenOpacity(distance),
+                            hasBottomNavigation: false,
+                            contextTitle: widget.contextTitle,
+                            isFullscreen: true,
+                            topOffset: widget.isOwnVideo ? 64 : 8,
+                            onInteracted: widget.onInteracted,
+                            // The shared [VideoAuthorInfoSection] below renders
+                            // the author block + inline caption pill, matching
+                            // the home feed overlay exactly. Suppress the
+                            // legacy inline column so they don't double up.
+                            omitAuthorBlock: true,
+                            // The action column lives in this widget's outer
+                            // Stack alongside the author info so both are
+                            // anchored to the same Stack bottom — matches the
+                            // home feed pattern in [FeedVideoOverlay] and
+                            // keeps "About" vertically aligned with the
+                            // bottom of the caption block.
+                            omitActionColumn: true,
+                            // Top-of-screen scrim so the transparent app
+                            // bar's white title / back button / More
+                            // popover stay readable over light video
+                            // frames.
+                            showTopGradient: true,
+                          );
+                        },
                       ),
-                    ),
-                  ),
-                  // Action column — sibling of the author info, both
-                  // anchored to the same Stack bottom at `bottom: 20`.
-                  PositionedDirectional(
-                    bottom: 20,
-                    end: 12,
-                    child: AnimatedOpacity(
-                      opacity: widget.isActive ? 1.0 : 0.0,
-                      duration: const Duration(milliseconds: 200),
-                      child: KeyboardAwareTopFade(
-                        child: VideoOverlayActionColumn(
-                          video: video,
-                          isFullscreen: true,
-                          onInteracted: widget.onInteracted,
+                      // Bottom-left metadata container — author avatar/name,
+                      // optional inline caption pill, and title/description.
+                      // 20 px above the Stack bottom (= comment-bar top). No
+                      // `viewPadding.bottom` term: the [InlineCommentComposerBar]
+                      // already absorbs the device home-indicator inset, so
+                      // adding it here would double-pad. The home feed's
+                      // matching `bottom: 20 + safeAreaBottom` line works
+                      // because there the inherited `viewPadding.bottom`
+                      // collapses to 0 below the [VineBottomNav]'s `SafeArea`.
+                      PositionedDirectional(
+                        bottom: 20,
+                        start: 16,
+                        end: 80,
+                        child: AnimatedOpacity(
+                          opacity: widget.isActive ? 1.0 : 0.0,
+                          duration: const Duration(milliseconds: 200),
+                          child: VideoAuthorInfoSection(
+                            video: video,
+                            hasTextContent:
+                                video.content.isNotEmpty ||
+                                (video.title != null &&
+                                    video.title!.isNotEmpty),
+                            player: player,
+                            onInteracted: widget.onInteracted,
+                          ),
                         ),
                       ),
-                    ),
+                      // Action column — sibling of the author info, both
+                      // anchored to the same Stack bottom at `bottom: 20`.
+                      PositionedDirectional(
+                        bottom: 20,
+                        end: 12,
+                        child: AnimatedOpacity(
+                          opacity: widget.isActive ? 1.0 : 0.0,
+                          duration: const Duration(milliseconds: 200),
+                          child: KeyboardAwareTopFade(
+                            child: VideoOverlayActionColumn(
+                              video: video,
+                              isFullscreen: true,
+                              onInteracted: widget.onInteracted,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Positioned.fill(
+                        child: DoubleTapHeartOverlay(trigger: _heartTrigger),
+                      ),
+                    ],
                   ),
-                  Positioned.fill(
-                    child: DoubleTapHeartOverlay(trigger: _heartTrigger),
-                  ),
-                ],
-              ),
-            );
-          },
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Heavily-blurred copy of a video's poster thumbnail, stretched to
+/// `BoxFit.cover` the entire fullscreen area. Painted behind the video
+/// in `_PooledFullscreenItemContent` so contain-fit videos (1 × 1 /
+/// landscape) sit on a diffused colour cloud derived from their own
+/// first frame instead of a flat dark surface — matches the
+/// Instagram / TikTok "blurred poster" look.
+///
+/// Cost: one image decode + one GPU blur pass via [ImageFiltered].
+/// The decoded image lives in Flutter's image cache, so revisiting
+/// the same video re-uses it. No ongoing per-frame cost once the
+/// image is rasterised.
+class _BlurredVideoBackdrop extends StatelessWidget {
+  const _BlurredVideoBackdrop({required this.url});
+
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRect(
+      // `ImageFiltered` applies the blur on the GPU side; `ClipRect`
+      // keeps the bleeding edge of the blur kernel from leaking
+      // outside the widget's box and over the surrounding chrome.
+      child: ImageFiltered(
+        imageFilter: ui.ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+        child: Image.network(
+          url,
+          fit: BoxFit.cover,
+          // 50 % opacity via [Image.opacity] (an animation) rather
+          // than an [Opacity] wrapper — the latter forces a full-
+          // screen save-layer, the former blends per-pixel during
+          // paint and is essentially free.
+          opacity: const AlwaysStoppedAnimation(0.5),
+          // Fall back to nothing on error — the parent
+          // [ColoredBox(VineTheme.surfaceContainerHigh)] shows through.
+          errorBuilder: (_, _, _) => const SizedBox.shrink(),
         ),
       ),
     );
@@ -1699,7 +1774,7 @@ class _MaybeRoundFeedBottom extends StatelessWidget {
   Widget build(BuildContext context) {
     if (!roundCorners) return child;
     // Inside the rounded shell, paint
-    // [VineTheme.cardBackground] (`#1A1A1A`) — the same neutral dark
+    // [VineTheme.surfaceContainerHigh] (`#1A1A1A`) — the same neutral dark
     // grey the Messages inbox uses. That's the canvas around
     // contain-fit videos (1 × 1 classics, landscape, anything without
     // dimensions metadata) which leave letterbox bands the user can
@@ -1708,7 +1783,7 @@ class _MaybeRoundFeedBottom extends StatelessWidget {
     // construction, so the rounded bottom corners reveal that green
     // and seam the dark video region into the bar visually.
     return NavRoundedShell(
-      innerColor: VineTheme.cardBackground,
+      innerColor: VineTheme.surfaceContainerHigh,
       child: child,
     );
   }
