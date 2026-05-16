@@ -347,12 +347,8 @@ class VineTheme {
   /// Disabled outline color.
   static const Color outlinedDisabled = Color(0xFF032017);
 
-  /// Disabled outline color for separators — Figma token
-  /// `outline/outline-disabled` (`rgba(255, 255, 255, 0.05)`). A faint
-  /// white alpha that lifts the divider off the dark surface; the
-  /// previous solid value (`0xFF001A12`) blended into the background
-  /// and made section borders nearly invisible.
-  static const Color outlineDisabled = Color(0x0DFFFFFF);
+  /// Disabled outline color for separators.
+  static const Color outlineDisabled = Color(0xFF001A12);
 
   /// Low-emphasis container background.
   static const Color containerLow = Color(0xFF0E2B21);

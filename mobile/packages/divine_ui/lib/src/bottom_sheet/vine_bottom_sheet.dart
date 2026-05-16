@@ -415,7 +415,13 @@ class _HeaderlessDragHandle extends StatelessWidget {
           padding: EdgeInsets.only(top: 8, bottom: 20),
           child: Center(child: VineBottomSheetDragHandle()),
         ),
-        if (showDivider) Container(height: 1, color: VineTheme.outlineDisabled),
+        // 5 % white alpha — Figma `outline/outline-disabled` token value
+        // (`rgba(255, 255, 255, 0.05)`). Scoped to this chrome divider
+        // only; the shared `VineTheme.outlineDisabled` solid value
+        // (`#001A12`) doesn't contrast against the sheet surface and a
+        // foundation-token retune is out of scope for the PR that
+        // introduced this divider — see PR #4422 review.
+        if (showDivider) Container(height: 1, color: const Color(0x0DFFFFFF)),
       ],
     );
   }
@@ -516,7 +522,7 @@ class _ScrollableContent extends StatelessWidget {
               ),
         ),
         if (bottomInput != null)
-          const Divider(height: 2, color: VineTheme.outlineDisabled),
+          const Divider(height: 2, color: VineTheme.outlinedDisabled),
 
         // Optional bottom input
         if (bottomInput != null)
@@ -625,7 +631,7 @@ class _FixedContent extends StatelessWidget {
           ),
 
           if (bottomInput != null)
-            const Divider(height: 2, color: VineTheme.outlineDisabled),
+            const Divider(height: 2, color: VineTheme.outlinedDisabled),
 
           // Optional bottom input
           if (bottomInput != null)

@@ -271,7 +271,7 @@ void main() {
         expect(
           find.byWidgetPredicate((w) {
             if (w is! Container) return false;
-            return w.color == VineTheme.outlineDisabled &&
+            return w.color == const Color(0x0DFFFFFF) &&
                 w.constraints?.maxHeight == 1;
           }),
           findsOneWidget,
@@ -297,7 +297,7 @@ void main() {
         expect(
           find.byWidgetPredicate((w) {
             if (w is! Container) return false;
-            return w.color == VineTheme.outlineDisabled &&
+            return w.color == const Color(0x0DFFFFFF) &&
                 w.constraints?.maxHeight == 1;
           }),
           findsNothing,
