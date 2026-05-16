@@ -2007,7 +2007,7 @@
     "keyManagementBackupTitle": "Fă backup la cheia ta",
     "keyManagementBackupSubtitle": "Salvează cheia privată (nsec) ca să-ți folosești contul în alte aplicații Nostr.",
     "keyManagementCopyNsec": "Copiază cheia mea privată (nsec)",
-    "keyManagementKeycastRemoteSigning": "This account signs with Keycast. No private key is stored on this device, so there is no nsec to copy here.",
+  "keyManagementKeycastRemoteSigning": "Acest cont semnează cu Keycast. Nu este stocată nicio cheie privată pe acest dispozitiv, deci nu există niciun nsec de copiat aici.",
     "keyManagementNeverShare": "Nu împărți niciodată nsec-ul cu nimeni!",
     "keyManagementPasteKey": "Lipește cheia ta privată",
     "keyManagementInvalidFormat": "Format de cheie invalid. Trebuie să înceapă cu \"nsec1\"",

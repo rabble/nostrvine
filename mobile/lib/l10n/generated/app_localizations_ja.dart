@@ -4482,7 +4482,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'This account signs with Keycast. No private key is stored on this device, so there is no nsec to copy here.';
+      'このアカウントはKeycastで署名します。このデバイスには秘密鍵が保存されていないため、ここでコピーできるnsecはありません。';
 
   @override
   String get keyManagementPasteKey => '秘密鍵を貼り付けてね';

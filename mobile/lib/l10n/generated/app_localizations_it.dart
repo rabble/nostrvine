@@ -4744,7 +4744,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'This account signs with Keycast. No private key is stored on this device, so there is no nsec to copy here.';
+      'Questo account firma con Keycast. Nessuna chiave privata è archiviata su questo dispositivo, quindi qui non c\'è alcun nsec da copiare.';
 
   @override
   String get keyManagementPasteKey => 'Incolla la tua chiave privata';

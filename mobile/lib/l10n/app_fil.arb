@@ -1248,7 +1248,7 @@
     "keyManagementBackupTitle": "I-backup ang Key Mo",
     "keyManagementBackupSubtitle": "I-save ang private key mo (nsec) para magamit ang account mo sa ibang Nostr apps.",
     "keyManagementCopyNsec": "Kopyahin ang Private Key Ko (nsec)",
-    "keyManagementKeycastRemoteSigning": "This account signs with Keycast. No private key is stored on this device, so there is no nsec to copy here.",
+    "keyManagementKeycastRemoteSigning": "Lumalagda ang account na ito gamit ang Keycast. Walang pribadong key na naka-store sa device na ito, kaya walang nsec na makokopya rito.",
     "keyManagementNeverShare": "Huwag i-share ang nsec mo sa kahit kanino!",
     "keyManagementPasteKey": "Pakipasta ang private key mo",
     "keyManagementInvalidFormat": "Invalid na format ng key. Kailangang mag-umpisa sa \"nsec1\"",

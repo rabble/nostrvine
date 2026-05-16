@@ -4747,7 +4747,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'This account signs with Keycast. No private key is stored on this device, so there is no nsec to copy here.';
+      'Този акаунт подписва с Keycast. На това устройство не е съхранен частен ключ, затова тук няма nsec за копиране.';
 
   @override
   String get keyManagementPasteKey => 'Постави частния си ключ';

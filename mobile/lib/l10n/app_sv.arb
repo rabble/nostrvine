@@ -2007,7 +2007,7 @@
     "keyManagementBackupTitle": "Säkerhetskopiera din nyckel",
     "keyManagementBackupSubtitle": "Spara din privata nyckel (nsec) för att använda ditt konto i andra Nostr-appar.",
     "keyManagementCopyNsec": "Kopiera min privata nyckel (nsec)",
-    "keyManagementKeycastRemoteSigning": "This account signs with Keycast. No private key is stored on this device, so there is no nsec to copy here.",
+  "keyManagementKeycastRemoteSigning": "Det här kontot signerar med Keycast. Ingen privat nyckel är lagrad på den här enheten, så det finns inget nsec att kopiera här.",
     "keyManagementNeverShare": "Dela aldrig din nsec med någon!",
     "keyManagementPasteKey": "Klistra in din privata nyckel",
     "keyManagementInvalidFormat": "Ogiltigt nyckelformat. Måste börja med \"nsec1\"",
