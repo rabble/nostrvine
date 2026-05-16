@@ -37,9 +37,14 @@ class MetadataTagsSection extends StatelessWidget {
 
     if (!hasCategories && !hasHashtags) return const SizedBox.shrink();
 
+    // runSpacing defaults to 0 because each `_HashtagChip` contributes
+    // 4 px of transparent tap-target padding above and below its visible
+    // bounds, producing an 8 px visible gap between rows without
+    // introducing additional spacing here. `_OverviewSection` drops its
+    // bottom padding by 4 px to compensate for the last row's invisible
+    // bottom padding.
     return Wrap(
       spacing: 8,
-      runSpacing: 8,
       children: [
         for (var i = 0; i < video.categories.length; i++)
           CategoryChip(categoryName: video.categories[i], index: i),
@@ -90,7 +95,16 @@ class _HashtagChip extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () => _navigateToHashtag(context),
-        child: chip,
+        // 4 px transparent padding above and below the visible 40 px
+        // chip extends the tap target to the 48 dp WCAG minimum
+        // without altering the rendered layout — the visible chip
+        // stays 40 px tall, and the surrounding `MetadataTagsSection`
+        // / `_OverviewSection` compensate by dropping `Wrap.runSpacing`
+        // to 0 and shrinking the section's bottom padding by 4 px.
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: chip,
+        ),
       ),
     );
   }

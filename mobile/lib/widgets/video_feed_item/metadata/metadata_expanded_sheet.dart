@@ -126,10 +126,9 @@ class _MetadataContent extends StatelessWidget {
 /// - Date renders independently of title/description so classic Vine
 ///   archives without captions still show their original publish year.
 ///
-/// Visually distinct from the sheet's drag-handle chrome above it —
-/// the separator line is provided by [_SheetHeaderSeparator] so this
-/// stays a regular labeled-less section in the scroll body, not part
-/// of the sheet header.
+/// The separator line between the sheet's drag-handle chrome and this
+/// section comes from `VineBottomSheet` itself when `showHeaderDivider`
+/// is true; this widget contributes only the scroll-body content.
 ///
 /// The visible date drops the localized "Posted on" prefix to match
 /// the Figma copy; the prefix lives on the [Semantics] label so
@@ -169,11 +168,14 @@ class _OverviewSection extends StatelessWidget {
         ),
     ];
 
+    // Bottom padding is 16 px (vs 20 px on top) only when tags are
+    // present — compensates for the hashtag chips' 4 px invisible
+    // tap-target padding below the last visible chip row so the
+    // section's visible bottom gap stays 20 px. See `_HashtagChip`.
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      padding: EdgeInsets.fromLTRB(16, 20, 16, hasTags ? 16 : 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 16,
         children: [
           Semantics(
             label: semanticDate,
@@ -186,13 +188,21 @@ class _OverviewSection extends StatelessWidget {
               ),
             ),
           ),
-          if (titleCluster.isNotEmpty)
+          if (titleCluster.isNotEmpty) ...[
+            const SizedBox(height: 16),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               spacing: 8,
               children: titleCluster,
             ),
-          if (hasTags) MetadataTagsSection(video: video),
+          ],
+          // 12 px to the tag wrap — the first chip row's 4 px
+          // invisible top padding lands on a visible 16 px gap,
+          // matching the date → title-cluster gap. See `_HashtagChip`.
+          if (hasTags) ...[
+            const SizedBox(height: 12),
+            MetadataTagsSection(video: video),
+          ],
         ],
       ),
     );

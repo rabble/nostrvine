@@ -393,9 +393,9 @@ void main() {
         find.text(l10n.metadataLoopsLabel(video.totalLoops)),
         findsOneWidget,
       );
-      expect(find.text('Likes'), findsOneWidget);
-      expect(find.text('Comments'), findsOneWidget);
-      expect(find.text('Reposts'), findsOneWidget);
+      expect(find.text(l10n.metadataLikesLabel), findsOneWidget);
+      expect(find.text(l10n.metadataCommentsLabel), findsOneWidget);
+      expect(find.text(l10n.metadataRepostsLabel), findsOneWidget);
     });
 
     testWidgets('uses singular Loop label when count is 1', (tester) async {
@@ -456,7 +456,8 @@ void main() {
         buildSubject(child: MetadataBadgesRow(video: video)),
       );
 
-      expect(find.textContaining('Human-Made'), findsOneWidget);
+      final l10n = _l10n(tester);
+      expect(find.textContaining(l10n.metadataBadgeHumanMade), findsOneWidget);
     });
 
     testWidgets('renders the divine-mark icon next to the Human-Made label', (
@@ -467,7 +468,8 @@ void main() {
         buildSubject(child: MetadataBadgesRow(video: video)),
       );
 
-      expect(find.textContaining('Human-Made'), findsOneWidget);
+      final l10n = _l10n(tester);
+      expect(find.textContaining(l10n.metadataBadgeHumanMade), findsOneWidget);
       final icon = tester.widget<DivineIcon>(find.byType(DivineIcon));
       expect(icon.icon, equals(DivineIconName.divineMark));
     });
@@ -479,7 +481,8 @@ void main() {
       );
 
       // Default test video URL is example.com (not Divine hosted)
-      expect(find.text('Not Divine'), findsOneWidget);
+      final l10n = _l10n(tester);
+      expect(find.text(l10n.metadataBadgeNotDivine), findsOneWidget);
     });
 
     testWidgets('renders both badges with dot separator', (tester) async {
@@ -491,8 +494,9 @@ void main() {
 
       // ProofMode badge shows but shouldShowNotDivineBadge is false
       // (hasProofMode suppresses Not Divine badge)
-      expect(find.textContaining('Human-Made'), findsOneWidget);
-      expect(find.text('Not Divine'), findsNothing);
+      final l10n = _l10n(tester);
+      expect(find.textContaining(l10n.metadataBadgeHumanMade), findsOneWidget);
+      expect(find.text(l10n.metadataBadgeNotDivine), findsNothing);
     });
 
     testWidgets('hides when no badges apply', (tester) async {
@@ -510,8 +514,9 @@ void main() {
         buildSubject(child: MetadataBadgesRow(video: video)),
       );
 
-      expect(find.text('Human-Made'), findsNothing);
-      expect(find.text('Not Divine'), findsNothing);
+      final l10n = _l10n(tester);
+      expect(find.text(l10n.metadataBadgeHumanMade), findsNothing);
+      expect(find.text(l10n.metadataBadgeNotDivine), findsNothing);
     });
   });
 
@@ -626,6 +631,36 @@ void main() {
         semantics.dispose();
       }
     });
+
+    testWidgets(
+      'hashtag chip tap target meets the 48 dp WCAG minimum (visible '
+      'chip stays 40 dp tall)',
+      (tester) async {
+        final video = _makeVideo(hashtags: ['comedy']);
+        await tester.pumpWidget(
+          buildSubject(child: MetadataTagsSection(video: video)),
+        );
+
+        // The GestureDetector wraps a Padding(vertical: 4) wrapping the
+        // visible 40 dp chip — so the tap-target bounds are 48 dp tall
+        // while the chip itself remains 40 dp tall.
+        final gestureFinder = find.ancestor(
+          of: find.text('comedy'),
+          matching: find.byType(GestureDetector),
+        );
+        expect(tester.getSize(gestureFinder).height, equals(48));
+
+        // The visible chip is the Container immediately above the
+        // tag's Text — its bounds match the rendered 40 dp height.
+        final containerFinder = find
+            .ancestor(
+              of: find.text('comedy'),
+              matching: find.byType(Container),
+            )
+            .first;
+        expect(tester.getSize(containerFinder).height, equals(40));
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------
@@ -961,11 +996,12 @@ void main() {
         buildSubject(child: MetadataVerificationSection(video: video)),
       );
 
-      expect(find.text('Verification'), findsOneWidget);
-      expect(find.text('Device attestation'), findsOneWidget);
-      expect(find.text('PGP signature'), findsOneWidget);
-      expect(find.text('C2PA Content Credentials'), findsOneWidget);
-      expect(find.text('Proof manifest'), findsOneWidget);
+      final l10n = _l10n(tester);
+      expect(find.text(l10n.metadataVerificationLabel), findsOneWidget);
+      expect(find.text(l10n.metadataDeviceAttestation), findsOneWidget);
+      expect(find.text(l10n.badgeExplanationPgpSignature), findsOneWidget);
+      expect(find.text(l10n.badgeExplanationC2paCredentials), findsOneWidget);
+      expect(find.text(l10n.metadataProofManifest), findsOneWidget);
       // Three passed (device attestation, PGP via manifest, proof manifest),
       // one failed (C2PA). DivineIcon renders SVGs — find by widget type
       // and icon enum value.
@@ -985,7 +1021,8 @@ void main() {
         buildSubject(child: MetadataVerificationSection(video: video)),
       );
 
-      expect(find.text('Verification'), findsNothing);
+      final l10n = _l10n(tester);
+      expect(find.text(l10n.metadataVerificationLabel), findsNothing);
     });
   });
 
@@ -1094,16 +1131,16 @@ void main() {
         find.text(l10n.metadataLoopsLabel(video.totalLoops)),
         findsOneWidget,
       );
-      expect(find.text('Likes'), findsOneWidget);
+      expect(find.text(l10n.metadataLikesLabel), findsOneWidget);
 
       // Badges row (Human-Made from verification, not Classic Vine).
       // Tags now live inside the header section, so they're visible
       // without scrolling.
-      expect(find.textContaining('Human-Made'), findsOneWidget);
+      expect(find.textContaining(l10n.metadataBadgeHumanMade), findsOneWidget);
       expect(find.text('grease'), findsOneWidget);
 
       // Top section labels
-      expect(find.text('Creator'), findsOneWidget);
+      expect(find.text(l10n.metadataCreatorLabel), findsOneWidget);
 
       // Scroll to reveal sections below the fold
       final listFinder = find.byType(ListView);
@@ -1116,7 +1153,7 @@ void main() {
       await tester.drag(listFinder, const Offset(0, -300));
       await tester.pumpAndSettle();
 
-      expect(find.text('Collaborators'), findsOneWidget);
+      expect(find.text(l10n.metadataCollaboratorsLabel), findsOneWidget);
       expect(find.text('Josh Musick'), findsOneWidget);
 
       // Scroll further to reveal remaining sections including
@@ -1124,17 +1161,19 @@ void main() {
       await tester.drag(listFinder, const Offset(0, -600));
       await tester.pumpAndSettle();
 
-      expect(find.text('Inspired by'), findsOneWidget);
+      expect(find.text(l10n.metadataInspiredByLabel), findsOneWidget);
       expect(find.text('Inspiring Creator'), findsOneWidget);
-      expect(find.text('Reposted by'), findsOneWidget);
+      expect(find.text(l10n.metadataRepostedByLabel), findsOneWidget);
       expect(find.text('Improvising'), findsOneWidget);
+      // Sounds section label is still hardcoded English in lib code
+      // (metadata_sounds_section.dart) — flagged as pre-existing l10n debt.
       expect(find.text('Sounds'), findsOneWidget);
       expect(find.text('Test Sound'), findsOneWidget);
 
       // Verification section moved to the bottom of the sheet.
       await tester.drag(listFinder, const Offset(0, -300));
       await tester.pumpAndSettle();
-      expect(find.text('Verification'), findsOneWidget);
+      expect(find.text(l10n.metadataVerificationLabel), findsOneWidget);
     });
 
     testWidgets('renders only populated sections for sparse video', (

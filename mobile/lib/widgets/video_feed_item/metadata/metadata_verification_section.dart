@@ -6,6 +6,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_section.dart';
 
 /// Verification section showing which ProofMode / C2PA signals are present.
@@ -20,26 +21,29 @@ class MetadataVerificationSection extends StatelessWidget {
   Widget build(BuildContext context) {
     if (!video.hasProofMode) return const SizedBox.shrink();
 
+    final l10n = context.l10n;
     return MetadataSection(
-      label: 'Verification',
+      label: l10n.metadataVerificationLabel,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         spacing: 4,
         children: [
           _VerificationCheckItem(
-            label: 'Device attestation',
+            label: l10n.metadataDeviceAttestation,
             passed: video.proofModeDeviceAttestation != null,
           ),
+          // Reuse the badge-explanation copy — same English value, no
+          // dedicated `metadata*` key exists for these two signals.
           _VerificationCheckItem(
-            label: 'PGP signature',
+            label: l10n.badgeExplanationPgpSignature,
             passed: video.proofModePgpFingerprint != null,
           ),
           _VerificationCheckItem(
-            label: 'C2PA Content Credentials',
+            label: l10n.badgeExplanationC2paCredentials,
             passed: video.proofModeC2paManifestId != null,
           ),
           _VerificationCheckItem(
-            label: 'Proof manifest',
+            label: l10n.metadataProofManifest,
             passed: video.proofModeManifest != null,
           ),
         ],

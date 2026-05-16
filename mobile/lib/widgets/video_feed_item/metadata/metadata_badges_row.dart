@@ -8,6 +8,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/utils/proofmode_helpers.dart';
 
 /// Row of non-interactive badge labels rendered between the title and
@@ -33,7 +34,7 @@ class MetadataBadgesRow extends StatelessWidget {
     }
 
     if (video.shouldShowNotDivineBadge) {
-      badges.add(const _TextBadge(label: 'Not Divine'));
+      badges.add(_TextBadge(label: context.l10n.metadataBadgeNotDivine));
     }
 
     if (badges.isEmpty) return const SizedBox.shrink();
@@ -56,6 +57,10 @@ class MetadataBadgesRow extends StatelessWidget {
 }
 
 /// "Human-Made" badge with "HM" superscript.
+///
+/// The "HM" superscript is a typographic flourish of the brand mark and
+/// intentionally stays untranslated; only the long-form label flows
+/// through localization.
 class _HumanMadeBadge extends StatelessWidget {
   const _HumanMadeBadge();
 
@@ -69,7 +74,10 @@ class _HumanMadeBadge extends StatelessWidget {
         Text.rich(
           TextSpan(
             children: [
-              TextSpan(text: 'Human-Made', style: VineTheme.titleSmallFont()),
+              TextSpan(
+                text: context.l10n.metadataBadgeHumanMade,
+                style: VineTheme.titleSmallFont(),
+              ),
               WidgetSpan(
                 alignment: PlaceholderAlignment.top,
                 child: Text(

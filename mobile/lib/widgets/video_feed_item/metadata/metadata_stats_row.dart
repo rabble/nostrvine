@@ -64,19 +64,19 @@ class MetadataStatsRow extends StatelessWidget {
                       const _VerticalDivider(),
                       _StatColumn(
                         count: state.likeCount,
-                        label: 'Likes',
+                        label: context.l10n.metadataLikesLabel,
                         isLoading: isLoading,
                       ),
                       const _VerticalDivider(),
                       _StatColumn(
                         count: state.commentCount,
-                        label: 'Comments',
+                        label: context.l10n.metadataCommentsLabel,
                         isLoading: isLoading,
                       ),
                       const _VerticalDivider(),
                       _StatColumn(
                         count: state.repostCount,
-                        label: 'Reposts',
+                        label: context.l10n.metadataRepostsLabel,
                         isLoading: isLoading,
                       ),
                     ],
