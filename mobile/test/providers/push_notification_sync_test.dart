@@ -258,6 +258,7 @@ void main() {
         any(),
         targetRelays: any(named: 'targetRelays'),
         timeout: any(named: 'timeout'),
+        diagnosticTag: any(named: 'diagnosticTag'),
       ),
     ).thenAnswer(
       (invocation) async => _acceptedOutcome(
@@ -379,6 +380,7 @@ void main() {
             event,
             targetRelays: any(named: 'targetRelays'),
             timeout: any(named: 'timeout'),
+            diagnosticTag: any(named: 'diagnosticTag'),
           ),
         ).thenAnswer(
           (_) async => _acceptedOutcome(event, pushEnvironment.relayUrl),
@@ -424,6 +426,7 @@ void main() {
             any(),
             targetRelays: any(named: 'targetRelays'),
             timeout: any(named: 'timeout'),
+            diagnosticTag: any(named: 'diagnosticTag'),
           ),
         );
       },
@@ -1380,6 +1383,7 @@ void main() {
             event,
             targetRelays: [pushEnvironment.relayUrl],
             timeout: const Duration(seconds: 5),
+            diagnosticTag: 'push-control',
           ),
         ).thenAnswer(
           (_) async => _acceptedOutcome(event, pushEnvironment.relayUrl),
@@ -1432,6 +1436,7 @@ void main() {
             event,
             targetRelays: [pushEnvironment.relayUrl],
             timeout: const Duration(seconds: 5),
+            diagnosticTag: 'push-control',
           ),
         ).called(1);
       },
@@ -1467,6 +1472,7 @@ void main() {
             event,
             targetRelays: [pushEnvironment.relayUrl],
             timeout: const Duration(seconds: 5),
+            diagnosticTag: 'push-control',
           ),
         ).thenAnswer(
           (_) async => _acceptedOutcome(event, pushEnvironment.relayUrl),
@@ -1517,6 +1523,7 @@ void main() {
             event,
             targetRelays: [pushEnvironment.relayUrl],
             timeout: const Duration(seconds: 5),
+            diagnosticTag: 'push-control',
           ),
         ).called(1);
       },
@@ -1553,6 +1560,7 @@ void main() {
             event,
             targetRelays: [pushEnvironment.relayUrl],
             timeout: const Duration(seconds: 5),
+            diagnosticTag: 'push-control',
           ),
         ).thenAnswer(
           (_) async => _acceptedOutcome(event, pushEnvironment.relayUrl),
@@ -1609,6 +1617,7 @@ void main() {
             event,
             targetRelays: [pushEnvironment.relayUrl],
             timeout: const Duration(seconds: 5),
+            diagnosticTag: 'push-control',
           ),
         );
 
@@ -1620,6 +1629,7 @@ void main() {
             event,
             targetRelays: [pushEnvironment.relayUrl],
             timeout: const Duration(seconds: 5),
+            diagnosticTag: 'push-control',
           ),
         ).called(1);
         verify(cleanupClient.dispose).called(1);
@@ -1628,6 +1638,7 @@ void main() {
             event,
             targetRelays: any(named: 'targetRelays'),
             timeout: any(named: 'timeout'),
+            diagnosticTag: any(named: 'diagnosticTag'),
           ),
         );
       },
@@ -1680,6 +1691,7 @@ void main() {
             any(),
             targetRelays: any(named: 'targetRelays'),
             timeout: any(named: 'timeout'),
+            diagnosticTag: any(named: 'diagnosticTag'),
           ),
         ).thenAnswer(
           (invocation) async => _acceptedOutcome(
@@ -1739,6 +1751,7 @@ void main() {
             registrationEvent,
             targetRelays: any(named: 'targetRelays'),
             timeout: any(named: 'timeout'),
+            diagnosticTag: any(named: 'diagnosticTag'),
           ),
         );
       },
@@ -1795,6 +1808,7 @@ void main() {
             registrationEvent,
             targetRelays: [pushEnvironment.relayUrl],
             timeout: const Duration(seconds: 5),
+            diagnosticTag: 'push-control',
           ),
         ).thenAnswer((_) async {
           events.add('registration publish started');
@@ -1809,6 +1823,7 @@ void main() {
             deregistrationEvent,
             targetRelays: [pushEnvironment.relayUrl],
             timeout: const Duration(seconds: 5),
+            diagnosticTag: 'push-control',
           ),
         ).thenAnswer((_) async {
           events.add('deregister');
