@@ -22,6 +22,8 @@ reporter: expanded
 
 # Registered test tags
 tags:
+  golden:
+    timeout: 10m
   integration:
     timeout: 10m
   skip_very_good_optimization:
