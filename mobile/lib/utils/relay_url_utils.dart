@@ -99,13 +99,26 @@ String resolveApiBaseUrlFromRelays({
 /// Resolve a pinned REST API base URL from configured relays.
 ///
 /// Unlike [resolveApiBaseUrlFromRelays], this never falls through to an
-/// arbitrary configured relay. If the pinned relay host is not configured, it
-/// returns the provided environment fallback instead.
+/// arbitrary configured relay. If the environment fallback host is configured,
+/// that host wins first so staging/local builds do not drift to a persisted
+/// production relay. If neither the fallback host nor pinned relay host is
+/// configured, it returns the provided environment fallback instead.
 String resolvePinnedApiBaseUrlFromRelays({
   required List<String> configuredRelays,
   required String fallbackBaseUrl,
   String pinnedRelayHost = _divineRelayHost,
 }) {
+  final fallbackHost = Uri.tryParse(fallbackBaseUrl)?.host.toLowerCase();
+  if (fallbackHost != null && fallbackHost.isNotEmpty) {
+    final fallbackRelay = configuredRelays.where((url) {
+      final host = Uri.tryParse(url)?.host.toLowerCase();
+      return host == fallbackHost;
+    });
+    if (fallbackRelay.isNotEmpty) {
+      return relayWsToHttpBase(fallbackRelay.first);
+    }
+  }
+
   final pinnedRelay = configuredRelays.where((url) {
     final host = Uri.tryParse(url)?.host.toLowerCase();
     return host == pinnedRelayHost.toLowerCase();

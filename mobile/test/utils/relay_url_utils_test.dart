@@ -151,6 +151,24 @@ void main() {
     });
   });
 
+  group('resolvePinnedApiBaseUrlFromRelays', () {
+    test(
+      'keeps staging notifications on the staging relay when production relay is persisted',
+      () {
+        expect(
+          resolvePinnedApiBaseUrlFromRelays(
+            configuredRelays: const [
+              'wss://relay.staging.dvines.org',
+              'wss://relay.divine.video',
+            ],
+            fallbackBaseUrl: 'https://relay.staging.dvines.org',
+          ),
+          'https://relay.staging.dvines.org',
+        );
+      },
+    );
+  });
+
   group('resolveApiBaseUrlFromRelays', () {
     test('maps relay.divine.video to api.divine.video for REST', () {
       expect(
