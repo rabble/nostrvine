@@ -5,8 +5,10 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
+import 'package:openvine/constants/notification_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
+import 'package:openvine/notifications/widgets/notification_actor_spans.dart';
 import 'package:openvine/notifications/widgets/notification_avatar_stack.dart';
 import 'package:openvine/notifications/widgets/notification_comment_quote.dart';
 import 'package:openvine/notifications/widgets/notification_leading_type_icon.dart';
@@ -44,7 +46,8 @@ class VideoNotificationRow extends StatelessWidget {
   final VoidCallback onThumbnailTap;
 
   bool _shouldStackThumbnail(BuildContext context) {
-    return MediaQuery.textScalerOf(context).scale(1) > 1.35;
+    return MediaQuery.textScalerOf(context).scale(1) >
+        NotificationConstants.largeTextStackThreshold;
   }
 
   @override
@@ -79,7 +82,7 @@ class VideoNotificationRow extends StatelessWidget {
                     child: _NotificationContent(
                       notification: notification,
                       onProfileTap: onProfileTap,
-                      showInlineThumbnail: shouldStackThumbnail,
+                      showStackedThumbnail: shouldStackThumbnail,
                       onThumbnailTap: onThumbnailTap,
                     ),
                   ),
@@ -105,13 +108,13 @@ class _NotificationContent extends StatelessWidget {
   const _NotificationContent({
     required this.notification,
     required this.onProfileTap,
-    required this.showInlineThumbnail,
+    required this.showStackedThumbnail,
     required this.onThumbnailTap,
   });
 
   final VideoNotification notification;
   final VoidCallback onProfileTap;
-  final bool showInlineThumbnail;
+  final bool showStackedThumbnail;
   final VoidCallback onThumbnailTap;
 
   bool get _hasComment =>
@@ -155,7 +158,7 @@ class _NotificationContent extends StatelessWidget {
             timestamp: relativeTime,
           ),
         ],
-        if (showInlineThumbnail) ...[
+        if (showStackedThumbnail) ...[
           const SizedBox(height: 12),
           Align(
             alignment: AlignmentDirectional.centerEnd,
@@ -193,7 +196,7 @@ class _MessageText extends StatelessWidget {
 
     if (othersCount == 0) {
       spans.addAll(
-        _localizedActorSentenceSpans(
+        localizedActorSentenceSpans(
           fullText: _messageFor(l10n, type, actors.first.displayName),
           actorName: actors.first.displayName,
         ),
@@ -303,29 +306,4 @@ String _messageFor(
     NotificationKind.mention ||
     NotificationKind.system => '',
   };
-}
-
-List<InlineSpan> _localizedActorSentenceSpans({
-  required String fullText,
-  required String actorName,
-}) {
-  final actorStart = fullText.indexOf(actorName);
-  if (actorName.isEmpty || actorStart < 0) {
-    return [TextSpan(text: fullText, style: VineTheme.bodyMediumFont())];
-  }
-
-  final actorEnd = actorStart + actorName.length;
-  return [
-    if (actorStart > 0)
-      TextSpan(
-        text: fullText.substring(0, actorStart),
-        style: VineTheme.bodyMediumFont(),
-      ),
-    TextSpan(text: actorName, style: VineTheme.labelLargeFont()),
-    if (actorEnd < fullText.length)
-      TextSpan(
-        text: fullText.substring(actorEnd),
-        style: VineTheme.bodyMediumFont(),
-      ),
-  ];
 }

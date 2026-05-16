@@ -3049,7 +3049,7 @@
         }
     },
     "notificationsViewProfilesSemanticLabel": "Vezi profilurile",
-    "notificationRepliedToYourComment": "a răspuns la comentariul tău",
+    "notificationRepliedToYourComment": "{actorName} a răspuns la comentariul tău",
     "notificationAndConnector": "și",
     "notificationOthersCount": "{count, plural, =1{încă 1 persoană} other{încă {count} persoane}}",
     "@notificationOthersCount": {

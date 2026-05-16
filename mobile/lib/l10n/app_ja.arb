@@ -3042,7 +3042,7 @@
         }
     },
     "notificationsViewProfilesSemanticLabel": "プロフィールを開く",
-    "notificationRepliedToYourComment": "があなたのコメントに返信しました",
+    "notificationRepliedToYourComment": "{actorName}さんがあなたのコメントに返信しました",
     "notificationAndConnector": "と",
     "notificationOthersCount": "{count, plural, other{他{count}人}}",
     "@notificationOthersCount": {

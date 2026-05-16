@@ -6377,8 +6377,9 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get notificationRepliedToYourComment =>
-      'heeft op je reactie gereageerd';
+  String notificationRepliedToYourComment(String actorName) {
+    return '$actorName heeft op je reactie gereageerd';
+  }
 
   @override
   String get notificationAndConnector => 'en';

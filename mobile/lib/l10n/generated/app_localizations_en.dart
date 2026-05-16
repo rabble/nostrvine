@@ -6346,7 +6346,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get notificationRepliedToYourComment => 'replied to your comment';
+  String notificationRepliedToYourComment(String actorName) {
+    return '$actorName replied to your comment';
+  }
 
   @override
   String get notificationAndConnector => 'and';

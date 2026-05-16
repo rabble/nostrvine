@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:openvine/constants/notification_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/widgets/notification_avatar_stack.dart';
 import 'package:openvine/notifications/widgets/notification_comment_quote.dart';
@@ -27,6 +28,7 @@ const _carol = ActorInfo(
 );
 
 final AppLocalizations _l10n = lookupAppLocalizations(const Locale('en'));
+final AppLocalizations _jaL10n = lookupAppLocalizations(const Locale('ja'));
 
 VideoNotification _video({
   String id = 'n1',
@@ -115,7 +117,10 @@ void main() {
             notification: _video(),
           );
 
-          expect(find.textContaining('Aliceさんがあなたの動画にいいねしました'), findsOneWidget);
+          expect(
+            find.textContaining(_jaL10n.notificationLikedYourVideo('Alice')),
+            findsOneWidget,
+          );
         },
       );
 
@@ -235,6 +240,42 @@ void main() {
             videoTitle: 'A fairly long title for max-font testing',
           ),
           textScaleFactor: 2,
+        );
+
+        final message = tester.getTopLeft(find.textContaining('Alice'));
+        final thumbnail = tester.getTopLeft(
+          find.byType(NotificationVideoThumbnail),
+        );
+        expect(thumbnail.dy, greaterThan(message.dy));
+      });
+
+      testWidgets('keeps the thumbnail inline below the stack threshold', (
+        tester,
+      ) async {
+        await _pump(
+          tester,
+          notification: _video(
+            videoTitle: 'A fairly long title for threshold testing',
+          ),
+          textScaleFactor: NotificationConstants.largeTextStackThreshold - 0.01,
+        );
+
+        final message = tester.getTopLeft(find.textContaining('Alice'));
+        final thumbnail = tester.getTopLeft(
+          find.byType(NotificationVideoThumbnail),
+        );
+        expect(thumbnail.dy, lessThan(message.dy));
+      });
+
+      testWidgets('stacks the thumbnail above the stack threshold', (
+        tester,
+      ) async {
+        await _pump(
+          tester,
+          notification: _video(
+            videoTitle: 'A fairly long title for threshold testing',
+          ),
+          textScaleFactor: NotificationConstants.largeTextStackThreshold + 0.01,
         );
 
         final message = tester.getTopLeft(find.textContaining('Alice'));

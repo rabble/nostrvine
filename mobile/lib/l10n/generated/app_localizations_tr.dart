@@ -6323,7 +6323,9 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get notificationRepliedToYourComment => 'yorumuna yanıt verdi';
+  String notificationRepliedToYourComment(String actorName) {
+    return '$actorName yorumuna yanıt verdi';
+  }
 
   @override
   String get notificationAndConnector => 've';

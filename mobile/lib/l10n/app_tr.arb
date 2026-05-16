@@ -3049,7 +3049,7 @@
         }
     },
     "notificationsViewProfilesSemanticLabel": "Profilleri görüntüle",
-    "notificationRepliedToYourComment": "yorumuna yanıt verdi",
+    "notificationRepliedToYourComment": "{actorName} yorumuna yanıt verdi",
     "notificationAndConnector": "ve",
     "notificationOthersCount": "{count, plural, =1{1 kişi daha} other{{count} kişi daha}}",
     "@notificationOthersCount": {

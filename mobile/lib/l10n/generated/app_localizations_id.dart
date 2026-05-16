@@ -6321,7 +6321,9 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String get notificationRepliedToYourComment => 'membalas komentar Anda';
+  String notificationRepliedToYourComment(String actorName) {
+    return '$actorName membalas komentar Anda';
+  }
 
   @override
   String get notificationAndConnector => 'dan';

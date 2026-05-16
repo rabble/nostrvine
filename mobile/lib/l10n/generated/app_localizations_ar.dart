@@ -6290,7 +6290,9 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get notificationRepliedToYourComment => 'ردّ على تعليقك';
+  String notificationRepliedToYourComment(String actorName) {
+    return '$actorName ردّ على تعليقك';
+  }
 
   @override
   String get notificationAndConnector => 'و';

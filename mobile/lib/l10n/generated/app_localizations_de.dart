@@ -6425,8 +6425,9 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get notificationRepliedToYourComment =>
-      'hat auf deinen Kommentar geantwortet';
+  String notificationRepliedToYourComment(String actorName) {
+    return '$actorName hat auf deinen Kommentar geantwortet';
+  }
 
   @override
   String get notificationAndConnector => 'und';

@@ -3057,7 +3057,7 @@
         }
     },
     "notificationsViewProfilesSemanticLabel": "Ver perfiles",
-    "notificationRepliedToYourComment": "respondió a tu comentario",
+    "notificationRepliedToYourComment": "{actorName} respondió a tu comentario",
     "notificationAndConnector": "y",
     "notificationOthersCount": "{count, plural, =1{1 persona más} other{{count} personas más}}",
     "@notificationOthersCount": {

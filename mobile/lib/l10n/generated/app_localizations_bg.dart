@@ -6413,7 +6413,9 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String get notificationRepliedToYourComment => 'Отговори на коментара ти';
+  String notificationRepliedToYourComment(String actorName) {
+    return '$actorName Отговори на коментара ти';
+  }
 
   @override
   String get notificationAndConnector => 'И';

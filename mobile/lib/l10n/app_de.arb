@@ -3049,7 +3049,7 @@
         }
     },
     "notificationsViewProfilesSemanticLabel": "Profile öffnen",
-    "notificationRepliedToYourComment": "hat auf deinen Kommentar geantwortet",
+    "notificationRepliedToYourComment": "{actorName} hat auf deinen Kommentar geantwortet",
     "notificationAndConnector": "und",
     "notificationOthersCount": "{count, plural, =1{1 weitere Person} other{{count} weitere Personen}}",
     "@notificationOthersCount": {

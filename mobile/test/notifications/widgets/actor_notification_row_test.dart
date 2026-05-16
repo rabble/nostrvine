@@ -6,6 +6,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:openvine/constants/notification_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/widgets/actor_notification_row.dart';
 import 'package:openvine/notifications/widgets/notification_comment_quote.dart';
@@ -18,6 +19,7 @@ const _alice = ActorInfo(
 );
 
 final AppLocalizations _l10n = lookupAppLocalizations(const Locale('en'));
+final AppLocalizations _jaL10n = lookupAppLocalizations(const Locale('ja'));
 
 ActorNotification _actor({
   String id = 'n1',
@@ -132,9 +134,7 @@ void main() {
         await _pump(tester, notification: _actor(type: NotificationKind.reply));
 
         expect(
-          find.textContaining(
-            'Alice ${_l10n.notificationRepliedToYourComment}',
-          ),
+          find.textContaining(_l10n.notificationRepliedToYourComment('Alice')),
           findsOneWidget,
         );
       });
@@ -148,7 +148,10 @@ void main() {
             notification: _actor(type: NotificationKind.mention),
           );
 
-          expect(find.textContaining('Aliceさんがあなたをメンションしました'), findsOneWidget);
+          expect(
+            find.textContaining(_jaL10n.notificationMentionedYou('Alice')),
+            findsOneWidget,
+          );
         },
       );
 
@@ -161,7 +164,12 @@ void main() {
           notification: _actor(type: NotificationKind.reply),
         );
 
-        expect(find.textContaining('Aliceさんがあなたのコメントに返信しました'), findsOneWidget);
+        expect(
+          find.textContaining(
+            _jaL10n.notificationRepliedToYourComment('Alice'),
+          ),
+          findsOneWidget,
+        );
       });
 
       testWidgets('Follow back button when not yet following', (tester) async {
@@ -216,6 +224,45 @@ void main() {
 
         final avatar = tester.getTopLeft(find.byType(UserAvatar));
         final button = tester.getTopLeft(find.byType(DivineButton));
+        expect(button.dy, greaterThan(avatar.dy));
+      });
+
+      testWidgets('keeps Follow back inline below the stack threshold', (
+        tester,
+      ) async {
+        await _pump(
+          tester,
+          notification: _actor(),
+          textScaleFactor: NotificationConstants.largeTextStackThreshold - 0.01,
+        );
+
+        final avatarRow = find
+            .ancestor(of: find.byType(UserAvatar), matching: find.byType(Row))
+            .first;
+        expect(
+          find.descendant(of: avatarRow, matching: find.byType(DivineButton)),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('stacks Follow back above the stack threshold', (
+        tester,
+      ) async {
+        await _pump(
+          tester,
+          notification: _actor(),
+          textScaleFactor: NotificationConstants.largeTextStackThreshold + 0.01,
+        );
+
+        final avatar = tester.getTopLeft(find.byType(UserAvatar));
+        final button = tester.getTopLeft(find.byType(DivineButton));
+        final avatarRow = find
+            .ancestor(of: find.byType(UserAvatar), matching: find.byType(Row))
+            .first;
+        expect(
+          find.descendant(of: avatarRow, matching: find.byType(DivineButton)),
+          findsNothing,
+        );
         expect(button.dy, greaterThan(avatar.dy));
       });
 

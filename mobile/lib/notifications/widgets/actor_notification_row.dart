@@ -8,6 +8,7 @@ import 'package:models/models.dart';
 import 'package:openvine/constants/notification_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
+import 'package:openvine/notifications/widgets/notification_actor_spans.dart';
 import 'package:openvine/notifications/widgets/notification_comment_quote.dart';
 import 'package:openvine/notifications/widgets/notification_leading_type_icon.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -99,7 +100,8 @@ class _NotificationContent extends StatelessWidget {
       notification.commentText != null && notification.commentText!.isNotEmpty;
 
   bool _shouldStackFollowBackButton(BuildContext context) {
-    return MediaQuery.textScalerOf(context).scale(1) > 1.35;
+    return MediaQuery.textScalerOf(context).scale(1) >
+        NotificationConstants.largeTextStackThreshold;
   }
 
   @override
@@ -200,7 +202,7 @@ class _MessageText extends StatelessWidget {
               style: VineTheme.bodyMediumFont(),
             ),
           ]
-        : _localizedActorSentenceSpans(
+        : localizedActorSentenceSpans(
             fullText: _messageFor(l10n, type, notification.actor.displayName),
             actorName: notification.actor.displayName,
           );
@@ -233,54 +235,10 @@ String _messageFor(
     NotificationKind.likeComment => l10n.notificationLikedYourComment(
       actorName,
     ),
-    NotificationKind.reply => _replyMessage(l10n, actorName),
+    NotificationKind.reply => l10n.notificationRepliedToYourComment(actorName),
     NotificationKind.system ||
     NotificationKind.like ||
     NotificationKind.comment ||
     NotificationKind.repost => '',
   };
-}
-
-String _replyMessage(AppLocalizations l10n, String actorName) {
-  final localizedActorName = _replyActorName(l10n.localeName, actorName);
-  final separator = _usesTightActorJoin(l10n.localeName) ? '' : ' ';
-  return '$localizedActorName$separator${l10n.notificationRepliedToYourComment}';
-}
-
-bool _usesTightActorJoin(String localeName) {
-  return localeName.startsWith('ja') ||
-      localeName.startsWith('ko') ||
-      localeName.startsWith('zh');
-}
-
-String _replyActorName(String localeName, String actorName) {
-  if (localeName.startsWith('ja')) {
-    return '$actorNameさん';
-  }
-  return actorName;
-}
-
-List<InlineSpan> _localizedActorSentenceSpans({
-  required String fullText,
-  required String actorName,
-}) {
-  final actorStart = fullText.indexOf(actorName);
-  if (actorName.isEmpty || actorStart < 0) {
-    return [TextSpan(text: fullText, style: VineTheme.bodyMediumFont())];
-  }
-
-  final actorEnd = actorStart + actorName.length;
-  return [
-    if (actorStart > 0)
-      TextSpan(
-        text: fullText.substring(0, actorStart),
-        style: VineTheme.bodyMediumFont(),
-      ),
-    TextSpan(text: actorName, style: VineTheme.labelLargeFont()),
-    if (actorEnd < fullText.length)
-      TextSpan(
-        text: fullText.substring(actorEnd),
-        style: VineTheme.bodyMediumFont(),
-      ),
-  ];
 }

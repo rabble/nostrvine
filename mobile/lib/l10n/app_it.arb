@@ -3049,7 +3049,7 @@
         }
     },
     "notificationsViewProfilesSemanticLabel": "Vedi profili",
-    "notificationRepliedToYourComment": "ha risposto al tuo commento",
+    "notificationRepliedToYourComment": "{actorName} ha risposto al tuo commento",
     "notificationAndConnector": "e",
     "notificationOthersCount": "{count, plural, =1{1 altro} other{{count} altri}}",
     "@notificationOthersCount": {

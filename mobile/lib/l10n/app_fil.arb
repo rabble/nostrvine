@@ -1942,7 +1942,7 @@
     "nostrAppPermissionTitle": "Hinihingi ng {appName} ang pag-apruba mo",
     "notificationAndConnector": "at",
     "notificationOthersCount": "{count, plural, =1{1 iba pa} other{{count} iba pa}}",
-    "notificationRepliedToYourComment": "nag-reply sa comment mo",
+    "notificationRepliedToYourComment": "nag-reply si {actorName} sa comment mo",
     "notificationsEmptySubtitle": "Kapag nag-interact ang mga tao sa content mo, makikita mo dito",
     "notificationsEmptyTitle": "Wala pang activity",
     "notificationsViewProfileSemanticLabel": "Tingnan ang profile ni {displayName}",

@@ -6348,7 +6348,9 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get notificationRepliedToYourComment => 'svarade på din kommentar';
+  String notificationRepliedToYourComment(String actorName) {
+    return '$actorName svarade på din kommentar';
+  }
 
   @override
   String get notificationAndConnector => 'och';

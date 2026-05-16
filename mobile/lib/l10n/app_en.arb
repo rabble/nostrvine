@@ -3583,9 +3583,14 @@
       }
     }
   },
-  "notificationRepliedToYourComment": "replied to your comment",
+  "notificationRepliedToYourComment": "{actorName} replied to your comment",
   "@notificationRepliedToYourComment": {
-    "description": "Verb phrase shown after the actor name in a reply notification."
+    "description": "Full sentence shown for a reply notification.",
+    "placeholders": {
+      "actorName": {
+        "type": "String"
+      }
+    }
   },
   "notificationAndConnector": "and",
   "@notificationAndConnector": {

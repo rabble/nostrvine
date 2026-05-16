@@ -3049,7 +3049,7 @@
         }
     },
     "notificationsViewProfilesSemanticLabel": "Ver perfis",
-    "notificationRepliedToYourComment": "respondeu ao teu comentário",
+    "notificationRepliedToYourComment": "{actorName} respondeu ao teu comentário",
     "notificationAndConnector": "e",
     "notificationOthersCount": "{count, plural, =1{mais 1 pessoa} other{mais {count} pessoas}}",
     "@notificationOthersCount": {

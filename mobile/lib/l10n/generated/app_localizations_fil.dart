@@ -6429,7 +6429,9 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String get notificationRepliedToYourComment => 'nag-reply sa comment mo';
+  String notificationRepliedToYourComment(String actorName) {
+    return 'nag-reply si $actorName sa comment mo';
+  }
 
   @override
   String get notificationAndConnector => 'at';

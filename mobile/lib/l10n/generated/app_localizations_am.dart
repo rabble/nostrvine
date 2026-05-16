@@ -6219,7 +6219,9 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get notificationRepliedToYourComment => 'ለአስተያየትዎ ምላሽ ሰጥተዋል';
+  String notificationRepliedToYourComment(String actorName) {
+    return '$actorName ለአስተያየትዎ ምላሽ ሰጥተዋል';
+  }
 
   @override
   String get notificationAndConnector => 'እና';

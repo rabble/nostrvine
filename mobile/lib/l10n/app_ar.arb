@@ -3042,7 +3042,7 @@
         }
     },
     "notificationsViewProfilesSemanticLabel": "عرض الملفات الشخصية",
-    "notificationRepliedToYourComment": "ردّ على تعليقك",
+    "notificationRepliedToYourComment": "{actorName} ردّ على تعليقك",
     "notificationAndConnector": "و",
     "notificationOthersCount": "{count, plural, =1{شخص آخر} other{{count} أشخاص آخرين}}",
     "@notificationOthersCount": {

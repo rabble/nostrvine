@@ -6505,7 +6505,9 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get notificationRepliedToYourComment => 'a răspuns la comentariul tău';
+  String notificationRepliedToYourComment(String actorName) {
+    return '$actorName a răspuns la comentariul tău';
+  }
 
   @override
   String get notificationAndConnector => 'și';

@@ -11174,11 +11174,11 @@ abstract class AppLocalizations {
   /// **'{actorName} reposted your video'**
   String notificationRepostedYourVideo(String actorName);
 
-  /// Verb phrase shown after the actor name in a reply notification.
+  /// Full sentence shown for a reply notification.
   ///
   /// In en, this message translates to:
-  /// **'replied to your comment'**
-  String get notificationRepliedToYourComment;
+  /// **'{actorName} replied to your comment'**
+  String notificationRepliedToYourComment(String actorName);
 
   /// Connector word between the first actor and the 'N others' count in a grouped notification (e.g. 'Alice and 3 others liked your video').
   ///

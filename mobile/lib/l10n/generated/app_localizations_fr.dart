@@ -6437,7 +6437,9 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get notificationRepliedToYourComment => 'a répondu à ton commentaire';
+  String notificationRepliedToYourComment(String actorName) {
+    return '$actorName a répondu à ton commentaire';
+  }
 
   @override
   String get notificationAndConnector => 'et';

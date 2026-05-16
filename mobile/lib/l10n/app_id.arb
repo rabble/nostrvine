@@ -3049,7 +3049,7 @@
         }
     },
     "notificationsViewProfilesSemanticLabel": "Lihat profil",
-    "notificationRepliedToYourComment": "membalas komentar Anda",
+    "notificationRepliedToYourComment": "{actorName} membalas komentar Anda",
     "notificationAndConnector": "dan",
     "notificationOthersCount": "{count, plural, other{{count} lainnya}}",
     "@notificationOthersCount": {

@@ -6088,7 +6088,9 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get notificationRepliedToYourComment => 'があなたのコメントに返信しました';
+  String notificationRepliedToYourComment(String actorName) {
+    return '$actorNameさんがあなたのコメントに返信しました';
+  }
 
   @override
   String get notificationAndConnector => 'と';

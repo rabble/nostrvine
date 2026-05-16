@@ -3049,7 +3049,7 @@
         }
     },
     "notificationsViewProfilesSemanticLabel": "Visa profiler",
-    "notificationRepliedToYourComment": "svarade på din kommentar",
+    "notificationRepliedToYourComment": "{actorName} svarade på din kommentar",
     "notificationAndConnector": "och",
     "notificationOthersCount": "{count, plural, =1{1 till} other{{count} till}}",
     "@notificationOthersCount": {

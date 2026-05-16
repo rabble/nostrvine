@@ -6111,7 +6111,9 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get notificationRepliedToYourComment => '님이 회원님의 댓글에 답글을 남겼습니다';
+  String notificationRepliedToYourComment(String actorName) {
+    return '$actorName님이 회원님의 댓글에 답글을 남겼습니다';
+  }
 
   @override
   String get notificationAndConnector => '및';

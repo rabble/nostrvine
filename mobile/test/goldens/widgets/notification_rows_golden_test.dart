@@ -26,6 +26,7 @@ const _bob = ActorInfo(
 final _goldenNow = DateTime.utc(2026, 5, 15, 23);
 final _notificationTimestamp = DateTime.utc(2026, 5, 15, 12);
 const _notificationGoldenTolerance = 0.03;
+final AppLocalizations _l10n = lookupAppLocalizations(const Locale('en'));
 
 void main() {
   final previousGoldenFileComparator = goldenFileComparator;
@@ -36,67 +37,59 @@ void main() {
   tearDownAll(() => goldenFileComparator = previousGoldenFileComparator);
 
   group('Notification row layouts', () {
-    testGoldens(
-      'notification rows render default layout',
-      (tester) async {
-        await withClock(Clock(() => _goldenNow), () async {
-          await tester.pumpWidgetBuilder(
-            _scenarioColumn(textScaleFactor: 1),
-            wrapper: materialAppWrapper(
-              theme: VineTheme.theme,
-              localizations: AppLocalizations.localizationsDelegates,
-              localeOverrides: AppLocalizations.supportedLocales,
-            ),
-            surfaceSize: const Size(420, 560),
-          );
-          addTearDown(() => tester.binding.setSurfaceSize(null));
-          await tester.pumpAndSettle();
+    testGoldens('notification rows render default layout', (tester) async {
+      await withClock(Clock(() => _goldenNow), () async {
+        await tester.pumpWidgetBuilder(
+          _scenarioColumn(textScaleFactor: 1),
+          wrapper: materialAppWrapper(
+            theme: VineTheme.theme,
+            localizations: AppLocalizations.localizationsDelegates,
+            localeOverrides: AppLocalizations.supportedLocales,
+          ),
+          surfaceSize: const Size(420, 560),
+        );
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await tester.pumpAndSettle();
 
-          expect(find.byType(ActorNotificationRow), findsOneWidget);
-          expect(find.byType(VideoNotificationRow), findsOneWidget);
-          expect(find.text('Follow back'), findsOneWidget);
-          expect(
-            find.byType(NotificationVideoThumbnail),
-            findsOneWidget,
-            reason: 'Default layout should keep the thumbnail inline.',
-          );
-          expect(tester.takeException(), isNull);
-          await screenMatchesGolden(tester, 'notification_rows_default');
-        });
-      },
-      tags: 'golden',
-    );
+        expect(find.byType(ActorNotificationRow), findsOneWidget);
+        expect(find.byType(VideoNotificationRow), findsOneWidget);
+        expect(find.text(_l10n.notificationFollowBack), findsOneWidget);
+        expect(
+          find.byType(NotificationVideoThumbnail),
+          findsOneWidget,
+          reason: 'Default layout should keep the thumbnail inline.',
+        );
+        expect(tester.takeException(), isNull);
+        await screenMatchesGolden(tester, 'notification_rows_default');
+      });
+    }, tags: 'golden');
 
-    testGoldens(
-      'notification rows render max-font layout',
-      (tester) async {
-        await withClock(Clock(() => _goldenNow), () async {
-          await tester.pumpWidgetBuilder(
-            _scenarioColumn(textScaleFactor: 2),
-            wrapper: materialAppWrapper(
-              theme: VineTheme.theme,
-              localizations: AppLocalizations.localizationsDelegates,
-              localeOverrides: AppLocalizations.supportedLocales,
-            ),
-            surfaceSize: const Size(420, 1200),
-          );
-          addTearDown(() => tester.binding.setSurfaceSize(null));
-          await tester.pumpAndSettle();
+    testGoldens('notification rows render max-font layout', (tester) async {
+      await withClock(Clock(() => _goldenNow), () async {
+        await tester.pumpWidgetBuilder(
+          _scenarioColumn(textScaleFactor: 2),
+          wrapper: materialAppWrapper(
+            theme: VineTheme.theme,
+            localizations: AppLocalizations.localizationsDelegates,
+            localeOverrides: AppLocalizations.supportedLocales,
+          ),
+          surfaceSize: const Size(420, 1200),
+        );
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await tester.pumpAndSettle();
 
-          expect(find.byType(ActorNotificationRow), findsOneWidget);
-          expect(find.byType(VideoNotificationRow), findsOneWidget);
-          expect(find.text('Follow back'), findsOneWidget);
-          expect(
-            find.byType(NotificationVideoThumbnail),
-            findsOneWidget,
-            reason: 'Large-text layout should still render the thumbnail.',
-          );
-          expect(tester.takeException(), isNull);
-          await screenMatchesGolden(tester, 'notification_rows_max_font');
-        });
-      },
-      tags: 'golden',
-    );
+        expect(find.byType(ActorNotificationRow), findsOneWidget);
+        expect(find.byType(VideoNotificationRow), findsOneWidget);
+        expect(find.text(_l10n.notificationFollowBack), findsOneWidget);
+        expect(
+          find.byType(NotificationVideoThumbnail),
+          findsOneWidget,
+          reason: 'Large-text layout should still render the thumbnail.',
+        );
+        expect(tester.takeException(), isNull);
+        await screenMatchesGolden(tester, 'notification_rows_max_font');
+      });
+    }, tags: 'golden');
   });
 }
 
@@ -179,16 +172,11 @@ Widget _scenarioColumn({required double textScaleFactor}) {
   );
 }
 
-Widget _scenario({
-  required double textScaleFactor,
-  required Widget child,
-}) {
+Widget _scenario({required double textScaleFactor, required Widget child}) {
   return SizedBox(
     width: 320,
     child: MediaQuery(
-      data: MediaQueryData(
-        textScaler: TextScaler.linear(textScaleFactor),
-      ),
+      data: MediaQueryData(textScaler: TextScaler.linear(textScaleFactor)),
       child: DecoratedBox(
         decoration: const BoxDecoration(color: VineTheme.backgroundColor),
         child: child,

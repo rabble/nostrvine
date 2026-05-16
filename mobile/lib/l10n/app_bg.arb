@@ -2915,7 +2915,7 @@
             }
         }
     },
-    "notificationRepliedToYourComment": "Отговори на коментара ти",
+    "notificationRepliedToYourComment": "{actorName} Отговори на коментара ти",
     "@notificationRepliedToYourComment": {
         "description": "Verb phrase shown after the actor name in a reply notification."
     },

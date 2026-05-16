@@ -3221,7 +3221,7 @@
             }
         }
     },
-    "notificationRepliedToYourComment": "ለአስተያየትዎ ምላሽ ሰጥተዋል",
+    "notificationRepliedToYourComment": "{actorName} ለአስተያየትዎ ምላሽ ሰጥተዋል",
     "@notificationRepliedToYourComment": {
         "description": "Verb phrase shown after the actor name in a reply notification."
     },

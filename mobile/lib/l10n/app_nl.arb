@@ -3049,7 +3049,7 @@
         }
     },
     "notificationsViewProfilesSemanticLabel": "Profielen bekijken",
-    "notificationRepliedToYourComment": "heeft op je reactie gereageerd",
+    "notificationRepliedToYourComment": "{actorName} heeft op je reactie gereageerd",
     "notificationAndConnector": "en",
     "notificationOthersCount": "{count, plural, =1{1 ander} other{{count} anderen}}",
     "@notificationOthersCount": {
