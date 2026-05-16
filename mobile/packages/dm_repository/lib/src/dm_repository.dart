@@ -113,6 +113,10 @@ class DmRepository {
   /// never race into the dedup/insert path.
   Future<void>? _eventLock;
 
+  /// Tracks the first post-auth cleanup pass so conversation queries can avoid
+  /// emitting stale denormalized previews before repairs land.
+  Future<void>? _postAuthMaintenance;
+
   /// User-scoped subscription ID to prevent collision when the provider
   /// rebuilds during auth transitions (old unsubscribe won't kill new sub).
   String _subscriptionId = 'dm_inbox';
@@ -170,7 +174,8 @@ class DmRepository {
 
     // Run post-auth maintenance sequentially so each step operates on the
     // final state of the previous one (e.g. backfill runs after merge).
-    unawaited(_runPostAuthMaintenance());
+    _postAuthMaintenance = _runPostAuthMaintenance();
+    unawaited(_postAuthMaintenance);
   }
 
   /// Reset internal state so the repository can be re-initialized for a
@@ -192,6 +197,7 @@ class DmRepository {
     } on Object {
       // Ignore if subscription doesn't exist
     }
+    _postAuthMaintenance = null;
     _userPubkey = '';
     _signer = null;
     _messageService = null;
@@ -1632,15 +1638,19 @@ class DmRepository {
   /// When [limit] is provided, only the top [limit] conversations are
   /// watched. Omit for all conversations.
   Stream<List<DmConversation>> watchConversations({int? limit}) {
-    return _conversationsDao
-        .watchAllConversations(limit: limit, ownerPubkey: _ownerPubkey)
-        .map((rows) => rows.map(_conversationFromRow).toList());
+    return _watchConversationRows(
+      () => _conversationsDao.watchAllConversations(
+        limit: limit,
+        ownerPubkey: _ownerPubkey,
+      ),
+    );
   }
 
   /// Get a single conversation by ID.
   ///
   /// Returns `null` if no conversation with the given ID exists.
   Future<DmConversation?> getConversation(String conversationId) async {
+    await _awaitInitialConversationMaintenance();
     final row = await _conversationsDao.getConversation(
       conversationId,
       ownerPubkey: _ownerPubkey,
@@ -1650,6 +1660,7 @@ class DmRepository {
 
   /// Get all conversations.
   Future<List<DmConversation>> getConversations() async {
+    await _awaitInitialConversationMaintenance();
     final rows = await _conversationsDao.getAllConversations(
       ownerPubkey: _ownerPubkey,
     );
@@ -1661,9 +1672,12 @@ class DmRepository {
   /// Supports pagination via [limit]. These conversations are never
   /// message requests.
   Stream<List<DmConversation>> watchAcceptedConversations({int? limit}) {
-    return _conversationsDao
-        .watchAcceptedConversations(limit: limit, ownerPubkey: _ownerPubkey)
-        .map((rows) => rows.map(_conversationFromRow).toList());
+    return _watchConversationRows(
+      () => _conversationsDao.watchAcceptedConversations(
+        limit: limit,
+        ownerPubkey: _ownerPubkey,
+      ),
+    );
   }
 
   /// Watch conversations where the user has never sent a message.
@@ -1672,9 +1686,11 @@ class DmRepository {
   /// follow state) is applied by [classifyPotentialRequests]. Returned
   /// without pagination since the list is typically small and needed in full.
   Stream<List<DmConversation>> watchPotentialRequests() {
-    return _conversationsDao
-        .watchPotentialRequestConversations(ownerPubkey: _ownerPubkey)
-        .map((rows) => rows.map(_conversationFromRow).toList());
+    return _watchConversationRows(
+      () => _conversationsDao.watchPotentialRequestConversations(
+        ownerPubkey: _ownerPubkey,
+      ),
+    );
   }
 
   /// Classifies potential request conversations by follow state.
@@ -1827,6 +1843,22 @@ class DmRepository {
       ownerPubkey: _ownerPubkey,
     );
     return rows.map(_messageFromRow).toList();
+  }
+
+  Future<void> _awaitInitialConversationMaintenance() async {
+    await _postAuthMaintenance;
+  }
+
+  Stream<List<DmConversation>> _watchConversationRows(
+    Stream<List<ConversationRow>> Function() watchRows,
+  ) {
+    final maintenance = _postAuthMaintenance;
+    final gatedRows = maintenance == null
+        ? watchRows()
+        : Stream.fromFuture(maintenance).asyncExpand((_) => watchRows());
+    return gatedRows.map((streamRows) {
+      return streamRows.map(_conversationFromRow).toList();
+    });
   }
 
   // -------------------------------------------------------------------------

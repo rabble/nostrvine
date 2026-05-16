@@ -5445,6 +5445,79 @@ void main() {
     });
 
     group('watchAcceptedConversations', () {
+      test(
+        'waits for post-auth maintenance before subscribing to conversations',
+        () async {
+          final maintenanceCompleter = Completer<int>();
+          final participants = [_validPubkeyA, _validPubkeyB]..sort();
+          final convId = DmRepository.computeConversationId(participants);
+
+          when(
+            () => mockConversationsDao.backfillLatestMessagePreviews(
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) => maintenanceCompleter.future);
+          when(
+            () => mockConversationsDao.getConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockConversationsDao.watchAcceptedConversations(
+              limit: any(named: 'limit'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.value([
+              ConversationRow(
+                id: convId,
+                participantPubkeys: jsonEncode(participants),
+                isGroup: false,
+                isRead: true,
+                currentUserHasSent: true,
+                createdAt: 1700000000,
+              ),
+            ]),
+          );
+
+          final repository =
+              DmRepository(
+                nostrClient: mockNostrClient,
+                directMessagesDao: mockDirectMessagesDao,
+                conversationsDao: mockConversationsDao,
+              )..setCredentials(
+                userPubkey: _validPubkeyA,
+                signer: LocalNostrSigner(_validPrivateKey),
+                messageService: mockMessageService,
+              );
+
+          final conversationsFuture = repository
+              .watchAcceptedConversations()
+              .first;
+
+          verifyNever(
+            () => mockConversationsDao.watchAcceptedConversations(
+              limit: any(named: 'limit'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+
+          maintenanceCompleter.complete(0);
+
+          await untilCalled(
+            () => mockConversationsDao.watchAcceptedConversations(
+              limit: any(named: 'limit'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+
+          final conversations = await conversationsFuture;
+          expect(conversations, hasLength(1));
+          expect(conversations.first.id, equals(convId));
+        },
+      );
+
       test('maps $ConversationRow stream to $DmConversation stream', () async {
         final participants = [_validPubkeyA, _validPubkeyB]..sort();
         final convId = DmRepository.computeConversationId(participants);
