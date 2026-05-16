@@ -31,8 +31,7 @@ void main() {
       tags: 'golden',
       (tester) async {
         await withClock(Clock(() => _goldenNow), () async {
-          await tester.binding.setSurfaceSize(const Size(420, 560));
-          addTearDown(() => tester.binding.setSurfaceSize(null));
+          _setGoldenSurface(tester, const Size(420, 560));
           await tester.pumpWidget(
             _appWrapper(_scenarioColumn(textScaleFactor: 1)),
           );
@@ -60,8 +59,7 @@ void main() {
       tags: 'golden',
       (tester) async {
         await withClock(Clock(() => _goldenNow), () async {
-          await tester.binding.setSurfaceSize(const Size(420, 1200));
-          addTearDown(() => tester.binding.setSurfaceSize(null));
+          _setGoldenSurface(tester, const Size(420, 1200));
           await tester.pumpWidget(
             _appWrapper(_scenarioColumn(textScaleFactor: 2)),
           );
@@ -84,6 +82,13 @@ void main() {
       },
     );
   });
+}
+
+void _setGoldenSurface(WidgetTester tester, Size size) {
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = size;
+  addTearDown(tester.view.resetDevicePixelRatio);
+  addTearDown(tester.view.resetPhysicalSize);
 }
 
 Widget _scenarioColumn({required double textScaleFactor}) {
