@@ -23,6 +23,14 @@ void main() {
       expect(DivineIconName.x.fileName, 'close');
     });
 
+    test('divineMark maps to the 32x32 standalone brand mark asset', () {
+      expect(DivineIconName.divineMark.fileName, 'divine_mark');
+      expect(
+        DivineIconName.divineMark.assetPath,
+        'assets/icon/divine_mark.svg',
+      );
+    });
+
     test('all enum values have non-empty file names', () {
       for (final icon in DivineIconName.values) {
         expect(

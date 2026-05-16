@@ -61,21 +61,28 @@ class _HumanMadeBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text.rich(
-      TextSpan(
-        children: [
-          TextSpan(text: 'Human-Made', style: VineTheme.titleSmallFont()),
-          WidgetSpan(
-            alignment: PlaceholderAlignment.top,
-            child: Text(
-              'HM',
-              style: VineTheme.titleSmallFont().copyWith(
-                fontSize: VineTheme.titleSmallFont().fontSize! / 1.555,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      spacing: 4,
+      children: [
+        const DivineIcon(icon: DivineIconName.divineMark),
+        Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(text: 'Human-Made', style: VineTheme.titleSmallFont()),
+              WidgetSpan(
+                alignment: PlaceholderAlignment.top,
+                child: Text(
+                  'HM',
+                  style: VineTheme.titleSmallFont().copyWith(
+                    fontSize: VineTheme.titleSmallFont().fontSize! / 1.555,
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

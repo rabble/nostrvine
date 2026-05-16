@@ -75,6 +75,7 @@ enum DivineIconName {
   copySimpleFill('copy_simple_fill'),
   cropSquare('crop_square'),
   cropPortrait('crop_portrait'),
+  divineMark('divine_mark'),
   dotsThree('DotsThree'),
   dotsThreeCircle('dots_three_circle'),
   dotsThreeCircleDuo('dots_three_circle_duo'),

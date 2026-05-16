@@ -459,7 +459,7 @@ void main() {
       expect(find.textContaining('Human-Made'), findsOneWidget);
     });
 
-    testWidgets('renders Human-Made badge without the divine logo', (
+    testWidgets('renders the divine-mark icon next to the Human-Made label', (
       tester,
     ) async {
       final video = _makeVideo(rawTags: {'verification': 'verified_mobile'});
@@ -468,7 +468,8 @@ void main() {
       );
 
       expect(find.textContaining('Human-Made'), findsOneWidget);
-      expect(find.byType(DivineIcon), findsNothing);
+      final icon = tester.widget<DivineIcon>(find.byType(DivineIcon));
+      expect(icon.icon, equals(DivineIconName.divineMark));
     });
 
     testWidgets('renders Not Divine badge for external videos', (tester) async {

@@ -37,9 +37,15 @@ class MetadataStatsRow extends StatelessWidget {
             builder: (context, constraints) {
               return SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
+                // Top padding shrinks to 4 px so the gap between the
+                // overview section's bottom (20 px padding) and the
+                // first stat row totals 24 px, matching Figma node
+                // 15675:27356's inter-group spacing.
+                padding: const EdgeInsets.only(
+                  left: 24,
+                  right: 24,
+                  top: 4,
+                  bottom: 16,
                 ),
                 child: ConstrainedBox(
                   constraints: BoxConstraints(
