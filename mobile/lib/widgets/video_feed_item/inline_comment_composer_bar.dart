@@ -35,6 +35,15 @@ class _InlineCommentComposerBarState extends State<InlineCommentComposerBar> {
   final FocusNode _focusNode = FocusNode();
   bool _hasText = false;
 
+  /// Snapshot of the field's text taken at submit-time so the
+  /// [BlocListener] can restore it if the cubit emits `failure`.
+  /// Mirrors [CommentsBloc]'s rollback of `mainInputText` on publish
+  /// error — without it the optimistic clear permanently loses the
+  /// draft when the network call fails. Empty string means "nothing
+  /// pending"; [_handleSubmit] early-returns on empty input so the
+  /// field can only ever hold a real, non-empty draft.
+  String _pendingDraft = '';
+
   @override
   void initState() {
     super.initState();
@@ -65,7 +74,9 @@ class _InlineCommentComposerBarState extends State<InlineCommentComposerBar> {
 
     // Optimistic UX: clear the field and drop the keyboard immediately so
     // the user moves on while the publish lands in the background. The
-    // cubit owns the snackbar via the BlocListener wired below.
+    // cubit owns the snackbar via the BlocListener wired below, which
+    // also restores [_pendingDraft] into the field on failure.
+    _pendingDraft = text;
     context.read<InlineCommentComposerCubit>().submit(
       video: video,
       content: text,
@@ -82,6 +93,23 @@ class _InlineCommentComposerBarState extends State<InlineCommentComposerBar> {
           (curr.status == InlineCommentComposerStatus.submitted ||
               curr.status == InlineCommentComposerStatus.failure),
       listener: (context, state) {
+        final draft = _pendingDraft;
+        _pendingDraft = '';
+
+        // Restore the typed draft when the publish fails so the user
+        // can retry without retyping. The `controller.text.isEmpty`
+        // guard prevents clobbering any text the user already started
+        // typing after the optimistic clear.
+        if (state.status == InlineCommentComposerStatus.failure &&
+            draft.isNotEmpty &&
+            _controller.text.isEmpty) {
+          _controller.text = draft;
+          _controller.selection = TextSelection.collapsed(
+            offset: draft.length,
+          );
+          _focusNode.requestFocus();
+        }
+
         final message = state.status == InlineCommentComposerStatus.submitted
             ? context.l10n.videoOverlayCommentPostedSnackbar
             : context.l10n.videoOverlayCommentPostFailedSnackbar;

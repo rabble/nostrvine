@@ -2,6 +2,8 @@
 // ABOUTME: comment field used by the fullscreen video player on
 // ABOUTME: Explore / Search / Profile entry points.
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -283,6 +285,126 @@ void main() {
           findsOneWidget,
         );
         verify(() => composerCubit.acknowledge()).called(1);
+      },
+    );
+
+    testWidgets(
+      'restores the draft and re-shows the send button when the cubit '
+      'emits failure after an optimistic clear',
+      (tester) async {
+        // Reproduces the full submit-then-fail loop the user sees in
+        // production: type → tap send (optimistic clear) → cubit emits
+        // failure → bar restores the typed text from `_pendingDraft`
+        // so the user can retry without retyping. Matches the
+        // `CommentsBloc` rollback of `mainInputText` on publish error.
+        // Uses a [StreamController] so the failure emits AFTER the tap
+        // — `whenListen` with `Stream.fromIterable` would drain the
+        // sequence on subscription, before the test has had a chance
+        // to capture a draft.
+        final activeVideo = buildVideo();
+        when(
+          () => fullscreenBloc.state,
+        ).thenReturn(stateWithVideo(activeVideo));
+        when(
+          () => composerCubit.submit(
+            video: any(named: 'video'),
+            content: any(named: 'content'),
+          ),
+        ).thenAnswer((_) async {});
+        final stateController = StreamController<InlineCommentComposerState>();
+        addTearDown(stateController.close);
+        whenListen<InlineCommentComposerState>(
+          composerCubit,
+          stateController.stream,
+          initialState: const InlineCommentComposerState(),
+        );
+
+        await tester.pumpWidget(buildBar());
+
+        const draft = 'lost in the void';
+        await tester.enterText(
+          find.bySemanticsIdentifier('inline_comment_composer_field'),
+          draft,
+        );
+        await tester.pump();
+        await tester.tap(
+          find.bySemanticsIdentifier('inline_comment_composer_send_button'),
+        );
+        await tester.pump();
+
+        // Now drive the failure through.
+        stateController.add(
+          const InlineCommentComposerState(
+            status: InlineCommentComposerStatus.failure,
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+
+        // Draft is back in the field and the send affordance is back
+        // along with it (since `_hasText` flips true on the restored
+        // controller value).
+        expect(find.text(draft), findsOneWidget);
+        expect(
+          find.bySemanticsIdentifier('inline_comment_composer_send_button'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'does not clobber freshly-typed text if the user starts a new '
+      'draft before the failure arrives',
+      (tester) async {
+        final activeVideo = buildVideo();
+        when(
+          () => fullscreenBloc.state,
+        ).thenReturn(stateWithVideo(activeVideo));
+        when(
+          () => composerCubit.submit(
+            video: any(named: 'video'),
+            content: any(named: 'content'),
+          ),
+        ).thenAnswer((_) async {});
+        final stateController = StreamController<InlineCommentComposerState>();
+        addTearDown(stateController.close);
+        whenListen<InlineCommentComposerState>(
+          composerCubit,
+          stateController.stream,
+          initialState: const InlineCommentComposerState(),
+        );
+
+        await tester.pumpWidget(buildBar());
+        await tester.enterText(
+          find.bySemanticsIdentifier('inline_comment_composer_field'),
+          'first draft',
+        );
+        await tester.pump();
+        await tester.tap(
+          find.bySemanticsIdentifier('inline_comment_composer_send_button'),
+        );
+        await tester.pump();
+
+        // User starts typing a new comment before the failure lands.
+        await tester.enterText(
+          find.bySemanticsIdentifier('inline_comment_composer_field'),
+          'new thought',
+        );
+        await tester.pump();
+
+        // Now the publish fails. The bar must NOT overwrite "new
+        // thought" with the stale "first draft" — the guard on
+        // `_controller.text.isEmpty` is what protects us.
+        stateController.add(
+          const InlineCommentComposerState(
+            status: InlineCommentComposerStatus.failure,
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(find.text('new thought'), findsOneWidget);
+        expect(find.text('first draft'), findsNothing);
       },
     );
 
