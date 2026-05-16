@@ -105,9 +105,6 @@ class RelayPool {
   List<MapEntry<String, Relay>> _cacheRelayEntriesSnapshot() =>
       _cacheRelays.entries.toList(growable: false);
 
-  bool _isPushControlKind(int? kind) =>
-      kind == 3079 || kind == 3080 || kind == 3083;
-
   int? _eventKindFromMessage(List<dynamic> message) {
     if (message.length < 2 || message[0] != 'EVENT' || message[1] is! Map) {
       return null;
@@ -126,8 +123,8 @@ class RelayPool {
     return id is String ? id : null;
   }
 
-  void _logPushControlDiagnostic(String message) {
-    log('📲 Push control relay diagnostic: $message');
+  void _logPublishDiagnostic(String diagnosticTag, String message) {
+    log('$diagnosticTag relay diagnostic: $message');
   }
 
   Future<bool> add(
@@ -419,16 +416,20 @@ class RelayPool {
         if (publishTracker != null) {
           if (success) {
             publishTracker.onAccepted(relay.url);
-            if (publishTracker.isPushControlEvent) {
-              _logPushControlDiagnostic(
+            final diagnosticTag = publishTracker.diagnosticTag;
+            if (diagnosticTag != null) {
+              _logPublishDiagnostic(
+                diagnosticTag,
                 'OK accepted kind=${publishTracker.eventKind} '
                 'eventId=$eventId relay=${relay.url}',
               );
             }
           } else {
             publishTracker.onRejected(relay.url, message);
-            if (publishTracker.isPushControlEvent) {
-              _logPushControlDiagnostic(
+            final diagnosticTag = publishTracker.diagnosticTag;
+            if (diagnosticTag != null) {
+              _logPublishDiagnostic(
+                diagnosticTag,
                 'OK rejected kind=${publishTracker.eventKind} '
                 'eventId=$eventId relay=${relay.url} reason=$message',
               );
@@ -932,13 +933,18 @@ class RelayPool {
     List<String>? tempRelays,
     List<String>? targetRelays,
     DateTime? deadline,
+    String? diagnosticTag,
     void Function(String relayUrl)? onSent,
   }) async {
     final sentTo = <String>[];
     final attemptedRelayUrls = <String>{};
     final eventKind = _eventKindFromMessage(message);
     final eventId = _eventIdFromMessage(message);
-    final isPushControlEvent = _isPushControlKind(eventKind);
+
+    void logDiagnostic(String message) {
+      if (diagnosticTag == null) return;
+      _logPublishDiagnostic(diagnosticTag, message);
+    }
 
     Duration sendTimeout() {
       final remaining = deadline?.difference(DateTime.now());
@@ -961,12 +967,10 @@ class RelayPool {
       removeTempRelay(relay.url);
     }
 
-    if (isPushControlEvent) {
-      _logPushControlDiagnostic(
-        'send start kind=$eventKind eventId=$eventId '
-        'targetRelays=$targetRelays tempRelays=$tempRelays',
-      );
-    }
+    logDiagnostic(
+      'send start kind=$eventKind eventId=$eventId '
+      'targetRelays=$targetRelays tempRelays=$tempRelays',
+    );
 
     for (final relay in _relaysSnapshot()) {
       final timeout = sendTimeout();
@@ -974,12 +978,10 @@ class RelayPool {
 
       if (message[0] == "EVENT") {
         if (!relay.relayStatus.writeAccess) {
-          if (isPushControlEvent) {
-            _logPushControlDiagnostic(
-              'send skipped kind=$eventKind eventId=$eventId relay=${relay.url} '
-              'reason=writeAccessDisabled',
-            );
-          }
+          logDiagnostic(
+            'send skipped kind=$eventKind eventId=$eventId relay=${relay.url} '
+            'reason=writeAccessDisabled',
+          );
           continue;
         }
       }
@@ -1031,27 +1033,25 @@ class RelayPool {
               attemptedRelayUrls.add(relay.url);
               onSent?.call(relay.url);
             }
-            if (isPushControlEvent) {
-              _logPushControlDiagnostic(
-                'auth-trigger send kind=$eventKind eventId=$eventId '
-                'relay=${relay.url} sent=$result',
-              );
-            }
+            logDiagnostic(
+              'auth-trigger send kind=$eventKind eventId=$eventId '
+              'relay=${relay.url} sent=$result',
+            );
             // Don't queue this message since we're sending it
           } else {
+            // Deadline-bound sends intentionally do not queue for AUTH: a queued
+            // frame could publish after the caller already returned failure.
             if (deadline == null) {
               log('🔐 Queueing message for authentication: ${message[0]}');
               relay.pendingAuthedMessages.add(message);
               sentTo.add(relay.url);
               attemptedRelayUrls.add(relay.url);
               onSent?.call(relay.url);
-              if (isPushControlEvent) {
-                _logPushControlDiagnostic(
-                  'queued for auth kind=$eventKind eventId=$eventId relay=${relay.url}',
-                );
-              }
-            } else if (isPushControlEvent) {
-              _logPushControlDiagnostic(
+              logDiagnostic(
+                'queued for auth kind=$eventKind eventId=$eventId relay=${relay.url}',
+              );
+            } else {
+              logDiagnostic(
                 'auth queue skipped kind=$eventKind eventId=$eventId relay=${relay.url} '
                 'reason=deadlineBoundSend',
               );
@@ -1091,18 +1091,14 @@ class RelayPool {
             attemptedRelayUrls.add(relay.url);
             onSent?.call(relay.url);
           }
-          if (isPushControlEvent) {
-            _logPushControlDiagnostic(
-              'send kind=$eventKind eventId=$eventId relay=${relay.url} sent=$result',
-            );
-          }
-        }
-      } catch (err) {
-        if (isPushControlEvent) {
-          _logPushControlDiagnostic(
-            'send error kind=$eventKind eventId=$eventId relay=${relay.url} error=$err',
+          logDiagnostic(
+            'send kind=$eventKind eventId=$eventId relay=${relay.url} sent=$result',
           );
         }
+      } catch (err) {
+        logDiagnostic(
+          'send error kind=$eventKind eventId=$eventId relay=${relay.url} error=$err',
+        );
         log(err.toString());
         relay.relayStatus.onError();
       }
@@ -1146,19 +1142,15 @@ class RelayPool {
           sentTo.add(tempRelay.url);
           onSent?.call(tempRelay.url);
         }
-        if (isPushControlEvent) {
-          _logPushControlDiagnostic(
-            'temp send kind=$eventKind eventId=$eventId relay=${tempRelay.url} sent=$result',
-          );
-        }
+        logDiagnostic(
+          'temp send kind=$eventKind eventId=$eventId relay=${tempRelay.url} sent=$result',
+        );
       }
     }
 
-    if (isPushControlEvent) {
-      _logPushControlDiagnostic(
-        'send complete kind=$eventKind eventId=$eventId sentTo=$sentTo',
-      );
-    }
+    logDiagnostic(
+      'send complete kind=$eventKind eventId=$eventId sentTo=$sentTo',
+    );
 
     return sentTo;
   }
@@ -1182,6 +1174,7 @@ class RelayPool {
     List<String>? tempRelays,
     List<String>? targetRelays,
     Duration timeout = const Duration(seconds: 15),
+    String? diagnosticTag,
   }) async {
     // Register tracker BEFORE sending so a fast relay can't respond with OK
     // before we start listening.
@@ -1192,6 +1185,7 @@ class RelayPool {
     final tracker = PublishTracker(
       eventId: eventId,
       eventKind: eventKind ?? _eventKindFromMessage(message),
+      diagnosticTag: diagnosticTag,
       expectedRelays: <String>{},
       timeout: timeout,
     );
@@ -1202,6 +1196,7 @@ class RelayPool {
       tempRelays: tempRelays,
       targetRelays: targetRelays,
       deadline: DateTime.now().add(timeout),
+      diagnosticTag: diagnosticTag,
       onSent: (relayUrl) => tracker.expectedRelays.add(relayUrl),
     );
 
@@ -1212,8 +1207,10 @@ class RelayPool {
     unawaited(
       tracker.future
           .then((outcome) {
-            if (tracker.isPushControlEvent) {
-              _logPushControlDiagnostic(
+            final diagnosticTag = tracker.diagnosticTag;
+            if (diagnosticTag != null) {
+              _logPublishDiagnostic(
+                diagnosticTag,
                 'OK outcome kind=${tracker.eventKind} eventId=$eventId '
                 'acceptedBy=${outcome.acceptedBy} rejectedBy=${outcome.rejectedBy} '
                 'noResponseFrom=${outcome.noResponseFrom}',

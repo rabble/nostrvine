@@ -20,6 +20,10 @@ class PublishOutcome {
   final String eventId;
 
   /// The event kind that was published, when known.
+  ///
+  /// Set by `RelayPool.sendEventAwaitOk` callers or inferred from the `EVENT`
+  /// message envelope. Null when callers do not provide a kind and it cannot be
+  /// inferred from the message.
   final int? eventKind;
 
   /// Relay URLs that returned `OK true`.
@@ -67,6 +71,7 @@ class PublishTracker {
   PublishTracker({
     required this.eventId,
     this.eventKind,
+    this.diagnosticTag,
     required this.expectedRelays,
     required Duration timeout,
   }) {
@@ -79,8 +84,8 @@ class PublishTracker {
   /// The event kind we are waiting on, when known.
   final int? eventKind;
 
-  bool get isPushControlEvent =>
-      eventKind == 3079 || eventKind == 3080 || eventKind == 3083;
+  /// Caller-supplied tag for temporary publish diagnostics, when enabled.
+  final String? diagnosticTag;
 
   /// Relay URLs we expect responses from.
   final Set<String> expectedRelays;

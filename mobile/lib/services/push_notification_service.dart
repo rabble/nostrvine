@@ -379,6 +379,8 @@ class PushNotificationService {
       event,
       targetRelays: [relayUrl],
       timeout: _pushControlPublishTimeout,
+      // TODO(#4437): Remove rollout-only push-control relay diagnostics.
+      diagnosticTag: 'push-control',
     );
 
     final outcomeDetails =

@@ -359,6 +359,7 @@ class NostrClient {
     Event event, {
     List<String>? targetRelays,
     Duration timeout = const Duration(seconds: 15),
+    String? diagnosticTag,
   }) async {
     final useOptimisticCache = _canOptimisticallyCache(event.kind);
 
@@ -390,12 +391,20 @@ class NostrClient {
     }
 
     final outcome =
-        await _nostr.sendEventAwaitOk(
-          event,
-          targetRelays: targetRelays,
-          tempRelays: targetRelays,
-          timeout: timeout,
-        ) ??
+        await (diagnosticTag == null
+            ? _nostr.sendEventAwaitOk(
+                event,
+                targetRelays: targetRelays,
+                tempRelays: targetRelays,
+                timeout: timeout,
+              )
+            : _nostr.sendEventAwaitOk(
+                event,
+                targetRelays: targetRelays,
+                tempRelays: targetRelays,
+                timeout: timeout,
+                diagnosticTag: diagnosticTag,
+              )) ??
         PublishOutcome(
           eventId: event.id,
           acceptedBy: const [],

@@ -510,10 +510,10 @@ void main() {
       final outcome = await tempNostr.relayPool.sendEventAwaitOk(
         [
           'EVENT',
-          {'id': 'push-control-event-id', 'kind': 3079},
+          {'id': 'deadline-event-id', 'kind': 1},
         ],
-        eventId: 'push-control-event-id',
-        eventKind: 3079,
+        eventId: 'deadline-event-id',
+        eventKind: 1,
         targetRelays: [relayUrl],
         tempRelays: [relayUrl],
         timeout: const Duration(milliseconds: 50),
@@ -551,10 +551,10 @@ void main() {
       final outcome = await tempNostr.relayPool.sendEventAwaitOk(
         [
           'EVENT',
-          {'id': 'push-control-event-id', 'kind': 3079},
+          {'id': 'fallback-event-id', 'kind': 1},
         ],
-        eventId: 'push-control-event-id',
-        eventKind: 3079,
+        eventId: 'fallback-event-id',
+        eventKind: 1,
         targetRelays: [relayUrl],
         tempRelays: [relayUrl],
         timeout: const Duration(milliseconds: 50),
@@ -585,10 +585,10 @@ void main() {
         final outcome = await nostr.relayPool.sendEventAwaitOk(
           [
             'EVENT',
-            {'id': 'push-control-event-id', 'kind': 3079},
+            {'id': 'deferred-event-id', 'kind': 1},
           ],
-          eventId: 'push-control-event-id',
-          eventKind: 3079,
+          eventId: 'deferred-event-id',
+          eventKind: 1,
           targetRelays: [relayUrl],
           timeout: const Duration(milliseconds: 10),
         );
