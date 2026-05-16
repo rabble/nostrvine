@@ -7,6 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
@@ -18,6 +19,16 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/bug_report_service.dart';
 
 import '../helpers/test_provider_overrides.dart';
+
+/// Authenticated identity is known but the signer-backed Nostr client has
+/// not finished initializing — the not-ready window the router must
+/// fail-closed through. Replaces the pre-refactor
+/// `isNostrReadyProvider.overrideWith((ref) => false)`.
+class _NotReadyNostrSession extends NostrSession {
+  @override
+  NostrSessionReadiness build() =>
+      const NostrSessionReadiness.identityKnown(pubkey: 'user-pubkey');
+}
 
 void main() {
   group('Minor account review router gating', () {
@@ -93,7 +104,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           ...getStandardTestOverrides(mockAuthService: mockAuthService),
-          isNostrReadyProvider.overrideWith((ref) => false),
+          nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async => restrictedStatus(),
           ),
@@ -117,7 +128,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           ...getStandardTestOverrides(mockAuthService: mockAuthService),
-          isNostrReadyProvider.overrideWith((ref) => false),
+          nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async => restrictedStatus(),
           ),
@@ -142,7 +153,7 @@ void main() {
         overrides: [
           ...getStandardTestOverrides(mockAuthService: mockAuthService),
           bugReportServiceProvider.overrideWith((ref) => BugReportService()),
-          isNostrReadyProvider.overrideWith((ref) => false),
+          nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async => restrictedStatus(),
           ),
@@ -168,7 +179,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           ...getStandardTestOverrides(mockAuthService: mockAuthService),
-          isNostrReadyProvider.overrideWith((ref) => false),
+          nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async => restrictedStatus(
               state: MinorReviewCaseState.restrictedPendingSupportEmail,
@@ -199,7 +210,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           ...getStandardTestOverrides(mockAuthService: mockAuthService),
-          isNostrReadyProvider.overrideWith((ref) => false),
+          nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async =>
                 restrictedStatus(moderationConversationId: 'mod-conv-123'),
@@ -225,7 +236,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           ...getStandardTestOverrides(mockAuthService: mockAuthService),
-          isNostrReadyProvider.overrideWith((ref) => false),
+          nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) async =>
                 restrictedStatus(moderationConversationId: 'mod-conv-123'),
@@ -253,7 +264,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           ...getStandardTestOverrides(mockAuthService: mockAuthService),
-          isNostrReadyProvider.overrideWith((ref) => false),
+          nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
           currentMinorAccountReviewStatusProvider.overrideWith(
             (ref) => completer.future,
           ),
