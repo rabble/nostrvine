@@ -62,9 +62,17 @@ import 'package:pooled_video_player/pooled_video_player.dart'
 import 'package:unified_logger/unified_logger.dart';
 import 'package:video_player/video_player.dart';
 
+/// Letterboxed (non-portrait) videos previously top-aligned in the
+/// available viewport — which left a tall band of empty space below
+/// 1 × 1 classic reposts. Always centering instead keeps 1 × 1 and
+/// landscape sources visually in the middle of the screen, with
+/// symmetric bands above and below filled by
+/// [VineTheme.surfaceBackground] (the same green the comment bar
+/// paints, see [_MaybeRoundFeedBottom]). Portrait videos cover the
+/// whole viewport so alignment is a no-op for them.
 @visibleForTesting
 Alignment fullscreenVideoMediaAlignment({required bool isPortrait}) {
-  return isPortrait ? Alignment.center : Alignment.topCenter;
+  return Alignment.center;
 }
 
 /// Arguments for navigating to PooledFullscreenVideoFeedScreen.
@@ -823,14 +831,11 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                 backgroundColor: VineTheme.surfaceBackground,
                 // Always edge-to-edge: the video fills the screen and the
                 // (transparent) AppBar overlays it, matching the home feed.
-                // The previous `extendBodyBehindAppBar: !hasHeader`
-                // exception existed because square Vine reposts (rendered
-                // with `BoxFit.contain`) had their baked-in letterbox
-                // bars "slip under" the transparent header. Since the
-                // missing-dimensions branch in `_PooledFullscreenItemContent`
-                // now treats those videos as portrait (`BoxFit.cover`),
-                // that letterbox no longer exists and the carve-out is
-                // moot.
+                // 1 × 1 / landscape / dimensions-less videos are rendered
+                // with `BoxFit.contain`, so their letterbox bars sit on
+                // the [VineTheme.surfaceBackground] above — the
+                // transparent AppBar reads cleanly against that surface
+                // colour, no carve-out needed.
                 extendBodyBehindAppBar: true,
                 // Wrap the AppBar in a [TextFieldTapRegion] so taps on
                 // the back button / title / [FeedSettingsMenu] popover
@@ -1330,13 +1335,17 @@ class _PooledFullscreenItemContentState
   @override
   Widget build(BuildContext context) {
     final video = widget.video;
-    // Match the home feed's policy (see `video_feed_page.dart`): treat
-    // videos without dimensions metadata as portrait so they cover the
-    // available area instead of landscape-letterboxing. Older Vine
-    // reposts arrive without dimensions and were previously rendered
-    // with `BoxFit.contain`, leaving large black bands above and below
-    // the content once the comment bar shrank the available height.
-    final isPortrait = video.dimensions == null || video.isPortrait;
+    // Use [BoxFit.cover] *only* for videos we can prove are portrait
+    // — i.e. ones with a dimensions tag whose height > width. Anything
+    // else (1 × 1 classic Vine reposts, landscape videos, posts with
+    // no dimensions metadata at all) falls into [BoxFit.contain] so it
+    // sits centered on the screen instead of being stretched. Classic
+    // 1 × 1 reposts arrive without dimensions; rendering them as
+    // [BoxFit.cover] previously stretched the frame vertically to
+    // fill the available height, distorting the image. Letterboxing
+    // (the alternative) keeps the source proportions intact and
+    // matches user expectations for square content.
+    final isPortrait = video.isPortrait;
     final overlayLabels = contentWarningOverlayLabels(
       contentWarningLabels: video.contentWarningLabels,
       warnLabels: video.warnLabels,
@@ -1685,10 +1694,18 @@ class _MaybeRoundFeedBottom extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!roundCorners) return child;
-    return NavRoundedShell(
-      innerColor: VineTheme.backgroundColor,
-      child: child,
-    );
+    // Default [NavRoundedShell.innerColor] is
+    // [VineTheme.surfaceBackground] — the same `#00150D` green the
+    // comment bar paints. That's exactly what we want here: on the
+    // fullscreen feed we render contain-fit videos (1 × 1 classics,
+    // landscape, anything without dimensions metadata) which leave
+    // letterbox bands inside the rounded shell. The bands sit on top
+    // of [innerColor], so leaving it at the green default gives the
+    // user the same "video centered on green canvas" reading the
+    // comment bar already establishes. The home feed picks a black
+    // inner explicitly because it only renders portrait covers that
+    // hide the inner colour entirely.
+    return NavRoundedShell(child: child);
   }
 }
 

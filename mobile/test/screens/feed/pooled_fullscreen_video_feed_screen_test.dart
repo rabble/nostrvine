@@ -220,10 +220,10 @@ class _PopCountingObserver extends NavigatorObserver {
 void main() {
   group('PooledFullscreenVideoFeedScreen', () {
     group('fullscreen video media alignment', () {
-      test('top-aligns contained square and landscape videos', () {
+      test('centers contained 1 × 1 / landscape videos in the viewport', () {
         expect(
           fullscreenVideoMediaAlignment(isPortrait: false),
-          Alignment.topCenter,
+          Alignment.center,
         );
       });
 
