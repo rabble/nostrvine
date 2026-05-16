@@ -49,6 +49,7 @@ void main() {
             ),
             surfaceSize: const Size(420, 560),
           );
+          addTearDown(() => tester.binding.setSurfaceSize(null));
           await tester.pumpAndSettle();
 
           expect(find.byType(ActorNotificationRow), findsOneWidget);
@@ -79,6 +80,7 @@ void main() {
             ),
             surfaceSize: const Size(420, 1200),
           );
+          addTearDown(() => tester.binding.setSurfaceSize(null));
           await tester.pumpAndSettle();
 
           expect(find.byType(ActorNotificationRow), findsOneWidget);
