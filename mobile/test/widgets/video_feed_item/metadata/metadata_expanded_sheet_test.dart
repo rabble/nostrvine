@@ -661,6 +661,32 @@ void main() {
         expect(tester.getSize(containerFinder).height, equals(40));
       },
     );
+
+    testWidgets(
+      'hashtag chip Wrap uses runSpacing 0 (so chips own the inter-row '
+      'gap via their invisible tap-target padding)',
+      (tester) async {
+        // The visible 8 dp gap between two rows of hashtag chips is
+        // produced by each chip contributing 4 dp of transparent
+        // padding above + 4 dp below (see `_HashtagChip`), NOT by
+        // `Wrap.runSpacing`. Bumping runSpacing double-counts and
+        // breaks the Figma layout. This test pins the contract so a
+        // well-meaning "fix the gap" edit fails loudly.
+        final video = _makeVideo(hashtags: ['a', 'b', 'c']);
+        await tester.pumpWidget(
+          buildSubject(child: MetadataTagsSection(video: video)),
+        );
+
+        final wrap = tester.widget<Wrap>(find.byType(Wrap));
+        expect(
+          wrap.runSpacing,
+          equals(0.0),
+          reason:
+              'runSpacing must stay at 0 — the chips own the inter-row '
+              'visible gap. See `_HashtagChip` for the full contract.',
+        );
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------

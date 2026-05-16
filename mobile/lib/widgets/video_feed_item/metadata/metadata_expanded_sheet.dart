@@ -168,10 +168,15 @@ class _OverviewSection extends StatelessWidget {
         ),
     ];
 
-    // Bottom padding is 16 px (vs 20 px on top) only when tags are
-    // present — compensates for the hashtag chips' 4 px invisible
-    // tap-target padding below the last visible chip row so the
-    // section's visible bottom gap stays 20 px. See `_HashtagChip`.
+    // ⚠ LOAD-BEARING bottom padding. 16 px (vs 20 px on top) only
+    // when tags are present — compensates for the hashtag chips' 4 px
+    // invisible tap-target padding below the last visible chip row so
+    // the section's visible bottom gap stays 20 px. One of three
+    // constants that conspire to keep the visible chip 40 dp tall
+    // while giving every tap target 48 dp; see the full dependency
+    // map in `MetadataTagsSection.build`
+    // (`metadata_tags_section.dart`). Changing this requires the
+    // other two as well.
     return Padding(
       padding: EdgeInsets.fromLTRB(16, 20, 16, hasTags ? 16 : 20),
       child: Column(
@@ -196,9 +201,11 @@ class _OverviewSection extends StatelessWidget {
               children: titleCluster,
             ),
           ],
-          // 12 px to the tag wrap — the first chip row's 4 px
-          // invisible top padding lands on a visible 16 px gap,
-          // matching the date → title-cluster gap. See `_HashtagChip`.
+          // ⚠ LOAD-BEARING 12 px (NOT 16). The first chip row's 4 px
+          // invisible top padding stacks on this to produce the visible
+          // 16 px gap matching the date → title-cluster gap. Sibling
+          // of the bottom-padding tweak above; see `MetadataTagsSection`
+          // for the full dependency map.
           if (hasTags) ...[
             const SizedBox(height: 12),
             MetadataTagsSection(video: video),

@@ -37,12 +37,25 @@ class MetadataTagsSection extends StatelessWidget {
 
     if (!hasCategories && !hasHashtags) return const SizedBox.shrink();
 
-    // runSpacing defaults to 0 because each `_HashtagChip` contributes
-    // 4 px of transparent tap-target padding above and below its visible
-    // bounds, producing an 8 px visible gap between rows without
-    // introducing additional spacing here. `_OverviewSection` drops its
-    // bottom padding by 4 px to compensate for the last row's invisible
-    // bottom padding.
+    // ⚠ LOAD-BEARING: this Wrap's `runSpacing` MUST stay at the default
+    // (0). Three load-bearing constants in three files conspire to keep
+    // the visible chip 40 dp tall (Figma) while giving each chip a
+    // 48 dp tap target (WCAG):
+    //
+    //   1. `_HashtagChip` (below): wraps the chip in `Padding(vertical: 4)`
+    //      inside its GestureDetector so the tap target = 4 + 40 + 4 = 48.
+    //   2. This Wrap: `runSpacing = 0`. Adjacent chips' 4 + 4 invisible
+    //      padding produces the visible 8 px row gap; raising runSpacing
+    //      double-counts and adds extra visible space.
+    //   3. `_OverviewSection` (`metadata_expanded_sheet.dart`): bottom
+    //      padding drops from 20 → 16 when `hasTags`, and the spacer
+    //      before the wrap is 12 (not 16), to absorb the chips' 4 px
+    //      invisible padding above and below the row.
+    //
+    // Locked in by `hashtag chip tap target meets the 48 dp WCAG
+    // minimum` + `hashtag chip Wrap uses runSpacing 0` in
+    // `metadata_expanded_sheet_test.dart`. If you must tweak any of
+    // these, update all three and rerun those tests.
     return Wrap(
       spacing: 8,
       children: [
@@ -95,12 +108,14 @@ class _HashtagChip extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () => _navigateToHashtag(context),
-        // 4 px transparent padding above and below the visible 40 px
-        // chip extends the tap target to the 48 dp WCAG minimum
-        // without altering the rendered layout — the visible chip
-        // stays 40 px tall, and the surrounding `MetadataTagsSection`
-        // / `_OverviewSection` compensate by dropping `Wrap.runSpacing`
-        // to 0 and shrinking the section's bottom padding by 4 px.
+        // ⚠ LOAD-BEARING: this 4 px is one of three constants that
+        // conspire to keep the visible chip 40 dp tall (Figma) while
+        // giving every chip a 48 dp tap target (WCAG). See the full
+        // dependency map in `MetadataTagsSection.build` above —
+        // tweaking this number requires updating `Wrap.runSpacing`
+        // there and the `hasTags`-conditional bottom padding +
+        // pre-tag spacer in `_OverviewSection`
+        // (`metadata_expanded_sheet.dart`).
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: chip,
