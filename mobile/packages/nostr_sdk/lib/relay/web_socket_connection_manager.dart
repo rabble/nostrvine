@@ -311,7 +311,13 @@ class WebSocketConnectionManager {
   /// is true). Set [skipReconnect] to true for query fan-out paths where
   /// blocking on reconnection would delay all other relay queries.
   /// Returns true if message was sent, false if send failed.
-  Future<bool> send(String message, {bool skipReconnect = false}) async {
+  Future<bool> send(
+    String message, {
+    bool skipReconnect = false,
+    DateTime? deadline,
+  }) async {
+    if (_deadlineExpired(deadline)) return false;
+
     // Try to reconnect if disconnected
     if (_state == ConnectionState.disconnected) {
       if (skipReconnect) {
@@ -319,7 +325,8 @@ class WebSocketConnectionManager {
         return false;
       }
       log('Disconnected, attempting reconnect before send');
-      final connected = await _tryReconnect();
+      final connected = await _tryReconnect(deadline: deadline);
+      if (_deadlineExpired(deadline)) return false;
       if (!connected) {
         log('Reconnect failed, cannot send');
         return false;
@@ -329,14 +336,20 @@ class WebSocketConnectionManager {
     // Wait if currently connecting
     if (_state == ConnectionState.connecting) {
       log('Connecting, waiting before send');
-      final connected = await _waitForConnection();
+      final connected = await _waitForConnection(deadline: deadline);
+      if (_deadlineExpired(deadline)) return false;
       if (!connected) {
         log('Connection failed, cannot send');
         return false;
       }
     }
 
+    if (_deadlineExpired(deadline)) return false;
     return _doSend(message);
+  }
+
+  bool _deadlineExpired(DateTime? deadline) {
+    return deadline != null && !DateTime.now().isBefore(deadline);
   }
 
   /// Send a message synchronously (no reconnection attempt).
@@ -358,10 +371,15 @@ class WebSocketConnectionManager {
   }
 
   /// Send a JSON-encodable message asynchronously (with reconnection)
-  Future<bool> sendJson(dynamic data, {bool skipReconnect = false}) async {
+  Future<bool> sendJson(
+    dynamic data, {
+    bool skipReconnect = false,
+    DateTime? deadline,
+  }) async {
     try {
+      if (_deadlineExpired(deadline)) return false;
       final encoded = jsonEncode(data);
-      return send(encoded, skipReconnect: skipReconnect);
+      return send(encoded, skipReconnect: skipReconnect, deadline: deadline);
     } catch (e) {
       log('JSON encode error: $e');
       _errorController.add('JSON encode error: $e');
@@ -373,8 +391,9 @@ class WebSocketConnectionManager {
 
   // --- Reconnection ---
 
-  Future<bool> _tryReconnect() async {
+  Future<bool> _tryReconnect({DateTime? deadline}) async {
     while (_shouldReconnect && _state == ConnectionState.disconnected) {
+      if (_deadlineExpired(deadline)) return false;
       if (_reconnectAttempts >= config.maxReconnectAttempts) {
         log('Max reconnect attempts reached for $url');
         _errorController.add('Max reconnect attempts reached');
@@ -393,9 +412,11 @@ class WebSocketConnectionManager {
         'Reconnecting in ${delay.inSeconds}s (attempt $_reconnectAttempts/${config.maxReconnectAttempts})',
       );
 
-      await Future<void>.delayed(delay);
+      final wait = _remainingOr(delay, deadline);
+      if (wait == Duration.zero) return false;
+      await Future<void>.delayed(wait);
 
-      if (!_shouldReconnect) return false;
+      if (!_shouldReconnect || _deadlineExpired(deadline)) return false;
 
       final connected = await _doConnect();
       if (connected) return true;
@@ -404,7 +425,20 @@ class WebSocketConnectionManager {
     return _state == ConnectionState.connected;
   }
 
-  Future<bool> _waitForConnection() async {
+  Duration _remainingOr(Duration fallback, DateTime? deadline) {
+    if (deadline == null) return fallback;
+    final remaining = deadline.difference(DateTime.now());
+    if (remaining.isNegative || remaining == Duration.zero) {
+      return Duration.zero;
+    }
+    if (remaining < fallback) return remaining;
+    return fallback;
+  }
+
+  Future<bool> _waitForConnection({DateTime? deadline}) async {
+    final waitTimeout = _connectionWaitTimeout(deadline);
+    if (waitTimeout == Duration.zero) return false;
+
     // Wait up to connectionTimeout for connection to complete
     final completer = Completer<bool>();
     StreamSubscription<ConnectionState>? sub;
@@ -426,7 +460,7 @@ class WebSocketConnectionManager {
     }
 
     final result = await completer.future.timeout(
-      config.connectionTimeout,
+      waitTimeout,
       onTimeout: () {
         sub?.cancel();
         return false;
@@ -434,6 +468,16 @@ class WebSocketConnectionManager {
     );
 
     return result;
+  }
+
+  Duration _connectionWaitTimeout(DateTime? deadline) {
+    if (deadline == null) return config.connectionTimeout;
+    final remaining = deadline.difference(DateTime.now());
+    if (remaining.isNegative || remaining == Duration.zero) {
+      return Duration.zero;
+    }
+    if (remaining < config.connectionTimeout) return remaining;
+    return config.connectionTimeout;
   }
 
   /// Reset reconnection state, allowing fresh attempts

@@ -951,6 +951,16 @@ class RelayPool {
       return remaining;
     }
 
+    bool deadlineExpired() {
+      return deadline != null && !DateTime.now().isBefore(deadline);
+    }
+
+    void removeExpiredTempRelay(Relay relay) {
+      if (!deadlineExpired()) return;
+      unawaited(relay.disconnect());
+      removeTempRelay(relay.url);
+    }
+
     if (isPushControlEvent) {
       _logPushControlDiagnostic(
         'send start kind=$eventKind eventId=$eventId '
@@ -999,7 +1009,12 @@ class RelayPool {
             // still applies so a stuck auth-trigger send cannot block the
             // rest of the fan-out.
             var result = await relay
-                .send(message, forceSend: true)
+                .send(
+                  message,
+                  forceSend: true,
+                  queueIfFailed: deadline == null,
+                  deadline: deadline,
+                )
                 .timeout(
                   timeout,
                   onTimeout: () {
@@ -1024,14 +1039,21 @@ class RelayPool {
             }
             // Don't queue this message since we're sending it
           } else {
-            log('🔐 Queueing message for authentication: ${message[0]}');
-            relay.pendingAuthedMessages.add(message);
-            sentTo.add(relay.url);
-            attemptedRelayUrls.add(relay.url);
-            onSent?.call(relay.url);
-            if (isPushControlEvent) {
+            if (deadline == null) {
+              log('🔐 Queueing message for authentication: ${message[0]}');
+              relay.pendingAuthedMessages.add(message);
+              sentTo.add(relay.url);
+              attemptedRelayUrls.add(relay.url);
+              onSent?.call(relay.url);
+              if (isPushControlEvent) {
+                _logPushControlDiagnostic(
+                  'queued for auth kind=$eventKind eventId=$eventId relay=${relay.url}',
+                );
+              }
+            } else if (isPushControlEvent) {
               _logPushControlDiagnostic(
-                'queued for auth kind=$eventKind eventId=$eventId relay=${relay.url}',
+                'auth queue skipped kind=$eventKind eventId=$eventId relay=${relay.url} '
+                'reason=deadlineBoundSend',
               );
             }
           }
@@ -1047,7 +1069,12 @@ class RelayPool {
           // publish for many minutes). Same convention as relayDoQuery /
           // relayDoSubscribe above.
           var result = await relay
-              .send(message, skipReconnect: true)
+              .send(
+                message,
+                skipReconnect: true,
+                queueIfFailed: deadline == null,
+                deadline: deadline,
+              )
               .timeout(
                 timeout,
                 onTimeout: () {
@@ -1095,7 +1122,12 @@ class RelayPool {
         // tempRelay whose initial connection is still in-flight must not
         // block the publish.
         var result = await tempRelay
-            .send(message, skipReconnect: true)
+            .send(
+              message,
+              skipReconnect: true,
+              queueIfFailed: false,
+              deadline: deadline,
+            )
             .timeout(
               timeout,
               onTimeout: () {
@@ -1103,9 +1135,13 @@ class RelayPool {
                   '⏱️ Per-relay send timeout for tempRelay ${tempRelay.url} '
                   '(connected=${tempRelay.relayStatus.connected})',
                 );
+                removeExpiredTempRelay(tempRelay);
                 return false;
               },
             );
+        if (!result) {
+          removeExpiredTempRelay(tempRelay);
+        }
         if (result) {
           sentTo.add(tempRelay.url);
           onSent?.call(tempRelay.url);

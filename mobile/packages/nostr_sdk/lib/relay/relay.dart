@@ -96,11 +96,16 @@ abstract class Relay {
     info ??= await RelayInfoUtil.get(url);
   }
 
+  /// Sends [message] to this relay.
+  ///
+  /// [deadline] is a hard send deadline: implementations must not write or
+  /// queue the message after it has expired.
   Future<bool> send(
     List<dynamic> message, {
     bool? forceSend,
     bool queueIfFailed = true,
     bool skipReconnect = false,
+    DateTime? deadline,
   });
 
   Future<void> disconnect();

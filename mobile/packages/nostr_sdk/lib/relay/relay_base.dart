@@ -132,6 +132,7 @@ class RelayBase extends Relay {
     bool? forceSend,
     bool queueIfFailed = true,
     bool skipReconnect = false,
+    DateTime? deadline,
   }) async {
     if (_connectionManager == null) {
       return false;
@@ -148,6 +149,7 @@ class RelayBase extends Relay {
       final result = await _connectionManager!.sendJson(
         sanitizedMessage,
         skipReconnect: skipReconnect,
+        deadline: deadline,
       );
       if (!result && queueIfFailed) {
         pendingMessages.add(message);

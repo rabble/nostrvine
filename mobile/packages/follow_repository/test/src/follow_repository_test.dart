@@ -62,6 +62,7 @@ class _FakeRelay extends RelayBase {
     bool? forceSend,
     bool queueIfFailed = true,
     bool skipReconnect = false,
+    DateTime? deadline,
   }) async {
     // Only throw on CLOSE messages (not REQ sent by onConnected)
     if (throwOnSend && message.isNotEmpty && message[0] == 'CLOSE') {

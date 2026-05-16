@@ -20,6 +20,7 @@ class TestRelay extends Relay {
     bool? forceSend,
     bool queueIfFailed = true,
     bool skipReconnect = false,
+    DateTime? deadline,
   }) async => true;
 }
 

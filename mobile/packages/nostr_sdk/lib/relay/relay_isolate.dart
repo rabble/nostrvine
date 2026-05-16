@@ -101,7 +101,12 @@ class RelayIsolate extends Relay {
     bool? forceSend,
     bool queueIfFailed = true,
     bool skipReconnect = false,
+    DateTime? deadline,
   }) async {
+    if (deadline != null && !DateTime.now().isBefore(deadline)) {
+      return false;
+    }
+
     if (mainToSubSendPort == null) {
       if (queueIfFailed) {
         pendingMessages.add(message);
@@ -113,6 +118,9 @@ class RelayIsolate extends Relay {
       // Defensive serialization: Ensure all data is JSON-serializable
       final sanitizedMessage = sanitizeForJson(message);
       final encoded = jsonEncode(sanitizedMessage);
+      if (deadline != null && !DateTime.now().isBefore(deadline)) {
+        return false;
+      }
       mainToSubSendPort!.send(encoded);
       return true;
     } catch (e) {

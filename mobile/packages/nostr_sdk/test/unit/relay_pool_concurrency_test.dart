@@ -1,6 +1,8 @@
 // ABOUTME: Regression tests for RelayPool concurrent modification hazards.
 // ABOUTME: Ensures autoSubscribe tolerates subscription changes during resend.
 
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:nostr_sdk/relay/client_connected.dart';
@@ -30,6 +32,7 @@ class _MutatingRelay extends Relay {
     bool? forceSend,
     bool queueIfFailed = true,
     bool skipReconnect = false,
+    DateTime? deadline,
   }) async {
     sentMessages.add(message);
 
@@ -65,6 +68,7 @@ class _SucceedingRelay extends Relay {
     bool? forceSend,
     bool queueIfFailed = true,
     bool skipReconnect = false,
+    DateTime? deadline,
   }) async {
     sentMessages.add(message);
     // Simulate EOSE after a short delay so saveQuery runs first
@@ -105,6 +109,7 @@ class _CountRelay extends Relay {
     bool? forceSend,
     bool queueIfFailed = true,
     bool skipReconnect = false,
+    DateTime? deadline,
   }) async {
     sentMessages.add(message);
     if (message.isNotEmpty && message.first == 'COUNT') {
@@ -147,6 +152,7 @@ class _FailingSendRelay extends Relay {
     bool? forceSend,
     bool queueIfFailed = true,
     bool skipReconnect = false,
+    DateTime? deadline,
   }) async {
     sentMessages.add(message);
     return false; // Always fail
@@ -187,6 +193,7 @@ class _StallingReconnectRelay extends Relay {
     bool? forceSend,
     bool queueIfFailed = true,
     bool skipReconnect = false,
+    DateTime? deadline,
   }) async {
     sentMessages.add(message);
     if (skipReconnect) {
@@ -229,11 +236,51 @@ class _AlwaysHangingRelay extends Relay {
     bool? forceSend,
     bool queueIfFailed = true,
     bool skipReconnect = false,
+    DateTime? deadline,
   }) async {
     sentMessages.add(message);
     // Hang far longer than any reasonable per-relay timeout. The pool's
     // `.timeout(...)` wrap must surface this as `false` and move on.
     await Future<void>.delayed(const Duration(minutes: 1));
+    return true;
+  }
+}
+
+class _DeferredSendRelay extends Relay {
+  _DeferredSendRelay(String url) : super(url, RelayStatus(url));
+
+  final releaseSend = Completer<void>();
+  final List<List<dynamic>> sentMessages = [];
+
+  @override
+  Future<bool> doConnect() async {
+    relayStatus.connected = ClientConnected.connected;
+    return true;
+  }
+
+  @override
+  Future<void> disconnect() async {
+    relayStatus.connected = ClientConnected.disconnect;
+  }
+
+  @override
+  Future<bool> send(
+    List<dynamic> message, {
+    bool? forceSend,
+    bool queueIfFailed = true,
+    bool skipReconnect = false,
+    DateTime? deadline,
+  }) async {
+    await releaseSend.future;
+
+    if (deadline != null && !DateTime.now().isBefore(deadline)) {
+      if (queueIfFailed) {
+        pendingMessages.add(message);
+      }
+      return false;
+    }
+
+    sentMessages.add(message);
     return true;
   }
 }
@@ -527,6 +574,43 @@ void main() {
         reason: 'a failed normal send should not suppress temp relay fallback',
       );
     });
+
+    test(
+      'sendEventAwaitOk does not write or queue an event after the deadline',
+      () async {
+        final relayUrl = 'wss://relay.divine.video';
+        final deferred = _DeferredSendRelay(relayUrl);
+        await nostr.relayPool.add(deferred);
+
+        final outcome = await nostr.relayPool.sendEventAwaitOk(
+          [
+            'EVENT',
+            {'id': 'push-control-event-id', 'kind': 3079},
+          ],
+          eventId: 'push-control-event-id',
+          eventKind: 3079,
+          targetRelays: [relayUrl],
+          timeout: const Duration(milliseconds: 10),
+        );
+
+        expect(outcome.failed, isTrue);
+
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        deferred.releaseSend.complete();
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          deferred.sentMessages,
+          isEmpty,
+          reason: 'the EVENT must not be written after the publish deadline',
+        );
+        expect(
+          deferred.pendingMessages,
+          isEmpty,
+          reason: 'deadline-bound await-OK sends must not queue stale EVENTs',
+        );
+      },
+    );
 
     test(
       'RelayPool.perRelaySendTimeout is exposed as a stable public contract',

@@ -57,6 +57,7 @@ class _AuthFakeRelay extends Relay {
     bool? forceSend,
     bool queueIfFailed = true,
     bool skipReconnect = false,
+    DateTime? deadline,
   }) async {
     sentMessages.add(message);
     return true;

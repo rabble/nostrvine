@@ -18,6 +18,7 @@ class MockRelay extends RelayBase {
     bool? forceSend,
     bool queueIfFailed = true,
     bool skipReconnect = false,
+    DateTime? deadline,
   }) async {
     sentMessages.add(message);
 
