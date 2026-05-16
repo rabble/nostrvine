@@ -174,11 +174,17 @@ class _ComposerField extends StatelessWidget {
           children: [
             Expanded(
               child: Padding(
+                // 12 / 12 vertical padding around a 24-line-height
+                // text field gives the pill an exact 48 px single-line
+                // height (12 + 24 + 12), matching Figma node
+                // 15222:192139. The pill grows past 48 when the field
+                // wraps onto a second line via `minLines: 1,
+                // maxLines: 5` below.
                 padding: const EdgeInsetsDirectional.only(
                   start: 16,
                   end: 8,
-                  top: 14,
-                  bottom: 14,
+                  top: 12,
+                  bottom: 12,
                 ),
                 child: Semantics(
                   identifier: 'inline_comment_composer_field',
