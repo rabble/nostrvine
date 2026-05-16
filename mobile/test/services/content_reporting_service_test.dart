@@ -758,6 +758,134 @@ void main() {
       expect(reportTags, isEmpty);
     });
 
+    test('reportUser() without related events omits e tags', () async {
+      const reportedPubkey =
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      List<List<String>>? capturedTags;
+
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedTags = invocation.namedArguments[#tags] as List<List<String>>?;
+        final event = Event(
+          testPublicKey,
+          EventKind.report,
+          capturedTags ?? [],
+          'test',
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        );
+        event.id = 'test_id';
+        event.sig = 'test_sig';
+        return event;
+      });
+
+      when(
+        () => mockNostrService.publishEvent(
+          any(),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer(
+        (_) async => PublishSuccess(
+          event: Event(
+            testPublicKey,
+            EventKind.report,
+            [],
+            '',
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ),
+      );
+
+      await service.reportUser(
+        userPubkey: reportedPubkey,
+        reason: ContentFilterReason.harassment,
+        details: 'Reported from DM conversation',
+      );
+
+      expect(capturedTags, isNotNull);
+      expect(capturedTags!.where((t) => t[0] == 'e'), isEmpty);
+
+      final pTag = capturedTags!.singleWhere((t) => t[0] == 'p');
+      expect(pTag, ['p', reportedPubkey, 'profanity']);
+
+      expect(service.reportHistory.single.eventId, 'user_$reportedPubkey');
+    });
+
+    test('reportUser() emits e tags only for valid related event ids', () async {
+      const reportedPubkey =
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+      const validEventId1 =
+          '1111111111111111111111111111111111111111111111111111111111111111';
+      const validEventId2 =
+          'abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd';
+      const invalidSyntheticUserTarget =
+          'user_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+      List<List<String>>? capturedTags;
+
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedTags = invocation.namedArguments[#tags] as List<List<String>>?;
+        final event = Event(
+          testPublicKey,
+          EventKind.report,
+          capturedTags ?? [],
+          'test',
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        );
+        event.id = 'test_id';
+        event.sig = 'test_sig';
+        return event;
+      });
+
+      when(
+        () => mockNostrService.publishEvent(
+          any(),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer(
+        (_) async => PublishSuccess(
+          event: Event(
+            testPublicKey,
+            EventKind.report,
+            [],
+            '',
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ),
+      );
+
+      await service.reportUser(
+        userPubkey: reportedPubkey,
+        reason: ContentFilterReason.spam,
+        details: 'Spam reports from this user',
+        relatedEventIds: [
+          invalidSyntheticUserTarget,
+          validEventId1,
+          'not-an-event-id',
+          validEventId2,
+        ],
+      );
+
+      expect(capturedTags, isNotNull);
+      final eTags = capturedTags!.where((t) => t[0] == 'e').toList();
+      expect(eTags, [
+        ['e', validEventId1, 'spam'],
+        ['e', validEventId2, 'spam'],
+      ]);
+
+      final pTag = capturedTags!.singleWhere((t) => t[0] == 'p');
+      expect(pTag, ['p', reportedPubkey, 'spam']);
+    });
+
     test('maps ContentFilterReason to NIP-56 standard types', () async {
       final expectedMappings = {
         ContentFilterReason.spam: 'spam',
