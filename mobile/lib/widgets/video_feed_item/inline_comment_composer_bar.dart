@@ -17,10 +17,11 @@ import 'package:openvine/l10n/l10n.dart';
 /// a comment without reading the others". On send, the keyboard dismisses
 /// and a snackbar confirms the outcome.
 ///
-/// Designed to be used as [Scaffold.bottomNavigationBar]; total visible
-/// height above the home indicator matches the home-feed [VineBottomNav]
-/// (72 px content + safe-area bottom). Visibility is owned by the parent
-/// screen, which gates on "active video present" and "user signed in".
+/// Lives inside the Scaffold body (not [Scaffold.bottomNavigationBar]) so
+/// the keyboard can push it up rather than stranding it below the keyboard.
+/// The pill grows with the [TextField]'s 1–5-line range — there is no fixed
+/// bar height. Visibility is owned by the parent screen, which gates on
+/// "active video present" and "user signed in".
 class InlineCommentComposerBar extends StatefulWidget {
   const InlineCommentComposerBar({super.key});
 
