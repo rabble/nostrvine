@@ -22,6 +22,8 @@ void main() {
     const baseUrl = 'https://api.example.com';
     const testPubkey =
         'aabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccdd';
+    const stableCursorId =
+        '1122334411223344112233441122334411223344112233441122334411223344';
 
     setUp(() {
       mockHttpClient = _MockHttpClient();
@@ -107,6 +109,43 @@ void main() {
         ).captured;
         final url = captured.first as Uri;
         expect(url.queryParameters['before'], equals('cursor_abc'));
+      });
+
+      test('passes cursorId as before_id parameter', () async {
+        when(
+          () => mockHttpClient.get(
+            any(),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            jsonEncode({
+              'notifications': <Map<String, dynamic>>[],
+              'unread_count': 0,
+              'has_more': false,
+            }),
+            200,
+          ),
+        );
+
+        await client.getNotifications(
+          pubkey: testPubkey,
+          cursor: '1700000000',
+          cursorId: stableCursorId,
+        );
+
+        final captured = verify(
+          () => mockHttpClient.get(
+            captureAny(),
+            headers: any(named: 'headers'),
+          ),
+        ).captured;
+        final url = captured.first as Uri;
+        expect(url.queryParameters['before'], equals('1700000000'));
+        expect(
+          url.queryParameters['before_id'],
+          equals(stableCursorId),
+        );
       });
 
       test('passes authHeaders when provided', () async {
@@ -581,6 +620,20 @@ void main() {
         );
 
         expect(uri.queryParameters['before'], equals('1700000000'));
+      });
+
+      test('includes before_id when cursorId is provided', () {
+        final uri = client.notificationsUri(
+          pubkey: testPubkey,
+          cursor: '1700000000',
+          cursorId: stableCursorId,
+        );
+
+        expect(uri.queryParameters['before'], equals('1700000000'));
+        expect(
+          uri.queryParameters['before_id'],
+          equals(stableCursorId),
+        );
       });
     });
   });

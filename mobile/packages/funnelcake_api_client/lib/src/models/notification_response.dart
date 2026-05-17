@@ -8,6 +8,7 @@ class NotificationResponse {
     required this.unreadCount,
     required this.hasMore,
     this.nextCursor,
+    this.nextCursorId,
   });
 
   /// Parses the REST response body into a typed notification payload.
@@ -21,6 +22,7 @@ class NotificationResponse {
           .toList(),
       unreadCount: json['unread_count'] as int? ?? 0,
       nextCursor: json['next_cursor'] as String?,
+      nextCursorId: json['next_cursor_id'] as String?,
       hasMore: json['has_more'] as bool? ?? false,
     );
   }
@@ -33,6 +35,9 @@ class NotificationResponse {
 
   /// Cursor for fetching the next page when available.
   final String? nextCursor;
+
+  /// Cursor tiebreaker for fetching the next page when available.
+  final String? nextCursorId;
 
   /// Whether more notifications are available beyond this page.
   final bool hasMore;

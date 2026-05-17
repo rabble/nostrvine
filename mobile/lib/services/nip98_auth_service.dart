@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:crypto/crypto.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -48,7 +49,7 @@ class Nip98Token {
   final DateTime expiresAt;
 
   /// Check if the token is expired
-  bool get isExpired => DateTime.now().isAfter(expiresAt);
+  bool get isExpired => clock.now().isAfter(expiresAt);
 
   /// Get the authorization header value
   String get authorizationHeader => 'Nostr $token';
@@ -72,7 +73,7 @@ class Nip98AuthService {
 
   // Token cache to avoid repeated signing for identical requests
   final Map<String, Nip98Token> _tokenCache = {};
-  static const Duration _tokenValidityDuration = Duration(minutes: 10);
+  static const Duration _tokenValidityDuration = Duration(seconds: 45);
   static const Duration _cacheCleanupInterval = Duration(minutes: 15);
 
   Timer? _cleanupTimer;
@@ -134,7 +135,7 @@ class Nip98AuthService {
       final eventJson = jsonEncode(authEvent.toJson());
       final token = base64Encode(utf8.encode(eventJson));
 
-      final now = DateTime.now();
+      final now = clock.now();
       final nip98Token = Nip98Token(
         token: token,
         signedEvent: authEvent,
@@ -174,7 +175,7 @@ class Nip98AuthService {
     String? payload,
   }) async {
     try {
-      final now = DateTime.now();
+      final now = clock.now();
       final timestamp = (now.millisecondsSinceEpoch / 1000).round();
 
       // Create tags according to NIP-98
@@ -297,7 +298,7 @@ class Nip98AuthService {
         return false;
       }
 
-      final now = (DateTime.now().millisecondsSinceEpoch / 1000).round();
+      final now = (clock.now().millisecondsSinceEpoch / 1000).round();
       final timeDiff = (now - tagTimestamp).abs();
       if (timeDiff > 60) {
         // 60 seconds
@@ -373,7 +374,7 @@ class Nip98AuthService {
       'expired_tokens': expiredTokens,
       'is_authenticated': _authService.isAuthenticated,
       'cleanup_interval_minutes': _cacheCleanupInterval.inMinutes,
-      'token_validity_minutes': _tokenValidityDuration.inMinutes,
+      'token_validity_seconds': _tokenValidityDuration.inSeconds,
     };
   }
 

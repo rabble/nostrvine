@@ -25,6 +25,8 @@ void main() {
   late NotificationRepository repository;
 
   const userPubkey = 'user1234567890abcdef';
+  const stableCursorId =
+      '1122334411223344112233441122334411223344112233441122334411223344';
 
   setUp(() {
     funnelcakeApiClient = _MockFunnelcakeApiClient();
@@ -35,21 +37,23 @@ void main() {
         pubkey: any(named: 'pubkey'),
         limit: any(named: 'limit'),
         cursor: any(named: 'cursor'),
+        cursorId: any(named: 'cursorId'),
       ),
     ).thenAnswer((invocation) {
       final pubkey = invocation.namedArguments[#pubkey] as String;
       final limit = invocation.namedArguments[#limit] as int? ?? 50;
       final cursor = invocation.namedArguments[#cursor] as String?;
+      final cursorId = invocation.namedArguments[#cursorId] as String?;
       final effectiveBefore =
           cursor ?? DateTime.now().millisecondsSinceEpoch.toString();
+      final queryParameters = <String, String>{
+        'limit': '$limit',
+        'before': effectiveBefore,
+        'before_id': ?cursorId,
+      };
       return Uri.parse(
         'https://api.example.com/api/users/$pubkey/notifications',
-      ).replace(
-        queryParameters: <String, String>{
-          'limit': '$limit',
-          'before': effectiveBefore,
-        },
-      );
+      ).replace(queryParameters: queryParameters);
     });
     // Default: getVideoStats throws (no metadata fetched). Tests that need a
     // thumbnail override this stub explicitly.
@@ -109,11 +113,13 @@ void main() {
     int unreadCount = 0,
     bool hasMore = false,
     String? nextCursor,
+    String? nextCursorId,
   }) {
     when(
       () => funnelcakeApiClient.getNotifications(
         pubkey: any(named: 'pubkey'),
         cursor: any(named: 'cursor'),
+        cursorId: any(named: 'cursorId'),
         requestUri: any(named: 'requestUri'),
         authHeaders: any(named: 'authHeaders'),
         limit: any(named: 'limit'),
@@ -124,6 +130,7 @@ void main() {
         unreadCount: unreadCount,
         hasMore: hasMore,
         nextCursor: nextCursor,
+        nextCursorId: nextCursorId,
       ),
     );
   }
@@ -233,6 +240,44 @@ void main() {
           ),
         );
       });
+
+      test(
+        'signs the full paginated notifications URL with cursor id',
+        () async {
+          var signedUrl = '';
+          repository = NotificationRepository(
+            funnelcakeApiClient: funnelcakeApiClient,
+            profileRepository: profileRepository,
+            notificationsDao: notificationsDao,
+            userPubkey: userPubkey,
+            authHeadersProvider: (url, method) async {
+              signedUrl = url;
+              return {'Authorization': 'Nostr test-token'};
+            },
+          );
+          stubNotifications(
+            [],
+            nextCursor: '1700000000',
+            nextCursorId: stableCursorId,
+            hasMore: true,
+          );
+          stubProfiles({});
+
+          await repository.getNotifications();
+          stubNotifications([], nextCursor: '1699999999');
+
+          await repository.getNotifications();
+
+          expect(
+            signedUrl,
+            equals(
+              'https://api.example.com/api/users/$userPubkey/notifications'
+              '?limit=50&before=1700000000'
+              '&before_id=$stableCursorId',
+            ),
+          );
+        },
+      );
 
       test('one like becomes a $VideoNotification with totalCount 1', () async {
         stubNotifications([

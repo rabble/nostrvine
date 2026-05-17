@@ -18,6 +18,7 @@ void main() {
         ],
         'unread_count': 5,
         'next_cursor': 'cursor_abc',
+        'next_cursor_id': '11223344' * 8,
         'has_more': true,
       };
 
@@ -26,6 +27,7 @@ void main() {
       expect(response.notifications, hasLength(1));
       expect(response.unreadCount, equals(5));
       expect(response.nextCursor, equals('cursor_abc'));
+      expect(response.nextCursorId, equals('11223344' * 8));
       expect(response.hasMore, isTrue);
     });
 
@@ -41,6 +43,7 @@ void main() {
       expect(response.notifications, isEmpty);
       expect(response.unreadCount, equals(0));
       expect(response.nextCursor, isNull);
+      expect(response.nextCursorId, isNull);
       expect(response.hasMore, isFalse);
     });
 
@@ -50,6 +53,7 @@ void main() {
       expect(response.notifications, isEmpty);
       expect(response.unreadCount, equals(0));
       expect(response.nextCursor, isNull);
+      expect(response.nextCursorId, isNull);
       expect(response.hasMore, isFalse);
     });
   });

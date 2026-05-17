@@ -11,6 +11,7 @@ class NotificationPage extends Equatable {
     required this.items,
     required this.unreadCount,
     this.nextCursor,
+    this.nextCursorId,
     this.hasMore = false,
   });
 
@@ -26,6 +27,9 @@ class NotificationPage extends Equatable {
   /// Cursor for fetching the next page, if available.
   final String? nextCursor;
 
+  /// Cursor tiebreaker for fetching the next page, if available.
+  final String? nextCursorId;
+
   /// Whether more pages are available.
   final bool hasMore;
 
@@ -34,16 +38,24 @@ class NotificationPage extends Equatable {
     List<NotificationItem>? items,
     int? unreadCount,
     String? nextCursor,
+    String? nextCursorId,
     bool? hasMore,
   }) {
     return NotificationPage(
       items: items ?? this.items,
       unreadCount: unreadCount ?? this.unreadCount,
       nextCursor: nextCursor ?? this.nextCursor,
+      nextCursorId: nextCursorId ?? this.nextCursorId,
       hasMore: hasMore ?? this.hasMore,
     );
   }
 
   @override
-  List<Object?> get props => [items, unreadCount, nextCursor, hasMore];
+  List<Object?> get props => [
+    items,
+    unreadCount,
+    nextCursor,
+    nextCursorId,
+    hasMore,
+  ];
 }

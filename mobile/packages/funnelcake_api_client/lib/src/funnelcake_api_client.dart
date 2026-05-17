@@ -167,6 +167,7 @@ class FunnelcakeApiClient {
     required String pubkey,
     int limit = 50,
     String? cursor,
+    String? cursorId,
   }) {
     // Server timestamps are Unix seconds, not milliseconds.
     final effectiveBefore =
@@ -174,6 +175,7 @@ class FunnelcakeApiClient {
     final queryParams = <String, String>{
       'limit': '$limit',
       'before': effectiveBefore,
+      'before_id': ?cursorId,
     };
 
     return Uri.parse(
@@ -2250,8 +2252,9 @@ class FunnelcakeApiClient {
   /// Fetches notifications for a user from the relay REST API.
   ///
   /// Uses NIP-98 authentication. The [cursor] parameter enables pagination
-  /// via the `before` query param. The [authHeaders] parameter allows the
-  /// caller to provide pre-built NIP-98 auth headers.
+  /// via the `before` query param and optional `before_id` tiebreaker.
+  /// The [authHeaders] parameter allows the caller to provide pre-built
+  /// NIP-98 auth headers.
   ///
   /// Throws:
   /// - [FunnelcakeNotConfiguredException] if the API is not configured.
@@ -2262,6 +2265,7 @@ class FunnelcakeApiClient {
     required String pubkey,
     int limit = 50,
     String? cursor,
+    String? cursorId,
     Uri? requestUri,
     Map<String, String>? authHeaders,
   }) async {
@@ -2271,7 +2275,12 @@ class FunnelcakeApiClient {
 
     final url =
         requestUri ??
-        notificationsUri(pubkey: pubkey, limit: limit, cursor: cursor);
+        notificationsUri(
+          pubkey: pubkey,
+          limit: limit,
+          cursor: cursor,
+          cursorId: cursorId,
+        );
 
     try {
       final response = await _httpClient

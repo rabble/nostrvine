@@ -68,6 +68,7 @@ class NotificationRepository {
 
   /// Last cursor returned by the API, used for pagination.
   String? _lastCursor;
+  String? _lastCursorId;
 
   /// Reactive snapshot of the enriched, grouped notification feed.
   ///
@@ -113,11 +114,19 @@ class NotificationRepository {
   /// after structured logging, so callers can drive a failure UI. The
   /// snapshot is left at its prior value on throw — the [BehaviorSubject]
   /// preserves it for downstream consumers.
-  Future<NotificationPage> getNotifications({String? cursor}) async {
+  Future<NotificationPage> getNotifications({
+    String? cursor,
+    String? cursorId,
+  }) async {
     try {
       final effectiveCursor = cursor ?? _lastCursor;
+      final effectiveCursorId = cursorId ?? _lastCursorId;
       final requestUrl = _funnelcakeApiClient
-          .notificationsUri(pubkey: _userPubkey, cursor: effectiveCursor)
+          .notificationsUri(
+            pubkey: _userPubkey,
+            cursor: effectiveCursor,
+            cursorId: effectiveCursorId,
+          )
           .toString();
 
       final authHeaders = _authHeadersProvider != null
@@ -127,11 +136,13 @@ class NotificationRepository {
       final response = await _funnelcakeApiClient.getNotifications(
         pubkey: _userPubkey,
         cursor: effectiveCursor,
+        cursorId: effectiveCursorId,
         requestUri: Uri.parse(requestUrl),
         authHeaders: authHeaders,
       );
 
       _lastCursor = response.nextCursor;
+      _lastCursorId = response.nextCursorId;
 
       final items = await _enrichAndGroup(response.notifications);
 
@@ -139,6 +150,7 @@ class NotificationRepository {
         items: items,
         unreadCount: response.unreadCount,
         nextCursor: response.nextCursor,
+        nextCursorId: response.nextCursorId,
         hasMore: response.hasMore,
       );
       _emitSnapshotForPage(page, isFirstPage: effectiveCursor == null);
@@ -157,6 +169,7 @@ class NotificationRepository {
   /// Refreshes notifications from the beginning (no cursor).
   Future<NotificationPage> refresh() {
     _lastCursor = null;
+    _lastCursorId = null;
     return getNotifications();
   }
 

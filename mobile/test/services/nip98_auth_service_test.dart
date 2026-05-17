@@ -4,6 +4,7 @@
 
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
@@ -343,6 +344,54 @@ void main() {
           ),
         ).called(2);
       });
+
+      test(
+        'does not reuse cached token after NIP-98 freshness window',
+        () async {
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+
+          var callCount = 0;
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((invocation) async {
+            callCount++;
+            final tags =
+                invocation.namedArguments[#tags] as List<List<String>>? ?? [];
+            return _createMockEvent(tags: tags, idSuffix: callCount.toString());
+          });
+
+          var now = DateTime.now();
+          await withClock(Clock(() => now), () async {
+            final token1 = await service.createAuthToken(
+              url: 'https://relay.example.com/api/endpoint?cursor=first',
+              method: HttpMethod.get,
+            );
+
+            now = now.add(const Duration(seconds: 61));
+
+            final token2 = await service.createAuthToken(
+              url: 'https://relay.example.com/api/endpoint?cursor=first',
+              method: HttpMethod.get,
+            );
+
+            expect(token1, isNotNull);
+            expect(token2, isNotNull);
+            expect(token1!.token, isNot(equals(token2!.token)));
+          });
+
+          verify(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).called(2);
+        },
+      );
     });
 
     group('payload hashing', () {
