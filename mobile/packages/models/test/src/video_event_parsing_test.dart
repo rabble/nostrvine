@@ -304,6 +304,64 @@ void main() {
       expect(videoEvent.thumbnailUrl, isNull);
     });
 
+    test('should ignore invalid thumbnail URLs from top-level tags', () {
+      final invalidThumbnailTags = [
+        ['thumb', 'https:///missing-host.jpg'],
+        ['image', 'https:///missing-host.jpg'],
+      ];
+
+      for (final thumbnailTag in invalidThumbnailTags) {
+        final nostrEvent = Event(
+          '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+          34236,
+          [
+            ['url', 'https://example.com/video.mp4'],
+            thumbnailTag,
+          ],
+          'Test video',
+          createdAt: 1757385263,
+        );
+
+        final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+        expect(
+          videoEvent.thumbnailUrl,
+          isNull,
+          reason: 'Expected ${thumbnailTag.first} to reject malformed URLs',
+        );
+      }
+    });
+
+    test('should ignore invalid thumbnail URLs from imeta tags', () {
+      final invalidImetaTags = [
+        [
+          'imeta',
+          'thumb https:///missing-host.jpg',
+        ],
+        [
+          'imeta',
+          'image https:///missing-host.jpg',
+        ],
+      ];
+
+      for (final imetaTag in invalidImetaTags) {
+        final nostrEvent = Event(
+          '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+          34236,
+          [
+            ['url', 'https://example.com/video.mp4'],
+            imetaTag,
+          ],
+          'Test video',
+          createdAt: 1757385263,
+        );
+
+        final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+        expect(videoEvent.thumbnailUrl, isNull);
+      }
+    });
+
     test('should accept valid thumbnail URLs from typed r tags', () {
       final nostrEvent = Event(
         '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
