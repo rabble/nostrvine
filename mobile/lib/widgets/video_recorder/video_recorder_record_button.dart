@@ -4,13 +4,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
+import 'package:openvine/widgets/video_recorder/shutter_long_press_mixin.dart';
 
 /// Circular record button for starting/stopping video recording.
-class RecordButton extends ConsumerWidget {
+class RecordButton extends ConsumerStatefulWidget {
   const RecordButton({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RecordButton> createState() => _RecordButtonState();
+}
+
+class _RecordButtonState extends ConsumerState<RecordButton>
+    with ShutterLongPressMixin {
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(
       videoRecorderProvider.select(
         (p) => (
@@ -46,15 +53,22 @@ class RecordButton extends ConsumerWidget {
           ? context.l10n.videoRecorderStopRecordingTooltip
           : context.l10n.videoRecorderStartRecordingTooltip,
       child: GestureDetector(
-        onTap: isEnabled ? notifier.toggleRecording : null,
+        onTap: isEnabled
+            ? () => handleShutterTap(notifier.toggleRecording)
+            : null,
         onLongPressStart: isEnabled && isLongPressSupported
-            ? (_) => notifier.startRecording()
+            ? (_) => handleShutterLongPressStart(
+                isRecording: state.isRecording,
+                start: notifier.startRecording,
+              )
             : null,
         onLongPressMoveUpdate: state.isRecording && isLongPressSupported
             ? (details) =>
                   notifier.zoomByLongPressMove(details.localOffsetFromOrigin)
             : null,
-        onLongPressUp: isLongPressSupported ? notifier.stopRecording : null,
+        onLongPressUp: isLongPressSupported
+            ? () => handleShutterLongPressUp(notifier.stopRecording)
+            : null,
         child: AnimatedOpacity(
           duration: const Duration(milliseconds: 200),
           opacity: isEnabled ? 1.0 : 0.5,

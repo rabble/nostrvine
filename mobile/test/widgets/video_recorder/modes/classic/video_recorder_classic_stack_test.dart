@@ -241,6 +241,63 @@ void main() {
         expect(notifier.stopRecordingCalled, isTrue);
       });
     });
+
+    // Regression tests for issue #4409 ("Phantom click"): an incidental
+    // long-touch on the preview shutter while a tap-started recording is
+    // in progress must NOT call stopRecording on release.
+    group('phantom click regression (issue #4409)', () {
+      testWidgets(
+        'long-press release does not stop a tap-started recording',
+        (tester) async {
+          late _TestVideoRecorderNotifier notifier;
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                videoRecorderProvider.overrideWith(() {
+                  notifier = _TestVideoRecorderNotifier(
+                    mockCamera,
+                    recordingState: VideoRecorderState.recording,
+                  );
+                  return notifier;
+                }),
+                clipManagerProvider.overrideWith(
+                  () => _TestClipManagerNotifier(clips: const []),
+                ),
+              ],
+              child: const MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: Scaffold(body: VideoRecorderClassicStack()),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final gesture = await tester.startGesture(
+            tester.getCenter(
+              find.ancestor(
+                of: find.byType(VideoRecorderCameraPreview),
+                matching: find.byType(GestureDetector),
+              ),
+            ),
+          );
+          await tester.pump(const Duration(seconds: 1));
+          await gesture.up();
+          await tester.pumpAndSettle();
+
+          expect(
+            notifier.stopRecordingCallCount,
+            equals(0),
+            reason:
+                'stopRecording must not be called when a long-press '
+                'release follows an incidental touch on an already- '
+                'recording shutter (issue #4409).',
+          );
+          expect(notifier.startRecordingCallCount, equals(0));
+        },
+      );
+    });
   });
 }
 
@@ -254,6 +311,8 @@ class _TestVideoRecorderNotifier extends VideoRecorderNotifier {
 
   var startRecordingCalled = false;
   var stopRecordingCalled = false;
+  int startRecordingCallCount = 0;
+  int stopRecordingCallCount = 0;
 
   @override
   VideoRecorderProviderState build() {
@@ -267,11 +326,13 @@ class _TestVideoRecorderNotifier extends VideoRecorderNotifier {
   @override
   Future<void> startRecording() async {
     startRecordingCalled = true;
+    startRecordingCallCount++;
   }
 
   @override
   Future<void> stopRecording([EditorVideo? result]) async {
     stopRecordingCalled = true;
+    stopRecordingCallCount++;
   }
 }
 
