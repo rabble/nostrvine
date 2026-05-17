@@ -7,6 +7,18 @@ Validated against: current camera architecture notes on 2026-03-19.
 
 Divine uses **4 different camera interface implementations** to handle platform-specific requirements and capabilities. This multi-interface approach allows for platform-specific optimizations while maintaining a consistent API.
 
+## Shutter Gesture Invariant
+
+Recorder shutter surfaces that combine tap-to-toggle and long-press recording
+must route those gestures through
+`mobile/lib/widgets/video_recorder/shutter_gesture_detector.dart`.
+
+This preserves a recorder-specific invariant introduced after issue `#4409`:
+- A tap-started recording must not be stopped by an incidental long-press
+  release on the same shutter target.
+- New shutter surfaces should reuse the shared widget instead of wiring
+  `GestureDetector` callbacks manually.
+
 ## Camera Interface Implementations
 
 ### 1. MobileCameraInterface (Basic)

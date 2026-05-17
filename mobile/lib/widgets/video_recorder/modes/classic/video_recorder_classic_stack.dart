@@ -7,21 +7,13 @@ import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_cla
 import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_classic_actions_top.dart';
 import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_classic_top_bar.dart';
 import 'package:openvine/widgets/video_recorder/preview/video_recorder_camera_preview.dart';
-import 'package:openvine/widgets/video_recorder/shutter_long_press_mixin.dart';
+import 'package:openvine/widgets/video_recorder/shutter_gesture_detector.dart';
 
-class VideoRecorderClassicStack extends ConsumerStatefulWidget {
+class VideoRecorderClassicStack extends ConsumerWidget {
   const VideoRecorderClassicStack({super.key});
 
   @override
-  ConsumerState<VideoRecorderClassicStack> createState() =>
-      _VideoRecorderClassicStackState();
-}
-
-class _VideoRecorderClassicStackState
-    extends ConsumerState<VideoRecorderClassicStack>
-    with ShutterLongPressMixin {
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(
       videoRecorderProvider.select(
         (p) => (
@@ -71,19 +63,13 @@ class _VideoRecorderClassicStackState
                       label: state.isRecording
                           ? context.l10n.videoRecorderRecordingTapToStopLabel
                           : context.l10n.videoRecorderTapToStartLabel,
-                      child: GestureDetector(
+                      child: ShutterGestureDetector(
+                        isEnabled: isEnabled,
+                        isRecording: state.isRecording,
                         behavior: .opaque,
-                        onTap: isEnabled
-                            ? () => handleShutterTap(notifier.toggleRecording)
-                            : null,
-                        onLongPressStart: isEnabled
-                            ? (_) => handleShutterLongPressStart(
-                                isRecording: state.isRecording,
-                                start: notifier.startRecording,
-                              )
-                            : null,
-                        onLongPressUp: () =>
-                            handleShutterLongPressUp(notifier.stopRecording),
+                        onTapToggle: notifier.toggleRecording,
+                        onLongPressStartRecording: notifier.startRecording,
+                        onLongPressStopRecording: notifier.stopRecording,
                         child: const IgnorePointer(
                           child: VideoRecorderCameraPreview(
                             enableTapToFocus: false,

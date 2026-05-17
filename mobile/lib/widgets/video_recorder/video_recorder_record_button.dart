@@ -4,20 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
-import 'package:openvine/widgets/video_recorder/shutter_long_press_mixin.dart';
+import 'package:openvine/widgets/video_recorder/shutter_gesture_detector.dart';
 
 /// Circular record button for starting/stopping video recording.
-class RecordButton extends ConsumerStatefulWidget {
+class RecordButton extends ConsumerWidget {
   const RecordButton({super.key});
 
   @override
-  ConsumerState<RecordButton> createState() => _RecordButtonState();
-}
-
-class _RecordButtonState extends ConsumerState<RecordButton>
-    with ShutterLongPressMixin {
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(
       videoRecorderProvider.select(
         (p) => (
@@ -52,22 +46,16 @@ class _RecordButtonState extends ConsumerState<RecordButton>
       tooltip: state.isRecording
           ? context.l10n.videoRecorderStopRecordingTooltip
           : context.l10n.videoRecorderStartRecordingTooltip,
-      child: GestureDetector(
-        onTap: isEnabled
-            ? () => handleShutterTap(notifier.toggleRecording)
-            : null,
-        onLongPressStart: isEnabled && isLongPressSupported
-            ? (_) => handleShutterLongPressStart(
-                isRecording: state.isRecording,
-                start: notifier.startRecording,
-              )
-            : null,
+      child: ShutterGestureDetector(
+        isEnabled: isEnabled,
+        isRecording: state.isRecording,
+        isLongPressSupported: isLongPressSupported,
+        onTapToggle: notifier.toggleRecording,
+        onLongPressStartRecording: notifier.startRecording,
+        onLongPressStopRecording: notifier.stopRecording,
         onLongPressMoveUpdate: state.isRecording && isLongPressSupported
             ? (details) =>
                   notifier.zoomByLongPressMove(details.localOffsetFromOrigin)
-            : null,
-        onLongPressUp: isLongPressSupported
-            ? () => handleShutterLongPressUp(notifier.stopRecording)
             : null,
         child: AnimatedOpacity(
           duration: const Duration(milliseconds: 200),
