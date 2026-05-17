@@ -1504,6 +1504,233 @@ void main() {
         final snapshot = await hydrated.watchSnapshot().first;
         expect(snapshot.items, isEmpty);
       });
+
+      test(
+        'cached "like" row becomes $VideoNotification placeholder preserving '
+        'videoEventId and actor pubkey',
+        () async {
+          when(
+            () => notificationsDao.getAllNotifications(
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              NotificationRow(
+                id: 'cached_like_1',
+                type: 'like',
+                fromPubkey: 'actor_pub',
+                timestamp: 1700000000,
+                targetEventId: 'video_evt_1',
+                targetPubkey: null,
+                content: null,
+                isRead: false,
+                cachedAt: DateTime(2026),
+              ),
+            ],
+          );
+          final hydrated = NotificationRepository(
+            funnelcakeApiClient: funnelcakeApiClient,
+            profileRepository: profileRepository,
+            notificationsDao: notificationsDao,
+            userPubkey: userPubkey,
+          );
+          addTearDown(hydrated.close);
+
+          await expectLater(
+            hydrated.watchSnapshot(),
+            emitsThrough(
+              predicate<NotificationPage>((p) {
+                if (p.items.length != 1) return false;
+                final item = p.items.first;
+                return item is VideoNotification &&
+                    item.id == 'cached_like_1' &&
+                    item.type == NotificationKind.like &&
+                    item.videoEventId == 'video_evt_1' &&
+                    item.actors.length == 1 &&
+                    item.actors.first.pubkey == 'actor_pub' &&
+                    item.totalCount == 1 &&
+                    item.commentText == null;
+              }, 'placeholder is VideoNotification(like) keyed to video'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'cached "comment" row becomes $VideoNotification placeholder '
+        'with commentText preserved',
+        () async {
+          when(
+            () => notificationsDao.getAllNotifications(
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              NotificationRow(
+                id: 'cached_comment_1',
+                type: 'comment',
+                fromPubkey: 'actor_pub',
+                timestamp: 1700000000,
+                targetEventId: 'video_evt_2',
+                targetPubkey: null,
+                content: 'Nice clip!',
+                isRead: false,
+                cachedAt: DateTime(2026),
+              ),
+            ],
+          );
+          final hydrated = NotificationRepository(
+            funnelcakeApiClient: funnelcakeApiClient,
+            profileRepository: profileRepository,
+            notificationsDao: notificationsDao,
+            userPubkey: userPubkey,
+          );
+          addTearDown(hydrated.close);
+
+          await expectLater(
+            hydrated.watchSnapshot(),
+            emitsThrough(
+              predicate<NotificationPage>((p) {
+                if (p.items.length != 1) return false;
+                final item = p.items.first;
+                return item is VideoNotification &&
+                    item.type == NotificationKind.comment &&
+                    item.videoEventId == 'video_evt_2' &&
+                    item.commentText == 'Nice clip!';
+              }, 'placeholder is VideoNotification(comment) with content'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'cached "repost" row becomes $VideoNotification placeholder',
+        () async {
+          when(
+            () => notificationsDao.getAllNotifications(
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              NotificationRow(
+                id: 'cached_repost_1',
+                type: 'repost',
+                fromPubkey: 'actor_pub',
+                timestamp: 1700000000,
+                targetEventId: 'video_evt_3',
+                targetPubkey: null,
+                content: null,
+                isRead: true,
+                cachedAt: DateTime(2026),
+              ),
+            ],
+          );
+          final hydrated = NotificationRepository(
+            funnelcakeApiClient: funnelcakeApiClient,
+            profileRepository: profileRepository,
+            notificationsDao: notificationsDao,
+            userPubkey: userPubkey,
+          );
+          addTearDown(hydrated.close);
+
+          await expectLater(
+            hydrated.watchSnapshot(),
+            emitsThrough(
+              predicate<NotificationPage>((p) {
+                if (p.items.length != 1) return false;
+                final item = p.items.first;
+                return item is VideoNotification &&
+                    item.type == NotificationKind.repost &&
+                    item.videoEventId == 'video_evt_3' &&
+                    item.isRead &&
+                    item.commentText == null;
+              }, 'placeholder is VideoNotification(repost) preserving isRead'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'cached "like" row with null targetEventId is skipped — degrading '
+        'to system would hide the row from the Likes tab and make tap a no-op',
+        () async {
+          when(
+            () => notificationsDao.getAllNotifications(
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              NotificationRow(
+                id: 'orphan_like',
+                type: 'like',
+                fromPubkey: 'actor_pub',
+                timestamp: 1700000000,
+                targetEventId: null,
+                targetPubkey: null,
+                content: null,
+                isRead: false,
+                cachedAt: DateTime(2026),
+              ),
+            ],
+          );
+          final hydrated = NotificationRepository(
+            funnelcakeApiClient: funnelcakeApiClient,
+            profileRepository: profileRepository,
+            notificationsDao: notificationsDao,
+            userPubkey: userPubkey,
+          );
+          addTearDown(hydrated.close);
+          // Give the unawaited hydration a chance to resolve.
+          await Future<void>.delayed(Duration.zero);
+          final snapshot = await hydrated.watchSnapshot().first;
+          expect(snapshot.items, isEmpty);
+        },
+      );
+
+      test(
+        'cached "follow" row remains an $ActorNotification placeholder',
+        () async {
+          when(
+            () => notificationsDao.getAllNotifications(
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              NotificationRow(
+                id: 'cached_follow_1',
+                type: 'follow',
+                fromPubkey: 'follower_pub',
+                timestamp: 1700000000,
+                targetEventId: null,
+                targetPubkey: 'follower_pub',
+                content: null,
+                isRead: false,
+                cachedAt: DateTime(2026),
+              ),
+            ],
+          );
+          final hydrated = NotificationRepository(
+            funnelcakeApiClient: funnelcakeApiClient,
+            profileRepository: profileRepository,
+            notificationsDao: notificationsDao,
+            userPubkey: userPubkey,
+          );
+          addTearDown(hydrated.close);
+
+          await expectLater(
+            hydrated.watchSnapshot(),
+            emitsThrough(
+              predicate<NotificationPage>((p) {
+                if (p.items.length != 1) return false;
+                final item = p.items.first;
+                return item is ActorNotification &&
+                    item.type == NotificationKind.follow &&
+                    item.actor.pubkey == 'follower_pub';
+              }, 'placeholder is ActorNotification(follow)'),
+            ),
+          );
+        },
+      );
     });
 
     group('refresh', () {

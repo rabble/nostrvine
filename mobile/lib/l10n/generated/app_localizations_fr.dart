@@ -4084,10 +4084,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get notificationsRefreshError =>
-      'Couldn\'t refresh — showing what you have';
-
-  @override
-  String get notificationsRefreshErrorRetry => 'Retry';
+      'Échec de l\'actualisation — affichage des éléments disponibles';
 
   @override
   String get notificationsCheckingNew =>

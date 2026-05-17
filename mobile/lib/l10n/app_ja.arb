@@ -1710,6 +1710,7 @@
     "notificationsTabReposts": "リポスト",
     "notificationsFailedToLoad": "通知の読み込みがうまくいかなかった",
     "notificationsRetry": "もう一回",
+    "notificationsRefreshError": "更新できませんでした — 既存の通知を表示しています",
     "notificationsCheckingNew": "新しい通知をチェック中",
     "notificationsNoneYet": "通知はまだないよ",
     "notificationsNoneForType": "{type}の通知はないよ",

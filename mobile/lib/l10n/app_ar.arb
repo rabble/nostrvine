@@ -1710,6 +1710,7 @@
     "notificationsTabReposts": "إعادة النشر",
     "notificationsFailedToLoad": "تعذر تحميل الإشعارات",
     "notificationsRetry": "إعادة المحاولة",
+    "notificationsRefreshError": "تعذّر التحديث — يتم عرض ما هو متاح",
     "notificationsCheckingNew": "جارٍ التحقق من الإشعارات الجديدة",
     "notificationsNoneYet": "لا توجد إشعارات بعد",
     "notificationsNoneForType": "لا توجد إشعارات {type}",

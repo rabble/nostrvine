@@ -1724,6 +1724,7 @@
     "notificationsTabReposts": "Reposts",
     "notificationsFailedToLoad": "No se pudieron cargar las notificaciones",
     "notificationsRetry": "Reintentar",
+    "notificationsRefreshError": "No se pudo actualizar — se muestra lo disponible",
     "notificationsCheckingNew": "buscando notificaciones nuevas",
     "notificationsNoneYet": "Todavía no hay notificaciones",
     "notificationsNoneForType": "No hay notificaciones de {type}",

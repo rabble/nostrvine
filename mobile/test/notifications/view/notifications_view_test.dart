@@ -190,7 +190,9 @@ void main() {
     });
 
     group('loading state', () {
-      testWidgets('renders loading indicator', (tester) async {
+      testWidgets('renders loading indicator when notifications is empty', (
+        tester,
+      ) async {
         when(() => mockBloc.state).thenReturn(
           NotificationFeedState(status: NotificationFeedStatus.loading),
         );
@@ -199,6 +201,78 @@ void main() {
 
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
       });
+
+      testWidgets(
+        'renders cached list (not full-screen spinner) when hydrated '
+        'notifications are present and refresh is still in flight',
+        (tester) async {
+          // Cold-start path: repository emits hydrated cache; bloc is
+          // still in `loading` because `refresh()` has not returned yet.
+          // The view must surface the cached rows under the active tab
+          // instead of masking them behind a full-screen spinner.
+          when(() => mockBloc.state).thenReturn(
+            NotificationFeedState(
+              status: NotificationFeedStatus.loading,
+              notifications: [
+                ActorNotification(
+                  id: 'cached_1',
+                  type: NotificationKind.follow,
+                  actor: ActorInfo(
+                    pubkey: 'cached_actor',
+                    displayName: 'Loading…',
+                  ),
+                  timestamp: DateTime(2026),
+                ),
+              ],
+            ),
+          );
+
+          await _pumpView(tester, mockBloc);
+
+          expect(find.byType(NotificationListItem), findsOneWidget);
+          // No full-screen spinner — the inner ListView never renders
+          // a CircularProgressIndicator unless `isLoadingMore` is true.
+          expect(
+            find.descendant(
+              of: find.byType(NotificationsView),
+              matching: find.byType(CircularProgressIndicator),
+            ),
+            findsNothing,
+          );
+        },
+      );
+
+      testWidgets(
+        'shows refresh-error banner when refreshError is true and cache '
+        'has items',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            NotificationFeedState(
+              status: NotificationFeedStatus.loaded,
+              refreshError: true,
+              notifications: [
+                ActorNotification(
+                  id: 'cached_1',
+                  type: NotificationKind.follow,
+                  actor: ActorInfo(
+                    pubkey: 'cached_actor',
+                    displayName: 'Alice',
+                  ),
+                  timestamp: DateTime(2026),
+                ),
+              ],
+            ),
+          );
+
+          await _pumpView(tester, mockBloc);
+
+          // Banner text + the reused `notificationsRetry` button label.
+          expect(find.text(_l10n.notificationsRefreshError), findsOneWidget);
+          expect(find.text(_l10n.notificationsRetry), findsOneWidget);
+          // List row also renders alongside the banner.
+          expect(find.byType(NotificationListItem), findsOneWidget);
+        },
+      );
     });
 
     group('failure state', () {

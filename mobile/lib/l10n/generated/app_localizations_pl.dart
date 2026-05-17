@@ -4123,10 +4123,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get notificationsRefreshError =>
-      'Couldn\'t refresh — showing what you have';
-
-  @override
-  String get notificationsRefreshErrorRetry => 'Retry';
+      'Nie udało się odświeżyć — pokazuję dostępne';
 
   @override
   String get notificationsCheckingNew => 'sprawdzanie nowych powiadomień';

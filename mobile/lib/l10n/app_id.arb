@@ -1717,6 +1717,7 @@
     "notificationsTabReposts": "Repost",
     "notificationsFailedToLoad": "Gagal memuat notifikasi",
     "notificationsRetry": "Coba Lagi",
+    "notificationsRefreshError": "Gagal menyegarkan — menampilkan yang tersedia",
     "notificationsCheckingNew": "mengecek notifikasi baru",
     "notificationsNoneYet": "Belum ada notifikasi",
     "notificationsNoneForType": "Tidak ada notifikasi {type}",

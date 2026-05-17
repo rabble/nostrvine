@@ -1720,6 +1720,7 @@
     "notificationsTabReposts": "Reposts",
     "notificationsFailedToLoad": "Échec du chargement des notifications",
     "notificationsRetry": "Réessayer",
+    "notificationsRefreshError": "Échec de l'actualisation — affichage des éléments disponibles",
     "notificationsCheckingNew": "vérification des nouvelles notifications",
     "notificationsNoneYet": "Pas encore de notifications",
     "notificationsNoneForType": "Aucune notification {type}",

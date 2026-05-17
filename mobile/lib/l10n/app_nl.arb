@@ -1720,6 +1720,7 @@
     "notificationsTabReposts": "Reposts",
     "notificationsFailedToLoad": "Meldingen laden mislukt",
     "notificationsRetry": "Opnieuw",
+    "notificationsRefreshError": "Vernieuwen mislukt — toont beschikbare items",
     "notificationsCheckingNew": "checken op nieuwe meldingen",
     "notificationsNoneYet": "Nog geen meldingen",
     "notificationsNoneForType": "Geen {type}-meldingen",

@@ -1720,6 +1720,7 @@
     "notificationsTabReposts": "Reposts",
     "notificationsFailedToLoad": "Benachrichtigungen konnten nicht geladen werden",
     "notificationsRetry": "Erneut versuchen",
+    "notificationsRefreshError": "Aktualisierung fehlgeschlagen – Vorhandenes wird angezeigt",
     "notificationsCheckingNew": "Suche nach neuen Benachrichtigungen",
     "notificationsNoneYet": "Noch keine Benachrichtigungen",
     "notificationsNoneForType": "Keine {type}-Benachrichtigungen",

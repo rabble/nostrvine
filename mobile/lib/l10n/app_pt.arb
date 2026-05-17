@@ -1720,6 +1720,7 @@
     "notificationsTabReposts": "Reposts",
     "notificationsFailedToLoad": "Falha ao carregar notificações",
     "notificationsRetry": "Tentar novamente",
+    "notificationsRefreshError": "Falha ao atualizar — mostrando o disponível",
     "notificationsCheckingNew": "verificando novas notificações",
     "notificationsNoneYet": "Sem notificações ainda",
     "notificationsNoneForType": "Sem notificações de {type}",

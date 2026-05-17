@@ -1717,6 +1717,7 @@
     "notificationsTabReposts": "Yeniden Paylaşımlar",
     "notificationsFailedToLoad": "Bildirimler yüklenemedi",
     "notificationsRetry": "Tekrar Dene",
+    "notificationsRefreshError": "Yenileme başarısız — mevcut olanlar gösteriliyor",
     "notificationsCheckingNew": "yeni bildirimler kontrol ediliyor",
     "notificationsNoneYet": "Henüz bildirim yok",
     "notificationsNoneForType": "{type} bildirimi yok",

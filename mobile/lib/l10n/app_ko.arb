@@ -1006,6 +1006,7 @@
     "notificationsTabReposts": "리포스트",
     "notificationsFailedToLoad": "알림을 불러오지 못했어요",
     "notificationsRetry": "다시 시도",
+    "notificationsRefreshError": "새로고침 실패 — 보유 중인 알림을 표시합니다",
     "notificationsCheckingNew": "새 알림을 확인하는 중",
     "notificationsNoneYet": "아직 알림이 없어요",
     "notificationsNoneForType": "{type} 알림이 없어요",

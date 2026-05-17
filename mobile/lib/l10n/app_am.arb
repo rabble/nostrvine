@@ -2011,6 +2011,7 @@
     "notificationsTabReposts": "ድጋሚ ልጥፎች",
     "notificationsFailedToLoad": "ማሳወቂያዎችን መጫን አልተሳካም።",
     "notificationsRetry": "እንደገና ይሞክሩ",
+    "notificationsRefreshError": "ማደስ አልተቻለም — ያለዎትን እያሳየ ነው",
     "notificationsCheckingNew": "አዲስ ማሳወቂያዎችን በመፈተሽ ላይ",
     "notificationsNoneYet": "እስካሁን ምንም ማሳወቂያዎች የሉም",
     "notificationsNoneForType": "ምንም {type} ማሳወቂያዎች የሉም",

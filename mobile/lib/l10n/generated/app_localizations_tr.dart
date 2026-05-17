@@ -4004,10 +4004,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get notificationsRefreshError =>
-      'Couldn\'t refresh — showing what you have';
-
-  @override
-  String get notificationsRefreshErrorRetry => 'Retry';
+      'Yenileme başarısız — mevcut olanlar gösteriliyor';
 
   @override
   String get notificationsCheckingNew => 'yeni bildirimler kontrol ediliyor';

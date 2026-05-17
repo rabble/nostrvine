@@ -3994,10 +3994,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get notificationsRefreshError =>
-      'Couldn\'t refresh — showing what you have';
-
-  @override
-  String get notificationsRefreshErrorRetry => 'Retry';
+      'Gagal menyegarkan — menampilkan yang tersedia';
 
   @override
   String get notificationsCheckingNew => 'mengecek notifikasi baru';

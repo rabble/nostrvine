@@ -321,7 +321,11 @@ class NotificationRepository {
       );
       if (rows.isEmpty) return;
       if (_snapshot.value.items.isNotEmpty) return;
-      final items = rows.map(_rowToPlaceholder).toList();
+      final items = rows
+          .map(_rowToPlaceholder)
+          .whereType<NotificationItem>()
+          .toList();
+      if (items.isEmpty) return;
       _snapshot.add(
         _snapshot.value.copyWith(
           items: items,
@@ -340,42 +344,83 @@ class NotificationRepository {
     }
   }
 
-  /// Maps a [NotificationRow] into an [ActorNotification] placeholder.
+  /// Maps a [NotificationRow] into a placeholder [NotificationItem].
+  ///
+  /// Returns null when the cached row cannot be reconstructed as a valid
+  /// item (e.g. a `like`/`comment`/`repost` row whose `targetEventId` is
+  /// missing — [VideoNotification] requires a non-null `videoEventId`).
+  /// Skipping is preferable to degrading video-anchored rows into
+  /// [NotificationKind.system], because system rows disappear from the
+  /// Likes/Comments/Reposts tab filters and become inert on tap.
   ///
   /// Profile and video metadata aren't refetched here — placeholders are
-  /// always replaced by the next first-page REST emission, so we keep the
-  /// hydration path synchronous and dependency-free.
-  ///
-  /// Video-anchored kinds (`like`, `comment`, `repost`) are coerced to
-  /// [NotificationKind.system] in the placeholder because
-  /// [VideoNotification] requires a non-null `videoEventId` and the
-  /// cached row only carries `targetEventId` (which may be null and isn't
-  /// guaranteed to be a video event). The system row is a transient
-  /// degraded view replaced as soon as REST or WS data arrives.
-  static ActorNotification _rowToPlaceholder(NotificationRow row) {
-    final placeholderKind = _placeholderKindFromCachedType(row.type);
+  /// always replaced by the next first-page REST emission, so we keep
+  /// the hydration path synchronous and dependency-free.
+  static NotificationItem? _rowToPlaceholder(NotificationRow row) {
+    final timestamp = DateTime.fromMillisecondsSinceEpoch(
+      row.timestamp * 1000,
+      isUtc: true,
+    ).toLocal();
+    final actor = ActorInfo(
+      pubkey: row.fromPubkey,
+      displayName: 'Loading…',
+    );
+
+    // Video-anchored kinds — reconstruct VideoNotification using the cached
+    // targetEventId (which `_itemToCacheRow` writes as videoEventId).
+    final videoKind = _videoKindFromCachedType(row.type);
+    if (videoKind != null) {
+      final videoEventId = row.targetEventId;
+      if (videoEventId == null || videoEventId.isEmpty) return null;
+      return VideoNotification(
+        id: row.id,
+        type: videoKind,
+        videoEventId: videoEventId,
+        actors: [actor],
+        totalCount: 1,
+        timestamp: timestamp,
+        isRead: row.isRead,
+        commentText: videoKind == NotificationKind.comment ? row.content : null,
+        // sourceEventIds intentionally empty — the cache stores only the
+        // dedupeKey (`id`) and the videoEventId (`targetEventId`), not the
+        // underlying Nostr source event id. First-page REST emission
+        // replaces the placeholder, so the union-by-sourceEventId merge in
+        // _emitSnapshotForPage doesn't need a value here.
+        sourceEventIds: const [],
+      );
+    }
+
+    // Actor-anchored kinds — `follow`, `mention`, `likeComment`, `reply`,
+    // `system` (and unknown future types fall through to `system`).
     return ActorNotification(
       id: row.id,
-      type: placeholderKind,
-      actor: ActorInfo(pubkey: row.fromPubkey, displayName: 'Loading…'),
-      timestamp: DateTime.fromMillisecondsSinceEpoch(
-        row.timestamp * 1000,
-        isUtc: true,
-      ).toLocal(),
+      type: _actorKindFromCachedType(row.type),
+      actor: actor,
+      timestamp: timestamp,
       isRead: row.isRead,
       commentText: row.content,
       targetEventId: row.targetEventId,
-      sourceEventIds: row.targetEventId != null && row.targetEventId!.isNotEmpty
-          ? [row.targetEventId!]
-          : const [],
+      sourceEventIds: const [],
     );
   }
 
-  /// Best-effort cached type → placeholder kind. Always returns a kind
-  /// supported by [ActorNotification]; video-anchored kinds fall back to
-  /// [NotificationKind.system] because the placeholder cannot reconstruct
-  /// a complete [VideoNotification].
-  static NotificationKind _placeholderKindFromCachedType(String type) =>
+  /// Maps a cached `type` column to a video-anchored [NotificationKind].
+  ///
+  /// Returns null for non-video types — those are routed through
+  /// [_actorKindFromCachedType] instead.
+  static NotificationKind? _videoKindFromCachedType(String type) =>
+      switch (type) {
+        'like' => NotificationKind.like,
+        'comment' => NotificationKind.comment,
+        'repost' => NotificationKind.repost,
+        _ => null,
+      };
+
+  /// Maps a cached `type` column to an actor-anchored [NotificationKind].
+  ///
+  /// Unknown types fall back to [NotificationKind.system] so the row
+  /// stays renderable until REST refreshes it.
+  static NotificationKind _actorKindFromCachedType(String type) =>
       switch (type) {
         'follow' => NotificationKind.follow,
         'mention' => NotificationKind.mention,

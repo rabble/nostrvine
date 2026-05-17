@@ -3843,11 +3843,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get notificationsRetry => '다시 시도';
 
   @override
-  String get notificationsRefreshError =>
-      'Couldn\'t refresh — showing what you have';
-
-  @override
-  String get notificationsRefreshErrorRetry => 'Retry';
+  String get notificationsRefreshError => '새로고침 실패 — 보유 중인 알림을 표시합니다';
 
   @override
   String get notificationsCheckingNew => '새 알림을 확인하는 중';

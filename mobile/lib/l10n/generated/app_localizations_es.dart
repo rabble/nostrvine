@@ -4070,10 +4070,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get notificationsRefreshError =>
-      'Couldn\'t refresh — showing what you have';
-
-  @override
-  String get notificationsRefreshErrorRetry => 'Retry';
+      'No se pudo actualizar — se muestra lo disponible';
 
   @override
   String get notificationsCheckingNew => 'buscando notificaciones nuevas';

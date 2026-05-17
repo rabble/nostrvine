@@ -1902,6 +1902,7 @@
     "notificationsTabReposts": "Репостове",
     "notificationsFailedToLoad": "Не успяхме да заредим известията",
     "notificationsRetry": "Опитай пак",
+    "notificationsRefreshError": "Неуспешно обновяване — показва се наличното",
     "notificationsCheckingNew": "Проверяваме за нови известия",
     "notificationsNoneYet": "Още няма известия",
     "notificationsNoneForType": "Няма известия от тип {type}",

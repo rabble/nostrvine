@@ -1720,6 +1720,7 @@
     "notificationsTabReposts": "Reposty",
     "notificationsFailedToLoad": "Nie udało się wczytać powiadomień",
     "notificationsRetry": "Spróbuj ponownie",
+    "notificationsRefreshError": "Nie udało się odświeżyć — pokazuję dostępne",
     "notificationsCheckingNew": "sprawdzanie nowych powiadomień",
     "notificationsNoneYet": "Brak powiadomień",
     "notificationsNoneForType": "Brak powiadomień typu {type}",

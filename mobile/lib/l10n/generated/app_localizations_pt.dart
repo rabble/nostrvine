@@ -4049,10 +4049,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get notificationsRefreshError =>
-      'Couldn\'t refresh — showing what you have';
-
-  @override
-  String get notificationsRefreshErrorRetry => 'Retry';
+      'Falha ao atualizar — mostrando o disponível';
 
   @override
   String get notificationsCheckingNew => 'verificando novas notificações';

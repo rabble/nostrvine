@@ -1052,6 +1052,7 @@
     "notificationsTabReposts": "Reposts",
     "notificationsFailedToLoad": "Hindi na-load ang notifications",
     "notificationsRetry": "Subukan ulit",
+    "notificationsRefreshError": "Hindi ma-refresh — ipinapakita ang nasa iyo",
     "notificationsCheckingNew": "tinitingnan kung may bagong notifications",
     "notificationsNoneYet": "Wala pang notifications",
     "notificationsNoneForType": "Walang {type} na notifications",

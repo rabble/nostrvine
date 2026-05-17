@@ -4069,10 +4069,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get notificationsRefreshError =>
-      'Couldn\'t refresh — showing what you have';
-
-  @override
-  String get notificationsRefreshErrorRetry => 'Retry';
+      'Неуспешно обновяване — показва се наличното';
 
   @override
   String get notificationsCheckingNew => 'Проверяваме за нови известия';

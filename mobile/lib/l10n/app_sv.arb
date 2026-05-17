@@ -1720,6 +1720,7 @@
     "notificationsTabReposts": "Återpubliceringar",
     "notificationsFailedToLoad": "Kunde inte läsa in aviseringar",
     "notificationsRetry": "Försök igen",
+    "notificationsRefreshError": "Kunde inte uppdatera — visar tillgängliga",
     "notificationsCheckingNew": "kollar efter nya aviseringar",
     "notificationsNoneYet": "Inga aviseringar än",
     "notificationsNoneForType": "Inga {type}-aviseringar",

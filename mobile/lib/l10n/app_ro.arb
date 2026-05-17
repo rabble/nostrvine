@@ -1720,6 +1720,7 @@
     "notificationsTabReposts": "Redistribuiri",
     "notificationsFailedToLoad": "N-am putut încărca notificările",
     "notificationsRetry": "Reîncearcă",
+    "notificationsRefreshError": "Actualizare eșuată — se afișează ce există",
     "notificationsCheckingNew": "se verifică notificări noi",
     "notificationsNoneYet": "Încă nicio notificare",
     "notificationsNoneForType": "Nicio notificare de tip {type}",
