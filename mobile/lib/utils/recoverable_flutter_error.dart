@@ -39,6 +39,9 @@ String? classifyRecoverableFlutterError(FlutterErrorDetails details) {
       error.contains('Connection closed while receiving data') &&
       hasRecoverableMediaHost;
 
+  final isMissingHttpHost =
+      library == 'dart:_http' && error.contains('No host specified in URI');
+
   final isInvalidImageData =
       error.contains('Invalid image data') &&
       (library == 'dart:ui' ||
@@ -48,6 +51,7 @@ String? classifyRecoverableFlutterError(FlutterErrorDetails details) {
   if (isImage404 ||
       isMediaHostLookup ||
       isInterruptedMediaDownload ||
+      isMissingHttpHost ||
       isInvalidImageData) {
     return _recoverableMediaLoadReason;
   }

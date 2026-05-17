@@ -367,6 +367,7 @@ class VideoEvent {
               );
             } else if (type == 'thumbnail' &&
                 url.isNotEmpty &&
+                _isValidVideoUrl(url) &&
                 !url.contains('picsum.photos')) {
               thumbnailUrl ??= url;
               developer.log(

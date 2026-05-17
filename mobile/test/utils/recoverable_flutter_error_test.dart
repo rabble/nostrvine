@@ -61,6 +61,18 @@ void main() {
       );
     });
 
+    test('classifies dart:_http missing-host URI failures as recoverable', () {
+      final details = FlutterErrorDetails(
+        exception: ArgumentError('No host specified in URI https:///thumb.jpg'),
+        library: 'dart:_http',
+      );
+
+      expect(
+        classifyRecoverableFlutterError(details),
+        'Recoverable media load failure',
+      );
+    });
+
     test('does not classify unrelated gesture errors as recoverable', () {
       final details = FlutterErrorDetails(
         exception: Exception('GoError: There is nothing to pop.'),
