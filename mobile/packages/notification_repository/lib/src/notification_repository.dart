@@ -310,9 +310,9 @@ class NotificationRepository {
   /// Best-effort load of cached rows into the snapshot on construction.
   ///
   /// Runs only when the snapshot is still empty (avoids racing the first
-  /// REST response). Cached rows are surfaced as actor-anchored
-  /// placeholders — the next REST/WS arrival replaces them with a fully
-  /// enriched item.
+  /// REST response). Cached rows are surfaced as lightweight placeholders
+  /// — video-anchored rows stay video-anchored when reconstructable, and
+  /// the next REST/WS arrival replaces them with fully enriched items.
   Future<void> _hydrateFromCache() async {
     try {
       if (_snapshot.value.items.isNotEmpty) return;
@@ -483,10 +483,9 @@ class NotificationRepository {
     );
   }
 
-  /// String form persisted in the `type` column. Inverse of
-  /// [_placeholderKindFromCachedType] (the hydration path drops the
-  /// video-anchored distinction since placeholders can't reconstruct
-  /// `videoEventId`).
+  /// String form persisted in the `type` column.
+  ///
+  /// Inverse of [_videoKindFromCachedType] plus [_actorKindFromCachedType].
   static String _persistType(NotificationKind kind) => switch (kind) {
     NotificationKind.like => 'like',
     NotificationKind.comment => 'comment',
