@@ -279,6 +279,43 @@ void main() {
         },
       );
 
+      test(
+        'explicit cursor override does not leak stored cursor id',
+        () async {
+          var signedUrl = '';
+          repository = NotificationRepository(
+            funnelcakeApiClient: funnelcakeApiClient,
+            profileRepository: profileRepository,
+            notificationsDao: notificationsDao,
+            userPubkey: userPubkey,
+            authHeadersProvider: (url, method) async {
+              signedUrl = url;
+              return {'Authorization': 'Nostr test-token'};
+            },
+          );
+          stubNotifications(
+            [],
+            nextCursor: '1700000000',
+            nextCursorId: stableCursorId,
+            hasMore: true,
+          );
+          stubProfiles({});
+
+          await repository.getNotifications();
+          stubNotifications([], nextCursor: 'manual_next');
+
+          await repository.getNotifications(cursor: 'manual_cursor');
+
+          expect(
+            signedUrl,
+            equals(
+              'https://api.example.com/api/users/$userPubkey/notifications'
+              '?limit=50&before=manual_cursor',
+            ),
+          );
+        },
+      );
+
       test('one like becomes a $VideoNotification with totalCount 1', () async {
         stubNotifications([
           makeNotification(

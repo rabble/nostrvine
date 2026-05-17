@@ -120,7 +120,9 @@ class NotificationRepository {
   }) async {
     try {
       final effectiveCursor = cursor ?? _lastCursor;
-      final effectiveCursorId = cursorId ?? _lastCursorId;
+      final effectiveCursorId = cursor != null
+          ? cursorId
+          : cursorId ?? _lastCursorId;
       final requestUrl = _funnelcakeApiClient
           .notificationsUri(
             pubkey: _userPubkey,

@@ -73,6 +73,7 @@ class Nip98AuthService {
 
   // Token cache to avoid repeated signing for identical requests
   final Map<String, Nip98Token> _tokenCache = {};
+  // Funnelcake rejects NIP-98 auth events older than 60s, so keep a buffer.
   static const Duration _tokenValidityDuration = Duration(seconds: 45);
   static const Duration _cacheCleanupInterval = Duration(minutes: 15);
 
