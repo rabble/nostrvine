@@ -1010,7 +1010,22 @@ void main() {
         );
 
         await tester.pumpWidget(
-          createTestWidget(child: SoundDetailScreen(sound: testSound)),
+          createTestWidget(
+            child: SoundDetailScreen(sound: testSound),
+            overrides: [
+              // Mock the videos + usage providers so the un-mocked
+              // soundsRepository fetch can't race into the error state and
+              // tip the framework with a RenderFlex overflow under shuffled
+              // VGV-optimized seeds.
+              soundUsageCountProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(0)),
+              videosUsingSoundProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(<String>[])),
+              audioPlaybackServiceProvider.overrideWithValue(mockAudioService),
+            ],
+          ),
         );
 
         await tester.pumpAndSettle();

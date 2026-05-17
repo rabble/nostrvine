@@ -1120,5 +1120,52 @@ void main() {
         verify(() => mockGoRouter.pop<Object?>()).called(1);
       });
     });
+
+    group('Error State Layout', () {
+      testWidgets(
+        'videos error state stays scrollable when the grid slot is short',
+        (tester) async {
+          // Reproduces the seed-1263147621 CI flake: when shuffled tests
+          // race the un-mocked sounds repository into an error before
+          // pumpAndSettle finishes, the screen rendered _buildErrorState
+          // and its Column overflowed the _VideosGrid slot by 15px (slot
+          // height was 222px in the failing run), throwing a RenderFlex
+          // exception that the framework promoted to a TestFailure
+          // across unrelated tests in the same VGV-optimized isolate.
+          // Shrink the surface enough to reproduce that short slot and
+          // verify no layout exception leaks out.
+          await tester.binding.setSurfaceSize(const Size(360, 480));
+          addTearDown(() => tester.binding.setSurfaceSize(null));
+
+          final testSound = createTestAudioEvent(id: 'sound1');
+
+          await tester.pumpWidget(
+            createTestWidget(
+              child: SoundDetailScreen(sound: testSound),
+              overrides: [
+                soundUsageCountProvider(
+                  testSound.id,
+                ).overrideWith((ref) => Future.value(0)),
+                videosUsingSoundProvider(testSound.id).overrideWith(
+                  (ref) => Future<List<String>>.error(
+                    Exception('forced error for layout regression test'),
+                  ),
+                ),
+                audioPlaybackServiceProvider.overrideWithValue(
+                  mockAudioService,
+                ),
+              ],
+            ),
+          );
+
+          await tester.pumpAndSettle();
+
+          // The error body must actually be on screen (no fallback path).
+          expect(find.byIcon(Icons.error_outline), findsOneWidget);
+          // No layout exception should have been thrown while building.
+          expect(tester.takeException(), isNull);
+        },
+      );
+    });
   });
 }
