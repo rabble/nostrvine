@@ -52,11 +52,24 @@ void main() {
       );
     }
 
+    Future<void> pumpSubject(
+      WidgetTester tester, {
+      bool advancedRelaySettingsEnabled = false,
+    }) async {
+      await tester.binding.setSurfaceSize(const Size(900, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        buildSubject(
+          advancedRelaySettingsEnabled: advancedRelaySettingsEnabled,
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
     testWidgets('shows Experimental Features tile and opens feature flags', (
       tester,
     ) async {
-      await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await pumpSubject(tester);
 
       expect(find.text(l10n.settingsExperimentalFeatures), findsOneWidget);
 
@@ -68,8 +81,7 @@ void main() {
 
     testWidgets('hides Relays and Relay Diagnostics tiles when '
         'advancedRelaySettings flag is off', (tester) async {
-      await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await pumpSubject(tester);
 
       expect(find.text(l10n.nostrSettingsRelays), findsNothing);
       expect(find.text(l10n.nostrSettingsRelayDiagnostics), findsNothing);
@@ -77,16 +89,14 @@ void main() {
 
     testWidgets('shows Relays and Relay Diagnostics tiles when '
         'advancedRelaySettings flag is on', (tester) async {
-      await tester.pumpWidget(buildSubject(advancedRelaySettingsEnabled: true));
-      await tester.pumpAndSettle();
+      await pumpSubject(tester, advancedRelaySettingsEnabled: true);
 
       expect(find.text(l10n.nostrSettingsRelays), findsOneWidget);
       expect(find.text(l10n.nostrSettingsRelayDiagnostics), findsOneWidget);
     });
 
     testWidgets('shows NIP-05 address tile', (tester) async {
-      await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await pumpSubject(tester);
 
       expect(find.text(l10n.nostrSettingsNip05Address), findsOneWidget);
       expect(find.text(l10n.nostrSettingsNip05AddressSubtitle), findsOneWidget);

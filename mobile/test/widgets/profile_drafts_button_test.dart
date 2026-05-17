@@ -143,6 +143,9 @@ void main() {
     testWidgets(
       'Clips button should have consistent styling with other buttons',
       (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1200));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
         await tester.pumpWidget(
           MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,

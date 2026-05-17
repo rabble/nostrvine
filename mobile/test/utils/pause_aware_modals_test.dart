@@ -11,8 +11,15 @@ import 'package:openvine/utils/pause_aware_modals.dart';
 
 void main() {
   group('showVideoPausingVineBottomSheet', () {
+    Future<void> setSheetTestSurface(WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+    }
+
     testWidgets('default path dismisses on tap above the sheet (inherits '
         'tapOutsideToDismiss default)', (tester) async {
+      await setSheetTestSurface(tester);
+
       await tester.pumpWidget(
         ProviderScope(
           child: MaterialApp(
@@ -51,6 +58,8 @@ void main() {
     testWidgets(
       'sets and clears isBottomSheetOpen on the overlay visibility provider',
       (tester) async {
+        await setSheetTestSurface(tester);
+
         late ProviderContainer container;
         await tester.pumpWidget(
           ProviderScope(
@@ -104,6 +113,8 @@ void main() {
     testWidgets(
       'tapOutsideToDismiss: false keeps the sheet open on outside tap',
       (tester) async {
+        await setSheetTestSurface(tester);
+
         await tester.pumpWidget(
           ProviderScope(
             child: MaterialApp(

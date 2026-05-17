@@ -183,6 +183,9 @@ void main() {
   testWidgets(
     'sizes the web player to a cover box so fullscreen video can crop',
     (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
       final controller = _FakeVideoPlayerController(
         videoSize: const Size(480, 480),
       );

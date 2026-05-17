@@ -67,6 +67,11 @@ void main() {
       );
     }
 
+    Future<void> setRegistrationTestSurface(WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(900, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+    }
+
     group('Form Display', () {
       testWidgets('displays email field', (tester) async {
         await tester.pumpWidget(buildTestWidget());
@@ -230,6 +235,8 @@ void main() {
 
     group('Password Visibility Toggle', () {
       testWidgets('toggles password visibility', (tester) async {
+        await setRegistrationTestSurface(tester);
+
         await tester.pumpWidget(buildTestWidget());
         await tester.pumpAndSettle();
 
@@ -415,6 +422,8 @@ void main() {
       testWidgets(
         'calls TextInput.finishAutofillContext when tapping Continue to App',
         (tester) async {
+          await setRegistrationTestSurface(tester);
+
           final recorder = AutofillContextRecorder.install();
 
           // Return verification-required result so the dialog is shown.
@@ -519,6 +528,8 @@ void main() {
       testWidgets('verification dialog is not dismissed by tapping outside', (
         tester,
       ) async {
+        await setRegistrationTestSurface(tester);
+
         when(
           () => mockOAuth.headlessRegister(
             email: any(named: 'email'),
@@ -607,6 +618,8 @@ void main() {
       testWidgets('verification dialog is not dismissed by system back', (
         tester,
       ) async {
+        await setRegistrationTestSurface(tester);
+
         when(
           () => mockOAuth.headlessRegister(
             email: any(named: 'email'),
