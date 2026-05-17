@@ -161,7 +161,7 @@ VideoEvent _makeDivineVideo() {
     createdAt: 1700000000,
     content: 'Divine video',
     timestamp: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
-    videoUrl: 'https://media.divine.video/$hash/720p.mp4',
+    videoUrl: 'https://media.divine.video/$hash',
   );
 }
 
@@ -417,11 +417,14 @@ void main() {
   });
 
   testWidgets(
-    'forwards HLS fallback URLs for Divine media to the auth player',
+    'uses optimized playback and HLS fallback URLs for Divine media',
     (tester) async {
       Future<String?> provider(String url, String method) async {
         return 'Nostr test-header';
       }
+
+      const hash =
+          'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210';
 
       await tester.pumpWidget(
         MaterialApp(
@@ -436,6 +439,7 @@ void main() {
       await tester.pump();
 
       final player = tester.widget<WebVideoPlayer>(find.byType(WebVideoPlayer));
+      expect(player.url, equals('https://media.divine.video/$hash/720p.mp4'));
       expect(player.hlsFallbackUrl, isNotNull);
       expect(player.hlsFallbackUrl, contains('/hls/'));
       expect(player.hlsFallbackUrl, endsWith('.m3u8'));

@@ -366,13 +366,14 @@ class WebVideoFeedState extends State<WebVideoFeed> {
           return const ColoredBox(color: VineTheme.backgroundColor);
         }
 
+        final playbackUrl = video.getOptimalVideoUrlForPlatform() ?? videoUrl;
         final playerKey = _getPlayerKey(index);
 
         return _WebVideoFeedItem(
           video: video,
           index: index,
           isActive: isActive,
-          videoUrl: videoUrl,
+          videoUrl: playbackUrl,
           playerKey: playerKey,
           headers: widget.headers,
           controllerFactory: widget.controllerFactory,
