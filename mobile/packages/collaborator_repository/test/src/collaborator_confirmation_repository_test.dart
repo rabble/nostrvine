@@ -166,6 +166,76 @@ void main() {
     });
 
     test(
+      'creator removal wins: re-watch with empty taggedPubkeys excludes '
+      'previously-confirmed collaborators',
+      () async {
+        // Spec invariant from
+        // docs/superpowers/plans/2026-04-25-collab-full-lifecycle.md:
+        // "Creator removal always wins. If the latest creator-authored video
+        // event no longer has the collaborator role `p` tag, Funnelcake must
+        // remove the pending/confirmed edge even if an old acceptance event
+        // still exists."
+        //
+        // Mobile-side analogue: even though `_relayAccepted` retains the
+        // historical acceptance, a re-watch driven by the latest creator-
+        // authored event with an empty (or shrunk) `taggedPubkeys` must
+        // produce a snapshot that does not surface the removed collaborator.
+        final repo = CollaboratorConfirmationRepository(
+          nostrClient: nostrClient,
+          localStateReader: _StaticLocalStateReader(const {}),
+          currentUserPubkey: _creatorPubkey,
+        );
+
+        // Initial state: B is tagged and has accepted.
+        final emissions = <VideoCollaboratorStatus>[];
+        final sub = repo
+            .watch(
+              _videoAddress,
+              creatorPubkey: _creatorPubkey,
+              taggedPubkeys: const [_collaboratorPubkey],
+            )
+            .listen(emissions.add);
+
+        await Future<void>.delayed(Duration.zero);
+        relayController.add(_acceptanceEvent(pubkey: _collaboratorPubkey));
+        await Future<void>.delayed(Duration.zero);
+        expect(
+          emissions.last.statusFor(_collaboratorPubkey),
+          equals(CollaboratorStatus.confirmed),
+        );
+
+        await sub.cancel();
+        repo.release(_videoAddress);
+
+        // Simulate the creator editing the video and removing B. A fresh
+        // watcher arrives with the new (empty) tagged list.
+        final reEmissions = <VideoCollaboratorStatus>[];
+        final reSub = repo
+            .watch(
+              _videoAddress,
+              creatorPubkey: _creatorPubkey,
+              taggedPubkeys: const <String>[],
+            )
+            .listen(reEmissions.add);
+
+        await Future<void>.delayed(Duration.zero);
+
+        // B was previously confirmed. The new snapshot must not surface them.
+        expect(reEmissions.last.statusByPubkey, isEmpty);
+        expect(
+          reEmissions.last.statusFor(_collaboratorPubkey),
+          equals(CollaboratorStatus.pending),
+          reason:
+              'statusFor falls back to pending for unknown pubkeys; the key '
+              'guarantee is that B is no longer in statusByPubkey.',
+        );
+
+        await reSub.cancel();
+        repo.release(_videoAddress);
+      },
+    );
+
+    test(
       'rejects events whose only address tag is `d` (NIP-33 self-id)',
       () async {
         // Defense in depth: even if a relay misbehaves and delivers an event

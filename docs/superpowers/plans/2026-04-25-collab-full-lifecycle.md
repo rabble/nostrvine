@@ -10,6 +10,39 @@
 
 ---
 
+## Mobile-Side Status (2026-05-17)
+
+The mobile-side chunks of this plan have shipped under coordination epic
+`#4201` (week of 2026-05-09 → 2026-05-17). Authoritative state derives from
+the Funnelcake read model once it ships; until then, mobile uses the
+in-process pipeline described below.
+
+**Shipped on mobile:**
+
+- **Kind choice + constant** (`KIND_COLLAB_RESPONSE = 34238`): `mobile/lib/constants/collaboration_event_kinds.dart`.
+- **Acceptance publish path** (Chunk 4 Task 10): `mobile/lib/services/collaborator_response_service.dart` — landed via `#3373` / `#4045`.
+- **Invite parser + local state store** (Chunk 3 Tasks 7–9): `collaborator_invite_parser.dart`, `collaborator_invite_state_store.dart`.
+- **Invite card + conversation wiring** (Chunk 4 Task 11): `collaborator_invite_card.dart`, `collaborator_invite_actions_cubit.dart`; updated for video preview by `#4378`.
+- **Message-request preview** (Chunk 4 Task 12): `request_preview_page.dart` / `request_preview_view.dart`.
+- **Post-publish invite delivery + retry** (Chunk 5 Tasks 13–14): `video_publish_service.dart`, `share_video_menu.dart`.
+- **Funnelcake confirmed-collab client** (Chunk 6 Task 15): `mobile/packages/funnelcake_api_client/lib/src/funnelcake_api_client.dart` (`getCollabVideos` → `/api/users/{pubkey}/collabs`).
+- **Profile collabs BLoC + grid** (Chunk 6 Task 16): `profile_collab_videos_bloc.dart`, `profile_collabs_grid.dart`.
+- **Raw `p`-tag feed expansion neutralized** (Chunk 6 Task 17 partial): `mobile/lib/services/video_event_service.dart` no-ops the legacy expansion path with a comment pointing back to this plan.
+- **Read consumer for acceptance** (closeout of `#4192` via `#4256`): new `mobile/packages/collaborator_repository` provides `CollaboratorConfirmationRepository` + `CollaboratorVisibility` + `VideoCollaboratorStatusCubit`. Pending vs confirmed render correctly on the inviter's own video and the recipient's own avatar.
+- **Self-acceptance publish path closed** (`#3559` / `#3566`): sender-side Accept/Ignore is removed; cubit asserts + early-returns when `currentUser == creator`. Mobile-side audit for `#3664` closed on 2026-04-29.
+- **p-tag construction centralized** (`#3704` via `#4326`, `#4383`): single helper for the 4-element collaborator p-tag.
+- **Profile enrichment race fixed** (`#3705` via `#4261`): targeted reconciliation prevents the duplicate-video flash on collab accept via Connect.
+
+**Funnelcake-side gates (still required for full plan completion):**
+
+- Chunk 1 Tasks 1–3 — `video_collaborators_current_data` + `video_feed_edges_current_data` read models.
+- Chunk 2 Tasks 4–6 — confirmed-only `/api/users/{pubkey}/collabs`, feed-edge-based following feed, Gorse feedback exclusion.
+- `#3664` — backend filter against self-acceptance events + historical row cleanup.
+
+Until the Funnelcake gates close, third-party viewers of any video still see all tagged collaborators including pending ones, and the following feed does not include videos from videos the user follows via a collaborator edge. Both gaps are documented in `mobile/packages/collaborator_repository/lib/src/collaborator_confirmation_repository.dart` and `mobile/lib/services/video_event_service.dart`.
+
+---
+
 ## Scope Check
 
 This is a two-repo feature. Execute it as two focused PRs, in this order:
