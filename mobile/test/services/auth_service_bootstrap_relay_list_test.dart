@@ -365,7 +365,7 @@ void main() {
     test(
       'uses injected primaryRelayUrl in r tag and target relay list (#3183)',
       () async {
-        const stagingRelayUrl = 'wss://relay.staging.dvines.org';
+        const stagingRelayUrl = 'wss://relay.staging.divine.video';
 
         final discovery = _ControllableRelayDiscoveryService(
           outcome: () => RelayDiscoveryResult.failure('No relay list found'),

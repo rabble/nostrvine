@@ -144,9 +144,9 @@ void main() {
       expect(
         resolvePinnedApiBaseUrlFromRelays(
           configuredRelays: const ['wss://relay.damus.io'],
-          fallbackBaseUrl: 'https://relay.staging.dvines.org',
+          fallbackBaseUrl: 'https://relay.staging.divine.video',
         ),
-        'https://relay.staging.dvines.org',
+        'https://relay.staging.divine.video',
       );
     });
   });
@@ -158,12 +158,12 @@ void main() {
         expect(
           resolvePinnedApiBaseUrlFromRelays(
             configuredRelays: const [
-              'wss://relay.staging.dvines.org',
+              'wss://relay.staging.divine.video',
               'wss://relay.divine.video',
             ],
-            fallbackBaseUrl: 'https://relay.staging.dvines.org',
+            fallbackBaseUrl: 'https://relay.staging.divine.video',
           ),
-          'https://relay.staging.dvines.org',
+          'https://relay.staging.divine.video',
         );
       },
     );
@@ -183,10 +183,10 @@ void main() {
     test('uses the first configured non-divine relay when needed', () {
       expect(
         resolveApiBaseUrlFromRelays(
-          configuredRelays: const ['wss://relay.staging.dvines.org'],
-          fallbackBaseUrl: 'https://relay.staging.dvines.org',
+          configuredRelays: const ['wss://relay.staging.divine.video'],
+          fallbackBaseUrl: 'https://relay.staging.divine.video',
         ),
-        'https://relay.staging.dvines.org',
+        'https://relay.staging.divine.video',
       );
     });
   });

@@ -333,6 +333,55 @@ void main() {
           ),
         );
       });
+
+      test(
+        'parses staging NIP-22 comment anchor fields',
+        () {
+          final json = {
+            'id': '',
+            'source_pubkey': 'aabbccdd' * 8,
+            'source_event_id': '11223344' * 8,
+            'source_kind': 1111,
+            'referenced_event_id': '',
+            'notification_type': 'mention',
+            'created_at': 1712345678,
+            'read': false,
+            'content': 'Fake staging comment from Codex',
+            'referenced_event_title': 'Codex staging comment notification test',
+            'target_comment_id': '11223344' * 8,
+            'root_event_id': '55667788' * 8,
+          };
+
+          final notification = RelayNotification.fromJson(json);
+
+          expect(notification.referencedEventId, equals(''));
+          expect(notification.rootEventId, equals('55667788' * 8));
+          expect(notification.targetCommentId, equals('11223344' * 8));
+          expect(
+            notification.referencedVideoTitle,
+            equals('Codex staging comment notification test'),
+          );
+        },
+      );
+
+      test('treats empty root_event_id and target_comment_id as null', () {
+        final json = {
+          'id': 'notif_123',
+          'source_pubkey': 'aabbccdd' * 8,
+          'source_event_id': '11223344' * 8,
+          'source_kind': 1111,
+          'notification_type': 'mention',
+          'created_at': 1712345678,
+          'read': false,
+          'root_event_id': '',
+          'target_comment_id': '',
+        };
+
+        final notification = RelayNotification.fromJson(json);
+
+        expect(notification.rootEventId, isNull);
+        expect(notification.targetCommentId, isNull);
+      });
     });
 
     group('dedupeKey', () {

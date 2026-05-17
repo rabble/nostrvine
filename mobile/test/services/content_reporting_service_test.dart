@@ -639,7 +639,7 @@ void main() {
     });
 
     test('publishes report to the configured moderation relay', () async {
-      const customRelay = 'wss://relay.staging.dvines.org';
+      const customRelay = 'wss://relay.staging.divine.video';
       SharedPreferences.setMockInitialValues({});
       final testPrefs = await SharedPreferences.getInstance();
       final stagingService = ContentReportingService(

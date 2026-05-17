@@ -321,6 +321,31 @@ void main() {
         );
       });
 
+      test('includes response body details on server error', () async {
+        when(
+          () => mockHttpClient.get(
+            any(),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            '{"error":"notifications table unavailable"}',
+            500,
+          ),
+        );
+
+        expect(
+          () => client.getNotifications(pubkey: testPubkey),
+          throwsA(
+            isA<FunnelcakeApiException>().having(
+              (e) => e.toString(),
+              'toString',
+              contains('notifications table unavailable'),
+            ),
+          ),
+        );
+      });
+
       test('throws FunnelcakeTimeoutException on timeout', () async {
         when(
           () => mockHttpClient.get(

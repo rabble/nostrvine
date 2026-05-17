@@ -66,7 +66,7 @@ class EnvironmentConfig {
       case AppEnvironment.poc:
         return 'wss://relay.poc.dvines.org';
       case AppEnvironment.staging:
-        return 'wss://relay.staging.dvines.org';
+        return 'wss://relay.staging.divine.video';
       case AppEnvironment.test:
         return 'wss://relay.test.dvines.org';
       case AppEnvironment.local:

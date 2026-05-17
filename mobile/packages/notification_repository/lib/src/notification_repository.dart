@@ -646,7 +646,7 @@ class NotificationRepository {
     for (final n in raw) {
       final kind = _mapNotificationKind(n);
       if (!isVideoAnchored(kind)) continue;
-      final eventId = n.referencedEventId;
+      final eventId = _videoAnchorEventId(kind, n);
       if (eventId == null || eventId.isEmpty) continue;
       final key = _VideoGroupKey(eventId, kind);
       (groups[key] ??= []).add(n);
@@ -767,7 +767,7 @@ class NotificationRepository {
   /// missing a `referencedEventId`).
   Future<NotificationItem?> enrichOne(RelayNotification raw) async {
     final kind = _mapNotificationKind(raw);
-    final referenced = raw.referencedEventId;
+    final referenced = _videoAnchorEventId(kind, raw);
     final isVideoAnchored =
         kind == NotificationKind.like ||
         kind == NotificationKind.comment ||
@@ -1028,6 +1028,11 @@ class NotificationRepository {
           ? NotificationKind.like
           : NotificationKind.likeComment;
     }
+    if (n.sourceKind == 1111 &&
+        n.rootEventId != null &&
+        n.rootEventId!.isNotEmpty) {
+      return NotificationKind.comment;
+    }
     return switch (n.notificationType) {
       'reply' =>
         n.isReferencedVideo ? NotificationKind.comment : NotificationKind.reply,
@@ -1040,6 +1045,23 @@ class NotificationRepository {
       _ when n.sourceKind == 1 => NotificationKind.comment,
       _ => NotificationKind.system,
     };
+  }
+
+  /// Returns the video event ID a video-anchored notification should group by.
+  ///
+  /// New staging Funnelcake payloads for NIP-22 comments can omit
+  /// `referenced_event_id` while including `root_event_id`. For comments, the
+  /// root ID is the video we want to open and group on.
+  static String? _videoAnchorEventId(
+    NotificationKind kind,
+    RelayNotification n,
+  ) {
+    if (kind == NotificationKind.comment &&
+        n.rootEventId != null &&
+        n.rootEventId!.isNotEmpty) {
+      return n.rootEventId;
+    }
+    return n.referencedEventId;
   }
 
   /// Truncates comment text to [_maxCommentLength] characters.

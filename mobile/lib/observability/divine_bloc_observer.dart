@@ -40,7 +40,7 @@ class DivineBlocObserver extends BlocObserver {
     super.onError(bloc, error, stackTrace);
     final runtimeType = bloc.runtimeType;
     Log.error(
-      'Bloc error: $runtimeType',
+      'Bloc error: $runtimeType: $error',
       name: 'BlocObserver',
       error: error,
       stackTrace: stackTrace,

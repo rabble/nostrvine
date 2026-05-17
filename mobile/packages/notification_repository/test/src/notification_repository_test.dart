@@ -83,6 +83,8 @@ void main() {
     bool read = false,
     String? referencedEventId = 'video_default',
     String? referencedDTag,
+    String? rootEventId,
+    String? targetCommentId,
     String? content,
     bool isReferencedVideo = true,
   }) {
@@ -96,6 +98,8 @@ void main() {
       read: read,
       referencedEventId: referencedEventId,
       referencedDTag: referencedDTag,
+      rootEventId: rootEventId,
+      targetCommentId: targetCommentId,
       content: content,
       isReferencedVideo: isReferencedVideo,
     );
@@ -1104,6 +1108,40 @@ void main() {
           final item = page.items.single as ActorNotification;
           expect(item.type, equals(NotificationKind.mention));
           expect(item.targetEventId, equals('mention_evt_id'));
+        },
+      );
+
+      test(
+        'kind 1111 staging mention with rootEventId maps to video comment',
+        () async {
+          stubNotifications([
+            makeNotification(
+              id: '',
+              sourceEventId: 'comment_evt_id',
+              sourceKind: 1111,
+              notificationType: 'mention',
+              referencedEventId: '',
+              rootEventId: 'root_video_evt_id',
+              targetCommentId: 'comment_evt_id',
+              content: 'Fake staging comment from Codex',
+              isReferencedVideo: false,
+            ),
+          ]);
+          stubProfiles({
+            'pubkey_alice': makeProfile(
+              'pubkey_alice',
+              displayName: 'Alice',
+            ),
+          });
+
+          final page = await repository.getNotifications();
+
+          final item = page.items.single as VideoNotification;
+          expect(item.id, equals('comment_evt_id'));
+          expect(item.type, equals(NotificationKind.comment));
+          expect(item.videoEventId, equals('root_video_evt_id'));
+          expect(item.commentText, equals('Fake staging comment from Codex'));
+          expect(item.sourceEventIds, equals(['comment_evt_id']));
         },
       );
 

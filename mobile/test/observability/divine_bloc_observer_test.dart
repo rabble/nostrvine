@@ -8,6 +8,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/observability/divine_bloc_observer.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class _MockCrashReportingService extends Mock
     implements CrashReportingService {}
@@ -27,7 +28,8 @@ void main() {
     late _MockCrashReportingService mockCrash;
     late DivineBlocObserver observer;
 
-    setUp(() {
+    setUp(() async {
+      await LogCaptureService().clearAllLogs();
       mockCrash = _MockCrashReportingService();
       when(
         () => mockCrash.recordError(
@@ -88,6 +90,26 @@ void main() {
           any<StackTrace?>(),
           reason: any(named: 'reason'),
         ),
+      );
+    });
+
+    test('includes the error string in the visible log message', () async {
+      final cubit = _CountCubit();
+      addTearDown(cubit.close);
+
+      observer.onError(
+        cubit,
+        Exception('staging notifications 500'),
+        StackTrace.current,
+      );
+
+      await Future<void>.delayed(Duration.zero);
+
+      final logs = LogCaptureService().getRecentLogs();
+      expect(logs.last.message, contains('Bloc error: _CountCubit'));
+      expect(
+        logs.last.message,
+        contains('Exception: staging notifications 500'),
       );
     });
 

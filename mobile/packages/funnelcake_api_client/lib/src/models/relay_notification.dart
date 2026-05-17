@@ -18,6 +18,8 @@ class RelayNotification {
     this.referencedVideoTitle,
     this.referencedVideoThumbnail,
     this.referencedDTag,
+    this.rootEventId,
+    this.targetCommentId,
   });
 
   /// Parses a notification payload from the FunnelCake API.
@@ -62,6 +64,8 @@ class RelayNotification {
           ? rawThumbnail
           : null,
       referencedDTag: (rawDTag != null && rawDTag.isNotEmpty) ? rawDTag : null,
+      rootEventId: _nonEmpty(json['root_event_id'] as String?),
+      targetCommentId: _nonEmpty(json['target_comment_id'] as String?),
     );
   }
 
@@ -114,6 +118,22 @@ class RelayNotification {
   /// coordinate (`34236:pubkey:d-tag`) which is stable across metadata edits.
   final String? referencedDTag;
 
+  /// Root video event ID included by Funnelcake for NIP-22 comment
+  /// notifications.
+  ///
+  /// Some staging payloads report a kind 1111 comment as
+  /// `notification_type: mention` with an empty `referenced_event_id`, but
+  /// still include `root_event_id`. Keeping this field lets app layers anchor
+  /// the notification directly to the video instead of resolving the comment
+  /// event through a relay round-trip.
+  final String? rootEventId;
+
+  /// Comment event ID included by Funnelcake for NIP-22 comment notifications.
+  final String? targetCommentId;
+
   /// Stable dedup key -- falls back to sourceEventId if id is empty.
   String get dedupeKey => id.isNotEmpty ? id : sourceEventId;
+
+  static String? _nonEmpty(String? value) =>
+      value == null || value.isEmpty ? null : value;
 }

@@ -25,7 +25,7 @@ void main() {
 
       test('staging returns staging relay', () {
         const config = EnvironmentConfig(environment: AppEnvironment.staging);
-        expect(config.relayUrl, 'wss://relay.staging.dvines.org');
+        expect(config.relayUrl, 'wss://relay.staging.divine.video');
       });
 
       test('test returns test relay', () {
@@ -54,7 +54,7 @@ void main() {
 
       test('staging derives from relay URL', () {
         const config = EnvironmentConfig(environment: AppEnvironment.staging);
-        expect(config.apiBaseUrl, 'https://relay.staging.dvines.org');
+        expect(config.apiBaseUrl, 'https://relay.staging.divine.video');
       });
 
       test('test derives from relay URL', () {
