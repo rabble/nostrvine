@@ -23,9 +23,9 @@ When analytics is enabled, the following metrics will be tracked:
 
 ### DiVine FunnelCake Relay
 
-- **Base URL**: `https://relay.staging.dvines.org`
-- **Swagger Docs**: https://relay.staging.dvines.org/swagger-ui/
-- **OpenAPI Spec**: https://relay.staging.dvines.org/openapi.json
+- **Base URL**: `https://relay.staging.divine.video`
+- **Swagger Docs**: https://relay.staging.divine.video/swagger-ui/
+- **OpenAPI Spec**: https://relay.staging.divine.video/openapi.json
 
 ### Available Endpoints (Read-Only)
 

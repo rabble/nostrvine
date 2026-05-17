@@ -134,7 +134,7 @@ Host resolution for notifications must use this order:
 2. Pinned production relay host (`relay.divine.video`), for production installs that have it configured.
 3. Current environment fallback relay host.
 
-This prevents staging builds from drifting to `https://relay.divine.video/api/users/{pubkey}/notifications` when a tester has `wss://relay.divine.video` persisted in relay settings. If staging Funnelcake logs show feed or recommendation calls but no `/api/users/{pubkey}/notifications` request, first verify the client is resolving notifications to `https://relay.staging.dvines.org` or the current staging API host before debugging backend queries.
+This prevents staging builds from drifting to `https://relay.divine.video/api/users/{pubkey}/notifications` when a tester has `wss://relay.divine.video` persisted in relay settings. If staging Funnelcake logs show feed or recommendation calls but no `/api/users/{pubkey}/notifications` request, first verify the client is resolving notifications to `https://relay.staging.divine.video` or the current staging API host before debugging backend queries.
 
 Unauthenticated route probes should return Funnelcake `401` with `Missing Authorization header`. A 401 proves the gateway path reaches Funnelcake; it does not prove the app signed the right URL.
 

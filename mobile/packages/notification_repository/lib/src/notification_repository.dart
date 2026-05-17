@@ -1028,7 +1028,8 @@ class NotificationRepository {
           ? NotificationKind.like
           : NotificationKind.likeComment;
     }
-    if (n.sourceKind == 1111 &&
+    if (n.notificationType != 'reply' &&
+        n.sourceKind == 1111 &&
         n.rootEventId != null &&
         n.rootEventId!.isNotEmpty) {
       return NotificationKind.comment;

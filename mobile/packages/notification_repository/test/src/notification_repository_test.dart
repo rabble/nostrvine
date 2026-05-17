@@ -1145,6 +1145,40 @@ void main() {
         },
       );
 
+      test(
+        'kind 1111 reply with rootEventId stays reply and keeps actor anchor',
+        () async {
+          stubNotifications([
+            makeNotification(
+              id: '',
+              sourceEventId: 'reply_evt_id',
+              sourceKind: 1111,
+              notificationType: 'reply',
+              referencedEventId: '',
+              rootEventId: 'root_video_evt_id',
+              targetCommentId: 'parent_comment_evt_id',
+              content: 'Nested reply from staging payload',
+              isReferencedVideo: false,
+            ),
+          ]);
+          stubProfiles({
+            'pubkey_alice': makeProfile(
+              'pubkey_alice',
+              displayName: 'Alice',
+            ),
+          });
+
+          final page = await repository.getNotifications();
+
+          final item = page.items.single as ActorNotification;
+          expect(item.id, equals('reply_evt_id'));
+          expect(item.type, equals(NotificationKind.reply));
+          expect(item.targetEventId, equals('reply_evt_id'));
+          expect(item.commentText, equals('Nested reply from staging payload'));
+          expect(item.sourceEventIds, equals(['reply_evt_id']));
+        },
+      );
+
       test('follow maps to follow ($ActorNotification)', () async {
         stubNotifications([
           makeNotification(
