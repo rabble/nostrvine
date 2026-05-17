@@ -651,7 +651,10 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     // Trade-off: no surface-recreate callback (e.g. permission dialogs);
     // acceptable for the feed because the screen is always foregrounded
     // while videos are playing. No effect on iOS/macOS.
-    final controller = DivineVideoPlayerController(useTexture: true);
+    final controller = DivineVideoPlayerController(
+      useTexture: true,
+      useLegacySurface: true,
+    );
     _controllers[index] = controller;
 
     bool ownsInit() {
