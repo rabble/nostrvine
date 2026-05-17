@@ -63,14 +63,14 @@ import 'package:pooled_video_player/pooled_video_player.dart'
 import 'package:unified_logger/unified_logger.dart';
 import 'package:video_player/video_player.dart';
 
-/// Letterboxed (non-portrait) videos previously top-aligned in the
-/// available viewport — which left a tall band of empty space below
-/// 1 × 1 classic reposts. Always centering instead keeps 1 × 1 and
-/// landscape sources visually in the middle of the screen, with
-/// symmetric bands above and below filled by
-/// [VineTheme.surfaceBackground] (the same green the comment bar
-/// paints, see [_MaybeRoundFeedBottom]). Portrait videos cover the
-/// whole viewport so alignment is a no-op for them.
+/// Always centers — including contain-fit (non-portrait) videos.
+/// Returning [Alignment.topCenter] for non-portrait used to jam 1 × 1
+/// classic Vine reposts against the AppBar; centering keeps them
+/// symmetric with the bands the caller paints around them (see
+/// [_MaybeRoundFeedBottom] / [_PooledFullscreenItemContent] for the
+/// canvas and [_BlurredVideoBackdrop] for the blurred-thumbnail
+/// layer). Portrait videos cover the whole viewport so alignment is
+/// a no-op for them.
 @visibleForTesting
 Alignment fullscreenVideoMediaAlignment({required bool isPortrait}) {
   return Alignment.center;
@@ -867,10 +867,11 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                       // Match the home feed: when the comment bar is on
                       // screen, the video carries the same rounded
                       // bottom corners as `video_feed_page.dart`, so
-                      // the corners reveal [VineTheme.navGreen] which
-                      // is the same token the comment bar paints. The
-                      // result is a continuous green seam between the
-                      // video's bottom-corner cutouts and the bar.
+                      // the corners reveal [VineTheme.navGreen] (the
+                      // outer color [NavRoundedShell] paints). It
+                      // shares its hex (`#00150D`) with the comment
+                      // bar's [VineTheme.surfaceBackground], so the
+                      // rounded cutouts seam continuously into the bar.
                       child: VideoTapShield(
                         child: _MaybeRoundFeedBottom(
                           roundCorners: showCommentBar,
