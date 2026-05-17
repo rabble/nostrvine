@@ -652,34 +652,48 @@ class _VideosGrid extends ConsumerWidget {
 
   Widget _buildEmptyState(BuildContext context) {
     final l10n = context.l10n;
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.videocam_off_outlined,
-            size: 64,
-            color: VineTheme.lightText,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            l10n.soundNoVideosYet,
-            style: const TextStyle(
-              color: VineTheme.whiteText,
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.videocam_off_outlined,
+                      size: 64,
+                      color: VineTheme.lightText,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      l10n.soundNoVideosYet,
+                      style: const TextStyle(
+                        color: VineTheme.whiteText,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      l10n.soundBeFirstToUse,
+                      style: const TextStyle(
+                        color: VineTheme.onSurfaceMuted,
+                        fontSize: 14,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            l10n.soundBeFirstToUse,
-            style: const TextStyle(
-              color: VineTheme.onSurfaceMuted,
-              fontSize: 14,
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -689,51 +703,64 @@ class _VideosGrid extends ConsumerWidget {
     VoidCallback onRetry,
   ) {
     final l10n = context.l10n;
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 64, color: VineTheme.likeRed),
-            const SizedBox(height: 16),
-            Text(
-              l10n.soundFailedToLoadVideos,
-              style: const TextStyle(
-                color: VineTheme.whiteText,
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error.toString(),
-              style: const TextStyle(
-                color: VineTheme.onSurfaceMuted,
-                fontSize: 12,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
-              label: Text(l10n.soundRetry),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: VineTheme.vineGreen,
-                foregroundColor: VineTheme.backgroundColor,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: VineTheme.likeRed,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      l10n.soundFailedToLoadVideos,
+                      style: const TextStyle(
+                        color: VineTheme.whiteText,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      error.toString(),
+                      style: const TextStyle(
+                        color: VineTheme.onSurfaceMuted,
+                        fontSize: 12,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      onPressed: onRetry,
+                      icon: const Icon(Icons.refresh),
+                      label: Text(l10n.soundRetry),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: VineTheme.vineGreen,
+                        foregroundColor: VineTheme.backgroundColor,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

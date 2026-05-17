@@ -1036,6 +1036,39 @@ void main() {
         // Duration is combined with video count: "6.0s · No videos yet"
         expect(find.textContaining('6.0s'), findsOneWidget);
       });
+
+      testWidgets('SoundDetailScreen empty state fits short viewports', (
+        tester,
+      ) async {
+        tester.view.physicalSize = const Size(400, 520);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final testSound = createTestAudioEvent(
+          id: 'sound1',
+          title: 'Cool Beat',
+        );
+
+        await tester.pumpWidget(
+          createTestWidget(
+            child: SoundDetailScreen(sound: testSound),
+            overrides: [
+              soundUsageCountProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(0)),
+              videosUsingSoundProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(<String>[])),
+            ],
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(find.text('No videos yet'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
     });
   });
 }
