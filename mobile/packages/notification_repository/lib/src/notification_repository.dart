@@ -22,6 +22,12 @@ const _maxCommentLength = 50;
 /// Maximum number of actor avatars shown in a grouped notification.
 const _maxGroupActors = 3;
 
+final RegExp _hexIdentifierPattern = RegExp(r'^[0-9a-fA-F]{32,}$');
+final RegExp _npubIdentifierPattern = RegExp(
+  r'^npub1[023456789acdefghjklmnpqrstuvwxyz]+$',
+  caseSensitive: false,
+);
+
 /// Repository for fetching, enriching, grouping, and managing
 /// notifications.
 ///
@@ -637,7 +643,11 @@ class NotificationRepository {
     for (final entry in groups.entries) {
       final group = entry.value
         ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      final actors = group
+      final actorNotifications = _orderVideoGroupActorNotifications(
+        group,
+        profiles,
+      );
+      final actors = actorNotifications
           .take(_maxGroupActors)
           .map((n) => _buildActor(n.sourcePubkey, profiles))
           .toList();
@@ -661,7 +671,7 @@ class NotificationRepository {
       // no body text. Reuses the same length-cap as actor-anchored
       // comments / replies for layout safety.
       final commentTextForRow = entry.key.kind == NotificationKind.comment
-          ? _truncateComment(group.first.content, entry.key.kind)
+          ? _truncateComment(actorNotifications.first.content, entry.key.kind)
           : null;
       result.add(
         VideoNotification(
@@ -895,9 +905,74 @@ class NotificationRepository {
     final profile = profiles[pubkey];
     return ActorInfo(
       pubkey: pubkey,
-      displayName: profile?.bestDisplayName ?? 'Unknown user',
+      displayName: _displayNameForActor(pubkey, profile),
       pictureUrl: profile?.picture,
     );
+  }
+
+  /// Orders grouped video notifications with a named profile in the lead
+  /// actor position.
+  List<RelayNotification> _orderVideoGroupActorNotifications(
+    List<RelayNotification> group,
+    Map<String, UserProfile> profiles,
+  ) {
+    RelayNotification? lead;
+    for (final n in group) {
+      if (_hasExplicitActorName(n.sourcePubkey, profiles)) {
+        lead = n;
+        break;
+      }
+    }
+
+    final ordered = lead == null
+        ? group
+        : <RelayNotification>[
+            lead,
+            ...group.where((n) => !identical(n, lead)),
+          ];
+    return ordered;
+  }
+
+  static bool _hasExplicitActorName(
+    String pubkey,
+    Map<String, UserProfile> profiles,
+  ) => _explicitActorName(pubkey, profiles[pubkey]) != null;
+
+  static String _displayNameForActor(String pubkey, UserProfile? profile) {
+    final explicit = _explicitActorName(pubkey, profile);
+    if (explicit != null) return explicit;
+
+    final fallback = profile?.bestDisplayName;
+    if (_isUsableActorName(fallback, pubkey)) return fallback!.trim();
+
+    return UserProfile.defaultDisplayNameFor(pubkey);
+  }
+
+  static String? _explicitActorName(String pubkey, UserProfile? profile) {
+    if (profile == null) return null;
+
+    final displayName = profile.displayName;
+    if (_isUsableActorName(displayName, pubkey)) {
+      return displayName!.trim();
+    }
+
+    final name = profile.name;
+    if (_isUsableActorName(name, pubkey)) return name!.trim();
+
+    return null;
+  }
+
+  static bool _isUsableActorName(String? value, String pubkey) {
+    final name = value?.trim();
+    if (name == null || name.isEmpty) return false;
+
+    final lower = name.toLowerCase();
+    if (lower == 'unknown' || lower == 'unknown user') return false;
+    if (name == pubkey) return false;
+    if (_hexIdentifierPattern.hasMatch(name)) return false;
+    if (_npubIdentifierPattern.hasMatch(name)) return false;
+
+    return true;
   }
 
   /// Maps a relay notification type string + source kind to

@@ -267,17 +267,23 @@ void main() {
         expect(item.videoTitle, equals('Hello'));
       });
 
-      test('falls back to "Unknown user" for missing profiles', () async {
-        stubNotifications([makeNotification(sourcePubkey: 'unknown_pub')]);
-        stubProfiles({});
+      test(
+        'falls back to a generated display name for missing profiles',
+        () async {
+          stubNotifications([makeNotification(sourcePubkey: 'unknown_pub')]);
+          stubProfiles({});
 
-        final page = await repository.getNotifications();
+          final page = await repository.getNotifications();
 
-        expect(page.items, hasLength(1));
-        final item = page.items.first as VideoNotification;
-        expect(item.actors.first.displayName, equals('Unknown user'));
-        expect(item.actors.first.pictureUrl, isNull);
-      });
+          expect(page.items, hasLength(1));
+          final item = page.items.first as VideoNotification;
+          expect(
+            item.actors.first.displayName,
+            equals(UserProfile.defaultDisplayNameFor('unknown_pub')),
+          );
+          expect(item.actors.first.pictureUrl, isNull);
+        },
+      );
 
       test('rethrows on API error after logging', () async {
         when(
@@ -491,6 +497,45 @@ void main() {
         // Newest first — pub_0 had the latest createdAt.
         expect(item.actors.first.displayName, equals('Actor0'));
         expect(item.videoEventId, equals('video_x'));
+      });
+
+      test('grouped video notifications lead with a named actor', () async {
+        const hashPubkey =
+            '2949ede154d1f121402761cbd73f2b8c490b5041cdd85c9908c5322f1a2fe3f6';
+        stubNotifications([
+          makeNotification(
+            id: 'l1',
+            sourcePubkey: hashPubkey,
+            referencedEventId: 'video_x',
+            createdAt: DateTime(2025, 1, 5),
+          ),
+          makeNotification(
+            id: 'l2',
+            sourcePubkey: 'pub_named',
+            referencedEventId: 'video_x',
+            createdAt: DateTime(2025, 1, 4),
+          ),
+          makeNotification(
+            id: 'l3',
+            sourcePubkey: 'pub_missing',
+            referencedEventId: 'video_x',
+            createdAt: DateTime(2025, 1, 3),
+          ),
+        ]);
+        stubProfiles({
+          hashPubkey: makeProfile(hashPubkey, displayName: hashPubkey),
+          'pub_named': makeProfile(
+            'pub_named',
+            displayName: 'Sally Strawberry',
+          ),
+        });
+
+        final page = await repository.getNotifications();
+
+        final item = page.items.single as VideoNotification;
+        expect(item.totalCount, equals(3));
+        expect(item.actors.first.pubkey, equals('pub_named'));
+        expect(item.actors.first.displayName, equals('Sally Strawberry'));
       });
 
       test('grouped video notifications build addressable id from '
