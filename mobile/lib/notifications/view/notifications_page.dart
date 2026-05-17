@@ -14,10 +14,10 @@ import 'package:openvine/providers/app_providers.dart';
 ///
 /// Reads dependencies from Riverpod, creates [NotificationFeedBloc], and
 /// provides it to [NotificationsView]. The bloc dispatches
-/// `NotificationFeedStarted` on mount, which triggers
-/// `repository.refresh()` → `repository.markAllAsRead()`. Both flow
-/// through the repository's snapshot stream and propagate to the badge
-/// cubit automatically — no page-level Riverpod bridge needed.
+/// `NotificationFeedStarted` on mount, which triggers `repository.refresh()`.
+/// The resulting snapshot flows through the repository's snapshot stream and
+/// propagates to the badge cubit automatically. Read state changes only on
+/// explicit item taps or mark-all actions.
 class NotificationsPage extends ConsumerWidget {
   /// Creates a [NotificationsPage].
   const NotificationsPage({super.key});

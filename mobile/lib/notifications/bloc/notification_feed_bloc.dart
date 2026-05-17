@@ -92,10 +92,10 @@ class NotificationFeedBloc
 
   /// Handle initial load.
   ///
-  /// Triggers `refresh()` then `markAllAsRead()` on the repository. Both
-  /// emit snapshots which `_onSnapshotChanged` translates into state.
-  /// Status transitions (loading → loaded / failure) are emitted here so
-  /// the UI can render the initial spinner and error states.
+  /// Triggers `refresh()` on the repository. The resulting snapshot is
+  /// translated into state by `_onSnapshotChanged`. Status transitions
+  /// (loading -> loaded / failure) are emitted here so the UI can render
+  /// the initial spinner and error states.
   Future<void> _onStarted(
     NotificationFeedStarted event,
     Emitter<NotificationFeedState> emit,
@@ -109,18 +109,6 @@ class NotificationFeedBloc
       addError(e, s);
       emit(state.copyWith(status: NotificationFeedStatus.failure));
       return;
-    }
-
-    // Best-effort auto-mark-read. The repository rolls back the snapshot
-    // on write failure, so the per-row read state and badge stay correct
-    // either way; we just record the throw via addError. Don't flip
-    // status to failure — the list loaded successfully and is still
-    // valid, and showing the error screen here would hide a working
-    // feed behind a Retry button.
-    try {
-      await _notificationRepository.markAllAsRead();
-    } catch (e, s) {
-      addError(e, s);
     }
   }
 

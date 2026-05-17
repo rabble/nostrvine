@@ -1,6 +1,5 @@
 // ABOUTME: Widget tests for InboxNotificationsPage — verifies that opening
-// ABOUTME: the inbox triggers repository.refresh + markAllAsRead exactly
-// ABOUTME: once (no fan-out across the five filter tabs).
+// ABOUTME: the inbox refreshes once without implicitly mutating read state.
 
 // ignore_for_file: prefer_const_constructors
 
@@ -45,7 +44,6 @@ void main() {
       when(
         () => mockNotificationRepo.refresh(),
       ).thenAnswer((_) async => NotificationPage.empty);
-      when(() => mockNotificationRepo.markAllAsRead()).thenAnswer((_) async {});
       when(() => mockFollowRepo.isFollowing(any())).thenReturn(false);
       when(() => mockInviteCubit.state).thenReturn(InviteStatusState());
       when(mockInviteCubit.load).thenAnswer((_) async {});
@@ -72,31 +70,29 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      verifyInOrder([
-        () => mockNotificationRepo.refresh(),
-        () => mockNotificationRepo.markAllAsRead(),
-      ]);
+      verify(() => mockNotificationRepo.refresh()).called(1);
+      verifyNever(() => mockNotificationRepo.markAllAsRead());
     });
 
     testWidgets(
-      'does not fan out refresh + markAllAsRead across the five filter tabs',
+      'does not fan out refresh or mark-read across the five filter tabs',
       (tester) async {
         await tester.pumpWidget(buildSubject());
         await tester.pumpAndSettle();
 
         // Swipe through the four non-default tabs. Each visit mounts a
         // fresh NotificationsView; the contract is that none of them
-        // triggers another refresh / mark-all-read.
+        // triggers another refresh or implicit mark-all-read.
         for (var i = 1; i < 5; i++) {
           await tester.tap(find.byType(Tab).at(i));
           await tester.pumpAndSettle();
         }
 
-        // Exactly one refresh + one markAllAsRead across the whole
-        // inbox-open lifecycle, even after all five filter views have
-        // mounted.
+        // Exactly one refresh and no implicit markAllAsRead across the
+        // whole inbox-open lifecycle, even after all five filter views
+        // have mounted.
         verify(() => mockNotificationRepo.refresh()).called(1);
-        verify(() => mockNotificationRepo.markAllAsRead()).called(1);
+        verifyNever(() => mockNotificationRepo.markAllAsRead());
         // Confirm all five filter views actually mounted — guards
         // against the test silently passing because TabBarView never
         // built the off-default children.

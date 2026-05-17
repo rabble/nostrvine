@@ -1,6 +1,6 @@
 // ABOUTME: Tests for NotificationsPage — verifies route constants and that
-// ABOUTME: the page forwards bloc construction + initial-load events to the
-// ABOUTME: repository, which in turn drives the badge cubit's stream.
+// ABOUTME: the page forwards bloc construction + initial refresh to the
+// ABOUTME: repository without implicitly mutating read state.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -62,9 +62,6 @@ void main() {
         when(
           () => mockNotificationRepo.refresh(),
         ).thenAnswer((_) async => NotificationPage.empty);
-        when(
-          () => mockNotificationRepo.markAllAsRead(),
-        ).thenAnswer((_) async {});
         when(() => mockFollowRepo.isFollowing(any())).thenReturn(false);
       });
 
@@ -87,16 +84,13 @@ void main() {
         verify(() => mockNotificationRepo.refresh()).called(1);
       });
 
-      testWidgets('calls repository.markAllAsRead() after refresh succeeds', (
+      testWidgets('does not mark notifications read on open', (
         tester,
       ) async {
         await tester.pumpWidget(buildSubject());
         await tester.pumpAndSettle();
 
-        verifyInOrder([
-          () => mockNotificationRepo.refresh(),
-          () => mockNotificationRepo.markAllAsRead(),
-        ]);
+        verifyNever(() => mockNotificationRepo.markAllAsRead());
       });
     });
   });

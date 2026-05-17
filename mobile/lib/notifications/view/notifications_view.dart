@@ -50,10 +50,6 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    // Mark-all-read fires once at the page level from
-    // `NotificationFeedStarted` → repository.markAllAsRead(). The
-    // resulting snapshot emission updates this view's BLoC state and
-    // the badge cubit atomically — no per-view dispatch needed.
   }
 
   @override

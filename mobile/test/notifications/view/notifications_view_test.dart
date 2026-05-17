@@ -305,11 +305,9 @@ void main() {
         expect(find.byType(Divider), findsNothing);
       });
 
-      // The mark-all-read dispatch was removed from
-      // NotificationsView.initState in #4204 — it now fires once at the
-      // page level via NotificationFeedStarted → repository.markAllAsRead.
+      // NotificationsView.initState must stay side-effect-free for read state.
       // See inbox_notifications_page_test.dart and notifications_page_test.dart
-      // for the new contract.
+      // for the page-level refresh contract.
 
       testWidgets('dispatches item tapped on notification tap', (tester) async {
         when(() => mockBloc.state).thenReturn(

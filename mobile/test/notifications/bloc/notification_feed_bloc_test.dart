@@ -182,7 +182,7 @@ void main() {
 
     group('NotificationFeedStarted', () {
       blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'emits loading then loaded; calls refresh then markAllAsRead',
+        'emits loading then loaded; calls refresh without marking read',
         build: createBloc,
         act: (bloc) => bloc.add(NotificationFeedStarted()),
         expect: () => [
@@ -190,10 +190,8 @@ void main() {
           NotificationFeedState(status: NotificationFeedStatus.loaded),
         ],
         verify: (_) {
-          verifyInOrder([
-            () => mockNotificationRepo.refresh(),
-            () => mockNotificationRepo.markAllAsRead(),
-          ]);
+          verify(() => mockNotificationRepo.refresh()).called(1);
+          verifyNever(() => mockNotificationRepo.markAllAsRead());
         },
       );
 
@@ -211,28 +209,6 @@ void main() {
           NotificationFeedState(status: NotificationFeedStatus.failure),
         ],
         errors: () => [isA<Exception>()],
-      );
-
-      blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'stays loaded when refresh succeeds but markAllAsRead throws',
-        setUp: () {
-          when(
-            () => mockNotificationRepo.markAllAsRead(),
-          ).thenThrow(Exception('mark-all-failed'));
-        },
-        build: createBloc,
-        act: (bloc) => bloc.add(NotificationFeedStarted()),
-        expect: () => [
-          NotificationFeedState(status: NotificationFeedStatus.loading),
-          NotificationFeedState(status: NotificationFeedStatus.loaded),
-        ],
-        errors: () => [isA<Exception>()],
-        verify: (_) {
-          verifyInOrder([
-            () => mockNotificationRepo.refresh(),
-            () => mockNotificationRepo.markAllAsRead(),
-          ]);
-        },
       );
     });
 
