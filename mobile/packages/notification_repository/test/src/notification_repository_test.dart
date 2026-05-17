@@ -70,9 +70,7 @@ void main() {
     when(
       () => notificationsDao.getAllNotifications(limit: any(named: 'limit')),
     ).thenAnswer((_) async => <NotificationRow>[]);
-    when(
-      () => notificationsDao.replaceAll(any()),
-    ).thenAnswer((_) async {});
+    when(() => notificationsDao.replaceAll(any())).thenAnswer((_) async {});
     repository = NotificationRepository(
       funnelcakeApiClient: funnelcakeApiClient,
       profileRepository: profileRepository,
@@ -297,42 +295,39 @@ void main() {
         },
       );
 
-      test(
-        'explicit cursor override does not leak stored cursor id',
-        () async {
-          var signedUrl = '';
-          repository = NotificationRepository(
-            funnelcakeApiClient: funnelcakeApiClient,
-            profileRepository: profileRepository,
-            notificationsDao: notificationsDao,
-            userPubkey: userPubkey,
-            authHeadersProvider: (url, method) async {
-              signedUrl = url;
-              return {'Authorization': 'Nostr test-token'};
-            },
-          );
-          stubNotifications(
-            [],
-            nextCursor: '1700000000',
-            nextCursorId: stableCursorId,
-            hasMore: true,
-          );
-          stubProfiles({});
+      test('explicit cursor override does not leak stored cursor id', () async {
+        var signedUrl = '';
+        repository = NotificationRepository(
+          funnelcakeApiClient: funnelcakeApiClient,
+          profileRepository: profileRepository,
+          notificationsDao: notificationsDao,
+          userPubkey: userPubkey,
+          authHeadersProvider: (url, method) async {
+            signedUrl = url;
+            return {'Authorization': 'Nostr test-token'};
+          },
+        );
+        stubNotifications(
+          [],
+          nextCursor: '1700000000',
+          nextCursorId: stableCursorId,
+          hasMore: true,
+        );
+        stubProfiles({});
 
-          await repository.getNotifications();
-          stubNotifications([], nextCursor: 'manual_next');
+        await repository.getNotifications();
+        stubNotifications([], nextCursor: 'manual_next');
 
-          await repository.getNotifications(cursor: 'manual_cursor');
+        await repository.getNotifications(cursor: 'manual_cursor');
 
-          expect(
-            signedUrl,
-            equals(
-              'https://api.example.com/api/users/$userPubkey/notifications'
-              '?limit=50&before=manual_cursor',
-            ),
-          );
-        },
-      );
+        expect(
+          signedUrl,
+          equals(
+            'https://api.example.com/api/users/$userPubkey/notifications'
+            '?limit=50&before=manual_cursor',
+          ),
+        );
+      });
 
       test('one like becomes a $VideoNotification with totalCount 1', () async {
         stubNotifications([
@@ -524,45 +519,42 @@ void main() {
         );
       });
 
-      test(
-        'retries first-page fetch on transient 5xx and succeeds on second '
-        'attempt',
-        () async {
-          stubProfiles({});
-          var calls = 0;
-          when(
-            () => funnelcakeApiClient.getNotifications(
-              pubkey: any(named: 'pubkey'),
-              cursor: any(named: 'cursor'),
-              requestUri: any(named: 'requestUri'),
-              authHeaders: any(named: 'authHeaders'),
-              limit: any(named: 'limit'),
-            ),
-          ).thenAnswer((_) async {
-            calls++;
-            if (calls == 1) {
-              throw const FunnelcakeApiException(
-                message: 'Internal server error',
-                statusCode: 500,
-                url: 'https://api.example.com/api/users/x/notifications',
-              );
-            }
-            return const NotificationResponse(
-              notifications: [],
-              unreadCount: 0,
-              hasMore: false,
+      test('retries first-page fetch on transient 5xx and succeeds on second '
+          'attempt', () async {
+        stubProfiles({});
+        var calls = 0;
+        when(
+          () => funnelcakeApiClient.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            cursor: any(named: 'cursor'),
+            requestUri: any(named: 'requestUri'),
+            authHeaders: any(named: 'authHeaders'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async {
+          calls++;
+          if (calls == 1) {
+            throw const FunnelcakeApiException(
+              message: 'Internal server error',
+              statusCode: 500,
+              url: 'https://api.example.com/api/users/x/notifications',
             );
-          });
-
-          final page = await repository.getNotifications();
-          expect(page.items, isEmpty);
-          expect(calls, equals(2));
-          expect(
-            (await repository.watchSnapshot().first).lastRefreshError,
-            isFalse,
+          }
+          return const NotificationResponse(
+            notifications: [],
+            unreadCount: 0,
+            hasMore: false,
           );
-        },
-      );
+        });
+
+        final page = await repository.getNotifications();
+        expect(page.items, isEmpty);
+        expect(calls, equals(2));
+        expect(
+          (await repository.watchSnapshot().first).lastRefreshError,
+          isFalse,
+        );
+      });
 
       test(
         'does not retry first-page fetch on 4xx — surfaces error immediately',
@@ -1257,10 +1249,7 @@ void main() {
             ),
           ]);
           stubProfiles({
-            'pubkey_alice': makeProfile(
-              'pubkey_alice',
-              displayName: 'Alice',
-            ),
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
           });
 
           final page = await repository.getNotifications();
@@ -1291,10 +1280,7 @@ void main() {
             ),
           ]);
           stubProfiles({
-            'pubkey_alice': makeProfile(
-              'pubkey_alice',
-              displayName: 'Alice',
-            ),
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
           });
 
           final page = await repository.getNotifications();
@@ -1552,51 +1538,47 @@ void main() {
         },
       );
 
-      test(
-        'cached "comment" row becomes $VideoNotification placeholder '
-        'with commentText preserved',
-        () async {
-          when(
-            () => notificationsDao.getAllNotifications(
-              limit: any(named: 'limit'),
+      test('cached "comment" row becomes $VideoNotification placeholder '
+          'with commentText preserved', () async {
+        when(
+          () =>
+              notificationsDao.getAllNotifications(limit: any(named: 'limit')),
+        ).thenAnswer(
+          (_) async => [
+            NotificationRow(
+              id: 'cached_comment_1',
+              type: 'comment',
+              fromPubkey: 'actor_pub',
+              timestamp: 1700000000,
+              targetEventId: 'video_evt_2',
+              content: 'Nice clip!',
+              isRead: false,
+              cachedAt: DateTime(2026),
             ),
-          ).thenAnswer(
-            (_) async => [
-              NotificationRow(
-                id: 'cached_comment_1',
-                type: 'comment',
-                fromPubkey: 'actor_pub',
-                timestamp: 1700000000,
-                targetEventId: 'video_evt_2',
-                content: 'Nice clip!',
-                isRead: false,
-                cachedAt: DateTime(2026),
-              ),
-            ],
-          );
-          final hydrated = NotificationRepository(
-            funnelcakeApiClient: funnelcakeApiClient,
-            profileRepository: profileRepository,
-            notificationsDao: notificationsDao,
-            userPubkey: userPubkey,
-          );
-          addTearDown(hydrated.close);
+          ],
+        );
+        final hydrated = NotificationRepository(
+          funnelcakeApiClient: funnelcakeApiClient,
+          profileRepository: profileRepository,
+          notificationsDao: notificationsDao,
+          userPubkey: userPubkey,
+        );
+        addTearDown(hydrated.close);
 
-          await expectLater(
-            hydrated.watchSnapshot(),
-            emitsThrough(
-              predicate<NotificationPage>((p) {
-                if (p.items.length != 1) return false;
-                final item = p.items.first;
-                return item is VideoNotification &&
-                    item.type == NotificationKind.comment &&
-                    item.videoEventId == 'video_evt_2' &&
-                    item.commentText == 'Nice clip!';
-              }, 'placeholder is VideoNotification(comment) with content'),
-            ),
-          );
-        },
-      );
+        await expectLater(
+          hydrated.watchSnapshot(),
+          emitsThrough(
+            predicate<NotificationPage>((p) {
+              if (p.items.length != 1) return false;
+              final item = p.items.first;
+              return item is VideoNotification &&
+                  item.type == NotificationKind.comment &&
+                  item.videoEventId == 'video_evt_2' &&
+                  item.commentText == 'Nice clip!';
+            }, 'placeholder is VideoNotification(comment) with content'),
+          ),
+        );
+      });
 
       test(
         'cached "repost" row becomes $VideoNotification placeholder',
@@ -1781,6 +1763,65 @@ void main() {
           ),
         );
       });
+
+      test(
+        'expands a grouped row to every raw notification id before '
+        'marking read',
+        () async {
+          when(
+            () => funnelcakeApiClient.markNotificationsRead(
+              pubkey: any(named: 'pubkey'),
+              notificationIds: any(named: 'notificationIds'),
+              authHeaders: any(named: 'authHeaders'),
+            ),
+          ).thenAnswer(
+            (_) async => const MarkReadResponse(success: true, markedCount: 2),
+          );
+          when(
+            () => notificationsDao.markAsRead(any()),
+          ).thenAnswer((_) async => true);
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+            'pubkey_bob': makeProfile('pubkey_bob', displayName: 'Bob'),
+          });
+          stubNotifications([
+            makeNotification(
+              id: 'older_server_notification',
+              sourceEventId: 'older_source_event',
+              createdAt: DateTime(2025),
+            ),
+            makeNotification(
+              id: 'newer_server_notification',
+              sourcePubkey: 'pubkey_bob',
+              sourceEventId: 'newer_source_event',
+              createdAt: DateTime(2025, 1, 2),
+            ),
+          ], unreadCount: 2);
+          await repository.refresh();
+
+          final groupedRow =
+              (await repository.watchSnapshot().first).items.first;
+
+          await repository.markAsRead([groupedRow.id]);
+
+          verify(
+            () => funnelcakeApiClient.markNotificationsRead(
+              pubkey: userPubkey,
+              notificationIds: [
+                'newer_server_notification',
+                'older_server_notification',
+              ],
+              authHeaders: any(named: 'authHeaders'),
+            ),
+          ).called(1);
+          verify(
+            () => notificationsDao.markAsRead('newer_server_notification'),
+          ).called(1);
+          verify(
+            () => notificationsDao.markAsRead('older_server_notification'),
+          ).called(1);
+        },
+      );
 
       test(
         'rolls back the optimistic snapshot when authHeadersProvider throws',
@@ -2596,47 +2637,44 @@ void main() {
         expect(await repository.watchUnreadCount().first, equals(1));
       });
 
-      test(
-        'acceptRealtime keeps a named actor in front when a fallback actor '
-        'arrives later',
-        () async {
-          const hashPubkey =
-              '2949ede154d1f121402761cbd73f2b8c490b5041'
-              'cdd85c9908c5322f1a2fe3f6';
-          stubProfiles({
-            'pubkey_sally': makeProfile(
-              'pubkey_sally',
-              displayName: 'Sally Strawberry',
-            ),
-            hashPubkey: makeProfile(hashPubkey, displayName: hashPubkey),
-          });
-          stubNotifications([
-            makeNotification(
-              id: 'named-first',
-              sourcePubkey: 'pubkey_sally',
-              referencedEventId: 'video_named',
-              createdAt: DateTime(2025, 3),
-            ),
-          ], unreadCount: 1);
-          await repository.refresh();
+      test('acceptRealtime keeps a named actor in front when a fallback actor '
+          'arrives later', () async {
+        const hashPubkey =
+            '2949ede154d1f121402761cbd73f2b8c490b5041'
+            'cdd85c9908c5322f1a2fe3f6';
+        stubProfiles({
+          'pubkey_sally': makeProfile(
+            'pubkey_sally',
+            displayName: 'Sally Strawberry',
+          ),
+          hashPubkey: makeProfile(hashPubkey, displayName: hashPubkey),
+        });
+        stubNotifications([
+          makeNotification(
+            id: 'named-first',
+            sourcePubkey: 'pubkey_sally',
+            referencedEventId: 'video_named',
+            createdAt: DateTime(2025, 3),
+          ),
+        ], unreadCount: 1);
+        await repository.refresh();
 
-          await repository.acceptRealtime(
-            makeNotification(
-              id: 'fallback-second',
-              sourcePubkey: hashPubkey,
-              referencedEventId: 'video_named',
-              createdAt: DateTime(2025, 4),
-            ),
-          );
+        await repository.acceptRealtime(
+          makeNotification(
+            id: 'fallback-second',
+            sourcePubkey: hashPubkey,
+            referencedEventId: 'video_named',
+            createdAt: DateTime(2025, 4),
+          ),
+        );
 
-          final merged =
-              (await repository.watchSnapshot().first).items.single
-                  as VideoNotification;
-          expect(merged.totalCount, equals(2));
-          expect(merged.actors.first.pubkey, equals('pubkey_sally'));
-          expect(merged.actors.first.displayName, equals('Sally Strawberry'));
-        },
-      );
+        final merged =
+            (await repository.watchSnapshot().first).items.single
+                as VideoNotification;
+        expect(merged.totalCount, equals(2));
+        expect(merged.actors.first.pubkey, equals('pubkey_sally'));
+        expect(merged.actors.first.displayName, equals('Sally Strawberry'));
+      });
 
       test(
         'acceptRealtime caps merged actors at the group display limit',
@@ -3097,55 +3135,52 @@ void main() {
         );
       });
 
-      test(
-        'pagination merge keeps the named actor in front when the existing '
-        'row is unnamed',
-        () async {
-          const hashPubkey =
-              '2949ede154d1f121402761cbd73f2b8c490b5041'
-              'cdd85c9908c5322f1a2fe3f6';
-          stubProfiles({
-            hashPubkey: makeProfile(hashPubkey, displayName: hashPubkey),
-            'pub_named': makeProfile(
-              'pub_named',
-              displayName: 'Sally Strawberry',
-            ),
-          });
-          stubNotifications(
-            [
-              makeNotification(
-                id: 'server-uuid-unnamed',
-                sourceEventId: 'nostr-unnamed',
-                sourcePubkey: hashPubkey,
-                referencedEventId: 'video_named',
-                createdAt: DateTime(2025, 6),
-              ),
-            ],
-            nextCursor: 'cursor_after_first',
-            hasMore: true,
-          );
-          await repository.refresh();
-
-          stubNotifications([
+      test('pagination merge keeps the named actor in front when the existing '
+          'row is unnamed', () async {
+        const hashPubkey =
+            '2949ede154d1f121402761cbd73f2b8c490b5041'
+            'cdd85c9908c5322f1a2fe3f6';
+        stubProfiles({
+          hashPubkey: makeProfile(hashPubkey, displayName: hashPubkey),
+          'pub_named': makeProfile(
+            'pub_named',
+            displayName: 'Sally Strawberry',
+          ),
+        });
+        stubNotifications(
+          [
             makeNotification(
-              id: 'server-uuid-named',
-              sourceEventId: 'nostr-named',
-              sourcePubkey: 'pub_named',
+              id: 'server-uuid-unnamed',
+              sourceEventId: 'nostr-unnamed',
+              sourcePubkey: hashPubkey,
               referencedEventId: 'video_named',
-              createdAt: DateTime(2025, 4),
+              createdAt: DateTime(2025, 6),
             ),
-          ]);
+          ],
+          nextCursor: 'cursor_after_first',
+          hasMore: true,
+        );
+        await repository.refresh();
 
-          await repository.getNotifications();
+        stubNotifications([
+          makeNotification(
+            id: 'server-uuid-named',
+            sourceEventId: 'nostr-named',
+            sourcePubkey: 'pub_named',
+            referencedEventId: 'video_named',
+            createdAt: DateTime(2025, 4),
+          ),
+        ]);
 
-          final merged =
-              (await repository.watchSnapshot().first).items.single
-                  as VideoNotification;
-          expect(merged.totalCount, equals(2));
-          expect(merged.actors.first.pubkey, equals('pub_named'));
-          expect(merged.actors.first.displayName, equals('Sally Strawberry'));
-        },
-      );
+        await repository.getNotifications();
+
+        final merged =
+            (await repository.watchSnapshot().first).items.single
+                as VideoNotification;
+        expect(merged.totalCount, equals(2));
+        expect(merged.actors.first.pubkey, equals('pub_named'));
+        expect(merged.actors.first.displayName, equals('Sally Strawberry'));
+      });
 
       test("comment-kind merge keeps the newer side's commentText "
           '(REST page newer than WS) — symmetric direction', () async {

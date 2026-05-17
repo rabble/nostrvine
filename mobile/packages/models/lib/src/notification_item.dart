@@ -40,6 +40,7 @@ sealed class NotificationItem extends Equatable {
     this.isRead = false,
     this.targetEventId,
     this.sourceEventIds = const [],
+    this.notificationIds = const [],
   });
 
   final String id;
@@ -60,4 +61,11 @@ sealed class NotificationItem extends Equatable {
   /// notifications this is the union of all underlying likes/comments/
   /// reposts contributing to the row.
   final List<String> sourceEventIds;
+
+  /// Raw relay notification ids represented by this rendered row.
+  ///
+  /// Grouped rows can stand in for multiple server notifications. Mark-read
+  /// writes must send every underlying raw id or a later refresh can
+  /// resurrect unread state for the same visible row.
+  final List<String> notificationIds;
 }

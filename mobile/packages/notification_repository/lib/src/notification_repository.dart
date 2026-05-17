@@ -361,10 +361,7 @@ class NotificationRepository {
       row.timestamp * 1000,
       isUtc: true,
     ).toLocal();
-    final actor = ActorInfo(
-      pubkey: row.fromPubkey,
-      displayName: 'Loading…',
-    );
+    final actor = ActorInfo(pubkey: row.fromPubkey, displayName: 'Loading…');
 
     // Video-anchored kinds — reconstruct VideoNotification using the cached
     // targetEventId (which `_itemToCacheRow` writes as videoEventId).
@@ -381,11 +378,12 @@ class NotificationRepository {
         timestamp: timestamp,
         isRead: row.isRead,
         commentText: videoKind == NotificationKind.comment ? row.content : null,
+        notificationIds: row.id.isNotEmpty ? [row.id] : const [],
         // sourceEventIds intentionally empty — the cache stores only the
-        // dedupeKey (`id`) and the videoEventId (`targetEventId`), not the
-        // underlying Nostr source event id. First-page REST emission
-        // replaces the placeholder, so the union-by-sourceEventId merge in
-        // _emitSnapshotForPage doesn't need a value here.
+        // persisted row id and the videoEventId (`targetEventId`), not the
+        // underlying Nostr source event id set. First-page REST emission
+        // replaces the placeholder, so the union-by-sourceEventId merge path
+        // doesn't need a value here.
       );
     }
 
@@ -399,6 +397,7 @@ class NotificationRepository {
       isRead: row.isRead,
       commentText: row.content,
       targetEventId: row.targetEventId,
+      notificationIds: row.id.isNotEmpty ? [row.id] : const [],
     );
   }
 
@@ -517,6 +516,7 @@ class NotificationRepository {
     final idSet = ids.toSet();
     final before = _snapshot.value;
     _snapshot.add(before.copyWith(items: _flipIsRead(before.items, idSet)));
+    final notificationIds = _expandServerNotificationIds(before.items, idSet);
 
     try {
       final authHeaders = _authHeadersProvider != null
@@ -528,11 +528,11 @@ class NotificationRepository {
 
       await _funnelcakeApiClient.markNotificationsRead(
         pubkey: _userPubkey,
-        notificationIds: ids,
+        notificationIds: notificationIds,
         authHeaders: authHeaders,
       );
 
-      for (final id in ids) {
+      for (final id in notificationIds) {
         await _notificationsDao.markAsRead(id);
       }
     } catch (_) {
@@ -662,6 +662,10 @@ class NotificationRepository {
           ...existing.sourceEventIds,
           ...incoming.sourceEventIds,
         }.toList();
+        final mergedNotificationIds = <String>{
+          ...existing.notificationIds,
+          ...incoming.notificationIds,
+        }.toList();
         result.add(
           existing.copyWith(
             actors: mergedActors,
@@ -669,6 +673,7 @@ class NotificationRepository {
             isRead: false,
             timestamp: incoming.timestamp,
             sourceEventIds: mergedSourceEventIds,
+            notificationIds: mergedNotificationIds,
           ),
         );
         merged = true;
@@ -803,6 +808,10 @@ class NotificationRepository {
       ...existing.sourceEventIds,
       ...incoming.sourceEventIds,
     }.toList();
+    final unionNotificationIds = <String>{
+      ...existing.notificationIds,
+      ...incoming.notificationIds,
+    }.toList();
     final mergedActors = _orderVideoGroupActors([
       ...existing.actors,
       ...incoming.actors.where(
@@ -823,6 +832,7 @@ class NotificationRepository {
         : mergedActors.length;
     return existing.copyWith(
       sourceEventIds: unionIds,
+      notificationIds: unionNotificationIds,
       actors: mergedActors,
       totalCount: mergedTotalCount,
       isRead: existing.isRead && incoming.isRead,
@@ -845,12 +855,48 @@ class NotificationRepository {
     Set<String> ids,
   ) {
     return items.map((n) {
-      if (!ids.contains(n.id) || n.isRead) return n;
+      if (!_matchesMarkReadId(n, ids) || n.isRead) return n;
       return switch (n) {
         VideoNotification() => n.copyWith(isRead: true),
         ActorNotification() => n.copyWith(isRead: true),
       };
     }).toList();
+  }
+
+  /// Expands display-row ids to all raw server notification ids represented by
+  /// those rows. Unknown ids pass through so callers can still mark a raw id
+  /// that is not present in the current snapshot.
+  static List<String> _expandServerNotificationIds(
+    List<NotificationItem> items,
+    Set<String> ids,
+  ) {
+    final expanded = <String>{};
+    final matchedInputIds = <String>{};
+
+    for (final item in items) {
+      if (!_matchesMarkReadId(item, ids)) continue;
+
+      matchedInputIds
+        ..add(item.id)
+        ..addAll(item.notificationIds.where(ids.contains));
+
+      final rawIds = item.notificationIds.isNotEmpty
+          ? item.notificationIds
+          : [item.id];
+      expanded.addAll(rawIds.where((id) => id.isNotEmpty));
+    }
+
+    for (final id in ids) {
+      if (id.isNotEmpty && !matchedInputIds.contains(id)) {
+        expanded.add(id);
+      }
+    }
+
+    return expanded.toList();
+  }
+
+  static bool _matchesMarkReadId(NotificationItem item, Set<String> ids) {
+    return ids.contains(item.id) || item.notificationIds.any(ids.contains);
   }
 
   /// Returns [items] with every item flipped to `isRead: true`.
@@ -1035,6 +1081,10 @@ class NotificationRepository {
               .map((n) => n.sourceEventId)
               .where((s) => s.isNotEmpty)
               .toList(),
+          notificationIds: group
+              .map((n) => n.dedupeKey)
+              .where((s) => s.isNotEmpty)
+              .toList(),
         ),
       );
     }
@@ -1081,6 +1131,7 @@ class NotificationRepository {
           sourceEventIds: n.sourceEventId.isNotEmpty
               ? [n.sourceEventId]
               : const [],
+          notificationIds: n.dedupeKey.isNotEmpty ? [n.dedupeKey] : const [],
           videoAddressableId: _actorVideoAddressableId(mapped, n),
         ),
       );
@@ -1137,6 +1188,7 @@ class NotificationRepository {
         sourceEventIds: raw.sourceEventId.isNotEmpty
             ? [raw.sourceEventId]
             : const [],
+        notificationIds: raw.dedupeKey.isNotEmpty ? [raw.dedupeKey] : const [],
       );
     }
 
@@ -1159,6 +1211,7 @@ class NotificationRepository {
       sourceEventIds: raw.sourceEventId.isNotEmpty
           ? [raw.sourceEventId]
           : const [],
+      notificationIds: raw.dedupeKey.isNotEmpty ? [raw.dedupeKey] : const [],
       videoAddressableId: _actorVideoAddressableId(mapped, raw),
     );
   }

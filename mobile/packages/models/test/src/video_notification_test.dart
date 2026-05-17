@@ -227,5 +227,60 @@ void main() {
         expect(a, isNot(equals(b)));
       });
     });
+
+    group('notificationIds', () {
+      test('defaults to const [] when not provided', () {
+        final notification = VideoNotification(
+          id: 'n1',
+          type: NotificationKind.like,
+          videoEventId: 'v1',
+          actors: [actorAlice],
+          totalCount: 1,
+          timestamp: timestamp,
+        );
+
+        expect(notification.notificationIds, isEmpty);
+      });
+
+      test('round-trips through copyWith', () {
+        final original = VideoNotification(
+          id: 'n1',
+          type: NotificationKind.like,
+          videoEventId: 'v1',
+          actors: [actorAlice],
+          totalCount: 1,
+          timestamp: timestamp,
+        );
+
+        final updated = original.copyWith(
+          notificationIds: const ['notif-a', 'notif-b'],
+        );
+
+        expect(updated.notificationIds, equals(<String>['notif-a', 'notif-b']));
+      });
+
+      test('two otherwise-equal items differ by notificationIds', () {
+        final a = VideoNotification(
+          id: 'n1',
+          type: NotificationKind.like,
+          videoEventId: 'v1',
+          actors: [actorAlice],
+          totalCount: 1,
+          timestamp: timestamp,
+          notificationIds: const ['notif-a'],
+        );
+        final b = VideoNotification(
+          id: 'n1',
+          type: NotificationKind.like,
+          videoEventId: 'v1',
+          actors: [actorAlice],
+          totalCount: 1,
+          timestamp: timestamp,
+          notificationIds: const ['notif-b'],
+        );
+
+        expect(a, isNot(equals(b)));
+      });
+    });
   });
 }

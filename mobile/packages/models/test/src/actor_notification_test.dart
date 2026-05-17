@@ -256,5 +256,52 @@ void main() {
         expect(a, isNot(equals(b)));
       });
     });
+
+    group('notificationIds', () {
+      test('defaults to const [] when not provided', () {
+        final notification = ActorNotification(
+          id: 'n1',
+          type: NotificationKind.follow,
+          actor: actor,
+          timestamp: timestamp,
+        );
+
+        expect(notification.notificationIds, isEmpty);
+      });
+
+      test('round-trips through copyWith', () {
+        final original = ActorNotification(
+          id: 'n1',
+          type: NotificationKind.follow,
+          actor: actor,
+          timestamp: timestamp,
+        );
+
+        final updated = original.copyWith(
+          notificationIds: const ['notif-follow-1'],
+        );
+
+        expect(updated.notificationIds, equals(<String>['notif-follow-1']));
+      });
+
+      test('two otherwise-equal items differ by notificationIds', () {
+        final a = ActorNotification(
+          id: 'n1',
+          type: NotificationKind.follow,
+          actor: actor,
+          timestamp: timestamp,
+          notificationIds: const ['notif-a'],
+        );
+        final b = ActorNotification(
+          id: 'n1',
+          type: NotificationKind.follow,
+          actor: actor,
+          timestamp: timestamp,
+          notificationIds: const ['notif-b'],
+        );
+
+        expect(a, isNot(equals(b)));
+      });
+    });
   });
 }

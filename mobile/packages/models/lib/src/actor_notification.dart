@@ -17,6 +17,7 @@ class ActorNotification extends NotificationItem {
     super.isRead,
     super.targetEventId,
     super.sourceEventIds,
+    super.notificationIds,
     this.commentText,
     this.isFollowingBack = false,
     this.videoAddressableId,
@@ -60,6 +61,7 @@ class ActorNotification extends NotificationItem {
     bool? isFollowingBack,
     String? targetEventId,
     List<String>? sourceEventIds,
+    List<String>? notificationIds,
     String? videoAddressableId,
   }) {
     return ActorNotification(
@@ -72,6 +74,7 @@ class ActorNotification extends NotificationItem {
       isFollowingBack: isFollowingBack ?? this.isFollowingBack,
       targetEventId: targetEventId ?? this.targetEventId,
       sourceEventIds: sourceEventIds ?? this.sourceEventIds,
+      notificationIds: notificationIds ?? this.notificationIds,
       videoAddressableId: videoAddressableId ?? this.videoAddressableId,
     );
   }
@@ -87,6 +90,7 @@ class ActorNotification extends NotificationItem {
     isFollowingBack,
     targetEventId,
     sourceEventIds,
+    notificationIds,
     videoAddressableId,
   ];
 }
