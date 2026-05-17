@@ -1807,14 +1807,15 @@ class _MaybeRoundFeedBottom extends StatelessWidget {
   Widget build(BuildContext context) {
     if (!roundCorners) return child;
     // Inside the rounded shell, paint
-    // [VineTheme.surfaceContainerHigh] (`#1A1A1A`) — the same neutral dark
-    // grey the Messages inbox uses. That's the canvas around
-    // contain-fit videos (1 × 1 classics, landscape, anything without
-    // dimensions metadata) which leave letterbox bands the user can
-    // see. The shell's *outer* colour is the comment-bar green
-    // ([VineTheme.surfaceBackground], `#00150D`) by [NavRoundedShell]
-    // construction, so the rounded bottom corners reveal that green
-    // and seam the dark video region into the bar visually.
+    // [VineTheme.surfaceContainerHigh] (`#000A06`) — a near-black with
+    // a faint green tint. That's the canvas around contain-fit videos
+    // (1 × 1 classics, landscape, anything without dimensions
+    // metadata) which leave letterbox bands the user can see. The
+    // shell's outer colour is [VineTheme.navGreen] (the color
+    // [NavRoundedShell] paints by construction); it shares its hex
+    // (`#00150D`) with the comment bar's [VineTheme.surfaceBackground],
+    // so the rounded bottom corners reveal a colour that seams
+    // continuously into the bar.
     return NavRoundedShell(
       innerColor: VineTheme.surfaceContainerHigh,
       child: child,
