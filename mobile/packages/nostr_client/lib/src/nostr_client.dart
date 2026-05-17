@@ -1216,12 +1216,14 @@ class NostrClient {
 }
 
 const _invalidRelayCountSentinels = {
-  2147483647,
-  4294967295,
-  9223372036854775807,
+  '2147483647',
+  '4294967295',
+  '9223372036854775807',
 };
 
 int _normalizeRelayCount(int count) {
-  if (count < 0 || _invalidRelayCountSentinels.contains(count)) return 0;
+  if (count < 0 || _invalidRelayCountSentinels.contains(count.toString())) {
+    return 0;
+  }
   return count;
 }
