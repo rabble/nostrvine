@@ -128,14 +128,16 @@ Note: `VineTheme` is adopted across 194 files, 1,251+ `context.l10n` usages supp
 
 ---
 
-### Zero uses of `SemanticsService.announce`
-**Problem**: No async operations announce changes to screen readers. Uploads, deletes, errors, bookmark additions, and follow/unfollow actions all complete silently.
+### Incomplete async screen reader announcements
+**Problem**: Async operation outcomes are not announced consistently. Uploads, deletes, errors, bookmark additions, and follow/unfollow actions need a current audit for screen reader feedback coverage.
 
-**Evidence**: Zero matches for `SemanticsService.announce` across the entire `mobile/lib/` directory. Screen reader users have no feedback when: video upload completes or fails, content is bookmarked or added to a list, follow/unfollow actions succeed, comments are posted or deleted, or error states change.
+**Reference-commit evidence**: The original audit found zero matches for the older `SemanticsService.announce` API across `mobile/lib/`, which meant screen reader users had no feedback when video upload completed or failed, content was bookmarked or added to a list, follow/unfollow actions succeeded, comments were posted or deleted, or error states changed.
 
-**Impact**: High. Screen reader users have no feedback for any async operation outcome.
+**Current `main` note**: The API guidance has changed. Use `SemanticsService.sendAnnouncement(View.of(context), message, Directionality.of(context))`, not the older two-argument `SemanticsService.announce`. Current code already has view-aware `sendAnnouncement` precedents in feed controls, conversation UI, metadata cover selection, and image attachments, so this finding should be treated as incomplete coverage rather than zero coverage.
 
-**Effort**: Medium. Add `SemanticsService.announce()` calls after key async operations. Focus first on upload complete/fail, delete, and follow/unfollow.
+**Impact**: High. Screen reader users can still miss important async outcomes where no announcement is wired.
+
+**Effort**: Medium. Add `SemanticsService.sendAnnouncement()` calls after key async operations that still lack announcements. Focus first on upload complete/fail, delete, and follow/unfollow, and use `Directionality.of(context)` so RTL locales get the correct reading direction.
 
 **GitHub ticket**: [#3645](https://github.com/divinevideo/divine-mobile/issues/3645)
 

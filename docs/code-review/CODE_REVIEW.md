@@ -1,10 +1,13 @@
-# Code Review: Issue Tracker
+# Code Review: Stale Audit Snapshot
 
-Working document. GitHub issues will be created once the list is finalized.
+Historical audit snapshot. GitHub issues have already been created for the
+findings below, but this document is **not** a live backlog. Treat every file
+path, count, and code claim as reference-commit evidence that must be
+re-verified against current `main` before implementation.
 
 **Reference commit:** [`4f2834ddb`](https://github.com/divinevideo/divine-mobile/commit/4f2834ddb529487020333feea8e269c6fa19bfbc): `feat(feed): move captions control into more info (#3105)` (2026-04-16)
 
-> **Note:** All file paths, line numbers, and code snippets in the issue files below were captured at the reference commit. Since `main` continues to evolve, some references may be outdated — files may have moved, lines shifted, or code changed. When acting on an issue, verify against the current state of the codebase.
+> **Note:** All file paths, line numbers, and code snippets in the issue files below were captured at the reference commit. Since `main` continues to evolve, some references may be outdated — files may have moved, lines shifted, or code changed. When acting on an issue, verify against the current state of the codebase and update the linked GitHub issue if the evidence has gone stale.
 >
 > **Scope:** File paths and code snippets cited in each issue are **representative examples**, not an exhaustive list. Counts (e.g., "40+ screens", "~170 catch blocks") reflect the scale at the reference commit; individual issues cite enough evidence to illustrate the pattern without cataloguing every instance.
 
@@ -125,7 +128,7 @@ Standardize patterns so new code doesn't recreate old inconsistencies.
 | 1 | **Re-enable 38 suppressed lint rules (phased)** — type-safety rules (`invalid_assignment`, `return_of_invalid_type`) mask real bugs | [Tooling](issues-tooling.md) |
 | 2 | **Extract `_buildFoo()` methods to widget classes** — 20+ files with the helper method anti-pattern | [Code Quality](issues-code-quality.md) |
 | 3 | **Standardize model equality on `Equatable`** — 9 models use Equatable, 20+ use hand-rolled `==`, several have none | [Code Quality](issues-code-quality.md) |
-| 4 | **Standardize serialization approach** — `json_serializable` on one model, hand-rolled everywhere else | [Code Quality](issues-code-quality.md) |
+| 4 | **Re-audit model serialization conventions** — reference snapshot cited mixed `json_serializable` and hand-rolled models; current `main` no longer has `VideoEvent` codegen | [Code Quality](issues-code-quality.md) |
 | 5 | **Remove 22 `Future.delayed` calls in app code** — each is a potential indicator of an underlying race condition or coordination bug masked by "wait a bit"; replace with explicit async coordination | [Code Quality](issues-code-quality.md) |
 | 6 | **Consolidate duplicate log batchers** — two utilities, same concept, different APIs | [Code Quality](issues-code-quality.md) |
 | 7 | **Migrate GoRouter to `@TypedGoRoute`** — 1,117-line procedural router vs project's own type-safe routing rules | [Navigation](issues-navigation.md) |
@@ -163,7 +166,7 @@ BLoC testing is strong (42 directories, 61 test files). The gaps are below and a
 | # | Action | Source |
 |:-:|--------|--------|
 | 1 | **Add semantic labels to core navigation** — bottom nav, explore grid, notifications are invisible to screen readers | [UI/UX](issues-ui-ux.md) |
-| 2 | **Add `SemanticsService.announce` for async operations** — zero announcements for uploads, deletes, follows, errors | [UI/UX](issues-ui-ux.md) |
+| 2 | **Expand `SemanticsService.sendAnnouncement` coverage for async operations** — current code has some view-aware announcements, but upload/delete/follow/error coverage still needs audit | [UI/UX](issues-ui-ux.md) |
 | 3 | **Fix touch targets below 48dp** — `VideoFollowButton` is 20×20dp (critical engagement action) | [UI/UX](issues-ui-ux.md) |
 | 4 | **Wire 15+ hardcoded English strings to `context.l10n`** — many already have unused ARB keys defined | [UI/UX](issues-ui-ux.md) |
 | 5 | **Add ICU plural syntax** to 22 ARB keys + replace 11 inline Dart ternaries — Arabic, Polish, Romanian broken | [UI/UX](issues-ui-ux.md) |

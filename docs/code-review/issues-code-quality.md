@@ -39,14 +39,16 @@ Note: The codebase uses `very_good_analysis` across 33 packages and `unified_log
 
 ---
 
-### Inconsistent serialization approaches across models
-**Problem**: The `models` package uses two different serialization strategies with no clear convention: hand-rolled `fromJson`/`toJson` (majority) and `json_serializable` code generation (one model).
+### Re-audit model serialization conventions
+**Problem**: The reference audit found inconsistent model serialization conventions, but the specific `VideoEvent` / `json_serializable` evidence is now stale on current `main`.
 
-**Evidence**: `json_serializable` used only by `VideoEvent` (`@JsonSerializable(createFactory: false)` at `video_event.dart:19`, with `.g.dart` for `toJson` only). Hand-rolled `fromJson` on `VideoStats`, `SocialCounts`, `UserProfile`, `ProfileSearchResult`, `HomeFeedResponse`, etc.
+**Reference-commit evidence**: At the reference commit, `json_serializable` was used only by `VideoEvent` (`@JsonSerializable(createFactory: false)` at `video_event.dart:19`, with `.g.dart` for `toJson` only), while `VideoStats`, `SocialCounts`, `UserProfile`, `ProfileSearchResult`, `HomeFeedResponse`, and other models used hand-rolled `fromJson`/`toJson`.
+
+**Current `main` note**: This exact claim no longer holds. `VideoEvent` now uses hand-rolled `toJson`, and `mobile/packages/models/lib/src/video_event.dart` has no `@JsonSerializable` annotation or generated `.g.dart` part. Before turning this into implementation work, re-audit current model serialization patterns across `mobile/packages/models`, app-level models, and generator-backed state classes, then decide whether the project standard should be hand-rolled serializers, Freezed/json_serializable, or a narrower package-by-package convention.
 
 **Impact**: Low.
 
-**Effort**: Medium. Standardize on one approach. Adopting `json_serializable` across the board (or Freezed for combined serialization + equality + copyWith) would eliminate the multiple approaches implemented. The only consideration, though, is the time cost of running code generation.
+**Effort**: Medium. Re-audit first, then standardize on one documented approach for each model surface. If adopting code generation, account for build-runner cost and generated-file maintenance. If keeping hand-rolled serializers, document the expected test coverage and update process when fields change.
 
 **GitHub ticket**: [#3584](https://github.com/divinevideo/divine-mobile/issues/3584)
 
