@@ -3363,6 +3363,11 @@ void main() {
 
         setUp(() {
           mockFunnelcakeClient = MockFunnelcakeApiClient();
+          when(
+            () => mockFunnelcakeClient.getBulkVideoStats(any()),
+          ).thenAnswer(
+            (_) async => const BulkVideoStatsResponse(stats: {}),
+          );
         });
 
         test('returns API results when Funnelcake succeeds', () async {
@@ -4346,6 +4351,71 @@ void main() {
             ),
           ).called(1);
         });
+
+        test(
+          'hydrates v2 native popular interaction counts before returning',
+          () async {
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getV2PopularVideos(
+                variant: any(named: 'variant'),
+                limit: any(named: 'limit'),
+                before: any(named: 'before'),
+              ),
+            ).thenAnswer(
+              (_) async => [
+                _createVideoStats(
+                  id: 'v2-native-popular-1',
+                  pubkey: 'pubkey-1',
+                  dTag: 'dtag-1',
+                  videoUrl: 'https://example.com/v2-native-1.mp4',
+                  loops: 200,
+                  views: 300,
+                ),
+              ],
+            );
+            when(
+              () => mockFunnelcakeClient.getBulkVideoStats([
+                'v2-native-popular-1',
+              ]),
+            ).thenAnswer(
+              (_) async => const BulkVideoStatsResponse(
+                stats: {
+                  'v2-native-popular-1': BulkVideoStatsEntry(
+                    eventId: 'v2-native-popular-1',
+                    reactions: 12,
+                    comments: 3,
+                    reposts: 4,
+                    loops: 201,
+                    views: 301,
+                  ),
+                },
+              ),
+            );
+
+            final repositoryWithApi = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            final result = await repositoryWithApi.getPopularVideos(
+              variant: PopularVideosVariant.native,
+              limit: 1,
+            );
+
+            expect(result, hasLength(1));
+            expect(result.single.originalLikes, equals(12));
+            expect(result.single.originalComments, equals(3));
+            expect(result.single.originalReposts, equals(4));
+            expect(result.single.nostrLikeCount, equals(0));
+            expect(result.single.totalLikes, equals(12));
+            verify(
+              () => mockFunnelcakeClient.getBulkVideoStats([
+                'v2-native-popular-1',
+              ]),
+            ).called(1);
+          },
+        );
 
         test('returns empty list when v2 API throws', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);

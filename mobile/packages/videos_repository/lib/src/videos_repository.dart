@@ -822,7 +822,10 @@ class VideosRepository {
           limit: limit,
           before: until,
         );
-        final videos = _transformVideoStats(stats, sortByCreatedAt: false);
+        final videos = await _hydrateVideosWithBulkStats(
+          _transformVideoStats(stats, sortByCreatedAt: false),
+          replaceInteractionCounts: true,
+        );
         if (until == null && offset == null) {
           _inMemoryFeedCache?.set(cacheKey, HomeFeedResult(videos: videos));
         }
