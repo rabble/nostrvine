@@ -2987,6 +2987,9 @@ void main() {
 
       setUp(() {
         mockFunnelcakeClient = MockFunnelcakeApiClient();
+        when(
+          () => mockFunnelcakeClient.getBulkVideoStats(any()),
+        ).thenAnswer((_) async => const BulkVideoStatsResponse(stats: {}));
       });
 
       test('returns native popular API results in server order', () async {
@@ -3037,6 +3040,65 @@ void main() {
           ),
         );
       });
+
+      test(
+        'hydrates native popular interaction counts before returning',
+        () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getNativePopularVideos(
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              _createVideoStats(
+                id: 'native-popular-1',
+                pubkey: 'pubkey-1',
+                dTag: 'dtag-1',
+                videoUrl: 'https://example.com/native-1.mp4',
+                loops: 200,
+                views: 300,
+              ),
+            ],
+          );
+          when(
+            () => mockFunnelcakeClient.getBulkVideoStats(['native-popular-1']),
+          ).thenAnswer(
+            (_) async => const BulkVideoStatsResponse(
+              stats: {
+                'native-popular-1': BulkVideoStatsEntry(
+                  eventId: 'native-popular-1',
+                  reactions: 12,
+                  comments: 3,
+                  reposts: 4,
+                  loops: 201,
+                  views: 301,
+                ),
+              },
+            ),
+          );
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repositoryWithApi.getNativePopularVideos(
+            limit: 1,
+          );
+
+          expect(result, hasLength(1));
+          expect(result.single.originalLikes, equals(12));
+          expect(result.single.originalComments, equals(3));
+          expect(result.single.originalReposts, equals(4));
+          expect(result.single.nostrLikeCount, equals(0));
+          expect(result.single.totalLikes, equals(12));
+          verify(
+            () => mockFunnelcakeClient.getBulkVideoStats(['native-popular-1']),
+          ).called(1);
+        },
+      );
 
       test('throws when native endpoint fails', () async {
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);

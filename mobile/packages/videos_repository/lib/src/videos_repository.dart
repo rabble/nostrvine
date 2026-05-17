@@ -291,8 +291,9 @@ class VideosRepository {
   }
 
   Future<List<VideoEvent>> _hydrateVideosWithBulkStats(
-    List<VideoEvent> videos,
-  ) async {
+    List<VideoEvent> videos, {
+    bool replaceInteractionCounts = false,
+  }) async {
     if (videos.isEmpty ||
         _funnelcakeApiClient == null ||
         !_funnelcakeApiClient.isAvailable) {
@@ -303,7 +304,8 @@ class VideosRepository {
         .where(
           (video) =>
               video.id.isNotEmpty &&
-              (video.originalLoops == null ||
+              (replaceInteractionCounts ||
+                  video.originalLoops == null ||
                   // Relay-sourced zeroes are frequently stale placeholders;
                   // treat them as missing so Funnelcake can reconcile counts.
                   video.originalLoops == 0 ||
@@ -337,14 +339,22 @@ class VideosRepository {
 
         return video.copyWith(
           originalLoops: stats.loops ?? video.originalLoops,
-          originalLikes: video.originalLikes ?? stats.reactions,
-          originalComments: video.originalComments ?? stats.comments,
-          originalReposts: video.originalReposts ?? stats.reposts,
+          originalLikes: replaceInteractionCounts
+              ? stats.reactions
+              : video.originalLikes ?? stats.reactions,
+          originalComments: replaceInteractionCounts
+              ? stats.comments
+              : video.originalComments ?? stats.comments,
+          originalReposts: replaceInteractionCounts
+              ? stats.reposts
+              : video.originalReposts ?? stats.reposts,
           // REST reaction totals already include the Nostr portion for the
           // fullscreen entry paths that rely on this hydration. Seeding
           // nostrLikeCount to 0 preserves totalLikes while still telling the
           // interactions bloc it has an initial count to display.
-          nostrLikeCount: video.nostrLikeCount ?? 0,
+          nostrLikeCount: replaceInteractionCounts
+              ? 0
+              : video.nostrLikeCount ?? 0,
           rawTags: video.rawTags['views'] == null && stats.views != null
               ? {...video.rawTags, 'views': stats.views.toString()}
               : video.rawTags,
@@ -720,20 +730,24 @@ class VideosRepository {
         // ignore: flutter_style_todos
         // TODO(#4307): Remove after the native popular exclude_platform
         // fix ships.
-        final videos = _filterNativePopularVideos(
+        final videos = await _hydrateVideosWithBulkStats(
           _transformVideoStats(videoStats, sortByCreatedAt: false),
+          replaceInteractionCounts: true,
+        );
+        final visibleVideos = _filterNativePopularVideos(
+          videos,
         );
         if (!skipCache && offset == 0) {
           _inMemoryFeedCache?.set(
             _nativePopularCacheKey,
             HomeFeedResult(
-              videos: videos,
+              videos: visibleVideos,
               consumedItemCount: videoStats.length,
             ),
           );
         }
         return NativePopularVideosPage(
-          videos: videos,
+          videos: visibleVideos,
           consumedItemCount: videoStats.length,
           nextOffset: offset + videoStats.length,
         );
