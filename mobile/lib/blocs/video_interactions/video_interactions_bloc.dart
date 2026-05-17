@@ -176,9 +176,23 @@ class VideoInteractionsBloc
         repostCountFuture,
       ]);
 
-      final likeCount = results[0];
+      final fetchedLikeCount = results[0];
       final commentCount = results[1];
       final repostCount = results[2];
+
+      // For addressable videos, treat a relay-fetched 0 as "no fresh info"
+      // when we already have a non-zero pre-fetch count. After a metadata
+      // edit the new event_id has no #e reactions yet, and the #a COUNT on
+      // the divine relay for kind 7 is unreliable — letting that 0 stomp
+      // the carried-forward nostrLikeCount (or Vine originalLikes portion)
+      // surfaces as #4432 ("likes went to zero after editing"). Mirrors the
+      // skip-zero guard in VideoEventService._executeLikeCountBatchFetch.
+      final likeCount =
+          (_addressableId != null &&
+              fetchedLikeCount == 0 &&
+              (preFetchLikeCount ?? 0) > 0)
+          ? preFetchLikeCount!
+          : fetchedLikeCount;
 
       emit(
         state.copyWith(

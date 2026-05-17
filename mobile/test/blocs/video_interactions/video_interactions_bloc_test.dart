@@ -222,6 +222,96 @@ void main() {
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        // Regression for #4432: after a metadata edit the new event_id has
+        // no #e reactions yet, and the divine relay's #a COUNT for kind 7
+        // can transiently return 0. _mergeUpdatedVideo carries
+        // nostrLikeCount forward into the per-video bloc seed, so a
+        // relay-fetched 0 here must not stomp it for addressable videos.
+        // Mirrors the skip-zero guard in
+        // VideoEventService._executeLikeCountBatchFetch.
+        'does not overwrite a seeded non-zero likeCount with a relay 0 for '
+        'addressable videos (regression for #4432)',
+        setUp: () {
+          when(
+            () => mockLikesRepository.isLiked(testEventId),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockRepostsRepository.isReposted(testAddressableId),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockLikesRepository.getLikeCount(
+              testEventId,
+              addressableId: testAddressableId,
+            ),
+          ).thenAnswer((_) async => 0);
+          when(
+            () => mockCommentsRepository.getCommentsCount(
+              testEventId,
+              rootAddressableId: testAddressableId,
+            ),
+          ).thenAnswer((_) async => 0);
+          when(
+            () => mockRepostsRepository.getRepostCount(testAddressableId),
+          ).thenAnswer((_) async => 0);
+        },
+        build: () => createBloc(
+          addressableId: testAddressableId,
+          initialLikeCount: 5,
+        ),
+        act: (bloc) => bloc.add(const VideoInteractionsFetchRequested()),
+        expect: () => [
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.loading,
+            likeCount: 5,
+          ),
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            likeCount: 5, // Preserved — relay 0 did not stomp the seed.
+            repostCount: 0,
+            commentCount: 0,
+          ),
+        ],
+      );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        // Companion to the addressable case above: for non-addressable
+        // videos (kind 22) the event_id never changes, so a relay 0 is
+        // authoritative and must still overwrite a stale seed. This pins
+        // the PR #4253 contract — relay is the source of truth — for the
+        // case where the #4432 guard does not apply.
+        'still overwrites a seeded likeCount with a relay 0 for '
+        'non-addressable videos (preserves #4253 contract)',
+        setUp: () {
+          when(
+            () => mockLikesRepository.isLiked(testEventId),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockLikesRepository.getLikeCount(testEventId),
+          ).thenAnswer((_) async => 0);
+          when(
+            () => mockCommentsRepository.getCommentsCount(testEventId),
+          ).thenAnswer((_) async => 0);
+          when(
+            () => mockRepostsRepository.getRepostCountByEventId(testEventId),
+          ).thenAnswer((_) async => 0);
+        },
+        build: () => createBloc(initialLikeCount: 5),
+        act: (bloc) => bloc.add(const VideoInteractionsFetchRequested()),
+        expect: () => [
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.loading,
+            likeCount: 5,
+          ),
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            likeCount: 0, // Relay 0 wins — no addressable id to gate on.
+            repostCount: 0,
+            commentCount: 0,
+          ),
+        ],
+      );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
         'emits [loading, success] when video is not liked',
         setUp: () {
           when(
