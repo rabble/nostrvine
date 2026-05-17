@@ -66,6 +66,10 @@ class _FeedAutoAdvanceCompletionListenerState
 
     try {
       _lastPosition = player.state.position;
+      final duration = player.state.duration;
+      if (duration > Duration.zero) {
+        _armedForCompletion = _lastPosition >= duration - widget.endThreshold;
+      }
     } catch (_) {
       _lastPosition = Duration.zero;
     }

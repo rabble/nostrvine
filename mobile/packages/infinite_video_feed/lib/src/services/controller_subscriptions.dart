@@ -83,8 +83,27 @@ class ControllerSubscriptions {
   }) {
     unawaited(_autoAdvance[index]?.cancel());
 
+    final initialState = controller.state;
     var armed = false;
-    var lastPosition = Duration.zero;
+    var lastPosition = initialState.position;
+
+    Duration? effectiveEnd;
+    final initialDuration = initialState.duration;
+    if (initialDuration > Duration.zero) {
+      effectiveEnd =
+          (maxLoopDuration != null && maxLoopDuration < initialDuration)
+          ? maxLoopDuration
+          : initialDuration;
+    } else if (maxLoopDuration != null) {
+      effectiveEnd = maxLoopDuration;
+    }
+    if (isCurrent() &&
+        initialState.isPlaying &&
+        effectiveEnd != null &&
+        effectiveEnd > Duration.zero &&
+        lastPosition >= effectiveEnd - endThreshold) {
+      armed = true;
+    }
 
     _autoAdvance[index] = controller.stateStream.listen((state) {
       if (!isCurrent() || !state.isPlaying) return;

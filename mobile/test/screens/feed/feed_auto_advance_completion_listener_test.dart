@@ -203,6 +203,31 @@ void main() {
       expect(harness._positions.hasListener, isFalse);
     });
 
+    testWidgets('fires after enabling while player is already near the end', (
+      tester,
+    ) async {
+      when(() => harness._state.position).thenReturn(
+        const Duration(milliseconds: 4500),
+      );
+
+      await tester.pumpWidget(
+        _subject(
+          player: harness.player,
+          isEnabled: false,
+          onCompleted: () => completions++,
+        ),
+      );
+
+      await tester.pumpWidget(
+        _subject(player: harness.player, onCompleted: () => completions++),
+      );
+
+      harness.emit(const Duration(milliseconds: 200));
+      await _flush(tester);
+
+      expect(completions, equals(1));
+    });
+
     testWidgets('clears arming when the player reference changes mid-flight', (
       tester,
     ) async {

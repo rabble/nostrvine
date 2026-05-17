@@ -253,6 +253,42 @@ void main() {
         },
       );
 
+      test(
+        'fires when subscription starts while controller is near end',
+        () async {
+          final controller = FakeController()
+            ..pushState(
+              const DivineVideoPlayerState(
+                status: PlaybackStatus.playing,
+                position: Duration(milliseconds: 9900),
+                duration: Duration(seconds: 10),
+              ),
+            );
+          var loopFired = false;
+
+          subs.subscribeToAutoAdvance(
+            0,
+            controller,
+            maxLoopDuration: const Duration(seconds: 10),
+            endThreshold: const Duration(milliseconds: 200),
+            startThreshold: const Duration(milliseconds: 100),
+            isCurrent: () => true,
+            onLoopCompleted: () => loopFired = true,
+          );
+
+          controller.pushState(
+            const DivineVideoPlayerState(
+              status: PlaybackStatus.playing,
+              position: Duration(milliseconds: 50),
+              duration: Duration(seconds: 10),
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+
+          expect(loopFired, isTrue);
+        },
+      );
+
       test('does not fire when not current', () async {
         final controller = FakeController();
         var loopFired = false;
