@@ -30,6 +30,13 @@ class _MockListSearchBloc extends MockBloc<ListSearchEvent, ListSearchState>
     implements ListSearchBloc {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(const VideoSearchQueryChanged(''));
+    registerFallbackValue(const UserSearchQueryChanged(''));
+    registerFallbackValue(const HashtagSearchQueryChanged(''));
+    registerFallbackValue(const ListSearchQueryChanged(''));
+  });
+
   group(SearchResultsAppBar, () {
     late _MockSearchResultsFilterCubit mockFilterCubit;
     late _MockUserSearchBloc mockUserSearchBloc;
@@ -59,6 +66,8 @@ void main() {
       String initialQuery = 'test',
       bool requestFocusOnMount = false,
     }) {
+      final controller = TextEditingController(text: initialQuery);
+      addTearDown(controller.dispose);
       return testMaterialApp(
         home: MultiBlocProvider(
           providers: [
@@ -72,6 +81,7 @@ void main() {
           ],
           child: Scaffold(
             body: SearchResultsAppBar(
+              controller: controller,
               initialQuery: initialQuery,
               requestFocusOnMount: requestFocusOnMount,
             ),
@@ -129,5 +139,69 @@ void main() {
 
       expect(textField.focusNode?.hasFocus, isTrue);
     });
+
+    testWidgets(
+      'dispatches *QueryChanged synchronously when initialQuery is non-empty',
+      (tester) async {
+        await tester.pumpWidget(createTestWidget(initialQuery: 'hello'));
+        // One pump — synchronous initState dispatch, no debounce elapsed yet.
+        await tester.pump();
+
+        verify(
+          () => mockVideoSearchBloc.add(const VideoSearchQueryChanged('hello')),
+        ).called(1);
+        verify(
+          () => mockUserSearchBloc.add(const UserSearchQueryChanged('hello')),
+        ).called(1);
+        verify(
+          () => mockHashtagSearchBloc.add(
+            const HashtagSearchQueryChanged('hello'),
+          ),
+        ).called(1);
+        verify(
+          () => mockListSearchBloc.add(const ListSearchQueryChanged('hello')),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'does NOT dispatch *QueryChanged synchronously when initialQuery is empty',
+      (tester) async {
+        await tester.pumpWidget(createTestWidget(initialQuery: ''));
+        await tester.pump();
+
+        verifyNever(() => mockVideoSearchBloc.add(any()));
+        verifyNever(() => mockUserSearchBloc.add(any()));
+        verifyNever(() => mockHashtagSearchBloc.add(any()));
+        verifyNever(() => mockListSearchBloc.add(any()));
+      },
+    );
+
+    testWidgets(
+      'does not double-dispatch after the debounce window when initialQuery '
+      'is non-empty (initial set bypasses the listener)',
+      (tester) async {
+        await tester.pumpWidget(createTestWidget(initialQuery: 'hello'));
+        // Settle past the 300ms UI debounce; if the parent's pre-seeded
+        // controller text had also bounced through the listener, a second
+        // event would land here.
+        await tester.pump(const Duration(milliseconds: 350));
+
+        verify(
+          () => mockVideoSearchBloc.add(const VideoSearchQueryChanged('hello')),
+        ).called(1);
+        verify(
+          () => mockUserSearchBloc.add(const UserSearchQueryChanged('hello')),
+        ).called(1);
+        verify(
+          () => mockHashtagSearchBloc.add(
+            const HashtagSearchQueryChanged('hello'),
+          ),
+        ).called(1);
+        verify(
+          () => mockListSearchBloc.add(const ListSearchQueryChanged('hello')),
+        ).called(1);
+      },
+    );
   });
 }

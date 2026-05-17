@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -36,6 +38,7 @@ void main() {
     late _MockUserSearchBloc mockUserBloc;
     late _MockHashtagSearchBloc mockHashtagBloc;
     late _MockListSearchBloc mockListBloc;
+    late TextEditingController controller;
 
     setUp(() {
       mockFilterCubit = _MockSearchResultsFilterCubit();
@@ -43,6 +46,7 @@ void main() {
       mockUserBloc = _MockUserSearchBloc();
       mockHashtagBloc = _MockHashtagSearchBloc();
       mockListBloc = _MockListSearchBloc();
+      controller = TextEditingController();
 
       // Default to a non-idle video state so the filter switch is exercised.
       // Individual idle-state tests override this to `initial`.
@@ -63,6 +67,7 @@ void main() {
       mockUserBloc.close();
       mockHashtagBloc.close();
       mockListBloc.close();
+      controller.dispose();
     });
 
     Widget buildSubject() {
@@ -79,7 +84,7 @@ void main() {
             BlocProvider<HashtagSearchBloc>.value(value: mockHashtagBloc),
             BlocProvider<ListSearchBloc>.value(value: mockListBloc),
           ],
-          child: const Scaffold(body: SearchResultsView()),
+          child: Scaffold(body: SearchResultsView(controller: controller)),
         ),
       );
     }
@@ -187,6 +192,146 @@ void main() {
           expect(find.byType(PeopleSection), findsNothing);
           expect(find.byType(TagsSection), findsNothing);
           expect(find.byType(ListsSection), findsNothing);
+          expect(find.byType(SearchSectionInitialState), findsOneWidget);
+        },
+      );
+    });
+
+    // Regression coverage for #3802: when navigated from Explore on
+    // partial input the route arg is non-empty but the BLoCs are still in
+    // `initial` for ~300ms while the AppBar's synchronous initState
+    // dispatch propagates through their debounceRestartable transformer.
+    // The view must NOT render the empty-query idle placeholder during
+    // that window — sections (with their own skeletons) should render
+    // instead. The view reads the live controller text, so we seed the
+    // controller (mirroring what [SearchResultsPage] does on mount) and
+    // the gate stays closed.
+    group('with non-empty search field text', () {
+      setUp(() {
+        when(() => mockVideoBloc.state).thenReturn(const VideoSearchState());
+        when(() => mockFilterCubit.state).thenReturn(SearchResultsFilter.all);
+      });
+
+      testWidgets(
+        'does NOT render $SearchSectionInitialState even when status is '
+        'initial',
+        (tester) async {
+          controller.text = 'hello';
+          await tester.pumpWidget(buildSubject());
+
+          expect(find.byType(SearchSectionInitialState), findsNothing);
+        },
+      );
+
+      testWidgets('renders the all-filter section list instead', (
+        tester,
+      ) async {
+        controller.text = 'hello';
+        await tester.pumpWidget(buildSubject());
+
+        expect(find.byType(PeopleSection, skipOffstage: false), findsOneWidget);
+        expect(find.byType(ListsSection, skipOffstage: false), findsOneWidget);
+        expect(find.byType(TagsSection, skipOffstage: false), findsOneWidget);
+        expect(find.byType(VideosSection, skipOffstage: false), findsOneWidget);
+      });
+
+      // Regression guard for the whitespace-only edge case reachable via
+      // deep / universal links such as `/search-results/%20%20`. The
+      // BLoCs would trim such a query down to `''` and stay in `initial`;
+      // the view must keep showing the idle placeholder so we don't land
+      // on indefinitely-loading section skeletons (a #3023-class bug).
+      testWidgets(
+        'shows the idle placeholder when search field is whitespace-only',
+        (tester) async {
+          controller.text = '   ';
+          await tester.pumpWidget(buildSubject());
+
+          expect(find.byType(SearchSectionInitialState), findsOneWidget);
+        },
+      );
+
+      // Same regression guard for sub-min-length queries (e.g. a 1-char
+      // deep link `/search-results/a`). The BLoC handlers gate on
+      // `minSearchQueryLength` (2), so anything shorter never advances
+      // out of `initial` and the view must surface the idle placeholder.
+      testWidgets(
+        'shows the idle placeholder when search field is shorter than '
+        'minSearchQueryLength',
+        (tester) async {
+          controller.text = 'a';
+          await tester.pumpWidget(buildSubject());
+
+          expect(find.byType(SearchSectionInitialState), findsOneWidget);
+        },
+      );
+    });
+
+    // Regression coverage for PR #4290 review feedback: after landing on
+    // /search-results/hello and the BLoCs returning to `initial` (which
+    // happens whenever the user clears the field or shortens it below
+    // [minSearchQueryLength]), the view must flip back to the idle
+    // placeholder. The old gate keyed on the immutable route arg and
+    // therefore stayed `false`, regressing the #3023 "infinite skeleton"
+    // symptom in the post-mount edit path.
+    group('field-edit transitions after mounting with a prefilled query', () {
+      testWidgets(
+        'shows idle placeholder when the cleared field meets a reset BLoC',
+        (tester) async {
+          // Simulate the resting state after the user has cleared the
+          // field on a previously-prefilled mount: controller is empty
+          // and the BLoCs have already reset to `initial`.
+          controller.text = '';
+          when(() => mockVideoBloc.state).thenReturn(const VideoSearchState());
+          when(() => mockFilterCubit.state).thenReturn(SearchResultsFilter.all);
+
+          await tester.pumpWidget(buildSubject());
+
+          expect(find.byType(SearchSectionInitialState), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'shows idle placeholder when a sub-min-length field meets a reset '
+        'BLoC',
+        (tester) async {
+          controller.text = 'h';
+          when(() => mockVideoBloc.state).thenReturn(const VideoSearchState());
+          when(() => mockFilterCubit.state).thenReturn(SearchResultsFilter.all);
+
+          await tester.pumpWidget(buildSubject());
+
+          expect(find.byType(SearchSectionInitialState), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'flips from sections to idle when text is cleared and the BLoC '
+        'resets',
+        (tester) async {
+          // Start in the post-results state: prefilled `hello` with the
+          // BLoC sitting on a successful result set.
+          controller.text = 'hello';
+          when(() => mockFilterCubit.state).thenReturn(SearchResultsFilter.all);
+          final stateController = StreamController<VideoSearchState>();
+          addTearDown(stateController.close);
+          whenListen(
+            mockVideoBloc,
+            stateController.stream,
+            initialState: const VideoSearchState(
+              status: VideoSearchStatus.success,
+              query: 'hello',
+            ),
+          );
+
+          await tester.pumpWidget(buildSubject());
+          expect(find.byType(SearchSectionInitialState), findsNothing);
+
+          // User clears the field; the BLoC's empty/short-query branch
+          // emits `const VideoSearchState()` (status: initial, query: '').
+          controller.clear();
+          stateController.add(const VideoSearchState());
+          await tester.pump();
+
           expect(find.byType(SearchSectionInitialState), findsOneWidget);
         },
       );

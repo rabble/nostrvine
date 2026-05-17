@@ -96,8 +96,15 @@ class SearchResultsPage extends ConsumerWidget {
   }
 }
 
-/// Wires the app bar and body together.
-class _SearchResultsBody extends StatelessWidget {
+/// Wires the app bar and body together, owning the search field's
+/// [TextEditingController] so both children read the same live value.
+///
+/// The controller is hoisted here (rather than created inside the app bar)
+/// so [SearchResultsView] can drive its idle-placeholder decision from the
+/// user's current input. Using the live text — not the route arg —
+/// correctly returns the view to the idle placeholder when the user clears
+/// or shortens a prefilled query after landing on /search-results/:query.
+class _SearchResultsBody extends StatefulWidget {
   const _SearchResultsBody({
     required this.initialQuery,
     required this.requestFocusOnMount,
@@ -107,14 +114,34 @@ class _SearchResultsBody extends StatelessWidget {
   final bool requestFocusOnMount;
 
   @override
+  State<_SearchResultsBody> createState() => _SearchResultsBodyState();
+}
+
+class _SearchResultsBodyState extends State<_SearchResultsBody> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialQuery);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         SearchResultsAppBar(
-          initialQuery: initialQuery,
-          requestFocusOnMount: requestFocusOnMount,
+          controller: _controller,
+          initialQuery: widget.initialQuery,
+          requestFocusOnMount: widget.requestFocusOnMount,
         ),
-        const Expanded(child: SearchResultsView()),
+        Expanded(child: SearchResultsView(controller: _controller)),
       ],
     );
   }

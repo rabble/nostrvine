@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,16 +12,25 @@ import 'package:openvine/screens/search_results/widgets/search_filter_pill.dart'
 
 /// App bar for the search results screen.
 ///
-/// Owns the [TextEditingController] and [FocusNode] lifecycle. Dispatches
-/// [VideoSearchQueryChanged] to [VideoSearchBloc] on text changes.
+/// Receives its [TextEditingController] from the parent (so the body can
+/// read the same live text) and owns the [FocusNode] and listener
+/// lifecycle. Dispatches `*QueryChanged` events to the four search BLoCs
+/// on text changes.
 class SearchResultsAppBar extends StatefulWidget {
   const SearchResultsAppBar({
+    required this.controller,
     required this.initialQuery,
     this.requestFocusOnMount = false,
     super.key,
   });
 
-  /// Pre-filled search text.
+  /// Shared text controller. Owned and disposed by the parent so the body
+  /// can subscribe to the same live value for its idle-placeholder gate.
+  final TextEditingController controller;
+
+  /// Pre-filled search text. The parent seeds [controller] with this value
+  /// at construction; we use it here only to decide whether to (a) dispatch
+  /// the initial query synchronously and (b) request focus on mount.
   final String initialQuery;
 
   /// When true, a prefilled search field claims focus after the first frame.
@@ -35,18 +46,22 @@ class SearchResultsAppBar extends StatefulWidget {
 }
 
 class _SearchResultsAppBarState extends State<SearchResultsAppBar> {
-  late final TextEditingController _controller;
   late final FocusNode _focusNode;
+  Timer? _debounce;
 
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController();
     _focusNode = FocusNode();
-    _controller.addListener(_onSearchChanged);
 
     if (widget.initialQuery.isNotEmpty) {
-      _controller.text = widget.initialQuery;
+      // Synchronous dispatch — bypass the UI 300ms debounce so the BLoCs
+      // leave `initial` this frame, preventing the misleading idle
+      // placeholder during Explore → Search transitions (#3802). Each
+      // BLoC still applies its own `debounceRestartable` transformer;
+      // the same-query dedup guard inside each handler coalesces a
+      // late-arriving event from the listener if one happens to fire.
+      _dispatchQuery(widget.initialQuery);
     }
 
     if (widget.requestFocusOnMount || widget.initialQuery.isEmpty) {
@@ -54,19 +69,30 @@ class _SearchResultsAppBarState extends State<SearchResultsAppBar> {
         if (mounted) _focusNode.requestFocus();
       });
     }
+
+    // Attach the listener AFTER the synchronous initial dispatch so the
+    // controller's pre-seeded text (set in the parent's initState) does
+    // not bounce through the debounced path and produce a duplicate event.
+    widget.controller.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
-    _controller
-      ..removeListener(_onSearchChanged)
-      ..dispose();
+    _debounce?.cancel();
+    widget.controller.removeListener(_onSearchChanged);
     _focusNode.dispose();
     super.dispose();
   }
 
   void _onSearchChanged() {
-    final query = _controller.text;
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      _dispatchQuery(widget.controller.text);
+    });
+  }
+
+  void _dispatchQuery(String query) {
     context.read<VideoSearchBloc>().add(VideoSearchQueryChanged(query));
     context.read<UserSearchBloc>().add(UserSearchQueryChanged(query));
     context.read<HashtagSearchBloc>().add(HashtagSearchQueryChanged(query));
@@ -91,7 +117,7 @@ class _SearchResultsAppBarState extends State<SearchResultsAppBar> {
             ),
             Expanded(
               child: DivineSearchBar(
-                controller: _controller,
+                controller: widget.controller,
                 focusNode: _focusNode,
                 hintText: context.l10n.exploreSearchHint,
                 suffixIcon: const SearchFilterPill(),
