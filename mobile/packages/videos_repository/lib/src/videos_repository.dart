@@ -13,7 +13,7 @@ import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:videos_repository/src/home_feed_result.dart';
 import 'package:videos_repository/src/in_memory_feed_cache.dart';
-import 'package:videos_repository/src/native_popular_videos_page.dart';
+import 'package:videos_repository/src/popular_videos_page.dart';
 import 'package:videos_repository/src/video_content_filter.dart';
 import 'package:videos_repository/src/video_event_filter.dart';
 import 'package:videos_repository/src/video_local_storage.dart';
@@ -49,7 +49,6 @@ const Duration _statsFetchTimeout = Duration(seconds: 3);
 /// has already been tried.
 const Duration _routeRelayTimeout = Duration(seconds: 3);
 const String _popularCacheKey = 'popular';
-const String _nativePopularCacheKey = 'popular-native';
 
 /// {@template videos_repository}
 /// Repository for video operations with Nostr.
@@ -687,78 +686,111 @@ class VideosRepository {
   /// This powers Explore → Popular. It uses Funnelcake's leaderboard endpoint
   /// with `exclude_platform=vine` so classic Vine archive imports do not occupy
   /// the default Popular surface while current divine creators try to go viral.
-  Future<List<VideoEvent>> getNativePopularVideos({
+  /// Fetches a cursor-backed page from the v2 popular feed.
+  ///
+  /// This path is Funnelcake-only because relays do not expose the
+  /// server-controlled `platform` / `exclude_platform` filters used by
+  /// native/classic Popular.
+  Future<PopularVideosPage> getPopularVideosPage({
+    required PopularVideosVariant variant,
     int limit = _defaultLimit,
-    int offset = 0,
+    int? until,
     bool skipCache = false,
   }) async {
-    final page = await getNativePopularVideosPage(
-      limit: limit,
-      offset: offset,
-      skipCache: skipCache,
-    );
-    return page.videos;
-  }
-
-  /// Fetches new divine videos from the popular leaderboard plus the pagination
-  /// metadata needed to continue the same source cleanly.
-  Future<NativePopularVideosPage> getNativePopularVideosPage({
-    int limit = _defaultLimit,
-    int offset = 0,
-    bool skipCache = false,
-  }) async {
-    if (!skipCache && offset == 0) {
-      final cached = _inMemoryFeedCache?.get(_nativePopularCacheKey);
+    final cacheKey = 'popular:v2:${variant.name}';
+    if (!skipCache && until == null) {
+      final cached = _inMemoryFeedCache?.get(cacheKey);
       if (cached != null) {
-        final consumedItemCount =
-            cached.consumedItemCount ?? cached.videos.length;
-        return NativePopularVideosPage(
+        return PopularVideosPage(
           videos: cached.videos,
-          consumedItemCount: consumedItemCount,
-          nextOffset: consumedItemCount,
+          hasMore: cached.hasMore ?? (cached.videos.length >= limit),
+          nextCursor: cached.nextCursor,
         );
       }
     }
 
-    if (_funnelcakeApiClient != null && _funnelcakeApiClient.isAvailable) {
-      try {
-        final videoStats = await _funnelcakeApiClient.getNativePopularVideos(
+    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
+      return const PopularVideosPage(videos: [], hasMore: false);
+    }
+
+    try {
+      var cursor = until;
+      final visible = <VideoEvent>[];
+      final seenIds = <String>{};
+
+      while (visible.length < limit) {
+        final stats = await _funnelcakeApiClient.getV2PopularVideos(
+          variant: variant,
           limit: limit,
-          offset: offset,
+          before: cursor,
         );
-        // Repository policy requires issue-linked TODOs for temporary code.
-        // ignore: flutter_style_todos
-        // TODO(#4307): Remove after the native popular exclude_platform
-        // fix ships.
-        final videos = await _hydrateVideosWithBulkStats(
-          _transformVideoStats(videoStats, sortByCreatedAt: false),
-          replaceInteractionCounts: true,
-        );
-        final visibleVideos = _filterNativePopularVideos(
-          videos,
-        );
-        if (!skipCache && offset == 0) {
-          _inMemoryFeedCache?.set(
-            _nativePopularCacheKey,
-            HomeFeedResult(
-              videos: visibleVideos,
-              consumedItemCount: videoStats.length,
-            ),
+        if (stats.isEmpty) {
+          final page = PopularVideosPage(
+            videos: visible,
+            hasMore: false,
           );
+          if (!skipCache && until == null) {
+            _inMemoryFeedCache?.set(
+              cacheKey,
+              HomeFeedResult(
+                videos: page.videos,
+                nextCursor: page.nextCursor,
+                hasMore: page.hasMore,
+              ),
+            );
+          }
+          return page;
         }
-        return NativePopularVideosPage(
-          videos: visibleVideos,
-          consumedItemCount: videoStats.length,
-          nextOffset: offset + videoStats.length,
-        );
-      } on FunnelcakeException {
-        rethrow;
-      }
-    }
 
-    throw const FunnelcakeException(
-      'Native popular videos require the Funnelcake leaderboard endpoint.',
-    );
+        final pageVideos = _filterPopularVideosForVariant(
+          _transformVideoStats(stats, sortByCreatedAt: false),
+          variant,
+        );
+        _appendUniqueVideos(visible, pageVideos, seenIds: seenIds);
+
+        final nextCursor = _cursorBeforeOldestStats(stats);
+        final sourceExhausted =
+            stats.length < limit || nextCursor == null || nextCursor == cursor;
+        if (sourceExhausted) {
+          final page = PopularVideosPage(
+            videos: visible.take(limit).toList(),
+            hasMore: false,
+          );
+          if (!skipCache && until == null) {
+            _inMemoryFeedCache?.set(
+              cacheKey,
+              HomeFeedResult(
+                videos: page.videos,
+                nextCursor: page.nextCursor,
+                hasMore: page.hasMore,
+              ),
+            );
+          }
+          return page;
+        }
+
+        cursor = nextCursor;
+      }
+
+      final page = PopularVideosPage(
+        videos: visible.take(limit).toList(),
+        hasMore: true,
+        nextCursor: cursor,
+      );
+      if (!skipCache && until == null) {
+        _inMemoryFeedCache?.set(
+          cacheKey,
+          HomeFeedResult(
+            videos: page.videos,
+            nextCursor: page.nextCursor,
+            hasMore: page.hasMore,
+          ),
+        );
+      }
+      return page;
+    } on FunnelcakeException {
+      return const PopularVideosPage(videos: [], hasMore: false);
+    }
   }
 
   /// Fetches popular videos sorted by engagement score.
@@ -813,26 +845,13 @@ class VideosRepository {
     // v2 platform-filtered popular feed path. Funnelcake-only: no relay
     // fallback because relays do not expose server-controlled platform fields.
     if (variant != null) {
-      if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
-        return const [];
-      }
-      try {
-        final stats = await _funnelcakeApiClient.getV2PopularVideos(
-          variant: variant,
-          limit: limit,
-          before: until,
-        );
-        final videos = await _hydrateVideosWithBulkStats(
-          _transformVideoStats(stats, sortByCreatedAt: false),
-          replaceInteractionCounts: true,
-        );
-        if (until == null && offset == null) {
-          _inMemoryFeedCache?.set(cacheKey, HomeFeedResult(videos: videos));
-        }
-        return videos;
-      } on FunnelcakeException {
-        return const [];
-      }
+      final page = await getPopularVideosPage(
+        variant: variant,
+        limit: limit,
+        until: until,
+        skipCache: skipCache,
+      );
+      return page.videos;
     }
 
     // Period-windowed leaderboard path. Funnelcake-only — no NIP-50 fallback,
@@ -1342,8 +1361,16 @@ class VideosRepository {
     return oldest - 1;
   }
 
-  List<VideoEvent> _filterNativePopularVideos(List<VideoEvent> videos) {
-    return videos.where((video) => !video.isOriginalVine).toList();
+  List<VideoEvent> _filterPopularVideosForVariant(
+    List<VideoEvent> videos,
+    PopularVideosVariant variant,
+  ) {
+    return switch (variant) {
+      PopularVideosVariant.native =>
+        videos.where((video) => !video.isOriginalVine).toList(),
+      PopularVideosVariant.classic =>
+        videos.where((video) => video.isOriginalVine).toList(),
+    };
   }
 
   VideoEvent? _applyContentPreferences(VideoEvent video) {
@@ -1969,10 +1996,7 @@ class VideosRepository {
       );
     }
 
-    return HomeFeedResult(
-      videos: videos,
-      rawResponseBody: response.rawBody,
-    );
+    return HomeFeedResult(videos: videos, rawResponseBody: response.rawBody);
   }
 
   /// Fetches personalized video recommendations.

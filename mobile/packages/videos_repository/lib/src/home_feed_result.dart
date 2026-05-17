@@ -24,6 +24,8 @@ class HomeFeedResult extends Equatable {
     this.videoListSources = const {},
     this.listOnlyVideoIds = const {},
     this.consumedItemCount,
+    this.nextCursor,
+    this.hasMore,
     this.rawResponseBody,
   });
 
@@ -48,6 +50,12 @@ class HomeFeedResult extends Equatable {
   /// caller needs pagination metadata that differs from `videos.length`.
   final int? consumedItemCount;
 
+  /// Cursor for the next page request when the feed is cursor-backed.
+  final int? nextCursor;
+
+  /// Whether the upstream feed has more data to fetch.
+  final bool? hasMore;
+
   /// The raw JSON response body from the API, if available.
   ///
   /// Populated on initial (non-paginated) home feed fetches so the
@@ -61,5 +69,7 @@ class HomeFeedResult extends Equatable {
     videoListSources,
     listOnlyVideoIds,
     consumedItemCount,
+    nextCursor,
+    hasMore,
   ];
 }
