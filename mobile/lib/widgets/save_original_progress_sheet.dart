@@ -81,7 +81,7 @@ class _SaveOriginalProgressSheetState extends State<_SaveOriginalProgressSheet>
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,

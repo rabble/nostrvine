@@ -242,9 +242,13 @@ void main() {
         await tester.tap(skipButton);
         await tester.pumpAndSettle();
 
-        await tester.tap(
-          find.widgetWithText(TextButton, 'Use this device only'),
+        final deviceOnlyButton = find.widgetWithText(
+          TextButton,
+          'Use this device only',
         );
+        await tester.ensureVisible(deviceOnlyButton);
+        await tester.pumpAndSettle();
+        await tester.tap(deviceOnlyButton);
         // Use pump() instead of pumpAndSettle() because the loading
         // spinner animates indefinitely after createAnonymousAccount is called.
         await tester.pump();

@@ -386,7 +386,6 @@ class NotificationRepository {
         // underlying Nostr source event id. First-page REST emission
         // replaces the placeholder, so the union-by-sourceEventId merge in
         // _emitSnapshotForPage doesn't need a value here.
-        sourceEventIds: const [],
       );
     }
 
@@ -400,7 +399,6 @@ class NotificationRepository {
       isRead: row.isRead,
       commentText: row.content,
       targetEventId: row.targetEventId,
-      sourceEventIds: const [],
     );
   }
 
