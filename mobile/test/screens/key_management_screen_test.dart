@@ -21,9 +21,9 @@ void main() {
     setUp(() {
       authService = createMockAuthService();
       when(() => authService.currentNpub).thenReturn(testNpub);
-      when(() => authService.authenticationSource).thenReturn(
-        AuthenticationSource.importedKeys,
-      );
+      when(
+        () => authService.authenticationSource,
+      ).thenReturn(AuthenticationSource.importedKeys);
       when(() => authService.canExportLocalNsec).thenReturn(false);
       when(() => authService.exportNsec()).thenAnswer((_) async => null);
     });
@@ -67,9 +67,7 @@ void main() {
       await pumpSubject(tester);
       final l10n = lookupAppLocalizations(const Locale('en'));
 
-      await tester.tap(
-        find.byTooltip(l10n.keyManagementCopyPublicKeyTooltip),
-      );
+      await tester.tap(find.byTooltip(l10n.keyManagementCopyPublicKeyTooltip));
       await tester.pumpAndSettle();
 
       expect(clipboardPayload, equals(testNpub));
@@ -79,6 +77,7 @@ void main() {
     testWidgets(
       'shows private key copy action when Keycast account has a local nsec',
       (tester) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
         when(
           () => authService.authenticationSource,
         ).thenReturn(AuthenticationSource.divineOAuth);
@@ -87,12 +86,12 @@ void main() {
         await pumpSubject(tester);
 
         expect(
-          find.text('Copy My Private Key (nsec)', skipOffstage: false),
+          find.text(l10n.keyManagementCopyNsec, skipOffstage: false),
           findsOneWidget,
         );
         expect(
           find.text(
-            'This account signs with Keycast. No private key is stored on this device, so there is no nsec to copy here.',
+            l10n.keyManagementKeycastRemoteSigning,
             skipOffstage: false,
           ),
           findsNothing,
@@ -103,6 +102,7 @@ void main() {
     testWidgets(
       'explains missing local nsec instead of showing copy action for RPC-only Keycast account',
       (tester) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
         when(
           () => authService.authenticationSource,
         ).thenReturn(AuthenticationSource.divineOAuth);
@@ -111,12 +111,12 @@ void main() {
         await pumpSubject(tester);
 
         expect(
-          find.text('Copy My Private Key (nsec)', skipOffstage: false),
+          find.text(l10n.keyManagementCopyNsec, skipOffstage: false),
           findsNothing,
         );
         expect(
           find.text(
-            'This account signs with Keycast. No private key is stored on this device, so there is no nsec to copy here.',
+            l10n.keyManagementKeycastRemoteSigning,
             skipOffstage: false,
           ),
           findsOneWidget,
