@@ -1,7 +1,6 @@
 package com.divinevideo.divine_video_player
 
 import android.content.Context
-import android.graphics.SurfaceTexture
 import android.os.Handler
 import android.view.Surface
 import androidx.media3.common.PlaybackException
@@ -15,13 +14,10 @@ import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
-import io.mockk.mockkConstructor
 import io.mockk.runs
 import io.mockk.slot
-import io.mockk.unmockkConstructor
 import io.mockk.verify
 import io.mockk.verifyOrder
-import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 
@@ -44,8 +40,6 @@ class DivineVideoPlayerInstanceTest {
     private lateinit var mockRegistry: TextureRegistry
     private lateinit var mockProducer: TextureRegistry.SurfaceProducer
     private lateinit var mockSurface: Surface
-    private lateinit var mockTextureEntry: TextureRegistry.SurfaceTextureEntry
-    private lateinit var mockSurfaceTexture: SurfaceTexture
     private lateinit var instance: DivineVideoPlayerInstance
 
     @Before
@@ -58,14 +52,9 @@ class DivineVideoPlayerInstanceTest {
         mockRegistry = mockk(relaxed = true)
         mockProducer = mockk(relaxed = true)
         mockSurface = mockk(relaxed = true)
-        mockTextureEntry = mockk(relaxed = true)
-        mockSurfaceTexture = mockk(relaxed = true)
 
         every { mockRegistry.createSurfaceProducer() } returns mockProducer
         every { mockProducer.id() } returns 42L
-        every { mockRegistry.createSurfaceTexture() } returns mockTextureEntry
-        every { mockTextureEntry.surfaceTexture() } returns mockSurfaceTexture
-        every { mockTextureEntry.id() } returns 99L
 
         instance = DivineVideoPlayerInstance(
             messenger = messenger,
@@ -148,7 +137,7 @@ class DivineVideoPlayerInstanceTest {
     fun `onSurfaceAvailable attaches surface to player and clears needsSurface`() {
         // Start with a null surface so enableTextureOutput leaves needsSurface = true.
         every { mockProducer.surface } returns null
-        instance.enableTextureOutput(mockRegistry, useLegacySurface = false)
+        instance.enableTextureOutput(mockRegistry)
 
         // Surface becomes available; simulate the callback firing with the real surface.
         every { mockProducer.surface } returns mockSurface
@@ -169,7 +158,7 @@ class DivineVideoPlayerInstanceTest {
     fun `onSurfaceAvailable leaves needsSurface true when player has not been created`() {
         // Surface is null at enableTextureOutput time → needsSurface = true.
         every { mockProducer.surface } returns null
-        instance.enableTextureOutput(mockRegistry, useLegacySurface = false)
+        instance.enableTextureOutput(mockRegistry)
 
         // Surface now available, but player still null.
         every { mockProducer.surface } returns mockSurface
@@ -187,7 +176,7 @@ class DivineVideoPlayerInstanceTest {
     @Test
     fun `onSurfaceCleanup detaches surface from player and raises needsSurface`() {
         every { mockProducer.surface } returns mockSurface
-        instance.enableTextureOutput(mockRegistry, useLegacySurface = false)
+        instance.enableTextureOutput(mockRegistry)
         materializePlayer()
 
         instance.onSurfaceCleanup()
@@ -201,7 +190,7 @@ class DivineVideoPlayerInstanceTest {
     @Test
     fun `onSurfaceCleanup raises needsSurface even when player is null`() {
         every { mockProducer.surface } returns null
-        instance.enableTextureOutput(mockRegistry, useLegacySurface = false)
+        instance.enableTextureOutput(mockRegistry)
         // Player never materialised — setVideoSurface(null) is a no-op via ?.
 
         instance.onSurfaceCleanup()
@@ -211,46 +200,6 @@ class DivineVideoPlayerInstanceTest {
         materializePlayer()
         // ensurePlayer() must attach because needsSurface was left true.
         verify { mockPlayer.setVideoSurface(mockSurface) }
-    }
-
-    // -- legacy SurfaceTextureEntry backend --
-
-    @Test
-    fun `enableTextureOutput default uses createSurfaceTexture, not createSurfaceProducer`() {
-        // Production hits this path via the Dart-side default (useLegacySurface = true)
-        // and the MethodChannel fallback. Kotlin's default is aligned to true so a
-        // direct call with no argument exercises the same path.
-        //
-        // Surface(SurfaceTexture) is an Android framework constructor that throws
-        // "Stub!" on the unit-test JVM unless intercepted; mockkConstructor returns
-        // a relaxed Surface mock instead.
-        mockkConstructor(Surface::class)
-        try {
-            val textureId = instance.enableTextureOutput(mockRegistry)
-
-            verify(exactly = 1) { mockRegistry.createSurfaceTexture() }
-            verify(exactly = 0) { mockRegistry.createSurfaceProducer() }
-            verify(exactly = 1) { mockTextureEntry.surfaceTexture() }
-            assertEquals(99L, textureId)
-        } finally {
-            unmockkConstructor(Surface::class)
-        }
-    }
-
-    @Test
-    fun `legacy backend attaches surface eagerly to materialized player`() {
-        mockkConstructor(Surface::class)
-        try {
-            instance.enableTextureOutput(mockRegistry)
-            materializePlayer()
-
-            // Legacy surface is owned for the player's lifetime; ensurePlayer must
-            // attach it eagerly (no waiting for an onSurfaceAvailable callback that
-            // the SurfaceTextureEntry backend never fires).
-            verify { mockPlayer.setVideoSurface(any<Surface>()) }
-        } finally {
-            unmockkConstructor(Surface::class)
-        }
     }
 
     // -- onMediaItemTransition detach/reattach --
@@ -265,7 +214,7 @@ class DivineVideoPlayerInstanceTest {
     @Test
     fun `MEDIA_ITEM_TRANSITION_REASON_AUTO forces surface detach then reattach`() {
         every { mockProducer.surface } returns mockSurface
-        instance.enableTextureOutput(mockRegistry, useLegacySurface = false)
+        instance.enableTextureOutput(mockRegistry)
         val listener = capturePlayerListener()
 
         listener.onMediaItemTransition(null, Player.MEDIA_ITEM_TRANSITION_REASON_AUTO)
@@ -280,7 +229,7 @@ class DivineVideoPlayerInstanceTest {
     fun `MEDIA_ITEM_TRANSITION_REASON_AUTO is skipped when surface is not yet attached`() {
         // Surface null during enableTextureOutput → needsSurface = true.
         every { mockProducer.surface } returns null
-        instance.enableTextureOutput(mockRegistry, useLegacySurface = false)
+        instance.enableTextureOutput(mockRegistry)
         every { mockProducer.surface } returns mockSurface
         val listener = capturePlayerListener()
         // ensurePlayer attached the surface (needsSurface = false). Force the flag

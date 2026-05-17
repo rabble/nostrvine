@@ -132,7 +132,7 @@ class DivineVideoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, 
                 val useTexture = call.argument<Boolean>("useTexture") ?: false
                 if (useTexture) {
                     val useLegacySurface =
-                        call.argument<Boolean>("useLegacySurface") ?: true
+                        call.argument<Boolean>("useLegacySurface") ?: false
                     val textureId = instance.enableTextureOutput(
                         binding.textureRegistry,
                         useLegacySurface = useLegacySurface,

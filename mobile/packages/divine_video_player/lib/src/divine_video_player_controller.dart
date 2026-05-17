@@ -31,24 +31,19 @@ class DivineVideoPlayerController {
   /// separate `CALayer`s that bypass Flutter's rendering pipeline.
   /// Defaults to `false` (platform view).
   ///
-  /// When [useLegacySurface] is `true` (default) AND [useTexture] is
-  /// `true`, the Android side allocates a legacy `SurfaceTextureEntry`
-  /// for texture output. Legacy is the safe default — its surface is
-  /// owned by the player for its full lifetime, so there is no
-  /// `ImageReader` callback that can fire on a detached `FlutterJNI`
-  /// during engine teardown (#3416).
-  ///
-  /// Pass `false` to opt into `SurfaceProducer` instead.
-  /// `SurfaceProducer` adds Android 14+ surface destroy/recreate
-  /// callbacks (useful when a permission dialog or OEM compositor
-  /// event — e.g. Vivo/Android 16 — temporarily destroys the
-  /// surface), at the cost of a residual race window between the
-  /// SDK-internal `ImageReaderSurfaceProducer.onImage` callback and
-  /// `FlutterJNI` detach. Only opt in when the recreate callback is
-  /// actually needed. No effect on iOS/macOS.
+  /// When [useLegacySurface] is `true` AND [useTexture] is `true`, the
+  /// Android side allocates a legacy `SurfaceTextureEntry` instead of
+  /// the default `SurfaceProducer`. The legacy backend has no
+  /// surface-recreate callback (so it can't transparently survive
+  /// permission dialogs / OEM compositor events), but it has no shared
+  /// `ImageReader` buffer pool either — which makes it immune to the
+  /// 1-frame ghost frame that surfaces when many `SurfaceProducer`-backed
+  /// players coexist and a sibling decoder is released (the feed flicker).
+  /// Use it for screens that render many players at once. No effect on
+  /// iOS/macOS. Defaults to `false`.
   DivineVideoPlayerController({
     this.useTexture = false,
-    this.useLegacySurface = true,
+    this.useLegacySurface = false,
   });
 
   /// Whether this player renders via a Flutter texture instead of a

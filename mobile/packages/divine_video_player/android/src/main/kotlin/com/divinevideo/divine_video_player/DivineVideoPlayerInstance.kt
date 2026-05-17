@@ -59,18 +59,17 @@ internal class DivineVideoPlayerInstance(
     //
     // Two backends are supported and selected per player at
     // [enableTextureOutput] time:
-    //  * [TextureRegistry.SurfaceTextureEntry] (default): single-buffer
-    //    SurfaceTexture owned by the player for its full lifetime. No
-    //    surface-recreate callback, but no `ImageReader` either — immune
-    //    to the cross-decoder ghost-frame issue and to the #3416
-    //    `FlutterJNI`-detached `scheduleFrame()` race on engine teardown.
-    //  * [TextureRegistry.SurfaceProducer]: Android 14+ ImageReader
+    //  * [TextureRegistry.SurfaceProducer] (default): Android 14+ ImageReader
     //    backend. Forwards Surface destroy/recreate events via the
     //    [TextureRegistry.SurfaceProducer.Callback] callback so playback can
     //    survive OEM compositor events (Vivo/Android 16, permission dialogs).
     //    Has a small (3–4) hardcoded buffer pool which can leak a stale
     //    frame across decoder format reprobes — visible as a 1-frame ghost
     //    when many players coexist (the feed). See #3416 / feed flicker.
+    //  * [TextureRegistry.SurfaceTextureEntry] (legacy): single-buffer
+    //    SurfaceTexture. No surface-recreate callback, but no shared pool
+    //    either, so it is immune to the cross-decoder ghost-frame issue.
+    //    Used by callers that render many players at once (the feed).
     //
     // Exactly one of these is non-null after [enableTextureOutput].
     private var surfaceProducer: TextureRegistry.SurfaceProducer? = null
@@ -180,26 +179,21 @@ internal class DivineVideoPlayerInstance(
      * Must be called before any clips are loaded. Returns the texture
      * ID that Dart should pass to the `Texture` widget.
      *
-     * When [useLegacySurface] is `true` (default) this uses the legacy
-     * [TextureRegistry.SurfaceTextureEntry]. Its surface is owned by
-     * the player for its full lifetime, with no `ImageReader` callback
-     * that can fire on a detached `FlutterJNI` during engine teardown
-     * (#3416). It does not deliver surface-recreate callbacks, so it
-     * cannot transparently survive an OEM compositor event — accepted
-     * trade-off given the codebase's chosen safety posture.
+     * When [useLegacySurface] is `false` (default) this uses
+     * [TextureRegistry.SurfaceProducer] so Android can notify us when
+     * the underlying surface is destroyed and recreated (permission
+     * dialogs, OEM compositor events on Vivo/Android 16).
      *
-     * When [useLegacySurface] is `false` this uses
-     * [TextureRegistry.SurfaceProducer] which adds Android 14+
-     * surface destroy/recreate callbacks (permission dialogs,
-     * Vivo/Android 16 compositor events), at the cost of the
-     * residual #3416 race window between
-     * `ImageReaderSurfaceProducer.onImage` and `FlutterJNI` detach.
-     * No callsite currently opts in — tests pass `false` explicitly
-     * to exercise the `SurfaceProducer.Callback` contract.
+     * When [useLegacySurface] is `true` this uses the legacy
+     * [TextureRegistry.SurfaceTextureEntry] which does not deliver
+     * surface-recreate callbacks but is immune to the SurfaceProducer
+     * ImageReader-pool ghost-frame issue. Use this for screens that
+     * render many players at once (the feed) where a sibling decoder's
+     * release can leak a stale frame onto a peer's surface.
      */
     fun enableTextureOutput(
         registry: TextureRegistry,
-        useLegacySurface: Boolean = true,
+        useLegacySurface: Boolean = false,
     ): Long {
         if (useLegacySurface) {
             val entry = registry.createSurfaceTexture()
