@@ -176,12 +176,9 @@ void main() {
       });
 
       test(
-        'passes explicit useLegacySurface false through create',
+        'passes default useLegacySurface false through create',
         () async {
-          controller = DivineVideoPlayerController(
-            useTexture: true,
-            useLegacySurface: false,
-          );
+          controller = DivineVideoPlayerController(useTexture: true);
 
           await initController();
 
