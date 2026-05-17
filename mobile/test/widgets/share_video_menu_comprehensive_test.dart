@@ -384,6 +384,9 @@ void main() {
     testWidgets(
       'shows Event JSON and Event ID when debugTools flag is enabled',
       (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1200));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
         await tester.pumpWidget(buildSubject());
         await tester.tap(find.byType(ShareActionButton));
         await tester.pumpAndSettle();
