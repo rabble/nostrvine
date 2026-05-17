@@ -147,6 +147,18 @@ void main() {
         expect(entry.reposts, equals(0));
       });
 
+      test('falls through invalid top-level engagement counters', () {
+        final entry = BulkVideoStatsEntry.fromJson(const {
+          'event_id': 'test',
+          'comments': '',
+          'stats': {
+            'comments': 5,
+          },
+        });
+
+        expect(entry.comments, equals(5));
+      });
+
       test('defaults to 0 when no matching key found', () {
         final entry = BulkVideoStatsEntry.fromJson(const {
           'event_id': 'test',

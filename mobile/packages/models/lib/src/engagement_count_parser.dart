@@ -15,8 +15,18 @@ const _invalidEngagementCountStrings = {
 /// Engagement counts are user-visible numbers. Negative values and known
 /// max-int sentinel values are treated as absent and normalized to zero.
 int parseEngagementCount(dynamic value) {
+  final parsed = tryParseEngagementCount(value);
+  if (parsed == null) return 0;
+  return parsed;
+}
+
+/// Parses an engagement counter and preserves missing/unparseable values.
+///
+/// This is used by fallback search paths that need to keep looking when a
+/// matching field is present but does not contain a usable count.
+int? tryParseEngagementCount(dynamic value) {
   final parsed = _parseCount(value);
-  if (parsed == null || parsed < 0) return 0;
+  if (parsed == null || parsed < 0) return null;
   return parsed;
 }
 

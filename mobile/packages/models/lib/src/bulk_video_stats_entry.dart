@@ -141,7 +141,8 @@ int? _findEngagementCountDeep(dynamic source, Set<String> targetKeys) {
     for (final entry in source.entries) {
       final key = entry.key.toString().toLowerCase();
       if (targetKeys.contains(key)) {
-        return parseEngagementCount(entry.value);
+        final parsed = tryParseEngagementCount(entry.value);
+        if (parsed != null) return parsed;
       }
     }
     for (final value in source.values) {
