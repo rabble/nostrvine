@@ -855,6 +855,185 @@ void main() {
       });
 
       testWidgets(
+        'dispatches FullscreenFeedLoadMoreRequested for prefetch indices '
+        'before the last item (not only at the end)',
+        (tester) async {
+          // Regression: _onNearEnd previously gated on isAtEnd, defeating
+          // the underlying widget's nearEndThreshold so the next page only
+          // loaded when the user reached the very last video. The wrapper
+          // must now trust the threshold and dispatch on any prefetch call
+          // when canLoadMore is true.
+          final videos = createTestVideos();
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: videos,
+                canLoadMore: true,
+              ),
+            ),
+          );
+
+          final pooledVideoFeed = tester.widget<PooledVideoFeed>(
+            find.byType(PooledVideoFeed),
+          );
+
+          pooledVideoFeed.onNearEnd?.call(0);
+
+          verify(
+            () => mockBloc.add(const FullscreenFeedLoadMoreRequested()),
+          ).called(1);
+        },
+      );
+
+      testWidgets(
+        'does not dispatch FullscreenFeedLoadMoreRequested when '
+        'canLoadMore is false',
+        (tester) async {
+          final videos = createTestVideos();
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: videos,
+              ),
+            ),
+          );
+
+          final pooledVideoFeed = tester.widget<PooledVideoFeed>(
+            find.byType(PooledVideoFeed),
+          );
+
+          pooledVideoFeed.onNearEnd?.call(2);
+
+          verifyNever(
+            () => mockBloc.add(const FullscreenFeedLoadMoreRequested()),
+          );
+        },
+      );
+
+      testWidgets('passes nearEndThreshold of 10 to PooledVideoFeed', (
+        tester,
+      ) async {
+        final videos = createTestVideos();
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: FullscreenFeedState(
+              status: FullscreenFeedStatus.ready,
+              videos: videos,
+              canLoadMore: true,
+            ),
+          ),
+        );
+
+        final pooledVideoFeed = tester.widget<PooledVideoFeed>(
+          find.byType(PooledVideoFeed),
+        );
+
+        expect(pooledVideoFeed.nearEndThreshold, equals(10));
+      });
+
+      testWidgets(
+        'shows LoadingMorePill (visible) on last video while loading more',
+        (tester) async {
+          final videos = createTestVideos();
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: videos,
+                currentIndex: videos.length - 1,
+                isLoadingMore: true,
+                canLoadMore: true,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          final pill = tester.widget<LoadingMorePill>(
+            find.byType(LoadingMorePill),
+          );
+          expect(pill.isVisible, isTrue);
+        },
+      );
+
+      testWidgets(
+        'hides LoadingMorePill when isLoadingMore is false',
+        (tester) async {
+          final videos = createTestVideos();
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: videos,
+                currentIndex: videos.length - 1,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          final pill = tester.widget<LoadingMorePill>(
+            find.byType(LoadingMorePill),
+          );
+          expect(pill.isVisible, isFalse);
+        },
+      );
+
+      testWidgets(
+        'hides LoadingMorePill when not on the last video',
+        (tester) async {
+          final videos = createTestVideos();
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: videos,
+                isLoadingMore: true,
+                canLoadMore: true,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          final pill = tester.widget<LoadingMorePill>(
+            find.byType(LoadingMorePill),
+          );
+          expect(pill.isVisible, isFalse);
+        },
+      );
+
+      testWidgets(
+        'LoadingMorePill renders localized feedLoadingMore copy when visible',
+        (tester) async {
+          final videos = createTestVideos();
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: videos,
+                currentIndex: videos.length - 1,
+                isLoadingMore: true,
+                canLoadMore: true,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          final loadingMoreText = lookupAppLocalizations(
+            const Locale('en'),
+          ).feedLoadingMore;
+          expect(find.text(loadingMoreText), findsOneWidget);
+        },
+      );
+
+      testWidgets(
         'navigator.maybePop fires when status becomes emptyAfterRemoval',
         (tester) async {
           // Capture pops via a NavigatorObserver. The widget tree puts

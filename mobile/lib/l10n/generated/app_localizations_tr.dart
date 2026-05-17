@@ -4113,6 +4113,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get feedSkip => 'Atla';
 
   @override
+  String get feedLoadingMore => 'Loading more videos…';
+
+  @override
   String get uploadWaitingToUpload => 'Yüklemek için bekleniyor';
 
   @override

@@ -3949,6 +3949,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get feedSkip => '건너뛰기';
 
   @override
+  String get feedLoadingMore => 'Loading more videos…';
+
+  @override
   String get uploadWaitingToUpload => '업로드 대기 중';
 
   @override

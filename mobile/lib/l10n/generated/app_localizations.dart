@@ -7238,6 +7238,12 @@ abstract class AppLocalizations {
   /// **'Skip'**
   String get feedSkip;
 
+  /// Shown in a small pill at the bottom of the fullscreen video feed while the next page of videos is being fetched.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading more videos…'**
+  String get feedLoadingMore;
+
   /// No description provided for @uploadWaitingToUpload.
   ///
   /// In en, this message translates to:

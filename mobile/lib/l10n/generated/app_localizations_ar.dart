@@ -4089,6 +4089,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get feedSkip => 'تخطي';
 
   @override
+  String get feedLoadingMore => 'Loading more videos…';
+
+  @override
   String get uploadWaitingToUpload => 'في انتظار الرفع';
 
   @override

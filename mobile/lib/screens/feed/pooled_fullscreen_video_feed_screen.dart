@@ -550,12 +550,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   }
 
   void _onNearEnd(FullscreenFeedState state, int index) {
-    if (!state.canLoadMore) {
-      return;
-    }
-
-    final isAtEnd = index >= state.videos.length - 1;
-    if (isAtEnd) {
+    if (state.canLoadMore) {
       _triggerLoadMore();
     }
   }
@@ -872,163 +867,176 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                       // shares its hex (`#00150D`) with the comment
                       // bar's [VineTheme.surfaceBackground], so the
                       // rounded cutouts seam continuously into the bar.
-                      child: VideoTapShield(
-                        child: _MaybeRoundFeedBottom(
-                          roundCorners: showCommentBar,
-                          child:
-                              InfiniteVideoFeed.isSupported &&
-                                  ref.watch(
-                                    isFeatureEnabledProvider(
-                                      .nativeFeedPlayer,
-                                    ),
-                                  )
-                              ? FeedVideos(
-                                  key: _feedVideosKey,
-                                  videos: state.videos,
-                                  contextTitle: widget.contextTitle,
-                                  currentIndex: state.currentIndex,
-                                  shouldPortraitExpand: false,
-                                  hasMore: state.canLoadMore,
-                                  isLoadingMore: state.isLoadingMore,
-                                  onActiveVideoChanged: (video, index) {
-                                    _resumeAutoAdvanceAfterSwipe();
-                                    FeedPerformanceTracker()
-                                        .startVideoSwipeTracking(
-                                          video.id,
-                                        );
-                                    context.read<FullscreenFeedBloc>().add(
-                                      FullscreenFeedIndexChanged(index),
-                                    );
-                                    widget.onPageChanged?.call(index);
-                                  },
-                                  onNearEnd: () {
-                                    if (state.canLoadMore) {
-                                      _triggerLoadMore();
-                                    }
-                                  },
-                                )
-                              : kIsWeb
-                              ? WebVideoFeed(
-                                  key: _webFeedKey,
-                                  videos: state.videos
-                                      .where((v) => v.videoUrl != null)
-                                      .toList(),
-                                  initialIndex: state.currentIndex,
-                                  controllerFactory:
-                                      widget.webControllerFactory ??
-                                      defaultWebVideoPlayerControllerFactory,
-                                  authHeaderProvider: webAuthHeaderProvider,
-                                  initialVolume: context
-                                      .read<VideoVolumeCubit>()
-                                      .state
-                                      .volume,
-                                  onActiveVideoChanged: (video, index) {
-                                    _pagePosition.value = index.toDouble();
-                                    _resumeAutoAdvanceAfterSwipe();
-                                    FeedPerformanceTracker()
-                                        .startVideoSwipeTracking(
-                                          video.id,
-                                        );
-                                    context.read<FullscreenFeedBloc>().add(
-                                      FullscreenFeedIndexChanged(index),
-                                    );
-                                    widget.onPageChanged?.call(index);
-                                  },
-                                  onCompleted: (_) =>
-                                      _handleAutoAdvanceCompleted(),
-                                  onErrored: _handleWebPlayerErrored,
-                                  onRequiresAuth: _handleWebPlayerRequiresAuth,
-                                  onNearEnd: (index) =>
-                                      _onNearEnd(state, index),
-                                  itemBuilder:
-                                      (
-                                        context,
-                                        video,
-                                        index, {
-                                        required isActive,
-                                        controller,
-                                      }) {
-                                        return _WebFullscreenItem(
-                                          video: video,
-                                          isActive: isActive,
-                                          isOwnVideo:
-                                              currentUserPubkey == video.pubkey,
-                                          controller: controller,
-                                          contextTitle: widget.contextTitle,
-                                          onInteracted: _suppressAutoAdvance,
-                                        );
-                                      },
-                                )
-                              : PooledVideoFeed(
-                                  key: _feedKey,
-                                  videos: state.pooledVideos,
-                                  controller: _controller,
-                                  initialIndex: state.currentIndex,
-                                  onActiveVideoChanged: (video, index) {
-                                    _resumeAutoAdvanceAfterSwipe();
-                                    FeedPerformanceTracker()
-                                        .startVideoSwipeTracking(
-                                          video.id,
-                                        );
-                                    context.read<FullscreenFeedBloc>().add(
-                                      FullscreenFeedIndexChanged(index),
-                                    );
-                                    widget.onPageChanged?.call(index);
-                                  },
-                                  onNearEnd: (index) =>
-                                      _onNearEnd(state, index),
-                                  nearEndThreshold: 0,
-                                  onScrollOffsetChanged: (page) =>
-                                      _pagePosition.value = page,
-                                  maxLoopDuration:
-                                      VideoEditorConstants.maxDuration,
-                                  itemBuilder: (context, video, index, {required isActive}) {
-                                    if (state.videos.isEmpty) {
-                                      debugPrint(
-                                        'FullscreenFeed: itemBuilder called with empty '
-                                        'state.videos! index=$index, '
-                                        'video.id=${video.id}',
-                                      );
-                                      return const ColoredBox(
-                                        color: VineTheme.backgroundColor,
-                                      );
-                                    }
-                                    final originalEvent = state.videos.firstWhere(
-                                      (v) => v.id == video.id,
-                                      orElse: () {
-                                        final clamped = index.clamp(
-                                          0,
-                                          state.videos.length - 1,
-                                        );
-                                        debugPrint(
-                                          'FullscreenFeed: video ID lookup miss! '
-                                          'video.id=${video.id}, index=$index, '
-                                          'clamped=$clamped, '
-                                          'state.videos.length='
-                                          '${state.videos.length}, '
-                                          'pooledVideos.length='
-                                          '${state.pooledVideos.length}',
-                                        );
-                                        return state.videos[clamped];
-                                      },
-                                    );
-                                    return _PooledFullscreenItem(
-                                      video: originalEvent,
-                                      index: index,
-                                      isActive: isActive,
-                                      pagePosition: _pagePosition,
+                      child: Stack(
+                        children: [
+                          VideoTapShield(
+                            child: _MaybeRoundFeedBottom(
+                              roundCorners: showCommentBar,
+                              child:
+                                  InfiniteVideoFeed.isSupported &&
+                                      ref.watch(
+                                        isFeatureEnabledProvider(
+                                          .nativeFeedPlayer,
+                                        ),
+                                      )
+                                  ? FeedVideos(
+                                      key: _feedVideosKey,
+                                      videos: state.videos,
                                       contextTitle: widget.contextTitle,
-                                      trafficSource: widget.trafficSource,
-                                      sourceDetail: widget.sourceDetail,
-                                      isOwnVideo: isOwnVideo,
-                                      isAutoAdvanceActive: effectiveAutoActive,
-                                      onInteracted: _suppressAutoAdvance,
-                                      onAutoAdvanceCompleted:
-                                          _handleAutoAdvanceCompleted,
-                                    );
-                                  },
-                                ),
-                        ),
+                                      currentIndex: state.currentIndex,
+                                      shouldPortraitExpand: false,
+                                      hasMore: state.canLoadMore,
+                                      isLoadingMore: state.isLoadingMore,
+                                      onActiveVideoChanged: (video, index) {
+                                        _resumeAutoAdvanceAfterSwipe();
+                                        FeedPerformanceTracker()
+                                            .startVideoSwipeTracking(video.id);
+                                        context.read<FullscreenFeedBloc>().add(
+                                          FullscreenFeedIndexChanged(index),
+                                        );
+                                        widget.onPageChanged?.call(index);
+                                      },
+                                      onNearEnd: () {
+                                        if (state.canLoadMore) {
+                                          _triggerLoadMore();
+                                        }
+                                      },
+                                    )
+                                  : kIsWeb
+                                  ? WebVideoFeed(
+                                      key: _webFeedKey,
+                                      videos: state.videos
+                                          .where((v) => v.videoUrl != null)
+                                          .toList(),
+                                      initialIndex: state.currentIndex,
+                                      controllerFactory:
+                                          widget.webControllerFactory ??
+                                          defaultWebVideoPlayerControllerFactory,
+                                      authHeaderProvider: webAuthHeaderProvider,
+                                      initialVolume: context
+                                          .read<VideoVolumeCubit>()
+                                          .state
+                                          .volume,
+                                      onActiveVideoChanged: (video, index) {
+                                        _pagePosition.value = index.toDouble();
+                                        _resumeAutoAdvanceAfterSwipe();
+                                        FeedPerformanceTracker()
+                                            .startVideoSwipeTracking(video.id);
+                                        context.read<FullscreenFeedBloc>().add(
+                                          FullscreenFeedIndexChanged(index),
+                                        );
+                                        widget.onPageChanged?.call(index);
+                                      },
+                                      onCompleted: (_) =>
+                                          _handleAutoAdvanceCompleted(),
+                                      onErrored: _handleWebPlayerErrored,
+                                      onRequiresAuth:
+                                          _handleWebPlayerRequiresAuth,
+                                      onNearEnd: (index) =>
+                                          _onNearEnd(state, index),
+                                      nearEndThreshold: 10,
+                                      itemBuilder:
+                                          (
+                                            context,
+                                            video,
+                                            index, {
+                                            required isActive,
+                                            controller,
+                                          }) {
+                                            return _WebFullscreenItem(
+                                              video: video,
+                                              isActive: isActive,
+                                              isOwnVideo:
+                                                  currentUserPubkey ==
+                                                  video.pubkey,
+                                              controller: controller,
+                                              contextTitle: widget.contextTitle,
+                                              onInteracted:
+                                                  _suppressAutoAdvance,
+                                            );
+                                          },
+                                    )
+                                  : PooledVideoFeed(
+                                      key: _feedKey,
+                                      videos: state.pooledVideos,
+                                      controller: _controller,
+                                      initialIndex: state.currentIndex,
+                                      onActiveVideoChanged: (video, index) {
+                                        _resumeAutoAdvanceAfterSwipe();
+                                        FeedPerformanceTracker()
+                                            .startVideoSwipeTracking(video.id);
+                                        context.read<FullscreenFeedBloc>().add(
+                                          FullscreenFeedIndexChanged(index),
+                                        );
+                                        widget.onPageChanged?.call(index);
+                                      },
+                                      onNearEnd: (index) =>
+                                          _onNearEnd(state, index),
+                                      nearEndThreshold: 10,
+                                      onScrollOffsetChanged: (page) =>
+                                          _pagePosition.value = page,
+                                      maxLoopDuration:
+                                          VideoEditorConstants.maxDuration,
+                                      itemBuilder: (context, video, index, {required isActive}) {
+                                        if (state.videos.isEmpty) {
+                                          debugPrint(
+                                            'FullscreenFeed: itemBuilder called with empty '
+                                            'state.videos! index=$index, '
+                                            'video.id=${video.id}',
+                                          );
+                                          return const ColoredBox(
+                                            color: VineTheme.backgroundColor,
+                                          );
+                                        }
+                                        final originalEvent = state.videos.firstWhere(
+                                          (v) => v.id == video.id,
+                                          orElse: () {
+                                            final clamped = index.clamp(
+                                              0,
+                                              state.videos.length - 1,
+                                            );
+                                            debugPrint(
+                                              'FullscreenFeed: video ID lookup miss! '
+                                              'video.id=${video.id}, index=$index, '
+                                              'clamped=$clamped, '
+                                              'state.videos.length='
+                                              '${state.videos.length}, '
+                                              'pooledVideos.length='
+                                              '${state.pooledVideos.length}',
+                                            );
+                                            return state.videos[clamped];
+                                          },
+                                        );
+                                        return _PooledFullscreenItem(
+                                          video: originalEvent,
+                                          index: index,
+                                          isActive: isActive,
+                                          pagePosition: _pagePosition,
+                                          contextTitle: widget.contextTitle,
+                                          trafficSource: widget.trafficSource,
+                                          sourceDetail: widget.sourceDetail,
+                                          isOwnVideo: isOwnVideo,
+                                          isAutoAdvanceActive:
+                                              effectiveAutoActive,
+                                          onInteracted: _suppressAutoAdvance,
+                                          onAutoAdvanceCompleted:
+                                              _handleAutoAdvanceCompleted,
+                                        );
+                                      },
+                                    ),
+                            ),
+                          ),
+                          Positioned(
+                            left: 0,
+                            right: 0,
+                            bottom: 16,
+                            child: LoadingMorePill(
+                              isVisible:
+                                  state.isLoadingMore &&
+                                  state.currentIndex >= state.videos.length - 1,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     if (showCommentBar) const InlineCommentComposerBar(),
@@ -1394,9 +1402,7 @@ class _PooledFullscreenItemContentState
             // cover the screen entirely and would never reveal the
             // backdrop, so we skip it for them.
             if (showBlurBackdrop)
-              Positioned.fill(
-                child: _BlurredVideoBackdrop(url: thumbnailUrl),
-              ),
+              Positioned.fill(child: _BlurredVideoBackdrop(url: thumbnailUrl)),
             PooledVideoPlayer(
               index: widget.index,
               isActive: widget.isActive,
@@ -1675,9 +1681,7 @@ class _FittedVideoPlayer extends StatelessWidget {
       builder: (context, rect, _) {
         final detected = _detectPortrait(rect, fallback: isPortrait);
         final boxFit = detected ? BoxFit.cover : BoxFit.contain;
-        final alignment = fullscreenVideoMediaAlignment(
-          isPortrait: detected,
-        );
+        final alignment = fullscreenVideoMediaAlignment(isPortrait: detected);
         // Do not set filterQuality to high — on Android the bicubic
         // interpolation causes visible blur on the Texture widget
         // when the video resolution doesn't match the display size
@@ -1703,10 +1707,7 @@ class _FittedVideoPlayer extends StatelessWidget {
 }
 
 class _VideoLoadingPlaceholder extends StatelessWidget {
-  const _VideoLoadingPlaceholder({
-    this.thumbnailUrl,
-    this.isPortrait = true,
-  });
+  const _VideoLoadingPlaceholder({this.thumbnailUrl, this.isPortrait = true});
 
   final String? thumbnailUrl;
   final bool isPortrait;
@@ -1819,6 +1820,54 @@ class _MaybeRoundFeedBottom extends StatelessWidget {
     return NavRoundedShell(
       innerColor: VineTheme.surfaceContainerHigh,
       child: child,
+    );
+  }
+}
+
+/// Bottom-center pill shown while the fullscreen feed is fetching the
+/// next page of videos and the user is already on the last item.
+/// Hidden (with a short fade) otherwise so it doesn't sit on top of
+/// the video chrome during normal scrolling.
+@visibleForTesting
+class LoadingMorePill extends StatelessWidget {
+  @visibleForTesting
+  const LoadingMorePill({required this.isVisible, super.key});
+
+  final bool isVisible;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 200),
+        opacity: isVisible ? 1 : 0,
+        child: Center(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: VineTheme.surfaceBackground.withValues(alpha: 0.85),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                spacing: 10,
+                children: [
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: BrandedLoadingIndicator(size: 16),
+                  ),
+                  Text(
+                    context.l10n.feedLoadingMore,
+                    style: VineTheme.bodyMediumFont(),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

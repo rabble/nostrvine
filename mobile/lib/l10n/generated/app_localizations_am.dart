@@ -4043,6 +4043,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get feedSkip => 'ዝለል';
 
   @override
+  String get feedLoadingMore => 'Loading more videos…';
+
+  @override
   String get uploadWaitingToUpload => 'ለመስቀል በመጠበቅ ላይ';
 
   @override

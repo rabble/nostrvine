@@ -4239,6 +4239,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get feedSkip => 'Pomiń';
 
   @override
+  String get feedLoadingMore => 'Loading more videos…';
+
+  @override
   String get uploadWaitingToUpload => 'Czekam na przesłanie';
 
   @override

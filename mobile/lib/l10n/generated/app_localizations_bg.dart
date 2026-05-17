@@ -4177,6 +4177,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get feedSkip => 'Пропускане';
 
   @override
+  String get feedLoadingMore => 'Loading more videos…';
+
+  @override
   String get uploadWaitingToUpload => 'Чака качване';
 
   @override

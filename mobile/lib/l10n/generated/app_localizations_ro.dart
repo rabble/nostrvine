@@ -4255,6 +4255,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get feedSkip => 'Sari peste';
 
   @override
+  String get feedLoadingMore => 'Loading more videos…';
+
+  @override
   String get uploadWaitingToUpload => 'Se așteaptă încărcarea';
 
   @override

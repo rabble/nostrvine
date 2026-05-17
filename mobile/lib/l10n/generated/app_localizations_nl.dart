@@ -4147,6 +4147,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get feedSkip => 'Overslaan';
 
   @override
+  String get feedLoadingMore => 'Loading more videos…';
+
+  @override
   String get uploadWaitingToUpload => 'Wachten om te uploaden';
 
   @override

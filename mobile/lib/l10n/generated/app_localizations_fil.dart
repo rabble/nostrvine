@@ -4190,6 +4190,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get feedSkip => 'Laktawan';
 
   @override
+  String get feedLoadingMore => 'Loading more videos…';
+
+  @override
   String get uploadWaitingToUpload => 'Naghihintay i-upload';
 
   @override

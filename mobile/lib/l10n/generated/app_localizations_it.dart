@@ -4176,6 +4176,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get feedSkip => 'Salta';
 
   @override
+  String get feedLoadingMore => 'Loading more videos…';
+
+  @override
   String get uploadWaitingToUpload => 'In attesa di caricamento';
 
   @override

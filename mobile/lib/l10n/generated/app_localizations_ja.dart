@@ -3934,6 +3934,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get feedSkip => 'スキップ';
 
   @override
+  String get feedLoadingMore => 'Loading more videos…';
+
+  @override
   String get uploadWaitingToUpload => 'アップロード待ち';
 
   @override

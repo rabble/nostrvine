@@ -441,6 +441,10 @@ const _knownUntranslatedDebt = {
   'videoOverlayCommentBarSendLabel',
   'videoOverlayCommentPostedSnackbar',
   'videoOverlayCommentPostFailedSnackbar',
+  // Added by the end-of-feed loading pill on the fullscreen video feed.
+  // Translators will pick this up in a follow-up pass; until then non-English
+  // locales fall back to the English source.
+  'feedLoadingMore',
 };
 
 Map<String, Object?> _readArb(File file) {

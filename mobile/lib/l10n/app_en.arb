@@ -2262,6 +2262,10 @@
   "feedExploreVideos": "Explore Videos",
   "feedExternalVideoSlow": "External video loading slowly",
   "feedSkip": "Skip",
+  "feedLoadingMore": "Loading more videos…",
+  "@feedLoadingMore": {
+    "description": "Shown in a small pill at the bottom of the fullscreen video feed while the next page of videos is being fetched."
+  },
   "uploadWaitingToUpload": "Waiting to upload",
   "uploadUploadingVideo": "Uploading video",
   "uploadProcessingVideo": "Processing video",
