@@ -14,6 +14,13 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  media_kit: ^1.2.6
+  media_kit_libs_video: ^1.0.7
+  media_kit_video:
+    git:
+      url: https://github.com/divinevideo/media-kit
+      ref: fix/texture-rotation
+      path: media_kit_video
   path_provider: ^2.1.5
 
 dev_dependencies:
@@ -33,3 +40,5 @@ flutter:
         pluginClass: DivineVideoPlayerPlugin
       macos:
         pluginClass: DivineVideoPlayerPlugin
+      linux:
+        dartPluginClass: DivineVideoPlayerLinuxPlugin

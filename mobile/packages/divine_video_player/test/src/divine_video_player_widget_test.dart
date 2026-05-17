@@ -1,4 +1,5 @@
 import 'package:divine_video_player/divine_video_player.dart';
+import 'package:divine_video_player/src/linux/linux_video_player_backend.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -11,6 +12,8 @@ void main() {
 
   setUp(() async {
     DivineVideoPlayerController.resetIdCounterForTesting();
+    DivineVideoPlayerController.debugForceLinuxBackend = null;
+    DivineVideoPlayerController.linuxBackendFactory = _FakeLinuxBackend.new;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
           const MethodChannel('divine_video_player'),
@@ -27,19 +30,41 @@ void main() {
         );
   });
 
+  tearDown(() {
+    DivineVideoPlayerController.debugForceLinuxBackend = null;
+    DivineVideoPlayerController.linuxBackendFactory =
+        MediaKitLinuxVideoPlayerBackend.new;
+    _FakeLinuxBackend.instance = null;
+  });
+
+  Future<DivineVideoPlayerController> initLinuxController({
+    bool firstFrameRendered = false,
+  }) async {
+    DivineVideoPlayerController.debugForceLinuxBackend = true;
+    final linuxController = DivineVideoPlayerController();
+    await linuxController.initialize();
+    _FakeLinuxBackend.instance!.emitState(
+      DivineVideoPlayerState(
+        status: PlaybackStatus.ready,
+        clipCount: 1,
+        isFirstFrameRendered: firstFrameRendered,
+      ),
+    );
+    return linuxController;
+  }
+
   group(DivineVideoPlayer, () {
-    testWidgets('renders Text for unsupported platform', (tester) async {
-      debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+    testWidgets('renders Linux backend view on Linux', (tester) async {
+      final linuxController = await initLinuxController();
 
       await tester.pumpWidget(
         Directionality(
           textDirection: TextDirection.ltr,
-          child: DivineVideoPlayer(controller: controller),
+          child: DivineVideoPlayer(controller: linuxController),
         ),
       );
 
-      expect(find.text('Platform not supported'), findsOneWidget);
-      debugDefaultTargetPlatformOverride = null;
+      expect(find.text('Linux player view'), findsOneWidget);
     });
 
     testWidgets('renders Text for unsupported fuchsia', (tester) async {
@@ -230,29 +255,28 @@ void main() {
     testWidgets('does not render Stack when placeholder is null', (
       tester,
     ) async {
-      debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+      final linuxController = await initLinuxController();
 
       await tester.pumpWidget(
         Directionality(
           textDirection: TextDirection.ltr,
-          child: DivineVideoPlayer(controller: controller),
+          child: DivineVideoPlayer(controller: linuxController),
         ),
       );
 
       expect(find.byType(Stack), findsNothing);
-      debugDefaultTargetPlatformOverride = null;
     });
 
     testWidgets('renders placeholder over surface before first frame', (
       tester,
     ) async {
-      debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+      final linuxController = await initLinuxController();
 
       await tester.pumpWidget(
         Directionality(
           textDirection: TextDirection.ltr,
           child: DivineVideoPlayer(
-            controller: controller,
+            controller: linuxController,
             placeholder: const Text('Loading...'),
           ),
         ),
@@ -260,31 +284,12 @@ void main() {
 
       expect(find.byType(Stack), findsOneWidget);
       expect(find.text('Loading...'), findsOneWidget);
-      debugDefaultTargetPlatformOverride = null;
     });
 
     testWidgets('hides placeholder after first frame rendered', (tester) async {
-      debugDefaultTargetPlatformOverride = TargetPlatform.linux;
-
-      // Set up a mock stream handler that emits firstFrameRendered=true,
-      // then create a fresh controller so its initialize() subscribes to
-      // that stream.
-      final nextId = DivineVideoPlayerController.nextId;
-
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(
-            MethodChannel('divine_video_player/player_$nextId'),
-            (call) async => null,
-          );
-
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockStreamHandler(
-            EventChannel('divine_video_player/player_$nextId/events'),
-            _FirstFrameStreamHandler(),
-          );
-
-      final freshController = DivineVideoPlayerController();
-      await freshController.initialize();
+      final freshController = await initLinuxController(
+        firstFrameRendered: true,
+      );
 
       await tester.pumpWidget(
         Directionality(
@@ -300,9 +305,73 @@ void main() {
       await tester.pump();
 
       expect(find.text('Loading...'), findsNothing);
-      debugDefaultTargetPlatformOverride = null;
     });
   });
+}
+
+class _FakeLinuxBackend implements LinuxVideoPlayerBackend {
+  _FakeLinuxBackend() {
+    instance = this;
+  }
+
+  static _FakeLinuxBackend? instance;
+
+  late void Function(DivineVideoPlayerState state) _onStateChanged;
+
+  @override
+  Future<void> initialize({
+    required void Function(DivineVideoPlayerState state) onStateChanged,
+    required void Function(Object error) onError,
+  }) async {
+    _onStateChanged = onStateChanged;
+  }
+
+  void emitState(DivineVideoPlayerState state) => _onStateChanged(state);
+
+  @override
+  Widget buildView() => const Text('Linux player view');
+
+  @override
+  Future<void> dispose() async {}
+
+  @override
+  Future<void> jumpToClip(int index) async {}
+
+  @override
+  Future<void> pause() async {}
+
+  @override
+  Future<void> play() async {}
+
+  @override
+  Future<void> removeAllAudioTracks() async {}
+
+  @override
+  Future<void> seekTo(Duration position) async {}
+
+  @override
+  Future<void> setAudioTrackVolume(int index, double volume) async {}
+
+  @override
+  Future<void> setAudioTracks(List<AudioTrack> tracks) async {}
+
+  @override
+  Future<void> setClips(
+    List<VideoClip> clips, {
+    Duration? startPosition,
+  }) async {}
+
+  @override
+  Future<void> setLooping({required bool looping}) async {}
+
+  @override
+  Future<void> setPlaybackSpeed(double speed) async {}
+
+  @override
+  Future<void> setVolume(double volume) async {}
+
+  @override
+  Future<void> stop() async {}
 }
 
 class _FirstFrameStreamHandler extends MockStreamHandler {

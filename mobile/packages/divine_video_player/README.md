@@ -6,7 +6,7 @@ Seamless multi-clip video player using native platform APIs.
 
 - Seamless playback across multiple video clips with no delay
 - Continuous timeline with global position tracking
-- Native implementations: Media3/ExoPlayer (Android), AVFoundation (iOS/macOS)
+- Native implementations: Media3/ExoPlayer (Android), AVFoundation (iOS/macOS), media_kit/mpv (Linux)
 - Preloading and buffering handled natively
 - Looping, clip jumping, and playback speed control
 - Multi-track audio overlays synced to the video timeline
@@ -141,3 +141,22 @@ enabled and falls back to the platform view otherwise.
 - Android: API 28+
 - iOS: 16.0+
 - macOS: 13.0+
+- Linux: `libmpv` is bundled through `media_kit_libs_video`; install the
+  system packages `libfontconfig1` and `libass9` if your distro does not
+  already provide them.
+
+## Linux Backend Notes
+
+Linux uses a Dart backend built on `media_kit` rather than the package's
+platform-channel plugin path. That keeps the public `DivineVideoPlayer`
+API consistent without introducing a separate C++ Linux plugin to maintain.
+
+The Linux backend supports:
+
+- HLS and MP4 playback
+- Multi-clip timelines using `media_kit` playlists with per-clip `start` and `end`
+- Play, pause, seek, loop, buffer, volume, speed, and disposal
+
+The Linux backend does not yet support overlay audio tracks via
+`setAudioTracks`. Callers that need mixed timeline audio should continue to
+use the existing mobile/macOS native backends.

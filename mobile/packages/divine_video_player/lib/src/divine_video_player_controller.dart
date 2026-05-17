@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:divine_video_player/src/audio_track.dart';
+import 'package:divine_video_player/src/linux/linux_video_player_backend.dart';
 import 'package:divine_video_player/src/video_clip.dart';
 import 'package:divine_video_player/src/video_player_state.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
@@ -56,6 +58,14 @@ class DivineVideoPlayerController {
   final bool useLegacySurface;
 
   static const _globalChannel = MethodChannel('divine_video_player');
+
+  /// Factory used to create the Linux backend implementation.
+  static LinuxVideoPlayerBackendFactory linuxBackendFactory =
+      MediaKitLinuxVideoPlayerBackend.new;
+
+  /// Test hook that forces Linux backend selection regardless of platform.
+  @visibleForTesting
+  static bool? debugForceLinuxBackend;
 
   /// Seeded from the current time so that IDs are unique across hot
   /// restarts. Without this, Dart's static reset would reuse id 0
@@ -111,10 +121,9 @@ class DivineVideoPlayerController {
   static Future<void> configureCache({
     int maxSizeBytes = kDefaultCacheMaxSizeBytes,
   }) {
-    return _globalChannel.invokeMethod<void>(
-      'configureCache',
-      {'maxSizeBytes': maxSizeBytes},
-    );
+    return _globalChannel.invokeMethod<void>('configureCache', {
+      'maxSizeBytes': maxSizeBytes,
+    });
   }
 
   /// Pre-loads video metadata and initial buffer data into the native
@@ -131,15 +140,15 @@ class DivineVideoPlayerController {
   /// ]);
   /// ```
   static Future<void> preload(List<VideoClip> clips) {
-    return _globalChannel.invokeMethod<void>(
-      'preload',
-      {'clips': clips.map((c) => c.toMap()).toList()},
-    );
+    return _globalChannel.invokeMethod<void>('preload', {
+      'clips': clips.map((c) => c.toMap()).toList(),
+    });
   }
 
   late final int _playerId;
   late final MethodChannel _methodChannel;
   late final EventChannel _eventChannel;
+  LinuxVideoPlayerBackend? _linuxBackend;
 
   final _stateController = StreamController<DivineVideoPlayerState>.broadcast();
 
@@ -148,6 +157,7 @@ class DivineVideoPlayerController {
   var _state = const DivineVideoPlayerState();
   var _initialized = false;
   var _disposed = false;
+  var _isLinuxBackend = false;
   var _firstFrameCompleter = Completer<bool>();
 
   /// The texture ID returned by the native side when [useTexture] is
@@ -159,6 +169,9 @@ class DivineVideoPlayerController {
   /// Only non-null after [initialize] completes when [useTexture] is
   /// `true`.
   int? get textureId => _textureId;
+
+  /// Whether this controller instance is backed by the Linux Dart backend.
+  bool get usesLinuxBackend => _isLinuxBackend;
 
   /// The current player state.
   DivineVideoPlayerState get state => _state;
@@ -195,27 +208,36 @@ class DivineVideoPlayerController {
     }
 
     _playerId = _nextId++;
-    _methodChannel = MethodChannel('divine_video_player/player_$_playerId');
-    _eventChannel = EventChannel(
-      'divine_video_player/player_$_playerId/events',
-    );
+    _isLinuxBackend = debugForceLinuxBackend ?? _usesLinuxBackend;
+    if (_isLinuxBackend) {
+      _linuxBackend = linuxBackendFactory();
+      await _linuxBackend!.initialize(
+        onStateChanged: _handleLinuxState,
+        onError: _handleEventError,
+      );
+    } else {
+      _methodChannel = MethodChannel('divine_video_player/player_$_playerId');
+      _eventChannel = EventChannel(
+        'divine_video_player/player_$_playerId/events',
+      );
 
-    final result = await _globalChannel.invokeMethod<Map<Object?, Object?>>(
-      'create',
-      {
-        'id': _playerId,
-        'useTexture': useTexture,
-        'useLegacySurface': useLegacySurface,
-      },
-    );
-    if (useTexture && result != null) {
-      _textureId = result['textureId'] as int?;
+      final result = await _globalChannel.invokeMethod<Map<Object?, Object?>>(
+        'create',
+        {
+          'id': _playerId,
+          'useTexture': useTexture,
+          'useLegacySurface': useLegacySurface,
+        },
+      );
+      if (useTexture && result != null) {
+        _textureId = result['textureId'] as int?;
+      }
+
+      _eventSubscription = _eventChannel.receiveBroadcastStream().listen(
+        _handleEvent,
+        onError: _handleEventError,
+      );
     }
-
-    _eventSubscription = _eventChannel.receiveBroadcastStream().listen(
-      _handleEvent,
-      onError: _handleEventError,
-    );
 
     _initialized = true;
   }
@@ -245,25 +267,28 @@ class DivineVideoPlayerController {
     if (_firstFrameCompleter.isCompleted) {
       _firstFrameCompleter = Completer<bool>();
     }
-    await _methodChannel.invokeMethod<void>(
-      'setClips',
-      {
-        'clips': clips.map((c) => c.toMap()).toList(),
-        if (startPosition != null && startPosition > Duration.zero)
-          'startPositionMs': startPosition.inMilliseconds,
-      },
-    );
+    if (_isLinuxBackend) {
+      await _linuxBackend!.setClips(clips, startPosition: startPosition);
+      return;
+    }
+    await _methodChannel.invokeMethod<void>('setClips', {
+      'clips': clips.map((c) => c.toMap()).toList(),
+      if (startPosition != null && startPosition > Duration.zero)
+        'startPositionMs': startPosition.inMilliseconds,
+    });
   }
 
   /// Starts or resumes playback.
   Future<void> play() async {
     _ensureInitialized();
+    if (_isLinuxBackend) return _linuxBackend!.play();
     await _methodChannel.invokeMethod<void>('play');
   }
 
   /// Pauses playback.
   Future<void> pause() async {
     _ensureInitialized();
+    if (_isLinuxBackend) return _linuxBackend!.pause();
     await _methodChannel.invokeMethod<void>('pause');
   }
 
@@ -274,12 +299,14 @@ class DivineVideoPlayerController {
   /// be reused by calling [setSource] or [setClips] again.
   Future<void> stop() async {
     _ensureInitialized();
+    if (_isLinuxBackend) return _linuxBackend!.stop();
     await _methodChannel.invokeMethod<void>('stop');
   }
 
   /// Seeks to [position] on the global timeline.
   Future<void> seekTo(Duration position) async {
     _ensureInitialized();
+    if (_isLinuxBackend) return _linuxBackend!.seekTo(position);
     await _methodChannel.invokeMethod<void>('seekTo', {
       'positionMs': position.inMilliseconds,
     });
@@ -291,18 +318,17 @@ class DivineVideoPlayerController {
     final vol = volume.clamp(0.0, 1.0);
     _state = _state.copyWith(volume: vol);
     _stateController.add(_state);
-    await _methodChannel.invokeMethod<void>('setVolume', {
-      'volume': vol,
-    });
+    if (_isLinuxBackend) return _linuxBackend!.setVolume(vol);
+    await _methodChannel.invokeMethod<void>('setVolume', {'volume': vol});
   }
 
   /// Sets the playback speed multiplier.
   Future<void> setPlaybackSpeed(double speed) async {
     _ensureInitialized();
-    await _methodChannel.invokeMethod<void>(
-      'setPlaybackSpeed',
-      {'speed': speed},
-    );
+    if (_isLinuxBackend) return _linuxBackend!.setPlaybackSpeed(speed);
+    await _methodChannel.invokeMethod<void>('setPlaybackSpeed', {
+      'speed': speed,
+    });
   }
 
   /// Enables or disables looping.
@@ -311,12 +337,14 @@ class DivineVideoPlayerController {
   /// clips finish.
   Future<void> setLooping({required bool looping}) async {
     _ensureInitialized();
+    if (_isLinuxBackend) return _linuxBackend!.setLooping(looping: looping);
     await _methodChannel.invokeMethod<void>('setLooping', {'looping': looping});
   }
 
   /// Jumps playback to the start of the clip at [index].
   Future<void> jumpToClip(int index) async {
     _ensureInitialized();
+    if (_isLinuxBackend) return _linuxBackend!.jumpToClip(index);
     await _methodChannel.invokeMethod<void>('jumpToClip', {'index': index});
   }
 
@@ -328,15 +356,16 @@ class DivineVideoPlayerController {
   /// Replaces any previously set audio tracks.
   Future<void> setAudioTracks(List<AudioTrack> tracks) async {
     _ensureInitialized();
-    await _methodChannel.invokeMethod<void>(
-      'setAudioTracks',
-      {'tracks': tracks.map((t) => t.toMap()).toList()},
-    );
+    if (_isLinuxBackend) return _linuxBackend!.setAudioTracks(tracks);
+    await _methodChannel.invokeMethod<void>('setAudioTracks', {
+      'tracks': tracks.map((t) => t.toMap()).toList(),
+    });
   }
 
   /// Removes all overlay audio tracks.
   Future<void> removeAllAudioTracks() async {
     _ensureInitialized();
+    if (_isLinuxBackend) return _linuxBackend!.removeAllAudioTracks();
     await _methodChannel.invokeMethod<void>('removeAllAudioTracks');
   }
 
@@ -346,6 +375,9 @@ class DivineVideoPlayerController {
   /// Has no effect if [index] is out of range.
   Future<void> setAudioTrackVolume(int index, double volume) async {
     _ensureInitialized();
+    if (_isLinuxBackend) {
+      return _linuxBackend!.setAudioTrackVolume(index, volume);
+    }
     await _methodChannel.invokeMethod<void>('setAudioTrackVolume', {
       'index': index,
       'volume': volume.clamp(0.0, 1.0),
@@ -366,7 +398,9 @@ class DivineVideoPlayerController {
     _eventSubscription = null;
 
     await Future.wait<void>([
-      if (_initialized)
+      if (_initialized && _isLinuxBackend)
+        _linuxBackend!.dispose()
+      else if (_initialized)
         _globalChannel.invokeMethod<void>('dispose', {'id': _playerId}),
       _stateController.close(),
     ]);
@@ -398,10 +432,32 @@ class DivineVideoPlayerController {
     }
   }
 
+  void _handleLinuxState(DivineVideoPlayerState state) {
+    _state = state;
+    if (_state.isFirstFrameRendered && !_firstFrameCompleter.isCompleted) {
+      _firstFrameCompleter.complete(true);
+    }
+    if (!_stateController.isClosed) {
+      _stateController.add(_state);
+    }
+  }
+
   void _handleEventError(Object error) {
     _state = _state.copyWith(status: PlaybackStatus.error);
     if (!_stateController.isClosed) {
       _stateController.add(_state);
     }
+  }
+
+  bool get _usesLinuxBackend =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.linux;
+
+  /// Builds the Linux video surface for this controller instance.
+  @internal
+  Widget buildLinuxView() {
+    if (!_isLinuxBackend || _linuxBackend == null) {
+      throw StateError('Linux view is not available.');
+    }
+    return _linuxBackend!.buildView();
   }
 }
