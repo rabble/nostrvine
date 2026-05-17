@@ -3,6 +3,8 @@
 
 // ignore_for_file: prefer_const_constructors
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -470,6 +472,86 @@ void main() {
           ).called(1);
           expect(capturedArgs, hasLength(1));
           expect(capturedArgs.single.autoOpenComments, isTrue);
+        },
+      );
+
+      testWidgets(
+        'reply tap pushes video route before resolver completes',
+        (tester) async {
+          final videoService = _MockVideoEventService();
+          final nostrClient = _MockNostrClient();
+          final videosRepository = _MockVideosRepository();
+          const parentCommentId = 'slow_parent_comment_id';
+          const rootVideoEventId = 'slow_reply_root_video';
+          final resolvedVideo = _video(rootVideoEventId);
+          final resolverCompleter = Completer<Event?>();
+
+          when(
+            () => videoService.getVideoById(parentCommentId),
+          ).thenReturn(null);
+          when(
+            () => nostrClient.fetchEventById(parentCommentId),
+          ).thenAnswer((_) => resolverCompleter.future);
+          when(
+            () => videosRepository.fetchVideoWithStatsForRouteId(
+              rootVideoEventId,
+            ),
+          ).thenAnswer((_) async => resolvedVideo);
+          when(
+            () => videoService.shouldHideVideo(resolvedVideo),
+          ).thenReturn(false);
+
+          when(() => mockBloc.state).thenReturn(
+            NotificationFeedState(
+              status: NotificationFeedStatus.loaded,
+              notifications: [
+                ActorNotification(
+                  id: 'slow-reply',
+                  type: NotificationKind.reply,
+                  actor: ActorInfo(pubkey: 'replier', displayName: 'Bob'),
+                  timestamp: DateTime(2026),
+                  targetEventId: parentCommentId,
+                ),
+              ],
+            ),
+          );
+
+          final capturedArgs = await _pumpRoutedView(
+            tester,
+            mockBloc,
+            videoEventService: videoService,
+            nostrClient: nostrClient,
+            videosRepository: videosRepository,
+          );
+
+          await tester.tap(find.byType(NotificationListItem).first);
+          await tester.pump();
+
+          expect(capturedArgs, hasLength(1));
+          expect(capturedArgs.single.autoOpenComments, isTrue);
+          verifyNever(
+            () => videosRepository.fetchVideoWithStatsForRouteId(any()),
+          );
+
+          final event = Event(
+            'a' * 64,
+            1111,
+            const [
+              ['E', rootVideoEventId],
+            ],
+            'parent comment text',
+            createdAt: 1700000000,
+          );
+          event.id = parentCommentId;
+          resolverCompleter.complete(event);
+
+          final videos = await capturedArgs.single.videosStream.first;
+          expect(videos.single.id, resolvedVideo.id);
+          verify(
+            () => videosRepository.fetchVideoWithStatsForRouteId(
+              rootVideoEventId,
+            ),
+          ).called(1);
         },
       );
 

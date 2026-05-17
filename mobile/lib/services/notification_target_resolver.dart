@@ -29,7 +29,15 @@ class NotificationTargetResolver {
       return targetId;
     }
 
-    // NIP-22: uppercase E tag = root scope, always points to root video
+    // NIP-22: uppercase A tag = root addressable scope. Prefer this when
+    // available because it remains valid across NIP-33 video replacements.
+    for (final tag in event.tags) {
+      if (tag.length >= 2 && tag[0] == 'A' && _isVideoAddressableId(tag[1])) {
+        return tag[1];
+      }
+    }
+
+    // NIP-22: uppercase E tag = root scope, points to root video event.
     for (final tag in event.tags) {
       if (tag.length >= 2 && tag[0] == 'E' && tag[1].isNotEmpty) {
         return tag[1];
@@ -58,5 +66,13 @@ class NotificationTargetResolver {
     }
 
     return replyId ?? firstEtagId;
+  }
+
+  bool _isVideoAddressableId(String value) {
+    final parts = value.split(':');
+    if (parts.length < 3) return false;
+
+    final kind = int.tryParse(parts.first);
+    return kind != null && NIP71VideoKinds.isAcceptableVideoKind(kind);
   }
 }

@@ -82,6 +82,33 @@ void main() {
     );
 
     test(
+      'prefers NIP-22 uppercase A root route over uppercase E event id',
+      () async {
+        const rootAddressableId =
+            '34236:'
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+            ':vine-stable-id';
+        const rootVideoId = 'root_video_nip22';
+
+        when(
+          () => videoEventService.getVideoById('comment_with_a'),
+        ).thenReturn(null);
+        when(() => nostrClient.fetchEventById('comment_with_a')).thenAnswer(
+          (_) async => Event('b' * 64, 1111, const [
+            ['A', rootAddressableId, ''],
+            ['E', rootVideoId, '', 'video_author_pubkey_hex'],
+            ['K', '34236'],
+          ], 'reply with stable root route'),
+        );
+
+        final resolved = await resolver
+            .resolveVideoEventIdFromNotificationTarget('comment_with_a');
+
+        expect(resolved, equals(rootAddressableId));
+      },
+    );
+
+    test(
       'resolves root video from NIP-22 uppercase E tag on top-level comment',
       () async {
         const rootVideoId = 'root_video_toplevel';
