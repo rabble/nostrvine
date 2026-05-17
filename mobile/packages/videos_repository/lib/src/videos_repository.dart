@@ -743,7 +743,10 @@ class VideosRepository {
         }
 
         final pageVideos = _filterPopularVideosForVariant(
-          _transformVideoStats(stats, sortByCreatedAt: false),
+          await _hydrateVideosWithBulkStats(
+            _transformVideoStats(stats, sortByCreatedAt: false),
+            replaceInteractionCounts: true,
+          ),
           variant,
         );
         _appendUniqueVideos(visible, pageVideos, seenIds: seenIds);

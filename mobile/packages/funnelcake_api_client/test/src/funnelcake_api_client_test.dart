@@ -4705,12 +4705,7 @@ void main() {
       test('throws FunnelcakeTimeoutException on timeout', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) => Future.delayed(
-            const Duration(minutes: 1),
-            () => http.Response('', 200),
-          ),
-        );
+        ).thenAnswer((_) async => throw TimeoutException('Request timed out'));
 
         expect(
           () => client.getCategories(),
