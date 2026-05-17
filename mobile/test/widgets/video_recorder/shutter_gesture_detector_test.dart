@@ -6,12 +6,12 @@ void main() {
   group(ShutterGestureDetector, () {
     Future<void> pumpHost(
       WidgetTester tester, {
-      bool isRecording = false,
-      bool isEnabled = true,
-      bool isLongPressSupported = true,
       required VoidCallback onTapToggle,
       required VoidCallback onLongPressStartRecording,
       required VoidCallback onLongPressStopRecording,
+      bool isRecording = false,
+      bool isEnabled = true,
+      bool isLongPressSupported = true,
     }) async {
       await tester.pumpWidget(
         Directionality(
@@ -147,7 +147,6 @@ void main() {
                   child: ShutterGestureDetector(
                     isEnabled: true,
                     isRecording: isRecording,
-                    isLongPressSupported: true,
                     behavior: HitTestBehavior.opaque,
                     onTapToggle: () {
                       setState(() => isRecording = true);

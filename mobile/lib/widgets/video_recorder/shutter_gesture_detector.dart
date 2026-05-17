@@ -1,4 +1,3 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 
 /// Shared shutter gesture handling for recorder surfaces that support both
