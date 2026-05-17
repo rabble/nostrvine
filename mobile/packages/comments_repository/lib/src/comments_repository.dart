@@ -88,6 +88,22 @@ class CommentsRepository {
   /// server or relay (so callers never need to push counts back in).
   final Map<String, int> _commentCountCache = {};
 
+  /// Companion cache keyed by NIP-71 addressable id (`kind:pubkey:d-tag`).
+  ///
+  /// For addressable video events (Kind 30000-39999), a metadata edit
+  /// publishes a replacement event with a new `id` but the same address.
+  /// Keying [_commentCountCache] purely by the volatile event id loses
+  /// the carried count on every edit and forces a relay re-query whose
+  /// NIP-45 COUNT on `#A` for kind 1111 can transiently return 0 (mirror
+  /// of the kind-7 issue in #4432). This companion cache lets a fresh
+  /// [getCommentsCount] for the new event id reuse the prior count via
+  /// the stable address.
+  ///
+  /// All writes are dual-keyed via [_writeCachedCommentCount] when a
+  /// `rootAddressableId` is in scope; reads check this map when the
+  /// event-id cache misses ([_readCachedCommentCount]).
+  final Map<String, int> _commentCountCacheByAddressableId = {};
+
   /// Subscription ID for the active comment watch, if any.
   String? _watchSubscriptionId;
 
@@ -157,7 +173,11 @@ class CommentsRepository {
                 : restThread;
             // Auto-update the count cache with the authoritative REST total.
             if (thread.totalCount > 0) {
-              _commentCountCache[rootEventId] = thread.totalCount;
+              _writeCachedCommentCount(
+                rootEventId,
+                thread.totalCount,
+                rootAddressableId: rootAddressableId,
+              );
             }
             return _filterThread(thread);
           }
@@ -225,7 +245,11 @@ class CommentsRepository {
       // callers (e.g. VideoInteractionsBloc) don't need to push counts back
       // into the repository manually.
       if (before == null && thread.totalCount > 0) {
-        _commentCountCache[rootEventId] = thread.totalCount;
+        _writeCachedCommentCount(
+          rootEventId,
+          thread.totalCount,
+          rootAddressableId: rootAddressableId,
+        );
       }
 
       return _filterThread(thread);
@@ -325,8 +349,11 @@ class CommentsRepository {
       }
       final sentEvent = result.event;
 
-      final cached = _commentCountCache[rootEventId];
-      if (cached != null) _commentCountCache[rootEventId] = cached + 1;
+      _adjustCachedCommentCount(
+        rootEventId,
+        1,
+        rootAddressableId: rootAddressableId,
+      );
       final videoMetadata = _parseVideoMetadataFromImetaTags(sentEvent.tags);
 
       return Comment(
@@ -374,7 +401,10 @@ class CommentsRepository {
     String? rootAddressableId,
     bool includeVideoReplies = false,
   }) async {
-    final cached = _commentCountCache[rootEventId];
+    final cached = _readCachedCommentCount(
+      rootEventId,
+      rootAddressableId: rootAddressableId,
+    );
     if (cached != null) return cached;
 
     try {
@@ -412,7 +442,11 @@ class CommentsRepository {
         count = result.count;
       }
 
-      _commentCountCache[rootEventId] = count;
+      _writeCachedCommentCount(
+        rootEventId,
+        count,
+        rootAddressableId: rootAddressableId,
+      );
       return count;
     } on Exception catch (e) {
       throw CountCommentsFailedException('Failed to count comments: $e');
@@ -425,8 +459,19 @@ class CommentsRepository {
   /// to keep the cache in sync with the authoritative count from the
   /// loaded comment thread. This avoids a stale NIP-45 COUNT when the
   /// user scrolls back to the same video.
-  void updateCachedCommentCount(String rootEventId, int count) {
-    _commentCountCache[rootEventId] = count;
+  ///
+  /// Pass [rootAddressableId] for addressable videos so the count
+  /// survives a future metadata edit that changes the event id.
+  void updateCachedCommentCount(
+    String rootEventId,
+    int count, {
+    String? rootAddressableId,
+  }) {
+    _writeCachedCommentCount(
+      rootEventId,
+      count,
+      rootAddressableId: rootAddressableId,
+    );
   }
 
   /// Clears the in-memory comment count cache.
@@ -435,6 +480,53 @@ class CommentsRepository {
   /// session are not served after re-login.
   void clearCommentCountCache() {
     _commentCountCache.clear();
+    _commentCountCacheByAddressableId.clear();
+  }
+
+  /// Reads the cached comment count, checking event-id first then the
+  /// addressable-id companion cache. Returns `null` on a full miss.
+  int? _readCachedCommentCount(
+    String rootEventId, {
+    String? rootAddressableId,
+  }) {
+    final byEventId = _commentCountCache[rootEventId];
+    if (byEventId != null) return byEventId;
+    if (rootAddressableId == null || rootAddressableId.isEmpty) return null;
+    return _commentCountCacheByAddressableId[rootAddressableId];
+  }
+
+  /// Writes [count] into both caches when [rootAddressableId] is provided.
+  /// Otherwise writes only the event-id cache.
+  void _writeCachedCommentCount(
+    String rootEventId,
+    int count, {
+    String? rootAddressableId,
+  }) {
+    _commentCountCache[rootEventId] = count;
+    if (rootAddressableId != null && rootAddressableId.isNotEmpty) {
+      _commentCountCacheByAddressableId[rootAddressableId] = count;
+    }
+  }
+
+  /// Adjusts the cached comment count by [delta] (clamped at zero),
+  /// dual-writing both caches. No-op if neither cache has a baseline
+  /// value yet — an isolated delta without a known total would lie.
+  void _adjustCachedCommentCount(
+    String rootEventId,
+    int delta, {
+    String? rootAddressableId,
+  }) {
+    final current = _readCachedCommentCount(
+      rootEventId,
+      rootAddressableId: rootAddressableId,
+    );
+    if (current == null) return;
+    final updated = current + delta;
+    _writeCachedCommentCount(
+      rootEventId,
+      updated < 0 ? 0 : updated,
+      rootAddressableId: rootAddressableId,
+    );
   }
 
   /// Deletes a comment by publishing a NIP-09 deletion request.
@@ -447,12 +539,17 @@ class CommentsRepository {
   /// - [rootEventId]: Optional root event ID. When provided, the cached
   ///   comment count for that root event is decremented so subsequent
   ///   [getCommentsCount] calls return the correct value.
+  /// - [rootAddressableId]: Optional addressable id of the root event.
+  ///   Pass alongside [rootEventId] for addressable videos so the
+  ///   decrement is mirrored into the companion cache and survives a
+  ///   subsequent metadata edit.
   /// - [reason]: Optional reason for the deletion
   ///
   /// Throws [DeleteCommentFailedException] if broadcasting fails.
   Future<void> deleteComment({
     required String commentId,
     String? rootEventId,
+    String? rootAddressableId,
     String? reason,
   }) async {
     try {
@@ -477,10 +574,11 @@ class CommentsRepository {
       }
 
       if (rootEventId != null) {
-        final cached = _commentCountCache[rootEventId];
-        if (cached != null) {
-          _commentCountCache[rootEventId] = max(0, cached - 1);
-        }
+        _adjustCachedCommentCount(
+          rootEventId,
+          -1,
+          rootAddressableId: rootAddressableId,
+        );
       }
     } on CommentsRepositoryException {
       rethrow;
