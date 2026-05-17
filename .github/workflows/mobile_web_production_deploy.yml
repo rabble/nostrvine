@@ -16,7 +16,7 @@ concurrency:
 jobs:
   build-and-deploy:
     name: Build & Deploy to app.divine.video
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-16core
     permissions:
       contents: read
 

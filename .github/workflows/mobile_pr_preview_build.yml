@@ -17,7 +17,7 @@ concurrency:
 jobs:
   build-preview:
     name: Build Flutter Web Preview
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-16core
     permissions:
       contents: read
 
