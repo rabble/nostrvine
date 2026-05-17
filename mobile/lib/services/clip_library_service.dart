@@ -156,7 +156,14 @@ class ClipLibraryService {
 
     // Fetch clip before deleting so we can clean up files
     final clip = await getClipById(id);
-    if (clip == null) return;
+    if (clip == null) {
+      Log.info(
+        '🗑️ Clip already deleted, skipping: $id',
+        name: 'ClipLibraryService',
+        category: LogCategory.video,
+      );
+      return;
+    }
 
     // Delete from DB, then clean up files
     await _clipsDao.deleteClip(id);

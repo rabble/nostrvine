@@ -154,7 +154,7 @@ class ClipsTab extends StatelessWidget {
     BuildContext context,
     DivineVideoClip clip,
   ) async {
-    await VineBottomSheetPrompt.show<void>(
+    final confirmed = await VineBottomSheetPrompt.show<bool>(
       context: context,
       sticker: .alert,
       title: context.l10n.libraryDeleteClipTitle,
@@ -162,12 +162,17 @@ class ClipsTab extends StatelessWidget {
       additionalText: context.l10n.libraryDeleteClipsWarning,
       primaryButtonText: context.l10n.libraryDeleteConfirm,
       secondaryButtonText: context.l10n.commonCancel,
-      onPrimaryPressed: () {
-        Navigator.pop(context);
-        context.read<ClipsLibraryBloc>().add(ClipsLibraryDeleteClip(clip));
-      },
-      onSecondaryPressed: context.pop,
+      onPrimaryPressed: () => Navigator.of(context).pop(true),
+      onSecondaryPressed: () => Navigator.of(context).pop(false),
     );
+
+    if (confirmed != true) return;
+    if (!context.mounted) return;
+
+    context.read<ClipsLibraryBloc>().add(ClipsLibraryDeleteClip(clip));
+    // Close the underlying VideoClipPreview so the user returns to the
+    // library, which already reflects the deletion via the BLoC reload.
+    Navigator.of(context).pop();
   }
 }
 

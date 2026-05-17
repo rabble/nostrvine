@@ -3,8 +3,11 @@
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
@@ -13,8 +16,11 @@ import 'package:openvine/l10n/generated/app_localizations_en.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/widgets/library/clips_tab.dart';
 import 'package:openvine/widgets/library/empty_library_state.dart';
+import 'package:openvine/widgets/video_clip/video_clip_preview.dart';
 import 'package:openvine/widgets/video_clip/video_clip_thumbnail_card.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+
+import '../../helpers/go_router.dart';
 
 class _MockClipsLibraryBloc
     extends MockBloc<ClipsLibraryEvent, ClipsLibraryState>
@@ -143,6 +149,82 @@ void main() {
           () => mockBloc.add(ClipsLibraryToggleSelection(clip1)),
         ).called(1);
       });
+
+      testWidgets(
+        'long-press → trash → confirm closes preview and dispatches delete',
+        (tester) async {
+          DivineVideoPlayerController.resetIdCounterForTesting();
+          final messenger =
+              TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+          messenger.setMockMethodCallHandler(
+            const MethodChannel('divine_video_player'),
+            (call) async {
+              if (call.method == 'create') {
+                return <String, Object?>{'textureId': 1};
+              }
+              return null;
+            },
+          );
+          messenger.setMockMethodCallHandler(
+            const MethodChannel('divine_video_player/player_0'),
+            (call) async => null,
+          );
+
+          final mockGoRouter = MockGoRouter();
+          when(() => mockGoRouter.pop<Object?>(any())).thenReturn(null);
+          when(mockGoRouter.canPop).thenReturn(true);
+
+          when(() => mockBloc.state).thenReturn(
+            ClipsLibraryState(
+              status: ClipsLibraryStatus.loaded,
+              clips: [clip1],
+            ),
+          );
+
+          await tester.pumpWidget(
+            ProviderScope(
+              child: MockGoRouterProvider(
+                goRouter: mockGoRouter,
+                child: buildWidget(),
+              ),
+            ),
+          );
+
+          // Long-press opens the VideoClipPreview overlay; tapping
+          // (default selectionEnabled=true) would only toggle selection.
+          // pumpAndSettle never settles here because the preview shows a
+          // CircularProgressIndicator while the player initializes.
+          await tester.longPress(find.byType(VideoClipThumbnailCard).first);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          expect(find.byType(VideoClipPreview), findsOneWidget);
+
+          await tester.tap(
+            find.byWidgetPredicate(
+              (w) => w is DivineIcon && w.icon == DivineIconName.trash,
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          await tester.tap(find.text(en.libraryDeleteConfirm));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          expect(find.byType(VideoClipPreview), findsNothing);
+          verify(() => mockBloc.add(ClipsLibraryDeleteClip(clip1))).called(1);
+
+          messenger.setMockMethodCallHandler(
+            const MethodChannel('divine_video_player'),
+            null,
+          );
+          messenger.setMockMethodCallHandler(
+            const MethodChannel('divine_video_player/player_0'),
+            null,
+          );
+        },
+      );
     });
   });
 
