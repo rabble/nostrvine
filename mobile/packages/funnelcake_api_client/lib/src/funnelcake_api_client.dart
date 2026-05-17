@@ -105,6 +105,23 @@ class FunnelcakeApiClient {
         .timeout(_timeout);
   }
 
+  Map<String, String> _diagnosticHeaders(http.Response response) {
+    const headerNames = <String>[
+      'x-request-id',
+      'x-correlation-id',
+      'traceparent',
+      'cf-ray',
+      'x-amzn-trace-id',
+      'server-timing',
+    ];
+
+    return {
+      for (final name in headerNames)
+        if (response.headers[name]?.isNotEmpty ?? false)
+          name: response.headers[name]!,
+    };
+  }
+
   Map<String, String> _videoQueryParameters(Map<String, String> params) {
     return <String, String>{
       ...params,
@@ -2302,6 +2319,8 @@ class FunnelcakeApiClient {
           message: 'Failed to fetch notifications',
           statusCode: response.statusCode,
           url: url.toString(),
+          responseBody: response.body,
+          diagnosticHeaders: _diagnosticHeaders(response),
         );
       }
     } on TimeoutException {

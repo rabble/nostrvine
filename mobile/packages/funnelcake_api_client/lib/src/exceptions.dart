@@ -34,6 +34,8 @@ class FunnelcakeApiException extends FunnelcakeException {
     required String message,
     required this.statusCode,
     this.url,
+    this.responseBody,
+    this.diagnosticHeaders = const {},
   }) : super(message);
 
   /// The HTTP status code returned by the server.
@@ -42,8 +44,50 @@ class FunnelcakeApiException extends FunnelcakeException {
   /// The URL that was requested (if available).
   final String? url;
 
+  /// Raw response body returned by the server, when available.
+  final String? responseBody;
+
+  /// Low-cardinality response headers useful for correlating client logs with
+  /// edge/backend logs. Does not include request headers or auth material.
+  final Map<String, String> diagnosticHeaders;
+
+  /// Best available request/correlation id returned by the server or edge.
+  String? get requestId =>
+      diagnosticHeaders['x-request-id'] ??
+      diagnosticHeaders['x-correlation-id'] ??
+      diagnosticHeaders['traceparent'];
+
   @override
-  String toString() => 'FunnelcakeApiException: $message (status: $statusCode)';
+  String toString() {
+    final details = <String>['status: $statusCode'];
+    final requestUrl = url;
+    if (requestUrl != null && requestUrl.isNotEmpty) {
+      details.add('url: $requestUrl');
+    }
+
+    final id = requestId;
+    if (id != null && id.isNotEmpty) {
+      details.add('requestId: $id');
+    }
+
+    final cfRay = diagnosticHeaders['cf-ray'];
+    if (cfRay != null && cfRay.isNotEmpty) {
+      details.add('cf-ray: $cfRay');
+    }
+
+    final body = responseBody;
+    if (body != null && body.isNotEmpty) {
+      details.add('body: ${_truncateDiagnosticValue(body)}');
+    }
+
+    return 'FunnelcakeApiException: $message (${details.join(', ')})';
+  }
+}
+
+String _truncateDiagnosticValue(String value) {
+  const maxLength = 1000;
+  if (value.length <= maxLength) return value;
+  return '${value.substring(0, maxLength)}...';
 }
 
 /// Exception thrown when a resource is not found (HTTP 404).

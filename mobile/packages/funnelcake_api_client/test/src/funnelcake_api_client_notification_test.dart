@@ -259,17 +259,64 @@ void main() {
             headers: any(named: 'headers'),
           ),
         ).thenAnswer(
-          (_) async => http.Response('Internal error', 500),
+          (_) async => http.Response(
+            '{"error":"Internal server error"}',
+            500,
+            headers: {
+              'x-request-id': 'req-123',
+              'cf-ray': 'ray-456',
+            },
+          ),
         );
 
         expect(
-          () => client.getNotifications(pubkey: testPubkey),
+          () => client.getNotifications(
+            pubkey: testPubkey,
+            cursor: '1778198474',
+            cursorId: stableCursorId,
+          ),
           throwsA(
-            isA<FunnelcakeApiException>().having(
-              (e) => e.statusCode,
-              'statusCode',
-              equals(500),
-            ),
+            isA<FunnelcakeApiException>()
+                .having(
+                  (e) => e.statusCode,
+                  'statusCode',
+                  equals(500),
+                )
+                .having(
+                  (e) => e.url,
+                  'url',
+                  allOf(
+                    contains('before=1778198474'),
+                    contains('before_id=$stableCursorId'),
+                  ),
+                )
+                .having(
+                  (e) => e.responseBody,
+                  'responseBody',
+                  equals('{"error":"Internal server error"}'),
+                )
+                .having(
+                  (e) => e.requestId,
+                  'requestId',
+                  equals('req-123'),
+                )
+                .having(
+                  (e) => e.diagnosticHeaders,
+                  'diagnosticHeaders',
+                  containsPair('cf-ray', 'ray-456'),
+                )
+                .having(
+                  (e) => e.toString(),
+                  'toString',
+                  allOf(
+                    contains('status: 500'),
+                    contains('before=1778198474'),
+                    contains('before_id=$stableCursorId'),
+                    contains('requestId: req-123'),
+                    contains('cf-ray: ray-456'),
+                    contains('body: {"error":"Internal server error"}'),
+                  ),
+                ),
           ),
         );
       });

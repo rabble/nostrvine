@@ -5217,7 +5217,10 @@ void main() {
       expect(exception.url, equals('https://example.com'));
       expect(
         exception.toString(),
-        equals('FunnelcakeApiException: Test error (status: 500)'),
+        equals(
+          'FunnelcakeApiException: Test error '
+          '(status: 500, url: https://example.com)',
+        ),
       );
     });
 
