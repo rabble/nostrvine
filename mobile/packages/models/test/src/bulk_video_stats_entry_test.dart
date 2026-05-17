@@ -132,6 +132,21 @@ void main() {
         expect(entry.loops, equals(100));
       });
 
+      test('normalizes invalid engagement counters to zero', () {
+        final entry = BulkVideoStatsEntry.fromJson(const {
+          'event_id': 'test',
+          'stats': {
+            'reactions': -1,
+            'comments': '9223372036854775807',
+            'reposts': '18446744073709551615',
+          },
+        });
+
+        expect(entry.reactions, equals(0));
+        expect(entry.comments, equals(0));
+        expect(entry.reposts, equals(0));
+      });
+
       test('defaults to 0 when no matching key found', () {
         final entry = BulkVideoStatsEntry.fromJson(const {
           'event_id': 'test',

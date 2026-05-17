@@ -3,6 +3,7 @@
 // ABOUTME: ClickHouse-backed analytics API.
 
 import 'package:meta/meta.dart';
+import 'package:models/src/engagement_count_parser.dart';
 import 'package:models/src/video_event.dart';
 
 /// Video with engagement metrics from Funnelcake API.
@@ -369,9 +370,9 @@ class VideoStats {
       authorAvatar: authorAvatar,
       blurhash: blurhash,
       dimensions: dimensions,
-      reactions: _parseInt(reactions),
-      comments: _parseInt(comments),
-      reposts: _parseInt(reposts),
+      reactions: parseEngagementCount(reactions),
+      comments: parseEngagementCount(comments),
+      reposts: parseEngagementCount(reposts),
       engagementScore: _parseInt(
         statsData['engagement_score'] ?? json['engagement_score'],
       ),

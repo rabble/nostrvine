@@ -1,4 +1,5 @@
 import 'package:meta/meta.dart';
+import 'package:models/src/engagement_count_parser.dart';
 
 /// Engagement stats for a single video from a bulk stats response.
 ///
@@ -24,7 +25,7 @@ class BulkVideoStatsEntry {
     return BulkVideoStatsEntry(
       eventId: (json['event_id'] ?? json['id'] ?? '').toString(),
       reactions:
-          _findIntDeep(json, {
+          _findEngagementCountDeep(json, {
             'reactions',
             'likes',
             'like_count',
@@ -32,10 +33,19 @@ class BulkVideoStatsEntry {
           }) ??
           0,
       comments:
-          _findIntDeep(json, {'comments', 'comment_count', 'total_comments'}) ??
+          _findEngagementCountDeep(json, {
+            'comments',
+            'comment_count',
+            'total_comments',
+          }) ??
           0,
       reposts:
-          _findIntDeep(json, {'reposts', 'repost_count', 'total_reposts'}) ?? 0,
+          _findEngagementCountDeep(json, {
+            'reposts',
+            'repost_count',
+            'total_reposts',
+          }) ??
+          0,
       loops: _findIntDeep(json, {
         'loops',
         'loop_count',
@@ -118,6 +128,29 @@ int? _findIntDeep(dynamic source, Set<String> targetKeys) {
   } else if (source is List) {
     for (final value in source) {
       final result = _findIntDeep(value, targetKeys);
+      if (result != null) return result;
+    }
+  }
+  return null;
+}
+
+/// Recursively searches a JSON structure for engagement keys and normalizes
+/// invalid counters to zero.
+int? _findEngagementCountDeep(dynamic source, Set<String> targetKeys) {
+  if (source is Map) {
+    for (final entry in source.entries) {
+      final key = entry.key.toString().toLowerCase();
+      if (targetKeys.contains(key)) {
+        return parseEngagementCount(entry.value);
+      }
+    }
+    for (final value in source.values) {
+      final result = _findEngagementCountDeep(value, targetKeys);
+      if (result != null) return result;
+    }
+  } else if (source is List) {
+    for (final value in source) {
+      final result = _findEngagementCountDeep(value, targetKeys);
       if (result != null) return result;
     }
   }

@@ -3101,6 +3101,28 @@ void main() {
         expect(result.source, equals(CountSource.websocket));
       });
 
+      test('normalizes relay sentinel counts to zero', () async {
+        final filters = [
+          Filter(kinds: [EventKind.textNote]),
+        ];
+        const countResponse = CountResponse(count: 9223372036854775807);
+
+        when(
+          () => mockNostr.countEvents(
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer((_) async => countResponse);
+
+        final result = await client.countEvents(filters);
+
+        expect(result.count, equals(0));
+        expect(result.source, equals(CountSource.websocket));
+      });
+
       test('falls back to queryEvents when COUNT not supported', () async {
         final filters = [
           Filter(kinds: [EventKind.textNote]),

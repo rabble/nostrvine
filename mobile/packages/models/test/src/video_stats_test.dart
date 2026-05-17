@@ -123,6 +123,29 @@ void main() {
         expect(stats.trendingScore, equals(0.75));
       });
 
+      test('normalizes invalid engagement counters to zero', () {
+        final stats = VideoStats.fromJson(const {
+          'id': 'test-id',
+          'pubkey': 'test-pubkey',
+          'created_at': 1700000000,
+          'kind': 34236,
+          'd_tag': 'video-1',
+          'title': 'Test',
+          'thumbnail': 'https://example.com/thumb.jpg',
+          'video_url': 'https://example.com/video.mp4',
+          'stats': {
+            'reactions': -1,
+            'comments': '9223372036854775807',
+            'reposts': '18446744073709551615',
+          },
+          'engagement_score': 0,
+        });
+
+        expect(stats.reactions, equals(0));
+        expect(stats.comments, equals(0));
+        expect(stats.reposts, equals(0));
+      });
+
       test('parses id as byte array (ASCII codes)', () {
         final json = {
           'id': [97, 98, 99, 49, 50, 51], // 'abc123' as ASCII codes
