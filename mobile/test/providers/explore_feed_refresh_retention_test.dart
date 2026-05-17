@@ -274,13 +274,17 @@ void main() {
       () async {
         final initialVideos = [_video('popular-initial')];
         final refreshedVideos = [_video('popular-refreshed')];
-        final refreshCompleter = Completer<NativePopularVideosPage>();
+        final refreshCompleter = Completer<List<VideoEvent>>();
         var requestCount = 0;
 
         when(
-          () => mockVideosRepository.getNativePopularVideosPage(
+          () => mockVideosRepository.getPopularVideos(
             limit: any(named: 'limit'),
+            until: any(named: 'until'),
             offset: any(named: 'offset'),
+            period: any(named: 'period'),
+            variant: any(named: 'variant'),
+            fetchMultiplier: any(named: 'fetchMultiplier'),
             skipCache: any(named: 'skipCache'),
           ),
         ).thenAnswer((invocation) {
@@ -288,7 +292,7 @@ void main() {
           final skipCache = invocation.namedArguments[#skipCache] as bool?;
           if (requestCount == 1) {
             expect(skipCache, isNot(true));
-            return Future.value(_nativePage(initialVideos));
+            return Future.value(initialVideos);
           }
           expect(skipCache, isTrue);
           return refreshCompleter.future;
@@ -333,7 +337,7 @@ void main() {
         ]);
         expect(refreshingState.isRefreshing, isTrue);
 
-        refreshCompleter.complete(_nativePage(refreshedVideos));
+        refreshCompleter.complete(refreshedVideos);
         await refreshFuture;
 
         final finalState = container.read(popularVideosFeedProvider).value;
@@ -343,13 +347,59 @@ void main() {
         ]);
         expect(finalState.isRefreshing, isFalse);
         verify(
-          () => mockVideosRepository.getNativePopularVideosPage(
+          () => mockVideosRepository.getPopularVideos(
             limit: AppConstants.paginationBatchSize,
+            variant: PopularVideosVariant.native,
             skipCache: true,
           ),
         ).called(1);
       },
     );
+
+    test('popular videos native source uses age-decayed v2 popular', () async {
+      when(
+        () => mockVideosRepository.getPopularVideos(
+          limit: any(named: 'limit'),
+          until: any(named: 'until'),
+          offset: any(named: 'offset'),
+          period: any(named: 'period'),
+          variant: any(named: 'variant'),
+          fetchMultiplier: any(named: 'fetchMultiplier'),
+          skipCache: any(named: 'skipCache'),
+        ),
+      ).thenAnswer((_) async => [_video('popular-age-decayed')]);
+
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+          appReadyProvider.overrideWithValue(true),
+          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+          contentBlocklistRepositoryProvider.overrideWithValue(
+            mockBlocklistRepository,
+          ),
+          videosRepositoryProvider.overrideWithValue(mockVideosRepository),
+          nostrServiceProvider.overrideWithValue(mockNostrClient),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final state = await container.read(popularVideosFeedProvider.future);
+
+      expect(state.videos.map((video) => video.id), ['popular-age-decayed']);
+      verify(
+        () => mockVideosRepository.getPopularVideos(
+          limit: AppConstants.paginationBatchSize,
+          variant: PopularVideosVariant.native,
+        ),
+      ).called(1);
+      verifyNever(
+        () => mockVideosRepository.getNativePopularVideosPage(
+          limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
+          skipCache: any(named: 'skipCache'),
+        ),
+      );
+    });
 
     test(
       'popular videos preserves existing videos when refresh fails',
@@ -358,19 +408,23 @@ void main() {
         var requestCount = 0;
 
         when(
-          () => mockVideosRepository.getNativePopularVideosPage(
+          () => mockVideosRepository.getPopularVideos(
             limit: any(named: 'limit'),
+            until: any(named: 'until'),
             offset: any(named: 'offset'),
+            period: any(named: 'period'),
+            variant: any(named: 'variant'),
+            fetchMultiplier: any(named: 'fetchMultiplier'),
             skipCache: any(named: 'skipCache'),
           ),
         ).thenAnswer((invocation) {
           requestCount += 1;
           final skipCache = invocation.namedArguments[#skipCache] as bool?;
           if (requestCount == 1) {
-            return Future.value(_nativePage(initialVideos));
+            return Future.value(initialVideos);
           }
           expect(skipCache, isTrue);
-          throw StateError('native refresh failed');
+          throw StateError('age-decayed refresh failed');
         });
 
         final container = ProviderContainer(
@@ -408,48 +462,49 @@ void main() {
           'popular-initial',
         ]);
         expect(finalState.isRefreshing, isFalse);
-        expect(finalState.error, contains('native refresh failed'));
+        expect(finalState.error, contains('age-decayed refresh failed'));
       },
     );
 
     test(
-      'popular videos load more uses raw offset and filters duplicates',
+      'popular videos load more uses timestamp cursor and filters duplicates',
       () async {
         final initialRawVideos = [
           _video('popular-initial'),
           for (var i = 1; i < AppConstants.paginationBatchSize; i++)
-            _vineArchiveVideo('popular-vine-$i'),
+            _vineArchiveVideo(
+              'popular-vine-$i',
+              createdAt: 1_742_169_600 - i,
+            ),
         ];
         final loadMoreRawVideos = [
           _video('popular-initial'),
           _video('popular-more'),
         ];
-        final requestedOffsets = <int>[];
+        const oldestInitialCursor =
+            1_742_169_600 - (AppConstants.paginationBatchSize - 1);
+        final requestedCursors = <int?>[];
 
         when(
-          () => mockVideosRepository.getNativePopularVideosPage(
+          () => mockVideosRepository.getPopularVideos(
             limit: any(named: 'limit'),
+            until: any(named: 'until'),
             offset: any(named: 'offset'),
+            period: any(named: 'period'),
+            variant: any(named: 'variant'),
+            fetchMultiplier: any(named: 'fetchMultiplier'),
             skipCache: any(named: 'skipCache'),
           ),
         ).thenAnswer((invocation) async {
-          final offset = invocation.namedArguments[#offset] as int? ?? 0;
-          requestedOffsets.add(offset);
-          if (offset == 0) {
-            return _nativePage(
-              initialRawVideos,
-              consumedItemCount: initialRawVideos.length,
-              nextOffset: initialRawVideos.length,
-            );
+          final until = invocation.namedArguments[#until] as int?;
+          requestedCursors.add(until);
+          if (until == null) {
+            return initialRawVideos;
           }
-          if (offset == initialRawVideos.length) {
-            return _nativePage(
-              loadMoreRawVideos,
-              consumedItemCount: 3,
-              nextOffset: offset + 3,
-            );
+          if (until == oldestInitialCursor) {
+            return loadMoreRawVideos;
           }
-          throw StateError('unexpected offset $offset');
+          throw StateError('unexpected cursor $until');
         });
 
         final container = ProviderContainer(
@@ -490,18 +545,22 @@ void main() {
         ]);
         expect(finalState.hasMoreContent, isFalse);
         expect(finalState.isLoadingMore, isFalse);
-        expect(requestedOffsets, [0, initialRawVideos.length]);
+        expect(requestedCursors, [null, oldestInitialCursor]);
       },
     );
 
-    test('popular videos does not fall back to legacy popular', () async {
+    test('popular videos does not fall back to native leaderboard', () async {
       when(
-        () => mockVideosRepository.getNativePopularVideosPage(
+        () => mockVideosRepository.getPopularVideos(
           limit: any(named: 'limit'),
+          until: any(named: 'until'),
           offset: any(named: 'offset'),
+          period: any(named: 'period'),
+          variant: any(named: 'variant'),
+          fetchMultiplier: any(named: 'fetchMultiplier'),
           skipCache: any(named: 'skipCache'),
         ),
-      ).thenThrow(StateError('native popular unavailable'));
+      ).thenThrow(StateError('age-decayed popular unavailable'));
 
       final container = ProviderContainer(
         overrides: [
@@ -521,11 +580,12 @@ void main() {
 
       expect(state.videos, isEmpty);
       expect(state.hasMoreContent, isFalse);
-      expect(state.error, contains('native popular unavailable'));
+      expect(state.error, contains('age-decayed popular unavailable'));
       verifyNever(
-        () => mockVideosRepository.getPopularVideos(
+        () => mockVideosRepository.getNativePopularVideosPage(
           limit: any(named: 'limit'),
-          until: any(named: 'until'),
+          offset: any(named: 'offset'),
+          skipCache: any(named: 'skipCache'),
         ),
       );
     });
@@ -706,18 +766,6 @@ void main() {
   });
 }
 
-NativePopularVideosPage _nativePage(
-  List<VideoEvent> videos, {
-  int? consumedItemCount,
-  int? nextOffset,
-}) {
-  return NativePopularVideosPage(
-    videos: videos,
-    consumedItemCount: consumedItemCount ?? videos.length,
-    nextOffset: nextOffset ?? consumedItemCount ?? videos.length,
-  );
-}
-
 WatchingVideosResponse _watchingResponse(
   List<String> ids, {
   int? nextCursor,
@@ -753,9 +801,10 @@ VideoEvent _video(
   );
 }
 
-VideoEvent _vineArchiveVideo(String id) {
+VideoEvent _vineArchiveVideo(String id, {int createdAt = 1_742_169_600}) {
   return _video(
     id,
+    createdAt: createdAt,
     rawTags: const {
       'd': 'seed',
       'x': '1',

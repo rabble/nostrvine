@@ -1,5 +1,5 @@
-// ABOUTME: Popular Videos feed provider showing trending native videos.
-// ABOUTME: Uses VideosRepository's native Popular path for Explore pagination.
+// ABOUTME: Popular Videos feed provider showing age-decayed popular videos.
+// ABOUTME: Uses VideosRepository's v2 Popular path for Explore pagination.
 
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
@@ -25,8 +25,8 @@ final popularVideosVariantProvider = StateProvider<PopularVideosVariant>(
 
 /// Popular Videos feed provider - shows trending videos by recent engagement.
 ///
-/// Delegates video fetching to [VideosRepository.getNativePopularVideos], which
-/// uses the new divine video leaderboard.
+/// Delegates video fetching to [VideosRepository.getPopularVideos] with the
+/// selected native/classic variant.
 ///
 /// Rebuilds when:
 /// - Pull to refresh
@@ -34,7 +34,7 @@ final popularVideosVariantProvider = StateProvider<PopularVideosVariant>(
 /// - Content filter preferences change
 @Riverpod(keepAlive: true)
 class PopularVideosFeed extends _$PopularVideosFeed {
-  _PopularFeedCursor _cursor = const _NativePopularCursor(offset: 0);
+  _PopularFeedCursor _cursor = const _NativePopularCursor(until: null);
 
   @override
   Future<VideoFeedState> build() async {
@@ -131,12 +131,14 @@ class PopularVideosFeed extends _$PopularVideosFeed {
   }) async {
     final videosRepository = ref.read(videosRepositoryProvider);
     return switch (variant) {
-      PopularVideosVariant.native =>
-        videosRepository.getNativePopularVideosPage(
+      PopularVideosVariant.native => _buildPopularPage(
+        videos: await videosRepository.getPopularVideos(
           limit: AppConstants.paginationBatchSize,
+          variant: variant,
           skipCache: skipCache,
         ),
-      PopularVideosVariant.classic => _buildClassicPage(
+      ),
+      PopularVideosVariant.classic => _buildPopularPage(
         videos: await videosRepository.getPopularVideos(
           limit: AppConstants.paginationBatchSize,
           variant: variant,
@@ -224,12 +226,14 @@ class PopularVideosFeed extends _$PopularVideosFeed {
   Future<NativePopularVideosPage> _fetchNextPage() async {
     final videosRepository = ref.read(videosRepositoryProvider);
     return switch (_cursor) {
-      _NativePopularCursor(:final offset) =>
-        videosRepository.getNativePopularVideosPage(
+      _NativePopularCursor(:final until) => _buildPopularPage(
+        videos: await videosRepository.getPopularVideos(
           limit: AppConstants.paginationBatchSize,
-          offset: offset,
+          until: until,
+          variant: PopularVideosVariant.native,
         ),
-      _ClassicPopularCursor(:final until) => _buildClassicPage(
+      ),
+      _ClassicPopularCursor(:final until) => _buildPopularPage(
         videos: await videosRepository.getPopularVideos(
           limit: AppConstants.paginationBatchSize,
           until: until,
@@ -279,7 +283,7 @@ class PopularVideosFeed extends _$PopularVideosFeed {
 
   _PopularFeedCursor _initialCursorFor(PopularVideosVariant variant) {
     return switch (variant) {
-      PopularVideosVariant.native => const _NativePopularCursor(offset: 0),
+      PopularVideosVariant.native => const _NativePopularCursor(until: null),
       PopularVideosVariant.classic => const _ClassicPopularCursor(until: null),
     };
   }
@@ -290,7 +294,7 @@ class PopularVideosFeed extends _$PopularVideosFeed {
   ) {
     return switch (variant) {
       PopularVideosVariant.native => _NativePopularCursor(
-        offset: page.nextOffset ?? page.videos.length,
+        until: page.videos.isEmpty ? null : getOldestTimestamp(page.videos),
       ),
       PopularVideosVariant.classic => _ClassicPopularCursor(
         until: page.videos.isEmpty ? null : getOldestTimestamp(page.videos),
@@ -298,7 +302,7 @@ class PopularVideosFeed extends _$PopularVideosFeed {
     };
   }
 
-  NativePopularVideosPage _buildClassicPage({
+  NativePopularVideosPage _buildPopularPage({
     required List<VideoEvent> videos,
   }) {
     return NativePopularVideosPage(
@@ -356,9 +360,9 @@ sealed class _PopularFeedCursor {
 }
 
 class _NativePopularCursor extends _PopularFeedCursor {
-  const _NativePopularCursor({required this.offset});
+  const _NativePopularCursor({required this.until});
 
-  final int offset;
+  final int? until;
 }
 
 class _ClassicPopularCursor extends _PopularFeedCursor {

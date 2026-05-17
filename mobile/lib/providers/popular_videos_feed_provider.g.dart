@@ -10,8 +10,8 @@ part of 'popular_videos_feed_provider.dart';
 // ignore_for_file: type=lint, type=warning
 /// Popular Videos feed provider - shows trending videos by recent engagement.
 ///
-/// Delegates video fetching to [VideosRepository.getNativePopularVideos], which
-/// uses the new divine video leaderboard.
+/// Delegates video fetching to [VideosRepository.getPopularVideos] with the
+/// selected native/classic variant.
 ///
 /// Rebuilds when:
 /// - Pull to refresh
@@ -23,8 +23,8 @@ const popularVideosFeedProvider = PopularVideosFeedProvider._();
 
 /// Popular Videos feed provider - shows trending videos by recent engagement.
 ///
-/// Delegates video fetching to [VideosRepository.getNativePopularVideos], which
-/// uses the new divine video leaderboard.
+/// Delegates video fetching to [VideosRepository.getPopularVideos] with the
+/// selected native/classic variant.
 ///
 /// Rebuilds when:
 /// - Pull to refresh
@@ -34,8 +34,8 @@ final class PopularVideosFeedProvider
     extends $AsyncNotifierProvider<PopularVideosFeed, VideoFeedState> {
   /// Popular Videos feed provider - shows trending videos by recent engagement.
   ///
-  /// Delegates video fetching to [VideosRepository.getNativePopularVideos], which
-  /// uses the new divine video leaderboard.
+  /// Delegates video fetching to [VideosRepository.getPopularVideos] with the
+  /// selected native/classic variant.
   ///
   /// Rebuilds when:
   /// - Pull to refresh
@@ -60,12 +60,12 @@ final class PopularVideosFeedProvider
   PopularVideosFeed create() => PopularVideosFeed();
 }
 
-String _$popularVideosFeedHash() => r'1aee71b4befef9549e64cabe481975e432f338d8';
+String _$popularVideosFeedHash() => r'899d23a6fde684b906af0337d293809cac63f7fa';
 
 /// Popular Videos feed provider - shows trending videos by recent engagement.
 ///
-/// Delegates video fetching to [VideosRepository.getNativePopularVideos], which
-/// uses the new divine video leaderboard.
+/// Delegates video fetching to [VideosRepository.getPopularVideos] with the
+/// selected native/classic variant.
 ///
 /// Rebuilds when:
 /// - Pull to refresh
