@@ -51,73 +51,90 @@ class ExportProgressWidget extends StatelessWidget {
 
     return ColoredBox(
       color: VineTheme.backgroundColor.withValues(alpha: 0.9),
-      child: Center(
-        child: Card(
-          color: VineTheme.cardBackground,
-          margin: const EdgeInsets.all(32.0),
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Icon
-                Icon(
-                  _getStageIcon(stage),
-                  size: 64,
-                  color: stage == ExportStage.complete
-                      ? VineTheme.success
-                      : stage == ExportStage.error
-                      ? VineTheme.error
-                      : VineTheme.whiteText,
-                ),
-                const SizedBox(height: 24),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isCompact =
+              constraints.maxWidth < 320 || constraints.maxHeight < 480;
+          final outerPadding = isCompact ? 8.0 : 32.0;
+          final innerPadding = isCompact ? 12.0 : 24.0;
+          final iconSize = isCompact ? 40.0 : 64.0;
+          final largeGap = isCompact ? 12.0 : 24.0;
+          final smallGap = isCompact ? 8.0 : 16.0;
 
-                // Stage text
-                Text(
-                  _getStageText(stage),
-                  style: const TextStyle(
-                    color: VineTheme.whiteText,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
+          return SingleChildScrollView(
+            padding: EdgeInsets.all(outerPadding),
+            child: Center(
+              child: Card(
+                color: VineTheme.cardBackground,
+                margin: EdgeInsets.zero,
+                child: Padding(
+                  padding: EdgeInsets.all(innerPadding),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Icon
+                      Icon(
+                        _getStageIcon(stage),
+                        size: iconSize,
+                        color: stage == ExportStage.complete
+                            ? VineTheme.success
+                            : stage == ExportStage.error
+                            ? VineTheme.error
+                            : VineTheme.whiteText,
+                      ),
+                      SizedBox(height: largeGap),
 
-                // Progress bar
-                LinearProgressIndicator(
-                  value: progress,
-                  backgroundColor: VineTheme.cardBackground,
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                    VineTheme.success,
+                      // Stage text
+                      Text(
+                        _getStageText(stage),
+                        style: const TextStyle(
+                          color: VineTheme.whiteText,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: largeGap),
+
+                      // Progress bar
+                      LinearProgressIndicator(
+                        value: progress,
+                        backgroundColor: VineTheme.cardBackground,
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          VineTheme.success,
+                        ),
+                      ),
+                      SizedBox(height: smallGap),
+
+                      // Percentage
+                      Text(
+                        percentageText,
+                        style: const TextStyle(
+                          color: VineTheme.whiteText,
+                          fontSize: 16,
+                        ),
+                      ),
+
+                      // Cancel button (if provided)
+                      if (onCancel != null) ...[
+                        SizedBox(height: largeGap),
+                        TextButton(
+                          onPressed: onCancel,
+                          child: const Text(
+                            'Cancel',
+                            style: TextStyle(
+                              color: VineTheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
-                const SizedBox(height: 16),
-
-                // Percentage
-                Text(
-                  percentageText,
-                  style: const TextStyle(
-                    color: VineTheme.whiteText,
-                    fontSize: 16,
-                  ),
-                ),
-
-                // Cancel button (if provided)
-                if (onCancel != null) ...[
-                  const SizedBox(height: 24),
-                  TextButton(
-                    onPressed: onCancel,
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(color: VineTheme.onSurfaceVariant),
-                    ),
-                  ),
-                ],
-              ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

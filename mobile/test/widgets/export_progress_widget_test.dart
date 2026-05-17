@@ -287,5 +287,28 @@ void main() {
 
       expect(container.color.a, closeTo(0.9, 0.01));
     });
+
+    testWidgets('fits compact viewports without overflowing', (
+      WidgetTester tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(140, 400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: ExportProgressWidget(
+              stage: ExportStage.concatenating,
+              progress: 0.5,
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Combining clips...'), findsOneWidget);
+    });
   });
 }
