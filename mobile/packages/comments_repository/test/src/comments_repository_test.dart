@@ -1478,6 +1478,16 @@ void main() {
     });
 
     group('getCommentsCount', () {
+      // 64-char hex constants hoisted to the group scope so the
+      // post-edit cache tests stay under the 80-char line limit while
+      // sharing a single old/new event id pair.
+      const oldEventId =
+          '1111111111111111111111111111111111111111111111111111111111111111';
+      const newEventId =
+          '2222222222222222222222222222222222222222222222222222222222222222';
+      const deletedCommentId =
+          'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+
       test('returns count from NIP-45', () async {
         when(() => mockNostrClient.countEvents(any())).thenAnswer(
           (_) async => const CountResult(count: 42),
@@ -1664,10 +1674,6 @@ void main() {
           const testAddressableId =
               '34236:$testRootAuthorPubkey'
               ':video-dtag';
-          const oldEventId =
-              '1111111111111111111111111111111111111111111111111111111111111111';
-          const newEventId =
-              '2222222222222222222222222222222222222222222222222222222222222222';
 
           when(() => mockNostrClient.countEvents(any())).thenAnswer(
             (_) async => const CountResult(count: 7),
@@ -1705,10 +1711,6 @@ void main() {
           const testAddressableId =
               '34236:$testRootAuthorPubkey'
               ':video-dtag';
-          const oldEventId =
-              '1111111111111111111111111111111111111111111111111111111111111111';
-          const newEventId =
-              '2222222222222222222222222222222222222222222222222222222222222222';
 
           when(() => mockNostrClient.countEvents(any())).thenAnswer(
             (_) async => const CountResult(count: 7),
@@ -1743,12 +1745,6 @@ void main() {
           const testAddressableId =
               '34236:$testRootAuthorPubkey'
               ':video-dtag';
-          const oldEventId =
-              '1111111111111111111111111111111111111111111111111111111111111111';
-          const newEventId =
-              '2222222222222222222222222222222222222222222222222222222222222222';
-          const testCommentId =
-              'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
 
           when(() => mockNostrClient.countEvents(any())).thenAnswer(
             (_) async => const CountResult(count: 7),
@@ -1764,7 +1760,7 @@ void main() {
           );
 
           await repository.deleteComment(
-            commentId: testCommentId,
+            commentId: deletedCommentId,
             rootEventId: oldEventId,
             rootAddressableId: testAddressableId,
           );
