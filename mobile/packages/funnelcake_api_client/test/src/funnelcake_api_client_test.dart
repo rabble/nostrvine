@@ -2784,7 +2784,7 @@ void main() {
 
     group('getV2PopularVideos', () {
       test(
-        'classic mode requests weekly popular imported Vine videos',
+        'classic mode requests monthly popular imported Vine videos',
         () async {
           when(
             () => mockHttpClient.get(any(), headers: any(named: 'headers')),
@@ -2804,7 +2804,7 @@ void main() {
                   as Uri;
           expect(uri.path, equals('/api/v2/videos'));
           expect(uri.queryParameters['sort'], equals('popular'));
-          expect(uri.queryParameters['period'], equals('week'));
+          expect(uri.queryParameters['period'], equals('month'));
           expect(uri.queryParameters['platform'], equals('vine'));
           expect(uri.queryParameters.containsKey('exclude_platform'), isFalse);
         },

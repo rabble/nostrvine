@@ -494,7 +494,7 @@ class FunnelcakeApiClient {
   /// imports.
   ///
   /// Native mode maps to `sort=popular&period=now&exclude_platform=vine`;
-  /// classic mode maps to `sort=popular&period=week&platform=vine`.
+  /// classic mode maps to `sort=popular&period=month&platform=vine`.
   Future<List<VideoStats>> getV2PopularVideos({
     required PopularVideosVariant variant,
     int limit = 50,
@@ -506,7 +506,7 @@ class FunnelcakeApiClient {
 
     final queryParams = _videoQueryParameters({
       'sort': 'popular',
-      'period': variant == PopularVideosVariant.classic ? 'week' : 'now',
+      'period': variant == PopularVideosVariant.classic ? 'month' : 'now',
       'limit': limit.toString(),
     });
     if (variant == PopularVideosVariant.classic) {
