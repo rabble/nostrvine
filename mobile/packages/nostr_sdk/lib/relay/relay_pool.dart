@@ -1011,6 +1011,7 @@ class RelayPool {
             // the AUTH handshake requires a real send. Per-relay timeout
             // still applies so a stuck auth-trigger send cannot block the
             // rest of the fan-out.
+            var timedOut = false;
             var result = await relay
                 .send(
                   message,
@@ -1021,6 +1022,7 @@ class RelayPool {
                 .timeout(
                   timeout,
                   onTimeout: () {
+                    timedOut = true;
                     log(
                       '⏱️ Per-relay auth-trigger send timeout for ${relay.url} '
                       '(connected=${relay.relayStatus.connected}, '
@@ -1029,9 +1031,11 @@ class RelayPool {
                     return false;
                   },
                 );
+            if (result || timedOut || deadlineExpired()) {
+              attemptedRelayUrls.add(relay.url);
+            }
             if (result) {
               sentTo.add(relay.url);
-              attemptedRelayUrls.add(relay.url);
               onSent?.call(relay.url);
             }
             logDiagnostic(
@@ -1069,6 +1073,7 @@ class RelayPool {
           // while one dead relay tries exponential backoff (can hang the
           // publish for many minutes). Same convention as relayDoQuery /
           // relayDoSubscribe above.
+          var timedOut = false;
           var result = await relay
               .send(
                 message,
@@ -1079,6 +1084,7 @@ class RelayPool {
               .timeout(
                 timeout,
                 onTimeout: () {
+                  timedOut = true;
                   log(
                     '⏱️ Per-relay send timeout for ${relay.url} '
                     '(connected=${relay.relayStatus.connected}, '
@@ -1087,9 +1093,11 @@ class RelayPool {
                   return false;
                 },
               );
+          if (result || timedOut || deadlineExpired()) {
+            attemptedRelayUrls.add(relay.url);
+          }
           if (result) {
             sentTo.add(relay.url);
-            attemptedRelayUrls.add(relay.url);
             onSent?.call(relay.url);
           }
           logDiagnostic(
