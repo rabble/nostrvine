@@ -80,7 +80,13 @@ class MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final videoMatch = divineVideoUrlRegex.firstMatch(message);
+    // NIP-17 rumor bodies (and any sender-controlled text reaching the
+    // app via JSON `\uXXXX` escapes) can carry unpaired UTF-16
+    // surrogates that crash Flutter's text renderer. Sanitize once at
+    // the top so every downstream substring / split / Text widget sees
+    // well-formed input.
+    final safeMessage = StringUtils.sanitizeUtf16(message);
+    final videoMatch = divineVideoUrlRegex.firstMatch(safeMessage);
     final videoStableId = videoMatch?.group(1);
 
     // Slice the message body around the video URL.
@@ -100,10 +106,10 @@ class MessageBubble extends StatelessWidget {
     final String? personalMessage;
     final String? textAfterUrl;
     if (videoMatch != null) {
-      final after = message.substring(videoMatch.end).trim();
+      final after = safeMessage.substring(videoMatch.end).trim();
       textAfterUrl = after.isEmpty ? null : after;
 
-      final beforeLines = message
+      final beforeLines = safeMessage
           .substring(0, videoMatch.start)
           .split('\n')
           .map((line) => line.trim())
@@ -211,7 +217,7 @@ class MessageBubble extends StatelessWidget {
                         ),
                       ),
                   ] else
-                    _MessageText(message: message, isSent: isSent),
+                    _MessageText(message: safeMessage, isSent: isSent),
                 ],
               ),
             ),
@@ -346,10 +352,7 @@ class _MessageText extends StatelessWidget {
 /// and renders state via [BlocBuilder]. Falls back to a tappable link when
 /// the video cannot be resolved.
 class _VideoLinkPreview extends ConsumerWidget {
-  const _VideoLinkPreview({
-    required this.videoStableId,
-    required this.isSent,
-  });
+  const _VideoLinkPreview({required this.videoStableId, required this.isSent});
 
   final String videoStableId;
   final bool isSent;

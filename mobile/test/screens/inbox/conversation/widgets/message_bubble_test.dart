@@ -202,6 +202,34 @@ void main() {
 
         expect(align.alignment, equals(AlignmentDirectional.centerStart));
       });
+
+      testWidgets(
+        'renders without crashing when message contains an unpaired '
+        'UTF-16 surrogate',
+        (tester) async {
+          // Sender-controlled NIP-17 rumor bodies can deliver malformed
+          // UTF-16 via JSON \uXXXX escapes; the renderer asserts on
+          // well-formed UTF-16, so MessageBubble must sanitize before
+          // painting. See https://github.com/divinevideo/divine-mobile/issues/4463.
+          final malformed = 'before${String.fromCharCode(0xD83D)}after';
+          await tester.pumpWidget(
+            MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: MessageBubble(
+                  message: malformed,
+                  timestamp: '2:30 PM',
+                  isSent: true,
+                ),
+              ),
+            ),
+          );
+
+          expect(tester.takeException(), isNull);
+          expect(find.text('beforeafter'), findsOneWidget);
+        },
+      );
     });
 
     group('URL linkification', () {

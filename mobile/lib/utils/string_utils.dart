@@ -41,4 +41,36 @@ class StringUtils {
   /// locale-aware number formatting across the app.
   static String formatCompactNumber(int number, {String? locale}) =>
       CountFormatter.formatCompact(number, locale: locale);
+
+  /// Strip unpaired UTF-16 surrogate code units from [input].
+  ///
+  /// Flutter's text rendering asserts that strings are well-formed UTF-16.
+  /// Sender-controlled content reaching the app via JSON `\uXXXX` escapes
+  /// (notably NIP-17 DM rumor bodies after `jsonDecode`) can carry
+  /// unpaired surrogates that survive transport and crash the renderer
+  /// with `Invalid argument(s): string is not well-formed UTF-16`. Apply
+  /// this at render boundaries that display untrusted text.
+  ///
+  /// Returns [input] unchanged when it is already well-formed.
+  static String sanitizeUtf16(String input) {
+    final units = input.codeUnits;
+    final out = <int>[];
+    for (var i = 0; i < units.length; i++) {
+      final unit = units[i];
+      if (unit >= 0xD800 && unit <= 0xDBFF) {
+        final next = i + 1 < units.length ? units[i + 1] : 0;
+        if (next >= 0xDC00 && next <= 0xDFFF) {
+          out
+            ..add(unit)
+            ..add(next);
+          i++;
+        }
+      } else if (unit >= 0xDC00 && unit <= 0xDFFF) {
+        continue;
+      } else {
+        out.add(unit);
+      }
+    }
+    return out.length == units.length ? input : String.fromCharCodes(out);
+  }
 }
