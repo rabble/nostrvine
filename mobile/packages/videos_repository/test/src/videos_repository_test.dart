@@ -1112,6 +1112,9 @@ void main() {
 
         setUp(() {
           mockFunnelcakeClient = MockFunnelcakeApiClient();
+          when(
+            () => mockFunnelcakeClient.getBulkVideoStats(any()),
+          ).thenAnswer((_) async => const BulkVideoStatsResponse(stats: {}));
         });
 
         test('returns API results when Funnelcake succeeds', () async {
@@ -3985,6 +3988,9 @@ void main() {
 
         setUp(() {
           mockFunnelcakeClient = MockFunnelcakeApiClient();
+          when(
+            () => mockFunnelcakeClient.getBulkVideoStats(any()),
+          ).thenAnswer((_) async => const BulkVideoStatsResponse(stats: {}));
         });
 
         test('calls getLeaderboardVideos when period is set', () async {
@@ -4033,6 +4039,67 @@ void main() {
             ),
           );
         });
+
+        test(
+          'hydrates period leaderboard interaction counts before returning',
+          () async {
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getLeaderboardVideos(
+                period: any(named: 'period'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer(
+              (_) async => [
+                _createVideoStats(
+                  id: 'leaderboard-1',
+                  pubkey: 'pubkey-1',
+                  dTag: 'dtag-1',
+                  videoUrl: 'https://example.com/leaderboard-1.mp4',
+                  loops: 500,
+                  views: 600,
+                ),
+              ],
+            );
+            when(
+              () => mockFunnelcakeClient.getBulkVideoStats(['leaderboard-1']),
+            ).thenAnswer(
+              (_) async => const BulkVideoStatsResponse(
+                stats: {
+                  'leaderboard-1': BulkVideoStatsEntry(
+                    eventId: 'leaderboard-1',
+                    reactions: 21,
+                    comments: 5,
+                    reposts: 8,
+                    loops: 501,
+                    views: 601,
+                  ),
+                },
+              ),
+            );
+
+            final repositoryWithApi = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            final videos = await repositoryWithApi.getPopularVideos(
+              limit: 1,
+              period: LeaderboardPeriod.week,
+            );
+
+            expect(videos, hasLength(1));
+            expect(videos.single.originalLikes, equals(21));
+            expect(videos.single.originalComments, equals(5));
+            expect(videos.single.originalReposts, equals(8));
+            expect(videos.single.nostrLikeCount, equals(0));
+            expect(videos.single.totalLikes, equals(21));
+            verify(
+              () => mockFunnelcakeClient.getBulkVideoStats(['leaderboard-1']),
+            ).called(1);
+          },
+        );
 
         test('passes offset when provided (period path)', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
