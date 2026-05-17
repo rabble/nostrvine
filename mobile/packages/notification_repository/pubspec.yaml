@@ -18,6 +18,7 @@ dependencies:
   nostr_client:
   profile_repository:
   rxdart: ^0.28.0
+  text_sanitizer:
 
 dev_dependencies:
   mocktail: ^1.0.4

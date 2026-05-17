@@ -15,6 +15,7 @@ import 'package:profile_repository/profile_repository.dart';
 // Hide rxdart's `NotificationKind` (a stream-event enum) to avoid clashing
 // with the domain `NotificationKind` from `models`.
 import 'package:rxdart/rxdart.dart' hide NotificationKind;
+import 'package:text_sanitizer/text_sanitizer.dart';
 
 /// Maximum length for comment preview text before truncation.
 const _maxCommentLength = 50;
@@ -290,13 +291,13 @@ class NotificationRepository {
   /// `videoEventId` and `type`, returns a new list with that row replaced
   /// by the merged group; otherwise returns null.
   ///
-  /// Merge semantics (mirror the pre-snapshot bloc handler): prepend the
-  /// new actor onto the existing actors capped at [_maxGroupActors],
-  /// increment `totalCount`, flip `isRead` to false, bump `timestamp` to
-  /// the incoming arrival, and union the underlying `sourceEventIds` so
-  /// the merged row carries every Nostr event it represents. The row
-  /// stays at its existing index — no re-sort, so the visible list
-  /// doesn't jump.
+  /// Merge semantics (mirror the pre-snapshot bloc handler): add the
+  /// incoming actor, reapply the grouped-row actor ordering, increment
+  /// `totalCount`, flip `isRead` to false, bump `timestamp` to the
+  /// incoming arrival, and union the underlying `sourceEventIds` so the
+  /// merged row carries every Nostr event it represents. The row stays
+  /// at its existing index — no re-sort, so the visible list doesn't
+  /// jump.
   static List<NotificationItem>? _mergeIntoExistingVideoGroup(
     List<NotificationItem> items,
     VideoNotification incoming,
@@ -308,10 +309,11 @@ class NotificationRepository {
           existing is VideoNotification &&
           existing.videoEventId == incoming.videoEventId &&
           existing.type == incoming.type) {
-        final mergedActors = [
-          incoming.actors.first,
-          ...existing.actors,
-        ].take(_maxGroupActors).toList();
+        final incomingActor = incoming.actors.first;
+        final mergedActors = _orderVideoGroupActors([
+          incomingActor,
+          ...existing.actors.where((a) => a.pubkey != incomingActor.pubkey),
+        ]).take(_maxGroupActors).toList();
         final mergedSourceEventIds = <String>{
           ...existing.sourceEventIds,
           ...incoming.sourceEventIds,
@@ -436,10 +438,9 @@ class NotificationRepository {
   ///   `totalCount >= actors.length` invariant always holds even in the
   ///   defensive edge case where both sides had empty `sourceEventIds`
   ///   (server response missing `source_event_id`).
-  /// - `actors` = existing actors first, then non-duplicate incoming
-  ///   actors (matched by pubkey), capped at [_maxGroupActors].
-  ///   "Existing first" matches production semantics: pagination walks
-  ///   backward in time, so existing.actors carry the newer createdAts.
+  /// - `actors` = the union of existing + incoming actors, then
+  ///   re-ordered to keep an explicitly named actor in front and capped
+  ///   at [_maxGroupActors].
   /// - `isRead` = `existing.isRead && incoming.isRead` (either side
   ///   being unread keeps the row unread).
   /// - `timestamp` = `max(existing.timestamp, incoming.timestamp)`.
@@ -448,11 +449,8 @@ class NotificationRepository {
   ///   `_nonEmpty(...) ?? _nonEmpty(...)` pattern).
   /// - `commentText` for comment-kind rows: pick from the side with the
   ///   larger `timestamp`, falling back to the other side only when the
-  ///   newer side has no text. Mirrors `_groupVideoAnchored`'s
-  ///   newest-wins (sort desc by `createdAt`, take `group.first.content`)
-  ///   and the `timestamp = max(...)` rule above, so the bold first-actor
-  ///   quote stays the latest comment even though REST pagination walks
-  ///   backward in time.
+  ///   newer side has no text. Mirrors the long-standing pagination
+  ///   merge contract even after lead-actor reordering.
   static VideoNotification _mergeAppendedVideoGroup(
     VideoNotification existing,
     VideoNotification incoming,
@@ -461,12 +459,12 @@ class NotificationRepository {
       ...existing.sourceEventIds,
       ...incoming.sourceEventIds,
     }.toList();
-    final mergedActors = [
+    final mergedActors = _orderVideoGroupActors([
       ...existing.actors,
       ...incoming.actors.where(
         (a) => !existing.actors.any((e) => e.pubkey == a.pubkey),
       ),
-    ].take(_maxGroupActors).toList();
+    ]).take(_maxGroupActors).toList();
     final existingIsNewer = !existing.timestamp.isBefore(incoming.timestamp);
     final mergedTimestamp = existingIsNewer
         ? existing.timestamp
@@ -647,10 +645,12 @@ class NotificationRepository {
         group,
         profiles,
       );
-      final actors = actorNotifications
-          .take(_maxGroupActors)
-          .map((n) => _buildActor(n.sourcePubkey, profiles))
-          .toList();
+      final actors = _orderVideoGroupActors(
+        actorNotifications
+            .take(_maxGroupActors)
+            .map((n) => _buildActor(n.sourcePubkey, profiles))
+            .toList(),
+      );
       final video = videosById[entry.key.eventId];
       final dTag = group
           .map((n) => n.referencedDTag)
@@ -665,11 +665,11 @@ class NotificationRepository {
       final titleFromNotif = group
           .map((n) => n.referencedVideoTitle)
           .firstWhere((t) => t != null && t.isNotEmpty, orElse: () => null);
-      // Carry the most-recent comment text (the same payload the bold
-      // first-actor span shows) so the row can quote it under the message
-      // text. Only meaningful for `comment` kind — likes and reposts have
-      // no body text. Reuses the same length-cap as actor-anchored
-      // comments / replies for layout safety.
+      // Carry the lead actor's comment text so the quoted body stays in
+      // sync with the bold first-actor span after named-actor reordering.
+      // Only meaningful for `comment` kind — likes and reposts have no
+      // body text. Reuses the same length-cap as actor-anchored comments
+      // / replies for layout safety.
       final commentTextForRow = entry.key.kind == NotificationKind.comment
           ? _truncateComment(actorNotifications.first.content, entry.key.kind)
           : null;
@@ -926,10 +926,7 @@ class NotificationRepository {
 
     final ordered = lead == null
         ? group
-        : <RelayNotification>[
-            lead,
-            ...group.where((n) => !identical(n, lead)),
-          ];
+        : <RelayNotification>[lead, ...group.where((n) => !identical(n, lead))];
     return ordered;
   }
 
@@ -953,13 +950,33 @@ class NotificationRepository {
 
     final displayName = profile.displayName;
     if (_isUsableActorName(displayName, pubkey)) {
-      return displayName!.trim();
+      return stripZalgo(displayName!).trim();
     }
 
     final name = profile.name;
-    if (_isUsableActorName(name, pubkey)) return name!.trim();
+    if (_isUsableActorName(name, pubkey)) return stripZalgo(name!).trim();
 
     return null;
+  }
+
+  static List<ActorInfo> _orderVideoGroupActors(List<ActorInfo> actors) {
+    ActorInfo? lead;
+    for (final actor in actors) {
+      if (_hasPreferredLeadActorName(actor.displayName, actor.pubkey)) {
+        lead = actor;
+        break;
+      }
+    }
+
+    if (lead == null) return actors;
+    return [lead, ...actors.where((actor) => actor.pubkey != lead!.pubkey)];
+  }
+
+  static bool _hasPreferredLeadActorName(String displayName, String pubkey) {
+    if (!_isUsableActorName(displayName, pubkey)) {
+      return false;
+    }
+    return displayName.trim() != UserProfile.defaultDisplayNameFor(pubkey);
   }
 
   static bool _isUsableActorName(String? value, String pubkey) {
