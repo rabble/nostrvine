@@ -65,7 +65,7 @@ void main() {
     });
 
     testWidgets(
-      'uses CachedNetworkImage for Divine-hosted thumbnails',
+      'uses Image.network for Divine-hosted thumbnails to avoid cache-manager stalls',
       (tester) async {
         final divineHostedVideo = createTestVideoEvent(
           id: 'test-divine',
@@ -87,85 +87,8 @@ void main() {
           ),
         );
 
-        expect(find.byType(CachedNetworkImage), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'no-black-screen guarantee: BlurhashDisplay always renders behind Divine-hosted thumbnail',
-      (tester) async {
-        // BlurhashDisplay sits behind the thumbnail in a Stack at all times.
-        // When the cache manager is still loading — or returns an error — the
-        // tile shows the blurhash preview (or flat surface colour) instead of
-        // a black square.  This is the key regression the bypass used to paper
-        // over; now that maxConnectionsPerHost is sized for the full grid, the
-        // cache manager delivers images without blocking and the background
-        // layer is merely the loading-state affordance it was always meant to
-        // be.
-        final divineVideo = createTestVideoEvent(
-          id: 'test-divine-bg',
-          thumbnailUrl:
-              'https://media.divine.video/72d7eda61074b17e077fb9f4a8b48166cdeb65cb07e053aafa6e69d5fa165995.jpg',
-          blurhash: 'LEHV6nWB2yk8pyo0adR*.7kCMdnj',
-        );
-
-        await tester.pumpWidget(
-          MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: VideoThumbnailWidget(
-                video: divineVideo,
-                width: 200,
-                height: 200,
-              ),
-            ),
-          ),
-        );
-
-        expect(find.byType(BlurhashDisplay), findsOneWidget);
-        expect(find.byType(CachedNetworkImage), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'never uses raw Image.network for Divine-hosted thumbnails',
-      (tester) async {
-        // The old bypass (removed in this PR) passed Divine-hosted thumbnail
-        // URLs directly to Image.network, skipping disk cache, LRU eviction,
-        // and retry logic.  Now that maxConnectionsPerHost is raised to match
-        // the profile grid size, every thumbnail — including Divine-hosted
-        // ones — goes through VineCachedImage (CachedNetworkImage).  This
-        // assertion locks that invariant in: a future re-introduction of
-        // Image.network would fail this test immediately.
-        final divineVideo = createTestVideoEvent(
-          id: 'test-divine-no-raw',
-          thumbnailUrl:
-              'https://media.divine.video/72d7eda61074b17e077fb9f4a8b48166cdeb65cb07e053aafa6e69d5fa165995.jpg',
-        );
-
-        await tester.pumpWidget(
-          MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: VideoThumbnailWidget(
-                video: divineVideo,
-                width: 200,
-                height: 200,
-              ),
-            ),
-          ),
-        );
-
-        expect(
-          find.byWidgetPredicate(
-            (w) => w is Image && w.image is NetworkImage,
-          ),
-          findsNothing,
-          reason: 'thumbnail must use VineCachedImage, not raw Image.network',
-        );
-        expect(find.byType(CachedNetworkImage), findsOneWidget);
+        expect(find.byType(Image), findsOneWidget);
+        expect(find.byType(CachedNetworkImage), findsNothing);
       },
     );
 

@@ -201,8 +201,50 @@ class _SafeNetworkImage extends StatelessWidget {
   final bool showPlayIcon;
   final BorderRadius? borderRadius;
 
+  // Toggle to test with plain Image.network instead of CachedNetworkImage
+  // Set to true to debug if the issue is with flutter_cache_manager
+  static const bool _useSimpleImageNetwork = false;
+
+  static bool _shouldBypassCacheManager(String url) {
+    final host = Uri.tryParse(url)?.host.toLowerCase();
+    if (host == null || host.isEmpty) return false;
+
+    // Explore/grid thumbnails are predominantly served from Divine-owned,
+    // immutable blob URLs. These load reliably with Image.network, while the
+    // CachedNetworkImage + custom cache manager path has been less reliable
+    // under concurrent grid loads on desktop.
+    return host == 'divine.video' || host.endsWith('.divine.video');
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Debug mode: test with plain Image.network to isolate cache issues
+    if (_useSimpleImageNetwork || _shouldBypassCacheManager(url)) {
+      return Image.network(
+        url,
+        width: width,
+        height: height,
+        fit: fit,
+        alignment: Alignment.topCenter,
+        errorBuilder: (context, error, stackTrace) {
+          Log.warning(
+            '🖼️ [Image.network] Thumbnail load failed for video $videoId:\n'
+            '  URL: $url\n'
+            '  Error type: ${error.runtimeType}\n'
+            '  Error: $error\n'
+            '  Stack: ${stackTrace?.toString().split('\n').take(5).join('\n')}',
+            name: 'VideoThumbnailWidget',
+            category: LogCategory.video,
+          );
+          return Container(
+            width: width,
+            height: height,
+            color: VineTheme.transparent,
+          );
+        },
+      );
+    }
+
     return VineCachedImage(
       imageUrl: url,
       width: width,

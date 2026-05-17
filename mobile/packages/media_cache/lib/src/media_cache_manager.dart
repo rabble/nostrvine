@@ -67,9 +67,11 @@ class MediaCacheConfig {
         maxNrOfCacheObjects: 200,
         connectionTimeout: const Duration(seconds: 10),
         idleTimeout: const Duration(seconds: 30),
-        // Raised from 6 → 20: profile grids load 20+ thumbnails concurrently
-        // from the same CDN host; 6 caused head-of-line blocking that left
-        // thumbnails black until earlier slots freed up (#4330).
+        // Tuning choice (not a measured optimum): raised from 6 → 20 to
+        // unblock surfaces like the profile grid that issue ~20 concurrent
+        // thumbnail requests to the same CDN host. 6 was observed too low
+        // under #4330; 20 leaves headroom over the typical grid column
+        // count. Revisit if socket/memory pressure shows up in profiling.
         maxConnectionsPerHost: 20,
         enableSyncManifest: false,
         defaultExtension: '.jpg',
