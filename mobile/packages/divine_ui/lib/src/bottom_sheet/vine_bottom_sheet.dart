@@ -417,10 +417,9 @@ class _HeaderlessDragHandle extends StatelessWidget {
         ),
         // 5 % white alpha — Figma `outline/outline-disabled` token value
         // (`rgba(255, 255, 255, 0.05)`). Scoped to this chrome divider
-        // only; the shared `VineTheme.outlineDisabled` solid value
-        // (`#001A12`) doesn't contrast against the sheet surface and a
-        // foundation-token retune is out of scope for the PR that
-        // introduced this divider — see PR #4422 review.
+        // only because the shared `VineTheme.outlineDisabled` solid
+        // value (`#001A12`) does not contrast against the sheet
+        // surface.
         if (showDivider) Container(height: 1, color: const Color(0x0DFFFFFF)),
       ],
     );
