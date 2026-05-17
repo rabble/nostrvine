@@ -172,13 +172,15 @@ class CommentsRepository {
                   )
                 : restThread;
             // Auto-update the count cache with the authoritative REST total.
-            if (thread.totalCount > 0) {
-              _writeCachedCommentCount(
-                rootEventId,
-                thread.totalCount,
-                rootAddressableId: rootAddressableId,
-              );
-            }
+            // Zero is written too so a previously cached positive value
+            // can't outlive the comments it counted — important with the
+            // addressable-id companion cache, which would otherwise serve
+            // that stale positive for the post-edit event id.
+            _writeCachedCommentCount(
+              rootEventId,
+              thread.totalCount,
+              rootAddressableId: rootAddressableId,
+            );
             return _filterThread(thread);
           }
         } on FunnelcakeException {
@@ -243,8 +245,12 @@ class CommentsRepository {
 
       // Auto-update the count cache with the authoritative total so that
       // callers (e.g. VideoInteractionsBloc) don't need to push counts back
-      // into the repository manually.
-      if (before == null && thread.totalCount > 0) {
+      // into the repository manually. Pagination (`before != null`) returns
+      // a slice rather than the full total, so the guard stays. Zero is
+      // written on a first-page result: trusting it for the empty UI but
+      // distrusting it for the cache would let the addressable-id companion
+      // serve a stale positive across a metadata edit.
+      if (before == null) {
         _writeCachedCommentCount(
           rootEventId,
           thread.totalCount,

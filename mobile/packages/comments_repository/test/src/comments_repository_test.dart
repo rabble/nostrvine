@@ -1005,6 +1005,103 @@ void main() {
         final filters = captured.first as List<Filter>;
         expect(filters.first.until, isNull);
       });
+
+      group('first-page authoritative zero clears stale positive cache', () {
+        // The dual-key cache from this PR makes a stale positive count
+        // outlive an addressable-event edit. If loadComments returns 0,
+        // both write sites must overwrite the cache so the post-edit
+        // fetch via the new event id sees the authoritative zero.
+        const oldEventId =
+            '1111111111111111111111111111111111111111111111111111111111111111';
+        const newEventId =
+            '2222222222222222222222222222222222222222222222222222222222222222';
+        const addressableId =
+            '34236:$testRootAuthorPubkey'
+            ':video-dtag';
+
+        test(
+          'REST authoritative zero overwrites a positive cache under the '
+          'addressable id',
+          () async {
+            repository =
+                CommentsRepository(
+                  nostrClient: mockNostrClient,
+                  funnelcakeApiClient: mockFunnelcakeApiClient,
+                )..updateCachedCommentCount(
+                  oldEventId,
+                  7,
+                  rootAddressableId: addressableId,
+                );
+
+            when(() => mockFunnelcakeApiClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeApiClient.getVideoComments(
+                videoId: any(named: 'videoId'),
+                sort: any(named: 'sort'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer(
+              (_) async => const VideoCommentsResponse(
+                comments: [],
+                total: 0,
+              ),
+            );
+
+            final loaded = await repository.loadComments(
+              rootEventId: newEventId,
+              rootEventKind: _testRootEventKind,
+              rootAddressableId: addressableId,
+            );
+            expect(loaded.totalCount, equals(0));
+
+            final post = await repository.getCommentsCount(
+              newEventId,
+              rootAddressableId: addressableId,
+            );
+            expect(
+              post,
+              equals(0),
+              reason: 'REST zero must wipe the stale 7 keyed by address',
+            );
+            verifyNever(() => mockNostrClient.countEvents(any()));
+          },
+        );
+
+        test(
+          'relay first-page empty result overwrites a positive cache under '
+          'the addressable id',
+          () async {
+            repository.updateCachedCommentCount(
+              oldEventId,
+              7,
+              rootAddressableId: addressableId,
+            );
+
+            when(
+              () => mockNostrClient.queryEvents(any()),
+            ).thenAnswer((_) async => <Event>[]);
+
+            final loaded = await repository.loadComments(
+              rootEventId: newEventId,
+              rootEventKind: _testRootEventKind,
+              rootAddressableId: addressableId,
+            );
+            expect(loaded.totalCount, equals(0));
+
+            final post = await repository.getCommentsCount(
+              newEventId,
+              rootAddressableId: addressableId,
+            );
+            expect(
+              post,
+              equals(0),
+              reason: 'relay zero must wipe the stale 7 keyed by address',
+            );
+            verifyNever(() => mockNostrClient.countEvents(any()));
+          },
+        );
+      });
     });
 
     group('postComment', () {
