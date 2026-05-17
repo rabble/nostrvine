@@ -67,7 +67,6 @@ class ConversationPage extends ConsumerWidget {
           create: (_) => ConversationBloc(
             dmRepository: dmRepository,
             conversationId: conversationId,
-            currentUserPubkey: currentPubkey,
           )..add(const ConversationStarted()),
         ),
         // Same identity-keying as ConversationBloc above: the response

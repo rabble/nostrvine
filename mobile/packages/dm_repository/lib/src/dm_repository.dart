@@ -2084,6 +2084,32 @@ class DmRepository {
         .map((rows) => rows.map(_messageFromRow).toList());
   }
 
+  /// Watch the durable `outgoing_dms` queue rows for [conversationId],
+  /// scoped to the active owner. Empty stream when no row is queued or
+  /// when no [OutgoingDmsDao] is wired (legacy test fixtures).
+  ///
+  /// Pair with [watchMessages] in the conversation bloc to render in-flight,
+  /// partial-delivery, and recipient-failed bubbles alongside the
+  /// persisted timeline. [sendMessage] enqueues a row before any signer
+  /// round-trip, so the first tick of this stream lands within
+  /// microseconds of dispatch — replacing the in-memory
+  /// `pendingOptimistic` slice introduced for #4193.
+  Stream<List<OutgoingDm>> watchOutgoing(String conversationId) {
+    final dao = _outgoingDmsDao;
+    final owner = _ownerPubkey;
+    // Signed-out / not-yet-ready states leave the queue invisible to
+    // the bloc — there is no owner to scope the rows to. The next
+    // auth flip recreates the bloc (BlocProvider keyed on repo
+    // identity) and the subscription starts fresh.
+    if (dao == null || owner == null) {
+      return Stream<List<OutgoingDm>>.value(const []);
+    }
+    return dao.watchForConversation(
+      conversationId: conversationId,
+      ownerPubkey: owner,
+    );
+  }
+
   /// Get messages in a conversation.
   Future<List<DmMessage>> getMessages(
     String conversationId, {

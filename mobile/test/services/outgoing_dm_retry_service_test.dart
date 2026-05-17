@@ -36,6 +36,7 @@ OutgoingDm _row({
   int retryCount = 0,
   DateTime? lastAttemptAt,
   String ownerPubkey = _ownerPubkey,
+  DateTime? queuedAt,
 }) {
   return OutgoingDm(
     id: id,
@@ -46,7 +47,7 @@ OutgoingDm _row({
     rumorEventJson: '{}',
     recipientWrapStatus: recipient,
     selfWrapStatus: self,
-    queuedAt: DateTime.utc(2026),
+    queuedAt: queuedAt ?? DateTime.utc(2026),
     ownerPubkey: ownerPubkey,
     retryCount: retryCount,
     lastAttemptAt: lastAttemptAt,
@@ -82,6 +83,9 @@ void main() {
         ownerPubkey: any(named: 'ownerPubkey'),
         maxRetries: any(named: 'maxRetries'),
       ),
+    ).thenAnswer((_) async => const <OutgoingDm>[]);
+    when(
+      () => dao.getStillPendingForOwner(any()),
     ).thenAnswer((_) async => const <OutgoingDm>[]);
     when(() => dao.incrementRetry(any())).thenAnswer((_) async => true);
   });
@@ -915,6 +919,123 @@ void main() {
               reason: OutgoingDmRetryServiceReportableSites.sweepTopLevel,
             ),
           ).called(1);
+        },
+      );
+    });
+
+    group('interrupted-send recovery (pending:pending)', () {
+      // The retry service's third arm — fulfils epic #3912's "outgoing
+      // DM survives the app being killed mid-send" acceptance criterion.
+      // recoverFullSend re-wraps the same rumor (rumor.id stable across
+      // retries) so NIP-17 receiver dedup makes the replay idempotent.
+
+      test(
+        'dispatches stale pending:pending row to recoverFullSend',
+        () async {
+          final now = DateTime.utc(2026, 5, 10, 12);
+          final stalePending = _row(
+            id: 'interrupted-1',
+            recipient: OutgoingWrapStatus.pending,
+            self: OutgoingWrapStatus.pending,
+            queuedAt: now.subtract(const Duration(minutes: 5)),
+          );
+          when(
+            () => dao.getStillPendingForOwner(any()),
+          ).thenAnswer((_) async => [stalePending]);
+          when(
+            () => dmRepository.recoverFullSend(rumorId: any(named: 'rumorId')),
+          ).thenAnswer((_) async => _successResult('interrupted-1'));
+
+          await buildService(now: () => now).sweep();
+
+          verify(
+            () => dmRepository.recoverFullSend(rumorId: 'interrupted-1'),
+          ).called(1);
+          verifyNever(
+            () => dmRepository.recoverSelfWrap(rumorId: any(named: 'rumorId')),
+          );
+        },
+      );
+
+      test(
+        'skips a pending row younger than initialDelay (in-flight send '
+        'might still complete in-process)',
+        () async {
+          final now = DateTime.utc(2026, 5, 10, 12);
+          final freshPending = _row(
+            id: 'fresh-1',
+            recipient: OutgoingWrapStatus.pending,
+            self: OutgoingWrapStatus.pending,
+            // initialDelay default is 2s; this row is younger.
+            queuedAt: now.subtract(const Duration(milliseconds: 500)),
+          );
+          when(
+            () => dao.getStillPendingForOwner(any()),
+          ).thenAnswer((_) async => [freshPending]);
+
+          await buildService(now: () => now).sweep();
+
+          verifyNever(
+            () => dmRepository.recoverFullSend(rumorId: any(named: 'rumorId')),
+          );
+        },
+      );
+
+      test(
+        'does not double-dispatch a row already handled by the failed arm',
+        () async {
+          final now = DateTime.utc(2026, 5, 10, 12);
+          // Same id appears in both filters (e.g. recipient=pending,
+          // self=failed). The failed arm owns this dispatch.
+          final hybridRow = _row(
+            id: 'hybrid-1',
+            recipient: OutgoingWrapStatus.pending,
+            self: OutgoingWrapStatus.failed,
+            queuedAt: now.subtract(const Duration(minutes: 5)),
+          );
+          when(
+            () => dao.getRetryableForOwner(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenAnswer((_) async => [hybridRow]);
+          when(
+            () => dao.getStillPendingForOwner(any()),
+          ).thenAnswer((_) async => [hybridRow]);
+          when(
+            () => dmRepository.recoverSelfWrap(rumorId: any(named: 'rumorId')),
+          ).thenAnswer((_) async => _successResult('hybrid-1'));
+
+          await buildService(now: () => now).sweep();
+
+          // recoverFullSend must NOT be called for this row — the
+          // failed-arm's recoverSelfWrap owns it.
+          verifyNever(
+            () => dmRepository.recoverFullSend(rumorId: 'hybrid-1'),
+          );
+        },
+      );
+
+      test(
+        'publish-failure path bumps incrementRetry once',
+        () async {
+          final now = DateTime.utc(2026, 5, 10, 12);
+          final stalePending = _row(
+            id: 'interrupted-fail',
+            recipient: OutgoingWrapStatus.pending,
+            self: OutgoingWrapStatus.pending,
+            queuedAt: now.subtract(const Duration(minutes: 5)),
+          );
+          when(
+            () => dao.getStillPendingForOwner(any()),
+          ).thenAnswer((_) async => [stalePending]);
+          when(
+            () => dmRepository.recoverFullSend(rumorId: any(named: 'rumorId')),
+          ).thenAnswer((_) async => _failureResult('relay timeout'));
+
+          await buildService(now: () => now).sweep();
+
+          verify(() => dao.incrementRetry('interrupted-fail')).called(1);
         },
       );
     });

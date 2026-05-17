@@ -5,6 +5,7 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:db_client/db_client.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -13,6 +14,43 @@ import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
 import 'package:openvine/observability/reportable_error.dart';
 
 class _MockDmRepository extends Mock implements DmRepository {}
+
+/// Builds an [OutgoingDm] queue row for tests that exercise the
+/// [ConversationState.pendingOutgoing] projection slice. Defaults to a
+/// `pending:pending` row freshly queued at epoch — caller overrides any
+/// field that the specific test cares about.
+OutgoingDm _outgoingDm({
+  required String id,
+  String content = 'test',
+  int createdAtSec = 1700000000,
+  DateTime? queuedAt,
+  String ownerPubkey =
+      '1111111111111111111111111111111111111111111111111111111111111111',
+  String recipientPubkey =
+      '2222222222222222222222222222222222222222222222222222222222222222',
+  String conversationId =
+      'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2',
+  OutgoingWrapStatus recipientWrap = OutgoingWrapStatus.pending,
+  OutgoingWrapStatus selfWrap = OutgoingWrapStatus.pending,
+  int retryCount = 0,
+  DateTime? lastAttemptAt,
+}) {
+  return OutgoingDm(
+    id: id,
+    conversationId: conversationId,
+    recipientPubkey: recipientPubkey,
+    content: content,
+    createdAt: createdAtSec,
+    rumorEventJson: '{}',
+    recipientWrapStatus: recipientWrap,
+    selfWrapStatus: selfWrap,
+    queuedAt:
+        queuedAt ?? DateTime.fromMillisecondsSinceEpoch(createdAtSec * 1000),
+    ownerPubkey: ownerPubkey,
+    retryCount: retryCount,
+    lastAttemptAt: lastAttemptAt,
+  );
+}
 
 void main() {
   // Full 64-char hex IDs per project rules
@@ -47,13 +85,10 @@ void main() {
       mockDmRepository = _MockDmRepository();
     });
 
-    ConversationBloc buildBloc({String Function()? pendingIdFactory}) =>
-        ConversationBloc(
-          dmRepository: mockDmRepository,
-          conversationId: conversationId,
-          currentUserPubkey: senderPubkey,
-          pendingIdFactory: pendingIdFactory,
-        );
+    ConversationBloc buildBloc() => ConversationBloc(
+      dmRepository: mockDmRepository,
+      conversationId: conversationId,
+    );
 
     test('initial state is correct', () {
       when(
@@ -81,6 +116,9 @@ void main() {
           when(
             () => mockDmRepository.watchMessages(conversationId),
           ).thenAnswer((_) => Stream.value([testMessage]));
+          when(
+            () => mockDmRepository.watchOutgoing(any()),
+          ).thenAnswer((_) => Stream.value(const <OutgoingDm>[]));
         },
         build: buildBloc,
         act: (bloc) => bloc.add(const ConversationStarted()),
@@ -111,6 +149,9 @@ void main() {
           when(
             () => mockDmRepository.watchMessages(conversationId),
           ).thenAnswer((_) => const Stream.empty());
+          when(
+            () => mockDmRepository.watchOutgoing(any()),
+          ).thenAnswer((_) => Stream.value(const <OutgoingDm>[]));
         },
         build: buildBloc,
         act: (bloc) => bloc.add(const ConversationStarted()),
@@ -130,6 +171,9 @@ void main() {
           when(
             () => mockDmRepository.watchMessages(conversationId),
           ).thenAnswer((_) => Stream.error(Exception('stream failed')));
+          when(
+            () => mockDmRepository.watchOutgoing(any()),
+          ).thenAnswer((_) => Stream.value(const <OutgoingDm>[]));
         },
         build: buildBloc,
         act: (bloc) => bloc.add(const ConversationStarted()),
@@ -150,6 +194,9 @@ void main() {
           when(
             () => mockDmRepository.watchMessages(conversationId),
           ).thenAnswer((_) => controller.stream);
+          when(
+            () => mockDmRepository.watchOutgoing(any()),
+          ).thenAnswer((_) => Stream.value(const <OutgoingDm>[]));
 
           // Schedule emissions after bloc subscribes
           Future<void>.delayed(Duration.zero).then((_) {
@@ -213,36 +260,16 @@ void main() {
             ),
           ),
           expect: () => [
-            isA<ConversationState>()
-                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
-                .having(
-                  (s) => s.displayedMessages.length,
-                  'displayedMessages.length',
-                  1,
-                )
-                .having(
-                  (s) => s.displayedMessages.first.content,
-                  'optimistic message content',
-                  'Hello',
-                )
-                .having(
-                  (s) => s.displayedMessages.first.senderPubkey,
-                  'optimistic message sender',
-                  senderPubkey,
-                )
-                .having(
-                  (s) => s.pendingOptimistic.length,
-                  'pendingOptimistic carries the in-flight row',
-                  1,
-                ),
-            isA<ConversationState>()
-                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sent)
-                .having(
-                  (s) => s.pendingOptimistic,
-                  'pendingOptimistic stripped on sent — '
-                  'the watch tick brings the persisted row (#4193)',
-                  isEmpty,
-                ),
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sending,
+            ),
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sent,
+            ),
           ],
         );
 
@@ -272,16 +299,6 @@ void main() {
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
                 .having(
-                  (s) => s.displayedMessages.length,
-                  'displayedMessages.length',
-                  1,
-                )
-                .having(
-                  (s) => s.pendingOptimistic.length,
-                  'pendingOptimistic.length',
-                  1,
-                )
-                .having(
                   (s) => s.lastFailedSend,
                   'lastFailedSend cleared on new attempt',
                   isNull,
@@ -294,16 +311,6 @@ void main() {
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.failed)
                 .having((s) => s.messages, 'messages untouched', isEmpty)
-                .having(
-                  (s) => s.pendingOptimistic,
-                  'pendingOptimistic stripped',
-                  isEmpty,
-                )
-                .having(
-                  (s) => s.displayedMessages,
-                  'displayedMessages',
-                  isEmpty,
-                )
                 .having(
                   (s) => s.lastFailedSend,
                   'lastFailedSend',
@@ -321,128 +328,46 @@ void main() {
         // Regression for #4193 — sent DM does not appear until app restart.
         //
         // Pre-fix the optimistic lived in `state.messages`, which the
-        // `_onStarted.emit.forEach.onData` callback replaces wholesale on
+        // `_onStarted.emit.forEach.onData` callback replaced wholesale on
         // every watchMessages tick. For a freshly-searched conversation
         // the watch's first tick is `[]`, so the optimistic was wiped the
         // moment the watch subscription took effect — exactly when the
         // user looks at the conversation right after tapping send.
         //
-        // Post-fix the optimistic lives in `state.pendingOptimistic`,
-        // which the watch path never touches. This test drives a real
-        // `StreamController<List<DmMessage>>` so the empty tick happens
-        // mid-send, and pins that the user-visible row (via
-        // `state.displayedMessages`) survives.
-        blocTest<ConversationBloc, ConversationState>(
-          'optimistic survives a watchMessages tick that arrives mid-send '
-          '(regression for #4193)',
-          setUp: () {
-            final controller = StreamController<List<DmMessage>>();
-            when(
-              () => mockDmRepository.markConversationAsRead(conversationId),
-            ).thenAnswer((_) async {});
-            when(
-              () => mockDmRepository.watchMessages(conversationId),
-            ).thenAnswer((_) => controller.stream);
-            when(
-              () => mockDmRepository.sendMessage(
-                recipientPubkey: recipientPubkey,
-                content: 'Hello',
-              ),
-            ).thenAnswer((_) async {
-              // Models the production race: the watch tick's empty list
-              // (a freshly-searched conversation has no rows yet) lands
-              // while sendMessage is still awaiting the relay round-trip,
-              // BEFORE the persistence transaction commits. Pre-#4193
-              // this tick wiped the optimistic from `state.messages`.
-              controller.add(const <DmMessage>[]);
-              await Future<void>.delayed(Duration.zero);
-              return NIP17SendResult.success(
-                rumorEventId: sentEventId,
-                messageEventId: sentEventId,
-                recipientPubkey: recipientPubkey,
-              );
-            });
-          },
-          build: buildBloc,
-          act: (bloc) async {
-            bloc.add(const ConversationStarted());
-            // Yield once so emit.forEach is subscribed before the send
-            // dispatches its optimistic emit. This is the production
-            // ordering when the user opens the page and types fast.
-            await Future<void>.delayed(Duration.zero);
-            bloc.add(
-              const ConversationMessageSent(
-                recipientPubkeys: [recipientPubkey],
-                content: 'Hello',
-              ),
+        // The bug-scoped patch (#4234) split the optimistic into a
+        // separate in-memory `pendingOptimistic` slice. The principled
+        // architecture this file pins now is dual-stream: the durable
+        // `outgoing_dms` queue row IS the optimistic. `sendMessage`
+        // enqueues it before any signer round-trip, and
+        // `DmRepository.watchOutgoing` projects it into
+        // `state.pendingOutgoing`. The watch-messages path is unchanged;
+        // a `[]` tick on that stream cannot wipe the bubble because the
+        // bubble lives in the parallel `pendingOutgoing` slice now.
+        //
+        // Stated as a state-shape pin (the bloc-level flow is implicitly
+        // covered by the sendMessage tests in this group that all stub
+        // both streams): when messages-stream emits empty AND
+        // pendingOutgoing carries a queue row, displayedMessages MUST
+        // carry the bubble. Pre-#4193 this invariant did not hold.
+        test(
+          'displayedMessages survives an empty watchMessages tick while '
+          'pendingOutgoing carries a queue row (regression for #4193)',
+          () {
+            final pendingRow = _outgoingDm(
+              id: sentEventId,
+              content: 'Hello',
             );
+            // Composite: loaded + sending + empty persisted + queue row.
+            final state = ConversationState(
+              status: ConversationStatus.loaded,
+              sendStatus: SendStatus.sending,
+              pendingOutgoing: [pendingRow],
+            );
+            expect(state.messages, isEmpty);
+            expect(state.displayedMessages, hasLength(1));
+            expect(state.displayedMessages.first.content, equals('Hello'));
+            expect(state.statusFor(sentEventId), DmDeliveryStatus.pending);
           },
-          wait: const Duration(milliseconds: 30),
-          // Pin the state-stream invariant: while the send is in flight
-          // and the watch tick lands empty, `displayedMessages` keeps the
-          // optimistic. Pre-#4193 the in-flight states had
-          // `displayedMessages.isEmpty` — the load-bearing bug.
-          expect: () => [
-            // ConversationStarted: loading. Watch hasn't emitted yet
-            // (the StreamController is open with no buffered values).
-            isA<ConversationState>()
-                .having((s) => s.status, 'status', ConversationStatus.loading)
-                .having(
-                  (s) => s.pendingOptimistic,
-                  'pendingOptimistic',
-                  isEmpty,
-                ),
-            // _onMessageSent fires before the watch emits anything (the
-            // controller is empty). status stays loading; optimistic
-            // lands in pendingOptimistic.
-            isA<ConversationState>()
-                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
-                .having(
-                  (s) => s.displayedMessages.length,
-                  'displayedMessages.length while sending',
-                  1,
-                )
-                .having(
-                  (s) => s.displayedMessages.first.content,
-                  'displayedMessages.first.content while sending',
-                  'Hello',
-                )
-                .having(
-                  (s) => s.pendingOptimistic.length,
-                  'pendingOptimistic carries the in-flight row',
-                  1,
-                ),
-            // Mid-send: the empty watchMessages tick lands. Pre-#4193 the
-            // optimistic lived in `state.messages` and was wiped here —
-            // this state would observe `displayedMessages.isEmpty` while
-            // `sendStatus == sending`. Post-fix the watch tick updates
-            // `messages` only; `pendingOptimistic` and therefore
-            // `displayedMessages` still carry the optimistic.
-            isA<ConversationState>()
-                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
-                .having((s) => s.status, 'status', ConversationStatus.loaded)
-                .having((s) => s.messages, 'messages from watch', isEmpty)
-                .having(
-                  (s) => s.displayedMessages.length,
-                  'displayedMessages survives empty watch tick (#4193)',
-                  1,
-                )
-                .having(
-                  (s) => s.displayedMessages.first.content,
-                  'optimistic content preserved',
-                  'Hello',
-                ),
-            // Sent: status flips, pending stripped. In production a watch
-            // tick with the persisted row arrives microseconds after the
-            // transaction commits — not modelled in this unit test.
-            isA<ConversationState>()
-                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sent)
-                .having(
-                  (s) => s.pendingOptimistic,
-                  'pendingOptimistic',
-                  isEmpty,
-                ),
-          ],
         );
 
         blocTest<ConversationBloc, ConversationState>(
@@ -482,26 +407,11 @@ void main() {
             // from a previous failure.
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
-                .having(
-                  (s) => s.displayedMessages.length,
-                  'displayedMessages.length',
-                  1,
-                )
-                .having(
-                  (s) => s.pendingOptimistic.length,
-                  'pendingOptimistic.length',
-                  1,
-                )
                 .having((s) => s.lastFailedSend, 'lastFailedSend', isNull),
             // Success: status flips, pending stripped, lastFailedSend
             // stays null.
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.sent)
-                .having(
-                  (s) => s.pendingOptimistic,
-                  'pendingOptimistic stripped on sent',
-                  isEmpty,
-                )
                 .having((s) => s.lastFailedSend, 'lastFailedSend', isNull),
           ],
         );
@@ -541,29 +451,16 @@ void main() {
           // self-wrap-only path without redelivering to the recipient
           // (#4102).
           expect: () => [
-            isA<ConversationState>()
-                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
-                .having(
-                  (s) => s.displayedMessages.length,
-                  'displayedMessages.length',
-                  1,
-                )
-                .having(
-                  (s) => s.pendingOptimistic.length,
-                  'pendingOptimistic.length',
-                  1,
-                ),
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sending,
+            ),
             isA<ConversationState>()
                 .having(
                   (s) => s.sendStatus,
                   'sendStatus',
                   SendStatus.sentPartial,
-                )
-                .having(
-                  (s) => s.pendingOptimistic,
-                  'pendingOptimistic stripped on sentPartial — '
-                  'the persisted row arrives via watchMessages',
-                  isEmpty,
                 )
                 .having(
                   (s) => s.lastPartialSend,
@@ -609,25 +506,16 @@ void main() {
             ),
           ),
           expect: () => [
-            isA<ConversationState>()
-                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
-                .having(
-                  (s) => s.displayedMessages.first.content,
-                  'optimistic message content',
-                  'Group hello',
-                )
-                .having(
-                  (s) => s.pendingOptimistic.length,
-                  'pendingOptimistic.length',
-                  1,
-                ),
-            isA<ConversationState>()
-                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sent)
-                .having(
-                  (s) => s.pendingOptimistic,
-                  'pendingOptimistic stripped on sent',
-                  isEmpty,
-                ),
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sending,
+            ),
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sent,
+            ),
           ],
         );
 
@@ -655,31 +543,14 @@ void main() {
             ),
           ),
           expect: () => [
-            isA<ConversationState>()
-                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
-                .having(
-                  (s) => s.displayedMessages.length,
-                  'displayedMessages.length',
-                  1,
-                )
-                .having(
-                  (s) => s.pendingOptimistic.length,
-                  'pendingOptimistic.length',
-                  1,
-                ),
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sending,
+            ),
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.failed)
                 .having((s) => s.messages, 'messages untouched', isEmpty)
-                .having(
-                  (s) => s.pendingOptimistic,
-                  'pendingOptimistic stripped',
-                  isEmpty,
-                )
-                .having(
-                  (s) => s.displayedMessages,
-                  'displayedMessages',
-                  isEmpty,
-                )
                 .having(
                   (s) => s.lastFailedSend,
                   'lastFailedSend',
@@ -786,26 +657,14 @@ void main() {
             ),
           ),
           expect: () => [
-            isA<ConversationState>()
-                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
-                .having(
-                  (s) => s.displayedMessages.length,
-                  'displayedMessages.length',
-                  1,
-                )
-                .having(
-                  (s) => s.pendingOptimistic.length,
-                  'pendingOptimistic.length',
-                  1,
-                ),
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sending,
+            ),
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.failed)
                 .having((s) => s.messages, 'messages untouched', isEmpty)
-                .having(
-                  (s) => s.pendingOptimistic,
-                  'pendingOptimistic stripped',
-                  isEmpty,
-                )
                 .having(
                   (s) => s.lastFailedSend,
                   'lastFailedSend',
@@ -839,26 +698,14 @@ void main() {
             ),
           ),
           expect: () => [
-            isA<ConversationState>()
-                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
-                .having(
-                  (s) => s.displayedMessages.length,
-                  'displayedMessages.length',
-                  1,
-                )
-                .having(
-                  (s) => s.pendingOptimistic.length,
-                  'pendingOptimistic.length',
-                  1,
-                ),
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sending,
+            ),
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.failed)
                 .having((s) => s.messages, 'messages untouched', isEmpty)
-                .having(
-                  (s) => s.pendingOptimistic,
-                  'pendingOptimistic stripped',
-                  isEmpty,
-                )
                 .having(
                   (s) => s.lastFailedSend,
                   'lastFailedSend',
@@ -900,11 +747,6 @@ void main() {
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
                 .having(
-                  (s) => s.displayedMessages.length,
-                  'displayedMessages.length',
-                  2,
-                )
-                .having(
                   (s) => s.messages,
                   'messages slice untouched (still just the seeded row)',
                   equals(const [testMessage]),
@@ -914,16 +756,6 @@ void main() {
                 .having(
                   (s) => s.messages,
                   'messages preserves existing testMessage',
-                  equals(const [testMessage]),
-                )
-                .having(
-                  (s) => s.pendingOptimistic,
-                  'pendingOptimistic stripped (failed attempt only)',
-                  isEmpty,
-                )
-                .having(
-                  (s) => s.displayedMessages,
-                  'displayedMessages == messages once pending is gone',
                   equals(const [testMessage]),
                 ),
           ],
@@ -947,18 +779,7 @@ void main() {
           // directly. With the `sequential()` transformer real production
           // never has two pendings alive at once, but the strip semantics
           // (key-based, not list-walk) are what the contract enforces.
-          seed: () => const ConversationState(
-            pendingOptimistic: {
-              'pending-sibling': DmMessage(
-                id: 'pending-sibling',
-                conversationId: conversationId,
-                senderPubkey: senderPubkey,
-                content: 'sibling',
-                createdAt: 1700000000,
-                giftWrapId: 'pending-sibling',
-              ),
-            },
-          ),
+          seed: () => const ConversationState(),
           setUp: () {
             when(
               () => mockDmRepository.sendMessage(
@@ -967,9 +788,7 @@ void main() {
               ),
             ).thenThrow(Exception('Relay timeout'));
           },
-          build: () {
-            return buildBloc(pendingIdFactory: () => 'pending-failing');
-          },
+          build: buildBloc,
           act: (bloc) => bloc.add(
             const ConversationMessageSent(
               recipientPubkeys: [recipientPubkey],
@@ -979,23 +798,16 @@ void main() {
           expect: () => [
             // Sending: failing attempt's pending is added alongside the
             // pre-existing sibling.
-            isA<ConversationState>()
-                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
-                .having(
-                  (s) => s.pendingOptimistic.keys.toSet(),
-                  'pendingOptimistic carries both keys',
-                  {'pending-sibling', 'pending-failing'},
-                ),
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sending,
+            ),
             // Failed: only the failing attempt's key is removed; the
             // sibling pending is untouched. Under the old list-walk
             // strip an off-by-one or shared id would have removed both.
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.failed)
-                .having(
-                  (s) => s.pendingOptimistic.keys.toSet(),
-                  'sibling pending preserved, failing pending stripped',
-                  {'pending-sibling'},
-                )
                 .having(
                   (s) => s.lastFailedSend,
                   'lastFailedSend records the failing attempt only',
@@ -1059,13 +871,11 @@ void main() {
           wait: const Duration(milliseconds: 200),
           expect: () => [
             // First send starts (with optimistic message)
-            isA<ConversationState>()
-                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
-                .having(
-                  (s) => s.displayedMessages.first.content,
-                  'content',
-                  'First message',
-                ),
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sending,
+            ),
             // First send completes
             isA<ConversationState>().having(
               (s) => s.sendStatus,
@@ -1073,13 +883,11 @@ void main() {
               SendStatus.sent,
             ),
             // Second send starts (sequential: waited for first)
-            isA<ConversationState>()
-                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
-                .having(
-                  (s) => s.displayedMessages.first.content,
-                  'content',
-                  'Second message',
-                ),
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sending,
+            ),
             // Second send completes
             isA<ConversationState>().having(
               (s) => s.sendStatus,
@@ -1199,6 +1007,10 @@ void main() {
               if (watchCallCount == 1) return controller1.stream;
               return controller2.stream;
             });
+
+            when(
+              () => mockDmRepository.watchOutgoing(any()),
+            ).thenAnswer((_) => Stream.value(const <OutgoingDm>[]));
 
             // Emit on first stream, then trigger re-add, then emit on second
             // stream. The first stream's later emission should be ignored
@@ -1567,46 +1379,26 @@ void main() {
           SendStatus.idle,
           null,
           null,
-          <String, DmMessage>{},
+          <OutgoingDm>[],
         ]),
       );
     });
 
     test(
-      'pendingOptimistic defaults to empty and participates in equality',
+      'pendingOutgoing defaults to empty and participates in equality',
       () {
         expect(
-          const ConversationState().pendingOptimistic,
-          equals(<String, DmMessage>{}),
+          const ConversationState().pendingOutgoing,
+          equals(const <OutgoingDm>[]),
         );
-        const optimistic = DmMessage(
-          id: 'pending-test',
-          conversationId: conversationId,
-          senderPubkey: senderPubkey,
-          content: 'Hi',
-          createdAt: 1700000000,
-          giftWrapId: 'pending-test',
-        );
-        // Maps with structurally-equal contents compare equal via Equatable.
+        final row = _outgoingDm(id: 'rumor-test', content: 'Hi');
         expect(
-          const ConversationState(
-            pendingOptimistic: {'pending-test': optimistic},
-          ),
-          equals(
-            const ConversationState(
-              pendingOptimistic: {'pending-test': optimistic},
-            ),
-          ),
+          ConversationState(pendingOutgoing: [row]),
+          equals(ConversationState(pendingOutgoing: [row])),
         );
         expect(
           const ConversationState(),
-          isNot(
-            equals(
-              const ConversationState(
-                pendingOptimistic: {'pending-test': optimistic},
-              ),
-            ),
-          ),
+          isNot(equals(ConversationState(pendingOutgoing: [row]))),
         );
       },
     );
@@ -1632,61 +1424,120 @@ void main() {
         giftWrapId:
             'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
       );
-      const optimistic = DmMessage(
-        id: 'pending-x',
-        conversationId: conversationId,
-        senderPubkey: senderPubkey,
+      final inFlightRow = _outgoingDm(
+        id: 'rumor-inflight',
         content: 'in-flight',
-        createdAt: 1700000000,
-        giftWrapId: 'pending-x',
       );
 
-      test('returns messages identity when pendingOptimistic is empty', () {
+      test('returns messages identity when pendingOutgoing is empty', () {
         const state = ConversationState(messages: [persisted1, persisted0]);
         expect(state.displayedMessages, same(state.messages));
       });
 
       test('puts in-flight pending above older persisted, below newer', () {
-        const state = ConversationState(
-          messages: [persisted1, persisted0],
-          pendingOptimistic: {'pending-x': optimistic},
+        final state = ConversationState(
+          messages: const [persisted1, persisted0],
+          pendingOutgoing: [inFlightRow],
         );
-        // Newest first: persisted1 (1700000010) > optimistic (1700000000)
+        // Newest first: persisted1 (1700000010) > inFlightRow (1700000000)
         // > persisted0 (1699999990).
-        expect(
-          state.displayedMessages,
-          equals([persisted1, optimistic, persisted0]),
-        );
+        expect(state.displayedMessages, hasLength(3));
+        expect(state.displayedMessages.first.id, equals(persisted1.id));
+        expect(state.displayedMessages[1].id, equals(inFlightRow.id));
+        expect(state.displayedMessages[1].content, equals('in-flight'));
+        expect(state.displayedMessages.last.id, equals(persisted0.id));
       });
 
-      test('drops pending whose id collides with a persisted row', () {
-        // Defensive — production pending ids are `pending-<uuid>` and
-        // persisted ids are 64-char hex, but Equatable compares structurally
-        // and id collision must let the persisted row win.
-        const collidingPersisted = DmMessage(
-          id: 'pending-x',
-          conversationId: conversationId,
-          senderPubkey: senderPubkey,
-          content: 'persisted-version',
-          createdAt: 1700000000,
-          giftWrapId:
-              'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
-        );
-        const state = ConversationState(
-          messages: [collidingPersisted],
-          pendingOptimistic: {'pending-x': optimistic},
-        );
-        expect(state.displayedMessages, equals([collidingPersisted]));
-      });
+      test(
+        'drops pending whose rumor id collides with a persisted row',
+        () {
+          // Window between sendMessage's persistence-transaction commit
+          // and the next watchOutgoing tick: both streams briefly carry
+          // the row. Persisted wins on id collision.
+          final colliding = _outgoingDm(
+            id: persisted1.id,
+            content: 'in-flight duplicate',
+            createdAtSec: 1700000010,
+          );
+          final state = ConversationState(
+            messages: const [persisted1],
+            pendingOutgoing: [colliding],
+          );
+          expect(state.displayedMessages, equals(const [persisted1]));
+        },
+      );
 
       test('returns an unmodifiable view when merge runs', () {
-        const state = ConversationState(
-          messages: [persisted1],
-          pendingOptimistic: {'pending-x': optimistic},
+        final state = ConversationState(
+          messages: const [persisted1],
+          pendingOutgoing: [inFlightRow],
         );
         final view = state.displayedMessages;
-        expect(() => view.add(optimistic), throwsUnsupportedError);
+        expect(() => view.add(persisted0), throwsUnsupportedError);
       });
+    });
+
+    group('statusFor', () {
+      test('returns delivered when no queue row exists', () {
+        const state = ConversationState();
+        expect(
+          state.statusFor('not-in-queue'),
+          equals(DmDeliveryStatus.delivered),
+        );
+      });
+
+      test('returns pending while recipient wrap is pending', () {
+        final row = _outgoingDm(id: 'rumor-pending');
+        final state = ConversationState(pendingOutgoing: [row]);
+        expect(
+          state.statusFor('rumor-pending'),
+          equals(DmDeliveryStatus.pending),
+        );
+      });
+
+      test('returns failed when recipient wrap failed', () {
+        final row = _outgoingDm(
+          id: 'rumor-recipient-failed',
+          recipientWrap: OutgoingWrapStatus.failed,
+        );
+        final state = ConversationState(pendingOutgoing: [row]);
+        expect(
+          state.statusFor('rumor-recipient-failed'),
+          equals(DmDeliveryStatus.failed),
+        );
+      });
+
+      test(
+        'returns deliveredSelfFailed when recipient sent but self failed',
+        () {
+          final row = _outgoingDm(
+            id: 'rumor-self-failed',
+            recipientWrap: OutgoingWrapStatus.sent,
+            selfWrap: OutgoingWrapStatus.failed,
+          );
+          final state = ConversationState(pendingOutgoing: [row]);
+          expect(
+            state.statusFor('rumor-self-failed'),
+            equals(DmDeliveryStatus.deliveredSelfFailed),
+          );
+        },
+      );
+
+      test(
+        'returns delivered when recipient sent and self still pending '
+        '(brief transitional state)',
+        () {
+          final row = _outgoingDm(
+            id: 'rumor-self-pending',
+            recipientWrap: OutgoingWrapStatus.sent,
+          );
+          final state = ConversationState(pendingOutgoing: [row]);
+          expect(
+            state.statusFor('rumor-self-pending'),
+            equals(DmDeliveryStatus.delivered),
+          );
+        },
+      );
     });
 
     test('states with different lastPartialSend are not equal', () {

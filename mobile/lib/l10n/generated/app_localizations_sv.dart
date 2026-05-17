@@ -5431,6 +5431,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dmMessageActionReport => 'Report';
 
   @override
+  String get dmStatusPending => 'Skickar';
+
+  @override
+  String get dmStatusFailed => 'Kunde inte skicka';
+
+  @override
+  String get dmStatusDeliveredSelfFailed =>
+      'Levererat. Synkas inte till dina andra enheter.';
+
+  @override
   String get inboxConversationActionsSheetLabel => 'Conversation actions';
 
   @override

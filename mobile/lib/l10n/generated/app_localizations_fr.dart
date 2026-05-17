@@ -5503,6 +5503,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dmMessageActionReport => 'Report';
 
   @override
+  String get dmStatusPending => 'Envoi';
+
+  @override
+  String get dmStatusFailed => 'Échec de l’envoi';
+
+  @override
+  String get dmStatusDeliveredSelfFailed =>
+      'Livré. Ne se synchronisera pas avec tes autres appareils.';
+
+  @override
   String get inboxConversationActionsSheetLabel => 'Conversation actions';
 
   @override

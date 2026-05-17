@@ -2171,6 +2171,48 @@ void main() {
       });
     });
 
+    group('watchOutgoing', () {
+      test('delegates to $OutgoingDmsDao when wired', () async {
+        const convId = 'outgoing-conv-id';
+        final mockOutgoingDao = _MockOutgoingDmsDao();
+        final row = OutgoingDm(
+          id: 'rumor-1',
+          conversationId: convId,
+          recipientPubkey: _validPubkeyB,
+          content: 'in-flight',
+          createdAt: 1700000000,
+          rumorEventJson: '{}',
+          recipientWrapStatus: OutgoingWrapStatus.pending,
+          selfWrapStatus: OutgoingWrapStatus.pending,
+          queuedAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+          ownerPubkey: _validPubkeyA,
+        );
+        when(
+          () => mockOutgoingDao.watchForConversation(
+            conversationId: convId,
+            ownerPubkey: _validPubkeyA,
+          ),
+        ).thenAnswer((_) => Stream.value([row]));
+
+        final repository = createRepository(outgoingDmsDao: mockOutgoingDao);
+        final emitted = await repository.watchOutgoing(convId).first;
+
+        expect(emitted, equals([row]));
+        verify(
+          () => mockOutgoingDao.watchForConversation(
+            conversationId: convId,
+            ownerPubkey: _validPubkeyA,
+          ),
+        ).called(1);
+      });
+
+      test('emits an empty list when no OutgoingDmsDao is wired', () async {
+        final repository = createRepository();
+        final emitted = await repository.watchOutgoing('any-conv').first;
+        expect(emitted, isEmpty);
+      });
+    });
+
     group('markConversationAsRead', () {
       test('delegates to $ConversationsDao', () async {
         const convId = 'some-conversation-id';

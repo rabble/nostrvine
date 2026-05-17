@@ -5454,6 +5454,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dmMessageActionReport => 'Report';
 
   @override
+  String get dmStatusPending => 'Versturen';
+
+  @override
+  String get dmStatusFailed => 'Versturen mislukt';
+
+  @override
+  String get dmStatusDeliveredSelfFailed =>
+      'Bezorgd. Wordt niet gesynchroniseerd met je andere apparaten.';
+
+  @override
   String get inboxConversationActionsSheetLabel => 'Conversation actions';
 
   @override

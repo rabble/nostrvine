@@ -5207,6 +5207,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get dmMessageActionReport => 'Report';
 
   @override
+  String get dmStatusPending => '送信中';
+
+  @override
+  String get dmStatusFailed => '送信できなかった';
+
+  @override
+  String get dmStatusDeliveredSelfFailed => '配信済み。ほかのデバイスには同期されない。';
+
+  @override
   String get inboxConversationActionsSheetLabel => 'Conversation actions';
 
   @override

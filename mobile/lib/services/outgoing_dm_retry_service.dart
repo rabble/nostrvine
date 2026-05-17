@@ -58,12 +58,21 @@ class OutgoingDmRetryConfig {
 /// only on a real publish failure so transient repo-not-ready states
 /// don't burn the retry budget.
 ///
-/// **Scope today:** `recipient: sent / self: failed` rows dispatch to
-/// [DmRepository.recoverSelfWrap]; `recipient: failed` rows dispatch
-/// to [DmRepository.recoverFullSend]. App-killed `pending: pending`
-/// rows are not in this filter (see
-/// [OutgoingDmsDao.getStillPendingForOwner]) and remain the concern of
-/// a separate interrupted-send recovery path.
+/// **Scope:** three sweep arms run on each foreground transition:
+///
+/// 1. `recipient: sent / self: failed` → [DmRepository.recoverSelfWrap]
+///    (the canonical partial-delivery recovery from #4124).
+/// 2. `recipient: failed` → [DmRepository.recoverFullSend] (replays both
+///    wraps; rumor.id is stable across retries so NIP-17 receiver dedup
+///    drops the duplicate copy if the original publish actually landed).
+/// 3. Either wrap still `pending` and the row queuedAt is older than the
+///    interrupted-send threshold → [DmRepository.recoverFullSend]. This
+///    catches app-killed mid-send rows surfaced by
+///    [OutgoingDmsDao.getStillPendingForOwner] — the case that fulfills
+///    epic #3912's "outgoing DM survives the app being killed mid-send"
+///    acceptance criterion. The min-age guard avoids racing with a
+///    `sendMessage` still in flight in the same process; idempotency at
+///    the receiver makes the race safe even if the guard fires false.
 class OutgoingDmRetryService {
   OutgoingDmRetryService({
     required DmRepository dmRepository,
@@ -145,7 +154,6 @@ class OutgoingDmRetryService {
         ownerPubkey: _userPubkey,
         maxRetries: _retryConfig.maxRetries,
       );
-      if (retryable.isEmpty) return;
 
       var processedSelfWrap = 0;
       var failedSelfWrap = 0;
@@ -293,13 +301,104 @@ class OutgoingDmRetryService {
         }
       }
 
+      // Interrupted-send arm: pending rows older than the min-age guard
+      // are app-killed mid-send. The user perceives the bubble as
+      // never-delivered; the relay may or may not have accepted the
+      // original wire copy. recoverFullSend re-wraps the SAME rumor
+      // (preserving rumor.id), so NIP-17 receiver dedup collapses
+      // duplicates if both wire copies eventually land.
+      var processedInterrupted = 0;
+      var failedInterrupted = 0;
+      var skippedInterruptedTooYoung = 0;
+      if (!abortedNotReady) {
+        final processedIds = retryable.map((r) => r.id).toSet();
+        final pending = await _dao.getStillPendingForOwner(_userPubkey);
+        for (final row in pending) {
+          // Skip rows already dispatched by the failed-status arm above
+          // (a row with recipient=pending + self=failed appears in both
+          // filters; the failed arm owns the dispatch).
+          if (processedIds.contains(row.id)) continue;
+
+          // Min-age guard: if the row was just enqueued, the originating
+          // sendMessage call may still be in flight in this process. Wait
+          // for at least the initial-delay window before treating the row
+          // as interrupted. Idempotent receiver dedup makes this purely
+          // a politeness — false negatives mean a one-cycle delay, not
+          // data loss.
+          final age = _now().difference(row.queuedAt);
+          if (age < _retryConfig.initialDelay) {
+            skippedInterruptedTooYoung++;
+            continue;
+          }
+
+          // Per-row backoff: same gate as the other arms.
+          final lastAttempt = row.lastAttemptAt;
+          if (lastAttempt != null) {
+            final gap = _now().difference(lastAttempt);
+            final required = _retryConfig.backoffFor(row.retryCount);
+            if (gap < required) {
+              skippedBackoff++;
+              continue;
+            }
+          }
+
+          try {
+            final result = await _dmRepository.recoverFullSend(
+              rumorId: row.id,
+            );
+            if (result.success) {
+              processedInterrupted++;
+            } else {
+              await _dao.incrementRetry(row.id);
+              failedInterrupted++;
+            }
+          } on Object catch (e, stackTrace) {
+            if (e is StateError) {
+              Log.warning(
+                'repo not ready during interrupted-send sweep; aborting: $e',
+                name: 'OutgoingDmRetryService',
+                category: LogCategory.system,
+              );
+              abortedNotReady = true;
+              break;
+            } else if (e is ArgumentError) {
+              Log.warning(
+                'skipping interrupted row ${row.id}: $e',
+                name: 'OutgoingDmRetryService',
+                category: LogCategory.system,
+              );
+            } else {
+              await _dao.incrementRetry(row.id);
+              Log.error(
+                'recoverFullSend threw for interrupted ${row.id}: $e',
+                name: 'OutgoingDmRetryService',
+                category: LogCategory.system,
+                error: e,
+                stackTrace: stackTrace,
+              );
+              unawaited(
+                _crashReporting.recordError(
+                  e,
+                  stackTrace,
+                  reason: OutgoingDmRetryServiceReportableSites
+                      .perRowUnexpectedThrow,
+                ),
+              );
+            }
+          }
+        }
+      }
+
       Log.info(
         'sweep complete: '
         'self-wrap-recovered=$processedSelfWrap '
         'self-wrap-failed=$failedSelfWrap '
         'full-send-recovered=$processedFullSend '
         'full-send-failed=$failedFullSend '
+        'interrupted-recovered=$processedInterrupted '
+        'interrupted-failed=$failedInterrupted '
         'skipped-backoff=$skippedBackoff '
+        'skipped-interrupted-too-young=$skippedInterruptedTooYoung '
         'aborted-not-ready=$abortedNotReady',
         name: 'OutgoingDmRetryService',
         category: LogCategory.system,

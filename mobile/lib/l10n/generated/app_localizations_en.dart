@@ -5432,6 +5432,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dmMessageActionReport => 'Report';
 
   @override
+  String get dmStatusPending => 'Sending';
+
+  @override
+  String get dmStatusFailed => 'Failed to send';
+
+  @override
+  String get dmStatusDeliveredSelfFailed =>
+      'Delivered. Won\'t sync to your other devices.';
+
+  @override
   String get inboxConversationActionsSheetLabel => 'Conversation actions';
 
   @override

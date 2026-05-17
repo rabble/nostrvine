@@ -5406,6 +5406,16 @@ class AppLocalizationsId extends AppLocalizations {
   String get dmMessageActionReport => 'Report';
 
   @override
+  String get dmStatusPending => 'Mengirim';
+
+  @override
+  String get dmStatusFailed => 'Gagal mengirim';
+
+  @override
+  String get dmStatusDeliveredSelfFailed =>
+      'Terkirim. Tidak akan tersinkron ke perangkat lainmu.';
+
+  @override
   String get inboxConversationActionsSheetLabel => 'Conversation actions';
 
   @override

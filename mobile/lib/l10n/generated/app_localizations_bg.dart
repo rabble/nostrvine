@@ -5484,6 +5484,16 @@ class AppLocalizationsBg extends AppLocalizations {
   String get dmMessageActionReport => 'Report';
 
   @override
+  String get dmStatusPending => 'Изпращаме';
+
+  @override
+  String get dmStatusFailed => 'Изпращането не успя';
+
+  @override
+  String get dmStatusDeliveredSelfFailed =>
+      'Доставено. Няма да се синхронизира с другите ти устройства.';
+
+  @override
   String get inboxConversationActionsSheetLabel => 'Conversation actions';
 
   @override

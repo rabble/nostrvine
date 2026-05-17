@@ -411,7 +411,7 @@ class _MessageList extends StatelessWidget {
             index == 0 ||
             messages[index - 1].senderPubkey != message.senderPubkey;
 
-        return MessageBubble(
+        MessageBubble buildBubble(DmDeliveryStatus status) => MessageBubble(
           message: message.content,
           timestamp: LocalizedTimeFormatter.formatMessageTime(
             context.l10n,
@@ -423,6 +423,22 @@ class _MessageList extends StatelessWidget {
           isFirstInGroup: isFirstInGroup,
           isLastInGroup: isLastInGroup,
           onLongPress: () => _onMessageLongPress(context, message, isSent),
+          deliveryStatus: status,
+        );
+
+        // Per-row BlocSelector scopes rebuilds to just the indicator's
+        // status — the bubble body stays cached across watchOutgoing
+        // ticks affecting other rows. Received bubbles never read the
+        // outgoing queue, so they bypass the selector and short-circuit
+        // to `delivered`.
+        if (!isSent) return buildBubble(DmDeliveryStatus.delivered);
+        return BlocSelector<
+          ConversationBloc,
+          ConversationState,
+          DmDeliveryStatus
+        >(
+          selector: (state) => state.statusFor(message.id),
+          builder: (_, status) => buildBubble(status),
         );
       },
     );

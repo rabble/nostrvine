@@ -2,6 +2,7 @@
 // ABOUTME: route constants. Ensures ConversationPage provides ConversationBloc
 // ABOUTME: to ConversationView via BlocProvider.
 
+import 'package:db_client/db_client.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -39,6 +40,9 @@ void main() {
       when(
         () => mockDmRepository.watchMessages(any()),
       ).thenAnswer((_) => Stream.value(const []));
+      when(
+        () => mockDmRepository.watchOutgoing(any()),
+      ).thenAnswer((_) => Stream.value(const <OutgoingDm>[]));
 
       when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPubkey);
       when(() => mockAuthService.isAuthenticated).thenReturn(true);

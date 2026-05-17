@@ -12,6 +12,7 @@
 // `_userPubkey` for the lifetime of the bloc, reproducing the
 // "looks sent, then disappeared" bug.
 
+import 'package:db_client/db_client.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -79,6 +80,9 @@ void main() {
         when(
           () => repo.watchMessages(any()),
         ).thenAnswer((_) => const Stream<List<DmMessage>>.empty());
+        when(
+          () => repo.watchOutgoing(any()),
+        ).thenAnswer((_) => Stream.value(const <OutgoingDm>[]));
       }
 
       when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPubkey);
@@ -293,6 +297,9 @@ void main() {
       when(
         () => mockDmRepository.watchMessages(any()),
       ).thenAnswer((_) => const Stream<List<DmMessage>>.empty());
+      when(
+        () => mockDmRepository.watchOutgoing(any()),
+      ).thenAnswer((_) => Stream.value(const <OutgoingDm>[]));
 
       when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPubkey);
       when(() => mockAuthService.isAuthenticated).thenReturn(true);

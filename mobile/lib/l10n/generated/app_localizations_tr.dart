@@ -5412,6 +5412,16 @@ class AppLocalizationsTr extends AppLocalizations {
   String get dmMessageActionReport => 'Report';
 
   @override
+  String get dmStatusPending => 'Gönderiliyor';
+
+  @override
+  String get dmStatusFailed => 'Gönderilemedi';
+
+  @override
+  String get dmStatusDeliveredSelfFailed =>
+      'Teslim edildi. Diğer cihazlarınla eşitlenmeyecek.';
+
+  @override
   String get inboxConversationActionsSheetLabel => 'Conversation actions';
 
   @override

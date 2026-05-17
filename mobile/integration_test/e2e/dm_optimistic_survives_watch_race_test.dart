@@ -196,7 +196,7 @@ void main() {
               'Bubble must be visible across the send window (regression '
               'for #4193 — pre-fix the empty initial watchMessages tick '
               'would have wiped it before sendMessage committed the '
-              'persisted row). pendingOptimistic vs persisted ownership '
+              'persisted row). pendingOutgoing vs persisted ownership '
               'is asserted in Phase 6 once status is deterministic.',
         );
         expect(
@@ -228,9 +228,12 @@ void main() {
           reason: 'sendStatus should reach sent within 15s',
         );
         expect(
-          bloc.state.pendingOptimistic,
+          bloc.state.pendingOutgoing,
           isEmpty,
-          reason: 'pending key must be stripped on success',
+          reason:
+              'queue row must be deleted on full delivery — '
+              'watchOutgoing tick should remove the row in the same '
+              'transaction that inserts the persisted message',
         );
         expect(
           bloc.state.messages,

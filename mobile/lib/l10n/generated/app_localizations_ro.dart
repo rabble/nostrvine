@@ -5579,6 +5579,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dmMessageActionReport => 'Report';
 
   @override
+  String get dmStatusPending => 'Se trimite';
+
+  @override
+  String get dmStatusFailed => 'N-am putut trimite';
+
+  @override
+  String get dmStatusDeliveredSelfFailed =>
+      'Livrat. Nu se va sincroniza cu celelalte dispozitive.';
+
+  @override
   String get inboxConversationActionsSheetLabel => 'Conversation actions';
 
   @override

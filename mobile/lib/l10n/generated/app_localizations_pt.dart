@@ -5464,6 +5464,16 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dmMessageActionReport => 'Report';
 
   @override
+  String get dmStatusPending => 'Enviando';
+
+  @override
+  String get dmStatusFailed => 'Falha ao enviar';
+
+  @override
+  String get dmStatusDeliveredSelfFailed =>
+      'Entregue. Não será sincronizado com seus outros dispositivos.';
+
+  @override
   String get inboxConversationActionsSheetLabel => 'Conversation actions';
 
   @override

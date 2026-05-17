@@ -6,26 +6,36 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:db_client/db_client.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:equatable/equatable.dart';
-import 'package:meta/meta.dart';
 import 'package:models/models.dart';
 import 'package:openvine/observability/reportable_error.dart';
-import 'package:uuid/uuid.dart';
+import 'package:rxdart/rxdart.dart';
 
 part 'conversation_event.dart';
 part 'conversation_state.dart';
+
+/// Tuple emitted by the dual-stream subscription in [_onStarted]. Carries
+/// both reactive slices through a single [emit.forEach] so the
+/// `restartable()` transformer keeps lifecycle handling identical to the
+/// previous single-stream shape.
+class _ConversationTick extends Equatable {
+  const _ConversationTick(this.messages, this.pendingOutgoing);
+
+  final List<DmMessage> messages;
+  final List<OutgoingDm> pendingOutgoing;
+
+  @override
+  List<Object?> get props => [messages, pendingOutgoing];
+}
 
 class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
   ConversationBloc({
     required DmRepository dmRepository,
     required String conversationId,
-    required String currentUserPubkey,
-    @visibleForTesting String Function()? pendingIdFactory,
   }) : _dmRepository = dmRepository,
        _conversationId = conversationId,
-       _currentUserPubkey = currentUserPubkey,
-       _pendingIdFactory = pendingIdFactory ?? _defaultPendingIdFactory,
        super(const ConversationState()) {
     on<ConversationStarted>(_onStarted, transformer: restartable());
     on<ConversationMessageSent>(_onMessageSent, transformer: sequential());
@@ -38,11 +48,6 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
 
   final DmRepository _dmRepository;
   final String _conversationId;
-  final String _currentUserPubkey;
-  final String Function() _pendingIdFactory;
-
-  static const _uuid = Uuid();
-  static String _defaultPendingIdFactory() => 'pending-${_uuid.v4()}';
 
   Future<void> _onStarted(
     ConversationStarted event,
@@ -53,16 +58,31 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     // Mark as read when opening
     await _dmRepository.markConversationAsRead(_conversationId);
 
+    // Dual-stream projection (#3909). `watchMessages` carries persisted
+    // truth; `watchOutgoing` carries the durable in-flight queue. The
+    // repository's `sendMessage` enqueues a queue row before any signer
+    // round-trip, so the in-flight bubble survives both the watch-stream
+    // race that #4193 patched AND an app kill mid-send (the latter is
+    // the epic #3912 acceptance criterion the previous in-memory slice
+    // could not meet).
+    final ticks =
+        Rx.combineLatest2<List<DmMessage>, List<OutgoingDm>, _ConversationTick>(
+          _dmRepository.watchMessages(_conversationId),
+          _dmRepository.watchOutgoing(_conversationId),
+          _ConversationTick.new,
+        );
+
     await emit.forEach(
-      _dmRepository.watchMessages(_conversationId),
-      onData: (messages) {
+      ticks,
+      onData: (tick) {
         // Mark as read whenever new messages arrive while the user is
         // viewing this conversation. This ensures incoming messages are
         // immediately marked as read rather than only on initial open.
         unawaited(_dmRepository.markConversationAsRead(_conversationId));
         return state.copyWith(
           status: ConversationStatus.loaded,
-          messages: messages,
+          messages: tick.messages,
+          pendingOutgoing: tick.pendingOutgoing,
         );
       },
       onError: (error, stackTrace) {
@@ -89,45 +109,16 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     ConversationMessageSent event,
     Emitter<ConversationState> emit,
   ) async {
-    // Optimistic insert lives in [state.pendingOptimistic], not
-    // [state.messages]. Keeping the two slices disjoint is what fixes
-    // #4193: the watchMessages stream's `onData` replaces `state.messages`
-    // verbatim on every tick, and on a freshly-searched conversation the
-    // first tick is `[]` — which previously wiped the optimistic before
-    // `sendMessage`'s persistence transaction had a chance to commit.
-    // The UI reads [state.displayedMessages], which merges the two on the
-    // way to the bubble list.
-    //
-    // On success / sentPartial: strip the pending key — the watch tick
-    // that brings the persisted row will land moments later, and
-    // displayedMessages already prefers the persisted version when the
-    // ids collide.
-    //
-    // On failure: strip the pending key — no DB write happened, so the
-    // watch stream cannot do it for us.
-    //
-    // [pendingId] must be unique per attempt. Strip-by-key fails closed:
-    // two coincident pending rows that shared an id would interfere with
-    // each other, so a UUID is mandatory (second-resolution timestamps
-    // collide on rapid sends).
-    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    final pendingId = _pendingIdFactory();
-    final optimisticMessage = DmMessage(
-      id: pendingId,
-      conversationId: _conversationId,
-      senderPubkey: _currentUserPubkey,
-      content: event.content,
-      createdAt: now,
-      giftWrapId: pendingId,
-    );
-
+    // The in-flight bubble lives in `state.pendingOutgoing`, sourced
+    // from `DmRepository.watchOutgoing`. `sendMessage` enqueues the row
+    // before any signer round-trip, so the watch tick that carries the
+    // optimistic lands within microseconds of dispatch — without any
+    // bloc-side in-memory tracking. This handler is responsible only
+    // for transient `sendStatus` transitions and the SnackBar
+    // affordance state (`lastFailedSend` / `lastPartialSend`).
     emit(
       state.copyWith(
         sendStatus: SendStatus.sending,
-        pendingOptimistic: {
-          ...state.pendingOptimistic,
-          pendingId: optimisticMessage,
-        },
         clearLastFailedSend: true,
         clearLastPartialSend: true,
       ),
@@ -139,10 +130,9 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       // reach relays. The sender's other devices will not see this
       // message on relay-only restore. Surface as a distinct status so
       // the UI can offer a self-wrap-only retry without re-delivering
-      // to the recipient (the message *was* sent — the persisted row
-      // shows up via the watch stream). [lastPartialSend.rumorIds]
-      // carries the per-recipient rumor ids whose self-wrap publish
-      // failed, so retrying republishes only those self-wraps via
+      // to the recipient. [lastPartialSend.rumorIds] carries the
+      // per-recipient rumor ids whose self-wrap publish failed, so
+      // retrying republishes only those self-wraps via
       // [recoverSelfWrap].
       final partialRumorIds = <String>[];
       if (event.recipientPubkeys.length == 1) {
@@ -175,29 +165,21 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           }
         }
       }
-      final stripped = Map.of(state.pendingOptimistic)..remove(pendingId);
       if (partialRumorIds.isNotEmpty) {
         emit(
           state.copyWith(
             sendStatus: SendStatus.sentPartial,
             lastPartialSend: PartialSend(rumorIds: partialRumorIds),
-            pendingOptimistic: stripped,
           ),
         );
         return;
       }
-      emit(
-        state.copyWith(
-          sendStatus: SendStatus.sent,
-          pendingOptimistic: stripped,
-        ),
-      );
+      emit(state.copyWith(sendStatus: SendStatus.sent));
     } catch (e, stackTrace) {
       addError(e, stackTrace);
       emit(
         state.copyWith(
           sendStatus: SendStatus.failed,
-          pendingOptimistic: Map.of(state.pendingOptimistic)..remove(pendingId),
           lastFailedSend: FailedSend(
             content: event.content,
             recipientPubkeys: event.recipientPubkeys,
@@ -205,6 +187,11 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         ),
       );
     }
+    // Note: the in-flight queue row remains in `state.pendingOutgoing`
+    // on failure/partial. The retry service (`OutgoingDmRetryService`)
+    // sweeps it independently. The user-facing SnackBar still offers
+    // a manual retry for fast-fail (`lastFailedSend`) and self-wrap
+    // recovery (`lastPartialSend`) — same UX as #3908.
   }
 
   Future<void> _onSelfWrapRecoveryRequested(

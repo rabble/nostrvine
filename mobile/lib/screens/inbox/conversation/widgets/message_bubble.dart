@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide AspectRatio, LogCategory;
+import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -60,6 +61,7 @@ class MessageBubble extends StatelessWidget {
     this.isFirstInGroup = true,
     this.isLastInGroup = true,
     this.onLongPress,
+    this.deliveryStatus = DmDeliveryStatus.delivered,
     super.key,
   });
 
@@ -77,6 +79,12 @@ class MessageBubble extends StatelessWidget {
 
   /// Called when the user long-presses the bubble.
   final VoidCallback? onLongPress;
+
+  /// Per-bubble delivery state. Only rendered for sent messages; received
+  /// bubbles ignore it. Defaults to [DmDeliveryStatus.delivered] so test
+  /// fixtures and call sites that don't track outgoing-queue state work
+  /// without churn.
+  final DmDeliveryStatus deliveryStatus;
 
   @override
   Widget build(BuildContext context) {
@@ -218,6 +226,11 @@ class MessageBubble extends StatelessWidget {
                       ),
                   ] else
                     _MessageText(message: safeMessage, isSent: isSent),
+                  if (isSent && deliveryStatus != DmDeliveryStatus.delivered)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: _DeliveryStatusIndicator(status: deliveryStatus),
+                    ),
                 ],
               ),
             ),
@@ -510,6 +523,50 @@ class _VideoCard extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Small trailing icon at the bottom of a sent bubble that surfaces
+/// the row's outgoing-queue status. Rendered only when the row is in a
+/// non-delivered state — a fully delivered bubble shows no indicator
+/// to keep the chat-typical visual rhythm.
+class _DeliveryStatusIndicator extends StatelessWidget {
+  const _DeliveryStatusIndicator({required this.status});
+
+  final DmDeliveryStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final (icon, color, label) = switch (status) {
+      DmDeliveryStatus.pending => (
+        Icons.access_time,
+        VineTheme.whiteText.withValues(alpha: 0.7),
+        context.l10n.dmStatusPending,
+      ),
+      DmDeliveryStatus.deliveredSelfFailed => (
+        Icons.warning_amber_rounded,
+        VineTheme.warning,
+        context.l10n.dmStatusDeliveredSelfFailed,
+      ),
+      DmDeliveryStatus.failed => (
+        Icons.error_outline,
+        VineTheme.error,
+        context.l10n.dmStatusFailed,
+      ),
+      // Filtered out at the bubble level — included for exhaustiveness.
+      DmDeliveryStatus.delivered => (
+        Icons.check,
+        VineTheme.whiteText.withValues(alpha: 0.7),
+        '',
+      ),
+    };
+    return Semantics(
+      label: label,
+      child: Tooltip(
+        message: label,
+        child: Icon(icon, size: 14, color: color),
       ),
     );
   }

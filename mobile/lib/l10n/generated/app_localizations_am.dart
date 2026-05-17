@@ -5321,6 +5321,15 @@ class AppLocalizationsAm extends AppLocalizations {
   String get dmMessageActionReport => 'Report';
 
   @override
+  String get dmStatusPending => 'በመላክ ላይ';
+
+  @override
+  String get dmStatusFailed => 'መላክ አልተሳካም';
+
+  @override
+  String get dmStatusDeliveredSelfFailed => 'ተልኳል። ወደ ሌሎች መሣሪያዎችህ አይመሳሰልም።';
+
+  @override
   String get inboxConversationActionsSheetLabel => 'Conversation actions';
 
   @override

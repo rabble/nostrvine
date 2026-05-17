@@ -5500,6 +5500,16 @@ class AppLocalizationsFil extends AppLocalizations {
   String get dmMessageActionReport => 'Report';
 
   @override
+  String get dmStatusPending => 'Nagpapadala';
+
+  @override
+  String get dmStatusFailed => 'Nabigong ipadala';
+
+  @override
+  String get dmStatusDeliveredSelfFailed =>
+      'Naipadala. Hindi mag-sync sa iba mong device.';
+
+  @override
   String get inboxConversationActionsSheetLabel => 'Conversation actions';
 
   @override

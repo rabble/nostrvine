@@ -12,6 +12,33 @@ enum ConversationStatus { initial, loading, loaded, error }
 /// Distinct from [sent] (full success) and [failed] (recipient never got it).
 enum SendStatus { idle, sending, sent, sentPartial, failed }
 
+/// Per-bubble delivery status, derived from the durable `outgoing_dms`
+/// queue row (when present) merged with the persisted `direct_messages`
+/// row (when present).
+///
+/// Bubbles flow through this enum: [pending] → [delivered] on full
+/// success, [pending] → [deliveredSelfFailed] on a partial delivery,
+/// [pending] → [failed] on a recipient-side publish failure. Persisted
+/// rows with no queue row remaining are always [delivered].
+enum DmDeliveryStatus {
+  /// Neither wrap has landed yet. Clock indicator.
+  pending,
+
+  /// Both wraps landed, or the row is persisted with no queue row
+  /// remaining (the repository deletes the queue row in the same
+  /// transaction that inserts the persisted message).
+  delivered,
+
+  /// Recipient gift wrap landed, self-addressed gift wrap did not.
+  /// The recipient sees the message; the sender's other devices will
+  /// not on relay-only restore. Warning indicator.
+  deliveredSelfFailed,
+
+  /// Recipient gift wrap failed. The retry service will replay; the
+  /// user can also tap to retry. Error indicator.
+  failed,
+}
+
 /// Snapshot of the most recent send attempt that did not reach the relay.
 ///
 /// Carried in [ConversationState] so the UI can offer a full-resend retry
@@ -63,7 +90,7 @@ class ConversationState extends Equatable {
     this.sendStatus = SendStatus.idle,
     this.lastFailedSend,
     this.lastPartialSend,
-    this.pendingOptimistic = const <String, DmMessage>{},
+    this.pendingOutgoing = const <OutgoingDm>[],
   });
 
   final ConversationStatus status;
@@ -91,35 +118,71 @@ class ConversationState extends Equatable {
   /// never re-delivered to.
   final PartialSend? lastPartialSend;
 
-  /// In-flight optimistic rows keyed by `pendingId`. Lives outside
-  /// [messages] so a watch-stream tick that fires between the optimistic
-  /// emit and `sendMessage`'s persistence transaction commit cannot wipe
-  /// the bubble (#4193). Stripped on the success / sentPartial / failed
-  /// transition for the matching `pendingId`.
-  final Map<String, DmMessage> pendingOptimistic;
-
-  /// Merged user-visible message list: in-flight optimistic rows on top
-  /// of persisted ones from [messages], sorted newest first.
+  /// Durable in-flight queue rows for this conversation, projected from
+  /// `DmRepository.watchOutgoing`. Replaces the in-memory
+  /// `pendingOptimistic` slice from #4193 — the queue row IS the
+  /// optimistic now, durable across app kill, and the repository
+  /// enqueues it before any signer round-trip so the first watch tick
+  /// fires within microseconds of dispatch.
   ///
-  /// Returns [messages] unchanged when there are no in-flight optimistics
-  /// (the hot path — every conversation that isn't actively mid-send).
-  /// Defends against the otherwise-impossible collision where a
-  /// `pendingOptimistic` value's id appears in [messages] by letting the
-  /// persisted row win.
+  /// A row leaves this list when:
+  /// - both wraps land → the repository deletes the queue row in the
+  ///   same transaction that inserts the persisted `direct_messages`
+  ///   row; the next [pendingOutgoing] tick drops it and the next
+  ///   [messages] tick carries the persisted row in its place;
+  /// - the retry policy gives up after exhausting retries (terminal
+  ///   failure) — surfaced via [failed] status; the queue row stays
+  ///   until the user explicitly cancels.
+  final List<OutgoingDm> pendingOutgoing;
+
+  /// Lookup of queue rows by rumor id for O(1) status resolution.
+  Map<String, OutgoingDm> get _outgoingByRumorId => {
+    for (final row in pendingOutgoing) row.id: row,
+  };
+
+  /// Delivery status for the bubble with rumor id [id]. A persisted row
+  /// with no queue row remaining is always [DmDeliveryStatus.delivered]
+  /// (the repository transactionally couples queue-row deletion with
+  /// persisted-row insertion).
+  DmDeliveryStatus statusFor(String id) {
+    final q = _outgoingByRumorId[id];
+    if (q == null) return DmDeliveryStatus.delivered;
+    if (q.recipientWrapStatus == OutgoingWrapStatus.failed) {
+      return DmDeliveryStatus.failed;
+    }
+    if (q.recipientWrapStatus == OutgoingWrapStatus.pending) {
+      return DmDeliveryStatus.pending;
+    }
+    // recipient sent; self-wrap drives the rest of the truth table.
+    if (q.selfWrapStatus == OutgoingWrapStatus.failed) {
+      return DmDeliveryStatus.deliveredSelfFailed;
+    }
+    return DmDeliveryStatus.delivered;
+  }
+
+  /// Merged user-visible message list: in-flight queue rows projected
+  /// as [DmMessage] bubbles on top of persisted ones from [messages],
+  /// sorted newest first.
+  ///
+  /// Returns [messages] unchanged when [pendingOutgoing] is empty (the
+  /// hot path — every conversation that isn't actively mid-send).
+  /// Defends against the brief tick window where a queue row and its
+  /// matching persisted row appear together by letting the persisted
+  /// row win on rumor-id collision.
   List<DmMessage> get displayedMessages {
-    if (pendingOptimistic.isEmpty) return messages;
+    if (pendingOutgoing.isEmpty) return messages;
     final persistedIds = messages.map((m) => m.id).toSet();
-    final pendings = pendingOptimistic.values.where(
-      (m) => !persistedIds.contains(m.id),
-    );
-    final merged = <DmMessage>[...pendings, ...messages]
+    final pendingBubbles = pendingOutgoing
+        .where((q) => !persistedIds.contains(q.id))
+        .map(_outgoingToBubble);
+    final merged = <DmMessage>[...pendingBubbles, ...messages]
       ..sort((a, b) {
         final byTime = b.createdAt.compareTo(a.createdAt);
         if (byTime != 0) return byTime;
         // Stable tiebreak when two rows share `createdAt` (second
         // resolution collides on rapid sends): lex-sort by id so the
-        // pending row (`pending-<uuid>`) lands deterministically next
-        // to the persisted row (64-char hex).
+        // pending row and the persisted row land deterministically next
+        // to each other.
         return a.id.compareTo(b.id);
       });
     return List.unmodifiable(merged);
@@ -131,7 +194,7 @@ class ConversationState extends Equatable {
     SendStatus? sendStatus,
     FailedSend? lastFailedSend,
     PartialSend? lastPartialSend,
-    Map<String, DmMessage>? pendingOptimistic,
+    List<OutgoingDm>? pendingOutgoing,
     bool clearLastFailedSend = false,
     bool clearLastPartialSend = false,
   }) {
@@ -145,7 +208,7 @@ class ConversationState extends Equatable {
       lastPartialSend: clearLastPartialSend
           ? null
           : (lastPartialSend ?? this.lastPartialSend),
-      pendingOptimistic: pendingOptimistic ?? this.pendingOptimistic,
+      pendingOutgoing: pendingOutgoing ?? this.pendingOutgoing,
     );
   }
 
@@ -156,6 +219,17 @@ class ConversationState extends Equatable {
     sendStatus,
     lastFailedSend,
     lastPartialSend,
-    pendingOptimistic,
+    pendingOutgoing,
   ];
+}
+
+DmMessage _outgoingToBubble(OutgoingDm row) {
+  return DmMessage(
+    id: row.id,
+    conversationId: row.conversationId,
+    senderPubkey: row.ownerPubkey,
+    content: row.content,
+    createdAt: row.createdAt,
+    giftWrapId: row.id,
+  );
 }

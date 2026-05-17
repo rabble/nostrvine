@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_sdk/nip19/nip19_tlv.dart';
+import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/l10n/generated/app_localizations_en.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -228,6 +229,134 @@ void main() {
 
           expect(tester.takeException(), isNull);
           expect(find.text('beforeafter'), findsOneWidget);
+        },
+      );
+    });
+
+    group('delivery status indicator', () {
+      // Per-status icon mapping for sent bubbles. The bubble omits the
+      // indicator entirely when `deliveryStatus == delivered`, so a
+      // fully-delivered sent message renders identically to a received
+      // message in this respect.
+
+      testWidgets('renders no indicator for delivered status', (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MessageBubble(
+                message: 'Done',
+                timestamp: '2:30 PM',
+                isSent: true,
+              ),
+            ),
+          ),
+        );
+
+        expect(find.byIcon(Icons.access_time), findsNothing);
+        expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
+        expect(find.byIcon(Icons.error_outline), findsNothing);
+      });
+
+      testWidgets('renders clock icon while pending', (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MessageBubble(
+                message: 'In flight',
+                timestamp: '2:30 PM',
+                isSent: true,
+                deliveryStatus: DmDeliveryStatus.pending,
+              ),
+            ),
+          ),
+        );
+
+        expect(find.byIcon(Icons.access_time), findsOneWidget);
+        expect(
+          find.byTooltip(strings.dmStatusPending),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets(
+        'renders warning icon for deliveredSelfFailed status',
+        (tester) async {
+          await tester.pumpWidget(
+            const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: MessageBubble(
+                  message: 'Half-delivered',
+                  timestamp: '2:30 PM',
+                  isSent: true,
+                  deliveryStatus: DmDeliveryStatus.deliveredSelfFailed,
+                ),
+              ),
+            ),
+          );
+
+          expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+          expect(
+            find.byTooltip(strings.dmStatusDeliveredSelfFailed),
+            findsOneWidget,
+          );
+        },
+      );
+
+      testWidgets('renders error icon for failed status', (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MessageBubble(
+                message: 'Failed send',
+                timestamp: '2:30 PM',
+                isSent: true,
+                deliveryStatus: DmDeliveryStatus.failed,
+              ),
+            ),
+          ),
+        );
+
+        expect(find.byIcon(Icons.error_outline), findsOneWidget);
+        expect(
+          find.byTooltip(strings.dmStatusFailed),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets(
+        'does not render indicator for received messages even when '
+        'a non-delivered status is passed',
+        (tester) async {
+          // Received bubbles never read the outgoing queue; the parameter
+          // defaults to delivered for them, and the caller in
+          // `_MessageList` short-circuits the BlocSelector. Defensively
+          // ignore the parameter when isSent is false.
+          await tester.pumpWidget(
+            const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: MessageBubble(
+                  message: 'From them',
+                  timestamp: '2:30 PM',
+                  isSent: false,
+                  deliveryStatus: DmDeliveryStatus.failed,
+                ),
+              ),
+            ),
+          );
+
+          expect(find.byIcon(Icons.error_outline), findsNothing);
+          expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
+          expect(find.byIcon(Icons.access_time), findsNothing);
         },
       );
     });

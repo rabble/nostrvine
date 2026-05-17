@@ -2994,6 +2994,18 @@
   "@dmMessageActionReport": {
     "description": "Long-press menu action on a received DM bubble that opens the report flow for that specific message."
   },
+  "dmStatusPending": "Sending",
+  "@dmStatusPending": {
+    "description": "Accessibility label / tooltip on the clock indicator at the bottom of a sent DM bubble whose recipient gift wrap has not yet landed."
+  },
+  "dmStatusFailed": "Failed to send",
+  "@dmStatusFailed": {
+    "description": "Accessibility label / tooltip on the error indicator at the bottom of a sent DM bubble whose recipient gift wrap publish has failed and is awaiting retry."
+  },
+  "dmStatusDeliveredSelfFailed": "Delivered. Won't sync to your other devices.",
+  "@dmStatusDeliveredSelfFailed": {
+    "description": "Accessibility label / tooltip on the warning indicator at the bottom of a sent DM bubble whose recipient gift wrap landed but whose self-addressed gift wrap did not, so the sender's other devices will not see this message on relay-only restore. Paired with `dmSendPartialMessage` which surfaces the same state in the SnackBar."
+  },
   "inboxConversationActionsSheetLabel": "Conversation actions",
   "@inboxConversationActionsSheetLabel": {
     "description": "Accessibility label announced by screen readers when the long-press actions bottom sheet for a conversation row opens."

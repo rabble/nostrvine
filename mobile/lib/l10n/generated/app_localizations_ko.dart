@@ -5224,6 +5224,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get dmMessageActionReport => 'Report';
 
   @override
+  String get dmStatusPending => '보내는 중';
+
+  @override
+  String get dmStatusFailed => '보내지 못했어요';
+
+  @override
+  String get dmStatusDeliveredSelfFailed => '전달됐어요. 다른 기기에는 동기화되지 않아요.';
+
+  @override
   String get inboxConversationActionsSheetLabel => 'Conversation actions';
 
   @override

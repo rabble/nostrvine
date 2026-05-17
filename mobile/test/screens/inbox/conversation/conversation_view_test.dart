@@ -3,6 +3,7 @@
 // ABOUTME: plus the app bar and input bar rendering.
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:db_client/db_client.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -241,32 +242,37 @@ void main() {
       });
 
       // Regression for #4193 — the user-visible bubble list reads from
-      // `state.displayedMessages`, which projects pending optimistic rows
+      // `state.displayedMessages`, which projects in-flight queue rows
+      // (`state.pendingOutgoing`, sourced from `DmRepository.watchOutgoing`)
       // on top of the persisted ones. When the watchMessages stream
       // hasn't yet delivered the persisted row (the freshly-searched
       // conversation case, or the microsecond gap between the persistence
-      // transaction commit and the watch tick), the optimistic in
-      // `pendingOptimistic` is the only thing the user has — and it must
+      // transaction commit and the watch tick), the queue row in
+      // `pendingOutgoing` is the only thing the user has — and it must
       // be visible.
       testWidgets(
-        'renders $MessageBubble when only pendingOptimistic is populated '
+        'renders $MessageBubble when only pendingOutgoing is populated '
         '(regression for #4193)',
         (tester) async {
-          final optimistic = DmMessage(
-            id: 'pending-test-uuid',
+          final pendingRow = OutgoingDm(
+            id: 'rumor-test-id',
             conversationId:
                 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
-            senderPubkey: currentPubkey,
+            recipientPubkey: otherPubkey,
             content: 'Optimistic in flight',
             createdAt: now.millisecondsSinceEpoch ~/ 1000,
-            giftWrapId: 'pending-test-uuid',
+            rumorEventJson: '{}',
+            recipientWrapStatus: OutgoingWrapStatus.pending,
+            selfWrapStatus: OutgoingWrapStatus.pending,
+            queuedAt: now,
+            ownerPubkey: currentPubkey,
           );
 
           await tester.pumpWidget(
             buildSubject(
               state: ConversationState(
                 status: ConversationStatus.loaded,
-                pendingOptimistic: {'pending-test-uuid': optimistic},
+                pendingOutgoing: [pendingRow],
               ),
             ),
           );
