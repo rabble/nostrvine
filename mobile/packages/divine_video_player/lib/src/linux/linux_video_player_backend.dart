@@ -375,6 +375,10 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
     }
   }
 
+  // coverage:ignore-start
+  // Default seams that bind to real media_kit native objects. They cannot
+  // run in a headless unit test (no native media_kit backend), which is why
+  // they are injectable — tests substitute fakes via the constructor.
   static Object _defaultVideoControllerFactory(Player player) =>
       media_kit.VideoController(player);
 
@@ -385,6 +389,7 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
     controller: controller as media_kit.VideoController,
     controls: null,
   );
+  // coverage:ignore-end
 
   void _rebuildClipOffsets() {
     _clipOffsets
