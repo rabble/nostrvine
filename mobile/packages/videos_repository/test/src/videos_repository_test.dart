@@ -3333,6 +3333,53 @@ void main() {
       );
 
       test(
+        'restores legacy cached timestamp cursors as before cursors',
+        () async {
+          final feedCache = InMemoryFeedCache()
+            ..set(
+              'popular:v2:${PopularVideosVariant.native.name}',
+              HomeFeedResult(
+                videos: [
+                  VideoEvent(
+                    id: 'cached-native',
+                    pubkey: 'cached-pubkey',
+                    createdAt: 1_704_067_200,
+                    content: '',
+                    timestamp: DateTime.fromMillisecondsSinceEpoch(
+                      1_704_067_200 * 1000,
+                    ),
+                  ),
+                ],
+                nextCursor: 1_704_067_198,
+                hasMore: true,
+              ),
+            );
+          final repositoryWithCache = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            inMemoryFeedCache: feedCache,
+          );
+
+          final cached = await repositoryWithCache.getPopularVideosPage(
+            variant: PopularVideosVariant.native,
+            limit: 1,
+          );
+
+          expect(cached.videos.map((video) => video.id), ['cached-native']);
+          expect(cached.nextCursor, equals('before:1704067198'));
+          expect(cached.hasMore, isTrue);
+          verifyNever(
+            () => mockFunnelcakeClient.getV2PopularVideosPage(
+              variant: any(named: 'variant'),
+              limit: any(named: 'limit'),
+              cursor: any(named: 'cursor'),
+              before: any(named: 'before'),
+            ),
+          );
+        },
+      );
+
+      test(
         'continues v2 popular pagination with the server cursor',
         () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
@@ -3409,6 +3456,69 @@ void main() {
               before: any(named: 'before'),
             ),
           ).called(2);
+        },
+      );
+
+      test(
+        'stops paging when the server repeats an opaque cursor',
+        () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getV2PopularVideosPage(
+              variant: any(named: 'variant'),
+              limit: any(named: 'limit'),
+              cursor: any(named: 'cursor'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((invocation) async {
+            expect(invocation.namedArguments[#cursor], equals('o:same'));
+            expect(invocation.namedArguments[#before], isNull);
+            return V2PopularVideosResponse(
+              videos: [
+                _createVideoStats(
+                  id: 'native-1',
+                  pubkey: 'pubkey-1',
+                  dTag: 'native-dtag-1',
+                  videoUrl: 'https://example.com/native-1.mp4',
+                ),
+                _createVideoStats(
+                  id: 'native-2',
+                  pubkey: 'pubkey-2',
+                  dTag: 'native-dtag-2',
+                  videoUrl: 'https://example.com/native-2.mp4',
+                  createdAt: 1_704_067_199,
+                ),
+              ],
+              hasMore: true,
+              nextCursor: 'o:same',
+            );
+          });
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repositoryWithApi.getPopularVideosPage(
+            variant: PopularVideosVariant.native,
+            limit: 2,
+            cursor: 'o:same',
+          );
+
+          expect(result.videos.map((video) => video.id), [
+            'native-1',
+            'native-2',
+          ]);
+          expect(result.nextCursor, isNull);
+          expect(result.hasMore, isFalse);
+          verify(
+            () => mockFunnelcakeClient.getV2PopularVideosPage(
+              variant: PopularVideosVariant.native,
+              limit: 2,
+              cursor: 'o:same',
+              before: any(named: 'before'),
+            ),
+          ).called(1);
         },
       );
 
