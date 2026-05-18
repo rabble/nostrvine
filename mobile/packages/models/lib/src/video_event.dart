@@ -545,15 +545,21 @@ class VideoEvent {
     final publishedAtTimestamp = int.tryParse(publishedAt ?? '');
     final effectiveTimestamp = publishedAtTimestamp ?? createdAtTimestamp;
 
-    Log.debug('🔍 DEBUG: Final parsing results:', name: 'VideoEvent',
-        category: LogCategory.video,
-      );
-    Log.debug('🔍 DEBUG: videoUrl = $videoUrl', name: 'VideoEvent',
-        category: LogCategory.video,
-      );
-    Log.debug('🔍 DEBUG: thumbnailUrl = $thumbnailUrl', name: 'VideoEvent',
-        category: LogCategory.video,
-      );
+    Log.debug(
+      '🔍 DEBUG: Final parsing results:',
+      name: 'VideoEvent',
+      category: LogCategory.video,
+    );
+    Log.debug(
+      '🔍 DEBUG: videoUrl = $videoUrl',
+      name: 'VideoEvent',
+      category: LogCategory.video,
+    );
+    Log.debug(
+      '🔍 DEBUG: thumbnailUrl = $thumbnailUrl',
+      name: 'VideoEvent',
+      category: LogCategory.video,
+    );
 
     // DEBUG: Log the exact videoUrl being passed to VideoEvent constructor
     if (videoUrl?.contains('cdn.divine.video') ?? false) {
@@ -563,9 +569,11 @@ class VideoEvent {
         category: LogCategory.video,
       );
     }
-    Log.debug('🔍 DEBUG: duration = $duration', name: 'VideoEvent',
-        category: LogCategory.video,
-      );
+    Log.debug(
+      '🔍 DEBUG: duration = $duration',
+      name: 'VideoEvent',
+      category: LogCategory.video,
+    );
 
     // POSTEL'S LAW: Be liberal in what you accept
     // Apply comprehensive fallback logic to find video URLs
@@ -656,22 +664,34 @@ class VideoEvent {
         name: 'VideoEvent',
         category: LogCategory.video,
       );
-      Log.debug('🔍 Event ID: ${event.id}', name: 'VideoEvent',
+      Log.debug(
+        '🔍 Event ID: ${event.id}',
+        name: 'VideoEvent',
         category: LogCategory.video,
       );
-      Log.debug('🔍 Event Kind: ${event.kind}', name: 'VideoEvent',
+      Log.debug(
+        '🔍 Event Kind: ${event.kind}',
+        name: 'VideoEvent',
         category: LogCategory.video,
       );
-      Log.debug('🔍 Event Pubkey: ${event.pubkey}', name: 'VideoEvent',
+      Log.debug(
+        '🔍 Event Pubkey: ${event.pubkey}',
+        name: 'VideoEvent',
         category: LogCategory.video,
       );
-      Log.debug('🔍 Thumbnail URL: $thumbnailUrl', name: 'VideoEvent',
+      Log.debug(
+        '🔍 Thumbnail URL: $thumbnailUrl',
+        name: 'VideoEvent',
         category: LogCategory.video,
       );
-      Log.debug('🔍 Video URL: $videoUrl', name: 'VideoEvent',
+      Log.debug(
+        '🔍 Video URL: $videoUrl',
+        name: 'VideoEvent',
         category: LogCategory.video,
       );
-      Log.debug('🔍 Event tag summary:', name: 'VideoEvent',
+      Log.debug(
+        '🔍 Event tag summary:',
+        name: 'VideoEvent',
         category: LogCategory.video,
       );
       for (var i = 0; i < event.tags.length; i++) {
@@ -683,7 +703,9 @@ class VideoEvent {
           category: LogCategory.video,
         );
       }
-      Log.debug('🔍 Event Content: ${event.content}', name: 'VideoEvent',
+      Log.debug(
+        '🔍 Event Content: ${event.content}',
+        name: 'VideoEvent',
         category: LogCategory.video,
       );
       Log.debug(
@@ -693,9 +715,11 @@ class VideoEvent {
       );
     }
 
-    Log.debug('🖼️ Thumbnail URL: $thumbnailUrl', name: 'VideoEvent',
-        category: LogCategory.video,
-      );
+    Log.debug(
+      '🖼️ Thumbnail URL: $thumbnailUrl',
+      name: 'VideoEvent',
+      category: LogCategory.video,
+    );
 
     return VideoEvent(
       id: event.id,
@@ -1651,9 +1675,11 @@ class VideoEvent {
       final isValid = _isValidVideoUrl(url);
       if (isValid) {
         final score = _scoreVideoUrl(url);
-        Log.debug('🎯 URL score: $score for $url', name: 'VideoEvent',
-        category: LogCategory.video,
-      );
+        Log.debug(
+          '🎯 URL score: $score for $url',
+          name: 'VideoEvent',
+          category: LogCategory.video,
+        );
         if (score > bestScore) {
           bestScore = score;
           bestUrl = url;

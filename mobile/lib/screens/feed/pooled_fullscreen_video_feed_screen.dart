@@ -992,7 +992,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                                         }
                                         final originalEvent = state.videos.firstWhere(
                                           (v) => v.id == video.id,
-                                            orElse: () {
+                                          orElse: () {
                                             final clamped = index.clamp(
                                               0,
                                               state.videos.length - 1,

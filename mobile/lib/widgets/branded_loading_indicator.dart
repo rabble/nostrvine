@@ -81,12 +81,12 @@ class _BrandedLoadingIndicatorState extends State<BrandedLoadingIndicator>
         width: widget.size,
         height: widget.size * _frameCount,
         fit: BoxFit.fitWidth,
-          errorBuilder: (context, error, stackTrace) {
-            Log.warning(
-              'Failed to load sprite sheet: $error',
-              name: 'BrandedLoadingIndicator',
-              category: LogCategory.ui,
-            );
+        errorBuilder: (context, error, stackTrace) {
+          Log.warning(
+            'Failed to load sprite sheet: $error',
+            name: 'BrandedLoadingIndicator',
+            category: LogCategory.ui,
+          );
           return SizedBox(
             width: widget.size,
             height: widget.size,

@@ -123,7 +123,7 @@ class AudioPlaybackService {
               Log.warning(
                 'Error in device change stream: $error',
                 name: 'AudioPlaybackService',
-        category: LogCategory.video,
+                category: LogCategory.video,
               );
             },
           );
@@ -193,7 +193,7 @@ class AudioPlaybackService {
         Log.debug(
           'Loaded audio from asset: $assetPath',
           name: 'AudioPlaybackService',
-        category: LogCategory.video,
+          category: LogCategory.video,
         );
       } else {
         loadedDuration = await _audioPlayer.setAudioSource(
@@ -225,7 +225,10 @@ class AudioPlaybackService {
     _loadCompleter = Completer<void>();
     try {
       final loadedDuration = await _audioPlayer.setFilePath(filePath);
-      Log.debug('Loaded audio from file: $filePath', name: 'AudioPlaybackService');
+      Log.debug(
+        'Loaded audio from file: $filePath',
+        name: 'AudioPlaybackService',
+      );
       _lastSource = (type: _SourceType.file, value: filePath);
       return loadedDuration;
     } catch (e) {
@@ -397,7 +400,7 @@ class AudioPlaybackService {
         Log.debug(
           'Seek interrupted, reloading source and retrying',
           name: 'AudioPlaybackService',
-        category: LogCategory.video,
+          category: LogCategory.video,
         );
         if (await _reloadLastSource()) {
           if (_isDisposed) return;
