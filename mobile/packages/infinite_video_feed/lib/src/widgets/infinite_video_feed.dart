@@ -60,7 +60,11 @@ class InfiniteVideoFeed extends StatefulWidget {
   /// all other desktop platforms.
   static bool get isSupported =>
       _isSupportedOverrideForTesting ??
-      (!kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS));
+      (!kIsWeb &&
+          (Platform.isAndroid ||
+              Platform.isIOS ||
+              Platform.isMacOS ||
+              Platform.isLinux));
 
   static bool? _isSupportedOverrideForTesting;
 

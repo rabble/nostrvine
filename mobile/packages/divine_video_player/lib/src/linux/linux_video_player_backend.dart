@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:developer' as developer;
+import 'dart:io' show Platform;
 import 'dart:math' as math;
 
 import 'package:divine_video_player/src/audio_track.dart' as divine;
@@ -394,16 +395,56 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
   // Default seams that bind to real media_kit native objects. They cannot
   // run in a headless unit test (no native media_kit backend), which is why
   // they are injectable — tests substitute fakes via the constructor.
-  static Object _defaultVideoControllerFactory(Player player) =>
-      media_kit.VideoController(player);
+  //
+  // Environment escape hatch: setting `DIVINE_LINUX_NO_VIDEO_OUTPUT=1` skips
+  // VideoController construction entirely. mpv's GL render-context setup
+  // segfaults natively on virtual GPUs (QEMU virtio-gpu, some headless CI
+  // runners) the moment it touches Flutter's EGL config — a native crash that
+  // cannot be caught from Dart. With the flag set, audio still plays via the
+  // mpv `Player`, and `buildView()` returns an empty placeholder so the
+  // thumbnail behind it stays visible.
+  static const _disableVideoOutputEnvVar = 'DIVINE_LINUX_NO_VIDEO_OUTPUT';
 
-  static Future<void> _defaultVideoControllerReady(Object controller) =>
-      (controller as media_kit.VideoController).waitUntilFirstFrameRendered;
+  static bool get _videoOutputDisabled {
+    final value = Platform.environment[_disableVideoOutputEnvVar];
+    if (value == null) return false;
+    final normalized = value.trim().toLowerCase();
+    return normalized == '1' || normalized == 'true' || normalized == 'yes';
+  }
 
-  static Widget _defaultVideoViewBuilder(Object controller) => media_kit.Video(
-    controller: controller as media_kit.VideoController,
-    controls: null,
-  );
+  static Object _defaultVideoControllerFactory(Player player) {
+    if (_videoOutputDisabled) {
+      developer.log(
+        'DIVINE_LINUX_NO_VIDEO_OUTPUT is set — skipping VideoController. '
+        'Audio will play but video frames will not render.',
+        name: 'divine_video_player',
+      );
+      return const _DisabledVideoController();
+    }
+    // Hardware-accelerated EGL rendering crashes on virtual GPUs (QEMU,
+    // VirtualBox). Software rendering is reliable across all Linux setups.
+    return media_kit.VideoController(
+      player,
+      configuration: const media_kit.VideoControllerConfiguration(
+        enableHardwareAcceleration: false,
+      ),
+    );
+  }
+
+  static Future<void> _defaultVideoControllerReady(Object controller) {
+    if (controller is _DisabledVideoController) return Future.value();
+    return (controller as media_kit.VideoController).waitUntilFirstFrameRendered;
+  }
+
+  static Widget _defaultVideoViewBuilder(Object controller) {
+    if (controller is _DisabledVideoController) {
+      return const SizedBox.expand();
+    }
+    return media_kit.Video(
+      controller: controller as media_kit.VideoController,
+      controls: null,
+    );
+  }
   // coverage:ignore-end
 
   void _rebuildClipOffsets() {
@@ -538,4 +579,11 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
       throw StateError('Linux backend has been disposed.');
     }
   }
+}
+
+/// Sentinel marker used in place of a real `VideoController` when video
+/// output is disabled via `DIVINE_LINUX_NO_VIDEO_OUTPUT`. Lets the rest of
+/// the backend stay non-nullable while skipping native GL setup.
+class _DisabledVideoController {
+  const _DisabledVideoController();
 }

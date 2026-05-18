@@ -97,7 +97,12 @@ class DivineVideoPlayerController {
   /// process-level state across hot restarts, so old ExoPlayer /
   /// AVPlayer instances and their timers survive unless explicitly
   /// released.
+  ///
+  /// No-op on web and Linux where no native channel is registered.
   static Future<void> disposeAll() {
+    if (kIsWeb || defaultTargetPlatform == TargetPlatform.linux) {
+      return Future.value();
+    }
     return _globalChannel.invokeMethod<void>('disposeAll');
   }
 
@@ -122,6 +127,9 @@ class DivineVideoPlayerController {
   static Future<void> configureCache({
     int maxSizeBytes = kDefaultCacheMaxSizeBytes,
   }) {
+    if (kIsWeb || defaultTargetPlatform == TargetPlatform.linux) {
+      return Future.value();
+    }
     return _globalChannel.invokeMethod<void>('configureCache', {
       'maxSizeBytes': maxSizeBytes,
     });
