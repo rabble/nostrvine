@@ -11,8 +11,7 @@ enum SearchResultsFilter {
 
   lists('Lists'),
   tags('Tags'),
-  videos('Videos')
-  ;
+  videos('Videos');
 
   const SearchResultsFilter(this.label);
 

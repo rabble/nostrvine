@@ -213,8 +213,7 @@ enum DivineIconName {
   warning('warning'),
   warningCircle('warning_circle'),
   waveform('waveform'),
-  x('close')
-  ;
+  x('close');
 
   const DivineIconName(this.fileName);
 

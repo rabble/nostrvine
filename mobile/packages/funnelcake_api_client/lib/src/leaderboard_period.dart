@@ -13,8 +13,7 @@ enum LeaderboardPeriod {
   month,
 
   /// All time.
-  alltime
-  ;
+  alltime;
 
   /// The exact token funnelcake's REST API expects in `?period=…`.
   String get wireValue => switch (this) {

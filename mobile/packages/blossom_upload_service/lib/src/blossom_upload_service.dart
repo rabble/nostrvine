@@ -45,8 +45,7 @@ enum BlossomUploadFailureReason {
   /// Anything else: unmapped 4xx, malformed responses, configuration
   /// errors, or unexpected exceptions. Caller falls back to a generic
   /// "upload failed" message.
-  unknown
-  ;
+  unknown;
 
   /// Classifies an HTTP [statusCode] into a [BlossomUploadFailureReason].
   ///

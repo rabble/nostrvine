@@ -13,8 +13,7 @@ enum InstallSource {
   zapstore,
 
   /// Direct APK sideload or unknown source.
-  sideload
-  ;
+  sideload;
 
   /// The installer package name on Android for Play Store.
   static const playStoreInstaller = 'com.android.vending';

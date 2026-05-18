@@ -14,8 +14,7 @@ enum RemoteRecordTrigger {
   volumeDown,
 
   /// A Bluetooth remote or headphone button was pressed.
-  bluetooth
-  ;
+  bluetooth;
 
   /// Converts a native string to a [RemoteRecordTrigger].
   static RemoteRecordTrigger fromNativeString(String value) {

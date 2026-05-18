@@ -77,8 +77,7 @@ enum DivineStickerName {
   vinylRecord('vinyl_record'),
   wavePool('wave_pool'),
   worldMap('world_map'),
-  x('x')
-  ;
+  x('x');
 
   const DivineStickerName(this.fileName);
 

@@ -15,8 +15,7 @@ enum NostrAppAuditDecision {
   promptDenied('prompt_denied'),
 
   /// The request was blocked before reaching the user.
-  blocked('blocked')
-  ;
+  blocked('blocked');
 
   const NostrAppAuditDecision(this.wireValue);
 

@@ -13,8 +13,7 @@ enum DivineCameraFlashMode {
   on,
 
   /// Torch mode - continuous light for video recording.
-  torch
-  ;
+  torch;
 
   /// Converts the flash mode to a string for platform communication.
   String toNativeString() {

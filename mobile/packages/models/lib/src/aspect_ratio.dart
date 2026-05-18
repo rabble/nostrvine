@@ -7,8 +7,7 @@ enum AspectRatio {
   square,
 
   /// 9:16 (default, modern vertical video)
-  vertical
-  ;
+  vertical;
 
   double get value => switch (this) {
     .square => 1,

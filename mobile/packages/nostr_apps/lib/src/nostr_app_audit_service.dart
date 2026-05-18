@@ -9,8 +9,7 @@ enum NostrAppHttpMethod {
   post('POST'),
   put('PUT'),
   delete('DELETE'),
-  patch('PATCH')
-  ;
+  patch('PATCH');
 
   const NostrAppHttpMethod(this.value);
 

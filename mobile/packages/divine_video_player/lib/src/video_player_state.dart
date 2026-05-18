@@ -22,8 +22,7 @@ enum PlaybackStatus {
   completed,
 
   /// An error occurred.
-  error
-  ;
+  error;
 
   /// Whether the player is in the [idle] state.
   bool get isIdle => this == .idle;
