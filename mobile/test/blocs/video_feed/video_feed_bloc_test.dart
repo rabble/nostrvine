@@ -57,6 +57,10 @@ void main() {
         () => mockFollowRepository.followingStream,
       ).thenAnswer((_) => followingController.stream);
       when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
+      // Default: repo already initialized — preserves existing test behaviour
+      // (skip(1) path).  Override to false in tests that exercise the
+      // cold-start race condition (skip(0) path).
+      when(() => mockFollowRepository.isInitialized).thenReturn(true);
 
       when(
         () => mockCuratedListRepository.subscribedListsStream,
@@ -515,6 +519,95 @@ void main() {
               skipCache: any(named: 'skipCache'),
             ),
           ).called(1);
+        },
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'refreshes following feed when follow repo initializes after initial load',
+        // Regression test for: Following and For You show identical content
+        // when the Funnelcake /feed endpoint returns stale/popular-fallback
+        // content because FollowRepository.initialize() has not finished yet.
+        //
+        // Before the fix: .skip(1) always dropped the first followingStream
+        // emission, so no corrective refresh ever fired.
+        //
+        // After the fix: .skip(0) when isInitialized==false at _onStarted time
+        // means the post-initialize() emission triggers _onFollowingListChanged,
+        // which does a skipCache refresh with the real follow list.
+        setUp: () {
+          final popularVideos = createTestVideos(5, idPrefix: 'popular');
+          final followingVideos = createTestVideos(5, idPrefix: 'following');
+
+          // Simulate: repo NOT yet initialized when VideoFeedStarted fires.
+          when(() => mockFollowRepository.isInitialized).thenReturn(false);
+          when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
+
+          // Both calls (initial load + corrective refresh) share the same
+          // signature; distinguish by call order via a counter.
+          var callCount = 0;
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer((_) async {
+            callCount++;
+            return callCount == 1
+                ? HomeFeedResult(videos: popularVideos)
+                : HomeFeedResult(videos: followingVideos);
+          });
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const VideoFeedStarted(mode: FeedMode.following));
+          // Wait for the initial load to complete.
+          await Future<void>.delayed(Duration.zero);
+          // Simulate FollowRepository.initialize() completing and emitting
+          // the real follow list.  With isInitialized==false the BLoC uses
+          // .skip(0), so this first emission is NOT dropped.
+          followingController.add(['author1', 'author2']);
+          // Wait for _onFollowingListChanged to finish the corrective refresh.
+          await Future<void>.delayed(Duration.zero);
+        },
+        expect: () => [
+          // 1. Loading state
+          const VideoFeedState(mode: FeedMode.following),
+          // 2. Initial load succeeds with popular/fallback content
+          isA<VideoFeedState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.videos.length, 'videos count', 5)
+              .having(
+                (s) => s.videos.first.id,
+                'first video id',
+                startsWith('popular'),
+              ),
+          // 3. Silent refresh replaces with real following content
+          isA<VideoFeedState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.videos.length, 'videos count', 5)
+              .having(
+                (s) => s.videos.first.id,
+                'first video id',
+                startsWith('following'),
+              ),
+        ],
+        verify: (_) {
+          // getHomeFeedVideos must be called twice: once for the initial load
+          // (empty authors) and once for the corrective refresh (real authors).
+          verify(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).called(2);
         },
       );
     });

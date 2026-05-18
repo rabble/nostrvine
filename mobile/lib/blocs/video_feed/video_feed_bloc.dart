@@ -154,12 +154,22 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       }
     }
 
-    // Subscribe to following list changes (skip first replay — the initial
-    // load already handled the current state, and the follow repo's
-    // force-emit for empty lists will arrive as emission #2).
+    // Subscribe to following list changes.
+    //
+    // If the follow repository was already initialized when we ran the
+    // initial load, skip the first replay — that load already used
+    // up-to-date data and we don't want a redundant second network call.
+    //
+    // If it was NOT yet initialized (the common cold-start race condition),
+    // skip nothing — the first real emission arrives when initialize()
+    // completes and serves as a corrective refresh.  This fixes the bug
+    // where Following and For You show identical content because the
+    // Funnelcake /feed endpoint returned stale/popular-fallback content
+    // before the server-side follow-graph index was confirmed ready.
+    final wasInitialized = _followRepository.isInitialized;
     unawaited(
       emit.onEach<List<String>>(
-        _followRepository.followingStream.skip(1),
+        _followRepository.followingStream.skip(wasInitialized ? 1 : 0),
         onData: (pubkeys) => add(VideoFeedFollowingListChanged(pubkeys)),
       ),
     );
