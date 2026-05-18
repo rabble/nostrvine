@@ -8,6 +8,7 @@ import 'package:pooled_video_player/src/controllers/player_pool.dart';
 import 'package:pooled_video_player/src/models/video_index_state.dart';
 import 'package:pooled_video_player/src/models/video_item.dart';
 import 'package:pooled_video_player/src/models/video_pool_config.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// State of video loading for a specific index.
 enum LoadState {
@@ -486,17 +487,29 @@ class VideoFeedController extends ChangeNotifier {
   }
 
   void _logDebug(String message) {
-    debugPrint('[POOLED] $message');
+    Log.debug(
+      '[POOLED] $message',
+      name: 'VideoFeedController',
+      category: LogCategory.video,
+    );
     onLog?.call('debug', message);
   }
 
   void _logWarning(String message) {
-    debugPrint('[POOLED] ⚠️ $message');
+    Log.warning(
+      '[POOLED] $message',
+      name: 'VideoFeedController',
+      category: LogCategory.video,
+    );
     onLog?.call('warning', message);
   }
 
   void _logError(String message) {
-    debugPrint('[POOLED] ❌ $message');
+    Log.error(
+      '[POOLED] $message',
+      name: 'VideoFeedController',
+      category: LogCategory.video,
+    );
     onLog?.call('error', message);
   }
 
@@ -1842,8 +1855,10 @@ class VideoFeedController extends ChangeNotifier {
         'elapsedMs=${_loadStopwatches[index]?.elapsedMilliseconds}',
       );
     } on Exception catch (e, stack) {
-      debugPrint(
+      Log.error(
         '[POOLED] play_failed ${_videoDebugDetails(index)} error=$e\n$stack',
+        name: 'VideoFeedController',
+        category: LogCategory.video,
       );
     }
   }

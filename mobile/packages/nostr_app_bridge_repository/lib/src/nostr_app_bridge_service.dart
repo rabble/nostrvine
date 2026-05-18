@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:nostr_app_bridge_repository/src/models/nostr_app_audit_event.dart';
 import 'package:nostr_app_bridge_repository/src/models/nostr_app_directory_entry.dart';
 import 'package:nostr_app_bridge_repository/src/nostr_app_audit_service.dart';
 import 'package:nostr_app_bridge_repository/src/nostr_app_bridge_policy.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Callback that prompts the user about a bridge permission request.
 typedef BridgePermissionPrompter =
@@ -467,10 +467,11 @@ class NostrAppBridgeService {
       return;
     }
     if (appId == null) {
-      developer.log(
+      Log.debug(
         'Skipping sandbox audit for non-numeric app id '
         '${app.id}',
         name: 'NostrAppBridgeService',
+        category: LogCategory.system,
       );
       return;
     }

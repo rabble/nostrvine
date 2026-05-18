@@ -1,10 +1,10 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
 import 'package:nostr_app_bridge_repository/src/models/nostr_app_directory_entry.dart';
 import 'package:nostr_app_bridge_repository/src/preloaded_nostr_apps.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Fetches and caches approved Nostr app manifests from the
 /// directory worker, falling back to cached or bundled entries.
@@ -78,9 +78,10 @@ class NostrAppDirectoryService {
 
       return _mergeWithPreloadedApps(remoteApps);
     } on Object catch (error, stackTrace) {
-      developer.log(
+      Log.error(
         'Falling back to cached Nostr app directory: $error',
         name: 'NostrAppDirectoryService',
+        category: LogCategory.api,
         error: error,
         stackTrace: stackTrace,
       );
@@ -123,9 +124,10 @@ class NostrAppDirectoryService {
             ..sort(_compareApps);
       return List<NostrAppDirectoryEntry>.unmodifiable(apps);
     } on Object catch (error) {
-      developer.log(
+      Log.error(
         'Ignoring invalid Nostr app directory cache: $error',
         name: 'NostrAppDirectoryService',
+        category: LogCategory.api,
         error: error,
       );
       return const [];

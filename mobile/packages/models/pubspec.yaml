@@ -17,6 +17,8 @@ dependencies:
     path: ../nostr_sdk
   text_sanitizer:
     path: ../text_sanitizer
+  unified_logger:
+    path: ../unified_logger
   unique_names_generator: ^3.0.0
 
 dev_dependencies:

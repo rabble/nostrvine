@@ -1,8 +1,6 @@
 // ABOUTME: Sounds tab for the Library screen.
 // ABOUTME: Shows reusable sounds the user has explicitly saved.
 
-import 'dart:developer' as developer;
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +15,7 @@ import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/widgets/sound_tile.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_selection_bottom_sheet.dart';
 import 'package:sound_service/sound_service.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// User-saved sounds tab for the Library screen.
 ///
@@ -85,10 +84,10 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
       }
       await audioService.play();
     } catch (e) {
-      developer.log(
+      Log.error(
         'Failed to preview sound: $e',
         name: 'SoundsTab',
-        level: 1000,
+        category: LogCategory.video,
       );
     } finally {
       if (mounted) {

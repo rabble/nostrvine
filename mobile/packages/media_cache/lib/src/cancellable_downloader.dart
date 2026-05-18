@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:unified_logger/unified_logger.dart';
 
 /// Handle to an in-progress HTTP download writing to a single target file.
 ///
@@ -95,9 +95,10 @@ class _HttpDownload implements CancellableDownload {
     try {
       final uri = Uri.parse(_url);
       if (uri.scheme.toLowerCase() != 'https') {
-        developer.log(
+        Log.warning(
           'CancellableDownload: rejecting non-https url $_url',
           name: 'MediaCache',
+          category: LogCategory.video,
         );
         _safeComplete(null);
         return;

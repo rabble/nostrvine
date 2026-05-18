@@ -2,9 +2,9 @@ import 'dart:io';
 
 import 'package:cronet_http/cronet_http.dart';
 import 'package:cupertino_http/cupertino_http.dart';
-import 'package:flutter/foundation.dart';
 import 'package:http/io_client.dart';
 import 'package:media_cache/src/cancellable_downloader.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// `dart:io` implementation that selects the best native HTTP stack.
 ///
@@ -47,9 +47,11 @@ CancellableDownloader createPlatformDownloaderImpl({
         CupertinoClient.fromSessionConfiguration(cfg),
       );
     } on Object catch (e, st) {
-      debugPrint(
+      Log.warning(
         'MediaCache: cupertino_http init failed, '
         'falling back to dart:io HttpClient: $e\n$st',
+        name: 'MediaCache',
+        category: LogCategory.video,
       );
     }
   } else if (Platform.isAndroid) {
@@ -59,9 +61,11 @@ CancellableDownloader createPlatformDownloaderImpl({
       // apply while Cronet is active.
       return HttpCancellableDownloader(CronetClient.defaultCronetEngine());
     } on Object catch (e, st) {
-      debugPrint(
+      Log.warning(
         'MediaCache: cronet_http init failed, '
         'falling back to dart:io HttpClient: $e\n$st',
+        name: 'MediaCache',
+        category: LogCategory.video,
       );
     }
   }

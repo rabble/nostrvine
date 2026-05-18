@@ -267,7 +267,11 @@ class StartupCoordinator {
     );
 
     if (kDebugMode) {
-      debugPrint(_metrics!.generateReport());
+      Log.debug(
+        _metrics!.generateReport(),
+        name: 'StartupCoordinator',
+        category: LogCategory.system,
+      );
     }
   }
 

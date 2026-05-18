@@ -1,14 +1,13 @@
 // ABOUTME: BLoC for the new message recipient search sheet.
 // ABOUTME: Loads followed contacts and merges them with network search results.
 
-import 'dart:developer' as developer;
-
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart';
 import 'package:openvine/constants/search_constants.dart';
 import 'package:profile_repository/profile_repository.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'new_message_search_event.dart';
 part 'new_message_search_state.dart';
@@ -90,9 +89,10 @@ class NewMessageSearchBloc
         sortBy: 'followers',
       );
 
-      developer.log(
+      Log.debug(
         'Query "$query": ${networkResults.length} network results',
         name: 'NewMessageSearchBloc',
+        category: LogCategory.api,
       );
 
       final merged = _mergeWithLocal(networkResults, filtered);

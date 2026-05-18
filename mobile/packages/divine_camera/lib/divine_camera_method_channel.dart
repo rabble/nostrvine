@@ -11,6 +11,7 @@ import 'package:divine_camera/src/models/video_quality.dart';
 import 'package:divine_camera/src/models/video_recording_result.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// An implementation of [DivineCameraPlatform] that uses method channels.
 class MethodChannelDivineCamera extends DivineCameraPlatform {
@@ -105,13 +106,23 @@ class MethodChannelDivineCamera extends DivineCameraPlatform {
         message: 'Failed to initialize camera',
       );
     }
-    debugPrint('DivineCamera: Raw result from native: $result');
-    debugPrint(
+    Log.debug(
+      'DivineCamera: Raw result from native: $result',
+      name: 'DivineCameraMethodChannel',
+      category: LogCategory.video,
+    );
+    Log.debug(
       'DivineCamera: aspectRatio value: ${result['aspectRatio']} '
       '(type: ${result['aspectRatio']?.runtimeType})',
+      name: 'DivineCameraMethodChannel',
+      category: LogCategory.video,
     );
     final state = CameraState.fromMap(result);
-    debugPrint('DivineCamera: Parsed state aspectRatio: ${state.aspectRatio}');
+    Log.debug(
+      'DivineCamera: Parsed state aspectRatio: ${state.aspectRatio}',
+      name: 'DivineCameraMethodChannel',
+      category: LogCategory.video,
+    );
     return state;
   }
 

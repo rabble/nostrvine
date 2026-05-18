@@ -3434,8 +3434,9 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       // No 'since' filter to allow loading of all historical content
     );
 
-    debugPrint(
+    Log.debug(
       '🔍 Streaming historical query for $subscriptionType: until=${until != null ? DateTime.fromMillisecondsSinceEpoch(until * 1000) : 'none'}, limit=$limit',
+      name: 'VideoEventService',
     );
     Log.debug(
       'Filter: ${filter.toJson()}',

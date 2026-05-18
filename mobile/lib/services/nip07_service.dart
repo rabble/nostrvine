@@ -218,7 +218,11 @@ class Nip07Service {
         name: 'Nip07Service',
         category: LogCategory.system,
       );
-      debugPrint('📋 Event ID: ${signedEvent['id']}');
+      Log.debug(
+        '📋 Event ID: ${signedEvent['id']}',
+        name: 'Nip07Service',
+        category: LogCategory.auth,
+      );
 
       return Nip07SignResult.success(signedEvent);
     } on nip07.Nip07Exception catch (e) {

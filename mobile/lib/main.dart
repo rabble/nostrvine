@@ -755,9 +755,13 @@ Future<void> _startOpenVineApp() async {
   // Configure global error widget builder for user-friendly error display
   // Wrap in Directionality to enable Text widgets even before MaterialApp is ready
   ErrorWidget.builder = (FlutterErrorDetails details) {
-    // On web, show error details for debugging
+    // On web, log error details for debugging
     if (kIsWeb) {
-      print('ErrorWidget: ${details.exception}\n${details.stack}');
+      Log.error(
+        'ErrorWidget: ${details.exception}\n${details.stack}',
+        name: 'ErrorWidget',
+        category: LogCategory.system,
+      );
     }
     return Directionality(
       textDirection: TextDirection.ltr,

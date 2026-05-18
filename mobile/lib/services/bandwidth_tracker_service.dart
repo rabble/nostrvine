@@ -2,9 +2,9 @@
 // ABOUTME: Uses rolling average to recommend original/720p/480p quality
 
 import 'dart:collection';
-import 'dart:developer' as developer;
 
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Quality recommendation based on measured bandwidth
 enum VideoQuality {
@@ -200,7 +200,11 @@ class BandwidthTrackerService {
   }
 
   void _log(String message) {
-    developer.log('[BandwidthTracker] $message');
+    Log.debug(
+      '[BandwidthTracker] $message',
+      name: 'BandwidthTrackerService',
+      category: LogCategory.video,
+    );
   }
 }
 

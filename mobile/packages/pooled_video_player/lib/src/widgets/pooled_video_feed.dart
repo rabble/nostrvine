@@ -6,6 +6,7 @@ import 'package:pooled_video_player/src/controllers/player_pool.dart';
 import 'package:pooled_video_player/src/controllers/video_feed_controller.dart';
 import 'package:pooled_video_player/src/models/video_item.dart';
 import 'package:pooled_video_player/src/widgets/video_pool_provider.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Builder for video feed items.
 typedef VideoFeedItemBuilder =
@@ -313,11 +314,13 @@ class PooledVideoFeedState extends State<PooledVideoFeed>
         itemBuilder: (context, index) {
           final videos = _controller.videos;
           if (index < 0 || index >= videos.length) {
-            debugPrint(
+            Log.warning(
               'PooledVideoFeed: INDEX OUT OF BOUNDS! '
               'index=$index, videos.length=${videos.length}, '
               '_videoCount=$_videoCount, '
               'controller.videoCount=${_controller.videoCount}',
+              name: 'PooledVideoFeed',
+              category: LogCategory.video,
             );
             return const ColoredBox(color: Color(0xFF000000));
           }

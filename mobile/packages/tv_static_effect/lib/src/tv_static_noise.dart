@@ -2,11 +2,11 @@
 // ABOUTME: Mimics old television "no signal" snow for permission screens.
 
 import 'dart:async';
-import 'dart:developer' as developer;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// A function that creates a [CustomPainter] for the given [time] and
 /// [opacity].
@@ -77,9 +77,10 @@ class _TvStaticNoiseState extends State<TvStaticNoise>
         setState(() => _loaded = true);
       }
     } on Exception catch (e, s) {
-      developer.log(
+      Log.error(
         'Failed to load TV static shader',
         name: 'TvStaticNoise',
+        category: LogCategory.ui,
         error: e,
         stackTrace: s,
       );

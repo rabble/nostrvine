@@ -43,17 +43,9 @@ class VideoLoadingMetrics {
 
     _activeSessions[videoId] = session;
 
-    // Use both UnifiedLogger AND print to ensure visibility
     final message =
         '🎬 STARTED tracking video loading #$_metricsCount for $videoId... - $videoUrl';
     UnifiedLogger.info(message, name: 'VideoLoadingMetrics');
-    print(message);
-
-    // Also use Flutter's debugPrint which should definitely show up
-    debugPrint('🎬🎬🎬 VIDEO METRICS #$_metricsCount: $message 🎬🎬🎬');
-
-    // Force a visible print to stdout
-    print('METRICS_TEST_OUTPUT: Video metrics started for $videoId');
 
     // Notify visual overlay
     _notifyEvent('🎬 STARTED #$_metricsCount: $videoId');
@@ -181,9 +173,6 @@ class VideoLoadingMetrics {
     final message =
         '▶️ PLAYBACK STARTED for $videoId... in ${totalDuration}ms total';
     UnifiedLogger.info(message, name: 'VideoLoadingMetrics');
-    print(message);
-
-    // Bridge to feed-level swipe tracking
     FeedPerformanceTracker().markVideoSwipeComplete(videoId);
 
     // Send complete metrics to Firebase Analytics
@@ -435,14 +424,7 @@ class VideoLoadingMetrics {
         '   📡 Bandwidth: ${session.estimatedBandwidth?.toStringAsFixed(2) ?? 'N/A'} Mbps\n'
         '   🌍 Domain: ${Uri.tryParse(session.videoUrl)?.host ?? 'unknown'}';
 
-    // Log to both systems for maximum visibility
     UnifiedLogger.info(summary, name: 'VideoLoadingMetrics');
-    print(summary);
-
-    // Also use debugPrint with extra visibility
-    debugPrint('🚀🚀🚀 VIDEO PERFORMANCE SUMMARY 🚀🚀🚀');
-    debugPrint(summary);
-    debugPrint('🚀🚀🚀 END VIDEO PERFORMANCE 🚀🚀🚀');
 
     // Notify visual overlay with timing
     _notifyEvent('🚀 COMPLETE: ${session.videoId} in ${totalDuration}ms');

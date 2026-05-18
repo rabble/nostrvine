@@ -3,8 +3,6 @@
 // ABOUTME: from media.divine.video/{sha256}/vtt. Slow path: query relay for
 // ABOUTME: Kind 39307 subtitle events.
 
-import 'dart:developer' as developer;
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:nostr_sdk/filter.dart';
@@ -12,6 +10,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/subtitle_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'subtitle_providers.g.dart';
 
@@ -121,9 +120,10 @@ Future<List<SubtitleCue>> subtitleCues(
         return SubtitleService.parseVtt(response.body);
       }
     } catch (e) {
-      developer.log(
+      Log.warning(
         'Direct VTT fetch failed for $directSubtitleUrl: $e',
         name: 'subtitleCues',
+        category: LogCategory.video,
       );
     }
   }
@@ -143,9 +143,10 @@ Future<List<SubtitleCue>> subtitleCues(
         return blossomCues;
       }
     } catch (e) {
-      developer.log(
+      Log.warning(
         'Blossom VTT fetch failed for $sha256: $e',
         name: 'subtitleCues',
+        category: LogCategory.video,
       );
       // Network error — fall through to relay path
     }

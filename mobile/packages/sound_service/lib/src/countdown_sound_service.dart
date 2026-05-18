@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
 
 import 'package:sound_service/src/simple_audio_player.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Factory function that creates a [SimpleAudioPlayer] instance.
 ///
@@ -81,15 +81,16 @@ class CountdownSoundService {
         _longBeepPlayer!.setAsset(longBeepAsset),
       ]);
 
-      log(
+      Log.debug(
         'Countdown sounds preloaded',
         name: 'CountdownSoundService',
+        category: LogCategory.video,
       );
     } on Exception catch (e) {
-      log(
+      Log.warning(
         'Failed to preload countdown sounds: $e',
         name: 'CountdownSoundService',
-        level: 900,
+        category: LogCategory.video,
       );
       // Clean up on failure
       await dispose();
@@ -108,10 +109,10 @@ class CountdownSoundService {
       await _shortBeepPlayer!.seek(Duration.zero);
       await _shortBeepPlayer!.play();
     } on Exception catch (e) {
-      log(
+      Log.warning(
         'Failed to play short countdown beep: $e',
         name: 'CountdownSoundService',
-        level: 900,
+        category: LogCategory.video,
       );
     }
   }
@@ -131,10 +132,10 @@ class CountdownSoundService {
       // which can cause the beep to bleed into the recorded video audio.
       await Future<void>.delayed(postPlaybackBuffer);
     } on Exception catch (e) {
-      log(
+      Log.warning(
         'Failed to play long countdown beep: $e',
         name: 'CountdownSoundService',
-        level: 900,
+        category: LogCategory.video,
       );
     }
   }

@@ -15,6 +15,7 @@ dependencies:
   nostr_client:
   nostr_sdk:
   rxdart: ^0.28.0
+  unified_logger:
 
 dev_dependencies:
   fake_async: ^1.3.3

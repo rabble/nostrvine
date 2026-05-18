@@ -4,7 +4,6 @@
 // ABOUTME: notifications.
 
 import 'dart:async';
-import 'dart:developer' as developer;
 import 'dart:math' as math;
 
 import 'package:db_client/db_client.dart';
@@ -18,6 +17,7 @@ import 'package:profile_repository/profile_repository.dart';
 // with the domain `NotificationKind` from `models`.
 import 'package:rxdart/rxdart.dart' hide NotificationKind;
 import 'package:text_sanitizer/text_sanitizer.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Maximum length for comment preview text before truncation.
 const _maxCommentLength = 50;
@@ -192,9 +192,10 @@ class NotificationRepository {
       }
       return page;
     } on Exception catch (e, s) {
-      developer.log(
+      Log.error(
         'Failed to fetch notifications: $e',
         name: 'NotificationRepository.getNotifications',
+        category: LogCategory.api,
         error: e,
         stackTrace: s,
       );
@@ -251,11 +252,12 @@ class NotificationRepository {
         }
         lastError = e;
         lastStack = s;
-        developer.log(
+        Log.error(
           'Transient notifications fetch failure '
           '(attempt ${attempt + 1}/${_NotificationRetryConfig.maxAttempts}): '
           '$e',
           name: 'NotificationRepository._fetchWithRetry',
+          category: LogCategory.api,
           error: e,
           stackTrace: s,
         );
@@ -335,9 +337,10 @@ class NotificationRepository {
         ),
       );
     } on Exception catch (e, s) {
-      developer.log(
+      Log.error(
         'Failed to hydrate notifications cache: $e',
         name: 'NotificationRepository._hydrateFromCache',
+        category: LogCategory.storage,
         error: e,
         stackTrace: s,
       );
@@ -437,13 +440,16 @@ class NotificationRepository {
       final rows = items.map(_itemToCacheRow).toList();
       await _notificationsDao.replaceAll(rows);
     } on Exception catch (e, s) {
-      developer.log(
+      Log.error(
         'Failed to persist notifications cache: $e',
         name: 'NotificationRepository._persistSnapshot',
+        category: LogCategory.storage,
         error: e,
         stackTrace: s,
       );
     }
+  }
+}
   }
 
   /// Projects an enriched [NotificationItem] into the persistence record

@@ -3,11 +3,11 @@
 // ABOUTME: so consumers never depend on just_audio types directly.
 
 import 'dart:async';
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:just_audio/just_audio.dart';
 import 'package:sound_service/src/audio_source_config.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 abstract class _RemoteAudioLoaderConfig {
   static const Duration connectionTimeout = Duration(seconds: 10);
@@ -113,10 +113,10 @@ class AudioClipPlayer {
     try {
       await _audioPlayer.dispose();
     } on Exception catch (e) {
-      log(
+      Log.warning(
         'Error disposing AudioClipPlayer: $e',
         name: 'AudioClipPlayer',
-        level: 900,
+        category: LogCategory.video,
       );
     }
     await _clearCachedRemoteFile();
@@ -140,10 +140,10 @@ class AudioClipPlayer {
         }
       }
     } on Exception catch (e) {
-      log(
+      Log.warning(
         'Failed to delete cached remote audio file: $e',
         name: 'AudioClipPlayer',
-        level: 900,
+        category: LogCategory.video,
       );
     }
   }

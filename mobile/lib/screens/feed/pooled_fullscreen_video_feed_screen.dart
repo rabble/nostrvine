@@ -979,10 +979,12 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                                           VideoEditorConstants.maxDuration,
                                       itemBuilder: (context, video, index, {required isActive}) {
                                         if (state.videos.isEmpty) {
-                                          debugPrint(
+                                          Log.warning(
                                             'FullscreenFeed: itemBuilder called with empty '
                                             'state.videos! index=$index, '
                                             'video.id=${video.id}',
+                                            name: 'PooledFullscreenFeed',
+                                            category: LogCategory.video,
                                           );
                                           return const ColoredBox(
                                             color: VineTheme.backgroundColor,
@@ -990,12 +992,12 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                                         }
                                         final originalEvent = state.videos.firstWhere(
                                           (v) => v.id == video.id,
-                                          orElse: () {
+                                            orElse: () {
                                             final clamped = index.clamp(
                                               0,
                                               state.videos.length - 1,
                                             );
-                                            debugPrint(
+                                            Log.warning(
                                               'FullscreenFeed: video ID lookup miss! '
                                               'video.id=${video.id}, index=$index, '
                                               'clamped=$clamped, '
@@ -1003,6 +1005,8 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                                               '${state.videos.length}, '
                                               'pooledVideos.length='
                                               '${state.pooledVideos.length}',
+                                              name: 'PooledFullscreenFeed',
+                                              category: LogCategory.video,
                                             );
                                             return state.videos[clamped];
                                           },

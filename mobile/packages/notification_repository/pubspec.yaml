@@ -19,6 +19,7 @@ dependencies:
   profile_repository:
   rxdart: ^0.28.0
   text_sanitizer:
+  unified_logger:
 
 dev_dependencies:
   mocktail: ^1.0.4

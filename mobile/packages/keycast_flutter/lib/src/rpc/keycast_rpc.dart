@@ -9,6 +9,7 @@ import 'package:keycast_flutter/src/models/exceptions.dart';
 import 'package:keycast_flutter/src/models/keycast_session.dart';
 import 'package:keycast_flutter/src/oauth/oauth_config.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class KeycastRpc implements NostrSigner {
   final String nostrApi;
@@ -36,7 +37,11 @@ class KeycastRpc implements NostrSigner {
     List<dynamic> params,
     T Function(dynamic) fromResult,
   ) async {
-    print('[Keycast RPC] Calling $method...');
+    Log.debug(
+      '[Keycast RPC] Calling $method...',
+      name: 'KeycastRpc',
+      category: LogCategory.auth,
+    );
     final stopwatch = Stopwatch()..start();
     final response = await _client.post(
       Uri.parse(nostrApi),
@@ -48,12 +53,18 @@ class KeycastRpc implements NostrSigner {
     );
 
     stopwatch.stop();
-    print(
+    Log.debug(
       '[Keycast RPC] $method completed in ${stopwatch.elapsedMilliseconds}ms (HTTP ${response.statusCode})',
+      name: 'KeycastRpc',
+      category: LogCategory.auth,
     );
 
     if (response.statusCode != 200) {
-      print('[Keycast RPC] Error response: ${response.body}');
+      Log.error(
+        '[Keycast RPC] Error response: ${response.body}',
+        name: 'KeycastRpc',
+        category: LogCategory.auth,
+      );
       throw RpcException(
         'HTTP ${response.statusCode}: ${response.body}',
         method: method,

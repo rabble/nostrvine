@@ -2,10 +2,10 @@
 // ABOUTME: Scopes entries by owner pubkey and enforces deletion tombstones.
 
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:hive_ce/hive_ce.dart';
 import 'package:models/models.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Key prefix constants and JSON field names for the Hive box.
 abstract class _CacheKeys {
@@ -21,11 +21,6 @@ abstract class _CacheKeys {
 
 /// Logger name used for cache-level diagnostic log entries.
 const String _logName = 'people_lists_repository.local_cache';
-
-/// Log level used for recoverable, non-fatal decode failures.
-///
-/// `dart:developer`'s convention is 900 for WARNING.
-const int _logLevelWarning = 900;
 
 /// Local cache for kind 30000 people lists, scoped by owner pubkey.
 ///
@@ -231,10 +226,10 @@ class LocalPeopleListsCache {
       );
       return UserList.fromJson(json);
     } on Object catch (error, stackTrace) {
-      developer.log(
+      Log.error(
         'Dropped malformed people-list record during decode',
         name: _logName,
-        level: _logLevelWarning,
+        category: LogCategory.storage,
         error: error,
         stackTrace: stackTrace,
       );

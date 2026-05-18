@@ -5,6 +5,7 @@ import 'package:openvine/features/feature_flags/models/feature_flag_state.dart';
 import 'package:openvine/features/feature_flags/models/flag_metadata.dart';
 import 'package:openvine/features/feature_flags/services/build_configuration.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Service managing feature flag state with change notifications for Riverpod reactivity
 class FeatureFlagService extends ChangeNotifier {
@@ -60,7 +61,11 @@ class FeatureFlagService extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       // Handle storage errors gracefully - log and continue
-      debugPrint('Failed to persist feature flag $flag: $e');
+      Log.warning(
+        'Failed to persist feature flag $flag: $e',
+        name: 'FeatureFlagService',
+        category: LogCategory.system,
+      );
       // Still update in-memory state even if persistence fails
       _currentState = _currentState.copyWith(flag, value);
       notifyListeners();
@@ -79,7 +84,11 @@ class FeatureFlagService extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       // Handle storage errors gracefully - log and continue
-      debugPrint('Failed to reset feature flag $flag: $e');
+      Log.warning(
+        'Failed to reset feature flag $flag: $e',
+        name: 'FeatureFlagService',
+        category: LogCategory.system,
+      );
       // Still update in-memory state even if persistence fails
       final defaultValue = _buildConfig.getDefault(flag);
       _currentState = _currentState.copyWith(flag, defaultValue);
@@ -97,7 +106,11 @@ class FeatureFlagService extends ChangeNotifier {
         await _prefs.remove(key);
       } catch (e) {
         // Handle storage errors gracefully - log and continue
-        debugPrint('Failed to reset feature flag $flag: $e');
+        Log.warning(
+          'Failed to reset feature flag $flag: $e',
+          name: 'FeatureFlagService',
+          category: LogCategory.system,
+        );
       }
       flags[flag] = _buildConfig.getDefault(flag);
     }

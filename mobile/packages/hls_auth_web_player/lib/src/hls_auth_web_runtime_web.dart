@@ -2,7 +2,6 @@
 // `web/hls_auth_web_player.js`.
 
 import 'dart:async';
-import 'dart:developer' as developer;
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 import 'dart:ui_web' as ui_web;
@@ -11,6 +10,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hls_auth_web_player/src/auth_header_provider.dart';
 import 'package:hls_auth_web_player/src/hls_auth_web_runtime.dart';
 import 'package:hls_auth_web_player/src/js/hls_js_bindings.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Web implementation of [HlsAuthWebRuntime]. Creates a `<video>` element per
 /// registered view type, hands it to the JS shim, and dispatches MP4 / HLS
@@ -30,9 +30,10 @@ class WebHlsAuthRuntime implements HlsAuthWebRuntime {
     try {
       return hlsIsSupportedJs().toDart;
     } on Object catch (error, stackTrace) {
-      developer.log(
+      Log.error(
         'hls.isSupported threw',
         name: 'hls_auth_web_player',
+        category: LogCategory.video,
         error: error,
         stackTrace: stackTrace,
       );
@@ -86,9 +87,10 @@ class WebHlsAuthRuntime implements HlsAuthWebRuntime {
         authHeader(jsUrl.toDart, jsMethod.toDart).then(
           (value) => completer.complete(value?.toJS),
           onError: (Object error, StackTrace stackTrace) {
-            developer.log(
+            Log.error(
               'auth header callback threw',
               name: 'hls_auth_web_player',
+              category: LogCategory.video,
               error: error,
               stackTrace: stackTrace,
             );

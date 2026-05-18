@@ -1,9 +1,9 @@
-import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
+import 'package:unified_logger/unified_logger.dart';
 
 /// Strips EXIF metadata (GPS, device info, timestamps) from images.
 ///
@@ -65,9 +65,10 @@ class ImageMetadataStripper {
 
       return targetFile;
     } on Exception catch (e, stackTrace) {
-      developer.log(
+      Log.error(
         'Failed to strip image metadata',
         name: 'ImageMetadataStripper',
+        category: LogCategory.storage,
         error: e,
         stackTrace: stackTrace,
       );
@@ -133,9 +134,10 @@ class ImageMetadataStripper {
         );
       }
     } on Object catch (e, stackTrace) {
-      developer.log(
+      Log.error(
         'Failed to decode image bytes for stripping; returning original',
         name: 'ImageMetadataStripper',
+        category: LogCategory.storage,
         error: e,
         stackTrace: stackTrace,
       );

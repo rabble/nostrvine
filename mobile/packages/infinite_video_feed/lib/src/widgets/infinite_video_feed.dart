@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:divine_video_player/divine_video_player.dart';
@@ -18,6 +17,7 @@ import 'package:infinite_video_feed/src/utils/source_loader.dart';
 import 'package:infinite_video_feed/src/widgets/video_item.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:models/models.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Infinite scrolling video feed using native platform video players.
 ///
@@ -461,7 +461,11 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
 
   // ─── Logging / setState wrapper ─────────────────────────────────────────
 
-  void _log(String message) => developer.log(message, name: _logName);
+  void _log(String message) => Log.debug(
+    message,
+    name: _logName,
+    category: LogCategory.video,
+  );
 
   void _rebuild() {
     if (mounted) setState(() {});
@@ -721,11 +725,11 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
             'Cache read failed index $index (${video.id}): $cacheError '
             '— evicting cache and falling back to network',
           );
-          developer.log(
+          Log.error(
             'Cache fallback to network',
             name: _logName,
+            category: LogCategory.video,
             error: cacheError,
-            stackTrace: cacheStackTrace,
           );
           unawaited(_evictCachedFile(video.id));
           if (playbackSources.isEmpty) {
@@ -786,9 +790,10 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
         return;
       }
       _log('Error loading index $index (${video.id}): $e');
-      developer.log(
+      Log.error(
         'Player init failed',
         name: _logName,
+        category: LogCategory.video,
         error: e,
         stackTrace: stackTrace,
       );
@@ -877,9 +882,10 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       }
     } on Object catch (e, stackTrace) {
       _log('Source failover failed index $index source=$nextSource: $e');
-      developer.log(
+      Log.error(
         'Source failover failed',
         name: _logName,
+        category: LogCategory.video,
         error: e,
         stackTrace: stackTrace,
       );
@@ -905,9 +911,10 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     try {
       await widget.cache.removeCachedFile(videoId);
     } on Object catch (e, stackTrace) {
-      developer.log(
+      Log.error(
         'Failed to evict cached file for $videoId',
         name: _logName,
+        category: LogCategory.video,
         error: e,
         stackTrace: stackTrace,
       );

@@ -16,6 +16,7 @@ dependencies:
   meta: ^1.16.0
   nostr_sdk:
   shared_preferences: ^2.5.0
+  unified_logger:
 
 dev_dependencies:
   mocktail: ^1.0.4

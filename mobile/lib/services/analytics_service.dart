@@ -109,7 +109,11 @@ class AnalyticsService implements BackgroundAwareService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_analyticsEnabledKey, enabled);
 
-      debugPrint('Analytics ${enabled ? 'enabled' : 'disabled'} by user');
+      Log.info(
+        'Analytics ${enabled ? 'enabled' : 'disabled'} by user',
+        name: 'AnalyticsService',
+        category: LogCategory.system,
+      );
     } catch (e) {
       Log.error(
         'Failed to save analytics preference: $e',

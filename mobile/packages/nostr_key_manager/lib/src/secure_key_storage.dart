@@ -10,6 +10,7 @@ import 'package:nostr_key_manager/src/nsec_bunker_client.dart';
 import 'package:nostr_key_manager/src/platform_secure_storage.dart';
 import 'package:nostr_key_manager/src/secure_key_container.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final _log = Logger('SecureKeyStorage');
@@ -227,8 +228,10 @@ class SecureKeyStorage {
       await _storeMetadata();
 
       _log.info('Generated and stored new secure key pair');
-      debugPrint(
-        '🔒 Security level: ${result.securityLevel?.name ?? 'unknown'}',
+      Log.debug(
+        '🔒 Security level: ${result.securityLevel?.name ?? "unknown"}',
+        name: 'SecureKeyStorage',
+        category: LogCategory.auth,
       );
 
       return keyContainer;
@@ -302,8 +305,10 @@ class SecureKeyStorage {
       await _storeMetadata();
 
       _log.info('Keys imported and stored securely');
-      debugPrint(
-        '🔒 Security level: ${result.securityLevel?.name ?? 'unknown'}',
+      Log.debug(
+        '🔒 Security level: ${result.securityLevel?.name ?? "unknown"}',
+        name: 'SecureKeyStorage',
+        category: LogCategory.auth,
       );
 
       return keyContainer;
@@ -413,8 +418,10 @@ class SecureKeyStorage {
       await _storeMetadata();
 
       _log.info('Keys imported from hex and stored securely');
-      debugPrint(
-        '🔒 Security level: ${result.securityLevel?.name ?? 'unknown'}',
+      Log.debug(
+        '🔒 Security level: ${result.securityLevel?.name ?? "unknown"}',
+        name: 'SecureKeyStorage',
+        category: LogCategory.auth,
       );
 
       return keyContainer;

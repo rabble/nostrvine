@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:media_cache/src/cancellable_downloader.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// A handle to an in-progress cache download that can be cancelled.
 ///
@@ -39,10 +39,11 @@ class CancellableCacheOperation {
     try {
       _subscription = stream.listen(
         (response) {
-          developer.log(
+          Log.debug(
             'CancellableCacheOp[$cacheKey]: '
             'event=${response.runtimeType}',
             name: 'MediaCache',
+            category: LogCategory.video,
           );
           if (response is FileInfo && !_completer.isCompleted) {
             onCached?.call(cacheKey ?? '', response.file.path);
@@ -50,17 +51,19 @@ class CancellableCacheOperation {
           }
         },
         onError: (Object error) {
-          developer.log(
+          Log.warning(
             'CancellableCacheOp[$cacheKey]: onError=$error',
             name: 'MediaCache',
+            category: LogCategory.video,
           );
           if (!_completer.isCompleted) _completer.complete();
         },
         onDone: () {
-          developer.log(
+          Log.debug(
             'CancellableCacheOp[$cacheKey]: onDone '
             '(completed=${_completer.isCompleted})',
             name: 'MediaCache',
+            category: LogCategory.video,
           );
           if (!_completer.isCompleted) _completer.complete();
         },
@@ -87,10 +90,11 @@ class CancellableCacheOperation {
     unawaited(
       download.file
           .then((file) {
-            developer.log(
+            Log.debug(
               'CancellableCacheOp[$cacheKey]: download done '
               '(file=${file?.path}, cancelled=$_isCancelled)',
               name: 'MediaCache',
+              category: LogCategory.video,
             );
             if (_completer.isCompleted) return;
             if (file != null && !_isCancelled) onCached?.call(file);

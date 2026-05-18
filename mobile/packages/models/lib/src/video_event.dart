@@ -4,13 +4,13 @@
 // kinds 22, 21, 34236, 34235
 
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 import 'package:meta/meta.dart';
 import 'package:models/src/nip71_video_kinds.dart';
 import 'package:models/src/video_attribution.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:text_sanitizer/text_sanitizer.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Represents a video event (NIP-71 compliant kinds 22, 34236)
 @immutable
@@ -86,17 +86,20 @@ class VideoEvent {
       );
     }
 
-    developer.log(
+    Log.debug(
       '🔍 DEBUG: Parsing Kind ${event.kind} event ${event.id}',
       name: 'VideoEvent',
+      category: LogCategory.video,
     );
-    developer.log(
+    Log.debug(
       '🔍 DEBUG: Event has ${event.tags.length} tags',
       name: 'VideoEvent',
+      category: LogCategory.video,
     );
-    developer.log(
+    Log.debug(
       '''🔍 DEBUG: Event content: ${event.content.length > 100 ? "${event.content.substring(0, 100)}..." : event.content}''',
       name: 'VideoEvent',
+      category: LogCategory.video,
     );
 
     final rawTags = <String, String>{};
@@ -140,16 +143,18 @@ class VideoEvent {
       final tagName = tag[0];
       final tagValue = (tag.length > 1) ? tag[1] : '';
 
-      developer.log(
+      Log.debug(
         '🔍 DEBUG: Tag [$i]: $tagName (${tag.length} elements)',
         name: 'VideoEvent',
+        category: LogCategory.video,
       );
 
       switch (tagName) {
         case 'url':
-          developer.log(
+          Log.debug(
             '🔍 DEBUG: Found url tag with value: $tagValue',
             name: 'VideoEvent',
+            category: LogCategory.video,
           );
           // Check if this is a valid video URL
           if (tagValue.isNotEmpty && _isValidVideoUrl(tagValue)) {
@@ -159,22 +164,25 @@ class VideoEvent {
                 'apt.openvine.co',
                 'api.openvine.co',
               );
-              developer.log(
+              Log.debug(
                 '''🔧 FIXED: Corrected apt.openvine.co to api.openvine.co: $fixedUrl''',
                 name: 'VideoEvent',
+                category: LogCategory.video,
               );
               videoUrlCandidates.add(fixedUrl);
             } else {
               videoUrlCandidates.add(tagValue);
-              developer.log(
+              Log.debug(
                 '✅ Added video URL candidate from url tag: $tagValue',
                 name: 'VideoEvent',
+                category: LogCategory.video,
               );
             }
           } else {
-            developer.log(
+            Log.debug(
               '⚠️ WARNING: Invalid URL in url tag: $tagValue',
               name: 'VideoEvent',
+              category: LogCategory.video,
             );
           }
         case 'streaming':
@@ -182,33 +190,38 @@ class VideoEvent {
           // Format: ["streaming", "url", "format"] e.g., ["streaming", "https://cdn.divine.video/.../video.m3u8", "hls"]
           if (tagValue.isNotEmpty && _isValidVideoUrl(tagValue)) {
             videoUrlCandidates.add(tagValue);
-            developer.log(
+            Log.debug(
               '✅ Added video URL candidate from streaming tag: $tagValue',
               name: 'VideoEvent',
+              category: LogCategory.video,
             );
           }
         case 'imeta':
-          developer.log(
+          Log.debug(
             '🔍 DEBUG: Found imeta tag with ${tag.length} elements',
             name: 'VideoEvent',
+            category: LogCategory.video,
           );
-          developer.log(
+          Log.debug(
             '🔍 DEBUG: Full imeta tag contents: $tag',
             name: 'VideoEvent',
+            category: LogCategory.video,
           );
           // Parse imeta tag which contains comma-separated metadata
           // Ensure we have a List<String> for the parser
           final iMetaTag = List<String>.from(tag);
           _parseImetaTag(iMetaTag, (key, value) {
-            developer.log(
+            Log.debug(
               '🔍 DEBUG: imeta key="$key" value="$value"',
               name: 'VideoEvent',
+              category: LogCategory.video,
             );
             switch (key) {
               case 'url':
-                developer.log(
+                Log.debug(
                   '🔍 DEBUG: imeta URL value: $value',
                   name: 'VideoEvent',
+                  category: LogCategory.video,
                 );
                 // Check if this is a valid video URL and add to candidates
                 if (value.isNotEmpty && _isValidVideoUrl(value)) {
@@ -218,22 +231,25 @@ class VideoEvent {
                       'apt.openvine.co',
                       'api.openvine.co',
                     );
-                    developer.log(
+                    Log.debug(
                       '''🔧 FIXED: Corrected apt.openvine.co to api.openvine.co in imeta: $fixedUrl''',
                       name: 'VideoEvent',
+                      category: LogCategory.video,
                     );
                     videoUrlCandidates.add(fixedUrl);
                   } else {
                     videoUrlCandidates.add(value);
-                    developer.log(
+                    Log.debug(
                       '✅ Added video URL candidate from imeta url: $value',
                       name: 'VideoEvent',
+                      category: LogCategory.video,
                     );
                   }
                 } else {
-                  developer.log(
+                  Log.debug(
                     '⚠️ WARNING: Invalid URL in imeta: $value',
                     name: 'VideoEvent',
+                    category: LogCategory.video,
                   );
                 }
               // POSTEL'S LAW: Accept various video URL keys that
@@ -248,9 +264,10 @@ class VideoEvent {
                 // Alternative video URL keys - add as candidates if valid
                 if (value.isNotEmpty && _isValidVideoUrl(value)) {
                   videoUrlCandidates.add(value);
-                  developer.log(
+                  Log.debug(
                     '✅ Added video URL candidate from imeta $key: $value',
                     name: 'VideoEvent',
+                    category: LogCategory.video,
                   );
                 }
               case 'm':
@@ -270,9 +287,10 @@ class VideoEvent {
                 // NIP-92 uses 'image' for thumbnail in imeta
                 if (value.isNotEmpty && _isValidVideoUrl(value)) {
                   thumbnailUrl ??= value;
-                  developer.log(
+                  Log.debug(
                     '✅ Set thumbnailUrl from imeta image tag: $value',
                     name: 'VideoEvent',
+                    category: LogCategory.video,
                   );
                 }
               case 'blurhash':
@@ -311,9 +329,10 @@ class VideoEvent {
           if (tagValue.isNotEmpty && tagValue.endsWith('.gif')) {
             // Store in tags for potential future use
             rawTags['preview_gif'] = tagValue;
-            developer.log(
+            Log.debug(
               '✅ Found preview GIF tag (not using as thumbnail): $tagValue',
               name: 'VideoEvent',
+              category: LogCategory.video,
             );
           }
         case 'image':
@@ -361,34 +380,38 @@ class VideoEvent {
           if (tag.length >= 3) {
             final url = tagValue;
             final type = tag[2];
-            developer.log(
+            Log.debug(
               '🔍 DEBUG: Found r tag with type annotation: '
               'url="$url" type="$type"',
               name: 'VideoEvent',
+              category: LogCategory.video,
             );
 
             if (type == 'video' && url.isNotEmpty && _isValidVideoUrl(url)) {
               videoUrl ??= url;
-              developer.log(
+              Log.debug(
                 '✅ Found video URL in r tag with type annotation: $url',
                 name: 'VideoEvent',
+                category: LogCategory.video,
               );
             } else if (type == 'thumbnail' &&
                 url.isNotEmpty &&
                 _isValidVideoUrl(url) &&
                 !url.contains('picsum.photos')) {
               thumbnailUrl ??= url;
-              developer.log(
+              Log.debug(
                 '✅ Found thumbnail URL in r tag with type annotation: $url',
                 name: 'VideoEvent',
+                category: LogCategory.video,
               );
             }
           } else if (tagValue.isNotEmpty && _isValidVideoUrl(tagValue)) {
             // Fallback: if no type annotation, treat as video URL
             videoUrlCandidates.add(tagValue);
-            developer.log(
+            Log.debug(
               '✅ Added video URL candidate from r tag: $tagValue',
               name: 'VideoEvent',
+              category: LogCategory.video,
             );
           }
         case 'e':
@@ -406,10 +429,11 @@ class VideoEvent {
                 if (tag.length >= 4 && tag[2].isNotEmpty) {
                   audioEventRelay = tag[2];
                 }
-                developer.log(
+                Log.debug(
                   '🎵 Found audio reference: $audioEventId '
                   '(relay: $audioEventRelay)',
                   name: 'VideoEvent',
+                  category: LogCategory.video,
                 );
               }
             }
@@ -419,27 +443,30 @@ class VideoEvent {
               if (tag.length >= 3 && tag[2].isNotEmpty) {
                 audioEventRelay = tag[2];
               }
-              developer.log(
+              Log.debug(
                 '🎵 Found bundled audio reference: $audioEventId',
                 name: 'VideoEvent',
+                category: LogCategory.video,
               );
             }
           }
           // Also check if it's a media URL in disguise (legacy behavior)
           if (tagValue.isNotEmpty && _isValidVideoUrl(tagValue)) {
             videoUrlCandidates.add(tagValue);
-            developer.log(
+            Log.debug(
               '✅ Added video URL candidate from e tag: $tagValue',
               name: 'VideoEvent',
+              category: LogCategory.video,
             );
           }
         case 'i':
           // External identity - sometimes used for media
           if (tagValue.isNotEmpty && _isValidVideoUrl(tagValue)) {
             videoUrlCandidates.add(tagValue);
-            developer.log(
+            Log.debug(
               '✅ Added video URL candidate from i tag: $tagValue',
               name: 'VideoEvent',
+              category: LogCategory.video,
             );
           }
         case 'p':
@@ -490,10 +517,11 @@ class VideoEvent {
           // POSTEL'S LAW: Check if any unknown tag contains a valid video URL
           if (tagValue.isNotEmpty && _isValidVideoUrl(tagValue)) {
             videoUrlCandidates.add(tagValue);
-            developer.log(
+            Log.debug(
               '✅ Added video URL candidate from unknown tag '
               '"$tagName": $tagValue',
               name: 'VideoEvent',
+              category: LogCategory.video,
             );
           }
       }
@@ -517,31 +545,42 @@ class VideoEvent {
     final publishedAtTimestamp = int.tryParse(publishedAt ?? '');
     final effectiveTimestamp = publishedAtTimestamp ?? createdAtTimestamp;
 
-    developer.log('🔍 DEBUG: Final parsing results:', name: 'VideoEvent');
-    developer.log('🔍 DEBUG: videoUrl = $videoUrl', name: 'VideoEvent');
-    developer.log('🔍 DEBUG: thumbnailUrl = $thumbnailUrl', name: 'VideoEvent');
+    Log.debug('🔍 DEBUG: Final parsing results:', name: 'VideoEvent',
+        category: LogCategory.video,
+      );
+    Log.debug('🔍 DEBUG: videoUrl = $videoUrl', name: 'VideoEvent',
+        category: LogCategory.video,
+      );
+    Log.debug('🔍 DEBUG: thumbnailUrl = $thumbnailUrl', name: 'VideoEvent',
+        category: LogCategory.video,
+      );
 
     // DEBUG: Log the exact videoUrl being passed to VideoEvent constructor
     if (videoUrl?.contains('cdn.divine.video') ?? false) {
-      developer.log(
+      Log.debug(
         '⚠️ SUSPICIOUS: Found cdn.divine.video URL: $videoUrl',
         name: 'VideoEvent',
+        category: LogCategory.video,
       );
     }
-    developer.log('🔍 DEBUG: duration = $duration', name: 'VideoEvent');
+    Log.debug('🔍 DEBUG: duration = $duration', name: 'VideoEvent',
+        category: LogCategory.video,
+      );
 
     // POSTEL'S LAW: Be liberal in what you accept
     // Apply comprehensive fallback logic to find video URLs
     if (videoUrl == null || videoUrl.isEmpty) {
-      developer.log(
+      Log.debug(
         '🔧 FALLBACK: No video URL found in tags, searching content...',
         name: 'VideoEvent',
+        category: LogCategory.video,
       );
       videoUrl = _extractVideoUrlFromContent(event.content);
       if (videoUrl != null) {
-        developer.log(
+        Log.debug(
           '✅ FALLBACK: Found video URL in content: $videoUrl',
           name: 'VideoEvent',
+          category: LogCategory.video,
         );
       }
     }
@@ -549,23 +588,26 @@ class VideoEvent {
     // Select best video URL from all candidates
     if (videoUrlCandidates.isNotEmpty) {
       videoUrl = _selectBestVideoUrl(videoUrlCandidates);
-      developer.log(
+      Log.debug(
         '🎯 Selected best video URL from ${videoUrlCandidates.length} '
         'candidates: $videoUrl',
         name: 'VideoEvent',
+        category: LogCategory.video,
       );
     } else {
       // If no candidates found, use the old fallback method
-      developer.log(
+      Log.debug(
         '🔧 FALLBACK: No URL candidates found, searching all tags '
         'for any potential video URL...',
         name: 'VideoEvent',
+        category: LogCategory.video,
       );
       videoUrl = _findAnyVideoUrlInTags(event.tags);
       if (videoUrl != null) {
-        developer.log(
+        Log.debug(
           '✅ FALLBACK: Found potential video URL in tags: $videoUrl',
           name: 'VideoEvent',
+          category: LogCategory.video,
         );
       }
     }
@@ -580,58 +622,80 @@ class VideoEvent {
         'apt.openvine.co',
         'api.openvine.co',
       );
-      developer.log(
+      Log.debug(
         '🔧 FINAL FIX: Corrected remaining apt.openvine.co to '
         'api.openvine.co: $fixedUrl',
         name: 'VideoEvent',
+        category: LogCategory.video,
       );
       videoUrl = fixedUrl;
     }
 
-    developer.log(
+    Log.debug(
       '🔍 DEBUG: hasVideo = ${videoUrl != null && videoUrl.isNotEmpty}',
       name: 'VideoEvent',
+      category: LogCategory.video,
     );
 
     // Use 'd' tag if available, otherwise fallback to event ID
     // Many relays don't include 'd' tags on NIP-71 addressable events
     if (vineId == null || vineId.isEmpty) {
-      developer.log(
+      Log.debug(
         '⚠️ WARNING: NIP-71 addressable event missing "d" tag, '
         'using event ID as fallback',
         name: 'VideoEvent',
+        category: LogCategory.video,
       );
       vineId = event.id; // Use event ID as unique identifier
     }
 
     // DEBUG: Log full event for cdn.divine.video thumbnails
     if (thumbnailUrl != null && thumbnailUrl!.contains('media.divine.video')) {
-      developer.log(
+      Log.debug(
         '🔍 DEBUG divine.video thumbnail found!',
         name: 'VideoEvent',
+        category: LogCategory.video,
       );
-      developer.log('🔍 Event ID: ${event.id}', name: 'VideoEvent');
-      developer.log('🔍 Event Kind: ${event.kind}', name: 'VideoEvent');
-      developer.log('🔍 Event Pubkey: ${event.pubkey}', name: 'VideoEvent');
-      developer.log('🔍 Thumbnail URL: $thumbnailUrl', name: 'VideoEvent');
-      developer.log('🔍 Video URL: $videoUrl', name: 'VideoEvent');
-      developer.log('🔍 Event tag summary:', name: 'VideoEvent');
+      Log.debug('🔍 Event ID: ${event.id}', name: 'VideoEvent',
+        category: LogCategory.video,
+      );
+      Log.debug('🔍 Event Kind: ${event.kind}', name: 'VideoEvent',
+        category: LogCategory.video,
+      );
+      Log.debug('🔍 Event Pubkey: ${event.pubkey}', name: 'VideoEvent',
+        category: LogCategory.video,
+      );
+      Log.debug('🔍 Thumbnail URL: $thumbnailUrl', name: 'VideoEvent',
+        category: LogCategory.video,
+      );
+      Log.debug('🔍 Video URL: $videoUrl', name: 'VideoEvent',
+        category: LogCategory.video,
+      );
+      Log.debug('🔍 Event tag summary:', name: 'VideoEvent',
+        category: LogCategory.video,
+      );
       for (var i = 0; i < event.tags.length; i++) {
         final tag = event.tags[i];
         final tagName = tag.isNotEmpty ? tag.first : '<empty>';
-        developer.log(
+        Log.debug(
           '🔍   Tag[$i]: $tagName (${tag.length} elements)',
           name: 'VideoEvent',
+          category: LogCategory.video,
         );
       }
-      developer.log('🔍 Event Content: ${event.content}', name: 'VideoEvent');
-      developer.log(
+      Log.debug('🔍 Event Content: ${event.content}', name: 'VideoEvent',
+        category: LogCategory.video,
+      );
+      Log.debug(
         '🔍 Event CreatedAt: ${event.createdAt}',
         name: 'VideoEvent',
+        category: LogCategory.video,
       );
     }
 
-    developer.log('🖼️ Thumbnail URL: $thumbnailUrl', name: 'VideoEvent');
+    Log.debug('🖼️ Thumbnail URL: $thumbnailUrl', name: 'VideoEvent',
+        category: LogCategory.video,
+      );
 
     return VideoEvent(
       id: event.id,
@@ -1505,9 +1569,10 @@ class VideoEvent {
       // The video player will determine if it can actually play the content
       return true;
     } on FormatException catch (e) {
-      developer.log(
+      Log.debug(
         '🔍 INVALID URL (parse error): $correctedUrl - error: $e',
         name: 'VideoEvent',
+        category: LogCategory.video,
       );
       return false;
     }
@@ -1586,7 +1651,9 @@ class VideoEvent {
       final isValid = _isValidVideoUrl(url);
       if (isValid) {
         final score = _scoreVideoUrl(url);
-        developer.log('🎯 URL score: $score for $url', name: 'VideoEvent');
+        Log.debug('🎯 URL score: $score for $url', name: 'VideoEvent',
+        category: LogCategory.video,
+      );
         if (score > bestScore) {
           bestScore = score;
           bestUrl = url;
@@ -1595,9 +1662,10 @@ class VideoEvent {
     }
 
     if (bestUrl != null) {
-      developer.log(
+      Log.debug(
         '✅ Selected best video URL (score: $bestScore): $bestUrl',
         name: 'VideoEvent',
+        category: LogCategory.video,
       );
     }
 

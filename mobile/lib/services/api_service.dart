@@ -2,7 +2,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart'; // ABOUTME: Handles ready events polling, authentication, and error handling
 import 'package:http/http.dart' as http;
 import 'package:openvine/config/app_config.dart';
 import 'package:openvine/services/network/rate_limiter.dart'
@@ -201,14 +200,20 @@ class ApiService {
           .timeout(const Duration(seconds: 10));
 
       final isHealthy = response.statusCode == 200;
-      debugPrint(
+      Log.debug(
         isHealthy ? '✅ API connection healthy' : '❌ API connection unhealthy',
+        name: 'ApiService',
+        category: LogCategory.api,
       );
 
       if (isHealthy) {
         try {
           final data = jsonDecode(response.body);
-          debugPrint('📊 Backend status: ${data['status']}');
+          Log.debug(
+            '📊 Backend status: ${data['status']}',
+            name: 'ApiService',
+            category: LogCategory.api,
+          );
         } catch (e) {
           // Ignore JSON parsing errors for health check
         }

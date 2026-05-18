@@ -18,6 +18,8 @@ dependencies:
     path: ../nostr_sdk
   pointycastle: ^3.7.3
   shared_preferences: ^2.2.3
+  unified_logger:
+    path: ../unified_logger
   web_socket_channel: ^3.0.2
 
 dev_dependencies:

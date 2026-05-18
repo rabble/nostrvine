@@ -5,6 +5,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Callback type for reconnect events
 typedef OnReconnectCallback = void Function();
@@ -95,7 +96,11 @@ class ConnectionStatusService extends ChangeNotifier {
         callback();
       } catch (e) {
         // Don't let one callback failure break others
-        debugPrint('Reconnect callback error: $e');
+        Log.warning(
+          'Reconnect callback error: $e',
+          name: 'ConnectionStatusService',
+          category: LogCategory.relay,
+        );
       }
     }
   }

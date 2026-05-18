@@ -18,6 +18,8 @@ dependencies:
   path: ^1.9.1
   path_provider: ^2.1.5
   sqflite: ^2.3.3+1
+  unified_logger:
+    path: ../unified_logger
 
 dev_dependencies:
   file: ^7.0.0

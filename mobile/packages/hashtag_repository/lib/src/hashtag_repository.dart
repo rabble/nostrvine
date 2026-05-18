@@ -1,11 +1,10 @@
 // ABOUTME: Repository for searching hashtags via Funnelcake API with local
 // ABOUTME: fallback. Owns source-selection and fallback strategy.
 
-import 'dart:developer' as developer;
-
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:hashtag_repository/src/hashtag_extractor.dart';
 import 'package:models/models.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Callback for searching locally cached hashtags.
 typedef LocalHashtagSearch = List<String> Function(String query, int limit);
@@ -69,9 +68,10 @@ class HashtagRepository {
 
       if (filtered.isNotEmpty) return filtered;
     } on Exception catch (e, stackTrace) {
-      developer.log(
+      Log.error(
         'Remote hashtag search failed, falling back to local',
         name: 'HashtagRepository',
+        category: LogCategory.api,
         error: e,
         stackTrace: stackTrace,
       );

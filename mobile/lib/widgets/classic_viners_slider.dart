@@ -14,6 +14,7 @@ import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/widgets/user_avatar.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Horizontal slider displaying top classic Viners sorted by loop count.
 ///
@@ -236,7 +237,11 @@ class _VinerAvatar extends ConsumerWidget {
     final npub = normalizeToNpub(identifier, currentUserHex: currentUserHex);
     if (npub == null) {
       // Invalid identifier - log warning and don't push
-      debugPrint('⚠️ Invalid public identifier: $identifier');
+      Log.warning(
+        '⚠️ Invalid public identifier: $identifier',
+        name: 'ClassicVinersSlider',
+        category: LogCategory.ui,
+      );
       return;
     }
 

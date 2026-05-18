@@ -6,7 +6,6 @@
 // ignore_for_file: experimental_member_use
 
 import 'dart:async';
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:audio_session/audio_session.dart' as audio_session;
@@ -15,6 +14,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:sound_service/src/audio_session_wrapper.dart';
 import 'package:sound_service/src/audio_source_config.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Service for managing audio playback during lip sync recording mode.
 ///
@@ -120,23 +120,24 @@ class AudioPlaybackService {
               );
             },
             onError: (Object error) {
-              log(
+              Log.warning(
                 'Error in device change stream: $error',
                 name: 'AudioPlaybackService',
-                level: 900,
+        category: LogCategory.video,
               );
             },
           );
 
-      log(
+      Log.debug(
         'Headphone detection initialized. Connected: $hasHeadphones',
         name: 'AudioPlaybackService',
+        category: LogCategory.video,
       );
     } on Exception catch (e) {
-      log(
+      Log.warning(
         'Failed to initialize headphone detection: $e',
         name: 'AudioPlaybackService',
-        level: 900,
+        category: LogCategory.video,
       );
       // Default to false if detection fails
       if (!_isDisposed) {
@@ -189,24 +190,25 @@ class AudioPlaybackService {
       if (url.startsWith('asset://')) {
         final assetPath = url.substring('asset://'.length);
         loadedDuration = await _audioPlayer.setAsset(assetPath);
-        log(
+        Log.debug(
           'Loaded audio from asset: $assetPath',
           name: 'AudioPlaybackService',
+        category: LogCategory.video,
         );
       } else {
         loadedDuration = await _audioPlayer.setAudioSource(
           _networkAudioSource(url),
         );
-        log('Loaded audio from URL: $url', name: 'AudioPlaybackService');
+        Log.debug('Loaded audio from URL: $url', name: 'AudioPlaybackService');
       }
 
       _lastSource = (type: _SourceType.url, value: url);
       return loadedDuration;
     } catch (e) {
-      log(
+      Log.warning(
         'Failed to load audio from $url: $e',
         name: 'AudioPlaybackService',
-        level: 900,
+        category: LogCategory.video,
       );
       rethrow;
     } finally {
@@ -223,14 +225,14 @@ class AudioPlaybackService {
     _loadCompleter = Completer<void>();
     try {
       final loadedDuration = await _audioPlayer.setFilePath(filePath);
-      log('Loaded audio from file: $filePath', name: 'AudioPlaybackService');
+      Log.debug('Loaded audio from file: $filePath', name: 'AudioPlaybackService');
       _lastSource = (type: _SourceType.file, value: filePath);
       return loadedDuration;
     } catch (e) {
-      log(
+      Log.warning(
         'Failed to load audio from file $filePath: $e',
         name: 'AudioPlaybackService',
-        level: 900,
+        category: LogCategory.video,
       );
       rethrow;
     } finally {
@@ -279,17 +281,18 @@ class AudioPlaybackService {
       }
 
       final loadedDuration = await _audioPlayer.setAudioSource(source);
-      log(
+      Log.debug(
         'Set audio source: ${source.runtimeType}',
         name: 'AudioPlaybackService',
+        category: LogCategory.video,
       );
       _lastSource = (type: _SourceType.audioSource, value: config);
       return loadedDuration;
     } catch (e) {
-      log(
+      Log.warning(
         'Failed to set audio source: $e',
         name: 'AudioPlaybackService',
-        level: 900,
+        category: LogCategory.video,
       );
       rethrow;
     } finally {
@@ -318,10 +321,10 @@ class AudioPlaybackService {
     if (_isDisposed) return;
     try {
       await _audioPlayer.play();
-      log('Started audio playback', name: 'AudioPlaybackService');
+      Log.debug('Started audio playback', name: 'AudioPlaybackService');
     } catch (e) {
       if (_isLoadingInterrupted(e)) {
-        log(
+        Log.debug(
           'Play interrupted, reloading source and retrying',
           name: 'AudioPlaybackService',
           level: 800,
@@ -332,10 +335,10 @@ class AudioPlaybackService {
           return;
         }
       }
-      log(
+      Log.warning(
         'Failed to start playback: $e',
         name: 'AudioPlaybackService',
-        level: 900,
+        category: LogCategory.video,
       );
       rethrow;
     }
@@ -346,12 +349,12 @@ class AudioPlaybackService {
     if (_isDisposed) return;
     try {
       await _audioPlayer.pause();
-      log('Paused audio playback', name: 'AudioPlaybackService');
+      Log.debug('Paused audio playback', name: 'AudioPlaybackService');
     } catch (e) {
-      log(
+      Log.warning(
         'Failed to pause playback: $e',
         name: 'AudioPlaybackService',
-        level: 900,
+        category: LogCategory.video,
       );
       rethrow;
     }
@@ -362,12 +365,12 @@ class AudioPlaybackService {
     if (_isDisposed) return;
     try {
       await _audioPlayer.stop();
-      log('Stopped audio playback', name: 'AudioPlaybackService');
+      Log.debug('Stopped audio playback', name: 'AudioPlaybackService');
     } catch (e) {
-      log(
+      Log.warning(
         'Failed to stop playback: $e',
         name: 'AudioPlaybackService',
-        level: 900,
+        category: LogCategory.video,
       );
       rethrow;
     }
@@ -384,15 +387,17 @@ class AudioPlaybackService {
     if (_isDisposed) return;
     try {
       await _audioPlayer.seek(position);
-      log(
+      Log.debug(
         'Seeked to position: ${position.inSeconds}s',
         name: 'AudioPlaybackService',
+        category: LogCategory.video,
       );
     } catch (e) {
       if (_isLoadingInterrupted(e)) {
-        log(
+        Log.debug(
           'Seek interrupted, reloading source and retrying',
           name: 'AudioPlaybackService',
+        category: LogCategory.video,
         );
         if (await _reloadLastSource()) {
           if (_isDisposed) return;
@@ -411,12 +416,17 @@ class AudioPlaybackService {
     if (_isDisposed) return;
     try {
       await _audioPlayer.setVolume(volume.clamp(0.0, 1.0));
-      log(
+      Log.debug(
         'Set volume to: ${(volume * 100).toInt()}%',
         name: 'AudioPlaybackService',
+        category: LogCategory.video,
       );
     } catch (e) {
-      log('Failed to set volume: $e', name: 'AudioPlaybackService', level: 900);
+      Log.warning(
+        'Failed to set volume: $e',
+        name: 'AudioPlaybackService',
+        category: LogCategory.video,
+      );
       rethrow;
     }
   }
@@ -456,15 +466,16 @@ class AudioPlaybackService {
         ),
       );
 
-      log(
+      Log.debug(
         'Configured audio session for recording mode',
         name: 'AudioPlaybackService',
+        category: LogCategory.video,
       );
     } on Exception catch (e) {
-      log(
+      Log.warning(
         'Failed to configure audio session for recording: $e',
         name: 'AudioPlaybackService',
-        level: 900,
+        category: LogCategory.video,
       );
       // Don't rethrow - allow playback to continue even if session config fails
     }
@@ -498,15 +509,16 @@ class AudioPlaybackService {
         ),
       );
 
-      log(
+      Log.debug(
         'Configured audio session for mixed playback',
         name: 'AudioPlaybackService',
+        category: LogCategory.video,
       );
     } on Exception catch (e) {
-      log(
+      Log.warning(
         'Failed to configure audio session for mixed playback: $e',
         name: 'AudioPlaybackService',
-        level: 900,
+        category: LogCategory.video,
       );
       // Don't rethrow - allow playback to continue even if session config fails
     }
@@ -538,12 +550,12 @@ class AudioPlaybackService {
         ),
       );
 
-      log('Reset audio session to default', name: 'AudioPlaybackService');
+      Log.debug('Reset audio session to default', name: 'AudioPlaybackService');
     } on Exception catch (e) {
-      log(
+      Log.warning(
         'Failed to reset audio session: $e',
         name: 'AudioPlaybackService',
-        level: 900,
+        category: LogCategory.video,
       );
       // Don't rethrow - allow continued operation even if reset fails
     }
@@ -560,7 +572,7 @@ class AudioPlaybackService {
     await _headphonesConnectedSubject.close();
     await _audioPlayer.dispose();
 
-    log('AudioPlaybackService disposed', name: 'AudioPlaybackService');
+    Log.debug('AudioPlaybackService disposed', name: 'AudioPlaybackService');
   }
 
   /// Returns `true` if the error is a transient "Loading interrupted" error
@@ -584,16 +596,17 @@ class AudioPlaybackService {
         case _SourceType.audioSource:
           await setAudioSource(source.value as AudioSourceConfig);
       }
-      log(
+      Log.debug(
         'Reloaded audio source after interruption',
         name: 'AudioPlaybackService',
+        category: LogCategory.video,
       );
       return true;
     } on Exception catch (e) {
-      log(
+      Log.warning(
         'Failed to reload audio source: $e',
         name: 'AudioPlaybackService',
-        level: 900,
+        category: LogCategory.video,
       );
       return false;
     }

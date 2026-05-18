@@ -3,7 +3,6 @@
 
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'package:flutter/foundation.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Service for tracking errors and exceptions across the app
@@ -64,7 +63,11 @@ class ErrorAnalyticsTracker {
       );
     } catch (e) {
       // Crashlytics not available or failed
-      debugPrint('Could not log to Crashlytics: $e');
+      Log.warning(
+        'Could not log to Crashlytics: $e',
+        name: 'ErrorAnalyticsTracker',
+        category: LogCategory.system,
+      );
     }
   }
 

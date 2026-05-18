@@ -116,7 +116,11 @@ class NativeProofModeService {
           }
         }
       } catch (e) {
-        print('Failed to calculate hash: $e');
+        Log.error(
+          'Failed to calculate hash: $e',
+          name: 'NativeProofmodeService',
+          category: LogCategory.system,
+        );
       }
 
       //no proof found, so let's sign and proof!
@@ -483,7 +487,11 @@ class NativeProofModeService {
       // Convert the Digest object to a hexadecimal string for display/comparison
       return digest.toString();
     } catch (e) {
-      print('Error generating hash: $e');
+      Log.error(
+        'Error generating hash: $e',
+        name: 'NativeProofmodeService',
+        category: LogCategory.system,
+      );
       rethrow;
     }
   }

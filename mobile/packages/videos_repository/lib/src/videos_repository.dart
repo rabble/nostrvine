@@ -4,13 +4,12 @@
 // ABOUTME: Returns Future<List<VideoEvent>>, not streams -
 // ABOUTME: loading is pagination-based.
 
-import 'dart:developer' as developer;
-
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:videos_repository/src/home_feed_result.dart';
 import 'package:videos_repository/src/in_memory_feed_cache.dart';
 import 'package:videos_repository/src/native_popular_videos_page.dart';
@@ -361,9 +360,10 @@ class VideosRepository {
         );
       }).toList();
     } on Object catch (e, stackTrace) {
-      developer.log(
+      Log.error(
         'Failed to hydrate home feed videos with bulk stats',
         name: 'VideosRepository',
+        category: LogCategory.video,
         error: e,
         stackTrace: stackTrace,
       );
@@ -1528,9 +1528,10 @@ class VideosRepository {
           .toList();
       return _transformAndFilter(events, sortByCreatedAt: false);
     } on Exception catch (e, stackTrace) {
-      developer.log(
+      Log.error(
         'searchVideosOnRelays failed for "$trimmed"',
         name: 'VideosRepository',
+        category: LogCategory.video,
         error: e,
         stackTrace: stackTrace,
       );
@@ -1575,9 +1576,10 @@ class VideosRepository {
       );
       return (videos: videos, totalCount: response.totalCount);
     } on FunnelcakeException catch (e, stackTrace) {
-      developer.log(
+      Log.error(
         'searchVideosViaApi failed for "$trimmed"',
         name: 'VideosRepository',
+        category: LogCategory.video,
         error: e,
         stackTrace: stackTrace,
       );
@@ -1637,9 +1639,10 @@ class VideosRepository {
         yield accumulated;
       }
     } on Exception catch (e, stackTrace) {
-      developer.log(
+      Log.error(
         'searchVideos API phase failed for "$trimmed"',
         name: 'VideosRepository',
+        category: LogCategory.video,
         error: e,
         stackTrace: stackTrace,
       );
@@ -1850,9 +1853,10 @@ class VideosRepository {
         );
         if (byFunnelcake != null) return byFunnelcake;
       } on FunnelcakeException catch (e, stackTrace) {
-        developer.log(
+        Log.error(
           'Funnelcake route lookup failed; falling back to relay',
           name: 'VideosRepository',
+          category: LogCategory.video,
           error: e,
           stackTrace: stackTrace,
         );

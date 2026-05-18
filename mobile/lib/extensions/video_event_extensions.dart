@@ -2,14 +2,13 @@
 // ABOUTME: These methods require services (M3u8ResolverService) or platform
 // ABOUTME: detection (dart:io) that don't belong in the pure data model.
 
-import 'dart:developer' as developer;
-
 import 'package:flutter/foundation.dart';
 import 'package:models/models.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/m3u8_resolver_service.dart';
 import 'package:openvine/services/video_format_preference.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Get quality string based on bandwidth tracker recommendation (3-tier)
 String _getBandwidthBasedQuality() {
@@ -295,9 +294,10 @@ extension VideoEventAppExtensions on VideoEvent {
     final hls = getHlsUrl(quality: hlsQuality);
 
     if (hls != null) {
-      developer.log(
+      Log.debug(
         '📱 Android: HLS fallback available ($quality -> $hlsQuality HLS): $hls',
         name: 'VideoEventExtensions',
+        category: LogCategory.video,
       );
     }
 
@@ -337,9 +337,10 @@ extension VideoEventAppExtensions on VideoEvent {
       return videoUrl;
     }
 
-    developer.log(
+    Log.debug(
       '🎬 Attempting to resolve m3u8 URL to MP4: $videoUrl',
       name: 'VideoEventExtensions',
+      category: LogCategory.video,
     );
 
     // Try to resolve to MP4
@@ -347,15 +348,17 @@ extension VideoEventAppExtensions on VideoEvent {
     final resolvedUrl = await resolver.resolveM3u8ToMp4(videoUrl);
 
     if (resolvedUrl != null) {
-      developer.log(
+      Log.debug(
         '✅ Resolved m3u8 to MP4: $resolvedUrl',
         name: 'VideoEventExtensions',
+        category: LogCategory.video,
       );
       return resolvedUrl;
     } else {
-      developer.log(
+      Log.warning(
         '⚠️ Failed to resolve m3u8, using original URL: $videoUrl',
         name: 'VideoEventExtensions',
+        category: LogCategory.video,
       );
       return videoUrl; // Fallback to original if resolution fails
     }

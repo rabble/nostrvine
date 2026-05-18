@@ -1,9 +1,8 @@
 // ABOUTME: Persists developer video format selection to SharedPreferences
 // ABOUTME: Used for A/B testing different server-side formats on real devices
 
-import 'dart:developer' as developer;
-
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Video playback format selection for developer testing.
 ///
@@ -110,7 +109,11 @@ class VideoFormatPreferenceService {
   }
 
   void _log(String message) {
-    developer.log('[VideoFormatPreference] $message');
+    Log.debug(
+      '[VideoFormatPreference] $message',
+      name: 'VideoFormatPreferenceService',
+      category: LogCategory.video,
+    );
   }
 }
 

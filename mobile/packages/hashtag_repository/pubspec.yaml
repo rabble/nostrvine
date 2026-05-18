@@ -11,6 +11,7 @@ resolution: workspace
 dependencies:
   funnelcake_api_client:
   models:
+  unified_logger:
 
 dev_dependencies:
   mocktail: ^1.0.4

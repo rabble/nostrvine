@@ -2,12 +2,12 @@
 // ABOUTME: Treats publishEvent non-null return as submitted, never confirmed.
 
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:people_lists_repository/src/local_people_lists_cache.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:people_lists_repository/src/nip51_people_list_codec.dart';
 import 'package:people_lists_repository/src/people_list_publish_result.dart';
 import 'package:people_lists_repository/src/people_list_search_result.dart';
@@ -15,9 +15,6 @@ import 'package:people_lists_repository/src/people_lists_repository.dart';
 
 /// Logger name for repository-level diagnostics.
 const String _logName = 'people_lists_repository.impl';
-
-/// Log level for recoverable warnings. `dart:developer`'s convention is 900.
-const int _logLevelWarning = 900;
 
 /// Filter callback for owner-authored people-list search results.
 ///
@@ -189,10 +186,10 @@ class PeopleListsRepositoryImpl implements PeopleListsRepository {
       );
       return PeopleListPublishResult.submitted(eventId: sent.event.id);
     } on Object catch (error, stackTrace) {
-      developer.log(
+      Log.error(
         'Failed to publish people-list deletion for list $listId',
         name: _logName,
-        level: _logLevelWarning,
+        category: LogCategory.relay,
         error: error,
         stackTrace: stackTrace,
       );
@@ -216,10 +213,10 @@ class PeopleListsRepositoryImpl implements PeopleListsRepository {
         Filter(kinds: const [Nip51PeopleListCodec.kind], limit: limit),
       ]);
     } on Object catch (error, stackTrace) {
-      developer.log(
+      Log.error(
         'Failed to query public people lists for "$trimmed"',
         name: _logName,
-        level: _logLevelWarning,
+        category: LogCategory.relay,
         error: error,
         stackTrace: stackTrace,
       );
@@ -281,10 +278,10 @@ class PeopleListsRepositoryImpl implements PeopleListsRepository {
       );
       return PeopleListPublishResult.submitted(eventId: sent.event.id);
     } on Object catch (error, stackTrace) {
-      developer.log(
+      Log.error(
         'Failed to publish people-list replacement for list ${list.id}',
         name: _logName,
-        level: _logLevelWarning,
+        category: LogCategory.relay,
         error: error,
         stackTrace: stackTrace,
       );

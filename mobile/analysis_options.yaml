@@ -53,7 +53,7 @@ analyzer:
 linter:
   rules:
     avoid_dynamic_calls: false
-    avoid_print: false
+    avoid_print: true
     cancel_subscriptions: false
     depend_on_referenced_packages: false
     flutter_style_todos: false
