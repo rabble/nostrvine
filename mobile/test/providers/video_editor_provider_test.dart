@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:characters/characters.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:models/models.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -275,6 +276,25 @@ void main() {
           container.read(videoEditorProvider).originalAudioVolume,
           equals(1.0),
         );
+      });
+    });
+
+    group('audio render mapping', () {
+      test('selected local import is rendered as file audio', () {
+        final sound = AudioEvent.fromLocalImport(
+          id: 'local_import_1700000000000',
+          filePath: '/tmp/imported/snare.mp3',
+          createdAt: 1700000000,
+          title: 'snare',
+          mimeType: 'audio/mpeg',
+          duration: 2,
+        );
+
+        final track = audioTrackFromSoundForRender(sound);
+
+        expect(track.audio.hasFile, isTrue);
+        expect(track.audio.file?.path, equals('/tmp/imported/snare.mp3'));
+        expect(track.audio.hasNetworkUrl, isFalse);
       });
     });
 

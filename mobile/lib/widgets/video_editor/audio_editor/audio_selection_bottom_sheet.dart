@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:divine_ui/divine_ui.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,7 +11,9 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/saved_sounds_provider.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_editor/video_audio_editor_timing_screen.dart';
+import 'package:openvine/services/local_audio_import_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_category_bar.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_editor_selection_overlay.dart';
@@ -28,9 +33,16 @@ final _featuredVineSounds = [
 ];
 
 class AudioSelectionBottomSheet extends ConsumerStatefulWidget {
-  const AudioSelectionBottomSheet({required this.scrollController, super.key});
+  const AudioSelectionBottomSheet({
+    required this.scrollController,
+    this.localAudioImportService,
+    this.pickAudioFile,
+    super.key,
+  });
 
   final ScrollController scrollController;
+  final LocalAudioImportService? localAudioImportService;
+  final Future<FilePickerResult?> Function()? pickAudioFile;
 
   static Future<AudioEvent?> show(BuildContext context) {
     return VineBottomSheet.show<AudioEvent>(
@@ -176,7 +188,10 @@ class _AudioSelectionBottomSheetState
       var resolvedSound = sound;
       if (shouldReload) {
         await _audioService.stop();
-        final loadedDuration = await _audioService.loadAudio(sound.url!);
+        final loadedDuration =
+            sound.isLocalImport && sound.localFilePath != null
+            ? await _audioService.loadAudioFromFile(sound.localFilePath!)
+            : await _audioService.loadAudio(sound.url!);
         _loadedSoundId = sound.id;
         // Backfill missing duration so the selection overlay and list
         // tile can show a correct timestamp for Nostr sounds that don't
@@ -221,6 +236,64 @@ class _AudioSelectionBottomSheetState
       _selectedItem = sound;
     });
     await _togglePlayPause(enforcePlay: true);
+  }
+
+  Future<void> _importAudio() async {
+    final picker =
+        widget.pickAudioFile ??
+        () {
+          return FilePicker.platform.pickFiles(
+            type: FileType.custom,
+            allowedExtensions: const [
+              'aac',
+              'm4a',
+              'mp3',
+              'wav',
+              'weba',
+              'webm',
+            ],
+            allowMultiple: false,
+          );
+        };
+
+    try {
+      final result = await picker();
+      final files = result?.files;
+      if (files == null || files.isEmpty) return;
+
+      final file = files.first;
+      final filePath = file.path;
+      if (filePath == null || filePath.isEmpty) return;
+
+      final imported =
+          await (widget.localAudioImportService ?? LocalAudioImportService())
+              .importAudioFile(
+                sourcePath: filePath,
+                draftId: ref.read(videoEditorProvider.notifier).draftId,
+                displayName: file.name,
+              );
+
+      if (!mounted) return;
+      setState(() => _selectedItem = imported);
+      await _togglePlayPause(enforcePlay: true);
+    } on LocalAudioImportException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
+      );
+    } catch (e, s) {
+      Log.error(
+        'Failed to import audio: $e',
+        name: 'AudioSelectionBottomSheet',
+        category: LogCategory.ui,
+        error: e,
+        stackTrace: s,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Audio import failed.')),
+      );
+    }
   }
 
   Future<void> _handleDoneSelection() async {
@@ -276,13 +349,17 @@ class _AudioSelectionBottomSheetState
   Future<double?> _resolveDurationSecs(AudioEvent sound) async {
     final assetPath = sound.assetPath;
     final url = sound.url;
+    final localPath = sound.localFilePath;
     if ((assetPath == null || assetPath.isEmpty) &&
-        (url == null || url.isEmpty)) {
+        (url == null || url.isEmpty) &&
+        (localPath == null || localPath.isEmpty)) {
       return null;
     }
     try {
       final metadata = await ProVideoEditor.instance.getMetadata(
-        EditorVideo.autoSource(assetPath: assetPath, networkUrl: url),
+        localPath != null
+            ? EditorVideo.file(File(localPath))
+            : EditorVideo.autoSource(assetPath: assetPath, networkUrl: url),
       );
       final secs = metadata.duration.inMilliseconds / 1000.0;
       return secs > 0 ? secs : null;
@@ -337,6 +414,7 @@ class _AudioSelectionBottomSheetState
               controller: _searchController,
               onChanged: _onSearchChanged,
             ),
+            _ImportAudioAction(onTap: _importAudio),
             Expanded(
               child: TabBarView(
                 controller: _tabController,
@@ -409,6 +487,40 @@ class _AudioSelectionBottomSheetState
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ImportAudioAction extends StatelessWidget {
+  const _ImportAudioAction({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: VineTheme.onPrimary,
+      child: InkWell(
+        onTap: onTap,
+        child: const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Icon(Icons.upload_file, color: VineTheme.whiteText),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Import audio',
+                  style: TextStyle(
+                    color: VineTheme.whiteText,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

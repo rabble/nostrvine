@@ -96,6 +96,16 @@ void main() {
         expect(find.byType(AudioSelectionBottomSheet), findsOneWidget);
       });
 
+      testWidgets('shows import action in the audio picker', (tester) async {
+        await tester.pumpWidget(
+          buildWidget(trendingSoundsAsync: const AsyncValue.data([])),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Import audio'), findsOneWidget);
+        expect(find.byIcon(Icons.upload_file), findsOneWidget);
+      });
+
       testWidgets('renders $AudioCategoryBar with all category chips', (
         tester,
       ) async {

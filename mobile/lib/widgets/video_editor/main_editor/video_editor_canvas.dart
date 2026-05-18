@@ -537,6 +537,14 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             videoEndTime: item.endTime,
             trackStart: sound.startOffset,
           );
+        } else if (sound.isLocalImport && sound.localFilePath != null) {
+          track = AudioTrack.file(
+            sound.localFilePath!,
+            volume: customVolume,
+            videoStartTime: item.startTime,
+            videoEndTime: item.endTime,
+            trackStart: sound.startOffset,
+          );
         } else {
           track = AudioTrack.network(
             sound.url!,

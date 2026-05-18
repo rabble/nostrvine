@@ -34,6 +34,22 @@ final videoEditorProvider =
       VideoEditorNotifier.new,
     );
 
+@visibleForTesting
+AudioTrack audioTrackFromSoundForRender(AudioEvent sound) {
+  return AudioTrack(
+    id: sound.id,
+    title: sound.title ?? '',
+    subtitle: sound.source ?? '',
+    duration: Duration(seconds: sound.duration?.toInt() ?? 0),
+    audio: sound.isBundled
+        ? EditorAudio.asset(sound.assetPath!)
+        : sound.isLocalImport && sound.localFilePath != null
+        ? EditorAudio.file(File(sound.localFilePath!))
+        : EditorAudio.network(sound.url!),
+    startTime: sound.startOffset,
+  );
+}
+
 /// Manages video editor state and operations.
 ///
 /// Handles:
@@ -1044,17 +1060,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
             volume: track.volume,
           ),
 
-        if (soundTrack != null)
-          AudioTrack(
-            id: soundTrack.id,
-            title: soundTrack.title ?? '',
-            subtitle: soundTrack.source ?? '',
-            duration: Duration(seconds: soundTrack.duration?.toInt() ?? 0),
-            audio: soundTrack.isBundled
-                ? EditorAudio.asset(soundTrack.assetPath!)
-                : EditorAudio.network(soundTrack.url!),
-            startTime: soundTrack.startOffset,
-          ),
+        if (soundTrack != null) audioTrackFromSoundForRender(soundTrack),
       ],
     );
   }
