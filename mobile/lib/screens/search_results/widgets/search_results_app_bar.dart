@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -47,20 +45,32 @@ class SearchResultsAppBar extends StatefulWidget {
 
 class _SearchResultsAppBarState extends State<SearchResultsAppBar> {
   late final FocusNode _focusNode;
-  Timer? _debounce;
+
+  // Last text we dispatched to the BLoCs. The TextField's EditableText
+  // mutates the controller's selection (cursor position) on attach and
+  // on focus changes, which fires the same listener — without this
+  // guard we'd dispatch duplicate `*QueryChanged` events for
+  // selection-only updates that don't change the query at all.
+  late String _lastDispatchedQuery;
 
   @override
   void initState() {
     super.initState();
     _focusNode = FocusNode();
+    _lastDispatchedQuery = widget.initialQuery;
 
     if (widget.initialQuery.isNotEmpty) {
-      // Synchronous dispatch — bypass the UI 300ms debounce so the BLoCs
-      // leave `initial` this frame, preventing the misleading idle
-      // placeholder during Explore → Search transitions (#3802). Each
-      // BLoC still applies its own `debounceRestartable` transformer;
-      // the same-query dedup guard inside each handler coalesces a
-      // late-arriving event from the listener if one happens to fire.
+      // Dispatch the prefilled query once at mount. The parent seeds the
+      // controller in its own `initState` before we attach the listener
+      // below, so the listener will not fire for that initial value and
+      // the BLoCs would otherwise stay in `initial` for the first
+      // `searchDebounceDuration` (300ms) after navigation. Each BLoC
+      // applies its own `debounceRestartable` transformer, so this is
+      // the only debounce in the pipeline — kicking it off here starts
+      // the timer at mount time rather than 300ms later. The misleading
+      // idle placeholder during Explore → Search transitions (#3802) is
+      // separately suppressed by `SearchResultsView` driving its idle
+      // gate from live `controller.text`, not from the BLoC status.
       _dispatchQuery(widget.initialQuery);
     }
 
@@ -70,26 +80,28 @@ class _SearchResultsAppBarState extends State<SearchResultsAppBar> {
       });
     }
 
-    // Attach the listener AFTER the synchronous initial dispatch so the
-    // controller's pre-seeded text (set in the parent's initState) does
-    // not bounce through the debounced path and produce a duplicate event.
+    // Attach the listener AFTER the initial dispatch so the controller's
+    // pre-seeded text (set in the parent's initState) does not produce a
+    // duplicate event.
     widget.controller.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
-    _debounce?.cancel();
     widget.controller.removeListener(_onSearchChanged);
     _focusNode.dispose();
     super.dispose();
   }
 
+  // Dispatch immediately on every edit. The four search BLoCs each apply
+  // `debounceRestartable` (300ms) to their `*QueryChanged` events, so
+  // adding a UI-level debounce here would stack with that and double the
+  // user-perceived latency on typing and clearing.
   void _onSearchChanged() {
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 300), () {
-      if (!mounted) return;
-      _dispatchQuery(widget.controller.text);
-    });
+    final query = widget.controller.text;
+    if (query == _lastDispatchedQuery) return;
+    _lastDispatchedQuery = query;
+    _dispatchQuery(query);
   }
 
   void _dispatchQuery(String query) {
