@@ -154,12 +154,19 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                   borderRadius: BorderRadius.circular(32),
                   child: ColoredBox(
                     color: VineTheme.surfaceContainerHigh,
-                    // Tap anywhere in the messages area to dismiss the
-                    // keyboard. Translucent hit behavior keeps bubble
-                    // long-press and list-scroll gestures intact.
-                    child: GestureDetector(
+                    // Any pointer interaction with the messages area
+                    // dismisses the keyboard so the user can read
+                    // history unobstructed — matches `comments_list`
+                    // (TikTok/Reels behavior). `Listener` catches
+                    // pointer-downs without entering the gesture arena,
+                    // so bubble long-press and list scroll still resolve
+                    // normally. The ListView's `onDrag` below is
+                    // complementary defense in depth for scrolls that
+                    // begin slightly outside the wrapped area.
+                    child: Listener(
                       behavior: HitTestBehavior.translucent,
-                      onTap: () => FocusScope.of(context).unfocus(),
+                      onPointerDown: (_) =>
+                          FocusManager.instance.primaryFocus?.unfocus(),
                       child: _ConversationContent(
                         currentPubkey: currentPubkey,
                         otherPubkey: otherPubkey,
@@ -374,6 +381,7 @@ class _MessageList extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView.builder(
       reverse: true,
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       // bottom: 8 stacks with the newest bubble's own 8 px bottom padding
       // for a 16 px gap to the scroll-view edge.
       padding: const EdgeInsets.only(top: 8, bottom: 8),
