@@ -76,8 +76,6 @@ import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/email_verification_listener.dart';
 import 'package:openvine/services/event_router.dart';
-import 'package:openvine/services/gallery_save_service.dart';
-import 'package:openvine/services/geo_blocking_service.dart';
 import 'package:openvine/services/hashtag_cache_service.dart';
 import 'package:openvine/services/hashtag_service.dart';
 import 'package:openvine/services/immediate_completion_helper.dart';
@@ -120,7 +118,6 @@ import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/search_utils.dart';
 import 'package:people_lists_repository/people_lists_repository.dart';
-import 'package:permissions_service/permissions_service.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -129,6 +126,7 @@ import 'package:unified_logger/unified_logger.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 export 'nostr_apps_providers.dart';
+export 'permissions_providers.dart';
 export 'preferences_providers.dart';
 
 part 'app_providers.g.dart';
@@ -857,26 +855,6 @@ ModerationLabelService moderationLabelService(Ref ref) {
     service.dispose();
   });
   return service;
-}
-
-/// Geo-blocking service for regional compliance
-@riverpod
-GeoBlockingService geoBlockingService(Ref ref) {
-  return GeoBlockingService();
-}
-
-/// Permissions service for checking and requesting OS permissions
-@riverpod
-PermissionsService permissionsService(Ref ref) {
-  return const PermissionHandlerPermissionsService();
-}
-
-/// Gallery save service for saving videos to device camera roll
-@riverpod
-GallerySaveService gallerySaveService(Ref ref) {
-  return GallerySaveService(
-    permissionsService: ref.watch(permissionsServiceProvider),
-  );
 }
 
 /// Secure key storage service (foundational service)
