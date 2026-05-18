@@ -303,7 +303,7 @@ void main() {
       },
     );
 
-    test('audio track methods are safe no-ops on Linux', () async {
+    test('audio track methods warn once and do not throw on Linux', () async {
       final backend = MediaKitLinuxVideoPlayerBackend(
         mediaKitInitializer: _noop,
         playerFactory: () => Player(platformPlayer: _FakePlatformPlayer()),
