@@ -325,14 +325,14 @@ Future<void> _setZendeskIdentity(
           category: LogCategory.system,
         );
       } else {
-        Log.info(
+        Log.warning(
           'Zendesk JWT upgrade failed, anonymous identity active',
           name: 'ZendeskIdentitySync',
           category: LogCategory.system,
         );
       }
     } catch (e) {
-      Log.info(
+      Log.warning(
         'Zendesk JWT upgrade failed ($e), anonymous identity active',
         name: 'ZendeskIdentitySync',
         category: LogCategory.system,
