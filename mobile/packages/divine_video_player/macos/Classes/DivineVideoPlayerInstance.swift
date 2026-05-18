@@ -508,6 +508,20 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                     guard let self else { return }
                     self.nudgeOutputQueue()
                     self.textureOutput?.forceRefresh(for: time)
+                    // `step(byCount:)` enqueues into the player's
+                    // internal pipeline and the resulting frame is not
+                    // available on `copyPixelBuffer` until the next
+                    // runloop iteration. Defer the synchronous pull
+                    // attempt one tick so it has a chance to succeed —
+                    // and only flip `firstFrameRendered` (via
+                    // `deliverFrame`→`onFirstFrame`) when a real
+                    // `CVPixelBuffer` is actually in the texture.
+                    // Otherwise Flutter would hide the loader over an
+                    // empty texture and render one frame of black
+                    // before the polling path catches up.
+                    DispatchQueue.main.async { [weak self] in
+                        self?.textureOutput?.tryPullFrameNow(at: time)
+                    }
                 }
             }
             return
@@ -532,6 +546,14 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                         guard let self else { return }
                         self.nudgeOutputQueue()
                         self.textureOutput?.forceRefresh(for: time)
+                        // See sibling branch above: defer the pull one
+                        // runloop tick so `step(byCount:)` has produced
+                        // a frame, and only mark the controller as
+                        // ready when a real `CVPixelBuffer` lands in
+                        // the Flutter texture.
+                        DispatchQueue.main.async { [weak self] in
+                            self?.textureOutput?.tryPullFrameNow(at: time)
+                        }
                     }
                 }
             }
