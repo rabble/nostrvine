@@ -3,9 +3,10 @@ import 'dart:async';
 import 'package:divine_video_player/divine_video_player.dart';
 import 'package:divine_video_player/src/linux/divine_video_player_linux_plugin.dart';
 import 'package:divine_video_player/src/linux/linux_video_player_backend.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:media_kit/media_kit.dart';
+import 'package:media_kit/media_kit.dart' hide AudioTrack;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -157,6 +158,35 @@ void main() {
       );
     });
 
+    test('times out when the default duration probe never resolves', () async {
+      final mainPlayer = _FakePlatformPlayer();
+      final probePlayer = _FakePlatformPlayer();
+      final players = <_FakePlatformPlayer>[mainPlayer, probePlayer];
+      final backend = MediaKitLinuxVideoPlayerBackend(
+        mediaKitInitializer: _noop,
+        playerFactory: () => Player(platformPlayer: players.removeAt(0)),
+        videoControllerFactory: (_) => _FakeVideoController(),
+        videoControllerReady: (controller) =>
+            (controller as _FakeVideoController).ready.future,
+        videoViewBuilder: (_) => const SizedBox.shrink(),
+      );
+
+      await backend.initialize(onStateChanged: (_) {}, onError: (_) {});
+
+      Object? error;
+      fakeAsync((async) {
+        backend
+            .setClips([const VideoClip(uri: 'file:///clip.mp4')])
+            .catchError((Object caughtError) => error = caughtError);
+
+        async.elapse(const Duration(seconds: 11));
+        async.flushMicrotasks();
+      });
+
+      expect(error, isA<TimeoutException>());
+      expect(probePlayer.lastOpenedMedia?.uri, endsWith('clip.mp4'));
+    });
+
     test(
       'playback controls and state refresh update the emitted state',
       () async {
@@ -282,6 +312,9 @@ void main() {
 
       await backend.initialize(onStateChanged: (_) {}, onError: (_) {});
 
+      await backend.setAudioTracks(const [
+        AudioTrack(uri: 'file:///overlay.mp3'),
+      ]);
       await backend.setAudioTracks(const []);
       await backend.removeAllAudioTracks();
       await backend.setAudioTrackVolume(0, 0.5);
