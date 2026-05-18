@@ -1,0 +1,389 @@
+// ABOUTME: Auth & identity Riverpod providers split from app_providers.dart
+// ABOUTME: Secure storage, OAuth/Keycast, AuthService keystone, NIP-98/CAWG/NIP-39,
+// ABOUTME: account deletion, Zendesk identity sync (eager)
+
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
+import 'package:keycast_flutter/keycast_flutter.dart';
+import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:openvine/models/auth_rpc_capability.dart';
+import 'package:openvine/models/environment_config.dart';
+import 'package:openvine/models/known_account.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/services/account_deletion_service.dart';
+import 'package:openvine/services/auth_service.dart' hide UserProfile;
+import 'package:openvine/services/cawg_verifier_client.dart';
+import 'package:openvine/services/email_verification_listener.dart';
+import 'package:openvine/services/nip98_auth_service.dart';
+import 'package:openvine/services/nostr_creator_binding_service.dart';
+import 'package:openvine/services/password_reset_listener.dart';
+import 'package:openvine/services/pending_verification_service.dart';
+import 'package:openvine/services/web_auth_service.dart';
+import 'package:openvine/services/zendesk_support_service.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:profile_repository/profile_repository.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:unified_logger/unified_logger.dart';
+
+part 'auth_providers.g.dart';
+
+/// Secure key storage service (foundational service)
+@Riverpod(keepAlive: true)
+SecureKeyStorage secureKeyStorage(Ref ref) {
+  return SecureKeyStorage();
+}
+
+/// OAuth configuration — uses local keycast when running in local environment
+const _productionLoginOrigin = 'https://login.divine.video';
+
+@Riverpod(keepAlive: true)
+OAuthConfig oauthConfig(Ref ref) {
+  final env = ref.watch(currentEnvironmentProvider);
+  if (env.environment == AppEnvironment.local) {
+    return const OAuthConfig(
+      serverUrl: 'http://$localHost:$localKeycastPort',
+      clientId: 'divine-mobile',
+      redirectUri: 'http://localhost:$localKeycastPort/app/callback',
+    );
+  }
+  return const OAuthConfig(
+    serverUrl: _productionLoginOrigin,
+    clientId: 'divine-mobile',
+    redirectUri: 'https://divine.video/app/callback',
+  );
+}
+
+@Riverpod(keepAlive: true)
+FlutterSecureStorage flutterSecureStorage(Ref ref) =>
+    const FlutterSecureStorage(
+      aOptions: AndroidOptions(
+        encryptedSharedPreferences: true,
+        resetOnError: true,
+      ),
+      mOptions: MacOsOptions(useDataProtectionKeyChain: false),
+    );
+
+@Riverpod(keepAlive: true)
+SecureKeycastStorage secureKeycastStorage(Ref ref) =>
+    SecureKeycastStorage(ref.watch(flutterSecureStorageProvider));
+
+@Riverpod(keepAlive: true)
+PendingVerificationService pendingVerificationService(Ref ref) =>
+    PendingVerificationService(ref.watch(flutterSecureStorageProvider));
+
+@Riverpod(keepAlive: true)
+KeycastOAuth oauthClient(Ref ref) {
+  final config = ref.watch(oauthConfigProvider);
+  final storage = ref.watch(secureKeycastStorageProvider);
+
+  final oauth = KeycastOAuth(config: config, storage: storage);
+
+  ref.onDispose(oauth.close);
+
+  return oauth;
+}
+
+@Riverpod(keepAlive: true)
+PasswordResetListener passwordResetListener(Ref ref) {
+  final listener = PasswordResetListener(ref);
+  ref.onDispose(listener.dispose);
+  return listener;
+}
+
+@Riverpod(keepAlive: true)
+EmailVerificationListener emailVerificationListener(Ref ref) {
+  final listener = EmailVerificationListener(ref);
+  ref.onDispose(listener.dispose);
+  return listener;
+}
+
+/// Web authentication service (for web platform only)
+@riverpod
+WebAuthService webAuthService(Ref ref) {
+  return WebAuthService();
+}
+
+/// Nostr key manager for cryptographic operations
+@Riverpod(keepAlive: true)
+NostrKeyManager nostrKeyManager(Ref ref) {
+  return NostrKeyManager();
+}
+
+/// Authentication service
+@Riverpod(keepAlive: true)
+AuthService authService(Ref ref) {
+  final keyStorage = ref.watch(secureKeyStorageProvider);
+  final nostrKeyManager = ref.watch(nostrKeyManagerProvider);
+  final userDataCleanupService = ref.watch(userDataCleanupServiceProvider);
+  final oauthClient = ref.watch(oauthClientProvider);
+  final flutterSecureStorage = ref.watch(flutterSecureStorageProvider);
+  final oauthConfig = ref.watch(oauthConfigProvider);
+  // NOTE: We construct FunnelcakeApiClient directly here instead of using
+  // funnelcakeApiClientProvider to avoid a circular dependency:
+  //   authService → funnelcakeApiClient → nostrService → authService
+  // Using currentEnvironmentProvider is safe (no auth/nostr dependency).
+  final authEnv = ref.read(currentEnvironmentProvider);
+  return AuthService(
+    userDataCleanupService: userDataCleanupService,
+    keyStorage: keyStorage,
+    nostrKeyManager: nostrKeyManager,
+    oauthClient: oauthClient,
+    flutterSecureStorage: flutterSecureStorage,
+    oauthConfig: oauthConfig,
+    profileCheckIndexerUrl: authEnv.indexerRelays.first,
+    indexerRelays: authEnv.indexerRelays,
+    primaryRelayUrl: authEnv.relayUrl,
+    preFetchFollowing: (pubkeyHex) async {
+      // Pre-fetch following list from funnelcake REST API during login
+      // setup. This populates SharedPreferences BEFORE auth state is
+      // set, so the router redirect has accurate cache data and sends
+      // user to /home not /explore.
+      final environmentConfig = ref.read(currentEnvironmentProvider);
+      final client = FunnelcakeApiClient(baseUrl: environmentConfig.apiBaseUrl);
+      final prefs = ref.read(sharedPreferencesProvider);
+      final result = await client.getFollowing(pubkey: pubkeyHex, limit: 5000);
+      if (result.pubkeys.isNotEmpty) {
+        final key = 'following_list_$pubkeyHex';
+        await prefs.setString(key, jsonEncode(result.pubkeys));
+        Log.info(
+          'Pre-fetched ${result.pubkeys.length} following for '
+          'router redirect cache',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+      }
+    },
+  );
+}
+
+/// Provider that returns current auth state and rebuilds when it changes.
+/// Widgets should watch this instead of authService.authState directly
+/// to get automatic rebuilds when authentication state changes.
+@Riverpod(keepAlive: true)
+AuthState currentAuthState(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+
+  // Listen to auth state changes and invalidate this provider when they occur
+  final subscription = authService.authStateStream.listen((_) {
+    // Invalidate to trigger rebuild with new state
+    ref.invalidateSelf();
+  });
+
+  // Clean up subscription when provider is disposed
+  ref.onDispose(subscription.cancel);
+
+  // Return current state
+  return authService.authState;
+}
+
+/// Provider that returns current RPC capability and rebuilds on changes.
+///
+/// Widgets and repositories should watch this instead of polling
+/// [AuthService.authRpcCapability] directly.
+@Riverpod(keepAlive: true)
+AuthRpcCapability currentAuthRpcCapability(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+
+  final subscription = authService.authRpcCapabilityStream.listen((_) {
+    ref.invalidateSelf();
+  });
+
+  ref.onDispose(subscription.cancel);
+
+  return authService.authRpcCapability;
+}
+
+/// Provider that fetches the list of known accounts from the auth service.
+///
+/// Invalidate this provider after sign-in or sign-out to refresh the list.
+@riverpod
+Future<List<KnownAccount>> knownAccounts(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+  // Rebuild when auth state changes so the list stays current.
+  ref.watch(currentAuthStateProvider);
+  return authService.getKnownAccounts();
+}
+
+/// Provider for user-signed creator-binding assertions.
+final nostrCreatorBindingServiceProvider = Provider<NostrCreatorBindingService>(
+  (ref) {
+    ref.watch(currentAuthStateProvider);
+    final authService = ref.watch(authServiceProvider);
+    return NostrCreatorBindingService(identity: authService.currentIdentity);
+  },
+);
+
+/// Provider for the CAWG verifier base URI.
+final cawgVerifierBaseUriProvider = Provider<Uri>((ref) {
+  return Uri.parse(
+    const String.fromEnvironment(
+      'CAWG_VERIFIER_BASE_URL',
+      defaultValue: 'https://verifyer.divine.video',
+    ),
+  );
+});
+
+/// Provider for the optional CAWG identity verifier client.
+final cawgVerifierClientProvider = Provider<CawgVerifierClient>((ref) {
+  final baseUri = ref.watch(cawgVerifierBaseUriProvider);
+  final client = CawgVerifierClient(baseUri: baseUri);
+  ref.onDispose(client.dispose);
+  return client;
+});
+
+/// Provider that sets Zendesk user identity when auth state changes
+/// Watch this provider at app startup to keep Zendesk identity in sync with auth
+@Riverpod(keepAlive: true)
+void zendeskIdentitySync(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+  final profileRepository = ref.watch(profileRepositoryProvider);
+
+  // Set initial identity if already authenticated
+  if (authService.isAuthenticated && authService.currentPublicKeyHex != null) {
+    _setZendeskIdentity(
+      authService.currentPublicKeyHex!,
+      profileRepository,
+      ref,
+    );
+  }
+
+  // Listen to auth state changes
+  final subscription = authService.authStateStream.listen((authState) async {
+    if (authState == AuthState.authenticated) {
+      final pubkeyHex = authService.currentPublicKeyHex;
+      if (pubkeyHex != null) {
+        await _setZendeskIdentity(pubkeyHex, profileRepository, ref);
+      }
+    } else if (authState == AuthState.unauthenticated) {
+      await ZendeskSupportService.clearUserIdentity();
+      Log.info(
+        'Zendesk identity cleared on logout',
+        name: 'ZendeskIdentitySync',
+        category: LogCategory.system,
+      );
+    }
+  });
+
+  ref.onDispose(subscription.cancel);
+}
+
+/// Helper to set Zendesk identity from pubkey
+Future<void> _setZendeskIdentity(
+  String pubkeyHex,
+  ProfileRepository? profileRepository,
+  Ref ref,
+) async {
+  try {
+    final npub = NostrKeyUtils.encodePubKey(pubkeyHex);
+    final profile = await profileRepository?.getCachedProfile(
+      pubkey: pubkeyHex,
+    );
+
+    // 1. Store user info locally (for REST API fallback)
+    ZendeskSupportService.setUserIdentity(
+      displayName: profile?.bestDisplayName,
+      nip05: profile?.nip05,
+      npub: npub,
+    );
+
+    // 2. Set anonymous identity on native SDK immediately (no network call)
+    // This ensures createTicket() works for content reports right away
+    await ZendeskSupportService.setAnonymousIdentityWithUserInfo();
+
+    // 3. Upgrade to JWT identity asynchronously (network call)
+    // If this fails, anonymous identity remains and tickets still work
+    try {
+      final nip98Service = ref.read(nip98AuthServiceProvider);
+      final relayManagerUrl = ref
+          .read(currentEnvironmentProvider)
+          .relayManagerApiUrl;
+
+      // Store auth context so the service can refresh JWT before each SDK action.
+      // The pre-auth token has a 5-minute TTL, so any delay between login and
+      // ticket creation would fail without a refresh.
+      ZendeskSupportService.storeAuthContext(
+        nip98Service: nip98Service,
+        relayManagerUrl: relayManagerUrl,
+      );
+
+      final jwtSet = await ZendeskSupportService.setJwtIdentity(
+        nip98Service: nip98Service,
+        relayManagerUrl: relayManagerUrl,
+      );
+
+      if (jwtSet) {
+        Log.info(
+          'Zendesk JWT identity set for user',
+          name: 'ZendeskIdentitySync',
+          category: LogCategory.system,
+        );
+      } else {
+        Log.info(
+          'Zendesk JWT upgrade failed, anonymous identity active',
+          name: 'ZendeskIdentitySync',
+          category: LogCategory.system,
+        );
+      }
+    } catch (e) {
+      Log.info(
+        'Zendesk JWT upgrade failed ($e), anonymous identity active',
+        name: 'ZendeskIdentitySync',
+        category: LogCategory.system,
+      );
+    }
+
+    Log.info(
+      'Zendesk identity set for user: ${profile?.bestDisplayName ?? npub}',
+      name: 'ZendeskIdentitySync',
+      category: LogCategory.system,
+    );
+  } catch (e) {
+    Log.warning(
+      'Failed to set Zendesk identity: $e',
+      name: 'ZendeskIdentitySync',
+      category: LogCategory.system,
+    );
+  }
+}
+
+/// Provider for [VerifierClient] pointed at the current environment's
+/// verifier base URL. Stateless — every call hits the network.
+@Riverpod(keepAlive: true)
+VerifierClient verifierClient(Ref ref) {
+  final env = ref.watch(currentEnvironmentProvider);
+  return VerifierClient(baseUrl: env.verifierBaseUrl);
+}
+
+/// Provider for [IdentityClaimsRepository] composing the verifier client
+/// with NIP-39 i tag parsing.
+@Riverpod(keepAlive: true)
+IdentityClaimsRepository identityClaimsRepository(Ref ref) {
+  return IdentityClaimsRepository(
+    verifierClient: ref.watch(verifierClientProvider),
+  );
+}
+
+/// NIP-98 authentication service
+@riverpod
+Nip98AuthService nip98AuthService(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+  return Nip98AuthService(authService: authService);
+}
+
+/// Account Deletion Service for NIP-62 Request to Vanish
+@riverpod
+AccountDeletionService accountDeletionService(Ref ref) {
+  final nostrService = ref.watch(nostrServiceProvider);
+  final authService = ref.watch(authServiceProvider);
+  return AccountDeletionService(
+    nostrService: nostrService,
+    authService: authService,
+  );
+}
