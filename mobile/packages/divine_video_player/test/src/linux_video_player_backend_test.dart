@@ -175,12 +175,15 @@ void main() {
 
       Object? error;
       fakeAsync((async) {
-        backend
-            .setClips([const VideoClip(uri: 'file:///clip.mp4')])
-            .catchError((Object caughtError) => error = caughtError);
+        unawaited(
+          backend
+              .setClips([const VideoClip(uri: 'file:///clip.mp4')])
+              .catchError((Object caughtError) => error = caughtError),
+        );
 
-        async.elapse(const Duration(seconds: 11));
-        async.flushMicrotasks();
+        async
+          ..elapse(const Duration(seconds: 11))
+          ..flushMicrotasks();
       });
 
       expect(error, isA<TimeoutException>());
@@ -300,7 +303,7 @@ void main() {
       },
     );
 
-    test('audio track methods are safe no-ops on Linux', () async {
+    test('audio track methods warn once and do not throw on Linux', () async {
       final backend = MediaKitLinuxVideoPlayerBackend(
         mediaKitInitializer: _noop,
         playerFactory: () => Player(platformPlayer: _FakePlatformPlayer()),

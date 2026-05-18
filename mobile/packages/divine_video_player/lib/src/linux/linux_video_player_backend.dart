@@ -272,7 +272,9 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
   }
 
   @override
-  Future<void> removeAllAudioTracks() async {}
+  Future<void> removeAllAudioTracks() async {
+    _logUnsupportedAudioTrackOperation();
+  }
 
   @override
   Future<void> setAudioTrackVolume(int index, double volume) async {
