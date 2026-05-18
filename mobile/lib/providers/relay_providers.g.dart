@@ -114,59 +114,6 @@ final class RelayCapabilityServiceProvider
 String _$relayCapabilityServiceHash() =>
     r'99f5caa2c958c29928c911ef3c747961279ce8cc';
 
-/// Background activity manager singleton for tracking app foreground/background state
-
-@ProviderFor(backgroundActivityManager)
-const backgroundActivityManagerProvider = BackgroundActivityManagerProvider._();
-
-/// Background activity manager singleton for tracking app foreground/background state
-
-final class BackgroundActivityManagerProvider
-    extends
-        $FunctionalProvider<
-          BackgroundActivityManager,
-          BackgroundActivityManager,
-          BackgroundActivityManager
-        >
-    with $Provider<BackgroundActivityManager> {
-  /// Background activity manager singleton for tracking app foreground/background state
-  const BackgroundActivityManagerProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'backgroundActivityManagerProvider',
-        isAutoDispose: false,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$backgroundActivityManagerHash();
-
-  @$internal
-  @override
-  $ProviderElement<BackgroundActivityManager> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
-
-  @override
-  BackgroundActivityManager create(Ref ref) {
-    return backgroundActivityManager(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(BackgroundActivityManager value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<BackgroundActivityManager>(value),
-    );
-  }
-}
-
-String _$backgroundActivityManagerHash() =>
-    r'4d3e0698e395bfb6f5b8459e9626b726a126376e';
-
 /// Relay statistics service for tracking per-relay metrics
 
 @ProviderFor(relayStatisticsService)
