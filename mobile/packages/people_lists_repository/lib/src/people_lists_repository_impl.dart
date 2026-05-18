@@ -7,11 +7,11 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:people_lists_repository/src/local_people_lists_cache.dart';
-import 'package:unified_logger/unified_logger.dart';
 import 'package:people_lists_repository/src/nip51_people_list_codec.dart';
 import 'package:people_lists_repository/src/people_list_publish_result.dart';
 import 'package:people_lists_repository/src/people_list_search_result.dart';
 import 'package:people_lists_repository/src/people_lists_repository.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Logger name for repository-level diagnostics.
 const String _logName = 'people_lists_repository.impl';

@@ -11,9 +11,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:logging/logging.dart';
-import 'package:unified_logger/unified_logger.dart';
-
 import 'package:nostr_key_manager/src/secure_key_container.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 final _log = Logger('PlatformSecureStorage');
 

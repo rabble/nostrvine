@@ -10,8 +10,8 @@ import 'package:nostr_key_manager/src/nsec_bunker_client.dart';
 import 'package:nostr_key_manager/src/platform_secure_storage.dart';
 import 'package:nostr_key_manager/src/secure_key_container.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:unified_logger/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 final _log = Logger('SecureKeyStorage');
 

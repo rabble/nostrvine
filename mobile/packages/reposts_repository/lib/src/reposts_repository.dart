@@ -9,12 +9,12 @@ import 'dart:math';
 
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:unified_logger/unified_logger.dart';
 import 'package:reposts_repository/src/exceptions.dart';
 import 'package:reposts_repository/src/models/repost_record.dart';
 import 'package:reposts_repository/src/models/reposts_sync_result.dart';
 import 'package:reposts_repository/src/reposts_local_storage.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Default limit for fetching user reposts from relays.
 const _defaultRepostFetchLimit = 500;

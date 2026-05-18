@@ -717,7 +717,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
               'registered ${playbackSources.length} network fallbacks',
             );
           }
-        } on Object catch (cacheError, cacheStackTrace) {
+        } on Object catch (cacheError) {
           // The cached file is unreadable at init time — evict it from the
           // cache so future loads don't replay the corrupt bytes, then
           // fall through to the network path.

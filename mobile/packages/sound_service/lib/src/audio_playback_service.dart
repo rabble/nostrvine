@@ -330,7 +330,6 @@ class AudioPlaybackService {
         Log.debug(
           'Play interrupted, reloading source and retrying',
           name: 'AudioPlaybackService',
-          level: 800,
         );
         if (await _reloadLastSource()) {
           if (_isDisposed) return;
