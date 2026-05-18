@@ -175,12 +175,15 @@ void main() {
 
       Object? error;
       fakeAsync((async) {
-        backend
-            .setClips([const VideoClip(uri: 'file:///clip.mp4')])
-            .catchError((Object caughtError) => error = caughtError);
+        unawaited(
+          backend
+              .setClips([const VideoClip(uri: 'file:///clip.mp4')])
+              .catchError((Object caughtError) => error = caughtError),
+        );
 
-        async.elapse(const Duration(seconds: 11));
-        async.flushMicrotasks();
+        async
+          ..elapse(const Duration(seconds: 11))
+          ..flushMicrotasks();
       });
 
       expect(error, isA<TimeoutException>());
