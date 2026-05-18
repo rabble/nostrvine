@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:divine_video_player/divine_video_player.dart';
 import 'package:divine_video_player/src/linux/linux_video_player_backend.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -843,6 +844,44 @@ void main() {
 
         expect(globalCalls, hasLength(1));
         expect(globalCalls.first.method, equals('disposeAll'));
+      });
+
+      test('disposeAll is a no-op on Linux', () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+        addTearDown(
+          () => debugDefaultTargetPlatformOverride = null,
+        );
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('divine_video_player'),
+              (call) async {
+                globalCalls.add(call);
+                return null;
+              },
+            );
+
+        await DivineVideoPlayerController.disposeAll();
+
+        expect(globalCalls, isEmpty);
+      });
+
+      test('configureCache is a no-op on Linux', () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+        addTearDown(
+          () => debugDefaultTargetPlatformOverride = null,
+        );
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('divine_video_player'),
+              (call) async {
+                globalCalls.add(call);
+                return null;
+              },
+            );
+
+        await DivineVideoPlayerController.configureCache();
+
+        expect(globalCalls, isEmpty);
       });
     });
   });
