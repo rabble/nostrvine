@@ -54,7 +54,7 @@ void main() {
       for (final localeCode in appLocaleCodes) {
         expect(
           projectFile,
-          contains(RegExp(r'\b' + RegExp.escape(localeCode) + r',')),
+          contains(RegExp('\\b${RegExp.escape(localeCode)},')),
           reason: 'Xcode knownRegions is missing $localeCode',
         );
       }
