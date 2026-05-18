@@ -328,7 +328,11 @@ final class ModerationLabelServiceProvider
 String _$moderationLabelServiceHash() =>
     r'45b724bac4937ca6647a775d5dc7e4d87ad27c23';
 
-/// Content blocklist repository for managing blocked/muted authors.
+/// Content blocklist service for filtering unwanted content from feeds
+///
+/// Injects SharedPreferences for local block persistence across restarts.
+/// Nostr publishing (kind 30000) is initialized via [syncBlockListsInBackground]
+/// during app startup in main.dart.
 ///
 /// keepAlive ensures the relay subscription created by
 /// [syncBlockListsInBackground] survives widget rebuilds. Without it the
@@ -339,7 +343,11 @@ String _$moderationLabelServiceHash() =>
 const contentBlocklistRepositoryProvider =
     ContentBlocklistRepositoryProvider._();
 
-/// Content blocklist repository for managing blocked/muted authors.
+/// Content blocklist service for filtering unwanted content from feeds
+///
+/// Injects SharedPreferences for local block persistence across restarts.
+/// Nostr publishing (kind 30000) is initialized via [syncBlockListsInBackground]
+/// during app startup in main.dart.
 ///
 /// keepAlive ensures the relay subscription created by
 /// [syncBlockListsInBackground] survives widget rebuilds. Without it the
@@ -354,7 +362,11 @@ final class ContentBlocklistRepositoryProvider
           ContentBlocklistRepository
         >
     with $Provider<ContentBlocklistRepository> {
-  /// Content blocklist repository for managing blocked/muted authors.
+  /// Content blocklist service for filtering unwanted content from feeds
+  ///
+  /// Injects SharedPreferences for local block persistence across restarts.
+  /// Nostr publishing (kind 30000) is initialized via [syncBlockListsInBackground]
+  /// during app startup in main.dart.
   ///
   /// keepAlive ensures the relay subscription created by
   /// [syncBlockListsInBackground] survives widget rebuilds. Without it the

@@ -6,8 +6,10 @@ import 'dart:async';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:content_policy/content_policy.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/app_providers.dart'
+    hide feedAspectRatioPreferenceServiceProvider;
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/preferences_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/account_label_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
@@ -138,7 +140,11 @@ ModerationLabelService moderationLabelService(Ref ref) {
   return service;
 }
 
-/// Content blocklist repository for managing blocked/muted authors.
+/// Content blocklist service for filtering unwanted content from feeds
+///
+/// Injects SharedPreferences for local block persistence across restarts.
+/// Nostr publishing (kind 30000) is initialized via [syncBlockListsInBackground]
+/// during app startup in main.dart.
 ///
 /// keepAlive ensures the relay subscription created by
 /// [syncBlockListsInBackground] survives widget rebuilds. Without it the
