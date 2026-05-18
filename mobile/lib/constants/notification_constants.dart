@@ -7,7 +7,11 @@ class NotificationConstants {
   /// Corner radius for a notification avatar (Figma: 0.4 × [avatarSize]).
   static const double avatarCornerRadius = 12.8;
 
-  /// Empirical breakpoint where 320px-wide notification rows start clipping
-  /// once the follow-back button or trailing thumbnail shares the main row.
-  static const double largeTextStackThreshold = 1.35;
+  /// Empirical breakpoint where 320px-wide video notification rows start
+  /// clipping once the trailing thumbnail shares the main row.
+  static const double largeTextStackThreshold = 1.33;
+
+  /// Empirical breakpoint where 320px-wide actor notification rows start
+  /// clipping once the Follow back button shares the avatar row.
+  static const double actorRowLargeTextStackThreshold = 1.15;
 }

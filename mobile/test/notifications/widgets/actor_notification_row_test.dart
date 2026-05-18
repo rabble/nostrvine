@@ -233,7 +233,8 @@ void main() {
         await _pump(
           tester,
           notification: _actor(),
-          textScaleFactor: NotificationConstants.largeTextStackThreshold - 0.01,
+          textScaleFactor:
+              NotificationConstants.actorRowLargeTextStackThreshold - 0.01,
         );
 
         final avatarRow = find
@@ -251,7 +252,8 @@ void main() {
         await _pump(
           tester,
           notification: _actor(),
-          textScaleFactor: NotificationConstants.largeTextStackThreshold + 0.01,
+          textScaleFactor:
+              NotificationConstants.actorRowLargeTextStackThreshold + 0.01,
         );
 
         final avatar = tester.getTopLeft(find.byType(UserAvatar));

@@ -101,7 +101,7 @@ class _NotificationContent extends StatelessWidget {
 
   bool _shouldStackFollowBackButton(BuildContext context) {
     return MediaQuery.textScalerOf(context).scale(1) >
-        NotificationConstants.largeTextStackThreshold;
+        NotificationConstants.actorRowLargeTextStackThreshold;
   }
 
   @override
