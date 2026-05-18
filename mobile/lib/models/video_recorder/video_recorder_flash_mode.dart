@@ -12,7 +12,8 @@ enum DivineFlashMode {
   torch,
 
   /// Flash off mode.
-  off;
+  off
+  ;
 
   /// Icon representing the flash mode.
   DivineIconName get icon => switch (this) {

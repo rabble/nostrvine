@@ -7,7 +7,8 @@ import 'package:unified_logger/unified_logger.dart';
 
 enum VerifierRequiredMethod {
   oauth('oauth'),
-  publicProof('public_proof');
+  publicProof('public_proof')
+  ;
 
   const VerifierRequiredMethod(this.wireValue);
 
