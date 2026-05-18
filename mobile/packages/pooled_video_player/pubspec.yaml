@@ -23,7 +23,7 @@ dependencies:
   media_kit_video:
     git:
       url: https://github.com/divinevideo/media-kit
-      ref: fix/texture-rotation
+      ref: 6b718491261e40ddebf1fe9b880b3d5d30205ee0
       path: media_kit_video
 
 dev_dependencies:

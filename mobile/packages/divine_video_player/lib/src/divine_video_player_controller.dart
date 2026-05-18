@@ -317,9 +317,9 @@ class DivineVideoPlayerController {
   Future<void> setVolume(double volume) async {
     _ensureInitialized();
     final vol = volume.clamp(0.0, 1.0);
+    if (_isLinuxBackend) return _linuxBackend!.setVolume(vol);
     _state = _state.copyWith(volume: vol);
     _stateController.add(_state);
-    if (_isLinuxBackend) return _linuxBackend!.setVolume(vol);
     await _methodChannel.invokeMethod<void>('setVolume', {'volume': vol});
   }
 

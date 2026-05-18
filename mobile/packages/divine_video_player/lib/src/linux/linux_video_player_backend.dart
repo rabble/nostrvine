@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'dart:math' as math;
 
 import 'package:divine_video_player/src/audio_track.dart' as divine;
@@ -81,6 +82,8 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
        _videoViewBuilder = videoViewBuilder ?? _defaultVideoViewBuilder,
        _durationProbe = durationProbe;
 
+  // media_kit native initialization is process-global, so this latch must
+  // survive hot restart. Tests reset it explicitly via the visible hook.
   static bool _mediaKitInitialized = false;
 
   final void Function() _mediaKitInitializer;
@@ -111,6 +114,7 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
   bool _disposed = false;
   bool _isLooping = false;
   bool _hasLoadedMedia = false;
+  bool _didLogUnsupportedAudioTrackWarning = false;
   int _currentClipIndex = 0;
 
   @override
@@ -261,13 +265,18 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
   }
 
   @override
-  Future<void> setAudioTracks(List<divine.AudioTrack> tracks) async {}
+  Future<void> setAudioTracks(List<divine.AudioTrack> tracks) async {
+    if (tracks.isEmpty) return;
+    _logUnsupportedAudioTrackOperation();
+  }
 
   @override
   Future<void> removeAllAudioTracks() async {}
 
   @override
-  Future<void> setAudioTrackVolume(int index, double volume) async {}
+  Future<void> setAudioTrackVolume(int index, double volume) async {
+    _logUnsupportedAudioTrackOperation();
+  }
 
   @override
   Widget buildView() {
@@ -366,9 +375,15 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
     final probe = _playerFactory();
     try {
       await probe.open(Media(uri), play: false);
-      final duration = await probe.stream.duration.firstWhere(
-        (value) => value > Duration.zero,
-      );
+      final duration = await probe.stream.duration
+          .firstWhere(
+            (value) => value > Duration.zero,
+          )
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () =>
+                throw TimeoutException('Could not probe duration for $uri'),
+          );
       return duration;
     } finally {
       await probe.dispose();
@@ -392,13 +407,12 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
   // coverage:ignore-end
 
   void _rebuildClipOffsets() {
-    _clipOffsets
-      ..clear()
-      ..addAll([
-        Duration.zero,
-        for (var i = 1; i < _clipDurations.length; i++)
-          _clipDurations.take(i).fold(Duration.zero, (a, b) => a + b),
-      ]);
+    _clipOffsets.clear();
+    var offset = Duration.zero;
+    for (final duration in _clipDurations) {
+      _clipOffsets.add(offset);
+      offset += duration;
+    }
   }
 
   Duration get _totalDuration =>
@@ -499,6 +513,15 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
       _state.copyWith(status: PlaybackStatus.error, errorMessage: '$error'),
     );
     _onError?.call(error);
+  }
+
+  void _logUnsupportedAudioTrackOperation() {
+    if (_didLogUnsupportedAudioTrackWarning) return;
+    _didLogUnsupportedAudioTrackWarning = true;
+    developer.log(
+      'Overlay audio tracks are not supported on the Linux backend yet.',
+      name: 'divine_video_player',
+    );
   }
 
   void _ensureMediaKitInitialized() {

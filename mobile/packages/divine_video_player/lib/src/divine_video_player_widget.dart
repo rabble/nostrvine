@@ -64,7 +64,6 @@ class DivineVideoPlayer extends StatelessWidget {
           creationParams: creationParams,
           creationParamsCodec: const StandardMessageCodec(),
         ),
-        TargetPlatform.linux => ctrl.buildLinuxView(),
         TargetPlatform.macOS => AppKitView(
           viewType: ctrl.viewType,
           creationParams: creationParams,

@@ -1503,7 +1503,7 @@ packages:
     dependency: "direct main"
     description:
       path: media_kit_video
-      ref: "fix/texture-rotation"
+      ref: "6b718491261e40ddebf1fe9b880b3d5d30205ee0"
       resolved-ref: "6b718491261e40ddebf1fe9b880b3d5d30205ee0"
       url: "https://github.com/divinevideo/media-kit"
     source: git

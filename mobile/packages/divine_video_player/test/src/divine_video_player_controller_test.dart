@@ -351,6 +351,28 @@ void main() {
         );
       });
 
+      test(
+        'setVolume on Linux emits exactly one backend-driven update',
+        () async {
+          final fakeLinuxBackend = _ControllerFakeLinuxBackend();
+          final states = <DivineVideoPlayerState>[];
+          controller = DivineVideoPlayerController();
+          DivineVideoPlayerController.debugForceLinuxBackend = true;
+          DivineVideoPlayerController.linuxBackendFactory = () =>
+              fakeLinuxBackend;
+
+          await controller.initialize();
+          controller.stateStream.listen(states.add);
+
+          await controller.setVolume(0.5);
+
+          expect(fakeLinuxBackend.lastVolume, 0.5);
+          expect(controller.state.volume, 0.5);
+          expect(states, hasLength(1));
+          expect(states.single.volume, 0.5);
+        },
+      );
+
       test('setPlaybackSpeed sends speed', () async {
         await controller.setPlaybackSpeed(2);
 
@@ -855,6 +877,8 @@ class _ControllerFakeLinuxBackend implements LinuxVideoPlayerBackend {
   Duration? lastStartPosition;
   int? lastAudioTrackIndex;
   double? lastAudioTrackVolume;
+  double? lastVolume;
+  late void Function(DivineVideoPlayerState state) _onStateChanged;
 
   @override
   Widget buildView() => const SizedBox.shrink();
@@ -870,6 +894,7 @@ class _ControllerFakeLinuxBackend implements LinuxVideoPlayerBackend {
     required void Function(Object error) onError,
   }) async {
     initializeCalls++;
+    _onStateChanged = onStateChanged;
   }
 
   @override
@@ -912,7 +937,15 @@ class _ControllerFakeLinuxBackend implements LinuxVideoPlayerBackend {
   Future<void> setPlaybackSpeed(double speed) async {}
 
   @override
-  Future<void> setVolume(double volume) async {}
+  Future<void> setVolume(double volume) async {
+    lastVolume = volume;
+    _onStateChanged(
+      DivineVideoPlayerState(
+        status: PlaybackStatus.ready,
+        volume: volume,
+      ),
+    );
+  }
 
   @override
   Future<void> stop() async {}
