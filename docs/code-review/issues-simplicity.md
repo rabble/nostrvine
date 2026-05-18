@@ -2,7 +2,9 @@
 
 Issues related to duplication, oversized files, unused code, and unnecessary complexity.
 
-Note: Newer features like `features/feature_flags/` demonstrate clean co-location, and the BLoC migration has produced focused classes. These issues cover legacy complexity — 30+ files over 800 lines (led by `video_event_service` at 5,652), a 1,801-line `main.dart` with 7+ responsibilities, dual notification implementations, and non-app code shipping in production `lib/`.
+> **Snapshot — April 2026.** This document captures the audit baseline extracted verbatim from #3530. File line counts, ticket statuses, and effort estimates reflect the state of the codebase when the audit was authored. For live status and active sequencing of this work, see the maintainability epic #4339 — the audit is its canonical inventory, and the Waves there supersede the per-ticket links below where applicable.
+
+Note: Newer features like `features/feature_flags/` demonstrate clean co-location, and the BLoC migration has produced focused classes. These issues cover legacy complexity — 30+ files over 800 lines (led by `video_event_service` at 5,652), a 1,784-line `main.dart` with 7+ responsibilities, dual notification implementations, and non-app code shipping in production `lib/`.
 
 ---
 
@@ -15,14 +17,14 @@ Note: Newer features like `features/feature_flags/` demonstrate clean co-locatio
 
 **Effort**: High. Each oversized file requires a domain-specific decomposition strategy. Priority targets: `video_event_service` (self-documented 9-concern split), `share_video_menu` (move business logic into `ShareSheetBloc`), `auth_service` (extract key management, session lifecycle, profile ops).
 
-**GitHub ticket**: [#3594](https://github.com/divinevideo/divine-mobile/issues/3594)
+**GitHub ticket**: [#3594](https://github.com/divinevideo/divine-mobile/issues/3594) — closed 2026-05-13; superseded by epic [#4339](https://github.com/divinevideo/divine-mobile/issues/4339) Wave 2/4 ([#3337](https://github.com/divinevideo/divine-mobile/issues/3337), [#3334](https://github.com/divinevideo/divine-mobile/issues/3334), [#4506](https://github.com/divinevideo/divine-mobile/issues/4506), [#4507](https://github.com/divinevideo/divine-mobile/issues/4507), [#4508](https://github.com/divinevideo/divine-mobile/issues/4508), [#4511](https://github.com/divinevideo/divine-mobile/issues/4511)–[#4516](https://github.com/divinevideo/divine-mobile/issues/4516)).
 
 ---
 
-### `main.dart` is a 1,801-line entry point with 7+ responsibilities
+### `main.dart` is a 1,784-line entry point with 7+ responsibilities
 **Problem**: `main.dart` bundles startup orchestration, service initialization, deep link handling, provider wiring, logging configuration, and UI widgets into a single file. Each concern is tightly coupled to the rest, making the startup sequence hard to understand, test, or modify independently.
 
-**Evidence**: `mobile/lib/main.dart` (1,801 lines, 84 imports) contains:
+**Evidence**: `mobile/lib/main.dart` (1,784 lines, 84 imports) contains:
 1. **Firebase background message handler** (~50 lines): top-level isolate function for push notifications
 2. **Startup coordinator setup** (~250 lines): phased initialization with timing instrumentation
 3. **`_startOpenVineApp()`** (~600 lines): bindings, crash reporting, video cache config, window manager, DNS overrides, logging config, error zone setup, `debugPrint` override
@@ -37,7 +39,7 @@ The `DivineApp.build()` method alone is ~400 lines deep with nested `MultiReposi
 
 **Effort**: Medium. Extract incrementally: (1) move `_UploadFailureListener` and `_CrashProbeHotspot` to their own files, (2) extract the startup/initialization functions into a dedicated `startup/` module, (3) extract the `MultiRepositoryProvider`/`MultiBlocProvider` wiring into a dedicated provider setup widget, (4) extract deep link handling into its own service (partially exists in `deep_link_service.dart` already).
 
-**GitHub ticket**: [#3595](https://github.com/divinevideo/divine-mobile/issues/3595)
+**GitHub ticket**: [#3595](https://github.com/divinevideo/divine-mobile/issues/3595) — closed 2026-05-13; superseded by [#3337](https://github.com/divinevideo/divine-mobile/issues/3337).
 
 ---
 
@@ -48,11 +50,11 @@ The `DivineApp.build()` method alone is ~400 lines deep with nested `MultiReposi
 
 **Done well**: The new `lib/notifications/` feature demonstrates the correct BLoC-based architecture. The replacement is built; it just needs to fully replace the old implementation.
 
-**Impact**: Medium. Two notification systems running simultaneously; confusion about which is canonical; ~1,500 LOC ready for removal once the new system is fully verified.
+**Impact**: Medium. Two notification systems running simultaneously; confusion about which is canonical; ~1,500 LOC of dual-system code in total (old screen + provider + wiring).
 
-**Effort**: Low. Verify the new `lib/notifications/` BLoC system covers all functionality, update `inbox_view.dart` to use the new notifications page, delete old screen and provider. Estimated ~1,000 LOC removed.
+**Effort**: Low. Verify the new `lib/notifications/` BLoC system covers all functionality, update `inbox_view.dart` to use the new notifications page, delete old screen and provider. Estimated ~1,000 LOC net deletion after wiring updates.
 
-**GitHub ticket**: [#3596](https://github.com/divinevideo/divine-mobile/issues/3596)
+**GitHub ticket**: [#3596](https://github.com/divinevideo/divine-mobile/issues/3596) — closed 2026-05-12; work landed.
 
 ---
 
@@ -78,7 +80,7 @@ The `DivineApp.build()` method alone is ~400 lines deep with nested `MultiReposi
 
 **Effort**: Medium. Introduce a `ModerationPipeline` that composes `ContentBlocklistService`, `NsfwContentFilter`, `ModerationLabelService`, and `DivineHostFilterService` into a single `shouldFilter(VideoEvent) → ModerationDecision` call. `ContentFilterService` already partially does this; expand it. Inline the 15-line wrapper.
 
-**GitHub ticket**: [#3598](https://github.com/divinevideo/divine-mobile/issues/3598)
+**GitHub ticket**: [#3598](https://github.com/divinevideo/divine-mobile/issues/3598) — closed 2026-05-13; work landed.
 
 ---
 
