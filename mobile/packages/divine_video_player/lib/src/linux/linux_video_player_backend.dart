@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 import 'dart:io' show Platform;
 import 'dart:math' as math;
 
@@ -9,6 +8,7 @@ import 'package:divine_video_player/src/video_player_state.dart';
 import 'package:flutter/widgets.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart' as media_kit;
+import 'package:unified_logger/unified_logger.dart';
 
 /// Creates a Linux video backend implementation.
 typedef LinuxVideoPlayerBackendFactory = LinuxVideoPlayerBackend Function();
@@ -416,10 +416,11 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
 
   static Object _defaultVideoControllerFactory(Player player) {
     if (_videoOutputDisabled) {
-      developer.log(
+      Log.warning(
         'DIVINE_LINUX_NO_VIDEO_OUTPUT is set — skipping VideoController. '
         'Audio will play but video frames will not render.',
         name: 'divine_video_player',
+        category: LogCategory.video,
       );
       return const _DisabledVideoController();
     }
@@ -562,9 +563,10 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
   void _logUnsupportedAudioTrackOperation() {
     if (_didLogUnsupportedAudioTrackWarning) return;
     _didLogUnsupportedAudioTrackWarning = true;
-    developer.log(
+    Log.warning(
       'Overlay audio tracks are not supported on the Linux backend yet.',
       name: 'divine_video_player',
+      category: LogCategory.video,
     );
   }
 
