@@ -46,16 +46,14 @@ import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/og_viner_cache_provider.dart';
+import 'package:openvine/providers/preferences_providers.dart';
 import 'package:openvine/providers/saved_sounds_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/account_label_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
-import 'package:openvine/services/ai_training_preference_service.dart';
 import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/api_service.dart';
-import 'package:openvine/services/audio_device_preference_service.dart';
-import 'package:openvine/services/audio_sharing_preference_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/badges/badge_repository.dart';
@@ -80,13 +78,11 @@ import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/email_verification_listener.dart';
 import 'package:openvine/services/event_router.dart';
-import 'package:openvine/services/feed_aspect_ratio_preference_service.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/services/geo_blocking_service.dart';
 import 'package:openvine/services/hashtag_cache_service.dart';
 import 'package:openvine/services/hashtag_service.dart';
 import 'package:openvine/services/immediate_completion_helper.dart';
-import 'package:openvine/services/language_preference_service.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/media_viewer_auth_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
@@ -134,6 +130,8 @@ import 'package:sound_service/sound_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:videos_repository/videos_repository.dart';
 
+export 'preferences_providers.dart';
+
 part 'app_providers.g.dart';
 
 @Riverpod(keepAlive: true)
@@ -172,12 +170,6 @@ final nostrAppGrantStoreProvider = Provider<NostrAppGrantStore>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
   return NostrAppGrantStore(sharedPreferences: prefs);
 });
-
-final feedAspectRatioPreferenceServiceProvider =
-    Provider<FeedAspectRatioPreferenceService>((ref) {
-      final prefs = ref.watch(sharedPreferencesProvider);
-      return FeedAspectRatioPreferenceService(prefs);
-    });
 
 final firebaseMessagingProvider = Provider<FirebaseMessaging>(
   (ref) => FirebaseMessaging.instance,
@@ -924,43 +916,6 @@ ModerationLabelService moderationLabelService(Ref ref) {
     followingSubscription.cancel();
     service.dispose();
   });
-  return service;
-}
-
-/// Audio sharing preference service for managing whether audio is available
-/// for reuse by default. keepAlive ensures setting persists across widget rebuilds.
-@Riverpod(keepAlive: true)
-AudioSharingPreferenceService audioSharingPreferenceService(Ref ref) {
-  final prefs = ref.watch(sharedPreferencesProvider);
-  return AudioSharingPreferenceService(prefs);
-}
-
-/// AI training opt-out preference service. Controls whether the
-/// CAWG training-mining assertion is embedded in C2PA manifests.
-/// keepAlive ensures setting persists across widget rebuilds.
-@Riverpod(keepAlive: true)
-AiTrainingPreferenceService aiTrainingPreferenceService(Ref ref) {
-  final service = AiTrainingPreferenceService();
-  service.initialize(); // Initialize asynchronously
-  return service;
-}
-
-/// Audio device preference service for managing the preferred input device
-/// for recording on macOS. keepAlive ensures preference persists.
-@Riverpod(keepAlive: true)
-AudioDevicePreferenceService audioDevicePreferenceService(Ref ref) {
-  final service = AudioDevicePreferenceService();
-  service.initialize(); // Initialize asynchronously
-  return service;
-}
-
-/// Language preference service for managing the user's preferred content
-/// language. Used for NIP-32 self-labeling on published video events.
-/// keepAlive ensures setting persists across widget rebuilds.
-@Riverpod(keepAlive: true)
-LanguagePreferenceService languagePreferenceService(Ref ref) {
-  final service = LanguagePreferenceService();
-  service.initialize(); // Initialize asynchronously
   return service;
 }
 
