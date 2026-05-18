@@ -26,11 +26,9 @@ import 'package:http/http.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:models/models.dart' hide LogCategory;
-import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:nostr_client/nostr_client.dart'
     show NostrClient, RelayConnectionStatus, RelayState;
 import 'package:nostr_key_manager/nostr_key_manager.dart';
-import 'package:openvine/config/app_config.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
@@ -130,6 +128,7 @@ import 'package:sound_service/sound_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:videos_repository/videos_repository.dart';
 
+export 'nostr_apps_providers.dart';
 export 'preferences_providers.dart';
 
 part 'app_providers.g.dart';
@@ -152,24 +151,6 @@ BlockedVideoFilter _createBlockedAuthorFilter(Ref ref) {
 
   return createBlocklistFilter(blocklistRepository);
 }
-
-final nostrAppDirectoryServiceProvider = Provider<NostrAppDirectoryService>((
-  ref,
-) {
-  final prefs = ref.watch(sharedPreferencesProvider);
-  final client = Client();
-  ref.onDispose(client.close);
-  return NostrAppDirectoryService(
-    sharedPreferences: prefs,
-    client: client,
-    baseUrl: AppConfig.appsDirectoryBaseUrl,
-  );
-});
-
-final nostrAppGrantStoreProvider = Provider<NostrAppGrantStore>((ref) {
-  final prefs = ref.watch(sharedPreferencesProvider);
-  return NostrAppGrantStore(sharedPreferences: prefs);
-});
 
 final firebaseMessagingProvider = Provider<FirebaseMessaging>(
   (ref) => FirebaseMessaging.instance,
@@ -410,47 +391,6 @@ final notificationPreferencesStoreProvider =
         openBox: HiveNotificationPreferencesStore.openBox,
       );
     });
-
-final nostrAppBridgePolicyProvider = Provider<NostrAppBridgePolicy>((ref) {
-  final authService = ref.watch(authServiceProvider);
-  final grantStore = ref.watch(nostrAppGrantStoreProvider);
-  return NostrAppBridgePolicy(
-    grantStore: grantStore,
-    currentUserPubkey: authService.currentPublicKeyHex,
-  );
-});
-
-final nostrAppAuditServiceProvider = Provider<NostrAppAuditService>((ref) {
-  final nip98AuthService = ref.watch(nip98AuthServiceProvider);
-  final client = Client();
-  ref.onDispose(client.close);
-  return NostrAppAuditService(
-    workerBaseUri: Uri.parse(AppConfig.appsDirectoryBaseUrl),
-    authTokenProvider:
-        ({required url, required method, required payload}) async {
-          final token = await nip98AuthService.createAuthToken(
-            url: url,
-            method: HttpMethod.post,
-            payload: payload,
-          );
-          if (token == null) return null;
-          return AuditAuthToken(authorizationHeader: token.authorizationHeader);
-        },
-    httpClient: client,
-  );
-});
-
-final nostrAppBridgeServiceProvider = Provider<NostrAppBridgeService>((ref) {
-  final authService = ref.watch(authServiceProvider);
-  final policy = ref.watch(nostrAppBridgePolicyProvider);
-  final auditService = ref.watch(nostrAppAuditServiceProvider);
-  return NostrAppBridgeService(
-    authProvider: _AuthServiceBridgeAdapter(authService),
-    policy: policy,
-    signerFactory: () => authService.requireIdentity,
-    auditService: auditService,
-  );
-});
 
 final badgeRepositoryProvider = Provider<BadgeRepository>((ref) {
   final authService = ref.watch(authServiceProvider);
@@ -2791,39 +2731,6 @@ RepostsRepository repostsRepository(Ref ref) {
   ref.onDispose(repository.dispose);
 
   return repository;
-}
-
-/// Adapts the app-level [AuthService] to the package-level
-/// [BridgeAuthProvider] interface.
-class _AuthServiceBridgeAdapter implements BridgeAuthProvider {
-  const _AuthServiceBridgeAdapter(this._authService);
-
-  final AuthService _authService;
-
-  @override
-  String? get currentPublicKeyHex => _authService.currentPublicKeyHex;
-
-  @override
-  List<BridgeRelay> get userRelays => _authService.userRelays
-      .map((r) => BridgeRelay(url: r.url, read: r.read, write: r.write))
-      .toList();
-
-  @override
-  Future<BridgeSignedEvent?> createAndSignEvent({
-    required int kind,
-    required String content,
-    required List<List<String>> tags,
-    int? createdAt,
-  }) async {
-    final event = await _authService.createAndSignEvent(
-      kind: kind,
-      content: content,
-      tags: tags,
-      createdAt: createdAt,
-    );
-    if (event == null) return null;
-    return BridgeSignedEvent(json: event.toJson());
-  }
 }
 
 /// Adapts the app-level [AuthService] to the package-level
