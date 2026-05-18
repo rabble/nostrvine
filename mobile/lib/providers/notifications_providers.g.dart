@@ -1,0 +1,122 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'notifications_providers.dart';
+
+// **************************************************************************
+// RiverpodGenerator
+// **************************************************************************
+
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
+/// Bridges Nostr session readiness to push notification registration.
+///
+/// Registers FCM token only after the signer-backed Nostr client is ready.
+/// Deregisters the last ready client through AuthService's pre-teardown hook so
+/// outgoing-session cleanup runs before signers and callbacks are cleared.
+
+@ProviderFor(pushNotificationSync)
+const pushNotificationSyncProvider = PushNotificationSyncProvider._();
+
+/// Bridges Nostr session readiness to push notification registration.
+///
+/// Registers FCM token only after the signer-backed Nostr client is ready.
+/// Deregisters the last ready client through AuthService's pre-teardown hook so
+/// outgoing-session cleanup runs before signers and callbacks are cleared.
+
+final class PushNotificationSyncProvider
+    extends $FunctionalProvider<void, void, void>
+    with $Provider<void> {
+  /// Bridges Nostr session readiness to push notification registration.
+  ///
+  /// Registers FCM token only after the signer-backed Nostr client is ready.
+  /// Deregisters the last ready client through AuthService's pre-teardown hook so
+  /// outgoing-session cleanup runs before signers and callbacks are cleared.
+  const PushNotificationSyncProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'pushNotificationSyncProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$pushNotificationSyncHash();
+
+  @$internal
+  @override
+  $ProviderElement<void> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  void create(Ref ref) {
+    return pushNotificationSync(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(void value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<void>(value),
+    );
+  }
+}
+
+String _$pushNotificationSyncHash() =>
+    r'6febd49e08c766ed1885edc6d4e7a49182497a30';
+
+/// Enhanced notification service with Nostr integration (lazy loaded)
+
+@ProviderFor(notificationServiceEnhanced)
+const notificationServiceEnhancedProvider =
+    NotificationServiceEnhancedProvider._();
+
+/// Enhanced notification service with Nostr integration (lazy loaded)
+
+final class NotificationServiceEnhancedProvider
+    extends
+        $FunctionalProvider<
+          NotificationServiceEnhanced,
+          NotificationServiceEnhanced,
+          NotificationServiceEnhanced
+        >
+    with $Provider<NotificationServiceEnhanced> {
+  /// Enhanced notification service with Nostr integration (lazy loaded)
+  const NotificationServiceEnhancedProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'notificationServiceEnhancedProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$notificationServiceEnhancedHash();
+
+  @$internal
+  @override
+  $ProviderElement<NotificationServiceEnhanced> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  NotificationServiceEnhanced create(Ref ref) {
+    return notificationServiceEnhanced(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(NotificationServiceEnhanced value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<NotificationServiceEnhanced>(value),
+    );
+  }
+}
+
+String _$notificationServiceEnhancedHash() =>
+    r'6651e865aeb5b6f1df646efafe4a7744579e2c60';

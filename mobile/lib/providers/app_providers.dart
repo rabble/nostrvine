@@ -14,8 +14,6 @@ import 'package:content_policy/content_policy.dart';
 import 'package:curated_list_repository/curated_list_repository.dart';
 import 'package:curation_repository/curation_repository.dart';
 import 'package:dm_repository/dm_repository.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:follow_repository/follow_repository.dart';
@@ -37,7 +35,6 @@ import 'package:openvine/l10n/current_app_l10n.dart';
 import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/models/known_account.dart';
-import 'package:openvine/models/notification_preferences.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
@@ -85,8 +82,6 @@ import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/nostr_creator_binding_service.dart';
-import 'package:openvine/services/notification_preferences_service.dart';
-import 'package:openvine/services/notification_service.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
 import 'package:openvine/services/nsfw_content_filter.dart';
 import 'package:openvine/services/outgoing_dm_retry_service.dart';
@@ -95,8 +90,6 @@ import 'package:openvine/services/pending_action_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
-import 'package:openvine/services/push_notification_service.dart';
-import 'package:openvine/services/push_notification_session_coordinator.dart';
 import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
 import 'package:openvine/services/seen_videos_service.dart';
@@ -126,6 +119,7 @@ import 'package:unified_logger/unified_logger.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 export 'nostr_apps_providers.dart';
+export 'notifications_providers.dart';
 export 'permissions_providers.dart';
 export 'preferences_providers.dart';
 
@@ -149,20 +143,6 @@ BlockedVideoFilter _createBlockedAuthorFilter(Ref ref) {
 
   return createBlocklistFilter(blocklistRepository);
 }
-
-final firebaseMessagingProvider = Provider<FirebaseMessaging>(
-  (ref) => FirebaseMessaging.instance,
-);
-
-final firebaseOnMessageProvider = Provider<Stream<RemoteMessage>>(
-  (ref) => FirebaseMessaging.onMessage,
-);
-
-final notificationServiceProvider = Provider<NotificationService>((ref) {
-  final service = NotificationService();
-  ref.onDispose(service.dispose);
-  return service;
-});
 
 final collaboratorResponseServiceProvider =
     Provider<CollaboratorResponseService>((ref) {
@@ -204,190 +184,6 @@ final collaboratorConfirmationRepositoryProvider =
       );
       ref.onDispose(repo.close);
       return repo;
-    });
-
-final pushNotificationServiceProvider = Provider<PushNotificationService?>((
-  ref,
-) {
-  final readiness = ref.watch(nostrSessionProvider);
-  if (!readiness.isReadyForActiveClient || readiness.client == null) {
-    return null;
-  }
-
-  final authService = ref.watch(authServiceProvider);
-  if (authService.currentIdentity?.pubkey != readiness.pubkey) {
-    return null;
-  }
-
-  final notificationService = ref.watch(notificationServiceProvider);
-  final envConfig = ref.watch(currentEnvironmentProvider);
-  final firebaseMessaging = ref.watch(firebaseMessagingProvider);
-
-  final pushService = PushNotificationService(
-    authService: authService,
-    nostrClient: readiness.client!,
-    notificationService: notificationService,
-    environmentConfig: envConfig,
-    getToken: firebaseMessaging.getToken,
-    isCurrent: () {
-      final currentReadiness = ref.read(nostrSessionProvider);
-      return currentReadiness.isReadyForActiveClient &&
-          currentReadiness.pubkey == readiness.pubkey &&
-          identical(currentReadiness.client, readiness.client) &&
-          authService.currentIdentity?.pubkey == readiness.pubkey;
-    },
-  );
-
-  ref.onDispose(pushService.dispose);
-  return pushService;
-});
-
-Future<bool> _updateNotificationPreferencesSafely(
-  PushNotificationService pushService,
-  NotificationPreferences preferences,
-) async {
-  try {
-    return await pushService.updatePreferences(preferences);
-  } catch (e) {
-    Log.warning(
-      'Push notification preference publish failed: $e',
-      name: 'PushNotificationSync',
-      category: LogCategory.system,
-    );
-    return false;
-  }
-}
-
-final Provider<void Function(String)>
-notificationPreferencesDirtySyncBridgeProvider =
-    Provider<void Function(String)>((ref) {
-      const maxDirtySyncRetries = 3;
-      var disposed = false;
-      var drainGeneration = 0;
-      final activeDrainPubkeys = <String>{};
-      final retryCountsByPubkey = <String, int>{};
-
-      ref.onDispose(() {
-        disposed = true;
-        drainGeneration += 1;
-      });
-
-      bool isReadyForPubkey(
-        String pubkey, {
-        PushNotificationService? pushService,
-      }) {
-        if (disposed) return false;
-
-        final authService = ref.read(authServiceProvider);
-        if (authService.currentIdentity?.pubkey != pubkey) return false;
-
-        final readiness = ref.read(nostrSessionProvider);
-        if (!readiness.isReadyForActiveClient || readiness.pubkey != pubkey) {
-          return false;
-        }
-
-        return pushService == null ||
-            identical(ref.read(pushNotificationServiceProvider), pushService);
-      }
-
-      Future<void> drainDirtyPreferences(String pubkey) async {
-        if (!activeDrainPubkeys.add(pubkey)) return;
-        final generation = ++drainGeneration;
-        var shouldRetry = false;
-        try {
-          final preferencesService = ref.read(
-            notificationPreferencesServiceProvider,
-          );
-          if (!isReadyForPubkey(pubkey)) return;
-          final outcome = await preferencesService
-              .syncDirtyPreferencesForPubkey(
-                pubkey,
-              );
-          if (disposed || generation != drainGeneration) return;
-          switch (outcome) {
-            case NotificationPreferencesSyncOutcome.publishedAndCleared:
-            case NotificationPreferencesSyncOutcome.nothingToDrain:
-              retryCountsByPubkey.remove(pubkey);
-            case NotificationPreferencesSyncOutcome.stillDirty:
-              shouldRetry = isReadyForPubkey(pubkey);
-          }
-        } catch (e) {
-          Log.warning(
-            'Push notification preference drain failed: $e',
-            name: 'PushNotificationSync',
-            category: LogCategory.system,
-          );
-        } finally {
-          activeDrainPubkeys.remove(pubkey);
-        }
-
-        if (!shouldRetry || disposed) return;
-        final retryCount = retryCountsByPubkey[pubkey] ?? 0;
-        if (retryCount >= maxDirtySyncRetries) return;
-        retryCountsByPubkey[pubkey] = retryCount + 1;
-        Future<void>.microtask(() {
-          if (disposed || !isReadyForPubkey(pubkey)) return;
-          unawaited(drainDirtyPreferences(pubkey));
-        });
-      }
-
-      void scheduleDirtyPreferencesDrain(String pubkey) {
-        if (disposed || !isReadyForPubkey(pubkey)) return;
-        Future<void>.microtask(() {
-          if (disposed || !isReadyForPubkey(pubkey)) return;
-          unawaited(drainDirtyPreferences(pubkey));
-        });
-      }
-
-      void handleReadiness(NostrSessionReadiness readiness) {
-        final readinessPubkey = readiness.pubkey;
-        if (readiness.isReadyForActiveClient && readinessPubkey != null) {
-          unawaited(drainDirtyPreferences(readinessPubkey));
-        }
-      }
-
-      ref.listen<NostrSessionReadiness>(nostrSessionProvider, (_, readiness) {
-        handleReadiness(readiness);
-      });
-
-      Future.microtask(() => handleReadiness(ref.read(nostrSessionProvider)));
-      return scheduleDirtyPreferencesDrain;
-    });
-
-final notificationPreferencesServiceProvider =
-    Provider<NotificationPreferencesService>((ref) {
-      final authService = ref.watch(authServiceProvider);
-
-      return NotificationPreferencesService(
-        store: ref.watch(notificationPreferencesStoreProvider),
-        currentPubkey: () => authService.currentIdentity?.pubkey,
-        onStillDirty: (pubkey) {
-          if (!ref.mounted) return;
-          ref.read(notificationPreferencesDirtySyncBridgeProvider)(pubkey);
-        },
-        publishPreferences: (pubkey, prefs) {
-          if (authService.currentIdentity?.pubkey != pubkey) {
-            return Future<bool>.value(false);
-          }
-
-          final pushService = ref.read(pushNotificationServiceProvider);
-          final readiness = ref.read(nostrSessionProvider);
-          if (pushService == null ||
-              !readiness.isReadyForActiveClient ||
-              readiness.pubkey != pubkey) {
-            return Future<bool>.value(false);
-          }
-
-          return _updateNotificationPreferencesSafely(pushService, prefs);
-        },
-      );
-    });
-
-final notificationPreferencesStoreProvider =
-    Provider<NotificationPreferencesStore>((ref) {
-      return const HiveNotificationPreferencesStore(
-        openBox: HiveNotificationPreferencesStore.openBox,
-      );
     });
 
 final badgeRepositoryProvider = Provider<BadgeRepository>((ref) {
@@ -1264,63 +1060,6 @@ void zendeskIdentitySync(Ref ref) {
   ref.onDispose(subscription.cancel);
 }
 
-/// Bridges Nostr session readiness to push notification registration.
-///
-/// Registers FCM token only after the signer-backed Nostr client is ready.
-/// Deregisters the last ready client through AuthService's pre-teardown hook so
-/// outgoing-session cleanup runs before signers and callbacks are cleared.
-@Riverpod(keepAlive: true)
-void pushNotificationSync(Ref ref) {
-  final authService = ref.watch(authServiceProvider);
-  ref.watch(notificationPreferencesDirtySyncBridgeProvider);
-
-  final coordinator = PushNotificationSessionCoordinator(
-    authService: authService,
-    firebaseMessaging: ref.read(firebaseMessagingProvider),
-    readReadiness: () => ref.read(nostrSessionProvider),
-    readPushService: () => ref.read(pushNotificationServiceProvider),
-    createCleanupClient: (identity) {
-      final factory = ref.read(nostrClientFactoryProvider);
-      return factory(
-        signer: identity,
-        statisticsService: ref.read(relayStatisticsServiceProvider),
-        environmentConfig: ref.read(currentEnvironmentProvider),
-        dbClient: ref.read(appDbClientProvider),
-      );
-    },
-  );
-
-  final unregisterBeforeSessionTeardown = authService
-      .registerBeforeSessionTeardownCallback(
-        coordinator.deregisterLastReadyPubkey,
-      );
-
-  final authStateSubscription = authService.authStateStream.listen((_) {
-    coordinator.handleAuthStateChange();
-  });
-
-  coordinator.handleReadiness(ref.read(nostrSessionProvider));
-
-  ref.listen<NostrSessionReadiness>(nostrSessionProvider, (_, next) {
-    coordinator.handleReadiness(next);
-  });
-
-  // Set up foreground message handler
-  final onMessageSubscription = ref.read(firebaseOnMessageProvider).listen((
-    message,
-  ) {
-    final pushService = ref.read(pushNotificationServiceProvider);
-    pushService?.handleForegroundMessage(message.data);
-  });
-
-  ref.onDispose(() {
-    coordinator.dispose();
-    unregisterBeforeSessionTeardown();
-    authStateSubscription.cancel();
-    onMessageSubscription.cancel();
-  });
-}
-
 /// Helper to set Zendesk identity from pubkey
 Future<void> _setZendeskIdentity(
   String pubkeyHex,
@@ -1826,93 +1565,6 @@ IdentityClaimsRepository identityClaimsRepository(Ref ref) {
   return IdentityClaimsRepository(
     verifierClient: ref.watch(verifierClientProvider),
   );
-}
-
-/// Enhanced notification service with Nostr integration (lazy loaded)
-@riverpod
-NotificationServiceEnhanced notificationServiceEnhanced(Ref ref) {
-  final service = NotificationServiceEnhanced();
-
-  // Delay initialization until after critical path is loaded
-  if (!kIsWeb) {
-    // Initialize on mobile - wait for keys to be available
-    final nostrService = ref.watch(nostrServiceProvider);
-    final profileRepository = ref.watch(profileRepositoryProvider);
-    final videoService = ref.watch(videoEventServiceProvider);
-
-    Future.microtask(() async {
-      try {
-        // Wait for the NostrClient to finish initialize() instead of polling
-        // hasKeys every 500 ms (#3352). 15 s timeout matches the previous
-        // budget (30 retries × 500 ms).
-        try {
-          await nostrService.ready.timeout(const Duration(seconds: 15));
-        } on TimeoutException {
-          Log.warning(
-            'Notification service initialization skipped - no Nostr keys available after 15s',
-            name: 'AppProviders',
-            category: LogCategory.system,
-          );
-          return;
-        }
-
-        if (!nostrService.hasKeys) {
-          Log.warning(
-            'Notification service initialization skipped - ready completed but hasKeys is false',
-            name: 'AppProviders',
-            category: LogCategory.system,
-          );
-          return;
-        }
-
-        if (profileRepository == null) {
-          Log.warning(
-            'Notification service initialization skipped - ProfileRepository not ready',
-            name: 'AppProviders',
-            category: LogCategory.system,
-          );
-          return;
-        }
-
-        await service.initialize(
-          nostrService: nostrService,
-          profileRepository: profileRepository,
-          videoService: videoService,
-        );
-      } catch (e) {
-        Log.error(
-          'Failed to initialize enhanced notification service: $e',
-          name: 'AppProviders',
-          category: LogCategory.system,
-        );
-      }
-    });
-  } else {
-    // On web, delay initialization by 3 seconds to allow main UI to load first
-    Timer(const Duration(seconds: 3), () async {
-      try {
-        final nostrService = ref.read(nostrServiceProvider);
-        final profileRepository = ref.read(profileRepositoryProvider);
-        final videoService = ref.read(videoEventServiceProvider);
-
-        if (profileRepository == null) return;
-
-        await service.initialize(
-          nostrService: nostrService,
-          profileRepository: profileRepository,
-          videoService: videoService,
-        );
-      } catch (e) {
-        Log.error(
-          'Failed to initialize enhanced notification service: $e',
-          name: 'AppProviders',
-          category: LogCategory.system,
-        );
-      }
-    });
-  }
-
-  return service;
 }
 
 // VideoManagerService removed - using pure Riverpod VideoManager provider instead
