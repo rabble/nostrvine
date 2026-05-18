@@ -10,10 +10,13 @@ import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/widgets/user_name.dart';
 
 void main() {
-  const pubkey =
+  const defaultPubkey =
       'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
 
-  Widget buildSubject({String nip05 = 'alice@example.com'}) {
+  Widget buildSubject({
+    String pubkey = defaultPubkey,
+    String nip05 = 'alice@example.com',
+  }) {
     return ProviderScope(
       overrides: [
         nip05VerificationProvider.overrideWith(
@@ -71,6 +74,19 @@ void main() {
 
   testWidgets('shows a checkmark for Rabble special profile', (tester) async {
     await tester.pumpWidget(buildSubject(nip05: '_@rabble.divine.video'));
+    await tester.pump();
+
+    expect(find.text('Alice'), findsOneWidget);
+    expect(find.byIcon(Icons.check), findsOneWidget);
+  });
+
+  testWidgets('shows a checkmark for special profile pubkey', (tester) async {
+    await tester.pumpWidget(
+      buildSubject(
+        pubkey:
+            'aa50001ef150418f30f62f827399d5c26a5ade52ab45ca4849f99b1726bb47b4',
+      ),
+    );
     await tester.pump();
 
     expect(find.text('Alice'), findsOneWidget);

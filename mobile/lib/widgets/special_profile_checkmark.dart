@@ -10,9 +10,14 @@ const _specialProfileHosts = {
   'rabble.divine.video',
 };
 
+const _specialProfilePubkeys = {
+  'aa50001ef150418f30f62f827399d5c26a5ade52ab45ca4849f99b1726bb47b4',
+};
+
 bool shouldShowSpecialProfileCheckmark(UserProfile? profile) {
   if (profile == null) return false;
-  return _matchesSpecialProfile(profile.nip05) ||
+  return _specialProfilePubkeys.contains(profile.pubkey.toLowerCase()) ||
+      _matchesSpecialProfile(profile.nip05) ||
       _matchesSpecialProfile(profile.displayNip05);
 }
 
