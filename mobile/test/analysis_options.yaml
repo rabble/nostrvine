@@ -1,0 +1,6 @@
+include: ../analysis_options.yaml
+
+linter:
+  rules:
+    # Tests legitimately use print() for diagnostic output — exempt here.
+    avoid_print: false
