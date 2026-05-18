@@ -252,7 +252,6 @@ class _AudioSelectionBottomSheetState
               'weba',
               'webm',
             ],
-            allowMultiple: false,
           );
         };
 

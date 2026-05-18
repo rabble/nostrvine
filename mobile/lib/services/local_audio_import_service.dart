@@ -37,7 +37,7 @@ class LocalAudioImportService {
     required String displayName,
   }) async {
     final source = File(sourcePath);
-    if (!await source.exists()) {
+    if (!source.existsSync()) {
       throw const LocalAudioImportException('Audio file could not be opened.');
     }
 
@@ -98,6 +98,6 @@ class LocalAudioImportService {
   }
 
   static String _safeFileName(String input) {
-    return input.replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_');
+    return input.replaceAll(RegExp('[^A-Za-z0-9._-]+'), '_');
   }
 }

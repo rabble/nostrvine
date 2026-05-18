@@ -1311,7 +1311,7 @@ class VideoEventPublisher {
     }
 
     final audioFile = File(filePath);
-    if (!await audioFile.exists()) {
+    if (!audioFile.existsSync()) {
       Log.error(
         'Imported audio file does not exist: $filePath',
         name: 'VideoEventPublisher',

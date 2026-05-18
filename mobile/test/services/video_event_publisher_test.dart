@@ -9,8 +9,8 @@ import 'package:collection/collection.dart';
 import 'package:crypto/crypto.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:models/models.dart' show AudioEvent, audioEventKind;
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' show AudioEvent, audioEventKind;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
@@ -650,7 +650,8 @@ void main() {
         when(
           () => nostrClient.publishEvent(any()),
         ).thenAnswer((invocation) async {
-          return PublishSuccess(event: invocation.positionalArguments.first);
+          final event = invocation.positionalArguments.first as Event;
+          return PublishSuccess(event: event);
         });
       });
 
