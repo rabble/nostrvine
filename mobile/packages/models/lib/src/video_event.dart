@@ -10,7 +10,6 @@ import 'package:models/src/nip71_video_kinds.dart';
 import 'package:models/src/video_attribution.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:text_sanitizer/text_sanitizer.dart';
-import 'dart:developer' as developer;
 
 /// Represents a video event (NIP-71 compliant kinds 22, 34236)
 @immutable
@@ -434,14 +433,6 @@ class VideoEvent {
     // Many relays don't include 'd' tags on NIP-71 addressable events
     if (vineId == null || vineId.isEmpty) {
       vineId = event.id; // Use event ID as unique identifier
-    }
-
-    // DEBUG: Log full event for cdn.divine.video thumbnails
-    if (thumbnailUrl != null && thumbnailUrl!.contains('media.divine.video')) {
-      for (var i = 0; i < event.tags.length; i++) {
-        final tag = event.tags[i];
-        final tagName = tag.isNotEmpty ? tag.first : '<empty>';
-      }
     }
 
     return VideoEvent(
@@ -1315,7 +1306,7 @@ class VideoEvent {
       // This is an open protocol - people can host videos anywhere
       // The video player will determine if it can actually play the content
       return true;
-    } on FormatException catch (e) {
+    } on FormatException {
       return false;
     }
   }

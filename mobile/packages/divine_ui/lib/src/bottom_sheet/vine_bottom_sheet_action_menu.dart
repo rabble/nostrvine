@@ -106,29 +106,32 @@ class _VineBottomSheetListTile extends StatelessWidget {
               : VineTheme.whiteText
         : VineTheme.onSurfaceDisabled;
 
-    return ListTile(
-      enabled: isEnabled,
-      minTileHeight: 56,
-      leading: SizedBox(
-        height: 24,
-        width: 24,
-        child: SvgPicture.asset(
-          data.iconPath,
-          colorFilter: .mode(color, .srcIn),
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        enabled: isEnabled,
+        minTileHeight: 56,
+        leading: SizedBox(
+          height: 24,
+          width: 24,
+          child: SvgPicture.asset(
+            data.iconPath,
+            colorFilter: .mode(color, .srcIn),
+          ),
         ),
+        title: Text(
+          data.label,
+          style: VineTheme.titleMediumFont(color: color),
+          maxLines: 1,
+          overflow: .ellipsis,
+        ),
+        onTap: isEnabled
+            ? () {
+                if (data.closeOnTap) Navigator.pop(context);
+                data.onTap!();
+              }
+            : null,
       ),
-      title: Text(
-        data.label,
-        style: VineTheme.titleMediumFont(color: color),
-        maxLines: 1,
-        overflow: .ellipsis,
-      ),
-      onTap: isEnabled
-          ? () {
-              if (data.closeOnTap) Navigator.pop(context);
-              data.onTap!();
-            }
-          : null,
     );
   }
 }
