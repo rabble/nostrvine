@@ -449,8 +449,6 @@ class NotificationRepository {
       );
     }
   }
-}
-  }
 
   /// Projects an enriched [NotificationItem] into the persistence record
   /// shape accepted by [NotificationsDao.replaceAll].
