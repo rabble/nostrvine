@@ -16,10 +16,10 @@ sealed class TagsPickerEvent extends Equatable {
 final class TagsPickerTagsAdded extends TagsPickerEvent {
   const TagsPickerTagsAdded(this.rawTokens);
 
-  final Iterable<String> rawTokens;
+  final List<String> rawTokens;
 
   @override
-  List<Object?> get props => [rawTokens.toList()];
+  List<Object?> get props => [rawTokens];
 }
 
 /// User removed a previously selected tag.

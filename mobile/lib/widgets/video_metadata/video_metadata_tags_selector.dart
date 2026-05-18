@@ -133,8 +133,20 @@ class _TagsPickerViewState extends State<_TagsPickerView> {
       previousText: previous,
     );
 
-    // No separator → just forward the raw text as a search query.
+    // No committable tokens. Two sub-cases:
+    //   1. No separator at all (typical typing) — forward as search query.
+    //   2. Separator(s) but only empty tokens (e.g. ' ' or ',,,') — clear
+    //      the field so we don't leave separator junk visible underneath
+    //      an empty-state pane.
     if (parsed.completed.isEmpty) {
+      if (parsed.remainder != text) {
+        _previousText = parsed.remainder;
+        _searchController.value = TextEditingValue(
+          text: parsed.remainder,
+          selection: TextSelection.collapsed(offset: parsed.remainder.length),
+        );
+        return;
+      }
       _previousText = text;
       context.read<TagsPickerBloc>().add(TagsPickerQueryChanged(text));
       return;
@@ -146,7 +158,10 @@ class _TagsPickerViewState extends State<_TagsPickerView> {
       text: parsed.remainder,
       selection: TextSelection.collapsed(offset: parsed.remainder.length),
     );
-    // Listener re-fires with the cleaned text and emits the query event.
+    // Listener re-fires with the cleaned text. The cleaned text never
+    // contains a separator, so the re-entry hits the `completed.isEmpty`
+    // branch above and dispatches at most one `TagsPickerQueryChanged` —
+    // no unbounded recursion.
   }
 
   void _addTag(String raw) {
@@ -186,8 +201,11 @@ class _TagsPickerViewState extends State<_TagsPickerView> {
           trailingAction: DivineIconButton(
             icon: .check,
             size: .small,
-            onPressed: () =>
-                context.pop(context.read<TagsPickerBloc>().state.selectedTags),
+            onPressed: () => context.pop(
+              Set<String>.unmodifiable(
+                context.read<TagsPickerBloc>().state.selectedTags,
+              ),
+            ),
           ),
         ),
 
