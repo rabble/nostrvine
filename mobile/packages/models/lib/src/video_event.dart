@@ -141,8 +141,7 @@ class VideoEvent {
             } else {
               videoUrlCandidates.add(tagValue);
             }
-          } else {
-          }
+          } else {}
         case 'streaming':
           // Handle streaming tag with HLS/DASH URLs
           // Format: ["streaming", "url", "format"] e.g., ["streaming", "https://cdn.divine.video/.../video.m3u8", "hls"]
@@ -168,8 +167,7 @@ class VideoEvent {
                   } else {
                     videoUrlCandidates.add(value);
                   }
-                } else {
-                }
+                } else {}
               // POSTEL'S LAW: Accept various video URL keys that
               // different clients may use
               case 'hls':
@@ -401,15 +399,13 @@ class VideoEvent {
     final effectiveTimestamp = publishedAtTimestamp ?? createdAtTimestamp;
 
     // DEBUG: Log the exact videoUrl being passed to VideoEvent constructor
-    if (videoUrl?.contains('cdn.divine.video') ?? false) {
-    }
+    if (videoUrl?.contains('cdn.divine.video') ?? false) {}
 
     // POSTEL'S LAW: Be liberal in what you accept
     // Apply comprehensive fallback logic to find video URLs
     if (videoUrl == null || videoUrl.isEmpty) {
       videoUrl = _extractVideoUrlFromContent(event.content);
-      if (videoUrl != null) {
-      }
+      if (videoUrl != null) {}
     }
 
     // Select best video URL from all candidates
@@ -418,8 +414,7 @@ class VideoEvent {
     } else {
       // If no candidates found, use the old fallback method
       videoUrl = _findAnyVideoUrlInTags(event.tags);
-      if (videoUrl != null) {
-      }
+      if (videoUrl != null) {}
     }
 
     // Note: Removed Classic Vine hardening that was forcing api.openvine.co
@@ -435,7 +430,6 @@ class VideoEvent {
       videoUrl = fixedUrl;
     }
 
-
     // Use 'd' tag if available, otherwise fallback to event ID
     // Many relays don't include 'd' tags on NIP-71 addressable events
     if (vineId == null || vineId.isEmpty) {
@@ -449,7 +443,6 @@ class VideoEvent {
         final tagName = tag.isNotEmpty ? tag.first : '<empty>';
       }
     }
-
 
     return VideoEvent(
       id: event.id,
@@ -1407,8 +1400,7 @@ class VideoEvent {
       }
     }
 
-    if (bestUrl != null) {
-    }
+    if (bestUrl != null) {}
 
     return bestUrl;
   }
