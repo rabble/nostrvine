@@ -104,10 +104,10 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
   /// attempted first (fast path).
   ///
   /// After the initial load, subscribes to [FollowRepository.followingStream]
-  /// (skipping the first replay) so only runtime follow/unfollow changes
-  /// trigger a refresh — avoiding a redundant second API call on startup.
-  /// The "no follows" CTA is handled by [_onFollowingListChanged] when the
-  /// follow repo's force-emit for empty lists arrives as emission #2.
+  /// and ignores only the first replay when it exactly matches the follow
+  /// list already used for that load. This avoids a redundant second API
+  /// call on startup while still allowing late [FollowRepository.initialize]
+  /// completions to trigger a corrective refresh or "no follows" CTA.
   ///
   /// Also subscribes to [CuratedListRepository.subscribedListsStream]
   /// (skipping the first replay) so curated list changes refresh the feed.
@@ -133,6 +133,10 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
 
     _feedTracker?.startFeedLoad(mode.name);
 
+    final initialFollowingPubkeys = List<String>.unmodifiable(
+      _followRepository.followingPubkeys,
+    );
+
     await _loadVideos(mode, emit);
 
     // After the initial load, check for the "no follows" CTA. Needed for
@@ -156,21 +160,28 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
 
     // Subscribe to following list changes.
     //
-    // If the follow repository was already initialized when we ran the
-    // initial load, skip the first replay — that load already used
-    // up-to-date data and we don't want a redundant second network call.
+    // The first replay can mean one of two things:
+    // - the initial load already used this exact follow list and a refresh
+    //   would be redundant
+    // - initialize() completed after the first load and this replay is the
+    //   corrective signal that the feed should refresh or show the CTA
     //
-    // If it was NOT yet initialized (the common cold-start race condition),
-    // skip nothing — the first real emission arrives when initialize()
-    // completes and serves as a corrective refresh.  This fixes the bug
-    // where Following and For You show identical content because the
-    // Funnelcake /feed endpoint returned stale/popular-fallback content
-    // before the server-side follow-graph index was confirmed ready.
-    final wasInitialized = _followRepository.isInitialized;
+    // Distinguish those cases by comparing the first replay with the list
+    // used for the initial fetch instead of relying on isInitialized.
+    var isFirstFollowingEmission = true;
     unawaited(
       emit.onEach<List<String>>(
-        _followRepository.followingStream.skip(wasInitialized ? 1 : 0),
-        onData: (pubkeys) => add(VideoFeedFollowingListChanged(pubkeys)),
+        _followRepository.followingStream,
+        onData: (pubkeys) {
+          if (isFirstFollowingEmission) {
+            isFirstFollowingEmission = false;
+            if (_listsEqual(pubkeys, initialFollowingPubkeys)) {
+              return;
+            }
+          }
+
+          add(VideoFeedFollowingListChanged(pubkeys));
+        },
       ),
     );
 
@@ -204,6 +215,16 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     );
 
     await _loadVideos(event.mode, emit);
+  }
+
+  bool _listsEqual(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+
+    return true;
   }
 
   /// Handle load more request (pagination).
