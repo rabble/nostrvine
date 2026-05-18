@@ -1,14 +1,13 @@
 // ABOUTME: Bottom-sheet widget for searching and managing video hashtags
 // ABOUTME: Matches the UserPickerSheet pattern: rounded search field + list rows
 
-import 'dart:async';
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hashtag_repository/hashtag_repository.dart';
+import 'package:openvine/blocs/tags_picker/tags_picker_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -74,7 +73,7 @@ class VideoMetadataTagsSelector extends ConsumerWidget {
 
 // ─── Sheet ─────────────────────────────────────────────────────────────────
 
-class _TagsPickerSheet extends ConsumerStatefulWidget {
+class _TagsPickerSheet extends ConsumerWidget {
   const _TagsPickerSheet({
     required this.initialTags,
     this.scrollController,
@@ -84,83 +83,89 @@ class _TagsPickerSheet extends ConsumerStatefulWidget {
   final ScrollController? scrollController;
 
   @override
-  ConsumerState<_TagsPickerSheet> createState() => _TagsPickerSheetState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Watch the repo so the bloc is recreated if Riverpod ever rebuilds the
+    // provider (auth flip, account switch). See state_management.md →
+    // "Bridging Riverpod-provided dependencies into BlocProvider".
+    final hashtagRepository = ref.watch(hashtagRepositoryProvider);
+    return BlocProvider<TagsPickerBloc>(
+      key: ValueKey(hashtagRepository),
+      create: (_) => TagsPickerBloc(
+        hashtagRepository: hashtagRepository,
+        initialTags: initialTags,
+      ),
+      child: _TagsPickerView(scrollController: scrollController),
+    );
+  }
 }
 
-class _TagsPickerSheetState extends ConsumerState<_TagsPickerSheet> {
-  late Set<String> _tags;
-  late final HashtagRepository _hashtagRepository;
+class _TagsPickerView extends StatefulWidget {
+  const _TagsPickerView({this.scrollController});
+
+  final ScrollController? scrollController;
+
+  @override
+  State<_TagsPickerView> createState() => _TagsPickerViewState();
+}
+
+class _TagsPickerViewState extends State<_TagsPickerView> {
   final _searchController = TextEditingController();
-  String _query = '';
-  List<String> _suggestions = [];
-  Timer? _debounceTimer;
-  bool _isLoading = false;
+  String _previousText = '';
 
   @override
   void initState() {
     super.initState();
-    _tags = Set.of(widget.initialTags);
-    _hashtagRepository = ref.read(hashtagRepositoryProvider);
     _searchController.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
-    _debounceTimer?.cancel();
     _searchController.dispose();
     super.dispose();
   }
 
   void _onSearchChanged() {
-    final query = _searchController.text.trim();
-    setState(() => _query = query);
-    _debounceTimer?.cancel();
-    if (query.isEmpty) {
-      setState(() {
-        _suggestions = [];
-        _isLoading = false;
-      });
+    final text = _searchController.text;
+    final previous = _previousText;
+
+    final parsed = parseTagsPickerInput(
+      text: text,
+      previousText: previous,
+    );
+
+    // No separator → just forward the raw text as a search query.
+    if (parsed.completed.isEmpty) {
+      _previousText = text;
+      context.read<TagsPickerBloc>().add(TagsPickerQueryChanged(text));
       return;
     }
-    _debounceTimer = Timer(const Duration(milliseconds: 350), () async {
-      if (!mounted) return;
-      setState(() => _isLoading = true);
-      final results = await _hashtagRepository.searchHashtags(query: query);
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _suggestions = results
-            .where(
-              (t) => !_tags.any((a) => a.toLowerCase() == t.toLowerCase()),
-            )
-            .toList();
-      });
-    });
+
+    context.read<TagsPickerBloc>().add(TagsPickerTagsAdded(parsed.completed));
+    _previousText = parsed.remainder;
+    _searchController.value = TextEditingValue(
+      text: parsed.remainder,
+      selection: TextSelection.collapsed(offset: parsed.remainder.length),
+    );
+    // Listener re-fires with the cleaned text and emits the query event.
   }
 
   void _addTag(String raw) {
-    final tag = raw.replaceAll(RegExp('[^a-zA-Z0-9]'), '');
-    if (tag.isEmpty) return;
-    setState(() {
-      _tags.add(tag);
-      _suggestions.removeWhere((s) => s.toLowerCase() == tag.toLowerCase());
-    });
+    context.read<TagsPickerBloc>().add(TagsPickerTagsAdded([raw]));
+    // Clear the field so the next suggestion tap / submit starts fresh.
+    if (_searchController.text.isNotEmpty) {
+      _previousText = '';
+      _searchController.clear();
+    }
   }
 
-  void _removeTag(String tag) => setState(() => _tags.remove(tag));
-
-  bool get _canAddQuery {
-    if (_query.isEmpty) return false;
-    final sanitized = _query.replaceAll(RegExp('[^a-zA-Z0-9]'), '');
-    if (sanitized.isEmpty) return false;
-    return !_tags.any((t) => t.toLowerCase() == sanitized.toLowerCase());
+  void _removeTag(String tag) {
+    context.read<TagsPickerBloc>().add(TagsPickerTagRemoved(tag));
   }
 
   static const _searchInputBorderRadius = 20.0;
 
   @override
   Widget build(BuildContext context) {
-    final sanitizedQuery = _query.replaceAll(RegExp('[^a-zA-Z0-9]'), '');
     final hintText = context.l10n.videoMetadataTagsPickerSearchHint;
 
     return Column(
@@ -181,7 +186,8 @@ class _TagsPickerSheetState extends ConsumerState<_TagsPickerSheet> {
           trailingAction: DivineIconButton(
             icon: .check,
             size: .small,
-            onPressed: () => context.pop(_tags),
+            onPressed: () =>
+                context.pop(context.read<TagsPickerBloc>().state.selectedTags),
           ),
         ),
 
@@ -202,7 +208,7 @@ class _TagsPickerSheetState extends ConsumerState<_TagsPickerSheet> {
               autocorrect: false,
               enableSuggestions: false,
               inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp('[a-zA-Z0-9]')),
+                FilteringTextInputFormatter.allow(RegExp('[a-zA-Z0-9 ,]')),
               ],
               onSubmitted: _addTag,
               cursorColor: VineTheme.vineGreen,
@@ -239,55 +245,72 @@ class _TagsPickerSheetState extends ConsumerState<_TagsPickerSheet> {
           ),
         ),
 
-        AnimatedSize(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          alignment: Alignment.topCenter,
-          child: _tags.isNotEmpty
-              ? ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 128),
-                  child: SingleChildScrollView(
-                    padding: const .only(bottom: 16),
-                    child: _SelectedTagsChipRow(
-                      tags: _tags.toList()..sort(),
-                      onRemove: _removeTag,
-                    ),
+        BlocSelector<TagsPickerBloc, TagsPickerState, Set<String>>(
+          selector: (s) => s.selectedTags,
+          builder: (context, selectedTags) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeInOut,
+                  alignment: Alignment.topCenter,
+                  child: selectedTags.isNotEmpty
+                      ? ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 128),
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: _SelectedTagsChipRow(
+                              tags: selectedTags.toList()..sort(),
+                              onRemove: _removeTag,
+                            ),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
+                if (selectedTags.isNotEmpty)
+                  const Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: VineTheme.outlineDisabled,
                   ),
-                )
-              : const SizedBox.shrink(),
+              ],
+            );
+          },
         ),
-        if (_tags.isNotEmpty)
-          const Divider(
-            height: 1,
-            thickness: 1,
-            color: VineTheme.outlineDisabled,
-          )
-        else if (_query.isEmpty)
-          const _EmptyState(),
 
-        AnimatedOpacity(
-          opacity: _isLoading ? 1.0 : 0.0,
-          duration: const Duration(milliseconds: 200),
-          child: const LinearProgressIndicator(
-            backgroundColor: Colors.transparent,
-            color: VineTheme.primary,
-            minHeight: 2,
-          ),
+        BlocSelector<TagsPickerBloc, TagsPickerState, bool>(
+          selector: (s) => s.status == TagsPickerStatus.searching,
+          builder: (context, isLoading) {
+            return AnimatedOpacity(
+              opacity: isLoading ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              child: const LinearProgressIndicator(
+                backgroundColor: Colors.transparent,
+                color: VineTheme.primary,
+                minHeight: 2,
+              ),
+            );
+          },
         ),
 
         Expanded(
-          child: Builder(
-            builder: (context) {
-              final resultTags = [
-                if (_canAddQuery) sanitizedQuery,
-                ..._suggestions.where(
-                  (s) => s.toLowerCase() != sanitizedQuery.toLowerCase(),
-                ),
-              ];
-
-              if (_query.isEmpty) {
+          child: BlocBuilder<TagsPickerBloc, TagsPickerState>(
+            builder: (context, state) {
+              if (state.query.isEmpty) {
+                if (state.selectedTags.isEmpty) {
+                  return const _EmptyState();
+                }
                 return const SizedBox.shrink();
               }
+
+              final sanitized = state.sanitizedQuery;
+              final resultTags = [
+                if (state.canAddQuery) sanitized,
+                ...state.suggestions.where(
+                  (s) => s.toLowerCase() != sanitized.toLowerCase(),
+                ),
+              ];
 
               if (resultTags.isEmpty) {
                 return Padding(
