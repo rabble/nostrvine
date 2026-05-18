@@ -90,6 +90,7 @@ import 'package:openvine/services/video_format_preference.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
+import 'package:openvine/utils/platform_support.dart';
 import 'package:openvine/utils/recoverable_flutter_error.dart';
 import 'package:openvine/utils/sensitive_uri_for_logs.dart';
 import 'package:openvine/widgets/app_lifecycle_handler.dart';
@@ -170,10 +171,10 @@ bool handleKnownFrameworkError(
 
 @visibleForTesting
 Future<void> configureVideoPlayerCacheForStartup({
-  required bool isWeb,
+  required bool skip,
   required Future<void> Function() configureCache,
 }) async {
-  if (isWeb) {
+  if (skip) {
     return;
   }
   await configureCache();
@@ -498,60 +499,64 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
     optional: true,
   );
 
-  coordinator.registerService(
-    name: 'PushNotifications',
-    phase: StartupPhase.deferred,
-    initialize: () async {
-      FirebaseMessaging.onBackgroundMessage(
-        _firebaseMessagingBackgroundHandler,
-      );
+  // firebase_messaging only supports Android, iOS, and macOS.
+  // firebase_options.dart throws UnsupportedError for Linux/Windows.
+  if (isFirebaseSupported && !kIsWeb) {
+    coordinator.registerService(
+      name: 'PushNotifications',
+      phase: StartupPhase.deferred,
+      initialize: () async {
+        FirebaseMessaging.onBackgroundMessage(
+          _firebaseMessagingBackgroundHandler,
+        );
 
-      // Check if app was launched from a push notification tap (cold start)
-      final initialMessage = await FirebaseMessaging.instance
-          .getInitialMessage();
-      if (initialMessage != null) {
-        final parsed = _parseFcmPayload(initialMessage.data);
-        if (parsed != null) {
-          Log.info(
-            'App launched from push notification, '
-            'target: ${parsed.referencedEventId} '
-            '(type: ${parsed.notificationType})',
-            name: 'main',
-            category: LogCategory.system,
-          );
-          unawaited(
-            _resolveAndPushNotificationDeepLink(
-              referencedEventId: parsed.referencedEventId,
-              notificationType: parsed.notificationType,
-              container: container,
-            ),
-          );
+        // Check if app was launched from a push notification tap (cold start)
+        final initialMessage = await FirebaseMessaging.instance
+            .getInitialMessage();
+        if (initialMessage != null) {
+          final parsed = _parseFcmPayload(initialMessage.data);
+          if (parsed != null) {
+            Log.info(
+              'App launched from push notification, '
+              'target: ${parsed.referencedEventId} '
+              '(type: ${parsed.notificationType})',
+              name: 'main',
+              category: LogCategory.system,
+            );
+            unawaited(
+              _resolveAndPushNotificationDeepLink(
+                referencedEventId: parsed.referencedEventId,
+                notificationType: parsed.notificationType,
+                container: container,
+              ),
+            );
+          }
         }
-      }
 
-      // Handle taps on notifications while app is in background
-      FirebaseMessaging.onMessageOpenedApp.listen((message) {
-        final parsed = _parseFcmPayload(message.data);
-        if (parsed != null) {
-          Log.info(
-            'Push notification tapped (background), '
-            'target: ${parsed.referencedEventId} '
-            '(type: ${parsed.notificationType})',
-            name: 'main',
-            category: LogCategory.system,
-          );
-          unawaited(
-            _resolveAndPushNotificationDeepLink(
-              referencedEventId: parsed.referencedEventId,
-              notificationType: parsed.notificationType,
-              container: container,
-            ),
-          );
-        }
-      });
-    },
-    optional: true,
-  );
+        // Handle taps on notifications while app is in background
+        FirebaseMessaging.onMessageOpenedApp.listen((message) {
+          final parsed = _parseFcmPayload(message.data);
+          if (parsed != null) {
+            Log.info(
+              'Push notification tapped (background), '
+              'target: ${parsed.referencedEventId} '
+              '(type: ${parsed.notificationType})',
+              name: 'main',
+              category: LogCategory.system,
+            );
+            unawaited(
+              _resolveAndPushNotificationDeepLink(
+                referencedEventId: parsed.referencedEventId,
+                notificationType: parsed.notificationType,
+                container: container,
+              ),
+            );
+          }
+        });
+      },
+      optional: true,
+    );
+  }
 
   return coordinator;
 }
@@ -594,20 +599,17 @@ Future<void> _startOpenVineApp() async {
   // in web/index.html (already added).
 
   // Configure the native video player disk cache (500 MB, LRU eviction).
-  // divine_video_player only ships android/ios/macos plugin platforms, so
-  // invoking configureCache() on web throws MissingPluginException. That
-  // exception gets swallowed by the runZonedGuarded + CrashReportingService
-  // chain below (Firebase Crashlytics has no web impl), and runApp() is
-  // never reached — the HTML loading spinner stays up forever with no JS
-  // errors. Skip the call on web to unblock startup.
+  // Skip on web/Linux/Windows — divine_video_player has no native plugin
+  // on those targets and `configureCache` is a bare method-channel call.
   await configureVideoPlayerCacheForStartup(
-    isWeb: kIsWeb,
+    skip: !hasNativeVideoPlayer,
     configureCache: DivineVideoPlayerController.configureCache,
   );
 
   // Dispose any zombie native players from a previous Dart VM
   // (e.g. hot restart). Must happen after configureCache so the
   // global method channel is already registered.
+  // No-op on Linux/web — handled internally by the package.
   if (!kIsWeb) {
     await DivineVideoPlayerController.disposeAll();
   }

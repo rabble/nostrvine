@@ -65,7 +65,7 @@ final class PushNotificationSyncProvider
 }
 
 String _$pushNotificationSyncHash() =>
-    r'6febd49e08c766ed1885edc6d4e7a49182497a30';
+    r'bd7c6af23335a355541b7086d8afedf15743369b';
 
 /// Enhanced notification service with Nostr integration (lazy loaded)
 

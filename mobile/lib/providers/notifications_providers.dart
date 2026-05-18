@@ -16,6 +16,7 @@ import 'package:openvine/services/notification_service.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
 import 'package:openvine/services/push_notification_service.dart';
 import 'package:openvine/services/push_notification_session_coordinator.dart';
+import 'package:openvine/utils/platform_support.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -45,6 +46,11 @@ final notificationPreferencesStoreProvider =
 final pushNotificationServiceProvider = Provider<PushNotificationService?>((
   ref,
 ) {
+  // Firebase Messaging only supports Android, iOS, macOS, and web.
+  if (!isFirebaseSupported) {
+    return null;
+  }
+
   final readiness = ref.watch(nostrSessionProvider);
   if (!readiness.isReadyForActiveClient || readiness.client == null) {
     return null;
@@ -226,6 +232,11 @@ final notificationPreferencesServiceProvider =
 /// outgoing-session cleanup runs before signers and callbacks are cleared.
 @Riverpod(keepAlive: true)
 void pushNotificationSync(Ref ref) {
+  // Firebase Messaging only supports Android, iOS, macOS, and web.
+  if (!isFirebaseSupported) {
+    return;
+  }
+
   final authService = ref.watch(authServiceProvider);
   ref.watch(notificationPreferencesDirtySyncBridgeProvider);
 

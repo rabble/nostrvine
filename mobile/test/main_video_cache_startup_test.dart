@@ -3,11 +3,11 @@ import 'package:openvine/main.dart' as app;
 
 void main() {
   group('configureVideoPlayerCacheForStartup', () {
-    test('skips cache configuration on web', () async {
+    test('skips cache configuration when skip is true', () async {
       var invoked = false;
 
       await app.configureVideoPlayerCacheForStartup(
-        isWeb: true,
+        skip: true,
         configureCache: () async {
           invoked = true;
         },
@@ -16,11 +16,11 @@ void main() {
       expect(invoked, isFalse);
     });
 
-    test('configures cache on native platforms', () async {
+    test('configures cache when skip is false', () async {
       var invoked = false;
 
       await app.configureVideoPlayerCacheForStartup(
-        isWeb: false,
+        skip: false,
         configureCache: () async {
           invoked = true;
         },
