@@ -20,10 +20,8 @@ bool get isFirebaseSupported =>
 /// Whether the `divine_video_player` plugin has a native implementation on
 /// the current platform.
 ///
-/// The plugin only ships native code for Android, iOS, and macOS. On web,
-/// Linux, and Windows the underlying method channel throws
-/// `MissingPluginException` for `configureCache`, `disposeAll`, etc., so
-/// callers must skip the call entirely.
+/// The plugin only ships native code for Android, iOS, and macOS, so callers
+/// must skip native-only startup work on web, Linux, and Windows.
 bool get hasNativeVideoPlayer =>
     !kIsWeb &&
     defaultTargetPlatform != TargetPlatform.linux &&

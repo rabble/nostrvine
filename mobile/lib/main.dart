@@ -180,6 +180,17 @@ Future<void> configureVideoPlayerCacheForStartup({
   await configureCache();
 }
 
+@visibleForTesting
+Future<void> disposeVideoPlayersForStartup({
+  required bool skip,
+  required Future<void> Function() disposeAll,
+}) async {
+  if (skip) {
+    return;
+  }
+  await disposeAll();
+}
+
 Future<void> _runTimedStartupTask({
   required String phaseName,
   required String initializationStep,
@@ -609,10 +620,10 @@ Future<void> _startOpenVineApp() async {
   // Dispose any zombie native players from a previous Dart VM
   // (e.g. hot restart). Must happen after configureCache so the
   // global method channel is already registered.
-  // No-op on Linux/web — handled internally by the package.
-  if (!kIsWeb) {
-    await DivineVideoPlayerController.disposeAll();
-  }
+  await disposeVideoPlayersForStartup(
+    skip: !hasNativeVideoPlayer,
+    disposeAll: DivineVideoPlayerController.disposeAll,
+  );
 
   StartupPerformanceService.instance.completePhase('bindings');
 

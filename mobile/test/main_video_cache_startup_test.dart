@@ -29,4 +29,32 @@ void main() {
       expect(invoked, isTrue);
     });
   });
+
+  group('disposeVideoPlayersForStartup', () {
+    test('skips disposal when skip is true', () async {
+      var invoked = false;
+
+      await app.disposeVideoPlayersForStartup(
+        skip: true,
+        disposeAll: () async {
+          invoked = true;
+        },
+      );
+
+      expect(invoked, isFalse);
+    });
+
+    test('disposes players when skip is false', () async {
+      var invoked = false;
+
+      await app.disposeVideoPlayersForStartup(
+        skip: false,
+        disposeAll: () async {
+          invoked = true;
+        },
+      );
+
+      expect(invoked, isTrue);
+    });
+  });
 }
