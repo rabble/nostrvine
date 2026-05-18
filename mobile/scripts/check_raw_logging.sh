@@ -6,7 +6,7 @@
 #   • No bare print() calls in mobile/lib/ or mobile/packages/ source files.
 #   • No debugPrint() calls in mobile/lib/ or mobile/packages/ source files.
 #   • No dart:developer import (and therefore no developer.log()) in
-#     mobile/lib/ or in non-SDK packages under mobile/packages/.
+#     mobile/lib/ or in non-SDK/non-leaf packages under mobile/packages/.
 #
 # Allowed exceptions (documented here — require an explicit script update):
 #   • mobile/lib/scripts/migrate_logging.dart — CLI migration helper script,
@@ -16,6 +16,10 @@
 #   • mobile/packages/nostr_sdk/ — publishable Nostr SDK; cannot depend on
 #     app-internal unified_logger.
 #   • mobile/packages/nostr_client/ — same rationale as nostr_sdk.
+#   • mobile/packages/models/ — shared leaf data package; adding a Flutter-
+#     dependent unified_logger dep would create a models ⇄ unified_logger
+#     cycle. Uses developer.log directly with level: param for the one
+#     error-level parse failure in pending_upload.dart.
 #   • Any file under .dart_tool/, build/, or generated file patterns
 #     (*.g.dart, *.freezed.dart).
 #
@@ -31,24 +35,14 @@ MOBILE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 fail=0
 
 # ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-check() {
-  local label="$1"
-  local count="$2"
-  if [[ "$count" -gt 0 ]]; then
-    echo "FAIL [$label]: $count violation(s) found"
-    fail=1
-  fi
-}
-
 # Exclude patterns common to all checks:
 #   - .dart_tool/ and build/ directories (generated)
 #   - *.g.dart, *.freezed.dart, *.mocks.dart (generated files)
 #   - unified_logger package (logger internals)
-#   - nostr_sdk, nostr_client (SDK packages without unified_logger dep)
+#   - nostr_sdk, nostr_client, models (SDK/leaf packages without unified_logger dep)
 #   - migrate_logging.dart (CLI script, not app code)
+# ---------------------------------------------------------------------------
+
 GLOBAL_EXCLUDES=(
   -not -path "*/.dart_tool/*"
   -not -path "*/build/*"
@@ -58,18 +52,21 @@ GLOBAL_EXCLUDES=(
   -not -path "*/unified_logger/*"
   -not -path "*/nostr_sdk/*"
   -not -path "*/nostr_client/*"
+  -not -path "*/packages/models/*"
   -not -name "migrate_logging.dart"
 )
 
 # ---------------------------------------------------------------------------
 # 1. No bare print() in lib/ or packages/
+#    Matches both leading-whitespace calls and inline calls.
+#    Excludes lines that are comments (// or ///).
 # ---------------------------------------------------------------------------
 
 PRINT_VIOLATIONS=$(
   find "$MOBILE_DIR/lib" "$MOBILE_DIR/packages" \
     "${GLOBAL_EXCLUDES[@]}" \
     -name "*.dart" -print0 \
-  | xargs -0 grep -l --include="*.dart" -E "^\s*print\(" 2>/dev/null \
+  | xargs -0 grep -lP "(?<!\/\/.*)(?<![a-zA-Z_])print\(" 2>/dev/null \
   || true
 )
 
@@ -87,7 +84,7 @@ DEBUG_PRINT_VIOLATIONS=$(
   find "$MOBILE_DIR/lib" "$MOBILE_DIR/packages" \
     "${GLOBAL_EXCLUDES[@]}" \
     -name "*.dart" -print0 \
-  | xargs -0 grep -l --include="*.dart" "debugPrint(" 2>/dev/null \
+  | xargs -0 grep -l "debugPrint(" 2>/dev/null \
   || true
 )
 
@@ -98,14 +95,14 @@ if [[ -n "$DEBUG_PRINT_VIOLATIONS" ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 3. No direct dart:developer import in lib/ or non-SDK packages/
+# 3. No direct dart:developer import in lib/ or non-exempt packages/
 # ---------------------------------------------------------------------------
 
 DEVELOPER_LOG_VIOLATIONS=$(
   find "$MOBILE_DIR/lib" "$MOBILE_DIR/packages" \
     "${GLOBAL_EXCLUDES[@]}" \
     -name "*.dart" -print0 \
-  | xargs -0 grep -l --include="*.dart" -E "^import 'dart:developer'" 2>/dev/null \
+  | xargs -0 grep -l -E "^import 'dart:developer'" 2>/dev/null \
   || true
 )
 

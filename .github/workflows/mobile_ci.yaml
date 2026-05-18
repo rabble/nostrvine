@@ -38,6 +38,8 @@ jobs:
             sudo apt-get install -y --no-install-recommends libxml2-utils
           fi
           bash scripts/check_native_transport_security.sh
+      - name: 🪵 Verify no raw logging in production code
+        run: bash scripts/check_raw_logging.sh
       - name: 🔨 Verify generated files are up-to-date
         run: |
           dart run build_runner build --delete-conflicting-outputs

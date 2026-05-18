@@ -10,11 +10,11 @@
 // See lib/adapters/user_profile_hive_adapter.dart for the proven pattern.
 
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'dart:math' as math;
 
 import 'package:meta/meta.dart';
 import 'package:models/src/native_proof_data.dart';
-import 'package:unified_logger/unified_logger.dart';
 
 /// Status of a video upload to Cloudinary
 enum UploadStatus {
@@ -138,10 +138,10 @@ class PendingUpload {
       }
       return null;
     } on Exception catch (e) {
-      Log.error(
+      developer.log(
         'Failed to parse NativeProofData: $e',
         name: 'PendingUpload',
-        category: LogCategory.storage,
+        level: 1000,
       );
       return null;
     }
