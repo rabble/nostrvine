@@ -60,6 +60,7 @@ class DivineVideoPlayerController {
   static const _globalChannel = MethodChannel('divine_video_player');
 
   /// Factory used to create the Linux backend implementation.
+  @visibleForTesting
   static LinuxVideoPlayerBackendFactory linuxBackendFactory =
       MediaKitLinuxVideoPlayerBackend.new;
 

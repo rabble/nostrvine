@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:divine_video_player/divine_video_player.dart';
+import 'package:divine_video_player/src/linux/linux_video_player_backend.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -17,6 +19,9 @@ void main() {
 
   setUp(() {
     DivineVideoPlayerController.resetIdCounterForTesting();
+    DivineVideoPlayerController.debugForceLinuxBackend = null;
+    DivineVideoPlayerController.linuxBackendFactory =
+        MediaKitLinuxVideoPlayerBackend.new;
     globalCalls = <MethodCall>[];
     playerCalls = <MethodCall>[];
     eventController = StreamController<Map<Object?, Object?>>.broadcast();
@@ -24,6 +29,9 @@ void main() {
   });
 
   tearDown(() async {
+    DivineVideoPlayerController.debugForceLinuxBackend = null;
+    DivineVideoPlayerController.linuxBackendFactory =
+        MediaKitLinuxVideoPlayerBackend.new;
     await eventController.close();
   });
 
@@ -256,6 +264,24 @@ void main() {
 
         expect(controller.textureId, equals(42));
       });
+
+      test('buildLinuxView throws when Linux backend is unavailable', () async {
+        await initController();
+
+        expect(controller.buildLinuxView, throwsStateError);
+      });
+
+      test('uses the Linux backend when forced for testing', () async {
+        final fakeLinuxBackend = _ControllerFakeLinuxBackend();
+        DivineVideoPlayerController.debugForceLinuxBackend = true;
+        DivineVideoPlayerController.linuxBackendFactory = () =>
+            fakeLinuxBackend;
+
+        await controller.initialize();
+
+        expect(controller.usesLinuxBackend, isTrue);
+        expect(fakeLinuxBackend.initializeCalls, 1);
+      });
     });
 
     group('playback methods', () {
@@ -434,6 +460,26 @@ void main() {
         await Future<void>.delayed(Duration.zero);
         expect(completed, isFalse);
       });
+
+      test('setClips delegates to the Linux backend when active', () async {
+        final fakeLinuxBackend = _ControllerFakeLinuxBackend();
+        controller = DivineVideoPlayerController();
+        DivineVideoPlayerController.debugForceLinuxBackend = true;
+        DivineVideoPlayerController.linuxBackendFactory = () =>
+            fakeLinuxBackend;
+
+        await controller.initialize();
+        await controller.setClips(
+          const [VideoClip(uri: '/linux.mp4')],
+          startPosition: const Duration(seconds: 4),
+        );
+
+        expect(fakeLinuxBackend.lastClips, hasLength(1));
+        expect(
+          fakeLinuxBackend.lastStartPosition,
+          const Duration(seconds: 4),
+        );
+      });
     });
 
     group('audio tracks', () {
@@ -500,6 +546,23 @@ void main() {
           containsPair('volume', 1.0),
         );
       });
+
+      test(
+        'setAudioTrackVolume delegates to the Linux backend when active',
+        () async {
+          final fakeLinuxBackend = _ControllerFakeLinuxBackend();
+          controller = DivineVideoPlayerController();
+          DivineVideoPlayerController.debugForceLinuxBackend = true;
+          DivineVideoPlayerController.linuxBackendFactory = () =>
+              fakeLinuxBackend;
+
+          await controller.initialize();
+          await controller.setAudioTrackVolume(2, 1.5);
+
+          expect(fakeLinuxBackend.lastAudioTrackIndex, 2);
+          expect(fakeLinuxBackend.lastAudioTrackVolume, 1.5);
+        },
+      );
     });
 
     group('event handling', () {
@@ -668,6 +731,18 @@ void main() {
         expect(() => controller.play(), throwsStateError);
         expect(() => controller.pause(), throwsStateError);
       });
+
+      test('disposes the Linux backend when active', () async {
+        final fakeLinuxBackend = _ControllerFakeLinuxBackend();
+        DivineVideoPlayerController.debugForceLinuxBackend = true;
+        DivineVideoPlayerController.linuxBackendFactory = () =>
+            fakeLinuxBackend;
+
+        await controller.initialize();
+        await controller.dispose();
+
+        expect(fakeLinuxBackend.disposeCalls, 1);
+      });
     });
 
     group('static methods', () {
@@ -771,4 +846,74 @@ class _TestStreamHandler extends MockStreamHandler {
     unawaited(_subscription?.cancel());
     _subscription = null;
   }
+}
+
+class _ControllerFakeLinuxBackend implements LinuxVideoPlayerBackend {
+  int initializeCalls = 0;
+  int disposeCalls = 0;
+  List<VideoClip>? lastClips;
+  Duration? lastStartPosition;
+  int? lastAudioTrackIndex;
+  double? lastAudioTrackVolume;
+
+  @override
+  Widget buildView() => const SizedBox.shrink();
+
+  @override
+  Future<void> dispose() async {
+    disposeCalls++;
+  }
+
+  @override
+  Future<void> initialize({
+    required void Function(DivineVideoPlayerState state) onStateChanged,
+    required void Function(Object error) onError,
+  }) async {
+    initializeCalls++;
+  }
+
+  @override
+  Future<void> jumpToClip(int index) async {}
+
+  @override
+  Future<void> pause() async {}
+
+  @override
+  Future<void> play() async {}
+
+  @override
+  Future<void> removeAllAudioTracks() async {}
+
+  @override
+  Future<void> seekTo(Duration position) async {}
+
+  @override
+  Future<void> setAudioTrackVolume(int index, double volume) async {
+    lastAudioTrackIndex = index;
+    lastAudioTrackVolume = volume;
+  }
+
+  @override
+  Future<void> setAudioTracks(List<AudioTrack> tracks) async {}
+
+  @override
+  Future<void> setClips(
+    List<VideoClip> clips, {
+    Duration? startPosition,
+  }) async {
+    lastClips = clips;
+    lastStartPosition = startPosition;
+  }
+
+  @override
+  Future<void> setLooping({required bool looping}) async {}
+
+  @override
+  Future<void> setPlaybackSpeed(double speed) async {}
+
+  @override
+  Future<void> setVolume(double volume) async {}
+
+  @override
+  Future<void> stop() async {}
 }

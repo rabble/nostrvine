@@ -65,19 +65,39 @@ abstract interface class LinuxVideoPlayerBackend {
 /// Linux backend powered by `media_kit` and mpv.
 class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
   /// Creates a Linux backend instance.
-  MediaKitLinuxVideoPlayerBackend();
+  MediaKitLinuxVideoPlayerBackend({
+    void Function()? mediaKitInitializer,
+    Player Function()? playerFactory,
+    Object Function(Player player)? videoControllerFactory,
+    Future<void> Function(Object controller)? videoControllerReady,
+    Widget Function(Object controller)? videoViewBuilder,
+    Future<Duration> Function(String uri)? durationProbe,
+  }) : _mediaKitInitializer = mediaKitInitializer ?? MediaKit.ensureInitialized,
+       _playerFactory = playerFactory ?? Player.new,
+       _videoControllerFactory =
+           videoControllerFactory ?? _defaultVideoControllerFactory,
+       _videoControllerReady =
+           videoControllerReady ?? _defaultVideoControllerReady,
+       _videoViewBuilder = videoViewBuilder ?? _defaultVideoViewBuilder,
+       _durationProbe = durationProbe;
 
   static bool _mediaKitInitialized = false;
 
-  /// Ensures `media_kit` is initialized exactly once per process.
-  static void ensureInitialized() {
-    if (_mediaKitInitialized) return;
-    MediaKit.ensureInitialized();
-    _mediaKitInitialized = true;
+  final void Function() _mediaKitInitializer;
+  final Player Function() _playerFactory;
+  final Object Function(Player player) _videoControllerFactory;
+  final Future<void> Function(Object controller) _videoControllerReady;
+  final Widget Function(Object controller) _videoViewBuilder;
+  final Future<Duration> Function(String uri)? _durationProbe;
+
+  /// Resets the one-time media_kit initialization latch for tests.
+  @visibleForTesting
+  static void resetInitializationForTesting() {
+    _mediaKitInitialized = false;
   }
 
   late final Player _player;
-  late final media_kit.VideoController _videoController;
+  late final Object _videoController;
   final _subscriptions = <StreamSubscription<dynamic>>[];
   final _clips = <VideoClip>[];
   final _clipDurations = <Duration>[];
@@ -98,16 +118,16 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
     required void Function(DivineVideoPlayerState state) onStateChanged,
     required void Function(Object error) onError,
   }) async {
-    ensureInitialized();
+    _ensureMediaKitInitialized();
     _onStateChanged = onStateChanged;
     _onError = onError;
-    _player = Player();
-    _videoController = media_kit.VideoController(_player);
+    _player = _playerFactory();
+    _videoController = _videoControllerFactory(_player);
     _listenToPlayer();
     _initialized = true;
 
     unawaited(
-      _videoController.waitUntilFirstFrameRendered.then((_) {
+      _videoControllerReady(_videoController).then((_) {
         _emitState(_state.copyWith(isFirstFrameRendered: true));
       }, onError: onError),
     );
@@ -241,39 +261,28 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
   }
 
   @override
-  Future<void> setAudioTracks(List<divine.AudioTrack> tracks) {
-    throw UnsupportedError(
-      'Linux backend does not support overlay audio tracks yet.',
-    );
-  }
+  Future<void> setAudioTracks(List<divine.AudioTrack> tracks) async {}
 
   @override
   Future<void> removeAllAudioTracks() async {}
 
   @override
-  Future<void> setAudioTrackVolume(int index, double volume) {
-    throw UnsupportedError(
-      'Linux backend does not support overlay audio tracks yet.',
-    );
-  }
+  Future<void> setAudioTrackVolume(int index, double volume) async {}
 
   @override
   Widget buildView() {
     _ensureReady();
-    return media_kit.Video(
-      controller: _videoController,
-      controls: null,
-    );
+    return _videoViewBuilder(_videoController);
   }
 
   @override
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
-    await Future.wait<void>([
-      for (final subscription in _subscriptions) subscription.cancel(),
-      _player.dispose(),
-    ]);
+    for (final subscription in _subscriptions) {
+      await subscription.cancel();
+    }
+    await _player.dispose();
   }
 
   void _listenToPlayer() {
@@ -329,18 +338,32 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
     final durations = <Duration>[];
     for (final clip in clips) {
       if (clip.end != null) {
+        if (clip.end! < clip.start) {
+          throw ArgumentError.value(
+            clip.end,
+            'clip.end',
+            'must be greater than or equal to clip.start',
+          );
+        }
         durations.add(clip.end! - clip.start);
         continue;
       }
 
-      final sourceDuration = await _probeDuration(clip.uri);
+      final sourceDuration = await (_durationProbe ?? _probeDuration)(clip.uri);
+      if (clip.start > sourceDuration) {
+        throw ArgumentError.value(
+          clip.start,
+          'clip.start',
+          'must be less than or equal to the source duration',
+        );
+      }
       durations.add(sourceDuration - clip.start);
     }
     return durations;
   }
 
   Future<Duration> _probeDuration(String uri) async {
-    final probe = Player();
+    final probe = _playerFactory();
     try {
       await probe.open(Media(uri), play: false);
       final duration = await probe.stream.duration.firstWhere(
@@ -351,6 +374,17 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
       await probe.dispose();
     }
   }
+
+  static Object _defaultVideoControllerFactory(Player player) =>
+      media_kit.VideoController(player);
+
+  static Future<void> _defaultVideoControllerReady(Object controller) =>
+      (controller as media_kit.VideoController).waitUntilFirstFrameRendered;
+
+  static Widget _defaultVideoViewBuilder(Object controller) => media_kit.Video(
+    controller: controller as media_kit.VideoController,
+    controls: null,
+  );
 
   void _rebuildClipOffsets() {
     _clipOffsets
@@ -449,15 +483,23 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
   }
 
   void _emitState(DivineVideoPlayerState newState) {
+    if (_disposed) return;
     _state = newState;
     _onStateChanged?.call(newState);
   }
 
   void _handleError(Object error) {
+    if (_disposed) return;
     _emitState(
       _state.copyWith(status: PlaybackStatus.error, errorMessage: '$error'),
     );
     _onError?.call(error);
+  }
+
+  void _ensureMediaKitInitialized() {
+    if (_mediaKitInitialized) return;
+    _mediaKitInitializer();
+    _mediaKitInitialized = true;
   }
 
   void _ensureReady() {
