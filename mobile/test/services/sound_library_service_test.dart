@@ -80,6 +80,38 @@ void main() {
       expect(sound.duration.inMilliseconds, equals(6269));
     });
 
+    test(
+      'real manifest includes sound-bot clips with bundled assets',
+      () async {
+        final manifestFile = File('assets/sounds/sounds_manifest.json');
+        final pubspecFile = File('pubspec.yaml');
+        final sounds = SoundLibraryService.parseManifest(
+          await manifestFile.readAsString(),
+        );
+
+        final soundBotSounds = sounds
+            .where((sound) => sound.id.startsWith('soundbot_'))
+            .toList();
+
+        expect(soundBotSounds, hasLength(39));
+
+        for (final sound in soundBotSounds) {
+          expect(
+            File(sound.assetPath).existsSync(),
+            isTrue,
+            reason: '${sound.id} should reference a bundled sound asset',
+          );
+          expect(sound.tags, contains('soundbot'));
+          expect(sound.duration.inMilliseconds, greaterThan(0));
+        }
+
+        expect(
+          await pubspecFile.readAsString(),
+          contains('- assets/sounds/sound-bot/'),
+        );
+      },
+    );
+
     test('searchSounds filters by query', () {
       final sounds = [
         VineSound(

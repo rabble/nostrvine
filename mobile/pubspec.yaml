@@ -368,6 +368,7 @@ flutter:
   assets:
     - assets/videos/
     - assets/sounds/
+    - assets/sounds/sound-bot/
     - assets/categories/
     - assets/top_1000_hashtags.json
     - assets/fonts/
