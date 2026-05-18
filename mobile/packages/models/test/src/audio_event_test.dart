@@ -373,6 +373,46 @@ void main() {
       });
     });
 
+    group('fromLocalImport', () {
+      test('creates draft-local audio event', () {
+        final event = AudioEvent.fromLocalImport(
+          id: 'local_import_1700000000000',
+          filePath: '/tmp/divine-audio/snare.mp3',
+          createdAt: 1700000000,
+          title: 'snare',
+          mimeType: 'audio/mpeg',
+          duration: 2.5,
+        );
+
+        expect(event.id, equals('local_import_1700000000000'));
+        expect(event.pubkey, equals(AudioEvent.localImportMarker));
+        expect(event.url, equals('/tmp/divine-audio/snare.mp3'));
+        expect(event.localFilePath, equals('/tmp/divine-audio/snare.mp3'));
+        expect(event.isLocalImport, isTrue);
+        expect(event.mimeType, equals('audio/mpeg'));
+        expect(event.title, equals('snare'));
+        expect(event.source, equals('Imported audio'));
+      });
+
+      test('survives json round trip', () {
+        final original = AudioEvent.fromLocalImport(
+          id: 'local_import_1700000000000',
+          filePath: '/tmp/divine-audio/kick.wav',
+          createdAt: 1700000000,
+          title: 'kick',
+          mimeType: 'audio/wav',
+          duration: 1.25,
+        );
+
+        final restored = AudioEvent.fromJson(original.toJson());
+
+        expect(restored.isLocalImport, isTrue);
+        expect(restored.localFilePath, equals('/tmp/divine-audio/kick.wav'));
+        expect(restored.title, equals('kick'));
+        expect(restored.duration, equals(1.25));
+      });
+    });
+
     group('toTags', () {
       test('generates complete tags list', () {
         // Arrange

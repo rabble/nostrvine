@@ -165,6 +165,27 @@ class AudioEvent {
     );
   }
 
+  /// Create a draft-local AudioEvent for an imported audio file.
+  factory AudioEvent.fromLocalImport({
+    required String id,
+    required String filePath,
+    required int createdAt,
+    required String title,
+    required String mimeType,
+    double? duration,
+  }) {
+    return AudioEvent(
+      id: id,
+      pubkey: localImportMarker,
+      createdAt: createdAt,
+      url: filePath,
+      mimeType: mimeType,
+      duration: duration,
+      title: title,
+      source: 'Imported audio',
+    );
+  }
+
   /// Deserialize from JSON for draft restoration.
   factory AudioEvent.fromJson(Map<String, dynamic> json) {
     return AudioEvent(
@@ -199,11 +220,25 @@ class AudioEvent {
   /// Used as ID prefix (with underscore) and as pubkey value.
   static const bundledMarker = 'bundled';
 
+  /// Marker for draft-local imported audio.
+  static const localImportMarker = 'local_import';
+
   /// Whether this audio is derived from a video's original sound.
   bool get isOriginalSound => id.startsWith('video_');
 
   /// Whether this audio is a bundled sound (from app assets).
   bool get isBundled => id.startsWith('${bundledMarker}_');
+
+  /// Whether this audio is a draft-local imported file.
+  bool get isLocalImport => id.startsWith('${localImportMarker}_');
+
+  /// Local file path for imported audio.
+  ///
+  /// Returns null for bundled and published Nostr audio.
+  String? get localFilePath {
+    if (!isLocalImport || url == null || url!.isEmpty) return null;
+    return url;
+  }
 
   /// Get the asset path for bundled sounds.
   /// Returns null if this is not a bundled sound.
