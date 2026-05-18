@@ -402,6 +402,95 @@ void main() {
     });
 
     // ------------------------------------------------------------------
+    group('subscribeToFirstFrame', () {
+      test('fires onFirstFrame when first-frame flag flips to true', () async {
+        final controller = FakeController();
+        var fired = false;
+
+        subs.subscribeToFirstFrame(
+          0,
+          controller,
+          onFirstFrame: () => fired = true,
+        );
+
+        controller.pushState(
+          const DivineVideoPlayerState(isFirstFrameRendered: true),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(fired, isTrue);
+      });
+
+      test(
+        'fires onFirstFrame synchronously when already rendered',
+        () async {
+          final controller = FakeController()
+            ..pushState(
+              const DivineVideoPlayerState(isFirstFrameRendered: true),
+            );
+          var count = 0;
+
+          subs.subscribeToFirstFrame(
+            0,
+            controller,
+            onFirstFrame: () => count++,
+          );
+
+          // Synchronous fire — no async gap needed.
+          expect(count, equals(1));
+
+          // Further state pushes must not re-fire (no subscription was
+          // created).
+          controller.pushState(
+            const DivineVideoPlayerState(isFirstFrameRendered: true),
+          );
+          await Future<void>.delayed(Duration.zero);
+          expect(count, equals(1));
+        },
+      );
+
+      test('fires only once even on further state updates', () async {
+        final controller = FakeController();
+        var count = 0;
+
+        subs.subscribeToFirstFrame(
+          0,
+          controller,
+          onFirstFrame: () => count++,
+        );
+
+        controller.pushState(
+          const DivineVideoPlayerState(isFirstFrameRendered: true),
+        );
+        await Future<void>.delayed(Duration.zero);
+        controller.pushState(
+          const DivineVideoPlayerState(isFirstFrameRendered: true),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(count, equals(1));
+      });
+
+      test('does not fire while first-frame flag is still false', () async {
+        final controller = FakeController();
+        var fired = false;
+
+        subs.subscribeToFirstFrame(
+          0,
+          controller,
+          onFirstFrame: () => fired = true,
+        );
+
+        controller.pushState(
+          const DivineVideoPlayerState(videoWidth: 1920, videoHeight: 1080),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(fired, isFalse);
+      });
+    });
+
+    // ------------------------------------------------------------------
     group('unsubscribe', () {
       test('cancels subscriptions for a specific index', () async {
         final controller = FakeController();

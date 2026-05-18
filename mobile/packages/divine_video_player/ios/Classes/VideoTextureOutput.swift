@@ -161,6 +161,31 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
         videoOutput?.requestNotificationOfMediaDataChange(withAdvanceInterval: 0)
     }
 
+    /// Synchronously attempts to pull a frame at `time` and push it into
+    /// the Flutter texture. Returns `true` if a real `CVPixelBuffer` was
+    /// delivered (which fires `onFirstFrame` on the first successful
+    /// call). Used by `safePreroll` to flip
+    /// `DivineVideoPlayerInstance.firstFrameRendered` only when the
+    /// texture actually has a buffer — otherwise Flutter would render
+    /// the texture's initial empty state (black) until the async
+    /// display-link path delivers one.
+    @discardableResult
+    func tryPullFrameNow(at time: CMTime) -> Bool {
+        guard let output = videoOutput else { return false }
+        guard let pixelBuffer = output.copyPixelBuffer(
+            forItemTime: time,
+            itemTimeForDisplay: nil
+        ) else {
+            return false
+        }
+        pendingSeekTime = .invalid
+        forceRefreshDeadline = 0
+        forceWindowFailCount = 0
+        mediaDataRearmCount = 0
+        deliverFrame(pixelBuffer)
+        return true
+    }
+
     // MARK: - AVPlayerItemOutputPullDelegate
 
     /// Called after a seek flushes the output queue.

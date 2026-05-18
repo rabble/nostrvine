@@ -935,6 +935,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   void _attachSubscriptions(int index, DivineVideoPlayerController controller) {
     _subscriptions
       ..subscribeToDimensions(index, controller, onDimensionsReady: _rebuild)
+      ..subscribeToFirstFrame(index, controller, onFirstFrame: _rebuild)
       ..subscribeToPlaybackErrors(
         index,
         controller,

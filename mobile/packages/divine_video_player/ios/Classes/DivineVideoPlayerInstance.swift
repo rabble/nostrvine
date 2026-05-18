@@ -595,6 +595,20 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                     guard let self else { return }
                     self.nudgeOutputQueue()
                     self.textureOutput?.forceRefresh(for: time)
+                    // `step(byCount:)` enqueues into the player's
+                    // internal pipeline and the resulting frame is not
+                    // available on `copyPixelBuffer` until the next
+                    // runloop iteration. Defer the synchronous pull
+                    // attempt one tick so it has a chance to succeed —
+                    // and only flip `firstFrameRendered` (via
+                    // `deliverFrame`→`onFirstFrame`) when a real
+                    // `CVPixelBuffer` is actually in the texture.
+                    // Otherwise Flutter would hide the loader over an
+                    // empty texture and render one frame of black
+                    // before the display-link path catches up.
+                    DispatchQueue.main.async { [weak self] in
+                        self?.textureOutput?.tryPullFrameNow(at: time)
+                    }
                 }
             }
             return
@@ -619,6 +633,14 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                         guard let self else { return }
                         self.nudgeOutputQueue()
                         self.textureOutput?.forceRefresh(for: time)
+                        // See sibling branch above: defer the pull one
+                        // runloop tick so `step(byCount:)` has produced
+                        // a frame, and only mark the controller as
+                        // ready when a real `CVPixelBuffer` lands in
+                        // the Flutter texture.
+                        DispatchQueue.main.async { [weak self] in
+                            self?.textureOutput?.tryPullFrameNow(at: time)
+                        }
                     }
                 }
             }
@@ -832,8 +854,17 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
 
     func getPlayer() -> AVPlayer? { player }
 
-    /// Called by the platform view when `AVPlayerLayer.isReadyForDisplay`
-    /// becomes `true`.
+    /// Marks the controller as having produced its first renderable
+    /// frame. Called by the platform view path when
+    /// `AVPlayerLayer.isReadyForDisplay` flips to `true`, and by the
+    /// texture path's `VideoTextureOutput.onFirstFrame` callback when
+    /// a real `CVPixelBuffer` has actually been delivered to the
+    /// Flutter texture (either via `tryPullFrameNow` from
+    /// `safePreroll` for prefetched items, or via the
+    /// `CADisplayLink` poll once playback begins). Flipping this flag
+    /// hides the loader overlay in Flutter, so it must only happen
+    /// after the texture has a buffer — otherwise the texture renders
+    /// one frame of black before the next display-link tick.
     func setFirstFrameRendered() {
         guard !firstFrameRendered else { return }
         firstFrameRendered = true

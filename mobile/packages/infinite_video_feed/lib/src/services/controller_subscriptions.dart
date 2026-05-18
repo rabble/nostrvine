@@ -2,15 +2,16 @@ import 'dart:async';
 
 import 'package:divine_video_player/divine_video_player.dart';
 
-/// Bundles the four state-stream subscriptions the feed maintains per
+/// Bundles the state-stream subscriptions the feed maintains per
 /// active player controller (errors, loop enforcement, auto-advance loop
-/// detection, dimensions).
+/// detection, dimensions, first-frame).
 ///
 /// Each `subscribeTo*` call cancels any prior subscription of the same
-/// kind for that index. [unsubscribe] cancels all four for one index;
+/// kind for that index. [unsubscribe] cancels all of them for one index;
 /// [disposeAll] cancels every subscription.
 class ControllerSubscriptions {
   final _dimensions = <int, StreamSubscription<DivineVideoPlayerState>>{};
+  final _firstFrame = <int, StreamSubscription<DivineVideoPlayerState>>{};
   final _errors = <int, StreamSubscription<DivineVideoPlayerState>>{};
   final _loop = <int, StreamSubscription<DivineVideoPlayerState>>{};
   final _autoAdvance = <int, StreamSubscription<DivineVideoPlayerState>>{};
@@ -162,9 +163,39 @@ class ControllerSubscriptions {
     });
   }
 
+  /// Subscribes to the first-frame transition and auto-cancels itself
+  /// once `state.isFirstFrameRendered` flips to `true`. Calls
+  /// [onFirstFrame] exactly once.
+  ///
+  /// If the controller already reports a rendered first frame on
+  /// subscribe (e.g. a reused controller whose surface is warm),
+  /// [onFirstFrame] fires synchronously and no stream subscription is
+  /// created. This is what guarantees the loader overlay drops on the
+  /// same frame as the swipe when iOS has the texture ready ahead of
+  /// time.
+  void subscribeToFirstFrame(
+    int index,
+    DivineVideoPlayerController controller, {
+    required void Function() onFirstFrame,
+  }) {
+    if (controller.state.isFirstFrameRendered) {
+      onFirstFrame();
+      return;
+    }
+
+    unawaited(_firstFrame[index]?.cancel());
+    _firstFrame[index] = controller.stateStream.listen((state) {
+      if (state.isFirstFrameRendered) {
+        unawaited(_firstFrame.remove(index)?.cancel());
+        onFirstFrame();
+      }
+    });
+  }
+
   /// Cancels all four subscriptions for [index].
   void unsubscribe(int index) {
     unawaited(_dimensions.remove(index)?.cancel());
+    unawaited(_firstFrame.remove(index)?.cancel());
     unawaited(_errors.remove(index)?.cancel());
     unawaited(_loop.remove(index)?.cancel());
     unawaited(_autoAdvance.remove(index)?.cancel());
@@ -176,6 +207,10 @@ class ControllerSubscriptions {
       unawaited(s.cancel());
     }
     _dimensions.clear();
+    for (final s in _firstFrame.values) {
+      unawaited(s.cancel());
+    }
+    _firstFrame.clear();
     for (final s in _errors.values) {
       unawaited(s.cancel());
     }
