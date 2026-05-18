@@ -129,57 +129,73 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
         listener: _onSendOutcome,
         child: Column(
           children: [
-            ConversationAppBar(
-              displayName: displayName,
-              handle: handle,
-              onBack: () => context.pop(),
-              onTitleTap: otherPubkey.isNotEmpty
-                  ? () => context.push(
-                      '${OtherProfileScreen.path}/${NostrKeyUtils.encodePubKey(otherPubkey)}',
-                    )
-                  : null,
-              onOptions: () => _onOptions(otherPubkey, displayName),
-            ),
+            // Wrap the AppBar + messages region in a Listener so any
+            // tap above the input bar — back button, title, options,
+            // dead space in the messages area, a MessageBubble —
+            // dismisses the keyboard before any navigation or sheet
+            // animation begins. The `_SendBar` is intentionally
+            // OUTSIDE this Listener: wrapping the input would
+            // `unfocus` on pointer-down and race with the TextField's
+            // own focus request, producing a re-focus flicker on
+            // every input tap.
+            //
+            // `Listener` catches pointer-downs without entering the
+            // gesture arena, so descendant tap/long-press recognizers
+            // (MessageBubble.onLongPress, ConversationAppBar's three
+            // buttons) still resolve normally afterwards. Matches the
+            // pattern shipped in `comments_list.dart`.
             Expanded(
-              // Force the messages card to fill the available width
-              // regardless of its content. Without this, the empty /
-              // loading state's SingleChildScrollView shrink-wraps the
-              // ClipRRect down to the EmptyConversation column's
-              // intrinsic width and the surface card renders as a
-              // narrow strip; the ListView (with messages) is fine on
-              // its own.
-              child: SizedBox(
-                width: double.infinity,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(32),
-                  child: ColoredBox(
-                    color: VineTheme.surfaceContainerHigh,
-                    // Any pointer interaction with the messages area
-                    // dismisses the keyboard so the user can read
-                    // history unobstructed — matches `comments_list`
-                    // (TikTok/Reels behavior). `Listener` catches
-                    // pointer-downs without entering the gesture arena,
-                    // so bubble long-press and list scroll still resolve
-                    // normally. The ListView's `onDrag` below is
-                    // complementary defense in depth for scrolls that
-                    // begin slightly outside the wrapped area.
-                    child: Listener(
-                      behavior: HitTestBehavior.translucent,
-                      onPointerDown: (_) =>
-                          FocusManager.instance.primaryFocus?.unfocus(),
-                      child: _ConversationContent(
-                        currentPubkey: currentPubkey,
-                        otherPubkey: otherPubkey,
-                        displayName: displayName,
-                        imageUrl: profile?.picture,
-                        nip05: profile?.shortDisplayNip05,
-                        onViewProfile: () {
-                          final npub = NostrKeyUtils.encodePubKey(otherPubkey);
-                          context.push('${OtherProfileScreen.path}/$npub');
-                        },
+              child: Listener(
+                behavior: HitTestBehavior.translucent,
+                onPointerDown: (_) =>
+                    FocusManager.instance.primaryFocus?.unfocus(),
+                child: Column(
+                  children: [
+                    ConversationAppBar(
+                      displayName: displayName,
+                      handle: handle,
+                      onBack: () => context.pop(),
+                      onTitleTap: otherPubkey.isNotEmpty
+                          ? () => context.push(
+                              '${OtherProfileScreen.path}/${NostrKeyUtils.encodePubKey(otherPubkey)}',
+                            )
+                          : null,
+                      onOptions: () => _onOptions(otherPubkey, displayName),
+                    ),
+                    Expanded(
+                      // Force the messages card to fill the available width
+                      // regardless of its content. Without this, the empty /
+                      // loading state's SingleChildScrollView shrink-wraps the
+                      // ClipRRect down to the EmptyConversation column's
+                      // intrinsic width and the surface card renders as a
+                      // narrow strip; the ListView (with messages) is fine on
+                      // its own.
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(32),
+                          child: ColoredBox(
+                            color: VineTheme.surfaceContainerHigh,
+                            child: _ConversationContent(
+                              currentPubkey: currentPubkey,
+                              otherPubkey: otherPubkey,
+                              displayName: displayName,
+                              imageUrl: profile?.picture,
+                              nip05: profile?.shortDisplayNip05,
+                              onViewProfile: () {
+                                final npub = NostrKeyUtils.encodePubKey(
+                                  otherPubkey,
+                                );
+                                context.push(
+                                  '${OtherProfileScreen.path}/$npub',
+                                );
+                              },
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ),

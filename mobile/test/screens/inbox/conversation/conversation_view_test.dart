@@ -1150,6 +1150,46 @@ void main() {
           expect(tester.testTextInput.isVisible, isFalse);
         },
       );
+
+      // Pins the second half of the GestureDetector → Listener swap
+      // contract: dismissal on pointer-down must NOT eat the
+      // descendant long-press recognizer on `MessageBubble`. A bare
+      // `GestureDetector(onTap:)` competes in the gesture arena and
+      // can swallow tap/long-press on descendants; `Listener` does
+      // not. The earlier "renders MessageBubble" test only proves the
+      // bubble renders — this test proves the full chain
+      // Listener (conversation_view) → MessageBubble → onLongPress
+      // → MessageActionsSheet.show is intact after the swap.
+      testWidgets(
+        'long-pressing a $MessageBubble still surfaces '
+        '$MessageActionsSheet',
+        (tester) async {
+          await pumpWithMessage(tester);
+
+          // Mirror `message_bubble_test.dart`: long-press the bubble
+          // by its rendered text. `find.byType(MessageBubble)` aims
+          // at the widget's geometric center, which sits over the
+          // padding/Semantics node above the bubble's inner
+          // GestureDetector and misses the hit-test (Flutter warns
+          // "warnIfMissed" in that case).
+          await tester.longPress(find.text('Hello there!'));
+          await tester.pumpAndSettle();
+
+          // The sheet's localized action labels are the cheapest
+          // proof the modal actually mounted — asserting on the
+          // sheet widget class would also work but couples to its
+          // current implementation (VineBottomSheetActionMenu).
+          expect(find.text(l10n.dmMessageActionCopyText), findsOneWidget);
+          // `pumpWithMessage` constructs a received message
+          // (senderPubkey = otherPubkey), so the sheet must offer
+          // Report (received-only) and not Delete (sent-only).
+          expect(find.text(l10n.dmMessageActionReport), findsOneWidget);
+          expect(
+            find.text(l10n.dmMessageActionDeleteForEveryone),
+            findsNothing,
+          );
+        },
+      );
     });
   });
 }
