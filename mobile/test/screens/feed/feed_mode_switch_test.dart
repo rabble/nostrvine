@@ -12,7 +12,7 @@ import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
 
-class _MockVideoFeedBloc extends MockBloc<VideoFeedEvent, VideoFeedState>
+class _MockVideoFeedBloc extends MockBloc<VideoFeedEvent, VideoFeedBlocState>
     implements VideoFeedBloc {}
 
 void main() {
@@ -55,7 +55,7 @@ void main() {
     group('Feed Mode Labels', () {
       testWidgets('displays "New" label for latest mode', (tester) async {
         when(() => mockBloc.state).thenReturn(
-          const VideoFeedState(
+          const VideoFeedBlocState(
             status: VideoFeedStatus.success,
             mode: FeedMode.latest,
           ),
@@ -70,7 +70,7 @@ void main() {
       ) async {
         when(
           () => mockBloc.state,
-        ).thenReturn(const VideoFeedState(status: VideoFeedStatus.success));
+        ).thenReturn(const VideoFeedBlocState(status: VideoFeedStatus.success));
         await tester.pumpWidget(createTestWidget());
 
         expect(find.text(l10n.feedModeForYou), findsOneWidget);
@@ -80,7 +80,7 @@ void main() {
     group('Tap Interaction', () {
       testWidgets('opens VineBottomSheet on tap', (tester) async {
         when(() => mockBloc.state).thenReturn(
-          const VideoFeedState(
+          const VideoFeedBlocState(
             status: VideoFeedStatus.success,
             mode: FeedMode.latest,
           ),
@@ -97,7 +97,7 @@ void main() {
         tester,
       ) async {
         when(() => mockBloc.state).thenReturn(
-          const VideoFeedState(
+          const VideoFeedBlocState(
             status: VideoFeedStatus.success,
             mode: FeedMode.latest,
           ),
@@ -120,7 +120,7 @@ void main() {
       ) async {
         when(
           () => mockBloc.state,
-        ).thenReturn(const VideoFeedState(status: VideoFeedStatus.success));
+        ).thenReturn(const VideoFeedBlocState(status: VideoFeedStatus.success));
         await tester.pumpWidget(createTestWidget());
 
         await tester.tap(find.text(l10n.feedModeForYou));
@@ -138,7 +138,7 @@ void main() {
         tester,
       ) async {
         when(() => mockBloc.state).thenReturn(
-          const VideoFeedState(
+          const VideoFeedBlocState(
             status: VideoFeedStatus.success,
             mode: FeedMode.latest,
           ),
@@ -166,7 +166,7 @@ void main() {
         'opens bottom sheet when caret icon is tapped (not the text label)',
         (tester) async {
           when(() => mockBloc.state).thenReturn(
-            const VideoFeedState(
+            const VideoFeedBlocState(
               status: VideoFeedStatus.success,
             ),
           );
@@ -198,7 +198,7 @@ void main() {
           // The 12 px Row spacing gap has no child widget drawn in it;
           // HitTestBehavior.opaque ensures it still registers taps.
           when(() => mockBloc.state).thenReturn(
-            const VideoFeedState(
+            const VideoFeedBlocState(
               status: VideoFeedStatus.success,
             ),
           );
@@ -250,7 +250,7 @@ void main() {
         'Semantics widget carries button=true and the current mode label',
         (tester) async {
           when(() => mockBloc.state).thenReturn(
-            const VideoFeedState(
+            const VideoFeedBlocState(
               status: VideoFeedStatus.success,
               mode: FeedMode.latest,
             ),
@@ -275,12 +275,12 @@ void main() {
           whenListen(
             mockBloc,
             Stream.fromIterable([
-              const VideoFeedState(
+              const VideoFeedBlocState(
                 status: VideoFeedStatus.success,
                 mode: FeedMode.following,
               ),
             ]),
-            initialState: const VideoFeedState(
+            initialState: const VideoFeedBlocState(
               status: VideoFeedStatus.success,
               mode: FeedMode.latest,
             ),
@@ -305,7 +305,7 @@ void main() {
         'opens bottom sheet when the Semantics button area is tapped',
         (tester) async {
           when(() => mockBloc.state).thenReturn(
-            const VideoFeedState(
+            const VideoFeedBlocState(
               status: VideoFeedStatus.success,
               mode: FeedMode.latest,
             ),
@@ -336,9 +336,9 @@ void main() {
       whenListen(
         mockBloc,
         Stream.fromIterable([
-          const VideoFeedState(status: VideoFeedStatus.success),
+          const VideoFeedBlocState(status: VideoFeedStatus.success),
         ]),
-        initialState: const VideoFeedState(
+        initialState: const VideoFeedBlocState(
           status: VideoFeedStatus.success,
           mode: FeedMode.latest,
         ),

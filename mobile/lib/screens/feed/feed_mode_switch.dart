@@ -53,7 +53,7 @@ class FeedModeSwitch extends StatelessWidget {
                 ? _FeedModeContent(
                     label: _labelForMode(FeedMode.forYou, context.l10n),
                   )
-                : BlocBuilder<VideoFeedBloc, VideoFeedState>(
+                : BlocBuilder<VideoFeedBloc, VideoFeedBlocState>(
                     buildWhen: (prev, curr) => prev.mode != curr.mode,
                     builder: (context, state) => _FeedModeContent(
                       onTap: () =>

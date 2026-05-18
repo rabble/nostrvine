@@ -32,7 +32,7 @@ import 'package:pooled_video_player/pooled_video_player.dart';
 import '../../helpers/test_provider_overrides.dart';
 import '../../test_data/video_test_data.dart';
 
-class _MockVideoFeedBloc extends MockBloc<VideoFeedEvent, VideoFeedState>
+class _MockVideoFeedBloc extends MockBloc<VideoFeedEvent, VideoFeedBlocState>
     implements VideoFeedBloc {}
 
 class _MockVideoVolumeCubit extends MockCubit<VideoVolumeState>
@@ -69,7 +69,7 @@ _MockPlayer _stubPlayer(
   return player;
 }
 
-Widget _buildEmptyFeedSubject(VideoFeedState state) {
+Widget _buildEmptyFeedSubject(VideoFeedBlocState state) {
   return MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
@@ -94,7 +94,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         _buildEmptyFeedSubject(
-          const VideoFeedState(
+          const VideoFeedBlocState(
             status: VideoFeedStatus.success,
             error: VideoFeedError.noFollowedUsers,
           ),
@@ -117,7 +117,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         _buildEmptyFeedSubject(
-          const VideoFeedState(
+          const VideoFeedBlocState(
             status: VideoFeedStatus.success,
             mode: FeedMode.following,
             error: VideoFeedError.noFollowedUsers,
@@ -139,7 +139,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         _buildEmptyFeedSubject(
-          const VideoFeedState(status: VideoFeedStatus.success),
+          const VideoFeedBlocState(status: VideoFeedStatus.success),
         ),
       );
 
@@ -159,7 +159,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         _buildEmptyFeedSubject(
-          const VideoFeedState(
+          const VideoFeedBlocState(
             status: VideoFeedStatus.success,
             mode: FeedMode.following,
           ),
@@ -181,7 +181,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         _buildEmptyFeedSubject(
-          const VideoFeedState(
+          const VideoFeedBlocState(
             status: VideoFeedStatus.success,
             mode: FeedMode.latest,
           ),
@@ -223,12 +223,12 @@ void main() {
     });
 
     Widget buildSubject({
-      VideoFeedState? state,
+      VideoFeedBlocState? state,
       List<dynamic>? additionalOverrides,
     }) {
       when(
         () => videoFeedBloc.state,
-      ).thenReturn(state ?? const VideoFeedState());
+      ).thenReturn(state ?? const VideoFeedBlocState());
 
       return testMaterialApp(
         additionalOverrides: [
@@ -374,10 +374,10 @@ void main() {
       // Start with loading state
       whenListen(
         videoFeedBloc,
-        Stream<VideoFeedState>.fromIterable([
-          const VideoFeedState(status: VideoFeedStatus.success),
+        Stream<VideoFeedBlocState>.fromIterable([
+          const VideoFeedBlocState(status: VideoFeedStatus.success),
         ]),
-        initialState: const VideoFeedState(),
+        initialState: const VideoFeedBlocState(),
       );
 
       await tester.pumpWidget(buildSubject());
@@ -436,7 +436,7 @@ void main() {
     });
 
     Widget buildSubject() {
-      when(() => videoFeedBloc.state).thenReturn(const VideoFeedState());
+      when(() => videoFeedBloc.state).thenReturn(const VideoFeedBlocState());
 
       return testMaterialApp(
         additionalOverrides: [
@@ -458,7 +458,7 @@ void main() {
     }
 
     Widget buildSubjectWithInitialLocation(String location) {
-      when(() => videoFeedBloc.state).thenReturn(const VideoFeedState());
+      when(() => videoFeedBloc.state).thenReturn(const VideoFeedBlocState());
 
       return testMaterialApp(
         additionalOverrides: [
@@ -503,7 +503,7 @@ void main() {
 
         container.read(overlayVisibilityProvider.notifier).setPageOpen(true);
 
-        when(() => videoFeedBloc.state).thenReturn(const VideoFeedState());
+        when(() => videoFeedBloc.state).thenReturn(const VideoFeedBlocState());
 
         await tester.pumpWidget(
           UncontrolledProviderScope(
@@ -711,7 +711,7 @@ void main() {
       registerFallbackValue(const VideoFeedRefreshRequested());
     });
 
-    Widget buildSubject(VideoFeedState state) {
+    Widget buildSubject(VideoFeedBlocState state) {
       when(() => videoFeedBloc.state).thenReturn(state);
 
       return testMaterialApp(
@@ -749,7 +749,7 @@ void main() {
       'renders native pooled feed with a GlobalKey for programmatic control',
       (tester) async {
         final testVideo = createTestVideoEvent();
-        final state = VideoFeedState(
+        final state = VideoFeedBlocState(
           status: VideoFeedStatus.success,
           videos: [testVideo],
         );
@@ -770,7 +770,7 @@ void main() {
     testWidgets('wraps the loaded feed in a RefreshIndicator that dispatches '
         'VideoFeedRefreshRequested on pull', (tester) async {
       final testVideo = createTestVideoEvent();
-      final state = VideoFeedState(
+      final state = VideoFeedBlocState(
         status: VideoFeedStatus.success,
         videos: [testVideo],
       );
@@ -800,7 +800,7 @@ void main() {
       'overscroll the RefreshIndicator listens for',
       (tester) async {
         final testVideo = createTestVideoEvent();
-        final state = VideoFeedState(
+        final state = VideoFeedBlocState(
           status: VideoFeedStatus.success,
           videos: [testVideo],
         );
@@ -846,7 +846,10 @@ void main() {
       InfiniteVideoFeed.debugIsSupportedOverride = false;
     });
 
-    Widget buildSubject(VideoFeedState state, {bool nativeFeedEnabled = true}) {
+    Widget buildSubject(
+      VideoFeedBlocState state, {
+      bool nativeFeedEnabled = true,
+    }) {
       when(() => videoFeedBloc.state).thenReturn(state);
 
       return testMaterialApp(
@@ -874,7 +877,7 @@ void main() {
     testWidgets('renders FeedVideos + InfiniteVideoFeed when supported', (
       tester,
     ) async {
-      final state = VideoFeedState(
+      final state = VideoFeedBlocState(
         status: VideoFeedStatus.success,
         videos: [createTestVideoEvent()],
       );
@@ -891,7 +894,7 @@ void main() {
     testWidgets(
       'renders PooledVideoFeed when supported but flag is off',
       (tester) async {
-        final state = VideoFeedState(
+        final state = VideoFeedBlocState(
           status: VideoFeedStatus.success,
           videos: [createTestVideoEvent()],
         );
@@ -989,7 +992,7 @@ void main() {
       ];
     }
 
-    Widget buildSubject(VideoFeedState state, {int currentIndex = 0}) {
+    Widget buildSubject(VideoFeedBlocState state, {int currentIndex = 0}) {
       when(() => videoFeedBloc.state).thenReturn(state);
       final pooledVideos = state.videos
           .map((video) => VideoItem(id: video.id, url: video.videoUrl!))
@@ -1027,7 +1030,7 @@ void main() {
 
       await tester.pumpWidget(
         buildSubject(
-          VideoFeedState(status: VideoFeedStatus.success, videos: videos),
+          VideoFeedBlocState(status: VideoFeedStatus.success, videos: videos),
         ),
       );
       await tester.pump();
@@ -1050,7 +1053,7 @@ void main() {
 
       await tester.pumpWidget(
         buildSubject(
-          VideoFeedState(status: VideoFeedStatus.success, videos: videos),
+          VideoFeedBlocState(status: VideoFeedStatus.success, videos: videos),
         ),
       );
       await tester.pump();
@@ -1078,7 +1081,7 @@ void main() {
 
       await tester.pumpWidget(
         buildSubject(
-          VideoFeedState(status: VideoFeedStatus.success, videos: videos),
+          VideoFeedBlocState(status: VideoFeedStatus.success, videos: videos),
         ),
       );
       await tester.pump();

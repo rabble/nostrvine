@@ -16,7 +16,7 @@ import '../../helpers/test_provider_overrides.dart';
 import '../../helpers/web_video_player_test_doubles.dart';
 import '../../test_data/video_test_data.dart';
 
-class MockVideoFeedBloc extends MockBloc<VideoFeedEvent, VideoFeedState>
+class MockVideoFeedBloc extends MockBloc<VideoFeedEvent, VideoFeedBlocState>
     implements VideoFeedBloc {}
 
 void main() {
@@ -50,7 +50,7 @@ void main() {
             'd4e5f6789012345678901234567890abcdef123456789012345678901234a1b2c3',
         videoUrl: 'https://example.com/video1.mp4',
       );
-      final state = VideoFeedState(
+      final state = VideoFeedBlocState(
         status: VideoFeedStatus.success,
         videos: [video],
       );

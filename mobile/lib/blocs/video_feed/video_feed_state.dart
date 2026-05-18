@@ -45,8 +45,8 @@ enum VideoFeedError {
 /// - [hasMore]: Whether more videos can be loaded
 /// - [isLoadingMore]: Whether pagination is in progress
 /// - [error]: Any error that occurred
-final class VideoFeedState extends Equatable {
-  const VideoFeedState({
+final class VideoFeedBlocState extends Equatable {
+  const VideoFeedBlocState({
     this.status = VideoFeedStatus.loading,
     this.videos = const [],
     this.mode = FeedMode.forYou,
@@ -105,7 +105,7 @@ final class VideoFeedState extends Equatable {
   bool get isEmpty => status == VideoFeedStatus.success && videos.isEmpty;
 
   /// Create a copy with updated values.
-  VideoFeedState copyWith({
+  VideoFeedBlocState copyWith({
     VideoFeedStatus? status,
     List<VideoEvent>? videos,
     FeedMode? mode,
@@ -117,7 +117,7 @@ final class VideoFeedState extends Equatable {
     Set<String>? listOnlyVideoIds,
     Map<String, UserProfile>? creatorProfiles,
   }) {
-    return VideoFeedState(
+    return VideoFeedBlocState(
       status: status ?? this.status,
       videos: videos ?? this.videos,
       mode: mode ?? this.mode,

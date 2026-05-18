@@ -34,7 +34,7 @@ const _feedModeKey = 'selected_feed_mode';
 /// - Pagination via cursor-based loading
 /// - Following list changes for home feed
 /// - Pull-to-refresh functionality
-class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
+class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
   VideoFeedBloc({
     required VideosRepository videosRepository,
     required FollowRepository followRepository,
@@ -58,7 +58,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
        _autoRefreshMinInterval = autoRefreshMinInterval,
        _feedTracker = feedTracker,
        _homeFeedCache = homeFeedCache ?? const HomeFeedCache(),
-       super(const VideoFeedState()) {
+       super(const VideoFeedBlocState()) {
     on<VideoFeedStarted>(_onStarted);
     on<VideoFeedModeChanged>(_onModeChanged);
     on<VideoFeedLoadMoreRequested>(
@@ -119,7 +119,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   /// restored. Otherwise [event.mode] is used.
   Future<void> _onStarted(
     VideoFeedStarted event,
-    Emitter<VideoFeedState> emit,
+    Emitter<VideoFeedBlocState> emit,
   ) async {
     final savedModeName = _sharedPreferences?.getString(_feedModeKey);
     final mode = savedModeName != null
@@ -174,7 +174,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   /// Handle mode changed event.
   Future<void> _onModeChanged(
     VideoFeedModeChanged event,
-    Emitter<VideoFeedState> emit,
+    Emitter<VideoFeedBlocState> emit,
   ) async {
     // Skip if already on this mode
     if (state.mode == event.mode && state.status == VideoFeedStatus.success) {
@@ -199,7 +199,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   /// Handle load more request (pagination).
   Future<void> _onLoadMoreRequested(
     VideoFeedLoadMoreRequested event,
-    Emitter<VideoFeedState> emit,
+    Emitter<VideoFeedBlocState> emit,
   ) async {
     // Skip if not in success state, already loading more, or no more content
     if (state.status != VideoFeedStatus.success ||
@@ -280,7 +280,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   /// Handle refresh request.
   Future<void> _onRefreshRequested(
     VideoFeedRefreshRequested event,
-    Emitter<VideoFeedState> emit,
+    Emitter<VideoFeedBlocState> emit,
   ) async {
     emit(
       state.copyWith(
@@ -302,7 +302,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   ///   [_autoRefreshMinInterval])
   Future<void> _onAutoRefreshRequested(
     VideoFeedAutoRefreshRequested event,
-    Emitter<VideoFeedState> emit,
+    Emitter<VideoFeedBlocState> emit,
   ) async {
     if (state.mode != FeedMode.following) return;
 
@@ -336,7 +336,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   ///   flash).
   Future<void> _onFollowingListChanged(
     VideoFeedFollowingListChanged event,
-    Emitter<VideoFeedState> emit,
+    Emitter<VideoFeedBlocState> emit,
   ) async {
     if (state.mode != FeedMode.following) return;
     if (state.status == VideoFeedStatus.loading) return;
@@ -366,7 +366,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   /// feed has already been loaded (avoids double-loading on startup).
   Future<void> _onCuratedListsChanged(
     VideoFeedCuratedListsChanged event,
-    Emitter<VideoFeedState> emit,
+    Emitter<VideoFeedBlocState> emit,
   ) async {
     if (state.mode != FeedMode.following) return;
     if (state.status == VideoFeedStatus.loading) return;
@@ -390,7 +390,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   /// filters the current videos against the full blocklist in-memory.
   void _onBlocklistChanged(
     VideoFeedBlocklistChanged event,
-    Emitter<VideoFeedState> emit,
+    Emitter<VideoFeedBlocState> emit,
   ) {
     final pubkey = event.blockedPubkey;
     if (pubkey != null) {
@@ -427,7 +427,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   /// the `noFollowedUsers` CTA or refresh the feed.
   Future<void> _loadVideos(
     FeedMode mode,
-    Emitter<VideoFeedState> emit, {
+    Emitter<VideoFeedBlocState> emit, {
     bool skipCache = false,
   }) async {
     // Serve cached home feed on first load for instant startup.
@@ -562,7 +562,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   /// after videos are already emitted.
   Future<void> _fetchCreatorProfiles(
     List<VideoEvent> videos,
-    Emitter<VideoFeedState> emit,
+    Emitter<VideoFeedBlocState> emit,
   ) async {
     if (_profileRepository == null || videos.isEmpty) return;
 

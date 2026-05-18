@@ -256,7 +256,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     unawaited(feedState.animateToPage(targetIndex));
   }
 
-  FeedAutoAdvanceSnapshot _autoAdvanceSnapshot(VideoFeedState state) {
+  FeedAutoAdvanceSnapshot _autoAdvanceSnapshot(VideoFeedBlocState state) {
     return FeedAutoAdvanceSnapshot(
       currentIndex: _currentFeedIndex(),
       itemCount: state.videos.length,
@@ -293,7 +293,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     );
   }
 
-  void _continuePendingAutoAdvance(VideoFeedState state) {
+  void _continuePendingAutoAdvance(VideoFeedBlocState state) {
     continueFeedAutoAdvanceAfterPagination(
       cubit: _autoAdvanceCubit,
       snapshot: _autoAdvanceSnapshot(state),
@@ -305,7 +305,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   ///
   /// Called from [didChangeDependencies] for eager setup and from
   /// [BlocListener] when videos arrive asynchronously.
-  void handleVideoController([VideoFeedState? state]) {
+  void handleVideoController([VideoFeedBlocState? state]) {
     if (kIsWeb) return; // Skip media_kit controller on web
     if (!ownsController) return;
     if (InfiniteVideoFeed.isSupported &&
@@ -364,7 +364,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   }
 
   /// Handles new videos from pagination by adding them to the controller.
-  void handleVideosChanged(VideoFeedState state) {
+  void handleVideosChanged(VideoFeedBlocState state) {
     if (!ownsController) return;
 
     final pooledVideos = state.videos.toPooledVideoItems();
@@ -525,7 +525,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
             ),
             // Reset controller when mode changes so a fresh one is
             // created for the new feed.
-            BlocListener<VideoFeedBloc, VideoFeedState>(
+            BlocListener<VideoFeedBloc, VideoFeedBlocState>(
               listenWhen: (previous, current) => previous.mode != current.mode,
               listener: (_, state) {
                 _pagePosition.value = 0;
@@ -534,7 +534,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
               },
             ),
             // Initialize controller when videos first become available
-            BlocListener<VideoFeedBloc, VideoFeedState>(
+            BlocListener<VideoFeedBloc, VideoFeedBlocState>(
               listenWhen: (previous, current) =>
                   !previous.isLoaded &&
                   current.isLoaded &&
@@ -548,12 +548,12 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
               },
             ),
             // Handle new videos from pagination
-            BlocListener<VideoFeedBloc, VideoFeedState>(
+            BlocListener<VideoFeedBloc, VideoFeedBlocState>(
               listenWhen: (previous, current) =>
                   previous.videos.length != current.videos.length,
               listener: (_, state) => handleVideosChanged(state),
             ),
-            BlocListener<VideoFeedBloc, VideoFeedState>(
+            BlocListener<VideoFeedBloc, VideoFeedBlocState>(
               listenWhen: (previous, current) =>
                   previous.videos.length != current.videos.length ||
                   previous.hasMore != current.hasMore ||
@@ -561,7 +561,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
               listener: (_, state) => _continuePendingAutoAdvance(state),
             ),
           ],
-          child: BlocBuilder<VideoFeedBloc, VideoFeedState>(
+          child: BlocBuilder<VideoFeedBloc, VideoFeedBlocState>(
             builder: (context, state) {
               // Loading state (including initial state before first load)
               if (state.isLoading) {
@@ -872,7 +872,7 @@ class _FeedErrorWidget extends StatelessWidget {
 class FeedEmptyWidget extends StatelessWidget {
   const FeedEmptyWidget({required this.state, super.key});
 
-  final VideoFeedState state;
+  final VideoFeedBlocState state;
 
   @override
   Widget build(BuildContext context) {
@@ -912,7 +912,7 @@ class FeedEmptyWidget extends StatelessWidget {
     );
   }
 
-  String _getEmptyMessage(BuildContext context, VideoFeedState state) {
+  String _getEmptyMessage(BuildContext context, VideoFeedBlocState state) {
     if ((state.mode == FeedMode.following || state.mode == FeedMode.forYou) &&
         state.error == VideoFeedError.noFollowedUsers) {
       return context.l10n.feedNoFollowedUsers;

@@ -128,24 +128,26 @@ void main() {
       bloc.close();
     });
 
-    group('VideoFeedState', () {
+    group('VideoFeedBlocState', () {
       test('isLoaded returns true when status is success', () {
-        const initialState = VideoFeedState();
-        const successState = VideoFeedState(status: VideoFeedStatus.success);
+        const initialState = VideoFeedBlocState();
+        const successState = VideoFeedBlocState(
+          status: VideoFeedStatus.success,
+        );
 
         expect(initialState.isLoaded, isFalse);
         expect(successState.isLoaded, isTrue);
       });
 
       test('isLoading returns true when status is loading', () {
-        const initialState = VideoFeedState();
+        const initialState = VideoFeedBlocState();
 
         expect(initialState.isLoading, isTrue);
       });
 
       test('isEmpty returns true when success with no videos', () {
-        const emptyState = VideoFeedState(status: VideoFeedStatus.success);
-        final loadedState = VideoFeedState(
+        const emptyState = VideoFeedBlocState(status: VideoFeedStatus.success);
+        final loadedState = VideoFeedBlocState(
           status: VideoFeedStatus.success,
           videos: [createTestVideo('v1')],
         );
@@ -155,7 +157,7 @@ void main() {
       });
 
       test('copyWith creates copy with updated values', () {
-        const state = VideoFeedState();
+        const state = VideoFeedBlocState();
 
         final updated = state.copyWith(
           status: VideoFeedStatus.success,
@@ -167,7 +169,7 @@ void main() {
       });
 
       test('copyWith preserves values when not specified', () {
-        const state = VideoFeedState(
+        const state = VideoFeedBlocState(
           status: VideoFeedStatus.success,
           mode: FeedMode.latest,
         );
@@ -179,7 +181,7 @@ void main() {
       });
 
       test('copyWith clearError removes error', () {
-        const state = VideoFeedState(error: VideoFeedError.loadFailed);
+        const state = VideoFeedBlocState(error: VideoFeedError.loadFailed);
 
         final updated = state.copyWith(clearError: true);
 
@@ -188,7 +190,7 @@ void main() {
     });
 
     group('VideoFeedStarted', () {
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'emits [loading, success] when home feed loads successfully',
         setUp: () {
           final videos = createTestVideos(pageSize);
@@ -210,8 +212,8 @@ void main() {
         act: (bloc) =>
             bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         expect: () => [
-          const VideoFeedState(mode: FeedMode.following),
-          isA<VideoFeedState>()
+          const VideoFeedBlocState(mode: FeedMode.following),
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize)
               .having((s) => s.mode, 'mode', FeedMode.following)
@@ -219,7 +221,7 @@ void main() {
         ],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'emits [loading, success] with latest mode when specified',
         setUp: () {
           final videos = createTestVideos(5);
@@ -235,14 +237,14 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.latest)),
         expect: () => [
-          const VideoFeedState(mode: FeedMode.latest),
-          isA<VideoFeedState>()
+          const VideoFeedBlocState(mode: FeedMode.latest),
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.mode, 'mode', FeedMode.latest),
         ],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'loads recommendations when forYou mode is specified',
         setUp: () {
           final videos = createTestVideos(5);
@@ -261,8 +263,8 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(const VideoFeedStarted()),
         expect: () => [
-          const VideoFeedState(),
-          isA<VideoFeedState>()
+          const VideoFeedBlocState(),
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.mode, 'mode', FeedMode.forYou),
         ],
@@ -288,7 +290,7 @@ void main() {
         },
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'restores saved mode from SharedPreferences before loading',
         setUp: () async {
           final videos = createTestVideos(5);
@@ -323,14 +325,14 @@ void main() {
         build: () => savedModeBloc,
         act: (bloc) => bloc.add(const VideoFeedStarted()),
         expect: () => [
-          const VideoFeedState(mode: FeedMode.latest),
-          isA<VideoFeedState>()
+          const VideoFeedBlocState(mode: FeedMode.latest),
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.mode, 'mode', FeedMode.latest),
         ],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'emits noFollowedUsers when following list is empty on startup',
         setUp: () {
           when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
@@ -349,15 +351,15 @@ void main() {
         act: (bloc) =>
             bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         expect: () => [
-          const VideoFeedState(mode: FeedMode.following),
+          const VideoFeedBlocState(mode: FeedMode.following),
           // _loadVideos emits success with empty videos
-          const VideoFeedState(
+          const VideoFeedBlocState(
             status: VideoFeedStatus.success,
             mode: FeedMode.following,
             hasMore: false,
           ),
           // _onStarted detects empty follows → noFollowedUsers CTA
-          const VideoFeedState(
+          const VideoFeedBlocState(
             status: VideoFeedStatus.success,
             mode: FeedMode.following,
             hasMore: false,
@@ -366,7 +368,7 @@ void main() {
         ],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'does not emit noFollowedUsers for forYou when following list is empty',
         setUp: () {
           when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
@@ -382,15 +384,15 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(const VideoFeedStarted()),
         expect: () => [
-          const VideoFeedState(),
-          const VideoFeedState(
+          const VideoFeedBlocState(),
+          const VideoFeedBlocState(
             status: VideoFeedStatus.success,
             hasMore: false,
           ),
         ],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'emits [loading, failure] when repository throws',
         setUp: () {
           when(() => mockFollowRepository.followingPubkeys).thenReturn(['a']);
@@ -409,8 +411,8 @@ void main() {
         act: (bloc) =>
             bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         expect: () => [
-          const VideoFeedState(mode: FeedMode.following),
-          const VideoFeedState(
+          const VideoFeedBlocState(mode: FeedMode.following),
+          const VideoFeedBlocState(
             status: VideoFeedStatus.failure,
             mode: FeedMode.following,
             error: VideoFeedError.loadFailed,
@@ -418,7 +420,7 @@ void main() {
         ],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'keeps hasMore true when fewer than page size returned',
         setUp: () {
           final videos = createTestVideos(3); // Less than 5 (page size)
@@ -439,15 +441,15 @@ void main() {
         act: (bloc) =>
             bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         expect: () => [
-          const VideoFeedState(mode: FeedMode.following),
-          isA<VideoFeedState>()
+          const VideoFeedBlocState(mode: FeedMode.following),
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', 3)
               .having((s) => s.hasMore, 'hasMore', true),
         ],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'sets hasMore to false when empty list returned',
         setUp: () {
           when(() => mockFollowRepository.followingPubkeys).thenReturn(['a']);
@@ -466,15 +468,15 @@ void main() {
         act: (bloc) =>
             bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         expect: () => [
-          const VideoFeedState(mode: FeedMode.following),
-          isA<VideoFeedState>()
+          const VideoFeedBlocState(mode: FeedMode.following),
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos, 'videos', isEmpty)
               .having((s) => s.hasMore, 'hasMore', false),
         ],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'does not await initialized before calling repository',
         setUp: () {
           final videos = createTestVideos(pageSize);
@@ -518,7 +520,7 @@ void main() {
     });
 
     group('VideoFeedModeChanged', () {
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'clears videos and loads new mode',
         setUp: () {
           final latestVideos = createTestVideos(5);
@@ -532,31 +534,31 @@ void main() {
           ).thenAnswer((_) async => latestVideos);
         },
         build: createBloc,
-        seed: () => VideoFeedState(
+        seed: () => VideoFeedBlocState(
           status: VideoFeedStatus.success,
           mode: FeedMode.following,
           videos: createTestVideos(3),
         ),
         act: (bloc) => bloc.add(const VideoFeedModeChanged(FeedMode.latest)),
         expect: () => [
-          const VideoFeedState(mode: FeedMode.latest),
-          isA<VideoFeedState>()
+          const VideoFeedBlocState(mode: FeedMode.latest),
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.mode, 'mode', FeedMode.latest)
               .having((s) => s.videos.length, 'videos count', 5),
         ],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'does nothing when already on the same mode with success state',
         build: createBloc,
-        seed: () => VideoFeedState(
+        seed: () => VideoFeedBlocState(
           status: VideoFeedStatus.success,
           mode: FeedMode.latest,
           videos: createTestVideos(5),
         ),
         act: (bloc) => bloc.add(const VideoFeedModeChanged(FeedMode.latest)),
-        expect: () => <VideoFeedState>[],
+        expect: () => <VideoFeedBlocState>[],
         verify: (_) {
           verifyNever(
             () => mockVideosRepository.getNewVideos(
@@ -570,7 +572,7 @@ void main() {
     });
 
     group('VideoFeedLoadMoreRequested', () {
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'uses recommendations pagination path for forYou mode',
         setUp: () {
           final moreVideos = createTestVideos(
@@ -589,18 +591,18 @@ void main() {
           ).thenAnswer((_) async => HomeFeedResult(videos: moreVideos));
         },
         build: createBloc,
-        seed: () => VideoFeedState(
+        seed: () => VideoFeedBlocState(
           status: VideoFeedStatus.success,
           videos: createTestVideos(pageSize, startTimestamp: 2000),
         ),
         act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
         expect: () => [
-          isA<VideoFeedState>().having(
+          isA<VideoFeedBlocState>().having(
             (s) => s.isLoadingMore,
             'isLoadingMore',
             true,
           ),
-          isA<VideoFeedState>()
+          isA<VideoFeedBlocState>()
               .having((s) => s.isLoadingMore, 'isLoadingMore', false)
               .having((s) => s.videos.length, 'videos count', pageSize + 2)
               .having((s) => s.hasMore, 'hasMore', true),
@@ -626,7 +628,7 @@ void main() {
         },
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'appends new videos to existing list',
         setUp: () {
           // Use different ID prefix to ensure unique videos
@@ -649,19 +651,19 @@ void main() {
           ).thenAnswer((_) async => HomeFeedResult(videos: moreVideos));
         },
         build: createBloc,
-        seed: () => VideoFeedState(
+        seed: () => VideoFeedBlocState(
           status: VideoFeedStatus.success,
           mode: FeedMode.following,
           videos: createTestVideos(pageSize, startTimestamp: 2000),
         ),
         act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
         expect: () => [
-          isA<VideoFeedState>().having(
+          isA<VideoFeedBlocState>().having(
             (s) => s.isLoadingMore,
             'isLoadingMore',
             true,
           ),
-          isA<VideoFeedState>()
+          isA<VideoFeedBlocState>()
               .having((s) => s.isLoadingMore, 'isLoadingMore', false)
               .having((s) => s.videos.length, 'videos count', pageSize * 2)
               .having((s) => s.hasMore, 'hasMore', true),
@@ -680,47 +682,47 @@ void main() {
         },
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'does nothing when not in success state',
         build: createBloc,
-        seed: () => const VideoFeedState(),
+        seed: () => const VideoFeedBlocState(),
         act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
-        expect: () => <VideoFeedState>[],
+        expect: () => <VideoFeedBlocState>[],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'does nothing when already loading more',
         build: createBloc,
-        seed: () => VideoFeedState(
+        seed: () => VideoFeedBlocState(
           status: VideoFeedStatus.success,
           videos: createTestVideos(5),
           isLoadingMore: true,
         ),
         act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
-        expect: () => <VideoFeedState>[],
+        expect: () => <VideoFeedBlocState>[],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'does nothing when hasMore is false',
         build: createBloc,
-        seed: () => VideoFeedState(
+        seed: () => VideoFeedBlocState(
           status: VideoFeedStatus.success,
           videos: createTestVideos(5),
           hasMore: false,
         ),
         act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
-        expect: () => <VideoFeedState>[],
+        expect: () => <VideoFeedBlocState>[],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'does nothing when videos list is empty',
         build: createBloc,
-        seed: () => const VideoFeedState(status: VideoFeedStatus.success),
+        seed: () => const VideoFeedBlocState(status: VideoFeedStatus.success),
         act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
-        expect: () => <VideoFeedState>[],
+        expect: () => <VideoFeedBlocState>[],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'keeps hasMore true when fewer than page size returned from load more',
         setUp: () {
           // Return fewer videos than page size with unique IDs.
@@ -745,26 +747,26 @@ void main() {
           ).thenAnswer((_) async => HomeFeedResult(videos: moreVideos));
         },
         build: createBloc,
-        seed: () => VideoFeedState(
+        seed: () => VideoFeedBlocState(
           status: VideoFeedStatus.success,
           mode: FeedMode.following,
           videos: createTestVideos(pageSize, startTimestamp: 2000),
         ),
         act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
         expect: () => [
-          isA<VideoFeedState>().having(
+          isA<VideoFeedBlocState>().having(
             (s) => s.isLoadingMore,
             'isLoadingMore',
             true,
           ),
-          isA<VideoFeedState>()
+          isA<VideoFeedBlocState>()
               .having((s) => s.isLoadingMore, 'isLoadingMore', false)
               .having((s) => s.videos.length, 'videos count', pageSize + 2)
               .having((s) => s.hasMore, 'hasMore', true),
         ],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'sets hasMore to false when empty list returned from load more',
         setUp: () {
           when(() => mockFollowRepository.followingPubkeys).thenReturn(['a']);
@@ -780,26 +782,26 @@ void main() {
           ).thenAnswer((_) async => const HomeFeedResult(videos: []));
         },
         build: createBloc,
-        seed: () => VideoFeedState(
+        seed: () => VideoFeedBlocState(
           status: VideoFeedStatus.success,
           mode: FeedMode.following,
           videos: createTestVideos(pageSize, startTimestamp: 2000),
         ),
         act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
         expect: () => [
-          isA<VideoFeedState>().having(
+          isA<VideoFeedBlocState>().having(
             (s) => s.isLoadingMore,
             'isLoadingMore',
             true,
           ),
-          isA<VideoFeedState>()
+          isA<VideoFeedBlocState>()
               .having((s) => s.isLoadingMore, 'isLoadingMore', false)
               .having((s) => s.videos.length, 'videos count', pageSize)
               .having((s) => s.hasMore, 'hasMore', false),
         ],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'drops concurrent requests via droppable transformer',
         setUp: () {
           final moreVideos = createTestVideos(
@@ -825,7 +827,7 @@ void main() {
           });
         },
         build: createBloc,
-        seed: () => VideoFeedState(
+        seed: () => VideoFeedBlocState(
           status: VideoFeedStatus.success,
           mode: FeedMode.following,
           videos: createTestVideos(pageSize, startTimestamp: 2000),
@@ -853,7 +855,7 @@ void main() {
         },
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'deduplicates overlapping videos from Funnelcake and Nostr',
         setUp: () {
           // Return videos that partially overlap with existing ones.
@@ -880,7 +882,7 @@ void main() {
           ).thenAnswer((_) async => HomeFeedResult(videos: overlappingVideos));
         },
         build: createBloc,
-        seed: () => VideoFeedState(
+        seed: () => VideoFeedBlocState(
           status: VideoFeedStatus.success,
           mode: FeedMode.following,
           videos: createTestVideos(
@@ -891,12 +893,12 @@ void main() {
         ),
         act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
         expect: () => [
-          isA<VideoFeedState>().having(
+          isA<VideoFeedBlocState>().having(
             (s) => s.isLoadingMore,
             'isLoadingMore',
             true,
           ),
-          isA<VideoFeedState>()
+          isA<VideoFeedBlocState>()
               .having((s) => s.isLoadingMore, 'isLoadingMore', false)
               // 3 existing + 3 new = 6 (2 duplicates removed)
               .having((s) => s.videos.length, 'videos count', 6)
@@ -904,7 +906,7 @@ void main() {
         ],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'resets isLoadingMore on error',
         setUp: () {
           when(() => mockFollowRepository.followingPubkeys).thenReturn(['a']);
@@ -920,19 +922,19 @@ void main() {
           ).thenThrow(Exception('Network error'));
         },
         build: createBloc,
-        seed: () => VideoFeedState(
+        seed: () => VideoFeedBlocState(
           status: VideoFeedStatus.success,
           mode: FeedMode.following,
           videos: createTestVideos(5),
         ),
         act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
         expect: () => [
-          isA<VideoFeedState>().having(
+          isA<VideoFeedBlocState>().having(
             (s) => s.isLoadingMore,
             'isLoadingMore',
             true,
           ),
-          isA<VideoFeedState>()
+          isA<VideoFeedBlocState>()
               .having((s) => s.isLoadingMore, 'isLoadingMore', false)
               .having((s) => s.videos.length, 'videos count', 5),
         ],
@@ -940,7 +942,7 @@ void main() {
     });
 
     group('VideoFeedRefreshRequested', () {
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'clears videos and reloads from beginning',
         setUp: () {
           final freshVideos = createTestVideos(pageSize);
@@ -958,7 +960,7 @@ void main() {
           ).thenAnswer((_) async => HomeFeedResult(videos: freshVideos));
         },
         build: createBloc,
-        seed: () => VideoFeedState(
+        seed: () => VideoFeedBlocState(
           status: VideoFeedStatus.success,
           mode: FeedMode.following,
           videos: createTestVideos(10), // Previous videos
@@ -966,8 +968,8 @@ void main() {
         ),
         act: (bloc) => bloc.add(const VideoFeedRefreshRequested()),
         expect: () => [
-          const VideoFeedState(mode: FeedMode.following),
-          isA<VideoFeedState>()
+          const VideoFeedBlocState(mode: FeedMode.following),
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize)
               .having((s) => s.hasMore, 'hasMore', true),
@@ -987,7 +989,7 @@ void main() {
         },
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'clears error on refresh',
         setUp: () {
           final videos = createTestVideos(5);
@@ -1005,15 +1007,15 @@ void main() {
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBloc,
-        seed: () => const VideoFeedState(
+        seed: () => const VideoFeedBlocState(
           status: VideoFeedStatus.failure,
           mode: FeedMode.following,
           error: VideoFeedError.loadFailed,
         ),
         act: (bloc) => bloc.add(const VideoFeedRefreshRequested()),
         expect: () => [
-          const VideoFeedState(mode: FeedMode.following),
-          isA<VideoFeedState>()
+          const VideoFeedBlocState(mode: FeedMode.following),
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.error, 'error', isNull),
         ],
@@ -1021,7 +1023,7 @@ void main() {
     });
 
     group('VideoFeedAutoRefreshRequested', () {
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'refreshes when on home mode and data is stale',
         setUp: () {
           final videos = createTestVideos(pageSize);
@@ -1044,44 +1046,44 @@ void main() {
           curatedListRepository: mockCuratedListRepository,
           autoRefreshMinInterval: Duration.zero,
         ),
-        seed: () => VideoFeedState(
+        seed: () => VideoFeedBlocState(
           status: VideoFeedStatus.success,
           mode: FeedMode.following,
           videos: createTestVideos(3),
         ),
         act: (bloc) => bloc.add(const VideoFeedAutoRefreshRequested()),
         expect: () => [
-          const VideoFeedState(mode: FeedMode.following),
-          isA<VideoFeedState>()
+          const VideoFeedBlocState(mode: FeedMode.following),
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize),
         ],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'does nothing when mode is not home',
         build: createBloc,
-        seed: () => VideoFeedState(
+        seed: () => VideoFeedBlocState(
           status: VideoFeedStatus.success,
           mode: FeedMode.latest,
           videos: createTestVideos(5),
         ),
         act: (bloc) => bloc.add(const VideoFeedAutoRefreshRequested()),
-        expect: () => <VideoFeedState>[],
+        expect: () => <VideoFeedBlocState>[],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'does nothing when mode is forYou',
         build: createBloc,
-        seed: () => VideoFeedState(
+        seed: () => VideoFeedBlocState(
           status: VideoFeedStatus.success,
           videos: createTestVideos(5),
         ),
         act: (bloc) => bloc.add(const VideoFeedAutoRefreshRequested()),
-        expect: () => <VideoFeedState>[],
+        expect: () => <VideoFeedBlocState>[],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'does nothing when data is fresh '
         '(last refresh within auto-refresh interval)',
         setUp: () {
@@ -1106,7 +1108,7 @@ void main() {
           // Large interval so data is always considered fresh
           autoRefreshMinInterval: const Duration(hours: 1),
         ),
-        seed: () => VideoFeedState(
+        seed: () => VideoFeedBlocState(
           status: VideoFeedStatus.success,
           mode: FeedMode.following,
           videos: createTestVideos(pageSize),
@@ -1120,10 +1122,10 @@ void main() {
           bloc.add(const VideoFeedAutoRefreshRequested());
         },
         skip: 2, // Skip the loading + success from VideoFeedStarted
-        expect: () => <VideoFeedState>[],
+        expect: () => <VideoFeedBlocState>[],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'refreshes when auto-refresh interval has elapsed',
         setUp: () {
           final videos = createTestVideos(pageSize);
@@ -1146,7 +1148,7 @@ void main() {
           curatedListRepository: mockCuratedListRepository,
           autoRefreshMinInterval: Duration.zero,
         ),
-        seed: () => VideoFeedState(
+        seed: () => VideoFeedBlocState(
           status: VideoFeedStatus.success,
           videos: createTestVideos(pageSize),
         ),
@@ -1160,14 +1162,14 @@ void main() {
         },
         skip: 2, // Skip the loading + success from VideoFeedStarted
         expect: () => [
-          const VideoFeedState(mode: FeedMode.following),
-          isA<VideoFeedState>()
+          const VideoFeedBlocState(mode: FeedMode.following),
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize),
         ],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'refreshes when _lastRefreshedAt is null '
         '(feed never loaded successfully)',
         setUp: () {
@@ -1186,15 +1188,15 @@ void main() {
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBloc,
-        seed: () => const VideoFeedState(
+        seed: () => const VideoFeedBlocState(
           status: VideoFeedStatus.failure,
           mode: FeedMode.following,
           error: VideoFeedError.loadFailed,
         ),
         act: (bloc) => bloc.add(const VideoFeedAutoRefreshRequested()),
         expect: () => [
-          const VideoFeedState(mode: FeedMode.following),
-          isA<VideoFeedState>()
+          const VideoFeedBlocState(mode: FeedMode.following),
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize),
         ],
@@ -1202,7 +1204,7 @@ void main() {
     });
 
     group('VideoFeedFollowingListChanged', () {
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'silently refreshes home feed on follow list change',
         setUp: () {
           final videos = createTestVideos(pageSize);
@@ -1222,7 +1224,7 @@ void main() {
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBloc,
-        seed: () => VideoFeedState(
+        seed: () => VideoFeedBlocState(
           status: VideoFeedStatus.success,
           mode: FeedMode.following,
           videos: createTestVideos(3),
@@ -1231,36 +1233,36 @@ void main() {
             bloc.add(const VideoFeedFollowingListChanged(['new-author'])),
         expect: () => [
           // No loading state — silent refresh replaces in-place
-          isA<VideoFeedState>()
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize)
               .having((s) => s.mode, 'mode', FeedMode.following),
         ],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'does nothing when mode is not home',
         build: createBloc,
-        seed: () => VideoFeedState(
+        seed: () => VideoFeedBlocState(
           status: VideoFeedStatus.success,
           mode: FeedMode.latest,
           videos: createTestVideos(5),
         ),
         act: (bloc) =>
             bloc.add(const VideoFeedFollowingListChanged(['new-author'])),
-        expect: () => <VideoFeedState>[],
+        expect: () => <VideoFeedBlocState>[],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'does nothing when feed is still loading',
         build: createBloc,
-        seed: () => const VideoFeedState(mode: FeedMode.following),
+        seed: () => const VideoFeedBlocState(mode: FeedMode.following),
         act: (bloc) =>
             bloc.add(const VideoFeedFollowingListChanged(['new-author'])),
-        expect: () => <VideoFeedState>[],
+        expect: () => <VideoFeedBlocState>[],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'transitions from noFollowedUsers to loaded feed',
         setUp: () {
           final videos = createTestVideos(pageSize);
@@ -1280,7 +1282,7 @@ void main() {
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBloc,
-        seed: () => const VideoFeedState(
+        seed: () => const VideoFeedBlocState(
           status: VideoFeedStatus.success,
           mode: FeedMode.following,
           hasMore: false,
@@ -1290,14 +1292,14 @@ void main() {
             bloc.add(const VideoFeedFollowingListChanged(['first-follow'])),
         expect: () => [
           // No loading state — silent refresh replaces in-place
-          isA<VideoFeedState>()
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize)
               .having((s) => s.error, 'error', isNull),
         ],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'skips initial follow list replay to avoid redundant API call',
         setUp: () {
           final videos = createTestVideos(pageSize);
@@ -1325,7 +1327,7 @@ void main() {
           followingController.add(['author']);
         },
         skip: 2, // Skip loading + success from VideoFeedStarted
-        expect: () => <VideoFeedState>[],
+        expect: () => <VideoFeedBlocState>[],
         verify: (_) {
           // Called only once — the replay is skipped, no redundant call
           verify(
@@ -1341,7 +1343,7 @@ void main() {
         },
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'silently refreshes on second follow list emission after feed '
         'is empty (Funnelcake failed)',
         setUp: () {
@@ -1382,7 +1384,7 @@ void main() {
         skip: 2, // Skip loading + success(empty) from VideoFeedStarted
         expect: () => [
           // No loading state — silent refresh replaces in-place
-          isA<VideoFeedState>()
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize),
         ],
@@ -1401,7 +1403,7 @@ void main() {
         },
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'silently refreshes on runtime follow list changes '
         '(skips initial replay)',
         setUp: () {
@@ -1433,7 +1435,7 @@ void main() {
         },
         skip: 2, // Skip loading + success from VideoFeedStarted
         // No state changes — same videos returned, Equatable deduplicates
-        expect: () => <VideoFeedState>[],
+        expect: () => <VideoFeedBlocState>[],
         verify: (_) {
           // Called 2 times: initial + runtime (replay is skipped)
           verify(
@@ -1451,7 +1453,7 @@ void main() {
     });
 
     group('VideoFeedCuratedListsChanged', () {
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'refreshes home feed when curated lists change',
         setUp: () {
           final videos = createTestVideos(pageSize);
@@ -1471,42 +1473,42 @@ void main() {
           ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBloc,
-        seed: () => VideoFeedState(
+        seed: () => VideoFeedBlocState(
           status: VideoFeedStatus.success,
           mode: FeedMode.following,
           videos: createTestVideos(3),
         ),
         act: (bloc) => bloc.add(const VideoFeedCuratedListsChanged()),
         expect: () => [
-          const VideoFeedState(mode: FeedMode.following),
-          isA<VideoFeedState>()
+          const VideoFeedBlocState(mode: FeedMode.following),
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize)
               .having((s) => s.mode, 'mode', FeedMode.following),
         ],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'does nothing when mode is not home',
         build: createBloc,
-        seed: () => VideoFeedState(
+        seed: () => VideoFeedBlocState(
           status: VideoFeedStatus.success,
           mode: FeedMode.latest,
           videos: createTestVideos(5),
         ),
         act: (bloc) => bloc.add(const VideoFeedCuratedListsChanged()),
-        expect: () => <VideoFeedState>[],
+        expect: () => <VideoFeedBlocState>[],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'does nothing when feed is still loading',
         build: createBloc,
-        seed: () => const VideoFeedState(mode: FeedMode.following),
+        seed: () => const VideoFeedBlocState(mode: FeedMode.following),
         act: (bloc) => bloc.add(const VideoFeedCuratedListsChanged()),
-        expect: () => <VideoFeedState>[],
+        expect: () => <VideoFeedBlocState>[],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'subscribes to subscribedListsStream via emit.onEach on startup',
         setUp: () {
           final videos = createTestVideos(pageSize);
@@ -1538,14 +1540,14 @@ void main() {
         },
         skip: 2, // Skip loading + success from VideoFeedStarted
         expect: () => [
-          const VideoFeedState(mode: FeedMode.following),
-          isA<VideoFeedState>()
+          const VideoFeedBlocState(mode: FeedMode.following),
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize),
         ],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'emits state with videoListSources and listOnlyVideoIds '
         'from HomeFeedResult',
         setUp: () {
@@ -1574,15 +1576,15 @@ void main() {
           );
         },
         build: createBloc,
-        seed: () => VideoFeedState(
+        seed: () => VideoFeedBlocState(
           status: VideoFeedStatus.success,
           mode: FeedMode.following,
           videos: createTestVideos(3),
         ),
         act: (bloc) => bloc.add(const VideoFeedCuratedListsChanged()),
         expect: () => [
-          const VideoFeedState(mode: FeedMode.following),
-          isA<VideoFeedState>()
+          const VideoFeedBlocState(mode: FeedMode.following),
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videoListSources, 'videoListSources', {
                 'video-0': {'list-1'},
@@ -1593,7 +1595,7 @@ void main() {
         ],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'merges attribution metadata on load more',
         setUp: () {
           final moreVideos = createTestVideos(
@@ -1623,7 +1625,7 @@ void main() {
           );
         },
         build: createBloc,
-        seed: () => VideoFeedState(
+        seed: () => VideoFeedBlocState(
           status: VideoFeedStatus.success,
           mode: FeedMode.following,
           videos: createTestVideos(pageSize, startTimestamp: 2000),
@@ -1634,12 +1636,12 @@ void main() {
         ),
         act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
         expect: () => [
-          isA<VideoFeedState>().having(
+          isA<VideoFeedBlocState>().having(
             (s) => s.isLoadingMore,
             'isLoadingMore',
             true,
           ),
-          isA<VideoFeedState>()
+          isA<VideoFeedBlocState>()
               .having((s) => s.isLoadingMore, 'isLoadingMore', false)
               .having((s) => s.videoListSources, 'videoListSources', {
                 'existing-0': {'list-1'},
@@ -1678,7 +1680,7 @@ void main() {
         feedTracker: mockTracker,
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'calls startFeedLoad on VideoFeedStarted',
         setUp: () {
           final videos = createTestVideos(3);
@@ -1702,7 +1704,7 @@ void main() {
         },
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'calls markFirstVideosReceived and markFeedDisplayed on success',
         setUp: () {
           final videos = createTestVideos(3);
@@ -1729,7 +1731,7 @@ void main() {
         },
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'calls trackFeedError on failure',
         setUp: () {
           when(() => mockFollowRepository.followingPubkeys).thenReturn(['a']);
@@ -1760,7 +1762,7 @@ void main() {
         },
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'uses correct feed type for latest mode',
         setUp: () {
           final videos = createTestVideos(3);
@@ -1837,7 +1839,7 @@ void main() {
         homeFeedCache: mockCache,
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'emits cached videos then fresh videos on cold start',
         setUp: () {
           final cachedVideos = createTestVideos(2, idPrefix: 'cached');
@@ -1869,14 +1871,14 @@ void main() {
             bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         expect: () => [
           // 1. Loading state from _onStarted
-          const VideoFeedState(mode: FeedMode.following),
+          const VideoFeedBlocState(mode: FeedMode.following),
           // 2. Cached videos served immediately
-          isA<VideoFeedState>()
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'cached count', 2)
               .having((s) => s.videos[0].id, 'first cached id', 'cached-0'),
           // 3. Fresh videos replace cached
-          isA<VideoFeedState>()
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'fresh count', 3)
               .having((s) => s.videos[0].id, 'first fresh id', 'fresh-0'),
@@ -1886,7 +1888,7 @@ void main() {
         },
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'skips cache when no SharedPreferences provided',
         setUp: () {
           final videos = createTestVideos(3);
@@ -1912,8 +1914,8 @@ void main() {
         act: (bloc) =>
             bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         expect: () => [
-          const VideoFeedState(mode: FeedMode.following),
-          isA<VideoFeedState>()
+          const VideoFeedBlocState(mode: FeedMode.following),
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'count', 3),
         ],
@@ -1922,7 +1924,7 @@ void main() {
         },
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'skips cache when cache returns null',
         setUp: () {
           final videos = createTestVideos(3);
@@ -1949,14 +1951,14 @@ void main() {
         act: (bloc) =>
             bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         expect: () => [
-          const VideoFeedState(mode: FeedMode.following),
-          isA<VideoFeedState>()
+          const VideoFeedBlocState(mode: FeedMode.following),
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'count', 3),
         ],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'writes raw response body to cache after fresh fetch',
         setUp: () {
           final videos = createTestVideos(3);
@@ -1990,7 +1992,7 @@ void main() {
         },
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'writes forYou raw response body to Home tab cache after fresh fetch',
         setUp: () {
           final videos = createTestVideos(3);
@@ -2023,7 +2025,7 @@ void main() {
         },
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'does not write cache when rawResponseBody is null',
         setUp: () {
           final videos = createTestVideos(3);
@@ -2048,7 +2050,7 @@ void main() {
         },
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'does not serve cache on non-home mode',
         setUp: () {
           final videos = createTestVideos(3);
@@ -2064,8 +2066,12 @@ void main() {
         build: createBlocWithCache,
         act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.latest)),
         expect: () => [
-          isA<VideoFeedState>().having((s) => s.mode, 'mode', FeedMode.latest),
-          isA<VideoFeedState>()
+          isA<VideoFeedBlocState>().having(
+            (s) => s.mode,
+            'mode',
+            FeedMode.latest,
+          ),
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'count', 3),
         ],
@@ -2074,7 +2080,7 @@ void main() {
         },
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'serves cached Home tab data before fresh forYou recommendations',
         setUp: () {
           final cachedVideos = createTestVideos(2, idPrefix: 'cached');
@@ -2102,12 +2108,12 @@ void main() {
         build: createBlocWithCache,
         act: (bloc) => bloc.add(const VideoFeedStarted()),
         expect: () => [
-          const VideoFeedState(),
-          isA<VideoFeedState>()
+          const VideoFeedBlocState(),
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'cached count', 2)
               .having((s) => s.videos.first.id, 'first cached id', 'cached-0'),
-          isA<VideoFeedState>()
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'recommended count', 3)
               .having(
@@ -2121,7 +2127,7 @@ void main() {
         },
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'keeps cached data visible when network fails',
         setUp: () {
           final cachedVideos = createTestVideos(2, idPrefix: 'cached');
@@ -2146,16 +2152,16 @@ void main() {
             bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         expect: () => [
           // 1. Loading state
-          const VideoFeedState(mode: FeedMode.following),
+          const VideoFeedBlocState(mode: FeedMode.following),
           // 2. Cached videos served
-          isA<VideoFeedState>()
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'cached count', 2),
           // No failure state emitted because cached data is displayed
         ],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'serves cache only once per bloc instance',
         setUp: () {
           final cachedVideos = createTestVideos(2, idPrefix: 'cached');
@@ -2192,7 +2198,7 @@ void main() {
         },
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'filters cached videos through '
         'VideosRepository.applyContentPreferences before emitting them',
         setUp: () {
@@ -2247,9 +2253,9 @@ void main() {
             bloc.add(const VideoFeedStarted(mode: FeedMode.following)),
         expect: () => [
           // 1. Loading state from _onStarted
-          const VideoFeedState(mode: FeedMode.following),
+          const VideoFeedBlocState(mode: FeedMode.following),
           // 2. Cached emission: hidden filtered out via applyContentPreferences
-          isA<VideoFeedState>()
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'cached count', 1)
               .having(
@@ -2259,7 +2265,7 @@ void main() {
               ),
           // 3. Fresh fetch result replaces cached state (unfiltered on the
           //    fresh path — only the cache path is under test here).
-          isA<VideoFeedState>()
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'fresh count', 2),
         ],
@@ -2314,7 +2320,7 @@ void main() {
         createdAt: DateTime(2024),
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'fetches creator profiles when videos load',
         setUp: () {
           final baseTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -2361,20 +2367,20 @@ void main() {
           ).called(1);
         },
         expect: () => [
-          const VideoFeedState(mode: FeedMode.following),
+          const VideoFeedBlocState(mode: FeedMode.following),
           // Videos loaded (no profiles yet)
-          isA<VideoFeedState>()
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos, 'videos', hasLength(2))
               .having((s) => s.creatorProfiles, 'profiles', isEmpty),
           // Profiles fetched
-          isA<VideoFeedState>()
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.creatorProfiles, 'profiles', hasLength(2)),
         ],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'fetches only new profiles on pagination',
         setUp: () {
           final baseTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -2439,29 +2445,29 @@ void main() {
         },
         expect: () => [
           // Loading
-          const VideoFeedState(mode: FeedMode.following),
+          const VideoFeedBlocState(mode: FeedMode.following),
           // Initial videos loaded
-          isA<VideoFeedState>()
+          isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos, 'videos', hasLength(1)),
           // Profiles for initial videos
-          isA<VideoFeedState>().having(
+          isA<VideoFeedBlocState>().having(
             (s) => s.creatorProfiles,
             'profiles after initial',
             hasLength(1),
           ),
           // Pagination loading
-          isA<VideoFeedState>().having(
+          isA<VideoFeedBlocState>().having(
             (s) => s.isLoadingMore,
             'isLoadingMore',
             isTrue,
           ),
           // Pagination complete
-          isA<VideoFeedState>()
+          isA<VideoFeedBlocState>()
               .having((s) => s.videos, 'videos', hasLength(3))
               .having((s) => s.isLoadingMore, 'isLoadingMore', isFalse),
           // Profiles for new creators
-          isA<VideoFeedState>().having(
+          isA<VideoFeedBlocState>().having(
             (s) => s.creatorProfiles,
             'profiles after pagination',
             hasLength(3),
@@ -2469,7 +2475,7 @@ void main() {
         ],
       );
 
-      blocTest<VideoFeedBloc, VideoFeedState>(
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'does not re-fetch existing profiles on pagination',
         setUp: () {
           final baseTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
