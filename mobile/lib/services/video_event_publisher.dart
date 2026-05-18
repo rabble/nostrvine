@@ -482,6 +482,7 @@ class VideoEventPublisher {
     String? inspiredByAddressableId,
     String? inspiredByRelayUrl,
     String? inspiredByNpub,
+    AudioEvent? selectedAudio,
     String? selectedAudioEventId,
     String? selectedAudioRelay,
     String? language,
@@ -505,6 +506,7 @@ class VideoEventPublisher {
       inspiredByAddressableId: inspiredByAddressableId,
       inspiredByRelayUrl: inspiredByRelayUrl,
       inspiredByNpub: inspiredByNpub,
+      selectedAudio: selectedAudio,
       selectedAudioEventId: selectedAudioEventId,
       selectedAudioRelay: selectedAudioRelay,
       language: language,
@@ -526,6 +528,7 @@ class VideoEventPublisher {
     String? inspiredByAddressableId,
     String? inspiredByRelayUrl,
     String? inspiredByNpub,
+    AudioEvent? selectedAudio,
     String? selectedAudioEventId,
     String? selectedAudioRelay,
     String? language,
@@ -881,25 +884,60 @@ class VideoEventPublisher {
         ]);
       }
 
+      var selectedAudioReferenceId = selectedAudioEventId;
+      var selectedAudioReferenceRelay = selectedAudioRelay;
+
+      if (selectedAudio?.isLocalImport == true) {
+        final userPubkey = _authService?.currentPublicKeyHex;
+        final relayHint = _audioRelayHint();
+        if (userPubkey == null) {
+          Log.error(
+            'Cannot publish imported audio without an authenticated pubkey',
+            name: 'VideoEventPublisher',
+            category: LogCategory.video,
+          );
+          return false;
+        }
+
+        selectedAudioReferenceId = await _publishImportedAudioEvent(
+          audio: selectedAudio!,
+          videoDTag: dTag,
+          pubkey: userPubkey,
+          relayHint: relayHint,
+        );
+        selectedAudioReferenceRelay = relayHint;
+
+        if (selectedAudioReferenceId == null) {
+          Log.error(
+            'Imported audio publishing failed; blocking video publish',
+            name: 'VideoEventPublisher',
+            category: LogCategory.video,
+          );
+          return false;
+        }
+      }
+
       // Handle selected audio: reference an existing Kind 1063 audio event
       // (e.g., when recording with a selected sound from another video)
       final hasSelectedAudioEventId =
-          selectedAudioEventId != null && selectedAudioEventId.isNotEmpty;
+          selectedAudioReferenceId != null &&
+          selectedAudioReferenceId.isNotEmpty;
       final reusableSelectedAudioEventId =
-          NostrHexUtils.isValidEventId(selectedAudioEventId)
-          ? selectedAudioEventId
+          NostrHexUtils.isValidEventId(selectedAudioReferenceId)
+          ? selectedAudioReferenceId
           : null;
       if (hasSelectedAudioEventId && reusableSelectedAudioEventId == null) {
         Log.warning(
           'Skipping selected audio reference because it is not a Nostr event id: '
-          '$selectedAudioEventId',
+          '$selectedAudioReferenceId',
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );
       }
 
       if (reusableSelectedAudioEventId != null) {
-        final audioRelay = selectedAudioRelay ?? 'wss://relay.divine.video';
+        final audioRelay =
+            selectedAudioReferenceRelay ?? 'wss://relay.divine.video';
         tags.add(['e', reusableSelectedAudioEventId, audioRelay, 'audio']);
         Log.info(
           'Added selected audio reference e tag: $reusableSelectedAudioEventId',
@@ -1253,6 +1291,116 @@ class VideoEventPublisher {
   ///
   /// The audio title uses the video title if provided, falling back to
   /// "Original sound - @username" format.
+  String _audioRelayHint() {
+    if (_nostrService.connectedRelays.isNotEmpty) {
+      return _nostrService.connectedRelays.first;
+    }
+    return 'wss://relay.divine.video';
+  }
+
+  Future<String?> _publishImportedAudioEvent({
+    required AudioEvent audio,
+    required String videoDTag,
+    required String pubkey,
+    required String relayHint,
+  }) async {
+    final filePath = audio.localFilePath;
+    final blossomService = _blossomUploadService;
+    if (filePath == null || blossomService == null) {
+      return null;
+    }
+
+    final audioFile = File(filePath);
+    if (!await audioFile.exists()) {
+      Log.error(
+        'Imported audio file does not exist: $filePath',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      return null;
+    }
+
+    final uploadResult = await blossomService.uploadAudio(
+      audioFile: audioFile,
+      mimeType: audio.mimeType ?? 'audio/mpeg',
+    );
+    final audioUrl = uploadResult.fallbackUrl ?? uploadResult.url;
+    if (!uploadResult.success ||
+        audioUrl == null ||
+        uploadResult.videoId == null) {
+      Log.error(
+        'Imported audio upload failed: ${uploadResult.errorMessage}',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      return null;
+    }
+
+    final sourceVideoReference =
+        '${NIP71VideoKinds.getPreferredAddressableKind()}:$pubkey:$videoDTag';
+    final publishedAudio = AudioEvent(
+      id: '',
+      pubkey: pubkey,
+      createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      url: audioUrl,
+      mimeType: audio.mimeType ?? 'audio/mpeg',
+      sha256: uploadResult.videoId,
+      fileSize: await audioFile.length(),
+      duration: audio.duration,
+      title: audio.title,
+      source: audio.source,
+      sourceVideoReference: sourceVideoReference,
+      sourceVideoRelay: relayHint,
+    );
+
+    if (_authService == null || !_authService.isAuthenticated) {
+      Log.error(
+        'Auth service not available or not authenticated',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      return null;
+    }
+
+    final signedAudioEvent = await _authService.createAndSignEvent(
+      kind: audioEventKind,
+      content: '',
+      tags: publishedAudio.toTags(),
+    );
+    if (signedAudioEvent == null) {
+      Log.error(
+        'Failed to create and sign imported audio event',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      return null;
+    }
+
+    final published = await _publishEventToNostr(signedAudioEvent);
+    if (!published) {
+      Log.error(
+        'Failed to publish imported audio event to relays',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      return null;
+    }
+
+    try {
+      await _savedSoundsService?.saveSound(
+        AudioEvent.fromNostrEvent(signedAudioEvent),
+      );
+    } catch (e) {
+      Log.warning(
+        'Failed to save imported audio event to My Sounds: $e',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+    }
+
+    return signedAudioEvent.id;
+  }
+
   Future<String?> _publishAudioEvent({
     required String videoPath,
     required String videoDTag,

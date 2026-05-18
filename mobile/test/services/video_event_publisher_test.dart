@@ -4,10 +4,12 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:collection/collection.dart';
 import 'package:crypto/crypto.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:models/models.dart' show AudioEvent, audioEventKind;
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
@@ -16,6 +18,7 @@ import 'package:nostr_sdk/relay/relay_pool.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -27,6 +30,10 @@ class _MockNostrClient extends Mock implements NostrClient {}
 class _MockAuthService extends Mock implements AuthService {}
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
+
+class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
+
+class _MockSavedSoundsService extends Mock implements SavedSoundsService {}
 
 class _FakeEvent extends Fake implements Event {}
 
@@ -497,6 +504,14 @@ void main() {
       registerFallbackValue(_FakeFilter());
       registerFallbackValue(<Filter>[]);
       registerFallbackValue(UploadStatus.pending);
+      registerFallbackValue(File('fallback.mp3'));
+      registerFallbackValue(
+        const AudioEvent(
+          id: 'fallback',
+          pubkey: 'fallback',
+          createdAt: 0,
+        ),
+      );
     });
 
     setUp(() {
@@ -591,6 +606,162 @@ void main() {
           'mention',
         ]),
         isTrue,
+      );
+    });
+
+    group('local imported audio', () {
+      late _MockBlossomUploadService blossomUploadService;
+      late _MockSavedSoundsService savedSoundsService;
+      late List<Event> signedEvents;
+
+      setUp(() {
+        blossomUploadService = _MockBlossomUploadService();
+        savedSoundsService = _MockSavedSoundsService();
+        signedEvents = [];
+
+        publisher = VideoEventPublisher(
+          uploadManager: uploadManager,
+          nostrService: nostrClient,
+          authService: authService,
+          videoEventService: videoEventService,
+          blossomUploadService: blossomUploadService,
+          savedSoundsService: savedSoundsService,
+        );
+
+        when(
+          () => savedSoundsService.saveSound(any()),
+        ).thenAnswer((_) async => SavedSoundSaveResult.saved);
+
+        when(
+          () => authService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((invocation) async {
+          final kind = invocation.namedArguments[#kind] as int;
+          final content = invocation.namedArguments[#content] as String;
+          final tags = invocation.namedArguments[#tags] as List<List<String>>;
+          final event = Event(testPubkey, kind, tags, content);
+          signedEvents.add(event);
+          return event;
+        });
+
+        when(
+          () => nostrClient.publishEvent(any()),
+        ).thenAnswer((invocation) async {
+          return PublishSuccess(event: invocation.positionalArguments.first);
+        });
+      });
+
+      test(
+        'publishes local imported audio before video and tags video event',
+        () async {
+          final audioFile = File(
+            '${Directory.systemTemp.path}/imported_audio.mp3',
+          );
+          await audioFile.writeAsBytes([1, 2, 3]);
+          addTearDown(() {
+            if (audioFile.existsSync()) audioFile.deleteSync();
+          });
+
+          final localAudio = AudioEvent.fromLocalImport(
+            id: 'local_import_1700000000000',
+            filePath: audioFile.path,
+            createdAt: 1700000000,
+            title: 'imported_audio',
+            mimeType: 'audio/mpeg',
+            duration: 3,
+          );
+
+          when(
+            () => blossomUploadService.uploadAudio(
+              audioFile: any(named: 'audioFile'),
+              mimeType: 'audio/mpeg',
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).thenAnswer(
+            (_) async => const BlossomUploadResult(
+              success: true,
+              url: 'https://cdn.example/audiohash',
+              fallbackUrl: 'https://cdn.example/audiohash',
+              videoId:
+                  'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+            ),
+          );
+
+          final result = await publisher.publishVideoEvent(
+            upload: createUpload(),
+            selectedAudio: localAudio,
+          );
+
+          expect(result, isTrue);
+
+          final audioEvent = signedEvents.singleWhere(
+            (event) => event.kind == audioEventKind,
+          );
+          expect(
+            _containsTag(audioEvent.tags, const [
+              'url',
+              'https://cdn.example/audiohash',
+            ]),
+            isTrue,
+          );
+          expect(
+            _containsTag(audioEvent.tags, const ['m', 'audio/mpeg']),
+            isTrue,
+          );
+          expect(
+            _containsTag(audioEvent.tags, const [
+              'x',
+              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+            ]),
+            isTrue,
+          );
+          expect(_containsTag(audioEvent.tags, const ['size', '3']), isTrue);
+          expect(
+            _containsTag(audioEvent.tags, const ['title', 'imported_audio']),
+            isTrue,
+          );
+
+          final videoEvent = signedEvents.singleWhere(
+            (event) => event.kind != audioEventKind,
+          );
+          expect(
+            _containsTag(videoEvent.tags, [
+              'e',
+              audioEvent.id,
+              'wss://relay.divine.video',
+              'audio',
+            ]),
+            isTrue,
+          );
+          verify(() => savedSoundsService.saveSound(any())).called(1);
+        },
+      );
+
+      test(
+        'blocks video publish when local imported audio cannot be published',
+        () async {
+          final localAudio = AudioEvent.fromLocalImport(
+            id: 'local_import_1700000000000',
+            filePath: '${Directory.systemTemp.path}/missing_imported_audio.mp3',
+            createdAt: 1700000000,
+            title: 'missing',
+            mimeType: 'audio/mpeg',
+          );
+
+          final result = await publisher.publishVideoEvent(
+            upload: createUpload(),
+            selectedAudio: localAudio,
+          );
+
+          expect(result, isFalse);
+          expect(
+            signedEvents.where((event) => event.kind != audioEventKind),
+            isEmpty,
+          );
+        },
       );
     });
   });

@@ -202,6 +202,7 @@ void main() {
               inspiredByAddressableId: any(named: 'inspiredByAddressableId'),
               inspiredByRelayUrl: any(named: 'inspiredByRelayUrl'),
               inspiredByNpub: any(named: 'inspiredByNpub'),
+              selectedAudio: any(named: 'selectedAudio'),
               selectedAudioEventId: any(named: 'selectedAudioEventId'),
               selectedAudioRelay: any(named: 'selectedAudioRelay'),
               language: any(named: 'language'),
@@ -285,6 +286,7 @@ void main() {
               inspiredByAddressableId: any(named: 'inspiredByAddressableId'),
               inspiredByRelayUrl: any(named: 'inspiredByRelayUrl'),
               inspiredByNpub: any(named: 'inspiredByNpub'),
+              selectedAudio: any(named: 'selectedAudio'),
               selectedAudioEventId: any(named: 'selectedAudioEventId'),
               selectedAudioRelay: any(named: 'selectedAudioRelay'),
               language: any(named: 'language'),
@@ -329,6 +331,7 @@ void main() {
             inspiredByAddressableId: any(named: 'inspiredByAddressableId'),
             inspiredByRelayUrl: any(named: 'inspiredByRelayUrl'),
             inspiredByNpub: any(named: 'inspiredByNpub'),
+            selectedAudio: any(named: 'selectedAudio'),
             selectedAudioEventId: any(named: 'selectedAudioEventId'),
             selectedAudioRelay: any(named: 'selectedAudioRelay'),
             language: any(named: 'language'),
@@ -474,6 +477,7 @@ void main() {
               inspiredByAddressableId: any(named: 'inspiredByAddressableId'),
               inspiredByRelayUrl: any(named: 'inspiredByRelayUrl'),
               inspiredByNpub: any(named: 'inspiredByNpub'),
+              selectedAudio: any(named: 'selectedAudio'),
               selectedAudioEventId: any(named: 'selectedAudioEventId'),
               selectedAudioRelay: any(named: 'selectedAudioRelay'),
               language: any(named: 'language'),
@@ -524,6 +528,7 @@ void main() {
               hashtags: any(named: 'hashtags'),
               expirationTimestamp: any(named: 'expirationTimestamp'),
               allowAudioReuse: any(named: 'allowAudioReuse'),
+              selectedAudio: any(named: 'selectedAudio'),
             ),
           ).thenAnswer((_) async => false);
           when(
@@ -756,6 +761,7 @@ void main() {
             hashtags: any(named: 'hashtags'),
             expirationTimestamp: any(named: 'expirationTimestamp'),
             allowAudioReuse: any(named: 'allowAudioReuse'),
+            selectedAudio: any(named: 'selectedAudio'),
           ),
         ).thenAnswer((_) async => false);
         when(
@@ -822,6 +828,7 @@ void main() {
             hashtags: any(named: 'hashtags'),
             expirationTimestamp: any(named: 'expirationTimestamp'),
             allowAudioReuse: any(named: 'allowAudioReuse'),
+            selectedAudio: any(named: 'selectedAudio'),
           ),
         ).thenAnswer((_) async => true);
 
@@ -1017,6 +1024,7 @@ void main() {
             hashtags: any(named: 'hashtags'),
             expirationTimestamp: any(named: 'expirationTimestamp'),
             allowAudioReuse: any(named: 'allowAudioReuse'),
+            selectedAudio: any(named: 'selectedAudio'),
           ),
         ).thenAnswer((_) async => true);
 
@@ -1104,6 +1112,7 @@ void main() {
             hashtags: any(named: 'hashtags'),
             expirationTimestamp: any(named: 'expirationTimestamp'),
             allowAudioReuse: any(named: 'allowAudioReuse'),
+            selectedAudio: any(named: 'selectedAudio'),
           ),
         ).thenAnswer((_) async => true);
 
@@ -1609,6 +1618,7 @@ void _setupSuccessfulPublish({
       inspiredByAddressableId: any(named: 'inspiredByAddressableId'),
       inspiredByRelayUrl: any(named: 'inspiredByRelayUrl'),
       inspiredByNpub: any(named: 'inspiredByNpub'),
+      selectedAudio: any(named: 'selectedAudio'),
       selectedAudioEventId: any(named: 'selectedAudioEventId'),
       selectedAudioRelay: any(named: 'selectedAudioRelay'),
       language: any(named: 'language'),
