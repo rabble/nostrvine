@@ -236,5 +236,34 @@ void main() {
       expect(r.completed, ['foo']);
       expect(r.remainder, 'bar');
     });
+
+    test('typed branch filters empty tokens from consecutive separators', () {
+      // User typed a second comma — `foo,,` produces ['foo', '', ''] which
+      // must collapse to just the leading token, with an empty remainder.
+      final r = parseTagsPickerInput(text: 'foo,,', previousText: 'foo,');
+      expect(r.completed, ['foo']);
+      expect(r.remainder, '');
+    });
+
+    test('paste with mixed separators (comma + space) commits all tokens', () {
+      final r = parseTagsPickerInput(
+        text: 'foo, bar,baz qux',
+        previousText: '',
+      );
+      expect(r.completed, ['foo', 'bar', 'baz', 'qux']);
+      expect(r.remainder, '');
+    });
+
+    test('parser is sanitize-agnostic — passes tokens through verbatim', () {
+      // Sanitization is the bloc's job (TagsPickerTagsAdded). The parser
+      // must not silently drop tokens that contain non-alphanumeric chars,
+      // otherwise the bloc never sees them and can't normalize them.
+      final r = parseTagsPickerInput(
+        text: '#foo, #bar',
+        previousText: '',
+      );
+      expect(r.completed, ['#foo', '#bar']);
+      expect(r.remainder, '');
+    });
   });
 }
