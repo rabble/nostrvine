@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:divine_video_player/divine_video_player.dart';
-import 'package:divine_video_player/src/linux/divine_video_player_linux_plugin.dart';
 import 'package:divine_video_player/src/linux/linux_video_player_backend.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter/widgets.dart';

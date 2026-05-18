@@ -435,7 +435,8 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
 
   static Future<void> _defaultVideoControllerReady(Object controller) {
     if (controller is _DisabledVideoController) return Future.value();
-    return (controller as media_kit.VideoController).waitUntilFirstFrameRendered;
+    return (controller as media_kit.VideoController)
+        .waitUntilFirstFrameRendered;
   }
 
   static Widget _defaultVideoViewBuilder(Object controller) {
