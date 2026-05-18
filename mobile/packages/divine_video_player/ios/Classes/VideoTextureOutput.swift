@@ -164,7 +164,8 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
     /// Synchronously attempts to pull a frame at `time` and push it into
     /// the Flutter texture. Returns `true` if a real `CVPixelBuffer` was
     /// delivered (which fires `onFirstFrame` on the first successful
-    /// call). Used by `safePreroll` to flip
+    /// call) and resets the output's retry/refresh bookkeeping like a
+    /// regular delivery would. Used by `safePreroll` to flip
     /// `DivineVideoPlayerInstance.firstFrameRendered` only when the
     /// texture actually has a buffer — otherwise Flutter would render
     /// the texture's initial empty state (black) until the async

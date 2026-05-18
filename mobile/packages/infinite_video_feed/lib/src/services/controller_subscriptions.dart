@@ -192,7 +192,7 @@ class ControllerSubscriptions {
     });
   }
 
-  /// Cancels all four subscriptions for [index].
+  /// Cancels every subscription for [index].
   void unsubscribe(int index) {
     unawaited(_dimensions.remove(index)?.cancel());
     unawaited(_firstFrame.remove(index)?.cancel());
