@@ -502,6 +502,22 @@ class FunnelcakeApiClient {
     int limit = 50,
     int? before,
   }) async {
+    final response = await getV2PopularVideosPage(
+      variant: variant,
+      limit: limit,
+      before: before,
+    );
+    return response.videos;
+  }
+
+  /// Fetches the v2 popular feed filtered to native Divine or classic Vine
+  /// imports, preserving the server's opaque pagination metadata.
+  Future<V2PopularVideosResponse> getV2PopularVideosPage({
+    required PopularVideosVariant variant,
+    int limit = 50,
+    String? cursor,
+    int? before,
+  }) async {
     if (!isAvailable) {
       throw const FunnelcakeNotConfiguredException();
     }
@@ -516,7 +532,9 @@ class FunnelcakeApiClient {
     } else {
       queryParams['exclude_platform'] = 'vine';
     }
-    if (before != null) {
+    if (cursor != null) {
+      queryParams['cursor'] = cursor;
+    } else if (before != null) {
       queryParams['before'] = before.toString();
     }
 
@@ -528,14 +546,20 @@ class FunnelcakeApiClient {
       final response = await _get(uri);
 
       if (response.statusCode == 200) {
-        final (:items, hasMore: _, nextCursor: _) = _unwrapListResponse(
+        final (:items, :hasMore, :nextCursor) = _unwrapListResponse(
           jsonDecode(response.body),
         );
 
-        return items
+        final videos = items
             .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
             .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
             .toList();
+
+        return V2PopularVideosResponse(
+          videos: videos,
+          nextCursor: nextCursor,
+          hasMore: hasMore,
+        );
       }
 
       throw FunnelcakeApiException(

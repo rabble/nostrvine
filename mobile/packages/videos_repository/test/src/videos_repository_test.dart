@@ -2993,6 +2993,22 @@ void main() {
         when(
           () => mockFunnelcakeClient.getBulkVideoStats(any()),
         ).thenAnswer((_) async => const BulkVideoStatsResponse(stats: {}));
+        when(
+          () => mockFunnelcakeClient.getV2PopularVideosPage(
+            variant: any(named: 'variant'),
+            limit: any(named: 'limit'),
+            cursor: any(named: 'cursor'),
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer((invocation) async {
+          final stats = await mockFunnelcakeClient.getV2PopularVideos(
+            variant:
+                invocation.namedArguments[#variant] as PopularVideosVariant,
+            limit: invocation.namedArguments[#limit] as int? ?? 25,
+            before: invocation.namedArguments[#before] as int?,
+          );
+          return V2PopularVideosResponse(videos: stats);
+        });
       });
 
       test(
@@ -3059,7 +3075,7 @@ void main() {
             'native-popular-1',
             'native-popular-2',
           ]);
-          expect(result.nextCursor, equals(1_704_067_196));
+          expect(result.nextCursor, equals('before:1704067196'));
           expect(result.hasMore, isTrue);
           verify(
             () => mockFunnelcakeClient.getV2PopularVideos(
@@ -3299,7 +3315,7 @@ void main() {
             'native-2',
           ]);
           expect(fresh.hasMore, isTrue);
-          expect(fresh.nextCursor, equals(1_704_067_198));
+          expect(fresh.nextCursor, equals('before:1704067198'));
           expect(cached.videos.map((video) => video.id), [
             'native-1',
             'native-2',
@@ -3313,6 +3329,234 @@ void main() {
               before: any(named: 'before'),
             ),
           ).called(1);
+        },
+      );
+
+      test(
+        'continues v2 popular pagination with the server cursor',
+        () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getV2PopularVideosPage(
+              variant: any(named: 'variant'),
+              limit: any(named: 'limit'),
+              cursor: any(named: 'cursor'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((invocation) async {
+            final cursor = invocation.namedArguments[#cursor] as String?;
+            expect(invocation.namedArguments[#before], isNull);
+            if (cursor == null) {
+              return V2PopularVideosResponse(
+                videos: [
+                  _createVideoStats(
+                    id: 'native-1',
+                    pubkey: 'pubkey-1',
+                    dTag: 'native-dtag-1',
+                    videoUrl: 'https://example.com/native-1.mp4',
+                  ),
+                  _createVideoStats(
+                    id: 'native-2',
+                    pubkey: 'pubkey-2',
+                    dTag: 'native-dtag-2',
+                    videoUrl: 'https://example.com/native-2.mp4',
+                    createdAt: 1_704_067_199,
+                  ),
+                ],
+                hasMore: true,
+                nextCursor: 'o:2',
+              );
+            }
+            expect(cursor, equals('o:2'));
+            return V2PopularVideosResponse(
+              videos: [
+                _createVideoStats(
+                  id: 'native-3',
+                  pubkey: 'pubkey-3',
+                  dTag: 'native-dtag-3',
+                  videoUrl: 'https://example.com/native-3.mp4',
+                  createdAt: 1_704_067_300,
+                ),
+              ],
+              hasMore: false,
+            );
+          });
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final first = await repositoryWithApi.getPopularVideosPage(
+            variant: PopularVideosVariant.native,
+            limit: 2,
+          );
+          final second = await repositoryWithApi.getPopularVideosPage(
+            variant: PopularVideosVariant.native,
+            limit: 2,
+            cursor: first.nextCursor,
+          );
+
+          expect(first.nextCursor, equals('o:2'));
+          expect(first.hasMore, isTrue);
+          expect(second.videos.map((video) => video.id), ['native-3']);
+          expect(second.hasMore, isFalse);
+          verify(
+            () => mockFunnelcakeClient.getV2PopularVideosPage(
+              variant: PopularVideosVariant.native,
+              limit: 2,
+              cursor: any(named: 'cursor'),
+              before: any(named: 'before'),
+            ),
+          ).called(2);
+        },
+      );
+
+      test(
+        'continues fallback timestamp pagination with before parameter',
+        () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getV2PopularVideosPage(
+              variant: any(named: 'variant'),
+              limit: any(named: 'limit'),
+              cursor: any(named: 'cursor'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((invocation) async {
+            final cursor = invocation.namedArguments[#cursor] as String?;
+            final before = invocation.namedArguments[#before] as int?;
+            expect(cursor, isNull);
+
+            if (before == null) {
+              return V2PopularVideosResponse(
+                videos: [
+                  _createVideoStats(
+                    id: 'native-1',
+                    pubkey: 'pubkey-1',
+                    dTag: 'native-dtag-1',
+                    videoUrl: 'https://example.com/native-1.mp4',
+                  ),
+                  _createVideoStats(
+                    id: 'native-2',
+                    pubkey: 'pubkey-2',
+                    dTag: 'native-dtag-2',
+                    videoUrl: 'https://example.com/native-2.mp4',
+                    createdAt: 1_704_067_199,
+                  ),
+                ],
+              );
+            }
+
+            expect(before, equals(1_704_067_198));
+            return V2PopularVideosResponse(
+              videos: [
+                _createVideoStats(
+                  id: 'native-3',
+                  pubkey: 'pubkey-3',
+                  dTag: 'native-dtag-3',
+                  videoUrl: 'https://example.com/native-3.mp4',
+                  createdAt: 1_704_067_198,
+                ),
+              ],
+              hasMore: false,
+            );
+          });
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final first = await repositoryWithApi.getPopularVideosPage(
+            variant: PopularVideosVariant.native,
+            limit: 2,
+          );
+          final second = await repositoryWithApi.getPopularVideosPage(
+            variant: PopularVideosVariant.native,
+            limit: 2,
+            cursor: first.nextCursor,
+          );
+
+          expect(first.nextCursor, equals('before:1704067198'));
+          expect(first.hasMore, isTrue);
+          expect(second.videos.map((video) => video.id), ['native-3']);
+          expect(second.hasMore, isFalse);
+          verify(
+            () => mockFunnelcakeClient.getV2PopularVideosPage(
+              variant: PopularVideosVariant.native,
+              limit: 2,
+              cursor: any(named: 'cursor'),
+              before: any(named: 'before'),
+            ),
+          ).called(2);
+        },
+      );
+
+      test(
+        'honors server hasMore when a v2 page is underfilled',
+        () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getV2PopularVideosPage(
+              variant: any(named: 'variant'),
+              limit: any(named: 'limit'),
+              cursor: any(named: 'cursor'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((invocation) async {
+            final cursor = invocation.namedArguments[#cursor] as String?;
+            if (cursor == null) {
+              return V2PopularVideosResponse(
+                videos: [
+                  _createVideoStats(
+                    id: 'native-1',
+                    pubkey: 'pubkey-1',
+                    dTag: 'native-dtag-1',
+                    videoUrl: 'https://example.com/native-1.mp4',
+                  ),
+                ],
+                hasMore: true,
+                nextCursor: 'o:1',
+              );
+            }
+            expect(cursor, equals('o:1'));
+            return V2PopularVideosResponse(
+              videos: [
+                _createVideoStats(
+                  id: 'native-2',
+                  pubkey: 'pubkey-2',
+                  dTag: 'native-dtag-2',
+                  videoUrl: 'https://example.com/native-2.mp4',
+                ),
+              ],
+              hasMore: false,
+            );
+          });
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repositoryWithApi.getPopularVideosPage(
+            variant: PopularVideosVariant.native,
+            limit: 2,
+          );
+
+          expect(result.videos.map((video) => video.id), [
+            'native-1',
+            'native-2',
+          ]);
+          expect(result.hasMore, isFalse);
+          verify(
+            () => mockFunnelcakeClient.getV2PopularVideosPage(
+              variant: PopularVideosVariant.native,
+              limit: 2,
+              cursor: any(named: 'cursor'),
+              before: any(named: 'before'),
+            ),
+          ).called(2);
         },
       );
     });
@@ -4237,6 +4481,22 @@ void main() {
 
         setUp(() {
           mockFunnelcakeClient = MockFunnelcakeApiClient();
+          when(
+            () => mockFunnelcakeClient.getV2PopularVideosPage(
+              variant: any(named: 'variant'),
+              limit: any(named: 'limit'),
+              cursor: any(named: 'cursor'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((invocation) async {
+            final stats = await mockFunnelcakeClient.getV2PopularVideos(
+              variant:
+                  invocation.namedArguments[#variant] as PopularVideosVariant,
+              limit: invocation.namedArguments[#limit] as int? ?? 25,
+              before: invocation.namedArguments[#before] as int?,
+            );
+            return V2PopularVideosResponse(videos: stats);
+          });
         });
 
         test('calls v2 API for classic popular videos', () async {

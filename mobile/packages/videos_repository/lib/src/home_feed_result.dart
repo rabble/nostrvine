@@ -25,6 +25,7 @@ class HomeFeedResult extends Equatable {
     this.listOnlyVideoIds = const {},
     this.consumedItemCount,
     this.nextCursor,
+    this.paginationCursor,
     this.hasMore,
     this.rawResponseBody,
   });
@@ -53,6 +54,9 @@ class HomeFeedResult extends Equatable {
   /// Cursor for the next page request when the feed is cursor-backed.
   final int? nextCursor;
 
+  /// Opaque cursor for feeds backed by string cursor APIs.
+  final String? paginationCursor;
+
   /// Whether the upstream feed has more data to fetch.
   final bool? hasMore;
 
@@ -70,6 +74,7 @@ class HomeFeedResult extends Equatable {
     listOnlyVideoIds,
     consumedItemCount,
     nextCursor,
+    paginationCursor,
     hasMore,
   ];
 }

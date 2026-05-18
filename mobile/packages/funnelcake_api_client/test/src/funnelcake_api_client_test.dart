@@ -2679,6 +2679,60 @@ void main() {
         expect(uri.queryParameters['exclude_platform'], equals('vine'));
         expect(uri.queryParameters.containsKey('platform'), isFalse);
       });
+
+      test(
+        'page mode sends opaque cursor and returns pagination metadata',
+        () async {
+          const envelope =
+              '''
+{
+  "data": [
+    {
+      "id": "abc123def456",
+      "pubkey": "$testPubkey",
+      "created_at": 1700000000,
+      "kind": 34236,
+      "d_tag": "test-video-1",
+      "title": "Test Video",
+      "content": "A test video description",
+      "thumbnail": "https://example.com/thumb.jpg",
+      "video_url": "https://example.com/video.mp4",
+      "reactions": 100,
+      "comments": 10,
+      "reposts": 5,
+      "engagement_score": 115
+    }
+  ],
+  "pagination": {"has_more": true, "next_cursor": "o:4"}
+}
+''';
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer((_) async => http.Response(envelope, 200));
+
+          final result = await client.getV2PopularVideosPage(
+            variant: PopularVideosVariant.native,
+            limit: 2,
+            cursor: 'o:2',
+          );
+
+          expect(result.videos, hasLength(1));
+          expect(result.nextCursor, equals('o:4'));
+          expect(result.hasMore, isTrue);
+
+          final uri =
+              verify(
+                    () => mockHttpClient.get(
+                      captureAny(),
+                      headers: any(named: 'headers'),
+                    ),
+                  ).captured.single
+                  as Uri;
+          expect(uri.path, equals('/api/v2/videos'));
+          expect(uri.queryParameters['cursor'], equals('o:2'));
+          expect(uri.queryParameters.containsKey('before'), isFalse);
+        },
+      );
     });
 
     group('getClassicVines', () {

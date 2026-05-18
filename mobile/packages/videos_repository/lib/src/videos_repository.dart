@@ -49,6 +49,20 @@ const Duration _statsFetchTimeout = Duration(seconds: 3);
 /// has already been tried.
 const Duration _routeRelayTimeout = Duration(seconds: 3);
 const String _popularCacheKey = 'popular';
+const String _popularLegacyBeforeCursorPrefix = 'before:';
+
+String _encodePopularLegacyBeforeCursor(int before) =>
+    '$_popularLegacyBeforeCursorPrefix$before';
+
+int? _decodePopularLegacyBeforeCursor(String? cursor) {
+  if (cursor == null || !cursor.startsWith(_popularLegacyBeforeCursorPrefix)) {
+    return null;
+  }
+
+  return int.tryParse(
+    cursor.substring(_popularLegacyBeforeCursorPrefix.length),
+  );
+}
 
 /// {@template videos_repository}
 /// Repository for video operations with Nostr.
@@ -695,16 +709,21 @@ class VideosRepository {
     required PopularVideosVariant variant,
     int limit = _defaultLimit,
     int? until,
+    String? cursor,
     bool skipCache = false,
   }) async {
     final cacheKey = 'popular:v2:${variant.name}';
-    if (!skipCache && until == null) {
+    if (!skipCache && until == null && cursor == null) {
       final cached = _inMemoryFeedCache?.get(cacheKey);
       if (cached != null) {
         return PopularVideosPage(
           videos: cached.videos,
           hasMore: cached.hasMore ?? (cached.videos.length >= limit),
-          nextCursor: cached.nextCursor,
+          nextCursor:
+              cached.paginationCursor ??
+              (cached.nextCursor == null
+                  ? null
+                  : _encodePopularLegacyBeforeCursor(cached.nextCursor!)),
         );
       }
     }
@@ -714,27 +733,32 @@ class VideosRepository {
     }
 
     try {
-      var cursor = until;
+      final legacyBeforeCursor = _decodePopularLegacyBeforeCursor(cursor);
+      var pageCursor = legacyBeforeCursor == null ? cursor : null;
+      var before = legacyBeforeCursor ?? (cursor == null ? until : null);
       final visible = <VideoEvent>[];
       final seenIds = <String>{};
+      String? nextPageCursor;
 
       while (visible.length < limit) {
-        final stats = await _funnelcakeApiClient.getV2PopularVideos(
+        final response = await _funnelcakeApiClient.getV2PopularVideosPage(
           variant: variant,
           limit: limit,
-          before: cursor,
+          cursor: pageCursor,
+          before: before,
         );
+        final stats = response.videos;
         if (stats.isEmpty) {
           final page = PopularVideosPage(
             videos: visible,
             hasMore: false,
           );
-          if (!skipCache && until == null) {
+          if (!skipCache && until == null && cursor == null) {
             _inMemoryFeedCache?.set(
               cacheKey,
               HomeFeedResult(
                 videos: page.videos,
-                nextCursor: page.nextCursor,
+                paginationCursor: page.nextCursor,
                 hasMore: page.hasMore,
               ),
             );
@@ -751,20 +775,31 @@ class VideosRepository {
         );
         _appendUniqueVideos(visible, pageVideos, seenIds: seenIds);
 
-        final nextCursor = _cursorBeforeOldestStats(stats);
+        final fallbackBefore = _cursorBeforeOldestStats(stats);
+        final fallbackCursor = fallbackBefore == null
+            ? null
+            : _encodePopularLegacyBeforeCursor(fallbackBefore);
+        nextPageCursor = response.nextCursor ?? fallbackCursor;
+        final serverHasMore = response.hasMore;
         final sourceExhausted =
-            stats.length < limit || nextCursor == null || nextCursor == cursor;
+            serverHasMore == false ||
+            (serverHasMore == null && stats.length < limit) ||
+            nextPageCursor == null ||
+            (pageCursor != null && nextPageCursor == pageCursor) ||
+            (pageCursor == null &&
+                before != null &&
+                nextPageCursor == _encodePopularLegacyBeforeCursor(before));
         if (sourceExhausted) {
           final page = PopularVideosPage(
             videos: visible.take(limit).toList(),
             hasMore: false,
           );
-          if (!skipCache && until == null) {
+          if (!skipCache && until == null && cursor == null) {
             _inMemoryFeedCache?.set(
               cacheKey,
               HomeFeedResult(
                 videos: page.videos,
-                nextCursor: page.nextCursor,
+                paginationCursor: page.nextCursor,
                 hasMore: page.hasMore,
               ),
             );
@@ -772,20 +807,21 @@ class VideosRepository {
           return page;
         }
 
-        cursor = nextCursor;
+        pageCursor = response.nextCursor;
+        before = response.nextCursor == null ? fallbackBefore : null;
       }
 
       final page = PopularVideosPage(
         videos: visible.take(limit).toList(),
         hasMore: true,
-        nextCursor: cursor,
+        nextCursor: nextPageCursor,
       );
-      if (!skipCache && until == null) {
+      if (!skipCache && until == null && cursor == null) {
         _inMemoryFeedCache?.set(
           cacheKey,
           HomeFeedResult(
             videos: page.videos,
-            nextCursor: page.nextCursor,
+            paginationCursor: page.nextCursor,
             hasMore: page.hasMore,
           ),
         );

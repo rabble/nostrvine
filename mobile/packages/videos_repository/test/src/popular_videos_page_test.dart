@@ -19,12 +19,12 @@ void main() {
       final page = PopularVideosPage(
         videos: [video],
         hasMore: true,
-        nextCursor: 28,
+        nextCursor: 'o:28',
       );
 
       expect(page.videos, [video]);
       expect(page.hasMore, isTrue);
-      expect(page.nextCursor, 28);
+      expect(page.nextCursor, 'o:28');
     });
 
     test('defaults pagination metadata to null', () {
@@ -42,19 +42,19 @@ void main() {
       final page1 = PopularVideosPage(
         videos: [video],
         hasMore: true,
-        nextCursor: 2,
+        nextCursor: 'o:2',
       );
       final page2 = PopularVideosPage(
         videos: [video],
         hasMore: true,
-        nextCursor: 2,
+        nextCursor: 'o:2',
       );
 
       expect(page1, equals(page2));
       expect(page1.props, [
         [video],
         true,
-        2,
+        'o:2',
       ]);
     });
   });

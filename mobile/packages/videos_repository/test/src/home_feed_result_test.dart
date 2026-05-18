@@ -32,6 +32,7 @@ void main() {
         listOnlyVideoIds: const {'v1'},
         consumedItemCount: 5,
         nextCursor: 1234,
+        paginationCursor: 'o:2',
         hasMore: true,
       );
 
@@ -40,6 +41,7 @@ void main() {
       expect(result.listOnlyVideoIds, contains('v1'));
       expect(result.consumedItemCount, 5);
       expect(result.nextCursor, 1234);
+      expect(result.paginationCursor, 'o:2');
       expect(result.hasMore, isTrue);
     });
 
@@ -140,6 +142,15 @@ void main() {
       expect(result1, isNot(equals(result2)));
     });
 
+    test('inequality when paginationCursor differs', () {
+      final video = createVideo(id: 'v1');
+
+      final result1 = HomeFeedResult(videos: [video], paginationCursor: 'o:1');
+      final result2 = HomeFeedResult(videos: [video], paginationCursor: 'o:2');
+
+      expect(result1, isNot(equals(result2)));
+    });
+
     test('rawResponseBody defaults to null', () {
       const result = HomeFeedResult(videos: []);
 
@@ -185,17 +196,19 @@ void main() {
         listOnlyVideoIds: listOnly,
         consumedItemCount: 7,
         nextCursor: 1234,
+        paginationCursor: 'o:2',
         hasMore: true,
         rawResponseBody: '{"videos":[]}',
       );
 
-      expect(result.props, hasLength(6));
+      expect(result.props, hasLength(7));
       expect(result.props[0], equals([video]));
       expect(result.props[1], equals(sources));
       expect(result.props[2], equals(listOnly));
       expect(result.props[3], 7);
       expect(result.props[4], 1234);
-      expect(result.props[5], isTrue);
+      expect(result.props[5], 'o:2');
+      expect(result.props[6], isTrue);
     });
   });
 }

@@ -34,7 +34,7 @@ final popularVideosVariantProvider = StateProvider<PopularVideosVariant>(
 /// - Content filter preferences change
 @Riverpod(keepAlive: true)
 class PopularVideosFeed extends _$PopularVideosFeed {
-  int? _nextCursor;
+  String? _nextCursor;
 
   @override
   Future<VideoFeedState> build() async {
@@ -216,7 +216,7 @@ class PopularVideosFeed extends _$PopularVideosFeed {
     final videosRepository = ref.read(videosRepositoryProvider);
     return videosRepository.getPopularVideosPage(
       limit: AppConstants.paginationBatchSize,
-      until: _nextCursor,
+      cursor: _nextCursor,
       variant: ref.read(popularVideosVariantProvider),
     );
   }

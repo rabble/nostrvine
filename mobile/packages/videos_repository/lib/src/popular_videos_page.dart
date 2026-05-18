@@ -21,7 +21,7 @@ class PopularVideosPage extends Equatable {
   final bool hasMore;
 
   /// Cursor for the next page request.
-  final int? nextCursor;
+  final String? nextCursor;
 
   @override
   List<Object?> get props => [videos, hasMore, nextCursor];

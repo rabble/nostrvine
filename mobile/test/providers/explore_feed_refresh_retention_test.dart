@@ -455,7 +455,7 @@ void main() {
     );
 
     test(
-      'popular videos load more uses timestamp cursor and filters duplicates',
+      'popular videos load more uses opaque cursor and filters duplicates',
       () async {
         final initialRawVideos = [
           _video('popular-initial'),
@@ -467,29 +467,30 @@ void main() {
           _video('popular-more'),
         ];
         const oldestInitialCursor =
-            1_742_169_600 - (AppConstants.paginationBatchSize - 1);
-        final requestedCursors = <int?>[];
+            '${1_742_169_600 - (AppConstants.paginationBatchSize - 1)}';
+        final requestedCursors = <String?>[];
 
         when(
           () => mockVideosRepository.getPopularVideosPage(
             limit: any(named: 'limit'),
             until: any(named: 'until'),
+            cursor: any(named: 'cursor'),
             variant: any(named: 'variant'),
             skipCache: any(named: 'skipCache'),
           ),
         ).thenAnswer((invocation) async {
-          final until = invocation.namedArguments[#until] as int?;
-          requestedCursors.add(until);
-          if (until == null) {
+          final cursor = invocation.namedArguments[#cursor] as String?;
+          requestedCursors.add(cursor);
+          if (cursor == null) {
             return _popularPage(
               initialRawVideos,
               nextCursor: oldestInitialCursor,
             );
           }
-          if (until == oldestInitialCursor) {
+          if (cursor == oldestInitialCursor) {
             return _popularPage(loadMoreRawVideos, hasMore: false);
           }
-          throw StateError('unexpected cursor $until');
+          throw StateError('unexpected cursor $cursor');
         });
 
         final container = ProviderContainer(
@@ -755,7 +756,7 @@ WatchingVideosResponse _watchingResponse(
 
 PopularVideosPage _popularPage(
   List<VideoEvent> videos, {
-  int? nextCursor,
+  String? nextCursor,
   bool hasMore = true,
 }) {
   return PopularVideosPage(
