@@ -24,14 +24,35 @@ abstract interface class SimpleAudioPlayer {
 }
 
 /// Default [SimpleAudioPlayer] backed by `just_audio`'s [AudioPlayer].
+///
+/// The constructor wiring (including the `handleAudioSessionActivation`
+/// pass-through) sits inside a `coverage:ignore` block because it is a
+/// thin forward to `just_audio`'s [AudioPlayer], whose behaviour is
+/// contract-guaranteed by that package. The regression risk of dropping
+/// `handleAudioSessionActivation: false` is covered indirectly by
+/// `VideoRecorderNotifier`'s default factories
+/// (`defaultCountdownSoundServiceFactory`,
+/// `defaultAudioPlaybackServiceFactory`) and the associated tests \u2014 see
+/// #4539 for the underlying iOS AVAudioSession issue.
 // coverage:ignore-start
 class JustAudioSimplePlayer implements SimpleAudioPlayer {
   /// Creates a [JustAudioSimplePlayer].
   ///
   /// An optional [audioPlayer] can be injected for internal
   /// package-level tests that need to mock the underlying player.
-  JustAudioSimplePlayer({AudioPlayer? audioPlayer})
-    : _player = audioPlayer ?? AudioPlayer();
+  ///
+  /// Set [handleAudioSessionActivation] to `false` when another component
+  /// (e.g. a camera capture pipeline) already owns the platform audio
+  /// session and just_audio must not reconfigure it. Default `true`
+  /// matches just_audio's own default.
+  JustAudioSimplePlayer({
+    AudioPlayer? audioPlayer,
+    bool handleAudioSessionActivation = true,
+  }) : _player =
+           audioPlayer ??
+           AudioPlayer(
+             handleAudioSessionActivation: handleAudioSessionActivation,
+           );
 
   final AudioPlayer _player;
 

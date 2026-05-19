@@ -27,12 +27,16 @@ import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sound_service/sound_service.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:wakelock_plus_platform_interface/wakelock_plus_platform_interface.dart';
 
 import '../mocks/mock_camera_service.dart';
 
 class _MockDraftStorageService extends Mock implements DraftStorageService {}
+
+class _MockCountdownSoundService extends Mock
+    implements CountdownSoundService {}
 
 /// Fake [WakelockPlusPlatformInterface] that records all [toggle] calls.
 class _FakeWakelockPlatform extends WakelockPlusPlatformInterface {
@@ -782,6 +786,80 @@ void main() {
 
       expect(mockCamera.currentLens, equals(DivineCameraLens.back));
     });
+  });
+
+  group('VideoRecorderNotifier - Audio Service Factories (#4539)', () {
+    // Regression guards for the factory-injection seam that keeps
+    // `handleAudioSessionActivation: false` wired through every
+    // `just_audio` usage during recording. If anyone deletes or renames
+    // the default factories, these tests fail loudly and the
+    // VideoRecorderNotifier constructor stops compiling — making the
+    // wiring impossible to silently drop.
+    test('defaultCountdownSoundServiceFactory returns a service', () {
+      final service = defaultCountdownSoundServiceFactory();
+      expect(service, isA<CountdownSoundService>());
+    });
+
+    test('defaultAudioPlaybackServiceFactory returns a service', () {
+      final service = defaultAudioPlaybackServiceFactory();
+      expect(service, isA<AudioPlaybackService>());
+    });
+
+    test(
+      'startRecording uses injected CountdownSoundService factory when '
+      'timer is enabled',
+      () async {
+        final mockCountdown = _MockCountdownSoundService();
+        when(mockCountdown.preload).thenAnswer((_) async {});
+        when(mockCountdown.playShortBeep).thenAnswer((_) async {});
+        when(mockCountdown.playLongBeepAndWait).thenAnswer((_) async {});
+        when(mockCountdown.dispose).thenAnswer((_) async {});
+
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+
+        final mockCamera = MockCameraService.create(
+          onUpdateState: ({forceCameraRebuild}) {},
+          onAutoStopped: (_) {},
+        );
+        await mockCamera.initialize();
+
+        var factoryCalls = 0;
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            videoRecorderProvider.overrideWith(
+              () => VideoRecorderNotifier(mockCamera, () {
+                factoryCalls++;
+                return mockCountdown;
+              }),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final notifier = container.read(videoRecorderProvider.notifier);
+        await notifier.initialize();
+
+        // Cycle from .off -> .three so startRecording enters the countdown
+        // branch where the CountdownSoundService factory is invoked.
+        notifier.cycleTimer();
+        expect(
+          container.read(videoRecorderProvider).timerDuration,
+          TimerDuration.three,
+        );
+
+        await notifier.startRecording();
+
+        expect(factoryCalls, equals(1));
+        verify(mockCountdown.preload).called(1);
+
+        await notifier.stopRecording();
+      },
+      // The 3-second countdown runs in real time. Bump the per-test
+      // timeout slightly so slower CI hosts don't flake.
+      timeout: const Timeout(Duration(seconds: 30)),
+    );
   });
 
   group('VideoRecorderNotifier - No Gallery Save on Recording', () {

@@ -39,6 +39,43 @@ const _kLastUsedCameraLensKey = 'camera_last_used_lens';
 @visibleForTesting
 const kLastUsedRecorderModeKey = 'camera_last_used_recorder_mode';
 
+/// Factory for creating a [CountdownSoundService].
+///
+/// Injectable so tests can verify the wiring that protects the
+/// camera-owned AVAudioSession (see [defaultCountdownSoundServiceFactory]
+/// and #4539).
+typedef CountdownSoundServiceFactory = CountdownSoundService Function();
+
+/// Factory for creating an [AudioPlaybackService].
+///
+/// Injectable so tests can verify the wiring that protects the
+/// camera-owned AVAudioSession (see [defaultAudioPlaybackServiceFactory]
+/// and #4539).
+typedef AudioPlaybackServiceFactory = AudioPlaybackService Function();
+
+/// Default [CountdownSoundService] factory used by [VideoRecorderNotifier].
+///
+/// Forwards `handleAudioSessionActivation: false` to [JustAudioSimplePlayer]
+/// so just_audio never calls `setCategory(.playback)` on the shared
+/// AVAudioSession — the camera already owns it in `.playAndRecord` mode.
+/// Interference would trigger `attachAudioToSessionIfNeeded()` on the
+/// native camera controller, restarting the audio capture pipeline and
+/// resetting VPIO/AGC. That manifested as the progressive mic-volume
+/// ramp-up reported in #4539.
+CountdownSoundService defaultCountdownSoundServiceFactory() =>
+    CountdownSoundService(
+      audioPlayerFactory: () =>
+          JustAudioSimplePlayer(handleAudioSessionActivation: false),
+    );
+
+/// Default [AudioPlaybackService] factory used by [VideoRecorderNotifier].
+///
+/// Forwards `handleAudioSessionActivation: false` for the same reason as
+/// [defaultCountdownSoundServiceFactory] — see that function for the full
+/// rationale and #4539.
+AudioPlaybackService defaultAudioPlaybackServiceFactory() =>
+    AudioPlaybackService(handleAudioSessionActivation: false);
+
 /// Notifier that wraps VideoRecorderNotifier and provides reactive updates.
 ///
 /// Manages camera lifecycle, recording state, and UI interactions including:
@@ -51,10 +88,24 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
   /// Creates a video recorder notifier.
   ///
   /// [cameraService] is an optional camera service override for testing.
-  VideoRecorderNotifier([CameraService? cameraService])
-    : _cameraServiceOverride = cameraService;
+  ///
+  /// [countdownSoundServiceFactory] and [audioPlaybackServiceFactory] are
+  /// optional overrides for testing. Defaults preserve the iOS audio-session
+  /// wiring required by #4539 — see [defaultCountdownSoundServiceFactory] and
+  /// [defaultAudioPlaybackServiceFactory].
+  VideoRecorderNotifier([
+    CameraService? cameraService,
+    CountdownSoundServiceFactory? countdownSoundServiceFactory,
+    AudioPlaybackServiceFactory? audioPlaybackServiceFactory,
+  ]) : _cameraServiceOverride = cameraService,
+       _countdownSoundServiceFactory =
+           countdownSoundServiceFactory ?? defaultCountdownSoundServiceFactory,
+       _audioPlaybackServiceFactory =
+           audioPlaybackServiceFactory ?? defaultAudioPlaybackServiceFactory;
 
   final CameraService? _cameraServiceOverride;
+  final CountdownSoundServiceFactory _countdownSoundServiceFactory;
+  final AudioPlaybackServiceFactory _audioPlaybackServiceFactory;
   late final CameraService _cameraService;
   AudioPlaybackService? _audioPlaybackService;
   CountdownSoundService? _countdownSoundService;
@@ -603,8 +654,11 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         category: .video,
       );
 
-      // Preload countdown sounds so playback is instant
-      _countdownSoundService ??= CountdownSoundService();
+      // Preload countdown sounds so playback is instant. The default
+      // factory wires `handleAudioSessionActivation: false` to protect the
+      // camera-owned AVAudioSession — see
+      // [defaultCountdownSoundServiceFactory] and #4539.
+      _countdownSoundService ??= _countdownSoundServiceFactory();
       try {
         await _countdownSoundService!.preload();
       } catch (e) {
@@ -1221,7 +1275,11 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     }
 
     try {
-      _audioPlaybackService ??= AudioPlaybackService();
+      // The default factory wires `handleAudioSessionActivation: false`
+      // so just_audio cannot reconfigure the camera-owned AVAudioSession
+      // during recording — see [defaultAudioPlaybackServiceFactory] and
+      // #4539.
+      _audioPlaybackService ??= _audioPlaybackServiceFactory();
 
       // Configure audio session for recording + playback
       await _audioPlaybackService!.configureForRecording();
