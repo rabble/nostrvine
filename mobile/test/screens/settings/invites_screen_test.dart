@@ -1,4 +1,5 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -183,7 +184,15 @@ void main() {
 
         await tester.pumpWidget(buildSubject());
         final l10n = lookupAppLocalizations(const Locale('en'));
-        await tester.tap(find.text(l10n.invitesGenerateButtonLabel));
+        final generateButton = find.widgetWithText(
+          DivineButton,
+          l10n.invitesGenerateButtonLabel,
+        );
+
+        await tester.pump();
+        await tester.ensureVisible(generateButton);
+        await tester.tap(generateButton);
+        await tester.pump();
 
         verify(() => mockCubit.generateInvite()).called(1);
       });
