@@ -6,4 +6,14 @@ part of 'video_metrics_dao.dart';
 mixin _$VideoMetricsDaoMixin on DatabaseAccessor<AppDatabase> {
   $NostrEventsTable get nostrEvents => attachedDatabase.nostrEvents;
   $VideoMetricsTable get videoMetrics => attachedDatabase.videoMetrics;
+  VideoMetricsDaoManager get managers => VideoMetricsDaoManager(this);
+}
+
+class VideoMetricsDaoManager {
+  final _$VideoMetricsDaoMixin _db;
+  VideoMetricsDaoManager(this._db);
+  $$NostrEventsTableTableManager get nostrEvents =>
+      $$NostrEventsTableTableManager(_db.attachedDatabase, _db.nostrEvents);
+  $$VideoMetricsTableTableManager get videoMetrics =>
+      $$VideoMetricsTableTableManager(_db.attachedDatabase, _db.videoMetrics);
 }

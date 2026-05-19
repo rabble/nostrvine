@@ -48,25 +48,29 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
     return column.equals(ownerPubkey) | column.isNull();
   }
 
-  /// Get all clips for a draft
+  /// Get all clips for a draft. Excludes trashed clips.
   Future<List<ClipRow>> getClipsByDraftId(String draftId) {
     final query = select(clips)
-      ..where((t) => t.draftId.equals(draftId))
+      ..where((t) => t.draftId.equals(draftId) & t.deletedAt.isNull())
       ..orderBy([(t) => OrderingTerm(expression: t.orderIndex)]);
     return query.get();
   }
 
-  /// Get a single clip by ID
+  /// Get a single clip by ID. Returns trashed clips too — callers that
+  /// only want active clips must filter on [ClipRow.deletedAt] themselves.
   Future<ClipRow?> getClipById(String id) {
     return (select(clips)..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
-  /// Get all clips sorted by recorded date (newest first).
-  /// When [ownerPubkey] is provided, returns only clips owned by that
-  /// account **plus** legacy clips with no owner.
+  /// Get all clips sorted by recorded date (newest first). Excludes
+  /// trashed clips. When [ownerPubkey] is provided, returns only clips
+  /// owned by that account **plus** legacy clips with no owner.
   Future<List<ClipRow>> getAllClips({int? limit, String? ownerPubkey}) {
     final query = select(clips)
-      ..where((t) => _ownedOrLegacy(t.ownerPubkey, ownerPubkey))
+      ..where(
+        (t) =>
+            _ownedOrLegacy(t.ownerPubkey, ownerPubkey) & t.deletedAt.isNull(),
+      )
       ..orderBy([
         (t) => OrderingTerm(expression: t.recordedAt, mode: OrderingMode.desc),
       ]);
@@ -96,10 +100,10 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
     return (delete(clips)..where((t) => t.draftId.equals(draftId))).go();
   }
 
-  /// Watch all clips for a draft (reactive stream)
+  /// Watch all clips for a draft (reactive stream). Excludes trashed clips.
   Stream<List<ClipRow>> watchClipsByDraftId(String draftId) {
     final query = select(clips)
-      ..where((t) => t.draftId.equals(draftId))
+      ..where((t) => t.draftId.equals(draftId) & t.deletedAt.isNull())
       ..orderBy([(t) => OrderingTerm(expression: t.orderIndex)]);
     return query.watch();
   }
@@ -109,10 +113,10 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
     return (select(clips)..where((t) => t.id.equals(id))).watchSingleOrNull();
   }
 
-  /// Get count of clips for a draft
+  /// Get count of clips for a draft. Excludes trashed clips.
   Future<int> getCountByDraftId(String draftId) async {
     final query = selectOnly(clips)
-      ..where(clips.draftId.equals(draftId))
+      ..where(clips.draftId.equals(draftId) & clips.deletedAt.isNull())
       ..addColumns([clips.id.count()]);
     final result = await query.getSingle();
     return result.read(clips.id.count()) ?? 0;
@@ -121,12 +125,16 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
   // -- Library clip methods (draftId IS NULL) --
 
   /// Get all library clips (no draft association), newest first.
-  /// When [ownerPubkey] is provided, returns only clips owned by that
-  /// account **plus** legacy clips with no owner.
+  /// Excludes trashed clips. When [ownerPubkey] is provided, returns
+  /// only clips owned by that account **plus** legacy clips with no
+  /// owner.
   Future<List<ClipRow>> getLibraryClips({int? limit, String? ownerPubkey}) {
     final query = select(clips)
       ..where(
-        (t) => t.draftId.isNull() & _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+        (t) =>
+            t.draftId.isNull() &
+            _ownedOrLegacy(t.ownerPubkey, ownerPubkey) &
+            t.deletedAt.isNull(),
       )
       ..orderBy([
         (t) => OrderingTerm(expression: t.recordedAt, mode: OrderingMode.desc),
@@ -137,18 +145,98 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
     return query.get();
   }
 
-  /// Watch all library clips (reactive stream).
+  /// Watch all library clips (reactive stream). Excludes trashed clips.
   /// When [ownerPubkey] is provided, returns only clips owned by that
   /// account **plus** legacy clips with no owner.
   Stream<List<ClipRow>> watchLibraryClips({String? ownerPubkey}) {
     final query = select(clips)
       ..where(
-        (t) => t.draftId.isNull() & _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+        (t) =>
+            t.draftId.isNull() &
+            _ownedOrLegacy(t.ownerPubkey, ownerPubkey) &
+            t.deletedAt.isNull(),
       )
       ..orderBy([
         (t) => OrderingTerm(expression: t.recordedAt, mode: OrderingMode.desc),
       ]);
     return query.watch();
+  }
+
+  // -- Trash methods --
+
+  /// Mark a clip as trashed at [deletedAt]. Also nulls out [draftId] when
+  /// [clearDraftId] is true, decoupling the clip from any draft session.
+  ///
+  /// Returns true if a row was updated.
+  Future<bool> softDeleteClip({
+    required String id,
+    required DateTime deletedAt,
+    bool clearDraftId = false,
+  }) async {
+    final companion = clearDraftId
+        ? ClipsCompanion(
+            deletedAt: Value(deletedAt),
+            draftId: const Value(null),
+          )
+        : ClipsCompanion(deletedAt: Value(deletedAt));
+    final rows = await (update(
+      clips,
+    )..where((t) => t.id.equals(id))).write(companion);
+    return rows > 0;
+  }
+
+  /// Restore a trashed clip by clearing its [deletedAt] marker. Leaves
+  /// [draftId] untouched; the clip lands wherever it was last attached
+  /// (library if [draftId] is NULL).
+  ///
+  /// Returns true if a row was updated.
+  Future<bool> restoreClip(String id) async {
+    final rows = await (update(clips)..where((t) => t.id.equals(id))).write(
+      const ClipsCompanion(deletedAt: Value(null)),
+    );
+    return rows > 0;
+  }
+
+  /// Get all trashed library clips, newest-deleted-first.
+  /// When [ownerPubkey] is provided, returns only clips owned by that
+  /// account **plus** legacy clips with no owner.
+  Future<List<ClipRow>> getTrashedLibraryClips({String? ownerPubkey}) {
+    final query = select(clips)
+      ..where(
+        (t) =>
+            t.draftId.isNull() &
+            _ownedOrLegacy(t.ownerPubkey, ownerPubkey) &
+            t.deletedAt.isNotNull(),
+      )
+      ..orderBy([
+        (t) => OrderingTerm(expression: t.deletedAt, mode: OrderingMode.desc),
+      ]);
+    return query.get();
+  }
+
+  /// Watch all trashed library clips (reactive stream).
+  Stream<List<ClipRow>> watchTrashedLibraryClips({String? ownerPubkey}) {
+    final query = select(clips)
+      ..where(
+        (t) =>
+            t.draftId.isNull() &
+            _ownedOrLegacy(t.ownerPubkey, ownerPubkey) &
+            t.deletedAt.isNotNull(),
+      )
+      ..orderBy([
+        (t) => OrderingTerm(expression: t.deletedAt, mode: OrderingMode.desc),
+      ]);
+    return query.watch();
+  }
+
+  /// Get trashed clips whose [deletedAt] is older than [cutoff], ready
+  /// to be hard-deleted by the purge sweep.
+  Future<List<ClipRow>> getTrashedClipsOlderThan(DateTime cutoff) {
+    final query = select(clips)
+      ..where(
+        (t) => t.deletedAt.isNotNull() & t.deletedAt.isSmallerThanValue(cutoff),
+      );
+    return query.get();
   }
 
   /// Delete all library clips (draftId IS NULL)

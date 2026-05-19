@@ -7595,6 +7595,17 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, ClipRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -7606,6 +7617,7 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, ClipRow> {
     filePath,
     thumbnailPath,
     ownerPubkey,
+    deletedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -7684,6 +7696,12 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, ClipRow> {
         ),
       );
     }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -7729,6 +7747,10 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, ClipRow> {
         DriftSqlType.string,
         data['${effectivePrefix}owner_pubkey'],
       ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
     );
   }
 
@@ -7767,6 +7789,11 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
   /// Hex public key of the account that owns this clip.
   /// NULL for legacy clips created before multi-account support.
   final String? ownerPubkey;
+
+  /// Soft-delete marker. NULL = active; non-NULL = in trash since this time.
+  /// Trashed clips are filtered out of normal queries and purged after the
+  /// retention window. See `ClipLibraryService.purgeExpiredTrash`.
+  final DateTime? deletedAt;
   const ClipRow({
     required this.id,
     this.draftId,
@@ -7777,6 +7804,7 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
     this.filePath,
     this.thumbnailPath,
     this.ownerPubkey,
+    this.deletedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -7797,6 +7825,9 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
     }
     if (!nullToAbsent || ownerPubkey != null) {
       map['owner_pubkey'] = Variable<String>(ownerPubkey);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
     }
     return map;
   }
@@ -7820,6 +7851,9 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
       ownerPubkey: ownerPubkey == null && nullToAbsent
           ? const Value.absent()
           : Value(ownerPubkey),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
     );
   }
 
@@ -7838,6 +7872,7 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
       filePath: serializer.fromJson<String?>(json['filePath']),
       thumbnailPath: serializer.fromJson<String?>(json['thumbnailPath']),
       ownerPubkey: serializer.fromJson<String?>(json['ownerPubkey']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
     );
   }
   @override
@@ -7853,6 +7888,7 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
       'filePath': serializer.toJson<String?>(filePath),
       'thumbnailPath': serializer.toJson<String?>(thumbnailPath),
       'ownerPubkey': serializer.toJson<String?>(ownerPubkey),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
     };
   }
 
@@ -7866,6 +7902,7 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
     Value<String?> filePath = const Value.absent(),
     Value<String?> thumbnailPath = const Value.absent(),
     Value<String?> ownerPubkey = const Value.absent(),
+    Value<DateTime?> deletedAt = const Value.absent(),
   }) => ClipRow(
     id: id ?? this.id,
     draftId: draftId.present ? draftId.value : this.draftId,
@@ -7878,6 +7915,7 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
         ? thumbnailPath.value
         : this.thumbnailPath,
     ownerPubkey: ownerPubkey.present ? ownerPubkey.value : this.ownerPubkey,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
   );
   ClipRow copyWithCompanion(ClipsCompanion data) {
     return ClipRow(
@@ -7900,6 +7938,7 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
       ownerPubkey: data.ownerPubkey.present
           ? data.ownerPubkey.value
           : this.ownerPubkey,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
     );
   }
 
@@ -7914,7 +7953,8 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
           ..write('data: $data, ')
           ..write('filePath: $filePath, ')
           ..write('thumbnailPath: $thumbnailPath, ')
-          ..write('ownerPubkey: $ownerPubkey')
+          ..write('ownerPubkey: $ownerPubkey, ')
+          ..write('deletedAt: $deletedAt')
           ..write(')'))
         .toString();
   }
@@ -7930,6 +7970,7 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
     filePath,
     thumbnailPath,
     ownerPubkey,
+    deletedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -7943,7 +7984,8 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
           other.data == this.data &&
           other.filePath == this.filePath &&
           other.thumbnailPath == this.thumbnailPath &&
-          other.ownerPubkey == this.ownerPubkey);
+          other.ownerPubkey == this.ownerPubkey &&
+          other.deletedAt == this.deletedAt);
 }
 
 class ClipsCompanion extends UpdateCompanion<ClipRow> {
@@ -7956,6 +7998,7 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
   final Value<String?> filePath;
   final Value<String?> thumbnailPath;
   final Value<String?> ownerPubkey;
+  final Value<DateTime?> deletedAt;
   final Value<int> rowid;
   const ClipsCompanion({
     this.id = const Value.absent(),
@@ -7967,6 +8010,7 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
     this.filePath = const Value.absent(),
     this.thumbnailPath = const Value.absent(),
     this.ownerPubkey = const Value.absent(),
+    this.deletedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ClipsCompanion.insert({
@@ -7979,6 +8023,7 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
     this.filePath = const Value.absent(),
     this.thumbnailPath = const Value.absent(),
     this.ownerPubkey = const Value.absent(),
+    this.deletedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        durationMs = Value(durationMs),
@@ -7994,6 +8039,7 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
     Expression<String>? filePath,
     Expression<String>? thumbnailPath,
     Expression<String>? ownerPubkey,
+    Expression<DateTime>? deletedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -8006,6 +8052,7 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
       if (filePath != null) 'file_path': filePath,
       if (thumbnailPath != null) 'thumbnail_path': thumbnailPath,
       if (ownerPubkey != null) 'owner_pubkey': ownerPubkey,
+      if (deletedAt != null) 'deleted_at': deletedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -8020,6 +8067,7 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
     Value<String?>? filePath,
     Value<String?>? thumbnailPath,
     Value<String?>? ownerPubkey,
+    Value<DateTime?>? deletedAt,
     Value<int>? rowid,
   }) {
     return ClipsCompanion(
@@ -8032,6 +8080,7 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
       filePath: filePath ?? this.filePath,
       thumbnailPath: thumbnailPath ?? this.thumbnailPath,
       ownerPubkey: ownerPubkey ?? this.ownerPubkey,
+      deletedAt: deletedAt ?? this.deletedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -8066,6 +8115,9 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
     if (ownerPubkey.present) {
       map['owner_pubkey'] = Variable<String>(ownerPubkey.value);
     }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -8084,6 +8136,7 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
           ..write('filePath: $filePath, ')
           ..write('thumbnailPath: $thumbnailPath, ')
           ..write('ownerPubkey: $ownerPubkey, ')
+          ..write('deletedAt: $deletedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -15074,6 +15127,7 @@ typedef $$ClipsTableCreateCompanionBuilder =
       Value<String?> filePath,
       Value<String?> thumbnailPath,
       Value<String?> ownerPubkey,
+      Value<DateTime?> deletedAt,
       Value<int> rowid,
     });
 typedef $$ClipsTableUpdateCompanionBuilder =
@@ -15087,6 +15141,7 @@ typedef $$ClipsTableUpdateCompanionBuilder =
       Value<String?> filePath,
       Value<String?> thumbnailPath,
       Value<String?> ownerPubkey,
+      Value<DateTime?> deletedAt,
       Value<int> rowid,
     });
 
@@ -15140,6 +15195,11 @@ class $$ClipsTableFilterComposer extends Composer<_$AppDatabase, $ClipsTable> {
 
   ColumnFilters<String> get ownerPubkey => $composableBuilder(
     column: $table.ownerPubkey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -15197,6 +15257,11 @@ class $$ClipsTableOrderingComposer
     column: $table.ownerPubkey,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ClipsTableAnnotationComposer
@@ -15244,6 +15309,9 @@ class $$ClipsTableAnnotationComposer
     column: $table.ownerPubkey,
     builder: (column) => column,
   );
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
 }
 
 class $$ClipsTableTableManager
@@ -15283,6 +15351,7 @@ class $$ClipsTableTableManager
                 Value<String?> filePath = const Value.absent(),
                 Value<String?> thumbnailPath = const Value.absent(),
                 Value<String?> ownerPubkey = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ClipsCompanion(
                 id: id,
@@ -15294,6 +15363,7 @@ class $$ClipsTableTableManager
                 filePath: filePath,
                 thumbnailPath: thumbnailPath,
                 ownerPubkey: ownerPubkey,
+                deletedAt: deletedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -15307,6 +15377,7 @@ class $$ClipsTableTableManager
                 Value<String?> filePath = const Value.absent(),
                 Value<String?> thumbnailPath = const Value.absent(),
                 Value<String?> ownerPubkey = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ClipsCompanion.insert(
                 id: id,
@@ -15318,6 +15389,7 @@ class $$ClipsTableTableManager
                 filePath: filePath,
                 thumbnailPath: thumbnailPath,
                 ownerPubkey: ownerPubkey,
+                deletedAt: deletedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

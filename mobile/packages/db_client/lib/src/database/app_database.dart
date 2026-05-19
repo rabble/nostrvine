@@ -274,6 +274,14 @@ class AppDatabase extends _$AppDatabase {
       ON clips (owner_pubkey)
     ''');
 
+    // Soft-delete marker for clip trash bin. NULL = active; non-NULL =
+    // trashed at that timestamp. Purged after the retention window.
+    await _addColumnIfMissing('clips', 'deleted_at', 'INTEGER');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_clip_deleted_at
+      ON clips (deleted_at)
+    ''');
+
     // Check if direct_messages table exists, create if missing
     final dmResult = await customSelect(
       "SELECT name FROM sqlite_master WHERE type='table' "
@@ -488,12 +496,8 @@ class AppDatabase extends _$AppDatabase {
     String column,
     String type,
   ) async {
-    final columns = await customSelect(
-      'PRAGMA table_info($table)',
-    ).get();
-    final exists = columns.any(
-      (row) => row.read<String>('name') == column,
-    );
+    final columns = await customSelect('PRAGMA table_info($table)').get();
+    final exists = columns.any((row) => row.read<String>('name') == column);
     if (!exists) {
       await customStatement('ALTER TABLE $table ADD COLUMN $column $type');
     }

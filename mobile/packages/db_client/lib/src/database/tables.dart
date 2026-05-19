@@ -600,6 +600,11 @@ class Clips extends Table {
   /// NULL for legacy clips created before multi-account support.
   TextColumn get ownerPubkey => text().nullable().named('owner_pubkey')();
 
+  /// Soft-delete marker. NULL = active; non-NULL = in trash since this time.
+  /// Trashed clips are filtered out of normal queries and purged after the
+  /// retention window. See `ClipLibraryService.purgeExpiredTrash`.
+  DateTimeColumn get deletedAt => dateTime().nullable().named('deleted_at')();
+
   @override
   Set<Column> get primaryKey => {id};
 
@@ -644,6 +649,11 @@ class Clips extends Table {
       'idx_clip_thumbnail_path',
       'CREATE INDEX IF NOT EXISTS idx_clip_thumbnail_path '
           'ON clips (thumbnail_path)',
+    ),
+    Index(
+      'idx_clip_deleted_at',
+      'CREATE INDEX IF NOT EXISTS idx_clip_deleted_at '
+          'ON clips (deleted_at)',
     ),
   ];
 }
