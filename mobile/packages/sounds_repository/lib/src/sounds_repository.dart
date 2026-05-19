@@ -10,6 +10,7 @@ import 'package:models/models.dart'
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:sounds_repository/src/sound_library_api_client.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Repository for managing audio events (Kind 1063) for audio reuse.
@@ -22,11 +23,21 @@ import 'package:unified_logger/unified_logger.dart';
 ///
 /// Exposes a stream for reactive updates to the sounds list.
 class SoundsRepository {
-  /// Creates a [SoundsRepository] with the given [nostrClient].
-  SoundsRepository({required NostrClient nostrClient})
-    : _nostrClient = nostrClient;
+  /// Creates a [SoundsRepository].
+  ///
+  /// [nostrClient] is required for the Nostr Kind 1063 audio-event paths
+  /// (trending / by-creator / by-id / usage counts). [soundLibraryApiClient]
+  /// is optional and only required for the external proxy-search paths
+  /// (`searchExternalLibrary` / `fetchExternalProviders`); when omitted those
+  /// methods throw [StateError].
+  SoundsRepository({
+    required NostrClient nostrClient,
+    SoundLibraryApiClient? soundLibraryApiClient,
+  }) : _nostrClient = nostrClient,
+       _soundLibraryApiClient = soundLibraryApiClient;
 
   final NostrClient _nostrClient;
+  final SoundLibraryApiClient? _soundLibraryApiClient;
 
   /// BehaviorSubject replays last value to late subscribers
   final _soundsSubject = BehaviorSubject<List<AudioEvent>>.seeded(const []);
@@ -468,5 +479,52 @@ class SoundsRepository {
   Future<void> refresh({int limit = 50}) async {
     clearCache();
     await fetchTrendingSounds(limit: limit);
+  }
+
+  /// List the proxy-backed external sound-library providers
+  /// (divine / nostr / freesound / openverse).
+  ///
+  /// Throws [StateError] if this repository was constructed without a
+  /// [SoundLibraryApiClient]. Throws [SoundLibraryApiException] on network
+  /// or parse failures.
+  Future<List<SoundLibraryProviderInfo>> fetchExternalProviders() {
+    final client = _requireSoundLibraryApiClient();
+    return client.fetchProviders();
+  }
+
+  /// Search the external sound library for [request].
+  ///
+  /// Composition logic for "which proxy provider to call" lives here, not in
+  /// the BLoC or UI: the repository owns source-selection. Currently the
+  /// proxy itself routes by `provider` query param (including `nostr` →
+  /// Funnelcake), so this method delegates straight to the client; if we
+  /// later need to fall back from `nostr` → relay on a 5xx, that fallback
+  /// belongs in this method.
+  ///
+  /// Throws [StateError] if this repository was constructed without a
+  /// [SoundLibraryApiClient]. Throws [SoundLibraryApiException] on network
+  /// or parse failures.
+  Future<SoundLibrarySearchResponse> searchExternalLibrary(
+    SoundLibrarySearchRequest request,
+  ) {
+    final client = _requireSoundLibraryApiClient();
+    return client.search(
+      query: request.query,
+      provider: request.provider,
+      page: request.page,
+      pageSize: request.pageSize,
+      licenseType: request.licenseType,
+    );
+  }
+
+  SoundLibraryApiClient _requireSoundLibraryApiClient() {
+    final client = _soundLibraryApiClient;
+    if (client == null) {
+      throw StateError(
+        'SoundsRepository was constructed without a SoundLibraryApiClient; '
+        'external sound-library methods are unavailable.',
+      );
+    }
+    return client;
   }
 }

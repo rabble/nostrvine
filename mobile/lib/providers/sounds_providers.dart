@@ -1,44 +1,14 @@
 // ABOUTME: Riverpod providers for the sounds/audio reuse feature.
 // ABOUTME: Provides reactive state management for sounds from SoundsRepository.
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' show AudioEvent;
+import 'package:openvine/config/app_config.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
-import 'package:openvine/services/sound_library_api_client.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sounds_repository/sounds_repository.dart';
 
 part 'sounds_providers.g.dart';
-
-final Provider<SoundLibraryApiClient> soundLibraryApiClientProvider =
-    Provider<SoundLibraryApiClient>((ref) {
-      return SoundLibraryApiClient();
-    });
-
-final FutureProvider<List<SoundLibraryProviderInfo>>
-soundLibraryProvidersProvider =
-    FutureProvider.autoDispose<List<SoundLibraryProviderInfo>>((ref) {
-      return ref.watch(soundLibraryApiClientProvider).fetchProviders();
-    });
-
-// The concrete family type is intentionally hidden by Riverpod's public export.
-// ignore: specify_nonobvious_property_types
-final soundLibrarySearchProvider = FutureProvider.autoDispose
-    .family<SoundLibrarySearchResponse, SoundLibrarySearchRequest>((
-      ref,
-      request,
-    ) {
-      return ref
-          .watch(soundLibraryApiClientProvider)
-          .search(
-            query: request.query,
-            provider: request.provider,
-            page: request.page,
-            pageSize: request.pageSize,
-            licenseType: request.licenseType,
-          );
-    });
 
 /// Provider for SoundsRepository singleton.
 ///
@@ -57,7 +27,12 @@ final soundLibrarySearchProvider = FutureProvider.autoDispose
 @Riverpod(keepAlive: true)
 SoundsRepository soundsRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
-  final repository = SoundsRepository(nostrClient: nostrClient);
+  final repository = SoundsRepository(
+    nostrClient: nostrClient,
+    soundLibraryApiClient: SoundLibraryApiClient(
+      baseUri: Uri.parse(AppConfig.backendBaseUrl),
+    ),
+  );
 
   // Initialize asynchronously to start fetching sounds
   repository.initialize();

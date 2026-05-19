@@ -1,15 +1,15 @@
 // ABOUTME: Tests for proxy-backed sound library search client.
-// ABOUTME: Verifies provider discovery, search query encoding, and license metadata mapping.
+// ABOUTME: Covers provider discovery, search encoding, malformed-row errors.
 
 import 'dart:convert';
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:openvine/services/sound_library_api_client.dart';
+import 'package:sounds_repository/sounds_repository.dart';
+import 'package:test/test.dart';
 
 void main() {
-  group('SoundLibraryApiClient', () {
+  group(SoundLibraryApiClient, () {
     test('loads visible providers', () async {
       final client = SoundLibraryApiClient(
         baseUri: Uri.parse('https://api.divine.video'),
@@ -134,5 +134,81 @@ void main() {
         ),
       );
     });
+
+    test(
+      'malformed row surfaces as SoundLibraryApiException, not TypeError',
+      () async {
+        final client = SoundLibraryApiClient(
+          baseUri: Uri.parse('https://api.divine.video'),
+          httpClient: MockClient((request) async {
+            return http.Response(
+              jsonEncode({
+                'results': [
+                  {
+                    // Missing required string fields: id is int.
+                    'id': 12345,
+                    'provider': null,
+                    'providerId': '502915',
+                    'previewUrl': 'https://cdn.example.com/p.mp3',
+                    'license': {
+                      'type': 'cc0',
+                      'name': 'Creative Commons 0',
+                      'url': 'https://example.com/license',
+                      'allowsCommercialUse': true,
+                      'allowsDerivatives': true,
+                      'requiresAttribution': false,
+                    },
+                  },
+                ],
+                'count': 1,
+              }),
+              200,
+            );
+          }),
+        );
+
+        await expectLater(
+          client.search(query: 'broken', provider: 'freesound'),
+          throwsA(isA<SoundLibraryApiException>()),
+        );
+      },
+    );
+
+    test(
+      'row with missing license surfaces as SoundLibraryApiException',
+      () async {
+        final client = SoundLibraryApiClient(
+          baseUri: Uri.parse('https://api.divine.video'),
+          httpClient: MockClient((request) async {
+            return http.Response(
+              jsonEncode({
+                'results': [
+                  {
+                    'id': 'freesound_1',
+                    'provider': 'freesound',
+                    'providerId': '1',
+                    'previewUrl': 'https://cdn.example.com/p.mp3',
+                    // license absent
+                  },
+                ],
+                'count': 1,
+              }),
+              200,
+            );
+          }),
+        );
+
+        await expectLater(
+          client.search(query: 'noLicense', provider: 'freesound'),
+          throwsA(
+            isA<SoundLibraryApiException>().having(
+              (e) => e.message,
+              'message',
+              contains('license'),
+            ),
+          ),
+        );
+      },
+    );
   });
 }

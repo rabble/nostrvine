@@ -8,44 +8,80 @@ import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 import 'package:models/models.dart'
     show AudioEvent, AudioExternalSource, AudioLicenseMetadata;
-import 'package:openvine/config/app_config.dart';
 
+/// Metadata describing one sound-library proxy provider exposed by the API.
 @immutable
 class SoundLibraryProviderInfo {
+  /// Creates a [SoundLibraryProviderInfo].
   const SoundLibraryProviderInfo({
     required this.id,
     required this.label,
     required this.enabled,
   });
 
+  /// Parses a provider entry from the proxy `/api/sounds/providers` response.
+  ///
+  /// Throws [SoundLibraryApiException] when `id` or `label` is missing or
+  /// non-string.
   factory SoundLibraryProviderInfo.fromJson(Map<String, dynamic> json) {
+    final id = json['id'];
+    final label = json['label'];
+    if (id is! String || label is! String) {
+      throw const SoundLibraryApiException(
+        'Provider entry missing id or label',
+      );
+    }
     return SoundLibraryProviderInfo(
-      id: json['id'] as String,
-      label: json['label'] as String,
+      id: id,
+      label: label,
       enabled: json['enabled'] as bool? ?? false,
     );
   }
 
+  /// Stable provider identifier (`divine`, `nostr`, `freesound`, `openverse`).
   final String id;
+
+  /// Human-facing label for the provider (e.g. `Community`, `Freesound`).
   final String label;
+
+  /// Whether the proxy currently has this provider routed.
   final bool enabled;
+
+  @override
+  bool operator ==(Object other) =>
+      other is SoundLibraryProviderInfo &&
+      other.id == id &&
+      other.label == label &&
+      other.enabled == enabled;
+
+  @override
+  int get hashCode => Object.hash(id, label, enabled);
 }
 
+/// A paged search response from the sound-library API.
 @immutable
 class SoundLibrarySearchResponse {
+  /// Creates a [SoundLibrarySearchResponse].
   const SoundLibrarySearchResponse({
     required this.sounds,
     required this.count,
     this.nextPage,
   });
 
+  /// Sounds returned for the requested page.
   final List<AudioEvent> sounds;
+
+  /// Total result count (across all pages) reported by the proxy.
   final int count;
+
+  /// Next page number to request, or `null` when there are no more pages.
   final int? nextPage;
 }
 
+/// A request to search the sound library across one provider.
 @immutable
 class SoundLibrarySearchRequest {
+  /// Creates a [SoundLibrarySearchRequest].
   const SoundLibrarySearchRequest({
     required this.query,
     this.provider = 'divine',
@@ -54,10 +90,19 @@ class SoundLibrarySearchRequest {
     this.licenseType,
   });
 
+  /// User-entered search query string.
   final String query;
+
+  /// Provider id to route the search to.
   final String provider;
+
+  /// 1-based page number.
   final int page;
+
+  /// Number of results per page.
   final int pageSize;
+
+  /// Optional license-type filter (e.g. `cc0`, `by`).
   final String? licenseType;
 
   @override
@@ -74,7 +119,10 @@ class SoundLibrarySearchRequest {
   int get hashCode => Object.hash(query, provider, page, pageSize, licenseType);
 }
 
+/// Exception type thrown by [SoundLibraryApiClient] on network, parse, or
+/// upstream-provider errors.
 class SoundLibraryApiException implements Exception {
+  /// Creates a [SoundLibraryApiException].
   const SoundLibraryApiException(
     this.message, {
     this.code,
@@ -82,9 +130,18 @@ class SoundLibraryApiException implements Exception {
     this.provider,
   });
 
+  /// Human-readable error message.
   final String message;
+
+  /// Stable machine-readable error code from the proxy response (e.g.
+  /// `provider_disabled`, `invalid_query`).
   final String? code;
+
+  /// HTTP status code that produced the error, or `null` if pre-request.
   final int? statusCode;
+
+  /// Provider id (`divine` / `nostr` / `freesound` / `openverse`) the request
+  /// was routed to, when applicable.
   final String? provider;
 
   @override
@@ -92,19 +149,31 @@ class SoundLibraryApiException implements Exception {
       'SoundLibraryApiException: $message (${statusCode ?? 'no status'})';
 }
 
+/// HTTP client for the proxy-backed sound library API.
+///
+/// The proxy normalizes results across providers (divine, nostr, freesound,
+/// openverse) into a single shape; this client just enforces JSON validity
+/// and wraps responses in typed models.
 class SoundLibraryApiClient {
+  /// Creates a [SoundLibraryApiClient].
+  ///
+  /// [baseUri] is the proxy origin (e.g. `https://api.divine.video`).
+  /// [httpClient] and [timeout] are overrideable for tests.
   SoundLibraryApiClient({
+    required Uri baseUri,
     http.Client? httpClient,
-    Uri? baseUri,
     Duration? timeout,
   }) : _httpClient = httpClient ?? http.Client(),
-       _baseUri = baseUri ?? Uri.parse(AppConfig.backendBaseUrl),
+       _baseUri = baseUri,
        _timeout = timeout ?? const Duration(seconds: 12);
 
   final http.Client _httpClient;
   final Uri _baseUri;
   final Duration _timeout;
 
+  /// List the providers the proxy will route to, with their enabled state.
+  ///
+  /// Throws [SoundLibraryApiException] on network / parse / non-2xx response.
   Future<List<SoundLibraryProviderInfo>> fetchProviders() async {
     final response = await _get(_uri('/api/sounds/providers'));
     final decoded = _decodeJson(response);
@@ -118,6 +187,10 @@ class SoundLibraryApiClient {
         .toList(growable: false);
   }
 
+  /// Search the sound library for [query] against [provider].
+  ///
+  /// Throws [SoundLibraryApiException] on empty query, network failure,
+  /// parse failure, or non-2xx response.
   Future<SoundLibrarySearchResponse> search({
     required String query,
     String provider = 'divine',
@@ -156,12 +229,14 @@ class SoundLibraryApiClient {
       throw const SoundLibraryApiException('Search response was invalid');
     }
 
+    final sounds = <AudioEvent>[];
+    for (final row in rawResults.whereType<Map<String, dynamic>>()) {
+      sounds.add(_soundFromJson(row));
+    }
+
     return SoundLibrarySearchResponse(
-      sounds: rawResults
-          .whereType<Map<String, dynamic>>()
-          .map(_soundFromJson)
-          .toList(growable: false),
-      count: decoded['count'] as int? ?? rawResults.length,
+      sounds: List<AudioEvent>.unmodifiable(sounds),
+      count: decoded['count'] as int? ?? sounds.length,
       nextPage: decoded['nextPage'] as int?,
     );
   }
@@ -223,16 +298,41 @@ class SoundLibraryApiClient {
     }
   }
 
+  /// Parses one sound row from the search response.
+  ///
+  /// Throws [SoundLibraryApiException] if a required string field is missing
+  /// or has the wrong type, so a single malformed row surfaces as a typed
+  /// API error instead of an opaque [TypeError] that aborts the whole map.
   AudioEvent _soundFromJson(Map<String, dynamic> json) {
-    final provider = json['provider'] as String;
-    final providerId = json['providerId'] as String;
-    final previewUrl = json['previewUrl'] as String;
-    final license = AudioLicenseMetadata.fromJson(
-      json['license'] as Map<String, dynamic>,
-    );
+    final id = _requireString(json, 'id');
+    final provider = _requireString(json, 'provider');
+    final providerId = _requireString(json, 'providerId');
+    final previewUrl = _requireString(json, 'previewUrl');
+
+    final licenseJson = json['license'];
+    if (licenseJson is! Map<String, dynamic>) {
+      throw SoundLibraryApiException(
+        'Sound row "$id" missing license',
+        provider: provider,
+      );
+    }
+
+    final AudioLicenseMetadata license;
+    try {
+      license = AudioLicenseMetadata.fromJson(licenseJson);
+      // AudioLicenseMetadata.fromJson throws raw TypeError on missing /
+      // wrong-typed fields; we surface that as our typed API exception so a
+      // single malformed row doesn't abort the whole search.
+      // ignore: avoid_catching_errors
+    } on TypeError catch (error) {
+      throw SoundLibraryApiException(
+        'Sound row "$id" has invalid license metadata: $error',
+        provider: provider,
+      );
+    }
 
     return AudioEvent(
-      id: json['id'] as String,
+      id: id,
       pubkey: AudioEvent.externalProviderMarker,
       createdAt: 0,
       url: previewUrl,
@@ -250,6 +350,16 @@ class SoundLibraryApiClient {
         license: license,
       ),
     );
+  }
+
+  String _requireString(Map<String, dynamic> json, String key) {
+    final value = json[key];
+    if (value is! String) {
+      throw SoundLibraryApiException(
+        'Sound row missing required field "$key"',
+      );
+    }
+    return value;
   }
 
   String _providerLabel(String provider) {

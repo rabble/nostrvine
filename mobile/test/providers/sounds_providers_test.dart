@@ -12,7 +12,6 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
-import 'package:openvine/services/sound_library_api_client.dart';
 import 'package:openvine/services/sound_library_service.dart';
 import 'package:sounds_repository/sounds_repository.dart';
 
@@ -22,8 +21,6 @@ class MockNostrClient extends Mock implements NostrClient {}
 class MockSoundsRepository extends Mock implements SoundsRepository {}
 
 class MockSoundLibraryService extends Mock implements SoundLibraryService {}
-
-class MockSoundLibraryApiClient extends Mock implements SoundLibraryApiClient {}
 
 /// Helper to create test AudioEvent instances
 AudioEvent createTestAudioEvent({
@@ -49,12 +46,10 @@ void main() {
   group('SoundsProviders', () {
     late MockNostrClient mockNostrClient;
     late MockSoundsRepository mockRepository;
-    late MockSoundLibraryApiClient mockSoundLibraryApiClient;
 
     setUp(() {
       mockNostrClient = MockNostrClient();
       mockRepository = MockSoundsRepository();
-      mockSoundLibraryApiClient = MockSoundLibraryApiClient();
 
       // Default stubs for NostrClient (SoundsRepository.initialize uses these)
       when(() => mockNostrClient.hasKeys).thenReturn(false);
@@ -98,99 +93,6 @@ void main() {
         // Same instance should be returned (keepAlive: true)
         expect(identical(repo1, repo2), isTrue);
       });
-    });
-
-    group('soundLibraryProvidersProvider', () {
-      test(
-        'loads provider availability from sound library API client',
-        () async {
-          const providers = [
-            SoundLibraryProviderInfo(
-              id: 'divine',
-              label: 'Divine',
-              enabled: true,
-            ),
-            SoundLibraryProviderInfo(
-              id: 'nostr',
-              label: 'Community',
-              enabled: true,
-            ),
-          ];
-          when(
-            () => mockSoundLibraryApiClient.fetchProviders(),
-          ).thenAnswer((_) async => providers);
-
-          final container = ProviderContainer(
-            overrides: [
-              soundLibraryApiClientProvider.overrideWithValue(
-                mockSoundLibraryApiClient,
-              ),
-            ],
-          );
-          addTearDown(container.dispose);
-
-          final result = await container.read(
-            soundLibraryProvidersProvider.future,
-          );
-
-          expect(result, equals(providers));
-          verify(() => mockSoundLibraryApiClient.fetchProviders()).called(1);
-        },
-      );
-    });
-
-    group('soundLibrarySearchProvider', () {
-      test(
-        'passes search request through to sound library API client',
-        () async {
-          final response = SoundLibrarySearchResponse(
-            sounds: [createTestAudioEvent(id: 'freesound_502915')],
-            count: 1,
-            nextPage: 2,
-          );
-          const request = SoundLibrarySearchRequest(
-            query: 'crowd',
-            provider: 'freesound',
-            page: 2,
-            pageSize: 25,
-            licenseType: 'cc0',
-          );
-
-          when(
-            () => mockSoundLibraryApiClient.search(
-              query: 'crowd',
-              provider: 'freesound',
-              page: 2,
-              pageSize: 25,
-              licenseType: 'cc0',
-            ),
-          ).thenAnswer((_) async => response);
-
-          final container = ProviderContainer(
-            overrides: [
-              soundLibraryApiClientProvider.overrideWithValue(
-                mockSoundLibraryApiClient,
-              ),
-            ],
-          );
-          addTearDown(container.dispose);
-
-          final result = await container.read(
-            soundLibrarySearchProvider(request).future,
-          );
-
-          expect(result, equals(response));
-          verify(
-            () => mockSoundLibraryApiClient.search(
-              query: 'crowd',
-              provider: 'freesound',
-              page: 2,
-              pageSize: 25,
-              licenseType: 'cc0',
-            ),
-          ).called(1);
-        },
-      );
     });
 
     group('selectedSoundProvider', () {
