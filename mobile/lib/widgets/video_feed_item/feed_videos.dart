@@ -25,6 +25,7 @@ import 'package:openvine/screens/feed/pooled_age_restricted_retry.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/utils/scroll_driven_opacity.dart';
+import 'package:openvine/widgets/video_feed_item/blurred_video_backdrop.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
@@ -227,6 +228,26 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
         onVideoLoopCompleted: _handleAutoAdvanceCompleted,
         shouldPortraitExpand: widget.shouldPortraitExpand,
         maxLoopDuration: VideoEditorConstants.maxDuration,
+        videoBuilder: (context, child, index, controller) {
+          if (index < 0 || index >= widget.videos.length) {
+            return const SizedBox.shrink();
+          }
+          final video = widget.videos[index];
+
+          final thumbnailUrl = video.thumbnailUrl;
+          final showBlurBackdrop =
+              !video.isPortrait &&
+              thumbnailUrl != null &&
+              thumbnailUrl.isNotEmpty;
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              if (showBlurBackdrop)
+                Positioned.fill(child: BlurredVideoBackdrop(url: thumbnailUrl)),
+              child,
+            ],
+          );
+        },
         loadingBuilder: (context, index, {required bool isSquare}) {
           if (index < 0 || index >= widget.videos.length) {
             return const SizedBox.shrink();

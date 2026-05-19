@@ -27,6 +27,7 @@ typedef ErrorBuilder =
 typedef VideoBuilder =
     Widget Function(
       BuildContext context,
+      Widget child,
       int index,
       DivineVideoPlayerController? controller,
     );

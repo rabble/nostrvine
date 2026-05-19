@@ -3,7 +3,6 @@
 // ABOUTME: Uses FullscreenFeedBloc for state management
 
 import 'dart:async';
-import 'dart:ui' as ui;
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, listEquals;
@@ -41,6 +40,7 @@ import 'package:openvine/utils/scroll_driven_opacity.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/nav_rounded_shell.dart';
 import 'package:openvine/widgets/pooled_video_metrics_tracker.dart';
+import 'package:openvine/widgets/video_feed_item/blurred_video_backdrop.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
@@ -879,28 +879,37 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                                           .nativeFeedPlayer,
                                         ),
                                       )
-                                  ? FeedVideos(
-                                      key: _feedVideosKey,
-                                      videos: state.videos,
-                                      contextTitle: widget.contextTitle,
-                                      currentIndex: state.currentIndex,
-                                      shouldPortraitExpand: false,
-                                      hasMore: state.canLoadMore,
-                                      isLoadingMore: state.isLoadingMore,
-                                      onActiveVideoChanged: (video, index) {
-                                        _resumeAutoAdvanceAfterSwipe();
-                                        FeedPerformanceTracker()
-                                            .startVideoSwipeTracking(video.id);
-                                        context.read<FullscreenFeedBloc>().add(
-                                          FullscreenFeedIndexChanged(index),
-                                        );
-                                        widget.onPageChanged?.call(index);
-                                      },
-                                      onNearEnd: () {
-                                        if (state.canLoadMore) {
-                                          _triggerLoadMore();
-                                        }
-                                      },
+                                  ? MediaQuery.removePadding(
+                                      context: context,
+                                      removeBottom: true,
+                                      child: FeedVideos(
+                                        key: _feedVideosKey,
+                                        videos: state.videos,
+                                        contextTitle: widget.contextTitle,
+                                        currentIndex: state.currentIndex,
+                                        hasMore: state.canLoadMore,
+                                        isLoadingMore: state.isLoadingMore,
+                                        onActiveVideoChanged: (video, index) {
+                                          _resumeAutoAdvanceAfterSwipe();
+                                          FeedPerformanceTracker()
+                                              .startVideoSwipeTracking(
+                                                video.id,
+                                              );
+                                          context
+                                              .read<FullscreenFeedBloc>()
+                                              .add(
+                                                FullscreenFeedIndexChanged(
+                                                  index,
+                                                ),
+                                              );
+                                          widget.onPageChanged?.call(index);
+                                        },
+                                        onNearEnd: () {
+                                          if (state.canLoadMore) {
+                                            _triggerLoadMore();
+                                          }
+                                        },
+                                      ),
                                     )
                                   : kIsWeb
                                   ? WebVideoFeed(
@@ -1406,7 +1415,7 @@ class _PooledFullscreenItemContentState
             // cover the screen entirely and would never reveal the
             // backdrop, so we skip it for them.
             if (showBlurBackdrop)
-              Positioned.fill(child: _BlurredVideoBackdrop(url: thumbnailUrl)),
+              Positioned.fill(child: BlurredVideoBackdrop(url: thumbnailUrl)),
             PooledVideoPlayer(
               index: widget.index,
               isActive: widget.isActive,
@@ -1602,47 +1611,6 @@ class _PooledFullscreenItemContentState
               },
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Heavily-blurred copy of a video's poster thumbnail, stretched to
-/// `BoxFit.cover` the entire fullscreen area. Painted behind the video
-/// in `_PooledFullscreenItemContent` so contain-fit videos (1 × 1 /
-/// landscape) sit on a diffused colour cloud derived from their own
-/// first frame instead of a flat dark surface — matches the
-/// Instagram / TikTok "blurred poster" look.
-///
-/// Cost: one image decode + one GPU blur pass via [ImageFiltered].
-/// The decoded image lives in Flutter's image cache, so revisiting
-/// the same video re-uses it. No ongoing per-frame cost once the
-/// image is rasterised.
-class _BlurredVideoBackdrop extends StatelessWidget {
-  const _BlurredVideoBackdrop({required this.url});
-
-  final String url;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRect(
-      // `ImageFiltered` applies the blur on the GPU side; `ClipRect`
-      // keeps the bleeding edge of the blur kernel from leaking
-      // outside the widget's box and over the surrounding chrome.
-      child: ImageFiltered(
-        imageFilter: ui.ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-        child: Image.network(
-          url,
-          fit: BoxFit.cover,
-          // 50 % opacity via [Image.opacity] (an animation) rather
-          // than an [Opacity] wrapper — the latter forces a full-
-          // screen save-layer, the former blends per-pixel during
-          // paint and is essentially free.
-          opacity: const AlwaysStoppedAnimation(0.5),
-          // Fall back to nothing on error — the parent
-          // [ColoredBox(VineTheme.surfaceContainerHigh)] shows through.
-          errorBuilder: (_, _, _) => const SizedBox.shrink(),
         ),
       ),
     );
