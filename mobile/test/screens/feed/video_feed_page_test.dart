@@ -930,6 +930,25 @@ void main() {
       expect(find.byType(WebVideoFeed), findsNothing);
     });
 
+    testWidgets('passes selected list name as native feed context title', (
+      tester,
+    ) async {
+      final state = VideoFeedBlocState(
+        status: VideoFeedStatus.success,
+        videos: [createTestVideoEvent()],
+        source: const VideoFeedSource.subscribedList(
+          listId: 'best-vines',
+          listName: 'Best Vines',
+        ),
+      );
+
+      await tester.pumpWidget(buildSubject(state));
+      await tester.pump();
+
+      final feedVideos = tester.widget<FeedVideos>(find.byType(FeedVideos));
+      expect(feedVideos.contextTitle, 'Best Vines');
+    });
+
     testWidgets(
       'renders PooledVideoFeed when supported but flag is off',
       (tester) async {

@@ -165,8 +165,8 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   List<VideoItem>? lastPooledVideos;
   int _currentWebIndex = 0;
 
-  /// Tracks which feed mode the current controller was built for.
-  FeedMode? controllerMode;
+  /// Tracks which feed source the current controller was built for.
+  VideoFeedSource? controllerSource;
 
   /// Feed-scoped Auto playback state. Owned by this state so tests can drive
   /// the screen without also wiring the cubit externally; exposed to children
@@ -319,7 +319,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     final pooledVideos = effectiveState.videos.toPooledVideoItems();
 
     if (controller != null &&
-        controllerMode == effectiveState.mode &&
+        controllerSource == effectiveState.source &&
         lastPooledVideos != null &&
         _samePooledVideos(lastPooledVideos!, pooledVideos)) {
       return;
@@ -346,7 +346,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
       onLog: pooledPlayerLogCallback(),
     );
 
-    controllerMode = effectiveState.mode;
+    controllerSource = effectiveState.source;
     lastPooledVideos = pooledVideos;
 
     // If an overlay is open or we're not on the home tab, deactivate
@@ -374,7 +374,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
       return;
     }
 
-    if (controllerMode != state.mode ||
+    if (controllerSource != state.source ||
         !_isAppendOnlyPooledUpdate(lastPooledVideos!, pooledVideos)) {
       handleVideoController(state);
       return;
@@ -392,7 +392,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
       controller?.dispose();
       controller = null;
     }
-    controllerMode = null;
+    controllerSource = null;
     lastPooledVideos = null;
   }
 
@@ -635,7 +635,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                         ))
                       FeedVideos(
                         videos: state.videos,
-                        contextTitle: state.mode.name,
+                        contextTitle: state.feedContextTitle,
                         isActive: _isNewFeedActive,
                         hasMore: state.hasMore,
                         isLoadingMore: state.isLoadingMore,
@@ -703,7 +703,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                                 index: index,
                                 isActive: isActive,
                                 pagePosition: _pagePosition,
-                                contextTitle: state.mode.name,
+                                contextTitle: state.feedContextTitle,
                                 listSources: listSources,
                                 onInteracted: _suppressAutoAdvance,
                               );
@@ -711,7 +711,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                       )
                     else
                       KeyedSubtree(
-                        key: ValueKey(state.mode),
+                        key: ValueKey(state.source.persistenceValue),
                         child: PooledVideoFeed(
                           key: _feedKey,
                           videos: pooledVideos,
@@ -731,7 +731,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                             if (originalEvent == null) {
                               Log.debug(
                                 'Feed item missing original event: '
-                                'mode=${state.mode.name}, index=$index, '
+                                'source=${state.source.persistenceValue}, index=$index, '
                                 'videoId=${video.id}, playbackUrl=${video.url}, '
                                 'stateVideoCount=${state.videos.length}',
                                 name: 'VideoFeedPage',
@@ -742,7 +742,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                               );
                             }
                             Log.debug(
-                              'Feed item build: mode=${state.mode.name}, index=$index, '
+                              'Feed item build: source=${state.source.persistenceValue}, index=$index, '
                               'eventId=${originalEvent.id}, isActive=$isActive, '
                               'playbackUrl=${video.url}, originalUrl=${originalEvent.videoUrl}, '
                               'thumbnailUrl=${originalEvent.thumbnailUrl}',
@@ -760,7 +760,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                               index: index,
                               isActive: isActive,
                               pagePosition: _pagePosition,
-                              contextTitle: state.mode.name,
+                              contextTitle: state.feedContextTitle,
                               listSources: listSources,
                               isAutoAdvanceActive: effectiveAutoActive,
                               onInteracted: _suppressAutoAdvance,
@@ -779,7 +779,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                             if (sourceIndex != -1) {
                               final event = state.videos[sourceIndex];
                               Log.info(
-                                '📺 Feed active video: mode=${state.mode.name}, '
+                                '📺 Feed active video: source=${state.source.persistenceValue}, '
                                 'index=$index, eventId=${event.id}, pubkey=${event.pubkey}, '
                                 'playbackUrl=${video.url}, originalUrl=${event.videoUrl}, '
                                 'thumbnailUrl=${event.thumbnailUrl}',
@@ -987,13 +987,13 @@ class _FeedEmptyTestPatternMark extends StatelessWidget {
         border: Border.all(color: VineTheme.outlineMuted),
       ),
       padding: const EdgeInsets.all(8),
-      child: Column(
+      child: const Column(
         children: [
           Expanded(
             flex: 3,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: const [
+              children: [
                 Expanded(child: ColoredBox(color: VineTheme.primary)),
                 Expanded(child: ColoredBox(color: VineTheme.warning)),
                 Expanded(child: ColoredBox(color: VineTheme.error)),
@@ -1001,11 +1001,11 @@ class _FeedEmptyTestPatternMark extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           Expanded(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: const [
+              children: [
                 Expanded(
                   flex: 2,
                   child: ColoredBox(color: VineTheme.onSurface),
