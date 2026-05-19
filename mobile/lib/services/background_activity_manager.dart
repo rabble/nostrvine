@@ -17,6 +17,12 @@ class BackgroundActivityManager {
   bool _isInitialized = false;
   final List<BackgroundAwareService> _registeredServices = [];
 
+  // Max time we wait for a single service's onAppBackgrounded to settle
+  // before logging a warning and moving on. Bounded so a misbehaving
+  // service can't extend the immediate-background phase past iOS/Android
+  // watchdog limits.
+  static const Duration _suspendGracePeriod = Duration(seconds: 1);
+
   // Timers for delayed actions
   Timer? _backgroundSuspensionTimer;
   Timer? _periodicCleanupTimer;
@@ -162,15 +168,21 @@ class BackgroundActivityManager {
       category: LogCategory.system,
     );
 
-    // Process services async with timeout to prevent watchdog kills
+    // Process services async with timeout to prevent watchdog kills.
+    // Each service gets a 1-second grace period to suspend; if it exceeds
+    // that, log a warning and move on (the service call continues to run
+    // in the background — the timeout only bounds *our* wait).
     for (final service in _registeredServices) {
       Future.microtask(() async {
         try {
-          // Give each service max 1 second to suspend
-          await Future.any([
-            Future(service.onAppBackgrounded),
-            Future.delayed(const Duration(seconds: 1)),
-          ]);
+          await Future(service.onAppBackgrounded).timeout(_suspendGracePeriod);
+        } on TimeoutException {
+          Log.warning(
+            'Service ${service.serviceName} exceeded $_suspendGracePeriod '
+            'suspend grace period',
+            name: 'BackgroundActivityManager',
+            category: LogCategory.system,
+          );
         } catch (e) {
           Log.error(
             'Error suspending service ${service.serviceName}: $e',
