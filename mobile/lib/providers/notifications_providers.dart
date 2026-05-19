@@ -309,7 +309,7 @@ NotificationServiceEnhanced notificationServiceEnhanced(Ref ref) {
         } on TimeoutException {
           Log.warning(
             'Notification service initialization skipped - no Nostr keys available after 15s',
-            name: 'AppProviders',
+            name: 'NotificationInit',
             category: LogCategory.system,
           );
           return;
@@ -318,7 +318,7 @@ NotificationServiceEnhanced notificationServiceEnhanced(Ref ref) {
         if (!nostrService.hasKeys) {
           Log.warning(
             'Notification service initialization skipped - ready completed but hasKeys is false',
-            name: 'AppProviders',
+            name: 'NotificationInit',
             category: LogCategory.system,
           );
           return;
@@ -327,7 +327,7 @@ NotificationServiceEnhanced notificationServiceEnhanced(Ref ref) {
         if (profileRepository == null) {
           Log.warning(
             'Notification service initialization skipped - ProfileRepository not ready',
-            name: 'AppProviders',
+            name: 'NotificationInit',
             category: LogCategory.system,
           );
           return;
@@ -341,7 +341,7 @@ NotificationServiceEnhanced notificationServiceEnhanced(Ref ref) {
       } catch (e) {
         Log.error(
           'Failed to initialize enhanced notification service: $e',
-          name: 'AppProviders',
+          name: 'NotificationInit',
           category: LogCategory.system,
         );
       }
@@ -364,7 +364,7 @@ NotificationServiceEnhanced notificationServiceEnhanced(Ref ref) {
       } catch (e) {
         Log.error(
           'Failed to initialize enhanced notification service: $e',
-          name: 'AppProviders',
+          name: 'NotificationInit',
           category: LogCategory.system,
         );
       }
