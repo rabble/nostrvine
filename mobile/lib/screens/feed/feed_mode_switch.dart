@@ -1,5 +1,5 @@
 // ABOUTME: Feed mode picker overlay widget for video feed
-// ABOUTME: Shows current mode (For You/New/Following) with bottom sheet selection
+// ABOUTME: Shows current source (For You/Following/lists) with bottom sheet selection
 
 import 'dart:ui';
 
@@ -54,11 +54,12 @@ class FeedModeSwitch extends StatelessWidget {
                     label: _labelForMode(FeedMode.forYou, context.l10n),
                   )
                 : BlocBuilder<VideoFeedBloc, VideoFeedBlocState>(
-                    buildWhen: (prev, curr) => prev.mode != curr.mode,
+                    buildWhen: (prev, curr) =>
+                        prev.source != curr.source ||
+                        prev.subscribedLists != curr.subscribedLists,
                     builder: (context, state) => _FeedModeContent(
-                      onTap: () =>
-                          _showFeedModeBottomSheet(context, state.mode),
-                      label: _labelForMode(state.mode, context.l10n),
+                      onTap: () => _showFeedModeBottomSheet(context, state),
+                      label: _labelForSource(state, context.l10n),
                       trailing: const FeedSettingsMenu(),
                     ),
                   ),
@@ -70,33 +71,71 @@ class FeedModeSwitch extends StatelessWidget {
 
   Future<void> _showFeedModeBottomSheet(
     BuildContext context,
-    FeedMode currentMode,
+    VideoFeedBlocState state,
   ) async {
     final l10n = context.l10n;
     final selected = await VineBottomSheetSelectionMenu.show(
       context: context,
-      selectedValue: currentMode.name,
+      selectedValue: state.source.persistenceValue,
       options: [
         VineBottomSheetSelectionOptionData(
           label: l10n.feedModeForYou,
           value: 'forYou',
         ),
         VineBottomSheetSelectionOptionData(
-          label: l10n.feedModeNew,
-          value: 'latest',
-        ),
-        VineBottomSheetSelectionOptionData(
           label: l10n.feedModeFollowing,
           value: 'following',
+        ),
+        ...state.subscribedLists.map(
+          (list) => VineBottomSheetSelectionOptionData(
+            label: list.name,
+            value: 'list:${list.id}',
+          ),
         ),
       ],
     );
 
     if (selected != null && context.mounted) {
-      final mode = FeedMode.values.firstWhere((m) => m.name == selected);
-      context.read<VideoFeedBloc>().add(VideoFeedModeChanged(mode));
+      context.read<VideoFeedBloc>().add(
+        VideoFeedSourceChanged(_sourceForSelection(selected, state)),
+      );
     }
   }
+}
+
+VideoFeedSource _sourceForSelection(String selected, VideoFeedBlocState state) {
+  if (selected == 'forYou') {
+    return const VideoFeedSource.forYou();
+  }
+  if (selected == 'following') {
+    return const VideoFeedSource.following();
+  }
+  if (selected.startsWith('list:')) {
+    final listId = selected.substring('list:'.length);
+    final list = state.subscribedLists.firstWhere((list) => list.id == listId);
+    return VideoFeedSource.subscribedList(listId: list.id, listName: list.name);
+  }
+
+  return const VideoFeedSource.forYou();
+}
+
+String _labelForSource(VideoFeedBlocState state, AppLocalizations l10n) {
+  final source = state.source;
+  return switch (source.type) {
+    VideoFeedSourceType.forYou => l10n.feedModeForYou,
+    VideoFeedSourceType.following => l10n.feedModeFollowing,
+    VideoFeedSourceType.subscribedList =>
+      _listNameForSource(state) ?? source.listName ?? source.labelFallback,
+  };
+}
+
+String? _listNameForSource(VideoFeedBlocState state) {
+  for (final list in state.subscribedLists) {
+    if (list.id == state.source.listId) {
+      return list.name;
+    }
+  }
+  return null;
 }
 
 String _labelForMode(FeedMode mode, AppLocalizations l10n) => switch (mode) {
@@ -122,24 +161,33 @@ class _FeedModeContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Semantics(
-          label: context.l10n.feedModeSemanticLabel(label),
-          button: true,
-          child: GestureDetector(
-            behavior: .opaque,
-            onTap: onTap,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              spacing: 12,
-              children: [
-                Text(
-                  label,
-                  style: VineTheme.headlineSmallFont().copyWith(
-                    shadows: VineTheme.buttonShadows,
-                  ),
+        Flexible(
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Semantics(
+              label: context.l10n.feedModeSemanticLabel(label),
+              button: true,
+              child: GestureDetector(
+                behavior: .opaque,
+                onTap: onTap,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  spacing: 12,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: VineTheme.headlineSmallFont().copyWith(
+                          shadows: VineTheme.buttonShadows,
+                        ),
+                      ),
+                    ),
+                    const _FeedModeCaret(),
+                  ],
                 ),
-                const _FeedModeCaret(),
-              ],
+              ),
             ),
           ),
         ),

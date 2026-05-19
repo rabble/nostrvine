@@ -1,5 +1,5 @@
 // ABOUTME: Widget tests for FeedModeSwitch
-// ABOUTME: Tests all feed modes display, tap interactions, and bottom sheet selection
+// ABOUTME: Tests feed source labels, tap interactions, and bottom sheet selection
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
@@ -25,7 +26,9 @@ void main() {
     });
 
     setUpAll(() {
-      registerFallbackValue(const VideoFeedModeChanged(FeedMode.latest));
+      registerFallbackValue(
+        const VideoFeedSourceChanged(VideoFeedSource.forYou()),
+      );
       l10n = lookupAppLocalizations(const Locale('en'));
     });
 
@@ -52,20 +55,19 @@ void main() {
       );
     }
 
-    group('Feed Mode Labels', () {
-      testWidgets('displays "New" label for latest mode', (tester) async {
-        when(() => mockBloc.state).thenReturn(
-          const VideoFeedBlocState(
-            status: VideoFeedStatus.success,
-            mode: FeedMode.latest,
-          ),
-        );
-        await tester.pumpWidget(createTestWidget());
+    CuratedList curatedList({required String id, required String name}) {
+      final now = DateTime(2026);
+      return CuratedList(
+        id: id,
+        name: name,
+        videoEventIds: const [],
+        createdAt: now,
+        updatedAt: now,
+      );
+    }
 
-        expect(find.text(l10n.feedModeNew), findsOneWidget);
-      });
-
-      testWidgets('displays "For You" label for the default home mode', (
+    group('Feed Source Labels', () {
+      testWidgets('displays "For You" label for the default home source', (
         tester,
       ) async {
         when(
@@ -75,6 +77,24 @@ void main() {
 
         expect(find.text(l10n.feedModeForYou), findsOneWidget);
       });
+
+      testWidgets('displays selected subscribed-list name for list source', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          VideoFeedBlocState(
+            status: VideoFeedStatus.success,
+            source: const VideoFeedSource.subscribedList(
+              listId: 'best',
+              listName: 'Best Vines',
+            ),
+            subscribedLists: [curatedList(id: 'best', name: 'Best Vines')],
+          ),
+        );
+        await tester.pumpWidget(createTestWidget());
+
+        expect(find.text('Best Vines'), findsOneWidget);
+      });
     });
 
     group('Tap Interaction', () {
@@ -82,57 +102,117 @@ void main() {
         when(() => mockBloc.state).thenReturn(
           const VideoFeedBlocState(
             status: VideoFeedStatus.success,
-            mode: FeedMode.latest,
+            source: VideoFeedSource.forYou(),
           ),
         );
         await tester.pumpWidget(createTestWidget());
 
-        await tester.tap(find.text(l10n.feedModeNew));
+        await tester.tap(find.text(l10n.feedModeForYou));
         await tester.pumpAndSettle();
 
         expect(find.byType(VineBottomSheet), findsOneWidget);
       });
 
-      testWidgets('dispatches VideoFeedModeChanged when following selected', (
+      testWidgets(
+        'dropdown shows For You, Following, and subscribed lists but not New',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            VideoFeedBlocState(
+              status: VideoFeedStatus.success,
+              source: const VideoFeedSource.forYou(),
+              subscribedLists: [curatedList(id: 'best', name: 'Best Vines')],
+            ),
+          );
+          await tester.pumpWidget(createTestWidget());
+
+          await tester.tap(find.text(l10n.feedModeForYou));
+          await tester.pumpAndSettle();
+
+          expect(find.text(l10n.feedModeForYou), findsWidgets);
+          expect(find.text(l10n.feedModeFollowing), findsOneWidget);
+          expect(find.text('Best Vines'), findsOneWidget);
+          expect(find.text(l10n.feedModeNew), findsNothing);
+        },
+      );
+
+      testWidgets('dispatches VideoFeedSourceChanged when For You selected', (
         tester,
       ) async {
         when(() => mockBloc.state).thenReturn(
           const VideoFeedBlocState(
             status: VideoFeedStatus.success,
-            mode: FeedMode.latest,
+            source: VideoFeedSource.following(),
           ),
         );
         await tester.pumpWidget(createTestWidget());
 
-        await tester.tap(find.text(l10n.feedModeNew));
+        await tester.tap(find.text(l10n.feedModeFollowing));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text(l10n.feedModeForYou));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockBloc.add(
+            const VideoFeedSourceChanged(VideoFeedSource.forYou()),
+          ),
+        ).called(1);
+      });
+
+      testWidgets('dispatches VideoFeedSourceChanged when following selected', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          const VideoFeedBlocState(
+            status: VideoFeedStatus.success,
+            source: VideoFeedSource.forYou(),
+          ),
+        );
+        await tester.pumpWidget(createTestWidget());
+
+        await tester.tap(find.text(l10n.feedModeForYou));
         await tester.pumpAndSettle();
 
         await tester.tap(find.text(l10n.feedModeFollowing));
         await tester.pumpAndSettle();
 
         verify(
-          () => mockBloc.add(const VideoFeedModeChanged(FeedMode.following)),
+          () => mockBloc.add(
+            const VideoFeedSourceChanged(VideoFeedSource.following()),
+          ),
         ).called(1);
       });
 
-      testWidgets('dispatches VideoFeedModeChanged when new selected', (
-        tester,
-      ) async {
-        when(
-          () => mockBloc.state,
-        ).thenReturn(const VideoFeedBlocState(status: VideoFeedStatus.success));
-        await tester.pumpWidget(createTestWidget());
+      testWidgets(
+        'dispatches VideoFeedSourceChanged when subscribed list selected',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            VideoFeedBlocState(
+              status: VideoFeedStatus.success,
+              source: const VideoFeedSource.forYou(),
+              subscribedLists: [curatedList(id: 'best', name: 'Best Vines')],
+            ),
+          );
+          await tester.pumpWidget(createTestWidget());
 
-        await tester.tap(find.text(l10n.feedModeForYou));
-        await tester.pumpAndSettle();
+          await tester.tap(find.text(l10n.feedModeForYou));
+          await tester.pumpAndSettle();
 
-        await tester.tap(find.text(l10n.feedModeNew));
-        await tester.pumpAndSettle();
+          await tester.tap(find.text('Best Vines'));
+          await tester.pumpAndSettle();
 
-        verify(
-          () => mockBloc.add(const VideoFeedModeChanged(FeedMode.latest)),
-        ).called(1);
-      });
+          verify(
+            () => mockBloc.add(
+              const VideoFeedSourceChanged(
+                VideoFeedSource.subscribedList(
+                  listId: 'best',
+                  listName: 'Best Vines',
+                ),
+              ),
+            ),
+          ).called(1);
+        },
+      );
 
       testWidgets('does not dispatch event when bottom sheet dismissed', (
         tester,
@@ -140,15 +220,15 @@ void main() {
         when(() => mockBloc.state).thenReturn(
           const VideoFeedBlocState(
             status: VideoFeedStatus.success,
-            mode: FeedMode.latest,
+            source: VideoFeedSource.forYou(),
           ),
         );
         await tester.pumpWidget(createTestWidget());
 
-        await tester.tap(find.text(l10n.feedModeNew));
+        await tester.tap(find.text(l10n.feedModeForYou));
         await tester.pumpAndSettle();
 
-        // Dismiss by tapping outside (on the barrier)
+        // Dismiss by tapping outside (on the barrier).
         await tester.tapAt(const Offset(10, 10));
         await tester.pumpAndSettle();
 
@@ -159,7 +239,7 @@ void main() {
     group('Tap Area Coverage', () {
       // Regression: before HitTestBehavior.opaque was set on the
       // GestureDetector, taps on the caret icon and the spacing gap
-      // between label and caret fell through — only the text label itself
+      // between label and caret fell through -- only the text label itself
       // responded.
 
       testWidgets(
@@ -168,12 +248,13 @@ void main() {
           when(() => mockBloc.state).thenReturn(
             const VideoFeedBlocState(
               status: VideoFeedStatus.success,
+              source: VideoFeedSource.forYou(),
             ),
           );
           await tester.pumpWidget(createTestWidget());
 
           // The visible caret uses VineTheme.whiteText; shadow copies use
-          // VineTheme.innerShadow — filter to the real icon only.
+          // VineTheme.innerShadow -- filter to the real icon only.
           final caretIcon = find.descendant(
             of: find.byType(FeedModeSwitch),
             matching: find.byWidgetPredicate(
@@ -200,6 +281,7 @@ void main() {
           when(() => mockBloc.state).thenReturn(
             const VideoFeedBlocState(
               status: VideoFeedStatus.success,
+              source: VideoFeedSource.forYou(),
             ),
           );
           await tester.pumpWidget(createTestWidget());
@@ -247,42 +329,42 @@ void main() {
       }
 
       testWidgets(
-        'Semantics widget carries button=true and the current mode label',
+        'Semantics widget carries button=true and the current source label',
         (tester) async {
           when(() => mockBloc.state).thenReturn(
             const VideoFeedBlocState(
               status: VideoFeedStatus.success,
-              mode: FeedMode.latest,
+              source: VideoFeedSource.forYou(),
             ),
           );
           await tester.pumpWidget(createTestWidget());
 
           final semanticsWidget = findFeedModeSemanticsWidget(
             tester,
-            l10n.feedModeNew,
+            l10n.feedModeForYou,
           );
           expect(
             semanticsWidget.properties.label,
-            equals(l10n.feedModeSemanticLabel(l10n.feedModeNew)),
+            equals(l10n.feedModeSemanticLabel(l10n.feedModeForYou)),
           );
           expect(semanticsWidget.properties.button, isTrue);
         },
       );
 
       testWidgets(
-        'semantics label updates when the feed mode changes',
+        'semantics label updates when the feed source changes',
         (tester) async {
           whenListen(
             mockBloc,
             Stream.fromIterable([
               const VideoFeedBlocState(
                 status: VideoFeedStatus.success,
-                mode: FeedMode.following,
+                source: VideoFeedSource.following(),
               ),
             ]),
             initialState: const VideoFeedBlocState(
               status: VideoFeedStatus.success,
-              mode: FeedMode.latest,
+              source: VideoFeedSource.forYou(),
             ),
           );
           await tester.pumpWidget(createTestWidget());
@@ -307,7 +389,7 @@ void main() {
           when(() => mockBloc.state).thenReturn(
             const VideoFeedBlocState(
               status: VideoFeedStatus.success,
-              mode: FeedMode.latest,
+              source: VideoFeedSource.forYou(),
             ),
           );
           await tester.pumpWidget(createTestWidget());
@@ -315,12 +397,12 @@ void main() {
           await tester.tap(
             find
                 .ancestor(
-                  of: find.text(l10n.feedModeNew),
+                  of: find.text(l10n.feedModeForYou),
                   matching: find.byWidgetPredicate(
                     (w) =>
                         w is Semantics &&
                         w.properties.label ==
-                            l10n.feedModeSemanticLabel(l10n.feedModeNew),
+                            l10n.feedModeSemanticLabel(l10n.feedModeForYou),
                   ),
                 )
                 .first,
@@ -332,15 +414,18 @@ void main() {
       );
     });
 
-    testWidgets('label gets updated when mode changes', (tester) async {
+    testWidgets('label gets updated when source changes', (tester) async {
       whenListen(
         mockBloc,
         Stream.fromIterable([
-          const VideoFeedBlocState(status: VideoFeedStatus.success),
+          const VideoFeedBlocState(
+            status: VideoFeedStatus.success,
+            source: VideoFeedSource.forYou(),
+          ),
         ]),
         initialState: const VideoFeedBlocState(
           status: VideoFeedStatus.success,
-          mode: FeedMode.latest,
+          source: VideoFeedSource.following(),
         ),
       );
 
