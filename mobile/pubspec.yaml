@@ -179,8 +179,14 @@ dependencies:
   # Collaborator Repository - Per-video pending/confirmed collaborator status
   collaborator_repository:
 
+  # Comments Repository - NIP-22 comments on Nostr events
+  comments_repository:
+
   # Content Blocklist Repository - Blocked users, mutual mutes, kind 30000 sync
   content_blocklist_repository:
+
+  # Curated List Repository - NIP-51 kind 30005 curated video lists
+  curated_list_repository:
 
   # Curation Repository - NIP-51 video curation sets and content discovery
   curation_repository:
@@ -221,6 +227,12 @@ dependencies:
 
   # People Lists Repository - NIP-51 kind 30000 follow sets
   people_lists_repository:
+
+  # Profile Repository - Kind 0 user metadata persistence and search
+  profile_repository:
+
+  # Models - Shared Nostr/data model definitions
+  models:
 
   # Videos Repository - Video feed data layer
   videos_repository:
