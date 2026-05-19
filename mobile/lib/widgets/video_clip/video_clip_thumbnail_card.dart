@@ -16,8 +16,8 @@ import 'package:openvine/utils/video_editor_utils.dart';
 class VideoClipThumbnailCard extends StatefulWidget {
   const VideoClipThumbnailCard({
     required this.clip,
-    required this.onTap,
-    required this.onLongPress,
+    this.onTap,
+    this.onLongPress,
     this.selectionIndex = -1,
     this.showSelectionIndicator = true,
     this.disabled = false,
@@ -37,11 +37,14 @@ class VideoClipThumbnailCard extends StatefulWidget {
   /// Whether to show the selection indicator in the top-right corner.
   final bool showSelectionIndicator;
 
-  /// Callback invoked when the card is tapped.
-  final VoidCallback onTap;
+  /// Callback invoked when the card is tapped. When `null`, the card
+  /// is non-interactive (e.g. in the trash bin view where restore /
+  /// delete-now actions live outside the thumbnail).
+  final VoidCallback? onTap;
 
-  /// Callback invoked when the card is long-pressed.
-  final VoidCallback onLongPress;
+  /// Callback invoked when the card is long-pressed. When `null`, no
+  /// long-press handler is registered.
+  final VoidCallback? onLongPress;
 
   /// Whether to show the duration badge at the bottom-left corner.
   final bool showDurationBadge;

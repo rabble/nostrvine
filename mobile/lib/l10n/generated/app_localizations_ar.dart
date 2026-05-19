@@ -5555,9 +5555,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'التحقق إذا كان مُنشأً بالذكاء الاصطناعي';
 
   @override
-  String get libraryDeleteConfirm => 'حذف';
-
-  @override
   String get libraryWebUnavailableHeadline =>
       'المكتبة متوفّرة في التطبيق على الجوال';
 
@@ -5599,24 +5596,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get librarySortVerticalFirst => 'العمودي أولاً';
 
   @override
-  String get libraryDeleteClipsTitle => 'حذف المقاطع';
-
-  @override
-  String libraryDeleteClipsMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '# مقاطع محددة',
-      one: 'مقطع واحد محدد',
-    );
-    return 'هل تريد حذف $_temp0؟';
-  }
-
-  @override
-  String get libraryDeleteClipsWarning =>
-      'لا يمكن التراجع. ستُزال ملفات الفيديو نهائيًا من جهازك.';
-
-  @override
   String get libraryPreparingVideo => 'جاري تجهيز الفيديو...';
 
   @override
@@ -5650,6 +5629,21 @@ class AppLocalizationsAr extends AppLocalizations {
       locale: localeName,
       other: 'تم حذف $count مقاطع',
       one: 'تم حذف مقطع واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryClipsDeletedUndoLabel => 'Undo';
+
+  @override
+  String libraryTrashAutoDeletes(int daysLeft) {
+    String _temp0 = intl.Intl.pluralLogic(
+      daysLeft,
+      locale: localeName,
+      other: 'Auto-deletes in $daysLeft days',
+      one: 'Auto-deletes tomorrow',
+      zero: 'Auto-deletes today',
     );
     return '$_temp0';
   }
@@ -5699,12 +5693,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String libraryDeleteDraftMessage(String title) {
     return 'هل تريد حذُ “$title”؟';
   }
-
-  @override
-  String get libraryDeleteClipTitle => 'حذف المقطع';
-
-  @override
-  String get libraryDeleteClipMessage => 'هل تريد حذف هذا المقطع؟';
 
   @override
   String get libraryClipSelectionTitle => 'مقاطع';

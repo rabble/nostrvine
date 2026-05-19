@@ -5491,9 +5491,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get proofmodeCheckAiGenerated => 'AI የመነጨ መሆኑን ያረጋግጡ';
 
   @override
-  String get libraryDeleteConfirm => 'ሰርዝ';
-
-  @override
   String get libraryWebUnavailableHeadline => 'ቤተ-መጽሐፍት በሞባይል መተግበሪያ ውስጥ ይገኛል።';
 
   @override
@@ -5534,24 +5531,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get librarySortVerticalFirst => 'ቁመት በመጀመሪያ';
 
   @override
-  String get libraryDeleteClipsTitle => 'ክሊፖችን ሰርዝ';
-
-  @override
-  String libraryDeleteClipsMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count የተመረጡ ክሊፖች',
-      one: '1 የተመረጠ ክሊፕ',
-    );
-    return '$_temp0 መሰረዝ እርግጠኛ ነህ?';
-  }
-
-  @override
-  String get libraryDeleteClipsWarning =>
-      'ይህ እርምጃ ሊቀለበስ አይችልም። የቪዲዮ ፋይሎቹ እስከመጨረሻው ከመሣሪያዎ ይወገዳሉ።';
-
-  @override
   String get libraryPreparingVideo => 'ቪዲዮ በማዘጋጀት ላይ...';
 
   @override
@@ -5585,6 +5564,21 @@ class AppLocalizationsAm extends AppLocalizations {
       locale: localeName,
       other: '$count ክሊፖች ተሰርዘዋል',
       one: '1 ክሊፕ ተሰርዟል',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryClipsDeletedUndoLabel => 'Undo';
+
+  @override
+  String libraryTrashAutoDeletes(int daysLeft) {
+    String _temp0 = intl.Intl.pluralLogic(
+      daysLeft,
+      locale: localeName,
+      other: 'Auto-deletes in $daysLeft days',
+      one: 'Auto-deletes tomorrow',
+      zero: 'Auto-deletes today',
     );
     return '$_temp0';
   }
@@ -5633,12 +5627,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String libraryDeleteDraftMessage(String title) {
     return 'እርግጠኛ ነህ \"$title\" መሰረዝ ትፈልጋለህ?';
   }
-
-  @override
-  String get libraryDeleteClipTitle => 'ክሊፕን ሰርዝ';
-
-  @override
-  String get libraryDeleteClipMessage => 'እርግጠኛ ነዎት ይህን ክሊፕ መሰረዝ ይፈልጋሉ?';
 
   @override
   String get libraryClipSelectionTitle => 'ክሊፖች';

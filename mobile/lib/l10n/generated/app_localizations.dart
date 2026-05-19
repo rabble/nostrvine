@@ -9908,12 +9908,6 @@ abstract class AppLocalizations {
   /// **'Check if AI-generated'**
   String get proofmodeCheckAiGenerated;
 
-  /// No description provided for @libraryDeleteConfirm.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete'**
-  String get libraryDeleteConfirm;
-
   /// No description provided for @libraryWebUnavailableHeadline.
   ///
   /// In en, this message translates to:
@@ -9992,24 +9986,6 @@ abstract class AppLocalizations {
   /// **'Vertical First'**
   String get librarySortVerticalFirst;
 
-  /// No description provided for @libraryDeleteClipsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete Clips'**
-  String get libraryDeleteClipsTitle;
-
-  /// No description provided for @libraryDeleteClipsMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Are you sure you want to delete {count, plural, one{# selected clip} other{# selected clips}}?'**
-  String libraryDeleteClipsMessage(int count);
-
-  /// No description provided for @libraryDeleteClipsWarning.
-  ///
-  /// In en, this message translates to:
-  /// **'This action cannot be undone. The video files will be permanently removed from your device.'**
-  String get libraryDeleteClipsWarning;
-
   /// No description provided for @libraryPreparingVideo.
   ///
   /// In en, this message translates to:
@@ -10045,6 +10021,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 clip deleted} other{{count} clips deleted}}'**
   String libraryClipsDeletedCount(int count);
+
+  /// Action button on the 'N clips deleted' snackbar shown after the user deletes clips from their library. Tapping it restores the clips from the trash bin.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get libraryClipsDeletedUndoLabel;
+
+  /// Subtitle on a trashed clip tile counting down to when the 30-day retention purge will permanently delete it. Replaces the recorded-date subtitle in the trash view.
+  ///
+  /// In en, this message translates to:
+  /// **'{daysLeft, plural, =0{Auto-deletes today} =1{Auto-deletes tomorrow} other{Auto-deletes in {daysLeft} days}}'**
+  String libraryTrashAutoDeletes(int daysLeft);
 
   /// No description provided for @libraryCouldNotLoadDrafts.
   ///
@@ -10129,18 +10117,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Are you sure you want to delete \"{title}\"?'**
   String libraryDeleteDraftMessage(String title);
-
-  /// No description provided for @libraryDeleteClipTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete Clip'**
-  String get libraryDeleteClipTitle;
-
-  /// No description provided for @libraryDeleteClipMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Are you sure you want to delete this clip?'**
-  String get libraryDeleteClipMessage;
 
   /// No description provided for @libraryClipSelectionTitle.
   ///

@@ -5672,9 +5672,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get proofmodeCheckAiGenerated => 'Prüfen, ob KI-generiert';
 
   @override
-  String get libraryDeleteConfirm => 'Löschen';
-
-  @override
   String get libraryWebUnavailableHeadline =>
       'Mediathek ist in der mobilen App';
 
@@ -5716,24 +5713,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get librarySortVerticalFirst => 'Vertikal zuerst';
 
   @override
-  String get libraryDeleteClipsTitle => 'Clips löschen';
-
-  @override
-  String libraryDeleteClipsMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '# ausgewählte Clips',
-      one: '# ausgewählten Clip',
-    );
-    return 'Möchtest du wirklich $_temp0 löschen?';
-  }
-
-  @override
-  String get libraryDeleteClipsWarning =>
-      'Das kann nicht rückgängig gemacht werden. Die Videodateien werden dauerhaft von deinem Gerät entfernt.';
-
-  @override
   String get libraryPreparingVideo => 'Video wird vorbereitet …';
 
   @override
@@ -5767,6 +5746,21 @@ class AppLocalizationsDe extends AppLocalizations {
       locale: localeName,
       other: '$count Clips gelöscht',
       one: '1 Clip gelöscht',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryClipsDeletedUndoLabel => 'Undo';
+
+  @override
+  String libraryTrashAutoDeletes(int daysLeft) {
+    String _temp0 = intl.Intl.pluralLogic(
+      daysLeft,
+      locale: localeName,
+      other: 'Auto-deletes in $daysLeft days',
+      one: 'Auto-deletes tomorrow',
+      zero: 'Auto-deletes today',
     );
     return '$_temp0';
   }
@@ -5819,12 +5813,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String libraryDeleteDraftMessage(String title) {
     return '„$title“ wirklich löschen?';
   }
-
-  @override
-  String get libraryDeleteClipTitle => 'Clip löschen';
-
-  @override
-  String get libraryDeleteClipMessage => 'Diesen Clip wirklich löschen?';
 
   @override
   String get libraryClipSelectionTitle => 'Clips';

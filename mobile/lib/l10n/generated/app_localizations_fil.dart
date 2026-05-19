@@ -5674,9 +5674,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get proofmodeCheckAiGenerated => 'Tingnan kung AI-generated';
 
   @override
-  String get libraryDeleteConfirm => 'Burahin';
-
-  @override
   String get libraryWebUnavailableHeadline =>
       'Available ang Library sa mobile app';
 
@@ -5719,24 +5716,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get librarySortVerticalFirst => 'Unahin ang patayo';
 
   @override
-  String get libraryDeleteClipsTitle => 'Burahin ang mga Clip';
-
-  @override
-  String libraryDeleteClipsMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '# napiling clip',
-      one: '# napiling clip',
-    );
-    return 'Sigurado ka bang gusto mong burahin ang $_temp0?';
-  }
-
-  @override
-  String get libraryDeleteClipsWarning =>
-      'Hindi na ito mababawi. Permanenteng maaalis sa device mo ang mga video file.';
-
-  @override
   String get libraryPreparingVideo => 'Hinahanda ang video...';
 
   @override
@@ -5770,6 +5749,21 @@ class AppLocalizationsFil extends AppLocalizations {
       locale: localeName,
       other: '$count clip ang nabura',
       one: '1 clip ang nabura',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryClipsDeletedUndoLabel => 'Undo';
+
+  @override
+  String libraryTrashAutoDeletes(int daysLeft) {
+    String _temp0 = intl.Intl.pluralLogic(
+      daysLeft,
+      locale: localeName,
+      other: 'Auto-deletes in $daysLeft days',
+      one: 'Auto-deletes tomorrow',
+      zero: 'Auto-deletes today',
     );
     return '$_temp0';
   }
@@ -5820,13 +5814,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String libraryDeleteDraftMessage(String title) {
     return 'Sigurado ka bang gusto mong burahin ang \"$title\"?';
   }
-
-  @override
-  String get libraryDeleteClipTitle => 'Burahin ang Clip';
-
-  @override
-  String get libraryDeleteClipMessage =>
-      'Sigurado ka bang gusto mong burahin ang clip na ito?';
 
   @override
   String get libraryClipSelectionTitle => 'Mga Clip';

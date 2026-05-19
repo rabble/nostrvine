@@ -5604,9 +5604,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get proofmodeCheckAiGenerated => 'Kontrollera om AI-genererat';
 
   @override
-  String get libraryDeleteConfirm => 'Radera';
-
-  @override
   String get libraryWebUnavailableHeadline => 'Biblioteket finns i mobilappen';
 
   @override
@@ -5647,24 +5644,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get librarySortVerticalFirst => 'Vertikala först';
 
   @override
-  String get libraryDeleteClipsTitle => 'Ta bort klipp';
-
-  @override
-  String libraryDeleteClipsMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '# valda klipp',
-      one: '# valt klipp',
-    );
-    return 'Vill du ta bort $_temp0?';
-  }
-
-  @override
-  String get libraryDeleteClipsWarning =>
-      'Det går inte att ångra. Videofilerna tas bort permanent från enheten.';
-
-  @override
   String get libraryPreparingVideo => 'Förbereder video...';
 
   @override
@@ -5698,6 +5677,21 @@ class AppLocalizationsSv extends AppLocalizations {
       locale: localeName,
       other: '$count klipp borttagna',
       one: '1 klipp borttaget',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryClipsDeletedUndoLabel => 'Undo';
+
+  @override
+  String libraryTrashAutoDeletes(int daysLeft) {
+    String _temp0 = intl.Intl.pluralLogic(
+      daysLeft,
+      locale: localeName,
+      other: 'Auto-deletes in $daysLeft days',
+      one: 'Auto-deletes tomorrow',
+      zero: 'Auto-deletes today',
     );
     return '$_temp0';
   }
@@ -5748,12 +5742,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String libraryDeleteDraftMessage(String title) {
     return 'Vill du ta bort \"$title\"?';
   }
-
-  @override
-  String get libraryDeleteClipTitle => 'Ta bort klipp';
-
-  @override
-  String get libraryDeleteClipMessage => 'Vill du ta bort det här klippet?';
 
   @override
   String get libraryClipSelectionTitle => 'Klipp';

@@ -65,7 +65,17 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
       // Hard-delete trashed clips past the 30-day retention window.
       // Best-effort, idempotent; failures here are logged inside the
       // service and must never block app startup.
-      await ref.read(clipLibraryServiceProvider).purgeExpiredTrash();
+      try {
+        await ref.read(clipLibraryServiceProvider).purgeExpiredTrash();
+      } catch (e, st) {
+        Log.error(
+          'Trash purge sweep failed: $e',
+          name: 'AppLifecycleHandler',
+          category: LogCategory.video,
+          error: e,
+          stackTrace: st,
+        );
+      }
     });
   }
 

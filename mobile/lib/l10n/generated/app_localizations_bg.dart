@@ -5656,9 +5656,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get proofmodeCheckAiGenerated => 'Провери дали е генерирано от AI';
 
   @override
-  String get libraryDeleteConfirm => 'Изтриване';
-
-  @override
   String get libraryWebUnavailableHeadline =>
       'Библиотеката е налична в мобилното приложение';
 
@@ -5701,24 +5698,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get librarySortVerticalFirst => 'Първо вертикални';
 
   @override
-  String get libraryDeleteClipsTitle => 'Изтриване на клипове';
-
-  @override
-  String libraryDeleteClipsMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '# избрани клипа',
-      one: '# избран клип',
-    );
-    return 'Сигурен ли си, че искаш да изтриеш $_temp0?';
-  }
-
-  @override
-  String get libraryDeleteClipsWarning =>
-      'Това действие не може да бъде отменено. Видео файловете ще бъдат премахнати за постоянно от твоето устройство.';
-
-  @override
   String get libraryPreparingVideo => 'Видеоклипът се подготвя...';
 
   @override
@@ -5758,6 +5737,21 @@ class AppLocalizationsBg extends AppLocalizations {
       locale: localeName,
       other: '$count клипа са изтрити',
       one: '1 клип е изтрит',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryClipsDeletedUndoLabel => 'Undo';
+
+  @override
+  String libraryTrashAutoDeletes(int daysLeft) {
+    String _temp0 = intl.Intl.pluralLogic(
+      daysLeft,
+      locale: localeName,
+      other: 'Auto-deletes in $daysLeft days',
+      one: 'Auto-deletes tomorrow',
+      zero: 'Auto-deletes today',
     );
     return '$_temp0';
   }
@@ -5809,13 +5803,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String libraryDeleteDraftMessage(String title) {
     return 'Сигурен ли си, че искаш да изтриеш „$title“?';
   }
-
-  @override
-  String get libraryDeleteClipTitle => 'Изтрий клип';
-
-  @override
-  String get libraryDeleteClipMessage =>
-      'Сигурен ли си, че искаш да изтриеш този клип?';
 
   @override
   String get libraryClipSelectionTitle => 'Клипове';

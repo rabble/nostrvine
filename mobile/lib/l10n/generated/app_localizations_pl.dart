@@ -5739,9 +5739,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get proofmodeCheckAiGenerated => 'Sprawdź, czy wygenerowane przez AI';
 
   @override
-  String get libraryDeleteConfirm => 'Usuń';
-
-  @override
   String get libraryWebUnavailableHeadline =>
       'Biblioteka jest w aplikacji mobilnej';
 
@@ -5783,26 +5780,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get librarySortVerticalFirst => 'Najpierw pionowe';
 
   @override
-  String get libraryDeleteClipsTitle => 'Usuń klipy';
-
-  @override
-  String libraryDeleteClipsMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '# wybranych klipów',
-      many: '# wybranych klipów',
-      few: '# wybrane klipy',
-      one: '# wybrany klip',
-    );
-    return 'Na pewno usunąć $_temp0?';
-  }
-
-  @override
-  String get libraryDeleteClipsWarning =>
-      'Tego nie cofniesz. Pliki wideo zostaną trwale usunięte z urządzenia.';
-
-  @override
   String get libraryPreparingVideo => 'Przygotowywanie wideo...';
 
   @override
@@ -5840,6 +5817,21 @@ class AppLocalizationsPl extends AppLocalizations {
       many: 'Usunięto $count klipów',
       few: 'Usunięto $count klipy',
       one: 'Usunięto 1 klip',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryClipsDeletedUndoLabel => 'Undo';
+
+  @override
+  String libraryTrashAutoDeletes(int daysLeft) {
+    String _temp0 = intl.Intl.pluralLogic(
+      daysLeft,
+      locale: localeName,
+      other: 'Auto-deletes in $daysLeft days',
+      one: 'Auto-deletes tomorrow',
+      zero: 'Auto-deletes today',
     );
     return '$_temp0';
   }
@@ -5892,12 +5884,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String libraryDeleteDraftMessage(String title) {
     return 'Na pewno usunąć „$title”?';
   }
-
-  @override
-  String get libraryDeleteClipTitle => 'Usuń klip';
-
-  @override
-  String get libraryDeleteClipMessage => 'Na pewno usunąć ten klip?';
 
   @override
   String get libraryClipSelectionTitle => 'Klify';

@@ -5653,9 +5653,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get proofmodeCheckAiGenerated => 'Verificar si fue generado por IA';
 
   @override
-  String get libraryDeleteConfirm => 'Eliminar';
-
-  @override
   String get libraryWebUnavailableHeadline =>
       'La biblioteca está en la app móvil';
 
@@ -5698,24 +5695,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get librarySortVerticalFirst => 'Verticales primero';
 
   @override
-  String get libraryDeleteClipsTitle => 'Eliminar clips';
-
-  @override
-  String libraryDeleteClipsMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '# clips seleccionados',
-      one: '# clip seleccionado',
-    );
-    return '¿Seguro que quieres eliminar $_temp0?';
-  }
-
-  @override
-  String get libraryDeleteClipsWarning =>
-      'No se puede deshacer. Los archivos de video se eliminarán permanentemente de tu dispositivo.';
-
-  @override
   String get libraryPreparingVideo => 'Preparando video...';
 
   @override
@@ -5749,6 +5728,21 @@ class AppLocalizationsEs extends AppLocalizations {
       locale: localeName,
       other: 'Se eliminaron $count clips',
       one: 'Se eliminó 1 clip',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryClipsDeletedUndoLabel => 'Undo';
+
+  @override
+  String libraryTrashAutoDeletes(int daysLeft) {
+    String _temp0 = intl.Intl.pluralLogic(
+      daysLeft,
+      locale: localeName,
+      other: 'Auto-deletes in $daysLeft days',
+      one: 'Auto-deletes tomorrow',
+      zero: 'Auto-deletes today',
     );
     return '$_temp0';
   }
@@ -5801,13 +5795,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String libraryDeleteDraftMessage(String title) {
     return '¿Seguro que quieres eliminar \"$title\"?';
   }
-
-  @override
-  String get libraryDeleteClipTitle => 'Eliminar clip';
-
-  @override
-  String get libraryDeleteClipMessage =>
-      '¿Seguro que quieres eliminar este clip?';
 
   @override
   String get libraryClipSelectionTitle => 'Clips';

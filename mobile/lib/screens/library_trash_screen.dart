@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/widgets/library/empty_library_state.dart';
 import 'package:openvine/widgets/video_clip/video_clip_thumbnail_card.dart';
 
@@ -149,8 +150,6 @@ class _TrashedClipTile extends StatelessWidget {
                 child: VideoClipThumbnailCard(
                   clip: clip,
                   showSelectionIndicator: false,
-                  onTap: () {},
-                  onLongPress: () {},
                 ),
               ),
             ),
@@ -165,7 +164,7 @@ class _TrashedClipTile extends StatelessWidget {
                     style: VineTheme.titleSmallFont(),
                   ),
                   Text(
-                    _formatRecordedAt(context, clip.recordedAt),
+                    context.l10n.libraryTrashAutoDeletes(_daysUntilPurge(clip)),
                     style: VineTheme.bodyMediumFont(
                       color: VineTheme.secondaryText,
                     ),
@@ -201,8 +200,15 @@ class _TrashedClipTile extends StatelessWidget {
     );
   }
 
-  String _formatRecordedAt(BuildContext context, DateTime recordedAt) {
-    final localized = MaterialLocalizations.of(context);
-    return localized.formatMediumDate(recordedAt);
+  /// Whole days remaining until the 30-day purge sweep hard-deletes
+  /// [clip]. Returns 0 for clips already past the cutoff (the next purge
+  /// run will catch them) and for clips missing a `deletedAt` (a degraded
+  /// row state — surface as "today" rather than crashing).
+  int _daysUntilPurge(DivineVideoClip clip) {
+    final deletedAt = clip.deletedAt;
+    if (deletedAt == null) return 0;
+    final cutoff = deletedAt.add(ClipLibraryService.trashRetention);
+    final remaining = cutoff.difference(DateTime.now()).inDays;
+    return remaining < 0 ? 0 : remaining;
   }
 }

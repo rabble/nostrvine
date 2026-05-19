@@ -5586,9 +5586,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Yapay zeka ile oluşturulup oluşturulmadığını kontrol et';
 
   @override
-  String get libraryDeleteConfirm => 'Sil';
-
-  @override
   String get libraryWebUnavailableHeadline => 'Kitaplık mobil uygulamada';
 
   @override
@@ -5629,24 +5626,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get librarySortVerticalFirst => 'Önce dikey';
 
   @override
-  String get libraryDeleteClipsTitle => 'Klipleri sil';
-
-  @override
-  String libraryDeleteClipsMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '# seçili klibi',
-      one: '# seçili klibi',
-    );
-    return '$_temp0 silmek istiyor musun?';
-  }
-
-  @override
-  String get libraryDeleteClipsWarning =>
-      'Geri alınamaz. Video dosyaları cihazından kalıcı olarak silinir.';
-
-  @override
   String get libraryPreparingVideo => 'Video hazırlanıyor...';
 
   @override
@@ -5680,6 +5659,21 @@ class AppLocalizationsTr extends AppLocalizations {
       locale: localeName,
       other: '$count klip silindi',
       one: '1 klip silindi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryClipsDeletedUndoLabel => 'Undo';
+
+  @override
+  String libraryTrashAutoDeletes(int daysLeft) {
+    String _temp0 = intl.Intl.pluralLogic(
+      daysLeft,
+      locale: localeName,
+      other: 'Auto-deletes in $daysLeft days',
+      one: 'Auto-deletes tomorrow',
+      zero: 'Auto-deletes today',
     );
     return '$_temp0';
   }
@@ -5729,12 +5723,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String libraryDeleteDraftMessage(String title) {
     return '\"$title\" silinsin mi?';
   }
-
-  @override
-  String get libraryDeleteClipTitle => 'Klibi sil';
-
-  @override
-  String get libraryDeleteClipMessage => 'Bu klibi silmek istiyor musun?';
 
   @override
   String get libraryClipSelectionTitle => 'Klipler';

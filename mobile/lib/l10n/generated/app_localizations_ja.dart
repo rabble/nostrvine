@@ -5377,9 +5377,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get proofmodeCheckAiGenerated => 'AI生成かチェック';
 
   @override
-  String get libraryDeleteConfirm => '削除';
-
-  @override
   String get libraryWebUnavailableHeadline => 'ライブラリはモバイルアプリで利用できます';
 
   @override
@@ -5420,17 +5417,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get librarySortVerticalFirst => '縦長を先に';
 
   @override
-  String get libraryDeleteClipsTitle => 'クリップを削除';
-
-  @override
-  String libraryDeleteClipsMessage(int count) {
-    return '選択した$count件のクリップを削除しますか？';
-  }
-
-  @override
-  String get libraryDeleteClipsWarning => 'この操作は取り消せません。動画ファイルは端末から完全に削除されます。';
-
-  @override
   String get libraryPreparingVideo => '動画を準備しています…';
 
   @override
@@ -5463,6 +5449,21 @@ class AppLocalizationsJa extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count件のクリップを削除しました',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryClipsDeletedUndoLabel => 'Undo';
+
+  @override
+  String libraryTrashAutoDeletes(int daysLeft) {
+    String _temp0 = intl.Intl.pluralLogic(
+      daysLeft,
+      locale: localeName,
+      other: 'Auto-deletes in $daysLeft days',
+      one: 'Auto-deletes tomorrow',
+      zero: 'Auto-deletes today',
     );
     return '$_temp0';
   }
@@ -5510,12 +5511,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String libraryDeleteDraftMessage(String title) {
     return '「$title」を削除しますか？';
   }
-
-  @override
-  String get libraryDeleteClipTitle => 'クリップを削除';
-
-  @override
-  String get libraryDeleteClipMessage => 'このクリップを削除しますか？';
 
   @override
   String get libraryClipSelectionTitle => 'クリップ';

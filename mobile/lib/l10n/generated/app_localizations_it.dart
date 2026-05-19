@@ -5652,9 +5652,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get proofmodeCheckAiGenerated => 'Verifica se generato dall\'IA';
 
   @override
-  String get libraryDeleteConfirm => 'Elimina';
-
-  @override
   String get libraryWebUnavailableHeadline => 'La libreria è nell’app mobile';
 
   @override
@@ -5695,24 +5692,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get librarySortVerticalFirst => 'Prima i verticali';
 
   @override
-  String get libraryDeleteClipsTitle => 'Elimina clip';
-
-  @override
-  String libraryDeleteClipsMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '# clip selezionate',
-      one: '# clip selezionata',
-    );
-    return 'Vuoi eliminare $_temp0?';
-  }
-
-  @override
-  String get libraryDeleteClipsWarning =>
-      'Azione irreversibile. I file video verranno rimossi definitivamente dal dispositivo.';
-
-  @override
   String get libraryPreparingVideo => 'Preparazione video...';
 
   @override
@@ -5746,6 +5725,21 @@ class AppLocalizationsIt extends AppLocalizations {
       locale: localeName,
       other: '$count clip eliminati',
       one: '1 clip eliminato',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryClipsDeletedUndoLabel => 'Undo';
+
+  @override
+  String libraryTrashAutoDeletes(int daysLeft) {
+    String _temp0 = intl.Intl.pluralLogic(
+      daysLeft,
+      locale: localeName,
+      other: 'Auto-deletes in $daysLeft days',
+      one: 'Auto-deletes tomorrow',
+      zero: 'Auto-deletes today',
     );
     return '$_temp0';
   }
@@ -5796,12 +5790,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String libraryDeleteDraftMessage(String title) {
     return 'Vuoi eliminare \"$title\"?';
   }
-
-  @override
-  String get libraryDeleteClipTitle => 'Elimina clip';
-
-  @override
-  String get libraryDeleteClipMessage => 'Eliminare questa clip?';
 
   @override
   String get libraryClipSelectionTitle => 'Clip';

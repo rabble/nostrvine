@@ -151,7 +151,7 @@ void main() {
       });
 
       testWidgets(
-        'long-press → trash → confirm closes preview and dispatches delete',
+        'long-press → trash closes preview and soft-deletes the clip',
         (tester) async {
           DivineVideoPlayerController.resetIdCounterForTesting();
           final messenger =
@@ -205,10 +205,6 @@ void main() {
               (w) => w is DivineIcon && w.icon == DivineIconName.trash,
             ),
           );
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 300));
-
-          await tester.tap(find.text(en.libraryDeleteConfirm));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 

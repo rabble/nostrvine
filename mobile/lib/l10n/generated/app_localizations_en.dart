@@ -5604,9 +5604,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get proofmodeCheckAiGenerated => 'Check if AI-generated';
 
   @override
-  String get libraryDeleteConfirm => 'Delete';
-
-  @override
   String get libraryWebUnavailableHeadline =>
       'Library is available in the mobile app';
 
@@ -5648,24 +5645,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get librarySortVerticalFirst => 'Vertical First';
 
   @override
-  String get libraryDeleteClipsTitle => 'Delete Clips';
-
-  @override
-  String libraryDeleteClipsMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '# selected clips',
-      one: '# selected clip',
-    );
-    return 'Are you sure you want to delete $_temp0?';
-  }
-
-  @override
-  String get libraryDeleteClipsWarning =>
-      'This action cannot be undone. The video files will be permanently removed from your device.';
-
-  @override
   String get libraryPreparingVideo => 'Preparing video...';
 
   @override
@@ -5699,6 +5678,21 @@ class AppLocalizationsEn extends AppLocalizations {
       locale: localeName,
       other: '$count clips deleted',
       one: '1 clip deleted',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryClipsDeletedUndoLabel => 'Undo';
+
+  @override
+  String libraryTrashAutoDeletes(int daysLeft) {
+    String _temp0 = intl.Intl.pluralLogic(
+      daysLeft,
+      locale: localeName,
+      other: 'Auto-deletes in $daysLeft days',
+      one: 'Auto-deletes tomorrow',
+      zero: 'Auto-deletes today',
     );
     return '$_temp0';
   }
@@ -5749,13 +5743,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String libraryDeleteDraftMessage(String title) {
     return 'Are you sure you want to delete \"$title\"?';
   }
-
-  @override
-  String get libraryDeleteClipTitle => 'Delete Clip';
-
-  @override
-  String get libraryDeleteClipMessage =>
-      'Are you sure you want to delete this clip?';
 
   @override
   String get libraryClipSelectionTitle => 'Clips';

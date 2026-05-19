@@ -27,6 +27,7 @@ class DivineVideoClip {
     this.trimEnd = Duration.zero,
     this.volume = 1,
     this.proofManifestJson,
+    this.deletedAt,
   }) : _thumbnailTimestamp = thumbnailTimestamp,
        _originalAspectRatio = originalAspectRatio;
 
@@ -64,6 +65,11 @@ class DivineVideoClip {
 
   /// JSON-encoded ProofMode / C2PA attestation data for this individual clip.
   final String? proofManifestJson;
+
+  /// When this clip was soft-deleted to the trash bin, or `null` for
+  /// active clips. Sourced from the Drift `clips.deleted_at` column and
+  /// only populated when the clip is loaded via the trash-bin path.
+  final DateTime? deletedAt;
 
   double get durationInSeconds => duration.inMilliseconds / 1000.0;
 
@@ -112,6 +118,7 @@ class DivineVideoClip {
     double? volume,
     String? proofManifestJson,
     bool clearProofManifestJson = false,
+    DateTime? deletedAt,
   }) {
     return DivineVideoClip(
       id: id ?? this.id,
@@ -131,6 +138,7 @@ class DivineVideoClip {
       proofManifestJson: clearProofManifestJson
           ? null
           : (proofManifestJson ?? this.proofManifestJson),
+      deletedAt: deletedAt ?? this.deletedAt,
     );
   }
 

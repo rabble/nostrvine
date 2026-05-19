@@ -218,13 +218,20 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
     BuildContext context, {
     required String label,
     bool error = false,
+    String? actionLabel,
+    VoidCallback? onActionPressed,
   }) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: VineTheme.transparent,
         elevation: 0,
         behavior: SnackBarBehavior.floating,
-        content: DivineSnackbarContainer(label: label, error: error),
+        content: DivineSnackbarContainer(
+          label: label,
+          error: error,
+          actionLabel: actionLabel,
+          onActionPressed: onActionPressed,
+        ),
       ),
     );
   }
@@ -341,25 +348,10 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
     clipsBloc.add(const ClipsLibraryExitSelectionMode());
   }
 
-  Future<void> _confirmDeleteSelectedClips(
-    BuildContext context,
-    ClipsLibraryBloc clipsBloc,
-    int selectedCount,
-  ) async {
-    await VineBottomSheetPrompt.show<void>(
-      context: context,
-      sticker: .alert,
-      title: context.l10n.libraryDeleteClipsTitle,
-      subtitle: context.l10n.libraryDeleteClipsMessage(selectedCount),
-      additionalText: context.l10n.libraryDeleteClipsWarning,
-      primaryButtonText: context.l10n.libraryDeleteConfirm,
-      secondaryButtonText: context.l10n.commonCancel,
-      onPrimaryPressed: () {
-        context.pop();
-        clipsBloc.add(const ClipsLibraryDeleteSelected());
-      },
-      onSecondaryPressed: context.pop,
-    );
+  void _softDeleteSelectedClips(ClipsLibraryBloc clipsBloc) {
+    // No confirm dialog: the bloc soft-deletes to the trash bin and the
+    // snackbar listener below surfaces an Undo affordance.
+    clipsBloc.add(const ClipsLibraryDeleteSelected());
   }
 
   @override
@@ -436,10 +428,21 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
           listener: (context, state) {
             final count = state.lastDeletedCount;
             if (count == null) return;
+            final deletedIds = state.lastDeletedClipIds;
+            final messenger = ScaffoldMessenger.of(context);
 
             _showSnackBar(
               context,
               label: context.l10n.libraryClipsDeletedCount(count),
+              actionLabel: deletedIds.isEmpty
+                  ? null
+                  : context.l10n.libraryClipsDeletedUndoLabel,
+              onActionPressed: deletedIds.isEmpty
+                  ? null
+                  : () {
+                      messenger.hideCurrentSnackBar();
+                      clipsBloc.add(ClipsLibraryRestoreClips(deletedIds));
+                    },
             );
           },
         ),
@@ -503,11 +506,7 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
                           onOpenTrash: () => _openTrash(context, clipsBloc),
                           onDeleteSelectedClips:
                               clipsState.selectedClipIds.isNotEmpty
-                              ? () => _confirmDeleteSelectedClips(
-                                  context,
-                                  clipsBloc,
-                                  clipsState.selectedClipIds.length,
-                                )
+                              ? () => _softDeleteSelectedClips(clipsBloc)
                               : null,
                         ),
                       Expanded(

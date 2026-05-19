@@ -5394,9 +5394,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get proofmodeCheckAiGenerated => 'AI 생성 여부 확인';
 
   @override
-  String get libraryDeleteConfirm => '삭제';
-
-  @override
   String get libraryWebUnavailableHeadline => '라이브러리는 모바일 앱에서 이용할 수 있어요';
 
   @override
@@ -5437,23 +5434,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get librarySortVerticalFirst => '세로형 먼저';
 
   @override
-  String get libraryDeleteClipsTitle => '클립 삭제';
-
-  @override
-  String libraryDeleteClipsMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count개',
-      one: '1개',
-    );
-    return '선택한 클립 $_temp0를 삭제할까요?';
-  }
-
-  @override
-  String get libraryDeleteClipsWarning => '되돌릴 수 없어요. 동영상 파일이 기기에서 삭제됩니다.';
-
-  @override
   String get libraryPreparingVideo => '동영상 준비 중...';
 
   @override
@@ -5487,6 +5467,21 @@ class AppLocalizationsKo extends AppLocalizations {
       locale: localeName,
       other: '클립 $count개 삭제됨',
       one: '클립 1개 삭제됨',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryClipsDeletedUndoLabel => 'Undo';
+
+  @override
+  String libraryTrashAutoDeletes(int daysLeft) {
+    String _temp0 = intl.Intl.pluralLogic(
+      daysLeft,
+      locale: localeName,
+      other: 'Auto-deletes in $daysLeft days',
+      one: 'Auto-deletes tomorrow',
+      zero: 'Auto-deletes today',
     );
     return '$_temp0';
   }
@@ -5534,12 +5529,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String libraryDeleteDraftMessage(String title) {
     return '“$title”을(를) 삭제할까요?';
   }
-
-  @override
-  String get libraryDeleteClipTitle => '클립 삭제';
-
-  @override
-  String get libraryDeleteClipMessage => '이 클립을 삭제할까요?';
 
   @override
   String get libraryClipSelectionTitle => '클립';

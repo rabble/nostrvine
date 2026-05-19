@@ -5627,9 +5627,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get proofmodeCheckAiGenerated => 'Controleren of AI-gegenereerd';
 
   @override
-  String get libraryDeleteConfirm => 'Verwijderen';
-
-  @override
   String get libraryWebUnavailableHeadline =>
       'Bibliotheek is beschikbaar in de mobiele app';
 
@@ -5672,24 +5669,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get librarySortVerticalFirst => 'Verticaal eerst';
 
   @override
-  String get libraryDeleteClipsTitle => 'Clips verwijderen';
-
-  @override
-  String libraryDeleteClipsMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '# geselecteerde clips',
-      one: '# geselecteerde clip',
-    );
-    return 'Weet je zeker dat je $_temp0 wilt verwijderen?';
-  }
-
-  @override
-  String get libraryDeleteClipsWarning =>
-      'Dit kan niet ongedaan worden gemaakt. De videobestanden worden permanent van je apparaat verwijderd.';
-
-  @override
   String get libraryPreparingVideo => 'Video voorbereiden...';
 
   @override
@@ -5723,6 +5702,21 @@ class AppLocalizationsNl extends AppLocalizations {
       locale: localeName,
       other: '$count clips verwijderd',
       one: '1 clip verwijderd',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryClipsDeletedUndoLabel => 'Undo';
+
+  @override
+  String libraryTrashAutoDeletes(int daysLeft) {
+    String _temp0 = intl.Intl.pluralLogic(
+      daysLeft,
+      locale: localeName,
+      other: 'Auto-deletes in $daysLeft days',
+      one: 'Auto-deletes tomorrow',
+      zero: 'Auto-deletes today',
     );
     return '$_temp0';
   }
@@ -5774,13 +5768,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String libraryDeleteDraftMessage(String title) {
     return 'Weet je zeker dat je \"$title\" wilt verwijderen?';
   }
-
-  @override
-  String get libraryDeleteClipTitle => 'Clip verwijderen';
-
-  @override
-  String get libraryDeleteClipMessage =>
-      'Weet je zeker dat je deze clip wilt verwijderen?';
 
   @override
   String get libraryClipSelectionTitle => 'Clips';

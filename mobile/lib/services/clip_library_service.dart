@@ -20,6 +20,12 @@ class ClipLibraryService {
   }) : _clipsDao = clipsDao,
        _draftsDao = draftsDao;
 
+  /// How long a soft-deleted clip stays in the trash bin before the
+  /// startup purge sweep permanently removes it. Shared between
+  /// [purgeExpiredTrash] and the trash UI countdown so the user-facing
+  /// "Auto-deletes in N days" copy stays in sync with the actual cutoff.
+  static const Duration trashRetention = Duration(days: 30);
+
   final ClipsDao _clipsDao;
   final DraftsDao _draftsDao;
 
@@ -226,7 +232,10 @@ class ClipLibraryService {
       final documentsPath = await getDocumentsPath();
       return rows.map((row) {
         final clipJson = json.decode(row.data) as Map<String, dynamic>;
-        return DivineVideoClip.fromJson(clipJson, documentsPath);
+        return DivineVideoClip.fromJson(
+          clipJson,
+          documentsPath,
+        ).copyWith(deletedAt: row.deletedAt);
       }).toList();
     } catch (e) {
       Log.error(
@@ -243,7 +252,7 @@ class ClipLibraryService {
   ///
   /// Returns the number of clips purged.
   Future<int> purgeExpiredTrash({
-    Duration retention = const Duration(days: 30),
+    Duration retention = trashRetention,
   }) async {
     final cutoff = DateTime.now().subtract(retention);
     final expired = await _clipsDao.getTrashedClipsOlderThan(cutoff);

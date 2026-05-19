@@ -139,7 +139,7 @@ class ClipsTab extends StatelessWidget {
         opaque: false,
         pageBuilder: (_, _, _) => VideoClipPreview(
           clip: clip,
-          onDelete: () => _confirmDeleteClip(context, clip),
+          onDelete: () => _softDeleteClip(context, clip),
         ),
         transitionsBuilder: (_, animation, _, child) {
           return FadeTransition(opacity: animation, child: child);
@@ -150,28 +150,10 @@ class ClipsTab extends StatelessWidget {
     );
   }
 
-  Future<void> _confirmDeleteClip(
-    BuildContext context,
-    DivineVideoClip clip,
-  ) async {
-    final confirmed = await VineBottomSheetPrompt.show<bool>(
-      context: context,
-      sticker: .alert,
-      title: context.l10n.libraryDeleteClipTitle,
-      subtitle: context.l10n.libraryDeleteClipMessage,
-      additionalText: context.l10n.libraryDeleteClipsWarning,
-      primaryButtonText: context.l10n.libraryDeleteConfirm,
-      secondaryButtonText: context.l10n.commonCancel,
-      onPrimaryPressed: () => Navigator.of(context).pop(true),
-      onSecondaryPressed: () => Navigator.of(context).pop(false),
-    );
-
-    if (confirmed != true) return;
-    if (!context.mounted) return;
-
+  void _softDeleteClip(BuildContext context, DivineVideoClip clip) {
+    // No confirm dialog: the bloc soft-deletes to the trash bin and
+    // surfaces a snackbar with Undo via the library screen's listener.
     context.read<ClipsLibraryBloc>().add(ClipsLibraryDeleteClip(clip));
-    // Close the underlying VideoClipPreview so the user returns to the
-    // library, which already reflects the deletion via the BLoC reload.
     Navigator.of(context).pop();
   }
 }

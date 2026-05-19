@@ -5677,9 +5677,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get proofmodeCheckAiGenerated => 'Vérifier si généré par IA';
 
   @override
-  String get libraryDeleteConfirm => 'Supprimer';
-
-  @override
   String get libraryWebUnavailableHeadline =>
       'La bibliothèque est dans l’appli mobile';
 
@@ -5722,24 +5719,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get librarySortVerticalFirst => 'Verticaux d\'abord';
 
   @override
-  String get libraryDeleteClipsTitle => 'Supprimer les clips';
-
-  @override
-  String libraryDeleteClipsMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '# clips sélectionnés',
-      one: '# clip sélectionné',
-    );
-    return 'Supprimer $_temp0 ?';
-  }
-
-  @override
-  String get libraryDeleteClipsWarning =>
-      'Action irréversible. Les fichiers vidéo seront définitivement supprimés de ton appareil.';
-
-  @override
   String get libraryPreparingVideo => 'Préparation de la vidéo...';
 
   @override
@@ -5773,6 +5752,21 @@ class AppLocalizationsFr extends AppLocalizations {
       locale: localeName,
       other: '$count clips supprimés',
       one: '1 clip supprimé',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryClipsDeletedUndoLabel => 'Undo';
+
+  @override
+  String libraryTrashAutoDeletes(int daysLeft) {
+    String _temp0 = intl.Intl.pluralLogic(
+      daysLeft,
+      locale: localeName,
+      other: 'Auto-deletes in $daysLeft days',
+      one: 'Auto-deletes tomorrow',
+      zero: 'Auto-deletes today',
     );
     return '$_temp0';
   }
@@ -5825,12 +5819,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String libraryDeleteDraftMessage(String title) {
     return 'Supprimer « $title » ?';
   }
-
-  @override
-  String get libraryDeleteClipTitle => 'Supprimer le clip';
-
-  @override
-  String get libraryDeleteClipMessage => 'Supprimer ce clip ?';
 
   @override
   String get libraryClipSelectionTitle => 'Clips';

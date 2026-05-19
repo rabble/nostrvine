@@ -5637,9 +5637,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get proofmodeCheckAiGenerated => 'Verificar se gerado por IA';
 
   @override
-  String get libraryDeleteConfirm => 'Excluir';
-
-  @override
   String get libraryWebUnavailableHeadline => 'A biblioteca fica no app móvel';
 
   @override
@@ -5680,24 +5677,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get librarySortVerticalFirst => 'Verticais primeiro';
 
   @override
-  String get libraryDeleteClipsTitle => 'Excluir clipes';
-
-  @override
-  String libraryDeleteClipsMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '# clipes selecionados',
-      one: '# clipe selecionado',
-    );
-    return 'Excluir $_temp0?';
-  }
-
-  @override
-  String get libraryDeleteClipsWarning =>
-      'Não dá para desfazer. Os arquivos de vídeo serão removidos permanentemente do dispositivo.';
-
-  @override
   String get libraryPreparingVideo => 'Preparando vídeo...';
 
   @override
@@ -5731,6 +5710,21 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: '$count clipes excluídos',
       one: '1 clipe excluído',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryClipsDeletedUndoLabel => 'Undo';
+
+  @override
+  String libraryTrashAutoDeletes(int daysLeft) {
+    String _temp0 = intl.Intl.pluralLogic(
+      daysLeft,
+      locale: localeName,
+      other: 'Auto-deletes in $daysLeft days',
+      one: 'Auto-deletes tomorrow',
+      zero: 'Auto-deletes today',
     );
     return '$_temp0';
   }
@@ -5782,12 +5776,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String libraryDeleteDraftMessage(String title) {
     return 'Excluir \"$title\"?';
   }
-
-  @override
-  String get libraryDeleteClipTitle => 'Excluir clipe';
-
-  @override
-  String get libraryDeleteClipMessage => 'Excluir este clipe?';
 
   @override
   String get libraryClipSelectionTitle => 'Clipes';
