@@ -37,6 +37,20 @@ final class VideoFeedModeChanged extends VideoFeedEvent {
   List<Object?> get props => [mode];
 }
 
+/// Switch to a different typed feed source.
+///
+/// Triggers loading of videos for the new source. Previous videos are cleared
+/// and fresh data is fetched.
+final class VideoFeedSourceChanged extends VideoFeedEvent {
+  const VideoFeedSourceChanged(this.source);
+
+  /// The new feed source to switch to.
+  final VideoFeedSource source;
+
+  @override
+  List<Object?> get props => [source];
+}
+
 /// Request to load more videos (pagination).
 ///
 /// Only effective when in [VideoFeedStatus.success] state and
@@ -94,10 +108,13 @@ final class VideoFeedFollowingListChanged extends VideoFeedEvent {
 /// emits updated lists. Triggers a refresh of the home feed so list videos
 /// are merged in.
 final class VideoFeedCuratedListsChanged extends VideoFeedEvent {
-  const VideoFeedCuratedListsChanged();
+  const VideoFeedCuratedListsChanged([this.subscribedLists = const []]);
+
+  /// Updated subscribed curated lists.
+  final List<CuratedList> subscribedLists;
 
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => [subscribedLists];
 }
 
 /// A user was blocked or the blocklist changed.

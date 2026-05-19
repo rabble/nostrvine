@@ -61,6 +61,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
        super(const VideoFeedBlocState()) {
     on<VideoFeedStarted>(_onStarted);
     on<VideoFeedModeChanged>(_onModeChanged);
+    on<VideoFeedSourceChanged>(_onSourceChanged);
     on<VideoFeedLoadMoreRequested>(
       _onLoadMoreRequested,
       transformer: droppable(),
@@ -94,8 +95,9 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
   /// [_onAutoRefreshRequested] to skip refreshes when data is fresh.
   DateTime? _lastRefreshedAt;
 
-  bool _usesHomeFeedCache(FeedMode mode) =>
-      mode == FeedMode.forYou || mode == FeedMode.following;
+  bool _usesHomeFeedCache(VideoFeedSource source) =>
+      source.type == VideoFeedSourceType.forYou ||
+      source.type == VideoFeedSourceType.following;
 
   /// Handle feed started event.
   ///
@@ -121,28 +123,37 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     VideoFeedStarted event,
     Emitter<VideoFeedBlocState> emit,
   ) async {
-    final savedModeName = _sharedPreferences?.getString(_feedModeKey);
-    final mode = savedModeName != null
-        ? FeedMode.values.firstWhere(
-            (m) => m.name == savedModeName,
-            orElse: () => event.mode,
-          )
-        : event.mode;
+    final source = _restoreSource(event.mode);
+    if (_sharedPreferences?.getString(_feedModeKey) !=
+        source.persistenceValue) {
+      await _sharedPreferences?.setString(
+        _feedModeKey,
+        source.persistenceValue,
+      );
+    }
 
-    emit(state.copyWith(status: VideoFeedStatus.loading, mode: mode));
+    final subscribedLists = _curatedListRepository.getSubscribedLists();
 
-    _feedTracker?.startFeedLoad(mode.name);
+    emit(
+      state.copyWith(
+        status: VideoFeedStatus.loading,
+        source: source,
+        subscribedLists: subscribedLists,
+      ),
+    );
+
+    _feedTracker?.startFeedLoad(source.mode.name);
 
     final initialFollowingPubkeys = List<String>.unmodifiable(
       _followRepository.followingPubkeys,
     );
 
-    await _loadVideos(mode, emit);
+    await _loadVideos(source, emit);
 
     // After the initial load, check for the "no follows" CTA. Needed for
     // BLoC re-creation (e.g. navigating back to home) when the follow repo
     // is already initialized — .skip(1) would skip the only replay.
-    if (mode == FeedMode.following) {
+    if (source.type == VideoFeedSourceType.following) {
       final currentFollowing = _followRepository.followingPubkeys;
       if (currentFollowing.isEmpty && state.videos.isEmpty) {
         emit(
@@ -188,8 +199,33 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     // Subscribe to curated list changes.
     await emit.onEach<List<CuratedList>>(
       _curatedListRepository.subscribedListsStream.skip(1),
-      onData: (_) => add(const VideoFeedCuratedListsChanged()),
+      onData: (lists) => add(VideoFeedCuratedListsChanged(lists)),
     );
+  }
+
+  VideoFeedSource _restoreSource(FeedMode fallbackMode) {
+    final saved = _sharedPreferences?.getString(_feedModeKey);
+    if (saved == null) {
+      return VideoFeedSource.fromMode(fallbackMode);
+    }
+
+    if (saved.startsWith('list:')) {
+      final listId = saved.substring('list:'.length);
+      final list = _curatedListRepository.getListById(listId);
+      if (list != null) {
+        return VideoFeedSource.subscribedList(
+          listId: list.id,
+          listName: list.name,
+        );
+      }
+      return const VideoFeedSource.forYou();
+    }
+
+    if (saved == FeedMode.following.name) {
+      return const VideoFeedSource.following();
+    }
+
+    return const VideoFeedSource.forYou();
   }
 
   /// Handle mode changed event.
@@ -197,24 +233,39 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     VideoFeedModeChanged event,
     Emitter<VideoFeedBlocState> emit,
   ) async {
-    // Skip if already on this mode
-    if (state.mode == event.mode && state.status == VideoFeedStatus.success) {
+    await _selectSource(VideoFeedSource.fromMode(event.mode), emit);
+  }
+
+  /// Handle source changed event.
+  Future<void> _onSourceChanged(
+    VideoFeedSourceChanged event,
+    Emitter<VideoFeedBlocState> emit,
+  ) async {
+    await _selectSource(event.source, emit);
+  }
+
+  Future<void> _selectSource(
+    VideoFeedSource source,
+    Emitter<VideoFeedBlocState> emit,
+  ) async {
+    // Skip if already on this source.
+    if (state.source == source && state.status == VideoFeedStatus.success) {
       return;
     }
 
-    await _sharedPreferences?.setString(_feedModeKey, event.mode.name);
+    await _sharedPreferences?.setString(_feedModeKey, source.persistenceValue);
 
     emit(
       state.copyWith(
         status: VideoFeedStatus.loading,
-        mode: event.mode,
+        source: source,
         videos: [],
         hasMore: true,
         clearError: true,
       ),
     );
 
-    await _loadVideos(event.mode, emit);
+    await _loadVideos(source, emit);
   }
 
   bool _listsEqual(List<String> a, List<String> b) {
@@ -252,7 +303,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
           .reduce((a, b) => a < b ? a : b);
       final cursor = oldestCreatedAt - 1;
 
-      final result = await _fetchVideosForMode(state.mode, until: cursor);
+      final result = await _fetchVideosForSource(state.source, until: cursor);
 
       // Filter out videos without valid URLs
       final validNewVideos = result.videos
@@ -322,7 +373,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       ),
     );
 
-    await _loadVideos(state.mode, emit, skipCache: true);
+    await _loadVideos(state.source, emit, skipCache: true);
   }
 
   /// Handle auto-refresh request (dispatched by UI on app resume).
@@ -335,7 +386,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     VideoFeedAutoRefreshRequested event,
     Emitter<VideoFeedBlocState> emit,
   ) async {
-    if (state.mode != FeedMode.following) return;
+    if (state.source.type != VideoFeedSourceType.following) return;
 
     final lastRefresh = _lastRefreshedAt;
     if (lastRefresh != null &&
@@ -352,7 +403,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       ),
     );
 
-    await _loadVideos(state.mode, emit, skipCache: true);
+    await _loadVideos(state.source, emit, skipCache: true);
   }
 
   /// Handle following list changes from [FollowRepository].
@@ -369,7 +420,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     VideoFeedFollowingListChanged event,
     Emitter<VideoFeedBlocState> emit,
   ) async {
-    if (state.mode != FeedMode.following) return;
+    if (state.source.type != VideoFeedSourceType.following) return;
     if (state.status == VideoFeedStatus.loading) return;
 
     // Empty follow list → show "follow someone" CTA.
@@ -388,7 +439,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     }
 
     // Silent refresh — keep current videos visible, replace when done.
-    await _loadVideos(FeedMode.following, emit, skipCache: true);
+    await _loadVideos(state.source, emit, skipCache: true);
   }
 
   /// Handle curated list subscription changes from [CuratedListRepository].
@@ -399,8 +450,18 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     VideoFeedCuratedListsChanged event,
     Emitter<VideoFeedBlocState> emit,
   ) async {
-    if (state.mode != FeedMode.following) return;
-    if (state.status == VideoFeedStatus.loading) return;
+    final subscribedLists = event.subscribedLists;
+    if (state.status == VideoFeedStatus.loading) {
+      if (subscribedLists.isNotEmpty) {
+        emit(state.copyWith(subscribedLists: subscribedLists));
+      }
+      return;
+    }
+
+    if (!state.isSubscribedListSelected) {
+      emit(state.copyWith(subscribedLists: subscribedLists));
+      return;
+    }
 
     emit(
       state.copyWith(
@@ -408,10 +469,11 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
         videos: [],
         hasMore: true,
         clearError: true,
+        subscribedLists: subscribedLists,
       ),
     );
 
-    await _loadVideos(FeedMode.following, emit, skipCache: true);
+    await _loadVideos(state.source, emit, skipCache: true);
   }
 
   /// Handle blocklist changes.
@@ -457,14 +519,14 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
   /// [VideoFeedFollowingListChanged], the handler decides whether to show
   /// the `noFollowedUsers` CTA or refresh the feed.
   Future<void> _loadVideos(
-    FeedMode mode,
+    VideoFeedSource source,
     Emitter<VideoFeedBlocState> emit, {
     bool skipCache = false,
   }) async {
     // Serve cached home feed on first load for instant startup.
     if (_serveCachedHomeFeed &&
         !_cacheServed &&
-        _usesHomeFeedCache(mode) &&
+        _usesHomeFeedCache(source) &&
         _sharedPreferences != null) {
       _cacheServed = true;
       final cached = _homeFeedCache.read(_sharedPreferences);
@@ -474,7 +536,10 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
         );
         final cachedValid = filtered.where((v) => v.videoUrl != null).toList();
         if (cachedValid.isNotEmpty) {
-          _feedTracker?.markFirstVideosReceived(mode.name, cachedValid.length);
+          _feedTracker?.markFirstVideosReceived(
+            source.mode.name,
+            cachedValid.length,
+          );
           emit(
             state.copyWith(
               status: VideoFeedStatus.success,
@@ -483,7 +548,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
               clearError: true,
             ),
           );
-          _feedTracker?.markFeedDisplayed(mode.name, cachedValid.length);
+          _feedTracker?.markFeedDisplayed(source.mode.name, cachedValid.length);
           // Continue to fetch fresh data below — the emit will update
           // the UI when the network result arrives.
         }
@@ -491,7 +556,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     }
 
     try {
-      final result = await _fetchVideosForMode(mode, skipCache: skipCache);
+      final result = await _fetchVideosForSource(source, skipCache: skipCache);
 
       // Filter out videos without valid URLs
       final validVideos = result.videos
@@ -500,7 +565,10 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
 
       _lastRefreshedAt = DateTime.now();
 
-      _feedTracker?.markFirstVideosReceived(mode.name, validVideos.length);
+      _feedTracker?.markFirstVideosReceived(
+        source.mode.name,
+        validVideos.length,
+      );
 
       emit(
         state.copyWith(
@@ -508,20 +576,22 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
           videos: validVideos,
           // Only stop pagination when no results at all.
           // Fewer than _pageSize can happen due to server-side filtering.
-          hasMore: validVideos.isNotEmpty,
+          hasMore:
+              source.type != VideoFeedSourceType.subscribedList &&
+              validVideos.isNotEmpty,
           clearError: true,
           videoListSources: result.videoListSources,
           listOnlyVideoIds: result.listOnlyVideoIds,
         ),
       );
 
-      _feedTracker?.markFeedDisplayed(mode.name, validVideos.length);
+      _feedTracker?.markFeedDisplayed(source.mode.name, validVideos.length);
 
       // Batch-fetch creator profiles to warm the Drift cache.
       await _fetchCreatorProfiles(validVideos, emit);
 
       // Cache the raw response for next cold start (fire-and-forget).
-      if (_usesHomeFeedCache(mode) &&
+      if (_usesHomeFeedCache(source) &&
           _sharedPreferences != null &&
           result.rawResponseBody != null) {
         unawaited(
@@ -536,7 +606,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       );
 
       _feedTracker?.trackFeedError(
-        mode.name,
+        source.mode.name,
         errorType: 'load_failed',
         errorMessage: e.toString(),
       );
@@ -563,26 +633,30 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
   /// a previously cached result from the [InMemoryFeedCache] without
   /// a network round-trip. Pass `true` for refresh and auto-refresh
   /// flows that must hit the network.
-  Future<HomeFeedResult> _fetchVideosForMode(
-    FeedMode mode, {
+  Future<HomeFeedResult> _fetchVideosForSource(
+    VideoFeedSource source, {
     int? until,
     bool skipCache = false,
-  }) => switch (mode) {
-    FeedMode.forYou => _videosRepository.getRecommendedVideos(
+  }) => switch (source.type) {
+    VideoFeedSourceType.forYou => _videosRepository.getRecommendedVideos(
       userPubkey: _userPubkey,
       until: until,
       skipCache: skipCache,
     ),
-    FeedMode.following => _videosRepository.getHomeFeedVideos(
+    VideoFeedSourceType.following => _videosRepository.getHomeFeedVideos(
       authors: _followRepository.followingPubkeys,
-      videoRefs: _curatedListRepository.getSubscribedListVideoRefs(),
+      // Required so plain Following does not include subscribed-list refs.
+      // ignore: avoid_redundant_argument_values
+      videoRefs: const {},
       userPubkey: _userPubkey,
       until: until,
       skipCache: skipCache,
     ),
-    FeedMode.latest =>
+    VideoFeedSourceType.subscribedList =>
       _videosRepository
-          .getNewVideos(until: until, skipCache: skipCache)
+          .getVideosForList(
+            _curatedListRepository.getOrderedVideoIds(source.listId!),
+          )
           .then((videos) => HomeFeedResult(videos: videos)),
   };
 
