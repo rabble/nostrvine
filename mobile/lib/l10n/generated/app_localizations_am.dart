@@ -4034,7 +4034,17 @@ class AppLocalizationsAm extends AppLocalizations {
       'እስካሁን ከምትከተላቸው ሰዎች ምንም ቪዲዮዎች የሉም።\nየሚወዷቸውን ፈጣሪዎች ያግኙ እና ይከተሉዋቸው።';
 
   @override
+  String get feedFollowingEmptyTitle => 'Gloriously empty';
+
+  @override
+  String get feedFollowingEmptyBody =>
+      'No ads. No AI slop. No one telling you what to watch. Fix that last part yourself.';
+
+  @override
   String get feedLatestEmpty => 'እስካሁን ምንም አዲስ ቪዲዮዎች የሉም።\nበቅርቡ ተመልሰው ይመልከቱ።';
+
+  @override
+  String get feedGoExplore => 'Go explore';
 
   @override
   String get feedExploreVideos => 'ቪዲዮዎችን ያስሱ';

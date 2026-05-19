@@ -877,8 +877,12 @@ class FeedEmptyWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isNoFollowedUsers =
-        (state.mode == FeedMode.following || state.mode == FeedMode.forYou) &&
+        state.mode == FeedMode.forYou &&
         state.error == VideoFeedError.noFollowedUsers;
+
+    if (state.mode == FeedMode.following) {
+      return const _FollowingFeedEmptyState();
+    }
 
     return Center(
       child: Column(
@@ -923,6 +927,97 @@ class FeedEmptyWidget extends StatelessWidget {
       FeedMode.following => context.l10n.feedFollowingEmpty,
       FeedMode.latest => context.l10n.feedLatestEmpty,
     };
+  }
+}
+
+class _FollowingFeedEmptyState extends StatelessWidget {
+  const _FollowingFeedEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const _FeedEmptyTestPatternMark(),
+            const SizedBox(height: 28),
+            Text(
+              context.l10n.feedFollowingEmptyTitle,
+              style: VineTheme.headlineSmallFont(color: VineTheme.onSurface),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 320),
+              child: Text(
+                context.l10n.feedFollowingEmptyBody,
+                style: VineTheme.bodyLargeFont(
+                  color: VineTheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 28),
+            DivineButton(
+              label: context.l10n.feedGoExplore,
+              trailingIcon: DivineIconName.arrowRight,
+              onPressed: () => context.go(ExploreScreen.pathForTab('popular')),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FeedEmptyTestPatternMark extends StatelessWidget {
+  const _FeedEmptyTestPatternMark();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 112,
+      height: 88,
+      decoration: BoxDecoration(
+        color: VineTheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: VineTheme.outlineMuted),
+      ),
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        children: [
+          Expanded(
+            flex: 3,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: const [
+                Expanded(child: ColoredBox(color: VineTheme.primary)),
+                Expanded(child: ColoredBox(color: VineTheme.warning)),
+                Expanded(child: ColoredBox(color: VineTheme.error)),
+                Expanded(child: ColoredBox(color: VineTheme.inverseSurface)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 6),
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: const [
+                Expanded(
+                  flex: 2,
+                  child: ColoredBox(color: VineTheme.onSurface),
+                ),
+                Expanded(child: ColoredBox(color: VineTheme.outlineMuted)),
+                Expanded(flex: 2, child: ColoredBox(color: VineTheme.scrim65)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

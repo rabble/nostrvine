@@ -6,10 +6,12 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:infinite_video_feed/infinite_video_feed.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
@@ -22,6 +24,7 @@ import 'package:openvine/features/feature_flags/providers/feature_flag_providers
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/router/router.dart';
+import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/feed_settings_menu.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
@@ -31,6 +34,8 @@ import 'package:pooled_video_player/pooled_video_player.dart';
 
 import '../../helpers/test_provider_overrides.dart';
 import '../../test_data/video_test_data.dart';
+
+class _MockGoRouter extends Mock implements GoRouter {}
 
 class _MockVideoFeedBloc extends MockBloc<VideoFeedEvent, VideoFeedBlocState>
     implements VideoFeedBloc {}
@@ -69,11 +74,15 @@ _MockPlayer _stubPlayer(
   return player;
 }
 
-Widget _buildEmptyFeedSubject(VideoFeedBlocState state) {
+Widget _buildEmptyFeedSubject(VideoFeedBlocState state, {GoRouter? router}) {
+  final child = Scaffold(body: FeedEmptyWidget(state: state));
+
   return MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    home: Scaffold(body: FeedEmptyWidget(state: state)),
+    home: router == null
+        ? child
+        : InheritedGoRouter(goRouter: router, child: child),
   );
 }
 
@@ -112,27 +121,35 @@ void main() {
       expect(find.textContaining('ForYou'), findsNothing);
     });
 
-    testWidgets('keeps no-follow guidance for an empty Following feed', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        _buildEmptyFeedSubject(
-          const VideoFeedBlocState(
-            status: VideoFeedStatus.success,
-            mode: FeedMode.following,
-            error: VideoFeedError.noFollowedUsers,
+    testWidgets(
+      'uses Figma empty state for an empty Following no-follow feed',
+      (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          _buildEmptyFeedSubject(
+            const VideoFeedBlocState(
+              status: VideoFeedStatus.success,
+              mode: FeedMode.following,
+              error: VideoFeedError.noFollowedUsers,
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(
-        find.text(
-          'No followed users.\nFollow someone to see their videos here.',
-        ),
-        findsOneWidget,
-      );
-      expect(find.text('Explore Videos'), findsOneWidget);
-    });
+        expect(
+          find.text('Gloriously empty'),
+          findsOneWidget,
+        );
+        expect(
+          find.text(
+            'No ads. No AI slop. No one telling you what to watch. '
+            'Fix that last part yourself.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('Go explore'), findsOneWidget);
+      },
+    );
 
     testWidgets('uses For You copy instead of the raw enum name', (
       tester,
@@ -154,7 +171,42 @@ void main() {
       expect(find.textContaining('ForYou'), findsNothing);
     });
 
-    testWidgets('uses mode-specific copy for an empty Following feed', (
+    testWidgets('uses Figma empty state for an empty Following feed', (
+      tester,
+    ) async {
+      final router = _MockGoRouter();
+      when(() => router.go(any())).thenReturn(null);
+
+      await tester.pumpWidget(
+        _buildEmptyFeedSubject(
+          const VideoFeedBlocState(
+            status: VideoFeedStatus.success,
+            mode: FeedMode.following,
+          ),
+          router: router,
+        ),
+      );
+
+      expect(
+        find.text(
+          'No ads. No AI slop. No one telling you what to watch. '
+          'Fix that last part yourself.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Gloriously empty'), findsOneWidget);
+      expect(find.text('Go explore'), findsOneWidget);
+      expect(find.byType(DivineButton), findsOneWidget);
+      expect(find.textContaining('following feed'), findsNothing);
+
+      await tester.tap(find.text('Go explore'));
+
+      verify(
+        () => router.go(ExploreScreen.pathForTab('popular')),
+      ).called(1);
+    });
+
+    testWidgets('uses the design-system arrow on the Following empty CTA', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -167,29 +219,16 @@ void main() {
       );
 
       expect(
-        find.text(
-          'No videos from people you follow yet.\n'
-          'Find creators you like and follow them.',
+        find.descendant(
+          of: find.byType(DivineButton),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is DivineIcon &&
+                widget.icon == DivineIconName.arrowRight,
+          ),
         ),
         findsOneWidget,
       );
-      expect(find.textContaining('following feed'), findsNothing);
-    });
-
-    testWidgets('uses mode-specific copy for an empty New feed', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        _buildEmptyFeedSubject(
-          const VideoFeedBlocState(
-            status: VideoFeedStatus.success,
-            mode: FeedMode.latest,
-          ),
-        ),
-      );
-
-      expect(find.text('No new videos yet.\nCheck back soon.'), findsOneWidget);
-      expect(find.textContaining('latest'), findsNothing);
     });
   });
 

@@ -4169,7 +4169,17 @@ class AppLocalizationsBg extends AppLocalizations {
       'Още няма видеа от хората, които следваш.\nНамери творци, които ти допадат, и ги последвай.';
 
   @override
+  String get feedFollowingEmptyTitle => 'Gloriously empty';
+
+  @override
+  String get feedFollowingEmptyBody =>
+      'No ads. No AI slop. No one telling you what to watch. Fix that last part yourself.';
+
+  @override
   String get feedLatestEmpty => 'Още няма нови видеа.\nПровери пак скоро.';
+
+  @override
+  String get feedGoExplore => 'Go explore';
 
   @override
   String get feedExploreVideos => 'Разгледай видеа';

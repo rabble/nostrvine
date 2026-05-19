@@ -4124,7 +4124,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'No videos from people you follow yet.\nFind creators you like and follow them.';
 
   @override
+  String get feedFollowingEmptyTitle => 'Gloriously empty';
+
+  @override
+  String get feedFollowingEmptyBody =>
+      'No ads. No AI slop. No one telling you what to watch. Fix that last part yourself.';
+
+  @override
   String get feedLatestEmpty => 'No new videos yet.\nCheck back soon.';
+
+  @override
+  String get feedGoExplore => 'Go explore';
 
   @override
   String get feedExploreVideos => 'Explore Videos';

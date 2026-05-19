@@ -3925,7 +3925,17 @@ class AppLocalizationsJa extends AppLocalizations {
       'フォロー中の人の動画はまだありません。\n気に入ったクリエイターを見つけてフォローしましょう。';
 
   @override
+  String get feedFollowingEmptyTitle => 'Gloriously empty';
+
+  @override
+  String get feedFollowingEmptyBody =>
+      'No ads. No AI slop. No one telling you what to watch. Fix that last part yourself.';
+
+  @override
   String get feedLatestEmpty => '新しい動画はまだありません。\nしばらくしてからもう一度確認してください。';
+
+  @override
+  String get feedGoExplore => 'Go explore';
 
   @override
   String get feedExploreVideos => '動画を探しに行こう';

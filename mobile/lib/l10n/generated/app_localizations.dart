@@ -7220,11 +7220,29 @@ abstract class AppLocalizations {
   /// **'No videos from people you follow yet.\nFind creators you like and follow them.'**
   String get feedFollowingEmpty;
 
+  /// Title for the empty Following feed state on Home.
+  ///
+  /// In en, this message translates to:
+  /// **'Gloriously empty'**
+  String get feedFollowingEmptyTitle;
+
+  /// Body copy for the empty Following feed state on Home.
+  ///
+  /// In en, this message translates to:
+  /// **'No ads. No AI slop. No one telling you what to watch. Fix that last part yourself.'**
+  String get feedFollowingEmptyBody;
+
   /// No description provided for @feedLatestEmpty.
   ///
   /// In en, this message translates to:
   /// **'No new videos yet.\nCheck back soon.'**
   String get feedLatestEmpty;
+
+  /// CTA label on the empty Following feed state that routes to the popular Explore tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Go explore'**
+  String get feedGoExplore;
 
   /// No description provided for @feedExploreVideos.
   ///
