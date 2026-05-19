@@ -207,15 +207,42 @@ class AudioTimingCubit extends Cubit<AudioTimingState> {
     );
     final clipEnd = Duration(milliseconds: (clipEndSecs * 1000).toInt());
 
-    // Determine URI and whether it's an asset
-    final String uri;
-    final bool isAsset;
+    // Determine the URI and which AudioSourceConfig variant fits.
+    //
+    // Audio extracted from local clips (see
+    // ClipEditorBloc._onAudioExtractionRequested) is stored in
+    // AudioEvent.url as a bare absolute path like
+    // `/var/mobile/.../extracted_audio_<ts>.wav`. Without explicit
+    // classification, that path is treated as a network URL and the
+    // remote loader calls HttpClient.getUrl on it, throwing
+    // "No host specified in URI" (issue #4395).
+    final AudioSourceConfig config;
     if (_sound.isBundled && _sound.assetPath != null) {
-      uri = _sound.assetPath!;
-      isAsset = true;
+      config = AudioSourceConfig.asset(
+        _sound.assetPath!,
+        start: clipStart,
+        end: clipEnd,
+      );
     } else if (_sound.url != null) {
-      uri = _sound.url!;
-      isAsset = false;
+      final uri = _sound.url!;
+      final parsed = Uri.tryParse(uri);
+      final isLocalFile =
+          parsed == null ||
+          parsed.scheme.isEmpty ||
+          parsed.scheme == 'file' ||
+          uri.startsWith('/');
+      if (isLocalFile) {
+        final filePath = parsed != null && parsed.scheme == 'file'
+            ? parsed.toFilePath()
+            : uri;
+        config = AudioSourceConfig.file(
+          filePath,
+          start: clipStart,
+          end: clipEnd,
+        );
+      } else {
+        config = AudioSourceConfig.network(uri, start: clipStart, end: clipEnd);
+      }
     } else {
       Log.warning(
         'No audio source available for sound: ${_sound.id}',
@@ -224,9 +251,6 @@ class AudioTimingCubit extends Cubit<AudioTimingState> {
       return;
     }
 
-    final config = isAsset
-        ? AudioSourceConfig.asset(uri, start: clipStart, end: clipEnd)
-        : AudioSourceConfig.network(uri, start: clipStart, end: clipEnd);
     await _clipPlayer.setClip(config);
   }
 

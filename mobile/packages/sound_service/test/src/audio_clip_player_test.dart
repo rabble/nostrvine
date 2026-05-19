@@ -558,6 +558,54 @@ void main() {
 
         verify(() => mockAudioPlayer.setAudioSource(any())).called(1);
       });
+
+      // Regression coverage for #4395: a caller that mis-classifies a
+      // local file path as network audio must hit an actionable
+      // ArgumentError before the default loader reaches HttpClient.
+      test(
+        'default network loader rejects non-http(s) URIs with ArgumentError',
+        () async {
+          final mockHttpClient = _MockHttpClient();
+
+          await expectLater(
+            HttpOverrides.runZoned(
+              () => player.setClip(
+                const AudioSourceConfig.network(
+                  '/var/mobile/extracted_audio.wav',
+                  start: Duration.zero,
+                  end: Duration(seconds: 2),
+                ),
+              ),
+              createHttpClient: _httpClientFactory(mockHttpClient),
+            ),
+            throwsA(isA<ArgumentError>()),
+          );
+
+          verifyNever(() => mockHttpClient.getUrl(any()));
+        },
+      );
+
+      test('AudioSourceConfig.file never invokes the remote loader', () async {
+        var loaderCallCount = 0;
+        player = AudioClipPlayer(
+          audioPlayer: mockAudioPlayer,
+          remoteAudioFileLoader: (_, _, _) async {
+            loaderCallCount++;
+            throw StateError('remote loader must not be called');
+          },
+        );
+
+        await player.setClip(
+          const AudioSourceConfig.file(
+            '/var/mobile/extracted_audio.wav',
+            start: Duration.zero,
+            end: Duration(seconds: 2),
+          ),
+        );
+
+        expect(loaderCallCount, 0);
+        verify(() => mockAudioPlayer.setAudioSource(any())).called(1);
+      });
     });
 
     group('play', () {

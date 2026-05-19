@@ -377,6 +377,75 @@ void main() {
           verify(() => mockClipPlayer.play()).called(1);
         },
       );
+
+      // Regression coverage for #4395: extracted audio is stored in
+      // AudioEvent.url as a bare absolute path; it must be routed
+      // through AudioSourceConfig.file, not .network.
+      blocTest<AudioTimingCubit, AudioTimingState>(
+        'uses AudioSourceConfig.file for a bare absolute path',
+        build: () => buildCubit(
+          sound: _createTestSound(
+            url:
+                '/var/mobile/Containers/Data/Application/'
+                'tmp/extracted_audio_123.wav',
+          ),
+        ),
+        seed: () => const AudioTimingState(audioDuration: 20),
+        act: (cubit) => cubit.resumePlayback(),
+        verify: (_) {
+          final captured =
+              verify(() => mockClipPlayer.setClip(captureAny())).captured.single
+                  as AudioSourceConfig;
+          expect(captured.isAsset, isFalse);
+          expect(captured.isFile, isTrue);
+          expect(captured.uri, startsWith('/var/mobile/'));
+        },
+      );
+
+      blocTest<AudioTimingCubit, AudioTimingState>(
+        'uses AudioSourceConfig.file for a file:// URI',
+        build: () => buildCubit(
+          sound: _createTestSound(url: 'file:///tmp/extracted_audio.wav'),
+        ),
+        seed: () => const AudioTimingState(audioDuration: 20),
+        act: (cubit) => cubit.resumePlayback(),
+        verify: (_) {
+          final captured =
+              verify(() => mockClipPlayer.setClip(captureAny())).captured.single
+                  as AudioSourceConfig;
+          expect(captured.isFile, isTrue);
+          expect(captured.uri, '/tmp/extracted_audio.wav');
+        },
+      );
+
+      blocTest<AudioTimingCubit, AudioTimingState>(
+        'uses AudioSourceConfig.network for an https URL',
+        build: () => buildCubit(sound: _createTestSound()),
+        seed: () => const AudioTimingState(audioDuration: 20),
+        act: (cubit) => cubit.resumePlayback(),
+        verify: (_) {
+          final captured =
+              verify(() => mockClipPlayer.setClip(captureAny())).captured.single
+                  as AudioSourceConfig;
+          expect(captured.isAsset, isFalse);
+          expect(captured.isFile, isFalse);
+          expect(captured.uri, 'https://example.com/audio.mp3');
+        },
+      );
+
+      blocTest<AudioTimingCubit, AudioTimingState>(
+        'uses AudioSourceConfig.asset for a bundled sound',
+        build: () => buildCubit(sound: _createBundledSound()),
+        seed: () => const AudioTimingState(audioDuration: 20),
+        act: (cubit) => cubit.resumePlayback(),
+        verify: (_) {
+          final captured =
+              verify(() => mockClipPlayer.setClip(captureAny())).captured.single
+                  as AudioSourceConfig;
+          expect(captured.isAsset, isTrue);
+          expect(captured.isFile, isFalse);
+        },
+      );
     });
 
     group('stopPlayback', () {

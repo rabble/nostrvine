@@ -153,6 +153,20 @@ class AudioClipPlayer {
     File? cachedFile,
     Uri? cachedUri,
   ) async {
+    // Defense-in-depth for issue #4395: callers that miscategorize a
+    // local file path as a network source would otherwise reach
+    // HttpClient.getUrl with a schemeless / file:// URI and crash with
+    // "No host specified in URI". Reject anything that is not http(s)
+    // up front with an actionable error.
+    if (uri.scheme != 'http' && uri.scheme != 'https') {
+      throw ArgumentError.value(
+        uri,
+        'uri',
+        'Remote audio loader requires an http(s) URI; got scheme '
+            '"${uri.scheme}". Use AudioSourceConfig.file for local paths.',
+      );
+    }
+
     if (cachedFile != null && cachedUri == uri && cachedFile.existsSync()) {
       return cachedFile;
     }
