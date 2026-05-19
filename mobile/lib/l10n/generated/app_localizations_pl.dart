@@ -4144,6 +4144,17 @@ class AppLocalizationsPl extends AppLocalizations {
   String get notificationsUnreadPrefix => 'Nieprzeczytane powiadomienie';
 
   @override
+  String notificationsBadgeUnread(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count unread notifications',
+      one: '1 unread notification',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String notificationsViewProfileSemanticLabel(String displayName) {
     return 'Zobacz profil użytkownika $displayName';
   }

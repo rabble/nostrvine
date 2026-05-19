@@ -971,15 +971,6 @@ class NotificationRepository {
         .toList();
   }
 
-  /// Filters a single real-time [NotificationItem].
-  ///
-  /// Returns `null` if the notification should be hidden (all actors
-  /// blocked). Use this for WebSocket events that bypass [getNotifications].
-  NotificationItem? filterRealtimeNotification(NotificationItem item) {
-    final result = _applyBlockFilter([item]);
-    return result.isEmpty ? null : result.first;
-  }
-
   /// Fetches [VideoStats] for each id in parallel.
   ///
   /// Per-id failures are tolerated — a single failed lookup yields no

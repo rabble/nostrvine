@@ -7094,6 +7094,12 @@ abstract class AppLocalizations {
   /// **'Unread notification'**
   String get notificationsUnreadPrefix;
 
+  /// Screen-reader announcement for the notifications badge overlay on top of nav icons. Conveys the unread count to assistive technology users.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 unread notification} other{{count} unread notifications}}'**
+  String notificationsBadgeUnread(int count);
+
   /// Screen-reader label for the avatar tap target on a notification row, which opens the user's profile.
   ///
   /// In en, this message translates to:

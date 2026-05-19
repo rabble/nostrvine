@@ -1,5 +1,5 @@
 // ABOUTME: Widget tests for NotificationBadge and AnimatedNotificationBadge
-// ABOUTME: Tests badge visibility based on count, text rendering, and dot for high counts
+// ABOUTME: Pins count rendering, overflow dot, l10n semantics, RepaintBoundary
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -25,7 +25,6 @@ void main() {
     testWidgets('shows no badge when count is 0', (WidgetTester tester) async {
       await tester.pumpWidget(buildTestWidget(count: 0));
 
-      // When count is 0, no Positioned badge should be rendered
       expect(
         find.descendant(
           of: find.byType(NotificationBadge),
@@ -56,7 +55,6 @@ void main() {
     ) async {
       await tester.pumpWidget(buildTestWidget(count: 5));
 
-      // Should have Positioned element for badge overlay
       expect(
         find.descendant(
           of: find.byType(NotificationBadge),
@@ -64,7 +62,6 @@ void main() {
         ),
         findsOneWidget,
       );
-      // Should display the count
       expect(find.text('5'), findsOneWidget);
     });
 
@@ -76,14 +73,12 @@ void main() {
       expect(find.text('99'), findsOneWidget);
     });
 
-    testWidgets('shows dot icon instead of text when count > 99', (
+    testWidgets('shows overflow dot instead of text when count > 99', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(buildTestWidget(count: 100));
 
-      // Should show dot icon instead of text
-      expect(find.byIcon(Icons.circle), findsOneWidget);
-      // Should not show the count as text
+      expect(find.byKey(const ValueKey('dot')), findsOneWidget);
       expect(find.text('100'), findsNothing);
     });
 
@@ -92,7 +87,6 @@ void main() {
     ) async {
       await tester.pumpWidget(buildTestWidget(count: 5, showBadge: false));
 
-      // Should not have Positioned badge
       expect(
         find.descendant(
           of: find.byType(NotificationBadge),
@@ -101,6 +95,40 @@ void main() {
         findsNothing,
       );
       expect(find.byIcon(Icons.notifications), findsOneWidget);
+    });
+
+    testWidgets('announces unread count via Semantics widget', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(buildTestWidget(count: 3));
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final expectedLabel = l10n.notificationsBadgeUnread(3);
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.container &&
+              widget.properties.label == expectedLabel,
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('Semantics label adapts to overflow count', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(buildTestWidget(count: 150));
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final expectedLabel = l10n.notificationsBadgeUnread(150);
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics && widget.properties.label == expectedLabel,
+        ),
+        findsOneWidget,
+      );
     });
   });
 
@@ -150,10 +178,12 @@ void main() {
       expect(find.text('3'), findsOneWidget);
     });
 
-    testWidgets('shows dot icon when count > 99', (WidgetTester tester) async {
+    testWidgets('shows overflow dot when count > 99', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(buildAnimatedTestWidget(count: 150));
 
-      expect(find.byIcon(Icons.circle), findsOneWidget);
+      expect(find.byKey(const ValueKey('dot')), findsOneWidget);
       expect(find.text('150'), findsNothing);
     });
 
@@ -170,6 +200,38 @@ void main() {
           matching: find.byType(Positioned),
         ),
         findsNothing,
+      );
+    });
+
+    testWidgets('isolates pulse animation under RepaintBoundary', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(buildAnimatedTestWidget(count: 4));
+
+      expect(
+        find.descendant(
+          of: find.byType(AnimatedNotificationBadge),
+          matching: find.byType(RepaintBoundary),
+        ),
+        findsWidgets,
+      );
+    });
+
+    testWidgets('announces unread count via Semantics widget', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(buildAnimatedTestWidget(count: 7));
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final expectedLabel = l10n.notificationsBadgeUnread(7);
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.container &&
+              widget.properties.label == expectedLabel,
+        ),
+        findsOneWidget,
       );
     });
   });

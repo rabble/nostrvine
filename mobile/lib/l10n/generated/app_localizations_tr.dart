@@ -4025,6 +4025,17 @@ class AppLocalizationsTr extends AppLocalizations {
   String get notificationsUnreadPrefix => 'Okunmamış bildirim';
 
   @override
+  String notificationsBadgeUnread(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count unread notifications',
+      one: '1 unread notification',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String notificationsViewProfileSemanticLabel(String displayName) {
     return '$displayName profilini görüntüle';
   }

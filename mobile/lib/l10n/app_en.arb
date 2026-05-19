@@ -2184,6 +2184,15 @@
   "@notificationsUnreadPrefix": {
     "description": "Screen-reader prefix announced before an unread notification row's content, so the user hears that the row is unread before the message itself."
   },
+  "notificationsBadgeUnread": "{count, plural, =1{1 unread notification} other{{count} unread notifications}}",
+  "@notificationsBadgeUnread": {
+    "description": "Screen-reader announcement for the notifications badge overlay on top of nav icons. Conveys the unread count to assistive technology users.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "notificationsViewProfileSemanticLabel": "View {displayName} profile",
   "@notificationsViewProfileSemanticLabel": {
     "description": "Screen-reader label for the avatar tap target on a notification row, which opens the user's profile.",

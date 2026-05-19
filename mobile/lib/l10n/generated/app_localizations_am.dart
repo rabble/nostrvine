@@ -3956,6 +3956,17 @@ class AppLocalizationsAm extends AppLocalizations {
   String get notificationsUnreadPrefix => 'ያልተነበበ ማስታወቂያ';
 
   @override
+  String notificationsBadgeUnread(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count unread notifications',
+      one: '1 unread notification',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String notificationsViewProfileSemanticLabel(String displayName) {
     return 'የ$displayName መገለጫ ይመልከቱ';
   }
