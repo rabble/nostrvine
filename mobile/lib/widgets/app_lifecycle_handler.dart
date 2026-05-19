@@ -62,6 +62,10 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
       ref.read(videoPublishProvider.notifier).resumePendingPublishes(context);
       await ref.read(clipLibraryServiceProvider).migrateOldClips();
       await ref.read(draftStorageServiceProvider).migrateOldDrafts();
+      // Hard-delete trashed clips past the 30-day retention window.
+      // Best-effort, idempotent; failures here are logged inside the
+      // service and must never block app startup.
+      await ref.read(clipLibraryServiceProvider).purgeExpiredTrash();
     });
   }
 

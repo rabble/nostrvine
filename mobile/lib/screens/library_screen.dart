@@ -17,6 +17,7 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
+import 'package:openvine/screens/library_trash_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/widgets/library/library.dart';
@@ -224,6 +225,28 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
         elevation: 0,
         behavior: SnackBarBehavior.floating,
         content: DivineSnackbarContainer(label: label, error: error),
+      ),
+    );
+  }
+
+  Future<void> _openTrash(
+    BuildContext context,
+    ClipsLibraryBloc clipsBloc,
+  ) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => BlocProvider<ClipsLibraryBloc>.value(
+          value: clipsBloc,
+          child: const LibraryTrashScreen(),
+        ),
+      ),
+    );
+    // Refresh active clips when returning so any restores show up.
+    if (!context.mounted) return;
+    clipsBloc.add(
+      ClipsLibraryLoadRequested(
+        preSelectedIds: clipsBloc.state.preSelectedIds,
+        disabledClipIds: clipsBloc.state.disabledClipIds,
       ),
     );
   }
@@ -477,6 +500,7 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
                           onEnterSelectionMode: () => clipsBloc.add(
                             const ClipsLibraryEnterSelectionMode(),
                           ),
+                          onOpenTrash: () => _openTrash(context, clipsBloc),
                           onDeleteSelectedClips:
                               clipsState.selectedClipIds.isNotEmpty
                               ? () => _confirmDeleteSelectedClips(
@@ -557,6 +581,7 @@ class _LibraryToolbar extends StatelessWidget {
     required this.onLeadingPressed,
     required this.onOpenSortMenu,
     required this.onEnterSelectionMode,
+    required this.onOpenTrash,
     this.onDeleteSelectedClips,
   });
 
@@ -566,6 +591,7 @@ class _LibraryToolbar extends StatelessWidget {
   final VoidCallback onLeadingPressed;
   final VoidCallback onOpenSortMenu;
   final VoidCallback onEnterSelectionMode;
+  final VoidCallback onOpenTrash;
   final VoidCallback? onDeleteSelectedClips;
 
   @override
@@ -594,6 +620,14 @@ class _LibraryToolbar extends StatelessWidget {
             ),
           ),
           if (isClipsTabActive) ...[
+            if (!isLibrarySelectionMode)
+              DivineIconButton(
+                size: .small,
+                type: .secondary,
+                icon: .trash,
+                semanticLabel: context.l10n.libraryTrashEntryLabel,
+                onPressed: onOpenTrash,
+              ),
             DivineIconButton(
               size: .small,
               type: .secondary,

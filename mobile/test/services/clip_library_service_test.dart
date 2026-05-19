@@ -97,7 +97,7 @@ void main() {
 
         final trashed = await service.softDelete('clip_to_trash');
         expect(trashed, isTrue);
-        expect((await service.getAllClips()), isEmpty);
+        expect(await service.getAllClips(), isEmpty);
         expect(
           (await service.getTrashedClips()).map((c) => c.id),
           contains('clip_to_trash'),
@@ -123,7 +123,7 @@ void main() {
 
         await service.saveClip(clip);
         await service.softDelete('roundtrip_clip');
-        expect((await service.getAllClips()), isEmpty);
+        expect(await service.getAllClips(), isEmpty);
 
         final restored = await service.restore('roundtrip_clip');
         expect(restored, isTrue);
@@ -131,7 +131,7 @@ void main() {
           (await service.getAllClips()).map((c) => c.id),
           contains('roundtrip_clip'),
         );
-        expect((await service.getTrashedClips()), isEmpty);
+        expect(await service.getTrashedClips(), isEmpty);
       });
     });
 
@@ -200,7 +200,7 @@ void main() {
 
         final purged = await service.purgeExpiredTrash();
         expect(purged, 1);
-        expect((await service.getTrashedClips()), isEmpty);
+        expect(await service.getTrashedClips(), isEmpty);
       });
 
       test('keeps trashed clips within retention window', () async {
