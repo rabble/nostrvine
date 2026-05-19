@@ -6585,7 +6585,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoRecorderGhostFrameDisabled => 'Ghost frame disabled';
 
   @override
-  String get videoRecorderClipDeletedMessage => 'Clip deleted';
+  String get videoRecorderClipDeletedMessage => 'Clip moved to trash';
+
+  @override
+  String get videoRecorderClipUndoLabel => 'Undo';
+
+  @override
+  String get libraryTrashTitle => 'Recently deleted';
+
+  @override
+  String get libraryTrashEmptyTitle => 'Trash is empty';
+
+  @override
+  String get libraryTrashEmptySubtitle =>
+      'Deleted clips live here for 30 days before being removed for good.';
+
+  @override
+  String get libraryTrashRestoreLabel => 'Restore';
+
+  @override
+  String get libraryTrashDeleteNowLabel => 'Delete now';
+
+  @override
+  String get libraryTrashEmptyAllLabel => 'Empty trash';
+
+  @override
+  String get libraryTrashEntryLabel => 'Recently deleted';
 
   @override
   String get videoRecorderCloseLabel => 'Close video recorder';

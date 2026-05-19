@@ -3754,7 +3754,39 @@
   "videoRecorderToggleGhostFrameLabel": "Toggle ghost frame",
   "videoRecorderGhostFrameEnabled": "Ghost frame enabled",
   "videoRecorderGhostFrameDisabled": "Ghost frame disabled",
-  "videoRecorderClipDeletedMessage": "Clip deleted",
+  "videoRecorderClipDeletedMessage": "Clip moved to trash",
+  "videoRecorderClipUndoLabel": "Undo",
+  "@videoRecorderClipUndoLabel": {
+    "description": "Action button on the 'Clip moved to trash' snackbar shown after the user deletes the last recorded clip. Tapping it restores the clip to its original position in the recording tray."
+  },
+  "libraryTrashTitle": "Recently deleted",
+  "@libraryTrashTitle": {
+    "description": "Screen title for the clip trash bin showing recently deleted clips that can still be restored within the retention window."
+  },
+  "libraryTrashEmptyTitle": "Trash is empty",
+  "@libraryTrashEmptyTitle": {
+    "description": "Empty-state title shown in the clip trash bin when there are no recently deleted clips."
+  },
+  "libraryTrashEmptySubtitle": "Deleted clips live here for 30 days before being removed for good.",
+  "@libraryTrashEmptySubtitle": {
+    "description": "Empty-state subtitle explaining the 30-day clip trash retention."
+  },
+  "libraryTrashRestoreLabel": "Restore",
+  "@libraryTrashRestoreLabel": {
+    "description": "Button on a trashed clip that restores it back to the active library."
+  },
+  "libraryTrashDeleteNowLabel": "Delete now",
+  "@libraryTrashDeleteNowLabel": {
+    "description": "Button on a trashed clip that skips the retention window and permanently deletes it immediately."
+  },
+  "libraryTrashEmptyAllLabel": "Empty trash",
+  "@libraryTrashEmptyAllLabel": {
+    "description": "Button that permanently deletes every clip currently in trash."
+  },
+  "libraryTrashEntryLabel": "Recently deleted",
+  "@libraryTrashEntryLabel": {
+    "description": "Menu/button label on the library screen that opens the trash view."
+  },
   "videoRecorderCloseLabel": "Close video recorder",
   "videoRecorderContinueToEditorLabel": "Continue to video editor",
   "videoRecorderCaptureCloseLabel": "Close",

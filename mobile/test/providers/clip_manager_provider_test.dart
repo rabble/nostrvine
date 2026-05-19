@@ -34,8 +34,14 @@ void main() {
         () => mockDraftStorageService.deleteDraft(any()),
       ).thenAnswer((_) async {});
       when(
-        () => mockClipLibraryService.deleteClip(any()),
-      ).thenAnswer((_) async {});
+        () => mockClipLibraryService.softDelete(
+          any(),
+          clearDraftId: any(named: 'clearDraftId'),
+        ),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockClipLibraryService.restore(any()),
+      ).thenAnswer((_) async => true);
       container = ProviderContainer(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
@@ -206,7 +212,7 @@ void main() {
 
       expect(container.read(clipManagerProvider).clips.length, equals(2));
 
-      await notifier.deleteLastRecordedClip();
+      await notifier.scheduleDeleteLastClip();
 
       final state = container.read(clipManagerProvider);
       expect(state.clips.length, equals(1));

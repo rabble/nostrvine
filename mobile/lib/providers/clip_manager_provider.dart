@@ -38,6 +38,12 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   Timer? _recordingDurationTimer;
   final _recordStopwatch = Stopwatch();
   final List<DivineVideoClip> _clips = [];
+  Timer? _pendingDeletionTimer;
+
+  /// Undo window before a scheduled deletion is committed to library
+  /// trash for good. The snackbar must outlast this so the user can
+  /// always tap Undo while the option is shown.
+  static const pendingDeletionWindow = Duration(seconds: 5);
 
   /// Returns an unmodifiable view of all clips.
   List<DivineVideoClip> get clips => List.unmodifiable(_clips);
@@ -62,6 +68,8 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   ClipManagerState build() {
     ref.onDispose(() {
       _recordingDurationTimer?.cancel();
+      _pendingDeletionTimer?.cancel();
+      _pendingDeletionTimer = null;
       _recordStopwatch.stop();
       _clips.clear();
       Log.debug(
@@ -176,6 +184,12 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     String? thumbnailPath,
     CameraLensMetadata? lensMetadata,
   }) {
+    // A new recording supersedes any pending undo from a previous tap.
+    if (state.pendingDeletion != null) {
+      _cancelPendingDeletionTimer();
+      unawaited(_commitPendingDeletion());
+    }
+
     final clipDuration =
         duration ??
         Duration(microseconds: _recordStopwatch.elapsedMicroseconds);
@@ -384,6 +398,11 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   /// Returns true if the clip was successfully deleted, false if not found.
   /// Also deletes associated files if not referenced elsewhere.
   Future<bool> removeClipById(String clipId) async {
+    if (state.pendingDeletion != null) {
+      _cancelPendingDeletionTimer();
+      await _commitPendingDeletion();
+    }
+
     final index = _clips.indexWhere((c) => c.id == clipId);
     if (index == -1) {
       Log.warning(
@@ -446,6 +465,11 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   /// Moves the clip at [oldIndex] to [newIndex], shifting other clips
   /// accordingly.
   void reorderClip(int oldIndex, int newIndex) {
+    if (state.pendingDeletion != null) {
+      _cancelPendingDeletionTimer();
+      unawaited(_commitPendingDeletion());
+    }
+
     if (oldIndex < 0 ||
         oldIndex >= _clips.length ||
         newIndex < 0 ||
@@ -642,14 +666,20 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     return index >= 0 ? _clips[index] : null;
   }
 
-  /// Remove the most recent clip (undo last recording).
+  /// Schedule a soft-delete of the most recent clip.
   ///
-  /// Delegates to [removeClipById] to update state and autosave, then
-  /// deletes the clip's associated files (video, thumbnail, ghost frame)
-  /// if they are not referenced by other drafts or library entries.
+  /// Removes the clip from the visible tray immediately and marks it
+  /// as trashed in the library (with its `draft_id` cleared, so a
+  /// restore later lands in the library rather than a stale session).
+  /// Hard-deletion is deferred to the trash retention window — the
+  /// snackbar Undo path calls [undoPendingDeletion] to roll back.
+  ///
+  /// If a previous deletion is still pending, it is committed
+  /// synchronously first: tapping the button again means the user has
+  /// moved on from the previous undo opportunity.
   ///
   /// No-ops when the clip list is empty.
-  Future<void> deleteLastRecordedClip() async {
+  Future<void> scheduleDeleteLastClip() async {
     if (_clips.isEmpty) {
       Log.debug(
         '⚠️ Cannot delete last clip - no clips available',
@@ -658,25 +688,96 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
       );
       return;
     }
-    final lastClip = _clips.last;
+
+    // Commit any in-flight pending deletion first so we never lose
+    // its draft-decoupling effect by overwriting state.pendingDeletion.
+    if (state.pendingDeletion != null) {
+      _cancelPendingDeletionTimer();
+      await _commitPendingDeletion();
+    }
+
+    final lastIndex = _clips.length - 1;
+    final lastClip = _clips[lastIndex];
+
     Log.info(
-      '↩️  Deleting last clip: ${lastClip.id}',
+      '🗑️  Scheduling delete of last clip: ${lastClip.id}',
       name: 'ClipManagerNotifier',
       category: .video,
     );
-    // Delete from library first so consumers see clean state when
-    // the session-clip removal triggers rebuilds.
-    final clipLibraryService = ref.read(clipLibraryServiceProvider);
-    await clipLibraryService.deleteClip(lastClip.id);
 
-    // Remove from autosave and invalidate the final-rendered clip.
-    await removeClipById(lastClip.id);
+    _clips.removeAt(lastIndex);
+    state = state.copyWith(
+      clips: List.unmodifiable(_clips),
+      pendingDeletion: ClipPendingDeletion(
+        clip: lastClip,
+        originalIndex: lastIndex,
+      ),
+      clearMergeOutputPath: true,
+    );
+
+    final clipLibraryService = ref.read(clipLibraryServiceProvider);
+    await clipLibraryService.softDelete(lastClip.id, clearDraftId: true);
+    await _forceAutosave();
+    if (!ref.mounted) return;
+
+    _pendingDeletionTimer = Timer(pendingDeletionWindow, () {
+      _pendingDeletionTimer = null;
+      unawaited(_commitPendingDeletion());
+    });
+  }
+
+  /// Reverse the pending deletion within the undo window. Restores
+  /// the clip to its original position in [clips] and brings it back
+  /// out of library trash. No-ops if no deletion is pending.
+  Future<void> undoPendingDeletion() async {
+    final pending = state.pendingDeletion;
+    if (pending == null) return;
+
+    _cancelPendingDeletionTimer();
+
+    Log.info(
+      '↩️  Undoing scheduled delete: ${pending.clip.id}',
+      name: 'ClipManagerNotifier',
+      category: .video,
+    );
+
+    final insertIndex = pending.originalIndex.clamp(0, _clips.length);
+    _clips.insert(insertIndex, pending.clip);
+    state = state.copyWith(
+      clips: List.unmodifiable(_clips),
+      clearPendingDeletion: true,
+      clearMergeOutputPath: true,
+    );
+
+    final clipLibraryService = ref.read(clipLibraryServiceProvider);
+    await clipLibraryService.restore(pending.clip.id);
+    await _forceAutosave();
+  }
+
+  void _cancelPendingDeletionTimer() {
+    _pendingDeletionTimer?.cancel();
+    _pendingDeletionTimer = null;
+  }
+
+  /// Drop the pending-deletion marker. The clip stays in library trash
+  /// and the 30-day retention window owns hard-deletion from here.
+  Future<void> _commitPendingDeletion() async {
+    final pending = state.pendingDeletion;
+    if (pending == null) return;
+    _cancelPendingDeletionTimer();
+    state = state.copyWith(clearPendingDeletion: true);
+    Log.debug(
+      '✅ Committed scheduled delete: ${pending.clip.id}',
+      name: 'ClipManagerNotifier',
+      category: .video,
+    );
   }
 
   /// Clear all clips without deleting files or autosave.
   ///
   /// Used when restoring a draft to prevent clip duplication.
   void clearClips() {
+    _cancelPendingDeletionTimer();
     final clipCount = _clips.length;
     _clips.clear();
     Log.debug(
@@ -692,6 +793,10 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   /// Clears all recorded clips and resets to initial state.
   /// Also deletes the autosave draft unless [keepAutosavedDraft] is true.
   Future<void> clearAll({bool keepAutosavedDraft = false}) async {
+    _cancelPendingDeletionTimer();
+    if (state.pendingDeletion != null) {
+      await _commitPendingDeletion();
+    }
     final clipCount = _clips.length;
     _clips.clear();
     Log.info(

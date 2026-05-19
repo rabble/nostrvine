@@ -67,6 +67,17 @@ void main() {
 }
 
 const _knownUntranslatedDebt = {
+  // Added by the clip trash bin feature. Translators will pick these
+  // up in a follow-up pass; until then the generated l10n APIs fall
+  // back to the English source.
+  'videoRecorderClipUndoLabel',
+  'libraryTrashTitle',
+  'libraryTrashEmptyTitle',
+  'libraryTrashEmptySubtitle',
+  'libraryTrashRestoreLabel',
+  'libraryTrashDeleteNowLabel',
+  'libraryTrashEmptyAllLabel',
+  'libraryTrashEntryLabel',
   'profileNoSavedVideosTitle',
   'profileSavedOwnEmpty',
   'profileErrorLoadingSaved',

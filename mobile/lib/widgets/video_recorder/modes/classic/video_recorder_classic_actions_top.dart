@@ -1,12 +1,20 @@
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
+import 'package:openvine/widgets/video_recorder/clip_delete_snackbar.dart';
 
 class VideoRecorderClassicActionsTop extends ConsumerWidget {
   const VideoRecorderClassicActionsTop({super.key});
+
+  void _deleteLastClip(BuildContext context, WidgetRef ref) {
+    unawaited(ref.read(clipManagerProvider.notifier).scheduleDeleteLastClip());
+    showClipDeleteSnackbar(context, ref);
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -22,13 +30,11 @@ class VideoRecorderClassicActionsTop extends ConsumerWidget {
         mainAxisAlignment: .center,
         children: [
           DivineIconButton(
-            icon: .arrowCounterClockwise,
+            icon: .trash,
             semanticLabel: context.l10n.videoRecorderDeleteLastClipLabel,
             size: .small,
             type: .ghostSecondary,
-            onPressed: ref
-                .read(clipManagerProvider.notifier)
-                .deleteLastRecordedClip,
+            onPressed: () => _deleteLastClip(context, ref),
           ),
         ],
       ),

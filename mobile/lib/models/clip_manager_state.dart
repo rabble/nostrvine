@@ -1,8 +1,32 @@
 // ABOUTME: UI state model for the Clip Manager screen
 // ABOUTME: Tracks clips, selection state, and duration calculations
 
+import 'package:equatable/equatable.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+
+/// In-flight soft-delete of a clip from the active recording session.
+///
+/// While present in [ClipManagerState.pendingDeletion], the clip is
+/// hidden from `clips` and has been moved to library trash, but its
+/// hard-deletion is deferred for an undo window. Tapping the snackbar
+/// Undo within the window restores the clip to [originalIndex] and
+/// pulls it back out of trash; ignoring the snackbar lets the clip
+/// stay in trash where the 30-day retention window owns the next step.
+class ClipPendingDeletion extends Equatable {
+  const ClipPendingDeletion({required this.clip, required this.originalIndex});
+
+  /// The clip that was just soft-deleted, preserved so Undo can
+  /// reinsert it without re-reading from disk.
+  final DivineVideoClip clip;
+
+  /// Position the clip occupied in `clips` before deletion. Used to
+  /// restore the original ordering on Undo.
+  final int originalIndex;
+
+  @override
+  List<Object?> get props => [clip.id, originalIndex];
+}
 
 /// State model for the Clip Manager.
 ///
@@ -23,6 +47,7 @@ class ClipManagerState {
     this.muteOriginalAudio = false,
     this.activeRecordingDuration = .zero,
     this.mergeOutputPath,
+    this.pendingDeletion,
   });
 
   /// List of all recorded clips in order.
@@ -54,6 +79,11 @@ class ClipManagerState {
   /// Set after clips are concatenated into a preview video. Cleared
   /// automatically whenever clips are added, removed, or reordered.
   final String? mergeOutputPath;
+
+  /// A clip that was soft-deleted from the active session and is
+  /// waiting in the undo window. Hidden from `clips` and present in
+  /// library trash; UI uses this to drive the Undo snackbar.
+  final ClipPendingDeletion? pendingDeletion;
 
   /// Total combined duration of all clips.
   Duration get totalDuration {
@@ -120,6 +150,8 @@ class ClipManagerState {
     Duration? activeRecordingDuration,
     String? mergeOutputPath,
     bool clearMergeOutputPath = false,
+    ClipPendingDeletion? pendingDeletion,
+    bool clearPendingDeletion = false,
   }) {
     return ClipManagerState(
       clips: clips ?? this.clips,
@@ -138,6 +170,9 @@ class ClipManagerState {
       mergeOutputPath: clearMergeOutputPath
           ? null
           : (mergeOutputPath ?? this.mergeOutputPath),
+      pendingDeletion: clearPendingDeletion
+          ? null
+          : (pendingDeletion ?? this.pendingDeletion),
     );
   }
 }

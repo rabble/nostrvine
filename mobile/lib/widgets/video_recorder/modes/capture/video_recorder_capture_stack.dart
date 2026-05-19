@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
+import 'package:openvine/widgets/video_recorder/clip_delete_snackbar.dart';
 import 'package:openvine/widgets/video_recorder/modes/capture/video_recorder_capture_actions.dart';
 import 'package:openvine/widgets/video_recorder/modes/capture/video_recorder_capture_top_bar.dart';
 import 'package:openvine/widgets/video_recorder/preview/video_recorder_camera_preview.dart';
@@ -20,21 +21,8 @@ class VideoRecorderCaptureStack extends ConsumerWidget {
   final bool fromEditor;
 
   void _deleteLastClip(BuildContext context, WidgetRef ref) {
-    final clipsNotifier = ref.read(clipManagerProvider.notifier);
-    unawaited(clipsNotifier.deleteLastRecordedClip());
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        padding: EdgeInsets.zero,
-        backgroundColor: VineTheme.transparent,
-        elevation: 0,
-        behavior: .floating,
-        margin: const .fromLTRB(16, 0, 16, 68),
-        content: DivineSnackbarContainer(
-          label: context.l10n.videoRecorderClipDeletedMessage,
-        ),
-      ),
-    );
+    unawaited(ref.read(clipManagerProvider.notifier).scheduleDeleteLastClip());
+    showClipDeleteSnackbar(context, ref);
   }
 
   @override
@@ -74,7 +62,7 @@ class VideoRecorderCaptureStack extends ConsumerWidget {
                     duration: const Duration(milliseconds: 220),
                     opacity: hasClips && !isRecording && !fromEditor ? 1 : 0,
                     child: DivineIconButton(
-                      icon: .arrowCounterClockwise,
+                      icon: .trash,
                       semanticLabel:
                           context.l10n.videoRecorderDeleteLastClipLabel,
                       type: .ghostSecondary,
@@ -90,7 +78,7 @@ class VideoRecorderCaptureStack extends ConsumerWidget {
                     opacity: 0,
                     child: IgnorePointer(
                       child: DivineIconButton(
-                        icon: .arrowCounterClockwise,
+                        icon: .trash,
                         type: .ghostSecondary,
                         size: .small,
                         onPressed: null,

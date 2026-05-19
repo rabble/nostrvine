@@ -6530,6 +6530,31 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoRecorderClipDeletedMessage => 'تم حذف المقطع';
 
   @override
+  String get videoRecorderClipUndoLabel => 'Undo';
+
+  @override
+  String get libraryTrashTitle => 'Recently deleted';
+
+  @override
+  String get libraryTrashEmptyTitle => 'Trash is empty';
+
+  @override
+  String get libraryTrashEmptySubtitle =>
+      'Deleted clips live here for 30 days before being removed for good.';
+
+  @override
+  String get libraryTrashRestoreLabel => 'Restore';
+
+  @override
+  String get libraryTrashDeleteNowLabel => 'Delete now';
+
+  @override
+  String get libraryTrashEmptyAllLabel => 'Empty trash';
+
+  @override
+  String get libraryTrashEntryLabel => 'Recently deleted';
+
+  @override
   String get videoRecorderCloseLabel => 'إغلاق مسجل الفيديو';
 
   @override

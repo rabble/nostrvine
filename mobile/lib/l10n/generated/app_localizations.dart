@@ -11567,8 +11567,56 @@ abstract class AppLocalizations {
   /// No description provided for @videoRecorderClipDeletedMessage.
   ///
   /// In en, this message translates to:
-  /// **'Clip deleted'**
+  /// **'Clip moved to trash'**
   String get videoRecorderClipDeletedMessage;
+
+  /// Action button on the 'Clip moved to trash' snackbar shown after the user deletes the last recorded clip. Tapping it restores the clip to its original position in the recording tray.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get videoRecorderClipUndoLabel;
+
+  /// Screen title for the clip trash bin showing recently deleted clips that can still be restored within the retention window.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently deleted'**
+  String get libraryTrashTitle;
+
+  /// Empty-state title shown in the clip trash bin when there are no recently deleted clips.
+  ///
+  /// In en, this message translates to:
+  /// **'Trash is empty'**
+  String get libraryTrashEmptyTitle;
+
+  /// Empty-state subtitle explaining the 30-day clip trash retention.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted clips live here for 30 days before being removed for good.'**
+  String get libraryTrashEmptySubtitle;
+
+  /// Button on a trashed clip that restores it back to the active library.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get libraryTrashRestoreLabel;
+
+  /// Button on a trashed clip that skips the retention window and permanently deletes it immediately.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete now'**
+  String get libraryTrashDeleteNowLabel;
+
+  /// Button that permanently deletes every clip currently in trash.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty trash'**
+  String get libraryTrashEmptyAllLabel;
+
+  /// Menu/button label on the library screen that opens the trash view.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently deleted'**
+  String get libraryTrashEntryLabel;
 
   /// No description provided for @videoRecorderCloseLabel.
   ///
