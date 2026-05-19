@@ -316,7 +316,9 @@ void main() {
               preloadGracePeriod: Duration.zero,
               loadingBuilder: (_, _, {required isSquare}) =>
                   const Text('loading'),
-              videoBuilder: (_, _, _, _) => const Text('video'),
+              videoBuilder: (_, _, _, _) {
+                return const Text('video');
+              },
             ),
           ),
         );
