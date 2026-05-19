@@ -1,4 +1,7 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/widgets.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 
 /// Heavily-blurred copy of a video's poster thumbnail, stretched to
 /// `BoxFit.cover` the entire fullscreen area. Painted behind the video
@@ -8,9 +11,8 @@ import 'package:flutter/widgets.dart';
 /// Instagram / TikTok "blurred poster" look.
 ///
 /// Cost: one image decode + one GPU blur pass via [ImageFiltered].
-/// The decoded image lives in Flutter's image cache, so revisiting
-/// the same video re-uses it. No ongoing per-frame cost once the
-/// image is rasterised.
+/// [VineCachedImage] keeps poster fetches on the shared cache path, so
+/// revisiting the same video can reuse the cached thumbnail bytes.
 class BlurredVideoBackdrop extends StatelessWidget {
   /// Creates a blurred backdrop from the poster thumbnail at [url].
   ///
@@ -28,18 +30,15 @@ class BlurredVideoBackdrop extends StatelessWidget {
       // keeps the bleeding edge of the blur kernel from leaking
       // outside the widget's box and over the surrounding chrome.
       child: ImageFiltered(
-        imageFilter: .blur(sigmaX: 30, sigmaY: 30),
-        child: Image.network(
-          url,
-          fit: BoxFit.cover,
-          // 50 % opacity via [Image.opacity] (an animation) rather
-          // than an [Opacity] wrapper — the latter forces a full-
-          // screen save-layer, the former blends per-pixel during
-          // paint and is essentially free.
-          opacity: const AlwaysStoppedAnimation(0.5),
-          // Fall back to nothing on error — the parent
-          // [ColoredBox(VineTheme.surfaceContainerHigh)] shows through.
-          errorBuilder: (_, _, _) => const SizedBox.shrink(),
+        imageFilter: ui.ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+        child: Opacity(
+          opacity: 0.5,
+          child: VineCachedImage(
+            imageUrl: url,
+            // Fall back to nothing on error — the parent
+            // [ColoredBox(VineTheme.surfaceContainerHigh)] shows through.
+            errorWidget: (_, _, _) => const SizedBox.shrink(),
+          ),
         ),
       ),
     );

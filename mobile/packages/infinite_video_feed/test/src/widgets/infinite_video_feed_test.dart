@@ -523,6 +523,87 @@ void main() {
         );
       });
 
+      testWidgets('passes default video item as child to videoBuilder', (
+        tester,
+      ) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        const globalChannel = MethodChannel('divine_video_player');
+        const playerChannel = MethodChannel('divine_video_player/player_0');
+        const eventChannelName = 'divine_video_player/player_0/events';
+        const methodCodec = StandardMethodCodec();
+        const wrapperKey = Key('video-builder-wrapper');
+
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          globalChannel,
+          (call) async {
+            if (call.method == 'create') return <Object?, Object?>{};
+            return null;
+          },
+        );
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          playerChannel,
+          (_) async => null,
+        );
+        tester.binding.defaultBinaryMessenger.setMockMessageHandler(
+          eventChannelName,
+          (message) async {
+            final call = methodCodec.decodeMethodCall(message);
+            if (call.method == 'listen') {
+              scheduleMicrotask(() async {
+                await tester.binding.defaultBinaryMessenger
+                    .handlePlatformMessage(
+                      eventChannelName,
+                      methodCodec.encodeSuccessEnvelope(<Object?, Object?>{
+                        'status': 'ready',
+                        'videoWidth': 1280,
+                        'videoHeight': 720,
+                        'isFirstFrameRendered': true,
+                      }),
+                      (_) {},
+                    );
+              });
+            }
+            return methodCodec.encodeSuccessEnvelope(null);
+          },
+        );
+
+        await tester.pumpWidget(
+          _wrapFeed(
+            InfiniteVideoFeed(
+              videos: [_makeVideo('wrapped_video_builder')],
+              cache: cache,
+              prefetchCount: 0,
+              preloadGracePeriod: Duration.zero,
+              videoBuilder: (_, child, _, _) {
+                return KeyedSubtree(key: wrapperKey, child: child);
+              },
+            ),
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byKey(wrapperKey), findsOneWidget);
+        expect(find.byType(VideoItemWidget), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          globalChannel,
+          null,
+        );
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          playerChannel,
+          null,
+        );
+        tester.binding.defaultBinaryMessenger.setMockMessageHandler(
+          eventChannelName,
+          null,
+        );
+      });
+
       testWidgets('currentIndex returns 0 initially', (tester) async {
         final key = GlobalKey<InfiniteVideoFeedState>();
         final videos = List.generate(3, (i) => _makeVideo('v$i'));

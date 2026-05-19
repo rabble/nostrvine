@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/widgets/video_feed_item/blurred_video_backdrop.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 
 void main() {
   group(BlurredVideoBackdrop, () {
@@ -24,31 +25,38 @@ void main() {
       expect(find.byType(ImageFiltered), findsOneWidget);
     });
 
-    testWidgets('passes url to network image provider', (tester) async {
+    testWidgets('passes url to $VineCachedImage', (tester) async {
       await tester.pumpWidget(buildWidget());
 
-      final image = tester.widget<Image>(find.byType(Image));
-      final provider = image.image as NetworkImage;
-      expect(provider.url, equals(testUrl));
+      final image = tester.widget<VineCachedImage>(
+        find.byType(VineCachedImage),
+      );
+      expect(image.imageUrl, equals(testUrl));
     });
 
-    testWidgets('uses $BoxFit cover', (tester) async {
+    testWidgets('uses $BoxFit cover with half opacity', (tester) async {
       await tester.pumpWidget(buildWidget());
 
-      final image = tester.widget<Image>(find.byType(Image));
+      final image = tester.widget<VineCachedImage>(
+        find.byType(VineCachedImage),
+      );
       expect(image.fit, equals(BoxFit.cover));
+      final opacity = tester.widget<Opacity>(find.byType(Opacity));
+      expect(opacity.opacity, equals(0.5));
     });
 
-    testWidgets('errorBuilder renders $SizedBox shrink when image fails', (
+    testWidgets('errorWidget renders $SizedBox shrink when image fails', (
       tester,
     ) async {
       await tester.pumpWidget(buildWidget());
 
-      final image = tester.widget<Image>(find.byType(Image));
-      final fallback = image.errorBuilder!(
-        tester.element(find.byType(Image)),
+      final image = tester.widget<VineCachedImage>(
+        find.byType(VineCachedImage),
+      );
+      final fallback = image.errorWidget!(
+        tester.element(find.byType(VineCachedImage)),
+        'https://example.com/fallback.jpg',
         Exception('load error'),
-        StackTrace.current,
       );
 
       expect(fallback, isA<SizedBox>());

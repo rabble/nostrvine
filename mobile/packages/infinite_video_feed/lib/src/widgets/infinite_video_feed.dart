@@ -1112,6 +1112,10 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
           controller,
           isActive: index == _currentIndex,
         );
+        final videoItem = VideoItemWidget(
+          controller: controller,
+          shouldPortraitExpand: widget.shouldPortraitExpand,
+        );
 
         final hasVideoSize =
             controller != null && controller.state.videoHeight != 0;
@@ -1132,18 +1136,11 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
             if (!hasError && hasVideoSize)
               widget.videoBuilder?.call(
                     context,
-                    VideoItemWidget(
-                      controller: controller,
-                      shouldPortraitExpand: widget.shouldPortraitExpand,
-                    ),
+                    videoItem,
                     index,
                     controller,
                   ) ??
-                  VideoItemWidget(
-                    controller: controller,
-                    shouldPortraitExpand: widget.shouldPortraitExpand,
-                  ),
-
+                  videoItem,
             // Overlay layer — consumer-provided controls, progress, etc.
             ?overlay,
 
