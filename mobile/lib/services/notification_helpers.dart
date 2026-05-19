@@ -63,6 +63,29 @@ String? extractAddressableId(Event event) {
   return (kind: kind, pubkey: pubkey, dTag: dTag);
 }
 
+/// Normalises a raw FCM [RemoteMessage.data]-style map into the two fields
+/// the deep-link resolver needs.
+///
+/// Translates the wire key `'type'` to `notificationType` so callers see one
+/// shape regardless of whether the payload came from the FCM wire (`type`)
+/// or a locally-emitted notification JSON (`notificationType`).
+///
+/// Returns `null` when the payload carries no `referencedEventId`, so the
+/// caller can short-circuit before reaching the deep-link resolver.
+({String referencedEventId, String? notificationType})? parseFcmPayload(
+  Map<String, dynamic> data,
+) {
+  final referencedEventId = data['referencedEventId'] as String?;
+  if (referencedEventId == null || referencedEventId.isEmpty) return null;
+  // FCM wire payload uses the key 'type'; local-notification JSON uses
+  // 'notificationType'. Normalise here so callers see one shape.
+  final notificationType = data['type'] as String?;
+  return (
+    referencedEventId: referencedEventId,
+    notificationType: notificationType,
+  );
+}
+
 /// Resolves the actor name from a user profile with fallback priority:
 /// 1. name field
 /// 2. displayName field

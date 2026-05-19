@@ -421,4 +421,80 @@ void main() {
       expect(result, 'plainname');
     });
   });
+
+  group('parseFcmPayload', () {
+    test('returns null when referencedEventId is missing', () {
+      expect(parseFcmPayload(const {}), isNull);
+      expect(parseFcmPayload(const {'type': 'like'}), isNull);
+    });
+
+    test('returns null when referencedEventId is an empty string', () {
+      expect(parseFcmPayload(const {'referencedEventId': ''}), isNull);
+    });
+
+    test(
+      'returns the referenced event id with a null type when type missing',
+      () {
+        final result = parseFcmPayload(const {
+          'referencedEventId': 'event_abc',
+        });
+
+        expect(result, isNotNull);
+        expect(result!.referencedEventId, equals('event_abc'));
+        expect(result.notificationType, isNull);
+      },
+    );
+
+    test('reads the FCM wire key "type" into notificationType', () {
+      final result = parseFcmPayload(const {
+        'referencedEventId': 'event_abc',
+        'type': 'reply',
+      });
+
+      expect(result, isNotNull);
+      expect(result!.referencedEventId, equals('event_abc'));
+      expect(result.notificationType, equals('reply'));
+    });
+
+    test('preserves the full referenced event id without truncation', () {
+      const fullEventId =
+          '7c4d2eaa1c5f4f0e8b2d1aabcdef1234567890abcdef1234567890abcdef1234';
+
+      final result = parseFcmPayload(const {
+        'referencedEventId': fullEventId,
+        'type': 'like',
+      });
+
+      expect(result!.referencedEventId, equals(fullEventId));
+    });
+
+    test('handles each known notification kind', () {
+      const kinds = ['like', 'reply', 'comment', 'mention', 'repost', 'follow'];
+      for (final kind in kinds) {
+        final result = parseFcmPayload({
+          'referencedEventId': 'evt_$kind',
+          'type': kind,
+        });
+
+        expect(
+          result,
+          isNotNull,
+          reason: '$kind payload should parse to non-null',
+        );
+        expect(result!.notificationType, equals(kind));
+      }
+    });
+
+    test('ignores unrelated keys in the payload', () {
+      final result = parseFcmPayload(const {
+        'referencedEventId': 'evt1',
+        'type': 'like',
+        'extra': 'ignored',
+        'aps': {'badge': 5},
+      });
+
+      expect(result!.referencedEventId, equals('evt1'));
+      expect(result.notificationType, equals('like'));
+    });
+  });
 }

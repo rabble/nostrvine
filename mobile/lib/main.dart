@@ -78,6 +78,8 @@ import 'package:openvine/services/locale_preference_service.dart';
 import 'package:openvine/services/logging_config_service.dart';
 import 'package:openvine/services/mention_resolution_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart' show HttpMethod;
+import 'package:openvine/services/notification_helpers.dart'
+    show parseFcmPayload;
 import 'package:openvine/services/notification_service.dart'
     show NotificationPayloadKind, NotificationTapEvent;
 import 'package:openvine/services/notification_target_resolver.dart';
@@ -252,25 +254,6 @@ VideoDeepLinkNavAction resolveVideoDeepLinkNavAction({
   }
   // Coming from a non-video route — push so back returns home.
   return VideoDeepLinkNavAction.push;
-}
-
-/// Normalises the raw FCM [RemoteMessage.data] map into the two fields the
-/// app cares about, translating the wire key `'type'` to `notificationType`
-/// so the rest of the app never has to know which key the FCM server uses.
-///
-/// Returns `null` when the payload carries no `referencedEventId`.
-({String referencedEventId, String? notificationType})? _parseFcmPayload(
-  Map<String, dynamic> data,
-) {
-  final referencedEventId = data['referencedEventId'] as String?;
-  if (referencedEventId == null || referencedEventId.isEmpty) return null;
-  // FCM wire payload uses the key 'type'; local-notification JSON uses
-  // 'notificationType'. Normalise here so callers see one shape.
-  final notificationType = data['type'] as String?;
-  return (
-    referencedEventId: referencedEventId,
-    notificationType: notificationType,
-  );
 }
 
 /// Resolves [referencedEventId] from a push notification payload to a video
@@ -525,7 +508,7 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
         final initialMessage = await FirebaseMessaging.instance
             .getInitialMessage();
         if (initialMessage != null) {
-          final parsed = _parseFcmPayload(initialMessage.data);
+          final parsed = parseFcmPayload(initialMessage.data);
           if (parsed != null) {
             Log.info(
               'App launched from push notification, '
@@ -546,7 +529,7 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
 
         // Handle taps on notifications while app is in background
         FirebaseMessaging.onMessageOpenedApp.listen((message) {
-          final parsed = _parseFcmPayload(message.data);
+          final parsed = parseFcmPayload(message.data);
           if (parsed != null) {
             Log.info(
               'Push notification tapped (background), '
