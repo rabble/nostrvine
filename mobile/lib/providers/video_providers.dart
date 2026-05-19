@@ -58,10 +58,9 @@ PersonalEventCacheService personalEventCacheService(Ref ref) {
   // Initialize with current user's pubkey when authenticated
   if (authService.isAuthenticated && authService.currentPublicKeyHex != null) {
     service.initialize(authService.currentPublicKeyHex!).catchError((e) {
-      Log.error(
-        'Failed to initialize PersonalEventCacheService',
-        name: 'AppProviders',
-        error: e,
+      Log.warning(
+        'Failed to initialize PersonalEventCacheService: $e',
+        name: 'PersonalEventCacheService',
       );
     });
   }
@@ -413,10 +412,9 @@ LikesRepository likesRepository(Ref ref) {
 
   // Initialize: load from local storage + set up persistent subscription
   repository.initialize().catchError((Object e) {
-    Log.error(
-      'Failed to initialize LikesRepository',
-      name: 'AppProviders',
-      error: e,
+    Log.warning(
+      'Failed to initialize LikesRepository: $e',
+      name: 'LikesRepository',
     );
   });
 
@@ -502,10 +500,9 @@ RepostsRepository repostsRepository(Ref ref) {
 
   // Initialize: load from local storage + set up persistent subscription
   repository.initialize().catchError((Object e) {
-    Log.error(
-      'Failed to initialize RepostsRepository',
-      name: 'AppProviders',
-      error: e,
+    Log.warning(
+      'Failed to initialize RepostsRepository: $e',
+      name: 'RepostsRepository',
     );
   });
 
