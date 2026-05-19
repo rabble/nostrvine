@@ -42,6 +42,13 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
     on<ClipsLibraryEnterSelectionMode>(_onEnterSelectionMode);
     on<ClipsLibraryExitSelectionMode>(_onExitSelectionMode);
     on<ClipsLibraryAutoOpenSelectionMode>(_onAutoOpenSelectionMode);
+    on<ClipsLibraryTrashLoadRequested>(
+      _onTrashLoadRequested,
+      transformer: droppable(),
+    );
+    on<ClipsLibraryRestoreClips>(_onRestoreClips, transformer: droppable());
+    on<ClipsLibraryHardDeleteClip>(_onHardDeleteClip, transformer: droppable());
+    on<ClipsLibraryEmptyTrash>(_onEmptyTrash, transformer: droppable());
   }
 
   /// SharedPreferences key for the persisted [ClipSort] selection.
@@ -206,17 +213,18 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
       ),
     );
 
-    final deletedCount = state.selectedClipIds.length;
+    final deletedIds = Set<String>.from(state.selectedClipIds);
+    final deletedCount = deletedIds.length;
 
     try {
       Log.info(
-        '📚 Deleting $deletedCount clips',
+        '📚 Soft-deleting $deletedCount clips',
         name: 'ClipsLibraryBloc',
         category: LogCategory.video,
       );
 
-      for (final clipId in state.selectedClipIds) {
-        await _clipLibraryService.deleteClip(clipId);
+      for (final clipId in deletedIds) {
+        await _clipLibraryService.softDelete(clipId);
       }
 
       // Reload clips and clear selection
@@ -230,6 +238,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
           selectedClipIds: const {},
           selectedDuration: Duration.zero,
           lastDeletedCount: deletedCount,
+          lastDeletedClipIds: deletedIds,
         ),
       );
     } catch (e, stackTrace) {
@@ -262,7 +271,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         category: LogCategory.video,
       );
 
-      await _clipLibraryService.deleteClip(event.clip.id);
+      await _clipLibraryService.softDelete(event.clip.id);
 
       // Reload clips
       final clips = await _clipLibraryService.getAllClips();
@@ -283,6 +292,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
           selectedClipIds: selectedIds,
           selectedDuration: selectedDuration,
           lastDeletedCount: 1,
+          lastDeletedClipIds: {event.clip.id},
         ),
       );
     } catch (e, stackTrace) {
@@ -463,6 +473,131 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
       state.copyWith(
         isLibrarySelectionMode: true,
         didAutoOpenSelectionMode: true,
+      ),
+    );
+  }
+
+  Future<void> _onTrashLoadRequested(
+    ClipsLibraryTrashLoadRequested event,
+    Emitter<ClipsLibraryState> emit,
+  ) async {
+    emit(state.copyWith(status: ClipsLibraryStatus.trashLoading));
+    try {
+      final trashed = await _clipLibraryService.getTrashedClips();
+      emit(
+        state.copyWith(
+          status: ClipsLibraryStatus.trashLoaded,
+          trashedClips: trashed,
+        ),
+      );
+    } catch (e, stackTrace) {
+      Log.error(
+        '📚 Failed to load trashed clips: $e',
+        name: 'ClipsLibraryBloc',
+        category: LogCategory.video,
+      );
+      addError(e, stackTrace);
+      emit(state.copyWith(status: ClipsLibraryStatus.error));
+    }
+  }
+
+  Future<void> _onRestoreClips(
+    ClipsLibraryRestoreClips event,
+    Emitter<ClipsLibraryState> emit,
+  ) async {
+    if (event.clipIds.isEmpty) return;
+    try {
+      for (final id in event.clipIds) {
+        await _clipLibraryService.restore(id);
+      }
+      Log.info(
+        '♻️ Restored ${event.clipIds.length} clip(s) from trash',
+        name: 'ClipsLibraryBloc',
+        category: LogCategory.video,
+      );
+      await _reloadClipsAndTrash(emit);
+    } catch (e, stackTrace) {
+      Log.error(
+        '📚 Failed to restore clips: $e',
+        name: 'ClipsLibraryBloc',
+        category: LogCategory.video,
+      );
+      addError(e, stackTrace);
+      emit(state.copyWith(status: ClipsLibraryStatus.error));
+    }
+  }
+
+  Future<void> _onHardDeleteClip(
+    ClipsLibraryHardDeleteClip event,
+    Emitter<ClipsLibraryState> emit,
+  ) async {
+    try {
+      await _clipLibraryService.hardDelete(event.clip.id);
+      final trashed = await _clipLibraryService.getTrashedClips();
+      emit(
+        state.copyWith(
+          status: ClipsLibraryStatus.trashLoaded,
+          trashedClips: trashed,
+        ),
+      );
+    } catch (e, stackTrace) {
+      Log.error(
+        '📚 Failed to hard-delete clip: $e',
+        name: 'ClipsLibraryBloc',
+        category: LogCategory.video,
+      );
+      addError(e, stackTrace);
+      emit(state.copyWith(status: ClipsLibraryStatus.error));
+    }
+  }
+
+  Future<void> _onEmptyTrash(
+    ClipsLibraryEmptyTrash event,
+    Emitter<ClipsLibraryState> emit,
+  ) async {
+    try {
+      final trashed = await _clipLibraryService.getTrashedClips();
+      for (final clip in trashed) {
+        await _clipLibraryService.hardDelete(clip.id);
+      }
+      Log.info(
+        '🧹 Emptied trash (${trashed.length} clip(s))',
+        name: 'ClipsLibraryBloc',
+        category: LogCategory.video,
+      );
+      emit(
+        state.copyWith(
+          status: ClipsLibraryStatus.trashLoaded,
+          trashedClips: const [],
+        ),
+      );
+    } catch (e, stackTrace) {
+      Log.error(
+        '📚 Failed to empty trash: $e',
+        name: 'ClipsLibraryBloc',
+        category: LogCategory.video,
+      );
+      addError(e, stackTrace);
+      emit(state.copyWith(status: ClipsLibraryStatus.error));
+    }
+  }
+
+  /// Reloads both the active and trashed clip lists. Used after restore
+  /// so both views reflect the change.
+  Future<void> _reloadClipsAndTrash(Emitter<ClipsLibraryState> emit) async {
+    final clips = await _clipLibraryService.getAllClips();
+    final trashed = await _clipLibraryService.getTrashedClips();
+    emit(
+      state.copyWith(
+        status:
+            state.status == ClipsLibraryStatus.trashLoading ||
+                state.status == ClipsLibraryStatus.trashLoaded
+            ? ClipsLibraryStatus.trashLoaded
+            : ClipsLibraryStatus.loaded,
+        clips: clips,
+        sortedClips: _applySort(clips, state.clipSort),
+        trashedClips: trashed,
+        clearDeletedClipIds: true,
       ),
     );
   }

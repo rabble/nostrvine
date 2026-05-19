@@ -378,8 +378,8 @@ void main() {
         'deletes selected clips and clears selection',
         setUp: () {
           when(
-            () => mockClipLibraryService.deleteClip('clip1'),
-          ).thenAnswer((_) async {});
+            () => mockClipLibraryService.softDelete('clip1'),
+          ).thenAnswer((_) async => true);
           when(
             () => mockClipLibraryService.getAllClips(),
           ).thenAnswer((_) async => [clip2]);
@@ -405,7 +405,7 @@ void main() {
               .having((s) => s.lastDeletedCount, 'lastDeletedCount', 1),
         ],
         verify: (_) {
-          verify(() => mockClipLibraryService.deleteClip('clip1')).called(1);
+          verify(() => mockClipLibraryService.softDelete('clip1')).called(1);
         },
       );
 
@@ -413,7 +413,7 @@ void main() {
         'emits error state when deletion fails',
         setUp: () {
           when(
-            () => mockClipLibraryService.deleteClip(any()),
+            () => mockClipLibraryService.softDelete(any()),
           ).thenThrow(Exception('Delete failed'));
         },
         seed: () => ClipsLibraryState(
@@ -455,8 +455,8 @@ void main() {
         'deletes single clip and reloads',
         setUp: () {
           when(
-            () => mockClipLibraryService.deleteClip('clip1'),
-          ).thenAnswer((_) async {});
+            () => mockClipLibraryService.softDelete('clip1'),
+          ).thenAnswer((_) async => true);
           when(
             () => mockClipLibraryService.getAllClips(),
           ).thenAnswer((_) async => []);
@@ -479,7 +479,7 @@ void main() {
               .having((s) => s.lastDeletedCount, 'lastDeletedCount', 1),
         ],
         verify: (_) {
-          verify(() => mockClipLibraryService.deleteClip('clip1')).called(1);
+          verify(() => mockClipLibraryService.softDelete('clip1')).called(1);
         },
       );
 
@@ -487,8 +487,8 @@ void main() {
         'clears stale deleted count so repeated single-delete results still emit',
         setUp: () {
           when(
-            () => mockClipLibraryService.deleteClip(any()),
-          ).thenAnswer((_) async {});
+            () => mockClipLibraryService.softDelete(any()),
+          ).thenAnswer((_) async => true);
           when(() => mockClipLibraryService.getAllClips()).thenAnswer(
             (_) async => [],
           );
@@ -514,8 +514,8 @@ void main() {
         'removes clip from selection if it was selected',
         setUp: () {
           when(
-            () => mockClipLibraryService.deleteClip('clip1'),
-          ).thenAnswer((_) async {});
+            () => mockClipLibraryService.softDelete('clip1'),
+          ).thenAnswer((_) async => true);
           when(
             () => mockClipLibraryService.getAllClips(),
           ).thenAnswer((_) async => []);

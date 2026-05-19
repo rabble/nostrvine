@@ -97,3 +97,35 @@ final class ClipsLibraryExitSelectionMode extends ClipsLibraryEvent {
 final class ClipsLibraryAutoOpenSelectionMode extends ClipsLibraryEvent {
   const ClipsLibraryAutoOpenSelectionMode();
 }
+
+/// Event to load the list of trashed clips.
+final class ClipsLibraryTrashLoadRequested extends ClipsLibraryEvent {
+  const ClipsLibraryTrashLoadRequested();
+}
+
+/// Event to restore one or more trashed clips back to the library.
+final class ClipsLibraryRestoreClips extends ClipsLibraryEvent {
+  const ClipsLibraryRestoreClips(this.clipIds);
+
+  /// IDs of clips to restore.
+  final Set<String> clipIds;
+
+  @override
+  List<Object?> get props => [clipIds];
+}
+
+/// Event to permanently delete a trashed clip (skip the trash window).
+final class ClipsLibraryHardDeleteClip extends ClipsLibraryEvent {
+  const ClipsLibraryHardDeleteClip(this.clip);
+
+  /// The trashed clip to permanently delete.
+  final DivineVideoClip clip;
+
+  @override
+  List<Object?> get props => [clip];
+}
+
+/// Event to permanently delete every trashed clip.
+final class ClipsLibraryEmptyTrash extends ClipsLibraryEvent {
+  const ClipsLibraryEmptyTrash();
+}

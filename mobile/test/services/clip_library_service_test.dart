@@ -81,8 +81,62 @@ void main() {
       });
     });
 
-    group('deleteClip', () {
-      test('removes clip by ID', () async {
+    group('softDelete', () {
+      test('hides clip from active queries but keeps row', () async {
+        final clip = DivineVideoClip(
+          id: 'clip_to_trash',
+          video: EditorVideo.file('/tmp/test_video.mp4'),
+          duration: const Duration(seconds: 2),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: .square,
+          originalAspectRatio: 9 / 16,
+        );
+
+        await service.saveClip(clip);
+        expect((await service.getAllClips()).length, 1);
+
+        final trashed = await service.softDelete('clip_to_trash');
+        expect(trashed, isTrue);
+        expect((await service.getAllClips()), isEmpty);
+        expect(
+          (await service.getTrashedClips()).map((c) => c.id),
+          contains('clip_to_trash'),
+        );
+      });
+
+      test('returns false when clip ID not found', () async {
+        final result = await service.softDelete('nonexistent_clip');
+        expect(result, isFalse);
+      });
+    });
+
+    group('restore', () {
+      test('moves clip back from trash to active', () async {
+        final clip = DivineVideoClip(
+          id: 'roundtrip_clip',
+          video: EditorVideo.file('/tmp/test_video.mp4'),
+          duration: const Duration(seconds: 2),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: .square,
+          originalAspectRatio: 9 / 16,
+        );
+
+        await service.saveClip(clip);
+        await service.softDelete('roundtrip_clip');
+        expect((await service.getAllClips()), isEmpty);
+
+        final restored = await service.restore('roundtrip_clip');
+        expect(restored, isTrue);
+        expect(
+          (await service.getAllClips()).map((c) => c.id),
+          contains('roundtrip_clip'),
+        );
+        expect((await service.getTrashedClips()), isEmpty);
+      });
+    });
+
+    group('hardDelete', () {
+      test('removes clip permanently', () async {
         final clip = DivineVideoClip(
           id: 'clip_to_delete',
           video: EditorVideo.file('/tmp/test_video.mp4'),
@@ -95,8 +149,9 @@ void main() {
         await service.saveClip(clip);
         expect((await service.getAllClips()).length, 1);
 
-        await service.deleteClip('clip_to_delete');
+        await service.hardDelete('clip_to_delete');
         expect((await service.getAllClips()).length, 0);
+        expect((await service.getTrashedClips()).length, 0);
       });
 
       test('does nothing when clip ID not found', () async {
@@ -110,9 +165,60 @@ void main() {
         );
 
         await service.saveClip(clip);
-        await service.deleteClip('nonexistent_clip');
+        await service.hardDelete('nonexistent_clip');
 
         expect((await service.getAllClips()).length, 1);
+      });
+    });
+
+    group('purgeExpiredTrash', () {
+      test('hard-deletes trashed clips older than retention', () async {
+        final clip = DivineVideoClip(
+          id: 'old_trashed',
+          video: EditorVideo.file('/tmp/test_video.mp4'),
+          duration: const Duration(seconds: 2),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: .square,
+          originalAspectRatio: 9 / 16,
+        );
+
+        await service.saveClip(clip);
+        await service.softDelete('old_trashed');
+
+        // Backdate the deleted_at to 31 days ago so it's beyond a 30-day
+        // retention window.
+        await database.customStatement(
+          'UPDATE clips SET deleted_at = ? WHERE id = ?',
+          [
+            DateTime.now()
+                    .subtract(const Duration(days: 31))
+                    .millisecondsSinceEpoch ~/
+                1000,
+            'old_trashed',
+          ],
+        );
+
+        final purged = await service.purgeExpiredTrash();
+        expect(purged, 1);
+        expect((await service.getTrashedClips()), isEmpty);
+      });
+
+      test('keeps trashed clips within retention window', () async {
+        final clip = DivineVideoClip(
+          id: 'recent_trashed',
+          video: EditorVideo.file('/tmp/test_video.mp4'),
+          duration: const Duration(seconds: 2),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: .square,
+          originalAspectRatio: 9 / 16,
+        );
+
+        await service.saveClip(clip);
+        await service.softDelete('recent_trashed');
+
+        final purged = await service.purgeExpiredTrash();
+        expect(purged, 0);
+        expect((await service.getTrashedClips()).length, 1);
       });
     });
 

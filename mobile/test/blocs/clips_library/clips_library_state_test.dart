@@ -172,6 +172,7 @@ void main() {
         ClipsLibraryStatus.loaded,
         [clip1],
         const <DivineVideoClip>[],
+        const <DivineVideoClip>[],
         {'clip1'},
         const <String>{},
         const <String>{},
@@ -181,6 +182,7 @@ void main() {
         false,
         const GallerySaveResultSuccess(successCount: 1, failureCount: 0),
         1,
+        const <String>{},
       ]);
     });
   });

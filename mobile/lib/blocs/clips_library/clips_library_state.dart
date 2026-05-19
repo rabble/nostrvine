@@ -58,6 +58,12 @@ enum ClipsLibraryStatus {
   /// Saving to gallery.
   savingToGallery,
 
+  /// Loading the list of trashed clips.
+  trashLoading,
+
+  /// Trashed clips loaded successfully.
+  trashLoaded,
+
   /// An error occurred.
   error,
 }
@@ -109,6 +115,7 @@ final class ClipsLibraryState extends Equatable {
     this.status = ClipsLibraryStatus.initial,
     this.clips = const [],
     this.sortedClips = const [],
+    this.trashedClips = const [],
     this.selectedClipIds = const {},
     this.disabledClipIds = const {},
     this.preSelectedIds = const {},
@@ -118,6 +125,7 @@ final class ClipsLibraryState extends Equatable {
     this.didAutoOpenSelectionMode = false,
     this.lastGallerySaveResult,
     this.lastDeletedCount,
+    this.lastDeletedClipIds = const {},
   });
 
   /// Current operation status.
@@ -128,6 +136,9 @@ final class ClipsLibraryState extends Equatable {
 
   /// [clips] sorted by the current [clipSort] for display.
   final List<DivineVideoClip> sortedClips;
+
+  /// Clips currently in trash, newest-deleted-first.
+  final List<DivineVideoClip> trashedClips;
 
   /// IDs of currently selected clips.
   final Set<String> selectedClipIds;
@@ -164,6 +175,10 @@ final class ClipsLibraryState extends Equatable {
   /// Number of clips deleted in the last delete operation (for UI feedback).
   final int? lastDeletedCount;
 
+  /// IDs of clips deleted in the last delete operation. Used by the
+  /// snackbar Undo action to restore them within the soft-delete window.
+  final Set<String> lastDeletedClipIds;
+
   /// Whether clips are currently loading.
   bool get isLoading => status == ClipsLibraryStatus.loading;
 
@@ -184,6 +199,7 @@ final class ClipsLibraryState extends Equatable {
     ClipsLibraryStatus? status,
     List<DivineVideoClip>? clips,
     List<DivineVideoClip>? sortedClips,
+    List<DivineVideoClip>? trashedClips,
     Set<String>? selectedClipIds,
     Set<String>? disabledClipIds,
     Set<String>? preSelectedIds,
@@ -193,13 +209,16 @@ final class ClipsLibraryState extends Equatable {
     bool? didAutoOpenSelectionMode,
     GallerySaveResult? lastGallerySaveResult,
     int? lastDeletedCount,
+    Set<String>? lastDeletedClipIds,
     bool clearGallerySaveResult = false,
     bool clearDeletedCount = false,
+    bool clearDeletedClipIds = false,
   }) {
     return ClipsLibraryState(
       status: status ?? this.status,
       clips: clips ?? this.clips,
       sortedClips: sortedClips ?? this.sortedClips,
+      trashedClips: trashedClips ?? this.trashedClips,
       selectedClipIds: selectedClipIds ?? this.selectedClipIds,
       disabledClipIds: disabledClipIds ?? this.disabledClipIds,
       preSelectedIds: preSelectedIds ?? this.preSelectedIds,
@@ -215,6 +234,9 @@ final class ClipsLibraryState extends Equatable {
       lastDeletedCount: clearDeletedCount
           ? null
           : (lastDeletedCount ?? this.lastDeletedCount),
+      lastDeletedClipIds: clearDeletedClipIds
+          ? const {}
+          : (lastDeletedClipIds ?? this.lastDeletedClipIds),
     );
   }
 
@@ -223,6 +245,7 @@ final class ClipsLibraryState extends Equatable {
     status,
     clips,
     sortedClips,
+    trashedClips,
     selectedClipIds,
     disabledClipIds,
     preSelectedIds,
@@ -232,5 +255,6 @@ final class ClipsLibraryState extends Equatable {
     didAutoOpenSelectionMode,
     lastGallerySaveResult,
     lastDeletedCount,
+    lastDeletedClipIds,
   ];
 }
