@@ -88,26 +88,6 @@ class CuratedListRepository {
   // Read-only queries
   // ---------------------------------------------------------------------------
 
-  /// Returns video references from all subscribed lists, keyed by list ID.
-  ///
-  /// Each value is the list's [CuratedList.videoEventIds], which contains
-  /// a mix of:
-  /// - **Event IDs**: 64-character hex strings
-  /// - **Addressable coordinates**: `kind:pubkey:d-tag` format
-  ///
-  /// Lists with empty [CuratedList.videoEventIds] are excluded.
-  ///
-  /// Returns an empty map when there are no subscribed lists.
-  Map<String, List<String>> getSubscribedListVideoRefs() {
-    final refs = <String, List<String>>{};
-    for (final entry in _subscribedLists.entries) {
-      if (entry.value.videoEventIds.isNotEmpty) {
-        refs[entry.key] = List.unmodifiable(entry.value.videoEventIds);
-      }
-    }
-    return Map.unmodifiable(refs);
-  }
-
   /// Returns the subscribed list with the given [id], or `null` if not found.
   CuratedList? getListById(String id) => _subscribedLists[id];
 

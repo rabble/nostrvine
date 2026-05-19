@@ -1,7 +1,6 @@
 // ABOUTME: Widget tests for KeyManagementScreen public key and export capability UI
 // ABOUTME: Verifies public key copy plus Keycast local-vs-remote signing states
 
-@Tags(['skip_very_good_optimization'])
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';

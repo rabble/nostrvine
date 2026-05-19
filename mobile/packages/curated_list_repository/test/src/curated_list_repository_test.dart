@@ -203,66 +203,6 @@ void main() {
       });
     });
 
-    group('getSubscribedListVideoRefs', () {
-      test('returns empty map when no lists are set', () {
-        expect(repository.getSubscribedListVideoRefs(), isEmpty);
-      });
-
-      test('returns video refs keyed by list ID', () {
-        const eventId =
-            'aabbccdd11223344aabbccdd11223344'
-            'aabbccdd11223344aabbccdd11223344';
-        const addressableCoord = '34236:pubkey123:my-vine';
-
-        repository.setSubscribedLists([
-          createList(id: 'list-a', videoEventIds: [eventId, addressableCoord]),
-          createList(id: 'list-b', videoEventIds: [addressableCoord]),
-        ]);
-
-        final refs = repository.getSubscribedListVideoRefs();
-
-        expect(refs, hasLength(2));
-        expect(refs['list-a'], equals([eventId, addressableCoord]));
-        expect(refs['list-b'], equals([addressableCoord]));
-      });
-
-      test('excludes lists with empty videoEventIds', () {
-        repository.setSubscribedLists([
-          createList(id: 'has-videos', videoEventIds: ['video-id']),
-          createList(id: 'empty-list'),
-        ]);
-
-        final refs = repository.getSubscribedListVideoRefs();
-
-        expect(refs, hasLength(1));
-        expect(refs.containsKey('has-videos'), isTrue);
-        expect(refs.containsKey('empty-list'), isFalse);
-      });
-
-      test('returns unmodifiable map', () {
-        repository.setSubscribedLists([
-          createList(id: 'list-a', videoEventIds: ['video-id']),
-        ]);
-
-        final refs = repository.getSubscribedListVideoRefs();
-
-        expect(() => refs['new-key'] = [], throwsA(isA<UnsupportedError>()));
-      });
-
-      test('returns unmodifiable video ID lists', () {
-        repository.setSubscribedLists([
-          createList(id: 'list-a', videoEventIds: ['video-id']),
-        ]);
-
-        final refs = repository.getSubscribedListVideoRefs();
-
-        expect(
-          () => refs['list-a']!.add('injected'),
-          throwsA(isA<UnsupportedError>()),
-        );
-      });
-    });
-
     group('getListById', () {
       test('returns null when no lists are set', () {
         expect(repository.getListById('nonexistent'), isNull);
@@ -297,9 +237,9 @@ void main() {
         expect(repository.getListById('old-list'), isNull);
         expect(repository.getListById('new-list'), isNotNull);
 
-        final refs = repository.getSubscribedListVideoRefs();
-        expect(refs, hasLength(1));
-        expect(refs.containsKey('new-list'), isTrue);
+        final lists = repository.getSubscribedLists();
+        expect(lists, hasLength(1));
+        expect(lists.first.id, equals('new-list'));
       });
 
       test('clears all data when set with empty list', () {
@@ -309,7 +249,7 @@ void main() {
           ])
           ..setSubscribedLists([]);
 
-        expect(repository.getSubscribedListVideoRefs(), isEmpty);
+        expect(repository.getSubscribedLists(), isEmpty);
         expect(repository.getListById('list-a'), isNull);
       });
 

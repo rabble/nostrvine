@@ -463,9 +463,26 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       return;
     }
 
+    // Mirror _restoreSource: if the currently selected subscribed list is no
+    // longer in the subscription set (user unsubscribed, list was deleted),
+    // fall back to forYou instead of reloading an empty list source.
+    final selectedId = state.source.listId;
+    final stillSubscribed = subscribedLists.any((l) => l.id == selectedId);
+    final nextSource = stillSubscribed
+        ? state.source
+        : const VideoFeedSource.forYou();
+
+    if (!stillSubscribed) {
+      await _sharedPreferences?.setString(
+        _feedModeKey,
+        nextSource.persistenceValue,
+      );
+    }
+
     emit(
       state.copyWith(
         status: VideoFeedStatus.loading,
+        source: nextSource,
         videos: [],
         hasMore: true,
         clearError: true,
@@ -473,7 +490,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       ),
     );
 
-    await _loadVideos(state.source, emit, skipCache: true);
+    await _loadVideos(nextSource, emit, skipCache: true);
   }
 
   /// Handle blocklist changes.

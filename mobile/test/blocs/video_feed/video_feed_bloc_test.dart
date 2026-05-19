@@ -63,9 +63,6 @@ void main() {
         () => mockCuratedListRepository.subscribedListsStream,
       ).thenAnswer((_) => curatedListsController.stream);
       when(
-        () => mockCuratedListRepository.getSubscribedListVideoRefs(),
-      ).thenReturn({});
-      when(
         () => mockCuratedListRepository.getSubscribedLists(),
       ).thenReturn([]);
 
@@ -849,11 +846,6 @@ void main() {
           when(() => mockFollowRepository.followingPubkeys).thenReturn([
             'pubkey',
           ]);
-          when(
-            () => mockCuratedListRepository.getSubscribedListVideoRefs(),
-          ).thenReturn({
-            'list-a': ['video-a'],
-          });
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: ['pubkey'],
@@ -1936,6 +1928,69 @@ void main() {
       );
 
       blocTest<VideoFeedBloc, VideoFeedBlocState>(
+        'falls back to forYou when selected subscribed list is unsubscribed',
+        setUp: () async {
+          SharedPreferences.setMockInitialValues({
+            'video_feed_mode': 'list:list-a',
+          });
+          when(
+            () => mockVideosRepository.getRecommendedVideos(
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResult(videos: createTestVideos(2)),
+          );
+        },
+        build: () => VideoFeedBloc(
+          videosRepository: mockVideosRepository,
+          followRepository: mockFollowRepository,
+          curatedListRepository: mockCuratedListRepository,
+        ),
+        seed: () => VideoFeedBlocState(
+          status: VideoFeedStatus.success,
+          source: const VideoFeedSource.subscribedList(
+            listId: 'list-a',
+            listName: 'Best Vines',
+          ),
+          subscribedLists: [createTestList()],
+          videos: createTestVideos(3),
+        ),
+        // List-a is no longer in the subscribed set — emulates unsubscribe.
+        act: (bloc) => bloc.add(const VideoFeedCuratedListsChanged()),
+        expect: () => [
+          isA<VideoFeedBlocState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.loading)
+              .having(
+                (s) => s.source.type,
+                'source type',
+                VideoFeedSourceType.forYou,
+              )
+              .having((s) => s.subscribedLists, 'lists', isEmpty),
+          isA<VideoFeedBlocState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having(
+                (s) => s.source.type,
+                'source type',
+                VideoFeedSourceType.forYou,
+              )
+              .having((s) => s.videos.length, 'videos count', 2),
+        ],
+        verify: (_) {
+          verify(
+            () => mockVideosRepository.getRecommendedVideos(
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'does not refresh plain Following when curated lists change',
         build: createBloc,
         seed: () => VideoFeedBlocState(
@@ -2260,9 +2315,6 @@ void main() {
         when(
           () => mockCuratedListRepository.subscribedListsStream,
         ).thenAnswer((_) => cacheCuratedListsController.stream);
-        when(
-          () => mockCuratedListRepository.getSubscribedListVideoRefs(),
-        ).thenReturn({});
 
         // Default passthrough so existing cache tests keep working. Individual
         // tests can override this stub to exercise the filter behavior.
