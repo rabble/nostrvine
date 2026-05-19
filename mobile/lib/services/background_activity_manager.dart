@@ -107,8 +107,6 @@ class BackgroundActivityManager {
         _isAppInForeground = false;
         _onAppTerminating();
     }
-
-    if (wasInForeground != _isAppInForeground) {}
   }
 
   /// Handle app entering background

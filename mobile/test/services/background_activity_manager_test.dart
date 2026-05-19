@@ -65,13 +65,14 @@ void main() {
 
     setUp(() async {
       manager = BackgroundActivityManager();
+      manager.dispose();
       testService = TestBackgroundService();
 
       // BackgroundActivityManager is a process-wide singleton. Tests in this
-      // file share the same instance and run in random order, so reset its
-      // state to foreground + drain any pending lifecycle notifications before
-      // each test. Otherwise a prior test that transitioned to background can
-      // cause "should provide status information" to observe stale state.
+      // file share the same instance and run in random order, so clear any
+      // prior registrations/timers, reset its state to foreground, and drain
+      // pending lifecycle notifications before each test. Otherwise a prior
+      // test can leak services or stale background state into the next case.
       manager.onAppLifecycleStateChanged(AppLifecycleState.resumed);
       await pumpEventQueue();
     });
@@ -83,6 +84,7 @@ void main() {
 
     test('should register and notify services', () async {
       manager.registerService(testService);
+      addTearDown(() => manager.unregisterService(testService));
 
       // Simulate app going to background
       manager.onAppLifecycleStateChanged(AppLifecycleState.paused);
@@ -125,6 +127,7 @@ void main() {
 
     test('should handle app resume', () async {
       manager.registerService(testService);
+      addTearDown(() => manager.unregisterService(testService));
 
       // Go to background then resume
       manager.onAppLifecycleStateChanged(AppLifecycleState.paused);
@@ -153,6 +156,7 @@ void main() {
 
     test('should provide status information', () {
       manager.registerService(testService);
+      addTearDown(() => manager.unregisterService(testService));
 
       final status = manager.getStatus();
       expect(status['isAppInForeground'], isTrue);
