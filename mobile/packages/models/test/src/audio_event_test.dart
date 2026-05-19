@@ -413,6 +413,60 @@ void main() {
       });
     });
 
+    group('external provider metadata', () {
+      test('round trips external source and license metadata through JSON', () {
+        const audioEvent = AudioEvent(
+          id: 'freesound_502915',
+          pubkey: AudioEvent.externalProviderMarker,
+          createdAt: 1779120000,
+          url: 'https://cdn.freesound.org/previews/502/502915.mp3',
+          mimeType: 'audio/mpeg',
+          duration: 5.943,
+          title: 'Oh No No No Crowd',
+          source: 'ThePauny via Freesound',
+          externalSource: AudioExternalSource(
+            provider: 'freesound',
+            providerSoundId: '502915',
+            providerName: 'Freesound',
+            creatorName: 'ThePauny',
+            creatorUrl: 'https://freesound.org/people/ThePauny/',
+            sourceUrl: 'https://freesound.org/people/ThePauny/sounds/502915/',
+            previewUrl: 'https://cdn.freesound.org/previews/502/502915.mp3',
+            license: AudioLicenseMetadata(
+              type: 'cc0',
+              name: 'Creative Commons 0',
+              url: 'https://creativecommons.org/publicdomain/zero/1.0/',
+              allowsCommercialUse: true,
+              allowsDerivatives: true,
+              requiresAttribution: false,
+            ),
+          ),
+        );
+
+        final decoded = AudioEvent.fromJson(audioEvent.toJson());
+
+        expect(decoded.isExternalProviderSound, isTrue);
+        expect(decoded.externalSource?.provider, equals('freesound'));
+        expect(decoded.externalSource?.providerSoundId, equals('502915'));
+        expect(decoded.externalSource?.creatorName, equals('ThePauny'));
+        expect(decoded.externalSource?.license.type, equals('cc0'));
+        expect(decoded.externalSource?.license.allowsCommercialUse, isTrue);
+        expect(decoded.externalSource?.license.allowsDerivatives, isTrue);
+        expect(decoded.externalSource?.license.requiresAttribution, isFalse);
+      });
+
+      test('omits external source metadata when it is absent', () {
+        const audioEvent = AudioEvent(
+          id: testHexId,
+          pubkey: testPubkey,
+          createdAt: 1700000000,
+        );
+
+        expect(audioEvent.toJson(), isNot(contains('externalSource')));
+        expect(audioEvent.isExternalProviderSound, isFalse);
+      });
+    });
+
     group('toTags', () {
       test('generates complete tags list', () {
         // Arrange

@@ -34,6 +34,7 @@ class AudioEvent {
     this.source,
     this.sourceVideoReference,
     this.sourceVideoRelay,
+    this.externalSource,
     this.startOffset = Duration.zero,
     this.volume = 1.0,
     this.startTime = Duration.zero,
@@ -201,6 +202,7 @@ class AudioEvent {
       source: json['source'] as String?,
       sourceVideoReference: json['sourceVideoReference'] as String?,
       sourceVideoRelay: json['sourceVideoRelay'] as String?,
+      externalSource: _parseExternalSource(json['externalSource']),
       startOffset: json['startOffsetMs'] != null
           ? Duration(
               milliseconds: json['startOffsetMs'] as int,
@@ -223,6 +225,9 @@ class AudioEvent {
   /// Marker for draft-local imported audio.
   static const localImportMarker = 'local_import';
 
+  /// Marker for sounds resolved from server-side external provider search.
+  static const externalProviderMarker = 'external_provider';
+
   /// Whether this audio is derived from a video's original sound.
   bool get isOriginalSound => id.startsWith('video_');
 
@@ -239,6 +244,9 @@ class AudioEvent {
     if (!isLocalImport || url == null || url!.isEmpty) return null;
     return url;
   }
+
+  /// Whether this audio came from a normalized external sound provider.
+  bool get isExternalProviderSound => externalSource != null;
 
   /// Get the asset path for bundled sounds.
   /// Returns null if this is not a bundled sound.
@@ -287,6 +295,10 @@ class AudioEvent {
 
   /// Optional relay hint for the source video.
   final String? sourceVideoRelay;
+
+  /// Normalized source, attribution, and license metadata for proxy-backed
+  /// sounds from Freesound, Openverse, or future providers.
+  final AudioExternalSource? externalSource;
 
   /// Start offset within the audio track.
   ///
@@ -410,6 +422,7 @@ class AudioEvent {
     String? source,
     String? sourceVideoReference,
     String? sourceVideoRelay,
+    AudioExternalSource? externalSource,
     Duration? startOffset,
     double? volume,
     Duration? startTime,
@@ -428,6 +441,7 @@ class AudioEvent {
       source: source ?? this.source,
       sourceVideoReference: sourceVideoReference ?? this.sourceVideoReference,
       sourceVideoRelay: sourceVideoRelay ?? this.sourceVideoRelay,
+      externalSource: externalSource ?? this.externalSource,
       startOffset: startOffset ?? this.startOffset,
       volume: volume ?? this.volume,
       startTime: startTime ?? this.startTime,
@@ -474,8 +488,109 @@ class AudioEvent {
     // Always serialize volume so history and draft snapshots preserve
     // explicit user edits instead of relying on an implicit default.
     'volume': volume,
+    if (externalSource != null) 'externalSource': externalSource!.toJson(),
     if (startOffset != .zero) 'startOffsetMs': startOffset.inMilliseconds,
     if (startTime != Duration.zero) 'startTimeMs': startTime.inMilliseconds,
     if (endTime != null) 'endTimeMs': endTime!.inMilliseconds,
+  };
+}
+
+AudioExternalSource? _parseExternalSource(Object? value) {
+  if (value is! Map<String, dynamic>) {
+    return null;
+  }
+  return AudioExternalSource.fromJson(value);
+}
+
+/// Normalized metadata for a sound result served by the sound library proxy.
+@immutable
+class AudioExternalSource {
+  const AudioExternalSource({
+    required this.provider,
+    required this.providerSoundId,
+    required this.providerName,
+    required this.license,
+    this.creatorName,
+    this.creatorUrl,
+    this.sourceUrl,
+    this.previewUrl,
+  });
+
+  factory AudioExternalSource.fromJson(Map<String, dynamic> json) {
+    final licenseJson = json['license'];
+    if (licenseJson is! Map<String, dynamic>) {
+      throw const FormatException('External audio source missing license');
+    }
+
+    return AudioExternalSource(
+      provider: json['provider'] as String,
+      providerSoundId: json['providerSoundId'] as String,
+      providerName: json['providerName'] as String,
+      creatorName: json['creatorName'] as String?,
+      creatorUrl: json['creatorUrl'] as String?,
+      sourceUrl: json['sourceUrl'] as String?,
+      previewUrl: json['previewUrl'] as String?,
+      license: AudioLicenseMetadata.fromJson(licenseJson),
+    );
+  }
+
+  final String provider;
+  final String providerSoundId;
+  final String providerName;
+  final String? creatorName;
+  final String? creatorUrl;
+  final String? sourceUrl;
+  final String? previewUrl;
+  final AudioLicenseMetadata license;
+
+  Map<String, dynamic> toJson() => {
+    'provider': provider,
+    'providerSoundId': providerSoundId,
+    'providerName': providerName,
+    'creatorName': ?creatorName,
+    'creatorUrl': ?creatorUrl,
+    'sourceUrl': ?sourceUrl,
+    'previewUrl': ?previewUrl,
+    'license': license.toJson(),
+  };
+}
+
+/// License metadata that has already been normalized by the sound proxy.
+@immutable
+class AudioLicenseMetadata {
+  const AudioLicenseMetadata({
+    required this.type,
+    required this.name,
+    required this.url,
+    required this.allowsCommercialUse,
+    required this.allowsDerivatives,
+    required this.requiresAttribution,
+  });
+
+  factory AudioLicenseMetadata.fromJson(Map<String, dynamic> json) {
+    return AudioLicenseMetadata(
+      type: json['type'] as String,
+      name: json['name'] as String,
+      url: json['url'] as String,
+      allowsCommercialUse: json['allowsCommercialUse'] as bool,
+      allowsDerivatives: json['allowsDerivatives'] as bool? ?? true,
+      requiresAttribution: json['requiresAttribution'] as bool,
+    );
+  }
+
+  final String type;
+  final String name;
+  final String url;
+  final bool allowsCommercialUse;
+  final bool allowsDerivatives;
+  final bool requiresAttribution;
+
+  Map<String, dynamic> toJson() => {
+    'type': type,
+    'name': name,
+    'url': url,
+    'allowsCommercialUse': allowsCommercialUse,
+    'allowsDerivatives': allowsDerivatives,
+    'requiresAttribution': requiresAttribution,
   };
 }
