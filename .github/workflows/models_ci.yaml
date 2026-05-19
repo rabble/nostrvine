@@ -24,4 +24,5 @@ jobs:
     uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@v1
     with:
       working_directory: "mobile/packages/models"
+      flutter_version: "3.41.9"
       min_coverage: 25
