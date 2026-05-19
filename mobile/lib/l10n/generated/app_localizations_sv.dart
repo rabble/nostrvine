@@ -4121,17 +4121,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Inga videor från personer du följer än.\nHitta kreatörer du gillar och följ dem.';
 
   @override
-  String get feedFollowingEmptyTitle => 'Gloriously empty';
-
-  @override
-  String get feedFollowingEmptyBody =>
-      'No ads. No AI slop. No one telling you what to watch. Fix that last part yourself.';
-
-  @override
   String get feedLatestEmpty => 'Inga nya videor än.\nTitta in igen snart.';
-
-  @override
-  String get feedGoExplore => 'Go explore';
 
   @override
   String get feedExploreVideos => 'Upptäck videor';

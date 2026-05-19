@@ -3940,17 +3940,7 @@ class AppLocalizationsKo extends AppLocalizations {
       '아직 팔로우한 사람들의 동영상이 없어요.\n마음에 드는 크리에이터를 찾아 팔로우해 보세요.';
 
   @override
-  String get feedFollowingEmptyTitle => 'Gloriously empty';
-
-  @override
-  String get feedFollowingEmptyBody =>
-      'No ads. No AI slop. No one telling you what to watch. Fix that last part yourself.';
-
-  @override
   String get feedLatestEmpty => '아직 새로운 동영상이 없어요.\n잠시 후 다시 확인해 주세요.';
-
-  @override
-  String get feedGoExplore => 'Go explore';
 
   @override
   String get feedExploreVideos => '영상 둘러보기';

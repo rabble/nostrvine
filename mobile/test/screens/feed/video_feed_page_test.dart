@@ -122,7 +122,7 @@ void main() {
     });
 
     testWidgets(
-      'uses Figma empty state for an empty Following no-follow feed',
+      'uses localized Following copy for an empty Following no-follow feed',
       (
         tester,
       ) async {
@@ -137,17 +137,13 @@ void main() {
         );
 
         expect(
-          find.text('Gloriously empty'),
-          findsOneWidget,
-        );
-        expect(
           find.text(
-            'No ads. No AI slop. No one telling you what to watch. '
-            'Fix that last part yourself.',
+            'No videos from people you follow yet.\n'
+            'Find creators you like and follow them.',
           ),
           findsOneWidget,
         );
-        expect(find.text('Go explore'), findsOneWidget);
+        expect(find.text('Explore Videos'), findsOneWidget);
       },
     );
 
@@ -171,7 +167,7 @@ void main() {
       expect(find.textContaining('ForYou'), findsNothing);
     });
 
-    testWidgets('uses Figma empty state for an empty Following feed', (
+    testWidgets('uses localized Following copy for an empty Following feed', (
       tester,
     ) async {
       final router = _MockGoRouter();
@@ -189,17 +185,16 @@ void main() {
 
       expect(
         find.text(
-          'No ads. No AI slop. No one telling you what to watch. '
-          'Fix that last part yourself.',
+          'No videos from people you follow yet.\n'
+          'Find creators you like and follow them.',
         ),
         findsOneWidget,
       );
-      expect(find.text('Gloriously empty'), findsOneWidget);
-      expect(find.text('Go explore'), findsOneWidget);
+      expect(find.text('Explore Videos'), findsOneWidget);
       expect(find.byType(DivineButton), findsOneWidget);
       expect(find.textContaining('following feed'), findsNothing);
 
-      await tester.tap(find.text('Go explore'));
+      await tester.tap(find.text('Explore Videos'));
 
       verify(
         () => router.go(ExploreScreen.pathForTab('popular')),

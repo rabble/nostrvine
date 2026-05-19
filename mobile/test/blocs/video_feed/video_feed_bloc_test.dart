@@ -849,9 +849,6 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: ['pubkey'],
-              // Required assertion: plain Following passes no list refs.
-              // ignore: avoid_redundant_argument_values
-              videoRefs: const {},
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
@@ -866,9 +863,6 @@ void main() {
           verify(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: ['pubkey'],
-              // Required assertion: plain Following passes no list refs.
-              // ignore: avoid_redundant_argument_values
-              videoRefs: const {},
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),

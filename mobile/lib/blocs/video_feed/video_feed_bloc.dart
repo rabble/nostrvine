@@ -662,9 +662,6 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     ),
     VideoFeedSourceType.following => _videosRepository.getHomeFeedVideos(
       authors: _followRepository.followingPubkeys,
-      // Required so plain Following does not include subscribed-list refs.
-      // ignore: avoid_redundant_argument_values
-      videoRefs: const {},
       userPubkey: _userPubkey,
       until: until,
       skipCache: skipCache,

@@ -4231,17 +4231,7 @@ class AppLocalizationsPl extends AppLocalizations {
       'Brak filmów od osób, które obserwujesz.\nZnajdź twórców, których lubisz i zacznij ich obserwować.';
 
   @override
-  String get feedFollowingEmptyTitle => 'Gloriously empty';
-
-  @override
-  String get feedFollowingEmptyBody =>
-      'No ads. No AI slop. No one telling you what to watch. Fix that last part yourself.';
-
-  @override
   String get feedLatestEmpty => 'Brak nowych filmów.\nWróć tu wkrótce.';
-
-  @override
-  String get feedGoExplore => 'Go explore';
 
   @override
   String get feedExploreVideos => 'Odkrywaj filmy';

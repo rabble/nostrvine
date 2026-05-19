@@ -4149,17 +4149,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Ainda não há vídeos das pessoas que você segue.\nEncontre criadores de que goste e siga-os.';
 
   @override
-  String get feedFollowingEmptyTitle => 'Gloriously empty';
-
-  @override
-  String get feedFollowingEmptyBody =>
-      'No ads. No AI slop. No one telling you what to watch. Fix that last part yourself.';
-
-  @override
   String get feedLatestEmpty => 'Ainda não há vídeos novos.\nVolte em breve.';
-
-  @override
-  String get feedGoExplore => 'Go explore';
 
   @override
   String get feedExploreVideos => 'Explorar vídeos';

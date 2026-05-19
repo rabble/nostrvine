@@ -944,16 +944,10 @@ class _FollowingFeedEmptyState extends StatelessWidget {
           children: [
             const _FeedEmptyTestPatternMark(),
             const SizedBox(height: 28),
-            Text(
-              context.l10n.feedFollowingEmptyTitle,
-              style: VineTheme.headlineSmallFont(color: VineTheme.onSurface),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 320),
               child: Text(
-                context.l10n.feedFollowingEmptyBody,
+                context.l10n.feedFollowingEmpty,
                 style: VineTheme.bodyLargeFont(
                   color: VineTheme.onSurfaceVariant,
                 ),
@@ -962,7 +956,7 @@ class _FollowingFeedEmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 28),
             DivineButton(
-              label: context.l10n.feedGoExplore,
+              label: context.l10n.feedExploreVideos,
               trailingIcon: DivineIconName.arrowRight,
               onPressed: () => context.go(ExploreScreen.pathForTab('popular')),
             ),

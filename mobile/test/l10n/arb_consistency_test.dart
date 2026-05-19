@@ -445,11 +445,6 @@ const _knownUntranslatedDebt = {
   // Translators will pick this up in a follow-up pass; until then non-English
   // locales fall back to the English source.
   'feedLoadingMore',
-  // Added by the Home Following empty-state pass. English ships; other
-  // locales fall back until the next translation pass.
-  'feedFollowingEmptyBody',
-  'feedFollowingEmptyTitle',
-  'feedGoExplore',
 };
 
 Map<String, Object?> _readArb(File file) {

@@ -2262,19 +2262,7 @@
   },
   "feedForYouEmpty": "Your For You feed is empty.\nExplore videos and follow creators to shape it.",
   "feedFollowingEmpty": "No videos from people you follow yet.\nFind creators you like and follow them.",
-  "feedFollowingEmptyTitle": "Gloriously empty",
-  "@feedFollowingEmptyTitle": {
-    "description": "Title for the empty Following feed state on Home."
-  },
-  "feedFollowingEmptyBody": "No ads. No AI slop. No one telling you what to watch. Fix that last part yourself.",
-  "@feedFollowingEmptyBody": {
-    "description": "Body copy for the empty Following feed state on Home."
-  },
   "feedLatestEmpty": "No new videos yet.\nCheck back soon.",
-  "feedGoExplore": "Go explore",
-  "@feedGoExplore": {
-    "description": "CTA label on the empty Following feed state that routes to the popular Explore tab."
-  },
   "feedExploreVideos": "Explore Videos",
   "feedExternalVideoSlow": "External video loading slowly",
   "feedSkip": "Skip",
