@@ -50,6 +50,7 @@ The sound library proxy owns:
 - Provider request construction.
 - Query validation and page-size caps.
 - License filtering.
+- License normalization.
 - Response trimming and normalization.
 - Cache headers appropriate for provider rate limits.
 - Provider enablement flags and production rollout gates.
@@ -77,7 +78,10 @@ Rules:
 - `page_size` defaults to `20` and is capped at `50`.
 - `q` has a fixed maximum length and only `GET` is accepted.
 - External providers request only fields mobile needs.
-- External providers exclude noncommercial results by default. The first version allows public domain, CC0, and attribution-compatible licenses.
+- External providers exclude noncommercial and no-derivatives results by default.
+- Clients may request a narrower `license_type` filter, but cannot expand beyond the provider's server-side allowlist.
+- The first version allows public domain, CC0, and attribution-compatible licenses.
+- Every returned result must include normalized license metadata or be dropped.
 - Disabled providers return `404` or a stable `provider_disabled` error without contacting upstream services.
 
 Response:
@@ -93,7 +97,14 @@ Response:
       "creator": "example_user",
       "source": "example_user via Freesound",
       "sourceUrl": "https://freesound.org/people/example_user/sounds/12345/",
-      "license": "Creative Commons 0",
+      "license": {
+        "type": "cc0",
+        "name": "Creative Commons 0",
+        "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "requiresAttribution": false,
+        "allowsCommercialUse": true,
+        "allowsDerivatives": true
+      },
       "duration": 2.8,
       "previewUrl": "https://cdn.freesound.org/previews/...",
       "tags": ["rewind", "tape"]
@@ -126,6 +137,7 @@ Mapping:
 - `AudioEvent.duration`: normalized duration in seconds
 - `AudioEvent.title`: provider title
 - `AudioEvent.source`: provider attribution label
+- `AudioEvent.externalSource.license`: normalized license metadata
 
 The existing preview, timing, selection, and saved-sounds flows can then treat provider results like other remote `AudioEvent` values.
 
@@ -136,6 +148,22 @@ The audio picker should keep dedicated categories so users understand where resu
 The UI must show `source` in the picker and saved library rows, which existing `AudioListTile` already supports. Detail surfaces should avoid routing non-Nostr provider entries through Nostr sound detail routes because they are not Kind 1063 events.
 
 Selection and saving must preserve source, source URL, license, provider, and provider ID. The first mobile patch should add narrow `AudioEvent` fields or a single structured `externalSource` object for those values; attribution must not be reduced to display-only text.
+
+Normalized license types:
+
+- `public_domain`
+- `cc0`
+- `cc_by`
+- `cc_by_sa`
+
+Disallowed by default:
+
+- Noncommercial licenses.
+- No-derivatives licenses.
+- Unknown or missing licenses.
+- Provider-specific custom licenses until they are explicitly reviewed and allowlisted.
+
+Provider-specific license strings must be converted to the normalized types above at the proxy. Mobile should render from normalized metadata and should not infer permissions from provider-specific strings.
 
 ## Caching And Rate Limits
 
@@ -160,7 +188,9 @@ Sound proxy tests:
 - Rejects empty queries.
 - Caps `page_size`.
 - Rejects overlong queries.
-- Filters noncommercial external results.
+- Filters disallowed external licenses.
+- Normalizes provider-specific license strings.
+- Drops results with missing or unknown license metadata.
 - Normalizes preview URLs and attribution fields.
 - Returns `provider_disabled` without contacting disabled providers.
 - Returns stable error codes for upstream 401, 429, and 5xx.
@@ -170,7 +200,7 @@ Mobile tests:
 - Client maps proxy JSON into `AudioEvent`.
 - Picker shows enabled provider categories and hides disabled provider categories.
 - Search result selection previews via `AudioPlaybackService`.
-- Saving a provider result persists enough metadata to render attribution later.
+- Saving a provider result persists normalized license metadata and enough attribution data to render attribution later.
 
 ## Rollout
 
