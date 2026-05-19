@@ -5,7 +5,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:core';
 
-import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:categories_repository/categories_repository.dart';
 import 'package:collaborator_repository/collaborator_repository.dart';
 import 'package:comments_repository/comments_repository.dart';
@@ -32,10 +31,9 @@ import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/relay_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/providers/upload_media_providers.dart';
 import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/services/analytics_service.dart';
-import 'package:openvine/services/api_service.dart';
-import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/badges/badge_repository.dart';
 import 'package:openvine/services/blocklist_content_filter.dart';
 import 'package:openvine/services/bookmark_service.dart';
@@ -47,29 +45,23 @@ import 'package:openvine/services/collaborator_response_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
-import 'package:openvine/services/crosspost_api_client.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/hashtag_cache_service.dart';
 import 'package:openvine/services/hashtag_service.dart';
 import 'package:openvine/services/immediate_completion_helper.dart';
-import 'package:openvine/services/media_auth_interceptor.dart';
-import 'package:openvine/services/media_viewer_auth_service.dart';
 import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
 import 'package:openvine/services/outgoing_dm_retry_service.dart';
 import 'package:openvine/services/pending_action_service.dart';
-import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/top_hashtags_service.dart';
-import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/search_utils.dart';
 import 'package:people_lists_repository/people_lists_repository.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:sound_service/sound_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -80,6 +72,7 @@ export 'notifications_providers.dart';
 export 'permissions_providers.dart';
 export 'preferences_providers.dart';
 export 'relay_providers.dart';
+export 'upload_media_providers.dart';
 export 'video_providers.dart';
 
 part 'app_providers.g.dart';
@@ -692,79 +685,6 @@ ProfileRepository? profileRepository(Ref ref) {
 
 // VideoManagerService removed - using pure Riverpod VideoManager provider instead
 
-/// Blossom BUD-01 authentication service for age-restricted content
-@riverpod
-BlossomAuthService blossomAuthService(Ref ref) {
-  final authService = ref.watch(authServiceProvider);
-  return BlossomAuthService(authProvider: _BlossomAuthAdapter(authService));
-}
-
-/// Shared viewer auth service for media GET requests.
-final mediaViewerAuthServiceProvider = Provider<MediaViewerAuthService>((ref) {
-  final authService = ref.watch(authServiceProvider);
-  final blossomAuthService = ref.watch(blossomAuthServiceProvider);
-  final nip98AuthService = ref.watch(nip98AuthServiceProvider);
-  return MediaViewerAuthService(
-    authService: authService,
-    blossomAuthService: blossomAuthService,
-    nip98AuthService: nip98AuthService,
-  );
-});
-
-/// Media authentication interceptor for handling 401 unauthorized responses
-@riverpod
-MediaAuthInterceptor mediaAuthInterceptor(Ref ref) {
-  final ageVerificationService = ref.watch(ageVerificationServiceProvider);
-  final contentFilterService = ref.watch(contentFilterServiceProvider);
-  final mediaViewerAuthService = ref.watch(mediaViewerAuthServiceProvider);
-  return MediaAuthInterceptor(
-    ageVerificationService: ageVerificationService,
-    contentFilterService: contentFilterService,
-    mediaViewerAuthService: mediaViewerAuthService,
-  );
-}
-
-/// Blossom upload service (uses user-configured Blossom server)
-@riverpod
-BlossomUploadService blossomUploadService(Ref ref) {
-  final authService = ref.watch(authServiceProvider);
-  final env = ref.read(currentEnvironmentProvider);
-  return BlossomUploadService(
-    authProvider: _BlossomAuthAdapter(authService),
-    performanceMonitor: _FirebasePerformanceAdapter(),
-    defaultServerUrl: env.blossomUrl,
-  );
-}
-
-/// Upload manager uses only Blossom upload service
-@Riverpod(keepAlive: true)
-UploadManager uploadManager(Ref ref) {
-  final blossomService = ref.watch(blossomUploadServiceProvider);
-  final env = ref.read(currentEnvironmentProvider);
-  return UploadManager(
-    blossomService: blossomService,
-    defaultBlossomUrl: env.blossomUrl,
-  );
-}
-
-/// API service depends on auth service
-@riverpod
-ApiService apiService(Ref ref) {
-  final authService = ref.watch(nip98AuthServiceProvider);
-  return ApiService(authService: authService);
-}
-
-/// Crosspost API client for Bluesky toggle settings
-@riverpod
-CrosspostApiClient crosspostApiClient(Ref ref) {
-  final oauthClient = ref.watch(oauthClientProvider);
-  final config = ref.watch(oauthConfigProvider);
-  return CrosspostApiClient(
-    oauthClient: oauthClient,
-    serverUrl: config.serverUrl,
-  );
-}
-
 /// Curation Service - manages NIP-51 video curation sets
 @Riverpod(keepAlive: true)
 CurationRepository curationRepository(Ref ref) {
@@ -915,22 +835,6 @@ Future<ContentDeletionService> contentDeletionService(Ref ref) async {
   return service;
 }
 
-/// Audio playback service for sound playback during recording and preview
-///
-/// Used by SoundsScreen to preview sounds and by camera screen
-/// for lip-sync recording. Handles audio loading, play/pause, and cleanup.
-/// Uses keepAlive to persist across the session (not auto-disposed).
-@Riverpod(keepAlive: true)
-AudioPlaybackService audioPlaybackService(Ref ref) {
-  final service = AudioPlaybackService();
-
-  ref.onDispose(() async {
-    await service.dispose();
-  });
-
-  return service;
-}
-
 /// Bug report service for collecting diagnostics and sending encrypted reports
 @riverpod
 BugReportService bugReportService(Ref ref) {
@@ -1071,50 +975,4 @@ CommentsRepository commentsRepository(Ref ref) {
   );
   ref.onDispose(repository.clearCommentCountCache);
   return repository;
-}
-
-/// Adapts the app-level [AuthService] to the package-level
-/// [BlossomAuthProvider] interface.
-class _BlossomAuthAdapter implements BlossomAuthProvider {
-  const _BlossomAuthAdapter(this._authService);
-
-  final AuthService _authService;
-
-  @override
-  bool get isAuthenticated => _authService.isAuthenticated;
-
-  @override
-  Future<BlossomSignedEvent?> createAndSignEvent({
-    required int kind,
-    required String content,
-    required List<List<String>> tags,
-  }) async {
-    final event = await _authService.createAndSignEvent(
-      kind: kind,
-      content: content,
-      tags: tags,
-    );
-    if (event == null) return null;
-    return BlossomSignedEvent(json: event.toJson());
-  }
-}
-
-/// Adapts [PerformanceMonitoringService] to the package-level
-/// [BlossomPerformanceMonitor] interface.
-class _FirebasePerformanceAdapter implements BlossomPerformanceMonitor {
-  @override
-  Future<void> startTrace(String traceName) =>
-      PerformanceMonitoringService.instance.startTrace(traceName);
-
-  @override
-  Future<void> stopTrace(String traceName) =>
-      PerformanceMonitoringService.instance.stopTrace(traceName);
-
-  @override
-  void setMetric(String traceName, String metricName, int value) =>
-      PerformanceMonitoringService.instance.setMetric(
-        traceName,
-        metricName,
-        value,
-      );
 }
