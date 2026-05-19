@@ -12,6 +12,7 @@ import 'package:content_policy/content_policy.dart';
 import 'package:curated_list_repository/curated_list_repository.dart';
 import 'package:curation_repository/curation_repository.dart';
 import 'package:dm_repository/dm_repository.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
@@ -565,12 +566,21 @@ CuratedListRepository curatedListRepository(Ref ref) {
 
   // Bridge: push curated list updates from legacy service into repository
   ref.listen(curatedListsStateProvider, (_, next) {
-    next.whenData(repository.setSubscribedLists);
+    next.whenData((_) {
+      final service = ref.read(curatedListsStateProvider.notifier).service;
+      repository.setSubscribedLists(
+        service == null ? const [] : subscribedListsForHomeBridge(service),
+      );
+    });
   });
 
   ref.onDispose(repository.dispose);
   return repository;
 }
+
+@visibleForTesting
+List<CuratedList> subscribedListsForHomeBridge(CuratedListService service) =>
+    service.subscribedLists;
 
 /// Provider for HashtagRepository instance.
 ///
