@@ -12,7 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:models/models.dart' show AspectRatio;
+import 'package:models/models.dart' show AspectRatio, AudioEvent;
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_provider_state.dart';
@@ -21,6 +21,7 @@ import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dar
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/services/draft_storage_service.dart';
@@ -37,6 +38,8 @@ class _MockDraftStorageService extends Mock implements DraftStorageService {}
 
 class _MockCountdownSoundService extends Mock
     implements CountdownSoundService {}
+
+class _MockAudioPlaybackService extends Mock implements AudioPlaybackService {}
 
 /// Fake [WakelockPlusPlatformInterface] that records all [toggle] calls.
 class _FakeWakelockPlatform extends WakelockPlusPlatformInterface {
@@ -859,6 +862,82 @@ void main() {
       // The 3-second countdown runs in real time. Bump the per-test
       // timeout slightly so slower CI hosts don't flake.
       timeout: const Timeout(Duration(seconds: 30)),
+    );
+
+    test(
+      'startRecording uses injected AudioPlaybackService factory when '
+      'a sound is selected',
+      () async {
+        final mockAudioPlaybackService = _MockAudioPlaybackService();
+        when(
+          mockAudioPlaybackService.configureForRecording,
+        ).thenAnswer((_) async {});
+        when(
+          () => mockAudioPlaybackService.loadAudio(any()),
+        ).thenAnswer((_) async => const Duration(seconds: 6));
+        when(mockAudioPlaybackService.play).thenAnswer((_) async {});
+        when(mockAudioPlaybackService.stop).thenAnswer((_) async {});
+        when(
+          mockAudioPlaybackService.resetAudioSession,
+        ).thenAnswer((_) async {});
+        when(mockAudioPlaybackService.dispose).thenAnswer((_) async {});
+
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+
+        final mockCamera = MockCameraService.create(
+          onUpdateState: ({forceCameraRebuild}) {},
+          onAutoStopped: (_) {},
+        );
+        await mockCamera.initialize();
+
+        const selectedSound = AudioEvent(
+          id: 'sound_123',
+          pubkey:
+              'test_pubkey_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+          createdAt: 1700000000,
+          title: 'Test Sound',
+          duration: 6.0,
+          url: 'https://example.com/audio/sound_123.m4a',
+          mimeType: 'audio/mp4',
+        );
+
+        var factoryCalls = 0;
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            videoRecorderProvider.overrideWith(
+              () => VideoRecorderNotifier(
+                mockCamera,
+                null,
+                () {
+                  factoryCalls++;
+                  return mockAudioPlaybackService;
+                },
+              ),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final notifier = container.read(videoRecorderProvider.notifier);
+        await notifier.initialize();
+        container.read(videoEditorProvider.notifier).selectSound(selectedSound);
+
+        await notifier.startRecording();
+
+        expect(factoryCalls, equals(1));
+        verify(mockAudioPlaybackService.configureForRecording).called(1);
+        verify(
+          () => mockAudioPlaybackService.loadAudio(selectedSound.url!),
+        ).called(1);
+        verify(mockAudioPlaybackService.play).called(1);
+
+        await notifier.stopRecording();
+
+        verify(mockAudioPlaybackService.stop).called(1);
+        verify(mockAudioPlaybackService.resetAudioSession).called(1);
+      },
     );
   });
 
