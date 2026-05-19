@@ -224,25 +224,11 @@ class AudioTimingCubit extends Cubit<AudioTimingState> {
         end: clipEnd,
       );
     } else if (_sound.url != null) {
-      final uri = _sound.url!;
-      final parsed = Uri.tryParse(uri);
-      final isLocalFile =
-          parsed == null ||
-          parsed.scheme.isEmpty ||
-          parsed.scheme == 'file' ||
-          uri.startsWith('/');
-      if (isLocalFile) {
-        final filePath = parsed != null && parsed.scheme == 'file'
-            ? parsed.toFilePath()
-            : uri;
-        config = AudioSourceConfig.file(
-          filePath,
-          start: clipStart,
-          end: clipEnd,
-        );
-      } else {
-        config = AudioSourceConfig.network(uri, start: clipStart, end: clipEnd);
-      }
+      config = _configForUrl(
+        _sound.url!,
+        start: clipStart,
+        end: clipEnd,
+      );
     } else {
       Log.warning(
         'No audio source available for sound: ${_sound.id}',
@@ -252,6 +238,34 @@ class AudioTimingCubit extends Cubit<AudioTimingState> {
     }
 
     await _clipPlayer.setClip(config);
+  }
+
+  /// Classifies a raw URL string from [AudioEvent.url] into the appropriate
+  /// [AudioSourceConfig] variant.
+  ///
+  /// Supports http(s) network URLs and local file paths (bare absolute paths
+  /// like `/var/mobile/...` or `file://` URIs). Platform-specific schemes
+  /// such as Android `content://` and web `blob:` are not handled and will
+  /// fall through to the network variant, where the defense-in-depth check
+  /// in [AudioClipPlayer] will surface a clear [ArgumentError].
+  static AudioSourceConfig _configForUrl(
+    String url, {
+    required Duration start,
+    required Duration end,
+  }) {
+    final parsed = Uri.tryParse(url);
+    final isLocalFile =
+        parsed == null ||
+        parsed.scheme.isEmpty ||
+        parsed.scheme == 'file' ||
+        url.startsWith('/');
+    if (isLocalFile) {
+      final filePath = parsed != null && parsed.scheme == 'file'
+          ? parsed.toFilePath()
+          : url;
+      return AudioSourceConfig.file(filePath, start: start, end: end);
+    }
+    return AudioSourceConfig.network(url, start: start, end: end);
   }
 
   @override

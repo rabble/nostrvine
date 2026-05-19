@@ -157,7 +157,8 @@ class AudioClipPlayer {
     // local file path as a network source would otherwise reach
     // HttpClient.getUrl with a schemeless / file:// URI and crash with
     // "No host specified in URI". Reject anything that is not http(s)
-    // up front with an actionable error.
+    // up front with an actionable error. Note: platform-specific schemes
+    // such as Android content:// and web blob: are also rejected here.
     if (uri.scheme != 'http' && uri.scheme != 'https') {
       throw ArgumentError.value(
         uri,
