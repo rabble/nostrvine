@@ -164,8 +164,9 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
 
   // -- Trash methods --
 
-  /// Mark a clip as trashed at [deletedAt]. Also nulls out [draftId] when
-  /// [clearDraftId] is true, decoupling the clip from any draft session.
+  /// Mark a clip as trashed at `deletedAt`. Also nulls out `draftId`
+  /// when `clearDraftId` is true, decoupling the clip from any draft
+  /// session.
   ///
   /// Returns true if a row was updated.
   Future<bool> softDeleteClip({
@@ -185,9 +186,9 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
     return rows > 0;
   }
 
-  /// Restore a trashed clip by clearing its [deletedAt] marker. Leaves
-  /// [draftId] untouched; the clip lands wherever it was last attached
-  /// (library if [draftId] is NULL).
+  /// Restore a trashed clip by clearing its `deletedAt` marker. Leaves
+  /// `draftId` untouched; the clip lands wherever it was last attached
+  /// (library when `draftId` is NULL).
   ///
   /// Returns true if a row was updated.
   Future<bool> restoreClip(String id) async {
@@ -229,7 +230,7 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
     return query.watch();
   }
 
-  /// Get trashed clips whose [deletedAt] is older than [cutoff], ready
+  /// Get trashed clips whose `deletedAt` is older than [cutoff], ready
   /// to be hard-deleted by the purge sweep.
   Future<List<ClipRow>> getTrashedClipsOlderThan(DateTime cutoff) {
     final query = select(clips)
