@@ -6656,32 +6656,32 @@ class AppLocalizationsEs extends AppLocalizations {
       'Fotograma fantasma desactivado';
 
   @override
-  String get videoRecorderClipDeletedMessage => 'Clip eliminado';
+  String get videoRecorderClipDeletedMessage => 'Clip movido a la papelera';
 
   @override
-  String get videoRecorderClipUndoLabel => 'Undo';
+  String get videoRecorderClipUndoLabel => 'Deshacer';
 
   @override
-  String get libraryTrashTitle => 'Recently deleted';
+  String get libraryTrashTitle => 'Eliminados recientemente';
 
   @override
-  String get libraryTrashEmptyTitle => 'Trash is empty';
+  String get libraryTrashEmptyTitle => 'La papelera está vacía';
 
   @override
   String get libraryTrashEmptySubtitle =>
-      'Deleted clips live here for 30 days before being removed for good.';
+      'Los clips eliminados permanecen aquí durante 30 días antes de eliminarse de forma permanente.';
 
   @override
-  String get libraryTrashRestoreLabel => 'Restore';
+  String get libraryTrashRestoreLabel => 'Restaurar';
 
   @override
-  String get libraryTrashDeleteNowLabel => 'Delete now';
+  String get libraryTrashDeleteNowLabel => 'Eliminar ahora';
 
   @override
-  String get libraryTrashEmptyAllLabel => 'Empty trash';
+  String get libraryTrashEmptyAllLabel => 'Vaciar papelera';
 
   @override
-  String get libraryTrashEntryLabel => 'Recently deleted';
+  String get libraryTrashEntryLabel => 'Eliminados recientemente';
 
   @override
   String get videoRecorderCloseLabel => 'Cerrar grabador de video';

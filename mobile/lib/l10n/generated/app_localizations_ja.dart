@@ -6316,32 +6316,31 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoRecorderGhostFrameDisabled => 'ゴーストフレームを無効化';
 
   @override
-  String get videoRecorderClipDeletedMessage => 'クリップを削除しました';
+  String get videoRecorderClipDeletedMessage => 'クリップをゴミ箱に移動しました';
 
   @override
-  String get videoRecorderClipUndoLabel => 'Undo';
+  String get videoRecorderClipUndoLabel => '元に戻す';
 
   @override
-  String get libraryTrashTitle => 'Recently deleted';
+  String get libraryTrashTitle => '最近削除した項目';
 
   @override
-  String get libraryTrashEmptyTitle => 'Trash is empty';
+  String get libraryTrashEmptyTitle => 'ゴミ箱は空です';
 
   @override
-  String get libraryTrashEmptySubtitle =>
-      'Deleted clips live here for 30 days before being removed for good.';
+  String get libraryTrashEmptySubtitle => '削除されたクリップは30日間ここに保管され、その後完全に削除されます。';
 
   @override
-  String get libraryTrashRestoreLabel => 'Restore';
+  String get libraryTrashRestoreLabel => '復元';
 
   @override
-  String get libraryTrashDeleteNowLabel => 'Delete now';
+  String get libraryTrashDeleteNowLabel => '今すぐ削除';
 
   @override
-  String get libraryTrashEmptyAllLabel => 'Empty trash';
+  String get libraryTrashEmptyAllLabel => 'ゴミ箱を空にする';
 
   @override
-  String get libraryTrashEntryLabel => 'Recently deleted';
+  String get libraryTrashEntryLabel => '最近削除した項目';
 
   @override
   String get videoRecorderCloseLabel => '動画レコーダーを閉じる';

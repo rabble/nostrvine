@@ -6339,32 +6339,31 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoRecorderGhostFrameDisabled => '고스트 프레임 비활성화됨';
 
   @override
-  String get videoRecorderClipDeletedMessage => '클립이 삭제되었습니다';
+  String get videoRecorderClipDeletedMessage => '클립이 휴지통으로 이동되었습니다';
 
   @override
-  String get videoRecorderClipUndoLabel => 'Undo';
+  String get videoRecorderClipUndoLabel => '실행 취소';
 
   @override
-  String get libraryTrashTitle => 'Recently deleted';
+  String get libraryTrashTitle => '최근 삭제된 항목';
 
   @override
-  String get libraryTrashEmptyTitle => 'Trash is empty';
+  String get libraryTrashEmptyTitle => '휴지통이 비어 있습니다';
 
   @override
-  String get libraryTrashEmptySubtitle =>
-      'Deleted clips live here for 30 days before being removed for good.';
+  String get libraryTrashEmptySubtitle => '삭제된 클립은 영구 삭제되기 전 30일 동안 여기에 보관됩니다.';
 
   @override
-  String get libraryTrashRestoreLabel => 'Restore';
+  String get libraryTrashRestoreLabel => '복원';
 
   @override
-  String get libraryTrashDeleteNowLabel => 'Delete now';
+  String get libraryTrashDeleteNowLabel => '지금 삭제';
 
   @override
-  String get libraryTrashEmptyAllLabel => 'Empty trash';
+  String get libraryTrashEmptyAllLabel => '휴지통 비우기';
 
   @override
-  String get libraryTrashEntryLabel => 'Recently deleted';
+  String get libraryTrashEntryLabel => '최근 삭제된 항목';
 
   @override
   String get videoRecorderCloseLabel => '동영상 녹화기 닫기';

@@ -6655,32 +6655,32 @@ class AppLocalizationsBg extends AppLocalizations {
       'Призрачната рамка е деактивирана';
 
   @override
-  String get videoRecorderClipDeletedMessage => 'Клипът е изтрит';
+  String get videoRecorderClipDeletedMessage => 'Клипът е преместен в кошчето';
 
   @override
-  String get videoRecorderClipUndoLabel => 'Undo';
+  String get videoRecorderClipUndoLabel => 'Отмени';
 
   @override
-  String get libraryTrashTitle => 'Recently deleted';
+  String get libraryTrashTitle => 'Наскоро изтрити';
 
   @override
-  String get libraryTrashEmptyTitle => 'Trash is empty';
+  String get libraryTrashEmptyTitle => 'Кошчето е празно';
 
   @override
   String get libraryTrashEmptySubtitle =>
-      'Deleted clips live here for 30 days before being removed for good.';
+      'Изтритите клипове остават тук 30 дни, преди да бъдат премахнати окончателно.';
 
   @override
-  String get libraryTrashRestoreLabel => 'Restore';
+  String get libraryTrashRestoreLabel => 'Възстанови';
 
   @override
-  String get libraryTrashDeleteNowLabel => 'Delete now';
+  String get libraryTrashDeleteNowLabel => 'Изтрий сега';
 
   @override
-  String get libraryTrashEmptyAllLabel => 'Empty trash';
+  String get libraryTrashEmptyAllLabel => 'Изпразни кошчето';
 
   @override
-  String get libraryTrashEntryLabel => 'Recently deleted';
+  String get libraryTrashEntryLabel => 'Наскоро изтрити';
 
   @override
   String get videoRecorderCloseLabel => 'Затворете видеорекордер';

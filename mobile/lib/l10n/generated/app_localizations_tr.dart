@@ -6564,32 +6564,32 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoRecorderGhostFrameDisabled => 'Hayalet kare devre dışı';
 
   @override
-  String get videoRecorderClipDeletedMessage => 'Klip silindi';
+  String get videoRecorderClipDeletedMessage => 'Klip çöp kutusuna taşındı';
 
   @override
-  String get videoRecorderClipUndoLabel => 'Undo';
+  String get videoRecorderClipUndoLabel => 'Geri al';
 
   @override
-  String get libraryTrashTitle => 'Recently deleted';
+  String get libraryTrashTitle => 'Son silinenler';
 
   @override
-  String get libraryTrashEmptyTitle => 'Trash is empty';
+  String get libraryTrashEmptyTitle => 'Çöp kutusu boş';
 
   @override
   String get libraryTrashEmptySubtitle =>
-      'Deleted clips live here for 30 days before being removed for good.';
+      'Silinen klipler kalıcı olarak kaldırılmadan önce 30 gün burada tutulur.';
 
   @override
-  String get libraryTrashRestoreLabel => 'Restore';
+  String get libraryTrashRestoreLabel => 'Geri yükle';
 
   @override
-  String get libraryTrashDeleteNowLabel => 'Delete now';
+  String get libraryTrashDeleteNowLabel => 'Şimdi sil';
 
   @override
-  String get libraryTrashEmptyAllLabel => 'Empty trash';
+  String get libraryTrashEmptyAllLabel => 'Çöp kutusunu boşalt';
 
   @override
-  String get libraryTrashEntryLabel => 'Recently deleted';
+  String get libraryTrashEntryLabel => 'Son silinenler';
 
   @override
   String get videoRecorderCloseLabel => 'Video kaydediciyi kapat';

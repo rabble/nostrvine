@@ -6451,32 +6451,32 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoRecorderGhostFrameDisabled => 'Ghost ፍሬም ጠፍቷል';
 
   @override
-  String get videoRecorderClipDeletedMessage => 'ክሊፕ ተሰርዟል።';
+  String get videoRecorderClipDeletedMessage => 'ክሊፕ ወደ መጣያ ተንቀሳቅሷል።';
 
   @override
-  String get videoRecorderClipUndoLabel => 'Undo';
+  String get videoRecorderClipUndoLabel => 'ቀልብስ';
 
   @override
-  String get libraryTrashTitle => 'Recently deleted';
+  String get libraryTrashTitle => 'በቅርቡ የተሰረዘ';
 
   @override
-  String get libraryTrashEmptyTitle => 'Trash is empty';
+  String get libraryTrashEmptyTitle => 'መጣያው ባዶ ነው።';
 
   @override
   String get libraryTrashEmptySubtitle =>
-      'Deleted clips live here for 30 days before being removed for good.';
+      'የተሰረዙ ክሊፖች ለ30 ቀናት እዚህ ይቆያሉ ከዚያም በቋሚነት ይወገዳሉ።';
 
   @override
-  String get libraryTrashRestoreLabel => 'Restore';
+  String get libraryTrashRestoreLabel => 'መልስ';
 
   @override
-  String get libraryTrashDeleteNowLabel => 'Delete now';
+  String get libraryTrashDeleteNowLabel => 'አሁን ሰርዝ';
 
   @override
-  String get libraryTrashEmptyAllLabel => 'Empty trash';
+  String get libraryTrashEmptyAllLabel => 'መጣያን ባዶ አድርግ';
 
   @override
-  String get libraryTrashEntryLabel => 'Recently deleted';
+  String get libraryTrashEntryLabel => 'በቅርቡ የተሰረዘ';
 
   @override
   String get videoRecorderCloseLabel => 'የቪዲዮ መቅረጫ ዝጋ';

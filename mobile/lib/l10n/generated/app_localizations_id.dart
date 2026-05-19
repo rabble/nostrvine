@@ -6561,32 +6561,32 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoRecorderGhostFrameDisabled => 'Frame hantu dinonaktifkan';
 
   @override
-  String get videoRecorderClipDeletedMessage => 'Klip dihapus';
+  String get videoRecorderClipDeletedMessage => 'Klip dipindahkan ke sampah';
 
   @override
-  String get videoRecorderClipUndoLabel => 'Undo';
+  String get videoRecorderClipUndoLabel => 'Urungkan';
 
   @override
-  String get libraryTrashTitle => 'Recently deleted';
+  String get libraryTrashTitle => 'Baru-baru ini dihapus';
 
   @override
-  String get libraryTrashEmptyTitle => 'Trash is empty';
+  String get libraryTrashEmptyTitle => 'Sampah kosong';
 
   @override
   String get libraryTrashEmptySubtitle =>
-      'Deleted clips live here for 30 days before being removed for good.';
+      'Klip yang dihapus tetap di sini selama 30 hari sebelum dihapus secara permanen.';
 
   @override
-  String get libraryTrashRestoreLabel => 'Restore';
+  String get libraryTrashRestoreLabel => 'Pulihkan';
 
   @override
-  String get libraryTrashDeleteNowLabel => 'Delete now';
+  String get libraryTrashDeleteNowLabel => 'Hapus sekarang';
 
   @override
-  String get libraryTrashEmptyAllLabel => 'Empty trash';
+  String get libraryTrashEmptyAllLabel => 'Kosongkan sampah';
 
   @override
-  String get libraryTrashEntryLabel => 'Recently deleted';
+  String get libraryTrashEntryLabel => 'Baru-baru ini dihapus';
 
   @override
   String get videoRecorderCloseLabel => 'Tutup perekam video';

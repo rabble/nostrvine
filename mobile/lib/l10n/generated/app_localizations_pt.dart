@@ -6630,32 +6630,32 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoRecorderGhostFrameDisabled => 'Quadro fantasma desativado';
 
   @override
-  String get videoRecorderClipDeletedMessage => 'Clipe excluído';
+  String get videoRecorderClipDeletedMessage => 'Clipe movido para a lixeira';
 
   @override
-  String get videoRecorderClipUndoLabel => 'Undo';
+  String get videoRecorderClipUndoLabel => 'Desfazer';
 
   @override
-  String get libraryTrashTitle => 'Recently deleted';
+  String get libraryTrashTitle => 'Excluídos recentemente';
 
   @override
-  String get libraryTrashEmptyTitle => 'Trash is empty';
+  String get libraryTrashEmptyTitle => 'A lixeira está vazia';
 
   @override
   String get libraryTrashEmptySubtitle =>
-      'Deleted clips live here for 30 days before being removed for good.';
+      'Os clipes excluídos ficam aqui por 30 dias antes de serem removidos permanentemente.';
 
   @override
-  String get libraryTrashRestoreLabel => 'Restore';
+  String get libraryTrashRestoreLabel => 'Restaurar';
 
   @override
-  String get libraryTrashDeleteNowLabel => 'Delete now';
+  String get libraryTrashDeleteNowLabel => 'Excluir agora';
 
   @override
-  String get libraryTrashEmptyAllLabel => 'Empty trash';
+  String get libraryTrashEmptyAllLabel => 'Esvaziar lixeira';
 
   @override
-  String get libraryTrashEntryLabel => 'Recently deleted';
+  String get libraryTrashEntryLabel => 'Excluídos recentemente';
 
   @override
   String get videoRecorderCloseLabel => 'Fechar gravador de vídeo';

@@ -6620,32 +6620,33 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoRecorderGhostFrameDisabled => 'Spookframe uitgeschakeld';
 
   @override
-  String get videoRecorderClipDeletedMessage => 'Clip verwijderd';
+  String get videoRecorderClipDeletedMessage =>
+      'Clip naar prullenbak verplaatst';
 
   @override
-  String get videoRecorderClipUndoLabel => 'Undo';
+  String get videoRecorderClipUndoLabel => 'Ongedaan maken';
 
   @override
-  String get libraryTrashTitle => 'Recently deleted';
+  String get libraryTrashTitle => 'Recent verwijderd';
 
   @override
-  String get libraryTrashEmptyTitle => 'Trash is empty';
+  String get libraryTrashEmptyTitle => 'Prullenbak is leeg';
 
   @override
   String get libraryTrashEmptySubtitle =>
-      'Deleted clips live here for 30 days before being removed for good.';
+      'Verwijderde clips blijven hier 30 dagen voordat ze definitief worden verwijderd.';
 
   @override
-  String get libraryTrashRestoreLabel => 'Restore';
+  String get libraryTrashRestoreLabel => 'Herstellen';
 
   @override
-  String get libraryTrashDeleteNowLabel => 'Delete now';
+  String get libraryTrashDeleteNowLabel => 'Nu verwijderen';
 
   @override
-  String get libraryTrashEmptyAllLabel => 'Empty trash';
+  String get libraryTrashEmptyAllLabel => 'Prullenbak legen';
 
   @override
-  String get libraryTrashEntryLabel => 'Recently deleted';
+  String get libraryTrashEntryLabel => 'Recent verwijderd';
 
   @override
   String get videoRecorderCloseLabel => 'Videorecorder sluiten';

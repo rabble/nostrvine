@@ -6681,32 +6681,33 @@ class AppLocalizationsFr extends AppLocalizations {
   String get videoRecorderGhostFrameDisabled => 'Cadre fantôme désactivé';
 
   @override
-  String get videoRecorderClipDeletedMessage => 'Clip supprimé';
+  String get videoRecorderClipDeletedMessage =>
+      'Clip déplacé vers la corbeille';
 
   @override
-  String get videoRecorderClipUndoLabel => 'Undo';
+  String get videoRecorderClipUndoLabel => 'Annuler';
 
   @override
-  String get libraryTrashTitle => 'Recently deleted';
+  String get libraryTrashTitle => 'Récemment supprimés';
 
   @override
-  String get libraryTrashEmptyTitle => 'Trash is empty';
+  String get libraryTrashEmptyTitle => 'La corbeille est vide';
 
   @override
   String get libraryTrashEmptySubtitle =>
-      'Deleted clips live here for 30 days before being removed for good.';
+      'Les clips supprimés restent ici pendant 30 jours avant d\'être supprimés définitivement.';
 
   @override
-  String get libraryTrashRestoreLabel => 'Restore';
+  String get libraryTrashRestoreLabel => 'Restaurer';
 
   @override
-  String get libraryTrashDeleteNowLabel => 'Delete now';
+  String get libraryTrashDeleteNowLabel => 'Supprimer maintenant';
 
   @override
-  String get libraryTrashEmptyAllLabel => 'Empty trash';
+  String get libraryTrashEmptyAllLabel => 'Vider la corbeille';
 
   @override
-  String get libraryTrashEntryLabel => 'Recently deleted';
+  String get libraryTrashEntryLabel => 'Récemment supprimés';
 
   @override
   String get videoRecorderCloseLabel => 'Fermer l\'enregistreur vidéo';

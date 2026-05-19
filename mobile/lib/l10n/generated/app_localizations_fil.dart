@@ -6672,32 +6672,33 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoRecorderGhostFrameDisabled => 'Naka-disable ang ghost frame';
 
   @override
-  String get videoRecorderClipDeletedMessage => 'Nabura ang clip';
+  String get videoRecorderClipDeletedMessage =>
+      'Inilipat ang clip sa basurahan';
 
   @override
-  String get videoRecorderClipUndoLabel => 'Undo';
+  String get videoRecorderClipUndoLabel => 'I-undo';
 
   @override
-  String get libraryTrashTitle => 'Recently deleted';
+  String get libraryTrashTitle => 'Kamakailan lang na nabura';
 
   @override
-  String get libraryTrashEmptyTitle => 'Trash is empty';
+  String get libraryTrashEmptyTitle => 'Walang laman ang basurahan';
 
   @override
   String get libraryTrashEmptySubtitle =>
-      'Deleted clips live here for 30 days before being removed for good.';
+      'Mananatili dito ang mga nabura na clip ng 30 araw bago tuluyang alisin.';
 
   @override
-  String get libraryTrashRestoreLabel => 'Restore';
+  String get libraryTrashRestoreLabel => 'Ibalik';
 
   @override
-  String get libraryTrashDeleteNowLabel => 'Delete now';
+  String get libraryTrashDeleteNowLabel => 'Burahin ngayon';
 
   @override
-  String get libraryTrashEmptyAllLabel => 'Empty trash';
+  String get libraryTrashEmptyAllLabel => 'I-empty ang basurahan';
 
   @override
-  String get libraryTrashEntryLabel => 'Recently deleted';
+  String get libraryTrashEntryLabel => 'Kamakailan lang na nabura';
 
   @override
   String get videoRecorderCloseLabel => 'Isara ang video recorder';

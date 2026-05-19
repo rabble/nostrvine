@@ -6749,32 +6749,32 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoRecorderGhostFrameDisabled => 'Cadru fantomă dezactivat';
 
   @override
-  String get videoRecorderClipDeletedMessage => 'Clip șters';
+  String get videoRecorderClipDeletedMessage => 'Clipul a fost mutat în coș';
 
   @override
-  String get videoRecorderClipUndoLabel => 'Undo';
+  String get videoRecorderClipUndoLabel => 'Anulează';
 
   @override
-  String get libraryTrashTitle => 'Recently deleted';
+  String get libraryTrashTitle => 'Șterse recent';
 
   @override
-  String get libraryTrashEmptyTitle => 'Trash is empty';
+  String get libraryTrashEmptyTitle => 'Coșul de gunoi este gol';
 
   @override
   String get libraryTrashEmptySubtitle =>
-      'Deleted clips live here for 30 days before being removed for good.';
+      'Clipurile șterse rămân aici timp de 30 de zile înainte de a fi eliminate definitiv.';
 
   @override
-  String get libraryTrashRestoreLabel => 'Restore';
+  String get libraryTrashRestoreLabel => 'Restaurează';
 
   @override
-  String get libraryTrashDeleteNowLabel => 'Delete now';
+  String get libraryTrashDeleteNowLabel => 'Șterge acum';
 
   @override
-  String get libraryTrashEmptyAllLabel => 'Empty trash';
+  String get libraryTrashEmptyAllLabel => 'Golește coșul';
 
   @override
-  String get libraryTrashEntryLabel => 'Recently deleted';
+  String get libraryTrashEntryLabel => 'Șterse recent';
 
   @override
   String get videoRecorderCloseLabel => 'Închide înregistratorul video';

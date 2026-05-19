@@ -6527,32 +6527,32 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoRecorderGhostFrameDisabled => 'الإطار الشبحي معطل';
 
   @override
-  String get videoRecorderClipDeletedMessage => 'تم حذف المقطع';
+  String get videoRecorderClipDeletedMessage => 'تم نقل المقطع إلى المهملات';
 
   @override
-  String get videoRecorderClipUndoLabel => 'Undo';
+  String get videoRecorderClipUndoLabel => 'تراجع';
 
   @override
-  String get libraryTrashTitle => 'Recently deleted';
+  String get libraryTrashTitle => 'المحذوفة مؤخرًا';
 
   @override
-  String get libraryTrashEmptyTitle => 'Trash is empty';
+  String get libraryTrashEmptyTitle => 'المهملات فارغة';
 
   @override
   String get libraryTrashEmptySubtitle =>
-      'Deleted clips live here for 30 days before being removed for good.';
+      'تبقى المقاطع المحذوفة هنا لمدة 30 يومًا قبل إزالتها نهائيًا.';
 
   @override
-  String get libraryTrashRestoreLabel => 'Restore';
+  String get libraryTrashRestoreLabel => 'استعادة';
 
   @override
-  String get libraryTrashDeleteNowLabel => 'Delete now';
+  String get libraryTrashDeleteNowLabel => 'حذف الآن';
 
   @override
-  String get libraryTrashEmptyAllLabel => 'Empty trash';
+  String get libraryTrashEmptyAllLabel => 'إفراغ المهملات';
 
   @override
-  String get libraryTrashEntryLabel => 'Recently deleted';
+  String get libraryTrashEntryLabel => 'المحذوفة مؤخرًا';
 
   @override
   String get videoRecorderCloseLabel => 'إغلاق مسجل الفيديو';

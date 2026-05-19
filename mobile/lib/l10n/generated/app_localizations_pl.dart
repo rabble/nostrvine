@@ -6740,32 +6740,32 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoRecorderGhostFrameDisabled => 'Klatka odniesienia wyłączona';
 
   @override
-  String get videoRecorderClipDeletedMessage => 'Klip usunięty';
+  String get videoRecorderClipDeletedMessage => 'Klip przeniesiony do kosza';
 
   @override
-  String get videoRecorderClipUndoLabel => 'Undo';
+  String get videoRecorderClipUndoLabel => 'Cofnij';
 
   @override
-  String get libraryTrashTitle => 'Recently deleted';
+  String get libraryTrashTitle => 'Ostatnio usunięte';
 
   @override
-  String get libraryTrashEmptyTitle => 'Trash is empty';
+  String get libraryTrashEmptyTitle => 'Kosz jest pusty';
 
   @override
   String get libraryTrashEmptySubtitle =>
-      'Deleted clips live here for 30 days before being removed for good.';
+      'Usunięte klipy pozostają tutaj przez 30 dni, zanim zostaną trwale usunięte.';
 
   @override
-  String get libraryTrashRestoreLabel => 'Restore';
+  String get libraryTrashRestoreLabel => 'Przywróć';
 
   @override
-  String get libraryTrashDeleteNowLabel => 'Delete now';
+  String get libraryTrashDeleteNowLabel => 'Usuń teraz';
 
   @override
-  String get libraryTrashEmptyAllLabel => 'Empty trash';
+  String get libraryTrashEmptyAllLabel => 'Opróżnij kosz';
 
   @override
-  String get libraryTrashEntryLabel => 'Recently deleted';
+  String get libraryTrashEntryLabel => 'Ostatnio usunięte';
 
   @override
   String get videoRecorderCloseLabel => 'Zamknij rejestrator wideo';

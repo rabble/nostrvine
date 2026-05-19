@@ -6669,32 +6669,33 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoRecorderGhostFrameDisabled => 'Geisterbild deaktiviert';
 
   @override
-  String get videoRecorderClipDeletedMessage => 'Clip gelöscht';
+  String get videoRecorderClipDeletedMessage =>
+      'Clip in den Papierkorb verschoben';
 
   @override
-  String get videoRecorderClipUndoLabel => 'Undo';
+  String get videoRecorderClipUndoLabel => 'Rückgängig';
 
   @override
-  String get libraryTrashTitle => 'Recently deleted';
+  String get libraryTrashTitle => 'Kürzlich gelöscht';
 
   @override
-  String get libraryTrashEmptyTitle => 'Trash is empty';
+  String get libraryTrashEmptyTitle => 'Papierkorb ist leer';
 
   @override
   String get libraryTrashEmptySubtitle =>
-      'Deleted clips live here for 30 days before being removed for good.';
+      'Gelöschte Clips bleiben 30 Tage hier, bevor sie endgültig entfernt werden.';
 
   @override
-  String get libraryTrashRestoreLabel => 'Restore';
+  String get libraryTrashRestoreLabel => 'Wiederherstellen';
 
   @override
-  String get libraryTrashDeleteNowLabel => 'Delete now';
+  String get libraryTrashDeleteNowLabel => 'Jetzt löschen';
 
   @override
-  String get libraryTrashEmptyAllLabel => 'Empty trash';
+  String get libraryTrashEmptyAllLabel => 'Papierkorb leeren';
 
   @override
-  String get libraryTrashEntryLabel => 'Recently deleted';
+  String get libraryTrashEntryLabel => 'Kürzlich gelöscht';
 
   @override
   String get videoRecorderCloseLabel => 'Videorecorder schließen';

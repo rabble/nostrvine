@@ -6590,32 +6590,33 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoRecorderGhostFrameDisabled => 'Spökram inaktiverad';
 
   @override
-  String get videoRecorderClipDeletedMessage => 'Klipp borttaget';
+  String get videoRecorderClipDeletedMessage =>
+      'Klipp flyttat till papperskorgen';
 
   @override
-  String get videoRecorderClipUndoLabel => 'Undo';
+  String get videoRecorderClipUndoLabel => 'Ångra';
 
   @override
-  String get libraryTrashTitle => 'Recently deleted';
+  String get libraryTrashTitle => 'Nyligen borttagna';
 
   @override
-  String get libraryTrashEmptyTitle => 'Trash is empty';
+  String get libraryTrashEmptyTitle => 'Papperskorgen är tom';
 
   @override
   String get libraryTrashEmptySubtitle =>
-      'Deleted clips live here for 30 days before being removed for good.';
+      'Borttagna klipp finns kvar här i 30 dagar innan de tas bort permanent.';
 
   @override
-  String get libraryTrashRestoreLabel => 'Restore';
+  String get libraryTrashRestoreLabel => 'Återställ';
 
   @override
-  String get libraryTrashDeleteNowLabel => 'Delete now';
+  String get libraryTrashDeleteNowLabel => 'Ta bort nu';
 
   @override
-  String get libraryTrashEmptyAllLabel => 'Empty trash';
+  String get libraryTrashEmptyAllLabel => 'Töm papperskorgen';
 
   @override
-  String get libraryTrashEntryLabel => 'Recently deleted';
+  String get libraryTrashEntryLabel => 'Nyligen borttagna';
 
   @override
   String get videoRecorderCloseLabel => 'Stäng videoinspelaren';
