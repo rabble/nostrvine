@@ -3656,4 +3656,14 @@
             }
         }
     }
+    ,
+    "videoEditorTimelineVolumePreview": "Volum {percent}%",
+    "@videoEditorTimelineVolumePreview": {
+        "placeholders": {
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorTimelineSlideToAdjust": "Glisează pentru ajustare"
 }

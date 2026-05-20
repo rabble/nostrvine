@@ -17,7 +17,7 @@ class VideoEditorMainState extends Equatable {
     this.seekCounter = 0,
     this.currentPosition = Duration.zero,
     this.totalDuration = Duration.zero,
-    this.isMuted = false,
+    this.isVolumeEditMode = false,
     this.isReordering = false,
     this.isTimelineHiddenByUser = false,
   });
@@ -75,8 +75,8 @@ class VideoEditorMainState extends Equatable {
   /// Total duration of all clips reported by the video player.
   final Duration totalDuration;
 
-  /// Whether audio is currently muted.
-  final bool isMuted;
+  /// Whether the timeline is in volume edit mode.
+  final bool isVolumeEditMode;
 
   /// Whether the timeline is in clip reorder mode.
   final bool isReordering;
@@ -94,7 +94,7 @@ class VideoEditorMainState extends Equatable {
     bool clearOpenSubEditor = false,
     bool? isLayerInteractionActive,
     bool? isLayerOverRemoveArea,
-    bool? isMuted,
+    bool? isVolumeEditMode,
     bool? isPlaying,
     bool? isPlayerReady,
     bool? isExternalPauseRequested,
@@ -129,7 +129,7 @@ class VideoEditorMainState extends Equatable {
       seekCounter: seekCounter ?? this.seekCounter,
       currentPosition: currentPosition ?? this.currentPosition,
       totalDuration: totalDuration ?? this.totalDuration,
-      isMuted: isMuted ?? this.isMuted,
+      isVolumeEditMode: isVolumeEditMode ?? this.isVolumeEditMode,
       isReordering: isReordering ?? this.isReordering,
       isTimelineHiddenByUser:
           isTimelineHiddenByUser ?? this.isTimelineHiddenByUser,
@@ -152,7 +152,7 @@ class VideoEditorMainState extends Equatable {
     seekCounter,
     currentPosition,
     totalDuration,
-    isMuted,
+    isVolumeEditMode,
     isReordering,
     isTimelineHiddenByUser,
   ];

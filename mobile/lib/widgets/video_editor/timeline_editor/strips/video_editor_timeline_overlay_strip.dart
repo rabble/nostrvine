@@ -7,6 +7,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
@@ -364,6 +365,8 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
   // -- Long-press drag callbacks -------------------------------------------
 
   void _onLongPressStart(TimelineOverlayItem item) {
+    final mainBloc = context.read<VideoEditorMainBloc?>();
+    if (mainBloc?.state.isVolumeEditMode == true) return;
     HapticFeedback.mediumImpact();
     _dragSnap.reset();
     _dragSnap.begin(

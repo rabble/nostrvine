@@ -75,6 +75,8 @@ class DivineIconButton extends StatelessWidget {
     required this.onPressed,
     this.type = DivineIconButtonType.primary,
     this.size = DivineIconButtonSize.base,
+    this.backgroundColor,
+    this.foregroundColor,
     this.semanticLabel,
     this.semanticValue,
     super.key,
@@ -93,6 +95,12 @@ class DivineIconButton extends StatelessWidget {
   /// The size of the button.
   final DivineIconButtonSize size;
 
+  /// Overrides the background color derived from [type].
+  final Color? backgroundColor;
+
+  /// Overrides the icon (foreground) color derived from [type].
+  final Color? foregroundColor;
+
   /// Semantic label for accessibility.
   final String? semanticLabel;
 
@@ -106,6 +114,8 @@ class DivineIconButton extends StatelessWidget {
       onPressed: onPressed,
       type: type,
       size: size,
+      backgroundColor: backgroundColor,
+      foregroundColor: foregroundColor,
       semanticLabel: semanticLabel,
       semanticValue: semanticValue,
     );
@@ -118,6 +128,8 @@ class _DivineIconButtonContent extends StatelessWidget {
     required this.onPressed,
     required this.type,
     required this.size,
+    this.backgroundColor,
+    this.foregroundColor,
     this.semanticLabel,
     this.semanticValue,
   });
@@ -126,6 +138,8 @@ class _DivineIconButtonContent extends StatelessWidget {
   final VoidCallback? onPressed;
   final DivineIconButtonType type;
   final DivineIconButtonSize size;
+  final Color? backgroundColor;
+  final Color? foregroundColor;
   final String? semanticLabel;
   final String? semanticValue;
 
@@ -151,23 +165,27 @@ class _DivineIconButtonContent extends StatelessWidget {
     _ => 0.32,
   };
 
-  Color get _backgroundColor => switch (type) {
-    DivineIconButtonType.primary => VineTheme.primary,
-    DivineIconButtonType.secondary => VineTheme.surfaceContainer,
-    DivineIconButtonType.tertiary => VineTheme.inverseSurface,
-    DivineIconButtonType.ghost => VineTheme.scrim65,
-    DivineIconButtonType.ghostSecondary => VineTheme.scrim15,
-    DivineIconButtonType.error => VineTheme.error,
-  };
+  Color get _backgroundColor =>
+      backgroundColor ??
+      switch (type) {
+        DivineIconButtonType.primary => VineTheme.primary,
+        DivineIconButtonType.secondary => VineTheme.surfaceContainer,
+        DivineIconButtonType.tertiary => VineTheme.inverseSurface,
+        DivineIconButtonType.ghost => VineTheme.scrim65,
+        DivineIconButtonType.ghostSecondary => VineTheme.scrim15,
+        DivineIconButtonType.error => VineTheme.error,
+      };
 
-  Color get _iconColor => switch (type) {
-    DivineIconButtonType.primary => VineTheme.onPrimary,
-    DivineIconButtonType.secondary => VineTheme.primary,
-    DivineIconButtonType.tertiary => VineTheme.inverseOnSurface,
-    DivineIconButtonType.ghost ||
-    DivineIconButtonType.ghostSecondary => VineTheme.onSurface,
-    DivineIconButtonType.error => VineTheme.onErrorContainer,
-  };
+  Color get _iconColor =>
+      foregroundColor ??
+      switch (type) {
+        DivineIconButtonType.primary => VineTheme.onPrimary,
+        DivineIconButtonType.secondary => VineTheme.primary,
+        DivineIconButtonType.tertiary => VineTheme.inverseOnSurface,
+        DivineIconButtonType.ghost ||
+        DivineIconButtonType.ghostSecondary => VineTheme.onSurface,
+        DivineIconButtonType.error => VineTheme.onErrorContainer,
+      };
 
   Color? get _borderColor => switch (type) {
     DivineIconButtonType.secondary => VineTheme.outlineMuted,

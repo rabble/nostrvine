@@ -142,9 +142,9 @@ class VideoEditorDurationChanged extends VideoEditorMainEvent {
 /// Types of sub-editors that can be opened.
 enum SubEditorType { text, draw, filter, stickers, music, clips }
 
-/// Triggered when the user toggles audio mute in the timeline.
-class VideoEditorMuteToggled extends VideoEditorMainEvent {
-  const VideoEditorMuteToggled();
+/// Triggered when the user toggles volume edit mode in the timeline.
+class VideoEditorVolumeEditModeToggled extends VideoEditorMainEvent {
+  const VideoEditorVolumeEditModeToggled();
 }
 
 /// Triggered when clip reorder mode is toggled.

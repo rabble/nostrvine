@@ -3,16 +3,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
+import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:time_formatter/time_formatter.dart';
 
 class VideoEditorTimelineHeader extends StatelessWidget {
-  const VideoEditorTimelineHeader({required this.playheadPosition, super.key});
+  const VideoEditorTimelineHeader({
+    required this.playheadPosition,
+    required this.volumePreviewNotifier,
+    super.key,
+  });
 
   /// Notifier driven by the scroll offset of the timeline.
   final ValueNotifier<Duration> playheadPosition;
+  final ValueNotifier<double?> volumePreviewNotifier;
 
   static const _padding = EdgeInsets.symmetric(horizontal: 16);
 
@@ -20,6 +26,10 @@ class VideoEditorTimelineHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final isVolumeEditMode = context.select(
+          (VideoEditorMainBloc b) => b.state.isVolumeEditMode,
+        );
+
         return SingleChildScrollView(
           padding: _padding,
           scrollDirection: .horizontal,
@@ -33,10 +43,15 @@ class VideoEditorTimelineHeader extends StatelessWidget {
               children: [
                 const Row(
                   spacing: 8,
-                  children: [_PlayPauseButton(), _MuteButton()],
+                  children: [_PlayPauseButton(), _VolumeButton()],
                 ),
 
-                _TimeDisplay(playheadPosition: playheadPosition),
+                if (isVolumeEditMode)
+                  _VolumeTextDisplay(
+                    volumePreviewNotifier: volumePreviewNotifier,
+                  )
+                else
+                  _TimeDisplay(playheadPosition: playheadPosition),
 
                 const Row(spacing: 8, children: [_UndoButton(), _RedoButton()]),
               ],
@@ -71,22 +86,62 @@ class _PlayPauseButton extends StatelessWidget {
   }
 }
 
-class _MuteButton extends StatelessWidget {
-  const _MuteButton();
+class _VolumeTextDisplay extends StatelessWidget {
+  const _VolumeTextDisplay({required this.volumePreviewNotifier});
+
+  final ValueNotifier<double?> volumePreviewNotifier;
 
   @override
   Widget build(BuildContext context) {
-    final isMuted = context.select((VideoEditorMainBloc b) => b.state.isMuted);
+    return ValueListenableBuilder<double?>(
+      valueListenable: volumePreviewNotifier,
+      builder: (context, preview, _) {
+        if (preview != null) {
+          return Text(
+            context.l10n.videoEditorTimelineVolumePreview(
+              (preview * 100).round(),
+            ),
+            style: VineTheme.labelLargeFont(color: VineTheme.accentYellow),
+          );
+        }
+        return Text(
+          context.l10n.videoEditorTimelineSlideToAdjust,
+          style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
+        );
+      },
+    );
+  }
+}
+
+class _VolumeButton extends StatelessWidget {
+  const _VolumeButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final isVolumeEditMode = context.select(
+      (VideoEditorMainBloc b) => b.state.isVolumeEditMode,
+    );
+    final hasModifiedClipVolume = context.select(
+      (ClipEditorBloc b) => b.state.clips.any((c) => c.volume != 1.0),
+    );
+    final hasModifiedAudioVolume = context.select(
+      (TimelineOverlayBloc b) => b.state.audioTracks
+          .where((t) => !t.isOriginalSound)
+          .any((t) => t.volume != 1.0),
+    );
+    final hasModifiedVolume = hasModifiedClipVolume || hasModifiedAudioVolume;
 
     return DivineIconButton(
-      icon: isMuted ? .speakerSimpleX : .speakerHigh,
+      icon: .speakerHigh,
       size: .small,
-      type: .ghost,
-      semanticLabel: isMuted
-          ? context.l10n.videoEditorUnmuteAudioSemanticLabel
-          : context.l10n.videoEditorMuteAudioSemanticLabel,
+      type: isVolumeEditMode ? .primary : .ghost,
+      foregroundColor: isVolumeEditMode
+          ? VineTheme.accentYellowBackground
+          : (hasModifiedVolume ? VineTheme.accentYellow : null),
+      backgroundColor: isVolumeEditMode ? VineTheme.accentYellow : null,
+      semanticLabel: context.l10n.videoEditorVolumeSemanticLabel,
       onPressed: () => context.read<VideoEditorMainBloc>().add(
-        const VideoEditorMuteToggled(),
+        const VideoEditorVolumeEditModeToggled(),
       ),
     );
   }

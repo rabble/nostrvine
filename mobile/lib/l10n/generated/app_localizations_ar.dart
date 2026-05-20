@@ -6727,6 +6727,28 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorUnmuteAudioSemanticLabel => 'إلغاء كتم الصوت';
 
   @override
+  String get videoEditorVolumeSemanticLabel => 'Adjust volume';
+
+  @override
+  String get videoEditorVolumeTitle => 'Volume';
+
+  @override
+  String videoEditorTimelineVolumePreview(int percent) {
+    return 'مستوى الصوت $percent%';
+  }
+
+  @override
+  String get videoEditorTimelineSlideToAdjust => 'اسحب للضبط';
+
+  @override
+  String get videoEditorOriginalAudioLabel => 'Original audio';
+
+  @override
+  String videoEditorClipVolumeLabel(int index) {
+    return 'Clip $index';
+  }
+
+  @override
   String get videoEditorDeleteLabel => 'حذف';
 
   @override

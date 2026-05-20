@@ -3784,4 +3784,14 @@
             }
         }
     }
+    ,
+    "videoEditorTimelineVolumePreview": "ድምጽ {percent}%",
+    "@videoEditorTimelineVolumePreview": {
+        "placeholders": {
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorTimelineSlideToAdjust": "ለማስተካከል ያንሸራትቱ"
 }

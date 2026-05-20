@@ -1,0 +1,309 @@
+import 'dart:math' as math;
+
+import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
+import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
+import 'package:openvine/constants/video_editor_timeline_constants.dart';
+import 'package:openvine/l10n/l10n.dart';
+
+/// Panel shown when the user taps the volume button in the timeline header.
+///
+/// Displays one arc volume control per video clip and per custom audio
+/// track. No labels, percentages, or section headers — just the arcs.
+class VideoEditorTimelineVolume extends StatelessWidget {
+  const VideoEditorTimelineVolume({
+    required this.volumePreviewNotifier,
+    super.key,
+  });
+
+  final ValueNotifier<double?> volumePreviewNotifier;
+
+  @override
+  Widget build(BuildContext context) {
+    final clips = context.select(
+      (ClipEditorBloc b) => b.state.clips,
+    );
+    final audioTracks = context.select(
+      (TimelineOverlayBloc b) => b.state.audioTracks,
+    );
+
+    final customTracks = audioTracks
+        .where((t) => !t.isOriginalSound)
+        .toList(growable: false);
+
+    if (clips.isEmpty && customTracks.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(
+        minWidth: TimelineConstants.soundControlWidth,
+      ),
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.centerRight,
+            end: Alignment.centerLeft,
+            colors: [
+              Color.fromRGBO(0, 10, 6, 0),
+              Color.fromRGBO(0, 10, 6, 0.96),
+            ],
+            stops: [0.0, 0.1739],
+          ),
+        ),
+        child: Padding(
+          padding: const .only(top: TimelineConstants.rulerHeight),
+          child: Column(
+            spacing: 6,
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: .start,
+            children: [
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: .start,
+                  spacing: TimelineConstants.thumbnailVerticalRowGap,
+                  children: [
+                    for (var i = 0; i < clips.length; i++) ...[
+                      _VolumeArc(
+                        height: TimelineConstants.thumbnailStripHeight,
+                        semanticLabel: context.l10n.videoEditorClipVolumeLabel(
+                          i + 1,
+                        ),
+                        volume: clips[i].volume,
+                        volumePreviewNotifier: volumePreviewNotifier,
+                        onChanged: (v) => context.read<ClipEditorBloc>().add(
+                          ClipEditorClipVolumeChanged(
+                            clipId: clips[i].id,
+                            volume: v,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+              Flexible(
+                child: Column(
+                  spacing: TimelineConstants.overlayRowGap,
+                  children: [
+                    for (var i = 0; i < customTracks.length; i++) ...[
+                      _VolumeArc(
+                        height: TimelineConstants.soundOverlayRowHeight,
+                        semanticLabel:
+                            customTracks[i].title != null &&
+                                customTracks[i].title!.isNotEmpty
+                            ? customTracks[i].title!
+                            : context.l10n.videoEditorAudioUntitledSound,
+                        volume: customTracks[i].volume,
+                        volumePreviewNotifier: volumePreviewNotifier,
+                        onChanged: (v) =>
+                            context.read<TimelineOverlayBloc>().add(
+                              TimelineOverlayAudioVolumeChanged(
+                                trackId: customTracks[i].id,
+                                volume: v,
+                              ),
+                            ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _VolumeArc extends StatefulWidget {
+  const _VolumeArc({
+    required this.height,
+    required this.semanticLabel,
+    required this.volume,
+    required this.volumePreviewNotifier,
+    required this.onChanged,
+  });
+
+  final double height;
+  final String semanticLabel;
+  final double volume;
+  final ValueNotifier<double?> volumePreviewNotifier;
+
+  /// Called once when the user lifts their finger (drag end), not on every
+  /// intermediate move. This avoids dispatching BLoC events during active
+  /// pointer tracking, which would trigger the
+  /// `!_debugDuringDeviceUpdate` assertion in mouse_tracker.dart.
+  final ValueChanged<double> onChanged;
+
+  @override
+  State<_VolumeArc> createState() => _VolumeArcState();
+}
+
+class _VolumeArcState extends State<_VolumeArc> {
+  static const double _gapSweepDeg = 80; // gap at the bottom, in degrees.
+
+  late double _localVolume;
+
+  /// Volume to restore when the user un-mutes via tap. Tracks the last
+  /// non-zero value the user actually heard.
+  double _lastUnmutedVolume = 1.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _localVolume = widget.volume;
+    if (widget.volume > 0) {
+      _lastUnmutedVolume = widget.volume;
+    }
+  }
+
+  @override
+  void didUpdateWidget(_VolumeArc oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.volume != widget.volume) {
+      _localVolume = widget.volume;
+      if (widget.volume > 0) {
+        _lastUnmutedVolume = widget.volume;
+      }
+    }
+  }
+
+  /// Pixels of drag distance that cover the full 0..1 range.
+  static const double _dragRangePx = 160;
+
+  /// Dead zone around the press point where volume stays at 100% so it's
+  /// easy to land exactly on max without pixel-perfect aim.
+  static const double _maxDeadZonePx = 12;
+
+  /// Local position where the current pan gesture began.
+  Offset _panStart = Offset.zero;
+
+  void _onPanStart(DragStartDetails d) {
+    _panStart = d.localPosition;
+    // Snap to full volume immediately so the gesture starts from a known
+    // reference point: finger down = 100%.
+    if (_localVolume != 1.0) {
+      setState(() => _localVolume = 1);
+    }
+    widget.volumePreviewNotifier.value = 1.0;
+  }
+
+  void _onPanUpdate(DragUpdateDetails d) {
+    // Finger on (or near) the tile = 100%. The further away the finger is
+    // from the press point, the quieter it gets. Coming back to the start
+    // pushes it back up to full volume.
+    final dx = d.localPosition.dx - _panStart.dx;
+    final dy = d.localPosition.dy - _panStart.dy;
+    final distance = math.sqrt(dx * dx + dy * dy);
+    final effective = (distance - _maxDeadZonePx).clamp(0.0, double.infinity);
+    final next = (1 - effective / _dragRangePx).clamp(0.0, 1.0);
+    if (next != _localVolume) {
+      setState(() => _localVolume = next);
+    }
+    widget.volumePreviewNotifier.value = next;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isMuted = _localVolume <= 0.001;
+    return Padding(
+      padding: const EdgeInsets.only(left: 8),
+      child: Semantics(
+        label: widget.semanticLabel,
+        slider: true,
+        value: '${(_localVolume * 100).round()}%',
+        child: SizedBox.square(
+          dimension: widget.height,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            // Short tap (no drag) toggles mute. GestureDetector only
+            // fires onTap when the gesture didn't escalate to a pan, so
+            // taps and drags don't conflict.
+            onTap: () {
+              final next = _localVolume > 0.001
+                  ? 0.0
+                  : (_lastUnmutedVolume > 0 ? _lastUnmutedVolume : 1.0);
+              setState(() => _localVolume = next);
+              widget.onChanged(next);
+            },
+            // Press-and-drag: relative gesture. Up = louder, down =
+            // quieter. The arc itself is not directly hit-tested.
+            onPanStart: _onPanStart,
+            onPanUpdate: _onPanUpdate,
+            onPanEnd: (_) {
+              if (_localVolume > 0) {
+                _lastUnmutedVolume = _localVolume;
+              }
+              widget.onChanged(_localVolume);
+              widget.volumePreviewNotifier.value = null;
+            },
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                CustomPaint(
+                  size: const Size.square(52),
+                  painter: _VolumeArcPainter(
+                    volume: _localVolume,
+                    gapSweepDeg: _gapSweepDeg,
+                  ),
+                ),
+                DivineIcon(
+                  icon: isMuted ? .speakerSimpleSlash : .speakerHigh,
+                  color: _localVolume >= 1
+                      ? VineTheme.whiteText
+                      : VineTheme.accentYellow,
+                  size: 16,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _VolumeArcPainter extends CustomPainter {
+  _VolumeArcPainter({
+    required this.volume,
+    required this.gapSweepDeg,
+  });
+
+  final double volume;
+  final double gapSweepDeg;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = math.min(size.width, size.height) / 2 - 6;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+
+    final gapSweep = gapSweepDeg * math.pi / 180;
+    final arcSweep = 2 * math.pi - gapSweep;
+    final startAngle = math.pi / 2 + gapSweep / 2;
+
+    final track = Paint()
+      ..color = VineTheme.onSurfaceDisabled
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.butt;
+    canvas.drawArc(rect, startAngle, arcSweep, false, track);
+
+    if (volume > 0) {
+      final fill = Paint()
+        ..color = volume >= 1 ? VineTheme.whiteText : VineTheme.accentYellow
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 4
+        ..strokeCap = StrokeCap.butt;
+      canvas.drawArc(rect, startAngle, arcSweep * volume, false, fill);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_VolumeArcPainter oldDelegate) =>
+      oldDelegate.volume != volume || oldDelegate.gapSweepDeg != gapSweepDeg;
+}

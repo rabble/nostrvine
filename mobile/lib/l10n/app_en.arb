@@ -3830,6 +3830,19 @@
   "videoEditorPauseSemanticLabel": "Pause",
   "videoEditorMuteAudioSemanticLabel": "Mute audio",
   "videoEditorUnmuteAudioSemanticLabel": "Unmute audio",
+  "videoEditorVolumeSemanticLabel": "Adjust volume",
+  "videoEditorVolumeTitle": "Volume",
+  "videoEditorTimelineVolumePreview": "Volume {percent}%",
+  "@videoEditorTimelineVolumePreview": {
+    "placeholders": { "percent": { "type": "int" } }
+  },
+  "videoEditorTimelineSlideToAdjust": "Slide to adjust",
+  "videoEditorOriginalAudioLabel": "Original audio",
+  "videoEditorCustomAudioLabel": "Added audio",
+  "videoEditorClipVolumeLabel": "Clip {index}",
+  "@videoEditorClipVolumeLabel": {
+    "placeholders": { "index": { "type": "int" } }
+  },
   "videoEditorDeleteLabel": "Delete",
   "videoEditorDeleteSelectedItemSemanticLabel": "Delete selected item",
   "videoEditorEditLabel": "Edit",

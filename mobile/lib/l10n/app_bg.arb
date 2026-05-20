@@ -3790,4 +3790,14 @@
             }
         }
     }
+    ,
+    "videoEditorTimelineVolumePreview": "Сила на звука {percent}%",
+    "@videoEditorTimelineVolumePreview": {
+        "placeholders": {
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorTimelineSlideToAdjust": "Плъзнете за регулиране"
 }

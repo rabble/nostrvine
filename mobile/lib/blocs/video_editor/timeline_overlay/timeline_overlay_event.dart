@@ -162,3 +162,18 @@ class TimelineOverlayWaveformLoaded extends TimelineOverlayEvent {
   @override
   List<Object?> get props => [itemId, leftChannel, rightChannel];
 }
+
+/// Update the volume of a custom audio track by its [AudioEvent.id].
+/// [volume] is clamped to [0.0, 1.0] by the handler.
+class TimelineOverlayAudioVolumeChanged extends TimelineOverlayEvent {
+  const TimelineOverlayAudioVolumeChanged({
+    required this.trackId,
+    required this.volume,
+  });
+
+  final String trackId;
+  final double volume;
+
+  @override
+  List<Object?> get props => [trackId, volume];
+}

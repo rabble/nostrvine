@@ -19,6 +19,15 @@ enum TimelineOverlayType {
   sound,
 }
 
+/// The audio source for a sound overlay item.
+enum AudioSource {
+  /// The original audio track extracted from the video clips.
+  original,
+
+  /// A custom audio track added by the user.
+  custom,
+}
+
 /// An overlay item positioned on the video editor timeline.
 ///
 /// Items live in typed strips (layer / filter / sound) and can be
@@ -37,6 +46,7 @@ class TimelineOverlayItem extends Equatable {
     this.maxDuration,
     this.waveformLeftChannel,
     this.waveformRightChannel,
+    this.audioSource,
   });
 
   /// Unique identifier.
@@ -73,6 +83,11 @@ class TimelineOverlayItem extends Equatable {
   /// Right audio waveform amplitude samples for sound items.
   final Float32List? waveformRightChannel;
 
+  /// The audio source for sound overlay items.
+  ///
+  /// `null` for non-sound items.
+  final AudioSource? audioSource;
+
   /// Start time in seconds for layout calculations.
   double get startTimeInSeconds => startTime.inMilliseconds / 1000.0;
   double get durationInSeconds => duration.inMilliseconds / 1000;
@@ -90,6 +105,7 @@ class TimelineOverlayItem extends Equatable {
     Duration? maxDuration,
     Float32List? waveformLeftChannel,
     Float32List? waveformRightChannel,
+    AudioSource? audioSource,
   }) {
     return TimelineOverlayItem(
       id: id ?? this.id,
@@ -102,6 +118,7 @@ class TimelineOverlayItem extends Equatable {
       maxDuration: maxDuration ?? this.maxDuration,
       waveformLeftChannel: waveformLeftChannel ?? this.waveformLeftChannel,
       waveformRightChannel: waveformRightChannel ?? this.waveformRightChannel,
+      audioSource: audioSource ?? this.audioSource,
     );
   }
 
@@ -117,5 +134,6 @@ class TimelineOverlayItem extends Equatable {
     maxDuration,
     waveformLeftChannel,
     waveformRightChannel,
+    audioSource,
   ];
 }

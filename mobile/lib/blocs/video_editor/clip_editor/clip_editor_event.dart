@@ -190,3 +190,21 @@ class ClipEditorAudioExtractionRequested extends ClipEditorEvent {
   @override
   List<Object?> get props => [clipTitle];
 }
+
+// === VOLUME ===
+
+/// Update the volume of a clip by its ID.
+///
+/// [volume] is clamped to [0.0, 1.0] by the handler.
+class ClipEditorClipVolumeChanged extends ClipEditorEvent {
+  const ClipEditorClipVolumeChanged({
+    required this.clipId,
+    required this.volume,
+  });
+
+  final String clipId;
+  final double volume;
+
+  @override
+  List<Object?> get props => [clipId, volume];
+}

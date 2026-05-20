@@ -6512,6 +6512,28 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorUnmuteAudioSemanticLabel => '音声のミュートを解除';
 
   @override
+  String get videoEditorVolumeSemanticLabel => 'Adjust volume';
+
+  @override
+  String get videoEditorVolumeTitle => 'Volume';
+
+  @override
+  String videoEditorTimelineVolumePreview(int percent) {
+    return '音量 $percent%';
+  }
+
+  @override
+  String get videoEditorTimelineSlideToAdjust => 'スライドして調整';
+
+  @override
+  String get videoEditorOriginalAudioLabel => 'Original audio';
+
+  @override
+  String videoEditorClipVolumeLabel(int index) {
+    return 'Clip $index';
+  }
+
+  @override
   String get videoEditorDeleteLabel => '削除';
 
   @override

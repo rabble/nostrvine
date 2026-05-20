@@ -1,5 +1,5 @@
 // ABOUTME: Widget tests for VideoEditorTimelineHeader.
-// ABOUTME: Validates play/pause, mute, undo/redo buttons and time display.
+// ABOUTME: Validates play/pause, undo/redo buttons, volume arc, and time display.
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
@@ -108,12 +108,6 @@ void main() {
         expect(find.bySemanticsLabel('Play'), findsOneWidget);
       });
 
-      testWidgets('renders mute button', (tester) async {
-        await tester.pumpWidget(buildWidget());
-
-        expect(find.bySemanticsLabel('Mute audio'), findsOneWidget);
-      });
-
       testWidgets('renders undo button', (tester) async {
         await tester.pumpWidget(buildWidget());
 
@@ -156,35 +150,6 @@ void main() {
       });
     });
 
-    group('mute', () {
-      testWidgets('shows mute label when not muted', (tester) async {
-        await tester.pumpWidget(
-          buildWidget(mainState: const VideoEditorMainState()),
-        );
-
-        expect(find.bySemanticsLabel('Mute audio'), findsOneWidget);
-      });
-
-      testWidgets('shows unmute label when muted', (tester) async {
-        await tester.pumpWidget(
-          buildWidget(mainState: const VideoEditorMainState(isMuted: true)),
-        );
-
-        expect(find.bySemanticsLabel('Unmute audio'), findsOneWidget);
-      });
-
-      testWidgets('dispatches mute toggle event on tap', (tester) async {
-        await tester.pumpWidget(buildWidget());
-
-        await tester.tap(find.bySemanticsLabel('Mute audio'));
-        await tester.pump();
-
-        verify(
-          () => mockMainBloc.add(const VideoEditorMuteToggled()),
-        ).called(1);
-      });
-    });
-
     group('undo/redo', () {
       testWidgets('undo button is disabled when canUndo is false', (
         tester,
@@ -196,8 +161,8 @@ void main() {
         final undoButtons = tester.widgetList<DivineIconButton>(
           find.byType(DivineIconButton),
         );
-        // Undo is the 3rd button (play, mute, undo, redo)
-        final undoButton = undoButtons.elementAt(2);
+        // Undo is the 2nd button (play, undo, redo)
+        final undoButton = undoButtons.elementAt(1);
         expect(undoButton.onPressed, isNull);
       });
 
@@ -211,7 +176,7 @@ void main() {
         final undoButtons = tester.widgetList<DivineIconButton>(
           find.byType(DivineIconButton),
         );
-        final undoButton = undoButtons.elementAt(2);
+        final undoButton = undoButtons.elementAt(1);
         expect(undoButton.onPressed, isNotNull);
       });
 
@@ -225,7 +190,7 @@ void main() {
         final redoButtons = tester.widgetList<DivineIconButton>(
           find.byType(DivineIconButton),
         );
-        final redoButton = redoButtons.elementAt(3);
+        final redoButton = redoButtons.elementAt(2);
         expect(redoButton.onPressed, isNull);
       });
 
@@ -239,7 +204,7 @@ void main() {
         final redoButtons = tester.widgetList<DivineIconButton>(
           find.byType(DivineIconButton),
         );
-        final redoButton = redoButtons.elementAt(3);
+        final redoButton = redoButtons.elementAt(2);
         expect(redoButton.onPressed, isNotNull);
       });
     });

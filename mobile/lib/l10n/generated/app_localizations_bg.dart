@@ -6859,6 +6859,28 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorUnmuteAudioSemanticLabel => 'Включване на звука';
 
   @override
+  String get videoEditorVolumeSemanticLabel => 'Adjust volume';
+
+  @override
+  String get videoEditorVolumeTitle => 'Volume';
+
+  @override
+  String videoEditorTimelineVolumePreview(int percent) {
+    return 'Сила на звука $percent%';
+  }
+
+  @override
+  String get videoEditorTimelineSlideToAdjust => 'Плъзнете за регулиране';
+
+  @override
+  String get videoEditorOriginalAudioLabel => 'Original audio';
+
+  @override
+  String videoEditorClipVolumeLabel(int index) {
+    return 'Clip $index';
+  }
+
+  @override
   String get videoEditorDeleteLabel => 'Изтрий';
 
   @override

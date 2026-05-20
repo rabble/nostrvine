@@ -11,11 +11,15 @@ abstract class TimelineConstants {
   /// Height of each clip thumbnail strip.
   static const double thumbnailStripHeight = 64;
 
+  static const double thumbnailVerticalRowGap = 8;
+
   /// Width of a single thumbnail image in the strip.
   static const double thumbnailWidth = 48;
 
   /// Corner radius for thumbnail images.
   static const double thumbnailRadius = 4;
+
+  static const double soundControlWidth = 92;
 
   /// Gap between adjacent clip containers.
   static const double clipGap = 1;

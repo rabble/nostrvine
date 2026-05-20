@@ -8,6 +8,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
+import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -129,6 +130,11 @@ class _VideoEditorTimelineClipStripState
   static const _autoScrollEdgeZone = 40.0;
   static const _maxAutoScrollPxPerFrame = 8.0;
 
+  // Keeps animation alive for one tick after volume edit mode is turned
+  // off so tiles animate back to their normal row instead of snapping.
+  bool _isExitingVolumeMode = false;
+  Timer? _volumeExitTimer;
+
   @override
   void initState() {
     super.initState();
@@ -159,6 +165,7 @@ class _VideoEditorTimelineClipStripState
   @override
   void dispose() {
     _stopAutoScroll();
+    _volumeExitTimer?.cancel();
     _reorderAnimController.dispose();
     _thumbnails.dispose();
     super.dispose();
@@ -515,85 +522,115 @@ class _VideoEditorTimelineClipStripState
         ? TimelineConstants.trimHandleWidth + TimelineConstants.trimHitAreaExtra
         : 0.0;
 
-    return Semantics(
-      label: context.l10n.videoEditorTimelineLongPressToDragHint,
-      button: true,
-      child: GestureDetector(
-        onLongPressStart: _onLongPressStart,
-        onLongPressMoveUpdate: _isReordering ? _onLongPressMoveUpdate : null,
-        onLongPressEnd: _isReordering ? _onLongPressEnd : null,
-        onLongPressCancel: _isReordering ? _onLongPressCancel : null,
-        child: AnimatedContainer(
-          duration: shouldAnimate ? animDuration : .zero,
-          curve: animCurve,
-          width: totalWidth,
-          height: TimelineConstants.thumbnailStripHeight,
-          child: Stack(
-            clipBehavior: shouldAnimate || widget.trimmingClipId != null
-                ? .none
-                : .hardEdge,
-            children: [
-              /// Non-dragged, non-trimming clips.
-              _NonTrimmingClipPositions(
-                orderedClips: _orderedClips,
-                thumbnails: _thumbnails,
-                layout: layout,
-                dragIndex: _dragIndex,
-                trimmingClipId: widget.trimmingClipId,
-                shouldAnimate: shouldAnimate,
-                animDuration: animDuration,
-                animCurve: animCurve,
-                isReordering: _isReordering,
-                rowOffset: _rowOffset,
-                reorderSlotStep: reorderSlotStep,
-                pixelsPerSecond: widget.pixelsPerSecond,
-                onReorder: _reorderClip,
-                onClipTapped: widget.onClipTapped,
-                rowOffsetSize: _reorderSize,
-              ),
+    final isVolumeEditMode = context.select(
+      (VideoEditorMainBloc b) => b.state.isVolumeEditMode,
+    );
+    const volumeRowStep =
+        TimelineConstants.thumbnailStripHeight +
+        TimelineConstants.thumbnailVerticalRowGap;
+    final containerHeight = isVolumeEditMode && _orderedClips.isNotEmpty
+        ? _orderedClips.length * volumeRowStep -
+              TimelineConstants.thumbnailVerticalRowGap
+        : TimelineConstants.thumbnailStripHeight;
+    final volumeAnimating = isVolumeEditMode || _isExitingVolumeMode;
 
-              /// Trimming clip — rendered last so handles stay on top.
-              // AnimatedPositioned is expanded by trimExpand on each side
-              // so the handle hit-areas fall within its bounds.
-              _TrimmingClipPositions(
-                orderedClips: _orderedClips,
-                thumbnails: _thumbnails,
-                layout: layout,
-                dragIndex: _dragIndex,
-                trimmingClipId: widget.trimmingClipId,
-                shouldAnimate: shouldAnimate,
-                animDuration: animDuration,
-                animCurve: animCurve,
-                isReordering: _isReordering,
-                rowOffset: _rowOffset,
-                reorderSlotStep: reorderSlotStep,
-                trimExpand: trimExpand,
-                pixelsPerSecond: widget.pixelsPerSecond,
-                onTrimChanged: widget.onTrimChanged,
-                onTrimDragChanged: widget.onTrimDragChanged,
-                onClipTapped: widget.onClipTapped,
-                reorderSize: _reorderSize,
-              ),
-
-              /// Dragged clip — AnimatedPositioned so left+width animate
-              // together during shrink, then Duration.zero for instant
-              // finger-following after the animation completes.
-              if (_dragIndex != null)
-                _DraggedClipPosition(
+    return BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
+      listenWhen: (prev, curr) =>
+          prev.isVolumeEditMode && !curr.isVolumeEditMode,
+      listener: (_, _) {
+        _volumeExitTimer?.cancel();
+        setState(() => _isExitingVolumeMode = true);
+        _volumeExitTimer = Timer(animDuration, () {
+          if (mounted) setState(() => _isExitingVolumeMode = false);
+        });
+      },
+      child: Semantics(
+        label: context.l10n.videoEditorTimelineLongPressToDragHint,
+        button: true,
+        child: GestureDetector(
+          onLongPressStart: isVolumeEditMode ? null : _onLongPressStart,
+          onLongPressMoveUpdate: _isReordering ? _onLongPressMoveUpdate : null,
+          onLongPressEnd: _isReordering ? _onLongPressEnd : null,
+          onLongPressCancel: _isReordering ? _onLongPressCancel : null,
+          child: AnimatedContainer(
+            duration: shouldAnimate || volumeAnimating ? animDuration : .zero,
+            curve: animCurve,
+            width: totalWidth,
+            height: containerHeight,
+            child: Stack(
+              clipBehavior:
+                  shouldAnimate ||
+                      widget.trimmingClipId != null ||
+                      volumeAnimating
+                  ? .none
+                  : .hardEdge,
+              children: [
+                /// Non-dragged, non-trimming clips.
+                _NonTrimmingClipPositions(
                   orderedClips: _orderedClips,
                   thumbnails: _thumbnails,
                   layout: layout,
                   dragIndex: _dragIndex,
-                  dragAnimating: _dragAnimating,
+                  trimmingClipId: widget.trimmingClipId,
+                  shouldAnimate: shouldAnimate || volumeAnimating,
                   animDuration: animDuration,
                   animCurve: animCurve,
-                  dragStartClipCenter: _dragStartClipCenter,
-                  dragClipWidth: _dragClipWidth,
-                  effectiveLocalX: _effectiveLocalX,
-                  dragFingerRatio: _dragFingerRatio,
+                  isReordering: _isReordering,
+                  rowOffset: _rowOffset,
+                  reorderSlotStep: reorderSlotStep,
                   pixelsPerSecond: widget.pixelsPerSecond,
+                  onReorder: _reorderClip,
+                  onClipTapped: widget.onClipTapped,
+                  rowOffsetSize: _reorderSize,
+                  isVolumeEditMode: isVolumeEditMode,
+                  volumeRowStep: volumeRowStep,
                 ),
-            ],
+
+                /// Trimming clip — rendered last so handles stay on top.
+                // AnimatedPositioned is expanded by trimExpand on each side
+                // so the handle hit-areas fall within its bounds.
+                _TrimmingClipPositions(
+                  orderedClips: _orderedClips,
+                  thumbnails: _thumbnails,
+                  layout: layout,
+                  dragIndex: _dragIndex,
+                  trimmingClipId: widget.trimmingClipId,
+                  shouldAnimate: shouldAnimate || volumeAnimating,
+                  animDuration: animDuration,
+                  animCurve: animCurve,
+                  isReordering: _isReordering,
+                  rowOffset: _rowOffset,
+                  reorderSlotStep: reorderSlotStep,
+                  trimExpand: trimExpand,
+                  pixelsPerSecond: widget.pixelsPerSecond,
+                  onTrimChanged: widget.onTrimChanged,
+                  onTrimDragChanged: widget.onTrimDragChanged,
+                  onClipTapped: widget.onClipTapped,
+                  reorderSize: _reorderSize,
+                  isVolumeEditMode: isVolumeEditMode,
+                  volumeRowStep: volumeRowStep,
+                ),
+
+                /// Dragged clip — AnimatedPositioned so left+width animate
+                // together during shrink, then Duration.zero for instant
+                // finger-following after the animation completes.
+                if (_dragIndex != null)
+                  _DraggedClipPosition(
+                    orderedClips: _orderedClips,
+                    thumbnails: _thumbnails,
+                    layout: layout,
+                    dragIndex: _dragIndex,
+                    dragAnimating: _dragAnimating,
+                    animDuration: animDuration,
+                    animCurve: animCurve,
+                    dragStartClipCenter: _dragStartClipCenter,
+                    dragClipWidth: _dragClipWidth,
+                    effectiveLocalX: _effectiveLocalX,
+                    dragFingerRatio: _dragFingerRatio,
+                    pixelsPerSecond: widget.pixelsPerSecond,
+                  ),
+              ],
+            ),
           ),
         ),
       ),
@@ -620,6 +657,8 @@ class _TrimmingClipPositions extends StatelessWidget {
     required this.onTrimDragChanged,
     required this.onClipTapped,
     required this.reorderSize,
+    required this.isVolumeEditMode,
+    required this.volumeRowStep,
   });
 
   final List<DivineVideoClip> orderedClips;
@@ -639,6 +678,8 @@ class _TrimmingClipPositions extends StatelessWidget {
   final ValueChanged<bool>? onTrimDragChanged;
   final ValueChanged<int>? onClipTapped;
   final double reorderSize;
+  final bool isVolumeEditMode;
+  final double volumeRowStep;
 
   @override
   Widget build(BuildContext context) {
@@ -654,7 +695,7 @@ class _TrimmingClipPositions extends StatelessWidget {
               left: isReordering
                   ? rowOffset + i * reorderSlotStep
                   : layout.offsets[i] - trimExpand,
-              top: 0,
+              top: isVolumeEditMode ? i * volumeRowStep : 0,
               width: isReordering
                   ? reorderSize
                   : layout.widths[i] + trimExpand * 2,
@@ -692,6 +733,8 @@ class _NonTrimmingClipPositions extends StatelessWidget {
     required this.onReorder,
     required this.onClipTapped,
     required this.rowOffsetSize,
+    required this.isVolumeEditMode,
+    required this.volumeRowStep,
   });
 
   final List<DivineVideoClip> orderedClips;
@@ -709,6 +752,8 @@ class _NonTrimmingClipPositions extends StatelessWidget {
   final ClipReorderCallback onReorder;
   final ValueChanged<int>? onClipTapped;
   final double rowOffsetSize;
+  final bool isVolumeEditMode;
+  final double volumeRowStep;
 
   @override
   Widget build(BuildContext context) {
@@ -724,7 +769,7 @@ class _NonTrimmingClipPositions extends StatelessWidget {
               left: isReordering
                   ? rowOffset + i * reorderSlotStep
                   : layout.offsets[i],
-              top: 0,
+              top: isVolumeEditMode ? i * volumeRowStep : 0,
               width: isReordering ? rowOffsetSize : layout.widths[i],
               height: TimelineConstants.thumbnailStripHeight,
               child: _AccessibleClipTile(

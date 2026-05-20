@@ -3656,4 +3656,14 @@
             }
         }
     }
+    ,
+    "videoEditorTimelineVolumePreview": "Lautstärke {percent}%",
+    "@videoEditorTimelineVolumePreview": {
+        "placeholders": {
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorTimelineSlideToAdjust": "Zum Anpassen schieben"
 }

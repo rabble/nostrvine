@@ -11909,7 +11909,7 @@ abstract class AppLocalizations {
   /// No description provided for @videoEditorCustomAudioLabel.
   ///
   /// In en, this message translates to:
-  /// **'Custom audio'**
+  /// **'Added audio'**
   String get videoEditorCustomAudioLabel;
 
   /// No description provided for @videoEditorPlaySemanticLabel.
@@ -11935,6 +11935,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unmute audio'**
   String get videoEditorUnmuteAudioSemanticLabel;
+
+  /// No description provided for @videoEditorVolumeSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust volume'**
+  String get videoEditorVolumeSemanticLabel;
+
+  /// No description provided for @videoEditorVolumeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Volume'**
+  String get videoEditorVolumeTitle;
+
+  /// No description provided for @videoEditorTimelineVolumePreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Volume {percent}%'**
+  String videoEditorTimelineVolumePreview(int percent);
+
+  /// No description provided for @videoEditorTimelineSlideToAdjust.
+  ///
+  /// In en, this message translates to:
+  /// **'Slide to adjust'**
+  String get videoEditorTimelineSlideToAdjust;
+
+  /// No description provided for @videoEditorOriginalAudioLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Original audio'**
+  String get videoEditorOriginalAudioLabel;
+
+  /// No description provided for @videoEditorClipVolumeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Clip {index}'**
+  String videoEditorClipVolumeLabel(int index);
 
   /// No description provided for @videoEditorDeleteLabel.
   ///

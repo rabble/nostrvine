@@ -6535,6 +6535,28 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorUnmuteAudioSemanticLabel => '오디오 음소거 해제';
 
   @override
+  String get videoEditorVolumeSemanticLabel => 'Adjust volume';
+
+  @override
+  String get videoEditorVolumeTitle => 'Volume';
+
+  @override
+  String videoEditorTimelineVolumePreview(int percent) {
+    return '볼륨 $percent%';
+  }
+
+  @override
+  String get videoEditorTimelineSlideToAdjust => '슬라이드하여 조절';
+
+  @override
+  String get videoEditorOriginalAudioLabel => 'Original audio';
+
+  @override
+  String videoEditorClipVolumeLabel(int index) {
+    return 'Clip $index';
+  }
+
+  @override
   String get videoEditorDeleteLabel => '삭제';
 
   @override

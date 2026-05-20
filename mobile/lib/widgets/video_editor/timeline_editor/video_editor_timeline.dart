@@ -19,6 +19,7 @@ import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timel
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_header.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_playhead.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_volume.dart';
 
 /// Interactive timeline editor for composing video clips.
 ///
@@ -39,6 +40,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
   static const _timelineToggleDuration = Duration(milliseconds: 220);
 
   late final ScrollController _scrollController;
+  late final ScrollController _verticalScrollController;
   bool _isUserScrolling = false;
 
   double _pixelsPerSecond = TimelineConstants.pixelsPerSecond;
@@ -50,6 +52,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
   /// Playhead time derived from scroll offset — always matches the visual
   /// playhead regardless of zoom level.
   final _playheadPosition = ValueNotifier<Duration>(Duration.zero);
+  final _volumePreviewNotifier = ValueNotifier<double?>(null);
 
   /// Active pointer positions — when ≥ 2 we compute pinch scale.
   final Map<int, Offset> _pointerPositions = {};
@@ -74,6 +77,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
   void initState() {
     super.initState();
     _scrollController = ScrollController()..addListener(_updatePlayheadTime);
+    _verticalScrollController = ScrollController();
   }
 
   @override
@@ -81,7 +85,9 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
     _scrollController
       ..removeListener(_updatePlayheadTime)
       ..dispose();
+    _verticalScrollController.dispose();
     _playheadPosition.dispose();
+    _volumePreviewNotifier.dispose();
     super.dispose();
   }
 
@@ -118,7 +124,6 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
     final isTimelineHiddenByUser = context.select(
       (VideoEditorMainBloc b) => b.state.isTimelineHiddenByUser,
     );
-
     // Sync layers from main editor to timeline overlay bloc, and
     // sync scroll to playback position while not user-scrolling.
     return MultiBlocListener(
@@ -139,6 +144,29 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
             state.currentPosition,
             totalDuration,
           ),
+        ),
+        BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
+          listenWhen: (prev, curr) =>
+              !prev.isVolumeEditMode && curr.isVolumeEditMode,
+          listener: (context, state) {
+            final clipBloc = context.read<ClipEditorBloc>();
+            if (clipBloc.state.isEditing) {
+              clipBloc.add(const ClipEditorEditingToggled());
+            }
+            context.read<TimelineOverlayBloc>().add(
+              const TimelineOverlayItemSelected(null),
+            );
+          },
+        ),
+        BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
+          listenWhen: (prev, curr) =>
+              prev.isVolumeEditMode && !curr.isVolumeEditMode,
+          listener: (context, state) {
+            if (_verticalScrollController.hasClients) {
+              _verticalScrollController.jumpTo(0);
+            }
+            _volumePreviewNotifier.value = null;
+          },
         ),
         BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
           listenWhen: (prev, curr) =>
@@ -163,7 +191,10 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
             Column(
               crossAxisAlignment: .stretch,
               children: [
-                VideoEditorTimelineHeader(playheadPosition: _playheadPosition),
+                VideoEditorTimelineHeader(
+                  playheadPosition: _playheadPosition,
+                  volumePreviewNotifier: _volumePreviewNotifier,
+                ),
                 const Padding(
                   padding: .only(top: 12),
                   child: Divider(
@@ -221,6 +252,8 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
                       onOverlayItemTapped: _onOverlayItemTapped,
                       onOverlayDragStarted: _onOverlayDragStarted,
                       onOverlayDragEnded: _onOverlayDragEnded,
+                      verticalScrollController: _verticalScrollController,
+                      volumePreviewNotifier: _volumePreviewNotifier,
                     ),
                   ),
                 ),
@@ -809,6 +842,8 @@ class _TimelineInteractiveBody extends StatelessWidget {
     required this.onOverlayItemTapped,
     required this.onOverlayDragStarted,
     required this.onOverlayDragEnded,
+    required this.verticalScrollController,
+    required this.volumePreviewNotifier,
   });
 
   final ValueNotifier<Duration> playheadPosition;
@@ -841,83 +876,158 @@ class _TimelineInteractiveBody extends StatelessWidget {
   final ValueChanged<TimelineOverlayItem> onOverlayItemTapped;
   final ValueChanged<TimelineOverlayItem> onOverlayDragStarted;
   final VoidCallback onOverlayDragEnded;
+  final ScrollController verticalScrollController;
+  final ValueNotifier<double?> volumePreviewNotifier;
 
   @override
   Widget build(BuildContext context) {
+    final isVolumeEditMode = context.select(
+      (VideoEditorMainBloc b) => b.state.isVolumeEditMode,
+    );
+    final audioCount = context.select(
+      (TimelineOverlayBloc b) =>
+          b.state.audioTracks.where((t) => !t.isOriginalSound).length,
+    );
+    final totalRows = clips.length + audioCount;
+    final rawVolumeContentHeight =
+        TimelineConstants.rulerHeight +
+        4 +
+        TimelineConstants.thumbnailStripHeight +
+        (totalRows - 1) * (TimelineConstants.thumbnailStripHeight + 8) +
+        8;
+    final volumeContentHeight =
+        rawVolumeContentHeight > TimelineConstants.height
+        ? rawVolumeContentHeight
+        : TimelineConstants.height;
+
     return Stack(
       fit: .expand,
       children: [
-        ValueListenableBuilder<Duration>(
-          valueListenable: playheadPosition,
-          builder: (context, position, child) {
-            final increased = Duration(
-              milliseconds: (position + const Duration(seconds: 1))
-                  .inMilliseconds
-                  .clamp(0, totalDuration.inMilliseconds),
-            );
-            final decreased = Duration(
-              milliseconds: (position - const Duration(seconds: 1))
-                  .inMilliseconds
-                  .clamp(0, totalDuration.inMilliseconds),
-            );
-            return Semantics(
-              label: context.l10n.videoEditorVideoTimelineSemanticLabel,
-              slider: true,
-              value: formatPosition(position),
-              increasedValue: formatPosition(increased),
-              decreasedValue: formatPosition(decreased),
-              onIncrease: () => onStepPosition(
-                position,
-                totalDuration,
-                const Duration(seconds: 1),
-              ),
-              onDecrease: () => onStepPosition(
-                position,
-                totalDuration,
-                const Duration(seconds: -1),
-              ),
-              child: child ?? const SizedBox.shrink(),
-            );
-          },
-          child: Listener(
-            onPointerDown: onPointerDown,
-            onPointerMove: onPointerMove,
-            onPointerUp: onPointerUp,
-            onPointerCancel: onPointerCancel,
-            child: NotificationListener<ScrollNotification>(
-              onNotification: onScrollNotification,
-              child: SingleChildScrollView(
-                controller: scrollController,
-                scrollDirection: Axis.horizontal,
-                physics: isPinching || isTrimming
-                    ? const NeverScrollableScrollPhysics()
-                    : const ClampingScrollPhysics(),
-                clipBehavior: .none,
-                padding: .symmetric(horizontal: halfScreen),
-                child: VideoEditorTimelineBody(
-                  totalDuration: totalDuration,
-                  pixelsPerSecond: pixelsPerSecond,
-                  scrollController: scrollController,
-                  scrollPadding: halfScreen,
-                  clips: clips,
-                  totalWidth: totalWidth,
-                  isInteracting: isInteracting,
-                  onReorder: onReorder,
-                  onReorderChanged: onReorderChanged,
-                  trimmingClipId: trimmingClipId,
-                  onTrimChanged: onTrimChanged,
-                  onTrimDragChanged: onTrimDragChanged,
-                  onClipTapped: onClipTapped,
-                  onOverlayItemMoved: onOverlayItemMoved,
-                  onOverlayItemMoving: onOverlayItemMoving,
-                  onOverlayItemTrimmed: onOverlayItemTrimmed,
-                  onOverlayTrimDragChanged: onOverlayTrimDragChanged,
-                  onOverlayItemTapped: onOverlayItemTapped,
-                  onOverlayDragStarted: onOverlayDragStarted,
-                  onOverlayDragEnded: onOverlayDragEnded,
-                  playheadPosition: playheadPosition,
+        SingleChildScrollView(
+          controller: verticalScrollController,
+          physics: isVolumeEditMode
+              ? const ClampingScrollPhysics()
+              : const NeverScrollableScrollPhysics(),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            height: isVolumeEditMode
+                ? volumeContentHeight
+                : TimelineConstants.height,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                ValueListenableBuilder<Duration>(
+                  valueListenable: playheadPosition,
+                  builder: (context, position, child) {
+                    final increased = Duration(
+                      milliseconds: (position + const Duration(seconds: 1))
+                          .inMilliseconds
+                          .clamp(0, totalDuration.inMilliseconds),
+                    );
+                    final decreased = Duration(
+                      milliseconds: (position - const Duration(seconds: 1))
+                          .inMilliseconds
+                          .clamp(0, totalDuration.inMilliseconds),
+                    );
+                    return Semantics(
+                      label: context.l10n.videoEditorVideoTimelineSemanticLabel,
+                      slider: true,
+                      value: formatPosition(position),
+                      increasedValue: formatPosition(increased),
+                      decreasedValue: formatPosition(decreased),
+                      onIncrease: () => onStepPosition(
+                        position,
+                        totalDuration,
+                        const Duration(seconds: 1),
+                      ),
+                      onDecrease: () => onStepPosition(
+                        position,
+                        totalDuration,
+                        const Duration(seconds: -1),
+                      ),
+                      child: child ?? const SizedBox.shrink(),
+                    );
+                  },
+                  child: Listener(
+                    onPointerDown: onPointerDown,
+                    onPointerMove: onPointerMove,
+                    onPointerUp: onPointerUp,
+                    onPointerCancel: onPointerCancel,
+                    child: NotificationListener<ScrollNotification>(
+                      onNotification: onScrollNotification,
+                      child: SingleChildScrollView(
+                        controller: scrollController,
+                        scrollDirection: Axis.horizontal,
+                        physics: isPinching || isTrimming
+                            ? const NeverScrollableScrollPhysics()
+                            : const ClampingScrollPhysics(),
+                        clipBehavior: .none,
+                        padding: .symmetric(horizontal: halfScreen),
+                        child: VideoEditorTimelineBody(
+                          totalDuration: totalDuration,
+                          pixelsPerSecond: pixelsPerSecond,
+                          scrollController: scrollController,
+                          scrollPadding: halfScreen,
+                          clips: clips,
+                          totalWidth: totalWidth,
+                          isInteracting: isInteracting,
+                          onReorder: onReorder,
+                          onReorderChanged: onReorderChanged,
+                          trimmingClipId: trimmingClipId,
+                          onTrimChanged: onTrimChanged,
+                          onTrimDragChanged: onTrimDragChanged,
+                          onClipTapped: isVolumeEditMode ? null : onClipTapped,
+                          onOverlayItemMoved: onOverlayItemMoved,
+                          onOverlayItemMoving: onOverlayItemMoving,
+                          onOverlayItemTrimmed: onOverlayItemTrimmed,
+                          onOverlayTrimDragChanged: onOverlayTrimDragChanged,
+                          onOverlayItemTapped: isVolumeEditMode
+                              ? null
+                              : onOverlayItemTapped,
+                          onOverlayDragStarted: onOverlayDragStarted,
+                          onOverlayDragEnded: onOverlayDragEnded,
+                          playheadPosition: playheadPosition,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  child: ClipRect(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 220),
+                      transitionBuilder: (child, animation) => SlideTransition(
+                        position:
+                            Tween<Offset>(
+                              begin: const Offset(-1.0, 0.0),
+                              end: Offset.zero,
+                            ).animate(
+                              CurvedAnimation(
+                                parent: animation,
+                                curve: Curves.easeInOut,
+                              ),
+                            ),
+                        child: child,
+                      ),
+                      layoutBuilder: (currentChild, previousChildren) => Stack(
+                        alignment: Alignment.centerLeft,
+                        children: <Widget>[...previousChildren, ?currentChild],
+                      ),
+                      child: isVolumeEditMode
+                          ? VideoEditorTimelineVolume(
+                              key: const ValueKey('volume'),
+                              volumePreviewNotifier: volumePreviewNotifier,
+                            )
+                          : const SizedBox.shrink(
+                              key: ValueKey('empty'),
+                            ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),

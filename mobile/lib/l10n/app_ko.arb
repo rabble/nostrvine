@@ -2945,4 +2945,14 @@
             }
         }
     }
+    ,
+    "videoEditorTimelineVolumePreview": "볼륨 {percent}%",
+    "@videoEditorTimelineVolumePreview": {
+        "placeholders": {
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "videoEditorTimelineSlideToAdjust": "슬라이드하여 조절"
 }

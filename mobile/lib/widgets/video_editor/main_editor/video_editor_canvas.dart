@@ -1062,18 +1062,6 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             _onSeekRequested(state.seekPosition);
           },
         ),
-        BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
-          listenWhen: (previous, current) =>
-              previous.isMuted != current.isMuted,
-          listener: (context, state) {
-            if (_isPlayerInitialized) {
-              _videoPlayer?.setVolume(state.isMuted ? 0 : 1);
-            }
-            ref
-                .read(videoEditorProvider.notifier)
-                .setOriginalAudioVolume(state.isMuted ? 0 : 1);
-          },
-        ),
       ],
       child: ProImageEditor.video(
         _proVideoController,

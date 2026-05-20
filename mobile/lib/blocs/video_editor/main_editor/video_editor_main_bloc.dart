@@ -33,7 +33,7 @@ class VideoEditorMainBloc
       transformer: restartable(),
     );
     on<VideoEditorDurationChanged>(_onDurationChanged);
-    on<VideoEditorMuteToggled>(_onMuteToggled);
+    on<VideoEditorVolumeEditModeToggled>(_onVolumeEditModeToggled);
     on<VideoEditorReorderingChanged>(_onReorderingChanged);
     on<VideoEditorTimelineVisibilityToggled>(_onTimelineVisibilityToggled);
   }
@@ -159,11 +159,11 @@ class VideoEditorMainBloc
     emit(state.copyWith(totalDuration: event.duration));
   }
 
-  void _onMuteToggled(
-    VideoEditorMuteToggled event,
+  void _onVolumeEditModeToggled(
+    VideoEditorVolumeEditModeToggled event,
     Emitter<VideoEditorMainState> emit,
   ) {
-    emit(state.copyWith(isMuted: !state.isMuted));
+    emit(state.copyWith(isVolumeEditMode: !state.isVolumeEditMode));
   }
 
   void _onReorderingChanged(

@@ -42,6 +42,10 @@ class TimelineOverlayBloc
     on<TimelineOverlayCollapseToggled>(_onCollapseToggled);
     on<TimelineOverlayTotalDurationChanged>(_onTotalDurationChanged);
     on<TimelineOverlayWaveformLoaded>(_onWaveformLoaded);
+    on<TimelineOverlayAudioVolumeChanged>(
+      _onAudioVolumeChanged,
+      transformer: sequential(),
+    );
   }
 
   void _onUpdateItems(
@@ -82,6 +86,9 @@ class TimelineOverlayBloc
               : VideoEditorConstants.maxDuration,
           waveformLeftChannel: leftCache[track.id],
           waveformRightChannel: rightCache[track.id],
+          audioSource: track.isOriginalSound
+              ? AudioSource.original
+              : AudioSource.custom,
         ),
     ];
 
@@ -456,5 +463,19 @@ class TimelineOverlayBloc
           item,
     ];
     emit(state.copyWith(items: updated));
+  }
+
+  void _onAudioVolumeChanged(
+    TimelineOverlayAudioVolumeChanged event,
+    Emitter<TimelineOverlayState> emit,
+  ) {
+    final updated = [
+      for (final track in state.audioTracks)
+        if (track.id == event.trackId)
+          track.copyWith(volume: event.volume.clamp(0.0, 1.0))
+        else
+          track,
+    ];
+    emit(state.copyWith(audioTracks: updated));
   }
 }

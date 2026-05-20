@@ -81,6 +81,12 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       _onAudioExtractionRequested,
       transformer: droppable(),
     );
+
+    // Volume
+    on<ClipEditorClipVolumeChanged>(
+      _onClipVolumeChanged,
+      transformer: sequential(),
+    );
   }
 
   final void Function() onFinalClipInvalidated;
@@ -430,6 +436,21 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         clearTrimmingClipId: true,
       ),
     );
+  }
+
+  // === VOLUME ===
+
+  void _onClipVolumeChanged(
+    ClipEditorClipVolumeChanged event,
+    Emitter<ClipEditorState> emit,
+  ) {
+    final index = state.clips.indexWhere((c) => c.id == event.clipId);
+    if (index == -1) return;
+    final updated = List<DivineVideoClip>.of(state.clips);
+    updated[index] = updated[index].copyWith(
+      volume: event.volume.clamp(0.0, 1.0),
+    );
+    emit(state.copyWith(clips: updated));
   }
 
   // === AUDIO EXTRACTION ===
