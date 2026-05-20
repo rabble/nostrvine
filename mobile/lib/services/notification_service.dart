@@ -434,7 +434,7 @@ class NotificationService {
       );
 
       await _flutterLocalNotificationsPlugin.initialize(
-        initializationSettings,
+        settings: initializationSettings,
         onDidReceiveNotificationResponse: _onNotificationTapped,
       );
 
@@ -587,11 +587,12 @@ class NotificationService {
 
       // Show the notification
       await _flutterLocalNotificationsPlugin.show(
-        notification.timestamp.millisecondsSinceEpoch %
+        id:
+            notification.timestamp.millisecondsSinceEpoch %
             100000, // Unique ID from timestamp
-        title,
-        body,
-        notificationDetails,
+        title: title,
+        body: body,
+        notificationDetails: notificationDetails,
       );
 
       Log.debug(
@@ -708,10 +709,10 @@ class NotificationService {
       // Show the notification with unique ID from timestamp
       final notificationId = DateTime.now().millisecondsSinceEpoch % 100000;
       await _flutterLocalNotificationsPlugin.show(
-        notificationId,
-        title,
-        body,
-        notificationDetails,
+        id: notificationId,
+        title: title,
+        body: body,
+        notificationDetails: notificationDetails,
       );
 
       Log.debug(

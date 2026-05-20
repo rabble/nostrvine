@@ -283,7 +283,7 @@ dependencies:
   # values-v31 styles) are hand-authored and should not be regenerated.
   # See #2749 and #2953 for context on the welcome-screen flash fix.
   flutter_native_splash: ^2.4.7
-  flutter_local_notifications: ^19.4.2
+  flutter_local_notifications: ^21.0.0
   package_info_plus: ^9.0.0
   uuid: ^4.5.1
   app_links: ^6.4.1

@@ -122,7 +122,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     iOS: darwinInit,
     macOS: darwinInit,
   );
-  await plugin.initialize(initSettings);
+  await plugin.initialize(settings: initSettings);
 
   const androidDetails = AndroidNotificationDetails(
     'openvine_push',
@@ -137,10 +137,10 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   );
 
   await plugin.show(
-    DateTime.now().millisecondsSinceEpoch ~/ 1000,
-    title,
-    body,
-    details,
+    id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+    title: title,
+    body: body,
+    notificationDetails: details,
     payload: jsonEncode({
       'referencedEventId': data['referencedEventId'],
       // Normalise at the boundary: FCM wire key is 'type'; the internal
