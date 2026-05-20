@@ -187,6 +187,7 @@ Rules:
   - [mobile/docs/NOSTR_VIDEO_EVENTS.md](mobile/docs/NOSTR_VIDEO_EVENTS.md)
   - [mobile/docs/DESIGN_SYSTEM_COMPONENTS.md](mobile/docs/DESIGN_SYSTEM_COMPONENTS.md)
   - [mobile/docs/GOLDEN_TESTING_GUIDE.md](mobile/docs/GOLDEN_TESTING_GUIDE.md)
+  - [mobile/docs/ERROR_HANDLING.md](mobile/docs/ERROR_HANDLING.md) (per-layer failure contract, Reportable matrix)
 
 ## Architecture Expectations
 

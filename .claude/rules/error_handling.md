@@ -119,6 +119,36 @@ void main() {
 
 ---
 
+## Per-layer failure contract
+
+The same failure travels four layers before a user sees it. Each layer
+has one job; mixing jobs is how silent failures and misleading
+dashboards get born.
+
+| Layer        | What it throws / returns                                                                                                                                                                                                                | What it does NOT do                                                                                              |
+|--------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
+| Client       | Typed exception (`FooApiException`, `NetworkException`, etc.) with a `///` doc on every public method listing thrown types. No `false` / `null` "and also it failed" returns.                                                           | No knowledge of features, no fallback selection, no UI strings.                                                  |
+| Repository   | Either a typed exception (re-thrown / translated) **or** a sentinel value documented on the method (`Future<List<X>>` returning `[]` is valid only if the doc says so). Owns fallback composition between sources.                      | Never builds user-visible strings. Never decides what's "Reportable" — that's the BLoC's call.                   |
+| BLoC / Cubit | Catches typed exceptions, applies the [decision matrix](#decision-matrix), calls `addError(...)` (wrapping with `Reportable(...)` for YES cases), emits a *status enum* — never an error string, never an `Exception` field.            | Doesn't store error text. Doesn't `print`. Doesn't reach into UI.                                                |
+| UI           | Reads `state.status`, maps to `context.l10n.xxx`, renders. Wires snackbars, retry buttons, and recovery flows off the status enum.                                                                                                      | Doesn't read exception objects from state. Doesn't decide what's reportable. Doesn't call repositories directly. |
+
+If you find yourself adding a `String? errorMessage` to a state class,
+you've crossed two layers — undo it and lift the decision to whichever
+layer above is missing.
+
+The matrix that BLoCs apply in the third row above is in
+[Reportable errors and Crashlytics](#reportable-errors-and-crashlytics)
+immediately below.
+
+Adjacent rules this formalises into one table:
+
+- `state_management.md` → "State must NEVER contain error messages,
+  error strings, or exception objects."
+- `architecture.md` → "Fallback and composition logic belongs in the
+  repository."
+
+---
+
 ## Reportable errors and Crashlytics
 
 A project-wide `BlocObserver` (`DivineBlocObserver`) writes every Bloc/Cubit
@@ -217,6 +247,64 @@ supplementary triage text, not a dashboard branching key, so the
 typed-vs-string choice is a call-site discoverability decision rather
 than a dashboard-taxonomy decision.
 
+### Reporter port pattern (pure-Dart packages)
+
+Pure-Dart packages under `mobile/packages/` cannot import
+`package:openvine/observability/...` without inverting the layer
+boundary. The approved alternative is a **reporter-port typedef**
+injected as a nullable constructor parameter, wired in the app layer
+to `CrashReportingService.instance.recordError`.
+
+Shape (the canonical reference is `dm_repository` — see
+`mobile/packages/dm_repository/lib/src/dm_repository.dart` and
+`dm_repository_reportable_sites.dart`):
+
+```dart
+// In the package
+typedef PkgErrorReporter = void Function(
+  Object error,
+  StackTrace stackTrace, {
+  required String site,
+});
+
+class FooRepository {
+  FooRepository({PkgErrorReporter? errorReporter})
+      : _report = errorReporter;
+
+  final PkgErrorReporter? _report;
+
+  Future<void> doThing() async {
+    try {
+      // ...
+    } catch (e, st) {
+      _report?.call(
+        e,
+        st,
+        site: FooRepositoryReportableSites.doThing,
+      );
+      rethrow; // or translate to a typed exception
+    }
+  }
+}
+
+// In the app layer (provider wiring)
+FooRepository(
+  errorReporter: (e, st, {required String site}) {
+    CrashReportingService.instance.recordError(
+      e,
+      st,
+      reason: 'FooRepository.$site',
+    );
+  },
+);
+```
+
+This is the **only** approved Crashlytics surface for packages that
+can't depend on `openvine/observability` — do not introduce another.
+
+The package owns its `*ReportableSites` constants file (per the same
+naming rule as in [Naming `context` identifiers](#naming-context-identifiers)).
+
 ### PII
 
 `Reportable.toString()` strips Nostr `npub1…` and `nsec1…` identifiers
@@ -230,6 +318,12 @@ If you opt a project-owned exception in by `implements ReportableError`
 directly (skipping the `Reportable` wrapper), the marker bypasses the
 sanitizer. Make sure your `toString()` does not embed `npub` / `nsec`
 strings, or wrap the throw with `Reportable` at the boundary instead.
+
+**Required**: any new class that `implements ReportableError` directly
+must ship a unit test asserting its `toString()` is free of `npub1…`,
+`nsec1…`, and email-shaped identifiers. The wrapper's sanitizer is
+the safety net for `Reportable<T>` wraps only; direct implementers
+opt out of that net and must own the contract at the class level.
 
 ---
 
