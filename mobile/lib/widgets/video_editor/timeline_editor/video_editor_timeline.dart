@@ -884,17 +884,21 @@ class _TimelineInteractiveBody extends StatelessWidget {
     final isVolumeEditMode = context.select(
       (VideoEditorMainBloc b) => b.state.isVolumeEditMode,
     );
-    final audioCount = context.select(
-      (TimelineOverlayBloc b) =>
-          b.state.audioTracks.where((t) => !t.isOriginalSound).length,
+    final soundItemCount = context.select(
+      (TimelineOverlayBloc b) => b.state.items
+          .where((i) => i.type == TimelineOverlayType.sound)
+          .length,
     );
-    final totalRows = clips.length + audioCount;
     final rawVolumeContentHeight =
         TimelineConstants.rulerHeight +
         4 +
-        TimelineConstants.thumbnailStripHeight +
-        (totalRows - 1) * (TimelineConstants.thumbnailStripHeight + 8) +
-        8;
+        clips.length *
+            (TimelineConstants.thumbnailStripHeight +
+                TimelineConstants.thumbnailVerticalRowGap) -
+        TimelineConstants.thumbnailVerticalRowGap +
+        4 +
+        TimelineConstants.overlayStripGap +
+        soundItemCount * TimelineConstants.soundOverlayRowHeight;
     final volumeContentHeight =
         rawVolumeContentHeight > TimelineConstants.height
         ? rawVolumeContentHeight
@@ -908,126 +912,136 @@ class _TimelineInteractiveBody extends StatelessWidget {
           physics: isVolumeEditMode
               ? const ClampingScrollPhysics()
               : const NeverScrollableScrollPhysics(),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeInOut,
-            height: isVolumeEditMode
-                ? volumeContentHeight
-                : TimelineConstants.height,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                ValueListenableBuilder<Duration>(
-                  valueListenable: playheadPosition,
-                  builder: (context, position, child) {
-                    final increased = Duration(
-                      milliseconds: (position + const Duration(seconds: 1))
-                          .inMilliseconds
-                          .clamp(0, totalDuration.inMilliseconds),
-                    );
-                    final decreased = Duration(
-                      milliseconds: (position - const Duration(seconds: 1))
-                          .inMilliseconds
-                          .clamp(0, totalDuration.inMilliseconds),
-                    );
-                    return Semantics(
-                      label: context.l10n.videoEditorVideoTimelineSemanticLabel,
-                      slider: true,
-                      value: formatPosition(position),
-                      increasedValue: formatPosition(increased),
-                      decreasedValue: formatPosition(decreased),
-                      onIncrease: () => onStepPosition(
-                        position,
-                        totalDuration,
-                        const Duration(seconds: 1),
-                      ),
-                      onDecrease: () => onStepPosition(
-                        position,
-                        totalDuration,
-                        const Duration(seconds: -1),
-                      ),
-                      child: child ?? const SizedBox.shrink(),
-                    );
-                  },
-                  child: Listener(
-                    onPointerDown: onPointerDown,
-                    onPointerMove: onPointerMove,
-                    onPointerUp: onPointerUp,
-                    onPointerCancel: onPointerCancel,
-                    child: NotificationListener<ScrollNotification>(
-                      onNotification: onScrollNotification,
-                      child: SingleChildScrollView(
-                        controller: scrollController,
-                        scrollDirection: Axis.horizontal,
-                        physics: isPinching || isTrimming
-                            ? const NeverScrollableScrollPhysics()
-                            : const ClampingScrollPhysics(),
-                        clipBehavior: .none,
-                        padding: .symmetric(horizontal: halfScreen),
-                        child: VideoEditorTimelineBody(
-                          totalDuration: totalDuration,
-                          pixelsPerSecond: pixelsPerSecond,
-                          scrollController: scrollController,
-                          scrollPadding: halfScreen,
-                          clips: clips,
-                          totalWidth: totalWidth,
-                          isInteracting: isInteracting,
-                          onReorder: onReorder,
-                          onReorderChanged: onReorderChanged,
-                          trimmingClipId: trimmingClipId,
-                          onTrimChanged: onTrimChanged,
-                          onTrimDragChanged: onTrimDragChanged,
-                          onClipTapped: isVolumeEditMode ? null : onClipTapped,
-                          onOverlayItemMoved: onOverlayItemMoved,
-                          onOverlayItemMoving: onOverlayItemMoving,
-                          onOverlayItemTrimmed: onOverlayItemTrimmed,
-                          onOverlayTrimDragChanged: onOverlayTrimDragChanged,
-                          onOverlayItemTapped: isVolumeEditMode
-                              ? null
-                              : onOverlayItemTapped,
-                          onOverlayDragStarted: onOverlayDragStarted,
-                          onOverlayDragEnded: onOverlayDragEnded,
-                          playheadPosition: playheadPosition,
+          child: ClipRect(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+              height: isVolumeEditMode
+                  ? volumeContentHeight
+                  : TimelineConstants.height,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  ValueListenableBuilder<Duration>(
+                    valueListenable: playheadPosition,
+                    builder: (context, position, child) {
+                      final increased = Duration(
+                        milliseconds: (position + const Duration(seconds: 1))
+                            .inMilliseconds
+                            .clamp(0, totalDuration.inMilliseconds),
+                      );
+                      final decreased = Duration(
+                        milliseconds: (position - const Duration(seconds: 1))
+                            .inMilliseconds
+                            .clamp(0, totalDuration.inMilliseconds),
+                      );
+                      return Semantics(
+                        label:
+                            context.l10n.videoEditorVideoTimelineSemanticLabel,
+                        slider: true,
+                        value: formatPosition(position),
+                        increasedValue: formatPosition(increased),
+                        decreasedValue: formatPosition(decreased),
+                        onIncrease: () => onStepPosition(
+                          position,
+                          totalDuration,
+                          const Duration(seconds: 1),
+                        ),
+                        onDecrease: () => onStepPosition(
+                          position,
+                          totalDuration,
+                          const Duration(seconds: -1),
+                        ),
+                        child: child ?? const SizedBox.shrink(),
+                      );
+                    },
+                    child: Listener(
+                      onPointerDown: onPointerDown,
+                      onPointerMove: onPointerMove,
+                      onPointerUp: onPointerUp,
+                      onPointerCancel: onPointerCancel,
+                      child: NotificationListener<ScrollNotification>(
+                        onNotification: onScrollNotification,
+                        child: SingleChildScrollView(
+                          controller: scrollController,
+                          scrollDirection: Axis.horizontal,
+                          physics: isPinching || isTrimming
+                              ? const NeverScrollableScrollPhysics()
+                              : const ClampingScrollPhysics(),
+                          clipBehavior: .none,
+                          padding: .symmetric(horizontal: halfScreen),
+                          child: VideoEditorTimelineBody(
+                            totalDuration: totalDuration,
+                            pixelsPerSecond: pixelsPerSecond,
+                            scrollController: scrollController,
+                            scrollPadding: halfScreen,
+                            clips: clips,
+                            totalWidth: totalWidth,
+                            isInteracting: isInteracting,
+                            onReorder: onReorder,
+                            onReorderChanged: onReorderChanged,
+                            trimmingClipId: trimmingClipId,
+                            onTrimChanged: onTrimChanged,
+                            onTrimDragChanged: onTrimDragChanged,
+                            onClipTapped: isVolumeEditMode
+                                ? null
+                                : onClipTapped,
+                            onOverlayItemMoved: onOverlayItemMoved,
+                            onOverlayItemMoving: onOverlayItemMoving,
+                            onOverlayItemTrimmed: onOverlayItemTrimmed,
+                            onOverlayTrimDragChanged: onOverlayTrimDragChanged,
+                            onOverlayItemTapped: isVolumeEditMode
+                                ? null
+                                : onOverlayItemTapped,
+                            onOverlayDragStarted: onOverlayDragStarted,
+                            onOverlayDragEnded: onOverlayDragEnded,
+                            playheadPosition: playheadPosition,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                Positioned(
-                  left: 0,
-                  top: 0,
-                  child: ClipRect(
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 220),
-                      transitionBuilder: (child, animation) => SlideTransition(
-                        position:
-                            Tween<Offset>(
-                              begin: const Offset(-1.0, 0.0),
-                              end: Offset.zero,
-                            ).animate(
-                              CurvedAnimation(
-                                parent: animation,
-                                curve: Curves.easeInOut,
+                  Positioned(
+                    left: 0,
+                    top: 0,
+                    child: ClipRect(
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 220),
+                        transitionBuilder: (child, animation) =>
+                            SlideTransition(
+                              position:
+                                  Tween<Offset>(
+                                    begin: const Offset(-1.0, 0.0),
+                                    end: Offset.zero,
+                                  ).animate(
+                                    CurvedAnimation(
+                                      parent: animation,
+                                      curve: Curves.easeInOut,
+                                    ),
+                                  ),
+                              child: child,
+                            ),
+                        layoutBuilder: (currentChild, previousChildren) =>
+                            Stack(
+                              alignment: Alignment.centerLeft,
+                              children: <Widget>[
+                                ...previousChildren,
+                                ?currentChild,
+                              ],
+                            ),
+                        child: isVolumeEditMode
+                            ? VideoEditorTimelineVolume(
+                                key: const ValueKey('volume'),
+                                volumePreviewNotifier: volumePreviewNotifier,
+                              )
+                            : const SizedBox.shrink(
+                                key: ValueKey('empty'),
                               ),
-                            ),
-                        child: child,
                       ),
-                      layoutBuilder: (currentChild, previousChildren) => Stack(
-                        alignment: Alignment.centerLeft,
-                        children: <Widget>[...previousChildren, ?currentChild],
-                      ),
-                      child: isVolumeEditMode
-                          ? VideoEditorTimelineVolume(
-                              key: const ValueKey('volume'),
-                              volumePreviewNotifier: volumePreviewNotifier,
-                            )
-                          : const SizedBox.shrink(
-                              key: ValueKey('empty'),
-                            ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

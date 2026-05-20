@@ -1,6 +1,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
@@ -116,6 +117,9 @@ class _TimelineOverlayStripsState extends State<TimelineOverlayStrips> {
         collapsedTypes: b.state.collapsedTypes,
       ),
     );
+    final isVolumeEditMode = context.select(
+      (VideoEditorMainBloc b) => b.state.isVolumeEditMode,
+    );
 
     // Rebuild buckets only when the items list changes.
     final itemsDirty = !identical(items, _prevItems);
@@ -133,10 +137,27 @@ class _TimelineOverlayStripsState extends State<TimelineOverlayStrips> {
       _prevClipEdgesMs = widget.clipEdgesMs;
     }
 
+    // In volume edit mode each sound item gets its own dedicated row so the
+    // user can adjust the volume of every track independently. The row index
+    // is set by list position (0, 1, 2, …) regardless of the item's stored
+    // row value, which may place multiple items on the same row in normal mode.
+    final soundItemsForDisplay = isVolumeEditMode && _soundItems.isNotEmpty
+        ? [
+            for (var i = 0; i < _soundItems.length; i++)
+              _soundItems[i].copyWith(row: i),
+          ]
+        : _soundItems;
+    final soundRowCountForDisplay = isVolumeEditMode
+        ? _soundItems.length
+        : _soundRowCount;
+
     final stripConfigs = [
       (
-        items: _soundItems,
-        rowCount: _soundRowCount,
+        items: soundItemsForDisplay,
+        rowCount: soundRowCountForDisplay,
+        isCollapsed:
+            !isVolumeEditMode &&
+            collapsedTypes.contains(TimelineOverlayType.sound),
         type: TimelineOverlayType.sound,
         color: VineTheme.accentVioletBackground,
         rowHeight: TimelineConstants.soundOverlayRowHeight,
@@ -144,6 +165,7 @@ class _TimelineOverlayStripsState extends State<TimelineOverlayStrips> {
       (
         items: _filterItems,
         rowCount: _filterRowCount,
+        isCollapsed: collapsedTypes.contains(TimelineOverlayType.filter),
         type: TimelineOverlayType.filter,
         color: VineTheme.success,
         rowHeight: TimelineConstants.overlayRowHeight,
@@ -151,6 +173,7 @@ class _TimelineOverlayStripsState extends State<TimelineOverlayStrips> {
       (
         items: _layerItems,
         rowCount: _layerRowCount,
+        isCollapsed: collapsedTypes.contains(TimelineOverlayType.layer),
         type: TimelineOverlayType.layer,
         color: VineTheme.accentVioletBackground,
         rowHeight: TimelineConstants.overlayRowHeight,
@@ -174,7 +197,7 @@ class _TimelineOverlayStripsState extends State<TimelineOverlayStrips> {
                 totalDuration: widget.totalDuration,
                 color: config.color,
                 rowHeight: config.rowHeight,
-                isCollapsed: collapsedTypes.contains(config.type),
+                isCollapsed: config.isCollapsed,
                 selectedItemId: selectedItemId,
                 snapPointsMs: _snapPointsMs,
                 onItemTapped: widget.onItemTapped,

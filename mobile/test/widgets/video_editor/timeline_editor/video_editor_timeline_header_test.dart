@@ -171,6 +171,17 @@ void main() {
     });
 
     group('undo/redo', () {
+      DivineIconButton buttonBySemanticLabel(
+        WidgetTester tester,
+        String label,
+      ) {
+        final finder = find.ancestor(
+          of: find.bySemanticsLabel(label),
+          matching: find.byType(DivineIconButton),
+        );
+        return tester.widget<DivineIconButton>(finder.first);
+      }
+
       testWidgets('undo button is disabled when canUndo is false', (
         tester,
       ) async {
@@ -178,11 +189,11 @@ void main() {
           buildWidget(mainState: const VideoEditorMainState()),
         );
 
-        final undoButtons = tester.widgetList<DivineIconButton>(
-          find.byType(DivineIconButton),
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final undoButton = buttonBySemanticLabel(
+          tester,
+          l10n.videoEditorUndoSemanticLabel,
         );
-        // Undo is the 2nd button (play, undo, redo)
-        final undoButton = undoButtons.elementAt(1);
         expect(undoButton.onPressed, isNull);
       });
 
@@ -193,10 +204,11 @@ void main() {
           buildWidget(mainState: const VideoEditorMainState(canUndo: true)),
         );
 
-        final undoButtons = tester.widgetList<DivineIconButton>(
-          find.byType(DivineIconButton),
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final undoButton = buttonBySemanticLabel(
+          tester,
+          l10n.videoEditorUndoSemanticLabel,
         );
-        final undoButton = undoButtons.elementAt(1);
         expect(undoButton.onPressed, isNotNull);
       });
 
@@ -207,10 +219,11 @@ void main() {
           buildWidget(mainState: const VideoEditorMainState()),
         );
 
-        final redoButtons = tester.widgetList<DivineIconButton>(
-          find.byType(DivineIconButton),
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final redoButton = buttonBySemanticLabel(
+          tester,
+          l10n.videoEditorRedoSemanticLabel,
         );
-        final redoButton = redoButtons.elementAt(2);
         expect(redoButton.onPressed, isNull);
       });
 
@@ -221,10 +234,11 @@ void main() {
           buildWidget(mainState: const VideoEditorMainState(canRedo: true)),
         );
 
-        final redoButtons = tester.widgetList<DivineIconButton>(
-          find.byType(DivineIconButton),
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final redoButton = buttonBySemanticLabel(
+          tester,
+          l10n.videoEditorRedoSemanticLabel,
         );
-        final redoButton = redoButtons.elementAt(2);
         expect(redoButton.onPressed, isNotNull);
       });
     });
