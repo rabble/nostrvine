@@ -7030,20 +7030,25 @@ void main() {
     });
 
     group('searchVideosViaApi', () {
-      test('returns empty list when query is empty', () async {
+      test('returns empty page when query is empty', () async {
         final result = await repository.searchVideosViaApi(query: '');
+
         expect(result.videos, isEmpty);
+        expect(result.hasMore, isFalse);
       });
 
-      test('returns empty list when query is whitespace only', () async {
+      test('returns empty page when query is whitespace only', () async {
         final result = await repository.searchVideosViaApi(query: '   ');
+
         expect(result.videos, isEmpty);
+        expect(result.hasMore, isFalse);
       });
 
-      test('returns empty list when funnelcakeApiClient is null', () async {
-        // Default repository has no funnelcake client
+      test('returns empty page when funnelcakeApiClient is null', () async {
         final result = await repository.searchVideosViaApi(query: 'flutter');
+
         expect(result.videos, isEmpty);
+        expect(result.hasMore, isFalse);
       });
 
       test(
@@ -7058,7 +7063,9 @@ void main() {
           );
 
           final result = await repoWithApi.searchVideosViaApi(query: 'flutter');
+
           expect(result.videos, isEmpty);
+          expect(result.hasMore, isFalse);
         },
       );
 
@@ -7083,6 +7090,7 @@ void main() {
               ),
             ],
             totalCount: 1,
+            hasMore: true,
           ),
         );
 
@@ -7094,6 +7102,7 @@ void main() {
         final result = await repoWithApi.searchVideosViaApi(query: 'flutter');
 
         expect(result.videos, hasLength(1));
+        expect(result.hasMore, isTrue);
         verify(
           () => mockFunnelcake.searchVideos(
             query: 'flutter',

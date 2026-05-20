@@ -1226,18 +1226,18 @@ class FunnelcakeApiClient {
       'type': 'video',
     });
     if (offset > 0) {
-      queryParams['offset'] = offset.toString();
+      queryParams['cursor'] = 'o:$offset';
     }
 
     final uri = Uri.parse(
-      '$_baseUrl/api/search',
+      '$_baseUrl/api/v2/search',
     ).replace(queryParameters: queryParams);
 
     try {
       final response = await _get(uri);
 
       if (response.statusCode == 200) {
-        final (:items, hasMore: _, nextCursor: _) = _unwrapListResponse(
+        final (:items, :hasMore, nextCursor: _) = _unwrapListResponse(
           jsonDecode(response.body),
         );
 
@@ -1248,9 +1248,13 @@ class FunnelcakeApiClient {
 
         final totalCount =
             int.tryParse(response.headers['x-total-count'] ?? '') ??
-            videos.length;
+            offset + videos.length;
 
-        return VideoSearchResponse(videos: videos, totalCount: totalCount);
+        return VideoSearchResponse(
+          videos: videos,
+          totalCount: totalCount,
+          hasMore: hasMore ?? false,
+        );
       } else {
         throw FunnelcakeApiException(
           message: 'Failed to search videos',

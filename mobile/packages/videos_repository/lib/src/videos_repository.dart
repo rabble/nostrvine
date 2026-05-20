@@ -1620,7 +1620,8 @@ class VideosRepository {
   ///
   /// Returns a record of matching [VideoEvent]s in API order and the total API
   /// result count.
-  Future<({List<VideoEvent> videos, int totalCount})> searchVideosViaApi({
+  Future<({List<VideoEvent> videos, int totalCount, bool hasMore})>
+  searchVideosViaApi({
     required String query,
     int limit = 50,
     int offset = 0,
@@ -1628,10 +1629,10 @@ class VideosRepository {
   }) async {
     final trimmed = query.trim();
     if (trimmed.isEmpty) {
-      return (videos: <VideoEvent>[], totalCount: 0);
+      return (videos: <VideoEvent>[], totalCount: 0, hasMore: false);
     }
     if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
-      return (videos: <VideoEvent>[], totalCount: 0);
+      return (videos: <VideoEvent>[], totalCount: 0, hasMore: false);
     }
 
     try {
@@ -1645,7 +1646,11 @@ class VideosRepository {
         response.videos,
         sortByCreatedAt: false,
       );
-      return (videos: videos, totalCount: response.totalCount);
+      return (
+        videos: videos,
+        totalCount: response.totalCount,
+        hasMore: response.hasMore,
+      );
     } on FunnelcakeException catch (e, stackTrace) {
       Log.error(
         'searchVideosViaApi failed for "$trimmed"',
@@ -1654,7 +1659,7 @@ class VideosRepository {
         error: e,
         stackTrace: stackTrace,
       );
-      return (videos: <VideoEvent>[], totalCount: 0);
+      return (videos: <VideoEvent>[], totalCount: 0, hasMore: false);
     }
   }
 

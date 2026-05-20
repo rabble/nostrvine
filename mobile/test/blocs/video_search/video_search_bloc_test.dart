@@ -61,7 +61,9 @@ void main() {
           offset: any(named: 'offset'),
           sort: any(named: 'sort'),
         ),
-      ).thenAnswer((_) async => (videos: <VideoEvent>[], totalCount: 0));
+      ).thenAnswer(
+        (_) async => (videos: <VideoEvent>[], totalCount: 0, hasMore: false),
+      );
       when(
         () => mockVideosRepository.deduplicateVideosPreservingOrder(any()),
       ).thenAnswer((inv) => inv.positionalArguments.first as List<VideoEvent>);
@@ -614,6 +616,7 @@ void main() {
             (_) async => (
               videos: [createVideo(id: 'v2', title: 'Page 2')],
               totalCount: 75,
+              hasMore: false,
             ),
           );
         },

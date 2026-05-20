@@ -163,7 +163,7 @@ class VideoSearchBloc extends Bloc<VideoSearchEvent, VideoSearchState> {
           resultCount: merged.length,
           apiOffset: newOffset,
           totalApiCount: result.totalCount,
-          hasMore: newOffset < result.totalCount,
+          hasMore: result.hasMore,
           isLoadingMore: false,
         ),
       );

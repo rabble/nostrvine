@@ -1,19 +1,20 @@
 import 'package:models/models.dart';
 
-/// Response model for the video search endpoint (`/api/search`).
-///
-/// Pairs the paginated video results with the total count reported by the
-/// `X-Total-Count` response header so callers can drive infinite-scroll UI.
+/// Response model for the video search endpoint (`/api/v2/search`).
 class VideoSearchResponse {
   /// Creates a parsed response for a video search page.
   const VideoSearchResponse({
     required this.videos,
     required this.totalCount,
+    this.hasMore = false,
   });
 
   /// The videos returned for this page.
   final List<VideoStats> videos;
 
-  /// Total number of videos matching the query (from `X-Total-Count` header).
+  /// Total number of videos matching the query when the API reports it.
   final int totalCount;
+
+  /// Whether another server page is available.
+  final bool hasMore;
 }

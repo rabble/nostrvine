@@ -2439,23 +2439,29 @@ void main() {
     group('searchVideos', () {
       const validResponseBody =
           '''
-[
-  {
-    "id": "search123",
-    "pubkey": "$testPubkey",
-    "created_at": 1700000000,
-    "kind": 34236,
-    "d_tag": "search-1",
-    "title": "Search Result",
-    "content": "",
-    "thumbnail": "https://example.com/thumb.jpg",
-    "video_url": "https://example.com/video.mp4",
-    "reactions": 10,
-    "comments": 1,
-    "reposts": 0,
-    "engagement_score": 11
+{
+  "data": [
+    {
+      "id": "search123",
+      "pubkey": "$testPubkey",
+      "created_at": 1700000000,
+      "kind": 34236,
+      "d_tag": "search-1",
+      "title": "Search Result",
+      "content": "",
+      "thumbnail": "https://example.com/thumb.jpg",
+      "video_url": "https://example.com/video.mp4",
+      "reactions": 10,
+      "comments": 1,
+      "reposts": 0,
+      "engagement_score": 11
+    }
+  ],
+  "pagination": {
+    "next_cursor": "o:1",
+    "has_more": true
   }
-]
+}
 ''';
 
       test('returns videos on successful response', () async {
@@ -2468,6 +2474,7 @@ void main() {
         expect(result, isA<VideoSearchResponse>());
         expect(result.videos, hasLength(1));
         expect(result.videos.first.id, equals('search123'));
+        expect(result.hasMore, isTrue);
       });
 
       test('constructs correct URL', () async {
@@ -2483,7 +2490,7 @@ void main() {
         ).captured;
 
         final uri = captured.first as Uri;
-        expect(uri.path, equals('/api/search'));
+        expect(uri.path, equals('/api/v2/search'));
         expect(uri.queryParameters['q'], equals('dart'));
         expect(uri.queryParameters['limit'], equals('50'));
         expect(uri.queryParameters['sort'], equals('trending'));
@@ -2505,6 +2512,23 @@ void main() {
         final uri = captured.first as Uri;
         expect(uri.queryParameters['sort'], equals('recent'));
         expect(uri.queryParameters['type'], equals('video'));
+      });
+
+      test('uses v2 cursor pagination for offsets', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('[]', 200));
+
+        await client.searchVideos(query: 'dart', offset: 50);
+
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+
+        final uri = captured.first as Uri;
+        expect(uri.queryParameters['cursor'], equals('o:50'));
+        expect(uri.queryParameters.containsKey('offset'), isFalse);
       });
 
       test('trims whitespace from query', () async {
@@ -2602,21 +2626,27 @@ void main() {
         );
       });
 
-      test('includes offset query parameter when greater than 0', () async {
-        when(
-          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer((_) async => http.Response('[]', 200));
+      test(
+        'includes cursor query parameter when offset is greater than 0',
+        () async {
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer((_) async => http.Response('[]', 200));
 
-        await client.searchVideos(query: 'flutter', offset: 20);
+          await client.searchVideos(query: 'flutter', offset: 20);
 
-        final captured = verify(
-          () =>
-              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
-        ).captured;
+          final captured = verify(
+            () => mockHttpClient.get(
+              captureAny(),
+              headers: any(named: 'headers'),
+            ),
+          ).captured;
 
-        final uri = captured.first as Uri;
-        expect(uri.queryParameters['offset'], equals('20'));
-      });
+          final uri = captured.first as Uri;
+          expect(uri.queryParameters['cursor'], equals('o:20'));
+          expect(uri.queryParameters.containsKey('offset'), isFalse);
+        },
+      );
 
       test('parses X-Total-Count header into totalCount', () async {
         when(
