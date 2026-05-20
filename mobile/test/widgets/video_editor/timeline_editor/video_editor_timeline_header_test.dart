@@ -30,11 +30,13 @@ void main() {
     late _MockVideoEditorMainBloc mockMainBloc;
     late _MockClipEditorBloc mockClipBloc;
     late ValueNotifier<Duration> playheadPosition;
+    late ValueNotifier<double?> volumePreviewNotifier;
 
     setUp(() {
       mockMainBloc = _MockVideoEditorMainBloc();
       mockClipBloc = _MockClipEditorBloc();
       playheadPosition = ValueNotifier(Duration.zero);
+      volumePreviewNotifier = ValueNotifier<double?>(null);
 
       when(() => mockMainBloc.state).thenReturn(const VideoEditorMainState());
       when(
@@ -48,6 +50,7 @@ void main() {
 
     tearDown(() {
       playheadPosition.dispose();
+      volumePreviewNotifier.dispose();
     });
 
     Widget buildWidget({
@@ -88,6 +91,7 @@ void main() {
               ],
               child: VideoEditorTimelineHeader(
                 playheadPosition: playheadPosition,
+                volumePreviewNotifier: volumePreviewNotifier,
               ),
             ),
           ),

@@ -26,7 +26,7 @@ void main() {
       expect(bloc.state.seekCounter, equals(0));
       expect(bloc.state.currentPosition, equals(Duration.zero));
       expect(bloc.state.totalDuration, equals(Duration.zero));
-      expect(bloc.state.isMuted, isFalse);
+      expect(bloc.state.isVolumeEditMode, isFalse);
       expect(bloc.state.isReordering, isFalse);
       bloc.close();
     });
@@ -435,29 +435,29 @@ void main() {
       );
     });
 
-    group(VideoEditorMuteToggled, () {
+    group(VideoEditorVolumeEditModeToggled, () {
       blocTest<VideoEditorMainBloc, VideoEditorMainState>(
-        'toggles isMuted from false to true',
+        'toggles isVolumeEditMode from false to true',
         build: buildBloc,
-        act: (bloc) => bloc.add(const VideoEditorMuteToggled()),
+        act: (bloc) => bloc.add(const VideoEditorVolumeEditModeToggled()),
         expect: () => [
           isA<VideoEditorMainState>().having(
-            (s) => s.isMuted,
-            'isMuted',
+            (s) => s.isVolumeEditMode,
+            'isVolumeEditMode',
             isTrue,
           ),
         ],
       );
 
       blocTest<VideoEditorMainBloc, VideoEditorMainState>(
-        'toggles isMuted from true to false',
+        'toggles isVolumeEditMode from true to false',
         build: buildBloc,
-        seed: () => const VideoEditorMainState(isMuted: true),
-        act: (bloc) => bloc.add(const VideoEditorMuteToggled()),
+        seed: () => const VideoEditorMainState(isVolumeEditMode: true),
+        act: (bloc) => bloc.add(const VideoEditorVolumeEditModeToggled()),
         expect: () => [
           isA<VideoEditorMainState>().having(
-            (s) => s.isMuted,
-            'isMuted',
+            (s) => s.isVolumeEditMode,
+            'isVolumeEditMode',
             isFalse,
           ),
         ],
@@ -523,7 +523,7 @@ void main() {
         seekCounter: 2,
         currentPosition: Duration(seconds: 4),
         totalDuration: Duration(seconds: 30),
-        isMuted: true,
+        isVolumeEditMode: true,
         isReordering: true,
       );
 
@@ -543,7 +543,7 @@ void main() {
       expect(copy.seekCounter, equals(2));
       expect(copy.currentPosition, equals(const Duration(seconds: 4)));
       expect(copy.totalDuration, equals(const Duration(seconds: 30)));
-      expect(copy.isMuted, isTrue);
+      expect(copy.isVolumeEditMode, isTrue);
       expect(copy.isReordering, isTrue);
     });
 
@@ -730,9 +730,9 @@ void main() {
       expect(event1, isNot(equals(event2)));
     });
 
-    test('$VideoEditorMuteToggled events are equal', () {
-      const event1 = VideoEditorMuteToggled();
-      const event2 = VideoEditorMuteToggled();
+    test('$VideoEditorVolumeEditModeToggled events are equal', () {
+      const event1 = VideoEditorVolumeEditModeToggled();
+      const event2 = VideoEditorVolumeEditModeToggled();
       expect(event1, equals(event2));
     });
 
