@@ -6308,6 +6308,21 @@ class AppLocalizationsIt extends AppLocalizations {
   String get searchVideosLoadingLabel => 'Loading video results';
 
   @override
+  String get searchVideosSortOptionsLabel => 'Sort video results';
+
+  @override
+  String get searchVideosSortTrending => 'Hot';
+
+  @override
+  String get searchVideosSortLoops => 'Most loops';
+
+  @override
+  String get searchVideosSortEngagement => 'Most engaged';
+
+  @override
+  String get searchVideosSortRecent => 'Recent';
+
+  @override
   String get searchListsSectionHeader => 'Liste';
 
   @override

@@ -3679,9 +3679,7 @@ void main() {
           mockFunnelcakeClient = MockFunnelcakeApiClient();
           when(
             () => mockFunnelcakeClient.getBulkVideoStats(any()),
-          ).thenAnswer(
-            (_) async => const BulkVideoStatsResponse(stats: {}),
-          );
+          ).thenAnswer((_) async => const BulkVideoStatsResponse(stats: {}));
         });
 
         test('returns API results when Funnelcake succeeds', () async {
@@ -7071,6 +7069,8 @@ void main() {
           () => mockFunnelcake.searchVideos(
             query: any(named: 'query'),
             limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            sort: any(named: 'sort'),
           ),
         ).thenAnswer(
           (_) async => VideoSearchResponse(
@@ -7094,7 +7094,13 @@ void main() {
         final result = await repoWithApi.searchVideosViaApi(query: 'flutter');
 
         expect(result.videos, hasLength(1));
-        verify(() => mockFunnelcake.searchVideos(query: 'flutter')).called(1);
+        verify(
+          () => mockFunnelcake.searchVideos(
+            query: 'flutter',
+            offset: 0,
+            sort: defaultVideoSearchSort,
+          ),
+        ).called(1);
       });
 
       test('returns empty list on FunnelcakeException', () async {
@@ -7104,6 +7110,8 @@ void main() {
           () => mockFunnelcake.searchVideos(
             query: any(named: 'query'),
             limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            sort: any(named: 'sort'),
           ),
         ).thenThrow(const FunnelcakeException('search failed'));
 
@@ -7126,6 +7134,8 @@ void main() {
           () => mockFunnelcake.searchVideos(
             query: any(named: 'query'),
             limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            sort: any(named: 'sort'),
           ),
         ).thenAnswer(
           (_) async => VideoSearchResponse(
@@ -7165,6 +7175,8 @@ void main() {
           () => mockFunnelcake.searchVideos(
             query: any(named: 'query'),
             limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            sort: any(named: 'sort'),
           ),
         ).thenAnswer(
           (_) async => const VideoSearchResponse(videos: [], totalCount: 0),
@@ -7178,7 +7190,42 @@ void main() {
         await repoWithApi.searchVideosViaApi(query: 'flutter', limit: 25);
 
         verify(
-          () => mockFunnelcake.searchVideos(query: 'flutter', limit: 25),
+          () => mockFunnelcake.searchVideos(
+            query: 'flutter',
+            limit: 25,
+            offset: 0,
+            sort: defaultVideoSearchSort,
+          ),
+        ).called(1);
+      });
+
+      test('passes custom sort to API', () async {
+        final mockFunnelcake = MockFunnelcakeApiClient();
+        when(() => mockFunnelcake.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcake.searchVideos(
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            sort: any(named: 'sort'),
+          ),
+        ).thenAnswer(
+          (_) async => const VideoSearchResponse(videos: [], totalCount: 0),
+        );
+
+        final repoWithApi = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcake,
+        );
+
+        await repoWithApi.searchVideosViaApi(query: 'flutter', sort: 'recent');
+
+        verify(
+          () => mockFunnelcake.searchVideos(
+            query: 'flutter',
+            offset: 0,
+            sort: 'recent',
+          ),
         ).called(1);
       });
     });
@@ -7325,6 +7372,8 @@ void main() {
           () => mockFunnelcake.searchVideos(
             query: any(named: 'query'),
             limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            sort: any(named: 'sort'),
           ),
         ).thenAnswer(
           (_) async => VideoSearchResponse(
@@ -7365,8 +7414,45 @@ void main() {
 
         // Should have 3 emissions: local, local+API, local+API+relay
         expect(results, hasLength(3));
-        expect(results[0], hasLength(1)); // local only
-        expect(results.last, hasLength(3)); // all sources combined
+        expect(results[0], hasLength(1));
+        expect(results[1].first.id, equals('api-1'));
+        expect(results.last, hasLength(3));
+      });
+
+      test('passes custom sort through progressive API search', () async {
+        final mockFunnelcake = MockFunnelcakeApiClient();
+        when(() => mockFunnelcake.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcake.searchVideos(
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            sort: any(named: 'sort'),
+          ),
+        ).thenAnswer(
+          (_) async => const VideoSearchResponse(videos: [], totalCount: 0),
+        );
+        when(
+          () => mockNostrClient.searchVideos(any(), limit: any(named: 'limit')),
+        ).thenAnswer((_) => const Stream.empty());
+
+        final repoWithApi = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcake,
+        );
+
+        await repoWithApi
+            .searchVideos(query: 'flutter', sort: 'recent')
+            .drain();
+
+        verify(
+          () => mockFunnelcake.searchVideos(
+            query: 'flutter',
+            limit: 50,
+            offset: 0,
+            sort: 'recent',
+          ),
+        ).called(1);
       });
 
       test('skips empty remote results without extra emission', () async {
@@ -7527,6 +7613,8 @@ void main() {
           () => mockFunnelcake.searchVideos(
             query: any(named: 'query'),
             limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            sort: any(named: 'sort'),
           ),
         ).thenThrow(Exception('unexpected API error'));
 

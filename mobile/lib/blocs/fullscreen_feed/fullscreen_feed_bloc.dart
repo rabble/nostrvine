@@ -171,15 +171,20 @@ class FullscreenFeedBloc
           category: LogCategory.video,
         );
 
-        // Clamp current index to valid range
-        final clampedIndex = videos.isEmpty
+        final currentVideoId = state.currentVideo?.id;
+        final preservedIndex = currentVideoId == null
+            ? -1
+            : videos.indexWhere((video) => video.id == currentVideoId);
+        final nextIndex = preservedIndex >= 0
+            ? preservedIndex
+            : videos.isEmpty
             ? 0
             : state.currentIndex.clamp(0, videos.length - 1);
 
         return state.copyWith(
           status: FullscreenFeedStatus.ready,
           videos: videos,
-          currentIndex: clampedIndex,
+          currentIndex: nextIndex,
           isLoadingMore: false,
         );
       },

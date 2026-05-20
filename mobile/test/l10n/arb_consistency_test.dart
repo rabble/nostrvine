@@ -85,6 +85,13 @@ const _knownUntranslatedDebt = {
   'videoActionAboutLabel',
   'videoOverlayOpenMetadataFromTitle',
   'videoOverlayOpenMetadataFromDescription',
+  // Search video sort labels use the English fallback until the next
+  // translation pass picks up the new API-backed sort options.
+  'searchVideosSortOptionsLabel',
+  'searchVideosSortTrending',
+  'searchVideosSortLoops',
+  'searchVideosSortEngagement',
+  'searchVideosSortRecent',
   // Added by the notifications redesign / avatar lightbox a11y pass.
   // Translators will pick these up in a follow-up pass; until then the
   // generated l10n APIs fall back to the English source.

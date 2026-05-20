@@ -340,6 +340,31 @@ void main() {
       );
 
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'preserves current video when stream prepends reordered results',
+        build: () => createBloc(initialIndex: 1),
+        act: (bloc) async {
+          final first = createTestVideo('video1');
+          final second = createTestVideo('video2');
+          final prepended = createTestVideo('video3');
+
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add([first, second]);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add([prepended, first, second]);
+        },
+        wait: const Duration(milliseconds: 200),
+        expect: () => [
+          isA<FullscreenFeedState>()
+              .having((s) => s.currentIndex, 'currentIndex', 1)
+              .having((s) => s.currentVideo?.id, 'currentVideo', 'video2'),
+          isA<FullscreenFeedState>()
+              .having((s) => s.currentIndex, 'currentIndex', 2)
+              .having((s) => s.currentVideo?.id, 'currentVideo', 'video2'),
+        ],
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'cancels previous subscription when started again',
         build: createBloc,
         act: (bloc) async {

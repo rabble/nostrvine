@@ -1193,6 +1193,8 @@ class FunnelcakeApiClient {
   ///
   /// [query] is the search term.
   /// [limit] is the maximum number of videos to return (defaults to 50).
+  /// [sort] is the API sort order: `'trending'`, `'loops'`,
+  /// `'engagement'`, `'recent'`, or `'published'`.
   ///
   /// Returns a list of [VideoStats] matching the query.
   ///
@@ -1206,6 +1208,7 @@ class FunnelcakeApiClient {
     required String query,
     int limit = 50,
     int offset = 0,
+    String sort = 'trending',
   }) async {
     if (!isAvailable) {
       throw const FunnelcakeNotConfiguredException();
@@ -1216,10 +1219,12 @@ class FunnelcakeApiClient {
       throw const FunnelcakeException('Search query cannot be empty');
     }
 
-    final queryParams = <String, String>{
+    final queryParams = _videoQueryParameters({
       'q': trimmedQuery,
       'limit': limit.toString(),
-    };
+      'sort': sort,
+      'type': 'video',
+    });
     if (offset > 0) {
       queryParams['offset'] = offset.toString();
     }

@@ -27,6 +27,17 @@ final class VideoSearchCleared extends VideoSearchEvent {
   const VideoSearchCleared();
 }
 
+/// Request to change the server-backed video search sort.
+final class VideoSearchSortChanged extends VideoSearchEvent {
+  const VideoSearchSortChanged(this.sort);
+
+  /// The selected server-backed sort order.
+  final VideoSearchSort sort;
+
+  @override
+  List<Object?> get props => [sort];
+}
+
 /// Request to load the next page of video search results from the API
 final class VideoSearchLoadMore extends VideoSearchEvent {
   const VideoSearchLoadMore();

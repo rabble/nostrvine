@@ -2486,6 +2486,25 @@ void main() {
         expect(uri.path, equals('/api/search'));
         expect(uri.queryParameters['q'], equals('dart'));
         expect(uri.queryParameters['limit'], equals('50'));
+        expect(uri.queryParameters['sort'], equals('trending'));
+        expect(uri.queryParameters['type'], equals('video'));
+      });
+
+      test('includes custom sort query parameter', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('[]', 200));
+
+        await client.searchVideos(query: 'dart', sort: 'recent');
+
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+
+        final uri = captured.first as Uri;
+        expect(uri.queryParameters['sort'], equals('recent'));
+        expect(uri.queryParameters['type'], equals('video'));
       });
 
       test('trims whitespace from query', () async {

@@ -18,6 +18,19 @@ enum VideoSearchStatus {
   failure,
 }
 
+/// Server-backed sort options for video search.
+enum VideoSearchSort {
+  trending('trending'),
+  loops('loops'),
+  engagement('engagement'),
+  recent('recent')
+  ;
+
+  const VideoSearchSort(this.apiValue);
+
+  final String apiValue;
+}
+
 /// State class for the VideoSearchBloc
 final class VideoSearchState extends Equatable {
   const VideoSearchState({
@@ -29,6 +42,7 @@ final class VideoSearchState extends Equatable {
     this.totalApiCount,
     this.hasMore = false,
     this.isLoadingMore = false,
+    this.sort = VideoSearchSort.trending,
   });
 
   /// The current status of the search
@@ -55,6 +69,9 @@ final class VideoSearchState extends Equatable {
   /// Whether a load-more request is currently in flight.
   final bool isLoadingMore;
 
+  /// Server-backed sort order for video search results.
+  final VideoSearchSort sort;
+
   /// Create a copy with updated values
   VideoSearchState copyWith({
     VideoSearchStatus? status,
@@ -65,6 +82,7 @@ final class VideoSearchState extends Equatable {
     Object? totalApiCount = _unset,
     bool? hasMore,
     bool? isLoadingMore,
+    VideoSearchSort? sort,
   }) {
     return VideoSearchState(
       status: status ?? this.status,
@@ -79,6 +97,7 @@ final class VideoSearchState extends Equatable {
           : totalApiCount as int?,
       hasMore: hasMore ?? this.hasMore,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      sort: sort ?? this.sort,
     );
   }
 
@@ -92,6 +111,7 @@ final class VideoSearchState extends Equatable {
     totalApiCount ?? -1,
     hasMore,
     isLoadingMore,
+    sort,
   ];
 
   static const Object _unset = Object();

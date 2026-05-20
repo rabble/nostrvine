@@ -25,6 +25,9 @@ const int _videoKind = EventKind.videoVertical;
 /// Default number of videos to fetch per page.
 const int _defaultLimit = 25;
 
+/// Default Funnelcake search sort.
+const String defaultVideoSearchSort = 'trending';
+
 /// Timeout for relay search queries.
 ///
 /// Set higher than the app-wide 5s default to accommodate slower
@@ -1615,12 +1618,13 @@ class VideosRepository {
   /// - [query]: The search query string. Returns empty if blank.
   /// - [limit]: Maximum number of results (default 50).
   ///
-  /// Returns a record of matching [VideoEvent]s (unsorted — call
-  /// [deduplicateAndSortVideos] to rank) and the total API result count.
+  /// Returns a record of matching [VideoEvent]s in API order and the total API
+  /// result count.
   Future<({List<VideoEvent> videos, int totalCount})> searchVideosViaApi({
     required String query,
     int limit = 50,
     int offset = 0,
+    String sort = defaultVideoSearchSort,
   }) async {
     final trimmed = query.trim();
     if (trimmed.isEmpty) {
@@ -1635,6 +1639,7 @@ class VideosRepository {
         query: trimmed,
         limit: limit,
         offset: offset,
+        sort: sort,
       );
       final videos = _transformVideoStats(
         response.videos,
@@ -1658,13 +1663,19 @@ class VideosRepository {
   /// Use this to combine results from [searchVideosLocally] and
   /// [searchVideosOnRelays] into a single ranked list.
   List<VideoEvent> deduplicateAndSortVideos(List<VideoEvent> videos) {
+    final unique = deduplicateVideosPreservingOrder(videos);
+    unique.sort(VideoEvent.compareByLoopsThenTime);
+    return unique;
+  }
+
+  /// Deduplicates videos by ID while preserving the first occurrence order.
+  List<VideoEvent> deduplicateVideosPreservingOrder(List<VideoEvent> videos) {
     final seenIds = <String>{};
-    final unique = videos.where((v) {
+    return videos.where((v) {
       if (seenIds.contains(v.id)) return false;
       seenIds.add(v.id);
       return true;
-    }).toList()..sort(VideoEvent.compareByLoopsThenTime);
-    return unique;
+    }).toList();
   }
 
   /// Searches videos across all sources, yielding progressively.
@@ -1685,6 +1696,7 @@ class VideosRepository {
   Stream<List<VideoEvent>> searchVideos({
     required String query,
     int limit = 50,
+    String sort = defaultVideoSearchSort,
   }) async* {
     final trimmed = query.trim();
     if (trimmed.isEmpty) return;
@@ -1696,11 +1708,15 @@ class VideosRepository {
 
     // Phase 2: Funnelcake API (fast)
     try {
-      final apiResult = await searchVideosViaApi(query: trimmed, limit: limit);
+      final apiResult = await searchVideosViaApi(
+        query: trimmed,
+        limit: limit,
+        sort: sort,
+      );
       if (apiResult.videos.isNotEmpty) {
-        accumulated = deduplicateAndSortVideos([
-          ...accumulated,
+        accumulated = deduplicateVideosPreservingOrder([
           ...apiResult.videos,
+          ...accumulated,
         ]);
         yield accumulated;
       }
@@ -1722,7 +1738,10 @@ class VideosRepository {
       limit: limit,
     );
     if (relayResults.isNotEmpty) {
-      accumulated = deduplicateAndSortVideos([...accumulated, ...relayResults]);
+      accumulated = deduplicateVideosPreservingOrder([
+        ...accumulated,
+        ...relayResults,
+      ]);
       yield accumulated;
     }
   }

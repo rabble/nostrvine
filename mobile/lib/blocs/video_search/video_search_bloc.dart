@@ -48,6 +48,7 @@ class VideoSearchBloc extends Bloc<VideoSearchEvent, VideoSearchState> {
       transformer: _debounceRestartable(),
     );
     on<VideoSearchCleared>(_onCleared);
+    on<VideoSearchSortChanged>(_onSortChanged);
     on<VideoSearchLoadMore>(_onLoadMore, transformer: sequential());
   }
 
@@ -70,6 +71,10 @@ class VideoSearchBloc extends Bloc<VideoSearchEvent, VideoSearchState> {
       return;
     }
 
+    await _search(query, emit);
+  }
+
+  Future<void> _search(String query, Emitter<VideoSearchState> emit) async {
     emit(
       state.copyWith(
         status: VideoSearchStatus.searching,
@@ -84,7 +89,7 @@ class VideoSearchBloc extends Bloc<VideoSearchEvent, VideoSearchState> {
 
     try {
       await emit.forEach<List<VideoEvent>>(
-        _videosRepository.searchVideos(query: query),
+        _videosRepository.searchVideos(query: query, sort: state.sort.apiValue),
         onData: (videos) => state.copyWith(
           status: VideoSearchStatus.searching,
           videos: videos,
@@ -109,6 +114,28 @@ class VideoSearchBloc extends Bloc<VideoSearchEvent, VideoSearchState> {
     }
   }
 
+  Future<void> _onSortChanged(
+    VideoSearchSortChanged event,
+    Emitter<VideoSearchState> emit,
+  ) async {
+    if (event.sort == state.sort) return;
+
+    emit(
+      state.copyWith(
+        sort: event.sort,
+        videos: const [],
+        resultCount: null,
+        apiOffset: 0,
+        totalApiCount: null,
+        hasMore: false,
+        isLoadingMore: false,
+      ),
+    );
+
+    if (state.query.isEmpty) return;
+    await _search(state.query, emit);
+  }
+
   Future<void> _onLoadMore(
     VideoSearchLoadMore event,
     Emitter<VideoSearchState> emit,
@@ -121,9 +148,10 @@ class VideoSearchBloc extends Bloc<VideoSearchEvent, VideoSearchState> {
       final result = await _videosRepository.searchVideosViaApi(
         query: state.query,
         offset: state.apiOffset,
+        sort: state.sort.apiValue,
       );
 
-      final merged = _videosRepository.deduplicateAndSortVideos([
+      final merged = _videosRepository.deduplicateVideosPreservingOrder([
         ...state.videos,
         ...result.videos,
       ]);

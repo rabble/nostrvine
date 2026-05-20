@@ -10988,6 +10988,36 @@ abstract class AppLocalizations {
   /// **'Loading video results'**
   String get searchVideosLoadingLabel;
 
+  /// No description provided for @searchVideosSortOptionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort video results'**
+  String get searchVideosSortOptionsLabel;
+
+  /// No description provided for @searchVideosSortTrending.
+  ///
+  /// In en, this message translates to:
+  /// **'Hot'**
+  String get searchVideosSortTrending;
+
+  /// No description provided for @searchVideosSortLoops.
+  ///
+  /// In en, this message translates to:
+  /// **'Most loops'**
+  String get searchVideosSortLoops;
+
+  /// No description provided for @searchVideosSortEngagement.
+  ///
+  /// In en, this message translates to:
+  /// **'Most engaged'**
+  String get searchVideosSortEngagement;
+
+  /// No description provided for @searchVideosSortRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get searchVideosSortRecent;
+
   /// No description provided for @searchListsSectionHeader.
   ///
   /// In en, this message translates to:
