@@ -37,6 +37,8 @@ class MarkAllReadOnDispose extends StatefulWidget {
 class _MarkAllReadOnDisposeState extends State<MarkAllReadOnDispose> {
   @override
   void dispose() {
+    // Call the repository directly here because it outlives the bloc teardown;
+    // dispatching a bloc event from dispose would race the bloc closing.
     unawaited(
       widget.repository.markAllAsRead().catchError((Object e, StackTrace s) {
         Log.warning(

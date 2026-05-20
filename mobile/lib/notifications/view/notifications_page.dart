@@ -52,6 +52,14 @@ class NotificationsPage extends ConsumerWidget {
 
     final followRepository = ref.watch(followRepositoryProvider);
 
+    // Key on the watched dependency identities so the bloc rebuilds when
+    // either repository swaps (account switch, sign-out → sign-in, or
+    // provider invalidation). Without this the BlocProvider element
+    // persists across rebuilds and keeps the bloc bound to stale
+    // repositories, while any mark-on-leave wrapper inside the subtree
+    // would otherwise fire against whichever notification repository the
+    // rebuilt widget tree captured — i.e. the new user's notifications.
+    // See `.claude/rules/state_management.md`.
     return BlocProvider(
       key: ValueKey((notificationRepository, followRepository)),
       create: (_) => NotificationFeedBloc(
