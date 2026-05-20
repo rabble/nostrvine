@@ -90,6 +90,7 @@ const _knownUntranslatedDebt = {
   // generated l10n APIs fall back to the English source.
   'profileAvatarLightboxBarrierLabel',
   'profileAvatarLightboxCloseSemanticLabel',
+  'notificationsBadgeUnread',
   'notificationsViewProfileSemanticLabel',
   'notificationsViewProfilesSemanticLabel',
   'notificationRepliedToYourComment',
