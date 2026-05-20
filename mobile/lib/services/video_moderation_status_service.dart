@@ -147,17 +147,23 @@ class VideoModerationStatusService {
     http.Client? httpClient,
     List<Uri>? endpointBases,
     Duration? cacheTtl,
+    Duration? requestTimeout,
   }) : _httpClient = httpClient ?? http.Client(),
        _endpointBases =
            endpointBases ??
            const [
              'https://moderation-api.divine.video',
            ].map(Uri.parse).toList(),
-       _cacheTtl = cacheTtl ?? const Duration(minutes: 10);
+       _cacheTtl = cacheTtl ?? const Duration(minutes: 10),
+       _requestTimeout = requestTimeout ?? _defaultRequestTimeout;
+
+  static const _defaultRequestTimeout = Duration(seconds: 3);
+  static const _userAgent = 'DivineMobile/1.0';
 
   final http.Client _httpClient;
   final List<Uri> _endpointBases;
   final Duration _cacheTtl;
+  final Duration _requestTimeout;
 
   final Map<String, _CachedModerationStatus> _cache = {};
   final Map<String, Future<VideoModerationStatus?>> _inflight = {};
@@ -186,7 +192,12 @@ class VideoModerationStatusService {
     for (final base in _endpointBases) {
       final uri = base.resolve('/check-result/$sha256');
       try {
-        final response = await _httpClient.get(uri);
+        final response = await _httpClient
+            .get(
+              uri,
+              headers: const {'user-agent': _userAgent},
+            )
+            .timeout(_requestTimeout);
         if (response.statusCode != 200) {
           continue;
         }

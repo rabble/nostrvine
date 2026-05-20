@@ -128,6 +128,74 @@ void main() {
       expect(requestedUri.path, '/check-result/$hash');
     });
 
+    test('sends a user agent with moderation requests', () async {
+      const hash =
+          'abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd';
+
+      late Map<String, String> requestHeaders;
+      final client = MockClient((request) async {
+        requestHeaders = request.headers;
+        return http.Response(
+          jsonEncode({
+            'moderated': true,
+            'blocked': false,
+            'age_restricted': false,
+            'needs_review': false,
+            'action': 'SAFE',
+          }),
+          200,
+        );
+      });
+
+      final service = VideoModerationStatusService(httpClient: client);
+
+      await service.fetchStatus(hash);
+
+      expect(requestHeaders['user-agent'], isNotEmpty);
+    });
+
+    test('falls back when a moderation request times out', () async {
+      const hash =
+          'abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd';
+
+      final client = MockClient((request) async {
+        if (request.url.host == 'first.example') {
+          await Future<void>.delayed(const Duration(minutes: 1));
+          return http.Response('late', 200);
+        }
+
+        return http.Response(
+          jsonEncode({
+            'moderated': true,
+            'blocked': true,
+            'age_restricted': false,
+            'needs_review': true,
+            'action': 'PERMANENT_BAN',
+          }),
+          200,
+        );
+      });
+      final service = VideoModerationStatusService(
+        httpClient: client,
+        endpointBases: [
+          Uri.parse('https://first.example'),
+          Uri.parse('https://second.example'),
+        ],
+        requestTimeout: const Duration(milliseconds: 10),
+      );
+
+      await expectLater(
+        service.fetchStatus(hash).timeout(const Duration(milliseconds: 100)),
+        completion(
+          isA<VideoModerationStatus>().having(
+            (status) => status.isUnavailableDueToModeration,
+            'isUnavailableDueToModeration',
+            isTrue,
+          ),
+        ),
+      );
+    });
+
     test('falls back across endpoints and caches result', () async {
       const hash =
           'abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd';

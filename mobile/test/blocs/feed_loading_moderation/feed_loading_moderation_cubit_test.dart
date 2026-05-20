@@ -50,13 +50,11 @@ void main() {
   FeedLoadingModerationCubit buildCubit({
     String? explicitSha256,
     String? videoUrl,
-    Duration checkDelay = const Duration(seconds: 2),
   }) {
     return FeedLoadingModerationCubit(
       service: mockService,
       explicitSha256: explicitSha256,
       videoUrl: videoUrl,
-      checkDelay: checkDelay,
     );
   }
 
@@ -97,24 +95,8 @@ void main() {
         });
       });
 
-      test('does not emit restricted before the delay elapses', () {
-        when(
-          () => mockService.fetchStatus(sha256),
-        ).thenAnswer((_) async => blockedStatus);
-
-        fakeAsync((fake) {
-          final cubit = buildCubit(videoUrl: divineUrl);
-          cubit.start();
-          fake.elapse(const Duration(milliseconds: 1999));
-          fake.flushMicrotasks();
-          expect(cubit.state.isRestricted, isFalse);
-          cubit.close();
-          fake.flushMicrotasks();
-        });
-      });
-
       test(
-        'emits restricted after delay when service returns a blocked status',
+        'emits restricted immediately when service returns a blocked status',
         () {
           when(
             () => mockService.fetchStatus(sha256),
@@ -123,7 +105,6 @@ void main() {
           fakeAsync((fake) {
             final cubit = buildCubit(videoUrl: divineUrl);
             cubit.start();
-            fake.elapse(const Duration(seconds: 2));
             fake.flushMicrotasks();
             expect(cubit.state.isRestricted, isTrue);
             verify(() => mockService.fetchStatus(sha256)).called(1);
@@ -215,19 +196,6 @@ void main() {
       );
     });
 
-    group('close', () {
-      test('cancels the timer so fetchStatus is never called', () {
-        fakeAsync((fake) {
-          final cubit = buildCubit(videoUrl: divineUrl);
-          cubit.start();
-          cubit.close();
-          fake.elapse(const Duration(seconds: 3));
-          fake.flushMicrotasks();
-          verifyNever(() => mockService.fetchStatus(any()));
-        });
-      });
-    });
-
     group('error handling', () {
       blocTest<FeedLoadingModerationCubit, FeedLoadingModerationState>(
         'calls addError and stays loading when fetchStatus throws',
@@ -239,7 +207,6 @@ void main() {
             service: mockService,
             explicitSha256: sha256,
             videoUrl: divineUrl,
-            checkDelay: Duration.zero,
           );
         },
         act: (cubit) => cubit.start(),
