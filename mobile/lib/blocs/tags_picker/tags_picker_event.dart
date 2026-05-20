@@ -41,3 +41,12 @@ final class TagsPickerQueryChanged extends TagsPickerEvent {
   @override
   List<Object?> get props => [query];
 }
+
+/// The suggestion list was cleared synchronously (e.g. after a suggestion tap).
+///
+/// Unlike [TagsPickerQueryChanged], this event is not debounced — it resets
+/// [TagsPickerState.query] and [TagsPickerState.suggestions] immediately so
+/// stale results are never visible after the user commits a tag.
+final class TagsPickerSearchReset extends TagsPickerEvent {
+  const TagsPickerSearchReset();
+}

@@ -125,13 +125,19 @@ void main() {
 
         await tester.tap(musicSuggestion);
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 400));
 
+        // Immediate post-tap state: the synchronous TagsPickerSearchReset must
+        // have cleared the query and suggestions before the debounce fires.
         expect(
           tester.widget<TextField>(searchField).controller?.text,
           isEmpty,
         );
+        // No suggestion chip for the previous query ('mus') should be visible.
+        expect(find.text('mus'), findsNothing);
+        // Selected chip is present.
         expect(find.text('music'), findsOneWidget);
+
+        await tester.pump(const Duration(milliseconds: 400));
       },
     );
   });

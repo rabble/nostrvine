@@ -89,6 +89,7 @@ class TagsPickerBloc extends Bloc<TagsPickerEvent, TagsPickerState> {
        super(TagsPickerState(selectedTags: Set.of(initialTags))) {
     on<TagsPickerTagsAdded>(_onTagsAdded);
     on<TagsPickerTagRemoved>(_onTagRemoved);
+    on<TagsPickerSearchReset>(_onSearchReset);
     on<TagsPickerQueryChanged>(
       _onQueryChanged,
       transformer: debounceRestartable(),
@@ -129,6 +130,19 @@ class TagsPickerBloc extends Bloc<TagsPickerEvent, TagsPickerState> {
     if (!state.selectedTags.contains(event.tag)) return;
     final updated = Set<String>.of(state.selectedTags)..remove(event.tag);
     emit(state.copyWith(selectedTags: updated));
+  }
+
+  void _onSearchReset(
+    TagsPickerSearchReset event,
+    Emitter<TagsPickerState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        status: TagsPickerStatus.initial,
+        query: '',
+        suggestions: const [],
+      ),
+    );
   }
 
   Future<void> _onQueryChanged(
