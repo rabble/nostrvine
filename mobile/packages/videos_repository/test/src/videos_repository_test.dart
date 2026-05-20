@@ -7097,8 +7097,6 @@ void main() {
         verify(
           () => mockFunnelcake.searchVideos(
             query: 'flutter',
-            offset: 0,
-            sort: defaultVideoSearchSort,
           ),
         ).called(1);
       });
@@ -7193,8 +7191,6 @@ void main() {
           () => mockFunnelcake.searchVideos(
             query: 'flutter',
             limit: 25,
-            offset: 0,
-            sort: defaultVideoSearchSort,
           ),
         ).called(1);
       });
@@ -7223,7 +7219,6 @@ void main() {
         verify(
           () => mockFunnelcake.searchVideos(
             query: 'flutter',
-            offset: 0,
             sort: 'recent',
           ),
         ).called(1);
@@ -7443,13 +7438,11 @@ void main() {
 
         await repoWithApi
             .searchVideos(query: 'flutter', sort: 'recent')
-            .drain();
+            .drain<void>();
 
         verify(
           () => mockFunnelcake.searchVideos(
             query: 'flutter',
-            limit: 50,
-            offset: 0,
             sort: 'recent',
           ),
         ).called(1);

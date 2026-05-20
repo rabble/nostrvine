@@ -1662,11 +1662,9 @@ class VideosRepository {
   ///
   /// Use this to combine results from [searchVideosLocally] and
   /// [searchVideosOnRelays] into a single ranked list.
-  List<VideoEvent> deduplicateAndSortVideos(List<VideoEvent> videos) {
-    final unique = deduplicateVideosPreservingOrder(videos);
-    unique.sort(VideoEvent.compareByLoopsThenTime);
-    return unique;
-  }
+  List<VideoEvent> deduplicateAndSortVideos(List<VideoEvent> videos) =>
+      deduplicateVideosPreservingOrder(videos)
+        ..sort(VideoEvent.compareByLoopsThenTime);
 
   /// Deduplicates videos by ID while preserving the first occurrence order.
   List<VideoEvent> deduplicateVideosPreservingOrder(List<VideoEvent> videos) {
