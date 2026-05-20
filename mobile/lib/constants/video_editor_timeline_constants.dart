@@ -7,6 +7,7 @@ abstract class TimelineConstants {
 
   /// Height of the ruler bar with time labels.
   static const double rulerHeight = 32;
+  static const double rulerToBodyGap = 4;
 
   /// Height of each clip thumbnail strip.
   static const double thumbnailStripHeight = 64;

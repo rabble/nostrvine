@@ -127,7 +127,7 @@ class VideoEditorTimelineBody extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: TimelineConstants.rulerToBodyGap),
 
               /// Video-Clips
               RepaintBoundary(

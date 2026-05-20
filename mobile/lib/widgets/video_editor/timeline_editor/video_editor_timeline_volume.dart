@@ -54,9 +54,13 @@ class VideoEditorTimelineVolume extends StatelessWidget {
           ),
         ),
         child: Padding(
-          padding: const .only(top: TimelineConstants.rulerHeight),
+          padding: const .only(
+            top:
+                TimelineConstants.rulerHeight +
+                TimelineConstants.rulerToBodyGap,
+          ),
           child: Column(
-            spacing: 6,
+            spacing: 12,
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: .start,
             children: [
@@ -87,11 +91,13 @@ class VideoEditorTimelineVolume extends StatelessWidget {
 
               Flexible(
                 child: Column(
-                  spacing: TimelineConstants.overlayRowGap,
+                  spacing: 6,
                   children: [
                     for (var i = 0; i < customTracks.length; i++) ...[
                       _VolumeArc(
-                        height: TimelineConstants.soundOverlayRowHeight,
+                        height:
+                            TimelineConstants.soundOverlayRowHeight -
+                            TimelineConstants.overlayRowGap,
                         semanticLabel:
                             customTracks[i].title != null &&
                                 customTracks[i].title!.isNotEmpty
@@ -216,8 +222,8 @@ class _VolumeArcState extends State<_VolumeArc> {
         label: widget.semanticLabel,
         slider: true,
         value: '${(_localVolume * 100).round()}%',
-        child: SizedBox.square(
-          dimension: widget.height,
+        child: SizedBox(
+          height: widget.height,
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             // Short tap (no drag) toggles mute. GestureDetector only
