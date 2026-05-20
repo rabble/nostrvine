@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/notifications/bloc/notification_feed_bloc.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/notifications/view/notifications_view.dart';
+import 'package:openvine/notifications/widgets/mark_all_read_on_dispose.dart';
 import 'package:openvine/providers/app_providers.dart';
 
 /// Top-level page for the notifications tab.
@@ -57,7 +58,10 @@ class NotificationsPage extends ConsumerWidget {
         notificationRepository: notificationRepository,
         followRepository: followRepository,
       )..add(const NotificationFeedStarted()),
-      child: const NotificationsView(),
+      child: MarkAllReadOnDispose(
+        repository: notificationRepository,
+        child: const NotificationsView(),
+      ),
     );
   }
 }

@@ -62,6 +62,9 @@ void main() {
         when(
           () => mockNotificationRepo.refresh(),
         ).thenAnswer((_) async => NotificationPage.empty);
+        when(
+          () => mockNotificationRepo.markAllAsRead(),
+        ).thenAnswer((_) async {});
         when(() => mockFollowRepo.isFollowing(any())).thenReturn(false);
       });
 
@@ -92,6 +95,26 @@ void main() {
 
         verifyNever(() => mockNotificationRepo.markAllAsRead());
       });
+
+      testWidgets(
+        'marks all notifications read when the page is unmounted',
+        (tester) async {
+          await tester.pumpWidget(buildSubject());
+          await tester.pumpAndSettle();
+          verifyNever(() => mockNotificationRepo.markAllAsRead());
+
+          // Replace the subtree with an empty widget to trigger dispose
+          // on the NotificationsPage (and the wrapping
+          // MarkAllReadOnDispose). This is the same lifecycle hook that
+          // fires when the user navigates to a different bottom-nav
+          // tab — the ShellRoute is not stateful, so leaving the
+          // notifications route unmounts the page.
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pumpAndSettle();
+
+          verify(() => mockNotificationRepo.markAllAsRead()).called(1);
+        },
+      );
     });
   });
 }

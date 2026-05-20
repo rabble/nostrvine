@@ -44,6 +44,9 @@ void main() {
       when(
         () => mockNotificationRepo.refresh(),
       ).thenAnswer((_) async => NotificationPage.empty);
+      when(
+        () => mockNotificationRepo.markAllAsRead(),
+      ).thenAnswer((_) async {});
       when(() => mockFollowRepo.isFollowing(any())).thenReturn(false);
       when(() => mockInviteCubit.state).thenReturn(InviteStatusState());
       when(mockInviteCubit.load).thenAnswer((_) async {});
@@ -73,6 +76,24 @@ void main() {
       verify(() => mockNotificationRepo.refresh()).called(1);
       verifyNever(() => mockNotificationRepo.markAllAsRead());
     });
+
+    testWidgets(
+      'marks all notifications read when the inbox page is unmounted',
+      (tester) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+        verifyNever(() => mockNotificationRepo.markAllAsRead());
+
+        // Replace the subtree with an empty widget to trigger dispose.
+        // Mirrors the user toggling the Messages segment within InboxView
+        // (the notifications KeyedSubtree gets swapped out) or leaving
+        // the inbox tab entirely (ShellRoute unmounts the subtree).
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+
+        verify(() => mockNotificationRepo.markAllAsRead()).called(1);
+      },
+    );
 
     testWidgets(
       'does not fan out refresh or mark-read across the five filter tabs',
