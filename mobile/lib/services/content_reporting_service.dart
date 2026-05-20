@@ -510,18 +510,6 @@ class ContentReportingService {
     return buffer.toString();
   }
 
-  /// Create metadata for report (for our internal tracking)
-  // ignore: unused_element
-  dynamic _createReportMetadata(String reportId, ContentFilterReason reason) {
-    // This would return proper NIP-94 metadata for the report
-    // For now, return a placeholder
-    return {
-      'reportId': reportId,
-      'reason': reason.name,
-      'timestamp': DateTime.now().toIso8601String(),
-    };
-  }
-
   /// Create Zendesk ticket for moderation tracking
   Future<void> _createZendeskTicket({
     required String reportId,

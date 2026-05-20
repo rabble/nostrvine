@@ -675,10 +675,14 @@ class ReportConfirmationDialog extends StatelessWidget {
       title: Row(
         spacing: 12,
         children: [
-          const Icon(Icons.check_circle, color: VineTheme.vineGreen, size: 28),
+          const DivineIcon(
+            icon: DivineIconName.checkCircle,
+            color: VineTheme.vineGreen,
+            size: 28,
+          ),
           Text(
             l10n.reportReceivedTitle,
-            style: const TextStyle(color: VineTheme.whiteText),
+            style: VineTheme.titleMediumFont(),
           ),
         ],
       ),
@@ -688,67 +692,68 @@ class ReportConfirmationDialog extends StatelessWidget {
         children: [
           Text(
             l10n.reportReceivedThankYou,
-            style: const TextStyle(color: VineTheme.whiteText, fontSize: 16),
+            style: VineTheme.bodyLargeFont(),
           ),
           const SizedBox(height: 16),
           Text(
             l10n.reportReceivedReviewNotice,
-            style: const TextStyle(
+            style: VineTheme.bodyMediumFont(
               color: VineTheme.secondaryText,
-              fontSize: 14,
             ),
           ),
           const SizedBox(height: 20),
-          InkWell(
-            onTap: () async {
-              final uri = Uri.parse('https://divine.video/safety');
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              }
-            },
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: VineTheme.backgroundColor,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: VineTheme.vineGreen),
-              ),
-              child: Row(
-                spacing: 8,
-                children: [
-                  const Icon(
-                    Icons.info_outline,
-                    color: VineTheme.vineGreen,
-                    size: 20,
-                  ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.reportLearnMore,
-                          style: const TextStyle(
-                            color: VineTheme.whiteText,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Text(
-                          l10n.reportSafetyUrl,
-                          style: const TextStyle(
-                            color: VineTheme.vineGreen,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
+          Semantics(
+            button: true,
+            label: l10n.reportLearnMore,
+            child: InkWell(
+              onTap: () async {
+                final uri = Uri.parse('https://divine.video/safety');
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(
+                    uri,
+                    mode: LaunchMode.externalApplication,
+                  );
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: VineTheme.backgroundColor,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: VineTheme.vineGreen),
+                ),
+                child: Row(
+                  spacing: 8,
+                  children: [
+                    const DivineIcon(
+                      icon: DivineIconName.info,
+                      color: VineTheme.vineGreen,
+                      size: 20,
                     ),
-                  ),
-                  const Icon(
-                    Icons.open_in_new,
-                    color: VineTheme.vineGreen,
-                    size: 18,
-                  ),
-                ],
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.reportLearnMore,
+                            style: VineTheme.titleSmallFont(),
+                          ),
+                          Text(
+                            l10n.reportSafetyUrl,
+                            style: VineTheme.labelSmallFont(
+                              color: VineTheme.vineGreen,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const DivineIcon(
+                      icon: DivineIconName.arrowUpRight,
+                      color: VineTheme.vineGreen,
+                      size: 18,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -759,7 +764,9 @@ class ReportConfirmationDialog extends StatelessWidget {
           onPressed: Navigator.of(context).pop,
           child: Text(
             l10n.reportClose,
-            style: const TextStyle(color: VineTheme.vineGreen),
+            style: VineTheme.labelLargeFont(
+              color: VineTheme.vineGreen,
+            ),
           ),
         ),
       ],
