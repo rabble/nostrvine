@@ -81,6 +81,11 @@ class MockContentFilterService extends Mock implements ContentFilterService {
 }
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(ContentLabel.nudity);
+    registerFallbackValue(ContentFilterPreference.show);
+  });
+
   group('SafetySettingsScreen Widget Tests', () {
     late MockContentBlocklistRepository mockBlocklistRepository;
     late MockContentReportingService mockReportingService;
@@ -293,6 +298,47 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(divineHostFilterService.showDivineHostedOnly, isFalse);
+      },
+    );
+
+    testWidgets(
+      'checking the 18+ box sets all adult categories to show',
+      (tester) async {
+        // Arrange - stub the methods the screen will call
+        when(
+          () => mockAgeVerificationService.setAdultContentVerified(true),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockContentFilterService.setPreference(
+            any(),
+            ContentFilterPreference.show,
+          ),
+        ).thenAnswer((_) async {});
+
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        // Act - tap the age-verification checkbox
+        final checkbox = find.byType(CheckboxListTile);
+        expect(checkbox, findsOneWidget);
+        await tester.tap(checkbox);
+        await tester.pumpAndSettle();
+
+        // Assert - age flag set and all adult categories unlocked
+        verify(
+          () => mockAgeVerificationService.setAdultContentVerified(true),
+        ).called(1);
+        for (final label in ContentFilterService.adultCategories) {
+          verify(
+            () => mockContentFilterService.setPreference(
+              label,
+              ContentFilterPreference.show,
+            ),
+          ).called(1);
+        }
+        verifyNever(
+          () => mockContentFilterService.lockAdultCategories(),
+        );
       },
     );
 
