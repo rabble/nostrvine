@@ -105,10 +105,7 @@ void main() {
     test(
       'throws when neither a video nor message identifiers are provided',
       () {
-        expect(
-          ReportContentDialog.new,
-          throwsA(isA<ArgumentError>()),
-        );
+        expect(ReportContentDialog.new, throwsA(isA<ArgumentError>()));
       },
     );
 
@@ -140,10 +137,7 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      expect(
-        find.text(l10n.reportWhyReporting),
-        findsOneWidget,
-      );
+      expect(find.text(l10n.reportWhyReporting), findsOneWidget);
     });
 
     testWidgets('renders all report reason options', (tester) async {
@@ -169,10 +163,7 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      expect(
-        find.text(l10n.reportReasonHarassmentSubtitle),
-        findsOneWidget,
-      );
+      expect(find.text(l10n.reportReasonHarassmentSubtitle), findsOneWidget);
       expect(find.text(l10n.reportReasonOtherSubtitle), findsOneWidget);
     });
 
@@ -300,11 +291,47 @@ void main() {
                 builder: (context) => ElevatedButton(
                   onPressed: () => showDialog<void>(
                     context: context,
-                    builder: (_) => Material(
-                      child: ReportContentDialog(video: testVideo),
-                    ),
+                    builder: (_) =>
+                        Material(child: ReportContentDialog(video: testVideo)),
                   ),
                   child: const Text('Open Report'),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+
+      return testProviderScope(
+        mockNostrService: mockNostrClient,
+        additionalOverrides: [
+          contentReportingServiceProvider.overrideWith(
+            (ref) async => mockReportingService,
+          ),
+          contentBlocklistRepositoryProvider.overrideWith(
+            (ref) => mockBlocklistRepository,
+          ),
+          muteServiceProvider.overrideWith((ref) async => mockMuteService),
+        ],
+        child: MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      );
+    }
+
+    Widget buildBottomSheetSubject() {
+      final router = GoRouter(
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) => Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () =>
+                      ReportContentDialog.show(context, video: testVideo),
+                  child: const Text('Open Bottom Sheet Report'),
                 ),
               ),
             ),
@@ -335,6 +362,13 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
       await tester.tap(find.text('Open Report'));
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> openBottomSheetReport(WidgetTester tester) async {
+      await tester.pumpWidget(buildBottomSheetSubject());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Open Bottom Sheet Report'));
       await tester.pumpAndSettle();
     }
 
@@ -375,10 +409,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.reportReceivedTitle), findsOneWidget);
-      expect(
-        find.text(l10n.reportReceivedThankYou),
-        findsOneWidget,
-      );
+      expect(find.text(l10n.reportReceivedThankYou), findsOneWidget);
     });
 
     testWidgets(
@@ -442,6 +473,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Failed to report content'), findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing);
     });
 
     testWidgets('exception during report shows inline error', (tester) async {
@@ -466,7 +498,56 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Failed to report content'), findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing);
     });
+
+    testWidgets(
+      'bottom sheet path keeps report errors inline instead of using snackbars',
+      (tester) async {
+        when(
+          () => mockReportingService.reportContent(
+            eventId: any(named: 'eventId'),
+            authorPubkey: any(named: 'authorPubkey'),
+            reason: any(named: 'reason'),
+            details: any(named: 'details'),
+            additionalContext: any(named: 'additionalContext'),
+            hashtags: any(named: 'hashtags'),
+          ),
+        ).thenAnswer((_) async => ReportResult.failure('Server error'));
+
+        await tester.binding.setSurfaceSize(const Size(800, 1200));
+        await openBottomSheetReport(tester);
+
+        await tester.tap(find.text(l10n.reportReasonSpam));
+        await tester.pumpAndSettle();
+
+        await tester.ensureVisible(
+          find.widgetWithText(DivineButton, l10n.reportSubmit),
+        );
+        await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('Failed to report content'), findsOneWidget);
+        expect(find.byType(SnackBar), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'bottom sheet path surfaces validation errors inline without snackbars',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(800, 1200));
+        await openBottomSheetReport(tester);
+
+        await tester.ensureVisible(
+          find.widgetWithText(DivineButton, l10n.reportSubmit),
+        );
+        await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.reportSelectReason), findsOneWidget);
+        expect(find.byType(SnackBar), findsNothing);
+      },
+    );
 
     testWidgets('Other reason with details submits successfully', (
       tester,
@@ -520,10 +601,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.reportReceivedTitle), findsOneWidget);
-      expect(
-        find.text(l10n.reportReceivedThankYou),
-        findsOneWidget,
-      );
+      expect(find.text(l10n.reportReceivedThankYou), findsOneWidget);
       expect(
         find.textContaining('via direct message'),
         findsOneWidget,
@@ -598,9 +676,8 @@ void main() {
                 builder: (context) => ElevatedButton(
                   onPressed: () => showDialog<void>(
                     context: context,
-                    builder: (_) => Material(
-                      child: ReportContentDialog(video: testVideo),
-                    ),
+                    builder: (_) =>
+                        Material(child: ReportContentDialog(video: testVideo)),
                   ),
                   child: const Text('Open Report'),
                 ),

@@ -209,7 +209,10 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
 
   void _onReasonSelected(ContentFilterReason reason) {
     final wasOther = _selectedReason == ContentFilterReason.other;
-    setState(() => _selectedReason = reason);
+    setState(() {
+      _selectedReason = reason;
+      _errorMessage = null;
+    });
 
     if (reason == ContentFilterReason.other && !wasOther) {
       final controller = widget.draggableController;
@@ -292,6 +295,10 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
                       controller: _detailsController,
                       focusNode: _detailsFocusNode,
                       enableInteractiveSelection: true,
+                      onChanged: (_) {
+                        if (_errorMessage == null) return;
+                        setState(() => _errorMessage = null);
+                      },
                       style: VineTheme.bodyLargeFont(),
                       minLines: 3,
                       maxLines: 5,
@@ -305,32 +312,38 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
               ),
             ),
           ],
-          if (_errorMessage != null) ...[
+          if (_errorMessage case final errorMessage?) ...[
             const SizedBox(height: 16),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: VineTheme.error.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: [
-                    const DivineIcon(
-                      icon: DivineIconName.warningCircle,
-                      color: VineTheme.error,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _errorMessage!,
-                        style: VineTheme.bodySmallFont(
-                          color: VineTheme.error,
+            Semantics(
+              container: true,
+              liveRegion: true,
+              label: errorMessage,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: VineTheme.error.withValues(alpha: 0.1),
+                  border: Border.all(color: VineTheme.error),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      const DivineIcon(
+                        icon: DivineIconName.warningCircle,
+                        color: VineTheme.error,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          errorMessage,
+                          style: VineTheme.bodySmallFont(
+                            color: VineTheme.error,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -431,9 +444,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
           }
         } else {
           setState(() {
-            _errorMessage = context.l10n.reportFailed(
-              result.error ?? '',
-            );
+            _errorMessage = context.l10n.reportFailed(result.error ?? '');
           });
         }
       }
@@ -680,26 +691,18 @@ class ReportConfirmationDialog extends StatelessWidget {
             color: VineTheme.vineGreen,
             size: 28,
           ),
-          Text(
-            l10n.reportReceivedTitle,
-            style: VineTheme.titleMediumFont(),
-          ),
+          Text(l10n.reportReceivedTitle, style: VineTheme.titleMediumFont()),
         ],
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            l10n.reportReceivedThankYou,
-            style: VineTheme.bodyLargeFont(),
-          ),
+          Text(l10n.reportReceivedThankYou, style: VineTheme.bodyLargeFont()),
           const SizedBox(height: 16),
           Text(
             l10n.reportReceivedReviewNotice,
-            style: VineTheme.bodyMediumFont(
-              color: VineTheme.secondaryText,
-            ),
+            style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
           ),
           const SizedBox(height: 20),
           Semantics(
@@ -709,10 +712,7 @@ class ReportConfirmationDialog extends StatelessWidget {
               onTap: () async {
                 final uri = Uri.parse('https://divine.video/safety');
                 if (await canLaunchUrl(uri)) {
-                  await launchUrl(
-                    uri,
-                    mode: LaunchMode.externalApplication,
-                  );
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
                 }
               },
               child: Container(
@@ -764,9 +764,7 @@ class ReportConfirmationDialog extends StatelessWidget {
           onPressed: Navigator.of(context).pop,
           child: Text(
             l10n.reportClose,
-            style: VineTheme.labelLargeFont(
-              color: VineTheme.vineGreen,
-            ),
+            style: VineTheme.labelLargeFont(color: VineTheme.vineGreen),
           ),
         ),
       ],

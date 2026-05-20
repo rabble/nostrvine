@@ -155,9 +155,8 @@ class ContentReportingService {
   }) async {
     try {
       if (!_isInitialized) {
-        if (_nostrService.isInitialized) {
-          _isInitialized = true;
-        } else {
+        await initialize();
+        if (!_isInitialized) {
           return ReportResult.failure('Reporting service not initialized');
         }
       }
