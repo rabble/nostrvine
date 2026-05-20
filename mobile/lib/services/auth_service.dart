@@ -705,9 +705,21 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     return false;
   }
 
+  Future<String?>? _pendingTokenRefresh;
+
   /// [TokenRefreshCallback] passed to [KeycastRpc] so it can recover
   /// from mid-session 401s without caller involvement.
-  Future<String?> _refreshAccessToken() async {
+  ///
+  /// Concurrent callers (multiple in-flight RPC calls hitting 401, or a
+  /// 401 racing with [_refreshOAuthTokenOnResume]) share a single
+  /// in-flight refresh to avoid consuming one-time-use refresh tokens.
+  Future<String?> _refreshAccessToken() {
+    return _pendingTokenRefresh ??= _doRefreshAccessToken().whenComplete(() {
+      _pendingTokenRefresh = null;
+    });
+  }
+
+  Future<String?> _doRefreshAccessToken() async {
     if (_oauthClient == null) return null;
     try {
       final refreshed = await _oauthClient.refreshSession();
@@ -4795,27 +4807,33 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   }
 
   Future<void> _refreshOAuthTokenOnResume() async {
-    if (_oauthClient == null || _keycastSigner == null) return;
+    try {
+      if (_oauthClient == null || _keycastSigner == null) return;
 
-    final session = await _oauthClient.getSession();
-    if (session != null) return;
+      final session = await _oauthClient.getSession();
+      if (session != null) return;
 
-    Log.info(
-      '📱 App resumed - OAuth token expired, refreshing',
-      name: 'AuthService',
-      category: LogCategory.auth,
-    );
-    final refreshed = await _oauthClient.refreshSession();
-    if (refreshed != null && refreshed.hasRpcAccess) {
-      await refreshed.save(_flutterSecureStorage);
-      _keycastSigner = KeycastRpc.fromSession(
-        _oauthConfig,
-        refreshed,
-        onTokenRefresh: _refreshAccessToken,
+      Log.info(
+        '📱 App resumed - OAuth token expired, refreshing',
+        name: 'AuthService',
+        category: LogCategory.auth,
       );
-      _hasExpiredOAuthSession = false;
-      _currentIdentity = _buildIdentity();
-      _setRpcCapability(AuthRpcCapability.rpcReady);
+      final newToken = await _refreshAccessToken();
+      if (newToken != null) {
+        _keycastSigner = KeycastRpc(
+          nostrApi: _oauthConfig.nostrApiUrl,
+          accessToken: newToken,
+          onTokenRefresh: _refreshAccessToken,
+        );
+        _currentIdentity = _buildIdentity();
+        _setRpcCapability(AuthRpcCapability.rpcReady);
+      }
+    } catch (e) {
+      Log.error(
+        '📱 App resumed - OAuth refresh failed: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
     }
   }
 
