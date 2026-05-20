@@ -4,8 +4,6 @@
 // ABOUTME: bloc and the badge cubit so the bottom-nav badge stays in lock
 // ABOUTME: step with the per-row read state.
 
-// ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
-
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -30,8 +28,8 @@ class _FakeNotificationRepository extends Fake
 
   final BehaviorSubject<NotificationPage> _snapshot;
 
-  /// Notification IDs passed to the most recent [markAsRead] call.
-  List<String> lastMarkedRead = const [];
+  /// Notification ID batches passed to [markAsRead].
+  final List<List<String>> markedReadCalls = [];
 
   @override
   Stream<NotificationPage> watchSnapshot() => _snapshot.stream;
@@ -43,7 +41,7 @@ class _FakeNotificationRepository extends Fake
 
   @override
   Future<void> markAsRead(List<String> ids) async {
-    lastMarkedRead = ids;
+    markedReadCalls.add(List<String>.from(ids));
     final current = _snapshot.value;
     final updated = current.items.map<NotificationItem>((item) {
       if (!ids.contains(item.id)) return item;
@@ -71,7 +69,7 @@ VideoNotification _unreadLike(String id) {
     id: id,
     type: NotificationKind.like,
     videoEventId: 'video_$id',
-    actors: [ActorInfo(pubkey: _alicePubkey, displayName: 'Alice')],
+    actors: const [ActorInfo(pubkey: _alicePubkey, displayName: 'Alice')],
     totalCount: 1,
     timestamp: DateTime(2026),
   );
@@ -81,7 +79,7 @@ ActorNotification _unreadFollow(String id) {
   return ActorNotification(
     id: id,
     type: NotificationKind.follow,
-    actor: ActorInfo(pubkey: _bobPubkey, displayName: 'Bob'),
+    actor: const ActorInfo(pubkey: _bobPubkey, displayName: 'Bob'),
     timestamp: DateTime(2026),
   );
 }
@@ -126,10 +124,15 @@ void main() {
           equals(3),
         );
 
-        bloc.add(NotificationFeedItemTapped('n1'));
+        bloc.add(const NotificationFeedItemTapped('n1'));
         await Future<void>.delayed(Duration.zero);
 
-        expect(repository.lastMarkedRead, equals(['n1']));
+        expect(
+          repository.markedReadCalls,
+          equals([
+            ['n1'],
+          ]),
+        );
         expect(badge.state, equals(2));
         expect(
           bloc.state.notifications.where((n) => !n.isRead).length,
@@ -159,10 +162,17 @@ void main() {
         await Future<void>.delayed(Duration.zero);
         expect(badge.state, equals(2));
 
-        bloc.add(NotificationFeedItemTapped('n2'));
+        bloc.add(const NotificationFeedItemTapped('n2'));
         await Future<void>.delayed(Duration.zero);
 
         expect(badge.state, equals(2));
+        expect(
+          repository.markedReadCalls,
+          equals([
+            ['n2'],
+            ['n2'],
+          ]),
+        );
       },
     );
 
@@ -180,14 +190,22 @@ void main() {
         await Future<void>.delayed(Duration.zero);
         expect(badge.state, equals(3));
 
-        bloc.add(NotificationFeedItemTapped('n1'));
+        bloc.add(const NotificationFeedItemTapped('n1'));
         await Future<void>.delayed(Duration.zero);
-        bloc.add(NotificationFeedItemTapped('n2'));
+        bloc.add(const NotificationFeedItemTapped('n2'));
         await Future<void>.delayed(Duration.zero);
-        bloc.add(NotificationFeedItemTapped('n3'));
+        bloc.add(const NotificationFeedItemTapped('n3'));
         await Future<void>.delayed(Duration.zero);
 
         expect(badge.state, equals(0));
+        expect(
+          repository.markedReadCalls,
+          equals([
+            ['n1'],
+            ['n2'],
+            ['n3'],
+          ]),
+        );
         expect(
           bloc.state.notifications.every((n) => n.isRead),
           isTrue,
