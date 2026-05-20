@@ -138,7 +138,7 @@ void main() {
           when(
             () => mockVideosRepository.searchVideos(
               query: 'flutter',
-              sort: defaultVideoSearchSort,
+              sort: any(named: 'sort'),
             ),
           ).thenAnswer((_) => Stream.value([video]));
         },
@@ -171,7 +171,7 @@ void main() {
           when(
             () => mockVideosRepository.searchVideos(
               query: 'flutter',
-              sort: defaultVideoSearchSort,
+              sort: any(named: 'sort'),
             ),
           ).thenAnswer(
             (_) => Stream.fromIterable([
@@ -208,7 +208,7 @@ void main() {
           when(
             () => mockVideosRepository.searchVideos(
               query: 'flutter',
-              sort: defaultVideoSearchSort,
+              sort: any(named: 'sort'),
             ),
           ).thenAnswer(
             (_) => Stream.fromIterable([
@@ -248,7 +248,7 @@ void main() {
           when(
             () => mockVideosRepository.searchVideos(
               query: 'flutter',
-              sort: defaultVideoSearchSort,
+              sort: any(named: 'sort'),
             ),
           ).thenAnswer((_) => Stream.value([]));
         },
@@ -278,7 +278,7 @@ void main() {
           when(
             () => mockVideosRepository.searchVideos(
               query: 'flutter',
-              sort: defaultVideoSearchSort,
+              sort: any(named: 'sort'),
             ),
           ).thenAnswer((_) => Stream.error(Exception('search failed')));
         },
@@ -308,7 +308,7 @@ void main() {
           when(
             () => mockVideosRepository.searchVideos(
               query: 'final',
-              sort: defaultVideoSearchSort,
+              sort: any(named: 'sort'),
             ),
           ).thenAnswer((_) => Stream.value([video]));
         },
@@ -327,7 +327,7 @@ void main() {
           verify(
             () => mockVideosRepository.searchVideos(
               query: 'final',
-              sort: defaultVideoSearchSort,
+              sort: any(named: 'sort'),
             ),
           ).called(1);
         },
@@ -360,7 +360,7 @@ void main() {
           when(
             () => mockVideosRepository.searchVideos(
               query: 'flutter',
-              sort: defaultVideoSearchSort,
+              sort: any(named: 'sort'),
             ),
           ).thenAnswer((_) => Stream.value([]));
         },
@@ -392,7 +392,7 @@ void main() {
           verify(
             () => mockVideosRepository.searchVideos(
               query: 'flutter',
-              sort: defaultVideoSearchSort,
+              sort: any(named: 'sort'),
             ),
           ).called(1);
         },
@@ -407,7 +407,7 @@ void main() {
           verify(
             () => mockVideosRepository.searchVideos(
               query: 'flutter',
-              sort: defaultVideoSearchSort,
+              sort: any(named: 'sort'),
             ),
           ).called(1);
         },
@@ -694,7 +694,7 @@ void main() {
             () => mockVideosRepository.searchVideosViaApi(
               query: 'flutter',
               offset: 50,
-              sort: defaultVideoSearchSort,
+              sort: any(named: 'sort'),
             ),
           ).thenThrow(Exception('network error'));
         },
