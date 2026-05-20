@@ -273,6 +273,134 @@ void main() {
       });
     });
 
+    group('token refresh on 401', () {
+      test('retries with new token after 401 when callback succeeds', () async {
+        var callCount = 0;
+        mockClient = MockClient((request) async {
+          callCount++;
+          if (callCount == 1) {
+            expect(
+              request.headers['Authorization'],
+              'Bearer expired_token',
+            );
+            return http.Response('Unauthorized', 401);
+          }
+          expect(
+            request.headers['Authorization'],
+            'Bearer fresh_token',
+          );
+          return http.Response(
+            jsonEncode({
+              'result':
+                  '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d',
+            }),
+            200,
+          );
+        });
+
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'expired_token',
+          httpClient: mockClient,
+          onTokenRefresh: () async => 'fresh_token',
+        );
+
+        final pubkey = await rpc.getPublicKey();
+        expect(
+          pubkey,
+          '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d',
+        );
+        expect(callCount, equals(2));
+      });
+
+      test('throws RpcException when callback returns null', () async {
+        mockClient = MockClient((request) async {
+          return http.Response('Unauthorized', 401);
+        });
+
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'expired_token',
+          httpClient: mockClient,
+          onTokenRefresh: () async => null,
+        );
+
+        expect(rpc.getPublicKey, throwsA(isA<RpcException>()));
+      });
+
+      test('throws RpcException on 401 when no callback provided', () async {
+        mockClient = MockClient((request) async {
+          return http.Response('Unauthorized', 401);
+        });
+
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'expired_token',
+          httpClient: mockClient,
+        );
+
+        expect(rpc.getPublicKey, throwsA(isA<RpcException>()));
+      });
+
+      test('does not retry on non-401 errors', () async {
+        var callCount = 0;
+        mockClient = MockClient((request) async {
+          callCount++;
+          return http.Response('Server error', 500);
+        });
+
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'test_token',
+          httpClient: mockClient,
+          onTokenRefresh: () async => 'fresh_token',
+        );
+
+        expect(rpc.getPublicKey, throwsA(isA<RpcException>()));
+        await Future<void>.delayed(Duration.zero);
+        expect(callCount, equals(1));
+      });
+
+      test('throws when retry also returns 401', () async {
+        var callCount = 0;
+        mockClient = MockClient((request) async {
+          callCount++;
+          return http.Response('Unauthorized', 401);
+        });
+
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'expired_token',
+          httpClient: mockClient,
+          onTokenRefresh: () async => 'also_expired_token',
+        );
+
+        expect(rpc.getPublicKey, throwsA(isA<RpcException>()));
+        await Future<void>.delayed(Duration.zero);
+        expect(callCount, equals(2));
+      });
+
+      test('fromSession passes onTokenRefresh to instance', () {
+        const config = OAuthConfig(
+          serverUrl: 'https://login.divine.video',
+          clientId: 'test',
+          redirectUri: 'divine://callback',
+        );
+        final session = KeycastSession(
+          bunkerUrl: 'bunker://test',
+          accessToken: 'valid_token',
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
+        );
+
+        final rpc = KeycastRpc.fromSession(
+          config,
+          session,
+          onTokenRefresh: () async => 'refreshed',
+        );
+        expect(rpc, isNotNull);
+      });
+    });
+
     group('signCanonicalPayload', () {
       test(
         'returns hex signature from RPC and base64-encodes payload',

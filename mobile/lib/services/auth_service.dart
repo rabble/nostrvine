@@ -518,7 +518,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       // Keycast signer before building the identity so we get a
       // KeycastNostrIdentity instead of a LocalNostrIdentity.
       if (session != null && session.hasRpcAccess) {
-        _keycastSigner = KeycastRpc.fromSession(_oauthConfig, session);
+        _keycastSigner = KeycastRpc.fromSession(
+          _oauthConfig,
+          session,
+          onTokenRefresh: _refreshAccessToken,
+        );
       }
 
       await _setupUserSession(localKey!, AuthenticationSource.divineOAuth);
@@ -581,7 +585,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         );
         await refreshed.save(_flutterSecureStorage);
         await _clearDismissedDivineLoginBannerForCurrentUser();
-        _keycastSigner = KeycastRpc.fromSession(_oauthConfig, refreshed);
+        _keycastSigner = KeycastRpc.fromSession(
+          _oauthConfig,
+          refreshed,
+          onTokenRefresh: _refreshAccessToken,
+        );
         _currentIdentity = _buildIdentity();
         _hasExpiredOAuthSession = false;
         _setRpcCapability(AuthRpcCapability.rpcReady);
@@ -695,6 +703,32 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       );
     }
     return false;
+  }
+
+  /// [TokenRefreshCallback] passed to [KeycastRpc] so it can recover
+  /// from mid-session 401s without caller involvement.
+  Future<String?> _refreshAccessToken() async {
+    if (_oauthClient == null) return null;
+    try {
+      final refreshed = await _oauthClient.refreshSession();
+      if (refreshed != null && refreshed.hasRpcAccess) {
+        Log.info(
+          '_refreshAccessToken: token refresh succeeded',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        await refreshed.save(_flutterSecureStorage);
+        _hasExpiredOAuthSession = false;
+        return refreshed.accessToken;
+      }
+    } catch (e) {
+      Log.error(
+        '_refreshAccessToken: token refresh failed: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+    }
+    return null;
   }
 
   Future<void> _clearDismissedDivineLoginBannerForCurrentUser([
@@ -2977,7 +3011,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     _hasExpiredOAuthSession = false;
 
     try {
-      _keycastSigner = KeycastRpc.fromSession(_oauthConfig, session);
+      _keycastSigner = KeycastRpc.fromSession(
+        _oauthConfig,
+        session,
+        onTokenRefresh: _refreshAccessToken,
+      );
 
       // Prefer the pubkey stored in the session over an RPC call.
       // session.userPubkey is ground truth once populated — it is
@@ -4751,6 +4789,33 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         category: LogCategory.auth,
       );
       _nostrConnectSession!.ensureConnected();
+    }
+
+    unawaited(_refreshOAuthTokenOnResume());
+  }
+
+  Future<void> _refreshOAuthTokenOnResume() async {
+    if (_oauthClient == null || _keycastSigner == null) return;
+
+    final session = await _oauthClient.getSession();
+    if (session != null) return;
+
+    Log.info(
+      '📱 App resumed - OAuth token expired, refreshing',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
+    final refreshed = await _oauthClient.refreshSession();
+    if (refreshed != null && refreshed.hasRpcAccess) {
+      await refreshed.save(_flutterSecureStorage);
+      _keycastSigner = KeycastRpc.fromSession(
+        _oauthConfig,
+        refreshed,
+        onTokenRefresh: _refreshAccessToken,
+      );
+      _hasExpiredOAuthSession = false;
+      _currentIdentity = _buildIdentity();
+      _setRpcCapability(AuthRpcCapability.rpcReady);
     }
   }
 

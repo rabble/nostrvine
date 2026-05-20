@@ -11,24 +11,38 @@ import 'package:keycast_flutter/src/oauth/oauth_config.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+/// Callback invoked when a 401 response indicates the access token has
+/// expired. Returns a fresh access token on success, or `null` if refresh
+/// is not possible.
+typedef TokenRefreshCallback = Future<String?> Function();
+
 class KeycastRpc implements NostrSigner {
   final String nostrApi;
-  final String accessToken;
+  String _accessToken;
   final http.Client _client;
+  final TokenRefreshCallback? _onTokenRefresh;
 
   KeycastRpc({
     required this.nostrApi,
-    required this.accessToken,
+    required String accessToken,
     http.Client? httpClient,
-  }) : _client = httpClient ?? http.Client();
+    TokenRefreshCallback? onTokenRefresh,
+  }) : _accessToken = accessToken,
+       _client = httpClient ?? http.Client(),
+       _onTokenRefresh = onTokenRefresh;
 
-  factory KeycastRpc.fromSession(OAuthConfig config, KeycastSession session) {
+  factory KeycastRpc.fromSession(
+    OAuthConfig config,
+    KeycastSession session, {
+    TokenRefreshCallback? onTokenRefresh,
+  }) {
     if (!session.hasRpcAccess) {
       throw SessionExpiredException();
     }
     return KeycastRpc(
       nostrApi: config.nostrApiUrl,
       accessToken: session.accessToken!,
+      onTokenRefresh: onTokenRefresh,
     );
   }
 
@@ -37,27 +51,20 @@ class KeycastRpc implements NostrSigner {
     List<dynamic> params,
     T Function(dynamic) fromResult,
   ) async {
-    Log.debug(
-      '[Keycast RPC] Calling $method...',
-      name: 'KeycastRpc',
-      category: LogCategory.auth,
-    );
-    final stopwatch = Stopwatch()..start();
-    final response = await _client.post(
-      Uri.parse(nostrApi),
-      headers: {
-        'Authorization': 'Bearer $accessToken',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({'method': method, 'params': params}),
-    );
+    var response = await _sendRequest(method, params);
 
-    stopwatch.stop();
-    Log.debug(
-      '[Keycast RPC] $method completed in ${stopwatch.elapsedMilliseconds}ms (HTTP ${response.statusCode})',
-      name: 'KeycastRpc',
-      category: LogCategory.auth,
-    );
+    if (response.statusCode == 401 && _onTokenRefresh != null) {
+      Log.info(
+        '[Keycast RPC] $method returned 401, attempting token refresh',
+        name: 'KeycastRpc',
+        category: LogCategory.auth,
+      );
+      final newToken = await _onTokenRefresh();
+      if (newToken != null) {
+        _accessToken = newToken;
+        response = await _sendRequest(method, params);
+      }
+    }
 
     if (response.statusCode != 200) {
       Log.error(
@@ -82,6 +89,35 @@ class KeycastRpc implements NostrSigner {
     }
 
     return fromResult(json['result']);
+  }
+
+  Future<http.Response> _sendRequest(
+    String method,
+    List<dynamic> params,
+  ) async {
+    Log.debug(
+      '[Keycast RPC] Calling $method...',
+      name: 'KeycastRpc',
+      category: LogCategory.auth,
+    );
+    final stopwatch = Stopwatch()..start();
+    final response = await _client.post(
+      Uri.parse(nostrApi),
+      headers: {
+        'Authorization': 'Bearer $_accessToken',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'method': method, 'params': params}),
+    );
+    stopwatch.stop();
+    Log.debug(
+      '[Keycast RPC] $method completed in '
+      '${stopwatch.elapsedMilliseconds}ms '
+      '(HTTP ${response.statusCode})',
+      name: 'KeycastRpc',
+      category: LogCategory.auth,
+    );
+    return response;
   }
 
   @override
