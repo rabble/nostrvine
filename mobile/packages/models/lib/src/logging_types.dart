@@ -7,7 +7,8 @@ enum LogLevel {
   debug(700),
   info(800),
   warning(900),
-  error(1000);
+  error(1000)
+  ;
 
   const LogLevel(this.value);
 
@@ -40,7 +41,8 @@ enum LogCategory {
   auth('AUTH'), // Authentication, key management, identity
   storage('STORAGE'), // Local storage, caching, persistence
   api('API'), // External API calls, network requests
-  system('SYSTEM'); // App lifecycle, initialization, configuration
+  system('SYSTEM')
+  ; // App lifecycle, initialization, configuration
 
   const LogCategory(this.name);
 

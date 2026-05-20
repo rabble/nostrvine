@@ -7,7 +7,8 @@ import 'package:nostr_sdk/filter.dart';
 /// Sort direction for server-side sorting
 enum SortDirection {
   asc,
-  desc;
+  desc
+  ;
 
   String toJson() => name;
 }
