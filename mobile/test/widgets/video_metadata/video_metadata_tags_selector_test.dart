@@ -86,6 +86,55 @@ void main() {
         await tester.pump(const Duration(milliseconds: 400));
       },
     );
+
+    testWidgets(
+      'tapping a suggestion clears the field and resets the search results',
+      (tester) async {
+        when(
+          () => hashtagRepository.searchHashtags(
+            query: 'mus',
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer((_) async => ['music']);
+
+        await tester.pumpWidget(
+          _buildTestApp(
+            hashtagRepository: hashtagRepository,
+            videoEditorState: VideoEditorProviderState(),
+          ),
+        );
+
+        await tester.tap(
+          find.byType(VideoMetadataSelectionTile),
+          warnIfMissed: false,
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final searchField = find.byType(TextField).last;
+        expect(searchField, findsOneWidget);
+
+        await tester.enterText(searchField, 'mus');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        final musicSuggestion = find.text('music');
+
+        expect(musicSuggestion, findsOneWidget);
+
+        await tester.tap(musicSuggestion);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(
+          tester.widget<TextField>(searchField).controller?.text,
+          isEmpty,
+        );
+        expect(musicSuggestion, findsOneWidget);
+        expect(find.text('music'), findsOneWidget);
+      },
+    );
   });
 }
 

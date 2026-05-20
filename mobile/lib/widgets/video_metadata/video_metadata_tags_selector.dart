@@ -166,11 +166,16 @@ class _TagsPickerViewState extends State<_TagsPickerView> {
 
   void _addTag(String raw) {
     context.read<TagsPickerBloc>().add(TagsPickerTagsAdded([raw]));
-    // Clear the field so the next suggestion tap / submit starts fresh.
+    _resetSearchInput();
+  }
+
+  void _resetSearchInput() {
+    _previousText = '';
     if (_searchController.text.isNotEmpty) {
-      _previousText = '';
-      _searchController.clear();
+      _searchController.value = const TextEditingValue();
+      return;
     }
+    context.read<TagsPickerBloc>().add(const TagsPickerQueryChanged(''));
   }
 
   void _removeTag(String tag) {
