@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
+import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
@@ -23,18 +24,24 @@ class _MockVideoEditorMainBloc
 class _MockClipEditorBloc extends MockBloc<ClipEditorEvent, ClipEditorState>
     implements ClipEditorBloc {}
 
+class _MockTimelineOverlayBloc
+    extends MockBloc<TimelineOverlayEvent, TimelineOverlayState>
+    implements TimelineOverlayBloc {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group(VideoEditorTimelineHeader, () {
     late _MockVideoEditorMainBloc mockMainBloc;
     late _MockClipEditorBloc mockClipBloc;
+    late _MockTimelineOverlayBloc mockTimelineOverlayBloc;
     late ValueNotifier<Duration> playheadPosition;
     late ValueNotifier<double?> volumePreviewNotifier;
 
     setUp(() {
       mockMainBloc = _MockVideoEditorMainBloc();
       mockClipBloc = _MockClipEditorBloc();
+      mockTimelineOverlayBloc = _MockTimelineOverlayBloc();
       playheadPosition = ValueNotifier(Duration.zero);
       volumePreviewNotifier = ValueNotifier<double?>(null);
 
@@ -46,6 +53,12 @@ void main() {
       when(
         () => mockClipBloc.stream,
       ).thenAnswer((_) => const Stream<ClipEditorState>.empty());
+      when(
+        () => mockTimelineOverlayBloc.state,
+      ).thenReturn(const TimelineOverlayState());
+      when(
+        () => mockTimelineOverlayBloc.stream,
+      ).thenAnswer((_) => const Stream<TimelineOverlayState>.empty());
     });
 
     tearDown(() {
@@ -88,6 +101,9 @@ void main() {
               providers: [
                 BlocProvider<VideoEditorMainBloc>.value(value: mockMainBloc),
                 BlocProvider<ClipEditorBloc>.value(value: mockClipBloc),
+                BlocProvider<TimelineOverlayBloc>.value(
+                  value: mockTimelineOverlayBloc,
+                ),
               ],
               child: VideoEditorTimelineHeader(
                 playheadPosition: playheadPosition,
