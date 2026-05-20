@@ -1,10 +1,12 @@
 import Flutter
 import UIKit
+import UserNotifications
 import AVFoundation
 import LibProofMode
 import ZendeskCoreSDK
 import SupportSDK
 import SupportProvidersSDK
+import flutter_local_notifications
 
 extension FlutterError: @retroactive Error {}
 
@@ -14,11 +16,17 @@ extension FlutterError: @retroactive Error {}
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
+    UNUserNotificationCenter.current().delegate = self as UNUserNotificationCenterDelegate
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
   // UIScene lifecycle: Called when Flutter engine is ready
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+    // Register plugins for any background notification action isolate.
+    FlutterLocalNotificationsPlugin.setPluginRegistrantCallback { registry in
+      GeneratedPluginRegistrant.register(with: registry)
+    }
+
     // Register plugins with the engine
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
 
