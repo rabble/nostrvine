@@ -179,16 +179,20 @@ class _VolumeArcState extends State<_VolumeArc> {
   }
 
   /// Pixels of drag distance that cover the full 0..1 range.
-  static const double _dragRangePx = 160;
+  ///
+  /// Set once at pan-start to 90 % of the current screen width so the gesture
+  /// scales with the device rather than using a fixed pixel value.
+  double _dragRangePx = 160;
 
   /// Dead zone around the press point where volume stays at 100% so it's
   /// easy to land exactly on max without pixel-perfect aim.
-  static const double _maxDeadZonePx = 12;
+  static const double _maxDeadZonePx = 24;
 
   /// Local position where the current pan gesture began.
   Offset _panStart = Offset.zero;
 
   void _onPanStart(DragStartDetails d) {
+    _dragRangePx = math.min(160, MediaQuery.sizeOf(context).width * 0.9);
     _panStart = d.localPosition;
     // Snap to full volume immediately so the gesture starts from a known
     // reference point: finger down = 100%.
