@@ -105,25 +105,84 @@ void main() {
       },
     );
 
-    test('reportContent() fails when service not initialized', () async {
-      // Create new service without initializing
-      final uninitializedService = ContentReportingService(
-        nostrService: mockNostrService,
-        authService: mockAuthService,
-        prefs: prefs,
-        moderationRelayUrl: 'wss://relay.divine.video',
-      );
+    test(
+      'reportContent() fails when service not initialized '
+      'and Nostr client still unready',
+      () async {
+        when(() => mockNostrService.isInitialized).thenReturn(false);
 
-      final result = await uninitializedService.reportContent(
-        eventId: 'test_event_id',
-        authorPubkey: 'test_author',
-        reason: ContentFilterReason.spam,
-        details: 'Spam content',
-      );
+        final uninitializedService = ContentReportingService(
+          nostrService: mockNostrService,
+          authService: mockAuthService,
+          prefs: prefs,
+          moderationRelayUrl: 'wss://relay.divine.video',
+        );
 
-      expect(result.success, false);
-      expect(result.error, 'Reporting service not initialized');
-    });
+        final result = await uninitializedService.reportContent(
+          eventId: 'test_event_id',
+          authorPubkey: 'test_author',
+          reason: ContentFilterReason.spam,
+          details: 'Spam content',
+        );
+
+        expect(result.success, isFalse);
+        expect(result.error, 'Reporting service not initialized');
+      },
+    );
+
+    test(
+      'reportContent() recovers via late initialization when '
+      'Nostr client becomes ready after construction',
+      () async {
+        when(() => mockNostrService.isInitialized).thenReturn(false);
+
+        final lateInitService = ContentReportingService(
+          nostrService: mockNostrService,
+          authService: mockAuthService,
+          prefs: prefs,
+          moderationRelayUrl: 'wss://relay.divine.video',
+        );
+
+        await lateInitService.initialize();
+        expect(lateInitService.isInitialized, isFalse);
+
+        when(() => mockNostrService.isInitialized).thenReturn(true);
+
+        final reportEvent = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 1984,
+          tags: [
+            ['e', _validEventId('a')],
+            ['p', 'test_author'],
+          ],
+          content: 'Spam content',
+        );
+
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((_) async => reportEvent);
+
+        when(
+          () => mockNostrService.publishEvent(
+            any(),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
+
+        final result = await lateInitService.reportContent(
+          eventId: _validEventId('a'),
+          authorPubkey: 'test_author',
+          reason: ContentFilterReason.spam,
+          details: 'Spam content',
+        );
+
+        expect(result.success, isTrue);
+      },
+    );
 
     test(
       'reportContent() succeeds for AI-generated content after initialization',

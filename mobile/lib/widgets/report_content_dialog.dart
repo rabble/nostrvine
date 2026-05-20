@@ -170,6 +170,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   final ScrollController _scrollController = ScrollController();
   bool _isSubmitting = false;
   bool _submitted = false;
+  String? _errorMessage;
   bool _scrollWhenKeyboardOpens = false;
   double _previousViewInsetsBottom = 0;
 
@@ -304,6 +305,36 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
               ),
             ),
           ],
+          if (_errorMessage != null) ...[
+            const SizedBox(height: 16),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: VineTheme.error.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    const DivineIcon(
+                      icon: DivineIconName.warningCircle,
+                      color: VineTheme.error,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _errorMessage!,
+                        style: VineTheme.bodySmallFont(
+                          color: VineTheme.error,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 24),
           DivineButton(
             label: l10n.reportSubmit,
@@ -319,22 +350,16 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   void _handleSubmitReport() {
     if (_isSubmitting) return;
     if (_selectedReason == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.reportSelectReason),
-          backgroundColor: VineTheme.error,
-        ),
-      );
+      setState(() {
+        _errorMessage = context.l10n.reportSelectReason;
+      });
       return;
     }
     if (_selectedReason == ContentFilterReason.other &&
         _detailsController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.reportOtherRequiresDetails),
-          backgroundColor: VineTheme.error,
-        ),
-      );
+      setState(() {
+        _errorMessage = context.l10n.reportOtherRequiresDetails;
+      });
       return;
     }
     _submitReport();
@@ -343,7 +368,10 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   Future<void> _submitReport() async {
     if (_selectedReason == null) return;
 
-    setState(() => _isSubmitting = true);
+    setState(() {
+      _isSubmitting = true;
+      _errorMessage = null;
+    });
     final selectedReasonTitle = context.l10n.reportReasonTitle(
       _selectedReason!,
     );
@@ -402,12 +430,11 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
             }
           }
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(context.l10n.reportFailed(result.error ?? '')),
-              backgroundColor: VineTheme.error,
-            ),
-          );
+          setState(() {
+            _errorMessage = context.l10n.reportFailed(
+              result.error ?? '',
+            );
+          });
         }
       }
     } catch (e) {
@@ -418,12 +445,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.reportFailed(e)),
-            backgroundColor: VineTheme.error,
-          ),
-        );
+        setState(() => _errorMessage = context.l10n.reportFailed(e));
       }
     } finally {
       if (mounted) {

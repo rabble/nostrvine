@@ -420,7 +420,7 @@ void main() {
       },
     );
 
-    testWidgets('failed report shows error snackbar', (tester) async {
+    testWidgets('failed report shows inline error', (tester) async {
       when(
         () => mockReportingService.reportContent(
           eventId: any(named: 'eventId'),
@@ -444,7 +444,7 @@ void main() {
       expect(find.textContaining('Failed to report content'), findsOneWidget);
     });
 
-    testWidgets('exception during report shows error snackbar', (tester) async {
+    testWidgets('exception during report shows inline error', (tester) async {
       when(
         () => mockReportingService.reportContent(
           eventId: any(named: 'eventId'),
