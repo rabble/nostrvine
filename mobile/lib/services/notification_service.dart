@@ -585,11 +585,11 @@ class NotificationService {
         linux: linuxDetails,
       );
 
-      // Show the notification
+      // Show the notification with unique ID from timestamp
+      final notificationId =
+          notification.timestamp.millisecondsSinceEpoch % 100000;
       await _flutterLocalNotificationsPlugin.show(
-        id:
-            notification.timestamp.millisecondsSinceEpoch %
-            100000, // Unique ID from timestamp
+        id: notificationId,
         title: title,
         body: body,
         notificationDetails: notificationDetails,
