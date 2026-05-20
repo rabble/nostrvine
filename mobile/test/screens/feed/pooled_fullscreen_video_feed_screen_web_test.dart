@@ -2,12 +2,17 @@ import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
+import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
+import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/screens/feed/feed_settings_menu.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
-import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
+import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart'
@@ -21,6 +26,12 @@ class MockFullscreenFeedBloc
     extends MockBloc<FullscreenFeedEvent, FullscreenFeedState>
     implements FullscreenFeedBloc {}
 
+class _MockVideoModerationStatusService extends Mock
+    implements VideoModerationStatusService {}
+
+class _MockVideoVolumeCubit extends MockCubit<VideoVolumeState>
+    implements VideoVolumeCubit {}
+
 const _testVideoId =
     'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234';
 const _testPubkey =
@@ -31,6 +42,7 @@ void main() {
     late MockFullscreenFeedBloc mockBloc;
     late MockAuthService mockAuthService;
     late MockProfileRepository mockProfileRepository;
+    late _MockVideoVolumeCubit videoVolumeCubit;
     late StreamController<FullscreenFeedState> stateController;
     late video_platform.VideoPlayerPlatform originalPlatform;
     late FakeVideoPlayerController webController;
@@ -43,12 +55,14 @@ void main() {
       mockBloc = MockFullscreenFeedBloc();
       mockAuthService = createMockAuthService();
       mockProfileRepository = createMockProfileRepository();
+      videoVolumeCubit = _MockVideoVolumeCubit();
       stateController = StreamController<FullscreenFeedState>.broadcast();
       originalPlatform = video_platform.VideoPlayerPlatform.instance;
       video_platform.VideoPlayerPlatform.instance = FakeVideoPlayerPlatform();
       webController = FakeVideoPlayerController();
 
       when(() => mockBloc.stream).thenAnswer((_) => stateController.stream);
+      when(() => videoVolumeCubit.state).thenReturn(const VideoVolumeState());
       when(() => mockAuthService.currentPublicKeyHex).thenReturn(null);
     });
 
@@ -71,8 +85,14 @@ void main() {
         testMaterialApp(
           mockAuthService: mockAuthService,
           mockProfileRepository: mockProfileRepository,
-          home: BlocProvider<FullscreenFeedBloc>.value(
-            value: mockBloc,
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider<FullscreenFeedBloc>.value(value: mockBloc),
+              BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
+              BlocProvider<VideoPlaybackStatusCubit>(
+                create: (_) => VideoPlaybackStatusCubit(),
+              ),
+            ],
             child: FullscreenFeedContent(
               webControllerFactory: ({required url, required headers}) =>
                   webController,
@@ -86,7 +106,7 @@ void main() {
       expect(find.byType(VideoOverlayActions), findsOneWidget);
     }, skip: !kIsWeb);
 
-    testWidgets('renders Auto action in the fullscreen web overlay', (
+    testWidgets('renders settings menu in the fullscreen web overlay', (
       tester,
     ) async {
       final video = createTestVideoEvent(id: _testVideoId, pubkey: _testPubkey);
@@ -100,8 +120,14 @@ void main() {
         testMaterialApp(
           mockAuthService: mockAuthService,
           mockProfileRepository: mockProfileRepository,
-          home: BlocProvider<FullscreenFeedBloc>.value(
-            value: mockBloc,
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider<FullscreenFeedBloc>.value(value: mockBloc),
+              BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
+              BlocProvider<VideoPlaybackStatusCubit>(
+                create: (_) => VideoPlaybackStatusCubit(),
+              ),
+            ],
             child: FullscreenFeedContent(
               webControllerFactory: ({required url, required headers}) =>
                   webController,
@@ -111,7 +137,70 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(AutoActionButton), findsOneWidget);
+      expect(find.byType(FeedSettingsMenu), findsOneWidget);
+    }, skip: !kIsWeb);
+
+    testWidgets('renders restricted content while web video is loading', (
+      tester,
+    ) async {
+      const sha256 =
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      final video = createTestVideoEvent(
+        id: _testVideoId,
+        pubkey: _testPubkey,
+        sha256: sha256,
+        videoUrl: 'https://media.divine.video/$sha256',
+      );
+      final state = FullscreenFeedState(
+        status: FullscreenFeedStatus.ready,
+        videos: [video],
+      );
+      final moderationService = _MockVideoModerationStatusService();
+      when(() => mockBloc.state).thenReturn(state);
+      when(() => moderationService.fetchStatus(sha256)).thenAnswer(
+        (_) async => const VideoModerationStatus(
+          moderated: true,
+          blocked: true,
+          quarantined: false,
+          ageRestricted: false,
+          needsReview: false,
+          aiGenerated: false,
+        ),
+      );
+
+      await tester.pumpWidget(
+        testMaterialApp(
+          additionalOverrides: [
+            videoModerationStatusServiceProvider.overrideWithValue(
+              moderationService,
+            ),
+          ],
+          mockAuthService: mockAuthService,
+          mockProfileRepository: mockProfileRepository,
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider<FullscreenFeedBloc>.value(value: mockBloc),
+              BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
+              BlocProvider<VideoPlaybackStatusCubit>(
+                create: (_) => VideoPlaybackStatusCubit(),
+              ),
+            ],
+            child: FullscreenFeedContent(
+              webControllerFactory: ({required url, required headers}) =>
+                  webController,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.videoErrorContentRestricted), findsOneWidget);
+      expect(find.text(l10n.videoErrorContentRestrictedBody), findsOneWidget);
+      verify(
+        () => moderationService.fetchStatus(sha256),
+      ).called(greaterThan(0));
     }, skip: !kIsWeb);
   });
 }
