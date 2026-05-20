@@ -163,7 +163,6 @@
 | `m3u8_resolver_service_test.dart` | 108 | 1 | `skip: 'Network test - run manually'` |
 | `nostr_key_manager_contacts_fetch_test.dart` | 108 | 1 | `skip: 'Same as above: _setupUserSession uses real WebSocket in test env.'` |
 | `nostr_key_manager_profile_fetch_test.dart` | 69, 200, 231 | 3 | `skip: true` |
-| `notification_service_enhanced/event_handlers_simple_test.dart` | 134, 192, 288, 352, 439, 557(group) | 6 | `skip: true` |
 | `profile_cache_test.dart` | 234 | 1 | `skip: true` |
 | `profile_editing_test.dart` | 389 | 1 | `skip: true` |
 | `seed_media_preload_service_test.dart` | 247 | 1 | `skip: true` |

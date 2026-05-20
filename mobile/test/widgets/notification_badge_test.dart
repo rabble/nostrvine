@@ -3,15 +3,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/notification_badge.dart';
 
 void main() {
   group(NotificationBadge, () {
     Widget buildTestWidget({required int count, bool showBadge = true}) {
       return MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: NotificationBadge(
             count: count,
@@ -96,40 +93,6 @@ void main() {
       );
       expect(find.byIcon(Icons.notifications), findsOneWidget);
     });
-
-    testWidgets('announces unread count via Semantics widget', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(buildTestWidget(count: 3));
-
-      final l10n = lookupAppLocalizations(const Locale('en'));
-      final expectedLabel = l10n.notificationsBadgeUnread(3);
-      expect(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is Semantics &&
-              widget.container &&
-              widget.properties.label == expectedLabel,
-        ),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('Semantics label adapts to overflow count', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(buildTestWidget(count: 150));
-
-      final l10n = lookupAppLocalizations(const Locale('en'));
-      final expectedLabel = l10n.notificationsBadgeUnread(150);
-      expect(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is Semantics && widget.properties.label == expectedLabel,
-        ),
-        findsOneWidget,
-      );
-    });
   });
 
   group(AnimatedNotificationBadge, () {
@@ -138,8 +101,6 @@ void main() {
       bool showBadge = true,
     }) {
       return MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: AnimatedNotificationBadge(
             count: count,
@@ -214,24 +175,6 @@ void main() {
           matching: find.byType(RepaintBoundary),
         ),
         findsWidgets,
-      );
-    });
-
-    testWidgets('announces unread count via Semantics widget', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(buildAnimatedTestWidget(count: 7));
-
-      final l10n = lookupAppLocalizations(const Locale('en'));
-      final expectedLabel = l10n.notificationsBadgeUnread(7);
-      expect(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is Semantics &&
-              widget.container &&
-              widget.properties.label == expectedLabel,
-        ),
-        findsOneWidget,
       );
     });
   });

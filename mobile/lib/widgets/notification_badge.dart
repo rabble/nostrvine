@@ -3,7 +3,6 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:openvine/l10n/l10n.dart';
 
 class NotificationBadge extends StatelessWidget {
   const NotificationBadge({
@@ -27,16 +26,14 @@ class NotificationBadge extends StatelessWidget {
     }
 
     final foreground = textColor ?? VineTheme.whiteText;
-    return Semantics(
-      label: context.l10n.notificationsBadgeUnread(count),
-      container: true,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          child,
-          PositionedDirectional(
-            end: -8,
-            top: -8,
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        child,
+        PositionedDirectional(
+          end: -8,
+          top: -8,
+          child: ExcludeSemantics(
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               padding: EdgeInsets.symmetric(
@@ -72,8 +69,8 @@ class NotificationBadge extends StatelessWidget {
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -147,16 +144,14 @@ class _AnimatedNotificationBadgeState extends State<AnimatedNotificationBadge>
     }
 
     final foreground = widget.textColor ?? VineTheme.whiteText;
-    return Semantics(
-      label: context.l10n.notificationsBadgeUnread(widget.count),
-      container: true,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          widget.child,
-          PositionedDirectional(
-            end: -8,
-            top: -8,
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        widget.child,
+        PositionedDirectional(
+          end: -8,
+          top: -8,
+          child: ExcludeSemantics(
             child: RepaintBoundary(
               child: AnimatedBuilder(
                 animation: _scaleAnimation,
@@ -204,8 +199,8 @@ class _AnimatedNotificationBadgeState extends State<AnimatedNotificationBadge>
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

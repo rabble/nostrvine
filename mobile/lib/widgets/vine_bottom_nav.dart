@@ -298,10 +298,15 @@ class _IconTabButton extends StatelessWidget {
       iconBox = NotificationBadge(count: badgeCount!, child: iconBox);
     }
 
+    final semanticValue = badgeCount != null && badgeCount! > 0
+        ? context.l10n.notificationsBadgeUnread(badgeCount!)
+        : null;
+
     return Semantics(
       identifier: semanticIdentifier,
       button: true,
       label: semanticLabel,
+      value: semanticValue,
       child: GestureDetector(
         onTap: onTap,
         behavior: .opaque,

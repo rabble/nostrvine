@@ -35,11 +35,6 @@ This audit identified **142+ anti-pattern violations** across **50+ test files**
   - **Recommended fix**: Listen to coordinator state stream, use await coordinator.initialized
 
 #### Service Tests
-- [ ] `test/services/notification_service_enhanced/event_handlers_simple_test.dart` - **16 occurrences**
-  - Lines: 179, 203, 221, 273, 311, 348, 350, 381, 427, 429, 467, 496, 516, 536, 546
-  - Context: Waiting for event handlers to process
-  - **Recommended fix**: Use StreamController completion futures
-
 - [ ] `test/services/video_event_processor_test.dart` - **4 occurrences**
   - Lines: 46, 72, 90, 144
   - Context: Waiting for video processor state

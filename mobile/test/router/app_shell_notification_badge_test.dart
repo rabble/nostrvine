@@ -1,3 +1,6 @@
+// ABOUTME: Widget tests for AppShell inbox badge semantics and visibility
+// ABOUTME: Verifies the inbox tab exposes unread count on the button semantics
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -95,6 +98,8 @@ void main() {
     testWidgets(
       'renders $NotificationBadge on bell tab when unread count > 0',
       (tester) async {
+        final semantics = tester.ensureSemantics();
+
         await tester.pumpWidget(
           _buildSubject(
             mockAuthService: mockAuthService,
@@ -106,10 +111,33 @@ void main() {
 
         expect(find.byType(NotificationBadge), findsOneWidget);
         expect(find.text('3'), findsOneWidget);
+        expect(
+          find.bySemanticsLabel(
+            lookupAppLocalizations(
+              const Locale('en'),
+            ).notificationsBadgeUnread(3),
+          ),
+          findsNothing,
+        );
+        expect(
+          tester.getSemantics(find.bySemanticsLabel('Inbox')),
+          matchesSemantics(
+            label: 'Inbox',
+            value: lookupAppLocalizations(
+              const Locale('en'),
+            ).notificationsBadgeUnread(3),
+            isButton: true,
+            isImage: true,
+            hasTapAction: true,
+          ),
+        );
+        semantics.dispose();
       },
     );
 
     testWidgets('renders no badge when unread count is 0', (tester) async {
+      final semantics = tester.ensureSemantics();
+
       await tester.pumpWidget(
         _buildSubject(
           mockAuthService: mockAuthService,
@@ -127,6 +155,16 @@ void main() {
         ),
         findsNothing,
       );
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('Inbox')),
+        matchesSemantics(
+          label: 'Inbox',
+          isButton: true,
+          isImage: true,
+          hasTapAction: true,
+        ),
+      );
+      semantics.dispose();
     });
   });
 }
