@@ -6,6 +6,35 @@
 >
 > **Existing code**: Riverpod is used for legacy code maintenance only
 
+## Ownership Boundary
+
+**Riverpod owns:** app-level DI, long-lived services/clients, infrastructure side-effects.  
+**BLoC/Cubit owns:** all feature UI state, all UI side effects, all loading/error/success states.
+
+## Allowed / Disallowed Patterns
+
+| Pattern | Verdict |
+|---------|---------|
+| `ConsumerWidget` outer Page + `BlocProvider` → `StatelessWidget` inner View | **Allowed** — canonical bridge; use `ref.watch` + `ValueKey` guard |
+| `ConsumerWidget` that only creates `BlocProvider` without reading any Riverpod dep | **Disallowed** — use plain `StatelessWidget` |
+| `ConsumerStatefulWidget` storing UI state in `_state` fields | **Disallowed** — extract to a `Cubit` |
+| New `@riverpod` / `StateProvider` for feature UI state | **Disallowed** — use BLoC/Cubit |
+| `*BridgeProvider` as infrastructure side-effect | **Allowed** — must have `// TODO(#issue):` removal comment |
+| `ref.read` capturing dep in `BlocProvider.create` without `ValueKey` guard | **Disallowed** — stale dep on auth flip |
+| `ref.watch` inside `BlocProvider.create` | **Disallowed** — `create` is called once; watch in `build`, pass via `ValueKey` |
+
+### Canonical template screens
+
+Copy the closest example when writing a new bridged screen:
+
+| Screen | File | Pattern |
+|--------|------|---------|
+| `NotificationsPage` | `mobile/lib/notifications/view/notifications_page.dart` | Nullable dep gate before creating `BlocProvider` |
+| `AppsDirectoryScreen` | `mobile/lib/screens/apps/apps_directory_screen.dart` | `ref.read` stable service, no `ValueKey` needed |
+| `VideoEngagementListScreen` | `mobile/lib/screens/video_engagement/video_engagement_list_screen.dart` | `ref.watch` auth-sensitive repos + record `ValueKey` guard; view in separate file |
+
+See `docs/BLOC_UI_MIGRATION_PRD.md` for the full rationale and bridge inventory.
+
 ---
 
 # BLoC (Primary - New Features)

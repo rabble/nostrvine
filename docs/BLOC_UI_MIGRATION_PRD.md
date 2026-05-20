@@ -1,7 +1,7 @@
 # PRD: Incremental UI Migration from Riverpod to BLoC
 
 Status: Current
-Validated against: current mobile architecture direction on 2026-03-19.
+Validated against: current mobile architecture direction on 2026-05-20.
 
 ## Status
 - **Owner:** mobile team
@@ -24,15 +24,86 @@ Riverpod is not being removed everywhere immediately. Existing Riverpod code rem
 3. **Predictable rebuild control** with `BlocBuilder`, `BlocSelector`, and `context.select`.
 4. **Better phased migration ergonomics**: convert one feature/screen without a big-bang rewrite.
 
-## In-Progress PR Evidence
-- **#1908**: replace Riverpod profile providers with `ProfilesBloc` (Phase 6)  
-  https://github.com/divinevideo/divine-mobile/pull/1908
-- **#1894**: wire `MyProfileBloc` into main profile screen  
-  https://github.com/divinevideo/divine-mobile/pull/1894
-- **#1903**: retire `UserProfileService`; keep Riverpod bridge providers temporarily  
-  https://github.com/divinevideo/divine-mobile/pull/1903
-- **#1282 (merged)**: migrate username validation from Riverpod to BLoC  
-  https://github.com/divinevideo/divine-mobile/pull/1282
+## Completed Migration Evidence
+- **#1282 (merged):** migrate username validation from Riverpod to BLoC
+- **#1894 (merged 2026-03-09):** wire `MyProfileBloc` into main profile screen
+- **#1903 (merged 2026-03-10):** retire `UserProfileService`; migrate to Drift-backed `ProfileRepository`
+
+## Ownership Boundary (enforced by convention + code review)
+
+Riverpod **owns**:
+- App-level dependency injection (repositories, services, clients)
+- Long-lived infrastructure side-effects (relay sync, blocklist sync, push token sync)
+- DI bridges: `ConsumerWidget` pages that read Riverpod deps and hand them into `BlocProvider`
+
+BLoC/Cubit **owns**:
+- All feature UI state
+- All UI side effects (navigation triggers, snackbar signals, dialog sequencing)
+- All loading/error/success state managed by a screen or feature
+
+## Allowed / Disallowed Patterns
+
+| Pattern | Verdict | Notes |
+|---------|---------|-------|
+| `ConsumerWidget` outer Page + `BlocProvider` → `StatelessWidget` inner View | **Allowed** | Canonical bridge. Use `ref.watch` on deps + `ValueKey` guard (see below). |
+| `ConsumerWidget` that only creates a `BlocProvider` without reading any Riverpod dep | **Disallowed** | Use plain `StatelessWidget` instead — no Riverpod involvement needed. |
+| `ConsumerStatefulWidget` storing UI state in `_state` fields instead of a Cubit | **Disallowed** | Extract the state into a `Cubit`. The widget becomes a `ConsumerWidget` or `StatefulWidget`. |
+| New `@riverpod` / `StateProvider` for feature UI state | **Disallowed** | Use `BLoC`/`Cubit` for all new UI state. |
+| `*BridgeProvider` as infrastructure side-effect (relay sync, blocklist sync, etc.) | **Allowed with issue link** | Must have a `// TODO(#NNNN):` removal comment. See bridge inventory below. |
+| `ref.read` capturing a dep inside `BlocProvider.create` without a `ValueKey` guard | **Disallowed** | Stale dep on auth flip. Use `ref.watch` + `ValueKey((dep1, dep2, ...))` on the `BlocProvider`. |
+| `ref.watch` inside `BlocProvider.create` | **Disallowed** | `create` is called once; `ref.watch` has no effect there. Watch in `build`, pass via `ValueKey`. |
+
+### ValueKey guard — required pattern when bridging watched deps
+
+When a `BlocProvider` inside a `ConsumerWidget` captures Riverpod dependencies that can change
+(e.g. repository instances that are replaced on auth flip), always supply a `ValueKey` composed
+of all captured deps. Flutter will recreate the `BlocProvider` subtree when the key changes,
+giving the bloc fresh dependencies and resetting its state intentionally.
+
+```dart
+class MySomeScreen extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final repo = ref.watch(someRepositoryProvider);
+    return BlocProvider<SomeBloc>(
+      key: ValueKey(repo),                    // ← recreates bloc when repo identity changes
+      create: (_) => SomeBloc(repo: repo)..add(const SomeStarted()),
+      child: const _SomeView(),
+    );
+  }
+}
+```
+
+When multiple deps are captured, use a record:
+
+```dart
+key: ValueKey((likesRepo, repostsRepo, eventId, type)),
+```
+
+## Canonical Template Screens
+
+These three screens are the correct reference implementations to copy from when writing new
+bridged screens. Do not invent a new pattern — pick the closest example below.
+
+| Screen | File | Pattern demonstrated |
+|--------|------|---------------------|
+| `NotificationsPage` | `mobile/lib/notifications/view/notifications_page.dart` | Nullable dep gate: returns loading widget until Riverpod dep is non-null, then creates `BlocProvider`. |
+| `AppsDirectoryScreen` | `mobile/lib/screens/apps/apps_directory_screen.dart` | `ref.read` on a stable service (no auth-flip risk); no `ValueKey` needed. |
+| `VideoEngagementListScreen` | `mobile/lib/screens/video_engagement/video_engagement_list_screen.dart` | `ref.watch` on auth-sensitive repos with a record `ValueKey` guard; view extracted to `video_engagement_list_view.dart`. |
+
+## Current Bridge Inventory
+
+The following `*BridgeProvider`s are watched in `AppShell.build()` as infrastructure
+side-effects. They are **not** UI state — they are long-lived service wiring that has not yet
+been moved to a dedicated cubit/service lifecycle. Each is annotated with a removal criterion.
+Tracking issue: **#3339**.
+
+| Provider | Purpose | Removal criterion |
+|----------|---------|------------------|
+| `relayStatisticsBridgeProvider` | Records relay connection events for analytics | Remove when relay management moves to a dedicated cubit/service |
+| `relaySetChangeBridgeProvider` | Refreshes feeds when the relay set changes | Remove when feed refresh is driven by a relay event stream in a cubit |
+| `notificationPreferencesDirtySyncBridgeProvider` | Syncs notification preferences on auth change | Remove when `NotificationPreferencesCubit` owns this lifecycle |
+| `blocklistSyncBridgeProvider` | Syncs block/mute list after login | Remove when `BlocklistCubit` owns post-login sync |
 
 ## Migration Model
 ### Principles
@@ -108,12 +179,6 @@ This section is intentionally written as implementation guidance for both humans
 - Emitting many transient states that trigger full subtree rebuilds.
 - Mixing migration with unrelated refactors in the same PR.
 - Keeping temporary Riverpod bridges without TODO/issue linkage.
-
-## How current PRs demonstrate the model
-- **#1908** demonstrates app-level feature bloc migration (`ProfilesBloc`) and replacing bridge providers.
-- **#1894** demonstrates incremental cutover of a specific screen path (`MyProfileBloc` into profile UI).
-- **#1903** demonstrates transitional architecture: repository-first core with temporary compatibility bridges.
-- **#1282** demonstrates focused Riverpod→BLoC migration in a narrower domain (username validation).
 
 ## External references
 - VGV: Why we use flutter_bloc  

@@ -201,20 +201,24 @@ class _AppShellState extends ConsumerState<AppShell> {
     // Initialize auto-cleanup provider to ensure only one video plays at a time
     ref.watch(videoControllerAutoCleanupProvider);
 
-    // Initialize relay statistics bridge to record connection events
+    // Transitional scaffold: records relay connection events for analytics.
+    // TODO(#3339): remove when relay management moves to a dedicated cubit/service.
     ref.watch(relayStatisticsBridgeProvider);
 
-    // Initialize relay set change bridge to refresh feeds when relays are added/removed
+    // Transitional scaffold: refreshes feeds when the relay set changes.
+    // TODO(#3339): remove when feed refresh is driven by a relay event stream in a cubit.
     ref.watch(relaySetChangeBridgeProvider);
 
     // Initialize Zendesk identity sync to keep user identity in sync with auth
     ref.watch(zendeskIdentitySyncProvider);
 
-    // Initialize push notification sync to register FCM token on auth
+    // Transitional scaffold: syncs notification preferences on auth change.
+    // TODO(#3339): remove when NotificationPreferencesCubit owns this lifecycle.
     ref.watch(notificationPreferencesDirtySyncBridgeProvider);
     ref.watch(pushNotificationSyncProvider);
 
-    // Start block/mute list sync once authenticated (handles post-reinstall login)
+    // Transitional scaffold: syncs block/mute list after login.
+    // TODO(#3339): remove when BlocklistCubit owns post-login sync.
     ref.watch(blocklistSyncBridgeProvider);
 
     // Watch page context to determine if back button should show and if on search route
