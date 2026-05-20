@@ -63,8 +63,8 @@ String? extractAddressableId(Event event) {
   return (kind: kind, pubkey: pubkey, dTag: dTag);
 }
 
-/// Normalises a raw FCM [RemoteMessage.data]-style map into the two fields
-/// the deep-link resolver needs.
+/// Normalises a raw push-notification payload map into the two fields the
+/// deep-link resolver needs.
 ///
 /// Translates the wire key `'type'` to `notificationType` so callers see one
 /// shape regardless of whether the payload came from the FCM wire (`type`)
@@ -77,9 +77,8 @@ String? extractAddressableId(Event event) {
 ) {
   final referencedEventId = data['referencedEventId'] as String?;
   if (referencedEventId == null || referencedEventId.isEmpty) return null;
-  // FCM wire payload uses the key 'type'; local-notification JSON uses
-  // 'notificationType'. Normalise here so callers see one shape.
-  final notificationType = data['type'] as String?;
+  final notificationType =
+      data['type'] as String? ?? data['notificationType'] as String?;
   return (
     referencedEventId: referencedEventId,
     notificationType: notificationType,

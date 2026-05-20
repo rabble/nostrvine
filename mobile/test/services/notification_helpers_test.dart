@@ -456,6 +456,28 @@ void main() {
       expect(result.notificationType, equals('reply'));
     });
 
+    test('reads local notification JSON key "notificationType"', () {
+      final result = parseFcmPayload(const {
+        'referencedEventId': 'event_abc',
+        'notificationType': 'reply',
+      });
+
+      expect(result, isNotNull);
+      expect(result!.referencedEventId, equals('event_abc'));
+      expect(result.notificationType, equals('reply'));
+    });
+
+    test('prefers FCM wire key when both type fields are present', () {
+      final result = parseFcmPayload(const {
+        'referencedEventId': 'event_abc',
+        'type': 'mention',
+        'notificationType': 'reply',
+      });
+
+      expect(result, isNotNull);
+      expect(result!.notificationType, equals('mention'));
+    });
+
     test('preserves the full referenced event id without truncation', () {
       const fullEventId =
           '7c4d2eaa1c5f4f0e8b2d1aabcdef1234567890abcdef1234567890abcdef1234';
