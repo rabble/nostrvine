@@ -67,7 +67,6 @@ FlutterSecureStorage flutterSecureStorage(Ref ref) =>
         encryptedSharedPreferences: true,
         resetOnError: true,
       ),
-      mOptions: MacOsOptions(useDataProtectionKeyChain: false),
     );
 
 @Riverpod(keepAlive: true)
