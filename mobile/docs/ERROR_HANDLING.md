@@ -20,27 +20,34 @@ the source of truth.
 ## Canonical examples (read before opening a sweep PR)
 
 - **BLoC multi-site pattern**:
-  `mobile/lib/blocs/video_interactions/video_interactions_bloc.dart`
-  paired with `reportable_sites.dart` — multi-site files lift identifiers into
-  a `*ReportableSites` constants class.
+  [`video_interactions_bloc.dart`](../lib/blocs/video_interactions/video_interactions_bloc.dart)
+  paired with
+  [`reportable_sites.dart`](../lib/blocs/video_interactions/reportable_sites.dart)
+  — multi-site files lift identifiers into a `*ReportableSites` constants
+  class.
 - **Service-layer pattern**:
-  `mobile/lib/services/outgoing_dm_retry_service.dart` with its colocated
-  `outgoing_dm_retry_service_reportable_sites.dart`.
+  [`outgoing_dm_retry_service.dart`](../lib/services/outgoing_dm_retry_service.dart)
+  with its colocated
+  [`outgoing_dm_retry_service_reportable_sites.dart`](../lib/services/outgoing_dm_retry_service_reportable_sites.dart).
 - **Pure-Dart package (reporter port)**:
-  `mobile/packages/dm_repository/lib/src/dm_repository.dart` +
-  `dm_repository_reportable_sites.dart` — the only approved Crashlytics
-  surface for packages that can't depend on `openvine/observability`.
+  [`dm_repository.dart`](../packages/dm_repository/lib/src/dm_repository.dart)
+  +
+  [`dm_repository_reportable_sites.dart`](../packages/dm_repository/lib/src/dm_repository_reportable_sites.dart)
+  — the only approved Crashlytics surface for packages that can't depend on
+  `openvine/observability`.
 - **"Explicitly NOT Reportable" precedent**:
-  `mobile/lib/blocs/my_profile/my_profile_bloc.dart:184` — when the matrix says
-  NO, leave the raw `addError(e, st)` and add an inline comment citing the
-  matrix row.
+  [`my_profile_bloc.dart`](../lib/blocs/my_profile/my_profile_bloc.dart#L186)
+  — when the matrix says NO, leave the raw `addError(e, st)` and add an
+  inline comment citing the rule and decision.
 
 ## Foundation
 
-- `mobile/lib/observability/divine_bloc_observer.dart` — `Bloc.observer`;
+- [`divine_bloc_observer.dart`](../lib/observability/divine_bloc_observer.dart)
+  — `Bloc.observer`;
   forwards Bloc errors to Crashlytics, gated on `ReportableError`.
-- `mobile/lib/observability/reportable_error.dart` — the `ReportableError`
-  marker, the `Reportable<T>` wrapper, and `sanitizeForCrashReport` (strips
-  `npub1…` / `nsec1…` / email identifiers).
-- `mobile/lib/services/crash_reporting_service.dart` — Firebase Crashlytics
-  facade exposing `recordError`, `setCustomKey`, and breadcrumb `log`.
+- [`reportable_error.dart`](../lib/observability/reportable_error.dart) — the
+  `ReportableError` marker, the `Reportable<T>` wrapper, and
+  `sanitizeForCrashReport` (strips `npub1…` / `nsec1…` / email identifiers).
+- [`crash_reporting_service.dart`](../lib/services/crash_reporting_service.dart)
+  — Firebase Crashlytics facade exposing `recordError`, `setCustomKey`, and
+  breadcrumb `log`.
