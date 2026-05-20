@@ -171,11 +171,7 @@ class _TagsPickerViewState extends State<_TagsPickerView> {
 
   void _resetSearchInput() {
     _previousText = '';
-    if (_searchController.text.isNotEmpty) {
-      _searchController.value = const TextEditingValue();
-      return;
-    }
-    context.read<TagsPickerBloc>().add(const TagsPickerQueryChanged(''));
+    _searchController.value = const TextEditingValue();
   }
 
   void _removeTag(String tag) {

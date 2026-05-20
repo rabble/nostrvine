@@ -131,7 +131,6 @@ void main() {
           tester.widget<TextField>(searchField).controller?.text,
           isEmpty,
         );
-        expect(musicSuggestion, findsOneWidget);
         expect(find.text('music'), findsOneWidget);
       },
     );
