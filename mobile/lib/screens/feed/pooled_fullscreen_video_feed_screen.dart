@@ -1465,6 +1465,7 @@ class _PooledFullscreenItemContentState
                 return PooledVideoErrorOverlay(
                   video: video,
                   onRetry: onRetry,
+                  onVerifyAge: () => _verifyAgeForVideo(context, video),
                   errorType: feedErrorType,
                 );
               },

@@ -27,6 +27,7 @@ class PooledVideoErrorOverlay extends ConsumerWidget {
     required this.video,
     required this.onRetry,
     required this.errorType,
+    this.onVerifyAge,
     this.shouldPortraitExpand = true,
     this.isSquare = false,
     super.key,
@@ -34,6 +35,7 @@ class PooledVideoErrorOverlay extends ConsumerWidget {
 
   final VideoEvent video;
   final VoidCallback onRetry;
+  final VoidCallback? onVerifyAge;
   final VideoErrorType? errorType;
 
   /// Mirrors `InfiniteVideoFeed.shouldPortraitExpand`. When `false`, the
@@ -75,30 +77,49 @@ class PooledVideoErrorOverlay extends ConsumerWidget {
     final moderationStatus = moderationAsync?.whenOrNull(
       data: (status) => status,
     );
+    final isModerationAgeRestricted =
+        shouldEnrichNotFoundWithModeration &&
+        moderationStatus != null &&
+        moderationStatus.ageRestricted;
     final isModerationRestricted =
         type == VideoErrorType.forbidden ||
         (shouldEnrichNotFoundWithModeration &&
             moderationStatus != null &&
             moderationStatus.isUnavailableDueToModeration);
+    final isAgeRestricted =
+        type == VideoErrorType.ageRestricted || isModerationAgeRestricted;
 
-    final DivineIconName icon = switch ((type, isModerationRestricted)) {
-      (VideoErrorType.ageRestricted, _) => DivineIconName.lockSimple,
-      (VideoErrorType.notFound, true) => DivineIconName.shieldCheck,
-      (VideoErrorType.notFound, false) => DivineIconName.warningCircle,
-      (_, true) => DivineIconName.shieldCheck,
+    final DivineIconName icon = switch ((
+      type,
+      isAgeRestricted,
+      isModerationRestricted,
+    )) {
+      (_, true, _) => DivineIconName.lockSimple,
+      (VideoErrorType.notFound, false, true) => DivineIconName.shieldCheck,
+      (VideoErrorType.notFound, false, false) => DivineIconName.warningCircle,
+      (_, false, true) => DivineIconName.shieldCheck,
       _ => DivineIconName.warningCircle,
     };
 
-    final message = switch ((type, isModerationRestricted)) {
-      (VideoErrorType.ageRestricted, _) => context.l10n.videoErrorAgeRestricted,
-      (VideoErrorType.notFound, true) =>
+    final message = switch ((type, isAgeRestricted, isModerationRestricted)) {
+      (_, true, _) => context.l10n.videoErrorAgeRestricted,
+      (VideoErrorType.notFound, false, true) =>
         context.l10n.videoErrorContentRestricted,
-      (VideoErrorType.notFound, false) => context.l10n.videoErrorNotFound,
-      (VideoErrorType.forbidden, _) => context.l10n.videoErrorContentRestricted,
-      (VideoErrorType.generic, _) => context.l10n.videoErrorPlayback,
+      (VideoErrorType.notFound, false, false) =>
+        context.l10n.videoErrorNotFound,
+      (VideoErrorType.forbidden, false, _) =>
+        context.l10n.videoErrorContentRestricted,
+      (VideoErrorType.ageRestricted, false, _) =>
+        context.l10n.videoErrorAgeRestricted,
+      (VideoErrorType.generic, false, _) => context.l10n.videoErrorPlayback,
     };
-
-    final showRetry = !isModerationRestricted;
+    final body = isAgeRestricted
+        ? context.l10n.videoErrorVerifyAgeBody
+        : isModerationRestricted
+        ? context.l10n.videoErrorContentRestrictedBody
+        : null;
+    final showVerifyAge = isAgeRestricted && onVerifyAge != null;
+    final showRetry = !isModerationRestricted && !showVerifyAge;
 
     return Stack(
       fit: StackFit.expand,
@@ -130,6 +151,22 @@ class PooledVideoErrorOverlay extends ConsumerWidget {
                   style: VineTheme.bodyMediumFont(),
                   textAlign: TextAlign.center,
                 ),
+                if (body != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Text(
+                      body,
+                      style: VineTheme.bodySmallFont(),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                if (showVerifyAge)
+                  DivineButton(
+                    label: context.l10n.videoErrorVerifyAgeButton,
+                    type: DivineButtonType.tertiary,
+                    size: DivineButtonSize.small,
+                    onPressed: onVerifyAge,
+                  ),
                 if (showRetry)
                   DivineButton(
                     label: context.l10n.videoErrorRetry,

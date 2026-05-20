@@ -23,6 +23,7 @@ void main() {
     late VideoEvent divineVideo;
     late VideoEvent thirdPartyVideo;
     late bool retryPressed;
+    late bool verifyAgePressed;
 
     // Valid 64-char hex sha256 for moderation status resolution.
     const testSha256 =
@@ -38,6 +39,7 @@ void main() {
         videoUrl: 'https://cdn.example.com/video.mp4',
       );
       retryPressed = false;
+      verifyAgePressed = false;
     });
 
     Widget buildWidget({VideoErrorType? errorType, VideoEvent? video}) {
@@ -65,6 +67,7 @@ void main() {
       required VideoErrorType? errorType,
       required VideoModerationStatus moderationStatus,
       VideoEvent? video,
+      VoidCallback? onVerifyAge,
     }) {
       return ProviderScope(
         overrides: [
@@ -79,6 +82,7 @@ void main() {
             body: PooledVideoErrorOverlay(
               video: video ?? divineVideo,
               onRetry: () => retryPressed = true,
+              onVerifyAge: onVerifyAge,
               errorType: errorType,
             ),
           ),
@@ -186,6 +190,39 @@ void main() {
 
           expect(_findDivineIcon(DivineIconName.shieldCheck), findsOneWidget);
           expect(find.text('Content restricted'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'shows age-gated explanation and verify action when moderation status is ageRestricted',
+        (tester) async {
+          await tester.pumpWidget(
+            buildWidgetWithModeration(
+              errorType: VideoErrorType.notFound,
+              moderationStatus: const VideoModerationStatus(
+                moderated: true,
+                blocked: false,
+                quarantined: false,
+                ageRestricted: true,
+                needsReview: false,
+                aiGenerated: false,
+              ),
+              onVerifyAge: () => verifyAgePressed = true,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('Age-restricted content'), findsOneWidget);
+          expect(
+            find.text('Verify your age to view this video.'),
+            findsOneWidget,
+          );
+          expect(find.text('Verify age'), findsOneWidget);
+          expect(find.text('Retry'), findsNothing);
+
+          await tester.tap(find.text('Verify age'));
+
+          expect(verifyAgePressed, isTrue);
         },
       );
 

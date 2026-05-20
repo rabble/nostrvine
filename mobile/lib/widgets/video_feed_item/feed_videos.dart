@@ -289,6 +289,12 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
           return PooledVideoErrorOverlay(
             video: video,
             onRetry: onRetry,
+            onVerifyAge: () => retryAgeRestrictedPooledVideo(
+              context: context,
+              ref: ref,
+              video: video,
+              index: index,
+            ),
             errorType: errorType,
             shouldPortraitExpand: widget.shouldPortraitExpand,
             isSquare: isSquare,
@@ -802,7 +808,7 @@ class _FeedLoadingOrRestrictedOverlay extends ConsumerWidget {
   }
 }
 
-class _FeedLoadingOrRestrictedOverlayView extends StatelessWidget {
+class _FeedLoadingOrRestrictedOverlayView extends ConsumerWidget {
   const _FeedLoadingOrRestrictedOverlayView({
     required this.video,
     required this.index,
@@ -818,7 +824,7 @@ class _FeedLoadingOrRestrictedOverlayView extends StatelessWidget {
   final bool shouldPortraitExpand;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isRestricted = context.select(
       (FeedLoadingModerationCubit c) => c.state.isRestricted,
     );
@@ -828,6 +834,12 @@ class _FeedLoadingOrRestrictedOverlayView extends StatelessWidget {
         video: video,
         // Retry is hidden for moderation-restricted content.
         onRetry: () {},
+        onVerifyAge: () => retryAgeRestrictedPooledVideo(
+          context: context,
+          ref: ref,
+          video: video,
+          index: index,
+        ),
         errorType: VideoErrorType.notFound,
         shouldPortraitExpand: shouldPortraitExpand,
         isSquare: isSquare,

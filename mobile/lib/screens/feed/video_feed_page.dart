@@ -30,6 +30,7 @@ import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_error_listener.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
 import 'package:openvine/screens/feed/feed_video_overlay.dart';
+import 'package:openvine/screens/feed/pooled_age_restricted_retry.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/utils/pooled_player_logger.dart';
@@ -1264,10 +1265,18 @@ class _PooledVideoFeedItemContentState
             WidgetsBinding.instance.addPostFrameCallback((_) {
               cubit.report(video.id, playbackStatusFromError(feedErrorType));
             });
-            return PooledVideoErrorOverlay(
-              video: video,
-              onRetry: onRetry,
-              errorType: feedErrorType,
+            return Consumer(
+              builder: (context, ref, _) => PooledVideoErrorOverlay(
+                video: video,
+                onRetry: onRetry,
+                onVerifyAge: () => retryAgeRestrictedPooledVideo(
+                  context: context,
+                  ref: ref,
+                  video: video,
+                  index: widget.index,
+                ),
+                errorType: feedErrorType,
+              ),
             );
           },
           overlayBuilder: (context, videoController, player, feedController) =>
