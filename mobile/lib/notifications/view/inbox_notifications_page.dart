@@ -39,7 +39,14 @@ class InboxNotificationsPage extends ConsumerWidget {
     }
     final followRepository = ref.watch(followRepositoryProvider);
 
+    // Key on the repository identity so the bloc rebuilds when the
+    // underlying repository swaps (account switch, sign-out → sign-in).
+    // The upstream KeyedSubtree in `inbox_view.dart` already forces this
+    // subtree to remount on pubkey change today, but pinning the contract
+    // here keeps the page safe even if the inbox scaffold is restructured.
+    // See `.claude/rules/state_management.md`.
     return BlocProvider(
+      key: ValueKey(notificationRepository),
       create: (_) => NotificationFeedBloc(
         notificationRepository: notificationRepository,
         followRepository: followRepository,
