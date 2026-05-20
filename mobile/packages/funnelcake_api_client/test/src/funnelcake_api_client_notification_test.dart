@@ -431,7 +431,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => http.Response(
-            jsonEncode({'success': true, 'marked_count': 5}),
+            jsonEncode({'marked_count': 5, 'marked_all': true}),
             200,
           ),
         );
@@ -463,7 +463,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => http.Response(
-            jsonEncode({'success': true, 'marked_count': 0}),
+            jsonEncode({'marked_count': 0, 'marked_all': true}),
             200,
           ),
         );
@@ -493,7 +493,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => http.Response(
-            jsonEncode({'success': true, 'marked_count': 2}),
+            jsonEncode({'marked_count': 2, 'marked_all': false}),
             200,
           ),
         );
@@ -588,25 +588,38 @@ void main() {
         );
       });
 
-      test('parses successful mark-read response', () async {
-        when(
-          () => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).thenAnswer(
-          (_) async => http.Response(
-            jsonEncode({'success': true, 'marked_count': 10}),
-            200,
-          ),
-        );
+      test(
+        'parses real funnelcake response shape (no `success` field) as '
+        'success',
+        () async {
+          // Per https://relay.divine.video/docs/llm-guide, the server
+          // returns {"marked_count": N, "marked_all": bool} on success and
+          // does NOT send a `success` field. PR #4271 introduced the
+          // soft-failure throw against a synthetic `success: true` field
+          // that never actually arrives — pre-PR this caused every
+          // mark-read call to throw and the repository to roll back the
+          // optimistic snapshot.
+          when(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer(
+            (_) async => http.Response(
+              jsonEncode({'marked_count': 10, 'marked_all': true}),
+              200,
+            ),
+          );
 
-        final response = await client.markNotificationsRead(pubkey: testPubkey);
+          final response = await client.markNotificationsRead(
+            pubkey: testPubkey,
+          );
 
-        expect(response.success, isTrue);
-        expect(response.markedCount, equals(10));
-      });
+          expect(response.success, isTrue);
+          expect(response.markedCount, equals(10));
+        },
+      );
 
       test(
         'throws FunnelcakeApiException on 200 with success: false',

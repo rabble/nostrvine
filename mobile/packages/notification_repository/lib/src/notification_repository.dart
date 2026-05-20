@@ -19,6 +19,21 @@ import 'package:rxdart/rxdart.dart' hide NotificationKind;
 import 'package:text_sanitizer/text_sanitizer.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+/// Callback that returns NIP-98 auth headers for an outgoing request.
+///
+/// The repository invokes this with the **full** URL the request will use
+/// (scheme + host + path + query) and the HTTP method. For requests with
+/// a body, [body] is the exact byte-identical JSON the request will send
+/// so the implementation can compute the matching `payload` tag — passing
+/// an empty body for a POST/PUT/PATCH causes the server to 401 with
+/// `payload hash mismatch`.
+typedef AuthHeadersProvider =
+    Future<Map<String, String>> Function(
+      String url,
+      String method, {
+      String? body,
+    });
+
 /// Maximum length for comment preview text before truncation.
 const _maxCommentLength = 50;
 
@@ -77,8 +92,7 @@ class NotificationRepository {
     required NotificationsDao notificationsDao,
     required String userPubkey,
     BlockedNotificationFilter? blockFilter,
-    Future<Map<String, String>> Function(String url, String method)?
-    authHeadersProvider,
+    AuthHeadersProvider? authHeadersProvider,
     bool hydrateOnStart = true,
   }) : _funnelcakeApiClient = funnelcakeApiClient,
        _profileRepository = profileRepository,
@@ -96,8 +110,7 @@ class NotificationRepository {
   final NotificationsDao _notificationsDao;
   final String _userPubkey;
   final BlockedNotificationFilter? _blockFilter;
-  final Future<Map<String, String>> Function(String url, String method)?
-  _authHeadersProvider;
+  final AuthHeadersProvider? _authHeadersProvider;
 
   /// Last cursor returned by the API, used for pagination.
   String? _lastCursor;
@@ -523,11 +536,17 @@ class NotificationRepository {
     final notificationIds = _expandServerNotificationIds(before.items, idSet);
 
     try {
+      // Sign the exact URL + body the request will use, otherwise the
+      // funnelcake server 401s with `URL mismatch` / `payload hash
+      // mismatch` and the rollback bounces the badge back to N.
+      final url = _funnelcakeApiClient
+          .notificationsReadUri(pubkey: _userPubkey)
+          .toString();
+      final body = FunnelcakeApiClient.buildMarkNotificationsReadBody(
+        notificationIds: notificationIds,
+      );
       final authHeaders = _authHeadersProvider != null
-          ? await _authHeadersProvider(
-              '/api/users/$_userPubkey/notifications/read',
-              'POST',
-            )
+          ? await _authHeadersProvider(url, 'POST', body: body)
           : <String, String>{};
 
       await _funnelcakeApiClient.markNotificationsRead(
@@ -559,11 +578,12 @@ class NotificationRepository {
     _snapshot.add(before.copyWith(items: _flipAllRead(before.items)));
 
     try {
+      final url = _funnelcakeApiClient
+          .notificationsReadUri(pubkey: _userPubkey)
+          .toString();
+      final body = FunnelcakeApiClient.buildMarkNotificationsReadBody();
       final authHeaders = _authHeadersProvider != null
-          ? await _authHeadersProvider(
-              '/api/users/$_userPubkey/notifications/read',
-              'POST',
-            )
+          ? await _authHeadersProvider(url, 'POST', body: body)
           : <String, String>{};
 
       await _funnelcakeApiClient.markNotificationsRead(

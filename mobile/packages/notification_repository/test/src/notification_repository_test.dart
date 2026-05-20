@@ -74,6 +74,16 @@ void main() {
         'https://api.example.com/api/users/$pubkey/notifications',
       ).replace(queryParameters: queryParameters);
     });
+    when(
+      () => funnelcakeApiClient.notificationsReadUri(
+        pubkey: any(named: 'pubkey'),
+      ),
+    ).thenAnswer((invocation) {
+      final pubkey = invocation.namedArguments[#pubkey] as String;
+      return Uri.parse(
+        'https://api.example.com/api/users/$pubkey/notifications/read',
+      );
+    });
     // Default: getVideoStats throws (no metadata fetched). Tests that need a
     // thumbnail override this stub explicitly.
     when(
@@ -215,7 +225,7 @@ void main() {
           profileRepository: profileRepository,
           notificationsDao: notificationsDao,
           userPubkey: userPubkey,
-          authHeadersProvider: (url, method) async {
+          authHeadersProvider: (url, method, {body}) async {
             signedUrl = url;
             signedMethod = method;
             return {'Authorization': 'Nostr test-token'};
@@ -244,7 +254,7 @@ void main() {
           profileRepository: profileRepository,
           notificationsDao: notificationsDao,
           userPubkey: userPubkey,
-          authHeadersProvider: (url, method) async {
+          authHeadersProvider: (url, method, {body}) async {
             signedUrl = url;
             return {'Authorization': 'Nostr test-token'};
           },
@@ -275,7 +285,7 @@ void main() {
             profileRepository: profileRepository,
             notificationsDao: notificationsDao,
             userPubkey: userPubkey,
-            authHeadersProvider: (url, method) async {
+            authHeadersProvider: (url, method, {body}) async {
               signedUrl = url;
               return {'Authorization': 'Nostr test-token'};
             },
@@ -311,7 +321,7 @@ void main() {
           profileRepository: profileRepository,
           notificationsDao: notificationsDao,
           userPubkey: userPubkey,
-          authHeadersProvider: (url, method) async {
+          authHeadersProvider: (url, method, {body}) async {
             signedUrl = url;
             return {'Authorization': 'Nostr test-token'};
           },
@@ -636,7 +646,7 @@ void main() {
             profileRepository: profileRepository,
             notificationsDao: notificationsDao,
             userPubkey: userPubkey,
-            authHeadersProvider: (url, method) async {
+            authHeadersProvider: (url, method, {body}) async {
               signedUrl = url;
               return {'Authorization': 'Nostr test-token'};
             },
@@ -672,7 +682,7 @@ void main() {
             profileRepository: profileRepository,
             notificationsDao: notificationsDao,
             userPubkey: userPubkey,
-            authHeadersProvider: (url, method) async {
+            authHeadersProvider: (url, method, {body}) async {
               signedUrl = url;
               return {'Authorization': 'Nostr test-token'};
             },
@@ -1840,7 +1850,7 @@ void main() {
             profileRepository: profileRepository,
             notificationsDao: notificationsDao,
             userPubkey: userPubkey,
-            authHeadersProvider: (url, method) async {
+            authHeadersProvider: (url, method, {body}) async {
               if (method == 'POST') {
                 throw Exception('signer unavailable');
               }
@@ -1963,7 +1973,7 @@ void main() {
             profileRepository: profileRepository,
             notificationsDao: notificationsDao,
             userPubkey: userPubkey,
-            authHeadersProvider: (url, method) async {
+            authHeadersProvider: (url, method, {body}) async {
               if (method == 'POST') {
                 throw Exception('signer unavailable');
               }
@@ -2008,7 +2018,7 @@ void main() {
           profileRepository: profileRepository,
           notificationsDao: notificationsDao,
           userPubkey: userPubkey,
-          authHeadersProvider: (url, method) async => {
+          authHeadersProvider: (url, method, {body}) async => {
             'Authorization': 'Nostr abc123',
           },
         );
@@ -2028,6 +2038,135 @@ void main() {
           ),
         ).called(1);
       });
+
+      test(
+        'markAllAsRead signs the full mark-read URL and empty body',
+        () async {
+          // NIP-98 requires the auth event's `u` tag to match the
+          // request URL exactly (scheme + host + path) and the
+          // `payload` tag to be sha256 of the actual body. Pinning the
+          // exact (url, body) tuple passed to the auth callback catches
+          // any future drift to a path-only URL or empty payload —
+          // both of which silently 401 the server and bounce the
+          // notifications badge back up via the repository rollback.
+          String? capturedUrl;
+          String? capturedMethod;
+          String? capturedBody;
+          when(
+            () => funnelcakeApiClient.notificationsReadUri(pubkey: userPubkey),
+          ).thenReturn(
+            Uri.parse(
+              'https://api.divine.video/api/users/$userPubkey/'
+              'notifications/read',
+            ),
+          );
+          when(
+            () => funnelcakeApiClient.markNotificationsRead(
+              pubkey: userPubkey,
+              notificationIds: any(named: 'notificationIds'),
+              authHeaders: any(named: 'authHeaders'),
+            ),
+          ).thenAnswer(
+            (_) async => const MarkReadResponse(success: true, markedCount: 1),
+          );
+          when(
+            () => notificationsDao.markAllAsRead(),
+          ).thenAnswer((_) async => 1);
+
+          final authRepo = NotificationRepository(
+            funnelcakeApiClient: funnelcakeApiClient,
+            profileRepository: profileRepository,
+            notificationsDao: notificationsDao,
+            userPubkey: userPubkey,
+            authHeadersProvider: (url, method, {body}) async {
+              capturedUrl = url;
+              capturedMethod = method;
+              capturedBody = body;
+              return {'Authorization': 'Nostr signed-token'};
+            },
+          );
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+          });
+          stubNotifications([makeNotification()], unreadCount: 1);
+          await authRepo.refresh();
+
+          await authRepo.markAllAsRead();
+
+          expect(
+            capturedUrl,
+            equals(
+              'https://api.divine.video/api/users/$userPubkey/'
+              'notifications/read',
+            ),
+          );
+          expect(capturedMethod, equals('POST'));
+          // FunnelcakeApiClient.buildMarkNotificationsReadBody() with
+          // no ids should produce `{}` — the exact bytes the request
+          // body will carry.
+          expect(capturedBody, equals('{}'));
+        },
+      );
+
+      test(
+        'markAsRead signs the body that includes the notification IDs',
+        () async {
+          String? capturedBody;
+          when(
+            () => funnelcakeApiClient.notificationsReadUri(pubkey: userPubkey),
+          ).thenReturn(
+            Uri.parse(
+              'https://api.divine.video/api/users/$userPubkey/'
+              'notifications/read',
+            ),
+          );
+          when(
+            () => funnelcakeApiClient.markNotificationsRead(
+              pubkey: userPubkey,
+              notificationIds: any(named: 'notificationIds'),
+              authHeaders: any(named: 'authHeaders'),
+            ),
+          ).thenAnswer(
+            (_) async => const MarkReadResponse(success: true, markedCount: 1),
+          );
+          when(
+            () => notificationsDao.markAsRead(any()),
+          ).thenAnswer((_) async => true);
+
+          final authRepo = NotificationRepository(
+            funnelcakeApiClient: funnelcakeApiClient,
+            profileRepository: profileRepository,
+            notificationsDao: notificationsDao,
+            userPubkey: userPubkey,
+            authHeadersProvider: (url, method, {body}) async {
+              capturedBody = body;
+              return {'Authorization': 'Nostr signed-token'};
+            },
+          );
+          stubProfiles({
+            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+          });
+          // Use a single notification whose id is both the row id and
+          // the expanded server notification id (the expansion in
+          // `_expandServerNotificationIds` falls back to the row id
+          // when the row carries no separate `notificationIds`).
+          stubNotifications([
+            makeNotification(id: 'server-notif-1', sourceEventId: 'evt-1'),
+          ], unreadCount: 1);
+          await authRepo.refresh();
+          final loadedId =
+              (await authRepo.watchSnapshot().first).items.first.id;
+
+          await authRepo.markAsRead([loadedId]);
+
+          // The expanded notification IDs end up in both the request
+          // body the client posts and the `payload` tag the NIP-98
+          // auth event signs — they must match byte-for-byte.
+          expect(capturedBody, isNotNull);
+          expect(capturedBody, contains('notification_ids'));
+          expect(capturedBody, contains('server-notif-1'));
+        },
+      );
     });
 
     group('sorting', () {

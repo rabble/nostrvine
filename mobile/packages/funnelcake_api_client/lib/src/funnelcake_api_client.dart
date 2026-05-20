@@ -200,6 +200,29 @@ class FunnelcakeApiClient {
     ).replace(queryParameters: queryParams);
   }
 
+  /// Returns the full mark-notifications-read URI for the given user.
+  ///
+  /// Callers building NIP-98 auth headers must sign the same URL that the
+  /// HTTP request will use, including scheme + host. Use this helper to
+  /// avoid signing a path-only URL while the request goes out to a full
+  /// origin (the resulting `URL mismatch` 401 is the precise failure mode
+  /// PR #4034's rollback semantics treat as a hard failure).
+  Uri notificationsReadUri({required String pubkey}) =>
+      Uri.parse('$_baseUrl/api/users/$pubkey/notifications/read');
+
+  /// Builds the JSON body sent to [markNotificationsRead].
+  ///
+  /// Exposed so callers building NIP-98 auth headers can hash the exact
+  /// bytes that will land in the POST body — otherwise the auth event's
+  /// `payload` tag drifts from the request body and the server rejects
+  /// with `payload hash mismatch`.
+  ///
+  /// Passing `null` (or omitting [notificationIds]) marks all of the
+  /// user's unread notifications as read, per the funnelcake docs.
+  static String buildMarkNotificationsReadBody({
+    List<String>? notificationIds,
+  }) => jsonEncode({'notification_ids': ?notificationIds});
+
   /// Fetches videos by a specific author.
   ///
   /// [pubkey] is the author's public key (hex format).
@@ -2329,9 +2352,11 @@ class FunnelcakeApiClient {
       throw const FunnelcakeNotConfiguredException();
     }
 
-    final url = Uri.parse('$_baseUrl/api/users/$pubkey/notifications/read');
+    final url = notificationsReadUri(pubkey: pubkey);
 
-    final payload = jsonEncode({'notification_ids': ?notificationIds});
+    final payload = buildMarkNotificationsReadBody(
+      notificationIds: notificationIds,
+    );
 
     try {
       final response = await _httpClient

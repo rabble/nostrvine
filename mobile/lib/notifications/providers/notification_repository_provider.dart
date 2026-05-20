@@ -46,7 +46,7 @@ final notificationRepositoryProvider = Provider<NotificationRepository?>((ref) {
     notificationsDao: db.notificationsDao,
     userPubkey: userPubkey,
     blockFilter: blocklistRepository.shouldFilterFromFeeds,
-    authHeadersProvider: (url, method) async {
+    authHeadersProvider: (url, method, {body}) async {
       final httpMethod = switch (method.toUpperCase()) {
         'POST' => HttpMethod.post,
         'PUT' => HttpMethod.put,
@@ -54,9 +54,13 @@ final notificationRepositoryProvider = Provider<NotificationRepository?>((ref) {
         'PATCH' => HttpMethod.patch,
         _ => HttpMethod.get,
       };
+      // Forward the request body so the NIP-98 `payload` tag hashes the
+      // bytes the request actually sends — without this the server 401s
+      // with `payload hash mismatch` and mark-read silently rolls back.
       final token = await nip98AuthService.createAuthToken(
         url: url,
         method: httpMethod,
+        payload: body,
       );
       if (token == null) return <String, String>{};
       return {'Authorization': token.authorizationHeader};

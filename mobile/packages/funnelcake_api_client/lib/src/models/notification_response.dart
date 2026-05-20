@@ -53,11 +53,21 @@ class MarkReadResponse {
   });
 
   /// Parses the REST response body into a typed mark-read payload.
+  ///
+  /// The funnelcake server returns `{"marked_count": N, "marked_all": bool}`
+  /// on success and `{"error": "..."}` on soft-failure. The `success` field
+  /// that #4271 introduced was speculative — the real funnelcake response
+  /// never sends it, so defaulting to `false` made every successful 200
+  /// parse as a soft-failure (badge bounce-back from the repository
+  /// rollback). Accept the explicit `success` value when present (for
+  /// forward-compat with a server that adopts the field), otherwise derive
+  /// it from the absence of `error`.
   factory MarkReadResponse.fromJson(Map<String, dynamic> json) {
+    final error = json['error'] as String?;
     return MarkReadResponse(
-      success: json['success'] as bool? ?? false,
+      success: (json['success'] as bool?) ?? (error == null),
       markedCount: json['marked_count'] as int? ?? 0,
-      error: json['error'] as String?,
+      error: error,
     );
   }
 
