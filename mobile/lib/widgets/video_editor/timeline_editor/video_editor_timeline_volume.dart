@@ -166,6 +166,8 @@ class _VolumeArcState extends State<_VolumeArc> {
   /// non-zero value the user actually heard.
   double _lastUnmutedVolume = 1.0;
 
+  bool _isDragging = false;
+
   @override
   void initState() {
     super.initState();
@@ -178,7 +180,7 @@ class _VolumeArcState extends State<_VolumeArc> {
   @override
   void didUpdateWidget(_VolumeArc oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.volume != widget.volume) {
+    if (!_isDragging && oldWidget.volume != widget.volume) {
       _localVolume = widget.volume;
       if (widget.volume > 0) {
         _lastUnmutedVolume = widget.volume;
@@ -202,6 +204,7 @@ class _VolumeArcState extends State<_VolumeArc> {
   void _onPanStart(DragStartDetails d) {
     _dragRangePx = math.min(160, MediaQuery.sizeOf(context).width * 0.9);
     _panStart = d.localPosition;
+    _isDragging = true;
     // Snap to full volume immediately so the gesture starts from a known
     // reference point: finger down = 100%.
     if (_localVolume != 1.0) {
@@ -253,6 +256,7 @@ class _VolumeArcState extends State<_VolumeArc> {
             onPanStart: _onPanStart,
             onPanUpdate: _onPanUpdate,
             onPanEnd: (_) {
+              _isDragging = false;
               if (_localVolume > 0) {
                 _lastUnmutedVolume = _localVolume;
               }

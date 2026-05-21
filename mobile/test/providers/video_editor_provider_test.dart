@@ -348,8 +348,6 @@ void main() {
             ({
               required clips,
               required editorStateHistory,
-              originalAudioVolume = 1.0,
-              customAudioVolume = 1.0,
               aiTrainingOptOut = true,
               parameters,
               taskId,
@@ -379,8 +377,6 @@ void main() {
             ({
               required clips,
               required editorStateHistory,
-              originalAudioVolume = 1.0,
-              customAudioVolume = 1.0,
               aiTrainingOptOut = true,
               parameters,
               taskId,
@@ -413,8 +409,6 @@ void main() {
             ({
               required clips,
               required editorStateHistory,
-              originalAudioVolume = 1.0,
-              customAudioVolume = 1.0,
               aiTrainingOptOut = true,
               parameters,
               taskId,
@@ -489,8 +483,6 @@ void main() {
             ({
               required clips,
               required editorStateHistory,
-              originalAudioVolume = 1.0,
-              customAudioVolume = 1.0,
               aiTrainingOptOut = true,
               parameters,
               taskId,
@@ -556,8 +548,6 @@ void main() {
             ({
               required clips,
               required editorStateHistory,
-              originalAudioVolume = 1.0,
-              customAudioVolume = 1.0,
               aiTrainingOptOut = true,
               parameters,
               taskId,
@@ -593,8 +583,6 @@ void main() {
             ({
               required clips,
               required editorStateHistory,
-              originalAudioVolume = 1.0,
-              customAudioVolume = 1.0,
               aiTrainingOptOut = true,
               parameters,
               taskId,
