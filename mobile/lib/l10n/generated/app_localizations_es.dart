@@ -4091,6 +4091,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get notificationsUnreadPrefix => 'Notificación no leída';
 
   @override
+  String notificationsBadgeUnread(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count unread notifications',
+      one: '1 unread notification',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String notificationsViewProfileSemanticLabel(String displayName) {
     return 'Ver perfil de $displayName';
   }
@@ -6767,9 +6778,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoEditorAudioLabel => 'Audio';
 
   @override
-  String get videoEditorVolumeLabel => 'Volume';
-
-  @override
   String get videoEditorAddTitle => 'Agregar';
 
   @override
@@ -6894,9 +6902,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => 'Audio grabado';
 
   @override
-  String get videoEditorCustomAudioLabel => 'Custom audio';
-
-  @override
   String get videoEditorPlaySemanticLabel => 'Reproducir';
 
   @override
@@ -6907,6 +6912,25 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get videoEditorUnmuteAudioSemanticLabel => 'Activar audio';
+
+  @override
+  String get videoEditorVolumeSemanticLabel => 'Ajustar volumen';
+
+  @override
+  String videoEditorTimelineVolumePreview(int percent) {
+    return 'Volumen $percent%';
+  }
+
+  @override
+  String get videoEditorTimelineSlideToAdjust => 'Desliza para ajustar';
+
+  @override
+  String get videoEditorOriginalAudioLabel => 'Audio original';
+
+  @override
+  String videoEditorClipVolumeLabel(int index) {
+    return 'Clip $index';
+  }
 
   @override
   String get videoEditorDeleteLabel => 'Eliminar';

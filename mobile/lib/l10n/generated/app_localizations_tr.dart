@@ -4025,6 +4025,17 @@ class AppLocalizationsTr extends AppLocalizations {
   String get notificationsUnreadPrefix => 'Okunmamış bildirim';
 
   @override
+  String notificationsBadgeUnread(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count unread notifications',
+      one: '1 unread notification',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String notificationsViewProfileSemanticLabel(String displayName) {
     return '$displayName profilini görüntüle';
   }
@@ -6674,9 +6685,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorAudioLabel => 'Ses';
 
   @override
-  String get videoEditorVolumeLabel => 'Volume';
-
-  @override
   String get videoEditorAddTitle => 'Ekle';
 
   @override
@@ -6798,9 +6806,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => 'Kaydedilmiş ses';
 
   @override
-  String get videoEditorCustomAudioLabel => 'Custom audio';
-
-  @override
   String get videoEditorPlaySemanticLabel => 'Oynat';
 
   @override
@@ -6811,6 +6816,25 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoEditorUnmuteAudioSemanticLabel => 'Sesi aç';
+
+  @override
+  String get videoEditorVolumeSemanticLabel => 'Sesi ayarla';
+
+  @override
+  String videoEditorTimelineVolumePreview(int percent) {
+    return 'Ses seviyesi $percent%';
+  }
+
+  @override
+  String get videoEditorTimelineSlideToAdjust => 'Ayarlamak için kaydır';
+
+  @override
+  String get videoEditorOriginalAudioLabel => 'Orijinal ses';
+
+  @override
+  String videoEditorClipVolumeLabel(int index) {
+    return 'Klip $index';
+  }
 
   @override
   String get videoEditorDeleteLabel => 'Sil';

@@ -3956,6 +3956,17 @@ class AppLocalizationsAm extends AppLocalizations {
   String get notificationsUnreadPrefix => 'ያልተነበበ ማስታወቂያ';
 
   @override
+  String notificationsBadgeUnread(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count unread notifications',
+      one: '1 unread notification',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String notificationsViewProfileSemanticLabel(String displayName) {
     return 'የ$displayName መገለጫ ይመልከቱ';
   }
@@ -6560,9 +6571,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorAudioLabel => 'ኦዲዮ';
 
   @override
-  String get videoEditorVolumeLabel => 'Volume';
-
-  @override
   String get videoEditorAddTitle => 'አክል';
 
   @override
@@ -6684,9 +6692,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => 'የተቀዳ ኦዲዮ';
 
   @override
-  String get videoEditorCustomAudioLabel => 'Custom audio';
-
-  @override
   String get videoEditorPlaySemanticLabel => 'ይጫወቱ';
 
   @override
@@ -6697,6 +6702,25 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoEditorUnmuteAudioSemanticLabel => 'የድምጽ ድምጸ-ከል አንሳ';
+
+  @override
+  String get videoEditorVolumeSemanticLabel => 'ድምጽ አስተካክል';
+
+  @override
+  String videoEditorTimelineVolumePreview(int percent) {
+    return 'ድምጽ $percent%';
+  }
+
+  @override
+  String get videoEditorTimelineSlideToAdjust => 'ለማስተካከል ያንሸራትቱ';
+
+  @override
+  String get videoEditorOriginalAudioLabel => 'ዋናው ኦዲዮ';
+
+  @override
+  String videoEditorClipVolumeLabel(int index) {
+    return 'ቅንጥብ $index';
+  }
 
   @override
   String get videoEditorDeleteLabel => 'ሰርዝ';

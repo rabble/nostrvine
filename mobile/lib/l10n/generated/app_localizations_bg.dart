@@ -4090,6 +4090,17 @@ class AppLocalizationsBg extends AppLocalizations {
   String get notificationsUnreadPrefix => 'Непрочетено известие';
 
   @override
+  String notificationsBadgeUnread(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count unread notifications',
+      one: '1 unread notification',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String notificationsViewProfileSemanticLabel(String displayName) {
     return 'Виж профила на $displayName';
   }
@@ -6767,9 +6778,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorAudioLabel => 'Аудио';
 
   @override
-  String get videoEditorVolumeLabel => 'Volume';
-
-  @override
   String get videoEditorAddTitle => 'Добави';
 
   @override
@@ -6894,9 +6902,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => 'Записано аудио';
 
   @override
-  String get videoEditorCustomAudioLabel => 'Custom audio';
-
-  @override
   String get videoEditorPlaySemanticLabel => 'Играйте';
 
   @override
@@ -6907,6 +6912,25 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get videoEditorUnmuteAudioSemanticLabel => 'Включване на звука';
+
+  @override
+  String get videoEditorVolumeSemanticLabel => 'Регулиране на силата на звука';
+
+  @override
+  String videoEditorTimelineVolumePreview(int percent) {
+    return 'Сила на звука $percent%';
+  }
+
+  @override
+  String get videoEditorTimelineSlideToAdjust => 'Плъзнете за регулиране';
+
+  @override
+  String get videoEditorOriginalAudioLabel => 'Оригинален звук';
+
+  @override
+  String videoEditorClipVolumeLabel(int index) {
+    return 'Клип $index';
+  }
 
   @override
   String get videoEditorDeleteLabel => 'Изтрий';

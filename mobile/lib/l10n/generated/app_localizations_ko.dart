@@ -3863,6 +3863,17 @@ class AppLocalizationsKo extends AppLocalizations {
   String get notificationsUnreadPrefix => '읽지 않은 알림';
 
   @override
+  String notificationsBadgeUnread(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count unread notifications',
+      one: '1 unread notification',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String notificationsViewProfileSemanticLabel(String displayName) {
     return '$displayName님의 프로필 보기';
   }
@@ -6445,9 +6456,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorAudioLabel => '오디오';
 
   @override
-  String get videoEditorVolumeLabel => 'Volume';
-
-  @override
   String get videoEditorAddTitle => '추가';
 
   @override
@@ -6568,9 +6576,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => '녹음된 오디오';
 
   @override
-  String get videoEditorCustomAudioLabel => 'Custom audio';
-
-  @override
   String get videoEditorPlaySemanticLabel => '재생';
 
   @override
@@ -6581,6 +6586,25 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoEditorUnmuteAudioSemanticLabel => '오디오 음소거 해제';
+
+  @override
+  String get videoEditorVolumeSemanticLabel => '볼륨 조절';
+
+  @override
+  String videoEditorTimelineVolumePreview(int percent) {
+    return '볼륨 $percent%';
+  }
+
+  @override
+  String get videoEditorTimelineSlideToAdjust => '슬라이드하여 조절';
+
+  @override
+  String get videoEditorOriginalAudioLabel => '원본 오디오';
+
+  @override
+  String videoEditorClipVolumeLabel(int index) {
+    return '클립 $index';
+  }
 
   @override
   String get videoEditorDeleteLabel => '삭제';
