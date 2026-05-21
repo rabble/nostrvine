@@ -3,11 +3,25 @@
 
 import 'dart:convert';
 
+import 'package:bloc/bloc.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/dm/conversation_mute/conversation_mute_cubit.dart';
+import 'package:openvine/observability/reportable_error.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+class _CapturingBlocObserver extends BlocObserver {
+  _CapturingBlocObserver(this.errors);
+
+  final List<Object> errors;
+
+  @override
+  void onError(BlocBase<dynamic> bloc, Object error, StackTrace stackTrace) {
+    errors.add(error);
+    super.onError(bloc, error, stackTrace);
+  }
+}
 
 class _MockSharedPreferences extends Mock implements SharedPreferences {}
 
@@ -71,6 +85,34 @@ void main() {
         expect(cubit.state.mutedIds, isEmpty);
         addTearDown(cubit.close);
       });
+
+      test(
+        'wraps `TypeError` from `cast<String>()` in Reportable — '
+        'matrix-YES, invariant (stored shape is wrong)',
+        () {
+          when(
+            () => mockPrefs.getString('muted_conversations'),
+          ).thenReturn(jsonEncode([1, 2, 3]));
+
+          final errors = <Object>[];
+          final originalObserver = Bloc.observer;
+          Bloc.observer = _CapturingBlocObserver(errors);
+          addTearDown(() {
+            Bloc.observer = originalObserver;
+          });
+
+          final cubit = buildCubit();
+          addTearDown(cubit.close);
+
+          expect(errors, hasLength(1));
+          expect(errors.single, isA<Reportable<Object>>());
+          expect(
+            (errors.single as Reportable<Object>).unwrap(),
+            isA<TypeError>(),
+          );
+          expect(cubit.state.mutedIds, isEmpty);
+        },
+      );
     });
 
     group('toggleMute', () {

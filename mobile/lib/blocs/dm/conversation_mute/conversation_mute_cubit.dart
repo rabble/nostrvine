@@ -5,6 +5,7 @@ import 'dart:convert';
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:openvine/observability/reportable_error.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -72,10 +73,8 @@ class ConversationMuteCubit extends Cubit<ConversationMuteState> {
     try {
       await _save(muted);
     } catch (e, stackTrace) {
-      // SharedPreferences write failures are expected IO (disk pressure
-      // / sandbox restrictions). Per .claude/rules/error_handling.md
-      // they are NOT Reportable — the UI rolls back optimistic state
-      // and surfaces `ConversationMuteStatus.error`.
+      // SharedPreferences IO failures are expected. Per
+      // .claude/rules/error_handling.md they are NOT Reportable.
       addError(e, stackTrace);
       emit(
         state.copyWith(
@@ -100,13 +99,19 @@ class ConversationMuteCubit extends Cubit<ConversationMuteState> {
     try {
       final list = (jsonDecode(stored) as List<dynamic>).cast<String>();
       emit(state.copyWith(mutedIds: list.toSet()));
-    } catch (e, stackTrace) {
-      // `FormatException` from corrupted prefs JSON and the lazy
-      // `cast<String>()` `TypeError` are both treated as recoverable
-      // data-migration concerns. Per .claude/rules/error_handling.md
-      // they are NOT Reportable — the cubit silently falls back to
-      // an empty muted set.
+    } on FormatException catch (e, stackTrace) {
+      // Corrupted prefs JSON — matrix-NO (API/domain). Recover with
+      // empty set.
       addError(e, stackTrace);
+      Log.error(
+        'Failed to load muted conversations: $e',
+        name: 'ConversationMuteCubit',
+        category: LogCategory.system,
+      );
+    } catch (e, stackTrace) {
+      // `cast<String>()` / `as List<dynamic>` lazy `TypeError` means
+      // the stored shape is unexpected — matrix-YES (Invariant).
+      addError(Reportable(e, context: '_load'), stackTrace);
       Log.error(
         'Failed to load muted conversations: $e',
         name: 'ConversationMuteCubit',

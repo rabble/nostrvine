@@ -10,6 +10,7 @@ import 'package:db_client/db_client.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/dm/reportable_sites.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -87,8 +88,7 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       },
       onError: (error, stackTrace) {
         // Drift / rxdart stream IO failures are expected here. Per
-        // .claude/rules/error_handling.md they are NOT Reportable — the
-        // UI surfaces the failure via `ConversationStatus.error`.
+        // .claude/rules/error_handling.md they are NOT Reportable.
         addError(error, stackTrace);
         return state.copyWith(status: ConversationStatus.error);
       },
@@ -103,13 +103,21 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       await _dmRepository.deleteMessageForEveryone(event.rumorId);
       // The watchMessages stream automatically excludes deleted messages,
       // so the UI updates reactively — no manual state mutation needed.
-    } catch (e, stackTrace) {
-      // `deleteMessageForEveryone` throws `ArgumentError` (rumor not
-      // found / not ours — recoverable) and propagates publish/IO
-      // failures from the repo. Per .claude/rules/error_handling.md
-      // both are matrix-NO; narrowing to surface the signer-failure
-      // `StateError` path as Reportable is deferred to a follow-up.
-      addError(e, stackTrace);
+    } on Object catch (e, stackTrace) {
+      if (e is ArgumentError) {
+        // Rumor gone or not ours — recoverable; matrix-NO.
+        addError(e, stackTrace);
+        return;
+      }
+      // Anything else (e.g. signer `StateError('Failed to sign kind 5
+      // deletion event')`) is an invariant violation — matrix-YES.
+      addError(
+        Reportable(
+          e,
+          context: ConversationBlocReportableSites.onMessageDeleted,
+        ),
+        stackTrace,
+      );
     }
   }
 
@@ -184,12 +192,8 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       }
       emit(state.copyWith(sendStatus: SendStatus.sent));
     } catch (e, stackTrace) {
-      // The dominant case here is the explicit `throw Exception(result.error)`
-      // above — a domain-failure path with the relay error message. The
-      // repo can also propagate `ArgumentError` (empty content) and IO
-      // failures from `sendMessage` / `sendGroupMessage`. Per
-      // .claude/rules/error_handling.md these are matrix-NO; UI consumes
-      // `SendStatus.failed` + `lastFailedSend` for retry affordance.
+      // Dominated by the explicit `throw Exception(result.error)` above
+      // and repo IO — per .claude/rules/error_handling.md, matrix-NO.
       addError(e, stackTrace);
       emit(
         state.copyWith(
@@ -244,7 +248,10 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
 
     if (lastError != null) {
       addError(
-        Reportable(lastError, context: '_onSelfWrapRecoveryRequested'),
+        Reportable(
+          lastError,
+          context: ConversationBlocReportableSites.onSelfWrapRecoveryRequested,
+        ),
         lastStackTrace,
       );
     }

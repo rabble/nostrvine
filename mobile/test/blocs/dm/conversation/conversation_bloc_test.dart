@@ -1351,7 +1351,8 @@ void main() {
       );
 
       blocTest<ConversationBloc, ConversationState>(
-        'reports error via addError when deleteMessageForEveryone throws',
+        'forwards `ArgumentError` (rumor gone / not ours) raw to addError '
+        '— matrix-NO, recoverable',
         setUp: () {
           when(
             () => mockDmRepository.deleteMessageForEveryone(messageId),
@@ -1361,6 +1362,26 @@ void main() {
         act: (bloc) =>
             bloc.add(const ConversationMessageDeleted(rumorId: messageId)),
         errors: () => [isA<ArgumentError>()],
+      );
+
+      blocTest<ConversationBloc, ConversationState>(
+        'wraps non-`ArgumentError` throws in Reportable — matrix-YES, '
+        'invariant (e.g. signer `StateError`)',
+        setUp: () {
+          when(
+            () => mockDmRepository.deleteMessageForEveryone(messageId),
+          ).thenThrow(StateError('Failed to sign kind 5 deletion event'));
+        },
+        build: buildBloc,
+        act: (bloc) =>
+            bloc.add(const ConversationMessageDeleted(rumorId: messageId)),
+        errors: () => [
+          isA<Reportable<Object>>().having(
+            (r) => r.unwrap(),
+            'unwrap',
+            isA<StateError>(),
+          ),
+        ],
       );
     });
   });
