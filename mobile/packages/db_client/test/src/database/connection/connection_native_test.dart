@@ -299,17 +299,66 @@ void main() {
     );
 
     test(
-      'preserves new DB sidecars when both legacy and new databases exist',
+      'restores legacy DB and backs up non-empty destination sidecars when destination has no actionable local rows',
       () async {
-        final legacyFile = File(legacyPath);
-        legacyFile.parent.createSync(recursive: true);
-        legacyFile.writeAsBytesSync(const [1]);
+        _createSqliteDatabase(legacyPath, draftCount: 1);
+        _createSqliteDatabase(
+          newPath,
+          pendingUploadStatuses: const ['published'],
+          pendingActionStatuses: const ['completed'],
+        );
+        File('$newPath-wal').writeAsBytesSync(const [7]);
+        File('$newPath-shm').writeAsBytesSync(const [8]);
+
+        await migrateLegacyDatabase(
+          legacyPath: legacyPath,
+          newPath: newPath,
+        );
+
+        final backupPath = _destinationBackupPath(newPath);
+        expect(_draftCount(newPath), equals(1));
+        expect(File(legacyPath).existsSync(), isFalse);
+        expect(File('$newPath-wal').existsSync(), isFalse);
+        expect(File('$newPath-shm').existsSync(), isFalse);
+        expect(File(backupPath).existsSync(), isTrue);
+        expect(File('$backupPath-wal').existsSync(), isTrue);
+        expect(File('$backupPath-shm').existsSync(), isTrue);
+        expect(File('$backupPath-wal').lengthSync(), greaterThan(0));
+        expect(File('$backupPath-shm').lengthSync(), greaterThan(0));
+      },
+    );
+
+    test(
+      'preserves destination when queue rows still require action',
+      () async {
+        _createSqliteDatabase(legacyPath, draftCount: 1);
+        _createSqliteDatabase(
+          newPath,
+          pendingUploadStatuses: const ['uploading'],
+          pendingActionStatuses: const ['pending'],
+        );
+
+        await migrateLegacyDatabase(
+          legacyPath: legacyPath,
+          newPath: newPath,
+        );
+
+        expect(File(legacyPath).existsSync(), isTrue);
+        expect(_draftCount(legacyPath), equals(1));
+        expect(_pendingUploadCount(newPath), equals(1));
+        expect(_pendingActionCount(newPath), equals(1));
+        expect(File(_destinationBackupPath(newPath)).existsSync(), isFalse);
+      },
+    );
+
+    test(
+      'preserves destination when both legacy and new databases have local data',
+      () async {
+        _createSqliteDatabase(legacyPath, draftCount: 1);
         File('$legacyPath-wal').writeAsBytesSync(const [4]);
         File('$legacyPath-shm').writeAsBytesSync(const [5]);
 
-        final newFile = File(newPath);
-        newFile.parent.createSync(recursive: true);
-        newFile.writeAsBytesSync(const [9]);
+        _createSqliteDatabase(newPath, draftCount: 1);
         File('$newPath-wal').writeAsBytesSync(const [2]);
         File('$newPath-shm').writeAsBytesSync(const [3]);
 
@@ -319,12 +368,9 @@ void main() {
         );
 
         expect(File(newPath).existsSync(), isTrue);
-        expect(File(newPath).readAsBytesSync(), equals(const [9]));
-        expect(File('$newPath-wal').readAsBytesSync(), equals(const [2]));
-        expect(File('$newPath-shm').readAsBytesSync(), equals(const [3]));
-        expect(File(legacyPath).readAsBytesSync(), equals(const [1]));
-        expect(File('$legacyPath-wal').readAsBytesSync(), equals(const [4]));
-        expect(File('$legacyPath-shm').readAsBytesSync(), equals(const [5]));
+        expect(_draftCount(newPath), equals(1));
+        expect(_draftCount(legacyPath), equals(1));
+        expect(File(_destinationBackupPath(newPath)).existsSync(), isFalse);
       },
     );
 
@@ -372,6 +418,8 @@ void _createSqliteDatabase(
   String path, {
   int draftCount = 0,
   int eventCount = 0,
+  List<String> pendingUploadStatuses = const [],
+  List<String> pendingActionStatuses = const [],
 }) {
   File(path).parent.createSync(recursive: true);
   final db = sqlite3.open(path);
@@ -384,6 +432,32 @@ void _createSqliteDatabase(
     db.execute('CREATE TABLE event (id TEXT PRIMARY KEY)');
     for (var i = 0; i < eventCount; i += 1) {
       db.execute('INSERT INTO event (id) VALUES (?)', ['event_$i']);
+    }
+
+    db.execute('''
+      CREATE TABLE pending_uploads (
+        id TEXT PRIMARY KEY,
+        status TEXT NOT NULL
+      )
+    ''');
+    for (var i = 0; i < pendingUploadStatuses.length; i += 1) {
+      db.execute('INSERT INTO pending_uploads (id, status) VALUES (?, ?)', [
+        'upload_$i',
+        pendingUploadStatuses[i],
+      ]);
+    }
+
+    db.execute('''
+      CREATE TABLE pending_actions (
+        id TEXT PRIMARY KEY,
+        status TEXT NOT NULL
+      )
+    ''');
+    for (var i = 0; i < pendingActionStatuses.length; i += 1) {
+      db.execute('INSERT INTO pending_actions (id, status) VALUES (?, ?)', [
+        'action_$i',
+        pendingActionStatuses[i],
+      ]);
     }
   } finally {
     db.dispose();
@@ -404,6 +478,20 @@ int _eventCount(String path) {
   final db = sqlite3.open(path);
   try {
     return db.select('SELECT COUNT(*) AS count FROM event').first['count']
+        as int;
+  } finally {
+    db.dispose();
+  }
+}
+
+int _pendingUploadCount(String path) => _tableCount(path, 'pending_uploads');
+
+int _pendingActionCount(String path) => _tableCount(path, 'pending_actions');
+
+int _tableCount(String path, String table) {
+  final db = sqlite3.open(path);
+  try {
+    return db.select('SELECT COUNT(*) AS count FROM $table').first['count']
         as int;
   } finally {
     db.dispose();

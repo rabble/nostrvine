@@ -116,9 +116,9 @@ void applyDbCacheVersionReset(String dbPath) {
 /// Handles three cases:
 /// 1. Legacy does not exist → no-op (fresh install or already migrated).
 /// 2. Legacy exists, new does not → rename legacy to new.
-/// 3. Both exist → migrate legacy only if the destination has no local-only
-///    rows and no non-empty sidecars. Otherwise preserve both; replacing a
-///    populated destination can discard local-only data.
+/// 3. Both exist → migrate legacy only if the destination has no actionable
+///    local-only rows. Otherwise preserve both; replacing a populated
+///    destination can discard local-only data.
 ///
 /// Also migrates the SQLite `-wal` and `-shm` sidecar files if present, so
 /// any unsynced writes in the write-ahead log are preserved.
@@ -132,9 +132,8 @@ Future<void> migrateLegacyDatabase({
 
   final newFile = File(newPath);
   if (newFile.existsSync()) {
-    if (!_hasNonEmptyDatabaseSidecars(newPath) &&
-        !_databaseHasLocalOnlyData(newPath) &&
-        _databaseHasLocalOnlyData(legacyPath)) {
+    if (!_databaseHasActionableLocalOnlyData(newPath) &&
+        _databaseHasActionableLocalOnlyData(legacyPath)) {
       _backupDestinationDatabase(newPath);
     } else {
       return;
@@ -150,14 +149,6 @@ Future<void> migrateLegacyDatabase({
       legacySidecar.renameSync('$newPath$suffix');
     }
   }
-}
-
-bool _hasNonEmptyDatabaseSidecars(String dbPath) {
-  for (final suffix in const ['-wal', '-shm']) {
-    final sidecar = File('$dbPath$suffix');
-    if (sidecar.existsSync() && sidecar.lengthSync() > 0) return true;
-  }
-  return false;
 }
 
 void _backupDestinationDatabase(String dbPath) {
@@ -185,7 +176,7 @@ String _nextDestinationBackupPath(String dbPath) {
   return candidate;
 }
 
-bool _databaseHasLocalOnlyData(String dbPath) {
+bool _databaseHasActionableLocalOnlyData(String dbPath) {
   Database db;
   try {
     db = sqlite3.open(dbPath, mode: OpenMode.readOnly);
@@ -194,12 +185,10 @@ bool _databaseHasLocalOnlyData(String dbPath) {
   }
 
   try {
-    for (final tableName in _localOnlyTableNames) {
-      if (!_databaseHasTable(db, tableName)) continue;
+    for (final query in _localOnlyDataQueries) {
+      if (!_databaseHasTable(db, query.tableName)) continue;
 
-      final rows = db.select(
-        'SELECT 1 FROM "${tableName.replaceAll('"', '""')}" LIMIT 1',
-      );
+      final rows = db.select(query.sql);
       if (rows.isNotEmpty) return true;
     }
     return false;
@@ -218,17 +207,42 @@ bool _databaseHasTable(Database db, String tableName) {
   return rows.isNotEmpty;
 }
 
-const _localOnlyTableNames = [
-  'pending_uploads',
-  'personal_reactions',
-  'personal_reposts',
-  'pending_actions',
-  'drafts',
-  'clips',
-  'direct_messages',
-  'conversations',
-  'outgoing_dms',
+const _localOnlyDataQueries = [
+  _LocalOnlyDataQuery(
+    'pending_uploads',
+    "SELECT 1 FROM pending_uploads WHERE status NOT IN ('published', 'failed') LIMIT 1",
+  ),
+  _LocalOnlyDataQuery(
+    'pending_actions',
+    "SELECT 1 FROM pending_actions WHERE status != 'completed' LIMIT 1",
+  ),
+  _LocalOnlyDataQuery(
+    'outgoing_dms',
+    "SELECT 1 FROM outgoing_dms WHERE recipient_wrap_status != 'sent' OR self_wrap_status != 'sent' LIMIT 1",
+  ),
+  _LocalOnlyDataQuery(
+    'personal_reactions',
+    'SELECT 1 FROM personal_reactions LIMIT 1',
+  ),
+  _LocalOnlyDataQuery(
+    'personal_reposts',
+    'SELECT 1 FROM personal_reposts LIMIT 1',
+  ),
+  _LocalOnlyDataQuery('drafts', 'SELECT 1 FROM drafts LIMIT 1'),
+  _LocalOnlyDataQuery('clips', 'SELECT 1 FROM clips LIMIT 1'),
+  _LocalOnlyDataQuery(
+    'direct_messages',
+    'SELECT 1 FROM direct_messages LIMIT 1',
+  ),
+  _LocalOnlyDataQuery('conversations', 'SELECT 1 FROM conversations LIMIT 1'),
 ];
+
+class _LocalOnlyDataQuery {
+  const _LocalOnlyDataQuery(this.tableName, this.sql);
+
+  final String tableName;
+  final String sql;
+}
 
 /// Builds the shared database path from a platform-specific writable base.
 ///
