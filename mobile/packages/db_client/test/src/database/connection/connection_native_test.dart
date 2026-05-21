@@ -247,16 +247,54 @@ void main() {
     test(
       'restores legacy DB when destination exists but has no local data',
       () async {
-        _createSqliteDatabase(legacyPath, rowCount: 1);
-        _createSqliteDatabase(newPath, rowCount: 0);
+        _createSqliteDatabase(legacyPath, draftCount: 1);
+        _createSqliteDatabase(newPath, draftCount: 0);
 
         await migrateLegacyDatabase(
           legacyPath: legacyPath,
           newPath: newPath,
         );
 
-        expect(_localRecordCount(newPath), equals(1));
+        expect(_draftCount(newPath), equals(1));
         expect(File(legacyPath).existsSync(), isFalse);
+      },
+    );
+
+    test(
+      'restores legacy DB when destination has only replaceable cache rows',
+      () async {
+        _createSqliteDatabase(legacyPath, draftCount: 1);
+        _createSqliteDatabase(newPath, eventCount: 1);
+
+        await migrateLegacyDatabase(
+          legacyPath: legacyPath,
+          newPath: newPath,
+        );
+
+        expect(_draftCount(newPath), equals(1));
+        expect(File(legacyPath).existsSync(), isFalse);
+        expect(File(_destinationBackupPath(newPath)).existsSync(), isTrue);
+        expect(_eventCount(_destinationBackupPath(newPath)), equals(1));
+      },
+    );
+
+    test(
+      'restores legacy DB when destination only has empty sidecars',
+      () async {
+        _createSqliteDatabase(legacyPath, draftCount: 1);
+        _createSqliteDatabase(newPath, draftCount: 0);
+        File('$newPath-wal').createSync();
+        File('$newPath-shm').createSync();
+
+        await migrateLegacyDatabase(
+          legacyPath: legacyPath,
+          newPath: newPath,
+        );
+
+        expect(_draftCount(newPath), equals(1));
+        expect(File(legacyPath).existsSync(), isFalse);
+        expect(File('$newPath-wal').existsSync(), isFalse);
+        expect(File('$newPath-shm').existsSync(), isFalse);
       },
     );
 
@@ -330,25 +368,47 @@ void main() {
   });
 }
 
-void _createSqliteDatabase(String path, {required int rowCount}) {
+void _createSqliteDatabase(
+  String path, {
+  int draftCount = 0,
+  int eventCount = 0,
+}) {
   File(path).parent.createSync(recursive: true);
   final db = sqlite3.open(path);
   try {
-    db.execute('CREATE TABLE local_records (id INTEGER PRIMARY KEY)');
-    for (var i = 0; i < rowCount; i += 1) {
-      db.execute('INSERT INTO local_records DEFAULT VALUES');
+    db.execute('CREATE TABLE drafts (id TEXT PRIMARY KEY)');
+    for (var i = 0; i < draftCount; i += 1) {
+      db.execute('INSERT INTO drafts (id) VALUES (?)', ['draft_$i']);
+    }
+
+    db.execute('CREATE TABLE event (id TEXT PRIMARY KEY)');
+    for (var i = 0; i < eventCount; i += 1) {
+      db.execute('INSERT INTO event (id) VALUES (?)', ['event_$i']);
     }
   } finally {
     db.dispose();
   }
 }
 
-int _localRecordCount(String path) {
+int _draftCount(String path) {
   final db = sqlite3.open(path);
   try {
-    return db.select('SELECT COUNT(*) AS count FROM local_records').first['count']
+    return db.select('SELECT COUNT(*) AS count FROM drafts').first['count']
         as int;
   } finally {
     db.dispose();
   }
 }
+
+int _eventCount(String path) {
+  final db = sqlite3.open(path);
+  try {
+    return db.select('SELECT COUNT(*) AS count FROM event').first['count']
+        as int;
+  } finally {
+    db.dispose();
+  }
+}
+
+String _destinationBackupPath(String path) =>
+    '$path.pre_legacy_migration_backup';

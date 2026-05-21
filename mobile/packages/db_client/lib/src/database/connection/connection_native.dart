@@ -116,9 +116,9 @@ void applyDbCacheVersionReset(String dbPath) {
 /// Handles three cases:
 /// 1. Legacy does not exist → no-op (fresh install or already migrated).
 /// 2. Legacy exists, new does not → rename legacy to new.
-/// 3. Both exist → migrate legacy only if the destination has no local rows.
-///    Otherwise preserve both; replacing a populated destination can discard
-///    local-only data.
+/// 3. Both exist → migrate legacy only if the destination has no local-only
+///    rows and no non-empty sidecars. Otherwise preserve both; replacing a
+///    populated destination can discard local-only data.
 ///
 /// Also migrates the SQLite `-wal` and `-shm` sidecar files if present, so
 /// any unsynced writes in the write-ahead log are preserved.
@@ -132,10 +132,10 @@ Future<void> migrateLegacyDatabase({
 
   final newFile = File(newPath);
   if (newFile.existsSync()) {
-    if (!_hasDatabaseSidecars(newPath) &&
-        !_databaseHasLocalData(newPath) &&
-        _databaseHasLocalData(legacyPath)) {
-      newFile.deleteSync();
+    if (!_hasNonEmptyDatabaseSidecars(newPath) &&
+        !_databaseHasLocalOnlyData(newPath) &&
+        _databaseHasLocalOnlyData(legacyPath)) {
+      _backupDestinationDatabase(newPath);
     } else {
       return;
     }
@@ -152,11 +152,40 @@ Future<void> migrateLegacyDatabase({
   }
 }
 
-bool _hasDatabaseSidecars(String dbPath) {
-  return File('$dbPath-wal').existsSync() || File('$dbPath-shm').existsSync();
+bool _hasNonEmptyDatabaseSidecars(String dbPath) {
+  for (final suffix in const ['-wal', '-shm']) {
+    final sidecar = File('$dbPath$suffix');
+    if (sidecar.existsSync() && sidecar.lengthSync() > 0) return true;
+  }
+  return false;
 }
 
-bool _databaseHasLocalData(String dbPath) {
+void _backupDestinationDatabase(String dbPath) {
+  final backupPath = _nextDestinationBackupPath(dbPath);
+
+  File(dbPath).renameSync(backupPath);
+  for (final suffix in const ['-wal', '-shm']) {
+    final sidecar = File('$dbPath$suffix');
+    if (sidecar.existsSync()) {
+      sidecar.renameSync('$backupPath$suffix');
+    }
+  }
+}
+
+String _nextDestinationBackupPath(String dbPath) {
+  const backupSuffix = '.pre_legacy_migration_backup';
+  var candidate = '$dbPath$backupSuffix';
+  var index = 1;
+  while (File(candidate).existsSync() ||
+      File('$candidate-wal').existsSync() ||
+      File('$candidate-shm').existsSync()) {
+    candidate = '$dbPath$backupSuffix.$index';
+    index += 1;
+  }
+  return candidate;
+}
+
+bool _databaseHasLocalOnlyData(String dbPath) {
   Database db;
   try {
     db = sqlite3.open(dbPath, mode: OpenMode.readOnly);
@@ -165,15 +194,11 @@ bool _databaseHasLocalData(String dbPath) {
   }
 
   try {
-    final tables = db.select(
-      "SELECT name FROM sqlite_master "
-      "WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
-    );
-    for (final table in tables) {
-      final tableName = table['name'] as String;
-      final escapedName = tableName.replaceAll('"', '""');
+    for (final tableName in _localOnlyTableNames) {
+      if (!_databaseHasTable(db, tableName)) continue;
+
       final rows = db.select(
-        'SELECT 1 FROM "$escapedName" LIMIT 1',
+        'SELECT 1 FROM "${tableName.replaceAll('"', '""')}" LIMIT 1',
       );
       if (rows.isNotEmpty) return true;
     }
@@ -184,6 +209,26 @@ bool _databaseHasLocalData(String dbPath) {
     db.dispose();
   }
 }
+
+bool _databaseHasTable(Database db, String tableName) {
+  final rows = db.select(
+    "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ? LIMIT 1",
+    [tableName],
+  );
+  return rows.isNotEmpty;
+}
+
+const _localOnlyTableNames = [
+  'pending_uploads',
+  'personal_reactions',
+  'personal_reposts',
+  'pending_actions',
+  'drafts',
+  'clips',
+  'direct_messages',
+  'conversations',
+  'outgoing_dms',
+];
 
 /// Builds the shared database path from a platform-specific writable base.
 ///
