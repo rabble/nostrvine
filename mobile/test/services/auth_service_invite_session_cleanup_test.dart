@@ -124,7 +124,9 @@ void main() {
       ).thenAnswer((_) async {});
 
       when(
-        () => mockOAuthClient.refreshSession(),
+        () => mockOAuthClient.refreshSession(
+          userPubkey: any(named: 'userPubkey'),
+        ),
       ).thenAnswer((_) async => null);
       when(() => mockOAuthClient.close()).thenReturn(null);
     });
@@ -198,7 +200,11 @@ void main() {
           restartedAuthService.authState,
           equals(AuthState.unauthenticated),
         );
-        verify(() => mockOAuthClient.refreshSession()).called(1);
+        verify(
+          () => mockOAuthClient.refreshSession(
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).called(1);
       },
     );
   });

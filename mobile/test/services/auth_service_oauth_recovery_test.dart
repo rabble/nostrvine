@@ -303,7 +303,9 @@ void main() {
           userPubkey: accountA.publicKeyHex,
         );
         when(
-          () => mockOAuthClient.refreshSession(),
+          () => mockOAuthClient.refreshSession(
+            userPubkey: any(named: 'userPubkey'),
+          ),
         ).thenAnswer((_) async => refreshedSession);
 
         // Create fresh AuthService (simulates app restart)
@@ -313,7 +315,11 @@ void main() {
         // The refresh was attempted — signInWithDivineOAuth is called
         // with the refreshed session. It fails due to HTTP (no server
         // in unit tests), but we can verify refresh was called.
-        verify(() => mockOAuthClient.refreshSession()).called(1);
+        verify(
+          () => mockOAuthClient.refreshSession(
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).called(1);
       },
     );
 

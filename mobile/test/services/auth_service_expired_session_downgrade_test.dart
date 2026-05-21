@@ -142,7 +142,9 @@ void main() {
 
         // refreshSession returns null (failed)
         when(
-          () => mockOAuthClient.refreshSession(),
+          () => mockOAuthClient.refreshSession(
+            userPubkey: any(named: 'userPubkey'),
+          ),
         ).thenAnswer((_) async => null);
 
         final authService = createAuthService();
@@ -176,7 +178,11 @@ void main() {
             );
 
             // Verify refresh was attempted
-            verify(() => mockOAuthClient.refreshSession()).called(1);
+            verify(
+              () => mockOAuthClient.refreshSession(
+                userPubkey: any(named: 'userPubkey'),
+              ),
+            ).called(1);
           },
           (error, stack) {
             // Ignore background relay discovery errors
@@ -200,7 +206,9 @@ void main() {
       secureStorage['keycast_session'] = jsonEncode(expiredSession.toJson());
 
       when(
-        () => mockOAuthClient.refreshSession(),
+        () => mockOAuthClient.refreshSession(
+          userPubkey: any(named: 'userPubkey'),
+        ),
       ).thenAnswer((_) async => null);
 
       final authService = createAuthService();
@@ -214,7 +222,11 @@ void main() {
             equals(AuthState.unauthenticated),
             reason: 'No local keys + refresh failed → unauthenticated',
           );
-          verify(() => mockOAuthClient.refreshSession()).called(1);
+          verify(
+            () => mockOAuthClient.refreshSession(
+              userPubkey: any(named: 'userPubkey'),
+            ),
+          ).called(1);
         },
         (error, stack) {
           // Ignore background errors
@@ -239,15 +251,24 @@ void main() {
         secureStorage['keycast_session'] = jsonEncode(expiredSession.toJson());
 
         // refreshSession returns a valid new session
+        final testPubkey = 'ab' * 32;
         final refreshedSession = KeycastSession(
           bunkerUrl: 'https://login.divine.video/api/nostr',
           accessToken: 'fresh_access_token',
           expiresAt: DateTime.now().add(const Duration(hours: 24)),
           refreshToken: 'new_refresh_token',
+          userPubkey: testPubkey,
         );
         when(
-          () => mockOAuthClient.refreshSession(),
-        ).thenAnswer((_) async => refreshedSession);
+          () => mockOAuthClient.refreshSession(
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenAnswer((_) async {
+          secureStorage['keycast_session'] = jsonEncode(
+            refreshedSession.toJson(),
+          );
+          return refreshedSession;
+        });
 
         final authService = createAuthService();
 
@@ -256,7 +277,11 @@ void main() {
             await authService.initialize();
 
             // Refresh was attempted
-            verify(() => mockOAuthClient.refreshSession()).called(1);
+            verify(
+              () => mockOAuthClient.refreshSession(
+                userPubkey: any(named: 'userPubkey'),
+              ),
+            ).called(1);
 
             // The refreshed session was saved to storage before
             // signInWithDivineOAuth was called

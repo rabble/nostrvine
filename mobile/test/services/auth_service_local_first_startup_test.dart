@@ -144,7 +144,9 @@ void main() {
 
       // refreshSession returns null (failed)
       when(
-        () => mockOAuthClient.refreshSession(),
+        () => mockOAuthClient.refreshSession(
+          userPubkey: any(named: 'userPubkey'),
+        ),
       ).thenAnswer((_) async => null);
 
       final authService = createAuthService();
@@ -216,7 +218,9 @@ void main() {
         arrangeExpiredSessionWithMatchingLocalKeys();
 
         when(
-          () => mockOAuthClient.refreshSession(),
+          () => mockOAuthClient.refreshSession(
+            userPubkey: any(named: 'userPubkey'),
+          ),
         ).thenAnswer((_) async => null);
 
         final authService = createAuthService();
@@ -250,7 +254,9 @@ void main() {
 
       // refreshSession hangs forever (simulates slow network)
       when(
-        () => mockOAuthClient.refreshSession(),
+        () => mockOAuthClient.refreshSession(
+          userPubkey: any(named: 'userPubkey'),
+        ),
       ).thenAnswer((_) => Completer<KeycastSession?>().future);
 
       final authService = createAuthService();
@@ -290,7 +296,9 @@ void main() {
 
         // refreshSession hangs forever — will be timed out
         when(
-          () => mockOAuthClient.refreshSession(),
+          () => mockOAuthClient.refreshSession(
+            userPubkey: any(named: 'userPubkey'),
+          ),
         ).thenAnswer((_) => Completer<KeycastSession?>().future);
 
         final authService = createAuthService();
@@ -324,7 +332,9 @@ void main() {
       secureStorage['keycast_session'] = jsonEncode(expiredSession.toJson());
 
       when(
-        () => mockOAuthClient.refreshSession(),
+        () => mockOAuthClient.refreshSession(
+          userPubkey: any(named: 'userPubkey'),
+        ),
       ).thenAnswer((_) async => null);
 
       final authService = createAuthService();
