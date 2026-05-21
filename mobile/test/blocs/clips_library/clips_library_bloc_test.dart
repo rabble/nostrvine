@@ -1,6 +1,9 @@
 // ABOUTME: Tests for ClipsLibraryBloc - managing saved video clips
 // ABOUTME: Tests loading, selection, deletion, and gallery export
 
+import 'dart:async';
+
+import 'package:bloc/bloc.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -16,6 +19,16 @@ class _MockClipLibraryService extends Mock implements ClipLibraryService {}
 class _MockGallerySaveService extends Mock implements GallerySaveService {}
 
 class _FakeEditorVideo extends Fake implements EditorVideo {}
+
+class _CapturingObserver extends BlocObserver {
+  final List<Object> errors = [];
+
+  @override
+  void onError(BlocBase<dynamic> bloc, Object error, StackTrace stackTrace) {
+    errors.add(error);
+    super.onError(bloc, error, stackTrace);
+  }
+}
 
 void main() {
   setUpAll(() {
@@ -178,6 +191,49 @@ void main() {
             ClipsLibraryStatus.error,
           ),
         ],
+      );
+
+      test(
+        'does not addError after close when _recoverAndReload completes '
+        'post-close (regression #4605)',
+        () async {
+          // Clip with a missing ghost frame triggers the unawaited
+          // _recoverAndReload background path. The recovery future is
+          // held open via a Completer so we can close the bloc before
+          // it resolves, then fail it — exercising the post-close race.
+          final clipMissingGhost = DivineVideoClip(
+            id: 'clip-missing-ghost',
+            video: EditorVideo.file('/path/to/clip.mp4'),
+            thumbnailPath: '/path/to/thumb.jpg',
+            duration: const Duration(seconds: 5),
+            recordedAt: DateTime(2026),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          );
+          final completer = Completer<List<DivineVideoClip>>();
+          when(
+            () => mockClipLibraryService.getAllClips(),
+          ).thenAnswer((_) async => [clipMissingGhost]);
+          when(
+            () => mockClipLibraryService.recoverMissingAssets(any()),
+          ).thenAnswer((_) => completer.future);
+
+          final observer = _CapturingObserver();
+          final priorObserver = Bloc.observer;
+          Bloc.observer = observer;
+          addTearDown(() => Bloc.observer = priorObserver);
+
+          final bloc = createBloc()..add(const ClipsLibraryLoadRequested());
+          // Let the handler reach unawaited(_recoverAndReload).
+          await Future<void>.delayed(Duration.zero);
+
+          await bloc.close();
+
+          completer.completeError(Exception('Recovery failed'));
+          await Future<void>.delayed(Duration.zero);
+
+          expect(observer.errors, isEmpty);
+        },
       );
     });
 
