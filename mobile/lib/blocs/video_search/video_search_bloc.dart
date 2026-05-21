@@ -102,6 +102,8 @@ class VideoSearchBloc extends Bloc<VideoSearchEvent, VideoSearchState> {
         ),
       );
     } on Exception catch (e, stackTrace) {
+      // Matrix-NO: searchVideos stream surfaces API / relay / network
+      // failures (Network/IO category).
       addError(e, stackTrace);
       emit(state.copyWith(status: VideoSearchStatus.failure));
     }
@@ -138,6 +140,8 @@ class VideoSearchBloc extends Bloc<VideoSearchEvent, VideoSearchState> {
         ),
       );
     } on Exception catch (e, stackTrace) {
+      // Matrix-NO: searchVideosViaApi surfaces API / network failures
+      // (Network/IO category).
       addError(e, stackTrace);
       emit(state.copyWith(isLoadingMore: false));
     }
