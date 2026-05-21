@@ -5,6 +5,7 @@ import 'package:bloc/bloc.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:equatable/equatable.dart';
+import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 
@@ -63,9 +64,10 @@ class ConversationActionsCubit extends Cubit<ConversationActionsState> {
       emit(state.copyWith(status: ConversationActionsStatus.idle));
       return result.success;
     } catch (e, stackTrace) {
-      // Reporting-service API failures are expected. Per
-      // .claude/rules/error_handling.md they are NOT Reportable.
-      addError(e, stackTrace);
+      // `ContentReportingService.reportUser` returns `ReportResult.failure`
+      // for expected publish/auth problems. Any throw escaping here is
+      // unexpected, so surface it as Reportable.
+      addError(Reportable(e, context: 'reportUser'), stackTrace);
       emit(state.copyWith(status: ConversationActionsStatus.idle));
       return false;
     }

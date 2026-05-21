@@ -7,6 +7,7 @@ import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/dm/conversation_actions/conversation_actions_cubit.dart';
+import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 
@@ -114,7 +115,7 @@ void main() {
       );
 
       blocTest<ConversationActionsCubit, ConversationActionsState>(
-        'returns false and calls addError on failure',
+        'wraps unexpected throws in Reportable and returns false',
         setUp: () {
           when(
             () => mockReportingService.reportUser(
@@ -135,7 +136,13 @@ void main() {
           ),
           const ConversationActionsState(),
         ],
-        errors: () => [isA<Exception>()],
+        errors: () => [
+          isA<Reportable<Object>>().having(
+            (r) => r.unwrap(),
+            'unwrap',
+            isA<Exception>(),
+          ),
+        ],
       );
     });
 
