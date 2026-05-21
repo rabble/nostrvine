@@ -10,8 +10,7 @@ enum VideoSearchSort {
   engagement('engagement'),
 
   /// Newest results first.
-  recent('recent')
-  ;
+  recent('recent');
 
   const VideoSearchSort(this.apiValue);
 
