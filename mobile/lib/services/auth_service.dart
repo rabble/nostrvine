@@ -577,12 +577,12 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         return;
       }
 
-      final refreshed = await _refreshOAuthSession(
-        expectedOwnerPubkey:
-            expectedOwnerPubkey ?? session?.userPubkey,
-      ).timeout(
-        rpcRefreshTimeout,
-      );
+      final refreshed =
+          await _refreshOAuthSession(
+            expectedOwnerPubkey: expectedOwnerPubkey ?? session?.userPubkey,
+          ).timeout(
+            rpcRefreshTimeout,
+          );
 
       if (refreshed != null) {
         Log.info(
@@ -729,11 +729,12 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   Future<KeycastSession?> _refreshOAuthSession({
     String? expectedOwnerPubkey,
   }) {
-    return _pendingOAuthRefresh ??= _doRefreshOAuthSession(
-      expectedOwnerPubkey: expectedOwnerPubkey,
-    ).whenComplete(() {
-      _pendingOAuthRefresh = null;
-    });
+    return _pendingOAuthRefresh ??=
+        _doRefreshOAuthSession(
+          expectedOwnerPubkey: expectedOwnerPubkey,
+        ).whenComplete(() {
+          _pendingOAuthRefresh = null;
+        });
   }
 
   Future<KeycastSession?> _doRefreshOAuthSession({
@@ -749,8 +750,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       // the stored session) over _currentProfile, which could point
       // to a different account during sign-in or account switch.
       var session = refreshed;
-      final pubkey =
-          expectedOwnerPubkey ?? _currentProfile?.publicKeyHex;
+      final pubkey = expectedOwnerPubkey ?? _currentProfile?.publicKeyHex;
       if (pubkey != null &&
           pubkey.isNotEmpty &&
           (session.userPubkey == null || session.userPubkey!.isEmpty)) {
