@@ -129,6 +129,19 @@ class TimelineOverlayBloc
         state.selectedItemId != null &&
         newItems.any((i) => i.id == state.selectedItemId);
 
+    // Detect volume-only differences from undo/redo restores.
+    // AudioEvent.== excludes volume, so Equatable would otherwise suppress the
+    // emit when only volumes changed. Incrementing audioTracksPlayerRevision
+    // makes the state distinct without touching audioTracksRevision (which
+    // would trigger the write-to-history listener and corrupt the undo stack).
+    final currentVolumes = {
+      for (final t in state.audioTracks) t.id: t.volume,
+    };
+    final volumeRestoredByUndo = event.audioTracks.any(
+      (t) =>
+          currentVolumes.containsKey(t.id) && currentVolumes[t.id] != t.volume,
+    );
+
     emit(
       state.copyWith(
         items: newItems,
@@ -138,6 +151,9 @@ class TimelineOverlayBloc
         // BlocListener in the canvas doesn't fire mid-gesture.
         clearDraggingItemId: state.draggingItemId == null,
         clearTrimmingItemId: state.trimmingItemId == null,
+        audioTracksPlayerRevision: volumeRestoredByUndo
+            ? state.audioTracksPlayerRevision + 1
+            : state.audioTracksPlayerRevision,
       ),
     );
   }

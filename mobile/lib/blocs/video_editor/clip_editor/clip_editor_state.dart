@@ -14,6 +14,7 @@ class ClipEditorState extends Equatable {
     this.splitPosition = Duration.zero,
     this.isEditing = false,
     this.isTrimDragging = false,
+    this.clipsVolumeRevision = 0,
     this.lastSplit,
     this.trimPosition,
     this.trimmingClipId,
@@ -35,6 +36,16 @@ class ClipEditorState extends Equatable {
 
   /// Whether a trim handle is currently being dragged.
   final bool isTrimDragging;
+
+  /// Incremented each time a clip's playback volume changes.
+  ///
+  /// `DivineVideoClip` equality is identity-based, so a volume-only update
+  /// on a clip would produce a distinct `clips` list (via `copyWith`) and
+  /// Equatable would detect it. However, the canvas `BlocListener` that
+  /// fires for clip list changes also rebuilds the composite player — which
+  /// is correct but expensive. This counter lets a lightweight, dedicated
+  /// volume-history listener fire without touching that heavier path.
+  final int clipsVolumeRevision;
 
   /// Last completed split operation. Consumed by the timeline strip
   /// to seed the new clips' thumbnail notifiers from the source clip
@@ -79,6 +90,7 @@ class ClipEditorState extends Equatable {
     Duration? splitPosition,
     bool? isEditing,
     bool? isTrimDragging,
+    int? clipsVolumeRevision,
     ClipSplitEvent? lastSplit,
     Duration? trimPosition,
     bool clearTrimPosition = false,
@@ -93,6 +105,7 @@ class ClipEditorState extends Equatable {
       splitPosition: splitPosition ?? this.splitPosition,
       isEditing: isEditing ?? this.isEditing,
       isTrimDragging: isTrimDragging ?? this.isTrimDragging,
+      clipsVolumeRevision: clipsVolumeRevision ?? this.clipsVolumeRevision,
       lastSplit: lastSplit ?? this.lastSplit,
       trimPosition: clearTrimPosition
           ? null
@@ -112,6 +125,7 @@ class ClipEditorState extends Equatable {
     splitPosition,
     isEditing,
     isTrimDragging,
+    clipsVolumeRevision,
     // Identity-only: each ClipSplitEvent is a fresh instance per split.
     identityHashCode(lastSplit),
     trimPosition,

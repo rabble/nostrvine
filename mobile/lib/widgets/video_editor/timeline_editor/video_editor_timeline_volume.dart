@@ -25,9 +25,17 @@ class VideoEditorTimelineVolume extends StatelessWidget {
     final clips = context.select(
       (ClipEditorBloc b) => b.state.clips,
     );
-    final audioTracks = context.select(
-      (TimelineOverlayBloc b) => b.state.audioTracks,
-    );
+    // audioTracksPlayerRevision is included so this widget rebuilds when
+    // undo/redo restores volumes. AudioEvent.== ignores volume, so the
+    // audioTracks list alone would compare equal across an undo.
+    final audioTracks = context
+        .select(
+          (TimelineOverlayBloc b) => (
+            tracks: b.state.audioTracks,
+            revision: b.state.audioTracksPlayerRevision,
+          ),
+        )
+        .tracks;
 
     final customTracks = audioTracks
         .where((t) => !t.isOriginalSound)

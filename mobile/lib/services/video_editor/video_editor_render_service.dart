@@ -732,6 +732,7 @@ class VideoEditorRenderService {
           audioStartTime: track.audioStartTime,
           audioEndTime: track.audioEndTime,
           loop: track.loop,
+          volume: track.volume,
         ),
       );
     }

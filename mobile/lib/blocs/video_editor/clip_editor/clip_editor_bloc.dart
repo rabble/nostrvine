@@ -450,7 +450,12 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     updated[index] = updated[index].copyWith(
       volume: event.volume.clamp(0.0, 1.0),
     );
-    emit(state.copyWith(clips: updated));
+    emit(
+      state.copyWith(
+        clips: updated,
+        clipsVolumeRevision: state.clipsVolumeRevision + 1,
+      ),
+    );
   }
 
   // === AUDIO EXTRACTION ===

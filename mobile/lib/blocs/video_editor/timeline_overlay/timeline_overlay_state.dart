@@ -6,6 +6,7 @@ class TimelineOverlayState extends Equatable {
     this.items = const [],
     this.audioTracks = const [],
     this.audioTracksRevision = 0,
+    this.audioTracksPlayerRevision = 0,
     this.selectedItemId,
     this.draggingItemId,
     this.dragPosition,
@@ -31,6 +32,22 @@ class TimelineOverlayState extends Equatable {
   /// [TimelineOverlayAudioVolumeChanged] is handled, ensuring [BlocListener]s
   /// in the canvas observe the volume update and call `_syncAudioTracks()`.
   final int audioTracksRevision;
+
+  /// Incremented in [TimelineOverlayItemsUpdate] when any audio track's
+  /// volume differs from the previously stored volume.
+  ///
+  /// This handles undo/redo restores: after an undo the ProImageEditor's
+  /// `activeMeta` reverts to the old volumes, `_syncMainCapabilities`
+  /// dispatches a [TimelineOverlayItemsUpdate] with those old volumes, and
+  /// this counter makes the resulting state distinct from the current state
+  /// so that Equatable does not suppress the [emit] and the Sync1 player
+  /// listener fires.
+  ///
+  /// Deliberately separate from [audioTracksRevision] — the write-to-history
+  /// [BlocListener] only watches [audioTracksRevision], so incrementing
+  /// [audioTracksPlayerRevision] does NOT trigger a new [ProImageEditor]
+  /// history entry (which would corrupt the undo stack).
+  final int audioTracksPlayerRevision;
 
   /// The currently selected item (shows trim handles), or `null`.
   final String? selectedItemId;
@@ -60,6 +77,7 @@ class TimelineOverlayState extends Equatable {
     List<TimelineOverlayItem>? items,
     List<AudioEvent>? audioTracks,
     int? audioTracksRevision,
+    int? audioTracksPlayerRevision,
     String? selectedItemId,
     bool clearSelectedItemId = false,
     String? draggingItemId,
@@ -76,6 +94,8 @@ class TimelineOverlayState extends Equatable {
       items: items ?? this.items,
       audioTracks: audioTracks ?? this.audioTracks,
       audioTracksRevision: audioTracksRevision ?? this.audioTracksRevision,
+      audioTracksPlayerRevision:
+          audioTracksPlayerRevision ?? this.audioTracksPlayerRevision,
       selectedItemId: clearSelectedItemId
           ? null
           : (selectedItemId ?? this.selectedItemId),
@@ -100,6 +120,7 @@ class TimelineOverlayState extends Equatable {
     items,
     audioTracks,
     audioTracksRevision,
+    audioTracksPlayerRevision,
     selectedItemId,
     draggingItemId,
     dragPosition,

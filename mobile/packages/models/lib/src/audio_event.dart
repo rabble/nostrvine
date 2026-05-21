@@ -471,8 +471,8 @@ class AudioEvent {
     'source': ?source,
     'sourceVideoReference': ?sourceVideoReference,
     'sourceVideoRelay': ?sourceVideoRelay,
+    'volume': volume,
     if (startOffset != .zero) 'startOffsetMs': startOffset.inMilliseconds,
-    if (volume != 1.0) 'volume': volume,
     if (startTime != Duration.zero) 'startTimeMs': startTime.inMilliseconds,
     if (endTime != null) 'endTimeMs': endTime!.inMilliseconds,
   };

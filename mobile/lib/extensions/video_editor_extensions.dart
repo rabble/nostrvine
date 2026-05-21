@@ -41,6 +41,22 @@ extension VideoEditorExtensions on ProImageEditorState {
     setState(() {});
   }
 
+  /// Persists updated audio track volumes in the editor's history metadata.
+  ///
+  /// Creates a new undo point with the given [audioTracks] list.  Use this
+  /// when only volume has changed and no start/end-time move is in progress.
+  void setSoundVolumes(List<AudioEvent> audioTracks) {
+    addHistory(
+      meta: {
+        ...stateManager.activeMeta,
+        VideoEditorConstants.audioStateHistoryKey: audioTracks
+            .map((e) => e.toJson())
+            .toList(),
+      },
+    );
+    setState(() {});
+  }
+
   /// Persists clip trim and order state in the editor's history metadata.
   ///
   /// When [skipUpdateHistory] is `false` (default), creates a new history
