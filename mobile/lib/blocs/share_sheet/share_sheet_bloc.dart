@@ -138,7 +138,11 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
           clearActionResult: true,
         ),
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      // ProfileRepository fetch IO + VideoSharingService recent-list
+      // access — matrix-NO (Network/IO). UI degrades to an empty
+      // contact list (the rest of the sheet stays usable).
+      addError(e, stackTrace);
       Log.error(
         'Error loading contacts: $e',
         name: 'ShareSheetBloc',
@@ -225,7 +229,11 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
           ),
         );
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      // VideoSharingService.shareVideoWithUser IO (relay broadcast +
+      // DM publish) — matrix-NO (Network/IO). Surfaces via
+      // ShareSheetSendFailure → snackbar.
+      addError(e, stackTrace);
       Log.error(
         'Failed to quick-send video: $e',
         name: 'ShareSheetBloc',
@@ -278,7 +286,10 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
           ),
         );
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      // Same source as _onQuickSendRequested — matrix-NO (Network/IO).
+      // Surfaces via ShareSheetSendFailure → snackbar.
+      addError(e, stackTrace);
       Log.error(
         'Failed to send video: $e',
         name: 'ShareSheetBloc',
@@ -330,7 +341,11 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
           ),
         ),
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      // BookmarkService toggle IO (relay publish + local persist) —
+      // matrix-NO (Network/IO). Surfaces via
+      // ShareSheetSaveResult(succeeded: false) → snackbar.
+      addError(e, stackTrace);
       Log.error(
         'Failed to toggle bookmark: $e',
         name: 'ShareSheetBloc',
@@ -381,7 +396,12 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
           ),
         ),
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      // ClassicVineClipImportService import IO (download + transcode +
+      // local persist) — matrix-NO. Surfaces via
+      // ShareSheetClassicVineClipImportResult(succeeded: false). Closes
+      // the silent-failure half of #3715.
+      addError(e, stackTrace);
       Log.error(
         'Failed to import classic Vine clip: $e',
         name: 'ShareSheetBloc',
@@ -415,7 +435,11 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
           ),
         ),
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      // VideoSharingService.generateShareUrl format failure —
+      // matrix-NO (API/domain). Surfaces via ShareSheetActionFailure
+      // → snackbar.
+      addError(e, stackTrace);
       Log.error(
         'Failed to generate share link: $e',
         name: 'ShareSheetBloc',
@@ -447,6 +471,9 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
           await file.copy(tmpFile.path);
           thumbnailPath = tmpFile.path;
         } catch (e) {
+          // Intentional silent fallback (no addError): sharing proceeds
+          // without a thumbnail attachment. No caller-visible failure —
+          // the share sheet still opens with the URL + title.
           Log.warning(
             'Thumbnail download failed, sharing without image: $e',
             name: 'ShareSheetBloc',
@@ -466,7 +493,11 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
           ),
         ),
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      // VideoSharingService.generateShareData failure (URL/format) —
+      // matrix-NO (API/domain). Surfaces via ShareSheetActionFailure
+      // → snackbar.
+      addError(e, stackTrace);
       Log.error(
         'Failed to generate share data: $e',
         name: 'ShareSheetBloc',
@@ -490,7 +521,11 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
           ),
         ),
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      // VideoEvent.toJson FormatException (data formatting) —
+      // matrix-NO (API/domain). Surfaces via ShareSheetActionFailure
+      // → snackbar.
+      addError(e, stackTrace);
       Log.error(
         'Failed to generate event JSON: $e',
         name: 'ShareSheetBloc',
@@ -516,7 +551,11 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
           ),
         ),
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      // NIP19Tlv.encodeNevent format failure on malformed hex id —
+      // matrix-NO (API/domain). Surfaces via ShareSheetActionFailure
+      // → snackbar.
+      addError(e, stackTrace);
       Log.error(
         'Failed to generate event ID: $e',
         name: 'ShareSheetBloc',

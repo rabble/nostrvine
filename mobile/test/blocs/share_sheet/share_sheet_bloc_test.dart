@@ -188,6 +188,7 @@ void main() {
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetContactsLoadRequested()),
+        errors: () => [isA<Exception>()],
         expect: () => [
           const ShareSheetState(status: ShareSheetStatus.loading),
           const ShareSheetState(status: ShareSheetStatus.ready),
@@ -558,6 +559,7 @@ void main() {
         ),
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetSendRequested()),
+        errors: () => [isA<Exception>()],
         expect: () => [
           isA<ShareSheetState>().having(
             (s) => s.isSending,
@@ -725,6 +727,7 @@ void main() {
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetSaveRequested()),
+        errors: () => [isA<Exception>()],
         expect: () => [
           isA<ShareSheetState>().having(
             (s) => s.actionResult,
@@ -754,6 +757,7 @@ void main() {
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetSaveRequested()),
+        errors: () => [isA<Exception>()],
         expect: () => [
           isA<ShareSheetState>().having(
             (s) => s.actionResult,
@@ -917,6 +921,30 @@ void main() {
           ),
         ],
       );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'emits import failure AND addError when importer throws (#3715)',
+        setUp: () {
+          when(
+            () => mockImporter.importToLibrary(any()),
+          ).thenThrow(Exception('download failed'));
+        },
+        build: () => createBloc(classicVineClipImportService: mockImporter),
+        act: (bloc) =>
+            bloc.add(const ShareSheetAddClassicVineToClipsRequested()),
+        errors: () => [isA<Exception>()],
+        expect: () => [
+          isA<ShareSheetState>().having(
+            (state) => state.actionResult,
+            'actionResult',
+            isA<ShareSheetClassicVineClipImportResult>().having(
+              (result) => result.succeeded,
+              'succeeded',
+              isFalse,
+            ),
+          ),
+        ],
+      );
     });
 
     // -----------------------------------------------------------------------
@@ -961,6 +989,7 @@ void main() {
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetCopyLinkRequested()),
+        errors: () => [isA<Exception>()],
         expect: () => [
           isA<ShareSheetState>().having(
             (s) => s.actionResult,
@@ -1110,6 +1139,7 @@ void main() {
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetShareViaRequested()),
+        errors: () => [isA<Exception>()],
         expect: () => [
           isA<ShareSheetState>().having(
             (s) => s.actionResult,
@@ -1158,6 +1188,7 @@ void main() {
           followRepository: mockFollowRepository,
         ),
         act: (bloc) => bloc.add(const ShareSheetCopyEventJsonRequested()),
+        errors: () => [isA<Exception>()],
         expect: () => [
           isA<ShareSheetState>().having(
             (s) => s.actionResult,
@@ -1206,6 +1237,7 @@ void main() {
           followRepository: mockFollowRepository,
         ),
         act: (bloc) => bloc.add(const ShareSheetCopyEventIdRequested()),
+        errors: () => [isA<Exception>()],
         expect: () => [
           isA<ShareSheetState>().having(
             (s) => s.actionResult,

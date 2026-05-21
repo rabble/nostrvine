@@ -248,6 +248,7 @@ void main() {
         },
         build: createBloc,
         act: (bloc) => bloc.add(const CommentsLoadRequested()),
+        errors: () => [isA<Exception>()],
         expect: () => [
           isA<CommentsState>().having(
             (s) => s.status,
@@ -571,7 +572,7 @@ void main() {
       );
 
       blocTest<CommentsBloc, CommentsState>(
-        'handles error gracefully when loading more fails',
+        'emits loadFailed error and resets isLoadingMore when loadMore fails',
         setUp: () {
           when(
             () => mockCommentsRepository.loadComments(
@@ -598,16 +599,20 @@ void main() {
           );
         },
         act: (bloc) => bloc.add(const CommentsLoadMoreRequested()),
+        errors: () => [isA<Exception>()],
         expect: () => [
           isA<CommentsState>().having(
             (s) => s.isLoadingMore,
             'isLoadingMore',
             true,
           ),
-          // Should reset isLoadingMore but preserve existing comments
+          // Resets isLoadingMore, preserves comments, AND surfaces
+          // loadFailed so the UI shows a snackbar instead of a
+          // stopped-but-blank spinner (see issue #4595).
           isA<CommentsState>()
               .having((s) => s.isLoadingMore, 'isLoadingMore', false)
-              .having((s) => s.comments.length, 'comments count', 1),
+              .having((s) => s.comments.length, 'comments count', 1)
+              .having((s) => s.error, 'error', CommentsError.loadFailed),
         ],
       );
 
@@ -977,6 +982,7 @@ void main() {
         seed: () => const CommentsState(mainInputText: 'Test comment'),
         build: createBloc,
         act: (bloc) => bloc.add(const CommentSubmitted()),
+        errors: () => [isA<Exception>()],
         expect: () => [
           // First: optimistic placeholder inserted, input cleared.
           isA<CommentsState>()
@@ -1480,6 +1486,7 @@ void main() {
             vote: Vote.up,
           ),
         ),
+        errors: () => [isA<Exception>()],
         expect: () => [
           // First emit: optimistic like
           isA<CommentsState>()
@@ -2239,6 +2246,7 @@ void main() {
           );
         },
         act: (bloc) => bloc.add(const CommentVoteCountsFetchRequested()),
+        errors: () => [isA<Exception>()],
         expect: () => <CommentsState>[],
       );
     });
@@ -2516,6 +2524,7 @@ void main() {
           );
         },
         act: (bloc) => bloc.add(CommentBlockUserRequested(validId('baduser'))),
+        errors: () => [isA<Exception>()],
         expect: () => [
           isA<CommentsState>().having(
             (s) => s.error,
