@@ -1275,22 +1275,76 @@ class _WebFullscreenItem extends ConsumerWidget {
   }
 }
 
-class _WebFullscreenLoadingModerationOverlay extends StatelessWidget {
+class _WebFullscreenLoadingModerationOverlay extends ConsumerStatefulWidget {
   const _WebFullscreenLoadingModerationOverlay({required this.video});
 
   final VideoEvent video;
+
+  @override
+  ConsumerState<_WebFullscreenLoadingModerationOverlay> createState() =>
+      _WebFullscreenLoadingModerationOverlayState();
+}
+
+class _WebFullscreenLoadingModerationOverlayState
+    extends ConsumerState<_WebFullscreenLoadingModerationOverlay> {
+  bool _dismissedAfterVerify = false;
+
+  Future<void> _verifyAge() async {
+    final videoUrl = widget.video.videoUrl;
+    if (videoUrl == null || videoUrl.isEmpty) return;
+
+    final headers = await ref
+        .read(mediaAuthInterceptorProvider)
+        .handleUnauthorizedMedia(
+          context: context,
+          sha256Hash: VideoModerationStatusService.resolveSha256(
+            explicitSha256: widget.video.sha256,
+            videoUrl: videoUrl,
+          ),
+          url: videoUrl,
+          serverUrl: _extractServerUrl(videoUrl),
+          category: 'video',
+        );
+    if (headers == null || !mounted) return;
+
+    setState(() {
+      _dismissedAfterVerify = true;
+    });
+  }
+
+  String? _extractServerUrl(String videoUrl) {
+    try {
+      final uri = Uri.parse(videoUrl);
+      final portSuffix = uri.hasPort ? ':${uri.port}' : '';
+      return '${uri.scheme}://${uri.host}$portSuffix';
+    } catch (_) {
+      return null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final isRestricted = context.select(
       (FeedLoadingModerationCubit cubit) => cubit.state.isRestricted,
     );
-    if (!isRestricted) return const SizedBox.shrink();
+    if (!isRestricted || _dismissedAfterVerify) return const SizedBox.shrink();
+
+    final sha256 = VideoModerationStatusService.resolveSha256(
+      explicitSha256: widget.video.sha256,
+      videoUrl: widget.video.videoUrl,
+    );
+    final moderationStatus = sha256 == null
+        ? null
+        : ref
+              .watch(videoModerationStatusProvider(sha256))
+              .whenOrNull(data: (status) => status);
+    final isAgeRestricted = moderationStatus?.ageRestricted ?? false;
 
     return Positioned.fill(
       child: PooledVideoErrorOverlay(
-        video: video,
+        video: widget.video,
         onRetry: () {},
+        onVerifyAge: isAgeRestricted ? _verifyAge : null,
         errorType: VideoErrorType.notFound,
       ),
     );

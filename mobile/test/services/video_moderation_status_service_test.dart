@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -157,11 +158,17 @@ void main() {
     test('falls back when a moderation request times out', () async {
       const hash =
           'abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd';
+      final firstResponse = Completer<http.Response>();
+
+      addTearDown(() {
+        if (!firstResponse.isCompleted) {
+          firstResponse.complete(http.Response('late', 200));
+        }
+      });
 
       final client = MockClient((request) async {
         if (request.url.host == 'first.example') {
-          await Future<void>.delayed(const Duration(minutes: 1));
-          return http.Response('late', 200);
+          return firstResponse.future;
         }
 
         return http.Response(
@@ -194,6 +201,10 @@ void main() {
           ),
         ),
       );
+
+      if (!firstResponse.isCompleted) {
+        firstResponse.complete(http.Response('late', 200));
+      }
     });
 
     test('falls back across endpoints and caches result', () async {
