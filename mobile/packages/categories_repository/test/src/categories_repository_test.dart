@@ -194,7 +194,7 @@ VideoStats _videoStats({required String id, required String pubkey}) {
     videoUrl: 'https://example.com/$id.mp4',
     thumbnail: 'https://example.com/$id.jpg',
     title: 'Video $id',
-    createdAt: DateTime(2026, 1, 1),
+    createdAt: DateTime(2026),
     kind: 34236,
     dTag: id,
     reactions: 0,
