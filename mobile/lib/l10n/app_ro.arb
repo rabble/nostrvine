@@ -2810,7 +2810,6 @@
     "videoEditorFailedLoadStickers": "Nu s-au putut încărca stickerele",
     "videoEditorAdjustVolumeTitle": "Ajustează volumul",
     "videoEditorRecordedAudioLabel": "Audio înregistrat",
-    "videoEditorCustomAudioLabel": "Audio personalizat",
     "videoEditorPlaySemanticLabel": "Redă",
     "videoEditorPauseSemanticLabel": "Pauză",
     "videoEditorMuteAudioSemanticLabel": "Dezactivează sunetul",
@@ -3666,7 +3665,6 @@
     },
     "videoEditorTimelineSlideToAdjust": "Glisează pentru ajustare",
     "videoEditorVolumeSemanticLabel": "Reglare volum",
-    "videoEditorVolumeTitle": "Volum",
     "videoEditorOriginalAudioLabel": "Audio original",
     "videoEditorClipVolumeLabel": "Clip {index}"
 }

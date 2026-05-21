@@ -1712,7 +1712,6 @@
     "videoEditorFailedLoadStickers": "Hindi na-load ang mga sticker",
     "videoEditorAdjustVolumeTitle": "I-adjust ang volume",
     "videoEditorRecordedAudioLabel": "Na-record na audio",
-    "videoEditorCustomAudioLabel": "Custom audio",
     "videoEditorPlaySemanticLabel": "I-play",
     "videoEditorPauseSemanticLabel": "I-pause",
     "videoEditorMuteAudioSemanticLabel": "I-mute ang audio",
@@ -2207,7 +2206,6 @@
     },
     "videoEditorTimelineSlideToAdjust": "I-slide para i-adjust",
     "videoEditorVolumeSemanticLabel": "Ayusin ang volume",
-    "videoEditorVolumeTitle": "Volume",
     "videoEditorOriginalAudioLabel": "Orihinal na audio",
     "videoEditorClipVolumeLabel": "Clip {index}"
 }

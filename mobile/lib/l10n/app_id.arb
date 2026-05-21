@@ -2750,7 +2750,6 @@
     },
     "videoEditorConfirmColorSemanticLabel": "Konfirmasi warna",
     "videoEditorCropSemanticLabel": "Pangkas",
-    "videoEditorCustomAudioLabel": "Audio kustom",
     "videoEditorDeleteClip": "Hapus klip",
     "videoEditorDeleteLabel": "Hapus",
     "videoEditorDeleteLayerDropZone": "Area lepas untuk menghapus lapisan",
@@ -3666,7 +3665,6 @@
     },
     "videoEditorTimelineSlideToAdjust": "Geser untuk menyesuaikan",
     "videoEditorVolumeSemanticLabel": "Sesuaikan volume",
-    "videoEditorVolumeTitle": "Volume",
     "videoEditorOriginalAudioLabel": "Audio asli",
     "videoEditorClipVolumeLabel": "Klip {index}"
 }

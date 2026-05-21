@@ -6709,9 +6709,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => 'الصوت المسجل';
 
   @override
-  String get videoEditorCustomAudioLabel => 'صوت مخصص';
-
-  @override
   String get videoEditorPlaySemanticLabel => 'تشغيل';
 
   @override
@@ -6725,9 +6722,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get videoEditorVolumeSemanticLabel => 'ضبط مستوى الصوت';
-
-  @override
-  String get videoEditorVolumeTitle => 'الصوت';
 
   @override
   String videoEditorTimelineVolumePreview(int percent) {

@@ -134,6 +134,97 @@ void main() {
         ),
         expect: () => const [TimelineOverlayState(trimmingItemId: 'sound-1')],
       );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'bumps player revision for undo-restored volume without history revision',
+        build: TimelineOverlayBloc.new,
+        seed: () => TimelineOverlayState(
+          audioTracks: [
+            _audioEvent(
+              id: 'sound-1',
+              start: const Duration(seconds: 1),
+              end: const Duration(seconds: 4),
+            ).copyWith(volume: 0.25),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          TimelineOverlayItemsUpdate(
+            layers: const <Layer>[],
+            filters: const <FilterState>[],
+            audioTracks: [
+              _audioEvent(
+                id: 'sound-1',
+                start: const Duration(seconds: 1),
+                end: const Duration(seconds: 4),
+              ),
+            ],
+            totalVideoDuration: const Duration(seconds: 12),
+          ),
+        ),
+        expect: () => [
+          isA<TimelineOverlayState>()
+              .having(
+                (s) => s.audioTracksPlayerRevision,
+                'audioTracksPlayerRevision',
+                1,
+              )
+              .having((s) => s.audioTracksRevision, 'audioTracksRevision', 0)
+              .having((s) => s.audioTracks.first.volume, 'volume', 1.0),
+        ],
+      );
+    });
+
+    group(TimelineOverlayAudioVolumeChanged, () {
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'clamps volume and bumps history revision',
+        build: TimelineOverlayBloc.new,
+        seed: () => TimelineOverlayState(
+          audioTracks: [
+            _audioEvent(
+              id: 'sound-1',
+              start: const Duration(seconds: 1),
+              end: const Duration(seconds: 4),
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const TimelineOverlayAudioVolumeChanged(
+            trackId: 'sound-1',
+            volume: -1.0,
+          ),
+        ),
+        expect: () => [
+          isA<TimelineOverlayState>()
+              .having((s) => s.audioTracks.first.volume, 'volume', 0.0)
+              .having((s) => s.audioTracksRevision, 'audioTracksRevision', 1)
+              .having(
+                (s) => s.audioTracksPlayerRevision,
+                'audioTracksPlayerRevision',
+                0,
+              ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'is no-op for unknown track id',
+        build: TimelineOverlayBloc.new,
+        seed: () => TimelineOverlayState(
+          audioTracks: [
+            _audioEvent(
+              id: 'sound-1',
+              start: const Duration(seconds: 1),
+              end: const Duration(seconds: 4),
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const TimelineOverlayAudioVolumeChanged(
+            trackId: 'missing',
+            volume: 0.5,
+          ),
+        ),
+        expect: () => <TimelineOverlayState>[],
+      );
     });
 
     group(TimelineOverlayItemMoved, () {

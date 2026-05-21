@@ -1000,6 +1000,48 @@ void main() {
       );
     });
 
+    group('ClipEditorClipVolumeChanged', () {
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'clamps volume, bumps revision, and keeps clips unmodifiable',
+        build: buildBloc,
+        seed: () => ClipEditorState(clips: twoClips),
+        act: (bloc) => bloc.add(
+          const ClipEditorClipVolumeChanged(clipId: 'a', volume: -1.0),
+        ),
+        expect: () => [
+          isA<ClipEditorState>()
+              .having((s) => s.clips.first.volume, 'volume', 0.0)
+              .having((s) => s.clipsVolumeRevision, 'clipsVolumeRevision', 1),
+        ],
+        verify: (bloc) {
+          expect(
+            () => (bloc.state.clips as List).add(_createClip(id: 'extra')),
+            throwsUnsupportedError,
+          );
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'is no-op when clamped volume matches current volume',
+        build: buildBloc,
+        seed: () => ClipEditorState(clips: twoClips),
+        act: (bloc) => bloc.add(
+          const ClipEditorClipVolumeChanged(clipId: 'a', volume: 2.0),
+        ),
+        expect: () => <ClipEditorState>[],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'is no-op for unknown clip id',
+        build: buildBloc,
+        seed: () => ClipEditorState(clips: twoClips),
+        act: (bloc) => bloc.add(
+          const ClipEditorClipVolumeChanged(clipId: 'missing', volume: 0.4),
+        ),
+        expect: () => <ClipEditorState>[],
+      );
+    });
+
     // =========================================================
     // EVENT EQUALITY
     // =========================================================

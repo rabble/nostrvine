@@ -2810,7 +2810,6 @@
     "videoEditorFailedLoadStickers": "Impossibile caricare gli sticker",
     "videoEditorAdjustVolumeTitle": "Regola volume",
     "videoEditorRecordedAudioLabel": "Audio registrato",
-    "videoEditorCustomAudioLabel": "Audio personalizzato",
     "videoEditorPlaySemanticLabel": "Riproduci",
     "videoEditorPauseSemanticLabel": "Pausa",
     "videoEditorMuteAudioSemanticLabel": "Disattiva audio",
@@ -3666,7 +3665,6 @@
     },
     "videoEditorTimelineSlideToAdjust": "Scorri per regolare",
     "videoEditorVolumeSemanticLabel": "Regola volume",
-    "videoEditorVolumeTitle": "Volume",
     "videoEditorOriginalAudioLabel": "Audio originale",
     "videoEditorClipVolumeLabel": "Clip {index}"
 }

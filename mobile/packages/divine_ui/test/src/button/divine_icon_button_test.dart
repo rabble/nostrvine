@@ -10,6 +10,8 @@ void main() {
       VoidCallback? onPressed,
       DivineIconButtonType type = DivineIconButtonType.primary,
       DivineIconButtonSize size = DivineIconButtonSize.base,
+      Color? backgroundColor,
+      Color? foregroundColor,
       String? semanticLabel,
     }) {
       return MaterialApp(
@@ -20,6 +22,8 @@ void main() {
               onPressed: onPressed,
               type: type,
               size: size,
+              backgroundColor: backgroundColor,
+              foregroundColor: foregroundColor,
               semanticLabel: semanticLabel,
             ),
           ),
@@ -107,6 +111,20 @@ void main() {
     });
 
     group('icon colors', () {
+      testWidgets('foregroundColor override takes precedence', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            onPressed: () {},
+            foregroundColor: Colors.purple,
+          ),
+        );
+
+        final divineIcon = tester.widget<DivineIcon>(
+          find.byType(DivineIcon),
+        );
+        expect(divineIcon.color, Colors.purple);
+      });
+
       testWidgets('primary type uses onPrimary color', (tester) async {
         await tester.pumpWidget(
           buildTestWidget(
@@ -188,6 +206,21 @@ void main() {
           find.byType(DivineIcon),
         );
         expect(divineIcon.color, VineTheme.onErrorContainer);
+      });
+    });
+
+    group('background colors', () {
+      testWidgets('backgroundColor override takes precedence', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            onPressed: () {},
+            backgroundColor: Colors.orange,
+          ),
+        );
+
+        final ink = tester.widget<Ink>(find.byType(Ink));
+        final decoration = ink.decoration! as BoxDecoration;
+        expect(decoration.color, Colors.orange);
       });
     });
 

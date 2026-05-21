@@ -50,15 +50,15 @@ class VideoEditorTimelineVolume extends StatelessWidget {
         minWidth: TimelineConstants.soundControlWidth,
       ),
       child: DecoratedBox(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.centerRight,
             end: Alignment.centerLeft,
             colors: [
-              Color.fromRGBO(0, 10, 6, 0),
-              Color.fromRGBO(0, 10, 6, 0.96),
+              VineTheme.surfaceContainerHigh.withValues(alpha: 0),
+              VineTheme.surfaceContainerHigh.withValues(alpha: 0.96),
             ],
-            stops: [0.0, 0.1739],
+            stops: const [0.0, 0.1739],
           ),
         ),
         child: Padding(
@@ -77,7 +77,7 @@ class VideoEditorTimelineVolume extends StatelessWidget {
                   crossAxisAlignment: .start,
                   spacing: TimelineConstants.thumbnailVerticalRowGap,
                   children: [
-                    for (var i = 0; i < clips.length; i++) ...[
+                    for (var i = 0; i < clips.length; i++)
                       _VolumeArc(
                         height: TimelineConstants.thumbnailStripHeight,
                         semanticLabel: context.l10n.videoEditorClipVolumeLabel(
@@ -92,7 +92,6 @@ class VideoEditorTimelineVolume extends StatelessWidget {
                           ),
                         ),
                       ),
-                    ],
                   ],
                 ),
               ),
@@ -101,7 +100,7 @@ class VideoEditorTimelineVolume extends StatelessWidget {
                 child: Column(
                   spacing: 6,
                   children: [
-                    for (var i = 0; i < customTracks.length; i++) ...[
+                    for (var i = 0; i < customTracks.length; i++)
                       _VolumeArc(
                         height:
                             TimelineConstants.soundOverlayRowHeight -
@@ -121,7 +120,6 @@ class VideoEditorTimelineVolume extends StatelessWidget {
                               ),
                             ),
                       ),
-                    ],
                   ],
                 ),
               ),
@@ -159,7 +157,11 @@ class _VolumeArc extends StatefulWidget {
 
 class _VolumeArcState extends State<_VolumeArc> {
   static const double _gapSweepDeg = 80; // gap at the bottom, in degrees.
+  static const double _maxDragRangePx = 160;
+  static const double _maxDeadZonePx = 24;
 
+  // Gesture-local preview state belongs here because it changes every frame
+  // while the pointer moves and does not represent persisted editor state.
   late double _localVolume;
 
   /// Volume to restore when the user un-mutes via tap. Tracks the last
@@ -192,17 +194,16 @@ class _VolumeArcState extends State<_VolumeArc> {
   ///
   /// Set once at pan-start to 90 % of the current screen width so the gesture
   /// scales with the device rather than using a fixed pixel value.
-  double _dragRangePx = 160;
-
-  /// Dead zone around the press point where volume stays at 100% so it's
-  /// easy to land exactly on max without pixel-perfect aim.
-  static const double _maxDeadZonePx = 24;
+  double _dragRangePx = _maxDragRangePx;
 
   /// Local position where the current pan gesture began.
   Offset _panStart = Offset.zero;
 
   void _onPanStart(DragStartDetails d) {
-    _dragRangePx = math.min(160, MediaQuery.sizeOf(context).width * 0.9);
+    _dragRangePx = math.min(
+      _maxDragRangePx,
+      MediaQuery.sizeOf(context).width * 0.9,
+    );
     _panStart = d.localPosition;
     _isDragging = true;
     // Snap to full volume immediately so the gesture starts from a known

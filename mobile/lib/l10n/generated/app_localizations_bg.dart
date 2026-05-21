@@ -6841,9 +6841,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => 'Записано аудио';
 
   @override
-  String get videoEditorCustomAudioLabel => 'Персонализирано аудио';
-
-  @override
   String get videoEditorPlaySemanticLabel => 'Играйте';
 
   @override
@@ -6857,9 +6854,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get videoEditorVolumeSemanticLabel => 'Регулиране на силата на звука';
-
-  @override
-  String get videoEditorVolumeTitle => 'Сила на звука';
 
   @override
   String videoEditorTimelineVolumePreview(int percent) {

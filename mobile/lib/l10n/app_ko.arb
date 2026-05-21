@@ -2039,7 +2039,6 @@
     },
     "videoEditorConfirmColorSemanticLabel": "색상 확인",
     "videoEditorCropSemanticLabel": "자르기",
-    "videoEditorCustomAudioLabel": "커스텀 오디오",
     "videoEditorDeleteClip": "클립 삭제",
     "videoEditorDeleteLabel": "삭제",
     "videoEditorDeleteLayerDropZone": "레이어 삭제 드롭 영역",
@@ -2955,7 +2954,6 @@
     },
     "videoEditorTimelineSlideToAdjust": "슬라이드하여 조절",
     "videoEditorVolumeSemanticLabel": "볼륨 조절",
-    "videoEditorVolumeTitle": "볼륨",
     "videoEditorOriginalAudioLabel": "원본 오디오",
     "videoEditorClipVolumeLabel": "클립 {index}"
 }

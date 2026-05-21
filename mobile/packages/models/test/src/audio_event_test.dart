@@ -766,6 +766,7 @@ void main() {
           sourceVideoReference: '34236:pubkey:vine-id',
           sourceVideoRelay: 'wss://relay.example',
           startOffset: Duration(milliseconds: 1500),
+          volume: 0.4,
         );
 
         final json = audioEvent.toJson();
@@ -788,6 +789,7 @@ void main() {
         expect(json['sourceVideoReference'], equals('34236:pubkey:vine-id'));
         expect(json['sourceVideoRelay'], equals('wss://relay.example'));
         expect(json['startOffsetMs'], equals(1500));
+        expect(json['volume'], equals(0.4));
       });
 
       test('omits null optional fields', () {
@@ -820,6 +822,18 @@ void main() {
         final json = audioEvent.toJson();
 
         expect(json.containsKey('startOffsetMs'), isFalse);
+      });
+
+      test('always serializes volume for backward-compatible snapshots', () {
+        const audioEvent = AudioEvent(
+          id: 'default-volume-123456789012345678901234567890123456789012345',
+          pubkey: testPubkey,
+          createdAt: 1700000000,
+        );
+
+        final json = audioEvent.toJson();
+
+        expect(json['volume'], equals(1.0));
       });
     });
 
@@ -901,6 +915,18 @@ void main() {
         final audioEvent = AudioEvent.fromJson(json);
 
         expect(audioEvent.startOffset, equals(Duration.zero));
+      });
+
+      test('defaults volume to 1.0 when reading older JSON snapshots', () {
+        final json = <String, dynamic>{
+          'id': 'no-volume-123456789012345678901234567890123456789012345678',
+          'pubkey': testPubkey,
+          'createdAt': 1700000000,
+        };
+
+        final audioEvent = AudioEvent.fromJson(json);
+
+        expect(audioEvent.volume, equals(1.0));
       });
     });
 

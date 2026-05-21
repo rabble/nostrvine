@@ -2743,7 +2743,6 @@
     },
     "videoEditorConfirmColorSemanticLabel": "تأكيد اللون",
     "videoEditorCropSemanticLabel": "قص",
-    "videoEditorCustomAudioLabel": "صوت مخصص",
     "videoEditorDeleteClip": "حذف المقطع",
     "videoEditorDeleteLabel": "حذف",
     "videoEditorDeleteLayerDropZone": "منطقة إسقاط لحذف الطبقة",
@@ -3666,7 +3665,6 @@
     },
     "videoEditorTimelineSlideToAdjust": "اسحب للضبط",
     "videoEditorVolumeSemanticLabel": "ضبط مستوى الصوت",
-    "videoEditorVolumeTitle": "الصوت",
     "videoEditorOriginalAudioLabel": "الصوت الأصلي",
     "videoEditorClipVolumeLabel": "مقطع {index}"
 }

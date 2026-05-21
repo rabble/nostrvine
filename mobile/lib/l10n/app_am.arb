@@ -3368,7 +3368,6 @@
     "videoEditorFailedLoadStickers": "ተለጣፊዎችን መጫን አልተሳካም።",
     "videoEditorAdjustVolumeTitle": "ድምጽን ያስተካክሉ",
     "videoEditorRecordedAudioLabel": "የተቀዳ ኦዲዮ",
-    "videoEditorCustomAudioLabel": "ብጁ ኦዲዮ",
     "videoEditorPlaySemanticLabel": "ይጫወቱ",
     "videoEditorPauseSemanticLabel": "ለአፍታ አቁም",
     "videoEditorMuteAudioSemanticLabel": "ኦዲዮ ድምጸ-ከል አድርግ",
@@ -3794,7 +3793,6 @@
     },
     "videoEditorTimelineSlideToAdjust": "ለማስተካከል ያንሸራትቱ",
     "videoEditorVolumeSemanticLabel": "ድምጽ አስተካክል",
-    "videoEditorVolumeTitle": "ድምጽ",
     "videoEditorOriginalAudioLabel": "ዋናው ኦዲዮ",
     "videoEditorClipVolumeLabel": "ቅንጥብ {index}"
 }

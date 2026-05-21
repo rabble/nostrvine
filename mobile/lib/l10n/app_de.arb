@@ -2810,7 +2810,6 @@
     "videoEditorFailedLoadStickers": "Sticker konnten nicht geladen werden",
     "videoEditorAdjustVolumeTitle": "Lautstärke anpassen",
     "videoEditorRecordedAudioLabel": "Aufgenommener Ton",
-    "videoEditorCustomAudioLabel": "Eigener Ton",
     "videoEditorPlaySemanticLabel": "Abspielen",
     "videoEditorPauseSemanticLabel": "Pausieren",
     "videoEditorMuteAudioSemanticLabel": "Ton stummschalten",
@@ -3666,7 +3665,6 @@
     },
     "videoEditorTimelineSlideToAdjust": "Zum Anpassen schieben",
     "videoEditorVolumeSemanticLabel": "Lautstärke anpassen",
-    "videoEditorVolumeTitle": "Lautstärke",
     "videoEditorOriginalAudioLabel": "Originalton",
     "videoEditorClipVolumeLabel": "Clip {index}"
 }

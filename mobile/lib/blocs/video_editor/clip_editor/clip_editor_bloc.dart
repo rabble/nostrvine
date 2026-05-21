@@ -446,13 +446,15 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
   ) {
     final index = state.clips.indexWhere((c) => c.id == event.clipId);
     if (index == -1) return;
+    final nextVolume = event.volume.clamp(0.0, 1.0);
+    if (state.clips[index].volume == nextVolume) return;
     final updated = List<DivineVideoClip>.of(state.clips);
     updated[index] = updated[index].copyWith(
-      volume: event.volume.clamp(0.0, 1.0),
+      volume: nextVolume,
     );
     emit(
       state.copyWith(
-        clips: updated,
+        clips: List.unmodifiable(updated),
         clipsVolumeRevision: state.clipsVolumeRevision + 1,
       ),
     );

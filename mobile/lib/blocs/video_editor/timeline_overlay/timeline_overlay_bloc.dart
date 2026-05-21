@@ -485,13 +485,14 @@ class TimelineOverlayBloc
     TimelineOverlayAudioVolumeChanged event,
     Emitter<TimelineOverlayState> emit,
   ) {
-    final updated = [
-      for (final track in state.audioTracks)
-        if (track.id == event.trackId)
-          track.copyWith(volume: event.volume.clamp(0.0, 1.0))
-        else
-          track,
-    ];
+    final index = state.audioTracks.indexWhere(
+      (track) => track.id == event.trackId,
+    );
+    if (index == -1) return;
+    final nextVolume = event.volume.clamp(0.0, 1.0);
+    if (state.audioTracks[index].volume == nextVolume) return;
+    final updated = List<AudioEvent>.of(state.audioTracks);
+    updated[index] = updated[index].copyWith(volume: nextVolume);
     emit(
       state.copyWith(
         audioTracks: updated,

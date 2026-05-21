@@ -2750,7 +2750,6 @@
     },
     "videoEditorConfirmColorSemanticLabel": "Rengi onayla",
     "videoEditorCropSemanticLabel": "Kırp",
-    "videoEditorCustomAudioLabel": "Özel ses",
     "videoEditorDeleteClip": "Klibi sil",
     "videoEditorDeleteLabel": "Sil",
     "videoEditorDeleteLayerDropZone": "Katman silme bırakma alanı",
@@ -3666,7 +3665,6 @@
     },
     "videoEditorTimelineSlideToAdjust": "Ayarlamak için kaydır",
     "videoEditorVolumeSemanticLabel": "Sesi ayarla",
-    "videoEditorVolumeTitle": "Ses",
     "videoEditorOriginalAudioLabel": "Orijinal ses",
     "videoEditorClipVolumeLabel": "Klip {index}"
 }

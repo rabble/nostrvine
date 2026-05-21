@@ -2810,7 +2810,6 @@
     "videoEditorFailedLoadStickers": "Det gick inte att ladda stickers",
     "videoEditorAdjustVolumeTitle": "Justera volym",
     "videoEditorRecordedAudioLabel": "Inspelat ljud",
-    "videoEditorCustomAudioLabel": "Eget ljud",
     "videoEditorPlaySemanticLabel": "Spela",
     "videoEditorPauseSemanticLabel": "Pausa",
     "videoEditorMuteAudioSemanticLabel": "Stäng av ljud",
@@ -3666,7 +3665,6 @@
     },
     "videoEditorTimelineSlideToAdjust": "Dra för att justera",
     "videoEditorVolumeSemanticLabel": "Justera volym",
-    "videoEditorVolumeTitle": "Volym",
     "videoEditorOriginalAudioLabel": "Originalljud",
     "videoEditorClipVolumeLabel": "Klipp {index}"
 }

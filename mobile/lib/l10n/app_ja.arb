@@ -2743,7 +2743,6 @@
     },
     "videoEditorConfirmColorSemanticLabel": "色を確定",
     "videoEditorCropSemanticLabel": "トリミング",
-    "videoEditorCustomAudioLabel": "カスタムオーディオ",
     "videoEditorDeleteClip": "クリップを削除",
     "videoEditorDeleteLabel": "削除",
     "videoEditorDeleteLayerDropZone": "レイヤー削除のドロップゾーン",
@@ -3666,7 +3665,6 @@
     },
     "videoEditorTimelineSlideToAdjust": "スライドして調整",
     "videoEditorVolumeSemanticLabel": "音量を調整",
-    "videoEditorVolumeTitle": "音量",
     "videoEditorOriginalAudioLabel": "元の音声",
     "videoEditorClipVolumeLabel": "クリップ {index}"
 }

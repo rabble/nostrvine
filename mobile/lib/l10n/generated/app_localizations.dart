@@ -11900,12 +11900,6 @@ abstract class AppLocalizations {
   /// **'Recorded audio'**
   String get videoEditorRecordedAudioLabel;
 
-  /// No description provided for @videoEditorCustomAudioLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Added audio'**
-  String get videoEditorCustomAudioLabel;
-
   /// No description provided for @videoEditorPlaySemanticLabel.
   ///
   /// In en, this message translates to:
@@ -11935,12 +11929,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Adjust volume'**
   String get videoEditorVolumeSemanticLabel;
-
-  /// No description provided for @videoEditorVolumeTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Volume'**
-  String get videoEditorVolumeTitle;
 
   /// No description provided for @videoEditorTimelineVolumePreview.
   ///

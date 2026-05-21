@@ -2810,7 +2810,6 @@
     "videoEditorFailedLoadStickers": "Stickers laden mislukt",
     "videoEditorAdjustVolumeTitle": "Volume aanpassen",
     "videoEditorRecordedAudioLabel": "Opgenomen audio",
-    "videoEditorCustomAudioLabel": "Aangepaste audio",
     "videoEditorPlaySemanticLabel": "Afspelen",
     "videoEditorPauseSemanticLabel": "Pauzeren",
     "videoEditorMuteAudioSemanticLabel": "Audio dempen",
@@ -3666,7 +3665,6 @@
     },
     "videoEditorTimelineSlideToAdjust": "Schuif om aan te passen",
     "videoEditorVolumeSemanticLabel": "Volume aanpassen",
-    "videoEditorVolumeTitle": "Volume",
     "videoEditorOriginalAudioLabel": "Origineel geluid",
     "videoEditorClipVolumeLabel": "Clip {index}"
 }

@@ -6745,9 +6745,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => 'Kaydedilmiş ses';
 
   @override
-  String get videoEditorCustomAudioLabel => 'Özel ses';
-
-  @override
   String get videoEditorPlaySemanticLabel => 'Oynat';
 
   @override
@@ -6761,9 +6758,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoEditorVolumeSemanticLabel => 'Sesi ayarla';
-
-  @override
-  String get videoEditorVolumeTitle => 'Ses';
 
   @override
   String videoEditorTimelineVolumePreview(int percent) {

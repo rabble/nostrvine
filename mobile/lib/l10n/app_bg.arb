@@ -3062,7 +3062,6 @@
     "videoEditorFailedLoadStickers": "Не успяхме да заредим стикерите",
     "videoEditorAdjustVolumeTitle": "Регулирайте силата на звука",
     "videoEditorRecordedAudioLabel": "Записано аудио",
-    "videoEditorCustomAudioLabel": "Персонализирано аудио",
     "videoEditorPlaySemanticLabel": "Играйте",
     "videoEditorPauseSemanticLabel": "Пауза",
     "videoEditorMuteAudioSemanticLabel": "Заглушаване на звука",
@@ -3800,7 +3799,6 @@
     },
     "videoEditorTimelineSlideToAdjust": "Плъзнете за регулиране",
     "videoEditorVolumeSemanticLabel": "Регулиране на силата на звука",
-    "videoEditorVolumeTitle": "Сила на звука",
     "videoEditorOriginalAudioLabel": "Оригинален звук",
     "videoEditorClipVolumeLabel": "Клип {index}"
 }

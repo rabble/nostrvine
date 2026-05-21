@@ -6835,9 +6835,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => 'Audio registrato';
 
   @override
-  String get videoEditorCustomAudioLabel => 'Audio personalizzato';
-
-  @override
   String get videoEditorPlaySemanticLabel => 'Riproduci';
 
   @override
@@ -6851,9 +6848,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get videoEditorVolumeSemanticLabel => 'Regola volume';
-
-  @override
-  String get videoEditorVolumeTitle => 'Volume';
 
   @override
   String videoEditorTimelineVolumePreview(int percent) {

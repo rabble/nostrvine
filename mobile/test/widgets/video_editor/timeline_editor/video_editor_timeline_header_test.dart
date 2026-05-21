@@ -69,6 +69,7 @@ void main() {
     Widget buildWidget({
       VideoEditorMainState? mainState,
       ClipEditorState? clipState,
+      TimelineOverlayState? overlayState,
       Duration? position,
     }) {
       if (mainState != null) {
@@ -76,6 +77,9 @@ void main() {
       }
       if (clipState != null) {
         when(() => mockClipBloc.state).thenReturn(clipState);
+      }
+      if (overlayState != null) {
+        when(() => mockTimelineOverlayBloc.state).thenReturn(overlayState);
       }
       if (position != null) {
         playheadPosition.value = position;
@@ -170,17 +174,6 @@ void main() {
     });
 
     group('undo/redo', () {
-      DivineIconButton buttonBySemanticLabel(
-        WidgetTester tester,
-        String label,
-      ) {
-        final finder = find.ancestor(
-          of: find.bySemanticsLabel(label),
-          matching: find.byType(DivineIconButton),
-        );
-        return tester.widget<DivineIconButton>(finder.first);
-      }
-
       testWidgets('undo button is disabled when canUndo is false', (
         tester,
       ) async {
@@ -284,7 +277,98 @@ void main() {
         expect(find.textContaining('08:00'), findsOneWidget);
       });
     });
+
+    group('volume mode', () {
+      testWidgets('shows slide-to-adjust copy in volume edit mode', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(
+            mainState: const VideoEditorMainState(isVolumeEditMode: true),
+            clipState: ClipEditorState(clips: [_createTestClip(id: 'a')]),
+          ),
+        );
+
+        expect(find.text('Slide to adjust'), findsOneWidget);
+      });
+
+      testWidgets('shows live preview percentage when notifier updates', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(
+            mainState: const VideoEditorMainState(isVolumeEditMode: true),
+            clipState: ClipEditorState(clips: [_createTestClip(id: 'a')]),
+          ),
+        );
+
+        volumePreviewNotifier.value = 0.42;
+        await tester.pump();
+
+        expect(find.text('Volume 42%'), findsOneWidget);
+      });
+
+      testWidgets(
+        'volume button uses highlighted override colors when active',
+        (
+          tester,
+        ) async {
+          await tester.pumpWidget(
+            buildWidget(
+              mainState: const VideoEditorMainState(isVolumeEditMode: true),
+              clipState: ClipEditorState(clips: [_createTestClip(id: 'a')]),
+            ),
+          );
+
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          final volumeButton = buttonBySemanticLabel(
+            tester,
+            l10n.videoEditorVolumeSemanticLabel,
+          );
+
+          expect(volumeButton.backgroundColor, VineTheme.accentYellow);
+          expect(
+            volumeButton.foregroundColor,
+            VineTheme.accentYellowBackground,
+          );
+        },
+      );
+
+      testWidgets(
+        'volume button uses accent icon when any volume is modified',
+        (
+          tester,
+        ) async {
+          await tester.pumpWidget(
+            buildWidget(
+              clipState: ClipEditorState(
+                clips: [
+                  _createTestClip(id: 'a').copyWith(volume: 0.6),
+                ],
+              ),
+            ),
+          );
+
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          final volumeButton = buttonBySemanticLabel(
+            tester,
+            l10n.videoEditorVolumeSemanticLabel,
+          );
+
+          expect(volumeButton.foregroundColor, VineTheme.accentYellow);
+          expect(volumeButton.backgroundColor, isNull);
+        },
+      );
+    });
   });
+}
+
+DivineIconButton buttonBySemanticLabel(WidgetTester tester, String label) {
+  final finder = find.ancestor(
+    of: find.bySemanticsLabel(label),
+    matching: find.byType(DivineIconButton),
+  );
+  return tester.widget<DivineIconButton>(finder.first);
 }
 
 DivineVideoClip _createTestClip({required String id, int seconds = 2}) {
