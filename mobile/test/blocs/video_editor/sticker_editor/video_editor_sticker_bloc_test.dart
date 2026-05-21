@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show StickerData, StickerPackData;
 import 'package:openvine/blocs/video_editor/sticker/video_editor_sticker_bloc.dart';
+import 'package:openvine/observability/reportable_error.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -88,6 +89,33 @@ void main() {
           expect(state.stickers[0].assetPath, testStickers[0].assetPath);
           expect(state.stickers[2].networkUrl, testStickers[2].networkUrl);
         },
+      );
+
+      blocTest<VideoEditorStickerBloc, VideoEditorStickerState>(
+        'wraps unexpected load error in Reportable with context',
+        setUp: () {
+          // Return malformed JSON so json.decode throws FormatException
+          // inside the bloc's catch. The mocked asset bytes themselves
+          // resolve fine — the invariant-shaped failure lands inside
+          // the bloc as designed.
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+              .setMockMessageHandler('flutter/assets', (_) async {
+                return ByteData.view(
+                  Uint8List.fromList(utf8.encode('not valid json {')).buffer,
+                );
+              });
+        },
+        build: () => VideoEditorStickerBloc(onPrecacheStickers: (_) {}),
+        act: (bloc) => bloc.add(const VideoEditorStickerLoad()),
+        expect: () => [
+          const VideoEditorStickerLoading(),
+          const VideoEditorStickerError(),
+        ],
+        errors: () => [
+          isA<Reportable<Object>>()
+              .having((r) => r.unwrap(), 'unwrap', isA<FormatException>())
+              .having((r) => r.context, 'context', '_onLoad'),
+        ],
       );
 
       blocTest<VideoEditorStickerBloc, VideoEditorStickerState>(
