@@ -1558,8 +1558,13 @@ class UploadManager {
       category: LogCategory.video,
     );
 
-    // Reset status and error
-    final resetUpload = upload.copyWith(status: UploadStatus.pending);
+    // retryCount tracks user-triggered retries, so consume one budget slot
+    // before starting a new upload session.
+    final nextRetryCount = (upload.retryCount ?? 0) + 1;
+    final resetUpload = upload.copyWith(
+      status: UploadStatus.pending,
+      retryCount: nextRetryCount,
+    );
 
     await _updateUpload(resetUpload);
 
@@ -2049,7 +2054,7 @@ class UploadManager {
         : now.difference(upload.createdAt);
 
     final shouldResetRetries = timeSinceLastAttempt.inHours >= 1;
-    final newRetryCount = shouldResetRetries ? 0 : (upload.retryCount ?? 0);
+    final newRetryCount = shouldResetRetries ? 1 : (upload.retryCount ?? 0) + 1;
 
     // Update upload with reset retry count if applicable
     final updatedUpload = upload.copyWith(

@@ -874,6 +874,98 @@ void main() {
         final recovered = retryUploadManager.getUpload(failedUpload.id);
         expect(recovered, isNotNull);
         expect(recovered!.status, equals(UploadStatus.readyToPublish));
+        expect(
+          recovered.retryCount,
+          equals(1),
+          reason: 'manual retry must consume one retry budget slot',
+        );
+      },
+    );
+
+    test(
+      'manual retries consume budget and the fourth retry is blocked',
+      () async {
+        final videoFile = File('${retryTestDir.path}/video3.mp4')
+          ..writeAsBytesSync([0, 1, 2, 3]);
+
+        when(
+          () => retryMockBlossom.isBlossomEnabled(),
+        ).thenAnswer((_) async => false);
+        when(
+          () => retryMockBlossom.uploadImage(
+            imageFile: any(named: 'imageFile'),
+            nostrPubkey: any(named: 'nostrPubkey'),
+            maxAttempts: any(named: 'maxAttempts'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenAnswer((_) async => const BlossomUploadResult(success: false));
+        when(
+          () => retryMockBlossom.uploadVideo(
+            videoFile: any(named: 'videoFile'),
+            nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            resumableSession: any(named: 'resumableSession'),
+            onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenThrow(
+          const BlossomUploadFailureException(
+            'Network error: connection refused',
+          ),
+        );
+
+        await expectLater(
+          retryUploadManager.startUpload(
+            videoFile: videoFile,
+            nostrPubkey: 'test-pubkey',
+          ),
+          throwsA(anything),
+        );
+
+        final upload = retryUploadManager.pendingUploads.firstOrNull;
+        expect(upload, isNotNull);
+        expect(upload!.retryCount, equals(0));
+
+        for (var manualRetry = 1; manualRetry <= 3; manualRetry++) {
+          await retryUploadManager.retryUpload(upload.id);
+
+          final latest = retryUploadManager.getUpload(upload.id);
+          expect(latest, isNotNull);
+          expect(latest!.status, equals(UploadStatus.failed));
+          expect(latest.retryCount, equals(manualRetry));
+          expect(
+            latest.canRetry,
+            equals(manualRetry < 3),
+            reason: 'manual retry budget should stop after three tries',
+          );
+        }
+
+        clearInteractions(retryMockBlossom);
+
+        await retryUploadManager.retryUpload(upload.id);
+
+        verifyNever(
+          () => retryMockBlossom.uploadVideo(
+            videoFile: any(named: 'videoFile'),
+            nostrPubkey: any(named: 'nostrPubkey'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            proofManifestJson: any(named: 'proofManifestJson'),
+            resumableSession: any(named: 'resumableSession'),
+            onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        );
+
+        final blocked = retryUploadManager.getUpload(upload.id);
+        expect(blocked, isNotNull);
+        expect(blocked!.status, equals(UploadStatus.failed));
+        expect(blocked.retryCount, equals(3));
+        expect(blocked.canRetry, isFalse);
       },
     );
   });
