@@ -7,8 +7,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/search_results_filter/search_results_filter.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
-import 'package:openvine/l10n/generated/app_localizations_en.dart';
 import 'package:openvine/screens/search_results/widgets/search_filter_pill.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 class _MockSearchResultsFilterCubit extends MockCubit<SearchResultsFilter>
     implements SearchResultsFilterCubit {}
@@ -20,6 +20,7 @@ void main() {
   group(SearchFilterPill, () {
     late _MockSearchResultsFilterCubit mockCubit;
     late _MockVideoSearchBloc mockVideoSearchBloc;
+    final l10n = lookupAppLocalizations(const Locale('en'));
 
     setUp(() {
       mockCubit = _MockSearchResultsFilterCubit();
@@ -91,17 +92,14 @@ void main() {
       tester,
     ) async {
       when(() => mockCubit.state).thenReturn(SearchResultsFilter.videos);
-      when(() => mockVideoSearchBloc.state).thenReturn(
-        const VideoSearchState(sort: VideoSearchSort.recent),
-      );
+      when(
+        () => mockVideoSearchBloc.state,
+      ).thenReturn(const VideoSearchState(sort: VideoSearchSort.recent));
 
       await tester.pumpWidget(buildSubject());
 
       expect(find.text('Videos'), findsOneWidget);
-      expect(
-        find.text(AppLocalizationsEn().searchVideosSortRecent),
-        findsOneWidget,
-      );
+      expect(find.text(l10n.searchVideosSortRecent), findsOneWidget);
     });
 
     testWidgets('dispatches $VideoSearchSortChanged after selecting sort', (
@@ -113,11 +111,9 @@ void main() {
       ).thenReturn(const VideoSearchState());
 
       await tester.pumpWidget(buildSubject());
-      await tester.tap(
-        find.text(AppLocalizationsEn().searchVideosSortTrending),
-      );
+      await tester.tap(find.text(l10n.searchVideosSortTrending));
       await tester.pumpAndSettle();
-      await tester.tap(find.text(AppLocalizationsEn().searchVideosSortRecent));
+      await tester.tap(find.text(l10n.searchVideosSortRecent));
       await tester.pumpAndSettle();
 
       verify(

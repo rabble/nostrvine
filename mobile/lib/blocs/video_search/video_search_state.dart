@@ -18,19 +18,6 @@ enum VideoSearchStatus {
   failure,
 }
 
-/// Server-backed sort options for video search.
-enum VideoSearchSort {
-  trending('trending'),
-  loops('loops'),
-  engagement('engagement'),
-  recent('recent')
-  ;
-
-  const VideoSearchSort(this.apiValue);
-
-  final String apiValue;
-}
-
 /// State class for the VideoSearchBloc
 final class VideoSearchState extends Equatable {
   const VideoSearchState({

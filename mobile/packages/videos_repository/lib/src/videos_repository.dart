@@ -16,6 +16,7 @@ import 'package:videos_repository/src/popular_videos_page.dart';
 import 'package:videos_repository/src/video_content_filter.dart';
 import 'package:videos_repository/src/video_event_filter.dart';
 import 'package:videos_repository/src/video_local_storage.dart';
+import 'package:videos_repository/src/video_search_sort.dart';
 
 export 'package:models/src/nip71_video_kinds.dart' show NIP71VideoKinds;
 
@@ -24,9 +25,6 @@ const int _videoKind = EventKind.videoVertical;
 
 /// Default number of videos to fetch per page.
 const int _defaultLimit = 25;
-
-/// Default Funnelcake search sort.
-const String defaultVideoSearchSort = 'trending';
 
 /// Timeout for relay search queries.
 ///
@@ -752,10 +750,7 @@ class VideosRepository {
         );
         final stats = response.videos;
         if (stats.isEmpty) {
-          final page = PopularVideosPage(
-            videos: visible,
-            hasMore: false,
-          );
+          final page = PopularVideosPage(videos: visible, hasMore: false);
           if (!skipCache && until == null && cursor == null) {
             _inMemoryFeedCache?.set(
               cacheKey,
@@ -1625,7 +1620,7 @@ class VideosRepository {
     required String query,
     int limit = 50,
     int offset = 0,
-    String sort = defaultVideoSearchSort,
+    VideoSearchSort sort = defaultVideoSearchSort,
   }) async {
     final trimmed = query.trim();
     if (trimmed.isEmpty) {
@@ -1640,7 +1635,7 @@ class VideosRepository {
         query: trimmed,
         limit: limit,
         offset: offset,
-        sort: sort,
+        sort: sort.apiValue,
       );
       final videos = _transformVideoStats(
         response.videos,
@@ -1699,7 +1694,7 @@ class VideosRepository {
   Stream<List<VideoEvent>> searchVideos({
     required String query,
     int limit = 50,
-    String sort = defaultVideoSearchSort,
+    VideoSearchSort sort = defaultVideoSearchSort,
   }) async* {
     final trimmed = query.trim();
     if (trimmed.isEmpty) return;

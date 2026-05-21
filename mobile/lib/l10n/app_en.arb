@@ -3474,9 +3474,21 @@
   "searchVideosLoadingLabel": "Loading video results",
   "searchVideosSortOptionsLabel": "Sort video results",
   "searchVideosSortTrending": "Hot",
+  "@searchVideosSortTrending": {
+    "description": "Label for the video search sort option that shows currently popular or trending results."
+  },
   "searchVideosSortLoops": "Most loops",
+  "@searchVideosSortLoops": {
+    "description": "Label for the video search sort option that ranks results by loop count."
+  },
   "searchVideosSortEngagement": "Most engaged",
+  "@searchVideosSortEngagement": {
+    "description": "Label for the video search sort option that ranks results by engagement."
+  },
   "searchVideosSortRecent": "Recent",
+  "@searchVideosSortRecent": {
+    "description": "Label for the video search sort option that shows the newest results first."
+  },
   "searchListsSectionHeader": "Lists",
   "searchListsLoadingLabel": "Loading list results",
   "cameraAgeRestriction": "You must be 16 or older to create content",
