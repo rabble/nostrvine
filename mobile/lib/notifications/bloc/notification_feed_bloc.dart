@@ -10,6 +10,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart';
 import 'package:notification_repository/notification_repository.dart';
+import 'package:openvine/notifications/bloc/reportable_sites.dart';
+import 'package:openvine/observability/reportable_error.dart';
 
 part 'notification_feed_event.dart';
 part 'notification_feed_state.dart';
@@ -106,20 +108,44 @@ class NotificationFeedBloc
     try {
       await _notificationRepository.refresh();
       emit(state.copyWith(status: NotificationFeedStatus.loaded));
-    } catch (e, s) {
+    } on Exception catch (e, s) {
       // `NotificationRepository.refresh` propagates typed
       // `FunnelcakeException` (4xx/5xx/timeout; transient-retry
       // exhausted on first page). Per .claude/rules/error_handling.md
       // they are NOT Reportable — the UI either keeps cached items
       // with an inline `refreshError` banner or falls back to
       // `NotificationFeedStatus.failure`.
-      addError(e, s);
+      //
       // Hard-failure only fires when the cache is also empty — the
-      // repository surfaces `lastRefreshError` on the snapshot, and the
-      // view renders an inline banner on top of cached items in that
-      // case. `state.notifications` already reflects any hydrated cache
-      // because `_onSnapshotChanged` runs before this catch arm if the
-      // repository emitted before throwing.
+      // repository surfaces `lastRefreshError` on the snapshot, and
+      // the view renders an inline banner on top of cached items in
+      // that case. `state.notifications` already reflects any hydrated
+      // cache because `_onSnapshotChanged` runs before this catch arm
+      // if the repository emitted before throwing.
+      addError(e, s);
+      final hasCachedItems = state.notifications.isNotEmpty;
+      emit(
+        state.copyWith(
+          status: hasCachedItems
+              ? NotificationFeedStatus.loaded
+              : NotificationFeedStatus.failure,
+          refreshError: true,
+        ),
+      );
+      return;
+    } catch (e, s) {
+      // Errors (StateError, TypeError, RangeError) escape `on Exception`
+      // and reach here. Per .claude/rules/error_handling.md they are
+      // matrix-YES invariant violations — wrap with Reportable so
+      // DivineBlocObserver forwards to Crashlytics. Recovery emit
+      // mirrors the matrix-NO arm so the UX is preserved.
+      addError(
+        Reportable(
+          e,
+          context: NotificationFeedBlocReportableSites.onStarted,
+        ),
+        s,
+      );
       final hasCachedItems = state.notifications.isNotEmpty;
       emit(
         state.copyWith(
@@ -145,12 +171,22 @@ class NotificationFeedBloc
     try {
       await _notificationRepository.getNotifications();
       emit(state.copyWith(isLoadingMore: false));
-    } catch (e, s) {
+    } on Exception catch (e, s) {
       // `NotificationRepository.getNotifications` (single-attempt
       // paginate-load-more) propagates typed `FunnelcakeException`
       // (4xx/5xx/timeout). Per .claude/rules/error_handling.md they
       // are NOT Reportable — the BLoC recovers `isLoadingMore: false`.
       addError(e, s);
+      emit(state.copyWith(isLoadingMore: false));
+    } catch (e, s) {
+      // Errors (StateError, TypeError) — matrix-YES invariant.
+      addError(
+        Reportable(
+          e,
+          context: NotificationFeedBlocReportableSites.onLoadMore,
+        ),
+        s,
+      );
       emit(state.copyWith(isLoadingMore: false));
     }
   }
@@ -163,13 +199,32 @@ class NotificationFeedBloc
     try {
       await _notificationRepository.refresh();
       emit(state.copyWith(status: NotificationFeedStatus.loaded));
-    } catch (e, s) {
+    } on Exception catch (e, s) {
       // `NotificationRepository.refresh` propagates typed
       // `FunnelcakeException` (4xx/5xx/timeout). Per
       // .claude/rules/error_handling.md they are NOT Reportable —
       // the UI either keeps cached items with `refreshError: true`
       // or falls back to `NotificationFeedStatus.failure`.
       addError(e, s);
+      final hasCachedItems = state.notifications.isNotEmpty;
+      emit(
+        state.copyWith(
+          status: hasCachedItems
+              ? NotificationFeedStatus.loaded
+              : NotificationFeedStatus.failure,
+          refreshError: true,
+        ),
+      );
+    } catch (e, s) {
+      // Errors (StateError, TypeError) — matrix-YES invariant.
+      // Recovery emit mirrors the matrix-NO arm so the UX is preserved.
+      addError(
+        Reportable(
+          e,
+          context: NotificationFeedBlocReportableSites.onRefreshed,
+        ),
+        s,
+      );
       final hasCachedItems = state.notifications.isNotEmpty;
       emit(
         state.copyWith(
@@ -192,12 +247,21 @@ class NotificationFeedBloc
   ) async {
     try {
       await _notificationRepository.markAsRead([event.notificationId]);
-    } catch (e, s) {
+    } on Exception catch (e, s) {
       // `NotificationRepository.markAsRead` propagates
       // `FunnelcakeException` and local Drift DAO write failures
       // after rolling the optimistic snapshot back. Per
       // .claude/rules/error_handling.md they are NOT Reportable.
       addError(e, s);
+    } catch (e, s) {
+      // Errors (StateError, TypeError) — matrix-YES invariant.
+      addError(
+        Reportable(
+          e,
+          context: NotificationFeedBlocReportableSites.onItemTapped,
+        ),
+        s,
+      );
     }
   }
 
@@ -210,13 +274,22 @@ class NotificationFeedBloc
   ) async {
     try {
       await _notificationRepository.markAllAsRead();
-    } catch (e, s) {
+    } on Exception catch (e, s) {
       // `NotificationRepository.markAllAsRead` propagates
       // `FunnelcakeException` and local Drift DAO write failures
       // after rolling the optimistic snapshot back (PR #4034
       // semantics). Per .claude/rules/error_handling.md they are
       // NOT Reportable.
       addError(e, s);
+    } catch (e, s) {
+      // Errors (StateError, TypeError) — matrix-YES invariant.
+      addError(
+        Reportable(
+          e,
+          context: NotificationFeedBlocReportableSites.onMarkAllRead,
+        ),
+        s,
+      );
     }
   }
 
@@ -235,13 +308,23 @@ class NotificationFeedBloc
       emit(
         state.copyWith(notifications: _applyFollowState(state.notifications)),
       );
-    } catch (e, s) {
+    } on Exception catch (e, s) {
       // `FollowRepository.follow` propagates `Exception('User not
       // authenticated')` (auth/session) and relay-IO failures from
       // contact-list broadcast — the repo rolls back the optimistic
       // follow internally. Per .claude/rules/error_handling.md they
       // are NOT Reportable.
       addError(e, s);
+    } catch (e, s) {
+      // Errors (StateError, TypeError from the post-await
+      // `_applyFollowState` transform) — matrix-YES invariant.
+      addError(
+        Reportable(
+          e,
+          context: NotificationFeedBlocReportableSites.onFollowBack,
+        ),
+        s,
+      );
     }
   }
 

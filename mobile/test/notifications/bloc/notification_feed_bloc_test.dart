@@ -14,6 +14,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:notification_repository/notification_repository.dart';
 import 'package:openvine/notifications/bloc/notification_feed_bloc.dart';
+import 'package:openvine/observability/reportable_error.dart';
 
 class _MockNotificationRepository extends Mock
     implements NotificationRepository {}
@@ -262,6 +263,32 @@ void main() {
         ],
         errors: () => [isA<Exception>()],
       );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'wraps unexpected Error from refresh as Reportable and emits '
+        'failure with refreshError',
+        setUp: () {
+          when(
+            () => mockNotificationRepo.refresh(),
+          ).thenThrow(StateError('invariant'));
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(NotificationFeedStarted()),
+        expect: () => [
+          NotificationFeedState(status: NotificationFeedStatus.loading),
+          NotificationFeedState(
+            status: NotificationFeedStatus.failure,
+            refreshError: true,
+          ),
+        ],
+        errors: () => [
+          isA<Reportable<Object>>().having(
+            (r) => r.unwrap(),
+            'unwrap',
+            isA<StateError>(),
+          ),
+        ],
+      );
     });
 
     group('NotificationFeedLoadMore', () {
@@ -328,6 +355,40 @@ void main() {
           ),
         ],
         errors: () => [isA<Exception>()],
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'wraps unexpected Error from getNotifications as Reportable and '
+        'recovers isLoadingMore',
+        setUp: () {
+          when(
+            () => mockNotificationRepo.getNotifications(),
+          ).thenThrow(StateError('invariant'));
+        },
+        build: createBloc,
+        seed: () => NotificationFeedState(
+          status: NotificationFeedStatus.loaded,
+          hasMore: true,
+        ),
+        act: (bloc) => bloc.add(NotificationFeedLoadMore()),
+        expect: () => [
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            hasMore: true,
+            isLoadingMore: true,
+          ),
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            hasMore: true,
+          ),
+        ],
+        errors: () => [
+          isA<Reportable<Object>>().having(
+            (r) => r.unwrap(),
+            'unwrap',
+            isA<StateError>(),
+          ),
+        ],
       );
     });
 
@@ -409,6 +470,31 @@ void main() {
         ],
         errors: () => [isA<Exception>()],
       );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'wraps unexpected Error from refresh as Reportable and emits '
+        'failure with refreshError',
+        setUp: () {
+          when(
+            () => mockNotificationRepo.refresh(),
+          ).thenThrow(StateError('invariant'));
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(NotificationFeedRefreshed()),
+        expect: () => [
+          NotificationFeedState(
+            status: NotificationFeedStatus.failure,
+            refreshError: true,
+          ),
+        ],
+        errors: () => [
+          isA<Reportable<Object>>().having(
+            (r) => r.unwrap(),
+            'unwrap',
+            isA<StateError>(),
+          ),
+        ],
+      );
     });
 
     group('NotificationFeedItemTapped', () {
@@ -432,6 +518,24 @@ void main() {
         act: (bloc) => bloc.add(NotificationFeedItemTapped('v1')),
         errors: () => [isA<Exception>()],
       );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'wraps unexpected Error from markAsRead as Reportable',
+        setUp: () {
+          when(
+            () => mockNotificationRepo.markAsRead(any()),
+          ).thenThrow(StateError('invariant'));
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(NotificationFeedItemTapped('v1')),
+        errors: () => [
+          isA<Reportable<Object>>().having(
+            (r) => r.unwrap(),
+            'unwrap',
+            isA<StateError>(),
+          ),
+        ],
+      );
     });
 
     group('NotificationFeedMarkAllRead', () {
@@ -454,6 +558,24 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(NotificationFeedMarkAllRead()),
         errors: () => [isA<Exception>()],
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'wraps unexpected Error from markAllAsRead as Reportable',
+        setUp: () {
+          when(
+            () => mockNotificationRepo.markAllAsRead(),
+          ).thenThrow(StateError('invariant'));
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(NotificationFeedMarkAllRead()),
+        errors: () => [
+          isA<Reportable<Object>>().having(
+            (r) => r.unwrap(),
+            'unwrap',
+            isA<StateError>(),
+          ),
+        ],
       );
     });
 
@@ -497,6 +619,24 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(NotificationFeedFollowBack(_bobPubkey)),
         errors: () => [isA<Exception>()],
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'wraps unexpected Error from follow as Reportable',
+        setUp: () {
+          when(
+            () => mockFollowRepo.follow(_bobPubkey),
+          ).thenThrow(StateError('invariant'));
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(NotificationFeedFollowBack(_bobPubkey)),
+        errors: () => [
+          isA<Reportable<Object>>().having(
+            (r) => r.unwrap(),
+            'unwrap',
+            isA<StateError>(),
+          ),
+        ],
       );
     });
   });
