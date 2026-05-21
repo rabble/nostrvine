@@ -98,7 +98,7 @@ void main() {
     }
 
     group('renders', () {
-      testWidgets(
+      testWidgetsWithSurfaceSize(
         'shows only editable lists and filters read-only lists out',
         (tester) async {
           final editable = _buildList(id: 'list-1', name: 'Close Friends');
@@ -121,7 +121,7 @@ void main() {
         },
       );
 
-      testWidgets(
+      testWidgetsWithSurfaceSize(
         'selected row is checked when target pubkey is already in the list',
         (tester) async {
           final memberList = _buildList(
@@ -159,7 +159,7 @@ void main() {
     });
 
     group('interactions', () {
-      testWidgets(
+      testWidgetsWithSurfaceSize(
         'tapping a row dispatches $PeopleListsPubkeyToggleRequested with '
         'the target list id and full pubkey',
         (tester) async {
@@ -186,7 +186,7 @@ void main() {
     });
 
     group('empty state', () {
-      testWidgets(
+      testWidgetsWithSurfaceSize(
         'shows hint text when there are no editable lists',
         (tester) async {
           when(() => bloc.state).thenReturn(_stateWith(lists: const []));
@@ -203,7 +203,7 @@ void main() {
         },
       );
 
-      testWidgets(
+      testWidgetsWithSurfaceSize(
         'ignores read-only lists when deciding whether the empty state is '
         'shown',
         (tester) async {
@@ -223,7 +223,7 @@ void main() {
         },
       );
 
-      testWidgets(
+      testWidgetsWithSurfaceSize(
         'Create list button is present in the modal sheet and opens the '
         'new people list sheet when tapped',
         (tester) async {
@@ -277,45 +277,60 @@ void main() {
     });
 
     group('theming', () {
-      testWidgets('renders inside $VineBottomSheet when shown as a modal', (
-        tester,
-      ) async {
-        final list = _buildList(id: 'list-1', name: 'Close Friends');
-        when(() => bloc.state).thenReturn(_stateWith(lists: [list]));
+      testWidgetsWithSurfaceSize(
+        'renders inside $VineBottomSheet when shown as a modal',
+        (
+          tester,
+        ) async {
+          final list = _buildList(id: 'list-1', name: 'Close Friends');
+          when(() => bloc.state).thenReturn(_stateWith(lists: [list]));
 
-        // BlocProvider must sit above the navigator so the bloc is
-        // reachable from the modal route. Wrapping the MaterialApp does
-        // this because MaterialApp builds the root Navigator below it.
-        await tester.pumpWidget(
-          BlocProvider<PeopleListsBloc>.value(
-            value: bloc,
-            child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(
-                body: Builder(
-                  builder: (context) {
-                    return ElevatedButton(
-                      onPressed: () => AddToPeopleListsSheet.show(
-                        context,
-                        pubkey: _targetPubkey,
-                        entryPoint: PeopleListEntryPoint.shareMenu,
-                      ),
-                      child: const Text('open'),
-                    );
-                  },
+          // BlocProvider must sit above the navigator so the bloc is
+          // reachable from the modal route. Wrapping the MaterialApp does
+          // this because MaterialApp builds the root Navigator below it.
+          await tester.pumpWidget(
+            BlocProvider<PeopleListsBloc>.value(
+              value: bloc,
+              child: MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: Scaffold(
+                  body: Builder(
+                    builder: (context) {
+                      return ElevatedButton(
+                        onPressed: () => AddToPeopleListsSheet.show(
+                          context,
+                          pubkey: _targetPubkey,
+                          entryPoint: PeopleListEntryPoint.shareMenu,
+                        ),
+                        child: const Text('open'),
+                      );
+                    },
+                  ),
                 ),
               ),
             ),
-          ),
-        );
+          );
 
-        await tester.tap(find.text('open'));
-        await tester.pumpAndSettle();
+          await tester.tap(find.text('open'));
+          await tester.pumpAndSettle();
 
-        expect(find.byType(VineBottomSheet), findsOneWidget);
-        expect(find.byType(AddToPeopleListsSheet), findsOneWidget);
-      });
+          expect(find.byType(VineBottomSheet), findsOneWidget);
+          expect(find.byType(AddToPeopleListsSheet), findsOneWidget);
+        },
+      );
     });
+  });
+}
+
+void testWidgetsWithSurfaceSize(
+  String description,
+  WidgetTesterCallback callback,
+) {
+  testWidgets(description, (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await callback(tester);
   });
 }

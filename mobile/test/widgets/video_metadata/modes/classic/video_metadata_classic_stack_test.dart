@@ -50,65 +50,94 @@ void main() {
       );
     }
 
-    testWidgets('renders $VideoMetadataClassicStack', (tester) async {
+    testWidgetsWithSurfaceSize('renders $VideoMetadataClassicStack', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildWidget());
 
       expect(find.byType(VideoMetadataClassicStack), findsOneWidget);
     });
 
-    testWidgets('renders $VideoMetadataClassicAppBar', (tester) async {
+    testWidgetsWithSurfaceSize('renders $VideoMetadataClassicAppBar', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildWidget());
 
       expect(find.byType(VideoMetadataClassicAppBar), findsOneWidget);
     });
 
-    testWidgets('renders $VideoMetadataClassicPreviewThumbnail', (
+    testWidgetsWithSurfaceSize(
+      'renders $VideoMetadataClassicPreviewThumbnail',
+      (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget());
+
+        expect(
+          find.byType(VideoMetadataClassicPreviewThumbnail),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgetsWithSurfaceSize('renders $VideoMetadataFormFields', (
       tester,
     ) async {
-      await tester.pumpWidget(buildWidget());
-
-      expect(find.byType(VideoMetadataClassicPreviewThumbnail), findsOneWidget);
-    });
-
-    testWidgets('renders $VideoMetadataFormFields', (tester) async {
       await tester.pumpWidget(buildWidget());
 
       expect(find.byType(VideoMetadataFormFields), findsOneWidget);
     });
 
-    testWidgets('renders $VideoMetadataClassicBottomBar', (tester) async {
+    testWidgetsWithSurfaceSize('renders $VideoMetadataClassicBottomBar', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildWidget());
 
       expect(find.byType(VideoMetadataClassicBottomBar), findsOneWidget);
     });
 
-    testWidgets('uses correct background color', (tester) async {
+    testWidgetsWithSurfaceSize('uses correct background color', (tester) async {
       await tester.pumpWidget(buildWidget());
 
       final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
       expect(scaffold.backgroundColor, equals(VineTheme.surfaceContainerHigh));
     });
 
-    testWidgets('body is scrollable', (tester) async {
+    testWidgetsWithSurfaceSize('body is scrollable', (tester) async {
       await tester.pumpWidget(buildWidget());
 
       expect(find.byType(SingleChildScrollView), findsOneWidget);
     });
 
-    testWidgets('$VideoMetadataFormFields disables optional sections', (
-      tester,
-    ) async {
-      await tester.pumpWidget(buildWidget());
+    testWidgetsWithSurfaceSize(
+      '$VideoMetadataFormFields disables optional sections',
+      (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget());
 
-      final formFields = tester.widget<VideoMetadataFormFields>(
-        find.byType(VideoMetadataFormFields),
-      );
-      expect(formFields.enableTags, isFalse);
-      expect(formFields.enableExpiration, isFalse);
-      expect(formFields.enableContentWarning, isFalse);
-      expect(formFields.enableCollaborators, isFalse);
-      expect(formFields.enableInspiredBy, isFalse);
-    });
+        final formFields = tester.widget<VideoMetadataFormFields>(
+          find.byType(VideoMetadataFormFields),
+        );
+        expect(formFields.enableTags, isFalse);
+        expect(formFields.enableExpiration, isFalse);
+        expect(formFields.enableContentWarning, isFalse);
+        expect(formFields.enableCollaborators, isFalse);
+        expect(formFields.enableInspiredBy, isFalse);
+      },
+    );
+  });
+}
+
+void testWidgetsWithSurfaceSize(
+  String description,
+  WidgetTesterCallback callback,
+) {
+  testWidgets(description, (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await callback(tester);
   });
 }
 

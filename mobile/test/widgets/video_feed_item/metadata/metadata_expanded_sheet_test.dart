@@ -191,48 +191,53 @@ void main() {
   // Overview section
   // ---------------------------------------------------------------------------
   group('_OverviewSection (via $MetadataExpandedSheet)', () {
-    testWidgets('renders fetched parent context for a video reply', (
+    testWidgetsWithSurfaceSize(
+      'renders fetched parent context for a video reply',
+      (
+        tester,
+      ) async {
+        final video = _makeVideo(
+          title: 'Comment video',
+          rawTags: const {
+            'A': _parentAddressableId,
+            'E': _parentEventId,
+            'K': '34236',
+            'a': _parentAddressableId,
+          },
+          inspiredByVideo: const InspiredByInfo(
+            addressableId: _parentAddressableId,
+          ),
+        );
+        final parentVideo = _makeVideo(
+          title: 'Original cat video',
+          content: 'where the reply belongs',
+        );
+        when(
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            _parentAddressableId,
+          ),
+        ).thenAnswer((_) async => parentVideo);
+
+        await tester.pumpWidget(
+          buildSubject(child: MetadataExpandedSheet(video: video)),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('In reply to'), findsOneWidget);
+        expect(find.text('Reply to Original cat video'), findsOneWidget);
+        expect(find.textContaining('Inspired by'), findsNothing);
+        verify(
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            _parentAddressableId,
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgetsWithSurfaceSize('renders title and description when present', (
       tester,
     ) async {
-      final video = _makeVideo(
-        title: 'Comment video',
-        rawTags: const {
-          'A': _parentAddressableId,
-          'E': _parentEventId,
-          'K': '34236',
-          'a': _parentAddressableId,
-        },
-        inspiredByVideo: const InspiredByInfo(
-          addressableId: _parentAddressableId,
-        ),
-      );
-      final parentVideo = _makeVideo(
-        title: 'Original cat video',
-        content: 'where the reply belongs',
-      );
-      when(
-        () => mockVideosRepository.fetchVideoWithStatsForRouteId(
-          _parentAddressableId,
-        ),
-      ).thenAnswer((_) async => parentVideo);
-
-      await tester.pumpWidget(
-        buildSubject(child: MetadataExpandedSheet(video: video)),
-      );
-      await tester.pump();
-      await tester.pump();
-
-      expect(find.text('In reply to'), findsOneWidget);
-      expect(find.text('Reply to Original cat video'), findsOneWidget);
-      expect(find.textContaining('Inspired by'), findsNothing);
-      verify(
-        () => mockVideosRepository.fetchVideoWithStatsForRouteId(
-          _parentAddressableId,
-        ),
-      ).called(1);
-    });
-
-    testWidgets('renders title and description when present', (tester) async {
       final video = _makeVideo(title: 'Who knew?', content: 'A description');
 
       await tester.pumpWidget(
@@ -243,7 +248,9 @@ void main() {
       expect(find.text('A description'), findsOneWidget);
     });
 
-    testWidgets('renders description with clickable rich text', (tester) async {
+    testWidgetsWithSurfaceSize('renders description with clickable rich text', (
+      tester,
+    ) async {
       final video = _makeVideo(
         title: 'Who knew?',
         content: 'Read more at https://example.com/docs #proof',
@@ -257,28 +264,33 @@ void main() {
       expect(find.byType(LinkifiedText), findsOneWidget);
     });
 
-    testWidgets('still renders the section without title or description', (
+    testWidgetsWithSurfaceSize(
+      'still renders the section without title or description',
+      (
+        tester,
+      ) async {
+        final video = _makeVideo();
+
+        await tester.pumpWidget(
+          buildSubject(child: MetadataExpandedSheet(video: video)),
+        );
+
+        // Stats row is always visible.
+        expect(find.byType(MetadataStatsRow), findsOneWidget);
+        // The title text must not appear since the video has no title.
+        expect(find.text('Who knew?'), findsNothing);
+        // The date renders even with no title or description. The visible
+        // text is just the date — "Posted on …" is the screen-reader label.
+        final expectedDate = DateFormat.yMMMMd('en').format(
+          DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000, isUtc: true),
+        );
+        expect(find.text(expectedDate), findsOneWidget);
+      },
+    );
+
+    testWidgetsWithSurfaceSize('renders posted date for a recent post', (
       tester,
     ) async {
-      final video = _makeVideo();
-
-      await tester.pumpWidget(
-        buildSubject(child: MetadataExpandedSheet(video: video)),
-      );
-
-      // Stats row is always visible.
-      expect(find.byType(MetadataStatsRow), findsOneWidget);
-      // The title text must not appear since the video has no title.
-      expect(find.text('Who knew?'), findsNothing);
-      // The date renders even with no title or description. The visible
-      // text is just the date — "Posted on …" is the screen-reader label.
-      final expectedDate = DateFormat.yMMMMd('en').format(
-        DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000, isUtc: true),
-      );
-      expect(find.text(expectedDate), findsOneWidget);
-    });
-
-    testWidgets('renders posted date for a recent post', (tester) async {
       final video = _makeVideo(title: 'Who knew?', content: 'A description');
 
       await tester.pumpWidget(
@@ -291,67 +303,55 @@ void main() {
       expect(find.text(expectedDate), findsOneWidget);
     });
 
-    testWidgets('prefers published_at for the visible posted date', (
-      tester,
-    ) async {
-      const publishedAt = 1700604800;
-      final video = _makeVideo(
-        title: 'Who knew?',
-        content: 'A description',
-        publishedAt: '$publishedAt',
-      );
+    testWidgetsWithSurfaceSize(
+      'prefers published_at for the visible posted date',
+      (
+        tester,
+      ) async {
+        const publishedAt = 1700604800;
+        final video = _makeVideo(
+          title: 'Who knew?',
+          content: 'A description',
+          publishedAt: '$publishedAt',
+        );
 
-      await tester.pumpWidget(
-        buildSubject(child: MetadataExpandedSheet(video: video)),
-      );
+        await tester.pumpWidget(
+          buildSubject(child: MetadataExpandedSheet(video: video)),
+        );
 
-      final expectedDate = DateFormat.yMMMMd('en').format(
-        DateTime.fromMillisecondsSinceEpoch(publishedAt * 1000, isUtc: true),
-      );
-      expect(find.text(expectedDate), findsOneWidget);
-    });
+        final expectedDate = DateFormat.yMMMMd('en').format(
+          DateTime.fromMillisecondsSinceEpoch(publishedAt * 1000, isUtc: true),
+        );
+        expect(find.text(expectedDate), findsOneWidget);
+      },
+    );
 
-    testWidgets('renders Vine-era date for a classic vine timestamp', (
-      tester,
-    ) async {
-      // 2012-12-11 21:38 UTC — a classic Vine-era timestamp.
-      final video = _makeVideo(
-        title: 'Classic vine',
-        content: 'From the archives',
-        createdAt: 1355261891,
-      );
+    testWidgetsWithSurfaceSize(
+      'renders Vine-era date for a classic vine timestamp',
+      (
+        tester,
+      ) async {
+        // 2012-12-11 21:38 UTC — a classic Vine-era timestamp.
+        final video = _makeVideo(
+          title: 'Classic vine',
+          content: 'From the archives',
+          createdAt: 1355261891,
+        );
 
-      await tester.pumpWidget(
-        buildSubject(child: MetadataExpandedSheet(video: video)),
-      );
+        await tester.pumpWidget(
+          buildSubject(child: MetadataExpandedSheet(video: video)),
+        );
 
-      // Year 2012 must be visible regardless of locale-specific month name.
-      expect(find.textContaining('2012'), findsWidgets);
-    });
+        // Year 2012 must be visible regardless of locale-specific month name.
+        expect(find.textContaining('2012'), findsWidgets);
+      },
+    );
 
-    testWidgets('applies labelSmall typography with onSurfaceVariant color', (
-      tester,
-    ) async {
-      final video = _makeVideo(title: 'Who knew?');
-
-      await tester.pumpWidget(
-        buildSubject(child: MetadataExpandedSheet(video: video)),
-      );
-
-      final expectedDate = DateFormat.yMMMMd('en').format(
-        DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000, isUtc: true),
-      );
-      final dateText = tester.widget<Text>(find.text(expectedDate));
-      expect(dateText.style?.fontSize, equals(11));
-      expect(dateText.style?.fontWeight, equals(FontWeight.w600));
-      expect(dateText.style?.color, equals(VineTheme.onSurfaceVariant));
-    });
-
-    testWidgets('wraps the date in a Semantics with the localized label', (
-      tester,
-    ) async {
-      final semantics = tester.ensureSemantics();
-      try {
+    testWidgetsWithSurfaceSize(
+      'applies labelSmall typography with onSurfaceVariant color',
+      (
+        tester,
+      ) async {
         final video = _makeVideo(title: 'Who knew?');
 
         await tester.pumpWidget(
@@ -361,23 +361,49 @@ void main() {
         final expectedDate = DateFormat.yMMMMd('en').format(
           DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000, isUtc: true),
         );
-        final l10n = _l10n(tester);
-        final node = tester.getSemantics(find.text(expectedDate));
-        expect(
-          node.label,
-          contains(l10n.metadataPostedDateSemantics(expectedDate)),
-        );
-      } finally {
-        semantics.dispose();
-      }
-    });
+        final dateText = tester.widget<Text>(find.text(expectedDate));
+        expect(dateText.style?.fontSize, equals(11));
+        expect(dateText.style?.fontWeight, equals(FontWeight.w600));
+        expect(dateText.style?.color, equals(VineTheme.onSurfaceVariant));
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
+      'wraps the date in a Semantics with the localized label',
+      (
+        tester,
+      ) async {
+        final semantics = tester.ensureSemantics();
+        try {
+          final video = _makeVideo(title: 'Who knew?');
+
+          await tester.pumpWidget(
+            buildSubject(child: MetadataExpandedSheet(video: video)),
+          );
+
+          final expectedDate = DateFormat.yMMMMd('en').format(
+            DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000, isUtc: true),
+          );
+          final l10n = _l10n(tester);
+          final node = tester.getSemantics(find.text(expectedDate));
+          expect(
+            node.label,
+            contains(l10n.metadataPostedDateSemantics(expectedDate)),
+          );
+        } finally {
+          semantics.dispose();
+        }
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------
   // Stats row
   // ---------------------------------------------------------------------------
   group(MetadataStatsRow, () {
-    testWidgets('renders all four stat columns with counts', (tester) async {
+    testWidgetsWithSurfaceSize('renders all four stat columns with counts', (
+      tester,
+    ) async {
       final video = _makeVideo();
 
       await tester.pumpWidget(
@@ -398,7 +424,9 @@ void main() {
       expect(find.text(l10n.metadataRepostsLabel), findsOneWidget);
     });
 
-    testWidgets('uses singular Loop label when count is 1', (tester) async {
+    testWidgetsWithSurfaceSize('uses singular Loop label when count is 1', (
+      tester,
+    ) async {
       final video = _makeVideo(originalLoops: 1);
 
       await tester.pumpWidget(
@@ -409,7 +437,7 @@ void main() {
       expect(find.text(l10n.metadataLoopsLabel(1)), findsOneWidget);
     });
 
-    testWidgets('shows dash when loading', (tester) async {
+    testWidgetsWithSurfaceSize('shows dash when loading', (tester) async {
       when(() => mockInteractionsBloc.state).thenReturn(
         const VideoInteractionsState(status: VideoInteractionsStatus.loading),
       );
@@ -428,7 +456,9 @@ void main() {
   // Creator section
   // ---------------------------------------------------------------------------
   group(MetadataCreatorSection, () {
-    testWidgets('renders creator chip with profile name', (tester) async {
+    testWidgetsWithSurfaceSize('renders creator chip with profile name', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildSubject(
           providerOverrides: [
@@ -450,17 +480,7 @@ void main() {
   // Badges row
   // ---------------------------------------------------------------------------
   group(MetadataBadgesRow, () {
-    testWidgets('renders Human-Made badge when hasProofMode', (tester) async {
-      final video = _makeVideo(rawTags: {'verification': 'verified_mobile'});
-      await tester.pumpWidget(
-        buildSubject(child: MetadataBadgesRow(video: video)),
-      );
-
-      final l10n = _l10n(tester);
-      expect(find.textContaining(l10n.metadataBadgeHumanMade), findsOneWidget);
-    });
-
-    testWidgets('renders the divine-mark icon next to the Human-Made label', (
+    testWidgetsWithSurfaceSize('renders Human-Made badge when hasProofMode', (
       tester,
     ) async {
       final video = _makeVideo(rawTags: {'verification': 'verified_mobile'});
@@ -470,11 +490,31 @@ void main() {
 
       final l10n = _l10n(tester);
       expect(find.textContaining(l10n.metadataBadgeHumanMade), findsOneWidget);
-      final icon = tester.widget<DivineIcon>(find.byType(DivineIcon));
-      expect(icon.icon, equals(DivineIconName.divineMark));
     });
 
-    testWidgets('renders Not Divine badge for external videos', (tester) async {
+    testWidgetsWithSurfaceSize(
+      'renders the divine-mark icon next to the Human-Made label',
+      (
+        tester,
+      ) async {
+        final video = _makeVideo(rawTags: {'verification': 'verified_mobile'});
+        await tester.pumpWidget(
+          buildSubject(child: MetadataBadgesRow(video: video)),
+        );
+
+        final l10n = _l10n(tester);
+        expect(
+          find.textContaining(l10n.metadataBadgeHumanMade),
+          findsOneWidget,
+        );
+        final icon = tester.widget<DivineIcon>(find.byType(DivineIcon));
+        expect(icon.icon, equals(DivineIconName.divineMark));
+      },
+    );
+
+    testWidgetsWithSurfaceSize('renders Not Divine badge for external videos', (
+      tester,
+    ) async {
       final video = _makeVideo();
       await tester.pumpWidget(
         buildSubject(child: MetadataBadgesRow(video: video)),
@@ -485,7 +525,9 @@ void main() {
       expect(find.text(l10n.metadataBadgeNotDivine), findsOneWidget);
     });
 
-    testWidgets('renders both badges with dot separator', (tester) async {
+    testWidgetsWithSurfaceSize('renders both badges with dot separator', (
+      tester,
+    ) async {
       // hasProofMode but not Divine hosted
       final video = _makeVideo(rawTags: {'verification': 'verified_web'});
       await tester.pumpWidget(
@@ -499,7 +541,7 @@ void main() {
       expect(find.text(l10n.metadataBadgeNotDivine), findsNothing);
     });
 
-    testWidgets('hides when no badges apply', (tester) async {
+    testWidgetsWithSurfaceSize('hides when no badges apply', (tester) async {
       // Divine-hosted video with no proof → no badges
       // (isFromDivineServer = true, so Not Divine hidden; no proof = no HM)
       final video = VideoEvent(
@@ -524,7 +566,9 @@ void main() {
   // Tags section
   // ---------------------------------------------------------------------------
   group(MetadataTagsSection, () {
-    testWidgets('renders hashtag chips when tags exist', (tester) async {
+    testWidgetsWithSurfaceSize('renders hashtag chips when tags exist', (
+      tester,
+    ) async {
       final video = _makeVideo(hashtags: ['sick', 'cool', 'baller']);
       await tester.pumpWidget(
         buildSubject(child: MetadataTagsSection(video: video)),
@@ -537,7 +581,9 @@ void main() {
       expect(find.text('#'), findsNWidgets(3));
     });
 
-    testWidgets('prepends classic hashtag for original Vine', (tester) async {
+    testWidgetsWithSurfaceSize('prepends classic hashtag for original Vine', (
+      tester,
+    ) async {
       final video = _makeVideo(rawTags: {'platform': 'vine'});
       await tester.pumpWidget(
         buildSubject(child: MetadataTagsSection(video: video)),
@@ -547,7 +593,9 @@ void main() {
       expect(find.text('#'), findsOneWidget);
     });
 
-    testWidgets('renders classic and hashtags together', (tester) async {
+    testWidgetsWithSurfaceSize('renders classic and hashtags together', (
+      tester,
+    ) async {
       final video = _makeVideo(
         hashtags: ['grease'],
         rawTags: {'platform': 'vine'},
@@ -562,7 +610,9 @@ void main() {
       expect(find.text('#'), findsNWidgets(2));
     });
 
-    testWidgets('hides when no hashtags and not Classic', (tester) async {
+    testWidgetsWithSurfaceSize('hides when no hashtags and not Classic', (
+      tester,
+    ) async {
       final video = _makeVideo();
       await tester.pumpWidget(
         buildSubject(child: MetadataTagsSection(video: video)),
@@ -572,7 +622,9 @@ void main() {
       expect(find.text('#'), findsNothing);
     });
 
-    testWidgets('renders category chips with accent colors', (tester) async {
+    testWidgetsWithSurfaceSize('renders category chips with accent colors', (
+      tester,
+    ) async {
       final video = _makeVideo(
         categories: ['animals', 'music'],
         hashtags: ['cool'],
@@ -591,7 +643,9 @@ void main() {
       expect(find.text('#'), findsOneWidget);
     });
 
-    testWidgets('renders only categories when no hashtags', (tester) async {
+    testWidgetsWithSurfaceSize('renders only categories when no hashtags', (
+      tester,
+    ) async {
       final video = _makeVideo(categories: ['sports']);
       await tester.pumpWidget(
         buildSubject(child: MetadataTagsSection(video: video)),
@@ -602,37 +656,40 @@ void main() {
       expect(find.text('#'), findsNothing);
     });
 
-    testWidgets('hashtag chip exposes a tappable button affordance', (
-      tester,
-    ) async {
-      final semantics = tester.ensureSemantics();
-      try {
-        final video = _makeVideo(hashtags: ['comedy']);
-        await tester.pumpWidget(
-          buildSubject(child: MetadataTagsSection(video: video)),
-        );
+    testWidgetsWithSurfaceSize(
+      'hashtag chip exposes a tappable button affordance',
+      (
+        tester,
+      ) async {
+        final semantics = tester.ensureSemantics();
+        try {
+          final video = _makeVideo(hashtags: ['comedy']);
+          await tester.pumpWidget(
+            buildSubject(child: MetadataTagsSection(video: video)),
+          );
 
-        // The chip is wrapped in Semantics(button: true) plus a
-        // GestureDetector with a non-null onTap — proving the tap target
-        // is wired. The actual navigation is exercised by
-        // HashtagScreenRouter's own tests.
-        final node = tester.getSemantics(find.text('comedy'));
-        expect(node.label, contains('comedy'));
+          // The chip is wrapped in Semantics(button: true) plus a
+          // GestureDetector with a non-null onTap — proving the tap target
+          // is wired. The actual navigation is exercised by
+          // HashtagScreenRouter's own tests.
+          final node = tester.getSemantics(find.text('comedy'));
+          expect(node.label, contains('comedy'));
 
-        final gesture = tester.widgetList<GestureDetector>(
-          find.ancestor(
-            of: find.text('comedy'),
-            matching: find.byType(GestureDetector),
-          ),
-        );
-        expect(gesture, isNotEmpty);
-        expect(gesture.first.onTap, isNotNull);
-      } finally {
-        semantics.dispose();
-      }
-    });
+          final gesture = tester.widgetList<GestureDetector>(
+            find.ancestor(
+              of: find.text('comedy'),
+              matching: find.byType(GestureDetector),
+            ),
+          );
+          expect(gesture, isNotEmpty);
+          expect(gesture.first.onTap, isNotNull);
+        } finally {
+          semantics.dispose();
+        }
+      },
+    );
 
-    testWidgets(
+    testWidgetsWithSurfaceSize(
       'hashtag chip tap target meets the 48 dp WCAG minimum (visible '
       'chip stays 40 dp tall)',
       (tester) async {
@@ -662,7 +719,7 @@ void main() {
       },
     );
 
-    testWidgets(
+    testWidgetsWithSurfaceSize(
       'hashtag chip Wrap uses runSpacing 0 (so chips own the inter-row '
       'gap via their invisible tap-target padding)',
       (tester) async {
@@ -693,7 +750,9 @@ void main() {
   // Collaborators section
   // ---------------------------------------------------------------------------
   group(MetadataCollaboratorsSection, () {
-    testWidgets('renders collaborator chips when present', (tester) async {
+    testWidgetsWithSurfaceSize('renders collaborator chips when present', (
+      tester,
+    ) async {
       final video = _makeVideo(
         collaboratorPubkeys: const [_collaborator1, _collaborator2],
       );
@@ -718,7 +777,7 @@ void main() {
       expect(find.text('Dan Spurgin'), findsOneWidget);
     });
 
-    testWidgets('hides when no collaborators', (tester) async {
+    testWidgetsWithSurfaceSize('hides when no collaborators', (tester) async {
       final video = _makeVideo();
       await tester.pumpWidget(
         buildSubject(child: MetadataCollaboratorsSection(video: video)),
@@ -733,7 +792,7 @@ void main() {
   // Collaborators section body (status-aware rendering)
   // ---------------------------------------------------------------------------
   group(MetadataCollaboratorsSectionBody, () {
-    testWidgets(
+    testWidgetsWithSurfaceSize(
       'fallback mode: renders all chips without Pending decoration',
       (tester) async {
         await tester.pumpWidget(
@@ -770,7 +829,7 @@ void main() {
       },
     );
 
-    testWidgets(
+    testWidgetsWithSurfaceSize(
       'inviter view: pending chip shows Pending label and is dimmed',
       (tester) async {
         await tester.pumpWidget(
@@ -813,7 +872,7 @@ void main() {
       },
     );
 
-    testWidgets(
+    testWidgetsWithSurfaceSize(
       'recipient view (ignored): own chip filtered out',
       (tester) async {
         await tester.pumpWidget(
@@ -846,7 +905,7 @@ void main() {
       },
     );
 
-    testWidgets(
+    testWidgetsWithSurfaceSize(
       'recipient view (ignored, sole collaborator): section shrinks',
       (tester) async {
         await tester.pumpWidget(
@@ -872,7 +931,7 @@ void main() {
       },
     );
 
-    testWidgets(
+    testWidgetsWithSurfaceSize(
       'third-party view: no Pending decoration even for pending status',
       (tester) async {
         await tester.pumpWidget(
@@ -911,7 +970,9 @@ void main() {
   // Inspired By section
   // ---------------------------------------------------------------------------
   group(MetadataInspiredBySection, () {
-    testWidgets('renders chip when inspired-by exists', (tester) async {
+    testWidgetsWithSurfaceSize('renders chip when inspired-by exists', (
+      tester,
+    ) async {
       final video = _makeVideo(
         inspiredByVideo: const InspiredByInfo(
           addressableId: '34236:$_inspiredByPubkey:some-dtag',
@@ -935,7 +996,7 @@ void main() {
       expect(find.text('Inspiring Creator'), findsOneWidget);
     });
 
-    testWidgets('hides when no inspired-by', (tester) async {
+    testWidgetsWithSurfaceSize('hides when no inspired-by', (tester) async {
       final video = _makeVideo();
 
       await tester.pumpWidget(
@@ -950,7 +1011,9 @@ void main() {
   // Reposted By section
   // ---------------------------------------------------------------------------
   group(MetadataRepostedBySection, () {
-    testWidgets('renders reposters fetched from relay', (tester) async {
+    testWidgetsWithSurfaceSize('renders reposters fetched from relay', (
+      tester,
+    ) async {
       final video = _makeVideo();
 
       await tester.pumpWidget(
@@ -973,7 +1036,9 @@ void main() {
       expect(find.text('Improvising'), findsOneWidget);
     });
 
-    testWidgets('renders pre-populated reposterPubkeys', (tester) async {
+    testWidgetsWithSurfaceSize('renders pre-populated reposterPubkeys', (
+      tester,
+    ) async {
       final video = _makeVideo(reposterPubkeys: [_reposterPubkey]);
 
       await tester.pumpWidget(
@@ -992,25 +1057,30 @@ void main() {
       expect(find.text('Improvising'), findsOneWidget);
     });
 
-    testWidgets('hides when relay returns empty and no pre-populated data', (
-      tester,
-    ) async {
-      final video = _makeVideo();
+    testWidgetsWithSurfaceSize(
+      'hides when relay returns empty and no pre-populated data',
+      (
+        tester,
+      ) async {
+        final video = _makeVideo();
 
-      await tester.pumpWidget(
-        buildSubject(child: MetadataRepostedBySection(video: video)),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          buildSubject(child: MetadataRepostedBySection(video: video)),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('Reposted by'), findsNothing);
-    });
+        expect(find.text('Reposted by'), findsNothing);
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------
   // Verification section
   // ---------------------------------------------------------------------------
   group(MetadataVerificationSection, () {
-    testWidgets('renders checklist when video has proof data', (tester) async {
+    testWidgetsWithSurfaceSize('renders checklist when video has proof data', (
+      tester,
+    ) async {
       final video = _makeVideo(
         rawTags: {
           'verification': 'verified_mobile',
@@ -1041,7 +1111,7 @@ void main() {
       expect(failIcons.length, 1);
     });
 
-    testWidgets('hides when no proof data', (tester) async {
+    testWidgetsWithSurfaceSize('hides when no proof data', (tester) async {
       final video = _makeVideo();
       await tester.pumpWidget(
         buildSubject(child: MetadataVerificationSection(video: video)),
@@ -1056,7 +1126,9 @@ void main() {
   // Sounds section
   // ---------------------------------------------------------------------------
   group(MetadataSoundsSection, () {
-    testWidgets('renders sound info when audio exists', (tester) async {
+    testWidgetsWithSurfaceSize('renders sound info when audio exists', (
+      tester,
+    ) async {
       final video = _makeVideo(audioEventId: _audioEventId);
 
       await tester.pumpWidget(
@@ -1079,7 +1151,9 @@ void main() {
       expect(find.text('Test Sound'), findsOneWidget);
     });
 
-    testWidgets('shows original sound when no audio reference', (tester) async {
+    testWidgetsWithSurfaceSize('shows original sound when no audio reference', (
+      tester,
+    ) async {
       final video = _makeVideo();
 
       await tester.pumpWidget(
@@ -1096,147 +1170,168 @@ void main() {
   // Full sheet integration
   // ---------------------------------------------------------------------------
   group('$MetadataExpandedSheet full integration', () {
-    testWidgets('renders all sections for fully populated video', (
-      tester,
-    ) async {
-      final video = _makeVideo(
-        title: 'Who knew?',
-        content: 'What really happens behind the scenes',
-        hashtags: ['grease', 'take503'],
-        collaboratorPubkeys: [_collaborator1],
-        inspiredByVideo: const InspiredByInfo(
-          addressableId: '34236:$_inspiredByPubkey:some-dtag',
-        ),
-        audioEventId: _audioEventId,
-        rawTags: {'verification': 'verified_mobile'},
-      );
-
-      await tester.pumpWidget(
-        buildSubject(
-          repostersState: const VideoRepostersState(
-            pubkeys: [_reposterPubkey],
-            isLoading: false,
+    testWidgetsWithSurfaceSize(
+      'renders all sections for fully populated video',
+      (
+        tester,
+      ) async {
+        final video = _makeVideo(
+          title: 'Who knew?',
+          content: 'What really happens behind the scenes',
+          hashtags: ['grease', 'take503'],
+          collaboratorPubkeys: [_collaborator1],
+          inspiredByVideo: const InspiredByInfo(
+            addressableId: '34236:$_inspiredByPubkey:some-dtag',
           ),
-          providerOverrides: [
-            fetchUserProfileProvider(_creatorPubkey).overrideWith(
-              (ref) async => _makeProfile(_creatorPubkey, 'Sebastian Heit'),
+          audioEventId: _audioEventId,
+          rawTags: {'verification': 'verified_mobile'},
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            repostersState: const VideoRepostersState(
+              pubkeys: [_reposterPubkey],
+              isLoading: false,
             ),
-            fetchUserProfileProvider(_collaborator1).overrideWith(
-              (ref) async => _makeProfile(_collaborator1, 'Josh Musick'),
-            ),
-            fetchUserProfileProvider(_inspiredByPubkey).overrideWith(
-              (ref) async =>
-                  _makeProfile(_inspiredByPubkey, 'Inspiring Creator'),
-            ),
-            fetchUserProfileProvider(_reposterPubkey).overrideWith(
-              (ref) async => _makeProfile(_reposterPubkey, 'Improvising'),
-            ),
-            soundByIdProvider(
-              _audioEventId,
-            ).overrideWith((ref) async => _testAudio),
-            userProfileReactiveProvider(_audioPubkey).overrideWith(
-              (ref) =>
-                  Stream.value(_makeProfile(_audioPubkey, 'Audio Creator')),
-            ),
-          ],
-          child: MetadataExpandedSheet(video: video),
-        ),
-      );
-      await tester.pumpAndSettle();
+            providerOverrides: [
+              fetchUserProfileProvider(_creatorPubkey).overrideWith(
+                (ref) async => _makeProfile(_creatorPubkey, 'Sebastian Heit'),
+              ),
+              fetchUserProfileProvider(_collaborator1).overrideWith(
+                (ref) async => _makeProfile(_collaborator1, 'Josh Musick'),
+              ),
+              fetchUserProfileProvider(_inspiredByPubkey).overrideWith(
+                (ref) async =>
+                    _makeProfile(_inspiredByPubkey, 'Inspiring Creator'),
+              ),
+              fetchUserProfileProvider(_reposterPubkey).overrideWith(
+                (ref) async => _makeProfile(_reposterPubkey, 'Improvising'),
+              ),
+              soundByIdProvider(
+                _audioEventId,
+              ).overrideWith((ref) async => _testAudio),
+              userProfileReactiveProvider(_audioPubkey).overrideWith(
+                (ref) =>
+                    Stream.value(_makeProfile(_audioPubkey, 'Audio Creator')),
+              ),
+            ],
+            child: MetadataExpandedSheet(video: video),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      // Title + description
-      expect(find.text('Who knew?'), findsOneWidget);
-      expect(
-        find.text('What really happens behind the scenes'),
-        findsOneWidget,
-      );
+        // Title + description
+        expect(find.text('Who knew?'), findsOneWidget);
+        expect(
+          find.text('What really happens behind the scenes'),
+          findsOneWidget,
+        );
 
-      // Stats
-      final l10n = _l10n(tester);
-      expect(
-        find.text(l10n.metadataLoopsLabel(video.totalLoops)),
-        findsOneWidget,
-      );
-      expect(find.text(l10n.metadataLikesLabel), findsOneWidget);
+        // Stats
+        final l10n = _l10n(tester);
+        expect(
+          find.text(l10n.metadataLoopsLabel(video.totalLoops)),
+          findsOneWidget,
+        );
+        expect(find.text(l10n.metadataLikesLabel), findsOneWidget);
 
-      // Badges row (Human-Made from verification, not Classic Vine).
-      // Tags now live inside the header section, so they're visible
-      // without scrolling.
-      expect(find.textContaining(l10n.metadataBadgeHumanMade), findsOneWidget);
-      expect(find.text('grease'), findsOneWidget);
+        // Badges row (Human-Made from verification, not Classic Vine).
+        // Tags now live inside the header section, so they're visible
+        // without scrolling.
+        expect(
+          find.textContaining(l10n.metadataBadgeHumanMade),
+          findsOneWidget,
+        );
+        expect(find.text('grease'), findsOneWidget);
 
-      // Top section labels
-      expect(find.text(l10n.metadataCreatorLabel), findsOneWidget);
+        // Top section labels
+        expect(find.text(l10n.metadataCreatorLabel), findsOneWidget);
 
-      // Scroll to reveal sections below the fold
-      final listFinder = find.byType(ListView);
-      await tester.drag(listFinder, const Offset(0, -300));
-      await tester.pumpAndSettle();
+        // Scroll to reveal sections below the fold
+        final listFinder = find.byType(ListView);
+        await tester.drag(listFinder, const Offset(0, -300));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Sebastian Heit'), findsOneWidget);
+        expect(find.text('Sebastian Heit'), findsOneWidget);
 
-      // Scroll further to reveal collaborators
-      await tester.drag(listFinder, const Offset(0, -300));
-      await tester.pumpAndSettle();
+        // Scroll further to reveal collaborators
+        await tester.drag(listFinder, const Offset(0, -300));
+        await tester.pumpAndSettle();
 
-      expect(find.text(l10n.metadataCollaboratorsLabel), findsOneWidget);
-      expect(find.text('Josh Musick'), findsOneWidget);
+        expect(find.text(l10n.metadataCollaboratorsLabel), findsOneWidget);
+        expect(find.text('Josh Musick'), findsOneWidget);
 
-      // Scroll further to reveal remaining sections including
-      // Verification, which now sits at the very bottom per Figma.
-      await tester.drag(listFinder, const Offset(0, -600));
-      await tester.pumpAndSettle();
+        // Scroll further to reveal remaining sections including
+        // Verification, which now sits at the very bottom per Figma.
+        await tester.drag(listFinder, const Offset(0, -600));
+        await tester.pumpAndSettle();
 
-      expect(find.text(l10n.metadataInspiredByLabel), findsOneWidget);
-      expect(find.text('Inspiring Creator'), findsOneWidget);
-      expect(find.text(l10n.metadataRepostedByLabel), findsOneWidget);
-      expect(find.text('Improvising'), findsOneWidget);
-      // Sounds section label is still hardcoded English in lib code
-      // (metadata_sounds_section.dart) — flagged as pre-existing l10n debt.
-      expect(find.text('Sounds'), findsOneWidget);
-      expect(find.text('Test Sound'), findsOneWidget);
+        expect(find.text(l10n.metadataInspiredByLabel), findsOneWidget);
+        expect(find.text('Inspiring Creator'), findsOneWidget);
+        expect(find.text(l10n.metadataRepostedByLabel), findsOneWidget);
+        expect(find.text('Improvising'), findsOneWidget);
+        // Sounds section label is still hardcoded English in lib code
+        // (metadata_sounds_section.dart) — flagged as pre-existing l10n debt.
+        expect(find.text('Sounds'), findsOneWidget);
+        expect(find.text('Test Sound'), findsOneWidget);
 
-      // Verification section moved to the bottom of the sheet.
-      await tester.drag(listFinder, const Offset(0, -300));
-      await tester.pumpAndSettle();
-      expect(find.text(l10n.metadataVerificationLabel), findsOneWidget);
-    });
+        // Verification section moved to the bottom of the sheet.
+        await tester.drag(listFinder, const Offset(0, -300));
+        await tester.pumpAndSettle();
+        expect(find.text(l10n.metadataVerificationLabel), findsOneWidget);
+      },
+    );
 
-    testWidgets('renders only populated sections for sparse video', (
-      tester,
-    ) async {
-      final video = _makeVideo(title: 'Simple video', hashtags: ['hello']);
+    testWidgetsWithSurfaceSize(
+      'renders only populated sections for sparse video',
+      (
+        tester,
+      ) async {
+        final video = _makeVideo(title: 'Simple video', hashtags: ['hello']);
 
-      await tester.pumpWidget(
-        buildSubject(
-          providerOverrides: [
-            fetchUserProfileProvider(_creatorPubkey).overrideWith(
-              (ref) async => _makeProfile(_creatorPubkey, 'Test User'),
-            ),
-          ],
-          child: MetadataExpandedSheet(video: video),
-        ),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          buildSubject(
+            providerOverrides: [
+              fetchUserProfileProvider(_creatorPubkey).overrideWith(
+                (ref) async => _makeProfile(_creatorPubkey, 'Test User'),
+              ),
+            ],
+            child: MetadataExpandedSheet(video: video),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      // Present
-      expect(find.text('Simple video'), findsOneWidget);
-      expect(find.text('Creator'), findsOneWidget);
-      // Tags section has no label — verify chip text directly.
-      expect(find.text('hello'), findsOneWidget);
+        // Present
+        expect(find.text('Simple video'), findsOneWidget);
+        expect(find.text('Creator'), findsOneWidget);
+        // Tags section has no label — verify chip text directly.
+        expect(find.text('hello'), findsOneWidget);
 
-      // Absent
-      expect(find.text('Collaborators'), findsNothing);
-      expect(find.text('Inspired by'), findsNothing);
-      expect(find.text('Reposted by'), findsNothing);
+        // Absent
+        expect(find.text('Collaborators'), findsNothing);
+        expect(find.text('Inspired by'), findsNothing);
+        expect(find.text('Reposted by'), findsNothing);
 
-      // Sounds section is always present (shows "Original sound")
-      // Scroll down to find it
-      final listFinder = find.byType(ListView);
-      await tester.drag(listFinder, const Offset(0, -300));
-      await tester.pumpAndSettle();
-      expect(find.text('Sounds'), findsOneWidget);
-      expect(find.text('Original sound'), findsOneWidget);
-    });
+        // Sounds section is always present (shows "Original sound")
+        // Scroll down to find it
+        final listFinder = find.byType(ListView);
+        await tester.drag(listFinder, const Offset(0, -300));
+        await tester.pumpAndSettle();
+        expect(find.text('Sounds'), findsOneWidget);
+        expect(find.text('Original sound'), findsOneWidget);
+      },
+    );
+  });
+}
+
+void testWidgetsWithSurfaceSize(
+  String description,
+  WidgetTesterCallback callback,
+) {
+  testWidgets(description, (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await callback(tester);
   });
 }
