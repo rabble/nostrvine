@@ -147,6 +147,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         name: 'ClipsLibraryBloc',
         category: LogCategory.video,
       );
+      // Matrix-NO: ClipLibraryService.getAllClips is local Drift IO.
       addError(e, stackTrace);
       emit(state.copyWith(status: ClipsLibraryStatus.error));
     }
@@ -237,6 +238,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         name: 'ClipsLibraryBloc',
         category: LogCategory.video,
       );
+      // Matrix-NO: deleteClip loop + getAllClips reload are local Drift IO.
       addError(e, stackTrace);
       emit(state.copyWith(status: ClipsLibraryStatus.error));
     }
@@ -289,6 +291,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         name: 'ClipsLibraryBloc',
         category: LogCategory.video,
       );
+      // Matrix-NO: deleteClip + getAllClips reload are local Drift IO.
       addError(e, stackTrace);
       emit(state.copyWith(status: ClipsLibraryStatus.error));
     }
@@ -340,6 +343,9 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
             failureCount++;
         }
       } catch (e, s) {
+        // Matrix-NO: GallerySaveService is documented as never throwing
+        // (returns result objects). This catch is defensive against the
+        // contract drifting; when-in-doubt classification applies.
         addError(e, s);
         emit(
           state.copyWith(
@@ -384,6 +390,8 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         name: 'ClipsLibraryBloc',
         category: LogCategory.video,
       );
+      // Matrix-NO: background recoverMissingAssets is filesystem + thumbnail
+      // IO (Network/IO category).
       addError(e, stackTrace);
     }
   }
@@ -404,6 +412,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
         name: 'ClipsLibraryBloc',
         category: LogCategory.video,
       );
+      // Matrix-NO: SharedPreferences.setString is local platform-channel IO.
       addError(e, stackTrace);
     }
     emit(
