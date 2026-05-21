@@ -5,6 +5,7 @@ class TimelineOverlayState extends Equatable {
   const TimelineOverlayState({
     this.items = const [],
     this.audioTracks = const [],
+    this.audioTracksRevision = 0,
     this.selectedItemId,
     this.draggingItemId,
     this.dragPosition,
@@ -21,6 +22,15 @@ class TimelineOverlayState extends Equatable {
   /// Stored so the presentation layer can build native [AudioTrack]s
   /// with the correct URL / asset path without reaching into Riverpod.
   final List<AudioEvent> audioTracks;
+
+  /// Incremented each time any audio track's volume changes.
+  ///
+  /// Because [AudioEvent] equality intentionally excludes [AudioEvent.volume]
+  /// (identity-based semantics), Equatable cannot detect volume-only changes
+  /// via the [audioTracks] list. This counter forces a distinct state whenever
+  /// [TimelineOverlayAudioVolumeChanged] is handled, ensuring [BlocListener]s
+  /// in the canvas observe the volume update and call `_syncAudioTracks()`.
+  final int audioTracksRevision;
 
   /// The currently selected item (shows trim handles), or `null`.
   final String? selectedItemId;
@@ -49,6 +59,7 @@ class TimelineOverlayState extends Equatable {
   TimelineOverlayState copyWith({
     List<TimelineOverlayItem>? items,
     List<AudioEvent>? audioTracks,
+    int? audioTracksRevision,
     String? selectedItemId,
     bool clearSelectedItemId = false,
     String? draggingItemId,
@@ -64,6 +75,7 @@ class TimelineOverlayState extends Equatable {
     return TimelineOverlayState(
       items: items ?? this.items,
       audioTracks: audioTracks ?? this.audioTracks,
+      audioTracksRevision: audioTracksRevision ?? this.audioTracksRevision,
       selectedItemId: clearSelectedItemId
           ? null
           : (selectedItemId ?? this.selectedItemId),
@@ -87,6 +99,7 @@ class TimelineOverlayState extends Equatable {
   List<Object?> get props => [
     items,
     audioTracks,
+    audioTracksRevision,
     selectedItemId,
     draggingItemId,
     dragPosition,

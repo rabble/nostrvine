@@ -916,11 +916,23 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           },
         ),
         // Sync native audio tracks when audio sources change
-        // (sound added/removed) or a sound item is dragged/trimmed.
+        // (sound added/removed/volume-changed) or a sound item is
+        // dragged/trimmed.
         BlocListener<TimelineOverlayBloc, TimelineOverlayState>(
           listenWhen: (previous, current) {
             // Audio sources changed (add / remove / replace).
             if (previous.audioTracks != current.audioTracks) return true;
+
+            // Audio track volume changed.
+            //
+            // AudioEvent equality is identity-based (excludes volume), so
+            // Equatable cannot detect a volume-only change via the
+            // audioTracks list. audioTracksRevision is incremented by
+            // TimelineOverlayAudioVolumeChanged to make the state distinct
+            // and force the listener to fire here.
+            if (previous.audioTracksRevision != current.audioTracksRevision) {
+              return true;
+            }
 
             // Sound item drag/trim ended.
             final dragEnded =

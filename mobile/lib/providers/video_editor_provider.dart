@@ -986,10 +986,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// Combines editor editing parameters with custom audio track if selected.
   /// Returns null if no parameters or sound track are configured.
   CompleteParameters? _buildRenderParameters() {
-    final hasEditorParams = state.editorEditingParameters != null;
     final soundTrack = state.selectedSound;
-
-    if (!hasEditorParams && soundTrack == null) return null;
 
     final baseParams =
         state.editorEditingParameters ?? CompleteParameters.fromMap({});

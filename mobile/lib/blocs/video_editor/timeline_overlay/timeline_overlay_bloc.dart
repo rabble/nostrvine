@@ -476,6 +476,11 @@ class TimelineOverlayBloc
         else
           track,
     ];
-    emit(state.copyWith(audioTracks: updated));
+    emit(
+      state.copyWith(
+        audioTracks: updated,
+        audioTracksRevision: state.audioTracksRevision + 1,
+      ),
+    );
   }
 }

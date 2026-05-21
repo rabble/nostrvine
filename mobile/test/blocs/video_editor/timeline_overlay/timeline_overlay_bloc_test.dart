@@ -87,6 +87,7 @@ void main() {
                 endTime: Duration(seconds: 4),
                 label: 'Beat',
                 maxDuration: VideoEditorConstants.maxDuration,
+                audioSource: AudioSource.custom,
               ),
             ],
             audioTracks: [
