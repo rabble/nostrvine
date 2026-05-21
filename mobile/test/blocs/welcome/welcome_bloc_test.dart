@@ -1,6 +1,9 @@
 // ABOUTME: Tests for WelcomeBloc
 // ABOUTME: Verifies multi-account loading, selection, and auth actions
 
+import 'dart:async';
+
+import 'package:bloc/bloc.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:db_client/db_client.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,6 +17,16 @@ import 'package:openvine/services/auth_service.dart' hide UserProfile;
 class _MockUserProfilesDao extends Mock implements UserProfilesDao {}
 
 class _MockAuthService extends Mock implements AuthService {}
+
+class _CapturingObserver extends BlocObserver {
+  final List<Object> errors = [];
+
+  @override
+  void onError(BlocBase<dynamic> bloc, Object error, StackTrace stackTrace) {
+    errors.add(error);
+    super.onError(bloc, error, stackTrace);
+  }
+}
 
 const _testPubkeyHex =
     'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
@@ -177,6 +190,44 @@ void main() {
           ),
         ],
         errors: () => [isA<Exception>()],
+      );
+
+      test(
+        'does not addError after close when _hydrateAccount completes '
+        'post-close (regression #4605)',
+        () async {
+          // Pin the lifecycle race: _hydrateProfiles is dispatched
+          // fire-and-forget from _onWelcomeStarted. If the user navigates
+          // away before the in-flight getProfile resolves, the bloc closes
+          // and an unguarded addError in the catch arm would throw
+          // StateError. The guard added in #4605 must suppress the forward.
+          final completer = Completer<UserProfile?>();
+          when(
+            () => mockAuthService.getKnownAccounts(),
+          ).thenAnswer((_) async => [_testKnownAccount]);
+          when(
+            () => mockUserProfilesDao.getProfile(_testPubkeyHex),
+          ).thenAnswer((_) => completer.future);
+
+          final observer = _CapturingObserver();
+          final priorObserver = Bloc.observer;
+          Bloc.observer = observer;
+          addTearDown(() => Bloc.observer = priorObserver);
+
+          final bloc = buildBloc()..add(const WelcomeStarted());
+          // Let the handler reach the await on getProfile.
+          await Future<void>.delayed(Duration.zero);
+
+          // Close the bloc while _hydrateAccount is still awaiting.
+          await bloc.close();
+
+          // Now fail the in-flight future; the catch arm runs post-close.
+          completer.completeError(Exception('DB error'));
+          // Drain microtasks queued by the completion.
+          await Future<void>.delayed(Duration.zero);
+
+          expect(observer.errors, isEmpty);
+        },
       );
 
       blocTest<WelcomeBloc, WelcomeState>(

@@ -141,7 +141,16 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
       // Drift IO — matrix-NO (Network/IO row). Raw addError so the
       // failure surfaces in DivineBlocObserver without reaching
       // Crashlytics. See .claude/rules/error_handling.md.
-      addError(e, stackTrace);
+      //
+      // _hydrateAccount runs from _hydrateProfiles which is dispatched
+      // fire-and-forget from _onWelcomeStarted (line 105). If the user
+      // navigates away from welcome before the Future.wait resolves the
+      // bloc closes, and calling addError on a closed BlocBase throws
+      // StateError. Guard the forward; local Log.warning above stays
+      // unguarded since it is safe regardless of close state. See #4605.
+      if (!isClosed) {
+        addError(e, stackTrace);
+      }
     }
     return PreviousAccount(
       pubkeyHex: known.pubkeyHex,
