@@ -298,7 +298,7 @@ void main() {
       );
 
       blocTest<WelcomeBloc, WelcomeState>(
-        'emits error on signInForAccount failure',
+        'emits error and records addError on signInForAccount failure',
         setUp: () {
           when(
             () => mockAuthService.signInForAccount(any(), any()),
@@ -321,10 +321,11 @@ void main() {
             previousAccounts: [_testPreviousAccount],
           ),
         ],
+        errors: () => [isA<Exception>()],
       );
 
       blocTest<WelcomeBloc, WelcomeState>(
-        'emits error then navigates to login options on '
+        'emits error, records addError, then navigates to login options on '
         '$SessionExpiredException',
         setUp: () {
           when(
@@ -358,6 +359,116 @@ void main() {
         ],
         verify: (_) {
           verify(() => mockAuthService.acceptTerms()).called(1);
+        },
+        errors: () => [isA<SessionExpiredException>()],
+      );
+    });
+
+    group('$WelcomeCancelSwitchRequested', () {
+      blocTest<WelcomeBloc, WelcomeState>(
+        'restores the previous account regardless of selected account',
+        build: buildBloc,
+        seed: () => const WelcomeState(
+          status: WelcomeStatus.loaded,
+          previousAccounts: [_testPreviousAccount, _testPreviousAccount2],
+          selectedPubkeyHex: _testPubkeyHex2,
+        ),
+        act: (bloc) => bloc.add(const WelcomeCancelSwitchRequested()),
+        expect: () => [
+          const WelcomeState(
+            status: WelcomeStatus.accepting,
+            previousAccounts: [_testPreviousAccount, _testPreviousAccount2],
+            selectedPubkeyHex: _testPubkeyHex2,
+            signingInPubkeyHex: _testPubkeyHex,
+          ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockAuthService.signInForAccount(
+              _testPubkeyHex,
+              AuthenticationSource.automatic,
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<WelcomeBloc, WelcomeState>(
+        'records addError and redirects to login options on '
+        '$SessionExpiredException',
+        setUp: () {
+          when(
+            () => mockAuthService.signInForAccount(any(), any()),
+          ).thenThrow(SessionExpiredException());
+        },
+        build: buildBloc,
+        seed: () => const WelcomeState(
+          status: WelcomeStatus.loaded,
+          previousAccounts: [_testPreviousAccount, _testPreviousAccount2],
+          selectedPubkeyHex: _testPubkeyHex2,
+        ),
+        act: (bloc) => bloc.add(const WelcomeCancelSwitchRequested()),
+        expect: () => [
+          const WelcomeState(
+            status: WelcomeStatus.accepting,
+            previousAccounts: [_testPreviousAccount, _testPreviousAccount2],
+            selectedPubkeyHex: _testPubkeyHex2,
+            signingInPubkeyHex: _testPubkeyHex,
+          ),
+          const WelcomeState(
+            status: WelcomeStatus.navigatingToLoginOptions,
+            previousAccounts: [_testPreviousAccount, _testPreviousAccount2],
+            selectedPubkeyHex: _testPubkeyHex2,
+          ),
+          const WelcomeState(
+            status: WelcomeStatus.loaded,
+            previousAccounts: [_testPreviousAccount, _testPreviousAccount2],
+            selectedPubkeyHex: _testPubkeyHex2,
+          ),
+        ],
+        verify: (_) {
+          verify(() => mockAuthService.acceptTerms()).called(1);
+        },
+        errors: () => [isA<SessionExpiredException>()],
+      );
+
+      blocTest<WelcomeBloc, WelcomeState>(
+        'records addError and emits error on restore failure',
+        setUp: () {
+          when(
+            () => mockAuthService.signInForAccount(any(), any()),
+          ).thenThrow(Exception('restore failed'));
+        },
+        build: buildBloc,
+        seed: () => const WelcomeState(
+          status: WelcomeStatus.loaded,
+          previousAccounts: [_testPreviousAccount, _testPreviousAccount2],
+          selectedPubkeyHex: _testPubkeyHex2,
+        ),
+        act: (bloc) => bloc.add(const WelcomeCancelSwitchRequested()),
+        expect: () => [
+          const WelcomeState(
+            status: WelcomeStatus.accepting,
+            previousAccounts: [_testPreviousAccount, _testPreviousAccount2],
+            selectedPubkeyHex: _testPubkeyHex2,
+            signingInPubkeyHex: _testPubkeyHex,
+          ),
+          const WelcomeState(
+            status: WelcomeStatus.error,
+            previousAccounts: [_testPreviousAccount, _testPreviousAccount2],
+            selectedPubkeyHex: _testPubkeyHex2,
+          ),
+        ],
+        errors: () => [isA<Exception>()],
+      );
+
+      blocTest<WelcomeBloc, WelcomeState>(
+        'does nothing when there is no previous account to restore',
+        build: buildBloc,
+        seed: () => const WelcomeState(status: WelcomeStatus.loaded),
+        act: (bloc) => bloc.add(const WelcomeCancelSwitchRequested()),
+        expect: () => <WelcomeState>[],
+        verify: (_) {
+          verifyNever(() => mockAuthService.signInForAccount(any(), any()));
         },
       );
     });

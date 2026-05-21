@@ -268,7 +268,12 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
       // Session expiry — matrix-NO (Auth/session row). Raw addError.
       addError(e, stackTrace);
       await _authService.acceptTerms();
-      emit(state.copyWith(status: WelcomeStatus.navigatingToLoginOptions));
+      emit(
+        state.copyWith(
+          status: WelcomeStatus.navigatingToLoginOptions,
+          clearSigningIn: true,
+        ),
+      );
       emit(state.copyWith(status: WelcomeStatus.loaded));
     } catch (e, stackTrace) {
       // Same auth/network/IO failure surface as `_onLogBackIn` —
