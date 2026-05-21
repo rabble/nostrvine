@@ -4,6 +4,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' show StickerData, StickerPackData;
+import 'package:openvine/observability/reportable_error.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 part 'video_editor_sticker_event.dart';
@@ -61,7 +62,11 @@ class VideoEditorStickerBloc
       emit(VideoEditorStickerLoaded(stickers: _allStickers));
       onPrecacheStickers(_allStickers.take(maxPrecacheCount).toList());
     } catch (e, stackTrace) {
-      addError(e, stackTrace);
+      // Matrix-YES: every failure path here is a build/asset invariant —
+      // missing bundled asset (FlutterError), corrupt JSON (FormatException),
+      // or shape-mismatch cast (TypeError). Bundled assets ship inside the
+      // IPA/APK so runtime PlatformException is essentially impossible.
+      addError(Reportable(e, context: '_onLoad'), stackTrace);
       Log.error(
         '🌟 Failed to load stickers: $e',
         name: 'VideoEditorStickerBloc',
