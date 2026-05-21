@@ -3664,5 +3664,9 @@
             }
         }
     },
-    "videoEditorTimelineSlideToAdjust": "Scorri per regolare"
+    "videoEditorTimelineSlideToAdjust": "Scorri per regolare",
+    "videoEditorVolumeSemanticLabel": "Regola volume",
+    "videoEditorVolumeTitle": "Volume",
+    "videoEditorOriginalAudioLabel": "Audio originale",
+    "videoEditorClipVolumeLabel": "Clip {index}"
 }

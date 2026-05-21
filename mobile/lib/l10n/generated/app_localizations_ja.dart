@@ -6509,10 +6509,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorUnmuteAudioSemanticLabel => '音声のミュートを解除';
 
   @override
-  String get videoEditorVolumeSemanticLabel => 'Adjust volume';
+  String get videoEditorVolumeSemanticLabel => '音量を調整';
 
   @override
-  String get videoEditorVolumeTitle => 'Volume';
+  String get videoEditorVolumeTitle => '音量';
 
   @override
   String videoEditorTimelineVolumePreview(int percent) {
@@ -6523,11 +6523,11 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorTimelineSlideToAdjust => 'スライドして調整';
 
   @override
-  String get videoEditorOriginalAudioLabel => 'Original audio';
+  String get videoEditorOriginalAudioLabel => '元の音声';
 
   @override
   String videoEditorClipVolumeLabel(int index) {
-    return 'Clip $index';
+    return 'クリップ $index';
   }
 
   @override

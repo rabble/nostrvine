@@ -3664,5 +3664,9 @@
             }
         }
     },
-    "videoEditorTimelineSlideToAdjust": "Ayarlamak için kaydır"
+    "videoEditorTimelineSlideToAdjust": "Ayarlamak için kaydır",
+    "videoEditorVolumeSemanticLabel": "Sesi ayarla",
+    "videoEditorVolumeTitle": "Ses",
+    "videoEditorOriginalAudioLabel": "Orijinal ses",
+    "videoEditorClipVolumeLabel": "Klip {index}"
 }

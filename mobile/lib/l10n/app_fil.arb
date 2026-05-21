@@ -2205,5 +2205,9 @@
             }
         }
     },
-    "videoEditorTimelineSlideToAdjust": "I-slide para i-adjust"
+    "videoEditorTimelineSlideToAdjust": "I-slide para i-adjust",
+    "videoEditorVolumeSemanticLabel": "Ayusin ang volume",
+    "videoEditorVolumeTitle": "Volume",
+    "videoEditorOriginalAudioLabel": "Orihinal na audio",
+    "videoEditorClipVolumeLabel": "Clip {index}"
 }

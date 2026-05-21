@@ -2953,5 +2953,9 @@
             }
         }
     },
-    "videoEditorTimelineSlideToAdjust": "슬라이드하여 조절"
+    "videoEditorTimelineSlideToAdjust": "슬라이드하여 조절",
+    "videoEditorVolumeSemanticLabel": "볼륨 조절",
+    "videoEditorVolumeTitle": "볼륨",
+    "videoEditorOriginalAudioLabel": "원본 오디오",
+    "videoEditorClipVolumeLabel": "클립 {index}"
 }

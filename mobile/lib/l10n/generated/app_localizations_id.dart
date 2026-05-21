@@ -6758,7 +6758,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoEditorUnmuteAudioSemanticLabel => 'Aktifkan suara';
 
   @override
-  String get videoEditorVolumeSemanticLabel => 'Adjust volume';
+  String get videoEditorVolumeSemanticLabel => 'Sesuaikan volume';
 
   @override
   String get videoEditorVolumeTitle => 'Volume';
@@ -6772,11 +6772,11 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoEditorTimelineSlideToAdjust => 'Geser untuk menyesuaikan';
 
   @override
-  String get videoEditorOriginalAudioLabel => 'Original audio';
+  String get videoEditorOriginalAudioLabel => 'Audio asli';
 
   @override
   String videoEditorClipVolumeLabel(int index) {
-    return 'Clip $index';
+    return 'Klip $index';
   }
 
   @override

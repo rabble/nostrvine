@@ -3798,5 +3798,9 @@
             }
         }
     },
-    "videoEditorTimelineSlideToAdjust": "Плъзнете за регулиране"
+    "videoEditorTimelineSlideToAdjust": "Плъзнете за регулиране",
+    "videoEditorVolumeSemanticLabel": "Регулиране на силата на звука",
+    "videoEditorVolumeTitle": "Сила на звука",
+    "videoEditorOriginalAudioLabel": "Оригинален звук",
+    "videoEditorClipVolumeLabel": "Клип {index}"
 }

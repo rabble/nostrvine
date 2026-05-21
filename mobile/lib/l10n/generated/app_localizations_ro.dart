@@ -6953,10 +6953,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorUnmuteAudioSemanticLabel => 'Activează sunetul';
 
   @override
-  String get videoEditorVolumeSemanticLabel => 'Adjust volume';
+  String get videoEditorVolumeSemanticLabel => 'Reglare volum';
 
   @override
-  String get videoEditorVolumeTitle => 'Volume';
+  String get videoEditorVolumeTitle => 'Volum';
 
   @override
   String videoEditorTimelineVolumePreview(int percent) {
@@ -6967,7 +6967,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorTimelineSlideToAdjust => 'Glisează pentru ajustare';
 
   @override
-  String get videoEditorOriginalAudioLabel => 'Original audio';
+  String get videoEditorOriginalAudioLabel => 'Audio original';
 
   @override
   String videoEditorClipVolumeLabel(int index) {

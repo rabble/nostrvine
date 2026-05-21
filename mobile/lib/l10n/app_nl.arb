@@ -3664,5 +3664,9 @@
             }
         }
     },
-    "videoEditorTimelineSlideToAdjust": "Schuif om aan te passen"
+    "videoEditorTimelineSlideToAdjust": "Schuif om aan te passen",
+    "videoEditorVolumeSemanticLabel": "Volume aanpassen",
+    "videoEditorVolumeTitle": "Volume",
+    "videoEditorOriginalAudioLabel": "Origineel geluid",
+    "videoEditorClipVolumeLabel": "Clip {index}"
 }

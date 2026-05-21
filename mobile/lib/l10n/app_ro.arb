@@ -3664,5 +3664,9 @@
             }
         }
     },
-    "videoEditorTimelineSlideToAdjust": "Glisează pentru ajustare"
+    "videoEditorTimelineSlideToAdjust": "Glisează pentru ajustare",
+    "videoEditorVolumeSemanticLabel": "Reglare volum",
+    "videoEditorVolumeTitle": "Volum",
+    "videoEditorOriginalAudioLabel": "Audio original",
+    "videoEditorClipVolumeLabel": "Clip {index}"
 }

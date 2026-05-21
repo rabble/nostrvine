@@ -3792,5 +3792,9 @@
             }
         }
     },
-    "videoEditorTimelineSlideToAdjust": "ለማስተካከል ያንሸራትቱ"
+    "videoEditorTimelineSlideToAdjust": "ለማስተካከል ያንሸራትቱ",
+    "videoEditorVolumeSemanticLabel": "ድምጽ አስተካክል",
+    "videoEditorVolumeTitle": "ድምጽ",
+    "videoEditorOriginalAudioLabel": "ዋናው ኦዲዮ",
+    "videoEditorClipVolumeLabel": "ቅንጥብ {index}"
 }

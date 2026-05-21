@@ -3664,5 +3664,9 @@
             }
         }
     },
-    "videoEditorTimelineSlideToAdjust": "اسحب للضبط"
+    "videoEditorTimelineSlideToAdjust": "اسحب للضبط",
+    "videoEditorVolumeSemanticLabel": "ضبط مستوى الصوت",
+    "videoEditorVolumeTitle": "الصوت",
+    "videoEditorOriginalAudioLabel": "الصوت الأصلي",
+    "videoEditorClipVolumeLabel": "مقطع {index}"
 }

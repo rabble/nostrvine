@@ -3664,5 +3664,9 @@
             }
         }
     },
-    "videoEditorTimelineSlideToAdjust": "Dra för att justera"
+    "videoEditorTimelineSlideToAdjust": "Dra för att justera",
+    "videoEditorVolumeSemanticLabel": "Justera volym",
+    "videoEditorVolumeTitle": "Volym",
+    "videoEditorOriginalAudioLabel": "Originalljud",
+    "videoEditorClipVolumeLabel": "Klipp {index}"
 }

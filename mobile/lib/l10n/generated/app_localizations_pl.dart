@@ -6936,10 +6936,10 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoEditorUnmuteAudioSemanticLabel => 'Włącz dźwięk';
 
   @override
-  String get videoEditorVolumeSemanticLabel => 'Adjust volume';
+  String get videoEditorVolumeSemanticLabel => 'Dostosuj głośność';
 
   @override
-  String get videoEditorVolumeTitle => 'Volume';
+  String get videoEditorVolumeTitle => 'Głośność';
 
   @override
   String videoEditorTimelineVolumePreview(int percent) {
@@ -6950,11 +6950,11 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoEditorTimelineSlideToAdjust => 'Przesuń, aby dostosować';
 
   @override
-  String get videoEditorOriginalAudioLabel => 'Original audio';
+  String get videoEditorOriginalAudioLabel => 'Oryginalne audio';
 
   @override
   String videoEditorClipVolumeLabel(int index) {
-    return 'Clip $index';
+    return 'Klip $index';
   }
 
   @override

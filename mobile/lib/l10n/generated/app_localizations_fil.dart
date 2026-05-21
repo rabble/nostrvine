@@ -6870,7 +6870,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoEditorUnmuteAudioSemanticLabel => 'I-unmute ang audio';
 
   @override
-  String get videoEditorVolumeSemanticLabel => 'Adjust volume';
+  String get videoEditorVolumeSemanticLabel => 'Ayusin ang volume';
 
   @override
   String get videoEditorVolumeTitle => 'Volume';
@@ -6884,7 +6884,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoEditorTimelineSlideToAdjust => 'I-slide para i-adjust';
 
   @override
-  String get videoEditorOriginalAudioLabel => 'Original audio';
+  String get videoEditorOriginalAudioLabel => 'Orihinal na audio';
 
   @override
   String videoEditorClipVolumeLabel(int index) {
