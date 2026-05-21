@@ -289,10 +289,15 @@ class VideoInteractionsBloc
         name: 'VideoInteractionsBloc',
         category: LogCategory.system,
       );
-      addError(
-        Reportable(e, context: VideoInteractionsReportableSites.publishLike),
-        stackTrace,
-      );
+      // _publishLike runs fire-and-forget via unawaited() at line 254.
+      // Guard symmetrically with the add() below (also !isClosed-gated)
+      // so addError doesn't fire on a closed bloc. See #4605.
+      if (!isClosed) {
+        addError(
+          Reportable(e, context: VideoInteractionsReportableSites.publishLike),
+          stackTrace,
+        );
+      }
       outcome = _LikeSettleFailed(wasLiked: wasLiked);
     }
 
@@ -408,10 +413,18 @@ class VideoInteractionsBloc
         name: 'VideoInteractionsBloc',
         category: LogCategory.system,
       );
-      addError(
-        Reportable(e, context: VideoInteractionsReportableSites.publishRepost),
-        stackTrace,
-      );
+      // _publishRepost runs fire-and-forget via unawaited() at line 375.
+      // Guard symmetrically with the add() below (also !isClosed-gated)
+      // so addError doesn't fire on a closed bloc. See #4605.
+      if (!isClosed) {
+        addError(
+          Reportable(
+            e,
+            context: VideoInteractionsReportableSites.publishRepost,
+          ),
+          stackTrace,
+        );
+      }
       outcome = _RepostSettleFailed(wasReposted: wasReposted);
     }
 
