@@ -115,8 +115,9 @@ void applyDbCacheVersionReset(String dbPath) {
 /// Handles three cases:
 /// 1. Legacy does not exist → no-op (fresh install or already migrated).
 /// 2. Legacy exists, new does not → rename legacy to new.
-/// 3. Both exist → the legacy DB predates the path change and contains the
-///    user's real history. Replace the new DB with the legacy one.
+/// 3. Both exist → keep the current Application Support DB. A destination DB
+///    means the app has already written to the new location, so replacing it
+///    with an older legacy file can discard local-only data.
 ///
 /// Also migrates the SQLite `-wal` and `-shm` sidecar files if present, so
 /// any unsynced writes in the write-ahead log are preserved.
@@ -130,9 +131,7 @@ Future<void> migrateLegacyDatabase({
 
   final newFile = File(newPath);
   if (newFile.existsSync()) {
-    // Both databases exist. The legacy DB predates the path change and
-    // has more history — always prefer it.
-    _deleteDatabaseAndSidecars(newPath);
+    return;
   }
 
   Directory(p.dirname(newPath)).createSync(recursive: true);
@@ -143,14 +142,6 @@ Future<void> migrateLegacyDatabase({
     if (legacySidecar.existsSync()) {
       legacySidecar.renameSync('$newPath$suffix');
     }
-  }
-}
-
-/// Deletes a database file and its `-wal` / `-shm` sidecars.
-void _deleteDatabaseAndSidecars(String dbPath) {
-  for (final suffix in const ['', '-wal', '-shm']) {
-    final file = File('$dbPath$suffix');
-    if (file.existsSync()) file.deleteSync();
   }
 }
 

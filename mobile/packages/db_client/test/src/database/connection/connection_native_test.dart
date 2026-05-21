@@ -222,7 +222,7 @@ void main() {
     });
 
     test(
-      'replaces new DB with legacy when both exist',
+      'preserves new DB when both legacy and new databases exist',
       () async {
         final legacyFile = File(legacyPath);
         legacyFile.parent.createSync(recursive: true);
@@ -237,18 +237,20 @@ void main() {
           newPath: newPath,
         );
 
-        // Legacy always wins — it predates the path change.
-        expect(File(legacyPath).existsSync(), isFalse);
-        expect(File(newPath).readAsBytesSync(), equals(const [1, 2, 3]));
+        expect(File(legacyPath).existsSync(), isTrue);
+        expect(File(legacyPath).readAsBytesSync(), equals(const [1, 2, 3]));
+        expect(File(newPath).readAsBytesSync(), equals(const [9, 9, 9]));
       },
     );
 
     test(
-      'cleans up new DB sidecars before replacing with legacy',
+      'preserves new DB sidecars when both legacy and new databases exist',
       () async {
         final legacyFile = File(legacyPath);
         legacyFile.parent.createSync(recursive: true);
         legacyFile.writeAsBytesSync(const [1]);
+        File('$legacyPath-wal').writeAsBytesSync(const [4]);
+        File('$legacyPath-shm').writeAsBytesSync(const [5]);
 
         final newFile = File(newPath);
         newFile.parent.createSync(recursive: true);
@@ -262,9 +264,12 @@ void main() {
         );
 
         expect(File(newPath).existsSync(), isTrue);
-        expect(File(newPath).readAsBytesSync(), equals(const [1]));
-        expect(File('$newPath-wal').existsSync(), isFalse);
-        expect(File('$newPath-shm').existsSync(), isFalse);
+        expect(File(newPath).readAsBytesSync(), equals(const [9]));
+        expect(File('$newPath-wal').readAsBytesSync(), equals(const [2]));
+        expect(File('$newPath-shm').readAsBytesSync(), equals(const [3]));
+        expect(File(legacyPath).readAsBytesSync(), equals(const [1]));
+        expect(File('$legacyPath-wal').readAsBytesSync(), equals(const [4]));
+        expect(File('$legacyPath-shm').readAsBytesSync(), equals(const [5]));
       },
     );
 
