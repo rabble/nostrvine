@@ -120,11 +120,7 @@ void main() {
       test('handles nested stats', () {
         final entry = BulkVideoStatsEntry.fromJson(const {
           'event_id': 'test',
-          'stats': {
-            'reactions': 10,
-            'comments': 5,
-            'loops': 100,
-          },
+          'stats': {'reactions': 10, 'comments': 5, 'loops': 100},
         });
 
         expect(entry.reactions, equals(10));
@@ -151,18 +147,24 @@ void main() {
         final entry = BulkVideoStatsEntry.fromJson(const {
           'event_id': 'test',
           'comments': '',
-          'stats': {
-            'comments': 5,
-          },
+          'stats': {'comments': 5},
         });
 
         expect(entry.comments, equals(5));
       });
 
-      test('defaults to 0 when no matching key found', () {
+      test('top-level zero wins over nested non-zero engagement counts', () {
         final entry = BulkVideoStatsEntry.fromJson(const {
           'event_id': 'test',
+          'comments': 0,
+          'stats': {'comments': 5},
         });
+
+        expect(entry.comments, equals(0));
+      });
+
+      test('defaults to 0 when no matching key found', () {
+        final entry = BulkVideoStatsEntry.fromJson(const {'event_id': 'test'});
 
         expect(entry.reactions, equals(0));
         expect(entry.comments, equals(0));
@@ -172,9 +174,7 @@ void main() {
       });
 
       test('handles empty JSON', () {
-        final entry = BulkVideoStatsEntry.fromJson(
-          const <String, dynamic>{},
-        );
+        final entry = BulkVideoStatsEntry.fromJson(const <String, dynamic>{});
 
         expect(entry.eventId, isEmpty);
         expect(entry.reactions, equals(0));
