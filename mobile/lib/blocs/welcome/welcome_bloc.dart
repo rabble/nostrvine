@@ -132,12 +132,16 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
     UserProfile? profile;
     try {
       profile = await _userProfilesDao.getProfile(known.pubkeyHex);
-    } catch (e) {
+    } catch (e, stackTrace) {
       Log.warning(
         'Failed to load cached profile for ${known.pubkeyHex}: $e',
         name: 'WelcomeBloc',
         category: LogCategory.auth,
       );
+      // Drift IO — matrix-NO (Network/IO row). Raw addError so the
+      // failure surfaces in DivineBlocObserver without reaching
+      // Crashlytics. See .claude/rules/error_handling.md.
+      addError(e, stackTrace);
     }
     return PreviousAccount(
       pubkeyHex: known.pubkeyHex,
@@ -205,6 +209,7 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
         name: 'WelcomeBloc',
         category: LogCategory.auth,
       );
+      // Session expiry — matrix-NO (Auth/session row). Raw addError.
       addError(e, stackTrace);
       emit(
         state.copyWith(
@@ -222,6 +227,9 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
         name: 'WelcomeBloc',
         category: LogCategory.auth,
       );
+      // Auth-flow failures dominate (OAuth/Invite/network) — matrix-NO.
+      // YES-narrowing for invariant types deferred per #4592; analogous
+      // to #4597's `_onMessageSent` deferral.
       addError(e, stackTrace);
       emit(state.copyWith(status: WelcomeStatus.error, clearSigningIn: true));
     }
@@ -257,11 +265,14 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
         previous.authSource,
       );
     } on SessionExpiredException catch (e, stackTrace) {
+      // Session expiry — matrix-NO (Auth/session row). Raw addError.
       addError(e, stackTrace);
       await _authService.acceptTerms();
       emit(state.copyWith(status: WelcomeStatus.navigatingToLoginOptions));
       emit(state.copyWith(status: WelcomeStatus.loaded));
     } catch (e, stackTrace) {
+      // Same auth/network/IO failure surface as `_onLogBackIn` —
+      // matrix-NO. YES-narrowing deferred per #4592.
       addError(e, stackTrace);
       emit(state.copyWith(status: WelcomeStatus.error, clearSigningIn: true));
     }

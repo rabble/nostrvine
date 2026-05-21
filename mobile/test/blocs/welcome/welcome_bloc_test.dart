@@ -158,7 +158,8 @@ void main() {
       );
 
       blocTest<WelcomeBloc, WelcomeState>(
-        'emits loaded with account when profile lookup throws',
+        'emits loaded with account and records addError when profile '
+        'lookup throws',
         setUp: () {
           when(
             () => mockAuthService.getKnownAccounts(),
@@ -175,6 +176,7 @@ void main() {
             previousAccounts: [_testPreviousAccount],
           ),
         ],
+        errors: () => [isA<Exception>()],
       );
 
       blocTest<WelcomeBloc, WelcomeState>(
