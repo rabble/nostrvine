@@ -60,7 +60,7 @@ void main() {
           repo.watchSnapshot,
         ).thenAnswer((_) => const Stream<NotificationPage>.empty());
         when(repo.refresh).thenAnswer((_) async => NotificationPage.empty);
-        when(() => repo.markAllAsRead()).thenAnswer((_) async {});
+        when(repo.markAllAsRead).thenAnswer((_) async {});
       }
 
       for (final repo in [mockFollowRepoA, mockFollowRepoB]) {
@@ -78,7 +78,7 @@ void main() {
               final v = ref.watch(_notificationRepoSwap);
               return v == 0 ? mockNotificationRepoA : mockNotificationRepoB;
             }),
-            followRepositoryProvider.overrideWith((_) => mockFollowRepoA),
+            followRepositoryProvider.overrideWithValue(mockFollowRepoA),
           ],
         );
         addTearDown(container.dispose);
@@ -112,8 +112,8 @@ void main() {
       (tester) async {
         final container = ProviderContainer(
           overrides: [
-            notificationRepositoryProvider.overrideWith(
-              (_) => mockNotificationRepoA,
+            notificationRepositoryProvider.overrideWithValue(
+              mockNotificationRepoA,
             ),
             followRepositoryProvider.overrideWith((ref) {
               final v = ref.watch(_followRepoSwap);
@@ -153,10 +153,10 @@ void main() {
         final rebuildKey = GlobalKey<_RebuildHostState>();
         final container = ProviderContainer(
           overrides: [
-            notificationRepositoryProvider.overrideWith(
-              (_) => mockNotificationRepoA,
+            notificationRepositoryProvider.overrideWithValue(
+              mockNotificationRepoA,
             ),
-            followRepositoryProvider.overrideWith((_) => mockFollowRepoA),
+            followRepositoryProvider.overrideWithValue(mockFollowRepoA),
           ],
         );
         addTearDown(container.dispose);
@@ -198,7 +198,7 @@ void main() {
               final v = ref.watch(_notificationRepoSwap);
               return v == 0 ? mockNotificationRepoA : mockNotificationRepoB;
             }),
-            followRepositoryProvider.overrideWith((_) => mockFollowRepoA),
+            followRepositoryProvider.overrideWithValue(mockFollowRepoA),
           ],
         );
         addTearDown(container.dispose);
@@ -266,7 +266,7 @@ void main() {
           repo.watchSnapshot,
         ).thenAnswer((_) => const Stream<NotificationPage>.empty());
         when(repo.refresh).thenAnswer((_) async => NotificationPage.empty);
-        when(() => repo.markAllAsRead()).thenAnswer((_) async {});
+        when(repo.markAllAsRead).thenAnswer((_) async {});
       }
 
       for (final repo in [mockFollowRepoA, mockFollowRepoB]) {
@@ -297,7 +297,7 @@ void main() {
               final v = ref.watch(_notificationRepoSwap);
               return v == 0 ? mockNotificationRepoA : mockNotificationRepoB;
             }),
-            followRepositoryProvider.overrideWith((_) => mockFollowRepoA),
+            followRepositoryProvider.overrideWithValue(mockFollowRepoA),
           ],
         );
         addTearDown(container.dispose);
@@ -337,8 +337,8 @@ void main() {
       (tester) async {
         final container = ProviderContainer(
           overrides: [
-            notificationRepositoryProvider.overrideWith(
-              (_) => mockNotificationRepoA,
+            notificationRepositoryProvider.overrideWithValue(
+              mockNotificationRepoA,
             ),
             followRepositoryProvider.overrideWith((ref) {
               final v = ref.watch(_followRepoSwap);
@@ -384,10 +384,10 @@ void main() {
         final rebuildKey = GlobalKey<_RebuildHostState>();
         final container = ProviderContainer(
           overrides: [
-            notificationRepositoryProvider.overrideWith(
-              (_) => mockNotificationRepoA,
+            notificationRepositoryProvider.overrideWithValue(
+              mockNotificationRepoA,
             ),
-            followRepositoryProvider.overrideWith((_) => mockFollowRepoA),
+            followRepositoryProvider.overrideWithValue(mockFollowRepoA),
           ],
         );
         addTearDown(container.dispose);
@@ -426,7 +426,7 @@ void main() {
               final v = ref.watch(_notificationRepoSwap);
               return v == 0 ? mockNotificationRepoA : mockNotificationRepoB;
             }),
-            followRepositoryProvider.overrideWith((_) => mockFollowRepoA),
+            followRepositoryProvider.overrideWithValue(mockFollowRepoA),
           ],
         );
         addTearDown(container.dispose);
