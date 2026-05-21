@@ -2,7 +2,6 @@
 // ABOUTME: Provides reactive state management for sounds from SoundsRepository.
 
 import 'package:models/models.dart' show AudioEvent;
-import 'package:openvine/config/app_config.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -27,12 +26,7 @@ part 'sounds_providers.g.dart';
 @Riverpod(keepAlive: true)
 SoundsRepository soundsRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
-  final repository = SoundsRepository(
-    nostrClient: nostrClient,
-    soundLibraryApiClient: SoundLibraryApiClient(
-      baseUri: Uri.parse(AppConfig.backendBaseUrl),
-    ),
-  );
+  final repository = SoundsRepository(nostrClient: nostrClient);
 
   // Initialize asynchronously to start fetching sounds
   repository.initialize();

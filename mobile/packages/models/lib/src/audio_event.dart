@@ -204,9 +204,7 @@ class AudioEvent {
       sourceVideoRelay: json['sourceVideoRelay'] as String?,
       externalSource: _parseExternalSource(json['externalSource']),
       startOffset: json['startOffsetMs'] != null
-          ? Duration(
-              milliseconds: json['startOffsetMs'] as int,
-            )
+          ? Duration(milliseconds: json['startOffsetMs'] as int)
           : Duration.zero,
       volume: (json['volume'] as num?)?.toDouble() ?? 1.0,
       startTime: json['startTimeMs'] != null
@@ -553,6 +551,31 @@ class AudioExternalSource {
     'previewUrl': ?previewUrl,
     'license': license.toJson(),
   };
+
+  @override
+  bool operator ==(Object other) {
+    return other is AudioExternalSource &&
+        other.provider == provider &&
+        other.providerSoundId == providerSoundId &&
+        other.providerName == providerName &&
+        other.creatorName == creatorName &&
+        other.creatorUrl == creatorUrl &&
+        other.sourceUrl == sourceUrl &&
+        other.previewUrl == previewUrl &&
+        other.license == license;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    provider,
+    providerSoundId,
+    providerName,
+    creatorName,
+    creatorUrl,
+    sourceUrl,
+    previewUrl,
+    license,
+  );
 }
 
 /// License metadata that has already been normalized by the sound proxy.
@@ -593,4 +616,25 @@ class AudioLicenseMetadata {
     'allowsDerivatives': allowsDerivatives,
     'requiresAttribution': requiresAttribution,
   };
+
+  @override
+  bool operator ==(Object other) {
+    return other is AudioLicenseMetadata &&
+        other.type == type &&
+        other.name == name &&
+        other.url == url &&
+        other.allowsCommercialUse == allowsCommercialUse &&
+        other.allowsDerivatives == allowsDerivatives &&
+        other.requiresAttribution == requiresAttribution;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    type,
+    name,
+    url,
+    allowsCommercialUse,
+    allowsDerivatives,
+    requiresAttribution,
+  );
 }

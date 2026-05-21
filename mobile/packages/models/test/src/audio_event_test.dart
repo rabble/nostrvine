@@ -453,6 +453,51 @@ void main() {
         expect(decoded.externalSource?.license.allowsCommercialUse, isTrue);
         expect(decoded.externalSource?.license.allowsDerivatives, isTrue);
         expect(decoded.externalSource?.license.requiresAttribution, isFalse);
+        expect(decoded.externalSource, equals(audioEvent.externalSource));
+      });
+
+      test('external source and license metadata use value equality', () {
+        const license = AudioLicenseMetadata(
+          type: 'cc0',
+          name: 'Creative Commons 0',
+          url: 'https://creativecommons.org/publicdomain/zero/1.0/',
+          allowsCommercialUse: true,
+          allowsDerivatives: true,
+          requiresAttribution: false,
+        );
+        const sameLicense = AudioLicenseMetadata(
+          type: 'cc0',
+          name: 'Creative Commons 0',
+          url: 'https://creativecommons.org/publicdomain/zero/1.0/',
+          allowsCommercialUse: true,
+          allowsDerivatives: true,
+          requiresAttribution: false,
+        );
+        const source = AudioExternalSource(
+          provider: 'freesound',
+          providerSoundId: '502915',
+          providerName: 'Freesound',
+          creatorName: 'ThePauny',
+          creatorUrl: 'https://freesound.org/people/ThePauny/',
+          sourceUrl: 'https://freesound.org/people/ThePauny/sounds/502915/',
+          previewUrl: 'https://cdn.freesound.org/previews/502/502915.mp3',
+          license: license,
+        );
+        const sameSource = AudioExternalSource(
+          provider: 'freesound',
+          providerSoundId: '502915',
+          providerName: 'Freesound',
+          creatorName: 'ThePauny',
+          creatorUrl: 'https://freesound.org/people/ThePauny/',
+          sourceUrl: 'https://freesound.org/people/ThePauny/sounds/502915/',
+          previewUrl: 'https://cdn.freesound.org/previews/502/502915.mp3',
+          license: sameLicense,
+        );
+
+        expect(license, equals(sameLicense));
+        expect(license.hashCode, equals(sameLicense.hashCode));
+        expect(source, equals(sameSource));
+        expect(source.hashCode, equals(sameSource.hashCode));
       });
 
       test('omits external source metadata when it is absent', () {
@@ -927,10 +972,7 @@ void main() {
         expect(audioEvent.duration, equals(6.2));
         expect(audioEvent.title, equals('Test Sound'));
         expect(audioEvent.source, equals('Original Sound'));
-        expect(
-          audioEvent.sourceVideoReference,
-          equals('34236:pubkey:vine-id'),
-        );
+        expect(audioEvent.sourceVideoReference, equals('34236:pubkey:vine-id'));
         expect(audioEvent.sourceVideoRelay, equals('wss://relay.example'));
         expect(
           audioEvent.startOffset,
@@ -1052,10 +1094,7 @@ void main() {
           startOffset: const Duration(milliseconds: 2500),
         );
 
-        expect(
-          updated.startOffset,
-          equals(const Duration(milliseconds: 2500)),
-        );
+        expect(updated.startOffset, equals(const Duration(milliseconds: 2500)));
         expect(original.startOffset, equals(Duration.zero));
       });
 
