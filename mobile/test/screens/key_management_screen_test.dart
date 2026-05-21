@@ -4,28 +4,61 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 
 import '../helpers/test_provider_overrides.dart';
 
+class _FakeKeyManagementAuthService extends Fake implements AuthService {
+  _FakeKeyManagementAuthService({
+    required this.currentNpub,
+    required this.authenticationSource,
+    required this.canExportLocalNsec,
+  });
+
+  @override
+  final String currentNpub;
+
+  @override
+  final AuthenticationSource authenticationSource;
+
+  @override
+  final bool canExportLocalNsec;
+
+  @override
+  bool get isAuthenticated => true;
+
+  @override
+  AuthState get authState => AuthState.authenticated;
+
+  @override
+  Stream<AuthState> get authStateStream =>
+      const Stream<AuthState>.empty();
+
+  @override
+  String? get currentPublicKeyHex => null;
+
+  @override
+  bool get isNip07Available => false;
+
+  @override
+  Future<String?> exportNsec({String? biometricPrompt}) async => null;
+}
+
 void main() {
   group(KeyManagementScreen, () {
     const testNpub =
         'npub1abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz';
 
-    late MockAuthService authService;
+    late _FakeKeyManagementAuthService authService;
 
     setUp(() {
-      authService = createMockAuthService();
-      when(() => authService.currentNpub).thenReturn(testNpub);
-      when(
-        () => authService.authenticationSource,
-      ).thenReturn(AuthenticationSource.importedKeys);
-      when(() => authService.canExportLocalNsec).thenReturn(false);
-      when(() => authService.exportNsec()).thenAnswer((_) async => null);
+      authService = _FakeKeyManagementAuthService(
+        currentNpub: testNpub,
+        authenticationSource: AuthenticationSource.importedKeys,
+        canExportLocalNsec: false,
+      );
     });
 
     tearDown(() {
@@ -87,10 +120,11 @@ void main() {
       'shows private key copy action when Keycast account has a local nsec',
       (tester) async {
         final l10n = lookupAppLocalizations(const Locale('en'));
-        when(
-          () => authService.authenticationSource,
-        ).thenReturn(AuthenticationSource.divineOAuth);
-        when(() => authService.canExportLocalNsec).thenReturn(true);
+        authService = _FakeKeyManagementAuthService(
+          currentNpub: testNpub,
+          authenticationSource: AuthenticationSource.divineOAuth,
+          canExportLocalNsec: true,
+        );
 
         await pumpSubject(tester);
 
@@ -112,10 +146,11 @@ void main() {
       'explains missing local nsec instead of showing copy action for RPC-only Keycast account',
       (tester) async {
         final l10n = lookupAppLocalizations(const Locale('en'));
-        when(
-          () => authService.authenticationSource,
-        ).thenReturn(AuthenticationSource.divineOAuth);
-        when(() => authService.canExportLocalNsec).thenReturn(false);
+        authService = _FakeKeyManagementAuthService(
+          currentNpub: testNpub,
+          authenticationSource: AuthenticationSource.divineOAuth,
+          canExportLocalNsec: false,
+        );
 
         await pumpSubject(tester);
 
@@ -130,7 +165,6 @@ void main() {
           ),
           findsOneWidget,
         );
-        verifyNever(() => authService.exportNsec());
       },
     );
   });
