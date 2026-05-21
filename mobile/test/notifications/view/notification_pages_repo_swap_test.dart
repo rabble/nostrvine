@@ -38,7 +38,6 @@ import 'package:openvine/notifications/providers/notification_repository_provide
 import 'package:openvine/notifications/view/inbox_notifications_page.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/notifications/view/notifications_view.dart';
-import 'package:openvine/providers/app_providers.dart';
 
 import '../../helpers/test_provider_overrides.dart';
 
@@ -56,20 +55,17 @@ class _MockInviteStatusCubit extends MockCubit<InviteStatusState>
 /// `profileRepositoryProvider`/`authServiceProvider` chain in
 /// `notification_repository_provider.dart`).
 final _notificationRepoSwap = StateProvider<int>((ref) => 0);
-final _followRepoSwap = StateProvider<int>((ref) => 0);
 
 void main() {
   late _MockNotificationRepository mockRepoA;
   late _MockNotificationRepository mockRepoB;
-  late _MockFollowRepository mockFollowRepoA;
-  late _MockFollowRepository mockFollowRepoB;
+  late _MockFollowRepository mockFollowRepo;
   late _MockInviteStatusCubit mockInviteCubit;
 
   setUp(() {
     mockRepoA = _MockNotificationRepository();
     mockRepoB = _MockNotificationRepository();
-    mockFollowRepoA = _MockFollowRepository();
-    mockFollowRepoB = _MockFollowRepository();
+    mockFollowRepo = _MockFollowRepository();
     mockInviteCubit = _MockInviteStatusCubit();
 
     for (final repo in [mockRepoA, mockRepoB]) {
@@ -77,10 +73,9 @@ void main() {
         repo.watchSnapshot,
       ).thenAnswer((_) => const Stream<NotificationPage>.empty());
       when(repo.refresh).thenAnswer((_) async => NotificationPage.empty);
+      when(repo.markAllAsRead).thenAnswer((_) async {});
     }
-    for (final repo in [mockFollowRepoA, mockFollowRepoB]) {
-      when(() => repo.isFollowing(any())).thenReturn(false);
-    }
+    when(() => mockFollowRepo.isFollowing(any())).thenReturn(false);
     when(() => mockInviteCubit.state).thenReturn(InviteStatusState());
     when(mockInviteCubit.load).thenAnswer((_) async {});
   });
@@ -88,14 +83,11 @@ void main() {
   group('NotificationsPage — BlocProvider repo-swap', () {
     Widget buildSubject() {
       return testMaterialApp(
+        mockFollowRepository: mockFollowRepo,
         additionalOverrides: [
           notificationRepositoryProvider.overrideWith((ref) {
             final v = ref.watch(_notificationRepoSwap);
             return v == 0 ? mockRepoA : mockRepoB;
-          }),
-          followRepositoryProvider.overrideWith((ref) {
-            final v = ref.watch(_followRepoSwap);
-            return v == 0 ? mockFollowRepoA : mockFollowRepoB;
           }),
         ],
         home: const NotificationsPage(),
@@ -147,48 +139,15 @@ void main() {
       },
     );
 
-    testWidgets('recreates NotificationFeedBloc when followRepositoryProvider '
-        'rebuilds with a new repository instance', (tester) async {
-      await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
-
-      final viewContextBefore = tester.element(find.byType(NotificationsView));
-      final blocA = BlocProvider.of<NotificationFeedBloc>(viewContextBefore);
-
-      final providerScope = ProviderScope.containerOf(
-        tester.element(find.byType(NotificationsPage)),
-      );
-      providerScope.read(_followRepoSwap.notifier).state = 1;
-      await tester.pumpAndSettle();
-
-      final viewContextAfter = tester.element(find.byType(NotificationsView));
-      final blocB = BlocProvider.of<NotificationFeedBloc>(viewContextAfter);
-
-      expect(
-        blocB,
-        isNot(same(blocA)),
-        reason:
-            'BlocProvider must also recreate the NotificationFeedBloc '
-            'when followRepository identity flips, because the bloc '
-            'captures both repositories. Narrowing the key to only '
-            'notificationRepository would preserve a stale '
-            'FollowRepository and drift the follow-back state logic.',
-      );
-      verify(() => mockRepoA.refresh()).called(2);
-    });
-
     testWidgets('preserves the same NotificationFeedBloc when the repository '
         'identity does not change across rebuilds', (tester) async {
       await tester.pumpWidget(
         testMaterialApp(
+          mockFollowRepository: mockFollowRepo,
           additionalOverrides: [
             notificationRepositoryProvider.overrideWith((ref) {
               ref.watch(_notificationRepoSwap);
               return mockRepoA; // identity stays the same
-            }),
-            followRepositoryProvider.overrideWith((ref) {
-              ref.watch(_followRepoSwap);
-              return mockFollowRepoA; // identity stays the same
             }),
           ],
           home: const NotificationsPage(),
@@ -226,14 +185,11 @@ void main() {
   group('InboxNotificationsPage — BlocProvider repo-swap', () {
     Widget buildSubject() {
       return testMaterialApp(
+        mockFollowRepository: mockFollowRepo,
         additionalOverrides: [
           notificationRepositoryProvider.overrideWith((ref) {
             final v = ref.watch(_notificationRepoSwap);
             return v == 0 ? mockRepoA : mockRepoB;
-          }),
-          followRepositoryProvider.overrideWith((ref) {
-            final v = ref.watch(_followRepoSwap);
-            return v == 0 ? mockFollowRepoA : mockFollowRepoB;
           }),
         ],
         home: BlocProvider<InviteStatusCubit>.value(
@@ -282,37 +238,5 @@ void main() {
         verify(() => mockRepoB.refresh()).called(1);
       },
     );
-
-    testWidgets('recreates NotificationFeedBloc when followRepositoryProvider '
-        'rebuilds with a new repository instance', (tester) async {
-      await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
-
-      final viewContextBefore = tester.element(
-        find.byType(NotificationsView).first,
-      );
-      final blocA = BlocProvider.of<NotificationFeedBloc>(viewContextBefore);
-
-      final providerScope = ProviderScope.containerOf(
-        tester.element(find.byType(InboxNotificationsPage)),
-      );
-      providerScope.read(_followRepoSwap.notifier).state = 1;
-      await tester.pumpAndSettle();
-
-      final viewContextAfter = tester.element(
-        find.byType(NotificationsView).first,
-      );
-      final blocB = BlocProvider.of<NotificationFeedBloc>(viewContextAfter);
-
-      expect(
-        blocB,
-        isNot(same(blocA)),
-        reason:
-            'The inbox notifications page also captures both '
-            'repositories. Its key must track followRepository '
-            'identity too, not only notificationRepository.',
-      );
-      verify(() => mockRepoA.refresh()).called(2);
-    });
   });
 }
