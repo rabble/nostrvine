@@ -25,8 +25,23 @@ void main() {
   late NotificationRepository repository;
 
   const userPubkey = 'user1234567890abcdef';
+  const blockedPubkey = 'blocked_actor_pub';
+  const allowedPubkey = 'allowed_actor_pub';
   const stableCursorId =
       '1122334411223344112233441122334411223344112233441122334411223344';
+
+  NotificationRepository buildRepository({
+    BlockedNotificationFilter? blockFilter,
+  }) {
+    return NotificationRepository(
+      funnelcakeApiClient: funnelcakeApiClient,
+      profileRepository: profileRepository,
+      notificationsDao: notificationsDao,
+      userPubkey: userPubkey,
+      blockFilter: blockFilter,
+      hydrateOnStart: false,
+    );
+  }
 
   setUpAll(() {
     registerFallbackValue(<NotificationCacheRow>[]);
@@ -71,13 +86,7 @@ void main() {
       () => notificationsDao.getAllNotifications(limit: any(named: 'limit')),
     ).thenAnswer((_) async => <NotificationRow>[]);
     when(() => notificationsDao.replaceAll(any())).thenAnswer((_) async {});
-    repository = NotificationRepository(
-      funnelcakeApiClient: funnelcakeApiClient,
-      profileRepository: profileRepository,
-      notificationsDao: notificationsDao,
-      userPubkey: userPubkey,
-      hydrateOnStart: false,
-    );
+    repository = buildRepository();
   });
 
   /// Helper to create a [RelayNotification] with sensible defaults.
@@ -1764,64 +1773,60 @@ void main() {
         );
       });
 
-      test(
-        'expands a grouped row to every raw notification id before '
-        'marking read',
-        () async {
-          when(
-            () => funnelcakeApiClient.markNotificationsRead(
-              pubkey: any(named: 'pubkey'),
-              notificationIds: any(named: 'notificationIds'),
-              authHeaders: any(named: 'authHeaders'),
-            ),
-          ).thenAnswer(
-            (_) async => const MarkReadResponse(success: true, markedCount: 2),
-          );
-          when(
-            () => notificationsDao.markAsRead(any()),
-          ).thenAnswer((_) async => true);
-          stubProfiles({
-            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
-            'pubkey_bob': makeProfile('pubkey_bob', displayName: 'Bob'),
-          });
-          stubNotifications([
-            makeNotification(
-              id: 'older_server_notification',
-              sourceEventId: 'older_source_event',
-              createdAt: DateTime(2025),
-            ),
-            makeNotification(
-              id: 'newer_server_notification',
-              sourcePubkey: 'pubkey_bob',
-              sourceEventId: 'newer_source_event',
-              createdAt: DateTime(2025, 1, 2),
-            ),
-          ], unreadCount: 2);
-          await repository.refresh();
+      test('expands a grouped row to every raw notification id before '
+          'marking read', () async {
+        when(
+          () => funnelcakeApiClient.markNotificationsRead(
+            pubkey: any(named: 'pubkey'),
+            notificationIds: any(named: 'notificationIds'),
+            authHeaders: any(named: 'authHeaders'),
+          ),
+        ).thenAnswer(
+          (_) async => const MarkReadResponse(success: true, markedCount: 2),
+        );
+        when(
+          () => notificationsDao.markAsRead(any()),
+        ).thenAnswer((_) async => true);
+        stubProfiles({
+          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+          'pubkey_bob': makeProfile('pubkey_bob', displayName: 'Bob'),
+        });
+        stubNotifications([
+          makeNotification(
+            id: 'older_server_notification',
+            sourceEventId: 'older_source_event',
+            createdAt: DateTime(2025),
+          ),
+          makeNotification(
+            id: 'newer_server_notification',
+            sourcePubkey: 'pubkey_bob',
+            sourceEventId: 'newer_source_event',
+            createdAt: DateTime(2025, 1, 2),
+          ),
+        ], unreadCount: 2);
+        await repository.refresh();
 
-          final groupedRow =
-              (await repository.watchSnapshot().first).items.first;
+        final groupedRow = (await repository.watchSnapshot().first).items.first;
 
-          await repository.markAsRead([groupedRow.id]);
+        await repository.markAsRead([groupedRow.id]);
 
-          verify(
-            () => funnelcakeApiClient.markNotificationsRead(
-              pubkey: userPubkey,
-              notificationIds: [
-                'newer_server_notification',
-                'older_server_notification',
-              ],
-              authHeaders: any(named: 'authHeaders'),
-            ),
-          ).called(1);
-          verify(
-            () => notificationsDao.markAsRead('newer_server_notification'),
-          ).called(1);
-          verify(
-            () => notificationsDao.markAsRead('older_server_notification'),
-          ).called(1);
-        },
-      );
+        verify(
+          () => funnelcakeApiClient.markNotificationsRead(
+            pubkey: userPubkey,
+            notificationIds: [
+              'newer_server_notification',
+              'older_server_notification',
+            ],
+            authHeaders: any(named: 'authHeaders'),
+          ),
+        ).called(1);
+        verify(
+          () => notificationsDao.markAsRead('newer_server_notification'),
+        ).called(1);
+        verify(
+          () => notificationsDao.markAsRead('older_server_notification'),
+        ).called(1);
+      });
 
       test(
         'rolls back the optimistic snapshot when authHeadersProvider throws',
@@ -2370,15 +2375,155 @@ void main() {
       test(
         'acceptRealtime enriches, prepends, and increments unread',
         () async {
+          repository = buildRepository(
+            blockFilter: (pubkey) => pubkey == blockedPubkey,
+          );
           stubProfiles({
-            'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+            allowedPubkey: makeProfile(allowedPubkey, displayName: 'Allowed'),
           });
 
-          await repository.acceptRealtime(makeNotification());
+          await repository.acceptRealtime(
+            makeNotification(sourcePubkey: allowedPubkey),
+          );
 
+          final snapshot = await repository.watchSnapshot().first;
+          expect(snapshot.items, hasLength(1));
           expect(await repository.watchUnreadCount().first, equals(1));
         },
       );
+
+      test('acceptRealtime drops a video-anchored notification from a '
+          'blocked actor', () async {
+        repository = buildRepository(
+          blockFilter: (pubkey) => pubkey == blockedPubkey,
+        );
+        stubProfiles({
+          blockedPubkey: makeProfile(blockedPubkey, displayName: 'Blocked'),
+        });
+
+        await repository.acceptRealtime(
+          makeNotification(sourcePubkey: blockedPubkey),
+        );
+
+        final snapshot = await repository.watchSnapshot().first;
+        expect(snapshot.items, isEmpty);
+        expect(await repository.watchUnreadCount().first, equals(0));
+      });
+
+      test(
+        'acceptRealtime drops a comment notification from a blocked actor',
+        () async {
+          repository = buildRepository(
+            blockFilter: (pubkey) => pubkey == blockedPubkey,
+          );
+          stubProfiles({
+            blockedPubkey: makeProfile(blockedPubkey, displayName: 'Blocked'),
+          });
+
+          await repository.acceptRealtime(
+            makeNotification(
+              sourcePubkey: blockedPubkey,
+              notificationType: 'comment',
+              sourceKind: 1,
+              content: 'spam comment',
+            ),
+          );
+
+          final snapshot = await repository.watchSnapshot().first;
+          expect(snapshot.items, isEmpty);
+        },
+      );
+
+      test('acceptRealtime drops an actor-anchored follow notification from a '
+          'blocked actor', () async {
+        repository = buildRepository(
+          blockFilter: (pubkey) => pubkey == blockedPubkey,
+        );
+        stubProfiles({
+          blockedPubkey: makeProfile(blockedPubkey, displayName: 'Blocked'),
+        });
+
+        await repository.acceptRealtime(
+          makeNotification(
+            sourcePubkey: blockedPubkey,
+            notificationType: 'follow',
+            sourceKind: 3,
+            referencedEventId: null,
+            isReferencedVideo: false,
+          ),
+        );
+
+        final snapshot = await repository.watchSnapshot().first;
+        expect(snapshot.items, isEmpty);
+      });
+
+      test('acceptRealtime keeps an actor-anchored follow notification from a '
+          'non-blocked actor', () async {
+        repository = buildRepository(
+          blockFilter: (pubkey) => pubkey == blockedPubkey,
+        );
+        stubProfiles({
+          allowedPubkey: makeProfile(allowedPubkey, displayName: 'Allowed'),
+        });
+
+        await repository.acceptRealtime(
+          makeNotification(
+            sourcePubkey: allowedPubkey,
+            notificationType: 'follow',
+            sourceKind: 3,
+            referencedEventId: null,
+            isReferencedVideo: false,
+          ),
+        );
+
+        final snapshot = await repository.watchSnapshot().first;
+        expect(snapshot.items, hasLength(1));
+        final item = snapshot.items.single as ActorNotification;
+        expect(item.type, equals(NotificationKind.follow));
+        expect(item.actor.pubkey, equals(allowedPubkey));
+        expect(await repository.watchUnreadCount().first, equals(1));
+      });
+
+      test(
+        'acceptRealtime strips blocked actors from a multi-actor video group '
+        'on merge',
+        () async {
+          repository = buildRepository(
+            blockFilter: (pubkey) => pubkey == blockedPubkey,
+          );
+          stubProfiles({
+            allowedPubkey: makeProfile(allowedPubkey, displayName: 'Allowed'),
+            blockedPubkey: makeProfile(blockedPubkey, displayName: 'Blocked'),
+          });
+
+          await repository.acceptRealtime(
+            makeNotification(sourcePubkey: allowedPubkey),
+          );
+          await repository.acceptRealtime(
+            makeNotification(id: 'n2', sourcePubkey: blockedPubkey),
+          );
+
+          final snapshot = await repository.watchSnapshot().first;
+          expect(snapshot.items, hasLength(1));
+          final group = snapshot.items.single as VideoNotification;
+          expect(group.totalCount, equals(1));
+          expect(group.actors.map((actor) => actor.pubkey), [allowedPubkey]);
+        },
+      );
+
+      test('acceptRealtime passes through blocked-pubkey arrivals when no '
+          'blockFilter is configured', () async {
+        stubProfiles({
+          blockedPubkey: makeProfile(blockedPubkey, displayName: 'Blocked'),
+        });
+
+        await repository.acceptRealtime(
+          makeNotification(sourcePubkey: blockedPubkey),
+        );
+
+        final snapshot = await repository.watchSnapshot().first;
+        expect(snapshot.items, hasLength(1));
+      });
 
       test('acceptRealtime dedupes against existing snapshot items', () async {
         stubProfiles({
