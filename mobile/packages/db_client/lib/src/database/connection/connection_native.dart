@@ -7,6 +7,7 @@ import 'package:drift/native.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:sqlite3/sqlite3.dart';
 
 /// Open a database connection for native platforms
 /// Uses file-based SQLite through drift's native implementation
@@ -115,9 +116,9 @@ void applyDbCacheVersionReset(String dbPath) {
 /// Handles three cases:
 /// 1. Legacy does not exist → no-op (fresh install or already migrated).
 /// 2. Legacy exists, new does not → rename legacy to new.
-/// 3. Both exist → keep the current Application Support DB. A destination DB
-///    means the app has already written to the new location, so replacing it
-///    with an older legacy file can discard local-only data.
+/// 3. Both exist → migrate legacy only if the destination has no local rows.
+///    Otherwise preserve both; replacing a populated destination can discard
+///    local-only data.
 ///
 /// Also migrates the SQLite `-wal` and `-shm` sidecar files if present, so
 /// any unsynced writes in the write-ahead log are preserved.
@@ -131,7 +132,13 @@ Future<void> migrateLegacyDatabase({
 
   final newFile = File(newPath);
   if (newFile.existsSync()) {
-    return;
+    if (!_hasDatabaseSidecars(newPath) &&
+        !_databaseHasLocalData(newPath) &&
+        _databaseHasLocalData(legacyPath)) {
+      newFile.deleteSync();
+    } else {
+      return;
+    }
   }
 
   Directory(p.dirname(newPath)).createSync(recursive: true);
@@ -142,6 +149,39 @@ Future<void> migrateLegacyDatabase({
     if (legacySidecar.existsSync()) {
       legacySidecar.renameSync('$newPath$suffix');
     }
+  }
+}
+
+bool _hasDatabaseSidecars(String dbPath) {
+  return File('$dbPath-wal').existsSync() || File('$dbPath-shm').existsSync();
+}
+
+bool _databaseHasLocalData(String dbPath) {
+  Database db;
+  try {
+    db = sqlite3.open(dbPath, mode: OpenMode.readOnly);
+  } catch (_) {
+    return true;
+  }
+
+  try {
+    final tables = db.select(
+      "SELECT name FROM sqlite_master "
+      "WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+    );
+    for (final table in tables) {
+      final tableName = table['name'] as String;
+      final escapedName = tableName.replaceAll('"', '""');
+      final rows = db.select(
+        'SELECT 1 FROM "$escapedName" LIMIT 1',
+      );
+      if (rows.isNotEmpty) return true;
+    }
+    return false;
+  } catch (_) {
+    return true;
+  } finally {
+    db.dispose();
   }
 }
 

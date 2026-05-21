@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:db_client/src/database/connection/connection_native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
+import 'package:sqlite3/sqlite3.dart';
 
 void main() {
   group('prepareDatabaseFile', () {
@@ -244,6 +245,22 @@ void main() {
     );
 
     test(
+      'restores legacy DB when destination exists but has no local data',
+      () async {
+        _createSqliteDatabase(legacyPath, rowCount: 1);
+        _createSqliteDatabase(newPath, rowCount: 0);
+
+        await migrateLegacyDatabase(
+          legacyPath: legacyPath,
+          newPath: newPath,
+        );
+
+        expect(_localRecordCount(newPath), equals(1));
+        expect(File(legacyPath).existsSync(), isFalse);
+      },
+    );
+
+    test(
       'preserves new DB sidecars when both legacy and new databases exist',
       () async {
         final legacyFile = File(legacyPath);
@@ -311,4 +328,27 @@ void main() {
       expect(File('$newPath-shm').existsSync(), isFalse);
     });
   });
+}
+
+void _createSqliteDatabase(String path, {required int rowCount}) {
+  File(path).parent.createSync(recursive: true);
+  final db = sqlite3.open(path);
+  try {
+    db.execute('CREATE TABLE local_records (id INTEGER PRIMARY KEY)');
+    for (var i = 0; i < rowCount; i += 1) {
+      db.execute('INSERT INTO local_records DEFAULT VALUES');
+    }
+  } finally {
+    db.dispose();
+  }
+}
+
+int _localRecordCount(String path) {
+  final db = sqlite3.open(path);
+  try {
+    return db.select('SELECT COUNT(*) AS count FROM local_records').first['count']
+        as int;
+  } finally {
+    db.dispose();
+  }
 }
