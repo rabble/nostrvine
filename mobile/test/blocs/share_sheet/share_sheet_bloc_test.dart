@@ -11,6 +11,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/share_sheet/share_sheet_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/classic_vine_clip_import_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
@@ -932,7 +933,13 @@ void main() {
         build: () => createBloc(classicVineClipImportService: mockImporter),
         act: (bloc) =>
             bloc.add(const ShareSheetAddClassicVineToClipsRequested()),
-        errors: () => [isA<Exception>()],
+        errors: () => [
+          isA<Reportable<Object>>().having(
+            (error) => error.unwrap(),
+            'unwrap',
+            isA<Exception>(),
+          ),
+        ],
         expect: () => [
           isA<ShareSheetState>().having(
             (state) => state.actionResult,
@@ -1188,7 +1195,13 @@ void main() {
           followRepository: mockFollowRepository,
         ),
         act: (bloc) => bloc.add(const ShareSheetCopyEventJsonRequested()),
-        errors: () => [isA<Exception>()],
+        errors: () => [
+          isA<Reportable<Object>>().having(
+            (error) => error.unwrap(),
+            'unwrap',
+            isA<FormatException>(),
+          ),
+        ],
         expect: () => [
           isA<ShareSheetState>().having(
             (s) => s.actionResult,
@@ -1237,7 +1250,13 @@ void main() {
           followRepository: mockFollowRepository,
         ),
         act: (bloc) => bloc.add(const ShareSheetCopyEventIdRequested()),
-        errors: () => [isA<Exception>()],
+        errors: () => [
+          isA<Reportable<Object>>().having(
+            (error) => error.unwrap(),
+            'unwrap',
+            isA<FormatException>(),
+          ),
+        ],
         expect: () => [
           isA<ShareSheetState>().having(
             (s) => s.actionResult,
