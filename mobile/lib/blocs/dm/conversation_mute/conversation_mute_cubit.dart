@@ -72,6 +72,10 @@ class ConversationMuteCubit extends Cubit<ConversationMuteState> {
     try {
       await _save(muted);
     } catch (e, stackTrace) {
+      // SharedPreferences write failures are expected IO (disk pressure
+      // / sandbox restrictions). Per .claude/rules/error_handling.md
+      // they are NOT Reportable — the UI rolls back optimistic state
+      // and surfaces `ConversationMuteStatus.error`.
       addError(e, stackTrace);
       emit(
         state.copyWith(
@@ -97,6 +101,11 @@ class ConversationMuteCubit extends Cubit<ConversationMuteState> {
       final list = (jsonDecode(stored) as List<dynamic>).cast<String>();
       emit(state.copyWith(mutedIds: list.toSet()));
     } catch (e, stackTrace) {
+      // `FormatException` from corrupted prefs JSON and the lazy
+      // `cast<String>()` `TypeError` are both treated as recoverable
+      // data-migration concerns. Per .claude/rules/error_handling.md
+      // they are NOT Reportable — the cubit silently falls back to
+      // an empty muted set.
       addError(e, stackTrace);
       Log.error(
         'Failed to load muted conversations: $e',

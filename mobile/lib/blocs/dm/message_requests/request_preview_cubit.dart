@@ -84,6 +84,9 @@ class RequestPreviewCubit extends Cubit<RequestPreviewState> {
         ),
       );
     } catch (e, stackTrace) {
+      // Local Drift read failures are expected IO. Per
+      // .claude/rules/error_handling.md they are NOT Reportable — the
+      // UI surfaces the failure via `RequestPreviewStatus.error`.
       addError(e, stackTrace);
       emit(state.copyWith(status: RequestPreviewStatus.error));
     }

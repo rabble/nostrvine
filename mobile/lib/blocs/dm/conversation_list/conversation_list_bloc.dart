@@ -99,6 +99,9 @@ class ConversationListBloc
         );
       },
       onError: (error, stackTrace) {
+        // Drift / follow-stream IO failures are expected here. Per
+        // .claude/rules/error_handling.md they are NOT Reportable — the
+        // UI surfaces the failure via `ConversationListStatus.error`.
         addError(error, stackTrace);
         return state.copyWith(status: ConversationListStatus.error);
       },

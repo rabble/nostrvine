@@ -36,6 +36,9 @@ class MessageRequestActionsCubit extends Cubit<MessageRequestActionsState> {
       await _dmRepository.removeConversation(conversationId);
       emit(state.copyWith(status: MessageRequestActionsStatus.success));
     } catch (e, stackTrace) {
+      // Local Drift write failures are expected IO. Per
+      // .claude/rules/error_handling.md they are NOT Reportable — surface
+      // via the status enum only.
       addError(e, stackTrace);
       emit(state.copyWith(status: MessageRequestActionsStatus.error));
     }
@@ -49,6 +52,8 @@ class MessageRequestActionsCubit extends Cubit<MessageRequestActionsState> {
       await _dmRepository.markConversationsAsRead(conversationIds);
       emit(state.copyWith(status: MessageRequestActionsStatus.success));
     } catch (e, stackTrace) {
+      // Local Drift write failures are expected IO. Per
+      // .claude/rules/error_handling.md they are NOT Reportable.
       addError(e, stackTrace);
       emit(state.copyWith(status: MessageRequestActionsStatus.error));
     }
@@ -62,6 +67,8 @@ class MessageRequestActionsCubit extends Cubit<MessageRequestActionsState> {
       await _dmRepository.removeConversations(conversationIds);
       emit(state.copyWith(status: MessageRequestActionsStatus.success));
     } catch (e, stackTrace) {
+      // Local Drift write failures are expected IO. Per
+      // .claude/rules/error_handling.md they are NOT Reportable.
       addError(e, stackTrace);
       emit(state.copyWith(status: MessageRequestActionsStatus.error));
     }

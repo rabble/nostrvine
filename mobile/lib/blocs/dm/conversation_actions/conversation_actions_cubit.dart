@@ -63,6 +63,8 @@ class ConversationActionsCubit extends Cubit<ConversationActionsState> {
       emit(state.copyWith(status: ConversationActionsStatus.idle));
       return result.success;
     } catch (e, stackTrace) {
+      // `ContentReportingService` API/network failures are expected.
+      // Per .claude/rules/error_handling.md they are NOT Reportable.
       addError(e, stackTrace);
       emit(state.copyWith(status: ConversationActionsStatus.idle));
       return false;
@@ -82,6 +84,9 @@ class ConversationActionsCubit extends Cubit<ConversationActionsState> {
       );
       emit(state.copyWith(status: ConversationActionsStatus.success));
     } catch (e, stackTrace) {
+      // `ContentBlocklistRepository.blockUser` IO / publish failures
+      // are expected. Per .claude/rules/error_handling.md they are NOT
+      // Reportable — surface via the status enum.
       addError(e, stackTrace);
       emit(state.copyWith(status: ConversationActionsStatus.failure));
     }
@@ -94,6 +99,9 @@ class ConversationActionsCubit extends Cubit<ConversationActionsState> {
       await _blocklistRepository.unblockUser(pubkey);
       emit(state.copyWith(status: ConversationActionsStatus.success));
     } catch (e, stackTrace) {
+      // `ContentBlocklistRepository.unblockUser` IO / publish failures
+      // are expected. Per .claude/rules/error_handling.md they are NOT
+      // Reportable.
       addError(e, stackTrace);
       emit(state.copyWith(status: ConversationActionsStatus.failure));
     }
@@ -109,6 +117,8 @@ class ConversationActionsCubit extends Cubit<ConversationActionsState> {
       emit(state.copyWith(status: ConversationActionsStatus.success));
       return true;
     } catch (e, stackTrace) {
+      // Local Drift write failures are expected IO. Per
+      // .claude/rules/error_handling.md they are NOT Reportable.
       addError(e, stackTrace);
       emit(state.copyWith(status: ConversationActionsStatus.failure));
       return false;

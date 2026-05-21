@@ -86,6 +86,9 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         );
       },
       onError: (error, stackTrace) {
+        // Drift / rxdart stream IO failures are expected here. Per
+        // .claude/rules/error_handling.md they are NOT Reportable — the
+        // UI surfaces the failure via `ConversationStatus.error`.
         addError(error, stackTrace);
         return state.copyWith(status: ConversationStatus.error);
       },
@@ -101,6 +104,11 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       // The watchMessages stream automatically excludes deleted messages,
       // so the UI updates reactively — no manual state mutation needed.
     } catch (e, stackTrace) {
+      // `deleteMessageForEveryone` throws `ArgumentError` (rumor not
+      // found / not ours — recoverable) and propagates publish/IO
+      // failures from the repo. Per .claude/rules/error_handling.md
+      // both are matrix-NO; narrowing to surface the signer-failure
+      // `StateError` path as Reportable is deferred to a follow-up.
       addError(e, stackTrace);
     }
   }
@@ -176,6 +184,12 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       }
       emit(state.copyWith(sendStatus: SendStatus.sent));
     } catch (e, stackTrace) {
+      // The dominant case here is the explicit `throw Exception(result.error)`
+      // above — a domain-failure path with the relay error message. The
+      // repo can also propagate `ArgumentError` (empty content) and IO
+      // failures from `sendMessage` / `sendGroupMessage`. Per
+      // .claude/rules/error_handling.md these are matrix-NO; UI consumes
+      // `SendStatus.failed` + `lastFailedSend` for retry affordance.
       addError(e, stackTrace);
       emit(
         state.copyWith(
