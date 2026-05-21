@@ -230,6 +230,35 @@ void main() {
         },
       );
 
+      test(
+        'does not add after close when _hydrateProfiles completes '
+        'successfully post-close (regression #4605)',
+        () async {
+          final completer = Completer<UserProfile?>();
+          when(
+            () => mockAuthService.getKnownAccounts(),
+          ).thenAnswer((_) async => [_testKnownAccount]);
+          when(
+            () => mockUserProfilesDao.getProfile(_testPubkeyHex),
+          ).thenAnswer((_) => completer.future);
+
+          final observer = _CapturingObserver();
+          final priorObserver = Bloc.observer;
+          Bloc.observer = observer;
+          addTearDown(() => Bloc.observer = priorObserver);
+
+          final bloc = buildBloc()..add(const WelcomeStarted());
+          await Future<void>.delayed(Duration.zero);
+
+          await bloc.close();
+
+          completer.complete(_testProfile);
+          await Future<void>.delayed(Duration.zero);
+
+          expect(observer.errors, isEmpty);
+        },
+      );
+
       blocTest<WelcomeBloc, WelcomeState>(
         'emits loaded with multiple accounts then hydrates profiles',
         setUp: () {

@@ -122,8 +122,10 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
       category: LogCategory.auth,
     );
 
-    // Only update if any profiles were actually found.
-    if (withProfiles > 0) {
+    // Only update if any profiles were actually found. Guard because this
+    // method runs fire-and-forget from _onWelcomeStarted, so the bloc may
+    // already be closed by the time the parallel hydration finishes.
+    if (withProfiles > 0 && !isClosed) {
       add(WelcomeProfilesHydrated(results));
     }
   }
