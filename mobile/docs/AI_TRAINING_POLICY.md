@@ -4,18 +4,20 @@ Status: Current
 
 ## Policy
 
-Every video published through Divine carries a cryptographically signed
-**CAWG `training-mining` opt-out assertion** embedded in its C2PA metadata.
-The signal marks the content as `notAllowed` for AI training, AI inference,
-generative-AI training, and data mining.
+Divine's publish pipeline always **attempts** to embed a cryptographically
+signed **CAWG `training-mining` opt-out assertion** in each video's C2PA
+metadata. When C2PA signing succeeds, the signal marks the content as
+`notAllowed` for AI training, AI inference, generative-AI training, and
+data mining.
 
 **This is not a default — it is the only option.** Divine does not offer an
 opt-in to AI training. Creators who want their content used for training
 must export it and do that outside Divine.
 
-Keeping it unconditional protects every Divine creator at once: if some
-content carried the signal and other content did not, downstream scrapers
-could argue ambiguity. A single, consistent policy removes that argument.
+Keeping the policy unconditional protects every Divine creator at once: if
+some content carried the signal and other content did not by policy,
+downstream scrapers could argue ambiguity. A single, consistent policy
+removes that argument.
 
 ## Why we don't make this a setting
 
@@ -31,7 +33,8 @@ This is a **cryptographically signed line in the sand**, in the same spirit
 as `robots.txt` or `Do Not Track`:
 
 - **It is** a machine-readable, signed declaration in every video file
-  that scrapers, dataset builders, and AI vendors can read and respect.
+  where C2PA signing succeeds, which scrapers, dataset builders, and AI
+  vendors can read and respect.
 - **It is not** a technical block. Bad actors who ignore the signal will
   scrape the content anyway. The value is in making the declaration
   unambiguous and verifiable, not in preventing the scrape.
@@ -44,8 +47,8 @@ be enforced at the protocol layer — the same reasoning that justifies
 
 The assertion follows the
 [CAWG Training and Data Mining specification v1.1](https://cawg.io/training-and-data-mining/1.1/).
-Every signed manifest contains a `cawg.training-mining` assertion with
-all four standard entries marked `notAllowed`:
+Every manifest Divine successfully signs contains a `cawg.training-mining`
+assertion with all four standard entries marked `notAllowed`:
 
 | Entry                          | Value        |
 |--------------------------------|--------------|
@@ -55,8 +58,11 @@ all four standard entries marked `notAllowed`:
 | `cawg.data_mining`             | `notAllowed` |
 
 The C2PA manifest is signed during upload via the Divine signing service.
-The signature ties the assertion to the specific video bytes — modifying
-the video invalidates the signature.
+Signing remains best-effort today: if ProofMode is unavailable on the
+current platform or C2PA signing fails, upload continues without the
+embedded assertion. When signing succeeds, the signature ties the
+assertion to the specific video bytes — modifying the video invalidates
+the signature.
 
 ## Where this lives in the code
 
@@ -80,8 +86,8 @@ The unconditional behaviour is pinned by tests in:
 
 ## Scope
 
-This policy covers C2PA metadata embedded in video files uploaded
-through Divine. Out of scope for this document:
+This policy covers Divine's unconditional attempt to embed C2PA metadata in
+video files uploaded through Divine. Out of scope for this document:
 
 - Re-signing or backfilling videos uploaded before this policy
   was made unconditional.

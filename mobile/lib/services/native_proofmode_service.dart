@@ -28,8 +28,9 @@ class NativeProofModeService {
   /// Handles platform availability checks and graceful fallback if ProofMode
   /// is not supported.
   ///
-  /// The downstream C2PA manifest always carries the CAWG `training-mining`
-  /// opt-out assertion. See `mobile/docs/AI_TRAINING_POLICY.md`.
+  /// When C2PA signing succeeds, the downstream manifest carries the CAWG
+  /// `training-mining` opt-out assertion. See
+  /// `mobile/docs/AI_TRAINING_POLICY.md`.
   static Future<NativeProofData?> proofFile(
     File videoFile, {
     NostrCreatorBindingAssertion? creatorBindingAssertion,
