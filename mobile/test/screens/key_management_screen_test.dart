@@ -33,8 +33,7 @@ class _FakeKeyManagementAuthService extends Fake implements AuthService {
   AuthState get authState => AuthState.authenticated;
 
   @override
-  Stream<AuthState> get authStateStream =>
-      const Stream<AuthState>.empty();
+  Stream<AuthState> get authStateStream => const Stream<AuthState>.empty();
 
   @override
   String? get currentPublicKeyHex => null;
