@@ -28,6 +28,14 @@ void main() {
       when(() => authService.exportNsec()).thenAnswer((_) async => null);
     });
 
+    tearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            SystemChannels.platform,
+            null,
+          );
+    });
+
     Future<void> pumpSubject(WidgetTester tester) async {
       await tester.pumpWidget(
         testMaterialApp(
@@ -35,6 +43,7 @@ void main() {
           mockAuthService: authService,
         ),
       );
+      await tester.pumpAndSettle();
     }
 
     testWidgets('renders the public key label', (tester) async {
