@@ -470,6 +470,7 @@ void main() {
               inviteRecoveryCode: 'AB12-EF34',
             ),
           ],
+          errors: () => [isA<InviteApiException>()],
           verify: (_) {
             verify(
               () => mockAuthService.clearPendingDivineOAuthSession(),
@@ -533,6 +534,7 @@ void main() {
             ),
             isA<DivineAuthFormState>(),
           ],
+          errors: () => [isA<InviteApiException>()],
           verify: (_) {
             final logMessage = LogCaptureService()
                 .getRecentLogs()
@@ -711,6 +713,7 @@ void main() {
               generalError: 'Token exchange failed',
             ),
           ],
+          errors: () => [isA<OAuthException>()],
         );
 
         blocTest<DivineAuthCubit, DivineAuthState>(
@@ -756,6 +759,7 @@ void main() {
               generalError: 'Failed to complete authentication',
             ),
           ],
+          errors: () => [isA<Exception>()],
         );
       });
 
@@ -1335,6 +1339,7 @@ void main() {
               contains('unexpected error'),
             ),
           ],
+          errors: () => [isA<Exception>()],
         );
       });
     });
@@ -1378,6 +1383,7 @@ void main() {
         build: buildCubit,
         act: (cubit) => cubit.sendPasswordResetEmail(testEmail),
         expect: () => <DivineAuthState>[],
+        errors: () => [isA<Exception>()],
       );
     });
 
@@ -1480,6 +1486,7 @@ void main() {
             inviteRecoveryCode: 'AB12-EF34',
           ),
         ],
+        errors: () => [isA<InviteApiException>()],
         verify: (_) {
           verifyNever(() => mockAuthService.createAnonymousAccount());
           verifyNever(
@@ -1509,6 +1516,7 @@ void main() {
               .having((s) => s.isSkipping, 'isSkipping', isFalse)
               .having((s) => s.generalError, 'generalError', isNotNull),
         ],
+        errors: () => [isA<Exception>()],
       );
 
       blocTest<DivineAuthCubit, DivineAuthState>(

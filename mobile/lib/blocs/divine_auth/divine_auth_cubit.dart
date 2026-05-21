@@ -178,12 +178,16 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       } else {
         await _handleSignUp(current.email, current.password);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       Log.error(
         'Auth submission error: $e',
         name: 'DivineAuthCubit',
         category: LogCategory.auth,
       );
+      // Auth submission failures dominate (OAuth/Invite/network) —
+      // matrix-NO. YES-narrowing deferred per #4592 (analogous to
+      // #4597's `_onMessageSent` deferral).
+      addError(e, stackTrace);
 
       final currentState = state;
       if (currentState is DivineAuthFormState) {
@@ -333,7 +337,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       );
 
       emit(const DivineAuthSuccess());
-    } on InviteApiException catch (e) {
+    } on InviteApiException catch (e, stackTrace) {
       await _authService.clearPendingDivineOAuthSession();
       Log.error(
         'Invite activation failed: '
@@ -341,6 +345,8 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
         name: 'DivineAuthCubit',
         category: LogCategory.auth,
       );
+      // Invite API rejection — matrix-NO (API/domain row).
+      addError(e, stackTrace);
 
       final current = state;
       if (current is DivineAuthFormState) {
@@ -354,23 +360,28 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
           ),
         );
       }
-    } on OAuthException catch (e) {
+    } on OAuthException catch (e, stackTrace) {
       Log.error(
         'OAuth exchange failed: ${e.message}',
         name: 'DivineAuthCubit',
         category: LogCategory.auth,
       );
+      // OAuth token exchange — matrix-NO (Auth/session + API/domain).
+      addError(e, stackTrace);
 
       final current = state;
       if (current is DivineAuthFormState) {
         emit(current.copyWith(isSubmitting: false, generalError: e.message));
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       Log.error(
         'Error exchanging code: $e',
         name: 'DivineAuthCubit',
         category: LogCategory.auth,
       );
+      // Anything not Invite/OAuth — storage, signing, identity, network.
+      // Matrix-NO; YES-narrowing deferred per #4592.
+      addError(e, stackTrace);
 
       final current = state;
       if (current is DivineAuthFormState) {
@@ -402,12 +413,14 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
           category: LogCategory.auth,
         );
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       Log.error(
         'Password reset error: $e',
         name: 'DivineAuthCubit',
         category: LogCategory.auth,
       );
+      // OAuth client network failure — matrix-NO (Network/IO).
+      addError(e, stackTrace);
     }
   }
 
@@ -452,13 +465,15 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       );
 
       emit(const DivineAuthSuccess());
-    } on InviteApiException catch (e) {
+    } on InviteApiException catch (e, stackTrace) {
       Log.error(
         'Anonymous account invite activation failed: '
         '${InviteErrorUtils.activationFailureLogDetails(e)}',
         name: 'DivineAuthCubit',
         category: LogCategory.auth,
       );
+      // Invite API rejection — matrix-NO (API/domain row).
+      addError(e, stackTrace);
 
       final currentState = state;
       if (currentState is DivineAuthFormState) {
@@ -472,12 +487,15 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
           ),
         );
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       Log.error(
         'Anonymous account creation failed: $e',
         name: 'DivineAuthCubit',
         category: LogCategory.auth,
       );
+      // Key generation, storage, identity creation — matrix-NO
+      // (Network/IO + signer). YES-narrowing deferred per #4592.
+      addError(e, stackTrace);
 
       final currentState = state;
       if (currentState is DivineAuthFormState) {
