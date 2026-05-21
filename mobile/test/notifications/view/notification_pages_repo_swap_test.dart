@@ -1,27 +1,16 @@
 // ABOUTME: Regression tests for the BlocProvider repo-swap pattern in
 // ABOUTME: NotificationsPage + InboxNotificationsPage — verifies that the
 // ABOUTME: NotificationFeedBloc is recreated when its Riverpod-provided
-// ABOUTME: repositories rebuild (auth flip / sign-out / account switch), so
-// ABOUTME: any mark-on-leave wrapper inside the subtree can never fire
-// ABOUTME: against the new user's repository while the old user was
-// ABOUTME: actually viewing.
+// ABOUTME: repositories rebuild (auth flip / sign-out / account switch).
 //
-// Mirrors `conversation_page_repo_swap_test.dart` and the four canonical
-// pooled-feed sites referenced in `.claude/rules/state_management.md`.
-// The production sites are
+// Mirrors `conversation_page_repo_swap_test.dart` and the canonical
+// pooled-feed repo-swap tests. The production sites are
 // `mobile/lib/notifications/view/notifications_page.dart` and
 // `mobile/lib/notifications/view/inbox_notifications_page.dart`, each
-// carrying `BlocProvider<NotificationFeedBloc>(key: ValueKey(
-// notificationRepository, followRepository), …)`. Without the key,
+// carrying `BlocProvider<NotificationFeedBloc>(key: ValueKey((
+// notificationRepository, followRepository)), …)`. Without the key,
 // the BlocProvider element persists across rebuilds and the bloc stays
-// bound to stale repositories — meanwhile `MarkAllReadOnDispose`
-// further down the subtree updates its `widget.repository` to whatever
-// the rebuilt widget tree captured (the new user's repository). When
-// the user later leaves the page, `dispose()` fires `markAllAsRead()`
-// against the new user's account, silently consuming notifications
-// they never saw.
-
-// ignore_for_file: prefer_const_constructors
+// bound to stale repositories.
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
@@ -30,16 +19,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
+import 'package:invite_api_client/invite_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:notification_repository/notification_repository.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/notifications/bloc/notification_feed_bloc.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/notifications/view/inbox_notifications_page.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/notifications/view/notifications_view.dart';
-
-import '../../helpers/test_provider_overrides.dart';
+import 'package:openvine/providers/app_providers.dart';
 
 class _MockNotificationRepository extends Mock
     implements NotificationRepository {}
@@ -49,194 +39,473 @@ class _MockFollowRepository extends Mock implements FollowRepository {}
 class _MockInviteStatusCubit extends MockCubit<InviteStatusState>
     implements InviteStatusCubit {}
 
-/// Toggle a `StateProvider<int>` to force `notificationRepositoryProvider`
-/// to rebuild and return a different mock — mirrors what happens in
-/// production when auth flips (the real provider rebuilds through the
-/// `profileRepositoryProvider`/`authServiceProvider` chain in
-/// `notification_repository_provider.dart`).
 final _notificationRepoSwap = StateProvider<int>((ref) => 0);
+final _followRepoSwap = StateProvider<int>((ref) => 0);
 
 void main() {
-  late _MockNotificationRepository mockRepoA;
-  late _MockNotificationRepository mockRepoB;
-  late _MockFollowRepository mockFollowRepo;
-  late _MockInviteStatusCubit mockInviteCubit;
-
-  setUp(() {
-    mockRepoA = _MockNotificationRepository();
-    mockRepoB = _MockNotificationRepository();
-    mockFollowRepo = _MockFollowRepository();
-    mockInviteCubit = _MockInviteStatusCubit();
-
-    for (final repo in [mockRepoA, mockRepoB]) {
-      when(
-        repo.watchSnapshot,
-      ).thenAnswer((_) => const Stream<NotificationPage>.empty());
-      when(repo.refresh).thenAnswer((_) async => NotificationPage.empty);
-      when(repo.markAllAsRead).thenAnswer((_) async {});
-    }
-    when(() => mockFollowRepo.isFollowing(any())).thenReturn(false);
-    when(() => mockInviteCubit.state).thenReturn(InviteStatusState());
-    when(mockInviteCubit.load).thenAnswer((_) async {});
-  });
-
   group('NotificationsPage — BlocProvider repo-swap', () {
-    Widget buildSubject() {
-      return testMaterialApp(
-        mockFollowRepository: mockFollowRepo,
-        additionalOverrides: [
-          notificationRepositoryProvider.overrideWith((ref) {
-            final v = ref.watch(_notificationRepoSwap);
-            return v == 0 ? mockRepoA : mockRepoB;
-          }),
-        ],
-        home: const NotificationsPage(),
-      );
-    }
+    late _MockNotificationRepository mockNotificationRepoA;
+    late _MockNotificationRepository mockNotificationRepoB;
+    late _MockFollowRepository mockFollowRepoA;
+    late _MockFollowRepository mockFollowRepoB;
+
+    setUp(() {
+      mockNotificationRepoA = _MockNotificationRepository();
+      mockNotificationRepoB = _MockNotificationRepository();
+      mockFollowRepoA = _MockFollowRepository();
+      mockFollowRepoB = _MockFollowRepository();
+
+      for (final repo in [mockNotificationRepoA, mockNotificationRepoB]) {
+        when(
+          repo.watchSnapshot,
+        ).thenAnswer((_) => const Stream<NotificationPage>.empty());
+        when(repo.refresh).thenAnswer((_) async => NotificationPage.empty);
+        when(() => repo.markAllAsRead()).thenAnswer((_) async {});
+      }
+
+      for (final repo in [mockFollowRepoA, mockFollowRepoB]) {
+        when(() => repo.isFollowing(any())).thenReturn(false);
+      }
+    });
 
     testWidgets(
       'recreates NotificationFeedBloc when notificationRepositoryProvider '
       'rebuilds with a new repository instance',
       (tester) async {
-        await tester.pumpWidget(buildSubject());
-        await tester.pumpAndSettle();
-
-        // Capture the bloc that was created when the page first built.
-        final viewContextBefore = tester.element(
-          find.byType(NotificationsView),
+        final container = ProviderContainer(
+          overrides: [
+            notificationRepositoryProvider.overrideWith((ref) {
+              final v = ref.watch(_notificationRepoSwap);
+              return v == 0 ? mockNotificationRepoA : mockNotificationRepoB;
+            }),
+            followRepositoryProvider.overrideWith((_) => mockFollowRepoA),
+          ],
         );
-        final blocA = BlocProvider.of<NotificationFeedBloc>(viewContextBefore);
-        expect(blocA.isClosed, isFalse, reason: 'initial bloc should be alive');
-        verify(() => mockRepoA.refresh()).called(1);
-        verifyNever(() => mockRepoB.refresh());
+        addTearDown(container.dispose);
 
-        // Flip the toggle. notificationRepositoryProvider rebuilds,
-        // NotificationsPage's ref.watch fires, the ValueKey on the
-        // BlocProvider changes, the old element is torn down and a new
-        // bloc is constructed wrapping mockRepoB.
-        final providerScope = ProviderScope.containerOf(
-          tester.element(find.byType(NotificationsPage)),
+        await tester.pumpWidget(
+          _TestApp(container: container, home: const NotificationsPage()),
         );
-        providerScope.read(_notificationRepoSwap.notifier).state = 1;
-        await tester.pumpAndSettle();
+        await tester.pump();
 
-        final viewContextAfter = tester.element(find.byType(NotificationsView));
-        final blocB = BlocProvider.of<NotificationFeedBloc>(viewContextAfter);
+        final blocBefore = _notificationFeedBlocFor(tester);
+        expect(blocBefore.isClosed, isFalse);
 
+        container.read(_notificationRepoSwap.notifier).state = 1;
+        await tester.pump();
+
+        final blocAfter = _notificationFeedBlocFor(tester);
         expect(
-          blocB,
-          isNot(same(blocA)),
+          blocAfter,
+          isNot(same(blocBefore)),
           reason:
-              'BlocProvider must create a new NotificationFeedBloc when '
-              'notificationRepository identity flips. Without the '
-              'ValueKey on the BlocProvider, the bloc would keep using '
-              'the stale repository, while MarkAllReadOnDispose further '
-              'down the subtree would update its widget.repository to '
-              'the new user — causing mark-all-read on the wrong user '
-              'when the user later leaves the page.',
+              'The page captures notificationRepository in BlocProvider.create. '
+              'When the provider identity flips, the ValueKey must recreate '
+              'NotificationFeedBloc so the page does not keep a stale repo.',
         );
-        verify(() => mockRepoB.refresh()).called(1);
       },
     );
 
-    testWidgets('preserves the same NotificationFeedBloc when the repository '
-        'identity does not change across rebuilds', (tester) async {
-      await tester.pumpWidget(
-        testMaterialApp(
-          mockFollowRepository: mockFollowRepo,
-          additionalOverrides: [
-            notificationRepositoryProvider.overrideWith((ref) {
-              ref.watch(_notificationRepoSwap);
-              return mockRepoA; // identity stays the same
+    testWidgets(
+      'recreates NotificationFeedBloc when followRepositoryProvider rebuilds '
+      'with a new repository instance',
+      (tester) async {
+        final container = ProviderContainer(
+          overrides: [
+            notificationRepositoryProvider.overrideWith(
+              (_) => mockNotificationRepoA,
+            ),
+            followRepositoryProvider.overrideWith((ref) {
+              final v = ref.watch(_followRepoSwap);
+              return v == 0 ? mockFollowRepoA : mockFollowRepoB;
             }),
           ],
-          home: const NotificationsPage(),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        addTearDown(container.dispose);
 
-      final blocA = BlocProvider.of<NotificationFeedBloc>(
-        tester.element(find.byType(NotificationsView)),
-      );
+        await tester.pumpWidget(
+          _TestApp(container: container, home: const NotificationsPage()),
+        );
+        await tester.pump();
 
-      final providerScope = ProviderScope.containerOf(
-        tester.element(find.byType(NotificationsPage)),
-      );
-      providerScope.read(_notificationRepoSwap.notifier).state = 1;
-      await tester.pumpAndSettle();
+        final blocBefore = _notificationFeedBlocFor(tester);
+        expect(blocBefore.isClosed, isFalse);
 
-      final blocAfter = BlocProvider.of<NotificationFeedBloc>(
-        tester.element(find.byType(NotificationsView)),
-      );
+        container.read(_followRepoSwap.notifier).state = 1;
+        await tester.pump();
 
-      expect(
-        blocAfter,
-        same(blocA),
-        reason:
-            'Identical repository identity should keep the same bloc '
-            '— the ValueKey prevents unnecessary churn on rebuilds.',
-      );
-      // Refresh should fire exactly once — the same bloc handled both
-      // pump cycles and NotificationFeedStarted is dispatched once.
-      verify(() => mockRepoA.refresh()).called(1);
-    });
+        final blocAfter = _notificationFeedBlocFor(tester);
+        expect(
+          blocAfter,
+          isNot(same(blocBefore)),
+          reason:
+              'The page also captures followRepository in BlocProvider.create. '
+              'The record ValueKey must include it so follow-back state uses '
+              'the active repository after auth-driven rebuilds.',
+        );
+      },
+    );
+
+    testWidgets(
+      'preserves the same NotificationFeedBloc when neither dependency '
+      'identity changes across rebuilds',
+      (tester) async {
+        final rebuildKey = GlobalKey<_RebuildHostState>();
+        final container = ProviderContainer(
+          overrides: [
+            notificationRepositoryProvider.overrideWith(
+              (_) => mockNotificationRepoA,
+            ),
+            followRepositoryProvider.overrideWith((_) => mockFollowRepoA),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          _TestApp(
+            container: container,
+            home: RebuildHost(
+              key: rebuildKey,
+              child: const NotificationsPage(),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final blocBefore = _notificationFeedBlocFor(tester);
+
+        rebuildKey.currentState!.rebuild();
+        await tester.pump();
+
+        final blocAfter = _notificationFeedBlocFor(tester);
+        expect(
+          blocAfter,
+          same(blocBefore),
+          reason:
+              'Rebuilding with the same dependency identities should keep the '
+              'same bloc. The record key must avoid unnecessary churn.',
+        );
+      },
+    );
+
+    testWidgets(
+      'drops prior bloc state when notificationRepositoryProvider rebuilds '
+      '(intentional)',
+      (tester) async {
+        final container = ProviderContainer(
+          overrides: [
+            notificationRepositoryProvider.overrideWith((ref) {
+              final v = ref.watch(_notificationRepoSwap);
+              return v == 0 ? mockNotificationRepoA : mockNotificationRepoB;
+            }),
+            followRepositoryProvider.overrideWith((_) => mockFollowRepoA),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          _TestApp(container: container, home: const NotificationsPage()),
+        );
+        await tester.pump();
+
+        final blocBefore = _notificationFeedBlocFor(tester);
+        blocBefore.emit(
+          const NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            unreadCount: 9,
+            hasMore: false,
+            isLoadingMore: true,
+            refreshError: true,
+          ),
+        );
+        await tester.pump();
+        expect(blocBefore.state.unreadCount, equals(9));
+        expect(blocBefore.state.hasMore, isFalse);
+        expect(blocBefore.state.refreshError, isTrue);
+
+        container.read(_notificationRepoSwap.notifier).state = 1;
+        await tester.pump();
+
+        final blocAfter = _notificationFeedBlocFor(tester);
+        expect(blocAfter, isNot(same(blocBefore)));
+        expect(
+          blocAfter.state.unreadCount,
+          equals(0),
+          reason: 'A recreated bloc must not inherit the old unread count.',
+        );
+        expect(
+          blocAfter.state.hasMore,
+          isTrue,
+          reason: 'A recreated bloc must restart with fresh pagination state.',
+        );
+        expect(
+          blocAfter.state.refreshError,
+          isFalse,
+          reason: 'A recreated bloc must not inherit the old refresh error.',
+        );
+      },
+    );
   });
 
   group('InboxNotificationsPage — BlocProvider repo-swap', () {
-    Widget buildSubject() {
-      return testMaterialApp(
-        mockFollowRepository: mockFollowRepo,
-        additionalOverrides: [
-          notificationRepositoryProvider.overrideWith((ref) {
-            final v = ref.watch(_notificationRepoSwap);
-            return v == 0 ? mockRepoA : mockRepoB;
-          }),
-        ],
-        home: BlocProvider<InviteStatusCubit>.value(
-          value: mockInviteCubit,
-          child: Scaffold(body: const InboxNotificationsPage()),
+    late _MockNotificationRepository mockNotificationRepoA;
+    late _MockNotificationRepository mockNotificationRepoB;
+    late _MockFollowRepository mockFollowRepoA;
+    late _MockFollowRepository mockFollowRepoB;
+    late _MockInviteStatusCubit mockInviteCubit;
+
+    setUp(() {
+      mockNotificationRepoA = _MockNotificationRepository();
+      mockNotificationRepoB = _MockNotificationRepository();
+      mockFollowRepoA = _MockFollowRepository();
+      mockFollowRepoB = _MockFollowRepository();
+      mockInviteCubit = _MockInviteStatusCubit();
+
+      for (final repo in [mockNotificationRepoA, mockNotificationRepoB]) {
+        when(
+          repo.watchSnapshot,
+        ).thenAnswer((_) => const Stream<NotificationPage>.empty());
+        when(repo.refresh).thenAnswer((_) async => NotificationPage.empty);
+        when(() => repo.markAllAsRead()).thenAnswer((_) async {});
+      }
+
+      for (final repo in [mockFollowRepoA, mockFollowRepoB]) {
+        when(() => repo.isFollowing(any())).thenReturn(false);
+      }
+
+      when(() => mockInviteCubit.state).thenReturn(
+        const InviteStatusState(
+          status: InviteStatusLoadingStatus.loaded,
+          inviteStatus: InviteStatus(
+            canInvite: false,
+            remaining: 0,
+            total: 0,
+            codes: [],
+          ),
         ),
       );
-    }
+      when(mockInviteCubit.load).thenAnswer((_) async {});
+    });
 
     testWidgets(
       'recreates NotificationFeedBloc when notificationRepositoryProvider '
       'rebuilds with a new repository instance',
       (tester) async {
-        await tester.pumpWidget(buildSubject());
-        await tester.pumpAndSettle();
-
-        final viewContextBefore = tester.element(
-          find.byType(NotificationsView).first,
+        final container = ProviderContainer(
+          overrides: [
+            notificationRepositoryProvider.overrideWith((ref) {
+              final v = ref.watch(_notificationRepoSwap);
+              return v == 0 ? mockNotificationRepoA : mockNotificationRepoB;
+            }),
+            followRepositoryProvider.overrideWith((_) => mockFollowRepoA),
+          ],
         );
-        final blocA = BlocProvider.of<NotificationFeedBloc>(viewContextBefore);
-        expect(blocA.isClosed, isFalse);
-        verify(() => mockRepoA.refresh()).called(1);
-        verifyNever(() => mockRepoB.refresh());
+        addTearDown(container.dispose);
 
-        final providerScope = ProviderScope.containerOf(
-          tester.element(find.byType(InboxNotificationsPage)),
+        await tester.pumpWidget(
+          _TestApp(
+            container: container,
+            home: BlocProvider<InviteStatusCubit>.value(
+              value: mockInviteCubit,
+              child: const Scaffold(body: InboxNotificationsPage()),
+            ),
+          ),
         );
-        providerScope.read(_notificationRepoSwap.notifier).state = 1;
-        await tester.pumpAndSettle();
+        await tester.pump();
 
-        final viewContextAfter = tester.element(
-          find.byType(NotificationsView).first,
-        );
-        final blocB = BlocProvider.of<NotificationFeedBloc>(viewContextAfter);
+        final blocBefore = _notificationFeedBlocFor(tester);
+        expect(blocBefore.isClosed, isFalse);
 
+        container.read(_notificationRepoSwap.notifier).state = 1;
+        await tester.pump();
+
+        final blocAfter = _notificationFeedBlocFor(tester);
         expect(
-          blocB,
-          isNot(same(blocA)),
+          blocAfter,
+          isNot(same(blocBefore)),
           reason:
-              'The inbox-wrapped notifications page also needs the '
-              'ValueKey contract — the upstream KeyedSubtree in '
-              'inbox_view.dart provides one layer of protection today, '
-              'but if that wrapper is restructured the BlocProvider key '
-              'is what keeps the bloc/repository identity coupled.',
+              'The inbox page captures notificationRepository in '
+              'BlocProvider.create, so a repo identity flip must recreate the '
+              'feed bloc.',
         );
-        verify(() => mockRepoB.refresh()).called(1);
+      },
+    );
+
+    testWidgets(
+      'recreates NotificationFeedBloc when followRepositoryProvider rebuilds '
+      'with a new repository instance',
+      (tester) async {
+        final container = ProviderContainer(
+          overrides: [
+            notificationRepositoryProvider.overrideWith(
+              (_) => mockNotificationRepoA,
+            ),
+            followRepositoryProvider.overrideWith((ref) {
+              final v = ref.watch(_followRepoSwap);
+              return v == 0 ? mockFollowRepoA : mockFollowRepoB;
+            }),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          _TestApp(
+            container: container,
+            home: BlocProvider<InviteStatusCubit>.value(
+              value: mockInviteCubit,
+              child: const Scaffold(body: InboxNotificationsPage()),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final blocBefore = _notificationFeedBlocFor(tester);
+        expect(blocBefore.isClosed, isFalse);
+
+        container.read(_followRepoSwap.notifier).state = 1;
+        await tester.pump();
+
+        final blocAfter = _notificationFeedBlocFor(tester);
+        expect(
+          blocAfter,
+          isNot(same(blocBefore)),
+          reason:
+              'The inbox page also captures followRepository in '
+              'BlocProvider.create, so its record key must recreate the bloc '
+              'when that dependency identity changes.',
+        );
+      },
+    );
+
+    testWidgets(
+      'preserves the same NotificationFeedBloc when neither dependency '
+      'identity changes across rebuilds',
+      (tester) async {
+        final rebuildKey = GlobalKey<_RebuildHostState>();
+        final container = ProviderContainer(
+          overrides: [
+            notificationRepositoryProvider.overrideWith(
+              (_) => mockNotificationRepoA,
+            ),
+            followRepositoryProvider.overrideWith((_) => mockFollowRepoA),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          _TestApp(
+            container: container,
+            home: RebuildHost(
+              key: rebuildKey,
+              child: BlocProvider<InviteStatusCubit>.value(
+                value: mockInviteCubit,
+                child: const Scaffold(body: InboxNotificationsPage()),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final blocBefore = _notificationFeedBlocFor(tester);
+
+        rebuildKey.currentState!.rebuild();
+        await tester.pump();
+
+        final blocAfter = _notificationFeedBlocFor(tester);
+        expect(blocAfter, same(blocBefore));
+      },
+    );
+
+    testWidgets(
+      'drops prior bloc state when notificationRepositoryProvider rebuilds '
+      '(intentional)',
+      (tester) async {
+        final container = ProviderContainer(
+          overrides: [
+            notificationRepositoryProvider.overrideWith((ref) {
+              final v = ref.watch(_notificationRepoSwap);
+              return v == 0 ? mockNotificationRepoA : mockNotificationRepoB;
+            }),
+            followRepositoryProvider.overrideWith((_) => mockFollowRepoA),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          _TestApp(
+            container: container,
+            home: BlocProvider<InviteStatusCubit>.value(
+              value: mockInviteCubit,
+              child: const Scaffold(body: InboxNotificationsPage()),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final blocBefore = _notificationFeedBlocFor(tester);
+        blocBefore.emit(
+          const NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            unreadCount: 4,
+            hasMore: false,
+            isLoadingMore: true,
+            refreshError: true,
+          ),
+        );
+        await tester.pump();
+        expect(blocBefore.state.unreadCount, equals(4));
+        expect(blocBefore.state.hasMore, isFalse);
+        expect(blocBefore.state.refreshError, isTrue);
+
+        container.read(_notificationRepoSwap.notifier).state = 1;
+        await tester.pump();
+
+        final blocAfter = _notificationFeedBlocFor(tester);
+        expect(blocAfter, isNot(same(blocBefore)));
+        expect(blocAfter.state.unreadCount, equals(0));
+        expect(blocAfter.state.hasMore, isTrue);
+        expect(blocAfter.state.refreshError, isFalse);
       },
     );
   });
+}
+
+class _TestApp extends StatelessWidget {
+  const _TestApp({required this.container, required this.home});
+
+  final ProviderContainer container;
+  final Widget home;
+
+  @override
+  Widget build(BuildContext context) {
+    return UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: home,
+      ),
+    );
+  }
+}
+
+class RebuildHost extends StatefulWidget {
+  const RebuildHost({required this.child, super.key});
+
+  final Widget child;
+
+  @override
+  State<RebuildHost> createState() => _RebuildHostState();
+}
+
+class _RebuildHostState extends State<RebuildHost> {
+  void rebuild() => setState(() {});
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
+NotificationFeedBloc _notificationFeedBlocFor(WidgetTester tester) {
+  final context = tester.element(find.byType(NotificationsView).first);
+  return BlocProvider.of<NotificationFeedBloc>(context);
 }
