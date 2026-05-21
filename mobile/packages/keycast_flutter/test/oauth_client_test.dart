@@ -1099,6 +1099,42 @@ void main() {
           );
         },
       );
+
+      test('binds userPubkey before saving session', () async {
+        final storage = MemoryKeycastStorage();
+        await storage.write('keycast_refresh_token', 'old_refresh_token');
+
+        final mockClient = MockClient((request) async {
+          return http.Response(
+            jsonEncode({
+              'bunker_url': 'bunker://refreshed',
+              'access_token': 'new_access_token',
+              'token_type': 'Bearer',
+              'expires_in': 86400,
+              'refresh_token': 'new_refresh_token',
+            }),
+            200,
+          );
+        });
+
+        final oauth = KeycastOAuth(
+          config: config,
+          httpClient: mockClient,
+          storage: storage,
+        );
+        final result = await oauth.refreshSession(
+          userPubkey: 'abc123pubkey',
+        );
+
+        expect(result, isNotNull);
+        expect(result!.userPubkey, 'abc123pubkey');
+
+        final savedJson = await storage.read('keycast_session');
+        final saved = KeycastSession.fromJson(
+          jsonDecode(savedJson!) as Map<String, dynamic>,
+        );
+        expect(saved.userPubkey, 'abc123pubkey');
+      });
     });
 
     group('getSessionOrRefresh', () {

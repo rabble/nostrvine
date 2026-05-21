@@ -99,10 +99,13 @@ class KeycastOAuth {
   /// Returns the new [KeycastSession] on success, or `null` if refresh
   /// is not possible (no refresh token) or fails.
   ///
+  /// [userPubkey] is attached to the session before it is persisted so
+  /// the saved session is always owner-bound.
+  ///
   /// On HTTP error the consumed refresh token is cleared (server may have
   /// rotated it). On network error the token is preserved since the server
   /// may not have consumed it.
-  Future<KeycastSession?> refreshSession() async {
+  Future<KeycastSession?> refreshSession({String? userPubkey}) async {
     final refreshToken = await _storage.read(_storageKeyRefreshToken);
     if (refreshToken == null) return null;
 
@@ -120,7 +123,10 @@ class KeycastOAuth {
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
         final tokenResponse = TokenResponse.fromJson(json);
-        final session = KeycastSession.fromTokenResponse(tokenResponse);
+        var session = KeycastSession.fromTokenResponse(tokenResponse);
+        if (userPubkey != null && userPubkey.isNotEmpty) {
+          session = session.copyWith(userPubkey: userPubkey);
+        }
         await _saveSession(session);
         return session;
       }
@@ -139,10 +145,13 @@ class KeycastOAuth {
   /// Tries [getSession] first. If that returns `null` (no session stored or
   /// token expired), falls back to [refreshSession] to obtain a fresh token.
   /// Returns `null` only when no session can be recovered at all.
-  Future<KeycastSession?> getSessionOrRefresh() async {
+  ///
+  /// [userPubkey] is forwarded to [refreshSession] so the saved session
+  /// is owner-bound when a refresh is needed.
+  Future<KeycastSession?> getSessionOrRefresh({String? userPubkey}) async {
     final session = await getSession();
     if (session != null) return session;
-    return refreshSession();
+    return refreshSession(userPubkey: userPubkey);
   }
 
   /// Generate authorization URL for OAuth flow

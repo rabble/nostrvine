@@ -742,30 +742,20 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   }) async {
     if (_oauthClient == null) return null;
     try {
-      final refreshed = await _oauthClient.refreshSession();
+      final pubkey = expectedOwnerPubkey ?? _currentProfile?.publicKeyHex;
+      final refreshed = await _oauthClient.refreshSession(
+        userPubkey: pubkey,
+      );
       if (refreshed == null || !refreshed.hasRpcAccess) return null;
 
-      // Bind userPubkey before persisting so ownership checks on
-      // restore stay valid. Prefer the caller-supplied owner (from
-      // the stored session) over _currentProfile, which could point
-      // to a different account during sign-in or account switch.
-      var session = refreshed;
-      final pubkey = expectedOwnerPubkey ?? _currentProfile?.publicKeyHex;
-      if (pubkey != null &&
-          pubkey.isNotEmpty &&
-          (session.userPubkey == null || session.userPubkey!.isEmpty)) {
-        session = session.copyWith(userPubkey: pubkey);
-      }
-
-      await session.save(_flutterSecureStorage);
       _hasExpiredOAuthSession = false;
       Log.info(
         '_refreshOAuthSession: succeeded '
-        '(userPubkey=${session.userPubkey != null ? "bound" : "unbound"})',
+        '(userPubkey=${refreshed.userPubkey != null ? "bound" : "unbound"})',
         name: 'AuthService',
         category: LogCategory.auth,
       );
-      return session;
+      return refreshed;
     } catch (e) {
       Log.error(
         '_refreshOAuthSession: failed: $e',
