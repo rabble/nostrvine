@@ -231,7 +231,37 @@ class VideoEventPublisher {
     );
   }
 
-  /// Publish event to Nostr relays
+  /// Publishes a signed Nostr [event] to the configured relays and returns
+  /// `true` iff at least one relay acknowledged the event as
+  /// [PublishSuccess].
+  ///
+  /// **Failure contract** (returns `false`):
+  /// 1. `TimeoutException` — the outer `Future.timeout` (bound by
+  ///    [currentOuterPublishTimeout]) fires before
+  ///    [NostrClient.publishEvent] completes. Derived from
+  ///    `RelayPool.perRelaySendTimeout × relayCount + buffer`; see
+  ///    [outerPublishTimeoutFor].
+  /// 2. Relay rejection — `publishResult` is not [PublishSuccess]
+  ///    (all configured relays rejected the event or the SDK reported
+  ///    no acknowledgement).
+  /// 3. Inner exception — any throw inside the outer try/catch is
+  ///    logged via `Log.error` and converted to `false`.
+  ///
+  /// All three causes are intentionally treated as transient by the
+  /// retry loop in [publishDirectUpload] (3 attempts, 2s/4s backoff).
+  /// The single-shot call sites in [_publishImportedAudioEvent],
+  /// [_publishAudioEvent], and [republishWithSubtitles] surface a
+  /// `false` return as `null` / `false` per their own contracts.
+  ///
+  /// **Sentinel-return contract** (per audit #3593 / #4592): this
+  /// method intentionally does NOT throw. All four callers are
+  /// internal and already have explicit post-failure recovery paths;
+  /// introducing a `PublishFailedException` would mean wrapping each
+  /// caller in try/catch to preserve the current bool/null/false
+  /// semantics with no observable behaviour change. Per
+  /// `.claude/rules/error_handling.md` the inner failures are
+  /// network/IO + API/domain — matrix-NO — so the Reportable-wrapped
+  /// throw path would not surface to Crashlytics either.
   Future<bool> _publishEventToNostr(Event event) async {
     try {
       Log.debug(
