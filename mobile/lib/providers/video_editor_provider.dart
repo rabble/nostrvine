@@ -423,42 +423,6 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     triggerAutosave();
   }
 
-  /// Update the volume level for the original video audio (0.0 to 1.0).
-  void setOriginalAudioVolume(double volume) {
-    state = state.copyWith(originalAudioVolume: volume.clamp(0.0, 1.0));
-    invalidateFinalRenderedClip();
-    triggerAutosave();
-  }
-
-  /// Update the volume level for the custom/added audio track (0.0 to 1.0).
-  void setCustomAudioVolume(double volume) {
-    state = state.copyWith(customAudioVolume: volume.clamp(0.0, 1.0));
-    invalidateFinalRenderedClip();
-    triggerAutosave();
-  }
-
-  /// Preview original audio volume without invalidating render or autosave.
-  ///
-  /// Used during live slider interaction so the user can hear the change
-  /// immediately. Call [setOriginalAudioVolume] to commit the final value.
-  void previewOriginalAudioVolume(double volume) {
-    final clamped = volume.clamp(0.0, 1.0);
-    if (clamped != state.originalAudioVolume) {
-      state = state.copyWith(originalAudioVolume: clamped);
-    }
-  }
-
-  /// Preview custom audio volume without invalidating render or autosave.
-  ///
-  /// Used during live slider interaction so the user can hear the change
-  /// immediately. Call [setCustomAudioVolume] to commit the final value.
-  void previewCustomAudioVolume(double volume) {
-    final clamped = volume.clamp(0.0, 1.0);
-    if (clamped != state.customAudioVolume) {
-      state = state.copyWith(customAudioVolume: clamped);
-    }
-  }
-
   /// Update the start offset of the currently selected sound.
   void updateSoundStartOffset(Duration offset) {
     if (state.selectedSound != null &&
@@ -512,8 +476,6 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       contentWarning: ContentLabel.toCsv(state.contentWarnings),
       finalRenderedClip: state.finalRenderedClip,
       proofManifestJson: state.proofManifestJson,
-      originalAudioVolume: state.originalAudioVolume,
-      customAudioVolume: state.customAudioVolume,
       thumbnailTimestamp: state.finalRenderedClip?.thumbnailTimestamp,
       videoReplyContext: ref.read(videoReplyContextProvider),
       shareReplyToFeed: state.shareReplyToFeed,
@@ -832,8 +794,6 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       contentWarnings: draft.contentWarnings,
       finalRenderedClip: validFinalRenderedClip,
       clearFinalRenderedClip: validFinalRenderedClip == null,
-      originalAudioVolume: draft.originalAudioVolume,
-      customAudioVolume: draft.customAudioVolume,
     );
 
     _clipManager.replaceClips(clipsWithThumbnails);
@@ -945,8 +905,6 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
           .read(aiTrainingPreferenceServiceProvider)
           .isOptOutEnabled,
       parameters: renderParameters,
-      originalAudioVolume: state.originalAudioVolume,
-      customAudioVolume: state.customAudioVolume,
       editorStateHistory: state.editorStateHistory,
       taskId: draftId,
     );

@@ -76,7 +76,6 @@ void main() {
                 onOpenCamera: () {},
                 onOpenClipsEditor: () {},
                 onAddStickers: () {},
-                onAdjustVolume: () {},
                 onAddEditTextLayer: ([layer]) async => null,
                 onOpenMusicLibrary: () {},
                 editorOverride: mockEditor,
@@ -103,7 +102,6 @@ void main() {
               onOpenCamera: () {},
               onOpenClipsEditor: () {},
               onAddStickers: () {},
-              onAdjustVolume: () {},
               onAddEditTextLayer: ([layer]) async => null,
               onOpenMusicLibrary: () {},
               child: BlocProvider<TimelineOverlayBloc>.value(

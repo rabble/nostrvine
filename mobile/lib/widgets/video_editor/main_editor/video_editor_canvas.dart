@@ -462,12 +462,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     );
     if (!mounted) return;
 
-    final editorState = ref.read(videoEditorProvider);
     if (clips.isEmpty) return;
-    await Future.wait([
-      _videoPlayer!.setLooping(looping: true),
-      _videoPlayer!.setVolume(editorState.originalAudioVolume),
-    ]);
+    await _videoPlayer!.setLooping(looping: true);
     if (!mounted) return;
 
     _isPlayerReadyNotifier.value = true;
@@ -520,8 +516,6 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     // Index audio events by ID for fast lookup.
     final audioById = {for (final e in audioEvents) e.id: e};
 
-    final customVolume = ref.read(videoEditorProvider).customAudioVolume;
-
     final tracks = <AudioTrack>[];
     for (final item in soundItems) {
       final sound = audioById[item.id];
@@ -532,7 +526,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
         if (sound.isBundled && sound.assetPath != null) {
           track = await AudioTrack.asset(
             sound.assetPath!,
-            volume: customVolume,
+            volume: sound.volume,
             videoStartTime: item.startTime,
             videoEndTime: item.endTime,
             trackStart: sound.startOffset,
@@ -540,7 +534,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
         } else if (sound.isLocalImport && sound.localFilePath != null) {
           track = AudioTrack.file(
             sound.localFilePath!,
-            volume: customVolume,
+            volume: sound.volume,
             videoStartTime: item.startTime,
             videoEndTime: item.endTime,
             trackStart: sound.startOffset,
@@ -548,7 +542,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
         } else {
           track = AudioTrack.network(
             sound.url!,
-            volume: customVolume,
+            volume: sound.volume,
             videoStartTime: item.startTime,
             videoEndTime: item.endTime,
             trackStart: sound.startOffset,
@@ -757,20 +751,6 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       videoEditorProvider.select((s) => s.editorStateHistory),
     );
     final targetAspectRatio = clip.targetAspectRatio;
-
-    // Live volume preview: sync player volumes when state changes
-    ref.listen<double>(
-      videoEditorProvider.select((s) => s.originalAudioVolume),
-      (_, volume) {
-        if (_isPlayerInitialized) _videoPlayer?.setVolume(volume);
-      },
-    );
-    ref.listen<double>(
-      videoEditorProvider.select((s) => s.customAudioVolume),
-      (_, volume) {
-        if (_isPlayerInitialized) _videoPlayer?.setAudioTrackVolume(0, volume);
-      },
-    );
 
     // Reinitialize the player when clip paths change.
     // Uses a custom equality check because List uses reference equality by

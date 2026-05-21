@@ -34,25 +34,11 @@ void main() {
 
       expect(clipsTapped, isTrue);
     });
-
-    testWidgets('tapping Volume calls onAdjustVolume', (tester) async {
-      var volumeTapped = false;
-
-      await tester.pumpWidget(
-        _buildWidget(onAdjustVolume: () => volumeTapped = true),
-      );
-
-      await tester.tap(find.bySemanticsLabel(l10n.videoEditorVolumeLabel));
-      await tester.pump();
-
-      expect(volumeTapped, isTrue);
-    });
   });
 }
 
 Widget _buildWidget({
   VoidCallback? onOpenClipsEditor,
-  VoidCallback? onAdjustVolume,
 }) {
   final editorKey = GlobalKey<ProImageEditorState>();
   final removeAreaKey = GlobalKey();
@@ -65,7 +51,6 @@ Widget _buildWidget({
       removeAreaKey: removeAreaKey,
       onOpenCamera: () {},
       onAddStickers: () {},
-      onAdjustVolume: onAdjustVolume ?? () {},
       onOpenClipsEditor: onOpenClipsEditor ?? () {},
       onAddEditTextLayer: ([layer]) async => null,
       onOpenMusicLibrary: () {},

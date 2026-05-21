@@ -181,8 +181,6 @@ class VideoEditorRenderService {
   static Future<(DivineVideoClip, String? proofManifestJson)?> Function({
     required List<DivineVideoClip> clips,
     required Map<String, dynamic> editorStateHistory,
-    double originalAudioVolume,
-    double customAudioVolume,
     bool aiTrainingOptOut,
     CompleteParameters? parameters,
     String? taskId,
@@ -207,8 +205,6 @@ class VideoEditorRenderService {
   renderVideoToClip({
     required List<DivineVideoClip> clips,
     required Map<String, dynamic> editorStateHistory,
-    double originalAudioVolume = 1.0,
-    double customAudioVolume = 1.0,
     bool aiTrainingOptOut = true,
     CompleteParameters? parameters,
     String? taskId,
@@ -217,8 +213,6 @@ class VideoEditorRenderService {
       return renderVideoToClipOverride!(
         clips: clips,
         editorStateHistory: editorStateHistory,
-        originalAudioVolume: originalAudioVolume,
-        customAudioVolume: customAudioVolume,
         aiTrainingOptOut: aiTrainingOptOut,
         parameters: parameters,
         taskId: taskId,
@@ -229,8 +223,6 @@ class VideoEditorRenderService {
 
     Log.debug(
       '🎬 renderVideoToClip: clips=${clips.length}, '
-      'originalAudioVolume=$originalAudioVolume, '
-      'customAudioVolume=$customAudioVolume, '
       'parameters=${parameters?.toLogString()}',
       name: _logName,
       category: LogCategory.video,
@@ -239,8 +231,6 @@ class VideoEditorRenderService {
     final outputPath = await renderVideo(
       clips: clips,
       aspectRatio: clips.first.targetAspectRatio,
-      originalAudioVolume: originalAudioVolume,
-      customAudioVolume: customAudioVolume,
       usePersistentStorage: true,
       parameters: parameters,
       taskId: taskId,
@@ -359,10 +349,7 @@ class VideoEditorRenderService {
   /// Renders multiple clips into a single video file with aspect ratio cropping.
   ///
   /// When [customAudioPath] is provided, the custom audio track is mixed into
-  /// the output. Use [originalAudioVolume] (default 1.0) and
-  /// [customAudioVolume] (default 1.0) to control relative levels.
-  /// Set [originalAudioVolume] to 0.0 to mute the original audio entirely
-  /// (e.g. when recording lip-sync without headphones).
+  /// the output.
   ///
   /// When [imageBytes] is provided (PNG with transparency), it is composited
   /// on top of the video as a watermark overlay.
@@ -374,8 +361,6 @@ class VideoEditorRenderService {
   /// the rendered video should persist across app restarts.
   static Future<String?> renderVideo({
     required List<DivineVideoClip> clips,
-    double originalAudioVolume = 1.0,
-    double customAudioVolume = 1.0,
     bool usePersistentStorage = false,
     model.AspectRatio? aspectRatio,
     CompleteParameters? parameters,
@@ -414,8 +399,6 @@ class VideoEditorRenderService {
         outputDir: outputDir,
         globalTransform: result.globalTransform,
         aspectRatio: aspectRatio ?? clips.first.targetAspectRatio,
-        originalAudioVolume: originalAudioVolume,
-        customAudioVolume: customAudioVolume,
         parameters: parameters,
       );
 
@@ -730,8 +713,6 @@ class VideoEditorRenderService {
     required CompleteParameters? parameters,
     required model.AspectRatio aspectRatio,
     _CropParameters? globalTransform,
-    double originalAudioVolume = 1.0,
-    double customAudioVolume = 1.0,
   }) async {
     final outputPath = path.join(
       outputDir.path,
@@ -739,28 +720,24 @@ class VideoEditorRenderService {
     );
 
     final customTracks = parameters?.audioTracks ?? const <AudioTrack>[];
-    final hasCustomAudio = customAudioVolume > 0 && customTracks.isNotEmpty;
 
     final audioTracks = <VideoAudioTrack>[];
-    if (hasCustomAudio) {
-      for (final track in customTracks) {
-        final audioPath = await track.audio.safeFilePath();
-        audioTracks.add(
-          VideoAudioTrack(
-            path: audioPath,
-            volume: customAudioVolume,
-            startTime: track.startTime,
-            endTime: track.endTime,
-            audioStartTime: track.audioStartTime,
-            audioEndTime: track.audioEndTime,
-            loop: track.loop,
-          ),
-        );
-      }
+    for (final track in customTracks) {
+      final audioPath = await track.audio.safeFilePath();
+      audioTracks.add(
+        VideoAudioTrack(
+          path: audioPath,
+          startTime: track.startTime,
+          endTime: track.endTime,
+          audioStartTime: track.audioStartTime,
+          audioEndTime: track.audioEndTime,
+          loop: track.loop,
+        ),
+      );
     }
 
     final volumeSegments = segments
-        .map((s) => s.copyWith(volume: s.volume ?? originalAudioVolume))
+        .map((s) => s.copyWith(volume: s.volume))
         .toList();
 
     Size? renderResolution;
@@ -778,7 +755,6 @@ class VideoEditorRenderService {
       endTime: VideoEditorConstants.maxDuration,
       shouldOptimizeForNetworkUse: true,
       audioTracks: audioTracks,
-      enableAudio: originalAudioVolume > 0 || hasCustomAudio,
       imageLayers: parameters?.capturedLayers.isNotEmpty == true
           ? () {
               final bodySize = parameters!.bodySize;

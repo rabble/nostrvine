@@ -43,8 +43,6 @@ class DivineVideoDraft {
     this.contentWarning,
     this.videoReplyContext,
     this.shareReplyToFeed = false,
-    this.originalAudioVolume = 1.0,
-    this.customAudioVolume = 1.0,
     this.thumbnailTimestamp,
   });
 
@@ -68,8 +66,6 @@ class DivineVideoDraft {
     String? contentWarning,
     VideoReplyContext? videoReplyContext,
     bool shareReplyToFeed = false,
-    double originalAudioVolume = 1.0,
-    double customAudioVolume = 1.0,
     Duration? thumbnailTimestamp,
   }) {
     final now = DateTime.now();
@@ -97,8 +93,6 @@ class DivineVideoDraft {
       contentWarning: contentWarning,
       videoReplyContext: videoReplyContext,
       shareReplyToFeed: shareReplyToFeed,
-      originalAudioVolume: originalAudioVolume,
-      customAudioVolume: customAudioVolume,
       thumbnailTimestamp: thumbnailTimestamp,
     );
   }
@@ -200,9 +194,6 @@ class DivineVideoDraft {
             )
           : null,
       shareReplyToFeed: json['shareReplyToFeed'] as bool? ?? false,
-      originalAudioVolume:
-          (json['originalAudioVolume'] as num?)?.toDouble() ?? 1.0,
-      customAudioVolume: (json['customAudioVolume'] as num?)?.toDouble() ?? 1.0,
       thumbnailTimestamp: json['thumbnailTimestamp'] != null
           ? Duration(milliseconds: json['thumbnailTimestamp'] as int)
           : null,
@@ -270,12 +261,6 @@ class DivineVideoDraft {
   final VideoReplyContext? videoReplyContext;
   final bool shareReplyToFeed;
 
-  /// Volume level for the original video audio track (0.0 to 1.0).
-  final double originalAudioVolume;
-
-  /// Volume level for the custom/added audio track (0.0 to 1.0).
-  final double customAudioVolume;
-
   /// Position in the video used to generate the thumbnail.
   final Duration? thumbnailTimestamp;
 
@@ -329,8 +314,6 @@ class DivineVideoDraft {
     Object? contentWarning = _sentinel,
     Object? videoReplyContext = _sentinel,
     bool? shareReplyToFeed,
-    double? originalAudioVolume,
-    double? customAudioVolume,
     Duration? thumbnailTimestamp,
     bool clearThumbnailTimestamp = false,
     bool skipUpdateLastModified = false,
@@ -372,8 +355,6 @@ class DivineVideoDraft {
         ? this.videoReplyContext
         : videoReplyContext as VideoReplyContext?,
     shareReplyToFeed: shareReplyToFeed ?? this.shareReplyToFeed,
-    originalAudioVolume: originalAudioVolume ?? this.originalAudioVolume,
-    customAudioVolume: customAudioVolume ?? this.customAudioVolume,
     thumbnailTimestamp: clearThumbnailTimestamp
         ? null
         : (thumbnailTimestamp ?? this.thumbnailTimestamp),
@@ -410,8 +391,6 @@ class DivineVideoDraft {
     if (videoReplyContext != null)
       'videoReplyContext': videoReplyContext!.toJson(),
     if (shareReplyToFeed) 'shareReplyToFeed': shareReplyToFeed,
-    if (originalAudioVolume != 1.0) 'originalAudioVolume': originalAudioVolume,
-    if (customAudioVolume != 1.0) 'customAudioVolume': customAudioVolume,
     if (thumbnailTimestamp != null)
       'thumbnailTimestamp': thumbnailTimestamp!.inMilliseconds,
   };
@@ -475,7 +454,5 @@ class DivineVideoDraft {
           collaboratorPubkeys.isNotEmpty ||
           inspiredByVideo != null ||
           inspiredByNpub != null ||
-          originalAudioVolume != 1.0 ||
-          customAudioVolume != 1.0 ||
           expireTime != null);
 }

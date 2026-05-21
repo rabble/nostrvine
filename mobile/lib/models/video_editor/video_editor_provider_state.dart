@@ -35,8 +35,6 @@ class VideoEditorProviderState {
     this.inspiredByVideo,
     this.inspiredByNpub,
     this.selectedSound,
-    this.originalAudioVolume = 1.0,
-    this.customAudioVolume = 1.0,
     this.contentWarnings = const {},
     this.proofManifestJson,
     GlobalKey? deleteButtonKey,
@@ -104,12 +102,6 @@ class VideoEditorProviderState {
   /// This is persisted in drafts and used for audio playback during editing.
   final AudioEvent? selectedSound;
 
-  /// Volume level for the original video audio track (0.0 to 1.0).
-  final double originalAudioVolume;
-
-  /// Volume level for the custom/added audio track (0.0 to 1.0).
-  final double customAudioVolume;
-
   /// NIP-32 content warning labels for sensitive content self-labeling.
   final Set<ContentLabel> contentWarnings;
 
@@ -163,8 +155,6 @@ class VideoEditorProviderState {
     bool clearInspiredByNpub = false,
     AudioEvent? selectedSound,
     bool clearSelectedSound = false,
-    double? originalAudioVolume,
-    double? customAudioVolume,
     Set<ContentLabel>? contentWarnings,
   }) {
     return VideoEditorProviderState(
@@ -197,8 +187,6 @@ class VideoEditorProviderState {
       selectedSound: clearSelectedSound
           ? null
           : (selectedSound ?? this.selectedSound),
-      originalAudioVolume: originalAudioVolume ?? this.originalAudioVolume,
-      customAudioVolume: customAudioVolume ?? this.customAudioVolume,
       contentWarnings: contentWarnings ?? this.contentWarnings,
       proofManifestJson: clearProofManifestJson || clearFinalRenderedClip
           ? null

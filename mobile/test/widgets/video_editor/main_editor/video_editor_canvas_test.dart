@@ -31,7 +31,6 @@ void main() {
               removeAreaKey: GlobalKey(),
               onOpenCamera: () {},
               onAddStickers: () {},
-              onAdjustVolume: () {},
               onOpenClipsEditor: () {},
               onOpenMusicLibrary: () {},
               onAddEditTextLayer: ([_]) async => null,

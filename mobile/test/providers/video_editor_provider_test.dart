@@ -48,16 +48,6 @@ void main() {
           reason: 'isProcessing should default to false',
         );
         expect(
-          state.originalAudioVolume,
-          1.0,
-          reason: 'originalAudioVolume should default to 1.0',
-        );
-        expect(
-          state.customAudioVolume,
-          1.0,
-          reason: 'customAudioVolume should default to 1.0',
-        );
-        expect(
           state.isSavingDraft,
           false,
           reason: 'isSavingDraft should default to false',
@@ -244,41 +234,6 @@ void main() {
       });
     });
 
-    group('setOriginalAudioVolume', () {
-      test('updates originalAudioVolume in state', () {
-        container
-            .read(videoEditorProvider.notifier)
-            .setOriginalAudioVolume(0.5);
-
-        expect(
-          container.read(videoEditorProvider).originalAudioVolume,
-          equals(0.5),
-        );
-      });
-
-      test('clamps value to 0.0 minimum', () {
-        container
-            .read(videoEditorProvider.notifier)
-            .setOriginalAudioVolume(-0.5);
-
-        expect(
-          container.read(videoEditorProvider).originalAudioVolume,
-          equals(0.0),
-        );
-      });
-
-      test('clamps value to 1.0 maximum', () {
-        container
-            .read(videoEditorProvider.notifier)
-            .setOriginalAudioVolume(1.5);
-
-        expect(
-          container.read(videoEditorProvider).originalAudioVolume,
-          equals(1.0),
-        );
-      });
-    });
-
     group('audio render mapping', () {
       test('selected local import is rendered as file audio', () {
         final sound = AudioEvent.fromLocalImport(
@@ -295,109 +250,6 @@ void main() {
         expect(track.audio.hasFile, isTrue);
         expect(track.audio.file?.path, equals('/tmp/imported/snare.mp3'));
         expect(track.audio.hasNetworkUrl, isFalse);
-      });
-    });
-
-    group('setCustomAudioVolume', () {
-      test('updates customAudioVolume in state', () {
-        container.read(videoEditorProvider.notifier).setCustomAudioVolume(0.3);
-
-        expect(
-          container.read(videoEditorProvider).customAudioVolume,
-          equals(0.3),
-        );
-      });
-
-      test('clamps value to 0.0 minimum', () {
-        container.read(videoEditorProvider.notifier).setCustomAudioVolume(-1);
-
-        expect(
-          container.read(videoEditorProvider).customAudioVolume,
-          equals(0.0),
-        );
-      });
-
-      test('clamps value to 1.0 maximum', () {
-        container.read(videoEditorProvider.notifier).setCustomAudioVolume(2);
-
-        expect(
-          container.read(videoEditorProvider).customAudioVolume,
-          equals(1.0),
-        );
-      });
-    });
-
-    group('previewOriginalAudioVolume', () {
-      test('updates originalAudioVolume in state', () {
-        container
-            .read(videoEditorProvider.notifier)
-            .previewOriginalAudioVolume(0.7);
-
-        expect(
-          container.read(videoEditorProvider).originalAudioVolume,
-          equals(0.7),
-        );
-      });
-
-      test('clamps value to valid range', () {
-        container
-            .read(videoEditorProvider.notifier)
-            .previewOriginalAudioVolume(5);
-
-        expect(
-          container.read(videoEditorProvider).originalAudioVolume,
-          equals(1.0),
-        );
-      });
-
-      test('is no-op when value unchanged', () {
-        final stateBefore = container.read(videoEditorProvider);
-
-        container
-            .read(videoEditorProvider.notifier)
-            .previewOriginalAudioVolume(1);
-
-        expect(
-          identical(container.read(videoEditorProvider), stateBefore),
-          isTrue,
-        );
-      });
-    });
-
-    group('previewCustomAudioVolume', () {
-      test('updates customAudioVolume in state', () {
-        container
-            .read(videoEditorProvider.notifier)
-            .previewCustomAudioVolume(0.4);
-
-        expect(
-          container.read(videoEditorProvider).customAudioVolume,
-          equals(0.4),
-        );
-      });
-
-      test('clamps value to valid range', () {
-        container
-            .read(videoEditorProvider.notifier)
-            .previewCustomAudioVolume(-0.2);
-
-        expect(
-          container.read(videoEditorProvider).customAudioVolume,
-          equals(0.0),
-        );
-      });
-
-      test('is no-op when value unchanged', () {
-        final stateBefore = container.read(videoEditorProvider);
-
-        container
-            .read(videoEditorProvider.notifier)
-            .previewCustomAudioVolume(1);
-
-        expect(
-          identical(container.read(videoEditorProvider), stateBefore),
-          isTrue,
-        );
       });
     });
 

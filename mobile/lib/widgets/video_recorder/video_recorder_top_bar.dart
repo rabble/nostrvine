@@ -59,12 +59,9 @@ class _VideoRecorderTopBarState extends ConsumerState<VideoRecorderTopBar> {
                     child: VideoEditorAudioChip(
                       selectedSound: selectedSound,
                       onSoundChanged: (sound) {
-                        ref.read(videoEditorProvider.notifier)
-                          ..selectSound(sound)
-                          // Lip-sync recording: mute original audio by default
-                          // since the selected sound replaces it. The user can
-                          // re-enable original audio later in the editor.
-                          ..setOriginalAudioVolume(0);
+                        ref
+                            .read(videoEditorProvider.notifier)
+                            .selectSound(sound);
                       },
                       onSelectionStarted: () {
                         setState(() => _isSelectingSound = true);

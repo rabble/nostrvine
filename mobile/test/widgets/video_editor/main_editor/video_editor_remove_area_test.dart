@@ -51,7 +51,6 @@ void main() {
               onOpenCamera: () {},
               onOpenClipsEditor: () {},
               onAddStickers: () {},
-              onAdjustVolume: () {},
               onAddEditTextLayer: ([layer]) async => null,
               onOpenMusicLibrary: () {},
               child: BlocProvider<VideoEditorMainBloc>.value(

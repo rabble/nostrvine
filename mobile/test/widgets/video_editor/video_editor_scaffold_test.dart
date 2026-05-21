@@ -72,7 +72,6 @@ void main() {
           removeAreaKey: removeAreaKey,
           onOpenCamera: () {},
           onAddStickers: () {},
-          onAdjustVolume: () {},
           onOpenClipsEditor: () {},
           onAddEditTextLayer: ([layer]) async => null,
           onOpenMusicLibrary: () {},

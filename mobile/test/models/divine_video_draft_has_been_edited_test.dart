@@ -227,24 +227,6 @@ void main() {
         expect(draft.hasBeenEdited, isTrue);
       });
 
-      test('returns true when originalAudioVolume is not 1.0', () {
-        final draft = _minimalDraft().copyWith(
-          originalAudioVolume: 0.5,
-          skipUpdateLastModified: true,
-        );
-
-        expect(draft.hasBeenEdited, isTrue);
-      });
-
-      test('returns true when customAudioVolume is not 1.0', () {
-        final draft = _minimalDraft().copyWith(
-          customAudioVolume: 0.8,
-          skipUpdateLastModified: true,
-        );
-
-        expect(draft.hasBeenEdited, isTrue);
-      });
-
       test('returns true when expireTime is set', () {
         final draft = _minimalDraft().copyWith(
           expireTime: const Duration(days: 7),
@@ -317,8 +299,6 @@ void main() {
             title: 'S',
           ),
           contentWarning: 'nsfw',
-          originalAudioVolume: 0.5,
-          customAudioVolume: 0.5,
         );
 
         final actualKeys = fullyPopulated.toJson().keys.toSet();
@@ -336,8 +316,6 @@ void main() {
           'collaboratorPubkeys',
           'inspiredByVideo',
           'inspiredByNpub',
-          'originalAudioVolume',
-          'customAudioVolume',
           'expireTime',
         };
 

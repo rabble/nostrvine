@@ -27,8 +27,6 @@ void main() {
       expect(state.inspiredByVideo, isNull);
       expect(state.inspiredByNpub, isNull);
       expect(state.selectedSound, isNull);
-      expect(state.originalAudioVolume, equals(1.0));
-      expect(state.customAudioVolume, equals(1.0));
       expect(state.contentWarnings, isEmpty);
       expect(state.proofManifestJson, isNull);
       expect(state.deleteButtonKey, isA<GlobalKey>());
@@ -115,36 +113,6 @@ void main() {
       final cleared = state.copyWith(clearSelectedSound: true);
 
       expect(cleared.selectedSound, isNull);
-    });
-
-    test('copyWith updates originalAudioVolume', () {
-      final state = VideoEditorProviderState();
-
-      final updated = state.copyWith(originalAudioVolume: 0.5);
-
-      expect(updated.originalAudioVolume, equals(0.5));
-      expect(updated.customAudioVolume, equals(1.0));
-    });
-
-    test('copyWith updates customAudioVolume', () {
-      final state = VideoEditorProviderState();
-
-      final updated = state.copyWith(customAudioVolume: 0.3);
-
-      expect(updated.customAudioVolume, equals(0.3));
-      expect(updated.originalAudioVolume, equals(1.0));
-    });
-
-    test('copyWith preserves audio volumes when not specified', () {
-      final state = VideoEditorProviderState(
-        originalAudioVolume: 0.7,
-        customAudioVolume: 0.4,
-      );
-
-      final copied = state.copyWith(title: 'New Title');
-
-      expect(copied.originalAudioVolume, equals(0.7));
-      expect(copied.customAudioVolume, equals(0.4));
     });
   });
 }
