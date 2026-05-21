@@ -358,6 +358,10 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         category: LogCategory.video,
       );
     } catch (e, stackTrace) {
+      // Matrix-NO: rethrown FFmpeg render exceptions, RenderCanceledException
+      // (user nav-away mid-render), and file IO. ArgumentError from
+      // VideoEditorSplitService is pre-validated by isValidSplitPosition at
+      // line 259 above and cannot reach this catch.
       addError(e, stackTrace);
       Log.error(
         '❌ Failed to split clip: $e',
@@ -538,6 +542,8 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         stackTrace: stackTrace,
         category: LogCategory.video,
       );
+      // Matrix-NO: AudioExtractionException is the typed expected failure
+      // (Network/IO — FFmpeg + file IO).
       addError(e, stackTrace);
       emit(
         state.copyWith(
