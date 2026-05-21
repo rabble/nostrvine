@@ -574,7 +574,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         return;
       }
 
-      final refreshed = await _refreshOAuthSession().timeout(
+      final refreshed = await _refreshOAuthSession(
+        expectedOwnerPubkey: session?.userPubkey,
+      ).timeout(
         rpcRefreshTimeout,
       );
 
@@ -637,7 +639,10 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       category: LogCategory.auth,
     );
     if (_oauthClient != null) {
-      final refreshed = await _tryRefreshOAuthSession(caller: 'initialize');
+      final refreshed = await _tryRefreshOAuthSession(
+        caller: 'initialize',
+        expectedOwnerPubkey: session?.userPubkey,
+      );
       if (refreshed) return;
     }
 
@@ -680,8 +685,13 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
   /// Shared OAuth session refresh logic used by both [initialize] and
   /// [tryRefreshExpiredSession]. Returns true if refresh succeeded.
-  Future<bool> _tryRefreshOAuthSession({required String caller}) async {
-    final refreshed = await _refreshOAuthSession();
+  Future<bool> _tryRefreshOAuthSession({
+    required String caller,
+    String? expectedOwnerPubkey,
+  }) async {
+    final refreshed = await _refreshOAuthSession(
+      expectedOwnerPubkey: expectedOwnerPubkey,
+    );
     if (refreshed != null) {
       Log.info(
         '$caller: refresh succeeded',
@@ -706,26 +716,37 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   ///   ownership checks on restore stay valid.
   /// - `_hasExpiredOAuthSession` is cleared on success.
   ///
+  /// [expectedOwnerPubkey] binds the refreshed session to a specific
+  /// account. Callers that hold a stored session should pass its
+  /// `userPubkey`; mid-session callers (401 retry, app resume) may omit
+  /// it — the method falls back to [_currentProfile].
+  ///
   /// Returns the refreshed session on success, or `null` on failure.
-  Future<KeycastSession?> _refreshOAuthSession() {
-    return _pendingOAuthRefresh ??= _doRefreshOAuthSession().whenComplete(() {
+  Future<KeycastSession?> _refreshOAuthSession({
+    String? expectedOwnerPubkey,
+  }) {
+    return _pendingOAuthRefresh ??= _doRefreshOAuthSession(
+      expectedOwnerPubkey: expectedOwnerPubkey,
+    ).whenComplete(() {
       _pendingOAuthRefresh = null;
     });
   }
 
-  Future<KeycastSession?> _doRefreshOAuthSession() async {
+  Future<KeycastSession?> _doRefreshOAuthSession({
+    String? expectedOwnerPubkey,
+  }) async {
     if (_oauthClient == null) return null;
     try {
       final refreshed = await _oauthClient.refreshSession();
       if (refreshed == null || !refreshed.hasRpcAccess) return null;
 
       // Bind userPubkey before persisting so ownership checks on
-      // restore stay valid. _currentProfile is always set during
-      // mid-session refreshes. For cold-start recovery, callers
-      // route through signInWithDivineOAuth which binds the pubkey
-      // itself if it's still missing.
+      // restore stay valid. Prefer the caller-supplied owner (from
+      // the stored session) over _currentProfile, which could point
+      // to a different account during sign-in or account switch.
       var session = refreshed;
-      final pubkey = _currentProfile?.publicKeyHex;
+      final pubkey =
+          expectedOwnerPubkey ?? _currentProfile?.publicKeyHex;
       if (pubkey != null &&
           pubkey.isNotEmpty &&
           (session.userPubkey == null || session.userPubkey!.isEmpty)) {
