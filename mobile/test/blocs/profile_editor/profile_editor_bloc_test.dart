@@ -2986,6 +2986,94 @@ void main() {
       );
 
       blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfileNip05Saved while avatar upload is in flight is dropped',
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          pendingAvatarStatus: PendingAvatarStatus.uploading,
+          persistedPictureUrl: testPersistedUrl,
+        ),
+        act: (bloc) => bloc.add(
+          ProfileNip05Saved(
+            currentProfile: UserProfile(
+              pubkey: testPubkey,
+              displayName: testDisplayName,
+              about: testAbout,
+              picture: testPicture,
+              rawData: const {},
+              createdAt: DateTime.now(),
+              eventId:
+                  'nip05evt-uploading-1234567890123456789012345678901234567890',
+            ),
+          ),
+        ),
+        expect: () => const <ProfileEditorState>[],
+        verify: (_) {
+          verifyNever(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: any(named: 'displayName'),
+              about: any(named: 'about'),
+              username: any(named: 'username'),
+              nip05: any(named: 'nip05'),
+              clearNip05: any(named: 'clearNip05'),
+              picture: any(named: 'picture'),
+              banner: any(named: 'banner'),
+              currentProfile: any(named: 'currentProfile'),
+            ),
+          );
+          verifyNever(
+            () => mockProfileRepository.claimUsername(
+              username: any(named: 'username'),
+            ),
+          );
+          verifyNever(
+            () => mockProfileRepository.getCachedProfile(
+              pubkey: any(named: 'pubkey'),
+            ),
+          );
+        },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfileSaveConfirmed while banner upload is in flight is dropped',
+        build: () => createBloc(hasExistingProfile: false),
+        seed: () => const ProfileEditorState(
+          status: ProfileEditorStatus.confirmationRequired,
+          pendingEvent: ProfileSaved(
+            pubkey: testPubkey,
+            displayName: testDisplayName,
+            about: testAbout,
+          ),
+          pendingBannerStatus: PendingBannerStatus.uploading,
+        ),
+        act: (bloc) => bloc.add(const ProfileSaveConfirmed()),
+        expect: () => const <ProfileEditorState>[],
+        verify: (_) {
+          verifyNever(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: any(named: 'displayName'),
+              about: any(named: 'about'),
+              username: any(named: 'username'),
+              nip05: any(named: 'nip05'),
+              clearNip05: any(named: 'clearNip05'),
+              picture: any(named: 'picture'),
+              banner: any(named: 'banner'),
+              currentProfile: any(named: 'currentProfile'),
+            ),
+          );
+          verifyNever(
+            () => mockProfileRepository.claimUsername(
+              username: any(named: 'username'),
+            ),
+          );
+          verifyNever(
+            () => mockProfileRepository.getCachedProfile(
+              pubkey: any(named: 'pubkey'),
+            ),
+          );
+        },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
         'ProfilePictureUrlSet while uploading is ignored',
         build: createBloc,
         seed: () => const ProfileEditorState(

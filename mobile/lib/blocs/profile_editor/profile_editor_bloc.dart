@@ -398,36 +398,34 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     );
   }
 
+  bool _shouldDropSaveBecauseUploadInFlight(String saveSource) {
+    if (state.pendingAvatarStatus == PendingAvatarStatus.uploading) {
+      Log.info(
+        'Ignoring $saveSource while avatar upload is in flight',
+        name: 'ProfileEditorBloc',
+      );
+      return true;
+    }
+
+    if (state.pendingBannerStatus == PendingBannerStatus.uploading) {
+      Log.info(
+        'Ignoring $saveSource while banner upload is in flight',
+        name: 'ProfileEditorBloc',
+      );
+      return true;
+    }
+
+    return false;
+  }
+
   Future<void> _onProfileSaved(
     ProfileSaved event,
     Emitter<ProfileEditorState> emit,
   ) async {
     try {
-      // Drop the save when an avatar upload is still in flight. Without this
-      // guard, `_resolveEffectivePicture` would fall back to
-      // `persistedPictureUrl` and publish kind 0 with the OLD picture, then
-      // the staged URL would land and the user would have to Save again. The
-      // UI also disables Save during upload (via `isSaveReady`); this is the
-      // belt-and-braces so any other caller — retry CTAs, future events —
-      // can't slip past.
-      if (state.pendingAvatarStatus == PendingAvatarStatus.uploading) {
-        Log.info(
-          'Ignoring ProfileSaved received while avatar upload is in flight',
-          name: 'ProfileEditorBloc',
-        );
-        return;
-      }
-
-      // Same belt-and-braces guard for banner uploads: drop the save if the
-      // banner is still uploading so we don't publish kind 0 with the
-      // pre-upload banner and then have a staged URL land afterwards.
-      if (state.pendingBannerStatus == PendingBannerStatus.uploading) {
-        Log.info(
-          'Ignoring ProfileSaved received while banner upload is in flight',
-          name: 'ProfileEditorBloc',
-        );
-        return;
-      }
+      // Save remains the only publish point, so every save entry point must
+      // refuse to publish while a staged upload is still in flight.
+      if (_shouldDropSaveBecauseUploadInFlight('ProfileSaved')) return;
 
       // The effective picture is owned by bloc state (staged > persisted),
       // with `event.picture` as a legacy fallback for callers that haven't
@@ -519,6 +517,8 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     Emitter<ProfileEditorState> emit,
   ) async {
     try {
+      if (_shouldDropSaveBecauseUploadInFlight('ProfileNip05Saved')) return;
+
       final displayName =
           event.currentProfile.displayName ?? event.currentProfile.name ?? '';
       if (displayName.trim().isEmpty) {
@@ -571,6 +571,8 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     Emitter<ProfileEditorState> emit,
   ) async {
     try {
+      if (_shouldDropSaveBecauseUploadInFlight('ProfileSaveConfirmed')) return;
+
       final pending = state.pendingEvent;
       if (pending == null) {
         Log.error(
