@@ -52,6 +52,7 @@ class NotificationsPage extends ConsumerWidget {
     final followRepository = ref.watch(followRepositoryProvider);
 
     return BlocProvider(
+      key: ValueKey((notificationRepository, followRepository)),
       create: (_) => NotificationFeedBloc(
         notificationRepository: notificationRepository,
         followRepository: followRepository,

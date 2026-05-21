@@ -29,7 +29,7 @@ Copy the closest example when writing a new bridged screen:
 
 | Screen | File | Pattern |
 |--------|------|---------|
-| `NotificationsPage` | `mobile/lib/notifications/view/notifications_page.dart` | Nullable dep gate before creating `BlocProvider` |
+| `NotificationsPage` | `mobile/lib/notifications/view/notifications_page.dart` | Nullable dep gate before creating `BlocProvider`, re-keyed on watched repositories |
 | `AppsDirectoryScreen` | `mobile/lib/screens/apps/apps_directory_screen.dart` | `ref.read` stable service, no `ValueKey` needed |
 | `VideoEngagementListScreen` | `mobile/lib/screens/video_engagement/video_engagement_list_screen.dart` | `ref.watch` auth-sensitive repos + record `ValueKey` guard; view in separate file |
 

@@ -1,20 +1,18 @@
 #!/usr/bin/env bash
-# Fails CI if a @riverpod annotation or StateProvider appears outside
-# mobile/lib/providers/, which is the only permitted home for Riverpod
-# providers in this codebase.
+# Fails CI if a new @riverpod annotation or StateProvider appears outside
+# the allowed provider directories.
 #
 # Rules enforced:
 #   • No @riverpod / @Riverpod( annotations in mobile/lib/ outside
-#     mobile/lib/providers/.
-#   • No StateProvider( calls in mobile/lib/ outside mobile/lib/providers/.
+#     the allowed provider directories.
+#   • No StateProvider( calls in mobile/lib/ outside the allowed provider
+#     directories.
 #
 # Background:
 #   Divine is mid-migration from Riverpod to BLoC/Cubit for UI state.
-#   The ownership boundary is: Riverpod owns DI and long-lived services
-#   (all in lib/providers/); BLoC/Cubit owns all feature UI state.
-#   Adding a new @riverpod provider for UI state inside lib/screens/ or
-#   lib/widgets/ silently extends the hybrid model instead of shrinking it.
-#   See docs/BLOC_UI_MIGRATION_PRD.md — "Allowed / Disallowed Patterns".
+#   The full ownership boundary is documented in docs/BLOC_UI_MIGRATION_PRD.md.
+#   This guard enforces the two highest-signal extension points for new
+#   Riverpod UI state: @riverpod annotations and StateProvider declarations.
 #
 # Allowed locations for @riverpod annotations (must be documented here if added):
 #   • mobile/lib/providers/ — primary home for app-wide DI providers.
@@ -50,7 +48,7 @@ GLOBAL_EXCLUDES=(
 )
 
 # ---------------------------------------------------------------------------
-# 1. No @riverpod annotation outside lib/providers/
+# 1. No @riverpod annotation outside allowed provider directories
 #    Catches both the shorthand @riverpod and the parameterised @Riverpod(...)
 #    forms produced by riverpod_annotation / riverpod_generator.
 # ---------------------------------------------------------------------------
@@ -64,13 +62,13 @@ RIVERPOD_ANNOTATION_VIOLATIONS=$(
 )
 
 if [[ -n "$RIVERPOD_ANNOTATION_VIOLATIONS" ]]; then
-  echo "FAIL [riverpod_boundary]: @riverpod annotation found outside lib/providers/ in:"
+  echo "FAIL [riverpod_boundary]: @riverpod annotation found outside allowed provider directories in:"
   echo "$RIVERPOD_ANNOTATION_VIOLATIONS" | sed 's/^/  /'
   fail=1
 fi
 
 # ---------------------------------------------------------------------------
-# 2. No StateProvider( outside lib/providers/
+# 2. No StateProvider( outside allowed provider directories
 #    StateProvider is the legacy Riverpod UI-state pattern explicitly listed
 #    as disallowed for new code in docs/BLOC_UI_MIGRATION_PRD.md.
 # ---------------------------------------------------------------------------
@@ -84,7 +82,7 @@ STATE_PROVIDER_VIOLATIONS=$(
 )
 
 if [[ -n "$STATE_PROVIDER_VIOLATIONS" ]]; then
-  echo "FAIL [riverpod_boundary]: StateProvider( found outside lib/providers/ in:"
+  echo "FAIL [riverpod_boundary]: StateProvider( found outside allowed provider directories in:"
   echo "$STATE_PROVIDER_VIOLATIONS" | sed 's/^/  /'
   fail=1
 fi
@@ -97,7 +95,8 @@ if [[ "$fail" -eq 0 ]]; then
   echo "OK: No Riverpod boundary violations found."
 else
   echo ""
-  echo "Riverpod providers must live in mobile/lib/providers/."
+  echo "New @riverpod annotations and StateProvider declarations must live in"
+  echo "mobile/lib/providers/, mobile/lib/*/providers/, or mobile/lib/services/."
   echo "For new UI state, use BLoC/Cubit instead of @riverpod or StateProvider."
   echo "See docs/BLOC_UI_MIGRATION_PRD.md — 'Allowed / Disallowed Patterns'."
   exit 1

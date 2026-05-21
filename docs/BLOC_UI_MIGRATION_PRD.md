@@ -87,7 +87,7 @@ bridged screens. Do not invent a new pattern — pick the closest example below.
 
 | Screen | File | Pattern demonstrated |
 |--------|------|---------------------|
-| `NotificationsPage` | `mobile/lib/notifications/view/notifications_page.dart` | Nullable dep gate: returns loading widget until Riverpod dep is non-null, then creates `BlocProvider`. |
+| `NotificationsPage` | `mobile/lib/notifications/view/notifications_page.dart` | Nullable dep gate: returns loading widget until Riverpod dep is non-null, then creates `BlocProvider` re-keyed on the watched repositories. |
 | `AppsDirectoryScreen` | `mobile/lib/screens/apps/apps_directory_screen.dart` | `ref.read` on a stable service (no auth-flip risk); no `ValueKey` needed. |
 | `VideoEngagementListScreen` | `mobile/lib/screens/video_engagement/video_engagement_list_screen.dart` | `ref.watch` on auth-sensitive repos with a record `ValueKey` guard; view extracted to `video_engagement_list_view.dart`. |
 

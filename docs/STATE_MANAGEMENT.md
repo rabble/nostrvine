@@ -20,7 +20,7 @@ The codebase remains hybrid during transition; Riverpod still exists in some leg
 
 | What you are building | Copy from |
 |-----------------------|-----------|
-| Screen that needs a repository from Riverpod | `NotificationsPage` — `mobile/lib/notifications/view/notifications_page.dart` |
+| Screen that needs a repository from Riverpod and must gate on nullable deps | `NotificationsPage` — `mobile/lib/notifications/view/notifications_page.dart` |
 | Screen using a stable service (no auth-flip risk) | `AppsDirectoryScreen` — `mobile/lib/screens/apps/apps_directory_screen.dart` |
 | Screen with auth-sensitive deps (needs `ValueKey` guard) | `VideoEngagementListScreen` — `mobile/lib/screens/video_engagement/video_engagement_list_screen.dart` |
 
