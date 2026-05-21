@@ -6731,9 +6731,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoEditorAudioLabel => 'Audio';
 
   @override
-  String get videoEditorVolumeLabel => 'Volume';
-
-  @override
   String get videoEditorAddTitle => 'Idagdag';
 
   @override

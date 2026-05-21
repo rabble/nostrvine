@@ -6811,9 +6811,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorAudioLabel => 'Audio';
 
   @override
-  String get videoEditorVolumeLabel => 'Volum';
-
-  @override
   String get videoEditorAddTitle => 'Adaugă';
 
   @override

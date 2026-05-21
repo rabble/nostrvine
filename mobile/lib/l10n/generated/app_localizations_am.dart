@@ -6510,9 +6510,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorAudioLabel => 'ኦዲዮ';
 
   @override
-  String get videoEditorVolumeLabel => 'መጠን';
-
-  @override
   String get videoEditorAddTitle => 'አክል';
 
   @override

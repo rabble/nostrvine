@@ -6799,9 +6799,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoEditorAudioLabel => 'Audio';
 
   @override
-  String get videoEditorVolumeLabel => 'Głośność';
-
-  @override
   String get videoEditorAddTitle => 'Dodaj';
 
   @override

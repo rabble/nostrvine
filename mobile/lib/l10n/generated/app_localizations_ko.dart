@@ -6397,9 +6397,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorAudioLabel => '오디오';
 
   @override
-  String get videoEditorVolumeLabel => '볼륨';
-
-  @override
   String get videoEditorAddTitle => '추가';
 
   @override

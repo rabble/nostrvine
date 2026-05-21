@@ -6717,9 +6717,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorAudioLabel => 'Аудио';
 
   @override
-  String get videoEditorVolumeLabel => 'Обем';
-
-  @override
   String get videoEditorAddTitle => 'Добави';
 
   @override

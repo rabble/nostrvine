@@ -11666,12 +11666,6 @@ abstract class AppLocalizations {
   /// **'Audio'**
   String get videoEditorAudioLabel;
 
-  /// No description provided for @videoEditorVolumeLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Volume'**
-  String get videoEditorVolumeLabel;
-
   /// No description provided for @videoEditorAddTitle.
   ///
   /// In en, this message translates to:

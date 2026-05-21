@@ -6624,9 +6624,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorAudioLabel => 'Ses';
 
   @override
-  String get videoEditorVolumeLabel => 'Ses seviyesi';
-
-  @override
   String get videoEditorAddTitle => 'Ekle';
 
   @override

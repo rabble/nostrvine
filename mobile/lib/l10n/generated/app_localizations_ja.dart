@@ -6374,9 +6374,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorAudioLabel => 'オーディオ';
 
   @override
-  String get videoEditorVolumeLabel => '音量';
-
-  @override
   String get videoEditorAddTitle => '追加';
 
   @override

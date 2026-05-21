@@ -7,11 +7,14 @@ abstract class TimelineConstants {
 
   /// Height of the ruler bar with time labels.
   static const double rulerHeight = 32;
+
+  /// Vertical gap between the ruler bar and the clip body below it.
   static const double rulerToBodyGap = 4;
 
   /// Height of each clip thumbnail strip.
   static const double thumbnailStripHeight = 64;
 
+  /// Vertical gap between thumbnail rows when multiple clip rows are shown.
   static const double thumbnailVerticalRowGap = 8;
 
   /// Width of a single thumbnail image in the strip.
@@ -20,6 +23,7 @@ abstract class TimelineConstants {
   /// Corner radius for thumbnail images.
   static const double thumbnailRadius = 4;
 
+  /// Width of the sound control panel in the left column.
   static const double soundControlWidth = 92;
 
   /// Gap between adjacent clip containers.

@@ -6650,9 +6650,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoEditorAudioLabel => 'Ljud';
 
   @override
-  String get videoEditorVolumeLabel => 'Volym';
-
-  @override
   String get videoEditorAddTitle => 'Lägg till';
 
   @override

@@ -6587,9 +6587,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorAudioLabel => 'الصوت';
 
   @override
-  String get videoEditorVolumeLabel => 'الصوت';
-
-  @override
   String get videoEditorAddTitle => 'إضافة';
 
   @override

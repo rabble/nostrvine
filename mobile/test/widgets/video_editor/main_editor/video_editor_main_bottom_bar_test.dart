@@ -18,7 +18,6 @@ void main() {
       expect(find.text(l10n.videoEditorLibraryLabel), findsOneWidget);
       expect(find.text(l10n.videoEditorTextLabel), findsOneWidget);
       expect(find.text(l10n.videoEditorDrawLabel), findsOneWidget);
-      expect(find.text(l10n.videoEditorVolumeLabel), findsOneWidget);
       expect(find.text(l10n.videoEditorFilterLabel), findsOneWidget);
     });
 

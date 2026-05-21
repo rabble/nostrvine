@@ -2,7 +2,9 @@
 // ABOUTME: Validates clip rendering, layout, reorder gesture, and accessibility.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -14,13 +16,16 @@ void main() {
 
   group(VideoEditorTimelineClipStrip, () {
     late ScrollController scrollController;
+    late VideoEditorMainBloc mainBloc;
 
     setUp(() {
       scrollController = ScrollController();
+      mainBloc = VideoEditorMainBloc();
     });
 
     tearDown(() {
       scrollController.dispose();
+      mainBloc.close();
     });
 
     Widget buildWidget({
@@ -42,17 +47,20 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
-          body: SingleChildScrollView(
-            controller: scrollController,
-            scrollDirection: Axis.horizontal,
-            child: VideoEditorTimelineClipStrip(
-              clips: testClips,
-              totalWidth: totalWidth,
-              pixelsPerSecond: pixelsPerSecond,
-              scrollController: scrollController,
-              isInteracting: isInteracting,
-              onReorder: onReorder,
-              onReorderChanged: onReorderChanged,
+          body: BlocProvider<VideoEditorMainBloc>.value(
+            value: mainBloc,
+            child: SingleChildScrollView(
+              controller: scrollController,
+              scrollDirection: Axis.horizontal,
+              child: VideoEditorTimelineClipStrip(
+                clips: testClips,
+                totalWidth: totalWidth,
+                pixelsPerSecond: pixelsPerSecond,
+                scrollController: scrollController,
+                isInteracting: isInteracting,
+                onReorder: onReorder,
+                onReorderChanged: onReorderChanged,
+              ),
             ),
           ),
         ),
