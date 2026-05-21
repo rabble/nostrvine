@@ -57,11 +57,9 @@ Future<String> getSharedDatabasePath() async {
   return newPath;
 }
 
-/// Bump this version to force a full database reset on next app launch.
-///
-/// All local data is re-fetchable from Nostr relays, so the database is
-/// effectively a cache. When a schema change, path migration, or data
-/// corruption requires a clean slate, increment this constant.
+/// Bump this version when startup needs to mark that a database compatibility
+/// check has run. Version adoption must not delete the database: it contains
+/// local-only user data such as drafts and pending actions.
 ///
 /// Version history:
 ///   1 — initial (implicit, no version file exists yet)
@@ -91,12 +89,10 @@ void writeDbCacheVersion(String dbDir, int version) {
   File(p.join(dbDir, dbVersionFileName)).writeAsStringSync('$version');
 }
 
-/// Deletes the database and its `-wal` / `-shm` sidecars when the stored
-/// cache version is stale. Writes the current [dbCacheVersion] afterwards.
+/// Writes the current [dbCacheVersion] when the stored version is stale.
 ///
-/// On first run (no version file), writes the current version without
-/// deleting anything — existing users are not wiped by the mechanism's
-/// introduction.
+/// On first run (no version file), also writes the current version without
+/// deleting anything.
 @visibleForTesting
 void applyDbCacheVersionReset(String dbPath) {
   final dbDir = p.dirname(dbPath);
@@ -109,7 +105,6 @@ void applyDbCacheVersionReset(String dbPath) {
   }
 
   if (stored < dbCacheVersion) {
-    _deleteDatabaseAndSidecars(dbPath);
     writeDbCacheVersion(dbDir, dbCacheVersion);
   }
 }

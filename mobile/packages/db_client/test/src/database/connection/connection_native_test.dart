@@ -79,7 +79,7 @@ void main() {
       expect(readDbCacheVersion(dbDir), equals(dbCacheVersion));
     });
 
-    test('deletes DB and sidecars when stored version is stale', () {
+    test('adopts current version when stored version is stale', () {
       Directory(dbDir).createSync(recursive: true);
       File(dbPath).writeAsBytesSync(const [1]);
       File('$dbPath-wal').writeAsBytesSync(const [2]);
@@ -88,9 +88,24 @@ void main() {
 
       applyDbCacheVersionReset(dbPath);
 
-      expect(File(dbPath).existsSync(), isFalse);
-      expect(File('$dbPath-wal').existsSync(), isFalse);
-      expect(File('$dbPath-shm').existsSync(), isFalse);
+      expect(File(dbPath).existsSync(), isTrue);
+      expect(File('$dbPath-wal').existsSync(), isTrue);
+      expect(File('$dbPath-shm').existsSync(), isTrue);
+      expect(readDbCacheVersion(dbDir), equals(dbCacheVersion));
+    });
+
+    test('preserves existing DB and sidecars when stored version is stale', () {
+      Directory(dbDir).createSync(recursive: true);
+      File(dbPath).writeAsBytesSync(const [1]);
+      File('$dbPath-wal').writeAsBytesSync(const [2]);
+      File('$dbPath-shm').writeAsBytesSync(const [3]);
+      writeDbCacheVersion(dbDir, 1);
+
+      applyDbCacheVersionReset(dbPath);
+
+      expect(File(dbPath).readAsBytesSync(), equals(const [1]));
+      expect(File('$dbPath-wal').readAsBytesSync(), equals(const [2]));
+      expect(File('$dbPath-shm').readAsBytesSync(), equals(const [3]));
       expect(readDbCacheVersion(dbDir), equals(dbCacheVersion));
     });
 
