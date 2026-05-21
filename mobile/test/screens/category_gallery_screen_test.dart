@@ -1,12 +1,24 @@
 // ABOUTME: Widget tests for the category gallery screen.
 // ABOUTME: Verifies picker-driven category navigation and gallery state handling.
 
+import 'package:categories_repository/categories_repository.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/categories/categories_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/category_gallery_screen.dart';
+
+import '../helpers/test_provider_overrides.dart';
+
+class _MockCategoriesRepository extends Mock implements CategoriesRepository {}
+
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
 
 void main() {
   Widget buildSubject({
@@ -202,4 +214,121 @@ void main() {
       expect(find.byKey(const Key('gallery-body')), findsOneWidget);
     });
   });
+
+  group('CategoryGalleryScreen', () {
+    late _MockCategoriesRepository categoriesRepository;
+    late _MockContentBlocklistRepository blocklistRepository;
+    late MockAuthService authService;
+    late ProviderContainer container;
+
+    const category = VideoCategory(name: 'animals', videoCount: 1500);
+    final blockedVideo = _video(
+      id: 'blocked-id',
+      pubkey:
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      title: 'Blocked Video',
+      authorName: 'Blocked User',
+    );
+    final allowedVideo = _video(
+      id: 'allowed-id',
+      pubkey:
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      title: 'Allowed Video',
+      authorName: 'Allowed User',
+    );
+
+    setUp(() {
+      categoriesRepository = _MockCategoriesRepository();
+      blocklistRepository = _MockContentBlocklistRepository();
+      authService = createMockAuthService();
+      when(() => authService.currentPublicKeyHex).thenReturn(_viewerPubkey);
+
+      when(
+        () => categoriesRepository.getVideosForCategory(
+          category: 'animals',
+          before: any(named: 'before'),
+          sort: any(named: 'sort'),
+          platform: any(named: 'platform'),
+        ),
+      ).thenAnswer(
+        (_) async => CategoryVideosPage(
+          videos: [blockedVideo, allowedVideo],
+          hasMore: false,
+        ),
+      );
+
+      when(
+        () => blocklistRepository.filterContent<VideoEvent>(any(), any()),
+      ).thenReturn([allowedVideo]);
+
+      container = ProviderContainer(
+        overrides: [
+          categoriesRepositoryProvider.overrideWithValue(categoriesRepository),
+          contentBlocklistRepositoryProvider.overrideWithValue(
+            blocklistRepository,
+          ),
+          authServiceProvider.overrideWithValue(authService),
+          subscribedListVideoCacheProvider.overrideWithValue(null),
+        ],
+      );
+      addTearDown(container.dispose);
+    });
+
+    testWidgets('removes blocked videos when blocklistVersion increments', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: CategoryGalleryScreen(category: category),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Blocked Video'), findsOneWidget);
+      expect(find.text('Allowed Video'), findsOneWidget);
+
+      container.read(blocklistVersionProvider.notifier).increment();
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Blocked Video'), findsNothing);
+      expect(find.text('Allowed Video'), findsOneWidget);
+      verify(
+        () => blocklistRepository.filterContent<VideoEvent>(any(), any()),
+      ).called(1);
+    });
+  });
+}
+
+const _viewerPubkey =
+    '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
+
+VideoEvent _video({
+  required String id,
+  required String pubkey,
+  required String title,
+  required String authorName,
+}) {
+  return VideoStats(
+    id: id,
+    pubkey: pubkey,
+    videoUrl: 'https://example.com/$id.mp4',
+    thumbnail: 'https://example.com/$id.jpg',
+    title: title,
+    authorName: authorName,
+    createdAt: DateTime(2026),
+    kind: 34236,
+    dTag: id,
+    reactions: 0,
+    comments: 0,
+    reposts: 0,
+    engagementScore: 0,
+  ).toVideoEvent();
 }

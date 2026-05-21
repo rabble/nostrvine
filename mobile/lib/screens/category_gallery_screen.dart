@@ -42,9 +42,21 @@ class _CategoryGalleryScreenState extends ConsumerState<CategoryGalleryScreen> {
       StreamController<List<VideoEvent>>.broadcast();
   final StreamController<bool> _hasMoreStreamController =
       StreamController<bool>.broadcast();
+  late final CategoriesBloc _bloc;
+
+  @override
+  void initState() {
+    super.initState();
+    _bloc = CategoriesBloc(
+      categoriesRepository: ref.read(categoriesRepositoryProvider),
+      contentBlocklistRepository: ref.read(contentBlocklistRepositoryProvider),
+      currentUserPubkey: ref.read(authServiceProvider).currentPublicKeyHex,
+    )..add(CategorySelected(widget.category));
+  }
 
   @override
   void dispose() {
+    _bloc.close();
     _videosStreamController.close();
     _hasMoreStreamController.close();
     super.dispose();
@@ -52,16 +64,14 @@ class _CategoryGalleryScreenState extends ConsumerState<CategoryGalleryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final categoriesRepository = ref.watch(categoriesRepositoryProvider);
-    final currentUserPubkey = ref
-        .watch(authServiceProvider)
-        .currentPublicKeyHex;
+    ref.listen(blocklistVersionProvider, (previous, current) {
+      if (previous != null && current > previous) {
+        _bloc.add(const CategoriesBlocklistChanged());
+      }
+    });
 
-    return BlocProvider(
-      create: (_) => CategoriesBloc(
-        categoriesRepository: categoriesRepository,
-        currentUserPubkey: currentUserPubkey,
-      )..add(CategorySelected(widget.category)),
+    return BlocProvider.value(
+      value: _bloc,
       child: BlocListener<CategoriesBloc, CategoriesState>(
         listenWhen: (previous, current) =>
             previous.videos != current.videos ||

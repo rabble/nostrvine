@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:categories_repository/categories_repository.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
@@ -13,20 +14,19 @@ import 'package:openvine/blocs/categories/categories_bloc.dart';
 
 class _MockCategoriesRepository extends Mock implements CategoriesRepository {}
 
-class _MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
 
 const _viewerPubkey =
     '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
 
 void main() {
   late _MockCategoriesRepository mockRepository;
-  late _MockFunnelcakeApiClient mockApiClient;
+  late _MockContentBlocklistRepository mockBlocklistRepository;
 
   setUp(() {
-    mockApiClient = _MockFunnelcakeApiClient();
     mockRepository = _MockCategoriesRepository();
-    // CategoriesBloc uses repository.apiClient for video-level calls.
-    when(() => mockRepository.apiClient).thenReturn(mockApiClient);
+    mockBlocklistRepository = _MockContentBlocklistRepository();
   });
 
   group(CategoriesBloc, () {
@@ -124,16 +124,26 @@ void main() {
       const category = VideoCategory(name: 'music', videoCount: 1500);
 
       final mockVideoStats = [
-        _createVideoStats('id1'),
-        _createVideoStats('id2'),
+        _createDefaultVideoStats('id1'),
+        _createDefaultVideoStats('id2'),
       ];
 
       blocTest<CategoriesBloc, CategoriesState>(
         'emits [loading, loaded] with videos for selected category',
         setUp: () {
           when(
-            () => mockApiClient.getVideosByCategory(category: 'music'),
-          ).thenAnswer((_) async => mockVideoStats);
+            () => mockRepository.getVideosForCategory(
+              category: 'music',
+              before: any(named: 'before'),
+              sort: any(named: 'sort'),
+              platform: any(named: 'platform'),
+            ),
+          ).thenAnswer(
+            (_) async => CategoryVideosPage(
+              videos: mockVideoStats.toVideoEvents(),
+              hasMore: false,
+            ),
+          );
         },
         build: () => CategoriesBloc(categoriesRepository: mockRepository),
         act: (bloc) => bloc.add(const CategorySelected(category)),
@@ -158,7 +168,12 @@ void main() {
         'emits error when API throws on category selection',
         setUp: () {
           when(
-            () => mockApiClient.getVideosByCategory(category: 'music'),
+            () => mockRepository.getVideosForCategory(
+              category: 'music',
+              before: any(named: 'before'),
+              sort: any(named: 'sort'),
+              platform: any(named: 'platform'),
+            ),
           ).thenThrow(const FunnelcakeException('Failed'));
         },
         build: () => CategoriesBloc(categoriesRepository: mockRepository),
@@ -185,23 +200,15 @@ void main() {
         'loads category-scoped recommendations when sort changes to forYou',
         setUp: () {
           when(
-            () => mockApiClient.getRecommendations(
-              pubkey: any(named: 'pubkey'),
-              limit: 50,
+            () => mockRepository.getRecommendedVideos(
+              pubkey: _viewerPubkey,
               category: 'music',
             ),
           ).thenAnswer(
-            (_) async => RecommendationsResponse(
-              videos: [_createVideoStats('recommended-id')],
-              source: 'personalized',
-            ),
+            (_) async => [
+              _createDefaultVideoStats('recommended-id').toVideoEvent(),
+            ],
           );
-          when(
-            () => mockApiClient.getVideosByCategory(
-              category: 'music',
-              sort: 'forYou',
-            ),
-          ).thenAnswer((_) async => const []);
         },
         seed: () => const CategoriesState(
           selectedCategory: category,
@@ -230,43 +237,46 @@ void main() {
         ],
         verify: (_) {
           verify(
-            () => mockApiClient.getRecommendations(
-              pubkey: any(named: 'pubkey'),
-              limit: 50,
+            () => mockRepository.getRecommendedVideos(
+              pubkey: _viewerPubkey,
               category: 'music',
             ),
           ).called(1);
           verifyNever(
-            () => mockApiClient.getVideosByCategory(
-              category: 'music',
-              sort: 'forYou',
+            () => mockRepository.getVideosForCategory(
+              category: any(named: 'category'),
+              before: any(named: 'before'),
+              sort: any(named: 'sort'),
+              platform: any(named: 'platform'),
             ),
           );
         },
       );
 
       blocTest<CategoriesBloc, CategoriesState>(
-        'falls back to Hot when forYou recommendations return no videos',
+        'falls back to Hot when forYou recommendations are empty after filtering',
         setUp: () {
           when(
-            () => mockApiClient.getRecommendations(
-              pubkey: any(named: 'pubkey'),
-              limit: 50,
+            () => mockRepository.getRecommendedVideos(
+              pubkey: _viewerPubkey,
               category: 'music',
-            ),
-          ).thenAnswer(
-            (_) async =>
-                const RecommendationsResponse(videos: [], source: 'popular'),
-          );
-          when(
-            () => mockApiClient.getVideosByCategory(category: 'music'),
-          ).thenAnswer((_) async => [_createVideoStats('hot-fallback-id')]);
-          when(
-            () => mockApiClient.getVideosByCategory(
-              category: 'music',
-              sort: 'forYou',
             ),
           ).thenAnswer((_) async => const []);
+          when(
+            () => mockRepository.getVideosForCategory(
+              category: 'music',
+              before: any(named: 'before'),
+              sort: any(named: 'sort'),
+              platform: any(named: 'platform'),
+            ),
+          ).thenAnswer(
+            (_) async => CategoryVideosPage(
+              videos: [
+                _createDefaultVideoStats('hot-fallback-id').toVideoEvent(),
+              ],
+              hasMore: true,
+            ),
+          );
         },
         seed: () => const CategoriesState(
           selectedCategory: category,
@@ -295,21 +305,14 @@ void main() {
         ],
         verify: (_) {
           verify(
-            () => mockApiClient.getRecommendations(
-              pubkey: any(named: 'pubkey'),
-              limit: 50,
+            () => mockRepository.getRecommendedVideos(
+              pubkey: _viewerPubkey,
               category: 'music',
             ),
           ).called(1);
           verify(
-            () => mockApiClient.getVideosByCategory(category: 'music'),
+            () => mockRepository.getVideosForCategory(category: 'music'),
           ).called(1);
-          verifyNever(
-            () => mockApiClient.getVideosByCategory(
-              category: 'music',
-              sort: 'forYou',
-            ),
-          );
         },
       );
 
@@ -317,12 +320,18 @@ void main() {
         'reloads videos with new sort order',
         setUp: () {
           when(
-            () => mockApiClient.getVideosByCategory(
+            () => mockRepository.getVideosForCategory(
               category: 'music',
+              before: any(named: 'before'),
               sort: 'loops',
               platform: 'vine',
             ),
-          ).thenAnswer((_) async => [_createVideoStats('id1')]);
+          ).thenAnswer(
+            (_) async => CategoryVideosPage(
+              videos: [_createDefaultVideoStats('id1').toVideoEvent()],
+              hasMore: false,
+            ),
+          );
         },
         seed: () => const CategoriesState(
           selectedCategory: category,
@@ -356,6 +365,68 @@ void main() {
       );
     });
 
+    group('CategoriesBlocklistChanged', () {
+      final blockedVideo = _createVideoStats(
+        'blocked-id',
+        pubkey:
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      ).toVideoEvent();
+      final allowedVideo = _createVideoStats(
+        'allowed-id',
+        pubkey:
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      ).toVideoEvent();
+
+      blocTest<CategoriesBloc, CategoriesState>(
+        'drops the just-blocked pubkey from in-memory videos',
+        seed: () => CategoriesState(
+          selectedCategory: const VideoCategory(
+            name: 'music',
+            videoCount: 1500,
+          ),
+          videosStatus: CategoriesVideosStatus.loaded,
+          videos: [blockedVideo, allowedVideo],
+        ),
+        build: () => CategoriesBloc(categoriesRepository: mockRepository),
+        act: (bloc) => bloc.add(
+          CategoriesBlocklistChanged(blockedPubkey: blockedVideo.pubkey),
+        ),
+        expect: () => [
+          isA<CategoriesState>().having((s) => s.videos, 'videos', [
+            allowedVideo,
+          ]),
+        ],
+      );
+
+      blocTest<CategoriesBloc, CategoriesState>(
+        're-filters current videos when the blocklist version changes',
+        setUp: () {
+          when(
+            () =>
+                mockBlocklistRepository.filterContent<VideoEvent>(any(), any()),
+          ).thenReturn([allowedVideo]);
+        },
+        seed: () => CategoriesState(
+          selectedCategory: const VideoCategory(
+            name: 'music',
+            videoCount: 1500,
+          ),
+          videosStatus: CategoriesVideosStatus.loaded,
+          videos: [blockedVideo, allowedVideo],
+        ),
+        build: () => CategoriesBloc(
+          categoriesRepository: mockRepository,
+          contentBlocklistRepository: mockBlocklistRepository,
+        ),
+        act: (bloc) => bloc.add(const CategoriesBlocklistChanged()),
+        expect: () => [
+          isA<CategoriesState>().having((s) => s.videos, 'videos', [
+            allowedVideo,
+          ]),
+        ],
+      );
+    });
+
     group('CategoryDeselected', () {
       blocTest<CategoriesBloc, CategoriesState>(
         'clears selected category and videos',
@@ -380,10 +451,17 @@ void main() {
   });
 }
 
-VideoStats _createVideoStats(String id) {
+VideoStats _createDefaultVideoStats(String id) {
+  return _createVideoStats(id, pubkey: _defaultVideoPubkey);
+}
+
+const _defaultVideoPubkey =
+    'abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890';
+
+VideoStats _createVideoStats(String id, {required String pubkey}) {
   return VideoStats(
     id: id,
-    pubkey: 'abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
+    pubkey: pubkey,
     videoUrl: 'https://example.com/video.mp4',
     thumbnail: 'https://example.com/thumb.jpg',
     title: 'Test Video $id',

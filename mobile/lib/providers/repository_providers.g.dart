@@ -325,7 +325,7 @@ final class CategoriesRepositoryProvider
 }
 
 String _$categoriesRepositoryHash() =>
-    r'6a3a483ae2565033933e9891b1742571c6e15fa8';
+    r'674c9dc3ed951c7bf04466dcd424d0195de4273b';
 
 /// Provider for ProfileRepository instance
 ///

@@ -45,3 +45,14 @@ final class CategoryVideosSortChanged extends CategoriesEvent {
 final class CategoryDeselected extends CategoriesEvent {
   const CategoryDeselected();
 }
+
+/// A user was blocked or the blocklist changed.
+final class CategoriesBlocklistChanged extends CategoriesEvent {
+  const CategoriesBlocklistChanged({this.blockedPubkey});
+
+  /// The pubkey that was just blocked, or null for a full re-filter.
+  final String? blockedPubkey;
+
+  @override
+  List<Object?> get props => [blockedPubkey];
+}

@@ -2,7 +2,22 @@
 // ABOUTME: Owns the in-memory TTL cache for the categories list.
 
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
-import 'package:models/models.dart' show VideoCategory;
+import 'package:models/models.dart';
+
+/// Returns `true` when content from [pubkey] should be hidden.
+typedef CategoryVideoBlockFilter = bool Function(String pubkey);
+
+/// A page of category videos plus pagination metadata.
+final class CategoryVideosPage {
+  /// Creates a [CategoryVideosPage].
+  const CategoryVideosPage({required this.videos, required this.hasMore});
+
+  /// The filtered videos for this page.
+  final List<VideoEvent> videos;
+
+  /// Whether the API returned a full page and may have more results.
+  final bool hasMore;
+}
 
 /// Repository for fetching and caching video categories.
 ///
@@ -14,17 +29,15 @@ class CategoriesRepository {
   /// Creates a [CategoriesRepository].
   CategoriesRepository({
     required FunnelcakeApiClient funnelcakeApiClient,
+    CategoryVideoBlockFilter? blockFilter,
     Duration cacheDuration = const Duration(minutes: 10),
   }) : _funnelcakeApiClient = funnelcakeApiClient,
+       _blockFilter = blockFilter,
        _cacheDuration = cacheDuration;
 
   final FunnelcakeApiClient _funnelcakeApiClient;
+  final CategoryVideoBlockFilter? _blockFilter;
   final Duration _cacheDuration;
-
-  /// Exposes the underlying API client so callers can make video-level requests
-  /// (e.g. [FunnelcakeApiClient.getVideosByCategory]) directly without going
-  /// through this repository.
-  FunnelcakeApiClient get apiClient => _funnelcakeApiClient;
 
   List<VideoCategory>? _cache;
   DateTime? _cachedAt;
@@ -71,6 +84,46 @@ class CategoriesRepository {
     _cachedAt = DateTime.now();
 
     return ordered;
+  }
+
+  /// Returns a filtered page of videos for [category].
+  Future<CategoryVideosPage> getVideosForCategory({
+    required String category,
+    int? before,
+    String sort = 'trending',
+    String? platform,
+  }) async {
+    final videoStats = await _funnelcakeApiClient.getVideosByCategory(
+      category: category,
+      before: before,
+      sort: sort,
+      platform: platform,
+    );
+
+    return CategoryVideosPage(
+      videos: _filterVideos(videoStats.toVideoEvents()),
+      hasMore: videoStats.length >= 50,
+    );
+  }
+
+  /// Returns filtered personalized recommendations for [pubkey].
+  Future<List<VideoEvent>> getRecommendedVideos({
+    required String pubkey,
+    String? category,
+    int limit = 50,
+  }) async {
+    final response = await _funnelcakeApiClient.getRecommendations(
+      pubkey: pubkey,
+      category: category,
+      limit: limit,
+    );
+    return _filterVideos(response.videos.toVideoEvents());
+  }
+
+  List<VideoEvent> _filterVideos(List<VideoEvent> videos) {
+    final blockFilter = _blockFilter;
+    if (blockFilter == null) return videos;
+    return videos.where((video) => !blockFilter(video.pubkey)).toList();
   }
 
   /// Clears the in-memory cache so the next call fetches fresh data.

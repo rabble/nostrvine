@@ -2,6 +2,7 @@
 // ABOUTME: Handles loading categories list and videos within a selected category
 
 import 'package:categories_repository/categories_repository.dart';
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
@@ -18,19 +19,21 @@ part 'categories_state.dart';
 class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
   CategoriesBloc({
     required CategoriesRepository categoriesRepository,
+    ContentBlocklistRepository? contentBlocklistRepository,
     this.currentUserPubkey,
   }) : _categoriesRepository = categoriesRepository,
-       _apiClient = categoriesRepository.apiClient,
+       _blocklistRepository = contentBlocklistRepository,
        super(const CategoriesState()) {
     on<CategoriesLoadRequested>(_onLoadRequested);
     on<CategorySelected>(_onCategorySelected);
     on<CategoryVideosLoadMore>(_onLoadMore);
     on<CategoryVideosSortChanged>(_onSortChanged);
     on<CategoryDeselected>(_onDeselected);
+    on<CategoriesBlocklistChanged>(_onBlocklistChanged);
   }
 
   final CategoriesRepository _categoriesRepository;
-  final FunnelcakeApiClient _apiClient;
+  final ContentBlocklistRepository? _blocklistRepository;
   final String? currentUserPubkey;
 
   Future<void> _onLoadRequested(
@@ -104,25 +107,23 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
       final lastVideo = state.videos.lastOrNull;
       final before = lastVideo?.createdAt;
 
-      final videoStats = await _apiClient.getVideosByCategory(
+      final page = await _categoriesRepository.getVideosForCategory(
         category: state.selectedCategory!.name,
         before: before,
         sort: _apiSortFor(state.sortOrder),
         platform: _platformFor(state.sortOrder),
       );
 
-      final newVideos = videoStats.toVideoEvents();
-
       // Deduplicate
       final existingIds = state.videos.map((v) => v.id).toSet();
-      final uniqueNew = newVideos
+      final uniqueNew = page.videos
           .where((v) => !existingIds.contains(v.id))
           .toList();
 
       emit(
         state.copyWith(
           videos: [...state.videos, ...uniqueNew],
-          hasMoreVideos: videoStats.length >= 50,
+          hasMoreVideos: page.hasMore,
           isLoadingMore: false,
         ),
       );
@@ -187,20 +188,20 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
         return;
       }
 
-      final hotVideoStats = await _apiClient.getVideosByCategory(
+      final hotVideosPage = await _categoriesRepository.getVideosForCategory(
         category: category.name,
       );
       emit(
         state.copyWith(
           videosStatus: CategoriesVideosStatus.loaded,
-          videos: hotVideoStats.toVideoEvents(),
+          videos: hotVideosPage.videos,
           hasMoreVideos: false,
         ),
       );
       return;
     }
 
-    final videoStats = await _apiClient.getVideosByCategory(
+    final page = await _categoriesRepository.getVideosForCategory(
       category: category.name,
       sort: _apiSortFor(sortOrder),
       platform: _platformFor(sortOrder),
@@ -209,8 +210,8 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
     emit(
       state.copyWith(
         videosStatus: CategoriesVideosStatus.loaded,
-        videos: videoStats.toVideoEvents(),
-        hasMoreVideos: videoStats.length >= 50,
+        videos: page.videos,
+        hasMoreVideos: page.hasMore,
       ),
     );
   }
@@ -223,12 +224,35 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
       return const [];
     }
 
-    final response = await _apiClient.getRecommendations(
+    return _categoriesRepository.getRecommendedVideos(
       pubkey: pubkey,
       category: category.name,
-      limit: 50,
     );
-    return response.videos.toVideoEvents();
+  }
+
+  void _onBlocklistChanged(
+    CategoriesBlocklistChanged event,
+    Emitter<CategoriesState> emit,
+  ) {
+    final pubkey = event.blockedPubkey;
+    if (pubkey != null) {
+      final filtered = state.videos.where((v) => v.pubkey != pubkey).toList();
+      if (filtered.length != state.videos.length) {
+        emit(state.copyWith(videos: filtered));
+      }
+      return;
+    }
+
+    final service = _blocklistRepository;
+    if (service == null) return;
+
+    final filtered = service.filterContent<VideoEvent>(
+      state.videos,
+      (video) => video.pubkey,
+    );
+    if (filtered.length != state.videos.length) {
+      emit(state.copyWith(videos: filtered));
+    }
   }
 
   String _apiSortFor(String sortOrder) {

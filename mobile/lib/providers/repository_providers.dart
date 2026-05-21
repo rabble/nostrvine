@@ -251,7 +251,10 @@ HashtagRepository hashtagRepository(Ref ref) {
 @Riverpod(keepAlive: true)
 CategoriesRepository categoriesRepository(Ref ref) {
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
-  return CategoriesRepository(funnelcakeApiClient: funnelcakeClient);
+  return CategoriesRepository(
+    funnelcakeApiClient: funnelcakeClient,
+    blockFilter: createBlockedAuthorFilter(ref),
+  );
 }
 
 /// Provider for ProfileRepository instance
