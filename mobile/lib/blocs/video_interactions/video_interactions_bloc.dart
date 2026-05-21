@@ -289,9 +289,9 @@ class VideoInteractionsBloc
         name: 'VideoInteractionsBloc',
         category: LogCategory.system,
       );
-      // _publishLike runs fire-and-forget via unawaited() at line 254.
-      // Guard symmetrically with the add() below (also !isClosed-gated)
-      // so addError doesn't fire on a closed bloc. See #4605.
+      // Guarded for symmetry with the sibling add() below: _publishLike
+      // runs fire-and-forget via unawaited() and post-close addError
+      // throws StateError.
       if (!isClosed) {
         addError(
           Reportable(e, context: VideoInteractionsReportableSites.publishLike),
@@ -413,9 +413,9 @@ class VideoInteractionsBloc
         name: 'VideoInteractionsBloc',
         category: LogCategory.system,
       );
-      // _publishRepost runs fire-and-forget via unawaited() at line 375.
-      // Guard symmetrically with the add() below (also !isClosed-gated)
-      // so addError doesn't fire on a closed bloc. See #4605.
+      // Guarded for symmetry with the sibling add() below: _publishRepost
+      // runs fire-and-forget via unawaited() and post-close addError
+      // throws StateError.
       if (!isClosed) {
         addError(
           Reportable(

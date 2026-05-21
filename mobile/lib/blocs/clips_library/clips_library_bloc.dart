@@ -392,10 +392,9 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
       );
       // Matrix-NO: background recoverMissingAssets is filesystem + thumbnail
       // IO (Network/IO category).
-      // _recoverAndReload is launched fire-and-forget via unawaited()
-      // from _onLoadRequested (line 142). The sibling add() above is
-      // already !isClosed-guarded; symmetric guard here prevents
-      // addError-on-closed StateError. See #4605.
+      // Guarded for symmetry with the sibling add() above: this method
+      // runs fire-and-forget via unawaited() and post-close addError
+      // throws StateError.
       if (!isClosed) {
         addError(e, stackTrace);
       }
