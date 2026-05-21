@@ -7,6 +7,7 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_clip_speed_sheet.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_controls.dart';
 
 /// Controls shown when a clip is in editing mode: Delete, Copy, Split, Done.
@@ -33,6 +34,7 @@ class _TimelineClipControlsState extends ConsumerState<TimelineClipControls> {
       onDelete: isLastClip ? null : () => _deleteClip(context, ref),
       onDuplicated: () => _duplicateClip(context, ref),
       onSplit: () => _splitClip(context),
+      onSpeed: () => _setPlaybackSpeed(context),
       onExtractAudio: () => _requestExtractAudio(context),
       isExtractingAudio: isExtractingAudio,
       // Done is gated while extraction is in flight purely as a UX cue —
@@ -47,6 +49,37 @@ class _TimelineClipControlsState extends ConsumerState<TimelineClipControls> {
                 const ClipEditorEditingStopped(),
               );
             },
+    );
+  }
+
+  Future<void> _setPlaybackSpeed(BuildContext context) async {
+    final bloc = context.read<ClipEditorBloc>();
+    final state = bloc.state;
+    final clip = state.clips[state.currentClipIndex];
+    final editor = VideoEditorScope.of(context).requireEditor;
+
+    final result = await VineBottomSheet.show<double>(
+      context: context,
+      expanded: false,
+      scrollable: false,
+      isScrollControlled: true,
+      body: VideoEditorClipSpeedSheet(
+        initialSpeed: clip.playbackSpeed ?? 1.0,
+      ),
+    );
+
+    if (result == null || !mounted) return;
+
+    final updated = clip.copyWith(playbackSpeed: result);
+    bloc.add(ClipEditorClipUpdated(clipId: clip.id, clip: updated));
+
+    editor.addHistory(
+      meta: {
+        ...editor.stateManager.activeMeta,
+        VideoEditorConstants.clipsStateHistoryKey: state.clips
+            .map((c) => c.id == clip.id ? updated.toJson() : c.toJson())
+            .toList(),
+      },
     );
   }
 

@@ -566,6 +566,7 @@ class VideoEditorRenderService {
                 startTime: c.trimStart == .zero ? null : c.trimStart,
                 endTime: c.trimStart + c.trimmedDuration,
                 volume: c.volume,
+                playbackSpeed: c.playbackSpeed,
               ),
             )
             .toList(),
@@ -601,7 +602,12 @@ class VideoEditorRenderService {
       );
 
       if (!needsCrop) {
-        segments.add(VideoSegment(video: entry.clip.video));
+        segments.add(
+          VideoSegment(
+            video: entry.clip.video,
+            playbackSpeed: entry.clip.playbackSpeed,
+          ),
+        );
       } else {
         final normalizedPath = await _renderNormalizedClip(
           clip: entry.clip,
@@ -664,7 +670,9 @@ class VideoEditorRenderService {
 
     final task = VideoRenderData(
       id: '${clip.id}_normalized',
-      videoSegments: [VideoSegment(video: clip.video)],
+      videoSegments: [
+        VideoSegment(video: clip.video, playbackSpeed: clip.playbackSpeed),
+      ],
       shouldOptimizeForNetworkUse: true,
       imageBytesWithCropping: true,
       transform: ExportTransform(

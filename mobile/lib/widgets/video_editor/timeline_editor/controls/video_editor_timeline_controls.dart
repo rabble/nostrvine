@@ -10,6 +10,7 @@ class VideoEditorTimelineControls extends StatelessWidget {
     this.onEdit,
     this.onDuplicated,
     this.onSplit,
+    this.onSpeed,
     this.onExtractAudio,
     this.isExtractingAudio = false,
     super.key,
@@ -19,6 +20,7 @@ class VideoEditorTimelineControls extends StatelessWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onDuplicated;
   final VoidCallback? onSplit;
+  final VoidCallback? onSpeed;
   final VoidCallback? onExtractAudio;
   final bool isExtractingAudio;
   final VoidCallback? onDone;
@@ -84,6 +86,14 @@ class VideoEditorTimelineControls extends StatelessWidget {
                           .l10n
                           .videoEditorSplitSelectedClipSemanticLabel,
                       onPressed: onSplit,
+                    ),
+                  if (onSpeed != null)
+                    _ControlButton(
+                      icon: .lightning,
+                      label: context.l10n.videoEditorSpeedLabel,
+                      semanticLabel:
+                          context.l10n.videoEditorSetClipSpeedSemanticLabel,
+                      onPressed: onSpeed,
                     ),
                   if (onExtractAudio != null)
                     _ControlButton(

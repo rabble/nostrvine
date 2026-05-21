@@ -7,14 +7,16 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
-DivineVideoClip _clip(String id, int seconds) => DivineVideoClip(
-  id: id,
-  video: EditorVideo.file('/tmp/$id.mp4'),
-  duration: Duration(seconds: seconds),
-  recordedAt: DateTime(2025),
-  targetAspectRatio: .vertical,
-  originalAspectRatio: 9 / 16,
-);
+DivineVideoClip _clip(String id, int seconds, {double? speed}) =>
+    DivineVideoClip(
+      id: id,
+      video: EditorVideo.file('/tmp/$id.mp4'),
+      duration: Duration(seconds: seconds),
+      recordedAt: DateTime(2025),
+      targetAspectRatio: .vertical,
+      originalAspectRatio: 9 / 16,
+      playbackSpeed: speed,
+    );
 
 void main() {
   // Three-clip composition used throughout most tests:
@@ -285,5 +287,109 @@ void main() {
         );
       });
     }
+  });
+
+  group('DivineVideoClip.playbackDuration', () {
+    test('null speed → same as trimmedDuration', () {
+      final clip = _clip('a', 10);
+      expect(clip.playbackDuration, equals(clip.trimmedDuration));
+    });
+
+    test('speed 1.0 → same as trimmedDuration', () {
+      final clip = _clip('a', 10, speed: 1.0);
+      expect(clip.playbackDuration, equals(clip.trimmedDuration));
+    });
+
+    test('speed 2.0 → half of trimmedDuration', () {
+      final clip = _clip('a', 10, speed: 2.0);
+      expect(clip.playbackDuration, equals(const Duration(seconds: 5)));
+    });
+
+    test('speed 0.5 → double of trimmedDuration', () {
+      final clip = _clip('a', 10, speed: 0.5);
+      expect(clip.playbackDuration, equals(const Duration(seconds: 20)));
+    });
+
+    test('playbackDurationInSeconds matches playbackDuration', () {
+      final clip = _clip('a', 10, speed: 2.0);
+      expect(clip.playbackDurationInSeconds, equals(5.0));
+    });
+  });
+
+  group('speed-aware geometry', () {
+    // Two-clip composition: clip 0 is 10 s at 2×speed (→ 5 s wide),
+    // clip 1 is 4 s at 1×speed (→ 4 s wide).  Total playback = 9 s.
+    final speedClips = [
+      _clip('fast', 10, speed: 2.0),
+      _clip('normal', 4),
+    ];
+    const speedPps = 52.0;
+    const speedTotal = Duration(seconds: 9);
+
+    test('positionToOffset: 0 s → 0 px', () {
+      expect(
+        timelinePositionToScrollOffset(speedClips, Duration.zero, speedPps),
+        equals(0.0),
+      );
+    });
+
+    test('positionToOffset: 5 s (end of fast clip) → 261 px (5*52 + gap)', () {
+      // 5 s * 52 pps = 260, + 1 gap = 261
+      expect(
+        timelinePositionToScrollOffset(
+          speedClips,
+          const Duration(seconds: 5),
+          speedPps,
+        ),
+        equals(261.0),
+      );
+    });
+
+    test('positionToOffset: 2.5 s (mid fast clip) → 130 px (no gap yet)', () {
+      expect(
+        timelinePositionToScrollOffset(
+          speedClips,
+          const Duration(milliseconds: 2500),
+          speedPps,
+        ),
+        equals(130.0),
+      );
+    });
+
+    test('positionToOffset: 7 s (mid normal clip) → 365 px', () {
+      // 7 s * 52 + 1 gap = 364 + 1 = 365
+      expect(
+        timelinePositionToScrollOffset(
+          speedClips,
+          const Duration(seconds: 7),
+          speedPps,
+        ),
+        equals(365.0),
+      );
+    });
+
+    test('round-trip at 5 s boundary with speed', () {
+      const pos = Duration(seconds: 5);
+      final offset = timelinePositionToScrollOffset(speedClips, pos, speedPps);
+      final recovered = timelineScrollOffsetToPosition(
+        speedClips,
+        offset,
+        speedPps,
+        speedTotal,
+      );
+      expect(recovered, equals(pos));
+    });
+
+    test('round-trip at 7 s with speed', () {
+      const pos = Duration(seconds: 7);
+      final offset = timelinePositionToScrollOffset(speedClips, pos, speedPps);
+      final recovered = timelineScrollOffsetToPosition(
+        speedClips,
+        offset,
+        speedPps,
+        speedTotal,
+      );
+      expect(recovered, equals(pos));
+    });
   });
 }

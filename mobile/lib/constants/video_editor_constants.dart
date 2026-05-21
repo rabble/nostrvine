@@ -112,6 +112,12 @@ class VideoEditorConstants {
   /// Maximum font scale multiplier for text overlays.
   static const double maxFontScale = 4.0;
 
+  /// Minimum playback speed multiplier for clips.
+  static const double clipSpeedMin = 0.25;
+
+  /// Maximum playback speed multiplier for clips.
+  static const double clipSpeedMax = 3.0;
+
   /// Background color for the text editor overlay.
   static const Color textEditorBackground = Color(0x9B000000);
 

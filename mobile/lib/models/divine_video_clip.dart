@@ -26,6 +26,7 @@ class DivineVideoClip {
     this.trimStart = Duration.zero,
     this.trimEnd = Duration.zero,
     this.volume = 1,
+    this.playbackSpeed,
     this.proofManifestJson,
     this.deletedAt,
   }) : _thumbnailTimestamp = thumbnailTimestamp,
@@ -63,6 +64,10 @@ class DivineVideoClip {
   /// Playback volume for this clip, between 0 (muted) and 1 (full volume).
   final double volume;
 
+  /// Playback speed multiplier for this clip (e.g. 0.5 = half speed, 2.0 = double speed).
+  /// Null means normal speed (1.0).
+  final double? playbackSpeed;
+
   /// JSON-encoded ProofMode / C2PA attestation data for this individual clip.
   final String? proofManifestJson;
 
@@ -82,6 +87,22 @@ class DivineVideoClip {
   /// Effective duration in seconds after trimming.
   double get trimmedDurationInSeconds =>
       trimmedDuration.inMilliseconds / 1000.0;
+
+  /// Wall-clock duration this clip occupies in the final composition,
+  /// i.e. [trimmedDuration] divided by [playbackSpeed].
+  ///
+  /// A 10 s clip at 2× speed occupies 5 s of playback time.
+  Duration get playbackDuration {
+    final speed = playbackSpeed ?? 1.0;
+    if (speed <= 0 || speed == 1.0) return trimmedDuration;
+    return Duration(
+      microseconds: (trimmedDuration.inMicroseconds / speed).round(),
+    );
+  }
+
+  /// [playbackDuration] expressed as fractional seconds.
+  double get playbackDurationInSeconds =>
+      playbackDuration.inMilliseconds / 1000.0;
   bool get isProcessing =>
       processingCompleter != null && !processingCompleter!.isCompleted;
 
@@ -116,6 +137,8 @@ class DivineVideoClip {
     Duration? trimStart,
     Duration? trimEnd,
     double? volume,
+    double? playbackSpeed,
+    bool clearPlaybackSpeed = false,
     String? proofManifestJson,
     bool clearProofManifestJson = false,
     DateTime? deletedAt,
@@ -135,6 +158,9 @@ class DivineVideoClip {
       trimStart: trimStart ?? this.trimStart,
       trimEnd: trimEnd ?? this.trimEnd,
       volume: volume ?? this.volume,
+      playbackSpeed: clearPlaybackSpeed
+          ? null
+          : (playbackSpeed ?? this.playbackSpeed),
       proofManifestJson: clearProofManifestJson
           ? null
           : (proofManifestJson ?? this.proofManifestJson),
@@ -164,6 +190,7 @@ class DivineVideoClip {
       'trimStartMs': trimStart.inMilliseconds,
       'trimEndMs': trimEnd.inMilliseconds,
       'volume': volume,
+      if (playbackSpeed != null) 'playbackSpeed': playbackSpeed,
       if (proofManifestJson != null) 'proofManifestJson': proofManifestJson,
     };
   }
@@ -216,6 +243,7 @@ class DivineVideoClip {
       trimStart: Duration(milliseconds: (json['trimStartMs'] as int?) ?? 0),
       trimEnd: Duration(milliseconds: (json['trimEndMs'] as int?) ?? 0),
       volume: (json['volume'] as num?)?.toDouble() ?? 1,
+      playbackSpeed: (json['playbackSpeed'] as num?)?.toDouble(),
       proofManifestJson: json['proofManifestJson'] as String?,
     );
   }

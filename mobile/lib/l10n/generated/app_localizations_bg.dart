@@ -7014,6 +7014,16 @@ class AppLocalizationsBg extends AppLocalizations {
       'Не можа да се извлече аудио. Моля, опитайте отново.';
 
   @override
+  String get videoEditorSpeedLabel => 'Speed';
+
+  @override
+  String get videoEditorSetClipSpeedSemanticLabel =>
+      'Set playback speed for selected clip';
+
+  @override
+  String get videoEditorSpeedSheetTitle => 'Clip Speed';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Завършете редактирането на времевата линия';
 

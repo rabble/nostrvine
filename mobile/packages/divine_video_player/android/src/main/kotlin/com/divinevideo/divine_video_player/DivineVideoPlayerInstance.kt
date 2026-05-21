@@ -6,6 +6,7 @@ import android.os.Looper
 import android.view.Surface
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
+import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.SeekParameters
@@ -104,6 +105,8 @@ internal class DivineVideoPlayerInstance(
     private var clipOffsets = listOf<Long>()
     /** Per-clip audio volumes (0.0–1.0). Multiplied by [volume] on each clip transition. */
     private var clipVolumes = listOf<Float>()
+    /** Per-clip playback speed multipliers (1.0 = normal). */
+    private var clipSpeeds = listOf<Float>()
     private var clipCount = 0
     private var isLooping = false
     private var volume = 1.0
@@ -301,6 +304,7 @@ internal class DivineVideoPlayerInstance(
         val mediaItems = mutableListOf<MediaItem>()
         val offsets = mutableListOf<Long>()
         val volumes = mutableListOf<Float>()
+        val speeds = mutableListOf<Float>()
         var accumulated = 0L
 
         for (map in clipsRaw) {
@@ -308,6 +312,7 @@ internal class DivineVideoPlayerInstance(
             val startMs = (map["startMs"] as? Number)?.toLong() ?: 0L
             val endMs = (map["endMs"] as? Number)?.toLong()
             val clipVol = (map["volume"] as? Number)?.toFloat() ?: 1.0f
+            val clipSpeed = (map["playbackSpeed"] as? Number)?.toFloat() ?: 1.0f
 
             val builder = MediaItem.Builder().setUri(uri)
                 .setClippingConfiguration(
@@ -322,6 +327,7 @@ internal class DivineVideoPlayerInstance(
             mediaItems.add(builder.build())
             offsets.add(accumulated)
             volumes.add(clipVol)
+            speeds.add(clipSpeed)
 
             // If endMs is unknown, we'll recalculate after prepare.
             if (endMs != null) {
@@ -331,6 +337,7 @@ internal class DivineVideoPlayerInstance(
 
         clipOffsets = offsets
         clipVolumes = volumes
+        clipSpeeds = speeds
         clipCount = mediaItems.size
         firstFrameRendered = false
 
@@ -365,6 +372,7 @@ internal class DivineVideoPlayerInstance(
         // (not 0) so a resume mid-playlist doesn't play clip 0's volume
         // before onMediaItemTransition can correct it.
         exoPlayer.volume = clipVolumes.getOrElse(startIndex) { 1.0f } * volume.toFloat()
+        exoPlayer.setPlaybackParameters(PlaybackParameters(clipSpeeds.getOrElse(startIndex) { 1.0f }))
         // While ExoPlayer buffers to the seek position, report the target
         // position so the timeline doesn't show intermediate values.
         pendingGlobalStartMs = globalStartMs
@@ -499,6 +507,7 @@ internal class DivineVideoPlayerInstance(
         exoPlayer.clearMediaItems()
         clipOffsets = listOf()
         clipVolumes = listOf()
+        clipSpeeds = listOf()
         clipCount = 0
         firstFrameRendered = false
         sendStateUpdate()
@@ -723,9 +732,15 @@ internal class DivineVideoPlayerInstance(
                     player?.setVideoSurface(null)
                     player?.setVideoSurface(surface)
                 }
-                // Apply per-clip volume for the clip that just started.
+            }
+            // Apply per-clip volume and speed for the clip that just started.
+            // Covers both REASON_AUTO (normal advance) and REASON_REPEAT
+            // (REPEAT_MODE_ALL loops the full playlist back to the first clip).
+            if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO ||
+                reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT) {
                 val newIndex = player?.currentMediaItemIndex ?: 0
                 player?.volume = (clipVolumes.getOrElse(newIndex) { 1.0f }) * volume.toFloat()
+                player?.setPlaybackParameters(PlaybackParameters(clipSpeeds.getOrElse(newIndex) { 1.0f }))
             }
             syncAudioOverlays()
             sendStateUpdate()

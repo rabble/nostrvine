@@ -79,9 +79,9 @@ class ClipEditorState extends Equatable {
   /// fresh signal even when fields happen to repeat.
   final ClipAudioExtractionResult? lastAudioExtraction;
 
-  /// Total duration of all clips (respecting trim).
+  /// Total wall-clock duration of all clips (respecting trim and playback speed).
   Duration get totalDuration =>
-      clips.fold(Duration.zero, (sum, clip) => sum + clip.trimmedDuration);
+      clips.fold(Duration.zero, (sum, clip) => sum + clip.playbackDuration);
 
   /// Creates a copy with the given fields replaced.
   ClipEditorState copyWith({

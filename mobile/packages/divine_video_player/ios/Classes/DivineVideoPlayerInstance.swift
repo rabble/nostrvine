@@ -160,6 +160,10 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                 self.firstFrameRendered = false
 
                 let playerItem = AVPlayerItem(asset: composition)
+                // Prevent pitch distortion when clips play at a speed
+                // other than 1×. .spectral (phase vocoder) preserves
+                // pitch across the full speed range.
+                playerItem.audioTimePitchAlgorithm = .spectral
                 if let videoComposition {
                     playerItem.videoComposition = videoComposition
                 }
@@ -268,6 +272,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             let startMs = (clipMap["startMs"] as? NSNumber)?.int64Value ?? 0
             let endMs = clipMap["endMs"] as? NSNumber
             let clipVol = (clipMap["volume"] as? NSNumber)?.floatValue ?? 1.0
+            let clipSpeed = (clipMap["playbackSpeed"] as? NSNumber)?.doubleValue ?? 1.0
 
             let url: URL
             if uri.hasPrefix("/") {
@@ -331,10 +336,22 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                 try audioTrack?.insertTimeRange(timeRange, of: sourceAudioTrack, at: insertTime)
             }
 
+            // Scale the just-inserted segment to achieve per-clip playback speed.
+            // A speed of 2.0 halves the presentation duration; 0.5 doubles it.
+            let scaledDuration: CMTime
+            if clipSpeed != 1.0, clipSpeed > 0 {
+                let scaledSeconds = CMTimeGetSeconds(clipDuration) / clipSpeed
+                scaledDuration = CMTime(seconds: scaledSeconds, preferredTimescale: 600)
+                let insertedRange = CMTimeRange(start: insertTime, duration: clipDuration)
+                composition.scaleTimeRange(insertedRange, toDuration: scaledDuration)
+            } else {
+                scaledDuration = clipDuration
+            }
+
             offsets.append(CMTimeGetSeconds(insertTime))
-            durations.append(CMTimeGetSeconds(clipDuration))
+            durations.append(CMTimeGetSeconds(scaledDuration))
             clipVolumes.append(clipVol)
-            insertTime = CMTimeAdd(insertTime, clipDuration)
+            insertTime = CMTimeAdd(insertTime, scaledDuration)
         }
 
         guard !offsets.isEmpty else {

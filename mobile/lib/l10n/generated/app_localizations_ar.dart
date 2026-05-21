@@ -6878,6 +6878,16 @@ class AppLocalizationsAr extends AppLocalizations {
       'تعذّر استخراج الصوت. يرجى المحاولة مجددًا.';
 
   @override
+  String get videoEditorSpeedLabel => 'Speed';
+
+  @override
+  String get videoEditorSetClipSpeedSemanticLabel =>
+      'Set playback speed for selected clip';
+
+  @override
+  String get videoEditorSpeedSheetTitle => 'Clip Speed';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'إنهاء تحرير الجدول الزمني';
 

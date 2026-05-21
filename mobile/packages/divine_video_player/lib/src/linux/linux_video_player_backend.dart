@@ -104,6 +104,7 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
   late final Object _videoController;
   final _subscriptions = <StreamSubscription<dynamic>>[];
   final _clips = <VideoClip>[];
+  final _clipSpeeds = <double>[];
   final _clipDurations = <Duration>[];
   final _clipOffsets = <Duration>[];
 
@@ -147,6 +148,9 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
     _clips
       ..clear()
       ..addAll(clips);
+    _clipSpeeds
+      ..clear()
+      ..addAll(clips.map((c) => c.playbackSpeed));
 
     final boundedDurations = await _resolveClipDurations(clips);
     _clipDurations
@@ -178,6 +182,8 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
     await _player.setPlaylistMode(
       _isLooping ? PlaylistMode.loop : PlaylistMode.none,
     );
+    // Apply first-clip speed immediately so playback starts at the correct rate.
+    await _player.setRate(_clipSpeeds.firstOrNull ?? 1.0);
 
     final seekPosition = startPosition ?? Duration.zero;
     if (seekPosition > Duration.zero) {
@@ -207,6 +213,7 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
     await _player.stop();
     _hasLoadedMedia = false;
     _clips.clear();
+    _clipSpeeds.clear();
     _clipDurations.clear();
     _clipOffsets.clear();
     _currentClipIndex = 0;
@@ -319,11 +326,13 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
         (_) => _refreshState(),
         onError: _handleError,
       ),
-      _player.stream.playlist.listen((playlist) {
+      _player.stream.playlist.listen((playlist) async {
         _currentClipIndex = playlist.index.clamp(
           0,
           math.max(_clips.length - 1, 0),
         );
+        final clipSpeed = _clipSpeeds.elementAtOrNull(_currentClipIndex) ?? 1.0;
+        await _player.setRate(clipSpeed);
         _refreshState();
       }, onError: _handleError),
       _player.stream.completed.listen(

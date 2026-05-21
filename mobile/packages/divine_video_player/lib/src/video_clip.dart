@@ -20,6 +20,7 @@ class VideoClip {
     this.start = Duration.zero,
     this.end,
     this.volume = 1.0,
+    this.playbackSpeed = 1.0,
   });
 
   /// Creates a [VideoClip] from a local file path.
@@ -28,6 +29,7 @@ class VideoClip {
     this.start = Duration.zero,
     this.end,
     this.volume = 1.0,
+    this.playbackSpeed = 1.0,
   }) : uri = path;
 
   /// Creates a [VideoClip] from a network URL.
@@ -36,6 +38,7 @@ class VideoClip {
     this.start = Duration.zero,
     this.end,
     this.volume = 1.0,
+    this.playbackSpeed = 1.0,
   }) : uri = url;
 
   /// Creates a [VideoClip] from a Flutter asset.
@@ -47,6 +50,7 @@ class VideoClip {
     Duration start = Duration.zero,
     Duration? end,
     double volume = 1.0,
+    double playbackSpeed = 1.0,
     AssetBundle? bundle,
   }) async {
     final (data, dir) = await (
@@ -57,7 +61,13 @@ class VideoClip {
     final file = File('${dir.path}/divine_player_assets/$fileName');
     await file.parent.create(recursive: true);
     await file.writeAsBytes(data.buffer.asUint8List(), flush: true);
-    return VideoClip(uri: file.path, start: start, end: end, volume: volume);
+    return VideoClip(
+      uri: file.path,
+      start: start,
+      end: end,
+      volume: volume,
+      playbackSpeed: playbackSpeed,
+    );
   }
 
   /// Creates a [VideoClip] from in-memory bytes.
@@ -70,12 +80,19 @@ class VideoClip {
     Duration start = Duration.zero,
     Duration? end,
     double volume = 1.0,
+    double playbackSpeed = 1.0,
   }) async {
     final dir = await getTemporaryDirectory();
     final file = File('${dir.path}/divine_player_memory/$fileName');
     await file.parent.create(recursive: true);
     await file.writeAsBytes(bytes, flush: true);
-    return VideoClip(uri: file.path, start: start, end: end, volume: volume);
+    return VideoClip(
+      uri: file.path,
+      start: start,
+      end: end,
+      volume: volume,
+      playbackSpeed: playbackSpeed,
+    );
   }
 
   /// File path, network URL, or platform URI of the video source.
@@ -92,6 +109,9 @@ class VideoClip {
   /// Audio volume for this clip (0.0 = muted, 1.0 = full volume).
   final double volume;
 
+  /// Playback speed multiplier for this clip (1.0 = normal, 2.0 = 2× fast).
+  final double playbackSpeed;
+
   /// Serializes this clip for platform channel transport.
   Map<String, dynamic> toMap() {
     return {
@@ -99,6 +119,7 @@ class VideoClip {
       'startMs': start.inMilliseconds,
       'endMs': end?.inMilliseconds,
       'volume': volume,
+      'playbackSpeed': playbackSpeed,
     };
   }
 }

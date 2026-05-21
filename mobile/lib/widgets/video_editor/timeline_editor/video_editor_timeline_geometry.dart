@@ -21,8 +21,8 @@ double timelinePositionToScrollOffset(
   var gapPixels = 0.0;
   for (var i = 0; i < clips.length; i++) {
     final clip = clips[i];
-    if (acc + clip.trimmedDuration > position) break;
-    acc += clip.trimmedDuration;
+    if (acc + clip.playbackDuration > position) break;
+    acc += clip.playbackDuration;
     if (i < clips.length - 1) {
       gapPixels += TimelineConstants.clipGap;
     }
@@ -45,16 +45,16 @@ Duration timelineScrollOffsetToPosition(
   for (var i = 0; i < clips.length; i++) {
     final clip = clips[i];
     final clipEndPx =
-        (acc + clip.trimmedDuration).inMicroseconds /
+        (acc + clip.playbackDuration).inMicroseconds /
             1_000_000.0 *
             pixelsPerSecond +
         gapPixels;
     if (scrollOffset <= clipEndPx) break;
     final gapEndPx = clipEndPx + TimelineConstants.clipGap;
     if (i < clips.length - 1 && scrollOffset < gapEndPx) {
-      return acc + clip.trimmedDuration;
+      return acc + clip.playbackDuration;
     }
-    acc += clip.trimmedDuration;
+    acc += clip.playbackDuration;
     if (i < clips.length - 1) {
       gapPixels += TimelineConstants.clipGap;
     }

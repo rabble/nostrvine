@@ -262,7 +262,7 @@ class _VideoEditorTimelineClipStripState
 
   double _clipWidth(DivineVideoClip clip) {
     if (widget.clips.length == 1) return widget.totalWidth;
-    return clip.trimmedDurationInSeconds * widget.pixelsPerSecond;
+    return clip.playbackDurationInSeconds * widget.pixelsPerSecond;
   }
 
   int _clipIndexAtX(double localX) {

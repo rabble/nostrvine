@@ -12182,6 +12182,24 @@ abstract class AppLocalizations {
   /// **'Could not extract audio. Please try again.'**
   String get videoEditorExtractAudioFailed;
 
+  /// No description provided for @videoEditorSpeedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed'**
+  String get videoEditorSpeedLabel;
+
+  /// No description provided for @videoEditorSetClipSpeedSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Set playback speed for selected clip'**
+  String get videoEditorSetClipSpeedSemanticLabel;
+
+  /// No description provided for @videoEditorSpeedSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clip Speed'**
+  String get videoEditorSpeedSheetTitle;
+
   /// No description provided for @videoEditorFinishTimelineEditingSemanticLabel.
   ///
   /// In en, this message translates to:
