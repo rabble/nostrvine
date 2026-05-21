@@ -4088,17 +4088,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get notificationsUnreadPrefix => 'Notifica non letta';
 
   @override
-  String notificationsBadgeUnread(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count unread notifications',
-      one: '1 unread notification',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String notificationsViewProfileSemanticLabel(String displayName) {
     return 'Vedi il profilo di $displayName';
   }
@@ -5652,6 +5641,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get proofmodeCheckAiGenerated => 'Verifica se generato dall\'IA';
 
   @override
+  String get libraryDeleteConfirm => 'Elimina';
+
+  @override
   String get libraryWebUnavailableHeadline => 'La libreria è nell’app mobile';
 
   @override
@@ -5692,6 +5684,24 @@ class AppLocalizationsIt extends AppLocalizations {
   String get librarySortVerticalFirst => 'Prima i verticali';
 
   @override
+  String get libraryDeleteClipsTitle => 'Elimina clip';
+
+  @override
+  String libraryDeleteClipsMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# clip selezionate',
+      one: '# clip selezionata',
+    );
+    return 'Vuoi eliminare $_temp0?';
+  }
+
+  @override
+  String get libraryDeleteClipsWarning =>
+      'Azione irreversibile. I file video verranno rimossi definitivamente dal dispositivo.';
+
+  @override
   String get libraryPreparingVideo => 'Preparazione video...';
 
   @override
@@ -5730,16 +5740,16 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get libraryClipsDeletedUndoLabel => 'Undo';
+  String get libraryClipsDeletedUndoLabel => 'Annulla';
 
   @override
   String libraryTrashAutoDeletes(int daysLeft) {
     String _temp0 = intl.Intl.pluralLogic(
       daysLeft,
       locale: localeName,
-      other: 'Auto-deletes in $daysLeft days',
-      one: 'Auto-deletes tomorrow',
-      zero: 'Auto-deletes today',
+      other: 'Eliminazione automatica tra $daysLeft giorni',
+      one: 'Eliminazione automatica domani',
+      zero: 'Eliminazione automatica oggi',
     );
     return '$_temp0';
   }
@@ -5790,6 +5800,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String libraryDeleteDraftMessage(String title) {
     return 'Vuoi eliminare \"$title\"?';
   }
+
+  @override
+  String get libraryDeleteClipTitle => 'Elimina clip';
+
+  @override
+  String get libraryDeleteClipMessage => 'Eliminare questa clip?';
 
   @override
   String get libraryClipSelectionTitle => 'Clip';
@@ -6663,6 +6679,27 @@ class AppLocalizationsIt extends AppLocalizations {
   String get libraryTrashEmptyAllLabel => 'Svuota il cestino';
 
   @override
+  String get libraryTrashDeleteConfirmTitle => 'Eliminare subito la clip?';
+
+  @override
+  String get libraryTrashDeleteConfirmMessage =>
+      'Questo rimuove subito la clip dal cestino.';
+
+  @override
+  String get libraryTrashEmptyConfirmTitle => 'Svuotare il cestino?';
+
+  @override
+  String libraryTrashEmptyConfirmMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clip',
+      one: '1 clip',
+    );
+    return 'Questo elimina definitivamente dal cestino $_temp0 subito.';
+  }
+
+  @override
   String get libraryTrashEntryLabel => 'Eliminati di recente';
 
   @override
@@ -6721,6 +6758,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get videoEditorAudioLabel => 'Audio';
+
+  @override
+  String get videoEditorVolumeLabel => 'Volume';
 
   @override
   String get videoEditorAddTitle => 'Aggiungi';
@@ -6848,6 +6888,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => 'Audio registrato';
 
   @override
+  String get videoEditorCustomAudioLabel => 'Custom audio';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'Riproduci';
 
   @override
@@ -6858,25 +6901,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get videoEditorUnmuteAudioSemanticLabel => 'Riattiva audio';
-
-  @override
-  String get videoEditorVolumeSemanticLabel => 'Regola volume';
-
-  @override
-  String videoEditorTimelineVolumePreview(int percent) {
-    return 'Volume $percent%';
-  }
-
-  @override
-  String get videoEditorTimelineSlideToAdjust => 'Scorri per regolare';
-
-  @override
-  String get videoEditorOriginalAudioLabel => 'Audio originale';
-
-  @override
-  String videoEditorClipVolumeLabel(int index) {
-    return 'Clip $index';
-  }
 
   @override
   String get videoEditorDeleteLabel => 'Elimina';

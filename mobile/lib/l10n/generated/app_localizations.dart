@@ -9908,6 +9908,12 @@ abstract class AppLocalizations {
   /// **'Check if AI-generated'**
   String get proofmodeCheckAiGenerated;
 
+  /// No description provided for @libraryDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get libraryDeleteConfirm;
+
   /// No description provided for @libraryWebUnavailableHeadline.
   ///
   /// In en, this message translates to:
@@ -9985,6 +9991,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Vertical First'**
   String get librarySortVerticalFirst;
+
+  /// No description provided for @libraryDeleteClipsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Clips'**
+  String get libraryDeleteClipsTitle;
+
+  /// No description provided for @libraryDeleteClipsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete {count, plural, one{# selected clip} other{# selected clips}}?'**
+  String libraryDeleteClipsMessage(int count);
+
+  /// No description provided for @libraryDeleteClipsWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This action cannot be undone. The video files will be permanently removed from your device.'**
+  String get libraryDeleteClipsWarning;
 
   /// No description provided for @libraryPreparingVideo.
   ///
@@ -10117,6 +10141,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Are you sure you want to delete \"{title}\"?'**
   String libraryDeleteDraftMessage(String title);
+
+  /// No description provided for @libraryDeleteClipTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Clip'**
+  String get libraryDeleteClipTitle;
+
+  /// No description provided for @libraryDeleteClipMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this clip?'**
+  String get libraryDeleteClipMessage;
 
   /// No description provided for @libraryClipSelectionTitle.
   ///
@@ -11587,6 +11623,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Empty trash'**
   String get libraryTrashEmptyAllLabel;
+
+  /// Confirmation-sheet title shown before permanently deleting a single clip from trash.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete clip now?'**
+  String get libraryTrashDeleteConfirmTitle;
+
+  /// Confirmation-sheet subtitle shown before permanently deleting a single clip from trash.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes the clip from trash right away.'**
+  String get libraryTrashDeleteConfirmMessage;
+
+  /// Confirmation-sheet title shown before permanently deleting every clip from trash.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty trash?'**
+  String get libraryTrashEmptyConfirmTitle;
+
+  /// Confirmation-sheet subtitle shown before permanently deleting every clip from trash.
+  ///
+  /// In en, this message translates to:
+  /// **'This permanently deletes {count, plural, =1{1 clip} other{{count} clips}} from trash right away.'**
+  String libraryTrashEmptyConfirmMessage(int count);
 
   /// Menu/button label on the library screen that opens the trash view.
   ///

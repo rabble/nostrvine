@@ -446,12 +446,6 @@ const _knownUntranslatedDebt = {
   // Translators will pick this up in a follow-up pass; until then non-English
   // locales fall back to the English source.
   'feedLoadingMore',
-  // Added by the clip-trash-bin self-review pass: the library delete flow
-  // now surfaces a snackbar with Undo instead of a confirm dialog, and
-  // the trash view counts down to the 30-day purge. Translators will pick
-  // these up in a follow-up pass.
-  'libraryClipsDeletedUndoLabel',
-  'libraryTrashAutoDeletes',
 };
 
 Map<String, Object?> _readArb(File file) {

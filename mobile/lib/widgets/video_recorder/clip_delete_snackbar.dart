@@ -18,21 +18,15 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 void showClipDeleteSnackbar(BuildContext context, WidgetRef ref) {
   final messenger = ScaffoldMessenger.of(context)..removeCurrentSnackBar();
   messenger.showSnackBar(
-    SnackBar(
+    DivineSnackbarContainer.snackBar(
+      context.l10n.videoRecorderClipDeletedMessage,
       duration: ClipManagerNotifier.pendingDeletionWindow,
-      padding: EdgeInsets.zero,
-      backgroundColor: VineTheme.transparent,
-      elevation: 0,
-      behavior: SnackBarBehavior.floating,
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 68),
-      content: DivineSnackbarContainer(
-        label: context.l10n.videoRecorderClipDeletedMessage,
-        actionLabel: context.l10n.videoRecorderClipUndoLabel,
-        onActionPressed: () {
-          messenger.hideCurrentSnackBar();
-          ref.read(clipManagerProvider.notifier).undoPendingDeletion();
-        },
-      ),
+      actionLabel: context.l10n.videoRecorderClipUndoLabel,
+      onActionPressed: () {
+        messenger.hideCurrentSnackBar();
+        ref.read(clipManagerProvider.notifier).undoPendingDeletion();
+      },
     ),
   );
 }

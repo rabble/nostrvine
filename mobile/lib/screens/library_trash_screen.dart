@@ -8,6 +8,7 @@ import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/clip_library_service.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/library/empty_library_state.dart';
 import 'package:openvine/widgets/video_clip/video_clip_thumbnail_card.dart';
 
@@ -37,15 +38,16 @@ class _LibraryTrashScreenState extends State<LibraryTrashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: VineTheme.surfaceBackground,
-      appBar: AppBar(
+      appBar: DiVineAppBar(
+        title: context.l10n.libraryTrashTitle,
         backgroundColor: VineTheme.surfaceBackground,
-        elevation: 0,
-        leading: const _BackButton(),
-        title: Text(
-          context.l10n.libraryTrashTitle,
-          style: VineTheme.titleMediumFont(),
+        surfaceTintColor: VineTheme.transparent,
+        shape: const Border(
+          bottom: BorderSide(color: VineTheme.outlineDisabled),
         ),
-        actions: const [_EmptyTrashAction()],
+        showBackButton: true,
+        onBackPressed: () => Navigator.of(context).maybePop(),
+        customActions: const [_EmptyTrashAction()],
       ),
       body: SafeArea(
         child: BlocBuilder<ClipsLibraryBloc, ClipsLibraryState>(
@@ -55,9 +57,7 @@ class _LibraryTrashScreenState extends State<LibraryTrashScreen> {
           builder: (context, state) {
             if (state.status == ClipsLibraryStatus.trashLoading &&
                 state.trashedClips.isEmpty) {
-              return const Center(
-                child: CircularProgressIndicator(color: VineTheme.vineGreen),
-              );
+              return const Center(child: BrandedLoadingIndicator(size: 60));
             }
             if (state.trashedClips.isEmpty) {
               return EmptyLibraryState(
@@ -81,31 +81,15 @@ class _LibraryTrashScreenState extends State<LibraryTrashScreen> {
   }
 }
 
-class _BackButton extends StatelessWidget {
-  const _BackButton();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(8),
-      child: DivineIconButton(
-        size: DivineIconButtonSize.small,
-        type: DivineIconButtonType.secondary,
-        icon: DivineIconName.caretLeft,
-        onPressed: () => Navigator.of(context).maybePop(),
-      ),
-    );
-  }
-}
-
 class _EmptyTrashAction extends StatelessWidget {
   const _EmptyTrashAction();
 
   @override
   Widget build(BuildContext context) {
-    return BlocSelector<ClipsLibraryBloc, ClipsLibraryState, bool>(
-      selector: (state) => state.trashedClips.isNotEmpty,
-      builder: (context, hasTrashed) {
+    return BlocSelector<ClipsLibraryBloc, ClipsLibraryState, int>(
+      selector: (state) => state.trashedClips.length,
+      builder: (context, trashedCount) {
+        final hasTrashed = trashedCount > 0;
         if (!hasTrashed) return const SizedBox.shrink();
         return Padding(
           padding: const EdgeInsets.only(right: 16),
@@ -114,14 +98,33 @@ class _EmptyTrashAction extends StatelessWidget {
               size: DivineButtonSize.small,
               type: DivineButtonType.secondary,
               label: context.l10n.libraryTrashEmptyAllLabel,
-              onPressed: () => context.read<ClipsLibraryBloc>().add(
-                const ClipsLibraryEmptyTrash(),
-              ),
+              onPressed: () =>
+                  _confirmEmptyTrash(context, trashedCount: trashedCount),
             ),
           ),
         );
       },
     );
+  }
+
+  Future<void> _confirmEmptyTrash(
+    BuildContext context, {
+    required int trashedCount,
+  }) async {
+    final confirmed = await VineBottomSheetPrompt.show<bool>(
+      context: context,
+      sticker: .alert,
+      title: context.l10n.libraryTrashEmptyConfirmTitle,
+      subtitle: context.l10n.libraryTrashEmptyConfirmMessage(trashedCount),
+      additionalText: context.l10n.libraryDeleteClipsWarning,
+      primaryButtonText: context.l10n.libraryDeleteConfirm,
+      secondaryButtonText: context.l10n.commonCancel,
+      onPrimaryPressed: () => Navigator.of(context).pop(true),
+      onSecondaryPressed: () => Navigator.of(context).pop(false),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+    context.read<ClipsLibraryBloc>().add(const ClipsLibraryEmptyTrash());
   }
 }
 
@@ -188,9 +191,7 @@ class _TrashedClipTile extends StatelessWidget {
                   size: DivineButtonSize.small,
                   type: DivineButtonType.error,
                   label: context.l10n.libraryTrashDeleteNowLabel,
-                  onPressed: () => context.read<ClipsLibraryBloc>().add(
-                    ClipsLibraryHardDeleteClip(clip),
-                  ),
+                  onPressed: () => _confirmHardDelete(context),
                 ),
               ],
             ),
@@ -202,13 +203,32 @@ class _TrashedClipTile extends StatelessWidget {
 
   /// Whole days remaining until the 30-day purge sweep hard-deletes
   /// [clip]. Returns 0 for clips already past the cutoff (the next purge
-  /// run will catch them) and for clips missing a `deletedAt` (a degraded
-  /// row state — surface as "today" rather than crashing).
+  /// run will catch them). Trashed rows are expected to carry `deletedAt`;
+  /// debug builds assert that invariant and release builds degrade to 0.
   int _daysUntilPurge(DivineVideoClip clip) {
     final deletedAt = clip.deletedAt;
+    assert(deletedAt != null, 'Trashed clip must have deletedAt');
     if (deletedAt == null) return 0;
     final cutoff = deletedAt.add(ClipLibraryService.trashRetention);
-    final remaining = cutoff.difference(DateTime.now()).inDays;
-    return remaining < 0 ? 0 : remaining;
+    final remaining = cutoff.difference(DateTime.now());
+    if (remaining <= Duration.zero) return 0;
+    return (remaining.inSeconds / Duration.secondsPerDay).ceil();
+  }
+
+  Future<void> _confirmHardDelete(BuildContext context) async {
+    final confirmed = await VineBottomSheetPrompt.show<bool>(
+      context: context,
+      sticker: .alert,
+      title: context.l10n.libraryTrashDeleteConfirmTitle,
+      subtitle: context.l10n.libraryTrashDeleteConfirmMessage,
+      additionalText: context.l10n.libraryDeleteClipsWarning,
+      primaryButtonText: context.l10n.libraryDeleteConfirm,
+      secondaryButtonText: context.l10n.commonCancel,
+      onPrimaryPressed: () => Navigator.of(context).pop(true),
+      onSecondaryPressed: () => Navigator.of(context).pop(false),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+    context.read<ClipsLibraryBloc>().add(ClipsLibraryHardDeleteClip(clip));
   }
 }

@@ -115,9 +115,9 @@ class LibraryScreen extends ConsumerWidget {
         ),
         BlocProvider<DraftsLibraryBloc>(
           key: ValueKey(draftStorageService),
-          create: (_) => DraftsLibraryBloc(
-            draftStorageService: draftStorageService,
-          )..add(const DraftsLibraryLoadRequested()),
+          create: (_) =>
+              DraftsLibraryBloc(draftStorageService: draftStorageService)
+                ..add(const DraftsLibraryLoadRequested()),
         ),
       ],
       child: _LibraryView(
@@ -222,16 +222,12 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
     VoidCallback? onActionPressed,
   }) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: VineTheme.transparent,
-        elevation: 0,
-        behavior: SnackBarBehavior.floating,
-        content: DivineSnackbarContainer(
-          label: label,
-          error: error,
-          actionLabel: actionLabel,
-          onActionPressed: onActionPressed,
-        ),
+      DivineSnackbarContainer.snackBar(
+        label,
+        error: error,
+        actionLabel: actionLabel,
+        onActionPressed: onActionPressed,
+        duration: const Duration(seconds: 5),
       ),
     );
   }
@@ -403,11 +399,7 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
                         successCount,
                         failureCount,
                       );
-                _showSnackBar(
-                  context,
-                  label: label,
-                  error: failureCount > 0,
-                );
+                _showSnackBar(context, label: label, error: failureCount > 0);
               case GallerySaveResultPermissionDenied():
                 _showSnackBar(
                   context,
@@ -735,10 +727,7 @@ class _LibraryContent extends StatelessWidget {
 }
 
 class _CreateVideoBar extends StatelessWidget {
-  const _CreateVideoBar({
-    required this.visible,
-    required this.onPressed,
-  });
+  const _CreateVideoBar({required this.visible, required this.onPressed});
 
   final bool visible;
   final VoidCallback onPressed;

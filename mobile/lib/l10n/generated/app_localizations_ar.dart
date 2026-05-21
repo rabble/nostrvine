@@ -4001,17 +4001,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get notificationsUnreadPrefix => 'إشعار غير مقروء';
 
   @override
-  String notificationsBadgeUnread(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count unread notifications',
-      one: '1 unread notification',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String notificationsViewProfileSemanticLabel(String displayName) {
     return 'عرض ملف $displayName';
   }
@@ -5555,6 +5544,9 @@ class AppLocalizationsAr extends AppLocalizations {
       'التحقق إذا كان مُنشأً بالذكاء الاصطناعي';
 
   @override
+  String get libraryDeleteConfirm => 'حذف';
+
+  @override
   String get libraryWebUnavailableHeadline =>
       'المكتبة متوفّرة في التطبيق على الجوال';
 
@@ -5596,6 +5588,24 @@ class AppLocalizationsAr extends AppLocalizations {
   String get librarySortVerticalFirst => 'العمودي أولاً';
 
   @override
+  String get libraryDeleteClipsTitle => 'حذف المقاطع';
+
+  @override
+  String libraryDeleteClipsMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# مقاطع محددة',
+      one: 'مقطع واحد محدد',
+    );
+    return 'هل تريد حذف $_temp0؟';
+  }
+
+  @override
+  String get libraryDeleteClipsWarning =>
+      'لا يمكن التراجع. ستُزال ملفات الفيديو نهائيًا من جهازك.';
+
+  @override
   String get libraryPreparingVideo => 'جاري تجهيز الفيديو...';
 
   @override
@@ -5634,16 +5644,16 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get libraryClipsDeletedUndoLabel => 'Undo';
+  String get libraryClipsDeletedUndoLabel => 'تراجع';
 
   @override
   String libraryTrashAutoDeletes(int daysLeft) {
     String _temp0 = intl.Intl.pluralLogic(
       daysLeft,
       locale: localeName,
-      other: 'Auto-deletes in $daysLeft days',
-      one: 'Auto-deletes tomorrow',
-      zero: 'Auto-deletes today',
+      other: 'سيُحذف تلقائيًا خلال $daysLeft أيام',
+      one: 'سيُحذف تلقائيًا غدًا',
+      zero: 'سيُحذف تلقائيًا اليوم',
     );
     return '$_temp0';
   }
@@ -5693,6 +5703,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String libraryDeleteDraftMessage(String title) {
     return 'هل تريد حذُ “$title”؟';
   }
+
+  @override
+  String get libraryDeleteClipTitle => 'حذف المقطع';
+
+  @override
+  String get libraryDeleteClipMessage => 'هل تريد حذف هذا المقطع؟';
 
   @override
   String get libraryClipSelectionTitle => 'مقاطع';
@@ -6540,6 +6556,27 @@ class AppLocalizationsAr extends AppLocalizations {
   String get libraryTrashEmptyAllLabel => 'إفراغ المهملات';
 
   @override
+  String get libraryTrashDeleteConfirmTitle => 'هل تريد حذف المقطع الآن؟';
+
+  @override
+  String get libraryTrashDeleteConfirmMessage =>
+      'سيؤدي هذا إلى إزالة المقطع من سلة المهملات فورًا.';
+
+  @override
+  String get libraryTrashEmptyConfirmTitle => 'إفراغ سلة المهملات؟';
+
+  @override
+  String libraryTrashEmptyConfirmMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count مقاطع',
+      one: 'مقطع واحد',
+    );
+    return 'سيؤدي هذا إلى حذف $_temp0 نهائيًا من سلة المهملات فورًا.';
+  }
+
+  @override
   String get libraryTrashEntryLabel => 'المحذوفة مؤخرًا';
 
   @override
@@ -6598,6 +6635,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get videoEditorAudioLabel => 'الصوت';
+
+  @override
+  String get videoEditorVolumeLabel => 'Volume';
 
   @override
   String get videoEditorAddTitle => 'إضافة';
@@ -6722,6 +6762,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => 'الصوت المسجل';
 
   @override
+  String get videoEditorCustomAudioLabel => 'Custom audio';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'تشغيل';
 
   @override
@@ -6732,25 +6775,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get videoEditorUnmuteAudioSemanticLabel => 'إلغاء كتم الصوت';
-
-  @override
-  String get videoEditorVolumeSemanticLabel => 'ضبط مستوى الصوت';
-
-  @override
-  String videoEditorTimelineVolumePreview(int percent) {
-    return 'مستوى الصوت $percent%';
-  }
-
-  @override
-  String get videoEditorTimelineSlideToAdjust => 'اسحب للضبط';
-
-  @override
-  String get videoEditorOriginalAudioLabel => 'الصوت الأصلي';
-
-  @override
-  String videoEditorClipVolumeLabel(int index) {
-    return 'مقطع $index';
-  }
 
   @override
   String get videoEditorDeleteLabel => 'حذف';

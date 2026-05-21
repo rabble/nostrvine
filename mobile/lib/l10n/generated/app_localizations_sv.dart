@@ -4042,17 +4042,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get notificationsUnreadPrefix => 'Oläst avisering';
 
   @override
-  String notificationsBadgeUnread(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count unread notifications',
-      one: '1 unread notification',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String notificationsViewProfileSemanticLabel(String displayName) {
     return 'Visa ${displayName}s profil';
   }
@@ -5604,6 +5593,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get proofmodeCheckAiGenerated => 'Kontrollera om AI-genererat';
 
   @override
+  String get libraryDeleteConfirm => 'Radera';
+
+  @override
   String get libraryWebUnavailableHeadline => 'Biblioteket finns i mobilappen';
 
   @override
@@ -5644,6 +5636,24 @@ class AppLocalizationsSv extends AppLocalizations {
   String get librarySortVerticalFirst => 'Vertikala först';
 
   @override
+  String get libraryDeleteClipsTitle => 'Ta bort klipp';
+
+  @override
+  String libraryDeleteClipsMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# valda klipp',
+      one: '# valt klipp',
+    );
+    return 'Vill du ta bort $_temp0?';
+  }
+
+  @override
+  String get libraryDeleteClipsWarning =>
+      'Det går inte att ångra. Videofilerna tas bort permanent från enheten.';
+
+  @override
   String get libraryPreparingVideo => 'Förbereder video...';
 
   @override
@@ -5682,16 +5692,16 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get libraryClipsDeletedUndoLabel => 'Undo';
+  String get libraryClipsDeletedUndoLabel => 'Ångra';
 
   @override
   String libraryTrashAutoDeletes(int daysLeft) {
     String _temp0 = intl.Intl.pluralLogic(
       daysLeft,
       locale: localeName,
-      other: 'Auto-deletes in $daysLeft days',
-      one: 'Auto-deletes tomorrow',
-      zero: 'Auto-deletes today',
+      other: 'Raderas automatiskt om $daysLeft dagar',
+      one: 'Raderas automatiskt i morgon',
+      zero: 'Raderas automatiskt i dag',
     );
     return '$_temp0';
   }
@@ -5742,6 +5752,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String libraryDeleteDraftMessage(String title) {
     return 'Vill du ta bort \"$title\"?';
   }
+
+  @override
+  String get libraryDeleteClipTitle => 'Ta bort klipp';
+
+  @override
+  String get libraryDeleteClipMessage => 'Vill du ta bort det här klippet?';
 
   @override
   String get libraryClipSelectionTitle => 'Klipp';
@@ -6604,6 +6620,27 @@ class AppLocalizationsSv extends AppLocalizations {
   String get libraryTrashEmptyAllLabel => 'Töm papperskorgen';
 
   @override
+  String get libraryTrashDeleteConfirmTitle => 'Radera klippet nu?';
+
+  @override
+  String get libraryTrashDeleteConfirmMessage =>
+      'Detta tar bort klippet från papperskorgen direkt.';
+
+  @override
+  String get libraryTrashEmptyConfirmTitle => 'Töm papperskorgen?';
+
+  @override
+  String libraryTrashEmptyConfirmMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count klipp',
+      one: '1 klipp',
+    );
+    return 'Detta raderar $_temp0 permanent från papperskorgen direkt.';
+  }
+
+  @override
   String get libraryTrashEntryLabel => 'Nyligen borttagna';
 
   @override
@@ -6662,6 +6699,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoEditorAudioLabel => 'Ljud';
+
+  @override
+  String get videoEditorVolumeLabel => 'Volume';
 
   @override
   String get videoEditorAddTitle => 'Lägg till';
@@ -6787,6 +6827,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => 'Inspelat ljud';
 
   @override
+  String get videoEditorCustomAudioLabel => 'Custom audio';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'Spela';
 
   @override
@@ -6797,25 +6840,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoEditorUnmuteAudioSemanticLabel => 'Sätt på ljud';
-
-  @override
-  String get videoEditorVolumeSemanticLabel => 'Justera volym';
-
-  @override
-  String videoEditorTimelineVolumePreview(int percent) {
-    return 'Volym $percent%';
-  }
-
-  @override
-  String get videoEditorTimelineSlideToAdjust => 'Dra för att justera';
-
-  @override
-  String get videoEditorOriginalAudioLabel => 'Originalljud';
-
-  @override
-  String videoEditorClipVolumeLabel(int index) {
-    return 'Klipp $index';
-  }
 
   @override
   String get videoEditorDeleteLabel => 'Ta bort';

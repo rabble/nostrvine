@@ -4059,17 +4059,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get notificationsUnreadPrefix => 'Ongelezen melding';
 
   @override
-  String notificationsBadgeUnread(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count unread notifications',
-      one: '1 unread notification',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String notificationsViewProfileSemanticLabel(String displayName) {
     return 'Profiel van $displayName bekijken';
   }
@@ -5627,6 +5616,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get proofmodeCheckAiGenerated => 'Controleren of AI-gegenereerd';
 
   @override
+  String get libraryDeleteConfirm => 'Verwijderen';
+
+  @override
   String get libraryWebUnavailableHeadline =>
       'Bibliotheek is beschikbaar in de mobiele app';
 
@@ -5669,6 +5661,24 @@ class AppLocalizationsNl extends AppLocalizations {
   String get librarySortVerticalFirst => 'Verticaal eerst';
 
   @override
+  String get libraryDeleteClipsTitle => 'Clips verwijderen';
+
+  @override
+  String libraryDeleteClipsMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# geselecteerde clips',
+      one: '# geselecteerde clip',
+    );
+    return 'Weet je zeker dat je $_temp0 wilt verwijderen?';
+  }
+
+  @override
+  String get libraryDeleteClipsWarning =>
+      'Dit kan niet ongedaan worden gemaakt. De videobestanden worden permanent van je apparaat verwijderd.';
+
+  @override
   String get libraryPreparingVideo => 'Video voorbereiden...';
 
   @override
@@ -5707,16 +5717,16 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get libraryClipsDeletedUndoLabel => 'Undo';
+  String get libraryClipsDeletedUndoLabel => 'Ongedaan maken';
 
   @override
   String libraryTrashAutoDeletes(int daysLeft) {
     String _temp0 = intl.Intl.pluralLogic(
       daysLeft,
       locale: localeName,
-      other: 'Auto-deletes in $daysLeft days',
-      one: 'Auto-deletes tomorrow',
-      zero: 'Auto-deletes today',
+      other: 'Wordt over $daysLeft dagen automatisch verwijderd',
+      one: 'Wordt morgen automatisch verwijderd',
+      zero: 'Wordt vandaag automatisch verwijderd',
     );
     return '$_temp0';
   }
@@ -5768,6 +5778,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String libraryDeleteDraftMessage(String title) {
     return 'Weet je zeker dat je \"$title\" wilt verwijderen?';
   }
+
+  @override
+  String get libraryDeleteClipTitle => 'Clip verwijderen';
+
+  @override
+  String get libraryDeleteClipMessage =>
+      'Weet je zeker dat je deze clip wilt verwijderen?';
 
   @override
   String get libraryClipSelectionTitle => 'Clips';
@@ -6633,6 +6650,27 @@ class AppLocalizationsNl extends AppLocalizations {
   String get libraryTrashEmptyAllLabel => 'Prullenbak legen';
 
   @override
+  String get libraryTrashDeleteConfirmTitle => 'Clip nu verwijderen?';
+
+  @override
+  String get libraryTrashDeleteConfirmMessage =>
+      'Hiermee wordt de clip meteen uit de prullenbak verwijderd.';
+
+  @override
+  String get libraryTrashEmptyConfirmTitle => 'Prullenbak legen?';
+
+  @override
+  String libraryTrashEmptyConfirmMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clips',
+      one: '1 clip',
+    );
+    return 'Hiermee worden $_temp0 meteen definitief uit de prullenbak verwijderd.';
+  }
+
+  @override
   String get libraryTrashEntryLabel => 'Recent verwijderd';
 
   @override
@@ -6690,6 +6728,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get videoEditorAudioLabel => 'Audio';
+
+  @override
+  String get videoEditorVolumeLabel => 'Volume';
 
   @override
   String get videoEditorAddTitle => 'Toevoegen';
@@ -6815,6 +6856,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => 'Opgenomen audio';
 
   @override
+  String get videoEditorCustomAudioLabel => 'Custom audio';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'Afspelen';
 
   @override
@@ -6825,25 +6869,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get videoEditorUnmuteAudioSemanticLabel => 'Audio inschakelen';
-
-  @override
-  String get videoEditorVolumeSemanticLabel => 'Volume aanpassen';
-
-  @override
-  String videoEditorTimelineVolumePreview(int percent) {
-    return 'Volume $percent%';
-  }
-
-  @override
-  String get videoEditorTimelineSlideToAdjust => 'Schuif om aan te passen';
-
-  @override
-  String get videoEditorOriginalAudioLabel => 'Origineel geluid';
-
-  @override
-  String videoEditorClipVolumeLabel(int index) {
-    return 'Clip $index';
-  }
 
   @override
   String get videoEditorDeleteLabel => 'Verwijderen';

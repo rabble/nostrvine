@@ -5604,6 +5604,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get proofmodeCheckAiGenerated => 'Check if AI-generated';
 
   @override
+  String get libraryDeleteConfirm => 'Delete';
+
+  @override
   String get libraryWebUnavailableHeadline =>
       'Library is available in the mobile app';
 
@@ -5643,6 +5646,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get librarySortVerticalFirst => 'Vertical First';
+
+  @override
+  String get libraryDeleteClipsTitle => 'Delete Clips';
+
+  @override
+  String libraryDeleteClipsMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# selected clips',
+      one: '# selected clip',
+    );
+    return 'Are you sure you want to delete $_temp0?';
+  }
+
+  @override
+  String get libraryDeleteClipsWarning =>
+      'This action cannot be undone. The video files will be permanently removed from your device.';
 
   @override
   String get libraryPreparingVideo => 'Preparing video...';
@@ -5743,6 +5764,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String libraryDeleteDraftMessage(String title) {
     return 'Are you sure you want to delete \"$title\"?';
   }
+
+  @override
+  String get libraryDeleteClipTitle => 'Delete Clip';
+
+  @override
+  String get libraryDeleteClipMessage =>
+      'Are you sure you want to delete this clip?';
 
   @override
   String get libraryClipSelectionTitle => 'Clips';
@@ -6595,6 +6623,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get libraryTrashEmptyAllLabel => 'Empty trash';
+
+  @override
+  String get libraryTrashDeleteConfirmTitle => 'Delete clip now?';
+
+  @override
+  String get libraryTrashDeleteConfirmMessage =>
+      'This removes the clip from trash right away.';
+
+  @override
+  String get libraryTrashEmptyConfirmTitle => 'Empty trash?';
+
+  @override
+  String libraryTrashEmptyConfirmMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clips',
+      one: '1 clip',
+    );
+    return 'This permanently deletes $_temp0 from trash right away.';
+  }
 
   @override
   String get libraryTrashEntryLabel => 'Recently deleted';

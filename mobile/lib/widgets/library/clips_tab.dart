@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/library/empty_library_state.dart';
 import 'package:openvine/widgets/video_clip/video_clip_preview.dart';
 import 'package:openvine/widgets/video_clip/video_clip_thumbnail_card.dart';
@@ -50,9 +51,7 @@ class ClipsTab extends StatelessWidget {
         final visibleClips = clips ?? state.clips;
 
         if (state.isLoading) {
-          return const Center(
-            child: CircularProgressIndicator(color: VineTheme.vineGreen),
-          );
+          return const Center(child: BrandedLoadingIndicator(size: 60));
         }
 
         if (state.status == ClipsLibraryStatus.error) {
@@ -151,8 +150,27 @@ class ClipsTab extends StatelessWidget {
   }
 
   void _softDeleteClip(BuildContext context, DivineVideoClip clip) {
-    // No confirm dialog: the bloc soft-deletes to the trash bin and
-    // surfaces a snackbar with Undo via the library screen's listener.
+    _confirmDeleteClip(context, clip);
+  }
+
+  Future<void> _confirmDeleteClip(
+    BuildContext context,
+    DivineVideoClip clip,
+  ) async {
+    final confirmed = await VineBottomSheetPrompt.show<bool>(
+      context: context,
+      sticker: .alert,
+      title: context.l10n.libraryDeleteClipTitle,
+      subtitle: context.l10n.libraryDeleteClipMessage,
+      additionalText: context.l10n.libraryDeleteClipsWarning,
+      primaryButtonText: context.l10n.libraryDeleteConfirm,
+      secondaryButtonText: context.l10n.commonCancel,
+      onPrimaryPressed: () => Navigator.of(context).pop(true),
+      onSecondaryPressed: () => Navigator.of(context).pop(false),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
     context.read<ClipsLibraryBloc>().add(ClipsLibraryDeleteClip(clip));
     Navigator.of(context).pop();
   }

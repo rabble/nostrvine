@@ -3863,17 +3863,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get notificationsUnreadPrefix => '읽지 않은 알림';
 
   @override
-  String notificationsBadgeUnread(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count unread notifications',
-      one: '1 unread notification',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String notificationsViewProfileSemanticLabel(String displayName) {
     return '$displayName님의 프로필 보기';
   }
@@ -5394,6 +5383,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get proofmodeCheckAiGenerated => 'AI 생성 여부 확인';
 
   @override
+  String get libraryDeleteConfirm => '삭제';
+
+  @override
   String get libraryWebUnavailableHeadline => '라이브러리는 모바일 앱에서 이용할 수 있어요';
 
   @override
@@ -5434,6 +5426,23 @@ class AppLocalizationsKo extends AppLocalizations {
   String get librarySortVerticalFirst => '세로형 먼저';
 
   @override
+  String get libraryDeleteClipsTitle => '클립 삭제';
+
+  @override
+  String libraryDeleteClipsMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count개',
+      one: '1개',
+    );
+    return '선택한 클립 $_temp0를 삭제할까요?';
+  }
+
+  @override
+  String get libraryDeleteClipsWarning => '되돌릴 수 없어요. 동영상 파일이 기기에서 삭제됩니다.';
+
+  @override
   String get libraryPreparingVideo => '동영상 준비 중...';
 
   @override
@@ -5472,16 +5481,16 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get libraryClipsDeletedUndoLabel => 'Undo';
+  String get libraryClipsDeletedUndoLabel => '실행 취소';
 
   @override
   String libraryTrashAutoDeletes(int daysLeft) {
     String _temp0 = intl.Intl.pluralLogic(
       daysLeft,
       locale: localeName,
-      other: 'Auto-deletes in $daysLeft days',
-      one: 'Auto-deletes tomorrow',
-      zero: 'Auto-deletes today',
+      other: '$daysLeft일 후 자동 삭제됨',
+      one: '내일 자동 삭제됨',
+      zero: '오늘 자동 삭제됨',
     );
     return '$_temp0';
   }
@@ -5529,6 +5538,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String libraryDeleteDraftMessage(String title) {
     return '“$title”을(를) 삭제할까요?';
   }
+
+  @override
+  String get libraryDeleteClipTitle => '클립 삭제';
+
+  @override
+  String get libraryDeleteClipMessage => '이 클립을 삭제할까요?';
 
   @override
   String get libraryClipSelectionTitle => '클립';
@@ -6352,6 +6367,26 @@ class AppLocalizationsKo extends AppLocalizations {
   String get libraryTrashEmptyAllLabel => '휴지통 비우기';
 
   @override
+  String get libraryTrashDeleteConfirmTitle => '지금 클립을 삭제할까요?';
+
+  @override
+  String get libraryTrashDeleteConfirmMessage => '이 작업은 클립을 휴지통에서 바로 삭제합니다.';
+
+  @override
+  String get libraryTrashEmptyConfirmTitle => '휴지통을 비울까요?';
+
+  @override
+  String libraryTrashEmptyConfirmMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '클립 $count개',
+      one: '클립 1개',
+    );
+    return '이 작업은 휴지통에서 $_temp0를 바로 영구 삭제합니다.';
+  }
+
+  @override
   String get libraryTrashEntryLabel => '최근 삭제된 항목';
 
   @override
@@ -6408,6 +6443,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoEditorAudioLabel => '오디오';
+
+  @override
+  String get videoEditorVolumeLabel => 'Volume';
 
   @override
   String get videoEditorAddTitle => '추가';
@@ -6530,6 +6568,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => '녹음된 오디오';
 
   @override
+  String get videoEditorCustomAudioLabel => 'Custom audio';
+
+  @override
   String get videoEditorPlaySemanticLabel => '재생';
 
   @override
@@ -6540,25 +6581,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoEditorUnmuteAudioSemanticLabel => '오디오 음소거 해제';
-
-  @override
-  String get videoEditorVolumeSemanticLabel => '볼륨 조절';
-
-  @override
-  String videoEditorTimelineVolumePreview(int percent) {
-    return '볼륨 $percent%';
-  }
-
-  @override
-  String get videoEditorTimelineSlideToAdjust => '슬라이드하여 조절';
-
-  @override
-  String get videoEditorOriginalAudioLabel => '원본 오디오';
-
-  @override
-  String videoEditorClipVolumeLabel(int index) {
-    return '클립 $index';
-  }
 
   @override
   String get videoEditorDeleteLabel => '삭제';

@@ -4160,17 +4160,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get notificationsUnreadPrefix => 'Notificare necitită';
 
   @override
-  String notificationsBadgeUnread(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count unread notifications',
-      one: '1 unread notification',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String notificationsViewProfileSemanticLabel(String displayName) {
     return 'Vezi profilul $displayName';
   }
@@ -5753,6 +5742,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get proofmodeCheckAiGenerated => 'Verifică dacă este generat de AI';
 
   @override
+  String get libraryDeleteConfirm => 'Șterge';
+
+  @override
   String get libraryWebUnavailableHeadline =>
       'Biblioteca e în aplicația mobilă';
 
@@ -5794,6 +5786,24 @@ class AppLocalizationsRo extends AppLocalizations {
   String get librarySortVerticalFirst => 'Verticalele mai întâi';
 
   @override
+  String get libraryDeleteClipsTitle => 'Șterge clipurile';
+
+  @override
+  String libraryDeleteClipsMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# clipuri selectate',
+      one: '# clip selectat',
+    );
+    return 'Ștergi $_temp0?';
+  }
+
+  @override
+  String get libraryDeleteClipsWarning =>
+      'Nu se poate anula. Fișierele video vor fi eliminate definitiv de pe dispozitiv.';
+
+  @override
   String get libraryPreparingVideo => 'Se pregătește videoclipul...';
 
   @override
@@ -5832,16 +5842,16 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get libraryClipsDeletedUndoLabel => 'Undo';
+  String get libraryClipsDeletedUndoLabel => 'Anulează';
 
   @override
   String libraryTrashAutoDeletes(int daysLeft) {
     String _temp0 = intl.Intl.pluralLogic(
       daysLeft,
       locale: localeName,
-      other: 'Auto-deletes in $daysLeft days',
-      one: 'Auto-deletes tomorrow',
-      zero: 'Auto-deletes today',
+      other: 'Se șterge automat în $daysLeft zile',
+      one: 'Se șterge automat mâine',
+      zero: 'Se șterge automat azi',
     );
     return '$_temp0';
   }
@@ -5891,6 +5901,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String libraryDeleteDraftMessage(String title) {
     return 'Ștergi „$title”?';
   }
+
+  @override
+  String get libraryDeleteClipTitle => 'Șterge clipul';
+
+  @override
+  String get libraryDeleteClipMessage => 'Ștergi acest clip?';
 
   @override
   String get libraryClipSelectionTitle => 'Clipuri';
@@ -6762,6 +6778,27 @@ class AppLocalizationsRo extends AppLocalizations {
   String get libraryTrashEmptyAllLabel => 'Golește coșul';
 
   @override
+  String get libraryTrashDeleteConfirmTitle => 'Ștergi clipul acum?';
+
+  @override
+  String get libraryTrashDeleteConfirmMessage =>
+      'Asta scoate clipul din coș imediat.';
+
+  @override
+  String get libraryTrashEmptyConfirmTitle => 'Golești coșul?';
+
+  @override
+  String libraryTrashEmptyConfirmMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clipuri',
+      one: '1 clip',
+    );
+    return 'Asta șterge definitiv din coș $_temp0 imediat.';
+  }
+
+  @override
   String get libraryTrashEntryLabel => 'Șterse recent';
 
   @override
@@ -6822,6 +6859,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get videoEditorAudioLabel => 'Audio';
+
+  @override
+  String get videoEditorVolumeLabel => 'Volume';
 
   @override
   String get videoEditorAddTitle => 'Adaugă';
@@ -6951,6 +6991,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => 'Audio înregistrat';
 
   @override
+  String get videoEditorCustomAudioLabel => 'Custom audio';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'Redă';
 
   @override
@@ -6961,25 +7004,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get videoEditorUnmuteAudioSemanticLabel => 'Activează sunetul';
-
-  @override
-  String get videoEditorVolumeSemanticLabel => 'Reglare volum';
-
-  @override
-  String videoEditorTimelineVolumePreview(int percent) {
-    return 'Volum $percent%';
-  }
-
-  @override
-  String get videoEditorTimelineSlideToAdjust => 'Glisează pentru ajustare';
-
-  @override
-  String get videoEditorOriginalAudioLabel => 'Audio original';
-
-  @override
-  String videoEditorClipVolumeLabel(int index) {
-    return 'Clip $index';
-  }
 
   @override
   String get videoEditorDeleteLabel => 'Șterge';

@@ -3129,6 +3129,7 @@
   "videoEditorStickers": "Stickers",
   "trendingTitle": "Trending",
   "proofmodeCheckAiGenerated": "Check if AI-generated",
+  "libraryDeleteConfirm": "Delete",
   "libraryWebUnavailableHeadline": "Library is available in the mobile app",
   "libraryWebUnavailableDescription": "Drafts and clips are saved on your device, so open Divine on your phone to manage them.",
   "libraryTabDrafts": "Drafts",
@@ -3142,6 +3143,16 @@
   "librarySortShortestClip": "Shortest Clip",
   "librarySortSquareFirst": "Square First",
   "librarySortVerticalFirst": "Vertical First",
+  "libraryDeleteClipsTitle": "Delete Clips",
+  "libraryDeleteClipsMessage": "Are you sure you want to delete {count, plural, one{# selected clip} other{# selected clips}}?",
+  "@libraryDeleteClipsMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "libraryDeleteClipsWarning": "This action cannot be undone. The video files will be permanently removed from your device.",
   "libraryPreparingVideo": "Preparing video...",
   "libraryCreateVideo": "Create Video",
   "libraryClipsSavedToDestination": "{count, plural, =1{1 clip} other{{count} clips}} saved to {destination}",
@@ -3216,6 +3227,8 @@
       }
     }
   },
+  "libraryDeleteClipTitle": "Delete Clip",
+  "libraryDeleteClipMessage": "Are you sure you want to delete this clip?",
   "libraryClipSelectionTitle": "Clips",
   "librarySecondsRemaining": "{seconds}s remaining",
   "@librarySecondsRemaining": {
@@ -3782,6 +3795,27 @@
   "libraryTrashEmptyAllLabel": "Empty trash",
   "@libraryTrashEmptyAllLabel": {
     "description": "Button that permanently deletes every clip currently in trash."
+  },
+  "libraryTrashDeleteConfirmTitle": "Delete clip now?",
+  "@libraryTrashDeleteConfirmTitle": {
+    "description": "Confirmation-sheet title shown before permanently deleting a single clip from trash."
+  },
+  "libraryTrashDeleteConfirmMessage": "This removes the clip from trash right away.",
+  "@libraryTrashDeleteConfirmMessage": {
+    "description": "Confirmation-sheet subtitle shown before permanently deleting a single clip from trash."
+  },
+  "libraryTrashEmptyConfirmTitle": "Empty trash?",
+  "@libraryTrashEmptyConfirmTitle": {
+    "description": "Confirmation-sheet title shown before permanently deleting every clip from trash."
+  },
+  "libraryTrashEmptyConfirmMessage": "This permanently deletes {count, plural, =1{1 clip} other{{count} clips}} from trash right away.",
+  "@libraryTrashEmptyConfirmMessage": {
+    "description": "Confirmation-sheet subtitle shown before permanently deleting every clip from trash.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "libraryTrashEntryLabel": "Recently deleted",
   "@libraryTrashEntryLabel": {

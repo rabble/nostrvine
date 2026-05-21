@@ -251,9 +251,7 @@ class ClipLibraryService {
   /// days). Idempotent and safe to run repeatedly on app startup.
   ///
   /// Returns the number of clips purged.
-  Future<int> purgeExpiredTrash({
-    Duration retention = trashRetention,
-  }) async {
+  Future<int> purgeExpiredTrash({Duration retention = trashRetention}) async {
     final cutoff = DateTime.now().subtract(retention);
     final expired = await _clipsDao.getTrashedClipsOlderThan(cutoff);
     if (expired.isEmpty) return 0;
@@ -297,9 +295,11 @@ class ClipLibraryService {
       name: 'ClipLibraryService',
       category: LogCategory.video,
     );
-    final clips = await getAllClips();
+    final activeClips = await getAllClips();
+    final trashedClips = await getTrashedClips();
+    final clips = [...activeClips, ...trashedClips];
 
-    // Clear DB first, then delete files
+    // Clear active + trashed library rows first, then delete files.
     await _clipsDao.clearLibraryClips();
 
     // Delete files only if not referenced by drafts

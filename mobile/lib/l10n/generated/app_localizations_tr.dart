@@ -4025,17 +4025,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get notificationsUnreadPrefix => 'Okunmamış bildirim';
 
   @override
-  String notificationsBadgeUnread(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count unread notifications',
-      one: '1 unread notification',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String notificationsViewProfileSemanticLabel(String displayName) {
     return '$displayName profilini görüntüle';
   }
@@ -5586,6 +5575,9 @@ class AppLocalizationsTr extends AppLocalizations {
       'Yapay zeka ile oluşturulup oluşturulmadığını kontrol et';
 
   @override
+  String get libraryDeleteConfirm => 'Sil';
+
+  @override
   String get libraryWebUnavailableHeadline => 'Kitaplık mobil uygulamada';
 
   @override
@@ -5626,6 +5618,24 @@ class AppLocalizationsTr extends AppLocalizations {
   String get librarySortVerticalFirst => 'Önce dikey';
 
   @override
+  String get libraryDeleteClipsTitle => 'Klipleri sil';
+
+  @override
+  String libraryDeleteClipsMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# seçili klibi',
+      one: '# seçili klibi',
+    );
+    return '$_temp0 silmek istiyor musun?';
+  }
+
+  @override
+  String get libraryDeleteClipsWarning =>
+      'Geri alınamaz. Video dosyaları cihazından kalıcı olarak silinir.';
+
+  @override
   String get libraryPreparingVideo => 'Video hazırlanıyor...';
 
   @override
@@ -5664,16 +5674,16 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get libraryClipsDeletedUndoLabel => 'Undo';
+  String get libraryClipsDeletedUndoLabel => 'Geri al';
 
   @override
   String libraryTrashAutoDeletes(int daysLeft) {
     String _temp0 = intl.Intl.pluralLogic(
       daysLeft,
       locale: localeName,
-      other: 'Auto-deletes in $daysLeft days',
-      one: 'Auto-deletes tomorrow',
-      zero: 'Auto-deletes today',
+      other: '$daysLeft gün içinde otomatik olarak silinir',
+      one: 'Yarın otomatik olarak silinir',
+      zero: 'Bugün otomatik olarak silinir',
     );
     return '$_temp0';
   }
@@ -5723,6 +5733,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String libraryDeleteDraftMessage(String title) {
     return '\"$title\" silinsin mi?';
   }
+
+  @override
+  String get libraryDeleteClipTitle => 'Klibi sil';
+
+  @override
+  String get libraryDeleteClipMessage => 'Bu klibi silmek istiyor musun?';
 
   @override
   String get libraryClipSelectionTitle => 'Klipler';
@@ -6577,6 +6593,27 @@ class AppLocalizationsTr extends AppLocalizations {
   String get libraryTrashEmptyAllLabel => 'Çöp kutusunu boşalt';
 
   @override
+  String get libraryTrashDeleteConfirmTitle => 'Klip şimdi silinsin mi?';
+
+  @override
+  String get libraryTrashDeleteConfirmMessage =>
+      'Bu işlem klibi hemen çöp kutusundan kaldırır.';
+
+  @override
+  String get libraryTrashEmptyConfirmTitle => 'Çöp kutusu boşaltılsın mı?';
+
+  @override
+  String libraryTrashEmptyConfirmMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count klibi',
+      one: '1 klibi',
+    );
+    return 'Bu işlem $_temp0 hemen çöp kutusundan kalıcı olarak siler.';
+  }
+
+  @override
   String get libraryTrashEntryLabel => 'Son silinenler';
 
   @override
@@ -6635,6 +6672,9 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoEditorAudioLabel => 'Ses';
+
+  @override
+  String get videoEditorVolumeLabel => 'Volume';
 
   @override
   String get videoEditorAddTitle => 'Ekle';
@@ -6758,6 +6798,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => 'Kaydedilmiş ses';
 
   @override
+  String get videoEditorCustomAudioLabel => 'Custom audio';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'Oynat';
 
   @override
@@ -6768,25 +6811,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoEditorUnmuteAudioSemanticLabel => 'Sesi aç';
-
-  @override
-  String get videoEditorVolumeSemanticLabel => 'Sesi ayarla';
-
-  @override
-  String videoEditorTimelineVolumePreview(int percent) {
-    return 'Ses seviyesi $percent%';
-  }
-
-  @override
-  String get videoEditorTimelineSlideToAdjust => 'Ayarlamak için kaydır';
-
-  @override
-  String get videoEditorOriginalAudioLabel => 'Orijinal ses';
-
-  @override
-  String videoEditorClipVolumeLabel(int index) {
-    return 'Klip $index';
-  }
 
   @override
   String get videoEditorDeleteLabel => 'Sil';

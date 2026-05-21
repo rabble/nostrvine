@@ -4090,17 +4090,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get notificationsUnreadPrefix => 'Непрочетено известие';
 
   @override
-  String notificationsBadgeUnread(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count unread notifications',
-      one: '1 unread notification',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String notificationsViewProfileSemanticLabel(String displayName) {
     return 'Виж профила на $displayName';
   }
@@ -5656,6 +5645,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get proofmodeCheckAiGenerated => 'Провери дали е генерирано от AI';
 
   @override
+  String get libraryDeleteConfirm => 'Изтриване';
+
+  @override
   String get libraryWebUnavailableHeadline =>
       'Библиотеката е налична в мобилното приложение';
 
@@ -5696,6 +5688,24 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get librarySortVerticalFirst => 'Първо вертикални';
+
+  @override
+  String get libraryDeleteClipsTitle => 'Изтриване на клипове';
+
+  @override
+  String libraryDeleteClipsMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# избрани клипа',
+      one: '# избран клип',
+    );
+    return 'Сигурен ли си, че искаш да изтриеш $_temp0?';
+  }
+
+  @override
+  String get libraryDeleteClipsWarning =>
+      'Това действие не може да бъде отменено. Видео файловете ще бъдат премахнати за постоянно от твоето устройство.';
 
   @override
   String get libraryPreparingVideo => 'Видеоклипът се подготвя...';
@@ -5742,16 +5752,16 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String get libraryClipsDeletedUndoLabel => 'Undo';
+  String get libraryClipsDeletedUndoLabel => 'Отмени';
 
   @override
   String libraryTrashAutoDeletes(int daysLeft) {
     String _temp0 = intl.Intl.pluralLogic(
       daysLeft,
       locale: localeName,
-      other: 'Auto-deletes in $daysLeft days',
-      one: 'Auto-deletes tomorrow',
-      zero: 'Auto-deletes today',
+      other: 'Ще се изтрие автоматично след $daysLeft дни',
+      one: 'Ще се изтрие автоматично утре',
+      zero: 'Ще се изтрие автоматично днес',
     );
     return '$_temp0';
   }
@@ -5803,6 +5813,13 @@ class AppLocalizationsBg extends AppLocalizations {
   String libraryDeleteDraftMessage(String title) {
     return 'Сигурен ли си, че искаш да изтриеш „$title“?';
   }
+
+  @override
+  String get libraryDeleteClipTitle => 'Изтрий клип';
+
+  @override
+  String get libraryDeleteClipMessage =>
+      'Сигурен ли си, че искаш да изтриеш този клип?';
 
   @override
   String get libraryClipSelectionTitle => 'Клипове';
@@ -6667,6 +6684,27 @@ class AppLocalizationsBg extends AppLocalizations {
   String get libraryTrashEmptyAllLabel => 'Изпразни кошчето';
 
   @override
+  String get libraryTrashDeleteConfirmTitle => 'Да изтрия ли клипа сега?';
+
+  @override
+  String get libraryTrashDeleteConfirmMessage =>
+      'Това веднага премахва клипа от кошчето.';
+
+  @override
+  String get libraryTrashEmptyConfirmTitle => 'Да изпразня ли кошчето?';
+
+  @override
+  String libraryTrashEmptyConfirmMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count клипа',
+      one: '1 клип',
+    );
+    return 'Това ще изтрие окончателно $_temp0 от кошчето веднага.';
+  }
+
+  @override
   String get libraryTrashEntryLabel => 'Наскоро изтрити';
 
   @override
@@ -6727,6 +6765,9 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get videoEditorAudioLabel => 'Аудио';
+
+  @override
+  String get videoEditorVolumeLabel => 'Volume';
 
   @override
   String get videoEditorAddTitle => 'Добави';
@@ -6853,6 +6894,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => 'Записано аудио';
 
   @override
+  String get videoEditorCustomAudioLabel => 'Custom audio';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'Играйте';
 
   @override
@@ -6863,25 +6907,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get videoEditorUnmuteAudioSemanticLabel => 'Включване на звука';
-
-  @override
-  String get videoEditorVolumeSemanticLabel => 'Регулиране на силата на звука';
-
-  @override
-  String videoEditorTimelineVolumePreview(int percent) {
-    return 'Сила на звука $percent%';
-  }
-
-  @override
-  String get videoEditorTimelineSlideToAdjust => 'Плъзнете за регулиране';
-
-  @override
-  String get videoEditorOriginalAudioLabel => 'Оригинален звук';
-
-  @override
-  String videoEditorClipVolumeLabel(int index) {
-    return 'Клип $index';
-  }
 
   @override
   String get videoEditorDeleteLabel => 'Изтрий';

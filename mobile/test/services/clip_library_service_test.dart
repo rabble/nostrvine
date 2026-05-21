@@ -301,6 +301,27 @@ void main() {
         await service.clearAllClips();
         expect((await service.getAllClips()).length, 0);
       });
+
+      test('removes trashed clips too', () async {
+        final clip = DivineVideoClip(
+          id: 'trashed_clip',
+          video: EditorVideo.file('/tmp/trashed_clip.mp4'),
+          duration: const Duration(seconds: 1),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+
+        await service.saveClip(clip);
+        await service.softDelete('trashed_clip');
+
+        expect((await service.getTrashedClips()).length, 1);
+
+        await service.clearAllClips();
+
+        expect((await service.getAllClips()).length, 0);
+        expect((await service.getTrashedClips()).length, 0);
+      });
     });
   });
 

@@ -5674,6 +5674,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get proofmodeCheckAiGenerated => 'Tingnan kung AI-generated';
 
   @override
+  String get libraryDeleteConfirm => 'Burahin';
+
+  @override
   String get libraryWebUnavailableHeadline =>
       'Available ang Library sa mobile app';
 
@@ -5716,6 +5719,24 @@ class AppLocalizationsFil extends AppLocalizations {
   String get librarySortVerticalFirst => 'Unahin ang patayo';
 
   @override
+  String get libraryDeleteClipsTitle => 'Burahin ang mga Clip';
+
+  @override
+  String libraryDeleteClipsMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# napiling clip',
+      one: '# napiling clip',
+    );
+    return 'Sigurado ka bang gusto mong burahin ang $_temp0?';
+  }
+
+  @override
+  String get libraryDeleteClipsWarning =>
+      'Hindi na ito mababawi. Permanenteng maaalis sa device mo ang mga video file.';
+
+  @override
   String get libraryPreparingVideo => 'Hinahanda ang video...';
 
   @override
@@ -5754,16 +5775,16 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String get libraryClipsDeletedUndoLabel => 'Undo';
+  String get libraryClipsDeletedUndoLabel => 'Bawiin';
 
   @override
   String libraryTrashAutoDeletes(int daysLeft) {
     String _temp0 = intl.Intl.pluralLogic(
       daysLeft,
       locale: localeName,
-      other: 'Auto-deletes in $daysLeft days',
-      one: 'Auto-deletes tomorrow',
-      zero: 'Auto-deletes today',
+      other: 'Awtomatikong made-delete sa loob ng $daysLeft araw',
+      one: 'Awtomatikong made-delete bukas',
+      zero: 'Awtomatikong made-delete ngayon',
     );
     return '$_temp0';
   }
@@ -5814,6 +5835,13 @@ class AppLocalizationsFil extends AppLocalizations {
   String libraryDeleteDraftMessage(String title) {
     return 'Sigurado ka bang gusto mong burahin ang \"$title\"?';
   }
+
+  @override
+  String get libraryDeleteClipTitle => 'Burahin ang Clip';
+
+  @override
+  String get libraryDeleteClipMessage =>
+      'Sigurado ka bang gusto mong burahin ang clip na ito?';
 
   @override
   String get libraryClipSelectionTitle => 'Mga Clip';
@@ -6683,6 +6711,27 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get libraryTrashEmptyAllLabel => 'I-empty ang basurahan';
+
+  @override
+  String get libraryTrashDeleteConfirmTitle => 'I-delete ang clip ngayon?';
+
+  @override
+  String get libraryTrashDeleteConfirmMessage =>
+      'Aalisin nito agad ang clip mula sa trash.';
+
+  @override
+  String get libraryTrashEmptyConfirmTitle => 'I-empty ang trash?';
+
+  @override
+  String libraryTrashEmptyConfirmMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count clip',
+      one: '1 clip',
+    );
+    return 'Permanente nitong ide-delete agad mula sa trash ang $_temp0.';
+  }
 
   @override
   String get libraryTrashEntryLabel => 'Kamakailan lang na nabura';

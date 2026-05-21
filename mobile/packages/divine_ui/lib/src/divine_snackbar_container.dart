@@ -20,11 +20,16 @@ class DivineSnackbarContainer extends StatelessWidget {
     bool error = false,
     String? actionLabel,
     VoidCallback? onActionPressed,
+    Duration? duration,
+    EdgeInsetsGeometry? margin,
+    EdgeInsetsGeometry? padding,
   }) => SnackBar(
+    duration: duration ?? const Duration(seconds: 4),
     backgroundColor: VineTheme.transparent,
     elevation: 0,
-    padding: EdgeInsets.zero,
+    padding: padding ?? EdgeInsets.zero,
     behavior: SnackBarBehavior.floating,
+    margin: margin,
     content: DivineSnackbarContainer(
       label: message,
       error: error,
@@ -64,10 +69,7 @@ class DivineSnackbarContainer extends StatelessWidget {
         borderRadius: const BorderRadius.all(Radius.circular(16)),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [

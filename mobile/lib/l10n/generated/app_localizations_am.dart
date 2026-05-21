@@ -3956,17 +3956,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get notificationsUnreadPrefix => 'ያልተነበበ ማስታወቂያ';
 
   @override
-  String notificationsBadgeUnread(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count unread notifications',
-      one: '1 unread notification',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String notificationsViewProfileSemanticLabel(String displayName) {
     return 'የ$displayName መገለጫ ይመልከቱ';
   }
@@ -5491,6 +5480,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get proofmodeCheckAiGenerated => 'AI የመነጨ መሆኑን ያረጋግጡ';
 
   @override
+  String get libraryDeleteConfirm => 'ሰርዝ';
+
+  @override
   String get libraryWebUnavailableHeadline => 'ቤተ-መጽሐፍት በሞባይል መተግበሪያ ውስጥ ይገኛል።';
 
   @override
@@ -5531,6 +5523,24 @@ class AppLocalizationsAm extends AppLocalizations {
   String get librarySortVerticalFirst => 'ቁመት በመጀመሪያ';
 
   @override
+  String get libraryDeleteClipsTitle => 'ክሊፖችን ሰርዝ';
+
+  @override
+  String libraryDeleteClipsMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count የተመረጡ ክሊፖች',
+      one: '1 የተመረጠ ክሊፕ',
+    );
+    return '$_temp0 መሰረዝ እርግጠኛ ነህ?';
+  }
+
+  @override
+  String get libraryDeleteClipsWarning =>
+      'ይህ እርምጃ ሊቀለበስ አይችልም። የቪዲዮ ፋይሎቹ እስከመጨረሻው ከመሣሪያዎ ይወገዳሉ።';
+
+  @override
   String get libraryPreparingVideo => 'ቪዲዮ በማዘጋጀት ላይ...';
 
   @override
@@ -5569,16 +5579,16 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get libraryClipsDeletedUndoLabel => 'Undo';
+  String get libraryClipsDeletedUndoLabel => 'ቀልብስ';
 
   @override
   String libraryTrashAutoDeletes(int daysLeft) {
     String _temp0 = intl.Intl.pluralLogic(
       daysLeft,
       locale: localeName,
-      other: 'Auto-deletes in $daysLeft days',
-      one: 'Auto-deletes tomorrow',
-      zero: 'Auto-deletes today',
+      other: 'በ$daysLeft ቀናት ውስጥ በራስ-ሰር ይሰረዛል',
+      one: 'ነገ በራስ-ሰር ይሰረዛል',
+      zero: 'ዛሬ በራስ-ሰር ይሰረዛል',
     );
     return '$_temp0';
   }
@@ -5627,6 +5637,12 @@ class AppLocalizationsAm extends AppLocalizations {
   String libraryDeleteDraftMessage(String title) {
     return 'እርግጠኛ ነህ \"$title\" መሰረዝ ትፈልጋለህ?';
   }
+
+  @override
+  String get libraryDeleteClipTitle => 'ክሊፕን ሰርዝ';
+
+  @override
+  String get libraryDeleteClipMessage => 'እርግጠኛ ነዎት ይህን ክሊፕ መሰረዝ ይፈልጋሉ?';
 
   @override
   String get libraryClipSelectionTitle => 'ክሊፖች';
@@ -6464,6 +6480,27 @@ class AppLocalizationsAm extends AppLocalizations {
   String get libraryTrashEmptyAllLabel => 'መጣያን ባዶ አድርግ';
 
   @override
+  String get libraryTrashDeleteConfirmTitle => 'አሁኑኑ ክሊፑን ሰርዝ?';
+
+  @override
+  String get libraryTrashDeleteConfirmMessage =>
+      'ይህ ክሊፑን ከቆሻሻ መጣያው ወዲያውኑ ያስወግደዋል።';
+
+  @override
+  String get libraryTrashEmptyConfirmTitle => 'ቆሻሻ መጣያውን ባዶ አድርግ?';
+
+  @override
+  String libraryTrashEmptyConfirmMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ክሊፖች',
+      one: '1 ክሊፕ',
+    );
+    return '$_temp0 ከቆሻሻ መጣያው ወዲያውኑ በቋሚነት ይሰረዛሉ።';
+  }
+
+  @override
   String get libraryTrashEntryLabel => 'በቅርቡ የተሰረዘ';
 
   @override
@@ -6521,6 +6558,9 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoEditorAudioLabel => 'ኦዲዮ';
+
+  @override
+  String get videoEditorVolumeLabel => 'Volume';
 
   @override
   String get videoEditorAddTitle => 'አክል';
@@ -6644,6 +6684,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorRecordedAudioLabel => 'የተቀዳ ኦዲዮ';
 
   @override
+  String get videoEditorCustomAudioLabel => 'Custom audio';
+
+  @override
   String get videoEditorPlaySemanticLabel => 'ይጫወቱ';
 
   @override
@@ -6654,25 +6697,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoEditorUnmuteAudioSemanticLabel => 'የድምጽ ድምጸ-ከል አንሳ';
-
-  @override
-  String get videoEditorVolumeSemanticLabel => 'ድምጽ አስተካክል';
-
-  @override
-  String videoEditorTimelineVolumePreview(int percent) {
-    return 'ድምጽ $percent%';
-  }
-
-  @override
-  String get videoEditorTimelineSlideToAdjust => 'ለማስተካከል ያንሸራትቱ';
-
-  @override
-  String get videoEditorOriginalAudioLabel => 'ዋናው ኦዲዮ';
-
-  @override
-  String videoEditorClipVolumeLabel(int index) {
-    return 'ቅንጥብ $index';
-  }
 
   @override
   String get videoEditorDeleteLabel => 'ሰርዝ';
