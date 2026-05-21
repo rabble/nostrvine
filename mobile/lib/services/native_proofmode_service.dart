@@ -27,9 +27,11 @@ class NativeProofModeService {
   /// Returns [NativeProofData] if proof generation succeeds, null otherwise.
   /// Handles platform availability checks and graceful fallback if ProofMode
   /// is not supported.
+  ///
+  /// The downstream C2PA manifest always carries the CAWG `training-mining`
+  /// opt-out assertion. See `mobile/docs/AI_TRAINING_POLICY.md`.
   static Future<NativeProofData?> proofFile(
     File videoFile, {
-    required bool aiTrainingOptOut,
     NostrCreatorBindingAssertion? creatorBindingAssertion,
     Map<String, dynamic>? cawgIdentityAssertion,
     Map<String, dynamic>? verifiedIdentityBundle,
@@ -133,7 +135,6 @@ class NativeProofModeService {
       );
       final c2paResult = await c2paSigningService.signVideo(
         videoPath: videoFile.path,
-        aiTrainingOptOut: aiTrainingOptOut,
         creatorBindingAssertion: creatorBindingAssertion,
         cawgIdentityAssertion: cawgIdentityAssertion,
         enableAdvancedCawgEmbedding: enableAdvancedCawgEmbedding,

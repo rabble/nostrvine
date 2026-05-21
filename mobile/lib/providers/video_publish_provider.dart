@@ -351,9 +351,6 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
           final result = await VideoEditorRenderService.renderVideoToClip(
             clips: draft.clips,
             parameters: parameters,
-            aiTrainingOptOut: ref
-                .read(aiTrainingPreferenceServiceProvider)
-                .isOptOutEnabled,
             editorStateHistory: draft.editorStateHistory,
           );
 
@@ -374,13 +371,9 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         }
       }
 
-      final aiTrainingOptOut = ref
-          .read(aiTrainingPreferenceServiceProvider)
-          .isOptOutEnabled;
       if (shouldAttachCreatorIdentityProof(proofManifestJson)) {
         proofManifestJson = await _refreshProofWithCreatorIdentity(
           clip: finalRenderedClip,
-          aiTrainingOptOut: aiTrainingOptOut,
           existingProofManifestJson: proofManifestJson,
         );
       }
@@ -556,16 +549,12 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         ? 'Collaborator invites sent.'
         : collaboratorInviteWarningMessage(failures);
     messenger.showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-      ),
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
     );
   }
 
   Future<String?> _refreshProofWithCreatorIdentity({
     required DivineVideoClip clip,
-    required bool aiTrainingOptOut,
     String? existingProofManifestJson,
   }) async {
     final filePath = await clip.video.safeFilePath();
@@ -579,7 +568,6 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
     try {
       final creatorBindingAssertion = await _createCreatorBindingAssertion(
         filePath: filePath,
-        aiTrainingOptOut: aiTrainingOptOut,
       );
       if (creatorBindingAssertion == null) {
         return existingProofManifestJson;
@@ -598,7 +586,6 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
 
       final proofData = await NativeProofModeService.proofFile(
         File(filePath),
-        aiTrainingOptOut: aiTrainingOptOut,
         creatorBindingAssertion: creatorBindingAssertion,
         cawgIdentityAssertion: verifierBundle?.identityAssertionPayload,
         verifiedIdentityBundle: verifierBundle?.toJson(),
@@ -635,7 +622,6 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
 
   Future<NostrCreatorBindingAssertion?> _createCreatorBindingAssertion({
     required String filePath,
-    required bool aiTrainingOptOut,
   }) async {
     try {
       final hardBindingValue =
@@ -650,9 +636,9 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
               alg: 'sha256',
               value: hardBindingValue,
             ),
-            referencedAssertions: <String>[
+            referencedAssertions: const <String>[
               'c2pa.actions.v2',
-              if (aiTrainingOptOut) 'cawg.training-mining',
+              'cawg.training-mining',
             ],
           );
 

@@ -44,14 +44,15 @@ class C2paSigningService {
   /// Signs a video file with C2PA content credentials.
   ///
   /// [videoPath] - Path to the video file to sign
-  /// [aiTrainingOptOut] - When true, includes a CAWG training-mining assertion
-  ///   marking all AI training and data mining uses as "notAllowed"
+  ///
+  /// The CAWG `training-mining` assertion (opt-out of AI training and data
+  /// mining) is embedded unconditionally as a matter of Divine policy.
+  /// See `mobile/docs/AI_TRAINING_POLICY.md`.
   ///
   /// Returns the path to the signed video file, or the original path if
   /// signing fails (signing is best-effort, not blocking).
   Future<C2paSigningResult> signVideo({
     required String videoPath,
-    bool aiTrainingOptOut = true,
     NostrCreatorBindingAssertion? creatorBindingAssertion,
     Map<String, dynamic>? cawgIdentityAssertion,
     bool enableAdvancedCawgEmbedding = false,
@@ -87,7 +88,6 @@ class C2paSigningService {
         claimGenerator: claimGenerator,
         title: filename,
         sourceType: DigitalSourceType.digitalCapture,
-        aiTrainingOptOut: aiTrainingOptOut,
         creatorBindingAssertion: creatorBindingAssertion,
         cawgIdentityAssertion: cawgIdentityAssertion,
         enableAdvancedCawgEmbedding: enableAdvancedCawgEmbedding,
@@ -186,21 +186,19 @@ class C2paSigningService {
     return _c2pa.isHardwareSigningAvailable();
   }
 
-  /// Exposes [_buildManifestJson] for testing.
+  /// Exposes the manifest JSON for testing.
   @visibleForTesting
   String buildManifestJsonPublic(
     String claimGenerator,
     String title,
-    String digitalSourceUrl, {
-    bool aiTrainingOptOut = true,
-  }) => _manifestService
+    String digitalSourceUrl,
+  ) => _manifestService
       .buildCreatedVideoManifest(
         claimGenerator: claimGenerator,
         title: title,
         sourceType:
             DigitalSourceType.fromUrl(digitalSourceUrl) ??
             DigitalSourceType.digitalCapture,
-        aiTrainingOptOut: aiTrainingOptOut,
       )
       .manifestJson;
 

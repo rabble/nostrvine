@@ -20,6 +20,7 @@ This directory is the index for current repository documentation. Use it to find
 - [mobile/docs/APPLE_REVIEW_RESPONSE.md](../mobile/docs/APPLE_REVIEW_RESPONSE.md)
 - [mobile/docs/ENCRYPTION_EXPORT_COMPLIANCE.md](../mobile/docs/ENCRYPTION_EXPORT_COMPLIANCE.md)
 - [mobile/docs/ANDROID_DEPLOYMENT.md](../mobile/docs/ANDROID_DEPLOYMENT.md)
+- [mobile/docs/AI_TRAINING_POLICY.md](../mobile/docs/AI_TRAINING_POLICY.md)
 
 ## Current Engineering Docs
 

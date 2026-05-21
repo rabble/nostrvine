@@ -181,7 +181,6 @@ class VideoEditorRenderService {
   static Future<(DivineVideoClip, String? proofManifestJson)?> Function({
     required List<DivineVideoClip> clips,
     required Map<String, dynamic> editorStateHistory,
-    bool aiTrainingOptOut,
     CompleteParameters? parameters,
     String? taskId,
   })?
@@ -205,7 +204,6 @@ class VideoEditorRenderService {
   renderVideoToClip({
     required List<DivineVideoClip> clips,
     required Map<String, dynamic> editorStateHistory,
-    bool aiTrainingOptOut = true,
     CompleteParameters? parameters,
     String? taskId,
   }) async {
@@ -213,7 +211,6 @@ class VideoEditorRenderService {
       return renderVideoToClipOverride!(
         clips: clips,
         editorStateHistory: editorStateHistory,
-        aiTrainingOptOut: aiTrainingOptOut,
         parameters: parameters,
         taskId: taskId,
       );
@@ -252,14 +249,10 @@ class VideoEditorRenderService {
     // Ensure all clips have proof attestations before generating the
     // final combined proof. Clips recorded before the feature was added
     // or where proof generation failed will be attested now.
-    final attestedClips = await _ensureClipProofs(
-      clips,
-      aiTrainingOptOut: aiTrainingOptOut,
-    );
+    final attestedClips = await _ensureClipProofs(clips);
 
     final proofData = await NativeProofModeService.proofFile(
       File(outputPath),
-      aiTrainingOptOut: aiTrainingOptOut,
       clips: attestedClips,
       editorStateHistory: editorStateHistory,
     );
@@ -300,9 +293,8 @@ class VideoEditorRenderService {
   /// proof, [NativeProofModeService.proofFile] is called on the clip's video
   /// file and the clip is updated with the result.
   static Future<List<DivineVideoClip>> _ensureClipProofs(
-    List<DivineVideoClip> clips, {
-    required bool aiTrainingOptOut,
-  }) async {
+    List<DivineVideoClip> clips,
+  ) async {
     final result = <DivineVideoClip>[];
     for (final clip in clips) {
       if (clip.proofManifestJson != null) {
@@ -324,7 +316,6 @@ class VideoEditorRenderService {
 
       final proofData = await NativeProofModeService.proofFile(
         File(videoFile.path),
-        aiTrainingOptOut: aiTrainingOptOut,
       );
 
       if (proofData != null) {

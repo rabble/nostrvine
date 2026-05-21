@@ -901,9 +901,6 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
     final result = await VideoEditorRenderService.renderVideoToClip(
       clips: _clips,
-      aiTrainingOptOut: ref
-          .read(aiTrainingPreferenceServiceProvider)
-          .isOptOutEnabled,
       parameters: renderParameters,
       editorStateHistory: state.editorStateHistory,
       taskId: draftId,

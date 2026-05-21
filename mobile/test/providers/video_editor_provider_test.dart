@@ -348,7 +348,6 @@ void main() {
             ({
               required clips,
               required editorStateHistory,
-              aiTrainingOptOut = true,
               parameters,
               taskId,
             }) async => (renderedClip, null);
@@ -377,7 +376,6 @@ void main() {
             ({
               required clips,
               required editorStateHistory,
-              aiTrainingOptOut = true,
               parameters,
               taskId,
             }) async => null;
@@ -409,7 +407,6 @@ void main() {
             ({
               required clips,
               required editorStateHistory,
-              aiTrainingOptOut = true,
               parameters,
               taskId,
             }) {
@@ -483,7 +480,6 @@ void main() {
             ({
               required clips,
               required editorStateHistory,
-              aiTrainingOptOut = true,
               parameters,
               taskId,
             }) {
@@ -548,7 +544,6 @@ void main() {
             ({
               required clips,
               required editorStateHistory,
-              aiTrainingOptOut = true,
               parameters,
               taskId,
             }) async {
@@ -583,7 +578,6 @@ void main() {
             ({
               required clips,
               required editorStateHistory,
-              aiTrainingOptOut = true,
               parameters,
               taskId,
             }) async {

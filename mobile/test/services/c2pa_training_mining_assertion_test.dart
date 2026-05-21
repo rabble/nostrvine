@@ -1,5 +1,5 @@
 // ABOUTME: Tests for CAWG training-mining assertion in C2PA manifests
-// ABOUTME: Verifies the cawg.training-mining assertion is correctly embedded
+// ABOUTME: Verifies the cawg.training-mining assertion is always embedded
 
 import 'dart:convert';
 
@@ -14,7 +14,7 @@ void main() {
       service = C2paSigningService();
     });
 
-    test('includes cawg.training-mining assertion when opt-out is enabled', () {
+    test('always includes cawg.training-mining assertion', () {
       final manifest = service.buildManifestJsonPublic(
         'DiVine/1.0',
         'test.mp4',
@@ -49,42 +49,24 @@ void main() {
       }
     });
 
-    test(
-      'excludes cawg.training-mining assertion when opt-out is disabled',
-      () {
-        final manifest = service.buildManifestJsonPublic(
-          'DiVine/1.0',
-          'test.mp4',
-          'https://example.com/digitalCapture',
-          aiTrainingOptOut: false,
-        );
+    test('emits c2pa.actions.v2 before cawg.training-mining', () {
+      final manifest = service.buildManifestJsonPublic(
+        'DiVine/1.0',
+        'test.mp4',
+        'https://example.com/digitalCapture',
+      );
 
-        final json = jsonDecode(manifest) as Map<String, dynamic>;
-        final assertions = json['assertions'] as List<dynamic>;
+      final json = jsonDecode(manifest) as Map<String, dynamic>;
+      final assertions = json['assertions'] as List<dynamic>;
 
-        expect(assertions, hasLength(1));
-        expect(
-          (assertions[0] as Map<String, dynamic>)['label'],
-          equals('c2pa.actions.v2'),
-        );
-      },
-    );
-
-    test('always includes c2pa.actions.v2 assertion regardless of opt-out', () {
-      for (final optOut in [true, false]) {
-        final manifest = service.buildManifestJsonPublic(
-          'DiVine/1.0',
-          'test.mp4',
-          'https://example.com/digitalCapture',
-          aiTrainingOptOut: optOut,
-        );
-
-        final json = jsonDecode(manifest) as Map<String, dynamic>;
-        final assertions = json['assertions'] as List<dynamic>;
-        final actionsAssertion = assertions[0] as Map<String, dynamic>;
-
-        expect(actionsAssertion['label'], equals('c2pa.actions.v2'));
-      }
+      expect(
+        (assertions[0] as Map<String, dynamic>)['label'],
+        equals('c2pa.actions.v2'),
+      );
+      expect(
+        (assertions[1] as Map<String, dynamic>)['label'],
+        equals('cawg.training-mining'),
+      );
     });
   });
 }

@@ -23,11 +23,15 @@ class C2paIdentityManifestService {
 
   final DateTime Function() _now;
 
+  /// Builds the C2PA manifest for a created video.
+  ///
+  /// The `cawg.training-mining` assertion is **always** embedded as a
+  /// matter of Divine policy — the platform does not offer an opt-in to
+  /// AI training. See `mobile/docs/AI_TRAINING_POLICY.md`.
   C2paIdentityManifestBuildResult buildCreatedVideoManifest({
     required String claimGenerator,
     required String title,
     required DigitalSourceType sourceType,
-    bool aiTrainingOptOut = true,
     NostrCreatorBindingAssertion? creatorBindingAssertion,
     Map<String, dynamic>? cawgIdentityAssertion,
     bool enableAdvancedCawgEmbedding = false,
@@ -62,7 +66,7 @@ class C2paIdentityManifestService {
             ],
           },
         ),
-        if (aiTrainingOptOut) _buildTrainingMiningAssertion(),
+        _buildTrainingMiningAssertion(),
         if (creatorBindingAssertion != null)
           CustomAssertion(
             label: creatorBindingAssertion.assertionLabel,

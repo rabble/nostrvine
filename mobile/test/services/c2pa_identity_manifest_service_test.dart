@@ -40,7 +40,6 @@ void main() {
         claimGenerator: 'DiVine/1.0',
         title: 'test.mp4',
         sourceType: DigitalSourceType.digitalCapture,
-        aiTrainingOptOut: false,
         creatorBindingAssertion: const NostrCreatorBindingAssertion(
           assertionLabel: 'video.divine.nostr.creator_binding',
           payloadJson:
@@ -75,7 +74,6 @@ void main() {
           claimGenerator: 'DiVine/1.0',
           title: 'test.mp4',
           sourceType: DigitalSourceType.digitalCapture,
-          aiTrainingOptOut: false,
           creatorBindingAssertion: const NostrCreatorBindingAssertion(
             assertionLabel: 'video.divine.nostr.creator_binding',
             payloadJson:
@@ -98,7 +96,6 @@ void main() {
           claimGenerator: 'DiVine/1.0',
           title: 'test.mp4',
           sourceType: DigitalSourceType.digitalCapture,
-          aiTrainingOptOut: false,
           cawgIdentityAssertion: const <String, dynamic>{
             'issuer': 'verifyer.divine.video',
           },

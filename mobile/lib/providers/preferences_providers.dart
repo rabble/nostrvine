@@ -3,7 +3,6 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/services/ai_training_preference_service.dart';
 import 'package:openvine/services/audio_device_preference_service.dart';
 import 'package:openvine/services/audio_sharing_preference_service.dart';
 import 'package:openvine/services/feed_aspect_ratio_preference_service.dart';
@@ -24,16 +23,6 @@ final feedAspectRatioPreferenceServiceProvider =
 AudioSharingPreferenceService audioSharingPreferenceService(Ref ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
   return AudioSharingPreferenceService(prefs);
-}
-
-/// AI training opt-out preference service. Controls whether the
-/// CAWG training-mining assertion is embedded in C2PA manifests.
-/// keepAlive ensures setting persists across widget rebuilds.
-@Riverpod(keepAlive: true)
-AiTrainingPreferenceService aiTrainingPreferenceService(Ref ref) {
-  final service = AiTrainingPreferenceService();
-  service.initialize(); // Initialize asynchronously
-  return service;
 }
 
 /// Audio device preference service for managing the preferred input device
