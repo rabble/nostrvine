@@ -8,6 +8,7 @@ import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/media_viewer_auth_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MockAgeVerificationService extends Mock
     implements AgeVerificationService {}
@@ -45,6 +46,57 @@ void main() {
   });
 
   group('MediaAuthInterceptor - preference handling', () {
+    test(
+      'handleUnauthorizedMedia still creates auth headers after unlock sets verified users to warn',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+
+        final realAgeVerificationService = AgeVerificationService();
+        await realAgeVerificationService.initialize();
+        await realAgeVerificationService.setAdultContentVerified(true);
+
+        final realContentFilterService = ContentFilterService(
+          ageVerificationService: realAgeVerificationService,
+        );
+        await realContentFilterService.initialize();
+        await realContentFilterService.unlockAdultCategories();
+
+        final interceptor = MediaAuthInterceptor(
+          ageVerificationService: realAgeVerificationService,
+          contentFilterService: realContentFilterService,
+          mediaViewerAuthService: mockMediaViewerAuthService,
+        );
+
+        when(
+          () => mockMediaViewerAuthService.createAuthHeaders(
+            sha256Hash: any(named: 'sha256Hash'),
+            url: any(named: 'url'),
+            serverUrl: any(named: 'serverUrl'),
+          ),
+        ).thenAnswer((_) async => {'Authorization': 'Nostr unlockedToken'});
+
+        when(() => mockContext.mounted).thenReturn(true);
+
+        expect(
+          realContentFilterService.adultPlaybackPreference,
+          ContentFilterPreference.warn,
+        );
+
+        final result = await interceptor.handleUnauthorizedMedia(
+          context: mockContext,
+          sha256Hash: 'abc123',
+          category: 'nudity',
+        );
+
+        expect(result, equals({'Authorization': 'Nostr unlockedToken'}));
+        verify(
+          () => mockMediaViewerAuthService.createAuthHeaders(
+            sha256Hash: 'abc123',
+          ),
+        ).called(1);
+      },
+    );
+
     test(
       'handleUnauthorizedMedia returns null when verified user preference is hide',
       () async {
