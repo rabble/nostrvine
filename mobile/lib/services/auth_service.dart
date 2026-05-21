@@ -561,7 +561,10 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// On success: rebuilds identity to [KeycastNostrIdentity] and sets
   /// [AuthRpcCapability.rpcReady]. On failure: preserves the local identity
   /// and sets capability back to [AuthRpcCapability.unavailable].
-  Future<void> _upgradeDivineRpcInBackground(KeycastSession? session) async {
+  Future<void> _upgradeDivineRpcInBackground(
+    KeycastSession? session, {
+    String? expectedOwnerPubkey,
+  }) async {
     Log.info(
       'initialize: starting background RPC refresh...',
       name: 'AuthService',
@@ -575,7 +578,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       }
 
       final refreshed = await _refreshOAuthSession(
-        expectedOwnerPubkey: session?.userPubkey,
+        expectedOwnerPubkey:
+            expectedOwnerPubkey ?? session?.userPubkey,
       ).timeout(
         rpcRefreshTimeout,
       );
@@ -1940,6 +1944,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           if (canRefresh) {
             final refreshed = await _tryRefreshOAuthSession(
               caller: 'signInForAccount',
+              expectedOwnerPubkey: pubkeyHex,
             );
             if (refreshed) break;
           }
@@ -1974,7 +1979,12 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
             _hasExpiredOAuthSession = true;
             _setRpcCapability(AuthRpcCapability.upgrading);
             await _setupUserSession(localKey, AuthenticationSource.divineOAuth);
-            unawaited(_upgradeDivineRpcInBackground(session));
+            unawaited(
+              _upgradeDivineRpcInBackground(
+                session,
+                expectedOwnerPubkey: pubkeyHex,
+              ),
+            );
           } else {
             Log.warning(
               'signInForAccount: no refresh, no local keys for '
