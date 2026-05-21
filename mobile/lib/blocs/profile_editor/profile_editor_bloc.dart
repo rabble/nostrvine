@@ -14,6 +14,8 @@ import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/profile_editor/reportable_sites.dart';
+import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/mention_resolution_service.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:stream_transform/stream_transform.dart';
@@ -141,6 +143,8 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         name: 'ProfileEditorBloc',
         category: LogCategory.ui,
       );
+      // Classification: Network/IO — matrix-NO. Catch sees `DioException` /
+      // `BlossomResumableUploadException` rethrown by `BlossomUploadService`.
       addError(error, stackTrace);
       emit(
         state.copyWith(
@@ -178,6 +182,8 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       name: 'ProfileEditorBloc',
       category: LogCategory.ui,
     );
+    // Classification: API/domain — matrix-NO. `Exception(...)` is synthesized
+    // from a documented `success: false` result with a typed `failureReason`.
     addError(Exception(errorMessage), StackTrace.current);
     emit(
       state.copyWith(
@@ -307,6 +313,8 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         name: 'ProfileEditorBloc',
         category: LogCategory.ui,
       );
+      // Classification: Network/IO — matrix-NO. Catch sees `DioException` /
+      // `BlossomResumableUploadException` rethrown by `BlossomUploadService`.
       addError(error, stackTrace);
       emit(
         state.copyWith(
@@ -340,6 +348,8 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       name: 'ProfileEditorBloc',
       category: LogCategory.ui,
     );
+    // Classification: API/domain — matrix-NO. `Exception(...)` is synthesized
+    // from a documented `success: false` result with a typed `failureReason`.
     addError(Exception(errorMessage), StackTrace.current);
     emit(
       state.copyWith(
@@ -392,53 +402,77 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     ProfileSaved event,
     Emitter<ProfileEditorState> emit,
   ) async {
-    // Drop the save when an avatar upload is still in flight. Without this
-    // guard, `_resolveEffectivePicture` would fall back to
-    // `persistedPictureUrl` and publish kind 0 with the OLD picture, then
-    // the staged URL would land and the user would have to Save again. The
-    // UI also disables Save during upload (via `isSaveReady`); this is the
-    // belt-and-braces so any other caller — retry CTAs, future events —
-    // can't slip past.
-    if (state.pendingAvatarStatus == PendingAvatarStatus.uploading) {
-      Log.info(
-        'Ignoring ProfileSaved received while avatar upload is in flight',
+    try {
+      // Drop the save when an avatar upload is still in flight. Without this
+      // guard, `_resolveEffectivePicture` would fall back to
+      // `persistedPictureUrl` and publish kind 0 with the OLD picture, then
+      // the staged URL would land and the user would have to Save again. The
+      // UI also disables Save during upload (via `isSaveReady`); this is the
+      // belt-and-braces so any other caller — retry CTAs, future events —
+      // can't slip past.
+      if (state.pendingAvatarStatus == PendingAvatarStatus.uploading) {
+        Log.info(
+          'Ignoring ProfileSaved received while avatar upload is in flight',
+          name: 'ProfileEditorBloc',
+        );
+        return;
+      }
+
+      // Same belt-and-braces guard for banner uploads: drop the save if the
+      // banner is still uploading so we don't publish kind 0 with the
+      // pre-upload banner and then have a staged URL land afterwards.
+      if (state.pendingBannerStatus == PendingBannerStatus.uploading) {
+        Log.info(
+          'Ignoring ProfileSaved received while banner upload is in flight',
+          name: 'ProfileEditorBloc',
+        );
+        return;
+      }
+
+      // The effective picture is owned by bloc state (staged > persisted),
+      // with `event.picture` as a legacy fallback for callers that haven't
+      // migrated to the staged-state model yet.
+      final effectivePicture = _resolveEffectivePicture(event);
+
+      // Guard: about to overwrite existing profile with minimal data?
+      if (!_hasExistingProfile && _isMinimal(event, effectivePicture)) {
+        Log.info(
+          '⚠️ Blank profile warning: no existing profile found, requesting confirmation',
+          name: 'ProfileEditorBloc',
+        );
+        emit(
+          state.copyWith(
+            status: ProfileEditorStatus.confirmationRequired,
+            pendingEvent: event,
+          ),
+        );
+        return;
+      }
+
+      await _saveProfile(event, effectivePicture, emit);
+    } on Object catch (error, stackTrace) {
+      // Classification: Invariant — matrix-YES. Defensive handler-level
+      // catch for `Error` types that escape `_saveProfile`'s typed publish
+      // branches and the `claimUsername` `on Exception` swallow (StateError
+      // from a signer invariant, TypeError from cast mismatches, etc.).
+      Log.error(
+        'Profile save handler threw: $error',
         name: 'ProfileEditorBloc',
       );
-      return;
-    }
-
-    // Same belt-and-braces guard for banner uploads: drop the save if the
-    // banner is still uploading so we don't publish kind 0 with the
-    // pre-upload banner and then have a staged URL land afterwards.
-    if (state.pendingBannerStatus == PendingBannerStatus.uploading) {
-      Log.info(
-        'Ignoring ProfileSaved received while banner upload is in flight',
-        name: 'ProfileEditorBloc',
-      );
-      return;
-    }
-
-    // The effective picture is owned by bloc state (staged > persisted),
-    // with `event.picture` as a legacy fallback for callers that haven't
-    // migrated to the staged-state model yet.
-    final effectivePicture = _resolveEffectivePicture(event);
-
-    // Guard: about to overwrite existing profile with minimal data?
-    if (!_hasExistingProfile && _isMinimal(event, effectivePicture)) {
-      Log.info(
-        '⚠️ Blank profile warning: no existing profile found, requesting confirmation',
-        name: 'ProfileEditorBloc',
+      addError(
+        Reportable(
+          error,
+          context: ProfileEditorReportableSites.onProfileSaved,
+        ),
+        stackTrace,
       );
       emit(
         state.copyWith(
-          status: ProfileEditorStatus.confirmationRequired,
-          pendingEvent: event,
+          status: ProfileEditorStatus.failure,
+          error: ProfileEditorError.publishFailed,
         ),
       );
-      return;
     }
-
-    await _saveProfile(event, effectivePicture, emit);
   }
 
   /// Banner string the next save should write into kind 0.
@@ -484,150 +518,231 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     ProfileNip05Saved event,
     Emitter<ProfileEditorState> emit,
   ) async {
-    final displayName =
-        event.currentProfile.displayName ?? event.currentProfile.name ?? '';
-    if (displayName.trim().isEmpty) {
+    try {
+      final displayName =
+          event.currentProfile.displayName ?? event.currentProfile.name ?? '';
+      if (displayName.trim().isEmpty) {
+        Log.error(
+          'NIP-05 save ignored because the loaded profile has no display name',
+          name: 'ProfileEditorBloc',
+        );
+        return;
+      }
+
+      final saveEvent = ProfileSaved(
+        pubkey: event.currentProfile.pubkey,
+        displayName: displayName,
+        about: event.currentProfile.about,
+        username: state.nip05Mode == Nip05Mode.divine ? state.username : null,
+        externalNip05: state.nip05Mode == Nip05Mode.external_
+            ? state.externalNip05
+            : null,
+        picture: event.currentProfile.picture,
+        banner: event.currentProfile.banner,
+      );
+
+      await _saveProfile(saveEvent, _resolveEffectivePicture(saveEvent), emit);
+    } on Object catch (error, stackTrace) {
+      // Classification: Invariant — matrix-YES. Same coverage as
+      // [_onProfileSaved] — `Error` types that escape `_saveProfile`'s typed
+      // branches.
       Log.error(
-        'NIP-05 save ignored because the loaded profile has no display name',
+        'Profile NIP-05 save handler threw: $error',
         name: 'ProfileEditorBloc',
       );
-      return;
+      addError(
+        Reportable(
+          error,
+          context: ProfileEditorReportableSites.onProfileNip05Saved,
+        ),
+        stackTrace,
+      );
+      emit(
+        state.copyWith(
+          status: ProfileEditorStatus.failure,
+          error: ProfileEditorError.publishFailed,
+        ),
+      );
     }
-
-    final saveEvent = ProfileSaved(
-      pubkey: event.currentProfile.pubkey,
-      displayName: displayName,
-      about: event.currentProfile.about,
-      username: state.nip05Mode == Nip05Mode.divine ? state.username : null,
-      externalNip05: state.nip05Mode == Nip05Mode.external_
-          ? state.externalNip05
-          : null,
-      picture: event.currentProfile.picture,
-      banner: event.currentProfile.banner,
-    );
-
-    await _saveProfile(saveEvent, _resolveEffectivePicture(saveEvent), emit);
   }
 
   Future<void> _onProfileSaveConfirmed(
     ProfileSaveConfirmed event,
     Emitter<ProfileEditorState> emit,
   ) async {
-    final pending = state.pendingEvent;
-    if (pending == null) {
-      Log.error(
-        'ProfileSaveConfirmed called without pending event',
+    try {
+      final pending = state.pendingEvent;
+      if (pending == null) {
+        Log.error(
+          'ProfileSaveConfirmed called without pending event',
+          name: 'ProfileEditorBloc',
+        );
+        return;
+      }
+
+      Log.info(
+        '✅ User confirmed blank profile publish',
         name: 'ProfileEditorBloc',
       );
-      return;
+
+      await _saveProfile(pending, _resolveEffectivePicture(pending), emit);
+    } on Object catch (error, stackTrace) {
+      // Classification: Invariant — matrix-YES. Same coverage as
+      // [_onProfileSaved] — `Error` types that escape `_saveProfile`'s typed
+      // branches.
+      Log.error(
+        'Profile save-confirmed handler threw: $error',
+        name: 'ProfileEditorBloc',
+      );
+      addError(
+        Reportable(
+          error,
+          context: ProfileEditorReportableSites.onProfileSaveConfirmed,
+        ),
+        stackTrace,
+      );
+      emit(
+        state.copyWith(
+          status: ProfileEditorStatus.failure,
+          error: ProfileEditorError.publishFailed,
+        ),
+      );
     }
-
-    Log.info(
-      '✅ User confirmed blank profile publish',
-      name: 'ProfileEditorBloc',
-    );
-
-    await _saveProfile(pending, _resolveEffectivePicture(pending), emit);
   }
 
   Future<void> _onUsernameChanged(
     UsernameChanged event,
     Emitter<ProfileEditorState> emit,
   ) async {
-    final rawUsername = event.username;
-    final username = rawUsername.trim();
+    try {
+      final rawUsername = event.username;
+      final username = rawUsername.trim();
 
-    if (username.isEmpty) {
-      emit(
-        state.copyWith(username: username, usernameStatus: UsernameStatus.idle),
-      );
-      return;
-    }
-
-    final validation = validateDivineUsername(rawUsername);
-    if (validation case DivineUsernameInvalid(:final reason)) {
-      final isLength = reason == _divineUsernameLengthFailureReason;
-      emit(
-        state.copyWith(
-          username: username,
-          usernameStatus: isLength
-              ? UsernameStatus.error
-              : UsernameStatus.invalidFormat,
-          usernameError: isLength
-              ? UsernameValidationError.invalidLength
-              : UsernameValidationError.invalidFormat,
-          usernameFormatMessage: isLength ? null : reason,
-        ),
-      );
-      return;
-    }
-
-    final normalized = (validation as DivineUsernameValid).normalized;
-
-    if (state.reservedUsernames.contains(normalized)) {
-      emit(
-        state.copyWith(
-          username: username,
-          usernameStatus: UsernameStatus.reserved,
-        ),
-      );
-      return;
-    }
-
-    // Skip API check if username matches the user's own claimed username
-    final initial = state.initialUsername;
-    if (initial != null && normalized == initial.toLowerCase()) {
-      emit(
-        state.copyWith(username: username, usernameStatus: UsernameStatus.idle),
-      );
-      return;
-    }
-
-    emit(
-      state.copyWith(
-        username: username,
-        usernameStatus: UsernameStatus.checking,
-      ),
-    );
-
-    final result = await _profileRepository.checkUsernameAvailability(
-      username: normalized,
-      currentUserPubkey: _currentUserPubkey,
-    );
-
-    switch (result) {
-      case UsernameAvailable():
-        emit(state.copyWith(usernameStatus: UsernameStatus.available));
-      case UsernameTaken():
-        emit(state.copyWith(usernameStatus: UsernameStatus.taken));
-      case UsernameReserved():
+      if (username.isEmpty) {
         emit(
           state.copyWith(
+            username: username,
+            usernameStatus: UsernameStatus.idle,
+          ),
+        );
+        return;
+      }
+
+      final validation = validateDivineUsername(rawUsername);
+      if (validation case DivineUsernameInvalid(:final reason)) {
+        final isLength = reason == _divineUsernameLengthFailureReason;
+        emit(
+          state.copyWith(
+            username: username,
+            usernameStatus: isLength
+                ? UsernameStatus.error
+                : UsernameStatus.invalidFormat,
+            usernameError: isLength
+                ? UsernameValidationError.invalidLength
+                : UsernameValidationError.invalidFormat,
+            usernameFormatMessage: isLength ? null : reason,
+          ),
+        );
+        return;
+      }
+
+      final normalized = (validation as DivineUsernameValid).normalized;
+
+      if (state.reservedUsernames.contains(normalized)) {
+        emit(
+          state.copyWith(
+            username: username,
             usernameStatus: UsernameStatus.reserved,
-            reservedUsernames: {...state.reservedUsernames, normalized},
           ),
         );
-      case UsernameBurned():
-        emit(state.copyWith(usernameStatus: UsernameStatus.burned));
-      case UsernameInvalidFormat(:final reason):
+        return;
+      }
+
+      // Skip API check if username matches the user's own claimed username
+      final initial = state.initialUsername;
+      if (initial != null && normalized == initial.toLowerCase()) {
         emit(
           state.copyWith(
-            usernameStatus: UsernameStatus.invalidFormat,
-            usernameError: UsernameValidationError.invalidFormat,
-            usernameFormatMessage: reason,
+            username: username,
+            usernameStatus: UsernameStatus.idle,
           ),
         );
-      case UsernameCheckError(:final message):
-        Log.error(
-          'Username availability check failed: $message',
-          name: 'ProfileEditorBloc',
-        );
-        emit(
-          state.copyWith(
-            usernameStatus: UsernameStatus.error,
-            usernameError: UsernameValidationError.networkError,
-          ),
-        );
+        return;
+      }
+
+      emit(
+        state.copyWith(
+          username: username,
+          usernameStatus: UsernameStatus.checking,
+        ),
+      );
+
+      final result = await _profileRepository.checkUsernameAvailability(
+        username: normalized,
+        currentUserPubkey: _currentUserPubkey,
+      );
+
+      // Restartable transformer may have cancelled this run while the API
+      // call was in flight; guard before emitting to a closed emitter.
+      if (emit.isDone) return;
+
+      switch (result) {
+        case UsernameAvailable():
+          emit(state.copyWith(usernameStatus: UsernameStatus.available));
+        case UsernameTaken():
+          emit(state.copyWith(usernameStatus: UsernameStatus.taken));
+        case UsernameReserved():
+          emit(
+            state.copyWith(
+              usernameStatus: UsernameStatus.reserved,
+              reservedUsernames: {...state.reservedUsernames, normalized},
+            ),
+          );
+        case UsernameBurned():
+          emit(state.copyWith(usernameStatus: UsernameStatus.burned));
+        case UsernameInvalidFormat(:final reason):
+          emit(
+            state.copyWith(
+              usernameStatus: UsernameStatus.invalidFormat,
+              usernameError: UsernameValidationError.invalidFormat,
+              usernameFormatMessage: reason,
+            ),
+          );
+        case UsernameCheckError(:final message):
+          Log.error(
+            'Username availability check failed: $message',
+            name: 'ProfileEditorBloc',
+          );
+          emit(
+            state.copyWith(
+              usernameStatus: UsernameStatus.error,
+              usernameError: UsernameValidationError.networkError,
+            ),
+          );
+      }
+    } on Object catch (error, stackTrace) {
+      // Classification: Invariant — matrix-YES. `checkUsernameAvailability`
+      // catches `on Exception` and returns `UsernameCheckError`, but `Error`
+      // subclasses (a JSON decode `TypeError`, an unexpected `StateError`)
+      // escape past that filter.
+      if (emit.isDone) return;
+      Log.error(
+        'Username availability check threw: $error',
+        name: 'ProfileEditorBloc',
+      );
+      addError(
+        Reportable(
+          error,
+          context: ProfileEditorReportableSites.onUsernameChanged,
+        ),
+        stackTrace,
+      );
+      emit(
+        state.copyWith(
+          usernameStatus: UsernameStatus.error,
+          usernameError: UsernameValidationError.networkError,
+        ),
+      );
     }
   }
 
@@ -706,63 +821,95 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     UsernameRechecked event,
     Emitter<ProfileEditorState> emit,
   ) async {
-    final username = state.username;
-    if (username.isEmpty) return;
+    try {
+      final username = state.username;
+      if (username.isEmpty) return;
 
-    final validation = validateDivineUsername(username);
-    if (validation case DivineUsernameInvalid()) {
-      return;
-    }
-    final normalized = (validation as DivineUsernameValid).normalized;
+      final validation = validateDivineUsername(username);
+      if (validation case DivineUsernameInvalid()) {
+        return;
+      }
+      final normalized = (validation as DivineUsernameValid).normalized;
 
-    // Remove from local reserved cache so the check runs against the server
-    final updatedReserved = {...state.reservedUsernames}..remove(normalized);
+      // Remove from local reserved cache so the check runs against the server
+      final updatedReserved = {...state.reservedUsernames}..remove(normalized);
 
-    emit(
-      state.copyWith(
-        usernameStatus: UsernameStatus.checking,
-        reservedUsernames: updatedReserved,
-      ),
-    );
+      emit(
+        state.copyWith(
+          usernameStatus: UsernameStatus.checking,
+          reservedUsernames: updatedReserved,
+        ),
+      );
 
-    final result = await _profileRepository.checkUsernameAvailability(
-      username: normalized,
-      currentUserPubkey: _currentUserPubkey,
-    );
+      final result = await _profileRepository.checkUsernameAvailability(
+        username: normalized,
+        currentUserPubkey: _currentUserPubkey,
+      );
 
-    switch (result) {
-      case UsernameAvailable():
-        emit(state.copyWith(usernameStatus: UsernameStatus.available));
-      case UsernameTaken():
-        emit(state.copyWith(usernameStatus: UsernameStatus.taken));
-      case UsernameReserved():
-        emit(
-          state.copyWith(
-            usernameStatus: UsernameStatus.reserved,
-            reservedUsernames: {...state.reservedUsernames, normalized},
-          ),
-        );
-      case UsernameBurned():
-        emit(state.copyWith(usernameStatus: UsernameStatus.burned));
-      case UsernameInvalidFormat(:final reason):
-        emit(
-          state.copyWith(
-            usernameStatus: UsernameStatus.invalidFormat,
-            usernameError: UsernameValidationError.invalidFormat,
-            usernameFormatMessage: reason,
-          ),
-        );
-      case UsernameCheckError(:final message):
-        Log.error(
-          'Username re-check failed: $message',
-          name: 'ProfileEditorBloc',
-        );
-        emit(
-          state.copyWith(
-            usernameStatus: UsernameStatus.reserved,
-            reservedUsernames: {...state.reservedUsernames, normalized},
-          ),
-        );
+      switch (result) {
+        case UsernameAvailable():
+          emit(state.copyWith(usernameStatus: UsernameStatus.available));
+        case UsernameTaken():
+          emit(state.copyWith(usernameStatus: UsernameStatus.taken));
+        case UsernameReserved():
+          emit(
+            state.copyWith(
+              usernameStatus: UsernameStatus.reserved,
+              reservedUsernames: {...state.reservedUsernames, normalized},
+            ),
+          );
+        case UsernameBurned():
+          emit(state.copyWith(usernameStatus: UsernameStatus.burned));
+        case UsernameInvalidFormat(:final reason):
+          emit(
+            state.copyWith(
+              usernameStatus: UsernameStatus.invalidFormat,
+              usernameError: UsernameValidationError.invalidFormat,
+              usernameFormatMessage: reason,
+            ),
+          );
+        case UsernameCheckError(:final message):
+          Log.error(
+            'Username re-check failed: $message',
+            name: 'ProfileEditorBloc',
+          );
+          emit(
+            state.copyWith(
+              usernameStatus: UsernameStatus.reserved,
+              reservedUsernames: {...state.reservedUsernames, normalized},
+            ),
+          );
+      }
+    } on Object catch (error, stackTrace) {
+      // Classification: Invariant — matrix-YES. Same `Error`-escape contract
+      // as [_onUsernameChanged] — `checkUsernameAvailability` swallows
+      // Exception, only Error subclasses reach here.
+      final username = state.username;
+      final validation = username.isEmpty
+          ? null
+          : validateDivineUsername(username);
+      final normalized = validation is DivineUsernameValid
+          ? validation.normalized
+          : null;
+      Log.error(
+        'Username re-check threw: $error',
+        name: 'ProfileEditorBloc',
+      );
+      addError(
+        Reportable(
+          error,
+          context: ProfileEditorReportableSites.onUsernameRechecked,
+        ),
+        stackTrace,
+      );
+      emit(
+        state.copyWith(
+          usernameStatus: UsernameStatus.reserved,
+          reservedUsernames: normalized == null
+              ? state.reservedUsernames
+              : {...state.reservedUsernames, normalized},
+        ),
+      );
     }
   }
 
@@ -897,16 +1044,54 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       );
       await _profileRepository.cacheProfile(savedProfile);
       emit(state.copyWith(status: ProfileEditorStatus.success));
-    } catch (error, stackTrace) {
+    } on NoRelaysConnectedException catch (error, stackTrace) {
+      // Classification: Network/IO — matrix-NO. The device has no active
+      // relay connections; user-actionable retry path.
+      Log.error(
+        'Failed to publish profile (no relays): $error',
+        name: 'ProfileEditorBloc',
+      );
       addError(error, stackTrace);
-      Log.error('Failed to publish profile: $error', name: 'ProfileEditorBloc');
-      final profileError = error is NoRelaysConnectedException
-          ? ProfileEditorError.noRelaysConnected
-          : ProfileEditorError.publishFailed;
       emit(
         state.copyWith(
           status: ProfileEditorStatus.failure,
-          error: profileError,
+          error: ProfileEditorError.noRelaysConnected,
+        ),
+      );
+    } on ProfilePublishFailedException catch (error, stackTrace) {
+      // Classification: API/domain — matrix-NO. Typed publish failure
+      // (relay rejected event or send error).
+      Log.error(
+        'Failed to publish profile: $error',
+        name: 'ProfileEditorBloc',
+      );
+      addError(error, stackTrace);
+      emit(
+        state.copyWith(
+          status: ProfileEditorStatus.failure,
+          error: ProfileEditorError.publishFailed,
+        ),
+      );
+    } on Object catch (error, stackTrace) {
+      // Classification: Invariant — matrix-YES. Anything that escapes the
+      // typed `ProfileRepositoryException` branches above is unexpected:
+      // a drift `TypeError` from a schema mismatch, a `StateError` from a
+      // sync transform between `saveProfileEvent` and `cacheProfile`, etc.
+      Log.error(
+        'Failed to publish profile (unexpected): $error',
+        name: 'ProfileEditorBloc',
+      );
+      addError(
+        Reportable(
+          error,
+          context: ProfileEditorReportableSites.saveProfilePublish,
+        ),
+        stackTrace,
+      );
+      emit(
+        state.copyWith(
+          status: ProfileEditorStatus.failure,
+          error: ProfileEditorError.publishFailed,
         ),
       );
     }
@@ -923,11 +1108,22 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       );
       return result.canonicalText;
     } on Object catch (error, stackTrace) {
+      // Classification: Invariant — matrix-YES. `MentionResolutionService`
+      // catches `on Exception` internally; only `Error` subtypes (StateError
+      // from `_applyReplacements`, RangeError on substring edges, TypeError
+      // from API-shape casts) reach here. The save continues with the
+      // unresolved `rawAbout`.
       Log.error(
         'Profile bio mention resolution failed: $error',
         name: 'ProfileEditorBloc',
       );
-      addError(error, stackTrace);
+      addError(
+        Reportable(
+          error,
+          context: ProfileEditorReportableSites.canonicalizeProfileAbout,
+        ),
+        stackTrace,
+      );
       return rawAbout;
     }
   }

@@ -13,6 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
+import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/mention_resolution_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:profile_repository/profile_repository.dart';
@@ -20,6 +21,9 @@ import 'package:profile_repository/profile_repository.dart';
 class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
+
+class _MockMentionResolutionService extends Mock
+    implements MentionResolutionService {}
 
 class _FakeFile extends Fake implements File {}
 
@@ -53,6 +57,7 @@ void main() {
     }
 
     late _MockBlossomUploadService mockBlossomUploadService;
+    late _MockMentionResolutionService mockMentionResolutionService;
 
     setUpAll(() {
       registerFallbackValue(
@@ -72,6 +77,7 @@ void main() {
     setUp(() {
       mockProfileRepository = _MockProfileRepository();
       mockBlossomUploadService = _MockBlossomUploadService();
+      mockMentionResolutionService = _MockMentionResolutionService();
       when(
         () => mockProfileRepository.cacheProfile(any()),
       ).thenAnswer((_) async {});
@@ -967,6 +973,382 @@ void main() {
           ],
         );
       });
+    });
+
+    // Defensive try/catch on the 5 handlers + narrowed publish branch +
+    // mention-resolution wrap. Per .claude/rules/error_handling.md, only
+    // `Error` subclasses (StateError, TypeError, RangeError) escape the
+    // repository's `on Exception` filters; these tests pin that the bloc
+    // now wraps them as `Reportable<T>` and still emits a sensible
+    // status-enum failure value.
+    group('handler-level invariant Reportable wraps', () {
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'wraps unexpected claimUsername Error in _onProfileSaved as '
+        'Reportable and emits failure(publishFailed)',
+        setUp: () {
+          when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockProfileRepository.claimUsername(username: testUsername),
+          ).thenThrow(StateError('claim invariant'));
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          const ProfileSaved(
+            pubkey: testPubkey,
+            displayName: testDisplayName,
+            about: testAbout,
+            picture: testPicture,
+            username: testUsername,
+          ),
+        ),
+        expect: () => [
+          isA<ProfileEditorState>().having(
+            (s) => s.status,
+            'status',
+            ProfileEditorStatus.loading,
+          ),
+          isA<ProfileEditorState>()
+              .having((s) => s.status, 'status', ProfileEditorStatus.failure)
+              .having(
+                (s) => s.error,
+                'error',
+                ProfileEditorError.publishFailed,
+              ),
+        ],
+        errors: () => [
+          isA<Reportable<Object>>().having(
+            (r) => r.unwrap(),
+            'unwrap',
+            isA<StateError>(),
+          ),
+        ],
+        verify: (_) {
+          // Claim threw — never reach the publish step.
+          verifyNever(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: any(named: 'displayName'),
+              about: any(named: 'about'),
+              username: any(named: 'username'),
+              clearNip05: any(named: 'clearNip05'),
+              picture: any(named: 'picture'),
+              banner: any(named: 'banner'),
+              currentProfile: any(named: 'currentProfile'),
+            ),
+          );
+        },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'wraps unexpected saveProfileEvent Error in narrowed publish catch '
+        'as Reportable and emits failure(publishFailed)',
+        setUp: () {
+          when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: testDisplayName,
+              about: testAbout,
+              picture: testPicture,
+              clearNip05: any(named: 'clearNip05'),
+            ),
+          ).thenThrow(StateError('publish invariant'));
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          const ProfileSaved(
+            pubkey: testPubkey,
+            displayName: testDisplayName,
+            about: testAbout,
+            picture: testPicture,
+          ),
+        ),
+        expect: () => [
+          isA<ProfileEditorState>().having(
+            (s) => s.status,
+            'status',
+            ProfileEditorStatus.loading,
+          ),
+          isA<ProfileEditorState>()
+              .having((s) => s.status, 'status', ProfileEditorStatus.failure)
+              .having(
+                (s) => s.error,
+                'error',
+                ProfileEditorError.publishFailed,
+              ),
+        ],
+        errors: () => [
+          isA<Reportable<Object>>().having(
+            (r) => r.unwrap(),
+            'unwrap',
+            isA<StateError>(),
+          ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'wraps unexpected Error in _onProfileNip05Saved as Reportable and '
+        'emits failure(publishFailed)',
+        setUp: () {
+          when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: testDisplayName,
+              about: testAbout,
+              picture: testPicture,
+              banner: any(named: 'banner'),
+              clearNip05: any(named: 'clearNip05'),
+            ),
+          ).thenThrow(StateError('nip05 save invariant'));
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          ProfileNip05Saved(
+            currentProfile: UserProfile(
+              pubkey: testPubkey,
+              displayName: testDisplayName,
+              about: testAbout,
+              picture: testPicture,
+              rawData: const {},
+              createdAt: DateTime.now(),
+              eventId:
+                  'nip05evt567890123456789012345678901234567890123456789012345678',
+            ),
+          ),
+        ),
+        expect: () => [
+          isA<ProfileEditorState>().having(
+            (s) => s.status,
+            'status',
+            ProfileEditorStatus.loading,
+          ),
+          isA<ProfileEditorState>()
+              .having((s) => s.status, 'status', ProfileEditorStatus.failure)
+              .having(
+                (s) => s.error,
+                'error',
+                ProfileEditorError.publishFailed,
+              ),
+        ],
+        errors: () => [
+          isA<Reportable<Object>>().having(
+            (r) => r.unwrap(),
+            'unwrap',
+            isA<StateError>(),
+          ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'wraps unexpected Error in _onProfileSaveConfirmed as Reportable '
+        'and emits failure(publishFailed)',
+        setUp: () {
+          when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: testDisplayName,
+              clearNip05: any(named: 'clearNip05'),
+            ),
+          ).thenThrow(StateError('confirmed save invariant'));
+        },
+        build: () => createBloc(hasExistingProfile: false),
+        seed: () => const ProfileEditorState(
+          status: ProfileEditorStatus.confirmationRequired,
+          pendingEvent: ProfileSaved(
+            pubkey: testPubkey,
+            displayName: testDisplayName,
+          ),
+        ),
+        act: (bloc) => bloc.add(const ProfileSaveConfirmed()),
+        expect: () => [
+          isA<ProfileEditorState>().having(
+            (s) => s.status,
+            'status',
+            ProfileEditorStatus.loading,
+          ),
+          isA<ProfileEditorState>()
+              .having((s) => s.status, 'status', ProfileEditorStatus.failure)
+              .having(
+                (s) => s.error,
+                'error',
+                ProfileEditorError.publishFailed,
+              ),
+        ],
+        errors: () => [
+          isA<Reportable<Object>>().having(
+            (r) => r.unwrap(),
+            'unwrap',
+            isA<StateError>(),
+          ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'wraps unexpected checkUsernameAvailability Error in '
+        '_onUsernameChanged as Reportable and emits error(networkError)',
+        setUp: () {
+          when(
+            () => mockProfileRepository.checkUsernameAvailability(
+              username: testUsername,
+              currentUserPubkey: any(named: 'currentUserPubkey'),
+            ),
+          ).thenThrow(StateError('availability check invariant'));
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const UsernameChanged(testUsername));
+          // Wait out the 500ms debounce + buffer
+          await Future<void>.delayed(const Duration(milliseconds: 600));
+        },
+        wait: const Duration(milliseconds: 700),
+        expect: () => [
+          isA<ProfileEditorState>().having(
+            (s) => s.usernameStatus,
+            'usernameStatus',
+            UsernameStatus.checking,
+          ),
+          isA<ProfileEditorState>()
+              .having(
+                (s) => s.usernameStatus,
+                'usernameStatus',
+                UsernameStatus.error,
+              )
+              .having(
+                (s) => s.usernameError,
+                'usernameError',
+                UsernameValidationError.networkError,
+              ),
+        ],
+        errors: () => [
+          isA<Reportable<Object>>().having(
+            (r) => r.unwrap(),
+            'unwrap',
+            isA<StateError>(),
+          ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'wraps unexpected checkUsernameAvailability Error in '
+        '_onUsernameRechecked as Reportable and re-reserves the name',
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          username: testUsername,
+          usernameStatus: UsernameStatus.reserved,
+          reservedUsernames: {testUsername},
+        ),
+        setUp: () {
+          when(
+            () => mockProfileRepository.checkUsernameAvailability(
+              username: testUsername,
+              currentUserPubkey: any(named: 'currentUserPubkey'),
+            ),
+          ).thenThrow(StateError('recheck invariant'));
+        },
+        act: (bloc) => bloc.add(const UsernameRechecked()),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having(
+                (s) => s.usernameStatus,
+                'usernameStatus',
+                UsernameStatus.checking,
+              )
+              .having(
+                (s) => s.reservedUsernames,
+                'reservedUsernames',
+                isEmpty,
+              ),
+          isA<ProfileEditorState>()
+              .having(
+                (s) => s.usernameStatus,
+                'usernameStatus',
+                UsernameStatus.reserved,
+              )
+              .having(
+                (s) => s.reservedUsernames,
+                'reservedUsernames',
+                contains(testUsername),
+              ),
+        ],
+        errors: () => [
+          isA<Reportable<Object>>().having(
+            (r) => r.unwrap(),
+            'unwrap',
+            isA<StateError>(),
+          ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'wraps unexpected MentionResolutionService Error as Reportable '
+        'but continues the save with the raw bio text',
+        setUp: () {
+          when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: testDisplayName,
+              about: 'hi @alice',
+              picture: testPicture,
+              clearNip05: any(named: 'clearNip05'),
+            ),
+          ).thenAnswer((_) async => createTestProfile());
+          when(
+            () => mockMentionResolutionService.resolveTextMentions(
+              rawText: any(named: 'rawText'),
+              currentUserPubkey: any(named: 'currentUserPubkey'),
+            ),
+          ).thenThrow(StateError('mention service invariant'));
+        },
+        build: () => createBloc(
+          mentionResolutionService: mockMentionResolutionService,
+        ),
+        act: (bloc) => bloc.add(
+          const ProfileSaved(
+            pubkey: testPubkey,
+            displayName: testDisplayName,
+            about: 'hi @alice',
+            picture: testPicture,
+          ),
+        ),
+        expect: () => [
+          isA<ProfileEditorState>().having(
+            (s) => s.status,
+            'status',
+            ProfileEditorStatus.loading,
+          ),
+          isA<ProfileEditorState>().having(
+            (s) => s.status,
+            'status',
+            ProfileEditorStatus.success,
+          ),
+        ],
+        errors: () => [
+          isA<Reportable<Object>>().having(
+            (r) => r.unwrap(),
+            'unwrap',
+            isA<StateError>(),
+          ),
+        ],
+        verify: (_) {
+          // Save still happens with the raw (unresolved) bio.
+          verify(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: testDisplayName,
+              about: 'hi @alice',
+              picture: testPicture,
+              clearNip05: any(named: 'clearNip05'),
+            ),
+          ).called(1);
+        },
+      );
     });
 
     group('InitialUsernameSet', () {
