@@ -10,7 +10,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/settings/account_content_labels_tile.dart';
-import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
@@ -64,16 +63,8 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
 
     final contentFilterService = ref.read(contentFilterServiceProvider);
     if (value) {
-      // When the user confirms they are 18+, unlock all adult categories so
-      // age-restricted videos play automatically without a per-video dialog.
-      for (final label in ContentFilterService.adultCategories) {
-        await contentFilterService.setPreference(
-          label,
-          ContentFilterPreference.show,
-        );
-      }
+      await contentFilterService.unlockAdultCategories();
     } else {
-      // If unchecked, lock adult categories back to hide
       await contentFilterService.lockAdultCategories();
       final videoEventService = ref.read(videoEventServiceProvider);
       videoEventService.filterAdultContentFromExistingVideos();

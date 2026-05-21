@@ -277,6 +277,142 @@ void main() {
       });
     });
 
+    group('unlockAdultCategories', () {
+      test('promotes hide categories to warn on first unlock', () async {
+        await ageService.initialize();
+        await ageService.setAdultContentVerified(true);
+        await service.initialize();
+
+        // All adult categories start at hide (default)
+        for (final label in ContentFilterService.adultCategories) {
+          expect(
+            service.getPreference(label),
+            equals(ContentFilterPreference.hide),
+          );
+        }
+
+        await service.unlockAdultCategories();
+
+        for (final label in ContentFilterService.adultCategories) {
+          expect(
+            service.getPreference(label),
+            equals(ContentFilterPreference.warn),
+            reason: '${label.displayName} should be promoted from hide to warn',
+          );
+        }
+      });
+
+      test('does not overwrite an existing warn preference', () async {
+        await ageService.initialize();
+        await ageService.setAdultContentVerified(true);
+        await service.initialize();
+
+        // User had previously set nudity to warn
+        await service.setPreference(
+          ContentLabel.nudity,
+          ContentFilterPreference.warn,
+        );
+
+        await service.unlockAdultCategories();
+
+        expect(
+          service.getPreference(ContentLabel.nudity),
+          equals(ContentFilterPreference.warn),
+        );
+      });
+
+      test('does not overwrite an existing show preference', () async {
+        await ageService.initialize();
+        await ageService.setAdultContentVerified(true);
+        await service.initialize();
+
+        // User had previously set sexual to show
+        await service.setPreference(
+          ContentLabel.sexual,
+          ContentFilterPreference.show,
+        );
+
+        await service.unlockAdultCategories();
+
+        expect(
+          service.getPreference(ContentLabel.sexual),
+          equals(ContentFilterPreference.show),
+        );
+      });
+
+      test('only promotes hide categories, leaves others intact', () async {
+        await ageService.initialize();
+        await ageService.setAdultContentVerified(true);
+        await service.initialize();
+
+        // Explicitly set nudity to show, leave the others at hide
+        await service.setPreference(
+          ContentLabel.nudity,
+          ContentFilterPreference.show,
+        );
+
+        await service.unlockAdultCategories();
+
+        // nudity was already show — must not be changed
+        expect(
+          service.getPreference(ContentLabel.nudity),
+          equals(ContentFilterPreference.show),
+        );
+        // sexual and porn were hide — must be promoted to warn
+        expect(
+          service.getPreference(ContentLabel.sexual),
+          equals(ContentFilterPreference.warn),
+        );
+        expect(
+          service.getPreference(ContentLabel.porn),
+          equals(ContentFilterPreference.warn),
+        );
+      });
+
+      test('persists unlocked preferences across instances', () async {
+        await ageService.initialize();
+        await ageService.setAdultContentVerified(true);
+        await service.initialize();
+
+        await service.unlockAdultCategories();
+
+        final newAgeService = AgeVerificationService();
+        await newAgeService.initialize();
+        final newService = ContentFilterService(
+          ageVerificationService: newAgeService,
+        );
+        await newService.initialize();
+
+        // age-verified so the gate is lifted; persisted warn should be visible
+        await newAgeService.setAdultContentVerified(true);
+        for (final label in ContentFilterService.adultCategories) {
+          expect(
+            newService.getPreference(label),
+            equals(ContentFilterPreference.warn),
+            reason: '${label.displayName} should survive restart',
+          );
+        }
+      });
+
+      test(
+        'adultPlaybackPreference is warn after unlock from all-hide',
+        () async {
+          await ageService.initialize();
+          await ageService.setAdultContentVerified(true);
+          await service.initialize();
+
+          // Starts as hide (not verified initially wouldn't matter here,
+          // but we need verified to read through the age gate)
+          await service.unlockAdultCategories();
+
+          expect(
+            service.adultPlaybackPreference,
+            equals(ContentFilterPreference.warn),
+          );
+        },
+      );
+    });
+
     group('adultPlaybackPreference', () {
       test('returns hide when adult categories are locked', () async {
         await ageService.initialize();

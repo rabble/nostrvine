@@ -228,6 +228,27 @@ class ContentFilterService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Unlock adult categories when the user enables age verification.
+  ///
+  /// Only promotes categories that are still at [ContentFilterPreference.hide]
+  /// to [ContentFilterPreference.warn]. Categories the user has already
+  /// explicitly changed to [warn] or [show] are left untouched, so this
+  /// never overwrites a deliberate preference.
+  ///
+  /// Using [warn] as the unlock default means the user sees a confirmation
+  /// prompt the first time they play a given adult video — a safe default
+  /// that can be overridden per-category in Content Filters.
+  Future<void> unlockAdultCategories() async {
+    for (final label in adultCategories) {
+      if ((_preferences[label] ?? _defaultFor(label)) ==
+          ContentFilterPreference.hide) {
+        _preferences[label] = ContentFilterPreference.warn;
+      }
+    }
+    await _save();
+    notifyListeners();
+  }
+
   /// Migrate from the old `adult_content_preference` integer.
   ///
   /// Maps:
