@@ -73,6 +73,9 @@ void main() {
       () => mockAuthService.authStateStream,
     ).thenAnswer((_) => const Stream.empty());
     when(() => mockAuthService.getKnownAccounts()).thenAnswer((_) async => []);
+    when(
+      () => mockAuthService.getSessionRecoveryAnchorNpub(),
+    ).thenAnswer((_) async => null);
     when(() => mockAuthService.acceptTerms()).thenAnswer((_) async {});
     when(
       () => mockAuthService.signInForAccount(any(), any()),
