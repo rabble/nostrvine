@@ -403,7 +403,7 @@ class _MessageTextState extends ConsumerState<_MessageText> {
   }
 
   void _navigateToSearch(String username) {
-    context.go(
+    context.push(
       SearchResultsPage.pathForQuery(username, requestFocusOnMount: false),
     );
   }

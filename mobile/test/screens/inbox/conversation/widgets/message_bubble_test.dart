@@ -479,6 +479,44 @@ void main() {
         expect(find.text('video:$naddr'), findsOneWidget);
       });
 
+      testWidgets('pushes search route on @mention tap so back returns', (
+        tester,
+      ) async {
+        // Regression: tapping a `@username` mention used to call `context.go`
+        // and replace the stack, which broke back navigation from the
+        // resulting search page in a DM conversation. Pushing preserves the
+        // DM under the search so the user can pop back.
+        final router = GoRouter(
+          routes: [
+            GoRoute(
+              path: '/',
+              builder: (context, state) => const Scaffold(
+                body: MessageBubble(
+                  message: 'Hey @hm21',
+                  timestamp: '2:30 PM',
+                  isSent: true,
+                ),
+              ),
+            ),
+            GoRoute(
+              path: '/search-results/:query',
+              builder: (context, state) => Scaffold(
+                body: Text('search:${state.pathParameters['query']}'),
+              ),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(_routerTestApp(router));
+        await tester.pump();
+
+        _linkRecognizer(tester, '@hm21').onTap!();
+        await tester.pumpAndSettle();
+
+        expect(find.text('search:hm21'), findsOneWidget);
+        expect(router.canPop(), isTrue);
+      });
+
       testWidgets('URL span has $TapGestureRecognizer', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
