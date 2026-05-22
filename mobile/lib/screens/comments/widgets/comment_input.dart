@@ -425,9 +425,10 @@ class _KeyboardDismissButton extends StatelessWidget {
 /// Send button that appears when text is entered.
 ///
 /// Stays visually as a sendable up-arrow at all times. Comment posting is
-/// optimistic at the BLoC layer (see CommentsBloc._onSubmitted): the
-/// comment lands in the list before the network call, so this button has
-/// no in-flight state to surface — matching WhatsApp/Telegram-style
+/// optimistic at the BLoC layer (see `CommentComposerBloc._onSubmitted` —
+/// emits `ComposerOutboxInsertPlaceholder` before awaiting `postComment`):
+/// the comment lands in the list before the network call, so this button
+/// has no in-flight state to surface — matching WhatsApp/Telegram-style
 /// instant-send affordance.
 class _SendButton extends StatelessWidget {
   const _SendButton({required this.onSubmit});

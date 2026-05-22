@@ -37,11 +37,11 @@ class _InlineCommentComposerBarState extends State<InlineCommentComposerBar> {
 
   /// Snapshot of the field's text taken at submit-time so the
   /// [BlocListener] can restore it if the cubit emits `failure`.
-  /// Mirrors [CommentsBloc]'s rollback of `mainInputText` on publish
-  /// error — without it the optimistic clear permanently loses the
-  /// draft when the network call fails. Empty string means "nothing
-  /// pending"; [_handleSubmit] early-returns on empty input so the
-  /// field can only ever hold a real, non-empty draft.
+  /// Mirrors `CommentComposerBloc._emitSubmitRollback`'s rollback of
+  /// `mainInputText` on publish error — without it the optimistic clear
+  /// permanently loses the draft when the network call fails. Empty
+  /// string means "nothing pending"; [_handleSubmit] early-returns on
+  /// empty input so the field can only ever hold a real, non-empty draft.
   String _pendingDraft = '';
 
   @override

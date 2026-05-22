@@ -53,11 +53,15 @@ class CommentComposerBloc
        super(const CommentComposerState()) {
     on<CommentTextChanged>(_onTextChanged);
     on<CommentReplyToggled>(_onReplyToggled);
-    on<CommentSubmitted>(_onSubmitted);
+    // droppable() on the two submit events: a rapid second tap on Send lands
+    // BEFORE the first handler emits the cleared input, so both reads of
+    // state.mainInputText would otherwise insert two placeholders + double-
+    // publish. Mirrors CommentReactionsBloc.CommentVoteToggled.
+    on<CommentSubmitted>(_onSubmitted, transformer: droppable());
     on<CommentComposerErrorCleared>(_onErrorCleared);
     on<CommentEditModeEntered>(_onEditModeEntered);
     on<CommentEditModeCancelled>(_onEditModeCancelled);
-    on<CommentEditSubmitted>(_onEditSubmitted);
+    on<CommentEditSubmitted>(_onEditSubmitted, transformer: droppable());
     on<MentionSearchRequested>(
       _onMentionSearchRequested,
       transformer: restartable(),
@@ -77,25 +81,15 @@ class CommentComposerBloc
   final String _rootAuthorPubkey;
   final String? _rootAddressableId;
 
-  /// Logs [error] to the unified log and forwards through [addError]. Wraps
-  /// with [Reportable] when [error] is **not** a [CommentsRepositoryException]
-  /// (i.e. matrix-YES — see `rules/error_handling.md`).
-  void _logFailure(
-    Object error,
-    StackTrace stackTrace,
-    String site,
-    String operation,
-  ) {
-    if (error is CommentsRepositoryException) {
-      addError(error, stackTrace);
-    } else {
-      addError(Reportable(error, context: site), stackTrace);
-    }
-    Log.error(
-      '$operation: $error',
-      name: 'CommentComposerBloc',
-      category: LogCategory.ui,
+  /// Wraps [error] with [Reportable] (matrix-YES → Crashlytics) unless it is
+  /// a [CommentsRepositoryException] (matrix-NO domain/IO), then logs both
+  /// to the unified log and the BlocObserver via [addError].
+  void _logFailure(Object e, StackTrace st, String site, String op) {
+    addError(
+      e is CommentsRepositoryException ? e : Reportable(e, context: site),
+      st,
     );
+    Log.error('$op: $e', name: 'CommentComposerBloc', category: LogCategory.ui);
   }
 
   void _onTextChanged(

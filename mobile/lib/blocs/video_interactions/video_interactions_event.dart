@@ -43,7 +43,7 @@ class VideoInteractionsSubscriptionRequested extends VideoInteractionsEvent {
 /// Updates the comment count from an authoritative source.
 ///
 /// Dispatched when the comments sheet is dismissed, carrying the actual
-/// loaded comment count from [CommentsBloc] so the feed sidebar stays
+/// loaded comment count from `CommentsListBloc` so the feed sidebar stays
 /// in sync without an extra relay round-trip.
 class VideoInteractionsCommentCountUpdated extends VideoInteractionsEvent {
   const VideoInteractionsCommentCountUpdated(this.commentCount);

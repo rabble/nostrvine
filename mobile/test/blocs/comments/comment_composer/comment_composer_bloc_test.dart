@@ -197,6 +197,78 @@ void main() {
 
     group('CommentSubmitted', () {
       blocTest<CommentComposerBloc, CommentComposerState>(
+        'submit pins outbox sequence: Insert THEN Confirm (regression guard)',
+        setUp: () {
+          final posted = makeComment(validId('confirmed'), content: 'pin');
+          when(
+            () => mockCommentsRepository.postComment(
+              content: any(named: 'content'),
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              replyToEventId: any(named: 'replyToEventId'),
+              replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
+              mentionedPubkeys: any(named: 'mentionedPubkeys'),
+            ),
+          ).thenAnswer((_) async => posted);
+        },
+        build: createBloc,
+        seed: () => const CommentComposerState(mainInputText: 'pin'),
+        act: (b) => b.add(const CommentSubmitted()),
+        // Two outbox emissions in order: a refactor that collapses or skips
+        // the optimistic Insert (e.g. only emitting Confirm) would break the
+        // instant-render UX. The bridge listener reads each state emit, so
+        // both must land — pin them here.
+        expect: () => [
+          isA<CommentComposerState>().having(
+            (s) => s.outbox,
+            'outbox after first emit',
+            isA<ComposerOutboxInsertPlaceholder>(),
+          ),
+          isA<CommentComposerState>().having(
+            (s) => s.outbox,
+            'outbox after second emit',
+            isA<ComposerOutboxConfirmPlaceholder>(),
+          ),
+        ],
+      );
+
+      blocTest<CommentComposerBloc, CommentComposerState>(
+        'submit-fail pins outbox sequence: Insert THEN Rollback',
+        setUp: () {
+          when(
+            () => mockCommentsRepository.postComment(
+              content: any(named: 'content'),
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              replyToEventId: any(named: 'replyToEventId'),
+              replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
+              mentionedPubkeys: any(named: 'mentionedPubkeys'),
+            ),
+          ).thenThrow(const PostCommentFailedException('boom'));
+        },
+        build: createBloc,
+        seed: () => const CommentComposerState(mainInputText: 'pin'),
+        act: (b) => b.add(const CommentSubmitted()),
+        errors: () => [isA<PostCommentFailedException>()],
+        expect: () => [
+          isA<CommentComposerState>().having(
+            (s) => s.outbox,
+            'outbox after first emit',
+            isA<ComposerOutboxInsertPlaceholder>(),
+          ),
+          isA<CommentComposerState>().having(
+            (s) => s.outbox,
+            'outbox after second emit',
+            isA<ComposerOutboxRollbackPlaceholder>(),
+          ),
+        ],
+      );
+
+      blocTest<CommentComposerBloc, CommentComposerState>(
         'emits InsertPlaceholder then ConfirmPlaceholder on success, '
         'passing rootAddressableId (#4478)',
         setUp: () {
@@ -527,6 +599,150 @@ void main() {
         verify: (b) {
           expect(b.state.mentionSuggestions.isNotEmpty, isTrue);
           expect(b.state.mentionSuggestions.first.displayName, 'AlicePost');
+        },
+      );
+    });
+
+    group('mention conversion on submit', () {
+      blocTest<CommentComposerBloc, CommentComposerState>(
+        'resolves selected mentions to canonical content and mentionedPubkeys '
+        '— matrix-NO repo throwing does not block raw publish',
+        setUp: () {
+          when(
+            () => mockMentionResolutionService.resolveTextMentions(
+              rawText: any(named: 'rawText'),
+              selectedMentions: any(named: 'selectedMentions'),
+              currentUserPubkey: any(named: 'currentUserPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => MentionResolutionResult(
+              canonicalText: 'hello nostr:npub1alicexxxx',
+              resolvedPubkeys: [validId('alice')],
+              unresolvedTokens: const [],
+            ),
+          );
+          when(
+            () => mockCommentsRepository.postComment(
+              content: any(named: 'content'),
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              replyToEventId: any(named: 'replyToEventId'),
+              replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
+              mentionedPubkeys: any(named: 'mentionedPubkeys'),
+            ),
+          ).thenAnswer(
+            (_) async => makeComment(validId('confirmed'), content: 'hello'),
+          );
+        },
+        build: createBloc,
+        seed: () => CommentComposerState(
+          mainInputText: 'hello @Alice',
+          activeMentions: {'Alice': validId('alice')},
+          activeMentionBindings: [
+            MentionBinding(display: 'Alice', pubkey: validId('alice')),
+          ],
+        ),
+        act: (b) => b.add(const CommentSubmitted()),
+        verify: (_) {
+          verify(
+            () => mockCommentsRepository.postComment(
+              content: 'hello nostr:npub1alicexxxx',
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              replyToEventId: any(named: 'replyToEventId'),
+              replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
+              mentionedPubkeys: [validId('alice')],
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<CommentComposerBloc, CommentComposerState>(
+        'clears activeMentions / activeMentionBindings after successful post',
+        setUp: () {
+          when(
+            () => mockCommentsRepository.postComment(
+              content: any(named: 'content'),
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              replyToEventId: any(named: 'replyToEventId'),
+              replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
+              mentionedPubkeys: any(named: 'mentionedPubkeys'),
+            ),
+          ).thenAnswer(
+            (_) async => makeComment(validId('confirmed')),
+          );
+        },
+        build: createBloc,
+        seed: () => CommentComposerState(
+          mainInputText: 'hi @Bob',
+          activeMentions: {'Bob': validId('bob')},
+          activeMentionBindings: [
+            MentionBinding(display: 'Bob', pubkey: validId('bob')),
+          ],
+        ),
+        act: (b) => b.add(const CommentSubmitted()),
+        verify: (b) {
+          expect(b.state.activeMentions, isEmpty);
+          expect(b.state.activeMentionBindings, isEmpty);
+          expect(b.state.mainInputText, '');
+        },
+      );
+
+      blocTest<CommentComposerBloc, CommentComposerState>(
+        'publish proceeds with raw text when MentionResolutionService throws',
+        setUp: () {
+          when(
+            () => mockMentionResolutionService.resolveTextMentions(
+              rawText: any(named: 'rawText'),
+              selectedMentions: any(named: 'selectedMentions'),
+              currentUserPubkey: any(named: 'currentUserPubkey'),
+            ),
+          ).thenThrow(Exception('typed resolution timeout'));
+          when(
+            () => mockCommentsRepository.postComment(
+              content: any(named: 'content'),
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              replyToEventId: any(named: 'replyToEventId'),
+              replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
+              mentionedPubkeys: any(named: 'mentionedPubkeys'),
+            ),
+          ).thenAnswer(
+            (_) async => makeComment(validId('raw')),
+          );
+        },
+        build: createBloc,
+        seed: () => const CommentComposerState(mainInputText: 'raw hello'),
+        // Mention-resolution-throw is Reportable; absorb it so the test
+        // doesn't fail on the propagated error.
+        errors: () => [isA<Object>()],
+        act: (b) => b.add(const CommentSubmitted()),
+        verify: (_) {
+          // Raw text was published despite resolution throw.
+          verify(
+            () => mockCommentsRepository.postComment(
+              content: 'raw hello',
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              replyToEventId: any(named: 'replyToEventId'),
+              replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
+              mentionedPubkeys: any<List<String>>(
+                named: 'mentionedPubkeys',
+                that: isEmpty,
+              ),
+            ),
+          ).called(1);
         },
       );
     });

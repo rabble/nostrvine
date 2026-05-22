@@ -198,7 +198,7 @@ abstract final class CommentsScreen {
             ),
           ),
         ],
-        child: _OutboxBridges(
+        child: OutboxBridges(
           onCommentCountChanged: onCommentCountChanged,
           child: child,
         ),
@@ -232,10 +232,16 @@ abstract final class CommentsScreen {
 /// Wires the composer / reactions outbox signals into [CommentsListBloc] store
 /// mutations. Also triggers a vote-count batch fetch on the reactions bloc
 /// every time the loaded-comment set changes.
-class _OutboxBridges extends StatelessWidget {
-  const _OutboxBridges({
+///
+/// Public-by-test only: it has no callers outside `CommentsScreen.show` but is
+/// exposed via [visibleForTesting] so the bridge wiring can be exercised
+/// directly with mock blocs.
+@visibleForTesting
+class OutboxBridges extends StatelessWidget {
+  const OutboxBridges({
     required this.onCommentCountChanged,
     required this.child,
+    super.key,
   });
 
   final ValueChanged<int>? onCommentCountChanged;
@@ -254,17 +260,32 @@ class _OutboxBridges extends StatelessWidget {
             onCommentCountChanged?.call(state.commentsById.length);
           },
         ),
-        // When the loaded comment set changes, fetch up-to-date vote counts.
+        // When new non-placeholder ids appear in the store, fetch their vote
+        // counts. Only the DIFF is requested (not the whole set) so a
+        // viral-video feed doesn't redundantly hammer the relay with the
+        // same N-1 already-known ids on every emit. The handler is
+        // restartable, so a slower in-flight fetch can't clobber a fresher
+        // one — see CommentReactionsBloc.on<CommentVoteCountsFetchRequested>.
         BlocListener<CommentsListBloc, CommentsListState>(
           listenWhen: (prev, next) =>
               !_idSetsEqual(prev.commentsById.keys, next.commentsById.keys),
           listener: (ctx, state) {
-            final commentIds = state.commentsById.keys
-                .where((id) => !id.startsWith('pending_comment_'))
+            final prevKeys = ctx
+                .read<CommentReactionsBloc>()
+                .state
+                .commentUpvoteCounts
+                .keys
+                .toSet();
+            final newIds = state.commentsById.keys
+                .where(
+                  (id) =>
+                      !id.startsWith('pending_comment_') &&
+                      !prevKeys.contains(id),
+                )
                 .toList();
-            if (commentIds.isEmpty) return;
+            if (newIds.isEmpty) return;
             ctx.read<CommentReactionsBloc>().add(
-              CommentVoteCountsFetchRequested(commentIds),
+              CommentVoteCountsFetchRequested(newIds),
             );
           },
         ),
@@ -532,6 +553,18 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
             if (isEditMode) {
               composer.add(const CommentEditSubmitted());
             } else if (isReplyMode) {
+              // Guard against the parent comment having been removed from the
+              // store between reply-mode entry and submit (block-by-author
+              // cleanup, kind-5 delete, or list still loading). Submitting
+              // with parentAuthorPubkey=null produces a malformed NIP-22
+              // reply (E tag without matching P tag). Cancel reply mode
+              // instead so the user can re-target a still-visible comment.
+              if (replyToAuthorPubkey == null) {
+                composer.add(
+                  CommentReplyToggled(state.activeReplyCommentId!),
+                );
+                return;
+              }
               composer.add(
                 CommentSubmitted(
                   parentCommentId: state.activeReplyCommentId,

@@ -221,7 +221,9 @@ final class CommentComposerState extends Equatable {
   }
 
   /// Clears the active reply: drops [activeReplyCommentId],
-  /// [replyInputText], and the mention selections scoped to that composer.
+  /// [replyInputText], the mention overlay state, AND the reply's selected
+  /// mentions. Matches the pre-split CommentsState.clearActiveReply behavior
+  /// so the autocomplete overlay collapses with the reply input.
   CommentComposerState clearActiveReply() {
     return CommentComposerState(
       mainInputText: mainInputText,
@@ -230,23 +232,20 @@ final class CommentComposerState extends Equatable {
       activeEditOriginalReplyToAuthorPubkey:
           activeEditOriginalReplyToAuthorPubkey,
       editInputText: editInputText,
-      mentionQuery: mentionQuery,
-      mentionSuggestions: mentionSuggestions,
       error: error,
       outbox: outbox,
     );
   }
 
-  /// Clears edit mode: drops [activeEditCommentId], [editInputText], and the
-  /// preserved original threading info. Mention state is also cleared because
-  /// selected mentions are scoped to one composer.
+  /// Clears edit mode: drops [activeEditCommentId], [editInputText], the
+  /// preserved original threading info, AND the edit composer's mention
+  /// overlay/selection state. Matches the pre-split behavior — selected
+  /// mentions are scoped to one composer and don't carry across edit close.
   CommentComposerState clearEditMode() {
     return CommentComposerState(
       mainInputText: mainInputText,
       replyInputText: replyInputText,
       activeReplyCommentId: activeReplyCommentId,
-      mentionQuery: mentionQuery,
-      mentionSuggestions: mentionSuggestions,
       error: error,
       outbox: outbox,
     );

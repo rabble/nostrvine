@@ -217,6 +217,205 @@ void main() {
           expect(b.state.isLoadingMore, isFalse);
         },
       );
+
+      blocTest<CommentsListBloc, CommentsListState>(
+        'noop when isLoadingMore is already true (re-entry guard)',
+        build: createBloc,
+        seed: () => CommentsListState(
+          status: CommentsStatus.success,
+          isLoadingMore: true,
+          commentsById: {validId('c1'): makeComment(validId('c1'))},
+        ),
+        act: (b) => b.add(const CommentsLoadMoreRequested()),
+        expect: () => isEmpty,
+      );
+
+      blocTest<CommentsListBloc, CommentsListState>(
+        'noop when hasMoreContent is false',
+        build: createBloc,
+        seed: () => CommentsListState(
+          status: CommentsStatus.success,
+          hasMoreContent: false,
+          commentsById: {validId('c1'): makeComment(validId('c1'))},
+        ),
+        act: (b) => b.add(const CommentsLoadMoreRequested()),
+        expect: () => isEmpty,
+      );
+
+      blocTest<CommentsListBloc, CommentsListState>(
+        'emits loadFailed error and resets isLoadingMore when loadMore '
+        'throws (#4595 regression — surface snackbar, not stuck spinner)',
+        setUp: () {
+          when(
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenThrow(const LoadCommentsFailedException('boom'));
+        },
+        build: createBloc,
+        seed: () => CommentsListState(
+          status: CommentsStatus.success,
+          commentsById: {validId('c1'): makeComment(validId('c1'))},
+        ),
+        act: (b) => b.add(const CommentsLoadMoreRequested()),
+        errors: () => [isA<LoadCommentsFailedException>()],
+        verify: (b) {
+          expect(b.state.isLoadingMore, isFalse);
+          expect(b.state.error, CommentsListError.loadFailed);
+        },
+      );
+
+      blocTest<CommentsListBloc, CommentsListState>(
+        'cursor is the oldest non-placeholder createdAt, regardless of sortMode',
+        setUp: () {
+          when(
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => CommentThread.empty(validId('root')),
+          );
+        },
+        build: createBloc,
+        seed: () {
+          final newer = makeComment(
+            validId('newer'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(9000),
+          );
+          final older = makeComment(
+            validId('older'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1000),
+          );
+          final placeholder = Comment(
+            id: 'pending_comment_1',
+            content: 'wip',
+            authorPubkey: validId('me'),
+            // Most recent timestamp, but placeholder filter must skip it.
+            createdAt: DateTime.fromMillisecondsSinceEpoch(100000),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          return CommentsListState(
+            status: CommentsStatus.success,
+            sortMode: CommentsSortMode.oldest,
+            commentsById: {
+              newer.id: newer,
+              older.id: older,
+              placeholder.id: placeholder,
+            },
+          );
+        },
+        act: (b) => b.add(const CommentsLoadMoreRequested()),
+        verify: (_) {
+          // Cursor must equal `older.createdAt` regardless of sortMode and
+          // ignoring the placeholder at the newer timestamp.
+          verify(
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              limit: any(named: 'limit'),
+              before: DateTime.fromMillisecondsSinceEpoch(1000),
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<CommentsListBloc, CommentsListState>(
+        'noop when every comment is an optimistic placeholder (no cursor)',
+        build: createBloc,
+        seed: () => CommentsListState(
+          status: CommentsStatus.success,
+          commentsById: {
+            'pending_comment_1': Comment(
+              id: 'pending_comment_1',
+              content: 'wip',
+              authorPubkey: validId('me'),
+              createdAt: DateTime.now(),
+              rootEventId: validId('root'),
+              rootAuthorPubkey: validId('author'),
+            ),
+          },
+        ),
+        act: (b) => b.add(const CommentsLoadMoreRequested()),
+        expect: () => isEmpty,
+        verify: (_) {
+          verifyNever(
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          );
+        },
+      );
+
+      blocTest<CommentsListBloc, CommentsListState>(
+        'deduplicates overlapping ids returned by loadMore (Nostr `until` is '
+        'inclusive)',
+        setUp: () {
+          // Repository returns the cursor comment again as part of the next
+          // page. The Map must dedupe by id rather than producing duplicates.
+          final overlap = makeComment(
+            validId('c1'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(5000),
+            content: 'shared boundary',
+          );
+          final extra = makeComment(
+            validId('c0'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1000),
+          );
+          when(
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => CommentThread(
+              rootEventId: validId('root'),
+              comments: [overlap, extra],
+              totalCount: 2,
+              commentCache: {overlap.id: overlap, extra.id: extra},
+            ),
+          );
+        },
+        build: createBloc,
+        seed: () {
+          final existing = makeComment(
+            validId('c1'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(5000),
+          );
+          return CommentsListState(
+            status: CommentsStatus.success,
+            commentsById: {existing.id: existing},
+          );
+        },
+        act: (b) => b.add(const CommentsLoadMoreRequested()),
+        verify: (b) {
+          // Two distinct ids only — overlap shouldn't appear twice.
+          expect(b.state.commentsById.length, 2);
+          expect(
+            b.state.commentsById.keys,
+            containsAll([
+              validId('c1'),
+              validId('c0'),
+            ]),
+          );
+        },
+      );
     });
 
     group('NewCommentReceived', () {
@@ -286,6 +485,38 @@ void main() {
         ),
         act: (b) => b.add(NewCommentReceived(makeComment(validId('c1')))),
         expect: () => isEmpty,
+      );
+
+      blocTest<CommentsListBloc, CommentsListState>(
+        'does NOT bump newCommentCount for backlog comments (pre-EOSE)',
+        build: createBloc,
+        // Backfill not yet complete — these comments are part of the initial
+        // relay sweep, not live updates the user hasn't seen yet.
+        seed: () => const CommentsListState(status: CommentsStatus.success),
+        act: (b) => b.add(NewCommentReceived(makeComment(validId('c1')))),
+        verify: (b) {
+          expect(b.state.commentsById.length, 1);
+          expect(b.state.newCommentCount, 0);
+        },
+      );
+
+      blocTest<CommentsListBloc, CommentsListState>(
+        'EOSE transition flips backlog→live: post-EOSE comments DO bump pill',
+        build: createBloc,
+        seed: () => const CommentsListState(status: CommentsStatus.success),
+        act: (b) {
+          // Pre-EOSE: backlog comment, no bump.
+          b.add(NewCommentReceived(makeComment(validId('backlog'))));
+          // EOSE.
+          b.add(const CommentsInitialBackfillCompleted());
+          // Post-EOSE: live comment, bumps the pill.
+          b.add(NewCommentReceived(makeComment(validId('live'))));
+        },
+        verify: (b) {
+          expect(b.state.commentsById.length, 2);
+          expect(b.state.newCommentCount, 1);
+          expect(b.state.isBackfillComplete, isTrue);
+        },
       );
     });
 
@@ -616,6 +847,67 @@ void main() {
         await streamController.close();
         await bloc.close();
       });
+
+      test('stopWatchingComments is awaited in close()', () async {
+        when(
+          () => mockCommentsRepository.loadComments(
+            rootEventId: any(named: 'rootEventId'),
+            rootEventKind: any(named: 'rootEventKind'),
+            rootAddressableId: any(named: 'rootAddressableId'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => CommentThread.empty(validId('root')));
+
+        final bloc = createBloc();
+        bloc.add(const CommentsLoadRequested());
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        await bloc.close();
+
+        verify(() => mockCommentsRepository.stopWatchingComments()).called(1);
+      });
+
+      test(
+        'streamed comments arriving after close() do not throw (isClosed guard)',
+        () async {
+          final streamController = StreamController<Comment>.broadcast();
+          when(
+            () => mockCommentsRepository.watchComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              since: any(named: 'since'),
+              onEose: any(named: 'onEose'),
+            ),
+          ).thenAnswer((_) => streamController.stream);
+          when(
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => CommentThread.empty(validId('root')));
+
+          final bloc = createBloc();
+          bloc.add(const CommentsLoadRequested());
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+
+          await bloc.close();
+
+          // Emit AFTER close — the throttleListen onData wrapper guards on
+          // !isClosed and silently drops. Must not throw "Cannot add events
+          // after close" on the bloc.
+          expect(
+            () {
+              streamController.add(makeComment(validId('late')));
+            },
+            returnsNormally,
+          );
+
+          await streamController.close();
+        },
+      );
     });
   });
 }

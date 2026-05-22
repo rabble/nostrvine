@@ -14,11 +14,13 @@ part 'inline_comment_composer_state.dart';
 /// Lightweight cubit that owns the publish flow for the inline comment bar
 /// at the bottom of [PooledFullscreenVideoFeedScreen].
 ///
-/// Unlike the full [CommentsBloc], this cubit does not load, paginate, or
-/// hold a list of comments — the bar's UX is "tap, type, send" and never
-/// surfaces other people's comments. State is therefore just a single
-/// [InlineCommentComposerStatus] enum; the active video is supplied
-/// per-call to [submit] so the cubit holds no mutable video reference.
+/// Unlike the full bottom-sheet trio (`CommentsListBloc` +
+/// `CommentComposerBloc` + `CommentReactionsBloc`), this cubit does not
+/// load, paginate, or hold a list of comments — the bar's UX is "tap, type,
+/// send" and never surfaces other people's comments. State is therefore
+/// just a single [InlineCommentComposerStatus] enum; the active video is
+/// supplied per-call to [submit] so the cubit holds no mutable video
+/// reference.
 class InlineCommentComposerCubit extends Cubit<InlineCommentComposerState> {
   InlineCommentComposerCubit({required CommentsRepository commentsRepository})
     : _commentsRepository = commentsRepository,

@@ -57,7 +57,13 @@ class CommentReactionsBloc
        _rootAddressableId = rootAddressableId,
        super(const CommentReactionsState()) {
     on<CommentVoteToggled>(_onVoteToggled, transformer: droppable());
-    on<CommentVoteCountsFetchRequested>(_onVoteCountsFetchRequested);
+    // restartable(): on a fast comment stream the UI bridge dispatches a
+    // fetch for each new id batch. Without this, a slow earlier fetch
+    // returning after a newer one could clobber the fresher counts.
+    on<CommentVoteCountsFetchRequested>(
+      _onVoteCountsFetchRequested,
+      transformer: restartable(),
+    );
     on<CommentReportRequested>(_onReportRequested, transformer: droppable());
     on<CommentBlockUserRequested>(
       _onBlockUserRequested,
@@ -78,17 +84,31 @@ class CommentReactionsBloc
   final String? _rootAddressableId;
 
   /// Logs [error] to the unified log and forwards through [addError]. Wraps
-  /// with [Reportable] when [error] is not a known domain exception type
-  /// (see rules/error_handling.md).
+  /// with [Reportable] (matrix-YES → Crashlytics) when [error] is not one of
+  /// the named domain-exception types this bloc is expected to throw.
+  ///
+  /// The named [LikesRepositoryException] / [CommentsRepositoryException]
+  /// types are matrix-NO per rules/error_handling.md (network/IO + API
+  /// domain). Anything else — `StateError`, `TypeError`, project-owned
+  /// `*InvariantException`s, etc. — must reach Crashlytics.
+  ///
+  /// [treatExceptionAsDomain] is for call sites whose underlying dependency
+  /// throws untyped [Exception] subtypes (e.g.
+  /// [ContentBlocklistRepository.blockUser] doesn't ship a typed exception
+  /// hierarchy yet). Set to true ONLY where the original code used
+  /// `on Exception catch` to keep relay/network failures out of Crashlytics.
   void _logFailure(
     Object error,
     StackTrace stackTrace,
     String site,
-    String operation,
-  ) {
-    if (error is LikesRepositoryException ||
+    String operation, {
+    bool treatExceptionAsDomain = false,
+  }) {
+    final isMatrixNo =
+        error is LikesRepositoryException ||
         error is CommentsRepositoryException ||
-        error is Exception) {
+        (treatExceptionAsDomain && error is Exception);
+    if (isMatrixNo) {
       addError(error, stackTrace);
     } else {
       addError(Reportable(error, context: site), stackTrace);
@@ -133,12 +153,28 @@ class CommentReactionsBloc
       final voteStatuses =
           results[1] as ({Set<String> upvotedIds, Set<String> downvotedIds});
 
+      // Merge into existing maps/sets rather than replacing — keep
+      // previously-fetched counts for ids not in this batch so an
+      // incremental fetch (only newly-loaded comments) doesn't lose
+      // already-known counts.
       emit(
         state.copyWith(
-          commentUpvoteCounts: voteCounts.upvotes,
-          commentDownvoteCounts: voteCounts.downvotes,
-          upvotedCommentIds: voteStatuses.upvotedIds,
-          downvotedCommentIds: voteStatuses.downvotedIds,
+          commentUpvoteCounts: {
+            ...state.commentUpvoteCounts,
+            ...voteCounts.upvotes,
+          },
+          commentDownvoteCounts: {
+            ...state.commentDownvoteCounts,
+            ...voteCounts.downvotes,
+          },
+          upvotedCommentIds: {
+            ...state.upvotedCommentIds,
+            ...voteStatuses.upvotedIds,
+          },
+          downvotedCommentIds: {
+            ...state.downvotedCommentIds,
+            ...voteStatuses.downvotedIds,
+          },
         ),
       );
     } catch (e, stackTrace) {
@@ -330,29 +366,46 @@ class CommentReactionsBloc
   ) async {
     try {
       await _contentBlocklistRepository.blockUser(event.authorPubkey);
-
-      // Unfollow the blocked user if currently following.
-      final followRepo = _followRepository;
-      if (followRepo != null && followRepo.isFollowing(event.authorPubkey)) {
-        await followRepo.toggleFollow(event.authorPubkey);
-      }
-
-      // Signal the list bloc to drop all of this author's comments.
-      emit(
-        state.copyWith(
-          outbox: ReactionsOutboxRemoveByAuthor(event.authorPubkey),
-        ),
-      );
     } catch (e, stackTrace) {
       // ContentBlocklistRepository persist + kind-30000 broadcast IO failures
-      // are expected-domain/IO here, so keep them out of Crashlytics.
+      // are expected-domain/IO here, so treatExceptionAsDomain matches the
+      // original `on Exception catch` to keep them out of Crashlytics.
       _logFailure(
         e,
         stackTrace,
         CommentReactionsBlocReportableSites.onBlockUserRequested,
         'Error blocking user',
+        treatExceptionAsDomain: true,
       );
       emit(state.copyWith(error: ReactionsError.blockFailed));
+      return;
+    }
+
+    // Block is durable at this point; drop the author's comments from the
+    // list IMMEDIATELY so a follow-side failure below doesn't desync the UI
+    // (the user already sees their block confirmed by the list cleanup).
+    emit(
+      state.copyWith(
+        outbox: ReactionsOutboxRemoveByAuthor(event.authorPubkey),
+      ),
+    );
+
+    // Best-effort unfollow. A failure here is logged but doesn't roll back
+    // the block — the user blocked the author whether or not the unfollow
+    // succeeded, and the kind-30000 mute list is the source of truth.
+    final followRepo = _followRepository;
+    if (followRepo != null && followRepo.isFollowing(event.authorPubkey)) {
+      try {
+        await followRepo.toggleFollow(event.authorPubkey);
+      } catch (e, stackTrace) {
+        _logFailure(
+          e,
+          stackTrace,
+          CommentReactionsBlocReportableSites.onBlockUserRequested,
+          'Error unfollowing after block',
+          treatExceptionAsDomain: true,
+        );
+      }
     }
   }
 

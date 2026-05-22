@@ -19,19 +19,12 @@ part 'comments_list_state.dart';
 
 /// BLoC owning the canonical store of [Comment]s for one video.
 ///
-/// Responsibilities:
-/// - Loading and paginating comments from Nostr relays via
-///   [CommentsRepository.loadComments].
-/// - Watching the real-time comment stream via
-///   [CommentsRepository.watchComments] and routing events through
-///   [NewCommentReceived].
-/// - Sorting via [CommentsSortMode] (engagement sort needs upvote counts
-///   from [CommentReactionsBloc] — see [CommentsListState.threadedCommentsWith]).
-/// - Mutating [CommentsListState.commentsById] in response to cross-bloc
-///   intents bridged through UI [BlocListener]s — see
-///   [OptimisticCommentInserted], [OptimisticCommentConfirmed],
-///   [OptimisticCommentRolledBack], [CommentReplacedInStore],
-///   [CommentRemovedFromStore], [CommentsRemovedByAuthorFromStore].
+/// Loads, paginates, sorts, and watches the live stream of comments for one
+/// video. Mutations from [CommentComposerBloc] and [CommentReactionsBloc]
+/// flow in through UI [BlocListener]s as Optimistic*/CommentReplacedInStore /
+/// CommentRemovedFromStore / CommentsRemovedByAuthorFromStore events.
+/// Engagement sort needs upvote counts from [CommentReactionsBloc] — see
+/// [CommentsListState.threadedCommentsWith].
 class CommentsListBloc extends Bloc<CommentsListEvent, CommentsListState> {
   CommentsListBloc({
     required CommentsRepository commentsRepository,
@@ -82,7 +75,6 @@ class CommentsListBloc extends Bloc<CommentsListEvent, CommentsListState> {
   final CommentsRepository _commentsRepository;
   final bool _includeVideoReplies;
   StreamSubscription<Comment>? _commentStreamSubscription;
-  bool _isInitialBackfillComplete = true;
 
   /// Records a [CommentsRepositoryException] in the unified log (matrix-NO,
   /// stays out of Crashlytics — see `rules/error_handling.md`).
@@ -117,8 +109,13 @@ class CommentsListBloc extends Bloc<CommentsListEvent, CommentsListState> {
   ) async {
     if (state.status == CommentsStatus.loading) return;
 
-    _isInitialBackfillComplete = false;
-    emit(state.copyWith(status: CommentsStatus.loading, newCommentCount: 0));
+    emit(
+      state.copyWith(
+        status: CommentsStatus.loading,
+        newCommentCount: 0,
+        isBackfillComplete: false,
+      ),
+    );
     _startWatchingComments();
 
     try {
@@ -189,17 +186,18 @@ class CommentsListBloc extends Bloc<CommentsListEvent, CommentsListState> {
       return;
     }
 
+    // Cursor = min createdAt across non-placeholder comments. Sort-mode
+    // agnostic so `oldest` / `topEngagement` don't fold to the wrong cursor.
+    // Returns early if every comment is an optimistic placeholder.
+    final realCreatedAts = state.commentsById.values
+        .where((c) => !c.id.startsWith('pending_comment_'))
+        .map((c) => c.createdAt);
+    if (realCreatedAts.isEmpty) return;
+    final cursor = realCreatedAts.reduce((a, b) => a.isBefore(b) ? a : b);
+
     emit(state.copyWith(isLoadingMore: true));
 
     try {
-      // Use the oldest non-placeholder comment's timestamp as cursor.
-      // Nostr `until` filter is inclusive, so we may get duplicates which the
-      // Map deduplicates automatically.
-      final oldestComment = state.commentsSortedWith().lastWhere(
-        (c) => !c.id.startsWith('pending_comment_'),
-      );
-      final cursor = oldestComment.createdAt;
-
       Log.info(
         'Loading more comments before $cursor',
         name: 'CommentsListBloc',
@@ -267,7 +265,7 @@ class CommentsListBloc extends Bloc<CommentsListEvent, CommentsListState> {
     CommentsListErrorCleared event,
     Emitter<CommentsListState> emit,
   ) {
-    emit(state.copyWith());
+    emit(state.copyWith(clearError: true));
   }
 
   void _onNewCommentReceived(
@@ -307,7 +305,7 @@ class CommentsListBloc extends Bloc<CommentsListEvent, CommentsListState> {
         status: CommentsStatus.success,
         commentsById: updated,
         replyCountsByCommentId: computeReplyCounts(updated),
-        newCommentCount: _isInitialBackfillComplete && !isReplacingPlaceholder
+        newCommentCount: state.isBackfillComplete && !isReplacingPlaceholder
             ? state.newCommentCount + 1
             : state.newCommentCount,
       ),
@@ -318,7 +316,7 @@ class CommentsListBloc extends Bloc<CommentsListEvent, CommentsListState> {
     CommentsInitialBackfillCompleted event,
     Emitter<CommentsListState> emit,
   ) {
-    _isInitialBackfillComplete = true;
+    emit(state.copyWith(isBackfillComplete: true));
   }
 
   void _onNewCommentsAcknowledged(

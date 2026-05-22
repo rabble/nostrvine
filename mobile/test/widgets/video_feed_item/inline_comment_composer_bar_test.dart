@@ -295,8 +295,9 @@ void main() {
         // Reproduces the full submit-then-fail loop the user sees in
         // production: type → tap send (optimistic clear) → cubit emits
         // failure → bar restores the typed text from `_pendingDraft`
-        // so the user can retry without retyping. Matches the
-        // `CommentsBloc` rollback of `mainInputText` on publish error.
+        // so the user can retry without retyping. Matches
+        // `CommentComposerBloc._emitSubmitRollback` of `mainInputText`
+        // on publish error.
         // Uses a [StreamController] so the failure emits AFTER the tap
         // — `whenListen` with `Stream.fromIterable` would drain the
         // sequence on subscription, before the test has had a chance

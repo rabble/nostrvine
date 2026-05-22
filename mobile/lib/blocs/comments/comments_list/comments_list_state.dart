@@ -78,6 +78,7 @@ final class CommentsListState extends Equatable {
     this.sortMode = CommentsSortMode.newest,
     this.replyCountsByCommentId = const {},
     this.newCommentCount = 0,
+    this.isBackfillComplete = false,
   });
 
   /// The current status of the list.
@@ -113,6 +114,14 @@ final class CommentsListState extends Equatable {
   /// Number of new comments received from the real-time subscription that the
   /// user has not yet acknowledged (scrolled to top / tapped the pill).
   final int newCommentCount;
+
+  /// `true` once the initial relay backfill has reached EOSE; subsequent
+  /// stream events represent live (post-backfill) comments and bump the
+  /// [newCommentCount] pill. Lifted into state (instead of a mutable bloc
+  /// instance field) per rules/state_management.md so it is observable in
+  /// `blocTest` and survives state restoration. Default `false` to prevent
+  /// pre-load `NewCommentReceived` events from being mis-classified as live.
+  final bool isBackfillComplete;
 
   /// l10n-friendly error code; null when no error is pending.
   final CommentsListError? error;
@@ -232,6 +241,8 @@ final class CommentsListState extends Equatable {
     CommentsSortMode? sortMode,
     Map<String, int>? replyCountsByCommentId,
     int? newCommentCount,
+    bool? isBackfillComplete,
+    bool clearError = false,
   }) {
     return CommentsListState(
       status: status ?? this.status,
@@ -240,13 +251,18 @@ final class CommentsListState extends Equatable {
       rootAuthorPubkey: rootAuthorPubkey ?? this.rootAuthorPubkey,
       rootAddressableId: rootAddressableId ?? this.rootAddressableId,
       commentsById: commentsById ?? this.commentsById,
-      error: error,
+      // Aligns with CommentComposerState / CommentReactionsState: `error` is
+      // sticky until either replaced or explicitly cleared, so unrelated
+      // emits (sort change, store mutation, stream tick) don't silently null
+      // a pending failure before the snackbar listener can read it.
+      error: clearError ? null : (error ?? this.error),
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       hasMoreContent: hasMoreContent ?? this.hasMoreContent,
       sortMode: sortMode ?? this.sortMode,
       replyCountsByCommentId:
           replyCountsByCommentId ?? this.replyCountsByCommentId,
       newCommentCount: newCommentCount ?? this.newCommentCount,
+      isBackfillComplete: isBackfillComplete ?? this.isBackfillComplete,
     );
   }
 
@@ -264,5 +280,6 @@ final class CommentsListState extends Equatable {
     sortMode,
     replyCountsByCommentId,
     newCommentCount,
+    isBackfillComplete,
   ];
 }

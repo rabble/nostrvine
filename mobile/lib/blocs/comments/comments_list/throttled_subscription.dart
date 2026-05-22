@@ -10,8 +10,11 @@ import 'dart:async';
 /// Events arriving after the budget is exhausted are silently dropped
 /// until the next second window, preventing UI thrashing on viral videos.
 ///
-/// The returned [StreamSubscription] also cancels the refill [Timer] when
-/// cancelled, avoiding a periodic-timer leak per comments-sheet open/close.
+/// The returned [StreamSubscription] cancels the refill [Timer] when
+/// cancelled — and the wrapper also cancels the timer if the underlying
+/// stream terminates with an error (the default `cancelOnError: false` would
+/// otherwise leak the periodic Timer while the half-dead subscription waits
+/// for an explicit close).
 StreamSubscription<T> throttledListen<T>(
   Stream<T> stream, {
   required int maxPerSecond,
@@ -30,7 +33,13 @@ StreamSubscription<T> throttledListen<T>(
         onData(event);
       }
     },
-    onError: onError,
+    onError: (Object error) {
+      // Tear down the refill timer alongside surfacing the error so a stream
+      // that fails mid-flight doesn't leak Timer.periodic for the bloc
+      // lifetime. The user-supplied onError still runs after cleanup.
+      refillTimer.cancel();
+      onError?.call(error);
+    },
     onDone: refillTimer.cancel,
   );
   return _ThrottledSubscription<T>(subscription, refillTimer);
