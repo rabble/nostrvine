@@ -1002,5 +1002,174 @@ void main() {
         expect(find.text('No callback'), findsOneWidget);
       });
     });
+
+    group('markdown rendering', () {
+      /// Walks the rendered span tree and collects every TextSpan that
+      /// satisfies [predicate]. Used to assert on the inline-style
+      /// flags applied to the rendered content.
+      List<TextSpan> spansMatching(
+        WidgetTester tester,
+        bool Function(TextSpan span) predicate,
+      ) {
+        final hits = <TextSpan>[];
+        final richTexts = tester
+            .widgetList<RichText>(find.byType(RichText))
+            .toList();
+        for (final richText in richTexts) {
+          void visit(InlineSpan span) {
+            if (span is TextSpan) {
+              if (predicate(span)) hits.add(span);
+              for (final child in span.children ?? const <InlineSpan>[]) {
+                visit(child);
+              }
+            }
+          }
+
+          visit(richText.text);
+        }
+        return hits;
+      }
+
+      Widget bubble(String message, {bool isSent = true}) {
+        return MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: testProviderScope(
+              child: MessageBubble(
+                message: message,
+                timestamp: '2:30 PM',
+                isSent: isSent,
+              ),
+            ),
+          ),
+        );
+      }
+
+      testWidgets('bold span renders with FontWeight.w700', (tester) async {
+        await tester.pumpWidget(bubble('say **hi** please'));
+
+        final boldSpans = spansMatching(
+          tester,
+          (span) =>
+              span.text == 'hi' && span.style?.fontWeight == FontWeight.w700,
+        );
+        expect(boldSpans, hasLength(1));
+      });
+
+      testWidgets('italic span renders with FontStyle.italic', (tester) async {
+        await tester.pumpWidget(bubble('be _kind_ today'));
+
+        final italicSpans = spansMatching(
+          tester,
+          (span) =>
+              span.text == 'kind' && span.style?.fontStyle == FontStyle.italic,
+        );
+        expect(italicSpans, hasLength(1));
+      });
+
+      testWidgets('strikethrough span renders with lineThrough decoration', (
+        tester,
+      ) async {
+        await tester.pumpWidget(bubble('that is ~~wrong~~ now'));
+
+        final strikeSpans = spansMatching(
+          tester,
+          (span) =>
+              span.text == 'wrong' &&
+              span.style?.decoration == TextDecoration.lineThrough,
+        );
+        expect(strikeSpans, hasLength(1));
+      });
+
+      testWidgets('inline code renders with monospace + translucent bg', (
+        tester,
+      ) async {
+        await tester.pumpWidget(bubble('run `flutter test` first'));
+
+        final codeSpans = spansMatching(
+          tester,
+          (span) => span.text == 'flutter test',
+        );
+        expect(codeSpans, hasLength(1));
+        final style = codeSpans.single.style!;
+        // Chivo Mono comes through google_fonts so the fontFamily
+        // string includes a hash suffix — match by prefix.
+        expect(style.fontFamily, startsWith('ChivoMono'));
+        expect(style.background, isNotNull);
+      });
+
+      testWidgets('received bubble uses a lighter code background', (
+        tester,
+      ) async {
+        await tester.pumpWidget(bubble('try `x()`', isSent: false));
+
+        final codeSpan = spansMatching(
+          tester,
+          (span) => span.text == 'x()',
+        ).single;
+        final bgAlpha = codeSpan.style!.background!.color.a;
+        // Received variant uses 0.10 alpha; sent uses 0.18. Match the
+        // received bucket here.
+        expect(bgAlpha, closeTo(0.10, 0.02));
+      });
+
+      testWidgets('snake_case identifiers do not italicize', (tester) async {
+        await tester.pumpWidget(bubble('try foo_bar_baz today'));
+
+        final italicSpans = spansMatching(
+          tester,
+          (span) =>
+              (span.text?.contains('bar') ?? false) &&
+              span.style?.fontStyle == FontStyle.italic,
+        );
+        expect(italicSpans, isEmpty);
+      });
+
+      testWidgets('unmatched ** does not crash and renders as literal', (
+        tester,
+      ) async {
+        await tester.pumpWidget(bubble('half **incomplete'));
+
+        // No bold span emitted.
+        final boldSpans = spansMatching(
+          tester,
+          (span) => span.style?.fontWeight == FontWeight.w700,
+        );
+        expect(boldSpans, isEmpty);
+        // The literal markers reach the rendered text.
+        expect(find.textContaining('**incomplete'), findsOneWidget);
+      });
+
+      testWidgets('plain message without markdown markers renders unchanged', (
+        tester,
+      ) async {
+        await tester.pumpWidget(bubble('just regular text here'));
+
+        // No span carries any of the markdown style overrides.
+        expect(
+          spansMatching(
+            tester,
+            (span) => span.style?.fontWeight == FontWeight.w700,
+          ),
+          isEmpty,
+        );
+        expect(
+          spansMatching(
+            tester,
+            (span) => span.style?.fontStyle == FontStyle.italic,
+          ),
+          isEmpty,
+        );
+        expect(
+          spansMatching(
+            tester,
+            (span) => span.style?.decoration == TextDecoration.lineThrough,
+          ),
+          isEmpty,
+        );
+        expect(find.textContaining('just regular text here'), findsOneWidget);
+      });
+    });
   });
 }
