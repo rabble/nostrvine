@@ -2,6 +2,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' show AudioEvent;
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/observability/reportable_error.dart';
@@ -93,6 +94,43 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
   final AudioExtractionService _audioExtractionService;
   final SplitClipFn _splitClip;
 
+  static DivineVideoClip normalizeClipUpdate({
+    required List<DivineVideoClip> clips,
+    required int clipIndex,
+    required DivineVideoClip currentClip,
+    required DivineVideoClip proposedClip,
+  }) {
+    final nextSpeed = proposedClip.playbackSpeed;
+    if (nextSpeed == null || nextSpeed <= 0) return proposedClip;
+
+    var otherPlaybackDuration = Duration.zero;
+    for (var i = 0; i < clips.length; i++) {
+      if (i == clipIndex) continue;
+      otherPlaybackDuration += clips[i].playbackDuration;
+    }
+
+    final remainingPlaybackUs =
+        (VideoEditorConstants.maxDuration - otherPlaybackDuration)
+            .inMicroseconds;
+    final trimmedUs = proposedClip.trimmedDuration.inMicroseconds;
+    if (trimmedUs <= 0) return proposedClip;
+    if (remainingPlaybackUs <= 0) return currentClip;
+
+    final minAllowedSpeed = trimmedUs / remainingPlaybackUs;
+    if (minAllowedSpeed > VideoEditorConstants.clipSpeedMax) {
+      return currentClip;
+    }
+
+    final clampedSpeed = nextSpeed.clamp(
+      minAllowedSpeed > VideoEditorConstants.clipSpeedMin
+          ? minAllowedSpeed
+          : VideoEditorConstants.clipSpeedMin,
+      VideoEditorConstants.clipSpeedMax,
+    );
+    if (clampedSpeed == nextSpeed) return proposedClip;
+    return proposedClip.copyWith(playbackSpeed: clampedSpeed);
+  }
+
   // === CLIP DATA ===
 
   void _onInitialized(
@@ -148,8 +186,13 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     final index = state.clips.indexWhere((c) => c.id == event.clipId);
     if (index == -1) return;
 
-    final newClips = List<DivineVideoClip>.of(state.clips)
-      ..[index] = event.clip;
+    final nextClip = normalizeClipUpdate(
+      clips: state.clips,
+      clipIndex: index,
+      currentClip: state.clips[index],
+      proposedClip: event.clip,
+    );
+    final newClips = List<DivineVideoClip>.of(state.clips)..[index] = nextClip;
 
     emit(state.copyWith(clips: List.unmodifiable(newClips)));
   }
@@ -453,9 +496,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     final nextVolume = event.volume.clamp(0.0, 1.0);
     if (state.clips[index].volume == nextVolume) return;
     final updated = List<DivineVideoClip>.of(state.clips);
-    updated[index] = updated[index].copyWith(
-      volume: nextVolume,
-    );
+    updated[index] = updated[index].copyWith(volume: nextVolume);
     emit(
       state.copyWith(
         clips: List.unmodifiable(updated),
@@ -483,9 +524,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         category: LogCategory.video,
       );
       emit(
-        state.copyWith(
-          lastAudioExtraction: ClipAudioExtractionNoLocalFile(),
-        ),
+        state.copyWith(lastAudioExtraction: ClipAudioExtractionNoLocalFile()),
       );
       return;
     }
@@ -525,7 +564,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       // or removed before this one are accounted for.
       var clipStart = Duration.zero;
       for (var i = 0; i < currentIndex; i++) {
-        clipStart += currentClips[i].trimmedDuration;
+        clipStart += currentClips[i].playbackDuration;
       }
 
       final audioEvent = AudioEvent(
@@ -540,7 +579,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         title: event.clipTitle,
         startOffset: currentClip.trimStart,
         startTime: clipStart,
-        endTime: clipStart + currentClip.trimmedDuration,
+        endTime: clipStart + currentClip.playbackDuration,
       );
 
       // Mute the source clip now that its audio has been extracted.

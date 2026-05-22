@@ -258,7 +258,7 @@ class _CachedOverlayStripsState extends State<_CachedOverlayStrips> {
     final edges = <int>[0];
     var ms = 0;
     for (final clip in clips) {
-      ms += clip.trimmedDuration.inMilliseconds;
+      ms += clip.playbackDuration.inMilliseconds;
       edges.add(ms);
     }
     return edges;
@@ -267,7 +267,7 @@ class _CachedOverlayStripsState extends State<_CachedOverlayStrips> {
   static bool _sameEdges(List<DivineVideoClip> a, List<DivineVideoClip> b) {
     if (a.length != b.length) return false;
     for (var i = 0; i < a.length; i++) {
-      if (a[i].trimmedDuration != b[i].trimmedDuration) return false;
+      if (a[i].playbackDuration != b[i].playbackDuration) return false;
     }
     return true;
   }
@@ -386,17 +386,11 @@ class _TimelineOutsideAreaPainter extends CustomPainter {
 
     // Diagonal covers the rotated bounding box for any aspect ratio.
     final extent = math
-        .sqrt(
-          size.width * size.width + size.height * size.height,
-        )
+        .sqrt(size.width * size.width + size.height * size.height)
         .ceilToDouble();
     final startX = -extent - ((-extent) % _stripeGap);
     for (var x = startX; x <= extent; x += _stripeGap) {
-      canvas.drawLine(
-        Offset(x, -extent),
-        Offset(x, extent),
-        stripePaint,
-      );
+      canvas.drawLine(Offset(x, -extent), Offset(x, extent), stripePaint);
     }
 
     canvas.restore();

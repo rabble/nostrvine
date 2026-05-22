@@ -7,12 +7,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' as model;
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_overlay_strips.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_body.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 
 class _MockVideoEditorMainBloc
     extends MockBloc<VideoEditorMainEvent, VideoEditorMainState>
@@ -21,6 +24,22 @@ class _MockVideoEditorMainBloc
 class _MockTimelineOverlayBloc
     extends MockBloc<TimelineOverlayEvent, TimelineOverlayState>
     implements TimelineOverlayBloc {}
+
+DivineVideoClip _createClip({
+  required String id,
+  required Duration duration,
+  double? playbackSpeed,
+}) {
+  return DivineVideoClip(
+    id: id,
+    video: EditorVideo.file('video.mp4'),
+    duration: duration,
+    recordedAt: DateTime(2025),
+    targetAspectRatio: model.AspectRatio.vertical,
+    originalAspectRatio: 9 / 16,
+    playbackSpeed: playbackSpeed,
+  );
+}
 
 void main() {
   group(VideoEditorTimelineBody, () {
@@ -44,6 +63,7 @@ void main() {
       WidgetTester tester, {
       bool isReordering = false,
       Duration totalDuration = const Duration(seconds: 12),
+      List<DivineVideoClip> clips = const <DivineVideoClip>[],
     }) async {
       when(
         () => mainBloc.state,
@@ -70,7 +90,7 @@ void main() {
                 pixelsPerSecond: 80,
                 scrollController: scrollController,
                 scrollPadding: 16,
-                clips: const <DivineVideoClip>[],
+                clips: clips,
                 totalWidth: 960,
                 isInteracting: false,
                 onReorder: (_) {},
@@ -235,6 +255,31 @@ void main() {
         ),
         findsNothing,
       );
+    });
+
+    testWidgets('uses playback-duration clip edges for overlay snap points', (
+      tester,
+    ) async {
+      await pumpBody(
+        tester,
+        clips: [
+          _createClip(
+            id: 'slow',
+            duration: const Duration(seconds: 4),
+            playbackSpeed: 0.5,
+          ),
+          _createClip(
+            id: 'fast',
+            duration: const Duration(seconds: 3),
+            playbackSpeed: 2.0,
+          ),
+        ],
+      );
+
+      final overlayStrips = tester.widget<TimelineOverlayStrips>(
+        find.byType(TimelineOverlayStrips),
+      );
+      expect(overlayStrips.clipEdgesMs, equals([0, 8000, 9500]));
     });
   });
 }

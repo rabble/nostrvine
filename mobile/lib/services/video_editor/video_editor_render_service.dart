@@ -605,6 +605,11 @@ class VideoEditorRenderService {
         segments.add(
           VideoSegment(
             video: entry.clip.video,
+            startTime: entry.clip.trimStart == .zero
+                ? null
+                : entry.clip.trimStart,
+            endTime: entry.clip.trimStart + entry.clip.trimmedDuration,
+            volume: entry.clip.volume,
             playbackSpeed: entry.clip.playbackSpeed,
           ),
         );
@@ -671,7 +676,13 @@ class VideoEditorRenderService {
     final task = VideoRenderData(
       id: '${clip.id}_normalized',
       videoSegments: [
-        VideoSegment(video: clip.video, playbackSpeed: clip.playbackSpeed),
+        VideoSegment(
+          video: clip.video,
+          startTime: clip.trimStart == .zero ? null : clip.trimStart,
+          endTime: clip.trimStart + clip.trimmedDuration,
+          volume: clip.volume,
+          playbackSpeed: clip.playbackSpeed,
+        ),
       ],
       shouldOptimizeForNetworkUse: true,
       imageBytesWithCropping: true,

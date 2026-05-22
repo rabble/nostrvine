@@ -67,29 +67,17 @@ class _TimelineClipControlsState extends ConsumerState<TimelineClipControls> {
       expanded: false,
       scrollable: false,
       isScrollControlled: true,
-      body: VideoEditorClipSpeedSheet(
-        initialSpeed: clip.playbackSpeed ?? 1.0,
-      ),
+      body: VideoEditorClipSpeedSheet(initialSpeed: clip.playbackSpeed ?? 1.0),
     );
 
     if (result == null || !mounted) return;
 
-    // Clamp the selected speed so the total composition stays within maxDuration.
-    // A slower speed lengthens playback; the minimum allowed speed is the one
-    // that uses exactly the remaining capacity after all other clips.
-    final otherPlaybackDuration = state.totalDuration - clip.playbackDuration;
-    final maxClipPlaybackUs =
-        (VideoEditorConstants.maxDuration - otherPlaybackDuration)
-            .inMicroseconds;
-    double clampedResult = result;
-    if (maxClipPlaybackUs > 0 && clip.trimmedDuration.inMicroseconds > 0) {
-      // Higher speed → shorter playback.  Enforce: speed >= minSpeed so that
-      // clip.trimmedDuration / speed <= maxClipPlaybackUs.
-      final minSpeed = clip.trimmedDuration.inMicroseconds / maxClipPlaybackUs;
-      if (clampedResult < minSpeed) clampedResult = minSpeed;
-    }
-
-    final updated = clip.copyWith(playbackSpeed: clampedResult);
+    final updated = ClipEditorBloc.normalizeClipUpdate(
+      clips: state.clips,
+      clipIndex: state.currentClipIndex,
+      currentClip: clip,
+      proposedClip: clip.copyWith(playbackSpeed: result),
+    );
     bloc.add(ClipEditorClipUpdated(clipId: clip.id, clip: updated));
 
     editor.addHistory(

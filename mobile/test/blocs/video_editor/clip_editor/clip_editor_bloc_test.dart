@@ -7,6 +7,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
@@ -42,6 +43,7 @@ class _MockSplitProVideoEditor extends ProVideoEditor {
 DivineVideoClip _createClip({
   String id = 'clip-1',
   Duration duration = const Duration(seconds: 3),
+  double? playbackSpeed,
 }) {
   return DivineVideoClip(
     id: id,
@@ -50,6 +52,7 @@ DivineVideoClip _createClip({
     recordedAt: DateTime(2025),
     targetAspectRatio: .vertical,
     originalAspectRatio: 9 / 16,
+    playbackSpeed: playbackSpeed,
   );
 }
 
@@ -286,6 +289,67 @@ void main() {
           ),
         ),
         expect: () => <ClipEditorState>[],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'clamps playbackSpeed updates to preserve the maxDuration invariant',
+        build: buildBloc,
+        seed: () => ClipEditorState(
+          clips: [
+            _createClip(id: 'a', duration: const Duration(seconds: 2)),
+            _createClip(id: 'b', duration: const Duration(seconds: 6)),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          ClipEditorClipUpdated(
+            clipId: 'b',
+            clip: _createClip(
+              id: 'b',
+              duration: const Duration(seconds: 6),
+              playbackSpeed: 0.5,
+            ),
+          ),
+        ),
+        verify: (bloc) {
+          expect(
+            bloc.state.totalDuration <= VideoEditorConstants.maxDuration,
+            isTrue,
+          );
+          expect(
+            bloc.state.clips[1].playbackSpeed,
+            closeTo(1.3953488372, 1e-9),
+          );
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'rejects playbackSpeed updates when no valid speed can satisfy maxDuration',
+        build: buildBloc,
+        seed: () => ClipEditorState(
+          clips: [
+            _createClip(id: 'a', duration: VideoEditorConstants.maxDuration),
+            _createClip(id: 'b', duration: const Duration(seconds: 1)),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          ClipEditorClipUpdated(
+            clipId: 'b',
+            clip: _createClip(
+              id: 'b',
+              duration: const Duration(seconds: 1),
+              playbackSpeed: 0.5,
+            ),
+          ),
+        ),
+        verify: (bloc) {
+          expect(bloc.state.clips[1].playbackSpeed, isNull);
+          expect(
+            bloc.state.totalDuration,
+            equals(
+              VideoEditorConstants.maxDuration + const Duration(seconds: 1),
+            ),
+          );
+        },
       );
     });
 
@@ -650,10 +714,7 @@ void main() {
           final splitState = states.last;
 
           expect(splitState.lastSplit, isNotNull);
-          expect(
-            splitState.lastSplit!.sourceClipId,
-            equals('source-clip'),
-          );
+          expect(splitState.lastSplit!.sourceClipId, equals('source-clip'));
           expect(
             splitState.lastSplit!.startClipId,
             equals(splitState.clips.first.id),
@@ -667,44 +728,38 @@ void main() {
         },
       );
 
-      test(
-        'absoluteSplitPosition equals trimStart + splitPosition',
-        () async {
-          final clip = _createClip(
-            id: 'c',
-            duration: const Duration(seconds: 4),
-          ).copyWith(trimStart: const Duration(milliseconds: 500));
+      test('absoluteSplitPosition equals trimStart + splitPosition', () async {
+        final clip = _createClip(
+          id: 'c',
+          duration: const Duration(seconds: 4),
+        ).copyWith(trimStart: const Duration(milliseconds: 500));
 
-          final bloc = buildBloc(splitClip: _fakeSplitClip)
-            ..emit(
-              ClipEditorState(
-                clips: [clip],
-                isEditing: true,
-                // 1 s into the trimmed view
-                splitPosition: const Duration(seconds: 1),
-              ),
-            );
-
-          bloc.add(const ClipEditorSplitRequested());
-          final states = await bloc.stream.take(2).toList();
-          final split = states.last.lastSplit!;
-
-          expect(
-            split.absoluteSplitPosition,
-            // trimStart(500ms) + splitPosition(1000ms)
-            equals(const Duration(milliseconds: 1500)),
+        final bloc = buildBloc(splitClip: _fakeSplitClip)
+          ..emit(
+            ClipEditorState(
+              clips: [clip],
+              isEditing: true,
+              // 1 s into the trimmed view
+              splitPosition: const Duration(seconds: 1),
+            ),
           );
 
-          await bloc.close();
-        },
-      );
+        bloc.add(const ClipEditorSplitRequested());
+        final states = await bloc.stream.take(2).toList();
+        final split = states.last.lastSplit!;
+
+        expect(
+          split.absoluteSplitPosition,
+          // trimStart(500ms) + splitPosition(1000ms)
+          equals(const Duration(milliseconds: 1500)),
+        );
+
+        await bloc.close();
+      });
 
       test('lastSplit captures source trim bounds', () async {
-        final clip =
-            _createClip(
-              id: 'c',
-              duration: const Duration(seconds: 10),
-            ).copyWith(
+        final clip = _createClip(id: 'c', duration: const Duration(seconds: 10))
+            .copyWith(
               trimStart: const Duration(seconds: 3),
               trimEnd: const Duration(seconds: 2),
             );
@@ -1153,9 +1208,7 @@ void main() {
       blocTest<ClipEditorBloc, ClipEditorState>(
         'emits ClipAudioExtractionNoLocalFile when clip has no local file',
         build: buildBloc,
-        seed: () => ClipEditorState(
-          clips: [_createClipNoFile()],
-        ),
+        seed: () => ClipEditorState(clips: [_createClipNoFile()]),
         act: (bloc) => bloc.add(
           const ClipEditorAudioExtractionRequested(clipTitle: 'Test'),
         ),
@@ -1182,9 +1235,7 @@ void main() {
           );
           return buildBloc(audioExtractionService: mockService);
         },
-        seed: () => ClipEditorState(
-          clips: [_createClipWithFile()],
-        ),
+        seed: () => ClipEditorState(clips: [_createClipWithFile()]),
         act: (bloc) => bloc.add(
           const ClipEditorAudioExtractionRequested(clipTitle: 'Test'),
         ),
@@ -1195,16 +1246,8 @@ void main() {
             isTrue,
           ),
           isA<ClipEditorState>()
-              .having(
-                (s) => s.isExtractingAudio,
-                'isExtractingAudio',
-                isFalse,
-              )
-              .having(
-                (s) => s.clips.first.volume,
-                'volume',
-                0,
-              )
+              .having((s) => s.isExtractingAudio, 'isExtractingAudio', isFalse)
+              .having((s) => s.clips.first.volume, 'volume', 0)
               .having(
                 (s) => s.lastAudioExtraction,
                 'lastAudioExtraction',
@@ -1221,16 +1264,61 @@ void main() {
       );
 
       blocTest<ClipEditorBloc, ClipEditorState>(
-        'emits isExtractingAudio then ClipAudioExtractionFailure on AudioExtractionException',
+        'uses playback-time offsets when an extracted clip follows a slowed clip',
         build: () {
-          when(() => mockService.extractAudio(any())).thenThrow(
-            const AudioExtractionException('Extraction failed'),
+          when(() => mockService.extractAudio(any())).thenAnswer(
+            (_) async => const AudioExtractionResult(
+              audioFilePath: '/tmp/audio.m4a',
+              duration: 5,
+              fileSize: 12345,
+              sha256Hash: 'abc123',
+              mimeType: 'audio/mp4',
+            ),
           );
           return buildBloc(audioExtractionService: mockService);
         },
         seed: () => ClipEditorState(
-          clips: [_createClipWithFile()],
+          clips: [
+            _createClip(
+              id: 'slow',
+              duration: const Duration(seconds: 4),
+              playbackSpeed: 0.5,
+            ),
+            _createClipWithFile(id: 'target'),
+          ],
+          currentClipIndex: 1,
         ),
+        act: (bloc) => bloc.add(
+          const ClipEditorAudioExtractionRequested(clipTitle: 'Test'),
+        ),
+        verify: (bloc) {
+          final result =
+              bloc.state.lastAudioExtraction! as ClipAudioExtractionSuccess;
+          final targetClip = _createClipWithFile(id: 'target');
+          expect(
+            result.audioEvent.startTime,
+            equals(const Duration(seconds: 8)),
+          );
+          expect(
+            result.audioEvent.endTime,
+            equals(const Duration(milliseconds: 11500)),
+          );
+          expect(
+            result.audioEvent.endTime! - result.audioEvent.startTime,
+            equals(targetClip.playbackDuration),
+          );
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'emits isExtractingAudio then ClipAudioExtractionFailure on AudioExtractionException',
+        build: () {
+          when(
+            () => mockService.extractAudio(any()),
+          ).thenThrow(const AudioExtractionException('Extraction failed'));
+          return buildBloc(audioExtractionService: mockService);
+        },
+        seed: () => ClipEditorState(clips: [_createClipWithFile()]),
         act: (bloc) => bloc.add(
           const ClipEditorAudioExtractionRequested(clipTitle: 'Test'),
         ),
@@ -1241,11 +1329,7 @@ void main() {
             isTrue,
           ),
           isA<ClipEditorState>()
-              .having(
-                (s) => s.isExtractingAudio,
-                'isExtractingAudio',
-                isFalse,
-              )
+              .having((s) => s.isExtractingAudio, 'isExtractingAudio', isFalse)
               .having(
                 (s) => s.lastAudioExtraction,
                 'lastAudioExtraction',
@@ -1258,14 +1342,12 @@ void main() {
       blocTest<ClipEditorBloc, ClipEditorState>(
         'wraps unexpected extraction errors in Reportable with context',
         build: () {
-          when(() => mockService.extractAudio(any())).thenThrow(
-            StateError('boom'),
-          );
+          when(
+            () => mockService.extractAudio(any()),
+          ).thenThrow(StateError('boom'));
           return buildBloc(audioExtractionService: mockService);
         },
-        seed: () => ClipEditorState(
-          clips: [_createClipWithFile()],
-        ),
+        seed: () => ClipEditorState(clips: [_createClipWithFile()]),
         act: (bloc) => bloc.add(
           const ClipEditorAudioExtractionRequested(clipTitle: 'Test'),
         ),
@@ -1276,11 +1358,7 @@ void main() {
             isTrue,
           ),
           isA<ClipEditorState>()
-              .having(
-                (s) => s.isExtractingAudio,
-                'isExtractingAudio',
-                isFalse,
-              )
+              .having((s) => s.isExtractingAudio, 'isExtractingAudio', isFalse)
               .having(
                 (s) => s.lastAudioExtraction,
                 'lastAudioExtraction',
@@ -1300,59 +1378,54 @@ void main() {
 
       // Regression test for Fix 1: the handler must re-read `state.clips` after
       // the await and abort when the source clip no longer exists.
-      test(
-        'discards extraction result and emits ClipAudioExtractionDiscarded '
-        'when source clip is removed during in-flight extraction',
-        () async {
-          final completer = Completer<AudioExtractionResult>();
-          when(
-            () => mockService.extractAudio(any()),
-          ).thenAnswer((_) => completer.future);
+      test('discards extraction result and emits ClipAudioExtractionDiscarded '
+          'when source clip is removed during in-flight extraction', () async {
+        final completer = Completer<AudioExtractionResult>();
+        when(
+          () => mockService.extractAudio(any()),
+        ).thenAnswer((_) => completer.future);
 
-          final clip = _createClipWithFile();
-          final bloc = buildBloc(audioExtractionService: mockService);
+        final clip = _createClipWithFile();
+        final bloc = buildBloc(audioExtractionService: mockService);
 
-          // Bring bloc to the expected initial state via event.
-          bloc.add(ClipEditorInitialized([clip]));
-          await Future<void>.delayed(Duration.zero);
+        // Bring bloc to the expected initial state via event.
+        bloc.add(ClipEditorInitialized([clip]));
+        await Future<void>.delayed(Duration.zero);
 
-          bloc.add(
-            const ClipEditorAudioExtractionRequested(clipTitle: 'Test'),
-          );
-          await Future<void>.delayed(Duration.zero);
-          expect(bloc.state.isExtractingAudio, isTrue);
+        bloc.add(const ClipEditorAudioExtractionRequested(clipTitle: 'Test'));
+        await Future<void>.delayed(Duration.zero);
+        expect(bloc.state.isExtractingAudio, isTrue);
 
-          // Remove the clip while extraction is awaiting the service.
-          bloc.add(ClipEditorClipRemoved(clip.id));
-          await Future<void>.delayed(Duration.zero);
-          expect(bloc.state.clips, isEmpty);
+        // Remove the clip while extraction is awaiting the service.
+        bloc.add(ClipEditorClipRemoved(clip.id));
+        await Future<void>.delayed(Duration.zero);
+        expect(bloc.state.clips, isEmpty);
 
-          // Complete the service call — bloc must discard the stale result.
-          completer.complete(
-            const AudioExtractionResult(
-              audioFilePath: '/tmp/audio.m4a',
-              duration: 5,
-              fileSize: 12345,
-              sha256Hash: 'abc123',
-              mimeType: 'audio/mp4',
-            ),
-          );
-          await Future<void>.delayed(Duration.zero);
+        // Complete the service call — bloc must discard the stale result.
+        completer.complete(
+          const AudioExtractionResult(
+            audioFilePath: '/tmp/audio.m4a',
+            duration: 5,
+            fileSize: 12345,
+            sha256Hash: 'abc123',
+            mimeType: 'audio/mp4',
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
 
-          expect(bloc.state.isExtractingAudio, isFalse);
-          expect(
-            bloc.state.clips,
-            isEmpty,
-            reason: 'deleted clip must not be resurrected by the result',
-          );
-          expect(
-            bloc.state.lastAudioExtraction,
-            isA<ClipAudioExtractionDiscarded>(),
-          );
+        expect(bloc.state.isExtractingAudio, isFalse);
+        expect(
+          bloc.state.clips,
+          isEmpty,
+          reason: 'deleted clip must not be resurrected by the result',
+        );
+        expect(
+          bloc.state.lastAudioExtraction,
+          isA<ClipAudioExtractionDiscarded>(),
+        );
 
-          await bloc.close();
-        },
-      );
+        await bloc.close();
+      });
     });
   });
 }
