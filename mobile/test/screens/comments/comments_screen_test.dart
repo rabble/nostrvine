@@ -4,6 +4,7 @@
 // ABOUTME: the production screen.
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:comments_repository/comments_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -62,6 +63,22 @@ void main() {
     setUpAll(() {
       registerFallbackValue(const CommentsLoadRequested());
       registerFallbackValue(const CommentReplyToggled(''));
+      registerFallbackValue(const ComposerOutboxConsumed());
+      registerFallbackValue(const ReactionsOutboxConsumed());
+      registerFallbackValue(const CommentVoteCountsFetchRequested([]));
+      registerFallbackValue(
+        OptimisticCommentInserted(
+          Comment(
+            id: 'fb',
+            content: '',
+            authorPubkey: testVideoAuthorPubkey,
+            createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+            rootEventId: testVideoEventId,
+            rootAuthorPubkey: testVideoAuthorPubkey,
+          ),
+        ),
+      );
+      registerFallbackValue(const CommentsRemovedByAuthorFromStore(''));
     });
 
     setUp(() {
@@ -463,11 +480,91 @@ void main() {
         expect(find.byType(SnackBar), findsNothing);
       });
     });
+
+    group('OutboxBridges integration (real bridge path, not mirrored)', () {
+      testWidgets(
+        'composer InsertPlaceholder outbox → list.OptimisticCommentInserted + ack',
+        (tester) async {
+          final placeholder = Comment(
+            id: 'pending_comment_1',
+            content: 'wip',
+            authorPubkey: testVideoAuthorPubkey,
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1000),
+            rootEventId: testVideoEventId,
+            rootAuthorPubkey: testVideoAuthorPubkey,
+          );
+
+          // Pump the screen with the real OutboxBridges wrapping the test
+          // content. The composer mock then emits an outbox transition; the
+          // bridges should dispatch the corresponding event onto the list
+          // bloc + ack via ComposerOutboxConsumed.
+          whenListen(
+            mockComposerBloc,
+            Stream.fromIterable([
+              const CommentComposerState(),
+              CommentComposerState(
+                outbox: ComposerOutboxInsertPlaceholder(placeholder),
+              ),
+            ]),
+            initialState: const CommentComposerState(),
+          );
+
+          await tester.pumpWidget(buildTestWidget());
+          await tester.pump();
+
+          final captured = verify(
+            () => mockListBloc.add(captureAny<OptimisticCommentInserted>()),
+          ).captured;
+          expect(captured, hasLength(1));
+          expect(
+            (captured.first as OptimisticCommentInserted).placeholder.id,
+            'pending_comment_1',
+          );
+          verify(
+            () => mockComposerBloc.add(const ComposerOutboxConsumed()),
+          ).called(1);
+        },
+      );
+
+      testWidgets(
+        'reactions RemoveByAuthor outbox → list.CommentsRemovedByAuthorFromStore + ack',
+        (tester) async {
+          whenListen(
+            mockReactionsBloc,
+            Stream.fromIterable(const [
+              CommentReactionsState(),
+              CommentReactionsState(
+                outbox: ReactionsOutboxRemoveByAuthor(testVideoAuthorPubkey),
+              ),
+            ]),
+            initialState: const CommentReactionsState(),
+          );
+
+          await tester.pumpWidget(buildTestWidget());
+          await tester.pump();
+
+          final captured = verify(
+            () => mockListBloc.add(
+              captureAny<CommentsRemovedByAuthorFromStore>(),
+            ),
+          ).captured;
+          expect(
+            (captured.first as CommentsRemovedByAuthorFromStore).authorPubkey,
+            testVideoAuthorPubkey,
+          );
+          verify(
+            () => mockReactionsBloc.add(const ReactionsOutboxConsumed()),
+          ).called(1);
+        },
+      );
+    });
   });
 }
 
-/// Test content widget that mirrors the CommentsScreen body structure
-/// but accepts mocked blocs from parent widget.
+/// Test content widget that mirrors the CommentsScreen body structure and
+/// wraps the column in the production [OutboxBridges] so the integration
+/// seam is exercised by every test that pumps the screen, not just the
+/// dedicated bridge tests in `outbox_bridges_test.dart`.
 class _CommentsScreenTestContent extends StatelessWidget {
   const _CommentsScreenTestContent({
     required this.videoEvent,
@@ -481,20 +578,23 @@ class _CommentsScreenTestContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        const CommentsDragHandle(),
-        _TestCommentsTitle(initialCount: initialCommentCount),
-        CommentsHeader(onClose: () => Navigator.pop(context)),
-        const Divider(color: Colors.white24, height: 1),
-        Expanded(
-          child: CommentsList(
-            showClassicVineNotice: videoEvent.isVintageRecoveredVine,
-            scrollController: sheetScrollController,
+    return OutboxBridges(
+      onCommentCountChanged: null,
+      child: Column(
+        children: [
+          const CommentsDragHandle(),
+          _TestCommentsTitle(initialCount: initialCommentCount),
+          CommentsHeader(onClose: () => Navigator.pop(context)),
+          const Divider(color: Colors.white24, height: 1),
+          Expanded(
+            child: CommentsList(
+              showClassicVineNotice: videoEvent.isVintageRecoveredVine,
+              scrollController: sheetScrollController,
+            ),
           ),
-        ),
-        _MainCommentInputTest(),
-      ],
+          _MainCommentInputTest(),
+        ],
+      ),
     );
   }
 }

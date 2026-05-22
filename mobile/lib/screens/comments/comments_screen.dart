@@ -16,6 +16,7 @@ import 'package:openvine/blocs/comments/comments_list/comments_list_bloc.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/video_reply_context.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -24,30 +25,34 @@ import 'package:openvine/screens/comments/widgets/widgets.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 
-/// Maps any of the three per-bloc errors to a user-facing string.
-/// TODO(l10n): Replace with context.l10n when localization is added.
-String _listErrorToString(CommentsListError error) {
+/// Maps any of the three per-bloc errors to a localized user-facing string.
+///
+/// Kept as plain top-level functions taking [AppLocalizations] so the snackbar
+/// `BlocListener` callbacks can dispatch in one line without re-reading
+/// `context.l10n` on every emit.
+String _listErrorToString(AppLocalizations l10n, CommentsListError error) {
   return switch (error) {
-    CommentsListError.loadFailed => 'Failed to load comments',
+    CommentsListError.loadFailed => l10n.commentsErrorLoadFailed,
   };
 }
 
-String _composerErrorToString(ComposerError error) {
+String _composerErrorToString(AppLocalizations l10n, ComposerError error) {
   return switch (error) {
-    ComposerError.notAuthenticated => 'Please sign in to comment',
-    ComposerError.postCommentFailed => 'Failed to post comment',
-    ComposerError.postReplyFailed => 'Failed to post reply',
-    ComposerError.editFailed => 'Failed to edit comment',
+    ComposerError.notAuthenticated => l10n.commentsErrorNotAuthenticatedComment,
+    ComposerError.postCommentFailed => l10n.commentsErrorPostCommentFailed,
+    ComposerError.postReplyFailed => l10n.commentsErrorPostReplyFailed,
+    ComposerError.editFailed => l10n.commentsErrorEditFailed,
   };
 }
 
-String _reactionsErrorToString(ReactionsError error) {
+String _reactionsErrorToString(AppLocalizations l10n, ReactionsError error) {
   return switch (error) {
-    ReactionsError.notAuthenticated => 'Please sign in to interact',
-    ReactionsError.voteFailed => 'Failed to vote on comment',
-    ReactionsError.reportFailed => 'Failed to report comment',
-    ReactionsError.blockFailed => 'Failed to block user',
-    ReactionsError.deleteCommentFailed => 'Failed to delete comment',
+    ReactionsError.notAuthenticated =>
+      l10n.commentsErrorNotAuthenticatedInteract,
+    ReactionsError.voteFailed => l10n.commentsErrorVoteFailed,
+    ReactionsError.reportFailed => l10n.commentsErrorReportFailed,
+    ReactionsError.blockFailed => l10n.commentsErrorBlockFailed,
+    ReactionsError.deleteCommentFailed => l10n.commentsErrorDeleteFailed,
   };
 }
 
@@ -173,17 +178,31 @@ abstract final class CommentsScreen {
             )..add(const CommentsLoadRequested()),
           ),
           BlocProvider<CommentComposerBloc>(
-            create: (_) => CommentComposerBloc(
-              commentsRepository: commentsRepository,
-              authService: authService,
-              rootEventId: video.id,
-              rootEventKind: NIP71VideoKinds.addressableShortVideo,
-              rootAuthorPubkey: video.pubkey,
-              rootAddressableId: video.addressableId,
-              profileRepository: profileRepository,
-              mentionCandidatePubkeysProvider: () =>
-                  followRepository.followingPubkeys,
-            ),
+            create: (innerContext) {
+              // Captured at create-time. CommentsListBloc is provided above
+              // in the same MultiBlocProvider so it's available here via
+              // inheritance; the reference is stable for the sheet's life.
+              // The callback re-reads `state.commentsById` on every search
+              // so suggestions reflect the latest loaded comments.
+              final listBloc = innerContext.read<CommentsListBloc>();
+              return CommentComposerBloc(
+                commentsRepository: commentsRepository,
+                authService: authService,
+                rootEventId: video.id,
+                rootEventKind: NIP71VideoKinds.addressableShortVideo,
+                rootAuthorPubkey: video.pubkey,
+                rootAddressableId: video.addressableId,
+                profileRepository: profileRepository,
+                mentionCandidatePubkeysProvider: () => <String>[
+                  // Thread participants first — restored after the split
+                  // (pre-split CommentsBloc seeded these from state.commentsById).
+                  ...listBloc.state.commentsById.values.map(
+                    (c) => c.authorPubkey,
+                  ),
+                  ...followRepository.followingPubkeys,
+                ],
+              );
+            },
           ),
           BlocProvider<CommentReactionsBloc>(
             create: (_) => CommentReactionsBloc(
@@ -387,7 +406,7 @@ class _CommentsScreenBody extends StatelessWidget {
               listenWhen: (prev, next) =>
                   prev.error != next.error && next.error != null,
               listener: (ctx, state) {
-                _snack(ctx, _listErrorToString(state.error!));
+                _snack(ctx, _listErrorToString(ctx.l10n, state.error!));
                 ctx.read<CommentsListBloc>().add(
                   const CommentsListErrorCleared(),
                 );
@@ -397,7 +416,7 @@ class _CommentsScreenBody extends StatelessWidget {
               listenWhen: (prev, next) =>
                   prev.error != next.error && next.error != null,
               listener: (ctx, state) {
-                _snack(ctx, _composerErrorToString(state.error!));
+                _snack(ctx, _composerErrorToString(ctx.l10n, state.error!));
                 ctx.read<CommentComposerBloc>().add(
                   const CommentComposerErrorCleared(),
                 );
@@ -407,7 +426,7 @@ class _CommentsScreenBody extends StatelessWidget {
               listenWhen: (prev, next) =>
                   prev.error != next.error && next.error != null,
               listener: (ctx, state) {
-                _snack(ctx, _reactionsErrorToString(state.error!));
+                _snack(ctx, _reactionsErrorToString(ctx.l10n, state.error!));
                 ctx.read<CommentReactionsBloc>().add(
                   const CommentReactionsErrorCleared(),
                 );

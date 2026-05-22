@@ -6366,6 +6366,38 @@ class AppLocalizationsAm extends AppLocalizations {
   String get commentHideKeyboard => 'Hide keyboard';
 
   @override
+  String get commentsErrorLoadFailed => 'Failed to load comments';
+
+  @override
+  String get commentsErrorNotAuthenticatedComment =>
+      'Please sign in to comment';
+
+  @override
+  String get commentsErrorPostCommentFailed => 'Failed to post comment';
+
+  @override
+  String get commentsErrorPostReplyFailed => 'Failed to post reply';
+
+  @override
+  String get commentsErrorEditFailed => 'Failed to edit comment';
+
+  @override
+  String get commentsErrorNotAuthenticatedInteract =>
+      'Please sign in to interact';
+
+  @override
+  String get commentsErrorVoteFailed => 'Failed to vote on comment';
+
+  @override
+  String get commentsErrorReportFailed => 'Failed to report comment';
+
+  @override
+  String get commentsErrorBlockFailed => 'Failed to block user';
+
+  @override
+  String get commentsErrorDeleteFailed => 'Failed to delete comment';
+
+  @override
   String get draftUntitled => 'ርዕስ አልባ';
 
   @override

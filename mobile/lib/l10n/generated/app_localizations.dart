@@ -11390,6 +11390,66 @@ abstract class AppLocalizations {
   /// **'Hide keyboard'**
   String get commentHideKeyboard;
 
+  /// Snackbar shown when the comments bottom sheet cannot fetch its list of comments from relays.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load comments'**
+  String get commentsErrorLoadFailed;
+
+  /// Snackbar shown when an unauthenticated user attempts to post a comment, reply, or edit.
+  ///
+  /// In en, this message translates to:
+  /// **'Please sign in to comment'**
+  String get commentsErrorNotAuthenticatedComment;
+
+  /// Snackbar shown when publishing a new top-level comment fails after the optimistic placeholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to post comment'**
+  String get commentsErrorPostCommentFailed;
+
+  /// Snackbar shown when publishing a reply to a comment fails after the optimistic placeholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to post reply'**
+  String get commentsErrorPostReplyFailed;
+
+  /// Snackbar shown when the delete+repost flow that backs comment editing fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to edit comment'**
+  String get commentsErrorEditFailed;
+
+  /// Snackbar shown when an unauthenticated user attempts to vote / report / block / delete a comment.
+  ///
+  /// In en, this message translates to:
+  /// **'Please sign in to interact'**
+  String get commentsErrorNotAuthenticatedInteract;
+
+  /// Snackbar shown when up/down-voting a comment fails to publish to the relay.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to vote on comment'**
+  String get commentsErrorVoteFailed;
+
+  /// Snackbar shown when submitting an NIP-56 comment report fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to report comment'**
+  String get commentsErrorReportFailed;
+
+  /// Snackbar shown when blocking a comment author (kind-30000 mute list publish) fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to block user'**
+  String get commentsErrorBlockFailed;
+
+  /// Snackbar shown when deleting one of the user's own comments fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete comment'**
+  String get commentsErrorDeleteFailed;
+
   /// No description provided for @draftUntitled.
   ///
   /// In en, this message translates to:

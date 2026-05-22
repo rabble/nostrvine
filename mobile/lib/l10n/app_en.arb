@@ -3745,6 +3745,46 @@
   "@commentHideKeyboard": {
     "description": "Accessibility label for the comment input control that dismisses the keyboard."
   },
+  "commentsErrorLoadFailed": "Failed to load comments",
+  "@commentsErrorLoadFailed": {
+    "description": "Snackbar shown when the comments bottom sheet cannot fetch its list of comments from relays."
+  },
+  "commentsErrorNotAuthenticatedComment": "Please sign in to comment",
+  "@commentsErrorNotAuthenticatedComment": {
+    "description": "Snackbar shown when an unauthenticated user attempts to post a comment, reply, or edit."
+  },
+  "commentsErrorPostCommentFailed": "Failed to post comment",
+  "@commentsErrorPostCommentFailed": {
+    "description": "Snackbar shown when publishing a new top-level comment fails after the optimistic placeholder."
+  },
+  "commentsErrorPostReplyFailed": "Failed to post reply",
+  "@commentsErrorPostReplyFailed": {
+    "description": "Snackbar shown when publishing a reply to a comment fails after the optimistic placeholder."
+  },
+  "commentsErrorEditFailed": "Failed to edit comment",
+  "@commentsErrorEditFailed": {
+    "description": "Snackbar shown when the delete+repost flow that backs comment editing fails."
+  },
+  "commentsErrorNotAuthenticatedInteract": "Please sign in to interact",
+  "@commentsErrorNotAuthenticatedInteract": {
+    "description": "Snackbar shown when an unauthenticated user attempts to vote / report / block / delete a comment."
+  },
+  "commentsErrorVoteFailed": "Failed to vote on comment",
+  "@commentsErrorVoteFailed": {
+    "description": "Snackbar shown when up/down-voting a comment fails to publish to the relay."
+  },
+  "commentsErrorReportFailed": "Failed to report comment",
+  "@commentsErrorReportFailed": {
+    "description": "Snackbar shown when submitting an NIP-56 comment report fails."
+  },
+  "commentsErrorBlockFailed": "Failed to block user",
+  "@commentsErrorBlockFailed": {
+    "description": "Snackbar shown when blocking a comment author (kind-30000 mute list publish) fails."
+  },
+  "commentsErrorDeleteFailed": "Failed to delete comment",
+  "@commentsErrorDeleteFailed": {
+    "description": "Snackbar shown when deleting one of the user's own comments fails."
+  },
   "draftUntitled": "Untitled",
   "contentWarningNone": "None",
   "textBackgroundNone": "None",
