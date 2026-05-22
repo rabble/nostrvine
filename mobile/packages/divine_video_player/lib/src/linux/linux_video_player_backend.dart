@@ -182,7 +182,8 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
     await _player.setPlaylistMode(
       _isLooping ? PlaylistMode.loop : PlaylistMode.none,
     );
-    // Apply first-clip speed immediately so playback starts at the correct rate.
+    // Apply first-clip speed immediately so playback starts at the correct
+    // rate.
     await _player.setRate(_clipSpeeds.firstOrNull ?? 1.0);
 
     final seekPosition = startPosition ?? Duration.zero;
