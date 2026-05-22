@@ -10,7 +10,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:models/models.dart' hide NIP71VideoKinds;
-import 'package:openvine/blocs/comments/comments_bloc.dart';
+import 'package:openvine/blocs/comments/comment_composer/comment_composer_bloc.dart';
+import 'package:openvine/blocs/comments/comment_reactions/comment_reactions_bloc.dart';
+import 'package:openvine/blocs/comments/comments_list/comments_list_bloc.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -22,18 +24,30 @@ import 'package:openvine/screens/comments/widgets/widgets.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 
-/// Maps [CommentsError] to user-facing strings.
+/// Maps any of the three per-bloc errors to a user-facing string.
 /// TODO(l10n): Replace with context.l10n when localization is added.
-String _errorToString(CommentsError error) {
+String _listErrorToString(CommentsListError error) {
   return switch (error) {
-    CommentsError.loadFailed => 'Failed to load comments',
-    CommentsError.notAuthenticated => 'Please sign in to comment',
-    CommentsError.postCommentFailed => 'Failed to post comment',
-    CommentsError.postReplyFailed => 'Failed to post reply',
-    CommentsError.deleteCommentFailed => 'Failed to delete comment',
-    CommentsError.voteFailed => 'Failed to vote on comment',
-    CommentsError.reportFailed => 'Failed to report comment',
-    CommentsError.blockFailed => 'Failed to block user',
+    CommentsListError.loadFailed => 'Failed to load comments',
+  };
+}
+
+String _composerErrorToString(ComposerError error) {
+  return switch (error) {
+    ComposerError.notAuthenticated => 'Please sign in to comment',
+    ComposerError.postCommentFailed => 'Failed to post comment',
+    ComposerError.postReplyFailed => 'Failed to post reply',
+    ComposerError.editFailed => 'Failed to edit comment',
+  };
+}
+
+String _reactionsErrorToString(ReactionsError error) {
+  return switch (error) {
+    ReactionsError.notAuthenticated => 'Please sign in to interact',
+    ReactionsError.voteFailed => 'Failed to vote on comment',
+    ReactionsError.reportFailed => 'Failed to report comment',
+    ReactionsError.blockFailed => 'Failed to block user',
+    ReactionsError.deleteCommentFailed => 'Failed to delete comment',
   };
 }
 
@@ -53,15 +67,15 @@ class _CommentsTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<CommentsBloc, CommentsState>(
+    return BlocBuilder<CommentsListBloc, CommentsListState>(
       buildWhen: (prev, next) =>
-          prev.comments.length != next.comments.length ||
+          prev.commentsById.length != next.commentsById.length ||
           prev.status != next.status ||
           prev.newCommentCount != next.newCommentCount,
       builder: (context, state) {
-        // Use loaded count if available, otherwise use initial count
+        // Use loaded count if available, otherwise use initial count.
         final count = state.status == CommentsStatus.success
-            ? state.comments.length
+            ? state.commentsById.length
             : initialCount;
 
         return Row(
@@ -83,7 +97,7 @@ class _CommentsTitle extends StatelessWidget {
                 count: state.newCommentCount,
                 onTap: () {
                   onNewCommentsPillTap();
-                  context.read<CommentsBloc>().add(
+                  context.read<CommentsListBloc>().add(
                     const NewCommentsAcknowledged(),
                   );
                 },
@@ -101,10 +115,10 @@ class _CommentsTitle extends StatelessWidget {
 abstract final class CommentsScreen {
   /// Shows comments as a modal bottom sheet overlay.
   ///
-  /// Flows through [VineBottomSheet.show] (via
-  /// `showVideoPausingVineBottomSheet`) so the sheet inherits the
-  /// tap-outside-to-dismiss behaviour, snap support, and
-  /// overlay-visibility integration shared with other Vine bottom sheets.
+  /// Wires three BLoCs ([CommentsListBloc], [CommentComposerBloc],
+  /// [CommentReactionsBloc]) via [MultiBlocProvider] and adds [BlocListener]s
+  /// that bridge composer and reactions outbox signals into list-bloc store
+  /// mutations.
   static Future<void> show(
     BuildContext context,
     VideoEvent video, {
@@ -120,7 +134,6 @@ abstract final class CommentsScreen {
     final contentBlocklistRepository = container.read(
       contentBlocklistRepositoryProvider,
     );
-    // Async provider — pass as Future per the established pattern.
     final contentReportingServiceFuture = container.read(
       contentReportingServiceProvider.future,
     );
@@ -141,33 +154,52 @@ abstract final class CommentsScreen {
       initialChildSize: 0.7,
       minChildSize: 0.5,
       maxChildSize: 0.93,
-      // Wrap the whole sheet subtree in a single BlocProvider so every
-      // slot (title, trailing, bottomInput, buildScrollBody) shares the
-      // same CommentsBloc. BlocProvider owns lifecycle — it closes the
-      // BLoC automatically when the sheet is disposed, so we don't need
-      // a manual try/finally around the await.
-      contentWrapper: (context, child) => BlocProvider<CommentsBloc>(
-        create: (_) => CommentsBloc(
-          commentsRepository: commentsRepository,
-          authService: authService,
-          likesRepository: likesRepository,
-          contentReportingServiceFuture: contentReportingServiceFuture,
-          contentBlocklistRepository: contentBlocklistRepository,
-          rootEventId: video.id,
-          rootEventKind: NIP71VideoKinds.addressableShortVideo,
-          rootAuthorPubkey: video.pubkey,
-          rootAddressableId: video.addressableId,
-          initialTotalCount: video.originalComments,
-          profileRepository: profileRepository,
-          followRepository: followRepository,
-          includeVideoReplies: showVideoReplies,
-        )..add(const CommentsLoadRequested()),
-        child: BlocListener<CommentsBloc, CommentsState>(
-          listenWhen: (prev, next) =>
-              prev.commentsById.length != next.commentsById.length,
-          listener: (_, state) {
-            onCommentCountChanged?.call(state.commentsById.length);
-          },
+      // Wrap the whole sheet subtree in a MultiBlocProvider so every slot
+      // (title, trailing, bottomInput, buildScrollBody) shares the same
+      // three blocs. BlocProvider owns lifecycle — it closes each BLoC
+      // automatically when the sheet is disposed, so we don't need a manual
+      // try/finally around the await.
+      contentWrapper: (context, child) => MultiBlocProvider(
+        providers: [
+          BlocProvider<CommentsListBloc>(
+            create: (_) => CommentsListBloc(
+              commentsRepository: commentsRepository,
+              rootEventId: video.id,
+              rootEventKind: NIP71VideoKinds.addressableShortVideo,
+              rootAuthorPubkey: video.pubkey,
+              rootAddressableId: video.addressableId,
+              initialTotalCount: video.originalComments,
+              includeVideoReplies: showVideoReplies,
+            )..add(const CommentsLoadRequested()),
+          ),
+          BlocProvider<CommentComposerBloc>(
+            create: (_) => CommentComposerBloc(
+              commentsRepository: commentsRepository,
+              authService: authService,
+              rootEventId: video.id,
+              rootEventKind: NIP71VideoKinds.addressableShortVideo,
+              rootAuthorPubkey: video.pubkey,
+              rootAddressableId: video.addressableId,
+              profileRepository: profileRepository,
+              mentionCandidatePubkeysProvider: () =>
+                  followRepository.followingPubkeys,
+            ),
+          ),
+          BlocProvider<CommentReactionsBloc>(
+            create: (_) => CommentReactionsBloc(
+              authService: authService,
+              likesRepository: likesRepository,
+              commentsRepository: commentsRepository,
+              contentReportingServiceFuture: contentReportingServiceFuture,
+              contentBlocklistRepository: contentBlocklistRepository,
+              followRepository: followRepository,
+              rootEventId: video.id,
+              rootAddressableId: video.addressableId,
+            ),
+          ),
+        ],
+        child: _OutboxBridges(
+          onCommentCountChanged: onCommentCountChanged,
           child: child,
         ),
       ),
@@ -197,7 +229,117 @@ abstract final class CommentsScreen {
   }
 }
 
-/// Body widget with error listener
+/// Wires the composer / reactions outbox signals into [CommentsListBloc] store
+/// mutations. Also triggers a vote-count batch fetch on the reactions bloc
+/// every time the loaded-comment set changes.
+class _OutboxBridges extends StatelessWidget {
+  const _OutboxBridges({
+    required this.onCommentCountChanged,
+    required this.child,
+  });
+
+  final ValueChanged<int>? onCommentCountChanged;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiBlocListener(
+      listeners: [
+        // Notify host about comment-count changes for the trailing badge in
+        // the parent video feed.
+        BlocListener<CommentsListBloc, CommentsListState>(
+          listenWhen: (prev, next) =>
+              prev.commentsById.length != next.commentsById.length,
+          listener: (_, state) {
+            onCommentCountChanged?.call(state.commentsById.length);
+          },
+        ),
+        // When the loaded comment set changes, fetch up-to-date vote counts.
+        BlocListener<CommentsListBloc, CommentsListState>(
+          listenWhen: (prev, next) =>
+              !_idSetsEqual(prev.commentsById.keys, next.commentsById.keys),
+          listener: (ctx, state) {
+            final commentIds = state.commentsById.keys
+                .where((id) => !id.startsWith('pending_comment_'))
+                .toList();
+            if (commentIds.isEmpty) return;
+            ctx.read<CommentReactionsBloc>().add(
+              CommentVoteCountsFetchRequested(commentIds),
+            );
+          },
+        ),
+        // Composer → ListBloc outbox bridge.
+        BlocListener<CommentComposerBloc, CommentComposerState>(
+          listenWhen: (prev, next) =>
+              next.outbox != null && prev.outbox != next.outbox,
+          listener: _bridgeComposerOutbox,
+        ),
+        // Reactions → ListBloc outbox bridge.
+        BlocListener<CommentReactionsBloc, CommentReactionsState>(
+          listenWhen: (prev, next) =>
+              next.outbox != null && prev.outbox != next.outbox,
+          listener: _bridgeReactionsOutbox,
+        ),
+      ],
+      child: child,
+    );
+  }
+
+  static bool _idSetsEqual(Iterable<String> a, Iterable<String> b) {
+    final setA = a.toSet();
+    final setB = b.toSet();
+    if (setA.length != setB.length) return false;
+    return setA.containsAll(setB);
+  }
+
+  static void _bridgeComposerOutbox(
+    BuildContext ctx,
+    CommentComposerState state,
+  ) {
+    final outbox = state.outbox;
+    if (outbox == null) return;
+    final listBloc = ctx.read<CommentsListBloc>();
+    switch (outbox) {
+      case ComposerOutboxInsertPlaceholder(:final placeholder):
+        listBloc.add(OptimisticCommentInserted(placeholder));
+      case ComposerOutboxConfirmPlaceholder(
+        :final placeholderId,
+        :final confirmed,
+      ):
+        listBloc.add(
+          OptimisticCommentConfirmed(
+            placeholderId: placeholderId,
+            confirmed: confirmed,
+          ),
+        );
+      case ComposerOutboxRollbackPlaceholder(:final placeholderId):
+        listBloc.add(OptimisticCommentRolledBack(placeholderId));
+      case ComposerOutboxReplaceComment(:final oldId, :final newComment):
+        listBloc.add(
+          CommentReplacedInStore(oldId: oldId, newComment: newComment),
+        );
+    }
+    ctx.read<CommentComposerBloc>().add(const ComposerOutboxConsumed());
+  }
+
+  static void _bridgeReactionsOutbox(
+    BuildContext ctx,
+    CommentReactionsState state,
+  ) {
+    final outbox = state.outbox;
+    if (outbox == null) return;
+    final listBloc = ctx.read<CommentsListBloc>();
+    switch (outbox) {
+      case ReactionsOutboxRemoveComment(:final commentId):
+        listBloc.add(CommentRemovedFromStore(commentId));
+      case ReactionsOutboxRemoveByAuthor(:final authorPubkey):
+        listBloc.add(CommentsRemovedByAuthorFromStore(authorPubkey));
+    }
+    ctx.read<CommentReactionsBloc>().add(const ReactionsOutboxConsumed());
+  }
+}
+
+/// Body widget with per-bloc error listeners that surface snackbars.
 class _CommentsScreenBody extends StatelessWidget {
   const _CommentsScreenBody({
     required this.videoEvent,
@@ -207,6 +349,10 @@ class _CommentsScreenBody extends StatelessWidget {
   final VideoEvent videoEvent;
   final ScrollController sheetScrollController;
 
+  void _snack(BuildContext ctx, String message) {
+    ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer(
@@ -214,19 +360,39 @@ class _CommentsScreenBody extends StatelessWidget {
         final showVideoReplies = ref.watch(
           isFeatureEnabledProvider(FeatureFlag.videoReplies),
         );
-        return BlocListener<CommentsBloc, CommentsState>(
-          listenWhen: (prev, next) =>
-              prev.error != next.error && next.error != null,
-          listener: (context, state) {
-            if (state.error != null) {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(
-                SnackBar(content: Text(_errorToString(state.error!))),
-              );
-              context.read<CommentsBloc>().add(const CommentErrorCleared());
-            }
-          },
+        return MultiBlocListener(
+          listeners: [
+            BlocListener<CommentsListBloc, CommentsListState>(
+              listenWhen: (prev, next) =>
+                  prev.error != next.error && next.error != null,
+              listener: (ctx, state) {
+                _snack(ctx, _listErrorToString(state.error!));
+                ctx.read<CommentsListBloc>().add(
+                  const CommentsListErrorCleared(),
+                );
+              },
+            ),
+            BlocListener<CommentComposerBloc, CommentComposerState>(
+              listenWhen: (prev, next) =>
+                  prev.error != next.error && next.error != null,
+              listener: (ctx, state) {
+                _snack(ctx, _composerErrorToString(state.error!));
+                ctx.read<CommentComposerBloc>().add(
+                  const CommentComposerErrorCleared(),
+                );
+              },
+            ),
+            BlocListener<CommentReactionsBloc, CommentReactionsState>(
+              listenWhen: (prev, next) =>
+                  prev.error != next.error && next.error != null,
+              listener: (ctx, state) {
+                _snack(ctx, _reactionsErrorToString(state.error!));
+                ctx.read<CommentReactionsBloc>().add(
+                  const CommentReactionsErrorCleared(),
+                );
+              },
+            ),
+          ],
           child: SizedBox(
             child: CommentsList(
               showClassicVineNotice: videoEvent.isVintageRecoveredVine,
@@ -240,7 +406,7 @@ class _CommentsScreenBody extends StatelessWidget {
   }
 }
 
-/// Main comment input widget that reads from CommentsBloc state
+/// Main comment input widget that reads from [CommentComposerBloc] state.
 class _MainCommentInput extends ConsumerStatefulWidget {
   const _MainCommentInput();
 
@@ -255,7 +421,7 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
   @override
   void initState() {
     super.initState();
-    final state = context.read<CommentsBloc>().state;
+    final state = context.read<CommentComposerBloc>().state;
     _controller = TextEditingController(text: state.mainInputText);
     _focusNode = FocusNode();
   }
@@ -269,12 +435,12 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<CommentsBloc, CommentsState>(
+    return BlocConsumer<CommentComposerBloc, CommentComposerState>(
       listenWhen: (prev, next) =>
           prev.activeReplyCommentId != next.activeReplyCommentId ||
           prev.activeEditCommentId != next.activeEditCommentId,
       listener: (context, state) {
-        // Focus input when reply or edit is activated
+        // Focus input when reply or edit is activated.
         if (state.activeReplyCommentId != null ||
             state.activeEditCommentId != null) {
           _focusNode.requestFocus();
@@ -296,7 +462,7 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
             ? state.replyInputText
             : state.mainInputText;
 
-        // Sync controller with state
+        // Sync controller with state.
         if (_controller.text != inputText) {
           _controller.text = inputText;
           _controller.selection = TextSelection.collapsed(
@@ -304,27 +470,23 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
           );
         }
 
-        // Get display name of user being replied to
+        // Get display name of user being replied to.
         String? replyToDisplayName;
         String? replyToAuthorPubkey;
         if (isReplyMode) {
-          // Find the comment being replied to
-          final replyComment = state.comments.firstWhere(
-            (c) => c.id == state.activeReplyCommentId,
-            orElse: () => throw StateError('Reply comment not found'),
-          );
-          replyToAuthorPubkey = replyComment.authorPubkey;
-
-          // Fetch profile for display name
-          final profile = ref
-              .watch(userProfileReactiveProvider(replyToAuthorPubkey))
-              .value;
-
-          // Get display name with fallback
-          replyToDisplayName =
-              profile?.displayName ??
-              profile?.name ??
-              UserProfile.generatedNameFor(replyToAuthorPubkey);
+          final listState = context.read<CommentsListBloc>().state;
+          final replyComment =
+              listState.commentsById[state.activeReplyCommentId!];
+          if (replyComment != null) {
+            replyToAuthorPubkey = replyComment.authorPubkey;
+            final profile = ref
+                .watch(userProfileReactiveProvider(replyToAuthorPubkey))
+                .value;
+            replyToDisplayName =
+                profile?.displayName ??
+                profile?.name ??
+                UserProfile.generatedNameFor(replyToAuthorPubkey);
+          }
         }
 
         return CommentInput(
@@ -335,15 +497,17 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
           mentionSuggestions: state.mentionSuggestions,
           onMentionQuery: (query) {
             if (query.isEmpty) {
-              context.read<CommentsBloc>().add(
+              context.read<CommentComposerBloc>().add(
                 const MentionSuggestionsCleared(),
               );
             } else {
-              context.read<CommentsBloc>().add(MentionSearchRequested(query));
+              context.read<CommentComposerBloc>().add(
+                MentionSearchRequested(query),
+              );
             }
           },
           onMentionSelected: (pubkey, displayName, start, end) {
-            context.read<CommentsBloc>()
+            context.read<CommentComposerBloc>()
               ..add(
                 MentionRegistered(
                   displayName: displayName,
@@ -355,37 +519,38 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
               ..add(const MentionSuggestionsCleared());
           },
           onVideoReplyPressed:
-              ref.watch(
-                isFeatureEnabledProvider(FeatureFlag.videoReplies),
-              )
+              ref.watch(isFeatureEnabledProvider(FeatureFlag.videoReplies))
               ? () => _openVideoReplyCamera(context, state, replyToAuthorPubkey)
               : null,
           onChanged: (text) {
-            context.read<CommentsBloc>().add(
+            context.read<CommentComposerBloc>().add(
               CommentTextChanged(text, commentId: state.activeReplyCommentId),
             );
           },
           onSubmit: () {
+            final composer = context.read<CommentComposerBloc>();
             if (isEditMode) {
-              context.read<CommentsBloc>().add(const CommentEditSubmitted());
+              composer.add(const CommentEditSubmitted());
             } else if (isReplyMode) {
-              context.read<CommentsBloc>().add(
+              composer.add(
                 CommentSubmitted(
                   parentCommentId: state.activeReplyCommentId,
                   parentAuthorPubkey: replyToAuthorPubkey,
                 ),
               );
             } else {
-              context.read<CommentsBloc>().add(const CommentSubmitted());
+              composer.add(const CommentSubmitted());
             }
           },
           onCancelReply: () {
-            context.read<CommentsBloc>().add(
+            context.read<CommentComposerBloc>().add(
               CommentReplyToggled(state.activeReplyCommentId!),
             );
           },
           onCancelEdit: () {
-            context.read<CommentsBloc>().add(const CommentEditModeCancelled());
+            context.read<CommentComposerBloc>().add(
+              const CommentEditModeCancelled(),
+            );
           },
         );
       },
@@ -394,16 +559,17 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
 
   void _openVideoReplyCamera(
     BuildContext context,
-    CommentsState state,
+    CommentComposerState state,
     String? replyToAuthorPubkey,
   ) {
+    final listState = context.read<CommentsListBloc>().state;
     final replyContextNotifier = ref.read(videoReplyContextProvider.notifier);
     replyContextNotifier.set(
       VideoReplyContext(
-        rootEventId: state.rootEventId,
-        rootEventKind: state.rootEventKind,
-        rootAuthorPubkey: state.rootAuthorPubkey,
-        rootAddressableId: state.rootAddressableId,
+        rootEventId: listState.rootEventId,
+        rootEventKind: listState.rootEventKind,
+        rootAuthorPubkey: listState.rootAuthorPubkey,
+        rootAddressableId: listState.rootAddressableId,
         parentCommentId: state.activeReplyCommentId,
         parentAuthorPubkey: replyToAuthorPubkey,
       ),
@@ -416,13 +582,13 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
   }
 }
 
-/// Sort toggle button that cycles: New → Top → Old → New
+/// Sort toggle button that cycles: New → Top → Old → New.
 class _CommentsSortToggle extends StatelessWidget {
   const _CommentsSortToggle();
 
   @override
   Widget build(BuildContext context) {
-    return BlocSelector<CommentsBloc, CommentsState, CommentsSortMode>(
+    return BlocSelector<CommentsListBloc, CommentsListState, CommentsSortMode>(
       selector: (state) => state.sortMode,
       builder: (context, sortMode) {
         final (icon, label) = switch (sortMode) {
@@ -445,7 +611,7 @@ class _CommentsSortToggle extends StatelessWidget {
                 CommentsSortMode.topEngagement => CommentsSortMode.oldest,
                 CommentsSortMode.oldest => CommentsSortMode.newest,
               };
-              context.read<CommentsBloc>().add(
+              context.read<CommentsListBloc>().add(
                 CommentsSortModeChanged(nextMode),
               );
             },

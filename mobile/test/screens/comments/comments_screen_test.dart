@@ -1,5 +1,7 @@
-// ABOUTME: Widget tests for CommentsScreen main container
-// ABOUTME: Tests full comment screen integration, posting, and reply management
+// ABOUTME: Widget tests for CommentsScreen with the split three-bloc topology.
+// ABOUTME: Mocks CommentsListBloc + CommentComposerBloc + CommentReactionsBloc
+// ABOUTME: via MultiBlocProvider and exercises a content widget that mirrors
+// ABOUTME: the production screen.
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +11,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/blocs/comments/comments_bloc.dart';
+import 'package:openvine/blocs/comments/comment_composer/comment_composer_bloc.dart';
+import 'package:openvine/blocs/comments/comment_reactions/comment_reactions_bloc.dart';
+import 'package:openvine/blocs/comments/comments_list/comments_list_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -20,30 +24,25 @@ import 'package:openvine/services/social_service.dart';
 import '../../builders/comment_builder.dart';
 import '../../helpers/test_helpers.dart';
 
-/// Maps [CommentsError] to user-facing strings for tests.
-String _errorToString(CommentsError error) {
-  return switch (error) {
-    CommentsError.loadFailed => 'Failed to load comments',
-    CommentsError.notAuthenticated => 'Please sign in to comment',
-    CommentsError.postCommentFailed => 'Failed to post comment',
-    CommentsError.postReplyFailed => 'Failed to post reply',
-    CommentsError.deleteCommentFailed => 'Failed to delete comment',
-    CommentsError.voteFailed => 'Failed to vote on comment',
-    CommentsError.reportFailed => 'Failed to report comment',
-    CommentsError.blockFailed => 'Failed to block user',
-  };
-}
-
 class MockSocialService extends Mock implements SocialService {}
 
 class MockAuthService extends Mock implements AuthService {}
 
 class MockNostrClient extends Mock implements NostrClient {}
 
-class MockCommentsBloc extends MockBloc<CommentsEvent, CommentsState>
-    implements CommentsBloc {}
+class MockCommentsListBloc
+    extends MockBloc<CommentsListEvent, CommentsListState>
+    implements CommentsListBloc {}
 
-// Full 64-character test IDs
+class MockCommentComposerBloc
+    extends MockBloc<CommentComposerEvent, CommentComposerState>
+    implements CommentComposerBloc {}
+
+class MockCommentReactionsBloc
+    extends MockBloc<CommentReactionsEvent, CommentReactionsState>
+    implements CommentReactionsBloc {}
+
+// Full 64-character test IDs.
 const testVideoEventId =
     'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234';
 const testVideoAuthorPubkey =
@@ -54,19 +53,24 @@ void main() {
     late MockSocialService mockSocialService;
     late MockAuthService mockAuthService;
     late MockNostrClient mockNostrClient;
-    late MockCommentsBloc mockCommentsBloc;
+    late MockCommentsListBloc mockListBloc;
+    late MockCommentComposerBloc mockComposerBloc;
+    late MockCommentReactionsBloc mockReactionsBloc;
     late ScrollController scrollController;
     late VideoEvent testVideoEvent;
 
     setUpAll(() {
       registerFallbackValue(const CommentsLoadRequested());
+      registerFallbackValue(const CommentReplyToggled(''));
     });
 
     setUp(() {
       mockSocialService = MockSocialService();
       mockAuthService = MockAuthService();
       mockNostrClient = MockNostrClient();
-      mockCommentsBloc = MockCommentsBloc();
+      mockListBloc = MockCommentsListBloc();
+      mockComposerBloc = MockCommentComposerBloc();
+      mockReactionsBloc = MockCommentReactionsBloc();
       scrollController = ScrollController();
 
       testVideoEvent = TestHelpers.createVideoEvent(
@@ -74,16 +78,20 @@ void main() {
         pubkey: testVideoAuthorPubkey,
       );
 
-      // Return empty string to indicate user is not the comment author (no 3-dot menu)
       when(() => mockNostrClient.publicKey).thenReturn('');
 
-      // Default state
-      when(() => mockCommentsBloc.state).thenReturn(
-        const CommentsState(
+      when(() => mockListBloc.state).thenReturn(
+        const CommentsListState(
           rootEventId: testVideoEventId,
           rootAuthorPubkey: testVideoAuthorPubkey,
           status: CommentsStatus.success,
         ),
+      );
+      when(() => mockComposerBloc.state).thenReturn(
+        const CommentComposerState(),
+      );
+      when(() => mockReactionsBloc.state).thenReturn(
+        const CommentReactionsState(),
       );
     });
 
@@ -92,12 +100,16 @@ void main() {
     });
 
     Widget buildTestWidget({
-      CommentsState? commentsState,
+      CommentsListState? listState,
+      CommentComposerState? composerState,
       VideoEvent? videoEvent,
       int? initialCommentCount,
     }) {
-      if (commentsState != null) {
-        when(() => mockCommentsBloc.state).thenReturn(commentsState);
+      if (listState != null) {
+        when(() => mockListBloc.state).thenReturn(listState);
+      }
+      if (composerState != null) {
+        when(() => mockComposerBloc.state).thenReturn(composerState);
       }
 
       return ProviderScope(
@@ -110,8 +122,16 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: BlocProvider<CommentsBloc>.value(
-              value: mockCommentsBloc,
+            body: MultiBlocProvider(
+              providers: [
+                BlocProvider<CommentsListBloc>.value(value: mockListBloc),
+                BlocProvider<CommentComposerBloc>.value(
+                  value: mockComposerBloc,
+                ),
+                BlocProvider<CommentReactionsBloc>.value(
+                  value: mockReactionsBloc,
+                ),
+              ],
               child: _CommentsScreenTestContent(
                 videoEvent: videoEvent ?? testVideoEvent,
                 sheetScrollController: scrollController,
@@ -177,35 +197,36 @@ void main() {
         await tester.pump();
 
         final captured =
-            verify(() => mockCommentsBloc.add(captureAny())).captured.last
+            verify(() => mockComposerBloc.add(captureAny())).captured.last
                 as CommentTextChanged;
         expect(captured.text, 'Test comment');
       });
     });
 
     group('reply toggling', () {
-      testWidgets('tapping Reply adds CommentReplyToggled', (tester) async {
+      testWidgets('tapping Reply adds CommentReplyToggled to composer', (
+        tester,
+      ) async {
         final comment = CommentBuilder()
             .withId(TestCommentIds.comment1Id)
             .withContent('Test comment')
             .build();
 
-        final state = CommentsState(
+        final state = CommentsListState(
           rootEventId: testVideoEventId,
           rootAuthorPubkey: testVideoAuthorPubkey,
           status: CommentsStatus.success,
           commentsById: {comment.id: comment},
         );
 
-        await tester.pumpWidget(buildTestWidget(commentsState: state));
+        await tester.pumpWidget(buildTestWidget(listState: state));
         await tester.pump();
 
-        // Find and tap Reply button
         await tester.tap(find.text('Reply'));
         await tester.pump();
 
         final captured =
-            verify(() => mockCommentsBloc.add(captureAny())).captured.last
+            verify(() => mockComposerBloc.add(captureAny())).captured.last
                 as CommentReplyToggled;
         expect(captured.commentId, TestCommentIds.comment1Id);
       });
@@ -217,15 +238,19 @@ void main() {
             .withContent('Test comment')
             .build();
 
-        final commentsState = CommentsState(
+        final listState = CommentsListState(
           rootEventId: testVideoEventId,
           rootAuthorPubkey: testVideoAuthorPubkey,
           status: CommentsStatus.success,
           commentsById: {comment.id: comment},
+        );
+        const composerState = CommentComposerState(
           activeReplyCommentId: TestCommentIds.comment1Id,
         );
 
-        await tester.pumpWidget(buildTestWidget(commentsState: commentsState));
+        await tester.pumpWidget(
+          buildTestWidget(listState: listState, composerState: composerState),
+        );
         await tester.pumpAndSettle();
 
         final l10n = lookupAppLocalizations(const Locale('en'));
@@ -233,23 +258,20 @@ void main() {
           find.text('${l10n.commentReplyToPrefix} TestUser'),
           findsOneWidget,
         );
-        // Verify close icon exists (there may be multiple close icons on the screen)
         expect(find.byIcon(Icons.close), findsWidgets);
       });
     });
 
     group('title count', () {
-      testWidgets('shows correct initial count during loading state', (
-        tester,
-      ) async {
-        const state = CommentsState(
+      testWidgets('shows initial count during loading', (tester) async {
+        const state = CommentsListState(
           rootEventId: testVideoEventId,
           rootAuthorPubkey: testVideoAuthorPubkey,
           status: CommentsStatus.loading,
         );
 
         await tester.pumpWidget(
-          buildTestWidget(commentsState: state, initialCommentCount: 5),
+          buildTestWidget(listState: state, initialCommentCount: 5),
         );
         await tester.pump();
 
@@ -257,40 +279,39 @@ void main() {
       });
 
       testWidgets('shows loaded count after success', (tester) async {
-        final comment1 = CommentBuilder()
+        final c1 = CommentBuilder()
             .withId(TestCommentIds.comment1Id)
             .withContent('Comment 1')
             .build();
-        final comment2 = CommentBuilder()
+        final c2 = CommentBuilder()
             .withId(TestCommentIds.comment2Id)
             .withContent('Comment 2')
             .build();
 
-        final state = CommentsState(
+        final state = CommentsListState(
           rootEventId: testVideoEventId,
           rootAuthorPubkey: testVideoAuthorPubkey,
           status: CommentsStatus.success,
-          commentsById: {comment1.id: comment1, comment2.id: comment2},
+          commentsById: {c1.id: c1, c2.id: c2},
         );
 
         await tester.pumpWidget(
-          buildTestWidget(commentsState: state, initialCommentCount: 5),
+          buildTestWidget(listState: state, initialCommentCount: 5),
         );
         await tester.pump();
 
-        // Once loaded, should show actual count (2), not initial (5)
         expect(find.text('2 Comments'), findsOneWidget);
       });
 
       testWidgets('shows singular "Comment" for count of 1', (tester) async {
-        const state = CommentsState(
+        const state = CommentsListState(
           rootEventId: testVideoEventId,
           rootAuthorPubkey: testVideoAuthorPubkey,
           status: CommentsStatus.loading,
         );
 
         await tester.pumpWidget(
-          buildTestWidget(commentsState: state, initialCommentCount: 1),
+          buildTestWidget(listState: state, initialCommentCount: 1),
         );
         await tester.pump();
 
@@ -315,20 +336,18 @@ void main() {
             )
             .build();
 
-        final state = CommentsState(
+        final state = CommentsListState(
           rootEventId: testVideoEventId,
           rootAuthorPubkey: testVideoAuthorPubkey,
           status: CommentsStatus.success,
           commentsById: {parent.id: parent, reply.id: reply},
         );
 
-        await tester.pumpWidget(buildTestWidget(commentsState: state));
+        await tester.pumpWidget(buildTestWidget(listState: state));
         await tester.pump();
 
-        // Both comments should be visible
         expect(find.text('Parent comment'), findsOneWidget);
         expect(find.text('Reply comment'), findsOneWidget);
-        // Two CommentItem widgets
         expect(find.byType(CommentItem), findsNWidgets(2));
       });
     });
@@ -337,26 +356,26 @@ void main() {
       testWidgets('shows loading indicator in list when loading', (
         tester,
       ) async {
-        const state = CommentsState(
+        const state = CommentsListState(
           rootEventId: testVideoEventId,
           rootAuthorPubkey: testVideoAuthorPubkey,
           status: CommentsStatus.loading,
         );
 
-        await tester.pumpWidget(buildTestWidget(commentsState: state));
+        await tester.pumpWidget(buildTestWidget(listState: state));
         await tester.pump();
 
         expect(find.byType(CommentsSkeletonLoader), findsOneWidget);
       });
 
       testWidgets('shows empty state when no comments', (tester) async {
-        const state = CommentsState(
+        const state = CommentsListState(
           rootEventId: testVideoEventId,
           rootAuthorPubkey: testVideoAuthorPubkey,
           status: CommentsStatus.success,
         );
 
-        await tester.pumpWidget(buildTestWidget(commentsState: state));
+        await tester.pumpWidget(buildTestWidget(listState: state));
         await tester.pump();
 
         expect(find.text('No comments yet'), findsOneWidget);
@@ -366,7 +385,7 @@ void main() {
       testWidgets(
         'does not show archive notice for recent videos with loop stats',
         (tester) async {
-          const state = CommentsState(
+          const state = CommentsListState(
             rootEventId: testVideoEventId,
             rootAuthorPubkey: testVideoAuthorPubkey,
             status: CommentsStatus.success,
@@ -383,7 +402,7 @@ void main() {
 
           await tester.pumpWidget(
             buildTestWidget(
-              commentsState: state,
+              listState: state,
               videoEvent: recentVideoWithLoops,
             ),
           );
@@ -396,7 +415,7 @@ void main() {
       testWidgets('shows archive notice for vintage recovered vines', (
         tester,
       ) async {
-        const state = CommentsState(
+        const state = CommentsListState(
           rootEventId: testVideoEventId,
           rootAuthorPubkey: testVideoAuthorPubkey,
           status: CommentsStatus.success,
@@ -414,7 +433,7 @@ void main() {
 
         await tester.pumpWidget(
           buildTestWidget(
-            commentsState: state,
+            listState: state,
             videoEvent: vintageRecoveredVine,
           ),
         );
@@ -425,13 +444,10 @@ void main() {
     });
 
     group('error handling', () {
-      testWidgets('renders without error when state has no error', (
-        tester,
-      ) async {
+      testWidgets('renders without snackbar when no error', (tester) async {
         await tester.pumpWidget(buildTestWidget());
         await tester.pump();
 
-        // Should render normally without error
         expect(find.byType(CommentsDragHandle), findsOneWidget);
         expect(find.byType(SnackBar), findsNothing);
       });
@@ -440,7 +456,7 @@ void main() {
 }
 
 /// Test content widget that mirrors the CommentsScreen body structure
-/// but accepts mocked blocs from parent widget
+/// but accepts mocked blocs from parent widget.
 class _CommentsScreenTestContent extends StatelessWidget {
   const _CommentsScreenTestContent({
     required this.videoEvent,
@@ -454,37 +470,25 @@ class _CommentsScreenTestContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<CommentsBloc, CommentsState>(
-      listenWhen: (prev, next) =>
-          prev.error != next.error && next.error != null,
-      listener: (context, state) {
-        if (state.error != null) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(_errorToString(state.error!))));
-          context.read<CommentsBloc>().add(const CommentErrorCleared());
-        }
-      },
-      child: Column(
-        children: [
-          const CommentsDragHandle(),
-          _TestCommentsTitle(initialCount: initialCommentCount),
-          CommentsHeader(onClose: () => Navigator.pop(context)),
-          const Divider(color: Colors.white24, height: 1),
-          Expanded(
-            child: CommentsList(
-              showClassicVineNotice: videoEvent.isVintageRecoveredVine,
-              scrollController: sheetScrollController,
-            ),
+    return Column(
+      children: [
+        const CommentsDragHandle(),
+        _TestCommentsTitle(initialCount: initialCommentCount),
+        CommentsHeader(onClose: () => Navigator.pop(context)),
+        const Divider(color: Colors.white24, height: 1),
+        Expanded(
+          child: CommentsList(
+            showClassicVineNotice: videoEvent.isVintageRecoveredVine,
+            scrollController: sheetScrollController,
           ),
-          _MainCommentInputTest(),
-        ],
-      ),
+        ),
+        _MainCommentInputTest(),
+      ],
     );
   }
 }
 
-/// Test version of main comment input that works with mocked bloc
+/// Test version of main comment input that reads from the composer bloc.
 class _MainCommentInputTest extends StatefulWidget {
   @override
   State<_MainCommentInputTest> createState() => _MainCommentInputTestState();
@@ -497,7 +501,7 @@ class _MainCommentInputTestState extends State<_MainCommentInputTest> {
   @override
   void initState() {
     super.initState();
-    final state = context.read<CommentsBloc>().state;
+    final state = context.read<CommentComposerBloc>().state;
     _controller = TextEditingController(text: state.mainInputText);
     _focusNode = FocusNode();
   }
@@ -511,7 +515,7 @@ class _MainCommentInputTestState extends State<_MainCommentInputTest> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<CommentsBloc, CommentsState>(
+    return BlocConsumer<CommentComposerBloc, CommentComposerState>(
       listenWhen: (prev, next) =>
           prev.activeReplyCommentId != next.activeReplyCommentId,
       listener: (context, state) {
@@ -536,18 +540,16 @@ class _MainCommentInputTestState extends State<_MainCommentInputTest> {
           );
         }
 
-        // Get display name of user being replied to
         String? replyToDisplayName;
         String? replyToAuthorPubkey;
         if (isReplyMode) {
-          final replyComment = state.comments.firstWhere(
-            (c) => c.id == state.activeReplyCommentId,
-            orElse: () => throw StateError('Reply comment not found'),
-          );
-          replyToAuthorPubkey = replyComment.authorPubkey;
-
-          // For tests, use a simple "User" fallback since we mock the profile service
-          replyToDisplayName = 'TestUser';
+          final listState = context.read<CommentsListBloc>().state;
+          final replyComment =
+              listState.commentsById[state.activeReplyCommentId];
+          if (replyComment != null) {
+            replyToAuthorPubkey = replyComment.authorPubkey;
+            replyToDisplayName = 'TestUser';
+          }
         }
 
         return CommentInput(
@@ -555,24 +557,24 @@ class _MainCommentInputTestState extends State<_MainCommentInputTest> {
           focusNode: _focusNode,
           replyToDisplayName: replyToDisplayName,
           onChanged: (text) {
-            context.read<CommentsBloc>().add(
+            context.read<CommentComposerBloc>().add(
               CommentTextChanged(text, commentId: state.activeReplyCommentId),
             );
           },
           onSubmit: () {
             if (isReplyMode) {
-              context.read<CommentsBloc>().add(
+              context.read<CommentComposerBloc>().add(
                 CommentSubmitted(
                   parentCommentId: state.activeReplyCommentId,
                   parentAuthorPubkey: replyToAuthorPubkey,
                 ),
               );
             } else {
-              context.read<CommentsBloc>().add(const CommentSubmitted());
+              context.read<CommentComposerBloc>().add(const CommentSubmitted());
             }
           },
           onCancelReply: () {
-            context.read<CommentsBloc>().add(
+            context.read<CommentComposerBloc>().add(
               CommentReplyToggled(state.activeReplyCommentId!),
             );
           },
@@ -583,9 +585,6 @@ class _MainCommentInputTestState extends State<_MainCommentInputTest> {
 }
 
 /// Test replica of `_CommentsTitle` from comments_screen.dart.
-///
-/// Mirrors the same logic: shows [initialCount] during loading,
-/// switches to actual comment count on success.
 class _TestCommentsTitle extends StatelessWidget {
   const _TestCommentsTitle({required this.initialCount});
 
@@ -593,13 +592,13 @@ class _TestCommentsTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<CommentsBloc, CommentsState>(
+    return BlocBuilder<CommentsListBloc, CommentsListState>(
       buildWhen: (prev, next) =>
-          prev.comments.length != next.comments.length ||
+          prev.commentsById.length != next.commentsById.length ||
           prev.status != next.status,
       builder: (context, state) {
         final count = state.status == CommentsStatus.success
-            ? state.comments.length
+            ? state.commentsById.length
             : initialCount;
 
         return Text('$count ${count == 1 ? 'Comment' : 'Comments'}');

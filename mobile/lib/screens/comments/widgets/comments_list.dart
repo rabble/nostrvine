@@ -4,7 +4,8 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:openvine/blocs/comments/comments_bloc.dart';
+import 'package:openvine/blocs/comments/comment_reactions/comment_reactions_bloc.dart';
+import 'package:openvine/blocs/comments/comments_list/comments_list_bloc.dart';
 import 'package:openvine/screens/comments/widgets/widgets.dart';
 
 class CommentsList extends StatefulWidget {
@@ -37,9 +38,9 @@ class _CommentsListState extends State<CommentsList> {
   }
 
   void _onScroll() {
-    // Auto-acknowledge new comments when user scrolls to the top
+    // Auto-acknowledge new comments when user scrolls to the top.
     if (!widget.scrollController.hasClients) return;
-    final bloc = context.read<CommentsBloc>();
+    final bloc = context.read<CommentsListBloc>();
     if (widget.scrollController.offset <= 0 && bloc.state.newCommentCount > 0) {
       bloc.add(const NewCommentsAcknowledged());
     }
@@ -61,7 +62,7 @@ class _CommentsListState extends State<CommentsList> {
     return Listener(
       behavior: HitTestBehavior.translucent,
       onPointerDown: (_) => FocusManager.instance.primaryFocus?.unfocus(),
-      child: BlocBuilder<CommentsBloc, CommentsState>(
+      child: BlocBuilder<CommentsListBloc, CommentsListState>(
         builder: (context, state) {
           if (state.status == CommentsStatus.loading) {
             return const _LoadingState();
@@ -71,25 +72,38 @@ class _CommentsListState extends State<CommentsList> {
             return const _ErrorState();
           }
 
-          final threaded = widget.showVideoReplies
-              ? state.threadedComments
-              : state.threadedComments
-                    .where((node) => !node.comment.hasVideo)
-                    .toList();
+          // Engagement sort consumes upvote counts from CommentReactionsBloc,
+          // so cross-bloc the threaded list build via a nested BlocSelector.
+          return BlocSelector<
+            CommentReactionsBloc,
+            CommentReactionsState,
+            Map<String, int>
+          >(
+            selector: (s) => s.commentUpvoteCounts,
+            builder: (context, upvoteCounts) {
+              final all = state.threadedCommentsWith(
+                upvoteCounts: upvoteCounts,
+              );
+              final threaded = widget.showVideoReplies
+                  ? all
+                  : all.where((node) => !node.comment.hasVideo).toList();
 
-          if (threaded.isEmpty) {
-            return CommentsEmptyState(
-              isClassicVine: widget.showClassicVineNotice,
-            );
-          }
+              if (threaded.isEmpty) {
+                return CommentsEmptyState(
+                  isClassicVine: widget.showClassicVineNotice,
+                );
+              }
 
-          return ListView.builder(
-            controller: widget.scrollController,
-            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            itemCount: threaded.length,
-            itemBuilder: (context, index) {
-              final node = threaded[index];
-              return CommentItem(comment: node.comment, depth: node.depth);
+              return ListView.builder(
+                controller: widget.scrollController,
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                itemCount: threaded.length,
+                itemBuilder: (context, index) {
+                  final node = threaded[index];
+                  return CommentItem(comment: node.comment, depth: node.depth);
+                },
+              );
             },
           );
         },

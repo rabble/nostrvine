@@ -3,7 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:openvine/blocs/comments/comments_bloc.dart';
+import 'package:openvine/blocs/comments/comment_composer/comment_composer_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/comments/widgets/mention_overlay.dart';
 

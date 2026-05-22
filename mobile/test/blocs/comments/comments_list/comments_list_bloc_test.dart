@@ -1,0 +1,621 @@
+// ABOUTME: Tests for CommentsListBloc — load, paginate, sort, real-time stream,
+// ABOUTME: and the six cross-bloc store-mutation events (Optimistic
+// ABOUTME: Inserted/Confirmed/RolledBack, CommentReplacedInStore,
+// ABOUTME: CommentRemovedFromStore, CommentsRemovedByAuthorFromStore).
+// ABOUTME: Asserts #4478 cache-fix: rootAddressableId threaded into loadComments.
+
+import 'dart:async';
+
+import 'package:bloc_test/bloc_test.dart';
+import 'package:comments_repository/comments_repository.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/comments/comments_list/comments_list_bloc.dart';
+import 'package:openvine/blocs/comments/comments_list/comments_list_helpers.dart';
+
+class _MockCommentsRepository extends Mock implements CommentsRepository {}
+
+void main() {
+  group(CommentsListBloc, () {
+    late _MockCommentsRepository mockCommentsRepository;
+
+    String validId(String suffix) {
+      final hexSuffix = suffix.codeUnits
+          .map((c) => c.toRadixString(16).padLeft(2, '0'))
+          .join();
+      return hexSuffix.padLeft(64, '0');
+    }
+
+    setUp(() {
+      mockCommentsRepository = _MockCommentsRepository();
+      when(
+        () => mockCommentsRepository.watchComments(
+          rootEventId: any(named: 'rootEventId'),
+          rootEventKind: any(named: 'rootEventKind'),
+          rootAddressableId: any(named: 'rootAddressableId'),
+          since: any(named: 'since'),
+          onEose: any(named: 'onEose'),
+        ),
+      ).thenAnswer((_) => const Stream<Comment>.empty());
+      when(
+        () => mockCommentsRepository.stopWatchingComments(),
+      ).thenAnswer((_) async {});
+    });
+
+    Comment makeComment(
+      String id, {
+      String? content,
+      String? authorPubkey,
+      DateTime? createdAt,
+      String? replyToEventId,
+      String? replyToAuthorPubkey,
+    }) => Comment(
+      id: id,
+      content: content ?? 'hello',
+      authorPubkey: authorPubkey ?? validId('commenter'),
+      createdAt: createdAt ?? DateTime.now(),
+      rootEventId: validId('root'),
+      rootAuthorPubkey: validId('author'),
+      replyToEventId: replyToEventId,
+      replyToAuthorPubkey: replyToAuthorPubkey,
+    );
+
+    CommentsListBloc createBloc({
+      String? rootAddressableId,
+      int? initialTotalCount,
+    }) => CommentsListBloc(
+      commentsRepository: mockCommentsRepository,
+      rootEventId: validId('root'),
+      rootEventKind: 34236,
+      rootAuthorPubkey: validId('author'),
+      rootAddressableId: rootAddressableId,
+      initialTotalCount: initialTotalCount,
+    );
+
+    test('initial state', () {
+      final bloc = createBloc();
+      expect(bloc.state.status, CommentsStatus.initial);
+      expect(bloc.state.commentsById, isEmpty);
+      expect(bloc.state.rootEventId, validId('root'));
+      bloc.close();
+    });
+
+    group('CommentsLoadRequested', () {
+      blocTest<CommentsListBloc, CommentsListState>(
+        'emits [loading, success] and threads rootAddressableId (#4478)',
+        setUp: () {
+          final comment = makeComment(validId('c1'), content: 'first');
+          final thread = CommentThread(
+            rootEventId: validId('root'),
+            comments: [comment],
+            totalCount: 1,
+            commentCache: {comment.id: comment},
+          );
+          when(
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => thread);
+        },
+        build: () => createBloc(rootAddressableId: 'fake-addr'),
+        act: (b) => b.add(const CommentsLoadRequested()),
+        expect: () => [
+          isA<CommentsListState>().having(
+            (s) => s.status,
+            'status',
+            CommentsStatus.loading,
+          ),
+          isA<CommentsListState>()
+              .having((s) => s.status, 'status', CommentsStatus.success)
+              .having((s) => s.commentsById.length, 'count', 1),
+        ],
+        verify: (_) {
+          verify(
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootAddressableId: 'fake-addr',
+              limit: any(named: 'limit'),
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<CommentsListBloc, CommentsListState>(
+        'emits [loading, failure] when load throws and store is empty',
+        setUp: () {
+          when(
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenThrow(const LoadCommentsFailedException('boom'));
+        },
+        build: createBloc,
+        act: (b) => b.add(const CommentsLoadRequested()),
+        errors: () => [isA<LoadCommentsFailedException>()],
+        expect: () => [
+          isA<CommentsListState>().having(
+            (s) => s.status,
+            'status',
+            CommentsStatus.loading,
+          ),
+          isA<CommentsListState>()
+              .having((s) => s.status, 'status', CommentsStatus.failure)
+              .having((s) => s.error, 'error', CommentsListError.loadFailed),
+        ],
+      );
+
+      blocTest<CommentsListBloc, CommentsListState>(
+        'noop when status is already loading',
+        build: createBloc,
+        seed: () => const CommentsListState(status: CommentsStatus.loading),
+        act: (b) => b.add(const CommentsLoadRequested()),
+        expect: () => isEmpty,
+      );
+    });
+
+    group('CommentsLoadMoreRequested', () {
+      blocTest<CommentsListBloc, CommentsListState>(
+        'noop when status is not success',
+        build: createBloc,
+        act: (b) => b.add(const CommentsLoadMoreRequested()),
+        expect: () => isEmpty,
+      );
+
+      blocTest<CommentsListBloc, CommentsListState>(
+        'noop when commentsById is empty',
+        build: createBloc,
+        seed: () => const CommentsListState(status: CommentsStatus.success),
+        act: (b) => b.add(const CommentsLoadMoreRequested()),
+        expect: () => isEmpty,
+      );
+
+      blocTest<CommentsListBloc, CommentsListState>(
+        'pages older comments, merges into store',
+        setUp: () {
+          final older = makeComment(
+            validId('c0'),
+            content: 'older',
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1000),
+          );
+          final thread = CommentThread(
+            rootEventId: validId('root'),
+            comments: [older],
+            totalCount: 2,
+            commentCache: {older.id: older},
+          );
+          when(
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((_) async => thread);
+        },
+        build: createBloc,
+        seed: () {
+          final existing = makeComment(
+            validId('c1'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(5000),
+          );
+          return CommentsListState(
+            status: CommentsStatus.success,
+            commentsById: {existing.id: existing},
+          );
+        },
+        act: (b) => b.add(const CommentsLoadMoreRequested()),
+        verify: (b) {
+          expect(b.state.commentsById.length, 2);
+          expect(b.state.isLoadingMore, isFalse);
+        },
+      );
+    });
+
+    group('NewCommentReceived', () {
+      blocTest<CommentsListBloc, CommentsListState>(
+        'adds new comment and bumps newCommentCount after backfill',
+        build: createBloc,
+        seed: () => const CommentsListState(status: CommentsStatus.success),
+        act: (b) {
+          b.add(const CommentsInitialBackfillCompleted());
+          b.add(NewCommentReceived(makeComment(validId('c1'))));
+        },
+        verify: (b) {
+          expect(b.state.commentsById.length, 1);
+          expect(b.state.newCommentCount, 1);
+        },
+      );
+
+      blocTest<CommentsListBloc, CommentsListState>(
+        'reconciles placeholder by author+content on relay echo',
+        build: createBloc,
+        seed: () {
+          final placeholder = Comment(
+            id: 'pending_comment_999',
+            content: 'echo me',
+            authorPubkey: validId('me'),
+            createdAt: DateTime.now(),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          return CommentsListState(
+            status: CommentsStatus.success,
+            commentsById: {placeholder.id: placeholder},
+          );
+        },
+        act: (b) {
+          b.add(const CommentsInitialBackfillCompleted());
+          b.add(
+            NewCommentReceived(
+              makeComment(
+                validId('confirmed'),
+                content: 'echo me',
+                authorPubkey: validId('me'),
+              ),
+            ),
+          );
+        },
+        verify: (b) {
+          expect(
+            b.state.commentsById.containsKey('pending_comment_999'),
+            isFalse,
+          );
+          expect(
+            b.state.commentsById.containsKey(validId('confirmed')),
+            isTrue,
+          );
+          // newCommentCount does NOT bump because this is a placeholder swap.
+          expect(b.state.newCommentCount, 0);
+        },
+      );
+
+      blocTest<CommentsListBloc, CommentsListState>(
+        'skips duplicate by id',
+        build: createBloc,
+        seed: () => CommentsListState(
+          status: CommentsStatus.success,
+          commentsById: {validId('c1'): makeComment(validId('c1'))},
+        ),
+        act: (b) => b.add(NewCommentReceived(makeComment(validId('c1')))),
+        expect: () => isEmpty,
+      );
+    });
+
+    group('CommentsSortModeChanged', () {
+      blocTest<CommentsListBloc, CommentsListState>(
+        'updates sortMode',
+        build: createBloc,
+        act: (b) =>
+            b.add(const CommentsSortModeChanged(CommentsSortMode.oldest)),
+        expect: () => [
+          isA<CommentsListState>().having(
+            (s) => s.sortMode,
+            'sortMode',
+            CommentsSortMode.oldest,
+          ),
+        ],
+      );
+    });
+
+    group('NewCommentsAcknowledged', () {
+      blocTest<CommentsListBloc, CommentsListState>(
+        'resets newCommentCount to 0',
+        build: createBloc,
+        seed: () => const CommentsListState(newCommentCount: 5),
+        act: (b) => b.add(const NewCommentsAcknowledged()),
+        expect: () => [
+          isA<CommentsListState>().having(
+            (s) => s.newCommentCount,
+            'newCommentCount',
+            0,
+          ),
+        ],
+      );
+    });
+
+    group('Cross-bloc store mutation events', () {
+      blocTest<CommentsListBloc, CommentsListState>(
+        'OptimisticCommentInserted adds placeholder',
+        build: createBloc,
+        act: (b) {
+          final placeholder = Comment(
+            id: 'pending_comment_1',
+            content: 'wip',
+            authorPubkey: validId('me'),
+            createdAt: DateTime.now(),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          b.add(OptimisticCommentInserted(placeholder));
+        },
+        verify: (b) {
+          expect(b.state.commentsById.containsKey('pending_comment_1'), isTrue);
+        },
+      );
+
+      blocTest<CommentsListBloc, CommentsListState>(
+        'OptimisticCommentConfirmed replaces placeholder with confirmed',
+        build: createBloc,
+        seed: () {
+          final placeholder = Comment(
+            id: 'pending_comment_1',
+            content: 'wip',
+            authorPubkey: validId('me'),
+            createdAt: DateTime.now(),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          return CommentsListState(commentsById: {placeholder.id: placeholder});
+        },
+        act: (b) => b.add(
+          OptimisticCommentConfirmed(
+            placeholderId: 'pending_comment_1',
+            confirmed: makeComment(validId('confirmed')),
+          ),
+        ),
+        verify: (b) {
+          expect(
+            b.state.commentsById.containsKey('pending_comment_1'),
+            isFalse,
+          );
+          expect(
+            b.state.commentsById.containsKey(validId('confirmed')),
+            isTrue,
+          );
+        },
+      );
+
+      blocTest<CommentsListBloc, CommentsListState>(
+        'OptimisticCommentConfirmed cleans up placeholder when relay echo already added confirmed',
+        build: createBloc,
+        seed: () {
+          final placeholder = Comment(
+            id: 'pending_comment_1',
+            content: 'wip',
+            authorPubkey: validId('me'),
+            createdAt: DateTime.now(),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          final confirmed = makeComment(validId('confirmed'));
+          return CommentsListState(
+            commentsById: {
+              placeholder.id: placeholder,
+              confirmed.id: confirmed,
+            },
+          );
+        },
+        act: (b) => b.add(
+          OptimisticCommentConfirmed(
+            placeholderId: 'pending_comment_1',
+            confirmed: makeComment(validId('confirmed')),
+          ),
+        ),
+        verify: (b) {
+          expect(
+            b.state.commentsById.containsKey('pending_comment_1'),
+            isFalse,
+          );
+          expect(
+            b.state.commentsById.containsKey(validId('confirmed')),
+            isTrue,
+          );
+          expect(b.state.commentsById.length, 1);
+        },
+      );
+
+      blocTest<CommentsListBloc, CommentsListState>(
+        'OptimisticCommentRolledBack removes placeholder',
+        build: createBloc,
+        seed: () {
+          final placeholder = Comment(
+            id: 'pending_comment_1',
+            content: 'wip',
+            authorPubkey: validId('me'),
+            createdAt: DateTime.now(),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          return CommentsListState(commentsById: {placeholder.id: placeholder});
+        },
+        act: (b) => b.add(
+          const OptimisticCommentRolledBack('pending_comment_1'),
+        ),
+        verify: (b) {
+          expect(
+            b.state.commentsById.containsKey('pending_comment_1'),
+            isFalse,
+          );
+        },
+      );
+
+      blocTest<CommentsListBloc, CommentsListState>(
+        'CommentReplacedInStore swaps old comment for new one (edit flow)',
+        build: createBloc,
+        seed: () {
+          final original = makeComment(validId('original'));
+          return CommentsListState(commentsById: {original.id: original});
+        },
+        act: (b) => b.add(
+          CommentReplacedInStore(
+            oldId: validId('original'),
+            newComment: makeComment(validId('new'), content: 'edited'),
+          ),
+        ),
+        verify: (b) {
+          expect(
+            b.state.commentsById.containsKey(validId('original')),
+            isFalse,
+          );
+          expect(b.state.commentsById.containsKey(validId('new')), isTrue);
+          expect(b.state.commentsById[validId('new')]!.content, 'edited');
+        },
+      );
+
+      blocTest<CommentsListBloc, CommentsListState>(
+        'CommentRemovedFromStore removes the comment',
+        build: createBloc,
+        seed: () => CommentsListState(
+          commentsById: {validId('c1'): makeComment(validId('c1'))},
+        ),
+        act: (b) => b.add(CommentRemovedFromStore(validId('c1'))),
+        verify: (b) {
+          expect(b.state.commentsById.containsKey(validId('c1')), isFalse);
+        },
+      );
+
+      blocTest<CommentsListBloc, CommentsListState>(
+        'CommentsRemovedByAuthorFromStore drops every comment by author',
+        build: createBloc,
+        seed: () {
+          final blocked = makeComment(
+            validId('c1'),
+            authorPubkey: validId('blocked'),
+          );
+          final other = makeComment(
+            validId('c2'),
+            authorPubkey: validId('other'),
+          );
+          return CommentsListState(
+            commentsById: {blocked.id: blocked, other.id: other},
+          );
+        },
+        act: (b) => b.add(CommentsRemovedByAuthorFromStore(validId('blocked'))),
+        verify: (b) {
+          expect(b.state.commentsById.containsKey(validId('c1')), isFalse);
+          expect(b.state.commentsById.containsKey(validId('c2')), isTrue);
+        },
+      );
+    });
+
+    group('threadedCommentsWith', () {
+      test('sorts newest first by default', () {
+        final older = makeComment(
+          validId('c1'),
+          createdAt: DateTime.fromMillisecondsSinceEpoch(1000),
+        );
+        final newer = makeComment(
+          validId('c2'),
+          createdAt: DateTime.fromMillisecondsSinceEpoch(2000),
+        );
+        final state = CommentsListState(
+          commentsById: {older.id: older, newer.id: newer},
+        );
+        final threaded = state.threadedCommentsWith();
+        expect(threaded.first.comment.id, validId('c2'));
+        expect(threaded.last.comment.id, validId('c1'));
+      });
+
+      test('engagement sort uses provided upvote counts', () {
+        final low = makeComment(
+          validId('c1'),
+          createdAt: DateTime.now(),
+        );
+        final high = makeComment(
+          validId('c2'),
+          createdAt: DateTime.now(),
+        );
+        final state = CommentsListState(
+          commentsById: {low.id: low, high.id: high},
+          sortMode: CommentsSortMode.topEngagement,
+        );
+        final threaded = state.threadedCommentsWith(
+          upvoteCounts: {validId('c1'): 0, validId('c2'): 100},
+        );
+        expect(threaded.first.comment.id, validId('c2'));
+      });
+
+      test('threads replies under parents', () {
+        final parent = makeComment(validId('p1'), createdAt: DateTime.now());
+        final reply = makeComment(
+          validId('r1'),
+          createdAt: DateTime.now(),
+          replyToEventId: parent.id,
+          replyToAuthorPubkey: parent.authorPubkey,
+        );
+        final state = CommentsListState(
+          commentsById: {parent.id: parent, reply.id: reply},
+        );
+        final threaded = state.threadedCommentsWith();
+        expect(threaded.length, 2);
+        expect(threaded[0].depth, 0);
+        expect(threaded[1].depth, 1);
+      });
+    });
+
+    group('engagementScore', () {
+      test('newer + more upvoted scores higher', () {
+        final now = DateTime.now();
+        final hot = makeComment(
+          validId('hot'),
+          createdAt: now.subtract(const Duration(minutes: 5)),
+        );
+        final cold = makeComment(
+          validId('cold'),
+          createdAt: now.subtract(const Duration(hours: 50)),
+        );
+        final scoreHot = commentEngagementScore(
+          comment: hot,
+          now: now,
+          likeCounts: {hot.id: 20},
+          replyCounts: const {},
+        );
+        final scoreCold = commentEngagementScore(
+          comment: cold,
+          now: now,
+          likeCounts: {cold.id: 20},
+          replyCounts: const {},
+        );
+        expect(scoreHot > scoreCold, isTrue);
+      });
+    });
+
+    group('real-time stream', () {
+      test('starts watching after CommentsLoadRequested', () async {
+        final streamController = StreamController<Comment>.broadcast();
+        when(
+          () => mockCommentsRepository.watchComments(
+            rootEventId: any(named: 'rootEventId'),
+            rootEventKind: any(named: 'rootEventKind'),
+            rootAddressableId: any(named: 'rootAddressableId'),
+            since: any(named: 'since'),
+            onEose: any(named: 'onEose'),
+          ),
+        ).thenAnswer((_) => streamController.stream);
+        when(
+          () => mockCommentsRepository.loadComments(
+            rootEventId: any(named: 'rootEventId'),
+            rootEventKind: any(named: 'rootEventKind'),
+            rootAddressableId: any(named: 'rootAddressableId'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => CommentThread.empty(validId('root')));
+
+        final bloc = createBloc();
+        bloc.add(const CommentsLoadRequested());
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        verify(
+          () => mockCommentsRepository.watchComments(
+            rootEventId: any(named: 'rootEventId'),
+            rootEventKind: any(named: 'rootEventKind'),
+            rootAddressableId: any(named: 'rootAddressableId'),
+            since: any(named: 'since'),
+            onEose: any(named: 'onEose'),
+          ),
+        ).called(1);
+
+        await streamController.close();
+        await bloc.close();
+      });
+    });
+  });
+}

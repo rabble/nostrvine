@@ -1,3 +1,6 @@
+// ABOUTME: Widget tests for CommentItem with the split CommentComposerBloc +
+// ABOUTME: CommentReactionsBloc provider tree.
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/gestures.dart';
@@ -9,7 +12,8 @@ import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/blocs/comments/comments_bloc.dart';
+import 'package:openvine/blocs/comments/comment_composer/comment_composer_bloc.dart';
+import 'package:openvine/blocs/comments/comment_reactions/comment_reactions_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/comments/widgets/comment_item.dart';
@@ -29,8 +33,13 @@ class _FakeNostrClient implements NostrClient {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class _MockCommentsBloc extends MockBloc<CommentsEvent, CommentsState>
-    implements CommentsBloc {}
+class _MockComposerBloc
+    extends MockBloc<CommentComposerEvent, CommentComposerState>
+    implements CommentComposerBloc {}
+
+class _MockReactionsBloc
+    extends MockBloc<CommentReactionsEvent, CommentReactionsState>
+    implements CommentReactionsBloc {}
 
 const _testHexPubkey =
     '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
@@ -41,10 +50,25 @@ const _testRootAuthorPubkey =
 
 void main() {
   setUpAll(() {
-    registerFallbackValue(const CommentsLoadRequested());
+    registerFallbackValue(const CommentReplyToggled(''));
+    registerFallbackValue(
+      const CommentReactionsErrorCleared(),
+    );
   });
 
-  Widget buildTestWidget(String content, _MockCommentsBloc mockCommentsBloc) {
+  ({_MockComposerBloc composer, _MockReactionsBloc reactions}) buildMocks() {
+    final composer = _MockComposerBloc();
+    final reactions = _MockReactionsBloc();
+    when(() => composer.state).thenReturn(const CommentComposerState());
+    when(() => reactions.state).thenReturn(const CommentReactionsState());
+    return (composer: composer, reactions: reactions);
+  }
+
+  Widget buildTestWidget(
+    String content, {
+    required _MockComposerBloc composerBloc,
+    required _MockReactionsBloc reactionsBloc,
+  }) {
     final comment = CommentBuilder()
         .withAuthorPubkey(_testHexPubkey)
         .withRootEventId(_testRootEventId)
@@ -60,8 +84,11 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
-          body: BlocProvider<CommentsBloc>.value(
-            value: mockCommentsBloc,
+          body: MultiBlocProvider(
+            providers: [
+              BlocProvider<CommentComposerBloc>.value(value: composerBloc),
+              BlocProvider<CommentReactionsBloc>.value(value: reactionsBloc),
+            ],
             child: SingleChildScrollView(child: CommentItem(comment: comment)),
           ),
         ),
@@ -81,18 +108,15 @@ void main() {
   testWidgets('renders bare npub mentions as interactive profile links', (
     tester,
   ) async {
-    final mockCommentsBloc = _MockCommentsBloc();
-    when(() => mockCommentsBloc.state).thenReturn(
-      const CommentsState(
-        rootEventId: _testRootEventId,
-        rootAuthorPubkey: _testRootAuthorPubkey,
-        status: CommentsStatus.success,
-      ),
-    );
+    final mocks = buildMocks();
     final npub = NostrKeyUtils.encodePubKey(_testHexPubkey);
 
     await tester.pumpWidget(
-      buildTestWidget('My account is $npub', mockCommentsBloc),
+      buildTestWidget(
+        'My account is $npub',
+        composerBloc: mocks.composer,
+        reactionsBloc: mocks.reactions,
+      ),
     );
     await tester.pump();
 
@@ -102,18 +126,13 @@ void main() {
   });
 
   testWidgets('renders comment urls with tappable spans', (tester) async {
-    final mockCommentsBloc = _MockCommentsBloc();
-    when(() => mockCommentsBloc.state).thenReturn(
-      const CommentsState(
-        rootEventId: _testRootEventId,
-        rootAuthorPubkey: _testRootAuthorPubkey,
-        status: CommentsStatus.success,
-      ),
-    );
+    final mocks = buildMocks();
+
     await tester.pumpWidget(
       buildTestWidget(
         'checkout https://divine.video/leaderboard',
-        mockCommentsBloc,
+        composerBloc: mocks.composer,
+        reactionsBloc: mocks.reactions,
       ),
     );
     await tester.pump();
@@ -131,14 +150,7 @@ void main() {
   });
 
   testWidgets('opens video comments with hydrated route data', (tester) async {
-    final mockCommentsBloc = _MockCommentsBloc();
-    when(() => mockCommentsBloc.state).thenReturn(
-      const CommentsState(
-        rootEventId: _testRootEventId,
-        rootAuthorPubkey: _testRootAuthorPubkey,
-        status: CommentsStatus.success,
-      ),
-    );
+    final mocks = buildMocks();
 
     final comment = CommentBuilder()
         .withId(
@@ -166,8 +178,13 @@ void main() {
         GoRoute(
           path: '/',
           builder: (context, state) => Scaffold(
-            body: BlocProvider<CommentsBloc>.value(
-              value: mockCommentsBloc,
+            body: MultiBlocProvider(
+              providers: [
+                BlocProvider<CommentComposerBloc>.value(value: mocks.composer),
+                BlocProvider<CommentReactionsBloc>.value(
+                  value: mocks.reactions,
+                ),
+              ],
               child: SingleChildScrollView(
                 child: CommentItem(comment: comment),
               ),
@@ -216,21 +233,17 @@ void main() {
       'wraps the author row in IdentitySkeletonizer with isLoading=true '
       'while the profile has not resolved',
       (tester) async {
-        final mockCommentsBloc = _MockCommentsBloc();
-        when(() => mockCommentsBloc.state).thenReturn(
-          const CommentsState(
-            rootEventId: _testRootEventId,
-            rootAuthorPubkey: _testRootAuthorPubkey,
-            status: CommentsStatus.success,
+        final mocks = buildMocks();
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            'hello',
+            composerBloc: mocks.composer,
+            reactionsBloc: mocks.reactions,
           ),
         );
-
-        await tester.pumpWidget(buildTestWidget('hello', mockCommentsBloc));
         await tester.pump();
 
-        // No profile override — userProfileReactiveProvider yields null
-        // until a Kind 0 arrives, so the comment row should be in its
-        // loading state.
         final skeletonizer = tester.widget<IdentitySkeletonizer>(
           find.byType(IdentitySkeletonizer),
         );
@@ -241,7 +254,6 @@ void main() {
               'profile is null → IdentitySkeletonizer.isLoading should be true',
         );
 
-        // The placeholder name renders behind the shimmer.
         expect(
           find.text(UserProfile.generatedNameFor(_testHexPubkey)),
           findsOneWidget,

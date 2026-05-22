@@ -1,0 +1,497 @@
+// ABOUTME: BLoC owning the canonical comments store for one video.
+// ABOUTME: Handles load, paginate, sort, real-time stream + cross-bloc
+// ABOUTME: store-mutation intents (insert/confirm/rollback/replace/remove)
+// ABOUTME: bridged from CommentComposerBloc and CommentReactionsBloc.
+
+import 'dart:async';
+
+import 'package:comments_repository/comments_repository.dart';
+import 'package:equatable/equatable.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/comments/comments_list/comments_list_helpers.dart';
+import 'package:openvine/blocs/comments/comments_list/reportable_sites.dart';
+import 'package:openvine/blocs/comments/comments_list/throttled_subscription.dart';
+import 'package:openvine/observability/reportable_error.dart';
+import 'package:unified_logger/unified_logger.dart';
+
+part 'comments_list_event.dart';
+part 'comments_list_state.dart';
+
+/// BLoC owning the canonical store of [Comment]s for one video.
+///
+/// Responsibilities:
+/// - Loading and paginating comments from Nostr relays via
+///   [CommentsRepository.loadComments].
+/// - Watching the real-time comment stream via
+///   [CommentsRepository.watchComments] and routing events through
+///   [NewCommentReceived].
+/// - Sorting via [CommentsSortMode] (engagement sort needs upvote counts
+///   from [CommentReactionsBloc] — see [CommentsListState.threadedCommentsWith]).
+/// - Mutating [CommentsListState.commentsById] in response to cross-bloc
+///   intents bridged through UI [BlocListener]s — see
+///   [OptimisticCommentInserted], [OptimisticCommentConfirmed],
+///   [OptimisticCommentRolledBack], [CommentReplacedInStore],
+///   [CommentRemovedFromStore], [CommentsRemovedByAuthorFromStore].
+class CommentsListBloc extends Bloc<CommentsListEvent, CommentsListState> {
+  CommentsListBloc({
+    required CommentsRepository commentsRepository,
+    required String rootEventId,
+    required int rootEventKind,
+    required String rootAuthorPubkey,
+    String? rootAddressableId,
+    int? initialTotalCount,
+    bool includeVideoReplies = false,
+  }) : _commentsRepository = commentsRepository,
+       _initialTotalCount = initialTotalCount,
+       _includeVideoReplies = includeVideoReplies,
+       super(
+         CommentsListState(
+           rootEventId: rootEventId,
+           rootEventKind: rootEventKind,
+           rootAuthorPubkey: rootAuthorPubkey,
+           rootAddressableId: rootAddressableId,
+         ),
+       ) {
+    on<CommentsLoadRequested>(_onLoadRequested);
+    on<CommentsLoadMoreRequested>(_onLoadMoreRequested);
+    on<CommentsSortModeChanged>(_onSortModeChanged);
+    on<NewCommentReceived>(_onNewCommentReceived);
+    on<CommentsInitialBackfillCompleted>(_onInitialBackfillCompleted);
+    on<NewCommentsAcknowledged>(_onNewCommentsAcknowledged);
+    on<CommentsListErrorCleared>(_onErrorCleared);
+    on<OptimisticCommentInserted>(_onOptimisticCommentInserted);
+    on<OptimisticCommentConfirmed>(_onOptimisticCommentConfirmed);
+    on<OptimisticCommentRolledBack>(_onOptimisticCommentRolledBack);
+    on<CommentReplacedInStore>(_onCommentReplacedInStore);
+    on<CommentRemovedFromStore>(_onCommentRemovedFromStore);
+    on<CommentsRemovedByAuthorFromStore>(_onCommentsRemovedByAuthorFromStore);
+  }
+
+  /// Page size for comment loading.
+  static const _pageSize = 50;
+
+  /// Maximum number of real-time comments to accept per second.
+  /// Beyond this rate the stream is paused briefly to avoid UI thrashing
+  /// on viral videos.
+  static const _maxCommentsPerSecond = 10;
+
+  /// Optional initial total count from video metadata or interactions state.
+  /// Used to accurately determine hasMoreContent instead of page size heuristic.
+  final int? _initialTotalCount;
+
+  final CommentsRepository _commentsRepository;
+  final bool _includeVideoReplies;
+  StreamSubscription<Comment>? _commentStreamSubscription;
+  bool _isInitialBackfillComplete = true;
+
+  /// Records a [CommentsRepositoryException] in the unified log (matrix-NO,
+  /// stays out of Crashlytics — see `rules/error_handling.md`).
+  void _logRepoFailure(Object error, StackTrace stackTrace, String operation) {
+    addError(error, stackTrace);
+    Log.error(
+      '$operation: $error',
+      name: 'CommentsListBloc',
+      category: LogCategory.ui,
+    );
+  }
+
+  /// Records an unexpected throw via [Reportable] (matrix-YES → Crashlytics)
+  /// and logs to the unified log.
+  void _logUnexpectedFailure(
+    Object error,
+    StackTrace stackTrace,
+    String site,
+    String operation,
+  ) {
+    addError(Reportable(error, context: site), stackTrace);
+    Log.error(
+      '$operation: $error',
+      name: 'CommentsListBloc',
+      category: LogCategory.ui,
+    );
+  }
+
+  Future<void> _onLoadRequested(
+    CommentsLoadRequested event,
+    Emitter<CommentsListState> emit,
+  ) async {
+    if (state.status == CommentsStatus.loading) return;
+
+    _isInitialBackfillComplete = false;
+    emit(state.copyWith(status: CommentsStatus.loading, newCommentCount: 0));
+    _startWatchingComments();
+
+    try {
+      final thread = await _commentsRepository.loadComments(
+        rootEventId: state.rootEventId,
+        rootEventKind: state.rootEventKind,
+        rootAddressableId: state.rootAddressableId,
+        limit: _pageSize,
+        includeVideoReplies: _includeVideoReplies,
+      );
+
+      final commentsById = {
+        ...state.commentsById,
+        for (final comment in thread.comments) comment.id: comment,
+      };
+      final hasMore = _hasMoreContent(
+        loadedCount: commentsById.length,
+        lastBatchCount: thread.comments.length,
+        threadTotalCount: thread.totalCount,
+      );
+
+      emit(
+        state.copyWith(
+          status: CommentsStatus.success,
+          commentsById: commentsById,
+          hasMoreContent: hasMore,
+          replyCountsByCommentId: computeReplyCounts(commentsById),
+        ),
+      );
+    } on CommentsRepositoryException catch (e, stackTrace) {
+      // *FailedException + relay timeouts are matrix-NO (API/domain +
+      // Network/IO). addError logs without flagging Reportable so they stay
+      // out of Crashlytics — see rules/error_handling.md.
+      _logRepoFailure(e, stackTrace, 'Error loading comments');
+      _emitLoadFailureOrRecover(emit);
+    } catch (e, stackTrace) {
+      _logUnexpectedFailure(
+        e,
+        stackTrace,
+        CommentsListBlocReportableSites.onLoadRequested,
+        'Error loading comments',
+      );
+      _emitLoadFailureOrRecover(emit);
+    }
+  }
+
+  void _emitLoadFailureOrRecover(Emitter<CommentsListState> emit) {
+    if (state.commentsById.isNotEmpty) {
+      emit(state.copyWith(status: CommentsStatus.success));
+      return;
+    }
+    emit(
+      state.copyWith(
+        status: CommentsStatus.failure,
+        error: CommentsListError.loadFailed,
+      ),
+    );
+  }
+
+  Future<void> _onLoadMoreRequested(
+    CommentsLoadMoreRequested event,
+    Emitter<CommentsListState> emit,
+  ) async {
+    if (state.status != CommentsStatus.success ||
+        state.isLoadingMore ||
+        !state.hasMoreContent ||
+        state.commentsById.isEmpty) {
+      return;
+    }
+
+    emit(state.copyWith(isLoadingMore: true));
+
+    try {
+      // Use the oldest non-placeholder comment's timestamp as cursor.
+      // Nostr `until` filter is inclusive, so we may get duplicates which the
+      // Map deduplicates automatically.
+      final oldestComment = state.commentsSortedWith().lastWhere(
+        (c) => !c.id.startsWith('pending_comment_'),
+      );
+      final cursor = oldestComment.createdAt;
+
+      Log.info(
+        'Loading more comments before $cursor',
+        name: 'CommentsListBloc',
+        category: LogCategory.ui,
+      );
+
+      final thread = await _commentsRepository.loadComments(
+        rootEventId: state.rootEventId,
+        rootEventKind: state.rootEventKind,
+        rootAddressableId: state.rootAddressableId,
+        limit: _pageSize,
+        before: cursor,
+        includeVideoReplies: _includeVideoReplies,
+      );
+
+      final allCommentsById = {
+        ...state.commentsById,
+        for (final c in thread.comments) c.id: c,
+      };
+
+      emit(
+        state.copyWith(
+          commentsById: allCommentsById,
+          isLoadingMore: false,
+          hasMoreContent: _hasMoreContent(
+            loadedCount: allCommentsById.length,
+            lastBatchCount: thread.comments.length,
+            threadTotalCount: thread.totalCount,
+          ),
+          replyCountsByCommentId: computeReplyCounts(allCommentsById),
+        ),
+      );
+    } on CommentsRepositoryException catch (e, stackTrace) {
+      _logRepoFailure(e, stackTrace, 'Error loading more comments');
+      emit(
+        state.copyWith(
+          isLoadingMore: false,
+          error: CommentsListError.loadFailed,
+        ),
+      );
+    } catch (e, stackTrace) {
+      _logUnexpectedFailure(
+        e,
+        stackTrace,
+        CommentsListBlocReportableSites.onLoadMoreRequested,
+        'Error loading more comments',
+      );
+      emit(
+        state.copyWith(
+          isLoadingMore: false,
+          error: CommentsListError.loadFailed,
+        ),
+      );
+    }
+  }
+
+  void _onSortModeChanged(
+    CommentsSortModeChanged event,
+    Emitter<CommentsListState> emit,
+  ) {
+    emit(state.copyWith(sortMode: event.sortMode));
+  }
+
+  void _onErrorCleared(
+    CommentsListErrorCleared event,
+    Emitter<CommentsListState> emit,
+  ) {
+    emit(state.copyWith());
+  }
+
+  void _onNewCommentReceived(
+    NewCommentReceived event,
+    Emitter<CommentsListState> emit,
+  ) {
+    final comment = event.comment;
+
+    // Skip if already in the map by id (relay echo of a confirmed comment).
+    // Blocked/muted authors are already filtered by the repository's
+    // watchComments stream, so no additional check is needed here.
+    if (state.commentsById.containsKey(comment.id)) return;
+
+    // Optimistic-post reconciliation: if a pending placeholder matches this
+    // relay echo by author + content, swap it for the canonical comment so
+    // the user sees their own post settle into its real id without a
+    // duplicate row. Counter does not bump because the placeholder was
+    // already on screen.
+    String? placeholderToReplace;
+    for (final entry in state.commentsById.entries) {
+      final existing = entry.value;
+      if (existing.id.startsWith('pending_comment_') &&
+          existing.authorPubkey == comment.authorPubkey &&
+          existing.content == comment.content) {
+        placeholderToReplace = entry.key;
+        break;
+      }
+    }
+
+    final updated = Map<String, Comment>.from(state.commentsById);
+    if (placeholderToReplace != null) updated.remove(placeholderToReplace);
+    updated[comment.id] = comment;
+    final isReplacingPlaceholder = placeholderToReplace != null;
+
+    emit(
+      state.copyWith(
+        status: CommentsStatus.success,
+        commentsById: updated,
+        replyCountsByCommentId: computeReplyCounts(updated),
+        newCommentCount: _isInitialBackfillComplete && !isReplacingPlaceholder
+            ? state.newCommentCount + 1
+            : state.newCommentCount,
+      ),
+    );
+  }
+
+  void _onInitialBackfillCompleted(
+    CommentsInitialBackfillCompleted event,
+    Emitter<CommentsListState> emit,
+  ) {
+    _isInitialBackfillComplete = true;
+  }
+
+  void _onNewCommentsAcknowledged(
+    NewCommentsAcknowledged event,
+    Emitter<CommentsListState> emit,
+  ) {
+    emit(state.copyWith(newCommentCount: 0));
+  }
+
+  // --- Cross-bloc store mutations ----------------------------------------
+
+  void _emitStore(
+    Emitter<CommentsListState> emit,
+    Map<String, Comment> updated,
+  ) {
+    emit(
+      state.copyWith(
+        commentsById: updated,
+        replyCountsByCommentId: computeReplyCounts(updated),
+      ),
+    );
+  }
+
+  void _onOptimisticCommentInserted(
+    OptimisticCommentInserted event,
+    Emitter<CommentsListState> emit,
+  ) {
+    _emitStore(emit, {
+      ...state.commentsById,
+      event.placeholder.id: event.placeholder,
+    });
+  }
+
+  void _onOptimisticCommentConfirmed(
+    OptimisticCommentConfirmed event,
+    Emitter<CommentsListState> emit,
+  ) {
+    // Race-safe: if the relay echo arrived first via NewCommentReceived, the
+    // confirmed id is already present in the store and the placeholder has
+    // been swapped out. Just clean up any leftover placeholder.
+    if (state.commentsById.containsKey(event.confirmed.id)) {
+      if (!state.commentsById.containsKey(event.placeholderId)) return;
+      _emitStore(
+        emit,
+        Map<String, Comment>.from(state.commentsById)
+          ..remove(event.placeholderId),
+      );
+      return;
+    }
+
+    _emitStore(
+      emit,
+      Map<String, Comment>.from(state.commentsById)
+        ..remove(event.placeholderId)
+        ..[event.confirmed.id] = event.confirmed,
+    );
+  }
+
+  void _onOptimisticCommentRolledBack(
+    OptimisticCommentRolledBack event,
+    Emitter<CommentsListState> emit,
+  ) {
+    if (!state.commentsById.containsKey(event.placeholderId)) return;
+    _emitStore(
+      emit,
+      Map<String, Comment>.from(state.commentsById)
+        ..remove(event.placeholderId),
+    );
+  }
+
+  void _onCommentReplacedInStore(
+    CommentReplacedInStore event,
+    Emitter<CommentsListState> emit,
+  ) {
+    _emitStore(
+      emit,
+      Map<String, Comment>.from(state.commentsById)
+        ..remove(event.oldId)
+        ..[event.newComment.id] = event.newComment,
+    );
+  }
+
+  void _onCommentRemovedFromStore(
+    CommentRemovedFromStore event,
+    Emitter<CommentsListState> emit,
+  ) {
+    if (!state.commentsById.containsKey(event.commentId)) return;
+    _emitStore(
+      emit,
+      Map<String, Comment>.from(state.commentsById)..remove(event.commentId),
+    );
+  }
+
+  void _onCommentsRemovedByAuthorFromStore(
+    CommentsRemovedByAuthorFromStore event,
+    Emitter<CommentsListState> emit,
+  ) {
+    _emitStore(
+      emit,
+      Map<String, Comment>.from(state.commentsById)
+        ..removeWhere((_, c) => c.authorPubkey == event.authorPubkey),
+    );
+  }
+
+  // --- Stream wiring -----------------------------------------------------
+
+  /// Starts the real-time comment subscription.
+  ///
+  /// Called from [_onLoadRequested] after the initial load so the `since`
+  /// timestamp aligns with that load. Routes incoming comments through
+  /// [NewCommentReceived].
+  void _startWatchingComments() {
+    _commentStreamSubscription?.cancel();
+
+    try {
+      final stream = _commentsRepository.watchComments(
+        rootEventId: state.rootEventId,
+        rootEventKind: state.rootEventKind,
+        rootAddressableId: state.rootAddressableId,
+        includeVideoReplies: _includeVideoReplies,
+        onEose: () {
+          if (!isClosed) add(const CommentsInitialBackfillCompleted());
+        },
+      );
+
+      _commentStreamSubscription = throttledListen(
+        stream,
+        maxPerSecond: _maxCommentsPerSecond,
+        onData: (comment) {
+          if (!isClosed) add(NewCommentReceived(comment));
+        },
+        onError: (Object e) {
+          Log.warning(
+            'Comment watch stream error: $e',
+            name: 'CommentsListBloc',
+            category: LogCategory.ui,
+          );
+        },
+      );
+    } on CommentsRepositoryException catch (e, stackTrace) {
+      _logRepoFailure(e, stackTrace, 'Failed to start watching comments');
+    } catch (e, stackTrace) {
+      _logUnexpectedFailure(
+        e,
+        stackTrace,
+        CommentsListBlocReportableSites.startWatchingComments,
+        'Failed to start watching comments',
+      );
+    }
+  }
+
+  @override
+  Future<void> close() async {
+    await _commentStreamSubscription?.cancel();
+    await _commentsRepository.stopWatchingComments();
+    return super.close();
+  }
+
+  bool _hasMoreContent({
+    required int loadedCount,
+    required int lastBatchCount,
+    required int threadTotalCount,
+  }) {
+    final effectiveTotalCount =
+        _initialTotalCount ??
+        (threadTotalCount > lastBatchCount
+            ? threadTotalCount
+            : lastBatchCount < _pageSize
+            ? loadedCount
+            : null);
+
+    if (effectiveTotalCount != null) return loadedCount < effectiveTotalCount;
+
+    return lastBatchCount >= _pageSize;
+  }
+}

@@ -13,7 +13,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show UserProfile;
-import 'package:openvine/blocs/comments/comments_bloc.dart';
+import 'package:openvine/blocs/comments/comment_composer/comment_composer_bloc.dart';
+import 'package:openvine/blocs/comments/comment_reactions/comment_reactions_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -210,9 +211,10 @@ class _CommentItemState extends ConsumerState<CommentItem> {
   }) async {
     if (!mounted) return;
 
-    // Capture BLoC reference before async gap to avoid using context
-    // after the widget may have been unmounted
-    final bloc = context.read<CommentsBloc>();
+    // Capture BLoC references before async gap to avoid using context
+    // after the widget may have been unmounted.
+    final reactionsBloc = context.read<CommentReactionsBloc>();
+    final composerBloc = context.read<CommentComposerBloc>();
 
     final CommentOptionResult? result;
 
@@ -233,9 +235,9 @@ class _CommentItemState extends ConsumerState<CommentItem> {
 
     switch (result) {
       case CommentDeleteResult():
-        bloc.add(CommentDeleteRequested(widget.comment.id));
+        reactionsBloc.add(CommentDeleteRequested(widget.comment.id));
       case CommentReportResult(:final reason, :final details):
-        bloc.add(
+        reactionsBloc.add(
           CommentReportRequested(
             commentId: widget.comment.id,
             authorPubkey: widget.comment.authorPubkey,
@@ -244,12 +246,14 @@ class _CommentItemState extends ConsumerState<CommentItem> {
           ),
         );
       case CommentBlockUserResult(:final authorPubkey):
-        bloc.add(CommentBlockUserRequested(authorPubkey));
+        reactionsBloc.add(CommentBlockUserRequested(authorPubkey));
       case CommentEditResult(:final commentId, :final content):
-        bloc.add(
+        composerBloc.add(
           CommentEditModeEntered(
             commentId: commentId,
             originalContent: content,
+            originalReplyToEventId: widget.comment.replyToEventId,
+            originalReplyToAuthorPubkey: widget.comment.replyToAuthorPubkey,
           ),
         );
     }
@@ -451,7 +455,9 @@ class _ActionsRow extends StatelessWidget {
           label: 'Reply to comment',
           child: InkWell(
             onTap: () {
-              context.read<CommentsBloc>().add(CommentReplyToggled(commentId));
+              context.read<CommentComposerBloc>().add(
+                CommentReplyToggled(commentId),
+              );
             },
             child: ConstrainedBox(
               constraints: const BoxConstraints(minHeight: 16),
@@ -501,8 +507,8 @@ class _CommentVoteButtons extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocSelector<
-      CommentsBloc,
-      CommentsState,
+      CommentReactionsBloc,
+      CommentReactionsState,
       ({bool isUpvoted, bool isDownvoted, int upvotes, int downvotes})
     >(
       selector: (state) => (
@@ -524,7 +530,7 @@ class _CommentVoteButtons extends StatelessWidget {
               label: voteState.isUpvoted ? 'Remove upvote' : 'Upvote comment',
               child: InkWell(
                 onTap: () {
-                  context.read<CommentsBloc>().add(
+                  context.read<CommentReactionsBloc>().add(
                     CommentVoteToggled(
                       commentId: commentId,
                       authorPubkey: authorPubkey,
@@ -574,7 +580,7 @@ class _CommentVoteButtons extends StatelessWidget {
                   : 'Downvote comment',
               child: InkWell(
                 onTap: () {
-                  context.read<CommentsBloc>().add(
+                  context.read<CommentReactionsBloc>().add(
                     CommentVoteToggled(
                       commentId: commentId,
                       authorPubkey: authorPubkey,
