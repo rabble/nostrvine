@@ -1,8 +1,3 @@
-// ABOUTME: Events for the CommentsListBloc.
-// ABOUTME: Covers initial load, pagination, sort, real-time stream and cross-bloc
-// ABOUTME: store-mutation intents bridged from CommentComposerBloc and
-// ABOUTME: CommentReactionsBloc via UI BlocListeners.
-
 part of 'comments_list_bloc.dart';
 
 /// Base class for all comments-list events.
@@ -50,13 +45,12 @@ final class CommentsListErrorCleared extends CommentsListEvent {
   const CommentsListErrorCleared();
 }
 
-// --- Cross-bloc store-mutation intents -------------------------------------
-//
-// Dispatched by the UI in response to outbox signals from
-// [CommentComposerBloc] and [CommentReactionsBloc]. The list bloc owns the
-// canonical [Comment] store; these events are the only path through which
-// other blocs can mutate it, preserving the rule that BLoCs do not depend on
-// or dispatch to each other (see rules/state_management.md).
+// Cross-bloc store-mutation intents. Dispatched by the UI in response to
+// outbox signals from [CommentComposerBloc] and [CommentReactionsBloc]. The
+// list bloc owns the canonical [Comment] store; these events are the only
+// path through which other blocs can mutate it, preserving the rule that
+// BLoCs do not depend on or dispatch to each other (see
+// rules/state_management.md).
 
 /// Insert an optimistic placeholder comment.
 final class OptimisticCommentInserted extends CommentsListEvent {

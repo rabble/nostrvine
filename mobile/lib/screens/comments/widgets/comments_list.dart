@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/comments/comment_reactions/comment_reactions_bloc.dart';
 import 'package:openvine/blocs/comments/comments_list/comments_list_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/comments/widgets/widgets.dart';
 
 class CommentsList extends StatefulWidget {
@@ -123,10 +124,10 @@ class _ErrorState extends StatelessWidget {
   const _ErrorState();
 
   @override
-  Widget build(BuildContext context) => const Center(
+  Widget build(BuildContext context) => Center(
     child: Text(
-      'Failed to load comments',
-      style: TextStyle(color: VineTheme.error),
+      context.l10n.commentsErrorLoadFailed,
+      style: VineTheme.bodyMediumFont(color: VineTheme.error),
     ),
   );
 }

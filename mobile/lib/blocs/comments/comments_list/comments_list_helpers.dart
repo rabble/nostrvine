@@ -1,7 +1,3 @@
-// ABOUTME: Pure-Dart helpers used by CommentsListBloc / CommentsListState.
-// ABOUTME: Extracted to keep the bloc under the 500-line decomposition
-// ABOUTME: budget (issue #4516 acceptance criterion).
-
 import 'dart:math';
 
 import 'package:comments_repository/comments_repository.dart';

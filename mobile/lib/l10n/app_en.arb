@@ -3785,6 +3785,77 @@
   "@commentsErrorDeleteFailed": {
     "description": "Snackbar shown when deleting one of the user's own comments fails."
   },
+  "commentsHeaderCount": "{count, plural, =1{{count} Comment} other{{count} Comments}}",
+  "@commentsHeaderCount": {
+    "description": "Header above the comments list showing the total comment count.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "commentsSortNew": "New",
+  "@commentsSortNew": {
+    "description": "Comments-sort toggle label for newest-first order."
+  },
+  "commentsSortTop": "Top",
+  "@commentsSortTop": {
+    "description": "Comments-sort toggle label for engagement-weighted order."
+  },
+  "commentsSortOld": "Old",
+  "@commentsSortOld": {
+    "description": "Comments-sort toggle label for oldest-first order."
+  },
+  "commentsSortSemanticLabel": "Comments sorting",
+  "@commentsSortSemanticLabel": {
+    "description": "Accessibility label for the comments-sort toggle group."
+  },
+  "commentReply": "Reply",
+  "@commentReply": {
+    "description": "Button label under a comment that opens the reply composer."
+  },
+  "commentReplySemanticLabel": "Reply to comment",
+  "@commentReplySemanticLabel": {
+    "description": "Accessibility label for the reply button under a comment."
+  },
+  "commentUpvoteLabel": "Upvote comment",
+  "@commentUpvoteLabel": {
+    "description": "Accessibility label announced when the upvote button is not currently active."
+  },
+  "commentRemoveUpvoteLabel": "Remove upvote",
+  "@commentRemoveUpvoteLabel": {
+    "description": "Accessibility label announced when the upvote button is currently active and tapping it would clear the vote."
+  },
+  "commentDownvoteLabel": "Downvote comment",
+  "@commentDownvoteLabel": {
+    "description": "Accessibility label announced when the downvote button is not currently active."
+  },
+  "commentRemoveDownvoteLabel": "Remove downvote",
+  "@commentRemoveDownvoteLabel": {
+    "description": "Accessibility label announced when the downvote button is currently active and tapping it would clear the vote."
+  },
+  "commentsInputHint": "Add comment...",
+  "@commentsInputHint": {
+    "description": "Placeholder shown in the comments composer text field when posting a new comment or reply."
+  },
+  "commentsInputHintEdit": "Edit comment...",
+  "@commentsInputHintEdit": {
+    "description": "Placeholder shown in the comments composer text field when editing an existing comment."
+  },
+  "commentsEmptyTitle": "No comments yet",
+  "@commentsEmptyTitle": {
+    "description": "Empty state title shown in the comments sheet when a video has no comments."
+  },
+  "commentsEmptySubtitle": "Get the party started!",
+  "@commentsEmptySubtitle": {
+    "description": "Empty state encouragement shown below the no-comments title, prompting the viewer to post the first comment."
+  },
+  "commentsHeaderTitle": "Comments",
+  "@commentsHeaderTitle": {
+    "description": "Title at the top of the comments draggable sheet."
+  },
+  "commentsHeaderCloseLabel": "Close comments",
+  "@commentsHeaderCloseLabel": {
+    "description": "Accessibility label for the close button on the comments sheet header."
+  },
   "draftUntitled": "Untitled",
   "contentWarningNone": "None",
   "textBackgroundNone": "None",

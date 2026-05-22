@@ -1,7 +1,3 @@
-// ABOUTME: BLoC owning composer input state, mention search, and the publish
-// ABOUTME: + edit flows for one video's comments. Emits ComposerOutbox signals
-// ABOUTME: that the UI bridges into CommentsListBloc store mutations.
-
 import 'dart:async';
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
@@ -417,6 +413,14 @@ class CommentComposerBloc
     }
   }
 
+  /// Best-effort restore of the original comment after a failed edit
+  /// (delete succeeded but the replacement post threw). The restored comment
+  /// is a fresh publish, so it carries a **new Nostr event id** — any
+  /// pre-existing replies that referenced the old id are now orphaned
+  /// pointers. This is a Nostr delete-then-repost limitation; the alternative
+  /// would be to leave the edit half-applied (delete only), which is worse
+  /// UX. Returns null if the restore itself fails, in which case the caller
+  /// surfaces `ComposerError.editFailed` without a replacement.
   Future<Comment?> _restoreOriginalCommentAfterFailedEdit(
     Comment originalComment, {
     String? replyToEventId,
@@ -501,7 +505,7 @@ class CommentComposerBloc
     }
   }
 
-  MentionSuggestion _toSuggestion(MentionMatch m) => MentionSuggestion(
+  static MentionSuggestion _toSuggestion(MentionMatch m) => MentionSuggestion(
     pubkey: m.pubkey,
     displayName: m.displayName,
     picture: m.picture,

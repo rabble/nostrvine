@@ -1,8 +1,3 @@
-// ABOUTME: State for the CommentReactionsBloc.
-// ABOUTME: Owns per-comment vote counts + user vote status, plus a one-shot
-// ABOUTME: ReactionsOutbox signal for the UI to bridge into CommentsListBloc
-// ABOUTME: store mutations (delete / block-by-author).
-
 part of 'comment_reactions_bloc.dart';
 
 /// l10n-friendly reactions-side errors.

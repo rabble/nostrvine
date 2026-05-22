@@ -1,13 +1,9 @@
-// ABOUTME: BLoC owning the canonical comments store for one video.
-// ABOUTME: Handles load, paginate, sort, real-time stream + cross-bloc
-// ABOUTME: store-mutation intents (insert/confirm/rollback/replace/remove)
-// ABOUTME: bridged from CommentComposerBloc and CommentReactionsBloc.
-
 import 'dart:async';
 
 import 'package:comments_repository/comments_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:meta/meta.dart';
 import 'package:openvine/blocs/comments/comments_list/comments_list_helpers.dart';
 import 'package:openvine/blocs/comments/comments_list/reportable_sites.dart';
 import 'package:openvine/blocs/comments/comments_list/throttled_subscription.dart';
@@ -326,8 +322,6 @@ class CommentsListBloc extends Bloc<CommentsListEvent, CommentsListState> {
     emit(state.copyWith(newCommentCount: 0));
   }
 
-  // --- Cross-bloc store mutations ----------------------------------------
-
   void _emitStore(
     Emitter<CommentsListState> emit,
     Map<String, Comment> updated,
@@ -420,8 +414,6 @@ class CommentsListBloc extends Bloc<CommentsListEvent, CommentsListState> {
         ..removeWhere((_, c) => c.authorPubkey == event.authorPubkey),
     );
   }
-
-  // --- Stream wiring -----------------------------------------------------
 
   /// Starts the real-time comment subscription.
   ///

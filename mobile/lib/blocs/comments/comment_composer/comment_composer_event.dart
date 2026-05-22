@@ -1,7 +1,3 @@
-// ABOUTME: Events for the CommentComposerBloc.
-// ABOUTME: Covers input text, reply/edit mode, mention search/registration,
-// ABOUTME: post submission, edit submission, and outbox consumption.
-
 part of 'comment_composer_bloc.dart';
 
 /// Base class for all composer events.

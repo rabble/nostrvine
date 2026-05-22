@@ -10,7 +10,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show UserProfile;
 import 'package:openvine/blocs/comments/comment_composer/comment_composer_bloc.dart';
@@ -417,11 +416,12 @@ class _CommentContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isEmoji = _isEmojiOnly(content);
-    final baseStyle = TextStyle(
-      color: VineTheme.onSurface,
-      fontSize: isEmoji ? _emojiOnlyFontSize : 14,
-      height: isEmoji ? null : 20 / 14,
-    );
+    final baseStyle = isEmoji
+        ? const TextStyle(
+            color: VineTheme.onSurface,
+            fontSize: _emojiOnlyFontSize,
+          )
+        : VineTheme.bodyMediumFont(color: VineTheme.onSurface);
     return LinkifiedText(
       text: content,
       style: baseStyle,
@@ -453,7 +453,7 @@ class _ActionsRow extends StatelessWidget {
         Semantics(
           identifier: 'reply_button',
           button: true,
-          label: 'Reply to comment',
+          label: context.l10n.commentReplySemanticLabel,
           child: InkWell(
             onTap: () {
               context.read<CommentComposerBloc>().add(
@@ -465,17 +465,14 @@ class _ActionsRow extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  SvgPicture.asset(
-                    DivineIconName.arrowBendDownRight.assetPath,
-                    height: MediaQuery.textScalerOf(context).scale(11),
-                    colorFilter: const ColorFilter.mode(
-                      VineTheme.onSurface,
-                      BlendMode.srcIn,
-                    ),
+                  DivineIcon(
+                    icon: DivineIconName.arrowBendDownRight,
+                    size: MediaQuery.textScalerOf(context).scale(11),
+                    color: VineTheme.onSurface,
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Reply',
+                    context.l10n.commentReply,
                     style: VineTheme.labelLargeFont(
                       color: VineTheme.onSurfaceMuted,
                     ),
@@ -528,7 +525,9 @@ class _CommentVoteButtons extends StatelessWidget {
             Semantics(
               identifier: 'upvote_button',
               button: true,
-              label: voteState.isUpvoted ? 'Remove upvote' : 'Upvote comment',
+              label: voteState.isUpvoted
+                  ? context.l10n.commentRemoveUpvoteLabel
+                  : context.l10n.commentUpvoteLabel,
               child: InkWell(
                 onTap: () {
                   context.read<CommentReactionsBloc>().add(
@@ -544,15 +543,12 @@ class _CommentVoteButtons extends StatelessWidget {
                     horizontal: 4,
                     vertical: 2,
                   ),
-                  child: SvgPicture.asset(
-                    DivineIconName.arrowFatUp.assetPath,
-                    height: MediaQuery.textScalerOf(context).scale(16),
-                    colorFilter: ColorFilter.mode(
-                      voteState.isUpvoted
-                          ? VineTheme.vineGreen
-                          : VineTheme.onSurfaceMuted,
-                      BlendMode.srcIn,
-                    ),
+                  child: DivineIcon(
+                    icon: DivineIconName.arrowFatUp,
+                    size: MediaQuery.textScalerOf(context).scale(16),
+                    color: voteState.isUpvoted
+                        ? VineTheme.vineGreen
+                        : VineTheme.onSurfaceMuted,
                   ),
                 ),
               ),
@@ -577,8 +573,8 @@ class _CommentVoteButtons extends StatelessWidget {
               identifier: 'downvote_button',
               button: true,
               label: voteState.isDownvoted
-                  ? 'Remove downvote'
-                  : 'Downvote comment',
+                  ? context.l10n.commentRemoveDownvoteLabel
+                  : context.l10n.commentDownvoteLabel,
               child: InkWell(
                 onTap: () {
                   context.read<CommentReactionsBloc>().add(
@@ -594,15 +590,12 @@ class _CommentVoteButtons extends StatelessWidget {
                     horizontal: 4,
                     vertical: 2,
                   ),
-                  child: SvgPicture.asset(
-                    DivineIconName.arrowFatDown.assetPath,
-                    height: MediaQuery.textScalerOf(context).scale(16),
-                    colorFilter: ColorFilter.mode(
-                      voteState.isDownvoted
-                          ? VineTheme.likeRed
-                          : VineTheme.onSurfaceMuted,
-                      BlendMode.srcIn,
-                    ),
+                  child: DivineIcon(
+                    icon: DivineIconName.arrowFatDown,
+                    size: MediaQuery.textScalerOf(context).scale(16),
+                    color: voteState.isDownvoted
+                        ? VineTheme.likeRed
+                        : VineTheme.onSurfaceMuted,
                   ),
                 ),
               ),

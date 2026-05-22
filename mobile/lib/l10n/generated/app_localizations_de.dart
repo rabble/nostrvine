@@ -6609,6 +6609,65 @@ class AppLocalizationsDe extends AppLocalizations {
   String get commentsErrorDeleteFailed => 'Failed to delete comment';
 
   @override
+  String commentsHeaderCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Comments',
+      one: '$count Comment',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get commentsSortNew => 'New';
+
+  @override
+  String get commentsSortTop => 'Top';
+
+  @override
+  String get commentsSortOld => 'Old';
+
+  @override
+  String get commentsSortSemanticLabel => 'Comments sorting';
+
+  @override
+  String get commentReply => 'Reply';
+
+  @override
+  String get commentReplySemanticLabel => 'Reply to comment';
+
+  @override
+  String get commentUpvoteLabel => 'Upvote comment';
+
+  @override
+  String get commentRemoveUpvoteLabel => 'Remove upvote';
+
+  @override
+  String get commentDownvoteLabel => 'Downvote comment';
+
+  @override
+  String get commentRemoveDownvoteLabel => 'Remove downvote';
+
+  @override
+  String get commentsInputHint => 'Add comment...';
+
+  @override
+  String get commentsInputHintEdit => 'Edit comment...';
+
+  @override
+  String get commentsEmptyTitle => 'No comments yet';
+
+  @override
+  String get commentsEmptySubtitle => 'Get the party started!';
+
+  @override
+  String get commentsHeaderTitle => 'Comments';
+
+  @override
+  String get commentsHeaderCloseLabel => 'Close comments';
+
+  @override
   String get draftUntitled => 'Ohne Titel';
 
   @override

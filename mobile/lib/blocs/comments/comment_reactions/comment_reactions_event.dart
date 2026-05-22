@@ -1,7 +1,3 @@
-// ABOUTME: Events for the CommentReactionsBloc.
-// ABOUTME: Covers vote toggles (up/down), vote-count batch fetch, content
-// ABOUTME: reporting, blocking, deletion, and outbox consumption.
-
 part of 'comment_reactions_bloc.dart';
 
 /// Base class for all reactions events.

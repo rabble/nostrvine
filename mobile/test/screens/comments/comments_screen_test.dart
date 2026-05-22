@@ -15,7 +15,7 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/blocs/comments/comment_composer/comment_composer_bloc.dart';
 import 'package:openvine/blocs/comments/comment_reactions/comment_reactions_bloc.dart';
 import 'package:openvine/blocs/comments/comments_list/comments_list_bloc.dart';
-import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/comments/comments.dart';
@@ -25,21 +25,21 @@ import 'package:openvine/services/social_service.dart';
 import '../../builders/comment_builder.dart';
 import '../../helpers/test_helpers.dart';
 
-class MockSocialService extends Mock implements SocialService {}
+class _MockSocialService extends Mock implements SocialService {}
 
-class MockAuthService extends Mock implements AuthService {}
+class _MockAuthService extends Mock implements AuthService {}
 
-class MockNostrClient extends Mock implements NostrClient {}
+class _MockNostrClient extends Mock implements NostrClient {}
 
-class MockCommentsListBloc
+class _MockCommentsListBloc
     extends MockBloc<CommentsListEvent, CommentsListState>
     implements CommentsListBloc {}
 
-class MockCommentComposerBloc
+class _MockCommentComposerBloc
     extends MockBloc<CommentComposerEvent, CommentComposerState>
     implements CommentComposerBloc {}
 
-class MockCommentReactionsBloc
+class _MockCommentReactionsBloc
     extends MockBloc<CommentReactionsEvent, CommentReactionsState>
     implements CommentReactionsBloc {}
 
@@ -51,12 +51,12 @@ const testVideoAuthorPubkey =
 
 void main() {
   group('CommentsScreen', () {
-    late MockSocialService mockSocialService;
-    late MockAuthService mockAuthService;
-    late MockNostrClient mockNostrClient;
-    late MockCommentsListBloc mockListBloc;
-    late MockCommentComposerBloc mockComposerBloc;
-    late MockCommentReactionsBloc mockReactionsBloc;
+    late _MockSocialService mockSocialService;
+    late _MockAuthService mockAuthService;
+    late _MockNostrClient mockNostrClient;
+    late _MockCommentsListBloc mockListBloc;
+    late _MockCommentComposerBloc mockComposerBloc;
+    late _MockCommentReactionsBloc mockReactionsBloc;
     late ScrollController scrollController;
     late VideoEvent testVideoEvent;
 
@@ -95,12 +95,12 @@ void main() {
       addTearDown(binding.platformDispatcher.views.first.resetPhysicalSize);
       addTearDown(binding.platformDispatcher.views.first.resetDevicePixelRatio);
 
-      mockSocialService = MockSocialService();
-      mockAuthService = MockAuthService();
-      mockNostrClient = MockNostrClient();
-      mockListBloc = MockCommentsListBloc();
-      mockComposerBloc = MockCommentComposerBloc();
-      mockReactionsBloc = MockCommentReactionsBloc();
+      mockSocialService = _MockSocialService();
+      mockAuthService = _MockAuthService();
+      mockNostrClient = _MockNostrClient();
+      mockListBloc = _MockCommentsListBloc();
+      mockComposerBloc = _MockCommentComposerBloc();
+      mockReactionsBloc = _MockCommentReactionsBloc();
       scrollController = ScrollController();
 
       testVideoEvent = TestHelpers.createVideoEvent(
@@ -185,8 +185,9 @@ void main() {
         await tester.pumpWidget(buildTestWidget());
         await tester.pump();
 
+        final l10n = lookupAppLocalizations(const Locale('en'));
         expect(find.byType(CommentsHeader), findsOneWidget);
-        expect(find.text('Comments'), findsOneWidget);
+        expect(find.text(l10n.commentsHeaderTitle), findsOneWidget);
       });
 
       testWidgets('renders CommentsList', (tester) async {
@@ -216,7 +217,8 @@ void main() {
         await tester.pumpWidget(buildTestWidget());
         await tester.pump();
 
-        expect(find.text('Add comment...'), findsOneWidget);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.commentsInputHint), findsOneWidget);
       });
 
       testWidgets('adds CommentTextChanged on text entry', (tester) async {
@@ -252,7 +254,8 @@ void main() {
         await tester.pumpWidget(buildTestWidget(listState: state));
         await tester.pump();
 
-        await tester.tap(find.text('Reply'));
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.commentReply));
         await tester.pump();
 
         final captured =
@@ -305,7 +308,8 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.text('5 Comments'), findsOneWidget);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.commentsHeaderCount(5)), findsOneWidget);
       });
 
       testWidgets('shows loaded count after success', (tester) async {
@@ -330,7 +334,8 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.text('2 Comments'), findsOneWidget);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.commentsHeaderCount(2)), findsOneWidget);
       });
 
       testWidgets('shows singular "Comment" for count of 1', (tester) async {
@@ -345,7 +350,8 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.text('1 Comment'), findsOneWidget);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.commentsHeaderCount(1)), findsOneWidget);
       });
     });
 
@@ -408,8 +414,9 @@ void main() {
         await tester.pumpWidget(buildTestWidget(listState: state));
         await tester.pump();
 
-        expect(find.text('No comments yet'), findsOneWidget);
-        expect(find.text('Get the party started!'), findsOneWidget);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.commentsEmptyTitle), findsOneWidget);
+        expect(find.text(l10n.commentsEmptySubtitle), findsOneWidget);
       });
 
       testWidgets(
@@ -708,7 +715,7 @@ class _TestCommentsTitle extends StatelessWidget {
             ? state.commentsById.length
             : initialCount;
 
-        return Text('$count ${count == 1 ? 'Comment' : 'Comments'}');
+        return Text(context.l10n.commentsHeaderCount(count));
       },
     );
   }

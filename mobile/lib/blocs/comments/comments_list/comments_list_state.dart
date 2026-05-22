@@ -1,14 +1,11 @@
-// ABOUTME: State for the CommentsListBloc.
-// ABOUTME: Owns the canonical commentsById store + loading status + sort mode +
-// ABOUTME: pre-computed reply counts + new-comment pill counter for one video.
-
 part of 'comments_list_bloc.dart';
 
 /// A node in the comment tree, used for threaded display.
 ///
 /// Not part of bloc state — produced by
 /// [CommentsListState.threadedCommentsWith] on demand.
-class CommentNode {
+@immutable
+final class CommentNode {
   const CommentNode({
     required this.comment,
     this.replies = const [],

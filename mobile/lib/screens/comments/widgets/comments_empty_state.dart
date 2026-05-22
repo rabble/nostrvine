@@ -1,8 +1,6 @@
-// ABOUTME: Empty state widget for comments section
-// ABOUTME: Shows message when no comments exist, with special notice for classic vines
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Empty state widget displayed when there are no comments.
 ///
@@ -66,13 +64,13 @@ class CommentsEmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'No comments yet',
+              context.l10n.commentsEmptyTitle,
               textAlign: TextAlign.center,
               style: VineTheme.titleLargeFont(color: VineTheme.onSurface),
             ),
             const SizedBox(height: 4),
             Text(
-              'Get the party started!',
+              context.l10n.commentsEmptySubtitle,
               textAlign: TextAlign.center,
               style: VineTheme.bodyMediumFont(
                 color: VineTheme.onSurfaceVariant,

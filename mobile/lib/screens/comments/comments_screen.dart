@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:models/models.dart' hide NIP71VideoKinds;
 import 'package:openvine/blocs/comments/comment_composer/comment_composer_bloc.dart';
 import 'package:openvine/blocs/comments/comment_reactions/comment_reactions_bloc.dart';
@@ -87,14 +86,8 @@ class _CommentsTitle extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              '$count ${count == 1 ? 'Comment' : 'Comments'}',
-              style: GoogleFonts.bricolageGrotesque(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                height: 32 / 24,
-                letterSpacing: 0.15,
-                color: VineTheme.onSurface,
-              ),
+              context.l10n.commentsHeaderCount(count),
+              style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
             ),
             if (state.newCommentCount > 0) ...[
               const SizedBox(width: 8),
@@ -287,7 +280,7 @@ class OutboxBridges extends StatelessWidget {
         // one — see CommentReactionsBloc.on<CommentVoteCountsFetchRequested>.
         BlocListener<CommentsListBloc, CommentsListState>(
           listenWhen: (prev, next) =>
-              !_idSetsEqual(prev.commentsById.keys, next.commentsById.keys),
+              !_idSetsEqual(prev.commentsById, next.commentsById),
           listener: (ctx, state) {
             final prevKeys = ctx
                 .read<CommentReactionsBloc>()
@@ -325,11 +318,15 @@ class OutboxBridges extends StatelessWidget {
     );
   }
 
-  static bool _idSetsEqual(Iterable<String> a, Iterable<String> b) {
-    final setA = a.toSet();
-    final setB = b.toSet();
-    if (setA.length != setB.length) return false;
-    return setA.containsAll(setB);
+  static bool _idSetsEqual(
+    Map<String, Object?> a,
+    Map<String, Object?> b,
+  ) {
+    if (a.length != b.length) return false;
+    for (final key in a.keys) {
+      if (!b.containsKey(key)) return false;
+    }
+    return true;
   }
 
   static void _bridgeComposerOutbox(
@@ -643,19 +640,20 @@ class _CommentsSortToggle extends StatelessWidget {
     return BlocSelector<CommentsListBloc, CommentsListState, CommentsSortMode>(
       selector: (state) => state.sortMode,
       builder: (context, sortMode) {
+        final l10n = context.l10n;
         final (icon, label) = switch (sortMode) {
-          CommentsSortMode.newest => (Icons.schedule, 'New'),
+          CommentsSortMode.newest => (Icons.schedule, l10n.commentsSortNew),
           CommentsSortMode.topEngagement => (
             Icons.local_fire_department,
-            'Top',
+            l10n.commentsSortTop,
           ),
-          CommentsSortMode.oldest => (Icons.history, 'Old'),
+          CommentsSortMode.oldest => (Icons.history, l10n.commentsSortOld),
         };
 
         return Semantics(
           identifier: 'comments_sorting',
           button: true,
-          label: 'Comments sorting',
+          label: l10n.commentsSortSemanticLabel,
           child: GestureDetector(
             onTap: () {
               final nextMode = switch (sortMode) {

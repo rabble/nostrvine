@@ -1,8 +1,3 @@
-// ABOUTME: Two-tier mention search helper used by CommentComposerBloc.
-// ABOUTME: Tier 1 (local) walks candidate pubkeys against ProfileRepository's
-// ABOUTME: cache. Tier 2 backfills via the REST API. Returns plain records so
-// ABOUTME: the bloc owns the user-facing MentionSuggestion type.
-
 import 'package:profile_repository/profile_repository.dart';
 
 /// A single mention match, as a record so this helper has no dependency on

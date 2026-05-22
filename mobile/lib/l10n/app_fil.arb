@@ -2238,5 +2238,22 @@
     "commentsErrorVoteFailed": "Failed to vote on comment",
     "commentsErrorReportFailed": "Failed to report comment",
     "commentsErrorBlockFailed": "Failed to block user",
-    "commentsErrorDeleteFailed": "Failed to delete comment"
+    "commentsErrorDeleteFailed": "Failed to delete comment",
+    "commentsHeaderCount": "{count, plural, =1{{count} Comment} other{{count} Comments}}",
+    "commentsSortNew": "New",
+    "commentsSortTop": "Top",
+    "commentsSortOld": "Old",
+    "commentsSortSemanticLabel": "Comments sorting",
+    "commentReply": "Reply",
+    "commentReplySemanticLabel": "Reply to comment",
+    "commentUpvoteLabel": "Upvote comment",
+    "commentRemoveUpvoteLabel": "Remove upvote",
+    "commentDownvoteLabel": "Downvote comment",
+    "commentRemoveDownvoteLabel": "Remove downvote",
+    "commentsInputHint": "Add comment...",
+    "commentsInputHintEdit": "Edit comment...",
+    "commentsEmptyTitle": "No comments yet",
+    "commentsEmptySubtitle": "Get the party started!",
+    "commentsHeaderTitle": "Comments",
+    "commentsHeaderCloseLabel": "Close comments"
 }

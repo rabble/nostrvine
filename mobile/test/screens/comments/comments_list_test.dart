@@ -11,19 +11,19 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/blocs/comments/comment_reactions/comment_reactions_bloc.dart';
 import 'package:openvine/blocs/comments/comments_list/comments_list_bloc.dart';
-import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/comments/comments.dart';
 
 import '../../builders/comment_builder.dart';
 
-class MockNostrClient extends Mock implements NostrClient {}
+class _MockNostrClient extends Mock implements NostrClient {}
 
-class MockCommentsListBloc
+class _MockCommentsListBloc
     extends MockBloc<CommentsListEvent, CommentsListState>
     implements CommentsListBloc {}
 
-class MockCommentReactionsBloc
+class _MockCommentReactionsBloc
     extends MockBloc<CommentReactionsEvent, CommentReactionsState>
     implements CommentReactionsBloc {}
 
@@ -35,9 +35,9 @@ const testVideoAuthorPubkey =
 
 void main() {
   group('CommentsList', () {
-    late MockNostrClient mockNostrClient;
-    late MockCommentsListBloc mockListBloc;
-    late MockCommentReactionsBloc mockReactionsBloc;
+    late _MockNostrClient mockNostrClient;
+    late _MockCommentsListBloc mockListBloc;
+    late _MockCommentReactionsBloc mockReactionsBloc;
 
     setUpAll(() {
       registerFallbackValue(const CommentsLoadRequested());
@@ -45,9 +45,9 @@ void main() {
     });
 
     setUp(() {
-      mockNostrClient = MockNostrClient();
-      mockListBloc = MockCommentsListBloc();
-      mockReactionsBloc = MockCommentReactionsBloc();
+      mockNostrClient = _MockNostrClient();
+      mockListBloc = _MockCommentsListBloc();
+      mockReactionsBloc = _MockCommentReactionsBloc();
 
       when(() => mockNostrClient.publicKey).thenReturn('');
       when(() => mockReactionsBloc.state).thenReturn(
@@ -114,7 +114,8 @@ void main() {
       await tester.pumpWidget(buildTestWidget(listState: state));
       await tester.pump();
 
-      expect(find.textContaining('Failed to load comments'), findsOneWidget);
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.commentsErrorLoadFailed), findsOneWidget);
     });
 
     testWidgets('shows CommentsEmptyState when no comments', (tester) async {

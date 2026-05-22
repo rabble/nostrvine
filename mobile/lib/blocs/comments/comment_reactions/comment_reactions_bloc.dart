@@ -1,7 +1,3 @@
-// ABOUTME: BLoC owning vote / report / block / delete moderation for one
-// ABOUTME: video's comments. Emits ReactionsOutbox signals that the UI
-// ABOUTME: bridges into CommentsListBloc store mutations (delete / block).
-
 import 'dart:async';
 import 'dart:math';
 

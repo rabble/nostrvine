@@ -1,7 +1,3 @@
-// ABOUTME: Token-bucket throttle for a stream of incoming comments.
-// ABOUTME: Extracted from comments_list_bloc.dart to keep the bloc under the
-// ABOUTME: 500-line decomposition budget (issue #4516 acceptance criterion).
-
 import 'dart:async';
 
 import 'package:unified_logger/unified_logger.dart';

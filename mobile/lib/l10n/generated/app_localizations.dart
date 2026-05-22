@@ -11450,6 +11450,108 @@ abstract class AppLocalizations {
   /// **'Failed to delete comment'**
   String get commentsErrorDeleteFailed;
 
+  /// Header above the comments list showing the total comment count.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{count} Comment} other{{count} Comments}}'**
+  String commentsHeaderCount(int count);
+
+  /// Comments-sort toggle label for newest-first order.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get commentsSortNew;
+
+  /// Comments-sort toggle label for engagement-weighted order.
+  ///
+  /// In en, this message translates to:
+  /// **'Top'**
+  String get commentsSortTop;
+
+  /// Comments-sort toggle label for oldest-first order.
+  ///
+  /// In en, this message translates to:
+  /// **'Old'**
+  String get commentsSortOld;
+
+  /// Accessibility label for the comments-sort toggle group.
+  ///
+  /// In en, this message translates to:
+  /// **'Comments sorting'**
+  String get commentsSortSemanticLabel;
+
+  /// Button label under a comment that opens the reply composer.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply'**
+  String get commentReply;
+
+  /// Accessibility label for the reply button under a comment.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply to comment'**
+  String get commentReplySemanticLabel;
+
+  /// Accessibility label announced when the upvote button is not currently active.
+  ///
+  /// In en, this message translates to:
+  /// **'Upvote comment'**
+  String get commentUpvoteLabel;
+
+  /// Accessibility label announced when the upvote button is currently active and tapping it would clear the vote.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove upvote'**
+  String get commentRemoveUpvoteLabel;
+
+  /// Accessibility label announced when the downvote button is not currently active.
+  ///
+  /// In en, this message translates to:
+  /// **'Downvote comment'**
+  String get commentDownvoteLabel;
+
+  /// Accessibility label announced when the downvote button is currently active and tapping it would clear the vote.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove downvote'**
+  String get commentRemoveDownvoteLabel;
+
+  /// Placeholder shown in the comments composer text field when posting a new comment or reply.
+  ///
+  /// In en, this message translates to:
+  /// **'Add comment...'**
+  String get commentsInputHint;
+
+  /// Placeholder shown in the comments composer text field when editing an existing comment.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit comment...'**
+  String get commentsInputHintEdit;
+
+  /// Empty state title shown in the comments sheet when a video has no comments.
+  ///
+  /// In en, this message translates to:
+  /// **'No comments yet'**
+  String get commentsEmptyTitle;
+
+  /// Empty state encouragement shown below the no-comments title, prompting the viewer to post the first comment.
+  ///
+  /// In en, this message translates to:
+  /// **'Get the party started!'**
+  String get commentsEmptySubtitle;
+
+  /// Title at the top of the comments draggable sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Comments'**
+  String get commentsHeaderTitle;
+
+  /// Accessibility label for the close button on the comments sheet header.
+  ///
+  /// In en, this message translates to:
+  /// **'Close comments'**
+  String get commentsHeaderCloseLabel;
+
   /// No description provided for @draftUntitled.
   ///
   /// In en, this message translates to:

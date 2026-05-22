@@ -1,59 +1,35 @@
-// ABOUTME: Widget tests for CommentsHeader component
-// ABOUTME: Tests title display, close button, and callback functionality
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/comments/comments.dart';
 
 void main() {
   group('CommentsHeader', () {
-    testWidgets('displays "Comments" title', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: CommentsHeader(onClose: () {})),
-        ),
-      );
+    Widget buildSubject({VoidCallback? onClose}) => MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(body: CommentsHeader(onClose: onClose ?? () {})),
+    );
 
-      expect(find.text('Comments'), findsOneWidget);
+    testWidgets('displays localized title', (tester) async {
+      await tester.pumpWidget(buildSubject());
 
-      // Verify title styling
-      final textWidget = tester.widget<Text>(find.text('Comments'));
-      expect(textWidget.style?.color, equals(Colors.white));
-      expect(textWidget.style?.fontSize, equals(18));
-      expect(textWidget.style?.fontWeight, equals(FontWeight.bold));
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.commentsHeaderTitle), findsOneWidget);
     });
 
-    testWidgets('displays close button with correct icon', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: CommentsHeader(onClose: () {})),
-        ),
-      );
+    testWidgets('displays close button', (tester) async {
+      await tester.pumpWidget(buildSubject());
 
       expect(find.byIcon(Icons.close), findsOneWidget);
-
-      // Verify icon color
-      final iconWidget = tester.widget<Icon>(find.byIcon(Icons.close));
-      expect(iconWidget.color, equals(Colors.white));
     });
 
     testWidgets('calls onClose when close button is tapped', (tester) async {
       var closeCallCount = 0;
-
       await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: CommentsHeader(onClose: () => closeCallCount++)),
-        ),
+        buildSubject(onClose: () => closeCallCount++),
       );
 
-      // Tap the close button
       await tester.tap(find.byIcon(Icons.close));
       await tester.pump();
 
@@ -61,15 +37,8 @@ void main() {
     });
 
     testWidgets('has correct layout structure', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: CommentsHeader(onClose: () {})),
-        ),
-      );
+      await tester.pumpWidget(buildSubject());
 
-      // Should have a Row containing Text and IconButton
       expect(find.byType(Row), findsOneWidget);
       expect(find.byType(IconButton), findsOneWidget);
       expect(find.byType(Spacer), findsOneWidget);

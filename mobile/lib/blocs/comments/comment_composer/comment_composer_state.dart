@@ -1,8 +1,3 @@
-// ABOUTME: State for the CommentComposerBloc.
-// ABOUTME: Owns input text fields, reply/edit mode, mention search results,
-// ABOUTME: registered mentions, and a one-shot ComposerOutbox signal for the
-// ABOUTME: UI to bridge into CommentsListBloc store mutations.
-
 part of 'comment_composer_bloc.dart';
 
 /// A mention suggestion for autocomplete.

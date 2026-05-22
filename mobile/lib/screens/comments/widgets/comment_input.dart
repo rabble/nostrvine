@@ -344,7 +344,9 @@ class _CommentTextField extends StatelessWidget {
         : isReplying
         ? 'Add a reply'
         : 'Add a comment';
-    final hintText = isEditing ? 'Edit comment...' : 'Add comment...';
+    final hintText = isEditing
+        ? context.l10n.commentsInputHintEdit
+        : context.l10n.commentsInputHint;
     // Top-level comments keep Enter-to-send for quick posting, while reply/edit
     // flows stay multiline so users can compose longer text in-place.
     final isComposingMultiline = isReplying || isEditing;
