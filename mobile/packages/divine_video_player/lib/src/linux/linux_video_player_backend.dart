@@ -152,10 +152,20 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
       ..clear()
       ..addAll(clips.map((c) => c.playbackSpeed));
 
-    final boundedDurations = await _resolveClipDurations(clips);
-    _clipDurations
-      ..clear()
-      ..addAll(boundedDurations);
+    // _resolveClipDurations returns source-time durations.  Divide by the
+    // per-clip speed so _clipDurations (and therefore _clipOffsets and
+    // _totalDuration) are in wall-clock (playback) time, consistent with
+    // the global timeline coordinate space.
+    final sourceDurations = await _resolveClipDurations(clips);
+    _clipDurations.clear();
+    for (var i = 0; i < sourceDurations.length; i++) {
+      _clipDurations.add(
+        _sourceToPlayback(
+          sourceDurations[i],
+          speed: _clipSpeeds.elementAtOrNull(i) ?? 1.0,
+        ),
+      );
+    }
     _rebuildClipOffsets();
 
     final playlist = Playlist([
@@ -230,8 +240,13 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
     final targetIndex = _clipIndexForPosition(clamped);
     final clipOffset = _clipOffsets[targetIndex];
     final clip = _clips[targetIndex];
+    // _clipOffsets are in playback time; subtract to get a playback-time
+    // local offset, then multiply by speed to recover the source-time
+    // position that mpv expects.
     final localOffset = clamped - clipOffset;
-    final sourcePosition = clip.start + localOffset;
+    final speed = _clipSpeeds.elementAtOrNull(targetIndex) ?? 1.0;
+    final sourcePosition =
+        clip.start + _playbackToSource(localOffset, speed: speed);
 
     if (_currentClipIndex != targetIndex) {
       await _player.jump(targetIndex);
@@ -472,6 +487,24 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
   }
   // coverage:ignore-end
 
+  /// Converts a source-time [Duration] to wall-clock (playback) time by
+  /// dividing by [speed].  Returns [source] unchanged when [speed] is 1.0.
+  Duration _sourceToPlayback(Duration source, {required double speed}) {
+    if (speed == 1.0) return source;
+    return Duration(
+      microseconds: (source.inMicroseconds / speed).round(),
+    );
+  }
+
+  /// Converts a playback-time [Duration] to source time by multiplying by
+  /// [speed].  Returns [playback] unchanged when [speed] is 1.0.
+  Duration _playbackToSource(Duration playback, {required double speed}) {
+    if (speed == 1.0) return playback;
+    return Duration(
+      microseconds: (playback.inMicroseconds * speed).round(),
+    );
+  }
+
   void _rebuildClipOffsets() {
     _clipOffsets.clear();
     var offset = Duration.zero;
@@ -515,18 +548,32 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
     final currentDuration = hasClips
         ? _clipDurations[currentIndex]
         : Duration.zero;
+    // _clipDurations are in playback time.  mpv reports positions in source
+    // time, so recover the source duration for clamping, then divide by
+    // speed to convert the local offset back to playback time before adding
+    // to the playback-time currentOffset.
+    final speed = hasClips
+        ? (_clipSpeeds.elementAtOrNull(currentIndex) ?? 1.0)
+        : 1.0;
+    final sourceDuration = _playbackToSource(currentDuration, speed: speed);
 
     final localPosition = currentClip == null
         ? Duration.zero
-        : _clampDuration(
-            playerState.position - currentClip.start,
-            max: currentDuration,
+        : _sourceToPlayback(
+            _clampDuration(
+              playerState.position - currentClip.start,
+              max: sourceDuration,
+            ),
+            speed: speed,
           );
     final localBuffer = currentClip == null
         ? Duration.zero
-        : _clampDuration(
-            playerState.buffer - currentClip.start,
-            max: currentDuration,
+        : _sourceToPlayback(
+            _clampDuration(
+              playerState.buffer - currentClip.start,
+              max: sourceDuration,
+            ),
+            speed: speed,
           );
 
     final status = switch ((

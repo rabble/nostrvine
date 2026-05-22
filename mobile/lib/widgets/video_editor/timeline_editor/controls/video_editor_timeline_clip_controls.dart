@@ -74,7 +74,22 @@ class _TimelineClipControlsState extends ConsumerState<TimelineClipControls> {
 
     if (result == null || !mounted) return;
 
-    final updated = clip.copyWith(playbackSpeed: result);
+    // Clamp the selected speed so the total composition stays within maxDuration.
+    // A slower speed lengthens playback; the minimum allowed speed is the one
+    // that uses exactly the remaining capacity after all other clips.
+    final otherPlaybackDuration = state.totalDuration - clip.playbackDuration;
+    final maxClipPlaybackUs =
+        (VideoEditorConstants.maxDuration - otherPlaybackDuration)
+            .inMicroseconds;
+    double clampedResult = result;
+    if (maxClipPlaybackUs > 0 && clip.trimmedDuration.inMicroseconds > 0) {
+      // Higher speed → shorter playback.  Enforce: speed >= minSpeed so that
+      // clip.trimmedDuration / speed <= maxClipPlaybackUs.
+      final minSpeed = clip.trimmedDuration.inMicroseconds / maxClipPlaybackUs;
+      if (clampedResult < minSpeed) clampedResult = minSpeed;
+    }
+
+    final updated = clip.copyWith(playbackSpeed: clampedResult);
     bloc.add(ClipEditorClipUpdated(clipId: clip.id, clip: updated));
 
     editor.addHistory(
@@ -153,19 +168,19 @@ class _TimelineClipControlsState extends ConsumerState<TimelineClipControls> {
 
     final selectedClip = state.clips[state.currentClipIndex];
 
-    // Compute the split position relative to the current clip.
-    // The playhead shows a global timeline position — convert to the local
-    // offset within the selected clip.
+    // The playhead is in playback time; preceding clips must be accumulated
+    // with playbackDuration (not trimmedDuration) to stay in the same
+    // coordinate space.
     final globalPosition = widget.playheadPosition.value;
     var clipStart = Duration.zero;
     for (var i = 0; i < state.currentClipIndex; i++) {
-      clipStart += state.clips[i].trimmedDuration;
+      clipStart += state.clips[i].playbackDuration;
     }
-    final localPosition = globalPosition - clipStart;
+    final localPlaybackPosition = globalPosition - clipStart;
 
-    // Check if playhead is within the selected clip.
-    if (localPosition < Duration.zero ||
-        localPosition > selectedClip.trimmedDuration) {
+    // Bounds-check in playback time.
+    if (localPlaybackPosition < Duration.zero ||
+        localPlaybackPosition > selectedClip.playbackDuration) {
       ScaffoldMessenger.of(context).showSnackBar(
         DivineSnackbarContainer.snackBar(
           context.l10n.videoEditorSplitPlayheadOutsideClip,
@@ -173,6 +188,17 @@ class _TimelineClipControlsState extends ConsumerState<TimelineClipControls> {
       );
       return;
     }
+
+    // The split service and bloc expect a source-time offset relative to
+    // trimmedDuration.  Convert: source = playback × speed
+    // (since playbackDuration = trimmedDuration / speed).
+    final speed = selectedClip.playbackSpeed ?? 1.0;
+    final localPosition = speed == 1.0
+        ? localPlaybackPosition
+        : Duration(
+            microseconds: (localPlaybackPosition.inMicroseconds * speed)
+                .round(),
+          );
 
     if (!VideoEditorSplitService.isValidSplitPosition(
       selectedClip,

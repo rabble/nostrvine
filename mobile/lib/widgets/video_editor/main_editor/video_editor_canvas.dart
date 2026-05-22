@@ -278,13 +278,25 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     var precedingDuration = Duration.zero;
     for (final clip in clips) {
       if (clip.id == clipId) {
+        // positionInClip and trimStart are both source-time offsets, so
+        // relative is also in source time.
         final relative = positionInClip - clip.trimStart;
         if (relative < Duration.zero || relative > clip.trimmedDuration) {
           return null;
         }
-        return precedingDuration + relative;
+        // Convert source-time relative offset to playback time before
+        // combining with precedingDuration (which is already playback-time).
+        final speed = clip.playbackSpeed ?? 1.0;
+        final relativePlayback = speed == 1.0
+            ? relative
+            : Duration(
+                microseconds: (relative.inMicroseconds / speed).round(),
+              );
+        return precedingDuration + relativePlayback;
       }
-      precedingDuration += clip.trimmedDuration;
+      // Accumulate in playback time (trimmedDuration ÷ speed) so that
+      // speed-adjusted clips contribute the correct wall-clock offset.
+      precedingDuration += clip.playbackDuration;
     }
     return null;
   }
