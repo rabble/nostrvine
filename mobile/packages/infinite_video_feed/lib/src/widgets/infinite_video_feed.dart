@@ -51,6 +51,7 @@ class InfiniteVideoFeed extends StatefulWidget {
     this.onVideoStalled,
     this.slowLoadThreshold = const Duration(seconds: 8),
     this.preloadGracePeriod = const Duration(seconds: 3),
+    this.isActive = true,
     super.key,
   });
 
@@ -129,6 +130,12 @@ class InfiniteVideoFeed extends StatefulWidget {
   /// Defaults to `1.0`. Use [InfiniteVideoFeedState.setVolume] to change the
   /// volume after the feed is mounted.
   final double initialVolume;
+
+  /// Whether the feed is allowed to play its active video.
+  ///
+  /// When `false`, the feed pauses the current video and suppresses any
+  /// internal resume/play side effects until it becomes active again.
+  final bool isActive;
 
   /// Hook: Called when the playback volume changes (mute/unmute/setVolume).
   ///
@@ -262,6 +269,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   // Current playback volume applied to the active controller and all
   // controllers that become active. Seeded from widget.initialVolume.
   late double _volume;
+  late bool _isActive;
 
   // Generation counter for the player window so async neighbour-init can
   // detect that the user scrolled away mid-load.
@@ -292,12 +300,12 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
 
   /// Pauses the currently active video without changing the page.
   void pauseActive() {
-    unawaited(_controllers[_currentIndex]?.pause());
+    _setPlaybackActive(false);
   }
 
   /// Resumes the currently active video without changing the page.
   void resumeActive() {
-    unawaited(_controllers[_currentIndex]?.play());
+    _setPlaybackActive(true);
   }
 
   /// Sets the playback volume (0.0 silent, 1.0 full).
@@ -346,6 +354,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     super.initState();
     _currentIndex = widget.initialIndex;
     _volume = widget.initialVolume;
+    _isActive = widget.isActive;
     _pagePosition = ValueNotifier<double>(_currentIndex.toDouble());
     _pageController = PageController(initialPage: _currentIndex)
       ..addListener(_syncPagePosition);
@@ -374,6 +383,9 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   @override
   void didUpdateWidget(InfiniteVideoFeed oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.isActive != oldWidget.isActive) {
+      _setPlaybackActive(widget.isActive);
+    }
     if (widget.videos == oldWidget.videos) return;
 
     // Append-only: the new list starts with exactly the same items in the
@@ -463,14 +475,51 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
 
   // ─── Logging / setState wrapper ─────────────────────────────────────────
 
-  void _log(String message) => Log.debug(
-    message,
-    name: _logName,
-    category: LogCategory.video,
-  );
+  void _log(String message) =>
+      Log.debug(message, name: _logName, category: LogCategory.video);
 
   void _rebuild() {
     if (mounted) setState(() {});
+  }
+
+  void _setPlaybackActive(bool isActive) {
+    if (_isActive == isActive) return;
+    _isActive = isActive;
+    if (_isActive) {
+      _resumeCurrentPlaybackIfReady();
+    } else {
+      _pauseCurrentPlayback();
+    }
+  }
+
+  void _pauseCurrentPlayback() {
+    _watchdog.stop(_currentIndex);
+    _staleDetector.stop();
+    final controller = _controllers[_currentIndex];
+    if (controller != null && controller.isInitialized) {
+      unawaited(controller.pause());
+    }
+  }
+
+  void _resumeCurrentPlaybackIfReady() {
+    final controller = _controllers[_currentIndex];
+    if (controller == null || !controller.isInitialized) return;
+    unawaited(_activateCurrentController(controller, _currentIndex));
+  }
+
+  Future<void> _activateCurrentController(
+    DivineVideoPlayerController controller,
+    int index,
+  ) async {
+    if (!_isActive || index != _currentIndex || !controller.isInitialized) {
+      return;
+    }
+    await controller.setVolume(_volume);
+    if (!_isActive || index != _currentIndex) return;
+    await controller.play();
+    if (!_isActive || index != _currentIndex) return;
+    _watchdog.start(index, controller);
+    _staleDetector.start(index, controller);
   }
 
   // coverage:ignore-start
@@ -775,12 +824,10 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       await controller.setVolume(_volume);
       if (!guardInitOwnership('setVolume')) return;
 
-      if (index == _currentIndex) {
+      if (index == _currentIndex && _isActive) {
         _log('Playing index $index (${video.id})');
-        await controller.play();
+        await _activateCurrentController(controller, index);
         if (!guardInitOwnership('play')) return;
-        _watchdog.start(index, controller);
-        _staleDetector.start(index, controller);
       }
 
       _errors.remove(index);
@@ -877,11 +924,13 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     try {
       await controller.stop();
       await controller.setSource(VideoClip.network(nextSource));
-      if (index == _currentIndex) {
+      if (index == _currentIndex && _isActive) {
         await controller.setVolume(_volume);
         await controller.play();
-        _watchdog.start(index, controller);
-        _staleDetector.resetGrace();
+        if (index == _currentIndex && _isActive) {
+          _watchdog.start(index, controller);
+          _staleDetector.resetGrace();
+        }
       }
     } on Object catch (e, stackTrace) {
       _log('Source failover failed index $index source=$nextSource: $e');
@@ -1056,13 +1105,10 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     // Play the current video if it is already initialized. Otherwise
     // _initController will play it and start the watchdog + stale detector
     // once the source is ready.
-    if (_controllers.containsKey(index)) {
+    if (_isActive && _controllers.containsKey(index)) {
       final curr = _controllers[index]!;
       if (curr.isInitialized) {
-        unawaited(curr.setVolume(_volume));
-        unawaited(curr.play());
-        _watchdog.start(index, curr);
-        _staleDetector.start(index, curr);
+        unawaited(_activateCurrentController(curr, index));
       }
     }
 

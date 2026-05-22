@@ -1,6 +1,6 @@
 // ABOUTME: Widget tests for FeedVideos — covers loading/restricted overlay,
 // ABOUTME: overlay mode switching (forbidden/ageRestricted/contentWarning/interactive),
-// ABOUTME: isActive toggling, and pagination flush via didUpdateWidget.
+// ABOUTME: effective isActive propagation, route-aware pausing, and pagination flush.
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:comments_repository/comments_repository.dart';
@@ -21,6 +21,7 @@ import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
+import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
@@ -74,10 +75,7 @@ const _testVideoId =
 const _testPubkey =
     'd4e5f6789012345678901234567890abcdef123456789012345678901234a1b2c3';
 
-VideoEvent _makeVideo({
-  String? id,
-  List<String> warnLabels = const [],
-}) {
+VideoEvent _makeVideo({String? id, List<String> warnLabels = const []}) {
   return VideoEvent(
     id: id ?? _testVideoId,
     pubkey: _testPubkey,
@@ -147,9 +145,7 @@ extension _RepostsRepoStub on _MockRepostsRepository {
     when(
       watchRepostedAddressableIds,
     ).thenAnswer((_) => const Stream<Set<String>>.empty());
-    when(
-      () => getRepostCountByEventId(any()),
-    ).thenAnswer((_) async => 0);
+    when(() => getRepostCountByEventId(any())).thenAnswer((_) async => 0);
   }
 }
 
@@ -202,6 +198,7 @@ Future<void> _pumpFeedVideos(
   bool hasMore = false,
   bool isLoadingMore = false,
   void Function(VideoEvent, int)? onActiveVideoChanged,
+  List<NavigatorObserver> navigatorObservers = const <NavigatorObserver>[],
 }) async {
   final mockPlaybackCubit =
       videoPlaybackStatusCubit ??
@@ -227,6 +224,7 @@ Future<void> _pumpFeedVideos(
     UncontrolledProviderScope(
       container: container,
       child: MaterialApp(
+        navigatorObservers: navigatorObservers,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: MultiBlocProvider(
@@ -391,25 +389,24 @@ void main() {
       },
     );
 
-    testWidgets(
-      'shows $ContentWarningBlurOverlay when video has warnLabels',
-      (tester) async {
-        final video = _makeVideo(warnLabels: ['nsfw']);
-        final cubit = _MockVideoPlaybackStatusCubit()
-          ..stub(PlaybackStatus.ready, video.id);
+    testWidgets('shows $ContentWarningBlurOverlay when video has warnLabels', (
+      tester,
+    ) async {
+      final video = _makeVideo(warnLabels: ['nsfw']);
+      final cubit = _MockVideoPlaybackStatusCubit()
+        ..stub(PlaybackStatus.ready, video.id);
 
-        await _pumpFeedVideos(
-          tester,
-          videos: [video],
-          videoPlaybackStatusCubit: cubit,
-        );
-        await tester.pump();
+      await _pumpFeedVideos(
+        tester,
+        videos: [video],
+        videoPlaybackStatusCubit: cubit,
+      );
+      await tester.pump();
 
-        expect(find.byType(ContentWarningBlurOverlay), findsOneWidget);
-        // Neither moderation overlay should be showing.
-        expect(find.byType(ModeratedContentOverlay), findsNothing);
-      },
-    );
+      expect(find.byType(ContentWarningBlurOverlay), findsOneWidget);
+      // Neither moderation overlay should be showing.
+      expect(find.byType(ModeratedContentOverlay), findsNothing);
+    });
 
     testWidgets(
       'shows interactive overlay when status is ready and no content warning',
@@ -461,82 +458,123 @@ void main() {
     });
   });
 
+  group('activity wiring', () {
+    testWidgets('passes widget isActive through to InfiniteVideoFeed', (
+      tester,
+    ) async {
+      final video = _makeVideo();
+
+      await _pumpFeedVideos(tester, videos: [video], isActive: false);
+      await tester.pump();
+
+      final feed = tester.widget<InfiniteVideoFeed>(
+        find.byType(InfiniteVideoFeed),
+      );
+      expect(feed.isActive, isFalse);
+    });
+
+    testWidgets('route-aware callbacks toggle InfiniteVideoFeed activity', (
+      tester,
+    ) async {
+      final video = _makeVideo();
+
+      await _pumpFeedVideos(
+        tester,
+        videos: [video],
+        navigatorObservers: <NavigatorObserver>[routeObserver],
+      );
+      await tester.pump();
+
+      final feedFinder = find.byType(InfiniteVideoFeed);
+      final state = tester.state<FeedVideosState>(find.byType(FeedVideos));
+
+      expect(tester.widget<InfiniteVideoFeed>(feedFinder).isActive, isTrue);
+
+      state.didPushNext();
+      await tester.pump();
+      expect(tester.widget<InfiniteVideoFeed>(feedFinder).isActive, isFalse);
+
+      state.didPopNext();
+      await tester.pump();
+      expect(tester.widget<InfiniteVideoFeed>(feedFinder).isActive, isTrue);
+    });
+  });
+
   // -------------------------------------------------------------------------
   // Pagination flush (didUpdateWidget)
   // -------------------------------------------------------------------------
   group('pagination flush', () {
-    testWidgets(
-      'does not throw when hasMore and isLoadingMore change',
-      (tester) async {
-        final video = _makeVideo();
-        var hasMore = false;
-        var isLoadingMore = false;
-        late StateSetter rebuildState;
+    testWidgets('does not throw when hasMore and isLoadingMore change', (
+      tester,
+    ) async {
+      final video = _makeVideo();
+      var hasMore = false;
+      var isLoadingMore = false;
+      late StateSetter rebuildState;
 
-        final mockPlaybackCubit = _MockVideoPlaybackStatusCubit()
-          ..stub(PlaybackStatus.ready, video.id);
-        final mockAutoAdvanceCubit = _MockFeedAutoAdvanceCubit()
-          ..stub(const FeedAutoAdvanceState());
-        final mockVolumeCubit = _MockVideoVolumeCubit()..stub();
+      final mockPlaybackCubit = _MockVideoPlaybackStatusCubit()
+        ..stub(PlaybackStatus.ready, video.id);
+      final mockAutoAdvanceCubit = _MockFeedAutoAdvanceCubit()
+        ..stub(const FeedAutoAdvanceState());
+      final mockVolumeCubit = _MockVideoVolumeCubit()..stub();
 
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: ProviderContainer(overrides: _buildOverrides().cast()),
-            child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: MultiBlocProvider(
-                providers: [
-                  BlocProvider<FeedAutoAdvanceCubit>.value(
-                    value: mockAutoAdvanceCubit,
-                  ),
-                  BlocProvider<VideoPlaybackStatusCubit>.value(
-                    value: mockPlaybackCubit,
-                  ),
-                  BlocProvider<VideoVolumeCubit>.value(value: mockVolumeCubit),
-                ],
-                child: Scaffold(
-                  body: StatefulBuilder(
-                    builder: (context, setState) {
-                      rebuildState = setState;
-                      return FeedVideos(
-                        videos: [video],
-                        onNearEnd: () {},
-                        hasMore: hasMore,
-                        isLoadingMore: isLoadingMore,
-                      );
-                    },
-                  ),
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: ProviderContainer(overrides: _buildOverrides().cast()),
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: MultiBlocProvider(
+              providers: [
+                BlocProvider<FeedAutoAdvanceCubit>.value(
+                  value: mockAutoAdvanceCubit,
+                ),
+                BlocProvider<VideoPlaybackStatusCubit>.value(
+                  value: mockPlaybackCubit,
+                ),
+                BlocProvider<VideoVolumeCubit>.value(value: mockVolumeCubit),
+              ],
+              child: Scaffold(
+                body: StatefulBuilder(
+                  builder: (context, setState) {
+                    rebuildState = setState;
+                    return FeedVideos(
+                      videos: [video],
+                      onNearEnd: () {},
+                      hasMore: hasMore,
+                      isLoadingMore: isLoadingMore,
+                    );
+                  },
                 ),
               ),
             ),
           ),
-        );
+        ),
+      );
 
-        await tester.pump(const Duration(seconds: 4));
+      await tester.pump(const Duration(seconds: 4));
 
-        // Simulate a pagination start.
-        rebuildState(() {
-          hasMore = true;
-          isLoadingMore = true;
-        });
-        // Advance past InfiniteVideoFeed's 3-second grace-period timer.
-        await tester.pump(const Duration(seconds: 4));
+      // Simulate a pagination start.
+      rebuildState(() {
+        hasMore = true;
+        isLoadingMore = true;
+      });
+      // Advance past InfiniteVideoFeed's 3-second grace-period timer.
+      await tester.pump(const Duration(seconds: 4));
 
-        // Simulate pagination complete.
-        rebuildState(() {
-          hasMore = false;
-          isLoadingMore = false;
-        });
-        // Drain any pending 3-second grace-period timers created by
-        // InfiniteVideoFeed._waitForFirstFrameOrGracePeriod so that the
-        // widget tree can be disposed cleanly by the test framework.
-        await tester.pump(const Duration(seconds: 4));
-        // Replace the widget tree to stop InfiniteVideoFeed's async chain
-        // from scheduling new timers, then drain the cleared queue.
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(const Duration(seconds: 4));
-      },
-    );
+      // Simulate pagination complete.
+      rebuildState(() {
+        hasMore = false;
+        isLoadingMore = false;
+      });
+      // Drain any pending 3-second grace-period timers created by
+      // InfiniteVideoFeed._waitForFirstFrameOrGracePeriod so that the
+      // widget tree can be disposed cleanly by the test framework.
+      await tester.pump(const Duration(seconds: 4));
+      // Replace the widget tree to stop InfiniteVideoFeed's async chain
+      // from scheduling new timers, then drain the cleared queue.
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(seconds: 4));
+    });
   });
 }

@@ -14,6 +14,97 @@ class _MockMediaCacheManager extends Mock implements MediaCacheManager {}
 
 class _MockCancellable extends Mock implements CancellableCacheOperation {}
 
+class _NativePlayerHarness {
+  _NativePlayerHarness(this.tester);
+
+  final WidgetTester tester;
+  final List<String> methodCalls = <String>[];
+  final Map<int, Completer<void>> setClipsDelays = <int, Completer<void>>{};
+  final Set<int> _installedPlayerIds = <int>{};
+  static const _globalChannel = MethodChannel('divine_video_player');
+  static const _codec = StandardMethodCodec();
+
+  Future<void> install({Iterable<int> playerIds = const <int>[0, 1, 2]}) async {
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      _globalChannel,
+      (call) async {
+        if (call.method == 'create') return <Object?, Object?>{};
+        return null;
+      },
+    );
+
+    for (final playerId in playerIds) {
+      _installedPlayerIds.add(playerId);
+      final playerChannel = MethodChannel(
+        'divine_video_player/player_$playerId',
+      );
+      final eventChannelName = 'divine_video_player/player_$playerId/events';
+
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        playerChannel,
+        (call) async {
+          methodCalls.add('player_$playerId:${call.method}');
+          if (call.method == 'setClips') {
+            final delay = setClipsDelays[playerId];
+            if (delay != null && !delay.isCompleted) {
+              await delay.future;
+            }
+          }
+          return null;
+        },
+      );
+
+      tester.binding.defaultBinaryMessenger.setMockMessageHandler(
+        eventChannelName,
+        (message) async {
+          final call = _codec.decodeMethodCall(message);
+          if (call.method == 'listen') {
+            scheduleMicrotask(() async {
+              await sendEvent(playerId, const <Object?, Object?>{
+                'status': 'ready',
+                'videoWidth': 1280,
+                'videoHeight': 720,
+                'isFirstFrameRendered': true,
+              });
+            });
+          }
+          return _codec.encodeSuccessEnvelope(null);
+        },
+      );
+    }
+  }
+
+  int countCalls(String method) =>
+      methodCalls.where((call) => call.endsWith(':$method')).length;
+
+  Future<void> sendEvent(int playerId, Map<Object?, Object?> event) async {
+    final eventChannelName = 'divine_video_player/player_$playerId/events';
+    await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+      eventChannelName,
+      _codec.encodeSuccessEnvelope(event),
+      (_) {},
+    );
+  }
+
+  Future<void> dispose() async {
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      _globalChannel,
+      null,
+    );
+    for (final playerId in _installedPlayerIds) {
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        MethodChannel('divine_video_player/player_$playerId'),
+        null,
+      );
+      tester.binding.defaultBinaryMessenger.setMockMessageHandler(
+        'divine_video_player/player_$playerId/events',
+        null,
+      );
+    }
+    _installedPlayerIds.clear();
+  }
+}
+
 VideoEvent _makeVideo(String id, {String? videoUrl}) => VideoEvent(
   id: id,
   pubkey: 'pk',
@@ -613,6 +704,209 @@ void main() {
         );
 
         expect(key.currentState!.currentIndex, equals(0));
+      });
+
+      testWidgets('does not autoplay when mounted inactive', (tester) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        final harness = _NativePlayerHarness(tester);
+        await harness.install(playerIds: const <int>[0]);
+
+        try {
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                videos: [_makeVideo('inactive_mount')],
+                cache: cache,
+                isActive: false,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          expect(harness.countCalls('play'), equals(0));
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await harness.dispose();
+        }
+      });
+
+      testWidgets('does not autoplay after becoming inactive mid-init', (
+        tester,
+      ) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        final harness = _NativePlayerHarness(tester);
+        await harness.install(playerIds: const <int>[0]);
+        harness.setClipsDelays[0] = Completer<void>();
+
+        try {
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                videos: [_makeVideo('mid_init_pause')],
+                cache: cache,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                videos: [_makeVideo('mid_init_pause')],
+                cache: cache,
+                isActive: false,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          harness.setClipsDelays[0]!.complete();
+          await tester.pump();
+          await tester.pump();
+
+          expect(harness.countCalls('play'), equals(0));
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await harness.dispose();
+        }
+      });
+
+      testWidgets('page change does not autoplay while inactive', (
+        tester,
+      ) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        final harness = _NativePlayerHarness(tester);
+        await harness.install(playerIds: const <int>[0, 1]);
+        final key = GlobalKey<InfiniteVideoFeedState>();
+
+        try {
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: [_makeVideo('page0'), _makeVideo('page1')],
+                cache: cache,
+                isActive: false,
+                keepPreviousAlive: false,
+                keepNextAlive: false,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          unawaited(key.currentState!.animateToPage(1));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+          await tester.pump();
+
+          expect(key.currentState!.currentIndex, equals(1));
+          expect(harness.countCalls('play'), equals(0));
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await harness.dispose();
+        }
+      });
+
+      testWidgets('source failover does not autoplay while inactive', (
+        tester,
+      ) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        final harness = _NativePlayerHarness(tester);
+        await harness.install(playerIds: const <int>[0]);
+
+        const divineUrl =
+            'https://media.divine.video/'
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/'
+            '720p.mp4';
+
+        try {
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                videos: [_makeVideo('failover_inactive', videoUrl: divineUrl)],
+                cache: cache,
+                isActive: false,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          await harness.sendEvent(0, const <Object?, Object?>{
+            'status': 'error',
+            'errorCode': 'parse_error',
+            'errorMessage': 'parse failed',
+          });
+          await tester.pump();
+          await tester.pump();
+
+          expect(harness.countCalls('setClips'), greaterThanOrEqualTo(2));
+          expect(harness.countCalls('play'), equals(0));
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await harness.dispose();
+        }
+      });
+
+      testWidgets('autoplays current controller when reactivated', (
+        tester,
+      ) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        final harness = _NativePlayerHarness(tester);
+        await harness.install(playerIds: const <int>[0]);
+
+        try {
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                videos: [_makeVideo('reactivate')],
+                cache: cache,
+                isActive: false,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+          expect(harness.countCalls('play'), equals(0));
+
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                videos: [_makeVideo('reactivate')],
+                cache: cache,
+                isActive: true,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          expect(harness.countCalls('play'), equals(1));
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          await harness.dispose();
+        }
       });
     });
 

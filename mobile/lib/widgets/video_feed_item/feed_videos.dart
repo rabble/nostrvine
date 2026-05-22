@@ -93,6 +93,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
   FeedAutoAdvanceCubit get _autoAdvanceCubit =>
       context.read<FeedAutoAdvanceCubit>();
   final _feedKey = GlobalKey<InfiniteVideoFeedState>();
+  bool _routeAllowsPlayback = true;
 
   /// Last error type reported per video.id to
   /// [VideoPlaybackStatusCubit]. Used to dedupe at the call site so
@@ -112,13 +113,6 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
   @override
   void didUpdateWidget(covariant FeedVideos oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.isActive != oldWidget.isActive) {
-      if (widget.isActive) {
-        _feedKey.currentState?.resumeActive();
-      } else {
-        _feedKey.currentState?.pauseActive();
-      }
-    }
     // When pagination settles (hasMore / isLoadingMore changed), flush any
     // pending auto-advance that was waiting on more content.
     if (widget.hasMore != oldWidget.hasMore ||
@@ -155,12 +149,14 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
 
   @override
   void didPushNext() {
-    _feedKey.currentState?.pauseActive();
+    if (!_routeAllowsPlayback) return;
+    setState(() => _routeAllowsPlayback = false);
   }
 
   @override
   void didPopNext() {
-    _feedKey.currentState?.resumeActive();
+    if (_routeAllowsPlayback) return;
+    setState(() => _routeAllowsPlayback = true);
   }
 
   bool _isAutoAdvanceAvailable() {
@@ -201,6 +197,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
 
   @override
   Widget build(BuildContext context) {
+    final isFeedActive = widget.isActive && _routeAllowsPlayback;
     return BlocListener<VideoVolumeCubit, VideoVolumeState>(
       // Sync volume when hardware buttons change system volume.
       listener: (_, state) {
@@ -209,6 +206,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
       child: InfiniteVideoFeed(
         key: _feedKey,
         videos: widget.videos,
+        isActive: isFeedActive,
         // mediaCacheProvider is a keepAlive singleton; identity is stable for
         // the app lifetime, so ref.read is safe here. See
         // .claude/rules/state_management.md → "Bridging Riverpod-provided
