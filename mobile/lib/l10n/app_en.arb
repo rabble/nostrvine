@@ -3009,6 +3009,22 @@
   "@dmMessageActionReport": {
     "description": "Long-press menu action on a received DM bubble that opens the report flow for that specific message."
   },
+  "dmFormatBold": "Bold",
+  "@dmFormatBold": {
+    "description": "Label for the Bold formatting action in the DM composer's text-selection context menu. Wraps the selected text with markdown bold markers (e.g. **text**)."
+  },
+  "dmFormatItalic": "Italic",
+  "@dmFormatItalic": {
+    "description": "Label for the Italic formatting action in the DM composer's text-selection context menu. Wraps the selected text with markdown italic markers (e.g. _text_)."
+  },
+  "dmFormatStrikethrough": "Strikethrough",
+  "@dmFormatStrikethrough": {
+    "description": "Label for the Strikethrough formatting action in the DM composer's text-selection context menu. Wraps the selected text with markdown strikethrough markers (e.g. ~~text~~)."
+  },
+  "dmFormatCode": "Code",
+  "@dmFormatCode": {
+    "description": "Label for the inline-code formatting action in the DM composer's text-selection context menu. Wraps the selected text with markdown inline-code markers (e.g. `text`)."
+  },
   "dmStatusPending": "Sending",
   "@dmStatusPending": {
     "description": "Accessibility label / tooltip on the clock indicator at the bottom of a sent DM bubble whose recipient gift wrap has not yet landed."

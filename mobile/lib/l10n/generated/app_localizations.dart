@@ -9638,6 +9638,30 @@ abstract class AppLocalizations {
   /// **'Report'**
   String get dmMessageActionReport;
 
+  /// Label for the Bold formatting action in the DM composer's text-selection context menu. Wraps the selected text with markdown bold markers (e.g. **text**).
+  ///
+  /// In en, this message translates to:
+  /// **'Bold'**
+  String get dmFormatBold;
+
+  /// Label for the Italic formatting action in the DM composer's text-selection context menu. Wraps the selected text with markdown italic markers (e.g. _text_).
+  ///
+  /// In en, this message translates to:
+  /// **'Italic'**
+  String get dmFormatItalic;
+
+  /// Label for the Strikethrough formatting action in the DM composer's text-selection context menu. Wraps the selected text with markdown strikethrough markers (e.g. ~~text~~).
+  ///
+  /// In en, this message translates to:
+  /// **'Strikethrough'**
+  String get dmFormatStrikethrough;
+
+  /// Label for the inline-code formatting action in the DM composer's text-selection context menu. Wraps the selected text with markdown inline-code markers (e.g. `text`).
+  ///
+  /// In en, this message translates to:
+  /// **'Code'**
+  String get dmFormatCode;
+
   /// Accessibility label / tooltip on the clock indicator at the bottom of a sent DM bubble whose recipient gift wrap has not yet landed.
   ///
   /// In en, this message translates to:
