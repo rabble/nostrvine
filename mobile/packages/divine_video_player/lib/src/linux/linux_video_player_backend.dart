@@ -262,20 +262,16 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
     _emitState(_state.copyWith(volume: volume));
   }
 
-  /// Sets the playback speed for the entire player.
+  /// Sets the runtime player rate.
   ///
-  /// **Warning:** this overwrites all cached per-clip speeds with [speed].
-  /// Any per-clip values previously supplied via [setClips] are discarded.
-  /// Prefer setting speed through [setClips] when independent per-clip
-  /// control is required; use this method only for a uniform runtime override.
+  /// This only changes the mpv player rate. It deliberately does **not**
+  /// mutate the cached per-clip authored speeds (`_clipSpeeds`) used for the
+  /// playback-time <-> source-time mapping, so duration math, seek offsets,
+  /// and the global timeline coordinate space remain consistent with what
+  /// was supplied via [setClips].
   @override
   Future<void> setPlaybackSpeed(double speed) async {
     _ensureReady();
-    // Align cached per-clip rates with the explicitly requested runtime speed
-    // so that subsequent clip transitions use the same value.
-    for (var i = 0; i < _clipSpeeds.length; i++) {
-      _clipSpeeds[i] = speed;
-    }
     await _player.setRate(speed);
     _emitState(_state.copyWith(playbackSpeed: speed));
   }
@@ -358,8 +354,16 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
           0,
           math.max(_clips.length - 1, 0),
         );
-        final clipSpeed = _clipSpeeds.elementAtOrNull(_currentClipIndex) ?? 1.0;
-        await _player.setRate(clipSpeed);
+        // Only re-apply per-clip rate on transitions when any clip was
+        // authored with a non-default speed. Otherwise leave the player rate
+        // alone so an explicit [setPlaybackSpeed] override persists across
+        // implicit playlist events.
+        final hasAuthoredSpeed = _clipSpeeds.any((s) => s != 1.0);
+        if (hasAuthoredSpeed) {
+          final clipSpeed =
+              _clipSpeeds.elementAtOrNull(_currentClipIndex) ?? 1.0;
+          await _player.setRate(clipSpeed);
+        }
         _refreshState();
       }, onError: _handleError),
       _player.stream.completed.listen(
