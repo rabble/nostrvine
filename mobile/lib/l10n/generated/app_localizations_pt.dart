@@ -6986,14 +6986,14 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não foi possível extrair o áudio. Por favor, tente novamente.';
 
   @override
-  String get videoEditorSpeedLabel => 'Speed';
+  String get videoEditorSpeedLabel => 'Velocidade';
 
   @override
   String get videoEditorSetClipSpeedSemanticLabel =>
-      'Set playback speed for selected clip';
+      'Definir a velocidade de reprodução do clipe selecionado';
 
   @override
-  String get videoEditorSpeedSheetTitle => 'Clip Speed';
+  String get videoEditorSpeedSheetTitle => 'Velocidade do clipe';
 
   @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>

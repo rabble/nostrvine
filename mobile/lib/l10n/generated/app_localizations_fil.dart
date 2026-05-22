@@ -7029,14 +7029,14 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi na-extract ang audio. Pakisubukang muli.';
 
   @override
-  String get videoEditorSpeedLabel => 'Speed';
+  String get videoEditorSpeedLabel => 'Bilis';
 
   @override
   String get videoEditorSetClipSpeedSemanticLabel =>
-      'Set playback speed for selected clip';
+      'Itakda ang bilis ng playback para sa napiling clip';
 
   @override
-  String get videoEditorSpeedSheetTitle => 'Clip Speed';
+  String get videoEditorSpeedSheetTitle => 'Bilis ng Clip';
 
   @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>

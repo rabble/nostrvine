@@ -6945,14 +6945,14 @@ class AppLocalizationsSv extends AppLocalizations {
       'Kunde inte extrahera ljud. Försök igen.';
 
   @override
-  String get videoEditorSpeedLabel => 'Speed';
+  String get videoEditorSpeedLabel => 'Hastighet';
 
   @override
   String get videoEditorSetClipSpeedSemanticLabel =>
-      'Set playback speed for selected clip';
+      'Ange uppspelningshastighet för valt klipp';
 
   @override
-  String get videoEditorSpeedSheetTitle => 'Clip Speed';
+  String get videoEditorSpeedSheetTitle => 'Klipphastighet';
 
   @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>

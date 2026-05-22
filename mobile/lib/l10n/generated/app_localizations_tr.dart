@@ -6915,14 +6915,14 @@ class AppLocalizationsTr extends AppLocalizations {
       'Ses çıkarılamadı. Lütfen tekrar deneyin.';
 
   @override
-  String get videoEditorSpeedLabel => 'Speed';
+  String get videoEditorSpeedLabel => 'Hız';
 
   @override
   String get videoEditorSetClipSpeedSemanticLabel =>
-      'Set playback speed for selected clip';
+      'Seçili klip için oynatma hızını ayarla';
 
   @override
-  String get videoEditorSpeedSheetTitle => 'Clip Speed';
+  String get videoEditorSpeedSheetTitle => 'Klip Hızı';
 
   @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>

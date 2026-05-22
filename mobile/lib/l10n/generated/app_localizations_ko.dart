@@ -6681,14 +6681,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorExtractAudioFailed => '오디오를 추출할 수 없었습니다. 다시 시도해 주세요.';
 
   @override
-  String get videoEditorSpeedLabel => 'Speed';
+  String get videoEditorSpeedLabel => '속도';
 
   @override
-  String get videoEditorSetClipSpeedSemanticLabel =>
-      'Set playback speed for selected clip';
+  String get videoEditorSetClipSpeedSemanticLabel => '선택한 클립의 재생 속도 설정';
 
   @override
-  String get videoEditorSpeedSheetTitle => 'Clip Speed';
+  String get videoEditorSpeedSheetTitle => '클립 속도';
 
   @override
   String get videoEditorFinishTimelineEditingSemanticLabel => '타임라인 편집 완료';

@@ -7111,14 +7111,14 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu s-a putut extrage audio. Vă rugăm să încercați din nou.';
 
   @override
-  String get videoEditorSpeedLabel => 'Speed';
+  String get videoEditorSpeedLabel => 'Viteză';
 
   @override
   String get videoEditorSetClipSpeedSemanticLabel =>
-      'Set playback speed for selected clip';
+      'Setați viteza de redare pentru clipul selectat';
 
   @override
-  String get videoEditorSpeedSheetTitle => 'Clip Speed';
+  String get videoEditorSpeedSheetTitle => 'Viteza clipului';
 
   @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>

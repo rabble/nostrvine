@@ -7094,14 +7094,14 @@ class AppLocalizationsPl extends AppLocalizations {
       'Nie udało się wyodrębnić audio. Spróbuj ponownie.';
 
   @override
-  String get videoEditorSpeedLabel => 'Speed';
+  String get videoEditorSpeedLabel => 'Prędkość';
 
   @override
   String get videoEditorSetClipSpeedSemanticLabel =>
-      'Set playback speed for selected clip';
+      'Ustaw prędkość odtwarzania dla wybranego klipu';
 
   @override
-  String get videoEditorSpeedSheetTitle => 'Clip Speed';
+  String get videoEditorSpeedSheetTitle => 'Prędkość klipu';
 
   @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
