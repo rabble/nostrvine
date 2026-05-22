@@ -16,6 +16,7 @@ class DivineSlider extends StatelessWidget {
     required this.onChanged,
     this.min = 0,
     this.max = 1,
+    this.divisions,
     this.trackHeight = 8,
     this.thumbWidth = 4,
     this.thumbHeight = 32,
@@ -24,6 +25,7 @@ class DivineSlider extends StatelessWidget {
     this.thumbColor = VineTheme.onSurface,
     super.key,
   }) : assert(min <= max, 'min must be <= max'),
+       assert(divisions == null || divisions > 0, 'divisions must be > 0'),
        assert(trackHeight >= 0, 'trackHeight must be >= 0'),
        assert(thumbWidth > 0, 'thumbWidth must be > 0'),
        assert(thumbHeight > 0, 'thumbHeight must be > 0');
@@ -52,6 +54,10 @@ class DivineSlider extends StatelessWidget {
   /// Color of the filled (active) track portion.
   final Color activeColor;
 
+  /// Number of discrete divisions. When set, the slider snaps to
+  /// equally-spaced division points. Defaults to `null` (continuous).
+  final int? divisions;
+
   /// Color of the unfilled (inactive) track portion.
   final Color inactiveColor;
 
@@ -79,6 +85,7 @@ class DivineSlider extends StatelessWidget {
         value: value.clamp(min, max),
         min: min,
         max: max,
+        divisions: divisions,
         onChanged: onChanged,
       ),
     );

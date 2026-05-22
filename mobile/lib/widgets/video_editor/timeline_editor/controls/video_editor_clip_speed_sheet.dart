@@ -105,6 +105,7 @@ class _SpeedControlBar extends StatelessWidget {
               value: value,
               min: VideoEditorConstants.clipSpeedMin,
               max: VideoEditorConstants.clipSpeedMax,
+              divisions: VideoEditorConstants.clipSpeedDivisions,
               onChanged: (v) => speed.value = v,
             ),
           ),

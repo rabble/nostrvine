@@ -12,6 +12,7 @@ void main() {
       ValueChanged<double>? onChanged,
       double min = 0,
       double max = 1,
+      int? divisions,
       double trackHeight = 8,
       double thumbWidth = 4,
       double thumbHeight = 32,
@@ -29,6 +30,7 @@ void main() {
                 onChanged: onChanged,
                 min: min,
                 max: max,
+                divisions: divisions,
                 trackHeight: trackHeight,
                 thumbWidth: thumbWidth,
                 thumbHeight: thumbHeight,
@@ -98,6 +100,22 @@ void main() {
         await tester.pumpWidget(buildSlider());
 
         expect(find.byType(SliderTheme), findsOneWidget);
+      });
+
+      testWidgets('passes divisions to $Slider', (tester) async {
+        await tester.pumpWidget(buildSlider(divisions: 11));
+
+        final slider = tester.widget<Slider>(find.byType(Slider));
+        expect(slider.divisions, equals(11));
+      });
+
+      testWidgets('passes null divisions to $Slider when not set', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSlider());
+
+        final slider = tester.widget<Slider>(find.byType(Slider));
+        expect(slider.divisions, isNull);
       });
     });
 
@@ -214,6 +232,28 @@ void main() {
             value: 0,
             onChanged: (_) {},
             trackHeight: 0,
+          ),
+          returnsNormally,
+        );
+      });
+
+      test('asserts divisions > 0', () {
+        expect(
+          () => DivineSlider(
+            value: 0,
+            onChanged: (_) {},
+            divisions: 0,
+          ),
+          throwsAssertionError,
+        );
+      });
+
+      test('allows divisions of 1 or more', () {
+        expect(
+          () => DivineSlider(
+            value: 0,
+            onChanged: (_) {},
+            divisions: 1,
           ),
           returnsNormally,
         );
