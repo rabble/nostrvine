@@ -118,8 +118,8 @@ class VideoEditorConstants {
   /// Maximum playback speed multiplier for clips.
   static const double clipSpeedMax = 3.0;
 
-  /// Number of discrete divisions on the clip speed slider.
-  static const int clipSpeedDivisions = 55;
+  /// Step size between discrete speed values on the clip speed slider.
+  static const double clipSpeedStep = 0.05;
 
   /// Background color for the text editor overlay.
   static const Color textEditorBackground = Color(0x9B000000);

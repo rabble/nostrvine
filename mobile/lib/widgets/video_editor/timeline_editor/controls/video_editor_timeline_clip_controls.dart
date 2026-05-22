@@ -55,6 +55,10 @@ class _TimelineClipControlsState extends ConsumerState<TimelineClipControls> {
   Future<void> _setPlaybackSpeed(BuildContext context) async {
     final bloc = context.read<ClipEditorBloc>();
     final state = bloc.state;
+    if (state.currentClipIndex < 0 ||
+        state.currentClipIndex >= state.clips.length) {
+      return;
+    }
     final clip = state.clips[state.currentClipIndex];
     final editor = VideoEditorScope.of(context).requireEditor;
 

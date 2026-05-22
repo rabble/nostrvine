@@ -12182,19 +12182,19 @@ abstract class AppLocalizations {
   /// **'Could not extract audio. Please try again.'**
   String get videoEditorExtractAudioFailed;
 
-  /// No description provided for @videoEditorSpeedLabel.
+  /// Label shown next to the speed value in the clip speed bottom sheet.
   ///
   /// In en, this message translates to:
   /// **'Speed'**
   String get videoEditorSpeedLabel;
 
-  /// No description provided for @videoEditorSetClipSpeedSemanticLabel.
+  /// Accessibility label for the Set Speed button in the timeline clip controls.
   ///
   /// In en, this message translates to:
   /// **'Set playback speed for selected clip'**
   String get videoEditorSetClipSpeedSemanticLabel;
 
-  /// No description provided for @videoEditorSpeedSheetTitle.
+  /// Title of the bottom sheet for adjusting clip playback speed.
   ///
   /// In en, this message translates to:
   /// **'Clip Speed'**

@@ -247,12 +247,17 @@ class MediaKitLinuxVideoPlayerBackend implements LinuxVideoPlayerBackend {
     _emitState(_state.copyWith(volume: volume));
   }
 
+  /// Sets the playback speed for the entire player.
+  ///
+  /// **Warning:** this overwrites all cached per-clip speeds with [speed].
+  /// Any per-clip values previously supplied via [setClips] are discarded.
+  /// Prefer setting speed through [setClips] when independent per-clip
+  /// control is required; use this method only for a uniform runtime override.
   @override
   Future<void> setPlaybackSpeed(double speed) async {
     _ensureReady();
-    // `setPlaybackSpeed` is a player-level control. Keep it sticky across
-    // clip changes by aligning cached per-clip rates to the explicitly
-    // requested runtime speed.
+    // Align cached per-clip rates with the explicitly requested runtime speed
+    // so that subsequent clip transitions use the same value.
     for (var i = 0; i < _clipSpeeds.length; i++) {
       _clipSpeeds[i] = speed;
     }

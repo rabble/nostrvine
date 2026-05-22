@@ -288,11 +288,11 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                     let mutableVideoComposition = AVMutableVideoComposition()
                     mutableVideoComposition.renderSize = displaySize
                     mutableVideoComposition.sourceTrackIDForFrameTiming = videoTrack.trackID
-                    let minFrameDuration = (try? await sourceVideoTrack.load(.minFrameDuration))
-                        ?? CMTime(value: 1, timescale: 30)
-                    mutableVideoComposition.frameDuration = minFrameDuration.isValid
-                        ? minFrameDuration
-                        : CMTime(value: 1, timescale: 30)
+                    if sourceVideoTrack.minFrameDuration.isValid {
+                        mutableVideoComposition.frameDuration = sourceVideoTrack.minFrameDuration
+                    } else {
+                        mutableVideoComposition.frameDuration = CMTime(value: 1, timescale: 30)
+                    }
                     layerInstruction = instruction
                     videoComposition = mutableVideoComposition
                 }

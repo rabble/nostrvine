@@ -3954,8 +3954,17 @@
   "videoEditorExtractAudioNoLocalFile": "Cannot extract audio: clip is not locally available.",
   "videoEditorExtractAudioFailed": "Could not extract audio. Please try again.",
   "videoEditorSpeedLabel": "Speed",
+  "@videoEditorSpeedLabel": {
+    "description": "Label shown next to the speed value in the clip speed bottom sheet."
+  },
   "videoEditorSetClipSpeedSemanticLabel": "Set playback speed for selected clip",
+  "@videoEditorSetClipSpeedSemanticLabel": {
+    "description": "Accessibility label for the Set Speed button in the timeline clip controls."
+  },
   "videoEditorSpeedSheetTitle": "Clip Speed",
+  "@videoEditorSpeedSheetTitle": {
+    "description": "Title of the bottom sheet for adjusting clip playback speed."
+  },
   "videoEditorFinishTimelineEditingSemanticLabel": "Finish timeline editing",
   "videoEditorAudioPlayPreviewSemanticLabel": "Play preview",
   "videoEditorAudioPausePreviewSemanticLabel": "Pause preview",
