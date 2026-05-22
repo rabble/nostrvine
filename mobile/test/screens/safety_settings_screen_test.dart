@@ -278,6 +278,24 @@ void main() {
     });
 
     testWidgets(
+      'shows Divine moderation as enabled and non-interactive',
+      (tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        final tile = find.widgetWithText(SwitchListTile, 'Divine');
+        expect(tile, findsOneWidget);
+
+        final switchTile = tester.widget<SwitchListTile>(tile);
+        expect(switchTile.value, isTrue);
+        expect(switchTile.onChanged, isNull);
+
+        verifyNever(mockModerationLabelService.removeDivineLabeler);
+        verifyNever(mockModerationLabelService.addDivineLabeler);
+      },
+    );
+
+    testWidgets(
       'shows Divine-hosted-only toggle enabled by default and persists '
       'opt-out',
       (tester) async {

@@ -217,17 +217,8 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
   Widget _buildDivineProvider() {
     return SwitchListTile(
       value: _isDivineLabelerEnabled,
-      onChanged: (value) async {
-        final labelService = ref.read(moderationLabelServiceProvider);
-        if (value) {
-          await labelService.addDivineLabeler();
-        } else {
-          await labelService.removeDivineLabeler();
-        }
-        setState(() {
-          _isDivineLabelerEnabled = value;
-        });
-      },
+      // The built-in Divine moderation labeler is always on by product design.
+      onChanged: null,
       secondary: const Icon(Icons.verified_user, color: VineTheme.vineGreen),
       title: Text(
         context.l10n.safetySettingsDivine,
