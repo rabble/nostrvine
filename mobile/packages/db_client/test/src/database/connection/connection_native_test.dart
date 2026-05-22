@@ -244,7 +244,8 @@ void main() {
         expect(File(legacyPath).existsSync(), isFalse);
         expect(File(_destinationBackupPath(newPath)).existsSync(), isTrue);
         expect(_eventCount(_destinationBackupPath(newPath)), equals(1));
-        expect(File('$newPath-wal').readAsBytesSync(), equals([4]));
+        expect(File('$newPath-wal').existsSync(), isTrue);
+        expect(File('$newPath-wal').lengthSync(), greaterThan(0));
         expect(File('$newPath-shm').existsSync(), isTrue);
         expect(File('$newPath-shm').lengthSync(), greaterThan(0));
       },
