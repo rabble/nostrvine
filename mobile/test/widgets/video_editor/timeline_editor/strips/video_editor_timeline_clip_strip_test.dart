@@ -299,7 +299,7 @@ void main() {
           // totalWidth).
           final clips = [
             slow,
-            _createTestClip(id: 'normal', seconds: 2),
+            _createTestClip(id: 'normal'),
           ];
 
           await tester.pumpWidget(
