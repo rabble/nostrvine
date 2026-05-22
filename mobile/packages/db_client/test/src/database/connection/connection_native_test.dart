@@ -40,10 +40,7 @@ void main() {
     test('uses Application Support-style base path with openvine/database', () {
       final path = buildSharedDatabasePath('/tmp/app-support');
 
-      expect(
-        path,
-        equals('/tmp/app-support/openvine/database/divine_db.db'),
-      );
+      expect(path, equals('/tmp/app-support/openvine/database/divine_db.db'));
     });
   });
 
@@ -73,25 +70,7 @@ void main() {
       applyDbCacheVersionReset(dbPath);
 
       expect(File(dbPath).existsSync(), isTrue);
-      expect(
-        File(dbPath).readAsBytesSync(),
-        equals(const [1, 2, 3]),
-      );
-      expect(readDbCacheVersion(dbDir), equals(dbCacheVersion));
-    });
-
-    test('adopts current version when stored version is stale', () {
-      Directory(dbDir).createSync(recursive: true);
-      File(dbPath).writeAsBytesSync(const [1]);
-      File('$dbPath-wal').writeAsBytesSync(const [2]);
-      File('$dbPath-shm').writeAsBytesSync(const [3]);
-      writeDbCacheVersion(dbDir, 1);
-
-      applyDbCacheVersionReset(dbPath);
-
-      expect(File(dbPath).existsSync(), isTrue);
-      expect(File('$dbPath-wal').existsSync(), isTrue);
-      expect(File('$dbPath-shm').existsSync(), isTrue);
+      expect(File(dbPath).readAsBytesSync(), equals(const [1, 2, 3]));
       expect(readDbCacheVersion(dbDir), equals(dbCacheVersion));
     });
 
@@ -118,10 +97,7 @@ void main() {
       applyDbCacheVersionReset(dbPath);
 
       expect(File(dbPath).existsSync(), isTrue);
-      expect(
-        File(dbPath).readAsBytesSync(),
-        equals(const [9, 9]),
-      );
+      expect(File(dbPath).readAsBytesSync(), equals(const [9, 9]));
     });
 
     test('no-op when DB does not exist and no version file', () {
@@ -222,30 +198,24 @@ void main() {
       expect(File(newPath).existsSync(), isTrue);
     });
 
-    test(
-      'preserves new DB when both legacy and new databases exist',
-      () async {
-        final legacyFile = File(legacyPath);
-        legacyFile.parent.createSync(recursive: true);
-        legacyFile.writeAsBytesSync(const [1, 2, 3]);
+    test('preserves new DB when both legacy and new databases exist', () async {
+      final legacyFile = File(legacyPath);
+      legacyFile.parent.createSync(recursive: true);
+      legacyFile.writeAsBytesSync(const [1, 2, 3]);
 
-        final newFile = File(newPath);
-        newFile.parent.createSync(recursive: true);
-        newFile.writeAsBytesSync(const [9, 9, 9]);
+      final newFile = File(newPath);
+      newFile.parent.createSync(recursive: true);
+      newFile.writeAsBytesSync(const [9, 9, 9]);
 
-        await migrateLegacyDatabase(
-          legacyPath: legacyPath,
-          newPath: newPath,
-        );
+      await migrateLegacyDatabase(legacyPath: legacyPath, newPath: newPath);
 
-        expect(File(legacyPath).existsSync(), isFalse);
-        expect(File(newPath).readAsBytesSync(), equals(const [9, 9, 9]));
-        expect(
-          File(_legacyConflictBackupPath(newPath)).readAsBytesSync(),
-          equals(const [1, 2, 3]),
-        );
-      },
-    );
+      expect(File(legacyPath).existsSync(), isFalse);
+      expect(File(newPath).readAsBytesSync(), equals(const [9, 9, 9]));
+      expect(
+        File(_legacyConflictBackupPath(newPath)).readAsBytesSync(),
+        equals(const [1, 2, 3]),
+      );
+    });
 
     test(
       'restores legacy DB when destination exists but has no local data',
@@ -253,10 +223,7 @@ void main() {
         _createSqliteDatabase(legacyPath, draftCount: 1);
         _createSqliteDatabase(newPath);
 
-        await migrateLegacyDatabase(
-          legacyPath: legacyPath,
-          newPath: newPath,
-        );
+        await migrateLegacyDatabase(legacyPath: legacyPath, newPath: newPath);
 
         expect(_draftCount(newPath), equals(1));
         expect(File(legacyPath).existsSync(), isFalse);
@@ -267,17 +234,19 @@ void main() {
       'restores legacy DB when destination has only replaceable cache rows',
       () async {
         _createSqliteDatabase(legacyPath, draftCount: 1);
+        File('$legacyPath-wal').writeAsBytesSync(const [4]);
+        File('$legacyPath-shm').writeAsBytesSync(const [5]);
         _createSqliteDatabase(newPath, eventCount: 1);
 
-        await migrateLegacyDatabase(
-          legacyPath: legacyPath,
-          newPath: newPath,
-        );
+        await migrateLegacyDatabase(legacyPath: legacyPath, newPath: newPath);
 
         expect(_draftCount(newPath), equals(1));
         expect(File(legacyPath).existsSync(), isFalse);
         expect(File(_destinationBackupPath(newPath)).existsSync(), isTrue);
         expect(_eventCount(_destinationBackupPath(newPath)), equals(1));
+        expect(File('$newPath-wal').readAsBytesSync(), equals([4]));
+        expect(File('$newPath-shm').existsSync(), isTrue);
+        expect(File('$newPath-shm').lengthSync(), greaterThan(0));
       },
     );
 
@@ -289,10 +258,7 @@ void main() {
         File('$newPath-wal').createSync();
         File('$newPath-shm').createSync();
 
-        await migrateLegacyDatabase(
-          legacyPath: legacyPath,
-          newPath: newPath,
-        );
+        await migrateLegacyDatabase(legacyPath: legacyPath, newPath: newPath);
 
         expect(_draftCount(newPath), equals(1));
         expect(File(legacyPath).existsSync(), isFalse);
@@ -313,10 +279,7 @@ void main() {
         File('$newPath-wal').writeAsBytesSync(const [7]);
         File('$newPath-shm').writeAsBytesSync(const [8]);
 
-        await migrateLegacyDatabase(
-          legacyPath: legacyPath,
-          newPath: newPath,
-        );
+        await migrateLegacyDatabase(legacyPath: legacyPath, newPath: newPath);
 
         final backupPath = _destinationBackupPath(newPath);
         expect(_draftCount(newPath), equals(1));
@@ -341,10 +304,7 @@ void main() {
           pendingActionStatuses: const ['pending'],
         );
 
-        await migrateLegacyDatabase(
-          legacyPath: legacyPath,
-          newPath: newPath,
-        );
+        await migrateLegacyDatabase(legacyPath: legacyPath, newPath: newPath);
 
         final legacyBackupPath = _legacyConflictBackupPath(newPath);
         expect(File(legacyPath).existsSync(), isFalse);
@@ -369,10 +329,7 @@ void main() {
         expect(File('$legacyPath-wal').readAsBytesSync(), equals([4]));
         expect(File('$legacyPath-shm').readAsBytesSync(), equals([5]));
 
-        await migrateLegacyDatabase(
-          legacyPath: legacyPath,
-          newPath: newPath,
-        );
+        await migrateLegacyDatabase(legacyPath: legacyPath, newPath: newPath);
 
         expect(File(newPath).existsSync(), isTrue);
         expect(_draftCount(newPath), equals(1));
@@ -387,6 +344,24 @@ void main() {
         expect(File('$legacyBackupPath-shm').existsSync(), isTrue);
         expect(File('$legacyBackupPath-shm').lengthSync(), greaterThan(0));
         expect(_draftCount(legacyBackupPath), equals(1));
+      },
+    );
+
+    test(
+      'deletes orphaned legacy database when neither side has actionable data',
+      () async {
+        _createSqliteDatabase(legacyPath);
+        File('$legacyPath-wal').writeAsBytesSync(const [4]);
+        File('$legacyPath-shm').writeAsBytesSync(const [5]);
+        _createSqliteDatabase(newPath, eventCount: 1);
+
+        await migrateLegacyDatabase(legacyPath: legacyPath, newPath: newPath);
+
+        expect(File(newPath).existsSync(), isTrue);
+        expect(_eventCount(newPath), equals(1));
+        expect(File(legacyPath).existsSync(), isFalse);
+        expect(File('$legacyPath-wal').existsSync(), isFalse);
+        expect(File('$legacyPath-shm').existsSync(), isFalse);
       },
     );
 

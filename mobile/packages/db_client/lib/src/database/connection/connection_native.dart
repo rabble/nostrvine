@@ -20,9 +20,7 @@ QueryExecutor openConnection() {
   return LazyDatabase(() async {
     final dbPath = await getSharedDatabasePath();
     final dbFile = prepareDatabaseFile(dbPath);
-    return NativeDatabase(
-      dbFile,
-    );
+    return NativeDatabase(dbFile);
   });
 }
 
@@ -117,8 +115,9 @@ void applyDbCacheVersionReset(String dbPath) {
 /// 1. Legacy does not exist → no-op (fresh install or already migrated).
 /// 2. Legacy exists, new does not → rename legacy to new.
 /// 3. Both exist → migrate legacy only if the destination has no actionable
-///    local-only rows. Otherwise preserve both; replacing a populated
-///    destination can discard local-only data.
+///    local-only rows and legacy does. If neither side has actionable local
+///    data, delete the orphaned legacy file. Otherwise preserve both;
+///    replacing a populated destination can discard local-only data.
 ///
 /// Also migrates the SQLite `-wal` and `-shm` sidecar files if present, so
 /// any unsynced writes in the write-ahead log are preserved.
@@ -130,9 +129,10 @@ Future<void> migrateLegacyDatabase({
   final legacyFile = File(legacyPath);
   if (!legacyFile.existsSync()) return;
 
+  Map<String, List<int>>? legacySidecars;
   final newFile = File(newPath);
   if (newFile.existsSync()) {
-    final legacySidecars = _readDatabaseSidecars(legacyPath);
+    legacySidecars = _readDatabaseSidecars(legacyPath);
     final newHasActionableData = _databaseHasActionableLocalOnlyData(newPath);
     final legacyHasActionableData = _databaseHasActionableLocalOnlyData(
       legacyPath,
@@ -148,19 +148,18 @@ Future<void> migrateLegacyDatabase({
       );
       return;
     } else {
+      _deleteDatabaseAndSidecars(legacyPath);
       return;
     }
   }
 
   Directory(p.dirname(newPath)).createSync(recursive: true);
   legacyFile.renameSync(newPath);
-
-  for (final suffix in const ['-wal', '-shm']) {
-    final legacySidecar = File('$legacyPath$suffix');
-    if (legacySidecar.existsSync()) {
-      legacySidecar.renameSync('$newPath$suffix');
-    }
-  }
+  _moveSidecars(
+    fromPath: legacyPath,
+    toPath: newPath,
+    preservedSidecars: legacySidecars,
+  );
 }
 
 void _backupDestinationDatabase(String dbPath) {
@@ -190,14 +189,11 @@ void _backupLegacyConflictDatabase({
 
   Directory(p.dirname(newPath)).createSync(recursive: true);
   File(legacyPath).renameSync(backupPath);
-  for (final suffix in const ['-wal', '-shm']) {
-    final sidecar = File('$legacyPath$suffix');
-    if (sidecar.existsSync()) {
-      sidecar.renameSync('$backupPath$suffix');
-    } else if (sidecars.containsKey(suffix)) {
-      File('$backupPath$suffix').writeAsBytesSync(sidecars[suffix]!);
-    }
-  }
+  _moveSidecars(
+    fromPath: legacyPath,
+    toPath: backupPath,
+    preservedSidecars: sidecars,
+  );
 }
 
 Map<String, List<int>> _readDatabaseSidecars(String dbPath) {
@@ -209,6 +205,28 @@ Map<String, List<int>> _readDatabaseSidecars(String dbPath) {
     }
   }
   return sidecars;
+}
+
+void _moveSidecars({
+  required String fromPath,
+  required String toPath,
+  Map<String, List<int>>? preservedSidecars,
+}) {
+  for (final suffix in const ['-wal', '-shm']) {
+    final sidecar = File('$fromPath$suffix');
+    if (sidecar.existsSync()) {
+      sidecar.renameSync('$toPath$suffix');
+    } else if (preservedSidecars?.containsKey(suffix) ?? false) {
+      File('$toPath$suffix').writeAsBytesSync(preservedSidecars![suffix]!);
+    }
+  }
+}
+
+void _deleteDatabaseAndSidecars(String dbPath) {
+  for (final suffix in const ['', '-wal', '-shm']) {
+    final file = File('$dbPath$suffix');
+    if (file.existsSync()) file.deleteSync();
+  }
 }
 
 String _nextDatabaseBackupPath(String dbPath, {required String suffix}) {
