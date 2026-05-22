@@ -197,6 +197,20 @@ void main() {
         expect(style.color, VineTheme.vineGreen);
       });
 
+      testWidgets('codeFont returns Chivo Mono 400 13/20/0.25', (tester) async {
+        final style = VineTheme.codeFont();
+        expect(style.fontSize, 13);
+        expect(style.fontWeight, FontWeight.w400);
+        expect(style.height, 20 / 13);
+        expect(style.letterSpacing, 0.25);
+        expect(style.color, VineTheme.whiteText);
+      });
+
+      testWidgets('codeFont accepts a color override', (tester) async {
+        final style = VineTheme.codeFont(color: VineTheme.vineGreen);
+        expect(style.color, VineTheme.vineGreen);
+      });
+
       testWidgets('labelSmallFont returns correct style', (tester) async {
         final style = VineTheme.labelSmallFont();
         expect(style.fontSize, 11);

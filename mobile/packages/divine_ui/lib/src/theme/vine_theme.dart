@@ -234,6 +234,20 @@ class VineTheme {
         color: color,
       );
 
+  /// Inline code: Chivo Mono 400 13/20/0.25 — sized to sit flush with
+  /// `bodyMediumFont` in chat bubbles so a monospace run inside a DM
+  /// message doesn't shift the baseline. Callers pair this with a
+  /// translucent background paint so the code chip reads on both
+  /// sent-bubble (primaryAccessible) and received-bubble
+  /// (surfaceContainer) backgrounds.
+  static TextStyle codeFont({Color color = whiteText}) => GoogleFonts.chivoMono(
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
+    height: 20 / 13,
+    letterSpacing: 0.25,
+    color: color,
+  );
+
   /// Status bar style for dark backgrounds: light icons on both platforms.
   ///
   /// [SystemUiOverlayStyle.light] uses `statusBarBrightness: Brightness.light`
