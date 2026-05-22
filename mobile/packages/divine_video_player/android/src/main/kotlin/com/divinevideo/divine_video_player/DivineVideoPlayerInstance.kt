@@ -101,11 +101,16 @@ internal class DivineVideoPlayerInstance(
         get() = legacyEntry != null ||
             (surfaceProducer?.handlesCropAndRotation() == true)
 
-    /** Accumulated clip durations for global timeline calculation. */
+    /**
+     * Accumulated per-clip start offsets on the global timeline, expressed
+     * in playback (speed-adjusted) time — i.e. the same coordinate space
+     * Dart uses for the editor timeline. Source duration is divided by the
+     * clip's playback speed (slower → longer on the timeline).
+     */
     private var clipOffsets = listOf<Long>()
     /** Per-clip audio volumes (0.0–1.0). Multiplied by [volume] on each clip transition. */
     private var clipVolumes = listOf<Float>()
-    /** Per-clip playback speed multipliers (1.0 = normal). */
+    /** Per-clip playback speed multipliers (1.0 = normal). Never zero. */
     private var clipSpeeds = listOf<Float>()
     private var clipCount = 0
     private var isLooping = false
@@ -312,7 +317,8 @@ internal class DivineVideoPlayerInstance(
             val startMs = (map["startMs"] as? Number)?.toLong() ?: 0L
             val endMs = (map["endMs"] as? Number)?.toLong()
             val clipVol = (map["volume"] as? Number)?.toFloat() ?: 1.0f
-            val clipSpeed = (map["playbackSpeed"] as? Number)?.toFloat() ?: 1.0f
+            val clipSpeed = ((map["playbackSpeed"] as? Number)?.toFloat() ?: 1.0f)
+                .coerceAtLeast(MIN_PLAYBACK_SPEED)
 
             val builder = MediaItem.Builder().setUri(uri)
                 .setClippingConfiguration(
@@ -330,8 +336,11 @@ internal class DivineVideoPlayerInstance(
             speeds.add(clipSpeed)
 
             // If endMs is unknown, we'll recalculate after prepare.
+            // Offsets accumulate in playback time so the global timeline
+            // matches what the editor UI shows (slow clips occupy more
+            // space, fast clips less).
             if (endMs != null) {
-                accumulated += endMs - startMs
+                accumulated += sourceToPlaybackMs(endMs - startMs, clipSpeed)
             }
         }
 
@@ -343,6 +352,8 @@ internal class DivineVideoPlayerInstance(
 
         // Resolve the optional global start position to (clipIndex, localMs)
         // so ExoPlayer begins buffering at the right point immediately.
+        // [globalStartMs] arrives in playback time; ExoPlayer.seekTo expects
+        // source time, so we convert via the resolved clip's speed.
         val globalStartMs = (call.argument<Number>("startPositionMs"))?.toLong() ?: 0L
         var startIndex = 0
         var startLocalMs = globalStartMs
@@ -351,7 +362,10 @@ internal class DivineVideoPlayerInstance(
                 val nextOffset = if (i + 1 < offsets.size) offsets[i + 1] else Long.MAX_VALUE
                 if (globalStartMs < nextOffset) {
                     startIndex = i
-                    startLocalMs = globalStartMs - offsets[i]
+                    startLocalMs = playbackToSourceMs(
+                        globalStartMs - offsets[i],
+                        speeds[i],
+                    )
                     break
                 }
             }
@@ -409,7 +423,9 @@ internal class DivineVideoPlayerInstance(
         // lookup would always land on the last clip.
         refreshClipOffsets(exoPlayer)
 
-        // Find which clip the global position falls into.
+        // [globalMs] is in playback time; resolveGlobalPosition returns the
+        // clip index plus a clip-local position already converted to source
+        // time, which is what ExoPlayer.seekTo expects.
         val resolved = resolveGlobalPosition(globalMs)
 
         exoPlayer.seekTo(resolved.first, resolved.second)
@@ -420,7 +436,9 @@ internal class DivineVideoPlayerInstance(
     }
 
     /**
-     * Resolves a global timeline position to a (clipIndex, localMs) pair.
+     * Resolves a playback-time global position to a (clipIndex, localMs)
+     * pair where [localMs] is in source (clip-local) time, ready for
+     * `ExoPlayer.seekTo`.
      *
      * If clip offsets are all zero (durations not yet known because
      * `prepare()` hasn't finished), falls back to seeking within clip 0
@@ -435,21 +453,22 @@ internal class DivineVideoPlayerInstance(
 
         // Still all zero — fall back to clip 0.
         if (clipCount > 1 && clipOffsets.all { it == 0L }) {
-            return Pair(0, globalMs)
+            return Pair(0, playbackToSourceMs(globalMs, clipSpeeds.getOrElse(0) { 1.0f }))
         }
 
         var targetIndex = 0
-        var localMs = globalMs
+        var localPlaybackMs = globalMs
         for (i in clipOffsets.indices) {
             val nextOffset = if (i + 1 < clipOffsets.size) clipOffsets[i + 1]
             else Long.MAX_VALUE
             if (globalMs < nextOffset) {
                 targetIndex = i
-                localMs = globalMs - clipOffsets[i]
+                localPlaybackMs = globalMs - clipOffsets[i]
                 break
             }
         }
-        return Pair(targetIndex, localMs)
+        val targetSpeed = clipSpeeds.getOrElse(targetIndex) { 1.0f }
+        return Pair(targetIndex, playbackToSourceMs(localPlaybackMs, targetSpeed))
     }
 
     private fun handleSetVolume(call: MethodCall, result: MethodChannel.Result) {
@@ -542,13 +561,7 @@ internal class DivineVideoPlayerInstance(
     /** Syncs audio overlays to the current global video position. */
     private fun syncAudioOverlays() {
         val videoPlayer = player ?: return
-        val currentIndex = videoPlayer.currentMediaItemIndex
-        val localPositionMs = videoPlayer.currentPosition
-        val globalPositionMs = if (currentIndex < clipOffsets.size) {
-            clipOffsets[currentIndex] + localPositionMs
-        } else {
-            localPositionMs
-        }
+        val globalPositionMs = currentGlobalPlaybackMs(videoPlayer)
         audioOverlayManager.update(globalPositionMs, videoPlayer.isPlaying)
     }
 
@@ -569,13 +582,11 @@ internal class DivineVideoPlayerInstance(
         val sink = eventSink ?: return
 
         val currentIndex = exoPlayer.currentMediaItemIndex
-        val localPositionMs = exoPlayer.currentPosition
         val globalPositionMs = when {
             // While buffering toward an initial seek, report the target so the
             // timeline doesn't wander through intermediate positions.
             pendingGlobalStartMs > 0 -> pendingGlobalStartMs
-            currentIndex < clipOffsets.size -> clipOffsets[currentIndex] + localPositionMs
-            else -> localPositionMs
+            else -> currentGlobalPlaybackMs(exoPlayer)
         }
 
         val totalDurationMs = computeTotalDuration(exoPlayer)
@@ -643,7 +654,10 @@ internal class DivineVideoPlayerInstance(
                 // accumulating C.TIME_UNSET across an even number of clips.
                 if (durationMs < 0) 0L else durationMs
             }
-            total += windowDuration
+            // Convert source duration → playback (timeline) duration so the
+            // total matches the speed-adjusted timeline Dart renders.
+            val clipSpeed = clipSpeeds.getOrElse(i) { 1.0f }
+            total += sourceToPlaybackMs(windowDuration, clipSpeed)
         }
         // Update offsets with real durations once media is prepared.
         if (total > 0) refreshClipOffsets(exoPlayer)
@@ -674,7 +688,9 @@ internal class DivineVideoPlayerInstance(
                 allResolved = false
                 continue
             }
-            accum += durationMs
+            // Offsets accumulate in playback (speed-adjusted) time.
+            val clipSpeed = clipSpeeds.getOrElse(i) { 1.0f }
+            accum += sourceToPlaybackMs(durationMs, clipSpeed)
         }
         // Only update when ALL durations are known so partial data from clips
         // that haven't buffered yet doesn't corrupt earlier clip offsets.
@@ -684,12 +700,45 @@ internal class DivineVideoPlayerInstance(
     /** Returns the global buffered position in ms for the current clip. */
     private fun computeBufferedPosition(exoPlayer: ExoPlayer): Long {
         val currentIndex = exoPlayer.currentMediaItemIndex
-        val localBuffered = exoPlayer.bufferedPosition
+        val localBufferedSource = exoPlayer.bufferedPosition
+        val clipSpeed = clipSpeeds.getOrElse(currentIndex) { 1.0f }
+        val localBufferedPlayback = sourceToPlaybackMs(localBufferedSource, clipSpeed)
         return if (currentIndex < clipOffsets.size) {
-            clipOffsets[currentIndex] + localBuffered
+            clipOffsets[currentIndex] + localBufferedPlayback
         } else {
-            localBuffered
+            localBufferedPlayback
         }
+    }
+
+    /**
+     * Returns the current global playback-time position by mapping
+     * ExoPlayer's source-time `currentPosition` through the active clip's
+     * playback speed.
+     */
+    private fun currentGlobalPlaybackMs(exoPlayer: ExoPlayer): Long {
+        val currentIndex = exoPlayer.currentMediaItemIndex
+        val localSourceMs = exoPlayer.currentPosition
+        val clipSpeed = clipSpeeds.getOrElse(currentIndex) { 1.0f }
+        val localPlaybackMs = sourceToPlaybackMs(localSourceMs, clipSpeed)
+        return if (currentIndex < clipOffsets.size) {
+            clipOffsets[currentIndex] + localPlaybackMs
+        } else {
+            localPlaybackMs
+        }
+    }
+
+    /** Source duration / speed = playback (timeline) duration. */
+    private fun sourceToPlaybackMs(sourceMs: Long, speed: Float): Long {
+        if (sourceMs <= 0L) return 0L
+        val safe = speed.coerceAtLeast(MIN_PLAYBACK_SPEED)
+        return (sourceMs.toDouble() / safe.toDouble()).toLong()
+    }
+
+    /** Playback (timeline) duration * speed = source duration. */
+    private fun playbackToSourceMs(playbackMs: Long, speed: Float): Long {
+        if (playbackMs <= 0L) return 0L
+        val safe = speed.coerceAtLeast(MIN_PLAYBACK_SPEED)
+        return (playbackMs.toDouble() * safe.toDouble()).toLong()
     }
 
     // -- player listener --
@@ -720,6 +769,45 @@ internal class DivineVideoPlayerInstance(
             sendStateUpdate()
         }
 
+        override fun onPositionDiscontinuity(
+            oldPosition: Player.PositionInfo,
+            newPosition: Player.PositionInfo,
+            reason: Int,
+        ) {
+            // Apply per-clip speed/volume as early as possible on auto-transition.
+            // [onMediaItemTransition] fires later in the pipeline, after a few
+            // frames of the new clip have already rendered with the previous
+            // clip's playback parameters — audible/visible as a brief
+            // fast-forward (or slow-mo) at the start of the new clip when
+            // speeds differ. Position discontinuity fires at the moment the
+            // playback position jumps to the new media item, so resetting
+            // here closes that window.
+            // The mediaItemIndex guard also makes this a no-op for single-clip
+            // loops (REPEAT_MODE_ALL with one item): both indices are 0, so the
+            // block is skipped entirely → seamless loop regardless of speed.
+            if (reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION &&
+                newPosition.mediaItemIndex != oldPosition.mediaItemIndex
+            ) {
+                val newIndex = newPosition.mediaItemIndex
+                val oldIndex = oldPosition.mediaItemIndex
+                val newSpeed = clipSpeeds.getOrElse(newIndex) { 1.0f }
+                val oldSpeed = clipSpeeds.getOrElse(oldIndex) { 1.0f }
+                player?.volume = (clipVolumes.getOrElse(newIndex) { 1.0f }) * volume.toFloat()
+                player?.setPlaybackParameters(PlaybackParameters(newSpeed))
+                // setPlaybackParameters alone does not flush the audio sink
+                // (Sonic) buffer that was filled at the previous clip's rate.
+                // Audible result: the first ~500 ms of the new clip plays
+                // at the previous clip's speed before Sonic catches up. A
+                // [seekTo] of the new clip's start forces a renderer flush
+                // so subsequent samples are stretched at the new rate from
+                // frame zero. Only do this when the speed actually differs,
+                // to avoid an unnecessary stutter on equal-speed transitions.
+                if (newSpeed != oldSpeed) {
+                    player?.seekTo(newIndex, 0L)
+                }
+            }
+        }
+
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             // When ExoPlayer auto-advances to the next playlist item it reuses the
             // decoder without reconfiguring the output surface rotation. Force a
@@ -734,13 +822,22 @@ internal class DivineVideoPlayerInstance(
                 }
             }
             // Apply per-clip volume and speed for the clip that just started.
-            // Covers both REASON_AUTO (normal advance) and REASON_REPEAT
-            // (REPEAT_MODE_ALL loops the full playlist back to the first clip).
+            // [onPositionDiscontinuity] already handles the speed/volume switch
+            // (including the Sonic-flush seekTo) for every automatic transition,
+            // including REPEAT_MODE_ALL loops. This block is therefore a
+            // safety-net only: it covers any edge case where
+            // onPositionDiscontinuity did not fire (e.g. a single-item repeat
+            // in REPEAT_MODE_ONE where mediaItemIndex does not change).
+            // The seekTo flush is intentionally NOT repeated here — a second
+            // seekTo on the same frame causes a double-stutter at the loop
+            // restart point without any audio benefit.
             if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO ||
-                reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT) {
+                reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT
+            ) {
                 val newIndex = player?.currentMediaItemIndex ?: 0
+                val newSpeed = clipSpeeds.getOrElse(newIndex) { 1.0f }
                 player?.volume = (clipVolumes.getOrElse(newIndex) { 1.0f }) * volume.toFloat()
-                player?.setPlaybackParameters(PlaybackParameters(clipSpeeds.getOrElse(newIndex) { 1.0f }))
+                player?.setPlaybackParameters(PlaybackParameters(newSpeed))
             }
             syncAudioOverlays()
             sendStateUpdate()
@@ -895,5 +992,12 @@ internal class DivineVideoPlayerInstance(
 
     companion object {
         private const val POSITION_UPDATE_INTERVAL_MS = 200L
+
+        /**
+         * Floor for clip playback speed. Prevents division by zero when
+         * converting between source and playback time, and matches the
+         * sensible lower bound the editor UI exposes.
+         */
+        private const val MIN_PLAYBACK_SPEED = 0.001f
     }
 }
