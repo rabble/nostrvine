@@ -892,7 +892,6 @@ void main() {
               InfiniteVideoFeed(
                 videos: [_makeVideo('reactivate')],
                 cache: cache,
-                isActive: true,
                 prefetchCount: 0,
                 preloadGracePeriod: Duration.zero,
               ),
