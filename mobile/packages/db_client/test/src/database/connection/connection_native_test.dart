@@ -238,16 +238,16 @@ void main() {
         File('$legacyPath-shm').writeAsBytesSync(const [5]);
         _createSqliteDatabase(newPath, eventCount: 1);
 
+        expect(File('$legacyPath-wal').existsSync(), isTrue);
+
         await migrateLegacyDatabase(legacyPath: legacyPath, newPath: newPath);
 
         expect(_draftCount(newPath), equals(1));
         expect(File(legacyPath).existsSync(), isFalse);
+        expect(File('$legacyPath-wal').existsSync(), isFalse);
+        expect(File('$legacyPath-shm').existsSync(), isFalse);
         expect(File(_destinationBackupPath(newPath)).existsSync(), isTrue);
         expect(_eventCount(_destinationBackupPath(newPath)), equals(1));
-        expect(File('$newPath-wal').existsSync(), isTrue);
-        expect(File('$newPath-wal').lengthSync(), greaterThan(0));
-        expect(File('$newPath-shm').existsSync(), isTrue);
-        expect(File('$newPath-shm').lengthSync(), greaterThan(0));
       },
     );
 
