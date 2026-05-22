@@ -411,6 +411,121 @@ void main() {
     });
   });
 
+  group('playback speed', () {
+    Future<MediaKitLinuxVideoPlayerBackend> buildBackend(
+      _FakePlatformPlayer fakePlayer,
+    ) async {
+      final backend = MediaKitLinuxVideoPlayerBackend(
+        mediaKitInitializer: _noop,
+        playerFactory: () => Player(platformPlayer: fakePlayer),
+        videoControllerFactory: (_) => _FakeVideoController(),
+        videoControllerReady: (controller) =>
+            (controller as _FakeVideoController).ready.future,
+        videoViewBuilder: (_) => const SizedBox.shrink(),
+        durationProbe: (_) async => 10.seconds,
+      );
+      await backend.initialize(onStateChanged: (_) {}, onError: (_) {});
+      return backend;
+    }
+
+    test(
+      'playlist-index change re-applies per-clip speed when authored speeds '
+      'exist',
+      () async {
+        final fakePlayer = _FakePlatformPlayer();
+        final backend = await buildBackend(fakePlayer);
+
+        await backend.setClips([
+          VideoClip(
+            uri: 'file:///clip-1.mp4',
+            end: 4.seconds,
+            playbackSpeed: 0.5,
+          ),
+          VideoClip(
+            uri: 'file:///clip-2.mp4',
+            end: 6.seconds,
+            playbackSpeed: 2,
+          ),
+        ]);
+
+        // Simulate mpv advancing to the second clip.
+        fakePlayer.emitPlaylistIndex(1);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(fakePlayer.lastRate, 2.0);
+      },
+    );
+
+    test(
+      'playlist-index change does NOT call setRate when all clips are 1.0x',
+      () async {
+        final fakePlayer = _FakePlatformPlayer();
+        final backend = await buildBackend(fakePlayer);
+
+        await backend.setClips([
+          VideoClip(uri: 'file:///clip-1.mp4', end: 4.seconds),
+          VideoClip(uri: 'file:///clip-2.mp4', end: 6.seconds),
+        ]);
+
+        // Record rate after setClips (firstOrNull → 1.0) to establish
+        // baseline, then simulate index advance.
+        final rateBeforeIndexChange = fakePlayer.lastRate;
+        fakePlayer.emitPlaylistIndex(1);
+        await Future<void>.delayed(Duration.zero);
+
+        // Rate should be unchanged (no authored speed → branch not entered).
+        expect(fakePlayer.lastRate, rateBeforeIndexChange);
+      },
+    );
+
+    test(
+      'setClips converts slow-clip source duration to playback duration',
+      () async {
+        final emittedStates = <DivineVideoPlayerState>[];
+        final fakePlayer = _FakePlatformPlayer();
+        final backend = MediaKitLinuxVideoPlayerBackend(
+          mediaKitInitializer: _noop,
+          playerFactory: () => Player(platformPlayer: fakePlayer),
+          videoControllerFactory: (_) => _FakeVideoController(),
+          videoControllerReady: (controller) =>
+              (controller as _FakeVideoController).ready.future,
+          videoViewBuilder: (_) => const SizedBox.shrink(),
+          durationProbe: (_) async => 10.seconds,
+        );
+        await backend.initialize(
+          onStateChanged: emittedStates.add,
+          onError: (_) {},
+        );
+
+        // 4-second clip at 0.5x speed → 8 s wall-clock duration.
+        await backend.setClips([
+          VideoClip(
+            uri: 'file:///clip-slow.mp4',
+            end: 4.seconds,
+            playbackSpeed: 0.5,
+          ),
+        ]);
+
+        expect(emittedStates.last.duration, 8.seconds);
+      },
+    );
+
+    test('seekTo with slow clip uses playback-to-source conversion', () async {
+      final fakePlayer = _FakePlatformPlayer();
+      final backend = await buildBackend(fakePlayer);
+
+      // 10-second clip at 0.5x → 20 s playback.
+      await backend.setClips([
+        const VideoClip(uri: 'file:///clip-slow.mp4', playbackSpeed: 0.5),
+      ]);
+
+      // Seek to playback second 4 → source second 2.
+      await backend.seekTo(4.seconds);
+
+      expect(fakePlayer.lastSeekPosition, 2.seconds);
+    });
+  });
+
   test(
     'linux plugin registration is a no-op',
     () => expect(DivineVideoPlayerLinuxPlugin.registerWith, returnsNormally),
