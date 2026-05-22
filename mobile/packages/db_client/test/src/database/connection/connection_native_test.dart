@@ -251,7 +251,7 @@ void main() {
       'restores legacy DB when destination exists but has no local data',
       () async {
         _createSqliteDatabase(legacyPath, draftCount: 1);
-        _createSqliteDatabase(newPath, draftCount: 0);
+        _createSqliteDatabase(newPath);
 
         await migrateLegacyDatabase(
           legacyPath: legacyPath,
@@ -285,7 +285,7 @@ void main() {
       'restores legacy DB when destination only has empty sidecars',
       () async {
         _createSqliteDatabase(legacyPath, draftCount: 1);
-        _createSqliteDatabase(newPath, draftCount: 0);
+        _createSqliteDatabase(newPath);
         File('$newPath-wal').createSync();
         File('$newPath-shm').createSync();
 
@@ -302,7 +302,7 @@ void main() {
     );
 
     test(
-      'restores legacy DB and backs up non-empty destination sidecars when destination has no actionable local rows',
+      'backs up sidecars when destination has no actionable local rows',
       () async {
         _createSqliteDatabase(legacyPath, draftCount: 1);
         _createSqliteDatabase(
@@ -356,7 +356,7 @@ void main() {
     );
 
     test(
-      'preserves destination and backs up legacy beside it when both databases have local data',
+      'backs up legacy beside destination when both DBs have local data',
       () async {
         _createSqliteDatabase(legacyPath, draftCount: 1);
         File('$legacyPath-wal').writeAsBytesSync(const [4]);

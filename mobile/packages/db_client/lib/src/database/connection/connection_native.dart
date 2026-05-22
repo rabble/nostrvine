@@ -227,7 +227,7 @@ bool _databaseHasActionableLocalOnlyData(String dbPath) {
   Database db;
   try {
     db = sqlite3.open(dbPath, mode: OpenMode.readOnly);
-  } catch (_) {
+  } on SqliteException {
     return true;
   }
 
@@ -239,7 +239,7 @@ bool _databaseHasActionableLocalOnlyData(String dbPath) {
       if (rows.isNotEmpty) return true;
     }
     return false;
-  } catch (_) {
+  } on SqliteException {
     return true;
   } finally {
     db.dispose();
@@ -257,7 +257,8 @@ bool _databaseHasTable(Database db, String tableName) {
 const _localOnlyDataQueries = [
   _LocalOnlyDataQuery(
     'pending_uploads',
-    "SELECT 1 FROM pending_uploads WHERE status NOT IN ('published', 'failed') LIMIT 1",
+    'SELECT 1 FROM pending_uploads WHERE status NOT IN '
+        "('published', 'failed') LIMIT 1",
   ),
   _LocalOnlyDataQuery(
     'pending_actions',
@@ -265,7 +266,8 @@ const _localOnlyDataQueries = [
   ),
   _LocalOnlyDataQuery(
     'outgoing_dms',
-    "SELECT 1 FROM outgoing_dms WHERE recipient_wrap_status != 'sent' OR self_wrap_status != 'sent' LIMIT 1",
+    "SELECT 1 FROM outgoing_dms WHERE recipient_wrap_status != 'sent' "
+        "OR self_wrap_status != 'sent' LIMIT 1",
   ),
   _LocalOnlyDataQuery(
     'personal_reactions',
