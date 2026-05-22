@@ -2561,6 +2561,14 @@ class AppLocalizationsId extends AppLocalizations {
   String get authSignBackIn => 'Masuk kembali';
 
   @override
+  String get authRecoveryDraftsOwner =>
+      'Your drafts and clips are saved for this account';
+
+  @override
+  String get authRecoveryOtherAccountWarning =>
+      'Signing in here will hide those drafts and clips';
+
+  @override
   String get authTermsPrefix =>
       'Dengan memilih opsi di atas, kamu mengonfirmasi bahwa kamu berusia minimal 16 tahun dan setuju dengan ';
 

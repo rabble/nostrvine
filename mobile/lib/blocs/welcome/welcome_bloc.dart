@@ -9,6 +9,7 @@ import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:models/models.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
+import 'package:openvine/utils/npub_hex.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 part 'welcome_event.dart';
@@ -64,8 +65,16 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
     final pendingPubkey = _authService.pendingAccountSwitchPubkey;
     _authService.pendingAccountSwitchPubkey = null;
 
-    // Load known accounts from the registry
-    final knownAccounts = await _authService.getKnownAccounts();
+    // Load known accounts and the session-recovery anchor in parallel.
+    final accountsFuture = _authService.getKnownAccounts();
+    final anchorFuture = _authService.getSessionRecoveryAnchorNpub();
+    final knownAccounts = await accountsFuture;
+    final anchorNpub = await anchorFuture;
+
+    // Decode the npub anchor to hex so it can be compared with pubkeyHex
+    // fields in the account list. Use null on any decode failure so the
+    // mismatch detection degrades gracefully rather than crashing.
+    final anchorPubkeyHex = npubToHexOrNull(anchorNpub);
 
     if (knownAccounts.isEmpty) {
       Log.info(
@@ -78,7 +87,8 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
     }
 
     Log.info(
-      'WelcomeBloc: found ${knownAccounts.length} known account(s)',
+      'WelcomeBloc: found ${knownAccounts.length} known account(s)'
+      '${anchorPubkeyHex != null ? ", recovery anchor=$anchorPubkeyHex" : ""}',
       name: 'WelcomeBloc',
       category: LogCategory.auth,
     );
@@ -93,11 +103,28 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
         )
         .toList();
 
+    // Determine the initial selection:
+    //
+    // Priority order:
+    //   1. pendingPubkey — explicit account-switch from settings (highest priority)
+    //   2. event.initialSelectedPubkeyHex — router deep-link pre-selection
+    //   3. anchorPubkeyHex — the account the user was signed into at sign-out
+    //      (avoids defaulting to a different account that was just restored
+    //      via _redirectRecoveryToRemainingAccount and may show as "most recent")
+    //   4. null — falls back to previousAccounts.first (most recently used)
+    //
+    // Using the anchor as the default pre-selection ensures the welcome screen
+    // highlights the account the user was actually on, not the one that cold-
+    // start recovery would have silently switched to.
+    final initialSelection =
+        pendingPubkey ?? event.initialSelectedPubkeyHex ?? anchorPubkeyHex;
+
     emit(
       state.copyWith(
         status: WelcomeStatus.loaded,
         previousAccounts: accountsWithoutProfiles,
-        selectedPubkeyHex: pendingPubkey ?? event.initialSelectedPubkeyHex,
+        selectedPubkeyHex: initialSelection,
+        recoveryAnchorPubkeyHex: anchorPubkeyHex,
       ),
     );
 

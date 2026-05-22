@@ -55,6 +55,7 @@ final class WelcomeState extends Equatable {
     this.previousAccounts = const [],
     this.selectedPubkeyHex,
     this.signingInPubkeyHex,
+    this.recoveryAnchorPubkeyHex,
   });
 
   /// Current status of welcome operations.
@@ -69,6 +70,14 @@ final class WelcomeState extends Equatable {
 
   /// The pubkey of the account currently being signed into (for loading state).
   final String? signingInPubkeyHex;
+
+  /// The pubkey (hex) that was actively signed in at the time of the most
+  /// recent sign-out. Set from the session-recovery anchor written by
+  /// [AuthService.signOut] and decoded from npub to hex by [WelcomeBloc].
+  ///
+  /// Null when no anchor was recorded (clean install, or sign-in has already
+  /// cleared the anchor, or the anchor npub could not be decoded).
+  final String? recoveryAnchorPubkeyHex;
 
   /// Whether any returning users were detected.
   bool get hasReturningUsers => previousAccounts.isNotEmpty;
@@ -86,15 +95,32 @@ final class WelcomeState extends Equatable {
   /// Whether an auth action is in progress.
   bool get isAccepting => status == WelcomeStatus.accepting;
 
+  /// True when the session recovery anchor points to a different account than
+  /// the one currently selected for sign-in.
+  ///
+  /// This happens after a destructive sign-out when the cold-start session
+  /// restore path would have landed on a different account than the one the
+  /// user was actively using. The welcome screen uses this to show a
+  /// contextual banner explaining that local drafts/clips belong to the anchor
+  /// account and that choosing a different account will hide them.
+  bool get hasCrossAccountMismatch {
+    if (recoveryAnchorPubkeyHex == null) return false;
+    final selected = selectedAccount;
+    if (selected == null) return false;
+    return recoveryAnchorPubkeyHex != selected.pubkeyHex;
+  }
+
   /// Creates a copy of this state with the given fields replaced.
   WelcomeState copyWith({
     WelcomeStatus? status,
     List<PreviousAccount>? previousAccounts,
     String? selectedPubkeyHex,
     String? signingInPubkeyHex,
+    String? recoveryAnchorPubkeyHex,
     bool clearAccounts = false,
     bool clearSigningIn = false,
     bool clearSelectedPubkey = false,
+    bool clearRecoveryAnchor = false,
   }) {
     return WelcomeState(
       status: status ?? this.status,
@@ -107,6 +133,9 @@ final class WelcomeState extends Equatable {
       signingInPubkeyHex: clearSigningIn
           ? null
           : (signingInPubkeyHex ?? this.signingInPubkeyHex),
+      recoveryAnchorPubkeyHex: clearRecoveryAnchor
+          ? null
+          : (recoveryAnchorPubkeyHex ?? this.recoveryAnchorPubkeyHex),
     );
   }
 
@@ -116,5 +145,6 @@ final class WelcomeState extends Equatable {
     previousAccounts,
     selectedPubkeyHex,
     signingInPubkeyHex,
+    recoveryAnchorPubkeyHex,
   ];
 }

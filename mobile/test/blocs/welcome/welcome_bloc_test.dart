@@ -13,6 +13,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/welcome/welcome_bloc.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
+import 'package:openvine/utils/nostr_key_utils.dart';
 
 class _MockUserProfilesDao extends Mock implements UserProfilesDao {}
 
@@ -91,6 +92,9 @@ void main() {
     mockAuthService = _MockAuthService();
 
     when(() => mockAuthService.getKnownAccounts()).thenAnswer((_) async => []);
+    when(
+      () => mockAuthService.getSessionRecoveryAnchorNpub(),
+    ).thenAnswer((_) async => null);
     when(() => mockAuthService.acceptTerms()).thenAnswer((_) async {});
     when(
       () => mockAuthService.signInForAccount(any(), any()),
@@ -672,10 +676,195 @@ void main() {
       expect(cleared.signingInPubkeyHex, isNull);
     });
 
-    test('copyWith status resets from error', () {
-      const state = WelcomeState(status: WelcomeStatus.error);
-      final cleared = state.copyWith(status: WelcomeStatus.loaded);
-      expect(cleared.status, equals(WelcomeStatus.loaded));
+    test('copyWith clearRecoveryAnchor removes anchor', () {
+      const state = WelcomeState(recoveryAnchorPubkeyHex: _testPubkeyHex);
+      final cleared = state.copyWith(clearRecoveryAnchor: true);
+      expect(cleared.recoveryAnchorPubkeyHex, isNull);
     });
+
+    group('hasCrossAccountMismatch', () {
+      test('is false when no recovery anchor is set', () {
+        const state = WelcomeState(
+          previousAccounts: [_testPreviousAccount, _testPreviousAccount2],
+        );
+        expect(state.hasCrossAccountMismatch, isFalse);
+      });
+
+      test('is false when no accounts are present', () {
+        const state = WelcomeState(
+          recoveryAnchorPubkeyHex: _testPubkeyHex,
+        );
+        expect(state.hasCrossAccountMismatch, isFalse);
+      });
+
+      test(
+        'is false when the selected account matches the recovery anchor',
+        () {
+          // Anchor IS the selected account — safe default, no banner needed.
+          const state = WelcomeState(
+            previousAccounts: [_testPreviousAccount, _testPreviousAccount2],
+            selectedPubkeyHex: _testPubkeyHex,
+            recoveryAnchorPubkeyHex: _testPubkeyHex,
+          );
+          expect(state.hasCrossAccountMismatch, isFalse);
+        },
+      );
+
+      test(
+        'is true when the selected account differs from the recovery anchor',
+        () {
+          // User has switched dropdown to account 2, but anchor is account 1.
+          const state = WelcomeState(
+            previousAccounts: [_testPreviousAccount, _testPreviousAccount2],
+            selectedPubkeyHex: _testPubkeyHex2,
+            recoveryAnchorPubkeyHex: _testPubkeyHex,
+          );
+          expect(state.hasCrossAccountMismatch, isTrue);
+        },
+      );
+
+      test(
+        'is true when selectedPubkeyHex is null (defaults to first account) '
+        'and first account differs from anchor',
+        () {
+          // Anchor points to account 2, but no explicit selection so
+          // selectedAccount falls back to previousAccounts.first (account 1).
+          const state = WelcomeState(
+            previousAccounts: [_testPreviousAccount, _testPreviousAccount2],
+            recoveryAnchorPubkeyHex: _testPubkeyHex2,
+          );
+          expect(state.hasCrossAccountMismatch, isTrue);
+        },
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Session recovery anchor — WelcomeBloc._onStarted (#4624)
+  // ---------------------------------------------------------------------------
+
+  group('WelcomeStarted with session recovery anchor', () {
+    test(
+      'pre-selects the anchor account when anchor differs from '
+      'most-recently-used first account (cross-account scenario)',
+      () async {
+        // Simulate the incident: most-recently-used account is account 2
+        // (stamped by _redirectRecoveryToRemainingAccount), but the recovery
+        // anchor is account 1 (what the user was actually signed into).
+        // The bloc should pre-select account 1 so the welcome screen shows
+        // the right account by default.
+
+        // _testKnownAccount has pubkey1, _testKnownAccount2 has pubkey2.
+        // Arrange the list so account2 is "first" (most recently used).
+        final knownAccounts = [_testKnownAccount2, _testKnownAccount];
+        when(
+          () => mockAuthService.getKnownAccounts(),
+        ).thenAnswer((_) async => knownAccounts);
+
+        // Anchor points to account 1 (the user's actual active account).
+        final anchorNpub = NostrKeyUtils.encodePubKey(_testPubkeyHex);
+        when(
+          () => mockAuthService.getSessionRecoveryAnchorNpub(),
+        ).thenAnswer((_) async => anchorNpub);
+
+        final bloc = WelcomeBloc(
+          userProfilesDao: mockUserProfilesDao,
+          authService: mockAuthService,
+        );
+        bloc.add(const WelcomeStarted());
+        // Wait for _onStarted to complete (accounts load is async).
+        await Future<void>.delayed(Duration.zero);
+
+        final state = bloc.state;
+        expect(
+          state.selectedPubkeyHex,
+          equals(_testPubkeyHex),
+          reason:
+              'The anchor account should be pre-selected on the welcome '
+              'screen even when it is not the most-recently-used account, '
+              'preventing the user from unknowingly signing into the wrong '
+              'account',
+        );
+        expect(
+          state.recoveryAnchorPubkeyHex,
+          equals(_testPubkeyHex),
+          reason: 'The recovery anchor pubkey should be stored in state',
+        );
+        expect(
+          state.hasCrossAccountMismatch,
+          isFalse,
+          reason:
+              'hasCrossAccountMismatch should be false because the '
+              'pre-selected account matches the anchor (safe default)',
+        );
+
+        await bloc.close();
+      },
+    );
+
+    test(
+      'does not set recoveryAnchorPubkeyHex when no anchor is stored '
+      '(normal single-account flow)',
+      () async {
+        when(
+          () => mockAuthService.getKnownAccounts(),
+        ).thenAnswer((_) async => [_testKnownAccount]);
+        when(
+          () => mockAuthService.getSessionRecoveryAnchorNpub(),
+        ).thenAnswer((_) async => null);
+
+        final bloc = WelcomeBloc(
+          userProfilesDao: mockUserProfilesDao,
+          authService: mockAuthService,
+        );
+        bloc.add(const WelcomeStarted());
+        await Future<void>.delayed(Duration.zero);
+
+        expect(bloc.state.recoveryAnchorPubkeyHex, isNull);
+        expect(bloc.state.hasCrossAccountMismatch, isFalse);
+
+        await bloc.close();
+      },
+    );
+
+    test(
+      'event.initialSelectedPubkeyHex takes priority over the recovery anchor '
+      'for pre-selection (router deep-link flow)',
+      () async {
+        // When the router passes initialSelectedPubkeyHex (e.g., from the
+        // account-switcher deep link ?selectedPubkey=...), that explicit
+        // selection must win over the recovery anchor.
+        final knownAccounts = [_testKnownAccount, _testKnownAccount2];
+        when(
+          () => mockAuthService.getKnownAccounts(),
+        ).thenAnswer((_) async => knownAccounts);
+
+        final anchorNpub = NostrKeyUtils.encodePubKey(_testPubkeyHex);
+        when(
+          () => mockAuthService.getSessionRecoveryAnchorNpub(),
+        ).thenAnswer((_) async => anchorNpub);
+
+        final bloc = WelcomeBloc(
+          userProfilesDao: mockUserProfilesDao,
+          authService: mockAuthService,
+        );
+        // Pass account2 as the router-provided initial selection.
+        bloc.add(
+          const WelcomeStarted(initialSelectedPubkeyHex: _testPubkeyHex2),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        // Router-provided selection wins over anchor.
+        expect(
+          bloc.state.selectedPubkeyHex,
+          equals(_testPubkeyHex2),
+          reason:
+              'An explicit initialSelectedPubkeyHex from the router '
+              'must take priority over the recovery anchor pre-selection',
+        );
+
+        await bloc.close();
+      },
+    );
   });
 }

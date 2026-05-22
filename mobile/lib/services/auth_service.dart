@@ -46,6 +46,13 @@ const _kAuthSourceKey = 'authentication_source';
 // Key for the last-used account npub (used to restore the correct identity on restart)
 const _kLastUsedNpubKey = 'last_used_npub';
 
+// Key for the session recovery anchor: the npub that was actively signed in at
+// the time of the most recent sign-out. Written at the start of signOut() so
+// the welcome screen can detect cross-account cold-start restores and surface
+// a confirmation banner before silently completing a switch. Cleared by
+// _setupUserSession() once the user has explicitly signed back in.
+const _kSessionRecoveryAnchorKey = 'session_recovery_anchor_npub';
+
 // Keys for bunker connection persistence
 const _kBunkerInfoKey = 'bunker_info';
 
@@ -624,8 +631,30 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   Future<void> _restoreDivineRpcOrFallbackUnauthenticated(
     KeycastSession? session,
   ) async {
-    // If session is valid with RPC access, sign in directly.
+    // Read the session recovery anchor once. Both the direct-restore and the
+    // refresh paths below use it to detect cross-account cold-start restores.
+    final prefs = await SharedPreferences.getInstance();
+    final anchorNpub = prefs.getString(_kSessionRecoveryAnchorKey);
+
+    // If session is valid with RPC access, check whether it belongs to the
+    // same account the user was signed into when they last signed out.
+    //
+    // If a session-recovery anchor exists and the session belongs to a
+    // DIFFERENT account (cross-account cold-start restore), do NOT silently
+    // complete the sign-in. Instead route to unauthenticated so the welcome
+    // screen can surface a confirmation banner — the user gets to decide
+    // explicitly which account they want. If no anchor exists (fresh install,
+    // or first sign-out after the fix) we fall through to the original
+    // behaviour to avoid breaking the normal single-account flow.
     if (session != null && session.hasRpcAccess) {
+      if (_isCrossAccountRestore(
+        candidatePubkey: session.userPubkey,
+        anchorNpub: anchorNpub,
+      )) {
+        _setAuthState(AuthState.unauthenticated);
+        return;
+      }
+
       Log.info(
         'initialize: Divine OAuth session found with RPC access '
         '(no local key)',
@@ -643,11 +672,37 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       category: LogCategory.auth,
     );
     if (_oauthClient != null) {
-      final refreshed = await _tryRefreshOAuthSession(
-        caller: 'initialize',
+      final refreshed = await _refreshOAuthSession(
         expectedOwnerPubkey: session?.userPubkey,
       );
-      if (refreshed) return;
+
+      if (refreshed != null) {
+        // Apply the same cross-account guard to the refreshed session.
+        // The OAuth server is authoritative about which account a token
+        // belongs to, but we must not silently complete a sign-in as a
+        // different account than the one the user was on at sign-out.
+        if (_isCrossAccountRestore(
+          candidatePubkey: refreshed.userPubkey,
+          anchorNpub: anchorNpub,
+        )) {
+          // Do NOT consume the refresh or set _hasExpiredOAuthSession=false
+          // here — leave the user unauthenticated and let the welcome screen
+          // handle the confirmation. The refreshed token is discarded; the
+          // user will go through a full re-auth for whichever account they
+          // confirm.
+          _setAuthState(AuthState.unauthenticated);
+          return;
+        }
+
+        Log.info(
+          'initialize: refresh succeeded',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        await _clearDismissedDivineLoginBannerForCurrentUser();
+        await signInWithDivineOAuth(refreshed);
+        return;
+      }
     }
 
     // Refresh failed, no local keys — unauthenticated.
@@ -659,6 +714,31 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       category: LogCategory.auth,
     );
     _setAuthState(AuthState.unauthenticated);
+  }
+
+  /// Returns true when [candidatePubkey] belongs to a different account than
+  /// the one recorded in [anchorNpub] at sign-out time.
+  ///
+  /// Returns false (no block) when either side is absent — if there is no
+  /// anchor (fresh install, pre-fix first run) or the session has no bound
+  /// pubkey, the cross-account guard degrades gracefully rather than breaking
+  /// the normal single-account flow.
+  bool _isCrossAccountRestore({
+    required String? candidatePubkey,
+    required String? anchorNpub,
+  }) {
+    if (anchorNpub == null || candidatePubkey == null) return false;
+    final candidateNpub = NostrKeyUtils.encodePubKey(candidatePubkey);
+    if (anchorNpub == candidateNpub) return false;
+
+    Log.warning(
+      'initialize: cross-account session restore blocked — '
+      'anchor=$anchorNpub, candidate=$candidateNpub. '
+      'Routing to unauthenticated for explicit confirmation.',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
+    return true;
   }
 
   /// Attempt to silently refresh an expired OAuth session.
@@ -685,6 +765,20 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       category: LogCategory.auth,
     );
     return _tryRefreshOAuthSession(caller: 'tryRefreshExpiredSession');
+  }
+
+  /// Returns the npub that was actively signed in at the time of the most
+  /// recent sign-out, or null if no anchor has been recorded.
+  ///
+  /// The welcome screen uses this to detect when a cold-start session restore
+  /// would land on a different account than the one the user was just using,
+  /// and surfaces a confirmation banner before the switch completes silently.
+  ///
+  /// The anchor is written at the start of [signOut] and cleared by
+  /// [_setupUserSession] once the user has explicitly signed back in.
+  Future<String?> getSessionRecoveryAnchorNpub() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_kSessionRecoveryAnchorKey);
   }
 
   /// Shared OAuth session refresh logic used by both [initialize] and
@@ -3296,6 +3390,42 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       // Clear TOS acceptance on any logout - user must re-accept when logging
       // back in
       final prefs = await SharedPreferences.getInstance();
+
+      // Capture the leaving account as the session recovery anchor BEFORE any
+      // teardown — but only for non-destructive sign-out (account switch).
+      //
+      // The welcome screen reads this after sign-out to detect when a cold-
+      // start restore would land on a different account, and surfaces a
+      // confirmation banner so the user can redirect the switch explicitly.
+      //
+      // On DESTRUCTIVE sign-out (deleteKeys=true), the user is intentionally
+      // removing the account. The _redirectRecoveryToRemainingAccount path
+      // points initialize() at the next-best account, which should restore
+      // automatically without requiring confirmation. Clear any stale anchor
+      // so it does not block that automatic restore.
+      //
+      // The anchor is cleared by _setupUserSession() after a successful sign-in.
+      final leavingNpub = _currentKeyContainer?.npub;
+      if (!deleteKeys && leavingNpub != null) {
+        await prefs.setString(_kSessionRecoveryAnchorKey, leavingNpub);
+        Log.debug(
+          'signOut: recorded session recovery anchor=$leavingNpub',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+      } else {
+        // Destructive sign-out: clear any stale anchor so the remaining
+        // account's automatic restore is not blocked by the guard in
+        // _restoreDivineRpcOrFallbackUnauthenticated.
+        await prefs.remove(_kSessionRecoveryAnchorKey);
+        Log.debug(
+          'signOut: cleared session recovery anchor '
+          '(deleteKeys=$deleteKeys)',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+      }
+
       // On destructive sign-out, redirect recovery prefs to the next
       // remaining account so initialize() can restore it. Only clear when
       // no accounts remain — otherwise the user loses access to account A
@@ -4270,6 +4400,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       await prefs.setString(_kAuthSourceKey, source.code);
 
       await prefs.setString(_kLastUsedNpubKey, keyContainer.npub);
+
+      // Clear the session recovery anchor now that the user has explicitly
+      // signed in. A stale anchor must not persist to interfere with future
+      // welcome-screen mismatch detection after the next sign-out.
+      await prefs.remove(_kSessionRecoveryAnchorKey);
 
       final followingCacheKey = 'following_list_${keyContainer.publicKeyHex}';
       final hasFollowingCache = prefs.containsKey(followingCacheKey);

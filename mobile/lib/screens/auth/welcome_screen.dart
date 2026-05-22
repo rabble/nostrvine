@@ -285,6 +285,15 @@ class _ReturningUserLayout extends StatelessWidget {
                 profile: account.profile,
               ),
 
+              // Cross-account recovery banner: visible when the cold-start
+              // session restore would have landed on a different account than
+              // the one the user was actively using at sign-out.
+              if (state.hasCrossAccountMismatch)
+                _CrossAccountRecoveryBanner(
+                  isSelectedAccountAnchor:
+                      account.pubkeyHex == state.recoveryAnchorPubkeyHex,
+                ),
+
               const Spacer(),
 
               if (lastError != null) ...[
@@ -339,6 +348,55 @@ class _ReturningUserLayout extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Contextual banner shown on the welcome screen when a cold-start session
+/// restore would have landed on a different account than the one the user was
+/// actively using at sign-out.
+///
+/// When [isSelectedAccountAnchor] is true the selected account IS the anchor
+/// account (the safe default), so the banner reassures the user that their
+/// local drafts/clips belong here. When false, the user has explicitly switched
+/// the dropdown to a different account, and the banner warns that those
+/// drafts/clips will be hidden after sign-in.
+class _CrossAccountRecoveryBanner extends StatelessWidget {
+  const _CrossAccountRecoveryBanner({required this.isSelectedAccountAnchor});
+
+  final bool isSelectedAccountAnchor;
+
+  @override
+  Widget build(BuildContext context) {
+    final message = isSelectedAccountAnchor
+        ? context.l10n.authRecoveryDraftsOwner
+        : context.l10n.authRecoveryOtherAccountWarning;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: VineTheme.accentYellowBackground,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.info_outline,
+              size: 16,
+              color: VineTheme.accentYellow,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: VineTheme.bodySmallFont(color: VineTheme.accentYellow),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -453,6 +453,13 @@ const _knownUntranslatedDebt = {
   // Translators will pick this up in a follow-up pass; until then non-English
   // locales fall back to the English source.
   'feedLoadingMore',
+  // Added by the cross-account session recovery banner on the welcome screen
+  // (#4624). The banner warns when a cold-start restore would land on a
+  // different account than the one the user was using. Translators will pick
+  // these up in a follow-up pass; until then non-English locales fall back to
+  // the English source.
+  'authRecoveryDraftsOwner',
+  'authRecoveryOtherAccountWarning',
 };
 
 Map<String, Object?> _readArb(File file) {

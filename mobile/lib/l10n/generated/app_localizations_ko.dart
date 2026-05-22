@@ -2468,6 +2468,14 @@ class AppLocalizationsKo extends AppLocalizations {
   String get authSignBackIn => '다시 로그인';
 
   @override
+  String get authRecoveryDraftsOwner =>
+      'Your drafts and clips are saved for this account';
+
+  @override
+  String get authRecoveryOtherAccountWarning =>
+      'Signing in here will hide those drafts and clips';
+
+  @override
   String get authTermsPrefix =>
       '위에서 옵션을 선택하면 만 16세 이상임을 확인하고 다음 내용에 동의하는 것이에요: ';
 

@@ -1454,6 +1454,8 @@
   "authCreateNewAccount": "Create a new Divine account",
   "authSignInDifferentAccount": "Sign in with an existing account",
   "authSignBackIn": "Sign back in",
+  "authRecoveryDraftsOwner": "Your drafts and clips are saved for this account",
+  "authRecoveryOtherAccountWarning": "Signing in here will hide those drafts and clips",
   "authTermsPrefix": "By selecting an option above, you confirm you are at least 16 years old and agree to the ",
   "authTermsOfService": "Terms of Service",
   "authPrivacyPolicy": "Privacy Policy",

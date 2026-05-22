@@ -2596,6 +2596,14 @@ class AppLocalizationsNl extends AppLocalizations {
   String get authSignBackIn => 'Opnieuw inloggen';
 
   @override
+  String get authRecoveryDraftsOwner =>
+      'Your drafts and clips are saved for this account';
+
+  @override
+  String get authRecoveryOtherAccountWarning =>
+      'Signing in here will hide those drafts and clips';
+
+  @override
   String get authTermsPrefix =>
       'Door hierboven een optie te kiezen bevestig je dat je minstens 16 jaar bent en ga je akkoord met de ';
 

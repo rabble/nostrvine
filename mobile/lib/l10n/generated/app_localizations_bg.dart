@@ -2630,6 +2630,14 @@ class AppLocalizationsBg extends AppLocalizations {
   String get authSignBackIn => 'Влез отново';
 
   @override
+  String get authRecoveryDraftsOwner =>
+      'Your drafts and clips are saved for this account';
+
+  @override
+  String get authRecoveryOtherAccountWarning =>
+      'Signing in here will hide those drafts and clips';
+
+  @override
   String get authTermsPrefix =>
       'Като избереш опция по-горе, потвърждаваш, че си на 16 или повече и се съгласяваш с';
 

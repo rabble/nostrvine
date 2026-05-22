@@ -2675,6 +2675,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get authSignBackIn => 'Reautentifică-te';
 
   @override
+  String get authRecoveryDraftsOwner =>
+      'Your drafts and clips are saved for this account';
+
+  @override
+  String get authRecoveryOtherAccountWarning =>
+      'Signing in here will hide those drafts and clips';
+
+  @override
   String get authTermsPrefix =>
       'Selecționând o opțiune de mai sus, confirmi că ai cel puțin 16 ani și ești de acord cu ';
 

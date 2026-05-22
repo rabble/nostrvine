@@ -4568,6 +4568,18 @@ abstract class AppLocalizations {
   /// **'Sign back in'**
   String get authSignBackIn;
 
+  /// No description provided for @authRecoveryDraftsOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Your drafts and clips are saved for this account'**
+  String get authRecoveryDraftsOwner;
+
+  /// No description provided for @authRecoveryOtherAccountWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Signing in here will hide those drafts and clips'**
+  String get authRecoveryOtherAccountWarning;
+
   /// No description provided for @authTermsPrefix.
   ///
   /// In en, this message translates to:

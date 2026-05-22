@@ -2569,6 +2569,14 @@ class AppLocalizationsTr extends AppLocalizations {
   String get authSignBackIn => 'Tekrar giriş yap';
 
   @override
+  String get authRecoveryDraftsOwner =>
+      'Your drafts and clips are saved for this account';
+
+  @override
+  String get authRecoveryOtherAccountWarning =>
+      'Signing in here will hide those drafts and clips';
+
+  @override
   String get authTermsPrefix =>
       'Yukarıdaki bir seçeneği seçerek en az 16 yaşında olduğunu onayladığını ve ';
 

@@ -2539,6 +2539,14 @@ class AppLocalizationsAm extends AppLocalizations {
   String get authSignBackIn => 'ተመልሰው ይግቡ';
 
   @override
+  String get authRecoveryDraftsOwner =>
+      'Your drafts and clips are saved for this account';
+
+  @override
+  String get authRecoveryOtherAccountWarning =>
+      'Signing in here will hide those drafts and clips';
+
+  @override
   String get authTermsPrefix =>
       'ከላይ ያለውን አማራጭ በመምረጥ፣ ቢያንስ 16 ዓመት እንደሆናችሁ አረጋግጠዋል እና በዚህ ተስማምተዋል።';
 

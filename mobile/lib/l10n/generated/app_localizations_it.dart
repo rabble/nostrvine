@@ -2616,6 +2616,14 @@ class AppLocalizationsIt extends AppLocalizations {
   String get authSignBackIn => 'Rientra';
 
   @override
+  String get authRecoveryDraftsOwner =>
+      'Your drafts and clips are saved for this account';
+
+  @override
+  String get authRecoveryOtherAccountWarning =>
+      'Signing in here will hide those drafts and clips';
+
+  @override
   String get authTermsPrefix =>
       'Selezionando un\'opzione sopra, confermi di avere almeno 16 anni e accetti i ';
 

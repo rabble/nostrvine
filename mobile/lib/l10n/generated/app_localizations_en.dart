@@ -2588,6 +2588,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authSignBackIn => 'Sign back in';
 
   @override
+  String get authRecoveryDraftsOwner =>
+      'Your drafts and clips are saved for this account';
+
+  @override
+  String get authRecoveryOtherAccountWarning =>
+      'Signing in here will hide those drafts and clips';
+
+  @override
   String get authTermsPrefix =>
       'By selecting an option above, you confirm you are at least 16 years old and agree to the ';
 

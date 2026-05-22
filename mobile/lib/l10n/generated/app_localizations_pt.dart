@@ -2608,6 +2608,14 @@ class AppLocalizationsPt extends AppLocalizations {
   String get authSignBackIn => 'Entrar de novo';
 
   @override
+  String get authRecoveryDraftsOwner =>
+      'Your drafts and clips are saved for this account';
+
+  @override
+  String get authRecoveryOtherAccountWarning =>
+      'Signing in here will hide those drafts and clips';
+
+  @override
   String get authTermsPrefix =>
       'Ao selecionar uma opção acima, você confirma que tem pelo menos 16 anos e concorda com os ';
 
