@@ -5435,16 +5435,16 @@ class AppLocalizationsTr extends AppLocalizations {
   String get dmMessageActionReport => 'Report';
 
   @override
-  String get dmFormatBold => 'Bold';
+  String get dmFormatBold => 'Kalın';
 
   @override
-  String get dmFormatItalic => 'Italic';
+  String get dmFormatItalic => 'İtalik';
 
   @override
-  String get dmFormatStrikethrough => 'Strikethrough';
+  String get dmFormatStrikethrough => 'Üstü çizili';
 
   @override
-  String get dmFormatCode => 'Code';
+  String get dmFormatCode => 'Kod';
 
   @override
   String get dmStatusPending => 'Gönderiliyor';

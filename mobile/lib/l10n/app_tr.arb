@@ -3683,5 +3683,9 @@
     "videoEditorTimelineSlideToAdjust": "Ayarlamak için kaydır",
     "videoEditorVolumeSemanticLabel": "Sesi ayarla",
     "videoEditorOriginalAudioLabel": "Orijinal ses",
-    "videoEditorClipVolumeLabel": "Klip {index}"
+    "videoEditorClipVolumeLabel": "Klip {index}",
+    "dmFormatBold": "Kalın",
+    "dmFormatItalic": "İtalik",
+    "dmFormatStrikethrough": "Üstü çizili",
+    "dmFormatCode": "Kod"
 }

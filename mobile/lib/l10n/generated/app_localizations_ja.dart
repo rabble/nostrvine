@@ -5227,16 +5227,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get dmMessageActionReport => 'Report';
 
   @override
-  String get dmFormatBold => 'Bold';
+  String get dmFormatBold => '太字';
 
   @override
-  String get dmFormatItalic => 'Italic';
+  String get dmFormatItalic => '斜体';
 
   @override
-  String get dmFormatStrikethrough => 'Strikethrough';
+  String get dmFormatStrikethrough => '取り消し線';
 
   @override
-  String get dmFormatCode => 'Code';
+  String get dmFormatCode => 'コード';
 
   @override
   String get dmStatusPending => '送信中';

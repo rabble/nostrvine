@@ -5502,16 +5502,16 @@ class AppLocalizationsIt extends AppLocalizations {
   String get dmMessageActionReport => 'Report';
 
   @override
-  String get dmFormatBold => 'Bold';
+  String get dmFormatBold => 'Grassetto';
 
   @override
-  String get dmFormatItalic => 'Italic';
+  String get dmFormatItalic => 'Corsivo';
 
   @override
-  String get dmFormatStrikethrough => 'Strikethrough';
+  String get dmFormatStrikethrough => 'Barrato';
 
   @override
-  String get dmFormatCode => 'Code';
+  String get dmFormatCode => 'Codice';
 
   @override
   String get dmStatusPending => 'Invio';

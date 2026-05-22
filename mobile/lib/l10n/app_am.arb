@@ -3811,5 +3811,9 @@
     "videoEditorTimelineSlideToAdjust": "ለማስተካከል ያንሸራትቱ",
     "videoEditorVolumeSemanticLabel": "ድምጽ አስተካክል",
     "videoEditorOriginalAudioLabel": "ዋናው ኦዲዮ",
-    "videoEditorClipVolumeLabel": "ቅንጥብ {index}"
+    "videoEditorClipVolumeLabel": "ቅንጥብ {index}",
+    "dmFormatBold": "ደማቅ",
+    "dmFormatItalic": "አዘንብል",
+    "dmFormatStrikethrough": "መሰረዝ",
+    "dmFormatCode": "ኮድ"
 }

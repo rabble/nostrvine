@@ -3683,5 +3683,9 @@
     "videoEditorTimelineSlideToAdjust": "Geser untuk menyesuaikan",
     "videoEditorVolumeSemanticLabel": "Sesuaikan volume",
     "videoEditorOriginalAudioLabel": "Audio asli",
-    "videoEditorClipVolumeLabel": "Klip {index}"
+    "videoEditorClipVolumeLabel": "Klip {index}",
+    "dmFormatBold": "Tebal",
+    "dmFormatItalic": "Miring",
+    "dmFormatStrikethrough": "Coret",
+    "dmFormatCode": "Kode"
 }

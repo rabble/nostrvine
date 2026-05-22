@@ -3817,5 +3817,9 @@
     "videoEditorTimelineSlideToAdjust": "Плъзнете за регулиране",
     "videoEditorVolumeSemanticLabel": "Регулиране на силата на звука",
     "videoEditorOriginalAudioLabel": "Оригинален звук",
-    "videoEditorClipVolumeLabel": "Клип {index}"
+    "videoEditorClipVolumeLabel": "Клип {index}",
+    "dmFormatBold": "Получер",
+    "dmFormatItalic": "Курсив",
+    "dmFormatStrikethrough": "Зачеркнат",
+    "dmFormatCode": "Код"
 }

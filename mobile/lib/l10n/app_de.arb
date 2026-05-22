@@ -3683,5 +3683,9 @@
     "videoEditorTimelineSlideToAdjust": "Zum Anpassen schieben",
     "videoEditorVolumeSemanticLabel": "Lautstärke anpassen",
     "videoEditorOriginalAudioLabel": "Originalton",
-    "videoEditorClipVolumeLabel": "Clip {index}"
+    "videoEditorClipVolumeLabel": "Clip {index}",
+    "dmFormatBold": "Fett",
+    "dmFormatItalic": "Kursiv",
+    "dmFormatStrikethrough": "Durchgestrichen",
+    "dmFormatCode": "Code"
 }

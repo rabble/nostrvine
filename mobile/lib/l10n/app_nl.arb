@@ -3683,5 +3683,9 @@
     "videoEditorTimelineSlideToAdjust": "Schuif om aan te passen",
     "videoEditorVolumeSemanticLabel": "Volume aanpassen",
     "videoEditorOriginalAudioLabel": "Origineel geluid",
-    "videoEditorClipVolumeLabel": "Clip {index}"
+    "videoEditorClipVolumeLabel": "Clip {index}",
+    "dmFormatBold": "Vet",
+    "dmFormatItalic": "Cursief",
+    "dmFormatStrikethrough": "Doorgestreept",
+    "dmFormatCode": "Code"
 }

@@ -2972,5 +2972,9 @@
     "videoEditorTimelineSlideToAdjust": "슬라이드하여 조절",
     "videoEditorVolumeSemanticLabel": "볼륨 조절",
     "videoEditorOriginalAudioLabel": "원본 오디오",
-    "videoEditorClipVolumeLabel": "클립 {index}"
+    "videoEditorClipVolumeLabel": "클립 {index}",
+    "dmFormatBold": "굵게",
+    "dmFormatItalic": "기울임꼴",
+    "dmFormatStrikethrough": "취소선",
+    "dmFormatCode": "코드"
 }

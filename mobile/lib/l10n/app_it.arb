@@ -3683,5 +3683,9 @@
     "videoEditorTimelineSlideToAdjust": "Scorri per regolare",
     "videoEditorVolumeSemanticLabel": "Regola volume",
     "videoEditorOriginalAudioLabel": "Audio originale",
-    "videoEditorClipVolumeLabel": "Clip {index}"
+    "videoEditorClipVolumeLabel": "Clip {index}",
+    "dmFormatBold": "Grassetto",
+    "dmFormatItalic": "Corsivo",
+    "dmFormatStrikethrough": "Barrato",
+    "dmFormatCode": "Codice"
 }

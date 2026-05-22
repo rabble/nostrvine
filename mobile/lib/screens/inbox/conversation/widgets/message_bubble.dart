@@ -24,6 +24,7 @@ import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/utils/divine_video_url.dart';
 import 'package:openvine/utils/string_utils.dart';
+import 'package:openvine/widgets/linkified_text/linkified_text_support.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/markdown/markdown.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
@@ -377,17 +378,7 @@ class _MessageTextState extends ConsumerState<_MessageText> {
   }
 
   String _profileDisplayText(String hexPubkey) {
-    final profile = ref.watch(userProfileReactiveProvider(hexPubkey)).value;
-    final profileText = switch (profile) {
-      UserProfile(:final displayName?) when displayName.isNotEmpty =>
-        displayName,
-      UserProfile(:final name?) when name.isNotEmpty => name,
-      UserProfile(:final shortDisplayNip05?)
-          when shortDisplayNip05.isNotEmpty =>
-        shortDisplayNip05,
-      _ => UserProfile.defaultDisplayNameFor(hexPubkey),
-    };
-    return profileText.startsWith('@') ? profileText : '@$profileText';
+    return LinkifiedTextSupport.profileDisplayText(ref, hexPubkey);
   }
 
   void _navigateToHashtag(String hashtag) {
@@ -411,22 +402,12 @@ class _MessageTextState extends ConsumerState<_MessageText> {
   void _replaceCurrentSpans(List<InlineSpan> spans) {
     final previousSpans = _currentSpans;
     _currentSpans = spans;
-    _disposeSpans(previousSpans);
-  }
-
-  void _disposeSpans(List<InlineSpan> spans) {
-    for (final span in spans) {
-      if (span is TextSpan) {
-        span.recognizer?.dispose();
-        final children = span.children;
-        if (children != null) _disposeSpans(children);
-      }
-    }
+    LinkifiedTextSupport.disposeSpans(previousSpans);
   }
 
   @override
   void dispose() {
-    _disposeSpans(_currentSpans);
+    LinkifiedTextSupport.disposeSpans(_currentSpans);
     super.dispose();
   }
 

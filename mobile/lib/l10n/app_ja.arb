@@ -3683,5 +3683,9 @@
     "videoEditorTimelineSlideToAdjust": "スライドして調整",
     "videoEditorVolumeSemanticLabel": "音量を調整",
     "videoEditorOriginalAudioLabel": "元の音声",
-    "videoEditorClipVolumeLabel": "クリップ {index}"
+    "videoEditorClipVolumeLabel": "クリップ {index}",
+    "dmFormatBold": "太字",
+    "dmFormatItalic": "斜体",
+    "dmFormatStrikethrough": "取り消し線",
+    "dmFormatCode": "コード"
 }

@@ -3683,5 +3683,9 @@
     "videoEditorTimelineSlideToAdjust": "Dra för att justera",
     "videoEditorVolumeSemanticLabel": "Justera volym",
     "videoEditorOriginalAudioLabel": "Originalljud",
-    "videoEditorClipVolumeLabel": "Klipp {index}"
+    "videoEditorClipVolumeLabel": "Klipp {index}",
+    "dmFormatBold": "Fet",
+    "dmFormatItalic": "Kursiv",
+    "dmFormatStrikethrough": "Genomstruken",
+    "dmFormatCode": "Kod"
 }

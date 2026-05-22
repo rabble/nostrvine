@@ -3683,5 +3683,9 @@
     "videoEditorTimelineSlideToAdjust": "Desliza para ajustar",
     "videoEditorVolumeSemanticLabel": "Ajustar volumen",
     "videoEditorOriginalAudioLabel": "Audio original",
-    "videoEditorClipVolumeLabel": "Clip {index}"
+    "videoEditorClipVolumeLabel": "Clip {index}",
+    "dmFormatBold": "Negrita",
+    "dmFormatItalic": "Cursiva",
+    "dmFormatStrikethrough": "Tachado",
+    "dmFormatCode": "Código"
 }

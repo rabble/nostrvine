@@ -5526,13 +5526,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dmMessageActionReport => 'Report';
 
   @override
-  String get dmFormatBold => 'Bold';
+  String get dmFormatBold => 'Gras';
 
   @override
-  String get dmFormatItalic => 'Italic';
+  String get dmFormatItalic => 'Italique';
 
   @override
-  String get dmFormatStrikethrough => 'Strikethrough';
+  String get dmFormatStrikethrough => 'Barré';
 
   @override
   String get dmFormatCode => 'Code';

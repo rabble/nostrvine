@@ -5477,13 +5477,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dmMessageActionReport => 'Report';
 
   @override
-  String get dmFormatBold => 'Bold';
+  String get dmFormatBold => 'Vet';
 
   @override
-  String get dmFormatItalic => 'Italic';
+  String get dmFormatItalic => 'Cursief';
 
   @override
-  String get dmFormatStrikethrough => 'Strikethrough';
+  String get dmFormatStrikethrough => 'Doorgestreept';
 
   @override
   String get dmFormatCode => 'Code';

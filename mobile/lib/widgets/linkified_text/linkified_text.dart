@@ -4,14 +4,13 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:models/models.dart' show UserProfile;
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_span_builder.dart';
+import 'package:openvine/widgets/linkified_text/linkified_text_support.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class LinkifiedText extends ConsumerStatefulWidget {
@@ -99,17 +98,7 @@ class _LinkifiedTextState extends ConsumerState<LinkifiedText> {
   }
 
   String _profileDisplayText(String hexPubkey) {
-    final profile = ref.watch(userProfileReactiveProvider(hexPubkey)).value;
-    final profileText = switch (profile) {
-      UserProfile(:final displayName?) when displayName.isNotEmpty =>
-        displayName,
-      UserProfile(:final name?) when name.isNotEmpty => name,
-      UserProfile(:final shortDisplayNip05?)
-          when shortDisplayNip05.isNotEmpty =>
-        shortDisplayNip05,
-      _ => UserProfile.defaultDisplayNameFor(hexPubkey),
-    };
-    return profileText.startsWith('@') ? profileText : '@$profileText';
+    return LinkifiedTextSupport.profileDisplayText(ref, hexPubkey);
   }
 
   void _navigateToHashtagFeed(BuildContext context, String hashtag) {
@@ -169,31 +158,12 @@ class _LinkifiedTextState extends ConsumerState<LinkifiedText> {
   void _replaceCurrentSpans(List<TextSpan> spans) {
     final previousSpans = _currentSpans;
     _currentSpans = spans;
-    _disposeSpans(previousSpans);
-  }
-
-  void _disposeSpans(List<TextSpan> spans) {
-    for (final span in spans) {
-      span.recognizer?.dispose();
-      final children = span.children;
-      if (children == null) continue;
-      _disposeInlineSpans(children);
-    }
-  }
-
-  void _disposeInlineSpans(List<InlineSpan> spans) {
-    for (final span in spans) {
-      if (span is TextSpan) {
-        span.recognizer?.dispose();
-        final children = span.children;
-        if (children != null) _disposeInlineSpans(children);
-      }
-    }
+    LinkifiedTextSupport.disposeSpans(previousSpans);
   }
 
   @override
   void dispose() {
-    _disposeSpans(_currentSpans);
+    LinkifiedTextSupport.disposeSpans(_currentSpans);
     super.dispose();
   }
 }

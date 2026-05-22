@@ -5403,16 +5403,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dmMessageActionReport => 'Report';
 
   @override
-  String get dmFormatBold => 'Bold';
+  String get dmFormatBold => 'عريض';
 
   @override
-  String get dmFormatItalic => 'Italic';
+  String get dmFormatItalic => 'مائل';
 
   @override
-  String get dmFormatStrikethrough => 'Strikethrough';
+  String get dmFormatStrikethrough => 'يتوسطه خط';
 
   @override
-  String get dmFormatCode => 'Code';
+  String get dmFormatCode => 'رمز';
 
   @override
   String get dmStatusPending => 'جاري الإرسال';

@@ -2224,5 +2224,9 @@
     "videoEditorTimelineSlideToAdjust": "I-slide para i-adjust",
     "videoEditorVolumeSemanticLabel": "Ayusin ang volume",
     "videoEditorOriginalAudioLabel": "Orihinal na audio",
-    "videoEditorClipVolumeLabel": "Clip {index}"
+    "videoEditorClipVolumeLabel": "Clip {index}",
+    "dmFormatBold": "Makapal",
+    "dmFormatItalic": "Pahilis",
+    "dmFormatStrikethrough": "May guhit",
+    "dmFormatCode": "Code"
 }

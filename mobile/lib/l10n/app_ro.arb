@@ -3683,5 +3683,9 @@
     "videoEditorTimelineSlideToAdjust": "Glisează pentru ajustare",
     "videoEditorVolumeSemanticLabel": "Reglare volum",
     "videoEditorOriginalAudioLabel": "Audio original",
-    "videoEditorClipVolumeLabel": "Clip {index}"
+    "videoEditorClipVolumeLabel": "Clip {index}",
+    "dmFormatBold": "Aldin",
+    "dmFormatItalic": "Cursiv",
+    "dmFormatStrikethrough": "Tăiat",
+    "dmFormatCode": "Cod"
 }

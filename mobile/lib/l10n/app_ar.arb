@@ -3683,5 +3683,9 @@
     "videoEditorTimelineSlideToAdjust": "اسحب للضبط",
     "videoEditorVolumeSemanticLabel": "ضبط مستوى الصوت",
     "videoEditorOriginalAudioLabel": "الصوت الأصلي",
-    "videoEditorClipVolumeLabel": "مقطع {index}"
+    "videoEditorClipVolumeLabel": "مقطع {index}",
+    "dmFormatBold": "عريض",
+    "dmFormatItalic": "مائل",
+    "dmFormatStrikethrough": "يتوسطه خط",
+    "dmFormatCode": "رمز"
 }
