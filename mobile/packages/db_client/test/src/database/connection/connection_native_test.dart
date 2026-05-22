@@ -238,9 +238,12 @@ void main() {
           newPath: newPath,
         );
 
-        expect(File(legacyPath).existsSync(), isTrue);
-        expect(File(legacyPath).readAsBytesSync(), equals(const [1, 2, 3]));
+        expect(File(legacyPath).existsSync(), isFalse);
         expect(File(newPath).readAsBytesSync(), equals(const [9, 9, 9]));
+        expect(
+          File(_legacyConflictBackupPath(newPath)).readAsBytesSync(),
+          equals(const [1, 2, 3]),
+        );
       },
     );
 
@@ -343,8 +346,9 @@ void main() {
           newPath: newPath,
         );
 
-        expect(File(legacyPath).existsSync(), isTrue);
-        expect(_draftCount(legacyPath), equals(1));
+        final legacyBackupPath = _legacyConflictBackupPath(newPath);
+        expect(File(legacyPath).existsSync(), isFalse);
+        expect(_draftCount(legacyBackupPath), equals(1));
         expect(_pendingUploadCount(newPath), equals(1));
         expect(_pendingActionCount(newPath), equals(1));
         expect(File(_destinationBackupPath(newPath)).existsSync(), isFalse);
@@ -352,7 +356,7 @@ void main() {
     );
 
     test(
-      'preserves destination when both legacy and new databases have local data',
+      'preserves destination and backs up legacy beside it when both databases have local data',
       () async {
         _createSqliteDatabase(legacyPath, draftCount: 1);
         File('$legacyPath-wal').writeAsBytesSync(const [4]);
@@ -362,6 +366,9 @@ void main() {
         File('$newPath-wal').writeAsBytesSync(const [2]);
         File('$newPath-shm').writeAsBytesSync(const [3]);
 
+        expect(File('$legacyPath-wal').readAsBytesSync(), equals([4]));
+        expect(File('$legacyPath-shm').readAsBytesSync(), equals([5]));
+
         await migrateLegacyDatabase(
           legacyPath: legacyPath,
           newPath: newPath,
@@ -369,8 +376,17 @@ void main() {
 
         expect(File(newPath).existsSync(), isTrue);
         expect(_draftCount(newPath), equals(1));
-        expect(_draftCount(legacyPath), equals(1));
+        expect(File(legacyPath).existsSync(), isFalse);
+        expect(File('$legacyPath-wal').existsSync(), isFalse);
+        expect(File('$legacyPath-shm').existsSync(), isFalse);
         expect(File(_destinationBackupPath(newPath)).existsSync(), isFalse);
+
+        final legacyBackupPath = _legacyConflictBackupPath(newPath);
+        expect(File(legacyBackupPath).existsSync(), isTrue);
+        expect(File('$legacyBackupPath-wal').readAsBytesSync(), equals([4]));
+        expect(File('$legacyBackupPath-shm').existsSync(), isTrue);
+        expect(File('$legacyBackupPath-shm').lengthSync(), greaterThan(0));
+        expect(_draftCount(legacyBackupPath), equals(1));
       },
     );
 
@@ -500,3 +516,5 @@ int _tableCount(String path, String table) {
 
 String _destinationBackupPath(String path) =>
     '$path.pre_legacy_migration_backup';
+
+String _legacyConflictBackupPath(String path) => '$path.legacy_conflict_backup';

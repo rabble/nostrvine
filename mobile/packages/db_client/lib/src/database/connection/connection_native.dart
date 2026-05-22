@@ -132,9 +132,21 @@ Future<void> migrateLegacyDatabase({
 
   final newFile = File(newPath);
   if (newFile.existsSync()) {
-    if (!_databaseHasActionableLocalOnlyData(newPath) &&
-        _databaseHasActionableLocalOnlyData(legacyPath)) {
+    final legacySidecars = _readDatabaseSidecars(legacyPath);
+    final newHasActionableData = _databaseHasActionableLocalOnlyData(newPath);
+    final legacyHasActionableData = _databaseHasActionableLocalOnlyData(
+      legacyPath,
+    );
+
+    if (!newHasActionableData && legacyHasActionableData) {
       _backupDestinationDatabase(newPath);
+    } else if (newHasActionableData && legacyHasActionableData) {
+      _backupLegacyConflictDatabase(
+        legacyPath: legacyPath,
+        newPath: newPath,
+        sidecars: legacySidecars,
+      );
+      return;
     } else {
       return;
     }
@@ -152,7 +164,10 @@ Future<void> migrateLegacyDatabase({
 }
 
 void _backupDestinationDatabase(String dbPath) {
-  final backupPath = _nextDestinationBackupPath(dbPath);
+  final backupPath = _nextDatabaseBackupPath(
+    dbPath,
+    suffix: '.pre_legacy_migration_backup',
+  );
 
   File(dbPath).renameSync(backupPath);
   for (final suffix in const ['-wal', '-shm']) {
@@ -163,14 +178,46 @@ void _backupDestinationDatabase(String dbPath) {
   }
 }
 
-String _nextDestinationBackupPath(String dbPath) {
-  const backupSuffix = '.pre_legacy_migration_backup';
-  var candidate = '$dbPath$backupSuffix';
+void _backupLegacyConflictDatabase({
+  required String legacyPath,
+  required String newPath,
+  required Map<String, List<int>> sidecars,
+}) {
+  final backupPath = _nextDatabaseBackupPath(
+    newPath,
+    suffix: '.legacy_conflict_backup',
+  );
+
+  Directory(p.dirname(newPath)).createSync(recursive: true);
+  File(legacyPath).renameSync(backupPath);
+  for (final suffix in const ['-wal', '-shm']) {
+    final sidecar = File('$legacyPath$suffix');
+    if (sidecar.existsSync()) {
+      sidecar.renameSync('$backupPath$suffix');
+    } else if (sidecars.containsKey(suffix)) {
+      File('$backupPath$suffix').writeAsBytesSync(sidecars[suffix]!);
+    }
+  }
+}
+
+Map<String, List<int>> _readDatabaseSidecars(String dbPath) {
+  final sidecars = <String, List<int>>{};
+  for (final suffix in const ['-wal', '-shm']) {
+    final sidecar = File('$dbPath$suffix');
+    if (sidecar.existsSync()) {
+      sidecars[suffix] = sidecar.readAsBytesSync();
+    }
+  }
+  return sidecars;
+}
+
+String _nextDatabaseBackupPath(String dbPath, {required String suffix}) {
+  var candidate = '$dbPath$suffix';
   var index = 1;
   while (File(candidate).existsSync() ||
       File('$candidate-wal').existsSync() ||
       File('$candidate-shm').existsSync()) {
-    candidate = '$dbPath$backupSuffix.$index';
+    candidate = '$dbPath$suffix.$index';
     index += 1;
   }
   return candidate;
