@@ -116,6 +116,9 @@ void main() {
           reason:
               'Follow state should survive app reopen and repository reload',
         );
+        // cachedFollowingListProvider is keepAlive, so force it to re-read
+        // SharedPreferences rather than reusing the pre-background value.
+        container.invalidate(cachedFollowingListProvider);
         expect(
           container.read(cachedFollowingListProvider),
           contains(author.pubkey),
