@@ -3,6 +3,8 @@
 // ABOUTME: conditional timestamp display, clickable URLs, long-press actions,
 // ABOUTME: and inline video preview cards for divine.video links.
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,12 +16,16 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/universal_link_resolver.dart';
+import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/video_link_preview_cubit.dart';
+import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/utils/divine_video_url.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
+import 'package:openvine/widgets/markdown/markdown.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -270,12 +276,25 @@ bool _isTrustedDomain(String host) {
   return _trustedDomains.any((d) => lower == d || lower.endsWith('.$d'));
 }
 
-/// Renders message text with clickable URLs and Nostr references.
-class _MessageText extends StatelessWidget {
+/// Renders message text with inline markdown (bold / italic / strike /
+/// inline code / `[label](url)`) plus clickable URLs and Nostr
+/// references.
+///
+/// Markdown parsing produces an AST; plain leaves are delegated to
+/// [LinkifiedTextSpanBuilder] so URLs / @mentions / #hashtags / nostr
+/// references inside, e.g., a `**bold**` run remain tappable.
+class _MessageText extends ConsumerStatefulWidget {
   const _MessageText({required this.message, required this.isSent});
 
   final String message;
   final bool isSent;
+
+  @override
+  ConsumerState<_MessageText> createState() => _MessageTextState();
+}
+
+class _MessageTextState extends ConsumerState<_MessageText> {
+  List<InlineSpan> _currentSpans = const [];
 
   @override
   Widget build(BuildContext context) {
@@ -283,19 +302,132 @@ class _MessageText extends StatelessWidget {
     // Sent bubbles have a primaryAccessible background → use white for
     // contrast. Received bubbles use surfaceContainer → primary green
     // reads cleanly there.
-    final linkColor = isSent ? VineTheme.whiteText : VineTheme.primary;
+    final linkColor = widget.isSent ? VineTheme.whiteText : VineTheme.primary;
     final referenceStyle = defaultStyle.copyWith(
       color: linkColor,
       decoration: TextDecoration.underline,
       decorationColor: linkColor,
     );
-    return LinkifiedText(
-      text: message,
-      style: defaultStyle,
-      linkStyle: referenceStyle,
-      mentionStyle: referenceStyle,
-      onUrlTap: (link) => _openLink(context, link),
+    // Translucent white overlay reads on both bubble colors without
+    // needing a per-side palette swap.
+    final codeBackground = VineTheme.whiteText.withValues(
+      alpha: widget.isSent ? 0.18 : 0.10,
     );
+    final codeStyle = VineTheme.codeFont(color: defaultStyle.color!);
+
+    final ast = const InlineMarkdownParser().parse(widget.message);
+    final builder = MarkdownTextSpanBuilder(
+      defaultStyle: defaultStyle,
+      codeStyle: codeStyle,
+      codeBackgroundColor: codeBackground,
+      linkStyle: referenceStyle,
+      buildPlainSpans: (text, effectiveStyle) =>
+          _buildLinkifiedPlain(text, effectiveStyle, referenceStyle),
+      onLinkTap: (rawUrl) => _openLink(context, rawUrl),
+    );
+    final spans = builder.build(ast);
+    _replaceCurrentSpans(spans);
+
+    if (spans.isEmpty) {
+      return Text(widget.message, style: defaultStyle);
+    }
+    return Text.rich(TextSpan(children: spans));
+  }
+
+  /// Delegates plain markdown leaves to [LinkifiedTextSpanBuilder] so
+  /// the linkifier's URL / @mention / #hashtag / nostr-ref pipeline
+  /// runs inside markdown wrappers.
+  List<InlineSpan> _buildLinkifiedPlain(
+    String text,
+    TextStyle plainStyle,
+    TextStyle linkStyle,
+  ) {
+    if (text.isEmpty) return const [];
+    // Apply the surrounding emphasis to linked / mentioned tokens too
+    // so `**check @alice**` renders the mention in bold + reference
+    // color.
+    final emphasizedLink = linkStyle.copyWith(
+      fontWeight: plainStyle.fontWeight,
+      fontStyle: plainStyle.fontStyle,
+      decoration:
+          plainStyle.decoration == null ||
+              plainStyle.decoration == TextDecoration.none
+          ? linkStyle.decoration
+          : TextDecoration.combine([
+              linkStyle.decoration ?? TextDecoration.none,
+              plainStyle.decoration!,
+            ]),
+    );
+    return LinkifiedTextSpanBuilder(
+      text: text,
+      defaultStyle: plainStyle,
+      linkStyle: emphasizedLink,
+      mentionStyle: emphasizedLink,
+      videoLabel: Localizations.of<AppLocalizations>(
+        context,
+        AppLocalizations,
+      )?.clickableTextViewVideoLink,
+      profileLabelForHex: _profileDisplayText,
+      onHashtagTap: _navigateToHashtag,
+      onProfileTap: _navigateToProfile,
+      onVideoTap: _navigateToVideo,
+      onMentionTap: _navigateToSearch,
+      onUrlTap: (rawUrl) => _openLink(context, rawUrl),
+    ).build();
+  }
+
+  String _profileDisplayText(String hexPubkey) {
+    final profile = ref.watch(userProfileReactiveProvider(hexPubkey)).value;
+    final profileText = switch (profile) {
+      UserProfile(:final displayName?) when displayName.isNotEmpty =>
+        displayName,
+      UserProfile(:final name?) when name.isNotEmpty => name,
+      UserProfile(:final shortDisplayNip05?)
+          when shortDisplayNip05.isNotEmpty =>
+        shortDisplayNip05,
+      _ => UserProfile.defaultDisplayNameFor(hexPubkey),
+    };
+    return profileText.startsWith('@') ? profileText : '@$profileText';
+  }
+
+  void _navigateToHashtag(String hashtag) {
+    context.push(HashtagScreenRouter.pathForTag(hashtag));
+  }
+
+  void _navigateToProfile(String hexPubkey) {
+    context.pushOtherProfile(hexPubkey);
+  }
+
+  void _navigateToVideo(String routeReference) {
+    context.push(VideoDetailScreen.pathForId(routeReference));
+  }
+
+  void _navigateToSearch(String username) {
+    context.go(
+      SearchResultsPage.pathForQuery(username, requestFocusOnMount: false),
+    );
+  }
+
+  void _replaceCurrentSpans(List<InlineSpan> spans) {
+    final previousSpans = _currentSpans;
+    _currentSpans = spans;
+    _disposeSpans(previousSpans);
+  }
+
+  void _disposeSpans(List<InlineSpan> spans) {
+    for (final span in spans) {
+      if (span is TextSpan) {
+        span.recognizer?.dispose();
+        final children = span.children;
+        if (children != null) _disposeSpans(children);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _disposeSpans(_currentSpans);
+    super.dispose();
   }
 
   Future<void> _openLink(BuildContext context, String link) async {

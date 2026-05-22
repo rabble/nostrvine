@@ -197,10 +197,10 @@ void main() {
         expect(style.color, VineTheme.vineGreen);
       });
 
-      testWidgets('codeFont returns Chivo Mono 400 13/20/0.25', (tester) async {
+      testWidgets('codeFont returns Chivo Mono 300 13/20/0.25', (tester) async {
         final style = VineTheme.codeFont();
         expect(style.fontSize, 13);
-        expect(style.fontWeight, FontWeight.w400);
+        expect(style.fontWeight, FontWeight.w300);
         expect(style.height, 20 / 13);
         expect(style.letterSpacing, 0.25);
         expect(style.color, VineTheme.whiteText);
