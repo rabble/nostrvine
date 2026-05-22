@@ -1,5 +1,20 @@
 part of 'video_editor_timeline_clip_strip.dart';
 
+/// Scale factor that maps source-time pixel widths to playback-time pixel
+/// widths. `1 / playbackSpeed`, clamped for non-positive speeds.
+///
+/// `_ClipTile.fullWidth` / `trimStartOffset` must be scaled by this so the
+/// underlying source-time strip lines up with the visible slot width (which
+/// is in playback time — see `_clipWidth` in the strip widget). Without
+/// scaling, slow clips (speed < 1) produce a visible slot wider than the
+/// underlying strip, leaving the trailing region empty/black.
+extension _DivineVideoClipTimelineScale on DivineVideoClip {
+  double get _playbackScale {
+    final speed = playbackSpeed ?? 1.0;
+    return speed > 0 ? 1.0 / speed : 1.0;
+  }
+}
+
 class _TrimmableClipTile extends StatefulWidget {
   const _TrimmableClipTile({
     required this.clip,
@@ -127,11 +142,15 @@ class _TrimmableClipTileState extends State<_TrimmableClipTile> {
             behavior: HitTestBehavior.opaque,
             child: _ClipTile(
               clip: widget.clip,
-              fullWidth: widget.clip.durationInSeconds * widget.pixelsPerSecond,
+              fullWidth:
+                  widget.clip.durationInSeconds *
+                  widget.pixelsPerSecond *
+                  widget.clip._playbackScale,
               trimStartOffset:
                   widget.clip.trimStart.inMilliseconds /
                   1000.0 *
-                  widget.pixelsPerSecond,
+                  widget.pixelsPerSecond *
+                  widget.clip._playbackScale,
               thumbnailNotifier: widget.thumbnailNotifier,
             ),
           ),
@@ -168,9 +187,13 @@ class _DraggedClipTile extends StatelessWidget {
         ),
         child: _ClipTile(
           clip: clip,
-          fullWidth: clip.durationInSeconds * pixelsPerSecond,
+          fullWidth:
+              clip.durationInSeconds * pixelsPerSecond * clip._playbackScale,
           trimStartOffset:
-              clip.trimStart.inMilliseconds / 1000.0 * pixelsPerSecond,
+              clip.trimStart.inMilliseconds /
+              1000.0 *
+              pixelsPerSecond *
+              clip._playbackScale,
           thumbnailNotifier: thumbnailNotifier,
         ),
       ),
@@ -228,9 +251,13 @@ class _AccessibleClipTile extends StatelessWidget {
         },
         child: _ClipTile(
           clip: clip,
-          fullWidth: clip.durationInSeconds * pixelsPerSecond,
+          fullWidth:
+              clip.durationInSeconds * pixelsPerSecond * clip._playbackScale,
           trimStartOffset:
-              clip.trimStart.inMilliseconds / 1000.0 * pixelsPerSecond,
+              clip.trimStart.inMilliseconds /
+              1000.0 *
+              pixelsPerSecond *
+              clip._playbackScale,
           thumbnailNotifier: thumbnailNotifier,
         ),
       ),
