@@ -65,6 +65,17 @@ void main() {
     });
 
     setUp(() {
+      // Isolate from upstream test-pollution that can shrink the binding
+      // surface to ~140px wide (cascading layout overflow exceptions from
+      // other test files in the same flutter test run). Always pump our
+      // widgets on a stable 800x600 surface.
+      final binding = TestWidgetsFlutterBinding.ensureInitialized();
+      binding.platformDispatcher.views.first.physicalSize = const Size(
+        800,
+        600,
+      );
+      binding.platformDispatcher.views.first.devicePixelRatio = 1.0;
+
       mockSocialService = MockSocialService();
       mockAuthService = MockAuthService();
       mockNostrClient = MockNostrClient();
