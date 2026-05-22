@@ -2976,5 +2976,15 @@
     "dmFormatBold": "굵게",
     "dmFormatItalic": "기울임꼴",
     "dmFormatStrikethrough": "취소선",
-    "dmFormatCode": "코드"
+    "dmFormatCode": "코드",
+    "commentsErrorLoadFailed": "Failed to load comments",
+    "commentsErrorNotAuthenticatedComment": "Please sign in to comment",
+    "commentsErrorPostCommentFailed": "Failed to post comment",
+    "commentsErrorPostReplyFailed": "Failed to post reply",
+    "commentsErrorEditFailed": "Failed to edit comment",
+    "commentsErrorNotAuthenticatedInteract": "Please sign in to interact",
+    "commentsErrorVoteFailed": "Failed to vote on comment",
+    "commentsErrorReportFailed": "Failed to report comment",
+    "commentsErrorBlockFailed": "Failed to block user",
+    "commentsErrorDeleteFailed": "Failed to delete comment"
 }

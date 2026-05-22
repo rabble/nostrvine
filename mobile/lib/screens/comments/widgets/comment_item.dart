@@ -252,6 +252,7 @@ class _CommentItemState extends ConsumerState<CommentItem> {
           CommentEditModeEntered(
             commentId: commentId,
             originalContent: content,
+            originalComment: widget.comment,
             originalReplyToEventId: widget.comment.replyToEventId,
             originalReplyToAuthorPubkey: widget.comment.replyToAuthorPubkey,
           ),

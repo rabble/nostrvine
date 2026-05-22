@@ -403,6 +403,7 @@ void main() {
           CommentEditModeEntered(
             commentId: validId('e1'),
             originalContent: 'original',
+            originalComment: makeComment(validId('e1'), content: 'original'),
             originalReplyToEventId: validId('parent'),
             originalReplyToAuthorPubkey: validId('parentAuthor'),
           ),
@@ -415,6 +416,11 @@ void main() {
                 (s) => s.activeEditOriginalReplyToEventId,
                 'replyToId',
                 validId('parent'),
+              )
+              .having(
+                (s) => s.activeEditOriginalComment?.id,
+                'originalComment',
+                validId('e1'),
               ),
         ],
       );
@@ -463,6 +469,10 @@ void main() {
         seed: () => CommentComposerState(
           activeEditCommentId: validId('e1'),
           editInputText: 'edited',
+          activeEditOriginalComment: makeComment(
+            validId('e1'),
+            content: 'original',
+          ),
           activeEditOriginalReplyToEventId: validId('parent'),
           activeEditOriginalReplyToAuthorPubkey: validId('parentAuthor'),
         ),
@@ -510,6 +520,10 @@ void main() {
         seed: () => CommentComposerState(
           activeEditCommentId: validId('e1'),
           editInputText: 'edited',
+          activeEditOriginalComment: makeComment(
+            validId('e1'),
+            content: 'original',
+          ),
         ),
         act: (b) => b.add(const CommentEditSubmitted()),
         errors: () => [isA<DeleteCommentFailedException>()],
@@ -520,6 +534,70 @@ void main() {
             ComposerError.editFailed,
           ),
         ],
+      );
+
+      blocTest<CommentComposerBloc, CommentComposerState>(
+        'CommentEditSubmitted restores original comment when delete succeeds '
+        'but replacement publish fails',
+        setUp: () {
+          when(
+            () => mockCommentsRepository.deleteComment(
+              commentId: any(named: 'commentId'),
+              rootEventId: any(named: 'rootEventId'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockCommentsRepository.postComment(
+              content: any(named: 'content'),
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              replyToEventId: any(named: 'replyToEventId'),
+              replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
+              mentionedPubkeys: any(named: 'mentionedPubkeys'),
+            ),
+          ).thenAnswer((invocation) async {
+            final content = invocation.namedArguments[#content] as String;
+            if (content == 'edited') {
+              throw const PostCommentFailedException('replacement failed');
+            }
+            return makeComment(validId('restored'), content: content);
+          });
+        },
+        build: createBloc,
+        seed: () => CommentComposerState(
+          activeEditCommentId: validId('e1'),
+          editInputText: 'edited',
+          activeEditOriginalComment: makeComment(
+            validId('e1'),
+            content: 'original',
+          ),
+          activeEditOriginalReplyToEventId: validId('parent'),
+          activeEditOriginalReplyToAuthorPubkey: validId('parentAuthor'),
+        ),
+        act: (b) => b.add(const CommentEditSubmitted()),
+        errors: () => [isA<PostCommentFailedException>()],
+        verify: (b) {
+          verify(
+            () => mockCommentsRepository.postComment(
+              content: 'original',
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              replyToEventId: validId('parent'),
+              replyToAuthorPubkey: validId('parentAuthor'),
+              mentionedPubkeys: any(named: 'mentionedPubkeys'),
+            ),
+          ).called(1);
+          expect(b.state.error, ComposerError.editFailed);
+          expect(b.state.outbox, isA<ComposerOutboxReplaceComment>());
+          final replace = b.state.outbox! as ComposerOutboxReplaceComment;
+          expect(replace.newComment.content, 'original');
+          expect(b.state.activeEditCommentId, isNull);
+        },
       );
     });
 
@@ -675,9 +753,7 @@ void main() {
               replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
               mentionedPubkeys: any(named: 'mentionedPubkeys'),
             ),
-          ).thenAnswer(
-            (_) async => makeComment(validId('confirmed')),
-          );
+          ).thenAnswer((_) async => makeComment(validId('confirmed')));
         },
         build: createBloc,
         seed: () => CommentComposerState(
@@ -716,9 +792,7 @@ void main() {
               replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
               mentionedPubkeys: any(named: 'mentionedPubkeys'),
             ),
-          ).thenAnswer(
-            (_) async => makeComment(validId('raw')),
-          );
+          ).thenAnswer((_) async => makeComment(validId('raw')));
         },
         build: createBloc,
         seed: () => const CommentComposerState(mainInputText: 'raw hello'),

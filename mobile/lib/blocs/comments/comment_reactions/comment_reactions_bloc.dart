@@ -69,7 +69,7 @@ class CommentReactionsBloc
       _onBlockUserRequested,
       transformer: droppable(),
     );
-    on<CommentDeleteRequested>(_onDeleteRequested);
+    on<CommentDeleteRequested>(_onDeleteRequested, transformer: droppable());
     on<CommentReactionsErrorCleared>(_onErrorCleared);
     on<ReactionsOutboxConsumed>(_onOutboxConsumed);
   }
@@ -131,6 +131,8 @@ class CommentReactionsBloc
     ReactionsOutboxConsumed event,
     Emitter<CommentReactionsState> emit,
   ) {
+    // The UI may dispatch a duplicate ack during rebuild/listener churn; once
+    // outbox is null, extra acks are harmless no-ops.
     if (state.outbox == null) return;
     emit(state.copyWith(clearOutbox: true));
   }
@@ -385,9 +387,7 @@ class CommentReactionsBloc
     // list IMMEDIATELY so a follow-side failure below doesn't desync the UI
     // (the user already sees their block confirmed by the list cleanup).
     emit(
-      state.copyWith(
-        outbox: ReactionsOutboxRemoveByAuthor(event.authorPubkey),
-      ),
+      state.copyWith(outbox: ReactionsOutboxRemoveByAuthor(event.authorPubkey)),
     );
 
     // Best-effort unfollow. A failure here is logged but doesn't roll back

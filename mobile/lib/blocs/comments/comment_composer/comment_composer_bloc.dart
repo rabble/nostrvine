@@ -315,6 +315,7 @@ class CommentComposerBloc
         activeEditOriginalReplyToEventId: event.originalReplyToEventId,
         activeEditOriginalReplyToAuthorPubkey:
             event.originalReplyToAuthorPubkey,
+        activeEditOriginalComment: event.originalComment,
       ),
     );
   }
@@ -338,9 +339,11 @@ class CommentComposerBloc
 
     final originalCommentId = state.activeEditCommentId;
     if (originalCommentId == null) return;
+    final originalComment = state.activeEditOriginalComment;
 
     final replyToEventId = state.activeEditOriginalReplyToEventId;
     final replyToAuthorPubkey = state.activeEditOriginalReplyToAuthorPubkey;
+    var didDeleteOriginal = false;
 
     try {
       final resolvedMentions = await _resolveMentionsForText(
@@ -356,6 +359,7 @@ class CommentComposerBloc
         rootEventId: _rootEventId,
         rootAddressableId: _rootAddressableId,
       );
+      didDeleteOriginal = true;
 
       final postedComment = await _commentsRepository.postComment(
         content: resolvedMentions.canonicalText,
@@ -385,7 +389,57 @@ class CommentComposerBloc
         CommentComposerBlocReportableSites.onEditSubmitted,
         'Error editing comment',
       );
+
+      if (didDeleteOriginal && originalComment != null) {
+        final restored = await _restoreOriginalCommentAfterFailedEdit(
+          originalComment,
+          replyToEventId: replyToEventId,
+          replyToAuthorPubkey: replyToAuthorPubkey,
+        );
+        if (restored != null) {
+          emit(
+            state.clearEditMode().copyWith(
+              error: ComposerError.editFailed,
+              outbox: ComposerOutboxReplaceComment(
+                oldId: originalCommentId,
+                newComment: restored,
+              ),
+            ),
+          );
+          return;
+        }
+
+        emit(state.clearEditMode().copyWith(error: ComposerError.editFailed));
+        return;
+      }
+
       emit(state.copyWith(error: ComposerError.editFailed));
+    }
+  }
+
+  Future<Comment?> _restoreOriginalCommentAfterFailedEdit(
+    Comment originalComment, {
+    String? replyToEventId,
+    String? replyToAuthorPubkey,
+  }) async {
+    try {
+      return await _commentsRepository.postComment(
+        content: originalComment.content,
+        rootEventId: _rootEventId,
+        rootEventKind: _rootEventKind,
+        rootEventAuthorPubkey: _rootAuthorPubkey,
+        rootAddressableId: _rootAddressableId,
+        replyToEventId: replyToEventId,
+        replyToAuthorPubkey: replyToAuthorPubkey,
+      );
+    } catch (e, stackTrace) {
+      _logFailure(
+        e,
+        stackTrace,
+        CommentComposerBlocReportableSites.onEditSubmitted,
+        'Error restoring original comment after failed edit',
+      );
+      return null;
     }
   }
 
@@ -486,6 +540,8 @@ class CommentComposerBloc
     ComposerOutboxConsumed event,
     Emitter<CommentComposerState> emit,
   ) {
+    // The UI may dispatch a duplicate ack during rebuild/listener churn; once
+    // outbox is null, extra acks are harmless no-ops.
     if (state.outbox == null) return;
     emit(state.copyWith(clearOutbox: true));
   }

@@ -92,6 +92,8 @@ void main() {
         600,
       );
       binding.platformDispatcher.views.first.devicePixelRatio = 1.0;
+      addTearDown(binding.platformDispatcher.views.first.resetPhysicalSize);
+      addTearDown(binding.platformDispatcher.views.first.resetDevicePixelRatio);
 
       mockSocialService = MockSocialService();
       mockAuthService = MockAuthService();
@@ -115,12 +117,12 @@ void main() {
           status: CommentsStatus.success,
         ),
       );
-      when(() => mockComposerBloc.state).thenReturn(
-        const CommentComposerState(),
-      );
-      when(() => mockReactionsBloc.state).thenReturn(
-        const CommentReactionsState(),
-      );
+      when(
+        () => mockComposerBloc.state,
+      ).thenReturn(const CommentComposerState());
+      when(
+        () => mockReactionsBloc.state,
+      ).thenReturn(const CommentReactionsState());
     });
 
     tearDown(() {
@@ -429,10 +431,7 @@ void main() {
           );
 
           await tester.pumpWidget(
-            buildTestWidget(
-              listState: state,
-              videoEvent: recentVideoWithLoops,
-            ),
+            buildTestWidget(listState: state, videoEvent: recentVideoWithLoops),
           );
           await tester.pump();
 
@@ -460,10 +459,7 @@ void main() {
         );
 
         await tester.pumpWidget(
-          buildTestWidget(
-            listState: state,
-            videoEvent: vintageRecoveredVine,
-          ),
+          buildTestWidget(listState: state, videoEvent: vintageRecoveredVine),
         );
         await tester.pump();
 

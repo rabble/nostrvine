@@ -4,6 +4,8 @@
 
 import 'dart:async';
 
+import 'package:unified_logger/unified_logger.dart';
+
 /// Listens to [stream] but drops events that exceed [maxPerSecond].
 ///
 /// Uses a simple token-bucket approach: each second refills the budget.
@@ -22,8 +24,10 @@ StreamSubscription<T> throttledListen<T>(
   void Function(Object)? onError,
 }) {
   var budget = maxPerSecond;
+  var didLogBudgetExhaustion = false;
   final refillTimer = Timer.periodic(const Duration(seconds: 1), (_) {
     budget = maxPerSecond;
+    didLogBudgetExhaustion = false;
   });
 
   final subscription = stream.listen(
@@ -31,6 +35,15 @@ StreamSubscription<T> throttledListen<T>(
       if (budget > 0) {
         budget--;
         onData(event);
+        return;
+      }
+      if (!didLogBudgetExhaustion) {
+        didLogBudgetExhaustion = true;
+        Log.debug(
+          'Dropped comment events after exhausting $maxPerSecond/sec budget',
+          name: 'CommentsListThrottle',
+          category: LogCategory.ui,
+        );
       }
     },
     onError: (Object error) {

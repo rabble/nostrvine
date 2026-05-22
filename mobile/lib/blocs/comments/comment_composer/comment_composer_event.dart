@@ -58,6 +58,7 @@ final class CommentEditModeEntered extends CommentComposerEvent {
   const CommentEditModeEntered({
     required this.commentId,
     required this.originalContent,
+    required this.originalComment,
     this.originalReplyToEventId,
     this.originalReplyToAuthorPubkey,
   });
@@ -67,6 +68,10 @@ final class CommentEditModeEntered extends CommentComposerEvent {
 
   /// The original content to pre-populate in the input.
   final String originalContent;
+
+  /// Snapshot of the original canonical comment for rollback-repost if the
+  /// delete half of an edit succeeds but the replacement publish fails.
+  final Comment originalComment;
 
   /// Original `replyToEventId` from the comment being edited (preserves
   /// threading for the re-post that replaces it).

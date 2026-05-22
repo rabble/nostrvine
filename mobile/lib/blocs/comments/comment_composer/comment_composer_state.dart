@@ -118,6 +118,7 @@ final class CommentComposerState extends Equatable {
     this.activeEditCommentId,
     this.activeEditOriginalReplyToEventId,
     this.activeEditOriginalReplyToAuthorPubkey,
+    this.activeEditOriginalComment,
     this.editInputText = '',
     this.mentionQuery = '',
     this.mentionSuggestions = const [],
@@ -145,6 +146,9 @@ final class CommentComposerState extends Equatable {
 
   /// `replyToAuthorPubkey` of the comment being edited.
   final String? activeEditOriginalReplyToAuthorPubkey;
+
+  /// Snapshot of the canonical comment being edited.
+  final Comment? activeEditOriginalComment;
 
   /// Text content of the edit input buffer.
   final String editInputText;
@@ -188,6 +192,7 @@ final class CommentComposerState extends Equatable {
     String? activeEditCommentId,
     String? activeEditOriginalReplyToEventId,
     String? activeEditOriginalReplyToAuthorPubkey,
+    Comment? activeEditOriginalComment,
     String? editInputText,
     String? mentionQuery,
     List<MentionSuggestion>? mentionSuggestions,
@@ -209,6 +214,8 @@ final class CommentComposerState extends Equatable {
       activeEditOriginalReplyToAuthorPubkey:
           activeEditOriginalReplyToAuthorPubkey ??
           this.activeEditOriginalReplyToAuthorPubkey,
+      activeEditOriginalComment:
+          activeEditOriginalComment ?? this.activeEditOriginalComment,
       editInputText: editInputText ?? this.editInputText,
       mentionQuery: mentionQuery ?? this.mentionQuery,
       mentionSuggestions: mentionSuggestions ?? this.mentionSuggestions,
@@ -231,6 +238,7 @@ final class CommentComposerState extends Equatable {
       activeEditOriginalReplyToEventId: activeEditOriginalReplyToEventId,
       activeEditOriginalReplyToAuthorPubkey:
           activeEditOriginalReplyToAuthorPubkey,
+      activeEditOriginalComment: activeEditOriginalComment,
       editInputText: editInputText,
       error: error,
       outbox: outbox,
@@ -259,6 +267,7 @@ final class CommentComposerState extends Equatable {
     activeEditCommentId,
     activeEditOriginalReplyToEventId,
     activeEditOriginalReplyToAuthorPubkey,
+    activeEditOriginalComment,
     editInputText,
     mentionQuery,
     mentionSuggestions,

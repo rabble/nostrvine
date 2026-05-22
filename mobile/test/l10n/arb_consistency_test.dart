@@ -453,19 +453,6 @@ const _knownUntranslatedDebt = {
   // Translators will pick this up in a follow-up pass; until then non-English
   // locales fall back to the English source.
   'feedLoadingMore',
-  // Added by the comments-bloc split (#4516): error snackbars wired through
-  // l10n. Translators will pick these up in a follow-up pass; until then
-  // non-English locales fall back to the English source.
-  'commentsErrorLoadFailed',
-  'commentsErrorNotAuthenticatedComment',
-  'commentsErrorPostCommentFailed',
-  'commentsErrorPostReplyFailed',
-  'commentsErrorEditFailed',
-  'commentsErrorNotAuthenticatedInteract',
-  'commentsErrorVoteFailed',
-  'commentsErrorReportFailed',
-  'commentsErrorBlockFailed',
-  'commentsErrorDeleteFailed',
 };
 
 Map<String, Object?> _readArb(File file) {

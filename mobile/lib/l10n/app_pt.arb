@@ -3687,5 +3687,15 @@
     "dmFormatBold": "Negrito",
     "dmFormatItalic": "Itálico",
     "dmFormatStrikethrough": "Tachado",
-    "dmFormatCode": "Código"
+    "dmFormatCode": "Código",
+    "commentsErrorLoadFailed": "Failed to load comments",
+    "commentsErrorNotAuthenticatedComment": "Please sign in to comment",
+    "commentsErrorPostCommentFailed": "Failed to post comment",
+    "commentsErrorPostReplyFailed": "Failed to post reply",
+    "commentsErrorEditFailed": "Failed to edit comment",
+    "commentsErrorNotAuthenticatedInteract": "Please sign in to interact",
+    "commentsErrorVoteFailed": "Failed to vote on comment",
+    "commentsErrorReportFailed": "Failed to report comment",
+    "commentsErrorBlockFailed": "Failed to block user",
+    "commentsErrorDeleteFailed": "Failed to delete comment"
 }
