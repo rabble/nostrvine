@@ -2562,11 +2562,11 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get authRecoveryDraftsOwner =>
-      'Your drafts and clips are saved for this account';
+      'Draf dan klip kamu tersimpan untuk akun ini';
 
   @override
   String get authRecoveryOtherAccountWarning =>
-      'Signing in here will hide those drafts and clips';
+      'Masuk di sini akan menyembunyikan draf dan klip tersebut';
 
   @override
   String get authTermsPrefix =>

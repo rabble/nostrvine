@@ -1142,6 +1142,8 @@
     "authCreateNewAccount": "新しい Divine アカウントを作ろう",
     "authSignInDifferentAccount": "既存のアカウントでサインイン",
     "authSignBackIn": "もう一回サインイン",
+    "authRecoveryDraftsOwner": "下書きとクリップはこのアカウントに保存されています",
+    "authRecoveryOtherAccountWarning": "ここでサインインするとそれらが非表示になります",
     "authTermsPrefix": "上のオプションを選ぶと、16歳以上であることを確認し、次に同意したことになるよ: ",
     "authTermsOfService": "利用規約",
     "authPrivacyPolicy": "プライバシーポリシー",

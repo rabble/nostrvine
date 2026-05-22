@@ -2631,11 +2631,11 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get authRecoveryDraftsOwner =>
-      'Your drafts and clips are saved for this account';
+      'Ang iyong mga draft at clip ay naka-save para sa account na ito';
 
   @override
   String get authRecoveryOtherAccountWarning =>
-      'Signing in here will hide those drafts and clips';
+      'Ang pag-sign in dito ay magtatago ng mga draft at clip na iyon';
 
   @override
   String get authTermsPrefix =>

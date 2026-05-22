@@ -1145,6 +1145,8 @@
     "authCreateNewAccount": "Creează un cont Divine nou",
     "authSignInDifferentAccount": "Autentifică-te cu un cont existent",
     "authSignBackIn": "Reautentifică-te",
+    "authRecoveryDraftsOwner": "Ciornele și clipurile tale sunt salvate pentru acest cont",
+    "authRecoveryOtherAccountWarning": "Autentificarea aici le va ascunde",
     "authTermsPrefix": "Selecționând o opțiune de mai sus, confirmi că ai cel puțin 16 ani și ești de acord cu ",
     "authTermsOfService": "Termenii serviciului",
     "authPrivacyPolicy": "Politica de confidențialitate",

@@ -2661,11 +2661,11 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get authRecoveryDraftsOwner =>
-      'Your drafts and clips are saved for this account';
+      'Twoje szkice i klipy są zapisane dla tego konta';
 
   @override
   String get authRecoveryOtherAccountWarning =>
-      'Signing in here will hide those drafts and clips';
+      'Zalogowanie się tutaj ukryje te szkice i klipy';
 
   @override
   String get authTermsPrefix =>

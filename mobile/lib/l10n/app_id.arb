@@ -1142,6 +1142,8 @@
     "authCreateNewAccount": "Buat akun Divine baru",
     "authSignInDifferentAccount": "Masuk dengan akun yang sudah ada",
     "authSignBackIn": "Masuk kembali",
+    "authRecoveryDraftsOwner": "Draf dan klip kamu tersimpan untuk akun ini",
+    "authRecoveryOtherAccountWarning": "Masuk di sini akan menyembunyikan draf dan klip tersebut",
     "authTermsPrefix": "Dengan memilih opsi di atas, kamu mengonfirmasi bahwa kamu berusia minimal 16 tahun dan setuju dengan ",
     "authTermsOfService": "Ketentuan Layanan",
     "authPrivacyPolicy": "Kebijakan Privasi",

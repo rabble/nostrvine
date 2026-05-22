@@ -2617,11 +2617,11 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get authRecoveryDraftsOwner =>
-      'Your drafts and clips are saved for this account';
+      'Le tue bozze e i tuoi clip sono salvati per questo account';
 
   @override
   String get authRecoveryOtherAccountWarning =>
-      'Signing in here will hide those drafts and clips';
+      'Accedere qui nasconderà quelle bozze e quei clip';
 
   @override
   String get authTermsPrefix =>

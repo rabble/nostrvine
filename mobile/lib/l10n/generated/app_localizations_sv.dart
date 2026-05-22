@@ -2584,11 +2584,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get authRecoveryDraftsOwner =>
-      'Your drafts and clips are saved for this account';
+      'Dina utkast och klipp är sparade för det här kontot';
 
   @override
   String get authRecoveryOtherAccountWarning =>
-      'Signing in here will hide those drafts and clips';
+      'Loggar du in här döljs de utkasten och klippen';
 
   @override
   String get authTermsPrefix =>

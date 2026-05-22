@@ -2570,11 +2570,11 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get authRecoveryDraftsOwner =>
-      'Your drafts and clips are saved for this account';
+      'Taslakların ve kliplerin bu hesaba kaydedildi';
 
   @override
   String get authRecoveryOtherAccountWarning =>
-      'Signing in here will hide those drafts and clips';
+      'Buradan giriş yaparsan o taslaklar ve klipler gizlenir';
 
   @override
   String get authTermsPrefix =>

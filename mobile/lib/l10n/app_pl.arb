@@ -1145,6 +1145,8 @@
     "authCreateNewAccount": "Utwórz nowe konto Divine",
     "authSignInDifferentAccount": "Zaloguj się na istniejące konto",
     "authSignBackIn": "Zaloguj się z powrotem",
+    "authRecoveryDraftsOwner": "Twoje szkice i klipy są zapisane dla tego konta",
+    "authRecoveryOtherAccountWarning": "Zalogowanie się tutaj ukryje te szkice i klipy",
     "authTermsPrefix": "Wybierając opcję powyżej, potwierdzasz, że masz przynajmniej 16 lat i zgadzasz się z ",
     "authTermsOfService": "Regulaminem",
     "authPrivacyPolicy": "Polityką prywatności",

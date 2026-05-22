@@ -2631,11 +2631,11 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get authRecoveryDraftsOwner =>
-      'Your drafts and clips are saved for this account';
+      'Черновите и клиповете ти са запазени за този акаунт';
 
   @override
   String get authRecoveryOtherAccountWarning =>
-      'Signing in here will hide those drafts and clips';
+      'Влизането тук ще скрие тези чернови и клипове';
 
   @override
   String get authTermsPrefix =>

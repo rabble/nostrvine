@@ -1149,6 +1149,8 @@
     "authCreateNewAccount": "Crear una cuenta nueva en Divine",
     "authSignInDifferentAccount": "Iniciar sesión con una cuenta existente",
     "authSignBackIn": "Volver a iniciar sesión",
+    "authRecoveryDraftsOwner": "Tus borradores y clips están guardados en esta cuenta",
+    "authRecoveryOtherAccountWarning": "Iniciar sesión aquí ocultará esos borradores y clips",
     "authTermsPrefix": "Al seleccionar una opción, confirmás que tenés al menos 16 años y aceptás los ",
     "authTermsOfService": "Términos del Servicio",
     "authPrivacyPolicy": "Política de Privacidad",

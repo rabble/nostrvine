@@ -2468,12 +2468,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get authSignBackIn => '다시 로그인';
 
   @override
-  String get authRecoveryDraftsOwner =>
-      'Your drafts and clips are saved for this account';
+  String get authRecoveryDraftsOwner => '임시저장 및 클립이 이 계정에 저장되어 있어요';
 
   @override
-  String get authRecoveryOtherAccountWarning =>
-      'Signing in here will hide those drafts and clips';
+  String get authRecoveryOtherAccountWarning => '여기서 로그인하면 해당 임시저장과 클립이 숨겨져요';
 
   @override
   String get authTermsPrefix =>

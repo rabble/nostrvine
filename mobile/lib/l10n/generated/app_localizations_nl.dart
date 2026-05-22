@@ -2597,11 +2597,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get authRecoveryDraftsOwner =>
-      'Your drafts and clips are saved for this account';
+      'Je concepten en clips zijn opgeslagen voor dit account';
 
   @override
   String get authRecoveryOtherAccountWarning =>
-      'Signing in here will hide those drafts and clips';
+      'Hier inloggen verbergt die concepten en clips';
 
   @override
   String get authTermsPrefix =>

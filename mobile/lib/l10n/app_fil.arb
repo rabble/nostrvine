@@ -687,6 +687,8 @@
     "authCreateNewAccount": "Gumawa ng bagong Divine account",
     "authSignInDifferentAccount": "Mag-sign in gamit ang umiiral na account",
     "authSignBackIn": "Mag-sign in muli",
+    "authRecoveryDraftsOwner": "Ang iyong mga draft at clip ay naka-save para sa account na ito",
+    "authRecoveryOtherAccountWarning": "Ang pag-sign in dito ay magtatago ng mga draft at clip na iyon",
     "authTermsPrefix": "Sa pagpili ng opsyon sa itaas, kinukumpirma mo na ikaw ay 16 na taong gulang o mas matanda at sumasang-ayon sa ",
     "authTermsOfService": "Terms of Service",
     "authPrivacyPolicy": "Privacy Policy",

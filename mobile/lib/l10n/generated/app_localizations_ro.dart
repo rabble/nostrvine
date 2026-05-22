@@ -2676,11 +2676,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get authRecoveryDraftsOwner =>
-      'Your drafts and clips are saved for this account';
+      'Ciornele și clipurile tale sunt salvate pentru acest cont';
 
   @override
   String get authRecoveryOtherAccountWarning =>
-      'Signing in here will hide those drafts and clips';
+      'Autentificarea aici le va ascunde';
 
   @override
   String get authTermsPrefix =>

@@ -1335,6 +1335,8 @@
     "authCreateNewAccount": "አዲስ Divine መለያ ይፍጠሩ",
     "authSignInDifferentAccount": "በነባር መለያ ይግቡ",
     "authSignBackIn": "ተመልሰው ይግቡ",
+    "authRecoveryDraftsOwner": "ረቂቆችዎ እና ክሊፖችዎ ለዚህ መለያ ተቀምጠዋል",
+    "authRecoveryOtherAccountWarning": "እዚህ መግባት እነዚያ ረቂቆች እና ክሊፖች ይደብቃቸዋል",
     "authTermsPrefix": "ከላይ ያለውን አማራጭ በመምረጥ፣ ቢያንስ 16 ዓመት እንደሆናችሁ አረጋግጠዋል እና በዚህ ተስማምተዋል።",
     "authTermsOfService": "የአገልግሎት ውል",
     "authPrivacyPolicy": "የግላዊነት ፖሊሲ",

@@ -1145,6 +1145,8 @@
     "authCreateNewAccount": "Criar uma nova conta Divine",
     "authSignInDifferentAccount": "Entrar com uma conta existente",
     "authSignBackIn": "Entrar de novo",
+    "authRecoveryDraftsOwner": "Seus rascunhos e clipes estão salvos nesta conta",
+    "authRecoveryOtherAccountWarning": "Entrar aqui vai esconder esses rascunhos e clipes",
     "authTermsPrefix": "Ao selecionar uma opção acima, você confirma que tem pelo menos 16 anos e concorda com os ",
     "authTermsOfService": "Termos de Serviço",
     "authPrivacyPolicy": "Política de Privacidade",

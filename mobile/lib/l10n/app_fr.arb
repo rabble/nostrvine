@@ -1145,6 +1145,8 @@
     "authCreateNewAccount": "Créer un nouveau compte Divine",
     "authSignInDifferentAccount": "Se connecter avec un compte existant",
     "authSignBackIn": "Se reconnecter",
+    "authRecoveryDraftsOwner": "Tes brouillons et clips sont enregistrés pour ce compte",
+    "authRecoveryOtherAccountWarning": "Se connecter ici masquera ces brouillons et clips",
     "authTermsPrefix": "En choisissant une option ci-dessus, tu confirmes avoir au moins 16 ans et accepter les ",
     "authTermsOfService": "Conditions d'utilisation",
     "authPrivacyPolicy": "Politique de confidentialité",

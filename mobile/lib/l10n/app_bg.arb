@@ -1219,6 +1219,8 @@
     "authCreateNewAccount": "Създай нов Divine акаунт",
     "authSignInDifferentAccount": "Влез със съществуващ акаунт",
     "authSignBackIn": "Влез отново",
+    "authRecoveryDraftsOwner": "Черновите и клиповете ти са запазени за този акаунт",
+    "authRecoveryOtherAccountWarning": "Влизането тук ще скрие тези чернови и клипове",
     "authTermsPrefix": "Като избереш опция по-горе, потвърждаваш, че си на 16 или повече и се съгласяваш с",
     "authTermsOfService": "Условия за ползване",
     "authPrivacyPolicy": "Политика за поверителност",

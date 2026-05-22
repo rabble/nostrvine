@@ -1142,6 +1142,8 @@
     "authCreateNewAccount": "إنشاء حساب Divine جديد",
     "authSignInDifferentAccount": "تسجيل الدخول بحساب موجود",
     "authSignBackIn": "عد إلى تسجيل الدخول",
+    "authRecoveryDraftsOwner": "مسوداتك ومقاطعك محفوظة لهذا الحساب",
+    "authRecoveryOtherAccountWarning": "تسجيل الدخول هنا سيُخفي تلك المسودات والمقاطع",
     "authTermsPrefix": "باختيار خيار أعلاه، أنت تؤكّد أنّ عمرك 16 عامًا على الأقل وتوافق على ",
     "authTermsOfService": "شروط الخدمة",
     "authPrivacyPolicy": "سياسة الخصوصية",

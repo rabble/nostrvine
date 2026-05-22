@@ -2557,12 +2557,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get authSignBackIn => 'عد إلى تسجيل الدخول';
 
   @override
-  String get authRecoveryDraftsOwner =>
-      'Your drafts and clips are saved for this account';
+  String get authRecoveryDraftsOwner => 'مسوداتك ومقاطعك محفوظة لهذا الحساب';
 
   @override
   String get authRecoveryOtherAccountWarning =>
-      'Signing in here will hide those drafts and clips';
+      'تسجيل الدخول هنا سيُخفي تلك المسودات والمقاطع';
 
   @override
   String get authTermsPrefix =>

@@ -1145,6 +1145,8 @@
     "authCreateNewAccount": "Neues Divine-Konto erstellen",
     "authSignInDifferentAccount": "Mit bestehendem Konto anmelden",
     "authSignBackIn": "Wieder anmelden",
+    "authRecoveryDraftsOwner": "Deine Entwürfe und Clips sind für dieses Konto gespeichert",
+    "authRecoveryOtherAccountWarning": "Hier anmelden verbirgt diese Entwürfe und Clips",
     "authTermsPrefix": "Indem du oben eine Option wählst, bestätigst du, dass du mindestens 16 Jahre alt bist und den ",
     "authTermsOfService": "Nutzungsbedingungen",
     "authPrivacyPolicy": "Datenschutzrichtlinie",

@@ -2627,11 +2627,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get authRecoveryDraftsOwner =>
-      'Your drafts and clips are saved for this account';
+      'Tes brouillons et clips sont enregistrés pour ce compte';
 
   @override
   String get authRecoveryOtherAccountWarning =>
-      'Signing in here will hide those drafts and clips';
+      'Se connecter ici masquera ces brouillons et clips';
 
   @override
   String get authTermsPrefix =>

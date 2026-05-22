@@ -2539,12 +2539,11 @@ class AppLocalizationsAm extends AppLocalizations {
   String get authSignBackIn => 'ተመልሰው ይግቡ';
 
   @override
-  String get authRecoveryDraftsOwner =>
-      'Your drafts and clips are saved for this account';
+  String get authRecoveryDraftsOwner => 'ረቂቆችዎ እና ክሊፖችዎ ለዚህ መለያ ተቀምጠዋል';
 
   @override
   String get authRecoveryOtherAccountWarning =>
-      'Signing in here will hide those drafts and clips';
+      'እዚህ መግባት እነዚያ ረቂቆች እና ክሊፖች ይደብቃቸዋል';
 
   @override
   String get authTermsPrefix =>
