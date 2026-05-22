@@ -82,6 +82,7 @@ class MockContentFilterService extends Mock implements ContentFilterService {
 
 void main() {
   group('SafetySettingsScreen Widget Tests', () {
+    final l10n = lookupAppLocalizations(const Locale('en'));
     late MockContentBlocklistRepository mockBlocklistRepository;
     late MockContentReportingService mockReportingService;
     late MockAccountLabelService mockAccountLabelService;
@@ -124,12 +125,6 @@ void main() {
       ).thenAnswer((_) async {});
       when(
         () => mockModerationLabelService.removeLabeler(any()),
-      ).thenAnswer((_) async {});
-      when(
-        mockModerationLabelService.addDivineLabeler,
-      ).thenAnswer((_) async {});
-      when(
-        mockModerationLabelService.removeDivineLabeler,
       ).thenAnswer((_) async {});
       when(
         () => mockModerationLabelService.setFollowingModerationEnabled(
@@ -283,15 +278,18 @@ void main() {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
-        final tile = find.widgetWithText(SwitchListTile, 'Divine');
+        final tile = find.widgetWithText(
+          SwitchListTile,
+          l10n.safetySettingsDivine,
+        );
         expect(tile, findsOneWidget);
 
         final switchTile = tester.widget<SwitchListTile>(tile);
         expect(switchTile.value, isTrue);
         expect(switchTile.onChanged, isNull);
 
-        verifyNever(mockModerationLabelService.removeDivineLabeler);
-        verifyNever(mockModerationLabelService.addDivineLabeler);
+        verifyNever(() => mockModerationLabelService.removeLabeler(any()));
+        verifyNever(() => mockModerationLabelService.addLabeler(any()));
       },
     );
 
@@ -302,11 +300,17 @@ void main() {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
-        expect(find.text('Only show Divine-hosted videos'), findsOneWidget);
+        expect(
+          find.text(l10n.safetySettingsShowDivineHostedOnly),
+          findsOneWidget,
+        );
         expect(divineHostFilterService.showDivineHostedOnly, isTrue);
 
         await tester.tap(
-          find.widgetWithText(SwitchListTile, 'Only show Divine-hosted videos'),
+          find.widgetWithText(
+            SwitchListTile,
+            l10n.safetySettingsShowDivineHostedOnly,
+          ),
         );
         await tester.pumpAndSettle();
 
@@ -351,7 +355,10 @@ void main() {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
-        final tile = find.widgetWithText(SwitchListTile, 'People I follow');
+        final tile = find.widgetWithText(
+          SwitchListTile,
+          l10n.safetySettingsPeopleIFollow,
+        );
         expect(tile, findsOneWidget);
         expect(tester.widget<SwitchListTile>(tile).value, isFalse);
 

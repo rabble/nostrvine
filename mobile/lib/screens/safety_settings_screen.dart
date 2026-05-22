@@ -31,7 +31,6 @@ class SafetySettingsScreen extends ConsumerStatefulWidget {
 class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
   bool _isLoading = true;
   bool _isAgeVerified = false;
-  bool _isDivineLabelerEnabled = true;
   bool _isPeopleIFollowEnabled = false;
   bool _showDivineHostedOnly = true;
 
@@ -49,7 +48,6 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
     if (mounted) {
       setState(() {
         _isAgeVerified = service.isAdultContentVerified;
-        _isDivineLabelerEnabled = labelService.isDivineLabelerSubscribed;
         _isPeopleIFollowEnabled = labelService.isFollowingModerationEnabled;
         _showDivineHostedOnly = divineHostFilterService.showDivineHostedOnly;
         _isLoading = false;
@@ -216,7 +214,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
 
   Widget _buildDivineProvider() {
     return SwitchListTile(
-      value: _isDivineLabelerEnabled,
+      value: true,
       // The built-in Divine moderation labeler is always on by product design.
       onChanged: null,
       secondary: const Icon(Icons.verified_user, color: VineTheme.vineGreen),

@@ -122,13 +122,6 @@ class ModerationLabelService {
   bool get isDivineLabelerSubscribed =>
       _subscribedLabelers.contains(_divineModerationPubkey);
 
-  /// Subscribe to the Divine official labeler.
-  Future<void> addDivineLabeler() => addLabeler(_divineModerationPubkey);
-
-  /// Unsubscribe from the Divine official labeler (no-op by design —
-  /// [removeLabeler] guards against removing the built-in labeler).
-  Future<void> removeDivineLabeler() => removeLabeler(_divineModerationPubkey);
-
   /// Subscribed labelers excluding the built-in Divine labeler.
   Set<String> get customLabelers =>
       _subscribedLabelers.difference({_divineModerationPubkey});

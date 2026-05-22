@@ -124,12 +124,6 @@ void main() {
     ).thenReturn(false);
     when(() => moderationLabelService.customLabelers).thenReturn(<String>{});
     when(
-      () => moderationLabelService.addDivineLabeler(),
-    ).thenAnswer((_) async {});
-    when(
-      () => moderationLabelService.removeDivineLabeler(),
-    ).thenAnswer((_) async {});
-    when(
       () => moderationLabelService.setFollowingModerationEnabled(
         any(),
         followedPubkeys: any(named: 'followedPubkeys'),

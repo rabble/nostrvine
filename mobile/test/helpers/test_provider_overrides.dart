@@ -315,8 +315,6 @@ MockModerationLabelService createMockModerationLabelService() {
   when(() => mock.subscribeToLabeler(any())).thenAnswer((_) async {});
   when(() => mock.addLabeler(any())).thenAnswer((_) async {});
   when(() => mock.removeLabeler(any())).thenAnswer((_) async {});
-  when(mock.addDivineLabeler).thenAnswer((_) async {});
-  when(mock.removeDivineLabeler).thenAnswer((_) async {});
   when(
     () => mock.setFollowingModerationEnabled(
       any(),
