@@ -2074,7 +2074,7 @@ void main() {
     );
 
     test(
-      'signOut records the anchor on destructive sign-out too',
+      'signOut clears the anchor on destructive sign-out',
       () async {
         SharedPreferences.setMockInitialValues({
           'authentication_source': 'automatic',

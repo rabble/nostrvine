@@ -95,14 +95,19 @@ final class WelcomeState extends Equatable {
   /// Whether an auth action is in progress.
   bool get isAccepting => status == WelcomeStatus.accepting;
 
+  /// Whether the welcome screen should show session-recovery context.
+  ///
+  /// When present, the user most recently signed out of this account and the
+  /// welcome screen should explain which account owns local drafts/clips.
+  bool get hasRecoveryAnchor => recoveryAnchorPubkeyHex != null;
+
   /// True when the session recovery anchor points to a different account than
   /// the one currently selected for sign-in.
   ///
-  /// This happens after a destructive sign-out when the cold-start session
-  /// restore path would have landed on a different account than the one the
-  /// user was actively using. The welcome screen uses this to show a
-  /// contextual banner explaining that local drafts/clips belong to the anchor
-  /// account and that choosing a different account will hide them.
+  /// This happens when the user switches away from the anchored account on the
+  /// welcome screen. The banner flips from reassurance to a warning explaining
+  /// that local drafts/clips belong to the anchored account and will be hidden
+  /// after sign-in.
   bool get hasCrossAccountMismatch {
     if (recoveryAnchorPubkeyHex == null) return false;
     final selected = selectedAccount;

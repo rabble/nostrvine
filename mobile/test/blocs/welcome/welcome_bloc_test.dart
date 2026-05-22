@@ -91,6 +91,9 @@ void main() {
     mockUserProfilesDao = _MockUserProfilesDao();
     mockAuthService = _MockAuthService();
 
+    when(
+      () => mockUserProfilesDao.getProfile(any()),
+    ).thenAnswer((_) async => null);
     when(() => mockAuthService.getKnownAccounts()).thenAnswer((_) async => []);
     when(
       () => mockAuthService.getSessionRecoveryAnchorNpub(),
@@ -680,6 +683,17 @@ void main() {
       const state = WelcomeState(recoveryAnchorPubkeyHex: _testPubkeyHex);
       final cleared = state.copyWith(clearRecoveryAnchor: true);
       expect(cleared.recoveryAnchorPubkeyHex, isNull);
+    });
+
+    test('copyWith status resets from error', () {
+      const state = WelcomeState(status: WelcomeStatus.error);
+      final cleared = state.copyWith(status: WelcomeStatus.loaded);
+      expect(cleared.status, equals(WelcomeStatus.loaded));
+    });
+
+    test('hasRecoveryAnchor is true when recovery anchor is set', () {
+      const state = WelcomeState(recoveryAnchorPubkeyHex: _testPubkeyHex);
+      expect(state.hasRecoveryAnchor, isTrue);
     });
 
     group('hasCrossAccountMismatch', () {

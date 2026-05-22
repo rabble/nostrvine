@@ -5,6 +5,7 @@
 import 'package:db_client/db_client.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -17,6 +18,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/auth/auth_hero_section.dart';
 import 'package:openvine/widgets/error_message.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -45,6 +47,16 @@ final _testKnownAccount = KnownAccount(
   authSource: AuthenticationSource.automatic,
   addedAt: DateTime(2024),
   lastUsedAt: DateTime(2024, 6),
+);
+
+const _testPubkeyHex2 =
+    'b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3';
+
+final _testKnownAccount2 = KnownAccount(
+  pubkeyHex: _testPubkeyHex2,
+  authSource: AuthenticationSource.amber,
+  addedAt: DateTime(2024),
+  lastUsedAt: DateTime(2024, 5),
 );
 
 void main() {
@@ -82,7 +94,10 @@ void main() {
     ).thenAnswer((_) async {});
   });
 
-  Widget createTestWidget({AuthState authState = AuthState.unauthenticated}) {
+  Widget createTestWidget({
+    AuthState authState = AuthState.unauthenticated,
+    String? initialSelectedPubkeyHex,
+  }) {
     return ProviderScope(
       overrides: [
         authServiceProvider.overrideWithValue(mockAuthService),
@@ -98,7 +113,9 @@ void main() {
           routes: [
             GoRoute(
               path: WelcomeScreen.path,
-              builder: (context, state) => const WelcomeScreen(),
+              builder: (context, state) => WelcomeScreen(
+                initialSelectedPubkeyHex: initialSelectedPubkeyHex,
+              ),
               routes: [
                 GoRoute(
                   path: 'invite',
@@ -308,6 +325,87 @@ void main() {
 
         expect(find.text('Create a new Divine account'), findsOneWidget);
       });
+
+      testWidgets(
+        'shows the recovery owner banner when the selected account matches the anchor',
+        (tester) async {
+          final anchorNpub = NostrKeyUtils.encodePubKey(_testPubkeyHex);
+          when(
+            () => mockAuthService.getSessionRecoveryAnchorNpub(),
+          ).thenAnswer((_) async => anchorNpub);
+
+          final announcements = <Map<Object?, Object?>>[];
+          tester.binding.defaultBinaryMessenger
+              .setMockDecodedMessageHandler<Object?>(
+                SystemChannels.accessibility,
+                (Object? message) async {
+                  if (message is Map) announcements.add(message);
+                  return null;
+                },
+              );
+          addTearDown(
+            () => tester.binding.defaultBinaryMessenger
+                .setMockDecodedMessageHandler<Object?>(
+                  SystemChannels.accessibility,
+                  null,
+                ),
+          );
+
+          await tester.binding.setSurfaceSize(const Size(800, 1200));
+          addTearDown(() => tester.binding.setSurfaceSize(null));
+          await tester.pumpWidget(createTestWidget());
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text('Your drafts and clips are saved for this account'),
+            findsOneWidget,
+          );
+          expect(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is DivineIcon &&
+                  widget.icon == DivineIconName.warningCircle,
+            ),
+            findsOneWidget,
+          );
+
+          final announceCalls = announcements.where(
+            (message) => message['type'] == 'announce',
+          );
+          expect(announceCalls, isNotEmpty);
+          expect(
+            announceCalls
+                .map((message) => (message['data'] as Map?)?['message'])
+                .toList(),
+            contains('Your drafts and clips are saved for this account'),
+          );
+        },
+      );
+
+      testWidgets(
+        'shows the cross-account warning when selection differs from the anchor',
+        (tester) async {
+          final anchorNpub = NostrKeyUtils.encodePubKey(_testPubkeyHex);
+          when(
+            () => mockAuthService.getKnownAccounts(),
+          ).thenAnswer((_) async => [_testKnownAccount, _testKnownAccount2]);
+          when(
+            () => mockAuthService.getSessionRecoveryAnchorNpub(),
+          ).thenAnswer((_) async => anchorNpub);
+
+          await tester.binding.setSurfaceSize(const Size(800, 1200));
+          addTearDown(() => tester.binding.setSurfaceSize(null));
+          await tester.pumpWidget(
+            createTestWidget(initialSelectedPubkeyHex: _testPubkeyHex2),
+          );
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text('Signing in here will hide those drafts and clips'),
+            findsOneWidget,
+          );
+        },
+      );
 
       testWidgets('tapping "Sign back in" calls signInForAccount', (
         tester,
