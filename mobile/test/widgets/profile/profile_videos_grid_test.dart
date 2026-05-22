@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:db_client/db_client.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,7 +12,9 @@ import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
+import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/collaborator_invite_recovery_service.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/widgets/profile/profile_videos_grid.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -23,6 +26,9 @@ class _MockAuthService extends Mock implements AuthService {}
 class _MockBackgroundPublishBloc
     extends MockBloc<BackgroundPublishEvent, BackgroundPublishState>
     implements BackgroundPublishBloc {}
+
+class _MockCollaboratorInviteRecoveryService extends Mock
+    implements CollaboratorInviteRecoveryService {}
 
 const _ownPubkey =
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -73,10 +79,12 @@ void main() {
   group(ProfileVideosGrid, () {
     late _MockAuthService mockAuth;
     late _MockBackgroundPublishBloc mockBloc;
+    late _MockCollaboratorInviteRecoveryService mockInviteRecoveryService;
 
     setUp(() {
       mockAuth = _MockAuthService();
       mockBloc = _MockBackgroundPublishBloc();
+      mockInviteRecoveryService = _MockCollaboratorInviteRecoveryService();
       when(() => mockBloc.state).thenReturn(const BackgroundPublishState());
       debugProfileVideosGridBuildCount = 0;
     });
@@ -86,8 +94,17 @@ void main() {
       List<model.VideoEvent> videos = const [],
       bool isLoading = false,
       String? errorMessage,
+      List<PendingCollaboratorInviteGroup> pendingInviteGroups = const [],
     }) {
       return testProviderScope(
+        additionalOverrides: [
+          collaboratorInviteRecoveryServiceProvider.overrideWithValue(
+            mockInviteRecoveryService,
+          ),
+          pendingCollaboratorInviteGroupsProvider.overrideWith(
+            (ref) => Stream.value(pendingInviteGroups),
+          ),
+        ],
         mockAuthService: mockAuth,
         child: BlocProvider<BackgroundPublishBloc>.value(
           value: mockBloc,
@@ -174,6 +191,144 @@ void main() {
         );
 
         expect(find.byType(SliverGrid), findsOneWidget);
+      });
+
+      testWidgets('shows persistent pending invite banner on own profile', (
+        tester,
+      ) async {
+        when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+        final videos = _createTestVideos(pubkey: _ownPubkey);
+        final pendingInviteGroups = [
+          PendingCollaboratorInviteGroup(
+            creatorPubkey: _ownPubkey,
+            videoAddress: '34236:$_ownPubkey:video-1',
+            title: 'Beach post',
+            invites: [
+              PendingCollaboratorInvite(
+                rumorId: 'rumor-1',
+                collaboratorPubkey: _otherPubkey,
+                creatorPubkey: _ownPubkey,
+                videoAddress: '34236:$_ownPubkey:video-1',
+                recipientWrapStatus: OutgoingWrapStatus.failed,
+                selfWrapStatus: OutgoingWrapStatus.failed,
+                retryCount: 1,
+                queuedAt: DateTime.utc(2026, 5, 22, 13),
+              ),
+            ],
+          ),
+        ];
+
+        await tester.pumpWidget(
+          buildSubject(
+            userIdHex: _ownPubkey,
+            videos: videos,
+            pendingInviteGroups: pendingInviteGroups,
+          ),
+        );
+        await tester.pump();
+
+        expect(
+          find.text('1 collaborator invite still needs to send'),
+          findsOneWidget,
+        );
+        expect(find.text('For "Beach post". Retry it here.'), findsOneWidget);
+        expect(find.text('Retry'), findsOneWidget);
+      });
+
+      testWidgets('does not show pending invite banner on another profile', (
+        tester,
+      ) async {
+        when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+        final videos = _createTestVideos(pubkey: _otherPubkey);
+        final pendingInviteGroups = [
+          PendingCollaboratorInviteGroup(
+            creatorPubkey: _ownPubkey,
+            videoAddress: '34236:$_ownPubkey:video-1',
+            invites: [
+              PendingCollaboratorInvite(
+                rumorId: 'rumor-1',
+                collaboratorPubkey: _otherPubkey,
+                creatorPubkey: _ownPubkey,
+                videoAddress: '34236:$_ownPubkey:video-1',
+                recipientWrapStatus: OutgoingWrapStatus.failed,
+                selfWrapStatus: OutgoingWrapStatus.failed,
+                retryCount: 1,
+                queuedAt: DateTime.utc(2026, 5, 22, 13),
+              ),
+            ],
+          ),
+        ];
+
+        await tester.pumpWidget(
+          buildSubject(
+            userIdHex: _otherPubkey,
+            videos: videos,
+            pendingInviteGroups: pendingInviteGroups,
+          ),
+        );
+        await tester.pump();
+
+        expect(
+          find.text('1 collaborator invite still needs to send'),
+          findsNothing,
+        );
+      });
+
+      testWidgets('retry banner action uses queue-backed recovery', (
+        tester,
+      ) async {
+        when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+        when(
+          () => mockInviteRecoveryService.retryPendingInvitesForVideo(
+            videoAddress: any(named: 'videoAddress'),
+            collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
+          ),
+        ).thenAnswer(
+          (_) async => const CollaboratorInviteRetrySummary(
+            attemptedCount: 1,
+            successCount: 1,
+            failureCount: 0,
+          ),
+        );
+        final pendingInviteGroups = [
+          PendingCollaboratorInviteGroup(
+            creatorPubkey: _ownPubkey,
+            videoAddress: '34236:$_ownPubkey:video-1',
+            invites: [
+              PendingCollaboratorInvite(
+                rumorId: 'rumor-1',
+                collaboratorPubkey: _otherPubkey,
+                creatorPubkey: _ownPubkey,
+                videoAddress: '34236:$_ownPubkey:video-1',
+                recipientWrapStatus: OutgoingWrapStatus.failed,
+                selfWrapStatus: OutgoingWrapStatus.failed,
+                retryCount: 1,
+                queuedAt: DateTime.utc(2026, 5, 22, 13),
+              ),
+            ],
+          ),
+        ];
+
+        await tester.pumpWidget(
+          buildSubject(
+            userIdHex: _ownPubkey,
+            videos: _createTestVideos(pubkey: _ownPubkey),
+            pendingInviteGroups: pendingInviteGroups,
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('Retry'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        verify(
+          () => mockInviteRecoveryService.retryPendingInvitesForVideo(
+            videoAddress: '34236:$_ownPubkey:video-1',
+            collaboratorPubkeys: {_otherPubkey},
+          ),
+        ).called(1);
+        expect(find.text('Collaborator invites sent.'), findsOneWidget);
       });
     });
 
@@ -441,77 +596,68 @@ void main() {
       // consumer rebuild. A regression to identity-based list equality
       // would fail the first test below.
 
-      test(
-        'ActiveUploadsView.fromState compares equal across progress-only '
-        'state changes',
-        () {
-          final draft = _createTestDraft();
-          final state1 = BackgroundPublishState(
-            uploads: [
-              BackgroundUpload(draft: draft, result: null, progress: 0.1),
-            ],
-          );
-          final state2 = BackgroundPublishState(
-            uploads: [
-              BackgroundUpload(draft: draft, result: null, progress: 0.9),
-            ],
-          );
+      test('ActiveUploadsView.fromState compares equal across progress-only '
+          'state changes', () {
+        final draft = _createTestDraft();
+        final state1 = BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(draft: draft, result: null, progress: 0.1),
+          ],
+        );
+        final state2 = BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(draft: draft, result: null, progress: 0.9),
+          ],
+        );
 
-          expect(
-            ActiveUploadsView.fromState(state1),
-            equals(ActiveUploadsView.fromState(state2)),
-          );
-        },
-      );
+        expect(
+          ActiveUploadsView.fromState(state1),
+          equals(ActiveUploadsView.fromState(state2)),
+        );
+      });
 
-      test(
-        'ActiveUploadsView.fromState compares unequal when an upload '
-        'is added',
-        () {
-          final draftA = _createTestDraft(title: 'A');
-          final draftB = _createTestDraft(title: 'B');
-          final state1 = BackgroundPublishState(
-            uploads: [
-              BackgroundUpload(draft: draftA, result: null, progress: 0.5),
-            ],
-          );
-          final state2 = BackgroundPublishState(
-            uploads: [
-              BackgroundUpload(draft: draftA, result: null, progress: 0.5),
-              BackgroundUpload(draft: draftB, result: null, progress: 0.5),
-            ],
-          );
+      test('ActiveUploadsView.fromState compares unequal when an upload '
+          'is added', () {
+        final draftA = _createTestDraft(title: 'A');
+        final draftB = _createTestDraft(title: 'B');
+        final state1 = BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(draft: draftA, result: null, progress: 0.5),
+          ],
+        );
+        final state2 = BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(draft: draftA, result: null, progress: 0.5),
+            BackgroundUpload(draft: draftB, result: null, progress: 0.5),
+          ],
+        );
 
-          expect(
-            ActiveUploadsView.fromState(state1),
-            isNot(equals(ActiveUploadsView.fromState(state2))),
-          );
-        },
-      );
+        expect(
+          ActiveUploadsView.fromState(state1),
+          isNot(equals(ActiveUploadsView.fromState(state2))),
+        );
+      });
 
-      test(
-        'ActiveUploadsView.fromState compares unequal when a draft title '
-        'changes',
-        () {
-          final draftA = _createTestDraft(title: 'Old title');
-          final draftB = _createTestDraft(title: 'New title');
-          final state1 = BackgroundPublishState(
-            uploads: [
-              BackgroundUpload(draft: draftA, result: null, progress: 0.5),
-            ],
-          );
-          final state2 = BackgroundPublishState(
-            uploads: [
-              BackgroundUpload(draft: draftB, result: null, progress: 0.5),
-            ],
-          );
+      test('ActiveUploadsView.fromState compares unequal when a draft title '
+          'changes', () {
+        final draftA = _createTestDraft(title: 'Old title');
+        final draftB = _createTestDraft(title: 'New title');
+        final state1 = BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(draft: draftA, result: null, progress: 0.5),
+          ],
+        );
+        final state2 = BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(draft: draftB, result: null, progress: 0.5),
+          ],
+        );
 
-          expect(
-            ActiveUploadsView.fromState(state1),
-            isNot(equals(ActiveUploadsView.fromState(state2))),
-          );
-        },
-      );
+        expect(
+          ActiveUploadsView.fromState(state1),
+          isNot(equals(ActiveUploadsView.fromState(state2))),
+        );
+      });
 
       test(
         'ActiveUploadsView.fromState excludes uploads with a non-null result',
@@ -531,104 +677,98 @@ void main() {
         },
       );
 
-      testWidgets(
-        'progress-only state emission does not rebuild the grid '
-        'while the per-tile spinner still receives the update',
-        (tester) async {
-          when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+      testWidgets('progress-only state emission does not rebuild the grid '
+          'while the per-tile spinner still receives the update', (
+        tester,
+      ) async {
+        when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
 
-          final draft = _createTestDraft();
-          final initial = BackgroundPublishState(
-            uploads: [
-              BackgroundUpload(draft: draft, result: null, progress: 0.1),
-            ],
-          );
-          final tick = BackgroundPublishState(
-            uploads: [
-              BackgroundUpload(draft: draft, result: null, progress: 0.9),
-            ],
-          );
+        final draft = _createTestDraft();
+        final initial = BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(draft: draft, result: null, progress: 0.1),
+          ],
+        );
+        final tick = BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(draft: draft, result: null, progress: 0.9),
+          ],
+        );
 
-          // Use an externally-driven broadcast stream so we can pump the
-          // initial Riverpod async (profileFeedProvider transitions from
-          // AsyncLoading → AsyncData and triggers an orthogonal rebuild
-          // via `ref.watch`) to a steady state before measuring the
-          // bloc-tick's incremental rebuild count.
-          final controller =
-              StreamController<BackgroundPublishState>.broadcast();
-          addTearDown(controller.close);
-          whenListen(mockBloc, controller.stream, initialState: initial);
+        // Use an externally-driven broadcast stream so we can pump the
+        // initial Riverpod async (profileFeedProvider transitions from
+        // AsyncLoading → AsyncData and triggers an orthogonal rebuild
+        // via `ref.watch`) to a steady state before measuring the
+        // bloc-tick's incremental rebuild count.
+        final controller = StreamController<BackgroundPublishState>.broadcast();
+        addTearDown(controller.close);
+        whenListen(mockBloc, controller.stream, initialState: initial);
 
-          await tester.pumpWidget(buildSubject(userIdHex: _ownPubkey));
-          // Settle initial async (Riverpod's profileFeedProvider, post-
-          // frame callbacks, etc.) — anything not caused by our tick.
-          await tester.pump();
-          final baselineBuildCount = debugProfileVideosGridBuildCount;
+        await tester.pumpWidget(buildSubject(userIdHex: _ownPubkey));
+        // Settle initial async (Riverpod's profileFeedProvider, post-
+        // frame callbacks, etc.) — anything not caused by our tick.
+        await tester.pump();
+        final baselineBuildCount = debugProfileVideosGridBuildCount;
 
-          // Now emit the progress-only update.
-          controller.add(tick);
-          await tester.pump();
-          // PartialCircleSpinner.animateTo runs over 200ms — settle the
-          // implicit animation so we read the post-tick value.
-          await tester.pump(const Duration(milliseconds: 250));
+        // Now emit the progress-only update.
+        controller.add(tick);
+        await tester.pump();
+        // PartialCircleSpinner.animateTo runs over 200ms — settle the
+        // implicit animation so we read the post-tick value.
+        await tester.pump(const Duration(milliseconds: 250));
 
-          // (a) Grid did NOT rebuild as a result of the progress-only
-          // emission. A regression to identity-based list equality on
-          // the selector would tick this counter higher.
-          expect(debugProfileVideosGridBuildCount, equals(baselineBuildCount));
+        // (a) Grid did NOT rebuild as a result of the progress-only
+        // emission. A regression to identity-based list equality on
+        // the selector would tick this counter higher.
+        expect(debugProfileVideosGridBuildCount, equals(baselineBuildCount));
 
-          // (b) Per-tile spinner DID receive the updated progress —
-          // the tile's own context.select<...double>(...) projects to
-          // a primitive whose equality compares cleanly.
-          final spinner = tester.widget<PartialCircleSpinner>(
-            find.byType(PartialCircleSpinner),
-          );
-          expect(spinner.progress, closeTo(0.9, 1e-9));
-        },
-      );
+        // (b) Per-tile spinner DID receive the updated progress —
+        // the tile's own context.select<...double>(...) projects to
+        // a primitive whose equality compares cleanly.
+        final spinner = tester.widget<PartialCircleSpinner>(
+          find.byType(PartialCircleSpinner),
+        );
+        expect(spinner.progress, closeTo(0.9, 1e-9));
+      });
 
-      testWidgets(
-        'shape-change state emission does rebuild the grid '
-        '(contrast for the rebuild-count counter)',
-        (tester) async {
-          when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+      testWidgets('shape-change state emission does rebuild the grid '
+          '(contrast for the rebuild-count counter)', (tester) async {
+        when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
 
-          final draftA = _createTestDraft(title: 'A');
-          final draftB = _createTestDraft(title: 'B');
-          final initial = BackgroundPublishState(
-            uploads: [
-              BackgroundUpload(draft: draftA, result: null, progress: 0.5),
-            ],
-          );
-          final shapeChange = BackgroundPublishState(
-            uploads: [
-              BackgroundUpload(draft: draftA, result: null, progress: 0.5),
-              BackgroundUpload(draft: draftB, result: null, progress: 0.5),
-            ],
-          );
+        final draftA = _createTestDraft(title: 'A');
+        final draftB = _createTestDraft(title: 'B');
+        final initial = BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(draft: draftA, result: null, progress: 0.5),
+          ],
+        );
+        final shapeChange = BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(draft: draftA, result: null, progress: 0.5),
+            BackgroundUpload(draft: draftB, result: null, progress: 0.5),
+          ],
+        );
 
-          final controller =
-              StreamController<BackgroundPublishState>.broadcast();
-          addTearDown(controller.close);
-          whenListen(mockBloc, controller.stream, initialState: initial);
+        final controller = StreamController<BackgroundPublishState>.broadcast();
+        addTearDown(controller.close);
+        whenListen(mockBloc, controller.stream, initialState: initial);
 
-          await tester.pumpWidget(buildSubject(userIdHex: _ownPubkey));
-          await tester.pump();
-          final baselineBuildCount = debugProfileVideosGridBuildCount;
+        await tester.pumpWidget(buildSubject(userIdHex: _ownPubkey));
+        await tester.pump();
+        final baselineBuildCount = debugProfileVideosGridBuildCount;
 
-          controller.add(shapeChange);
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 250));
+        controller.add(shapeChange);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
 
-          // Shape changed (a new upload appeared) → grid must rebuild
-          // so the new tile is added to the SliverGrid.
-          expect(
-            debugProfileVideosGridBuildCount,
-            greaterThan(baselineBuildCount),
-          );
-          expect(find.byType(PartialCircleSpinner), findsNWidgets(2));
-        },
-      );
+        // Shape changed (a new upload appeared) → grid must rebuild
+        // so the new tile is added to the SliverGrid.
+        expect(
+          debugProfileVideosGridBuildCount,
+          greaterThan(baselineBuildCount),
+        );
+        expect(find.byType(PartialCircleSpinner), findsNWidgets(2));
+      });
     });
 
     group('scroll coordination with NestedScrollView', () {

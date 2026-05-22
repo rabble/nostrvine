@@ -18,6 +18,7 @@ import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
+import 'package:openvine/services/collaborator_invite_recovery_service.dart';
 import 'package:openvine/widgets/profile/profile_tab_empty_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_error_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_loading_more_sliver.dart';
@@ -274,9 +275,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
             // that hasn't been matched yet.
             final isDuplicate =
                 !matchedTitles.contains(video.title) &&
-                activeUploads.any(
-                  (upload) => upload.title == video.title,
-                );
+                activeUploads.any((upload) => upload.title == video.title);
 
             // Step 3: Mark the title as matched so only the first duplicate
             // per upload is filtered out. Pre-cache the network thumbnail
@@ -342,10 +341,33 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
             ?.value
             .isLoadingMore ??
         false;
+    final pendingInviteGroups = isOwnProfile
+        ? ref
+              .watch(pendingCollaboratorInviteGroupsProvider)
+              .maybeWhen(
+                data: (groups) => groups,
+                orElse: () => const <PendingCollaboratorInviteGroup>[],
+              )
+        : const <PendingCollaboratorInviteGroup>[];
 
     return CustomScrollView(
       physics: const ClampingScrollPhysics(),
       slivers: [
+        if (pendingInviteGroups.isNotEmpty)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              child: Column(
+                children: [
+                  for (final group in pendingInviteGroups)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: _PendingCollaboratorInviteBanner(group: group),
+                    ),
+                ],
+              ),
+            ),
+          ),
         SliverPadding(
           padding: EdgeInsets.only(
             bottom: MediaQuery.viewPaddingOf(context).bottom,
@@ -478,4 +500,139 @@ class _VideoGridTile extends StatelessWidget {
       ),
     ),
   );
+}
+
+class _PendingCollaboratorInviteBanner extends ConsumerStatefulWidget {
+  const _PendingCollaboratorInviteBanner({required this.group});
+
+  final PendingCollaboratorInviteGroup group;
+
+  @override
+  ConsumerState<_PendingCollaboratorInviteBanner> createState() =>
+      _PendingCollaboratorInviteBannerState();
+}
+
+class _PendingCollaboratorInviteBannerState
+    extends ConsumerState<_PendingCollaboratorInviteBanner> {
+  bool _isRetrying = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final group = widget.group;
+    final inviteCount = group.inviteCount;
+    final title = group.title?.trim();
+    final headline = inviteCount == 1
+        ? '1 collaborator invite still needs to send'
+        : '$inviteCount collaborator invites still need to send';
+    final detail = title == null || title.isEmpty
+        ? 'We kept the invite queued. Retry it here.'
+        : 'For "$title". Retry it here.';
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: VineTheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: VineTheme.outlineMuted, width: 1.5),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(top: 2),
+              child: Icon(
+                Icons.outgoing_mail,
+                color: VineTheme.vineGreen,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    headline,
+                    style: VineTheme.titleMediumFont(
+                      color: VineTheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    detail,
+                    style: VineTheme.bodySmallFont(
+                      color: VineTheme.onSurfaceVariant,
+                    ),
+                  ),
+                  if (group.lastError case final error?)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        error,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: VineTheme.bodySmallFont(
+                          color: VineTheme.secondaryText,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            DivineButton(
+              label: _isRetrying ? 'Retrying' : 'Retry',
+              size: DivineButtonSize.small,
+              onPressed: _isRetrying ? null : _retry,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _retry() async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final service = ref.read(collaboratorInviteRecoveryServiceProvider);
+    if (messenger == null) return;
+    if (service == null) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Collaborator invite retry is unavailable right now.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isRetrying = true;
+    });
+
+    try {
+      final summary = await service.retryPendingInvitesForVideo(
+        videoAddress: widget.group.videoAddress,
+        collaboratorPubkeys: widget.group.collaboratorPubkeys,
+      );
+      if (!mounted) return;
+
+      final message = switch (summary.failureCount) {
+        0 => 'Collaborator invites sent.',
+        _ =>
+          summary.failureCount == 1
+              ? '1 collaborator invite still needs to send.'
+              : '${summary.failureCount} collaborator invites still need to send.',
+      };
+      messenger.showSnackBar(
+        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRetrying = false;
+        });
+      }
+    }
+  }
 }

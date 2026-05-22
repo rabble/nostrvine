@@ -21,6 +21,7 @@ import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/collaborator_invite_local_state_adapter.dart';
+import 'package:openvine/services/collaborator_invite_recovery_service.dart';
 import 'package:openvine/services/collaborator_invite_state_store.dart';
 import 'package:openvine/services/collaborator_response_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
@@ -52,6 +53,30 @@ final collaboratorInviteStateStoreProvider =
       return CollaboratorInviteStateStore(
         prefs: ref.watch(sharedPreferencesProvider),
       );
+    });
+
+final collaboratorInviteRecoveryServiceProvider =
+    Provider<CollaboratorInviteRecoveryService?>((ref) {
+      final authService = ref.watch(authServiceProvider);
+      ref.watch(currentAuthStateProvider);
+
+      final userPubkey = authService.currentPublicKeyHex;
+      if (userPubkey == null || userPubkey.isEmpty) return null;
+
+      return CollaboratorInviteRecoveryService(
+        dmRepository: ref.watch(dmRepositoryProvider),
+        outgoingDmsDao: ref.watch(databaseProvider).outgoingDmsDao,
+        ownerPubkey: userPubkey,
+      );
+    });
+
+final pendingCollaboratorInviteGroupsProvider =
+    StreamProvider<List<PendingCollaboratorInviteGroup>>((ref) {
+      final service = ref.watch(collaboratorInviteRecoveryServiceProvider);
+      if (service == null) {
+        return Stream.value(const <PendingCollaboratorInviteGroup>[]);
+      }
+      return service.watchPendingInviteGroups();
     });
 
 /// Per-video collaborator confirmation status. Returns `null` until

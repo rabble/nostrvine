@@ -141,7 +141,10 @@ class NIP17MessageService {
 
       if (sentEvent is! PublishSuccess) {
         const errorMsg = 'Message publish failed to relays';
-        Log.error(errorMsg, category: LogCategory.system);
+        Log.error(
+          '$errorMsg (rumor=${rumorEvent.id}, recipient=$recipientPubkey)',
+          category: LogCategory.system,
+        );
         return const NIP17SendResult.failure(errorMsg);
       }
 
@@ -171,7 +174,8 @@ class NIP17MessageService {
       );
     } on Object catch (e, stackTrace) {
       Log.error(
-        'Failed to send NIP-17 message: $e',
+        'Failed to send NIP-17 message '
+        '(rumor=${rumorEvent.id}, recipient=$recipientPubkey): $e',
         category: LogCategory.system,
         error: e,
         stackTrace: stackTrace,
@@ -295,10 +299,7 @@ class NIP17MessageService {
       eventKind: eventKind,
       additionalTags: additionalTags,
     );
-    return sendRumor(
-      rumorEvent: rumor,
-      recipientPubkey: recipientPubkey,
-    );
+    return sendRumor(rumorEvent: rumor, recipientPubkey: recipientPubkey);
   }
 
   /// Dummy relay generator - we don't use relays in this Nostr instance

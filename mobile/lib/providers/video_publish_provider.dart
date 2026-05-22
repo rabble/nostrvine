@@ -474,10 +474,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
             category: .video,
           );
           if (result.hasInviteWarnings) {
-            _showCollaboratorInviteWarning(
-              publishService: publishService,
-              warnings: result.inviteWarnings,
-            );
+            _showCollaboratorInviteWarning(warnings: result.inviteWarnings);
           }
 
         case PublishError(:final userMessage):
@@ -506,7 +503,6 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
   }
 
   void _showCollaboratorInviteWarning({
-    required VideoPublishService publishService,
     required List<CollaboratorInviteWarning> warnings,
   }) {
     final targetContext = NavigatorKeys.root.currentContext;
@@ -526,7 +522,6 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
             unawaited(
               _retryCollaboratorInvites(
                 messenger: messenger,
-                publishService: publishService,
                 warnings: warnings,
               ),
             );
@@ -538,16 +533,28 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
 
   Future<void> _retryCollaboratorInvites({
     required ScaffoldMessengerState messenger,
-    required VideoPublishService publishService,
     required List<CollaboratorInviteWarning> warnings,
   }) async {
-    final results = await Future.wait(
-      warnings.map(publishService.retryCollaboratorInvite),
+    final service = ref.read(collaboratorInviteRecoveryServiceProvider);
+    if (service == null) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Collaborator invite retry is unavailable right now.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final summary = await service.retryPendingInvitesForVideo(
+      videoAddress: warnings.first.videoAddress,
+      collaboratorPubkeys: warnings.map(
+        (warning) => warning.collaboratorPubkey,
+      ),
     );
-    final failures = results.where((result) => !result.success).length;
-    final message = failures == 0
+    final message = summary.failureCount == 0
         ? 'Collaborator invites sent.'
-        : collaboratorInviteWarningMessage(failures);
+        : collaboratorInviteWarningMessage(summary.failureCount);
     messenger.showSnackBar(
       SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
     );

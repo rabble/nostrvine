@@ -431,15 +431,20 @@ class VideoEventPublisher {
       if (publishResult is PublishSuccess) {
         Log.info(
           '📡 Event sent to relays, awaiting visibility confirmation: '
-          '${event.id}',
+          '${event.id} '
+          '(configured=${_nostrService.configuredRelayCount}, '
+          'connected=${_nostrService.connectedRelayCount})',
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );
 
         return true;
       } else {
+        final failureReason = publishResult?.failureReason ?? 'timeout';
         Log.error(
-          '❌ Event publish failed to all relays',
+          '❌ Event publish failed for ${event.id}: $failureReason '
+          '(configured=${_nostrService.configuredRelayCount}, '
+          'connected=${_nostrService.connectedRelayCount})',
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );

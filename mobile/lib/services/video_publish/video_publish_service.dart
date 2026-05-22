@@ -299,8 +299,13 @@ class VideoPublishService {
         relayHint: relayHint,
       );
       if (result.hasFailures) {
-        Log.warning(
-          '⚠️ Some collaborator invites failed to send',
+        final failures = result.results.entries
+            .where((entry) => !entry.value.success)
+            .map((entry) => '${entry.key}:${entry.value.error ?? "unknown"}')
+            .join(', ');
+        Log.error(
+          'Some collaborator invites failed to send for '
+          '$videoAddress (creator=$creatorPubkey): $failures',
           category: .video,
         );
       }
@@ -319,8 +324,9 @@ class VideoPublishService {
           )
           .toList(growable: false);
     } on Object catch (e, stackTrace) {
-      Log.warning(
-        '⚠️ Failed to send collaborator invites: $e\n$stackTrace',
+      Log.error(
+        'Failed to send collaborator invites for $videoAddress '
+        '(creator=$creatorPubkey): $e\n$stackTrace',
         category: .video,
       );
       return draft.collaboratorPubkeys
@@ -336,35 +342,6 @@ class VideoPublishService {
             ),
           )
           .toList(growable: false);
-    }
-  }
-
-  Future<CollaboratorInviteResult> retryCollaboratorInvite(
-    CollaboratorInviteWarning warning,
-  ) async {
-    final inviteService = collaboratorInviteService;
-    if (inviteService == null) {
-      return const CollaboratorInviteResult(
-        success: false,
-        error: 'Collaborator invite service unavailable',
-      );
-    }
-
-    try {
-      return await inviteService.sendInvite(
-        collaboratorPubkey: warning.collaboratorPubkey,
-        creatorPubkey: warning.creatorPubkey,
-        videoAddress: warning.videoAddress,
-        title: warning.title,
-        thumbnailUrl: warning.thumbnailUrl,
-        relayHint: warning.relayHint,
-      );
-    } on Object catch (e, stackTrace) {
-      Log.warning(
-        '⚠️ Failed to retry collaborator invite: $e\n$stackTrace',
-        category: LogCategory.video,
-      );
-      return CollaboratorInviteResult(success: false, error: e.toString());
     }
   }
 
