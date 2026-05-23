@@ -1465,10 +1465,12 @@ class NotificationRepository {
   /// comment — map to [NotificationKind.likeComment] so the UI can
   /// render "liked your comment" instead of "liked your video".
   ///
-  /// Replies (kind 1111) split the same way: a reply directly on a video
+  /// Replies (kind 1111) split by the immediate target, not by whether the
+  /// payload also carries root video metadata. A reply directly on a video
   /// is indistinguishable from a comment for the user, so we map it to
-  /// [NotificationKind.comment]. A reply on a non-video (i.e. on one of
-  /// the user's own comments) maps to [NotificationKind.reply].
+  /// [NotificationKind.comment]. A reply on another comment maps to
+  /// [NotificationKind.reply], even when Funnelcake also includes the root
+  /// video's metadata for navigation.
   static NotificationKind _mapNotificationKind(RelayNotification n) {
     final isReaction = switch (n.notificationType) {
       'reaction' || 'zap' => true,
@@ -1478,6 +1480,9 @@ class NotificationRepository {
       return n.isReferencedVideo
           ? NotificationKind.like
           : NotificationKind.likeComment;
+    }
+    if (_isNestedCommentReply(n)) {
+      return NotificationKind.reply;
     }
     if (n.notificationType != 'reply' &&
         n.sourceKind == 1111 &&
@@ -1497,6 +1502,29 @@ class NotificationRepository {
       _ when n.sourceKind == 1 => NotificationKind.comment,
       _ => NotificationKind.system,
     };
+  }
+
+  static bool _isNestedCommentReply(RelayNotification n) {
+    if (n.notificationType != 'reply' && n.notificationType != 'comment') {
+      return false;
+    }
+    if (n.sourceKind != 1111) return false;
+    final rootEventId = n.rootEventId;
+    if (rootEventId == null || rootEventId.isEmpty) return false;
+
+    final referencedEventId = n.referencedEventId;
+    if (referencedEventId != null &&
+        referencedEventId.isNotEmpty &&
+        referencedEventId != rootEventId) {
+      return true;
+    }
+
+    final targetCommentId = n.targetCommentId;
+    return targetCommentId != null &&
+        targetCommentId.isNotEmpty &&
+        n.sourceEventId.isNotEmpty &&
+        targetCommentId != n.sourceEventId &&
+        targetCommentId != rootEventId;
   }
 
   /// Returns the video event ID a video-anchored notification should group by.

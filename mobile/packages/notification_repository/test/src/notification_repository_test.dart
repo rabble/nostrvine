@@ -1178,6 +1178,54 @@ void main() {
         expect(item.type, equals(NotificationKind.comment));
       });
 
+      test(
+        'reply to user comment with root video metadata maps to reply '
+        '($ActorNotification)',
+        () async {
+          stubNotifications([
+            makeNotification(
+              notificationType: 'reply',
+              sourceKind: 1111,
+              sourceEventId: 'reply_event_id',
+              referencedEventId: 'parent_comment_id',
+              rootEventId: 'someone_else_video_id',
+              targetCommentId: 'parent_comment_id',
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as ActorNotification;
+          expect(item.type, equals(NotificationKind.reply));
+          expect(item.targetEventId, equals('parent_comment_id'));
+        },
+      );
+
+      test(
+        'comment-typed nested NIP-22 reply maps to reply '
+        '($ActorNotification)',
+        () async {
+          stubNotifications([
+            makeNotification(
+              notificationType: 'comment',
+              sourceKind: 1111,
+              sourceEventId: 'reply_event_id',
+              referencedEventId: 'parent_comment_id',
+              rootEventId: 'someone_else_video_id',
+              targetCommentId: 'parent_comment_id',
+              content: 'Nested reply to my comment',
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as ActorNotification;
+          expect(item.type, equals(NotificationKind.reply));
+          expect(item.targetEventId, equals('parent_comment_id'));
+          expect(item.commentText, equals('Nested reply to my comment'));
+        },
+      );
+
       test('reply on a non-video target maps to reply ($ActorNotification) '
           'with targetEventId', () async {
         stubNotifications([
