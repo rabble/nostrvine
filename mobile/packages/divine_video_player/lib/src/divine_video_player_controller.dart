@@ -66,9 +66,36 @@ class DivineVideoPlayerController {
   static LinuxVideoPlayerBackendFactory linuxBackendFactory =
       MediaKitLinuxVideoPlayerBackend.new;
 
-  /// Factory used to create the Web backend implementation.
+  /// Factory used to create the [WebVideoPlayerBackend] instance.
   ///
-  /// Replace in tests to inject a fake backend without a real browser.
+  /// The default factory ([createDefaultWebVideoPlayerBackend]) returns an
+  /// `HtmlVideoElementBackend` on real web builds. On every other target it
+  /// returns a stub that throws — the controller never reaches the factory
+  /// when `kIsWeb` is `false`, so this is safe in production.
+  ///
+  /// **Test usage:** The default factory cannot be used in unit tests because
+  /// `HtmlVideoElementBackend` requires a live `HTMLVideoElement` in the
+  /// browser DOM — which does not exist in the Dart VM (`flutter test`).
+  /// Replace this factory with a fake before calling [initialize], and
+  /// combine it with [debugForceWebBackend] to actually activate the web
+  /// code path:
+  ///
+  /// ```dart
+  /// setUp(() {
+  ///   DivineVideoPlayerController.debugForceWebBackend = true;
+  ///   DivineVideoPlayerController.webBackendFactory =
+  ///       () => FakeWebVideoPlayerBackend();
+  /// });
+  ///
+  /// tearDown(() {
+  ///   DivineVideoPlayerController.debugForceWebBackend = null;
+  ///   DivineVideoPlayerController.webBackendFactory =
+  ///       createDefaultWebVideoPlayerBackend;
+  /// });
+  /// ```
+  ///
+  /// Without both this override and [debugForceWebBackend], the entire web
+  /// code path inside the controller is unreachable from unit tests.
   @visibleForTesting
   static WebVideoPlayerBackendFactory webBackendFactory =
       createDefaultWebVideoPlayerBackend;
@@ -77,7 +104,20 @@ class DivineVideoPlayerController {
   @visibleForTesting
   static bool? debugForceLinuxBackend;
 
-  /// Test hook that forces Web backend selection regardless of platform.
+  /// Test hook that forces web backend selection regardless of platform.
+  ///
+  /// Normally the controller selects the web backend only when `kIsWeb` is
+  /// `true`. Because `kIsWeb` is always `false` in the Dart VM (including
+  /// all `flutter test` runs), the web code path is unreachable without this
+  /// hook.
+  ///
+  /// Set to `true` before calling [initialize] to force the controller into
+  /// the web code path. This **must** be combined with a [webBackendFactory]
+  /// override that returns a fake — the default factory creates an
+  /// `HtmlVideoElementBackend` that requires a real browser DOM and will
+  /// throw in a headless test environment.
+  ///
+  /// Reset to `null` in `tearDown` to avoid leaking state across tests.
   @visibleForTesting
   static bool? debugForceWebBackend;
 

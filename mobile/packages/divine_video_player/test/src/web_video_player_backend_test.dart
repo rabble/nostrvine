@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:divine_video_player/divine_video_player.dart';
 import 'package:divine_video_player/src/audio_track.dart' as divine;
 import 'package:divine_video_player/src/web/web_video_player_backend.dart';

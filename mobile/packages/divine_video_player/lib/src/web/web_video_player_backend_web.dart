@@ -18,24 +18,9 @@ import 'package:web/web.dart' as web;
 /// Web backend powered by an `<video>` element rendered through
 /// `HtmlElementView`.
 ///
-/// Web limitations (intentional — see also issue documentation):
-///
-/// The following limitations are video-editor features. The video editor is
-/// not available on web, so these are not relevant in practice:
-///
-/// * Multi-clip seamless playback is not supported. When more than one clip
-///   is supplied, only the first is played and a warning is logged.
-/// * [VideoClip.start] / [VideoClip.end] subrange clipping is not honoured
-///   beyond an initial seek to `start`.
-/// * Overlay audio tracks are not supported; all `setAudioTracks` /
-///   `removeAllAudioTracks` / `setAudioTrackVolume` calls are no-ops.
-/// * [jumpToClip] only supports index 0 (rewind); all other indices are
-///   no-ops. Multi-clip navigation is a video-editor-only concept.
-///
-/// General web limitations:
-///
-/// * `rotationDegrees` is always `0`; the browser handles rotation
-///   metadata when decoding.
+/// Limitations: multi-clip playback, subrange clipping, overlay audio tracks,
+/// and [jumpToClip] beyond index 0 are no-ops (video-editor features not
+/// supported on web). `rotationDegrees` is always `0`.
 class HtmlVideoElementBackend implements WebVideoPlayerBackend {
   /// Creates a web backend that owns its own `<video>` element.
   HtmlVideoElementBackend() : _viewType = _nextViewType();
@@ -46,8 +31,13 @@ class HtmlVideoElementBackend implements WebVideoPlayerBackend {
     return 'divine_video_player_view_$_viewTypeCounter';
   }
 
+  // Lookup table that lets the registered view-factory closure reference the
+  // element without capturing `this` — entries are removed on dispose so
+  // elements can be GC'd.
+  static final Map<String, web.HTMLVideoElement> _elementRegistry = {};
+
   final String _viewType;
-  final web.HTMLVideoElement _videoElement = _createVideoElement();
+  late web.HTMLVideoElement _videoElement;
   final List<StreamSubscription<web.Event>> _subscriptions =
       <StreamSubscription<web.Event>>[];
 
@@ -57,7 +47,6 @@ class HtmlVideoElementBackend implements WebVideoPlayerBackend {
   DivineVideoPlayerState _state = const DivineVideoPlayerState();
   bool _initialized = false;
   bool _disposed = false;
-  bool _viewFactoryRegistered = false;
   bool _didLogUnsupportedMultiClip = false;
   bool _didLogUnsupportedAudioTrack = false;
 
@@ -65,7 +54,14 @@ class HtmlVideoElementBackend implements WebVideoPlayerBackend {
   // initial seek. We track the start offset to translate browser
   // `currentTime` back to the player's global timeline.
   Duration _clipStart = Duration.zero;
-  Duration _clipEnd = Duration.zero; // Duration.zero == "no end clamp"
+  Duration? _clipEnd;
+
+  /// Exposes the owned video element to browser tests.
+  ///
+  /// The production abstraction deliberately hides DOM details, but the web
+  /// backend's core behavior is coupled to native `HTMLVideoElement` events.
+  @visibleForTesting
+  web.HTMLVideoElement get debugVideoElement => _videoElement;
 
   static web.HTMLVideoElement _createVideoElement() {
     final element = web.document.createElement('video') as web.HTMLVideoElement
@@ -82,6 +78,9 @@ class HtmlVideoElementBackend implements WebVideoPlayerBackend {
     return element;
   }
 
+  static double _toSeconds(Duration d) =>
+      d.inMicroseconds / Duration.microsecondsPerSecond;
+
   @override
   Future<void> initialize({
     required void Function(DivineVideoPlayerState state) onStateChanged,
@@ -89,18 +88,19 @@ class HtmlVideoElementBackend implements WebVideoPlayerBackend {
   }) async {
     _onStateChanged = onStateChanged;
     _onError = onError;
+    _videoElement = _createVideoElement();
     _registerViewFactory();
     _listenToVideoElement();
     _initialized = true;
   }
 
   void _registerViewFactory() {
-    if (_viewFactoryRegistered) return;
+    if (_elementRegistry.containsKey(_viewType)) return;
+    _elementRegistry[_viewType] = _videoElement;
     ui_web.platformViewRegistry.registerViewFactory(
       _viewType,
-      (int _) => _videoElement,
+      (int _) => _elementRegistry[_viewType]!,
     );
-    _viewFactoryRegistered = true;
   }
 
   void _listenToVideoElement() {
@@ -190,7 +190,7 @@ class HtmlVideoElementBackend implements WebVideoPlayerBackend {
         ..removeAttribute('src')
         ..load();
       _clipStart = Duration.zero;
-      _clipEnd = Duration.zero;
+      _clipEnd = null;
       _emitState(const DivineVideoPlayerState());
       return;
     }
@@ -207,7 +207,7 @@ class HtmlVideoElementBackend implements WebVideoPlayerBackend {
 
     final clip = clips.first;
     _clipStart = clip.start;
-    _clipEnd = clip.end ?? Duration.zero;
+    _clipEnd = clip.end;
 
     _emitState(
       _state.copyWith(
@@ -229,21 +229,25 @@ class HtmlVideoElementBackend implements WebVideoPlayerBackend {
     final globalStart = startPosition ?? Duration.zero;
     final sourceSeek = _clipStart + globalStart;
     if (sourceSeek > Duration.zero) {
-      _videoElement.currentTime = sourceSeek.inMicroseconds / 1e6;
+      _videoElement.currentTime = _toSeconds(sourceSeek);
     }
   }
 
   void _onTimeUpdate() {
     // Web: enforce optional clip.end as a soft clamp by pausing when the
     // source-time crosses the end mark.
-    if (_clipEnd > Duration.zero) {
-      final endSeconds = _clipEnd.inMicroseconds / 1e6;
+    final clipEnd = _clipEnd;
+    if (clipEnd != null) {
+      final endSeconds = _toSeconds(clipEnd);
       if (_videoElement.currentTime >= endSeconds) {
         _videoElement.pause();
+        final clampedPosition = clipEnd > _clipStart
+            ? clipEnd - _clipStart
+            : Duration.zero;
         _emitState(
           _state.copyWith(
             status: PlaybackStatus.completed,
-            position: _clipEnd - _clipStart,
+            position: clampedPosition,
           ),
         );
         return;
@@ -294,7 +298,7 @@ class HtmlVideoElementBackend implements WebVideoPlayerBackend {
       ..removeAttribute('src')
       ..load();
     _clipStart = Duration.zero;
-    _clipEnd = Duration.zero;
+    _clipEnd = null;
     _emitState(const DivineVideoPlayerState());
   }
 
@@ -303,7 +307,7 @@ class HtmlVideoElementBackend implements WebVideoPlayerBackend {
     _ensureReady();
     final clampedPosition = position < Duration.zero ? Duration.zero : position;
     final sourceTime = _clipStart + clampedPosition;
-    _videoElement.currentTime = sourceTime.inMicroseconds / 1e6;
+    _videoElement.currentTime = _toSeconds(sourceTime);
     _refreshState();
   }
 
@@ -312,8 +316,10 @@ class HtmlVideoElementBackend implements WebVideoPlayerBackend {
     _ensureReady();
     final clamped = volume.clamp(0.0, 1.0);
     _videoElement.volume = clamped;
+    // Setting volume to 0 also mutes the element so the browser doesn't
+    // un-mute it if the volume is raised again while autoplay policies apply.
     _videoElement.muted = clamped == 0;
-    _emitState(_state.copyWith(volume: clamped));
+    // State is refreshed by the volumechange event listener.
   }
 
   @override
@@ -365,6 +371,7 @@ class HtmlVideoElementBackend implements WebVideoPlayerBackend {
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
+    _elementRegistry.remove(_viewType);
     for (final subscription in _subscriptions) {
       await subscription.cancel();
     }
@@ -387,18 +394,18 @@ class HtmlVideoElementBackend implements WebVideoPlayerBackend {
   void _refreshState() {
     if (_disposed) return;
     final element = _videoElement;
-    final positionSeconds =
-        element.currentTime - _clipStart.inMicroseconds / 1e6;
+    final positionSeconds = element.currentTime - _toSeconds(_clipStart);
     final position = Duration(
       microseconds: math.max(0, (positionSeconds * 1e6).round()),
     );
     final rawDurationSeconds = element.duration;
     final hasDuration =
         !rawDurationSeconds.isNaN && rawDurationSeconds.isFinite;
-    final effectiveDurationSeconds = _clipEnd > Duration.zero
-        ? (_clipEnd.inMicroseconds / 1e6) - _clipStart.inMicroseconds / 1e6
+    final clipEnd = _clipEnd;
+    final effectiveDurationSeconds = clipEnd != null
+        ? _toSeconds(clipEnd) - _toSeconds(_clipStart)
         : hasDuration
-        ? rawDurationSeconds - _clipStart.inMicroseconds / 1e6
+        ? rawDurationSeconds - _toSeconds(_clipStart)
         : 0.0;
     final duration = Duration(
       microseconds: math.max(0, (effectiveDurationSeconds * 1e6).round()),
@@ -408,7 +415,7 @@ class HtmlVideoElementBackend implements WebVideoPlayerBackend {
     final buffered = element.buffered;
     if (buffered.length > 0) {
       final lastEnd = buffered.end(buffered.length - 1);
-      final bufferedSeconds = lastEnd - _clipStart.inMicroseconds / 1e6;
+      final bufferedSeconds = lastEnd - _toSeconds(_clipStart);
       bufferedPosition = Duration(
         microseconds: math.max(0, (bufferedSeconds * 1e6).round()),
       );

@@ -1,0 +1,85 @@
+@TestOn('browser')
+library;
+
+import 'package:divine_video_player/divine_video_player.dart';
+import 'package:divine_video_player/src/web/web_video_player_backend_web.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:unified_logger/unified_logger.dart';
+import 'package:web/web.dart' as web;
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  group('HtmlVideoElementBackend', () {
+    late HtmlVideoElementBackend backend;
+    late List<DivineVideoPlayerState> states;
+    late List<Object> errors;
+
+    setUp(() async {
+      await LogCaptureService().clearAllLogs();
+      states = <DivineVideoPlayerState>[];
+      errors = <Object>[];
+      backend = HtmlVideoElementBackend();
+      await backend.initialize(
+        onStateChanged: states.add,
+        onError: errors.add,
+      );
+    });
+
+    tearDown(() async {
+      await backend.dispose();
+      await LogCaptureService().clearAllLogs();
+    });
+
+    test('setClips warns once and falls back to the first clip', () async {
+      const firstClip = VideoClip(uri: 'data:video/mp4;base64,AAAA');
+      const secondClip = VideoClip(uri: 'data:video/mp4;base64,BBBB');
+
+      await backend.setClips(const [firstClip, secondClip]);
+      await backend.setClips(const [firstClip, secondClip]);
+
+      expect(backend.debugVideoElement.src, firstClip.uri);
+      expect(states.last.clipCount, 1);
+      expect(states.last.currentClipIndex, 0);
+
+      final warnings = LogCaptureService()
+          .getRecentLogs(minLevel: LogLevel.warning)
+          .where(
+            (entry) =>
+                entry.category == LogCategory.video &&
+                entry.message.contains('multi-clip playback'),
+          )
+          .toList();
+
+      expect(warnings, hasLength(1));
+    });
+
+    test('timeupdate soft-clamps at clip end and completes playback', () async {
+      await backend.setClips(
+        const [
+          VideoClip(
+            uri: 'data:video/mp4;base64,AAAA',
+            start: Duration(seconds: 1),
+            end: Duration(seconds: 3),
+          ),
+        ],
+      );
+
+      backend.debugVideoElement.currentTime = 3;
+      backend.debugVideoElement.dispatchEvent(web.Event('timeupdate'));
+      await Future<void>.delayed(Duration.zero);
+
+      expect(states.last.status, PlaybackStatus.completed);
+      expect(states.last.position, const Duration(seconds: 2));
+      expect(backend.debugVideoElement.paused, isTrue);
+      expect(errors, isEmpty);
+    });
+
+    test('setVolume zero also mutes the video element', () async {
+      await backend.setVolume(0);
+
+      expect(backend.debugVideoElement.volume, 0);
+      expect(backend.debugVideoElement.muted, isTrue);
+    });
+  });
+}
