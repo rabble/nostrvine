@@ -11,6 +11,13 @@ The product rule is:
 
 The implementation must preserve Nostr semantics. Unfollow is local subscription state. Delete is a protocol-level deletion for owned public lists, not just a local cache removal.
 
+Implementation should be split into small, test-first slices:
+
+1. People-list delete and curated-list unfollow.
+2. Protocol-backed delete for owned curated video lists.
+
+The first slice gives users the common "leave someone else's list / delete my people list" behavior without expanding the PR into new curated-list protocol publishing. The second slice adds the missing kind `30005` deletion capability before any owned curated video list exposes `Delete list`.
+
 ## Current State
 
 There are two list systems:
@@ -32,7 +39,8 @@ For a followed list owned by someone else:
 
 - Show `Unfollow list`.
 - On activation, remove the subscription/follow state.
-- Show an undo-capable snackbar when the existing service can restore the subscription from available list data.
+- Show snackbar feedback after the service reports success.
+- Do not add undo in the first slice. The restore source differs between route-created list detail screens and discovered-list screens, so undo can be added later only after one explicit restore path is chosen.
 - Do not publish any deletion event.
 
 For a list owned by the current user:
@@ -40,7 +48,7 @@ For a list owned by the current user:
 - Show `Delete list`.
 - Require confirmation before dispatching the delete.
 - After confirmation, dispatch the delete and navigate away from the detail screen so the user does not land on the "list deleted" empty state.
-- If deletion fails, surface the existing failure state through translated UI copy; do not store raw error text in BLoC state.
+- Because the detail screen pops optimistically, do not promise detail-screen failure UI after dispatch. Failure should surface through the owner-scoped list surface if it already listens to `PeopleListsStatus.failure`; do not store raw error text in BLoC state.
 
 If a list is both owned and followed, prefer `Delete list` over `Unfollow list`. Deleting an owned list is the clearer primary action because the user controls the source event.
 
@@ -48,7 +56,8 @@ If a list is both owned and followed, prefer `Delete list` over `Unfollow list`.
 
 People-list delete should use existing BLoC and repository paths:
 
-- `UserListPeopleScreen` renders an owner-only action for editable lists.
+- `UserListPeopleScreen` renders delete only for lists selected from the current owner-scoped `PeopleListsBloc` state and only when `userList.isEditable == true`.
+- `UserList.isEditable` is not ownership proof; it is an additional guard for system/read-only lists. Ownership comes from the route selecting from the authenticated owner's bloc state.
 - Confirmation dispatches `PeopleListsDeleteRequested(listId: userList.id)`.
 - `PeopleListsBloc` continues to optimistically remove the list and calls `PeopleListsRepository.deleteList`.
 - `PeopleListsRepositoryImpl.deleteList` remains the protocol-backed NIP-09 implementation.
@@ -58,7 +67,7 @@ Curated-list unfollow should use existing service paths:
 - `CuratedListFeedScreen` determines whether the current user is subscribed to the displayed list.
 - For subscribed external lists, expose an explicit `Unfollow list` action.
 - The action calls `CuratedListService.unsubscribeFromList`, invalidates list providers, and updates the UI.
-- The existing subscribe path remains available for unfollow undo when the screen has enough `CuratedList` data to resubscribe.
+- The first slice does not implement undo.
 
 Curated-list delete needs one extra repository/service capability before UI exposure:
 
@@ -66,6 +75,21 @@ Curated-list delete needs one extra repository/service capability before UI expo
 - Publish a NIP-09 kind `5` deletion event that references the kind `30005` addressable list coordinate.
 - Only after that exists should owned curated lists show `Delete list`.
 - Local-only removal can remain internal, but it must not be labeled as deleting the public list.
+
+## Implementation Slices
+
+Slice 1: people-list delete and curated-list unfollow.
+
+- Add owner-scoped delete UI to `UserListPeopleScreen`.
+- Add explicit unfollow UI to `CuratedListFeedScreen` for subscribed external lists.
+- Reuse `PeopleListsDeleteRequested` and `CuratedListService.unsubscribeFromList`.
+- Do not touch curated-list delete.
+
+Slice 2: protocol-backed curated-list delete.
+
+- Add a tested service/repository method that publishes NIP-09 deletion for owned kind `30005` list coordinates.
+- Only then expose `Delete list` for owned curated video lists.
+- Keep local-only `CuratedListService.deleteList` internal or rename it before any UI references it.
 
 ## Data Flow
 
@@ -78,6 +102,7 @@ People-list delete:
 5. Bloc optimistically removes the list from state.
 6. Repository publishes kind `5` deletion and tombstones the list locally.
 7. UI navigates back to the previous screen.
+8. If repository submission fails after navigation, existing owner-list UI may surface `PeopleListsStatus.failure`; the popped detail screen does not handle it.
 
 Curated-list unfollow:
 
@@ -108,12 +133,29 @@ Delete and unfollow failures should not leave the UI pretending the action succe
 
 Add focused tests:
 
-- `UserListPeopleScreen` shows delete only for editable/owned people lists.
-- Delete confirmation cancel does not dispatch.
-- Delete confirmation confirm dispatches `PeopleListsDeleteRequested` and navigates away.
-- Curated list detail shows explicit unfollow for subscribed external lists.
-- Unfollow calls `unsubscribeFromList`, invalidates providers, and updates action state.
-- Owned curated-list delete does not use local-only `deleteList`; it exercises the protocol-backed deletion path.
+Slice 1 TDD order:
+
+1. RED: `UserListPeopleScreen` shows delete for an editable list from the active owner-scoped bloc.
+2. GREEN: add the smallest app-bar action/menu needed to expose delete.
+3. RED: read-only people list does not show delete.
+4. GREEN: gate the action with `isEditable`.
+5. RED: delete confirmation cancel does not dispatch.
+6. GREEN: wire cancel path.
+7. RED: delete confirmation confirm dispatches `PeopleListsDeleteRequested` and navigates away.
+8. GREEN: wire dispatch and pop.
+9. RED: `CuratedListFeedScreen` shows explicit `Unfollow list` for subscribed external lists.
+10. GREEN: expose unfollow action using existing subscription state.
+11. RED: unfollow calls `unsubscribeFromList`, invalidates providers, and updates action state.
+12. GREEN: wire service call, provider invalidation, and translated feedback.
+
+Slice 2 TDD order:
+
+1. RED: owned curated-list delete publishes a kind `5` event for the full kind `30005` list coordinate.
+2. GREEN: add the minimal protocol-backed delete method.
+3. RED: local curated-list state is not removed when publish fails.
+4. GREEN: delay local removal/tombstone until submission succeeds.
+5. RED: owned curated-list detail shows `Delete list` only after protocol-backed delete is available.
+6. GREEN: expose owned curated-list delete UI.
 
 Repository-level coverage for curated-list deletion should assert:
 
