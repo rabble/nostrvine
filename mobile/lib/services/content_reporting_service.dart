@@ -380,7 +380,6 @@ class ContentReportingService {
       final tags = <List<String>>[
         for (final nip56EventId in eventTagIds) ['e', nip56EventId, nip56Type],
         ['p', authorPubkey, nip56Type],
-        ['client', 'diVine'],
         ['L', _reportLabelNamespace],
         // These label values are a cross-repo wire contract consumed by
         // divine-web and divine-relay-manager.

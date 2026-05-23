@@ -511,9 +511,7 @@ class MuteService {
       }
 
       // Create NIP-51 kind 10000 tags
-      final tags = <List<String>>[
-        ['client', 'diVine'],
-      ];
+      final tags = <List<String>>[];
 
       // Add muted items as tags (only non-expired, permanent mutes for Nostr)
       for (final item in mutedItems.where((item) => item.isPermanent)) {

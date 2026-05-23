@@ -2036,6 +2036,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Export, backup, and restore your Nostr keys';
 
   @override
+  String get nostrSettingsClientAttribution => 'Client Attribution';
+
+  @override
+  String get nostrSettingsClientAttributionSubtitle =>
+      'Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly.';
+
+  @override
   String get nostrSettingsRemoveKeys => 'Remove Keys from Device';
 
   @override

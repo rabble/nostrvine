@@ -12,6 +12,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
+import 'package:nostr_client/nostr_client.dart' show Nip89ClientTag;
 import 'package:nostr_key_manager/nostr_key_manager.dart'
     show
         NostrKeyManager,
@@ -584,12 +585,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         return;
       }
 
-      final refreshed =
-          await _refreshOAuthSession(
-            expectedOwnerPubkey: expectedOwnerPubkey ?? session?.userPubkey,
-          ).timeout(
-            rpcRefreshTimeout,
-          );
+      final refreshed = await _refreshOAuthSession(
+        expectedOwnerPubkey: expectedOwnerPubkey ?? session?.userPubkey,
+      ).timeout(rpcRefreshTimeout);
 
       if (refreshed != null) {
         Log.info(
@@ -820,9 +818,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// it — the method falls back to [_currentProfile].
   ///
   /// Returns the refreshed session on success, or `null` on failure.
-  Future<KeycastSession?> _refreshOAuthSession({
-    String? expectedOwnerPubkey,
-  }) {
+  Future<KeycastSession?> _refreshOAuthSession({String? expectedOwnerPubkey}) {
     return _pendingOAuthRefresh ??=
         _doRefreshOAuthSession(
           expectedOwnerPubkey: expectedOwnerPubkey,
@@ -837,9 +833,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     if (_oauthClient == null) return null;
     try {
       final pubkey = expectedOwnerPubkey ?? _currentProfile?.publicKeyHex;
-      final refreshed = await _oauthClient.refreshSession(
-        userPubkey: pubkey,
-      );
+      final refreshed = await _oauthClient.refreshSession(userPubkey: pubkey);
       if (refreshed == null || !refreshed.hasRpcAccess) return null;
 
       _hasExpiredOAuthSession = false;
@@ -3844,6 +3838,12 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
             (DateTime.now().millisecondsSinceEpoch ~/ 1000) +
             (72 * 60 * 60); // 72 hours
         eventTags.add(['expiration', expirationTimestamp.toString()]);
+      }
+
+      if (!Nip89ClientTag.shouldSkipKind(kind) &&
+          !Nip89ClientTag.hasClientTag(eventTags) &&
+          await Nip89ClientTag.isEnabled()) {
+        eventTags.add(Nip89ClientTag.tag);
       }
 
       // Create the unsigned event with the identity's pubkey — both the

@@ -358,7 +358,7 @@ class NIP17MessageService {
       'created_at': (DateTime.now().millisecondsSinceEpoch ~/ 1000),
       'tags': [
         ['p', recipientPubkey],
-        ['client', 'diVine_bug_report'],
+        ['client', 'Divine', '31990:d95aa8fc0eff8e488952495b8064991d27fb96ed8652f12cdedc5a4e8b5ae540:divine-mobile', 'wss://relay.divine.video'],
         ...additionalTags,
       ],
     };

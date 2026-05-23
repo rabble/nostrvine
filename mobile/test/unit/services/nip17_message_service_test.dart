@@ -188,7 +188,7 @@ void main() {
         recipientPubkey: _recipientPubkey,
         content: 'Test message',
         additionalTags: [
-          ['client', 'diVine_bug_report'],
+          Nip89ClientTag.tag,
           ['report_id', 'test-123'],
         ],
       );

@@ -2,6 +2,7 @@
 // ABOUTME: Constructs filters and events in memory; no network or relay involved
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 
@@ -94,7 +95,7 @@ void main() {
         [
           ['h', 'vine'],
           ['url', 'https://example.com/video.mp4'],
-          ['client', 'diVine'],
+          Nip89ClientTag.tag,
           [
             'expiration',
             '${(DateTime.now().millisecondsSinceEpoch ~/ 1000) + 3600}',
@@ -110,7 +111,7 @@ void main() {
         22,
         [
           ['url', 'https://example.com/video.mp4'],
-          ['client', 'diVine'],
+          Nip89ClientTag.tag,
           [
             'expiration',
             '${(DateTime.now().millisecondsSinceEpoch ~/ 1000) + 3600}',

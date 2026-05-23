@@ -97,6 +97,10 @@ class NostrSession extends Notifier<NostrSessionReadiness> {
 final nostrSessionProvider =
     NotifierProvider<NostrSession, NostrSessionReadiness>(NostrSession.new);
 
+final nip89ClientTagEnabledProvider = FutureProvider<bool>((ref) async {
+  return Nip89ClientTag.isEnabled();
+});
+
 /// Signature for constructing a [NostrClient]. The default implementation
 /// delegates to [NostrServiceFactory.create]. Tests override
 /// [nostrClientFactoryProvider] to inject fake clients and observe the
@@ -167,11 +171,7 @@ class NostrService extends _$NostrService {
 
     // NIP-65 discovered-relays callback — see _userRelaysDiscoveredCallbackFor.
     authService.registerUserRelaysDiscoveredCallback(
-      _userRelaysDiscoveredCallbackFor(
-        client,
-        initialPubkey,
-        clientGeneration,
-      ),
+      _userRelaysDiscoveredCallbackFor(client, initialPubkey, clientGeneration),
     );
 
     // Bootstrap kind:10002 publisher — see _bootstrapCallbackFor.

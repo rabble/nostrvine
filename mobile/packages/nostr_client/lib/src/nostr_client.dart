@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:db_client/db_client.dart' hide Filter;
 import 'package:meta/meta.dart';
 import 'package:nostr_client/src/models/models.dart';
+import 'package:nostr_client/src/nip89_client_tag.dart';
 import 'package:nostr_client/src/publish_result.dart';
 import 'package:nostr_client/src/relay_manager.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
@@ -187,6 +188,16 @@ class NostrClient {
   /// Tracks whether dispose() has been called
   bool _isDisposed = false;
 
+  Future<void> _prepareEventForPublish(Event event) async {
+    final changed = await Nip89ClientTag.applyToEvent(event);
+    if (!changed) {
+      return;
+    }
+
+    // publishEvent()/publishEventAwaitOk() both delegate signing to nostr_sdk
+    // when sig is blank, so clearing the signature is enough here.
+  }
+
   /// Completes the first time [initialize] finishes, so consumers can await
   /// readiness without polling `hasKeys`. `NostrClient` is one-shot — after
   /// `dispose()` a fresh instance is constructed for the next session, so
@@ -284,6 +295,7 @@ class NostrClient {
     Event event, {
     List<String>? targetRelays,
   }) async {
+    await _prepareEventForPublish(event);
     final useOptimisticCache = _canOptimisticallyCache(event.kind);
 
     // Optimistic cache for regular events only
@@ -361,6 +373,7 @@ class NostrClient {
     Duration timeout = const Duration(seconds: 15),
     String? diagnosticTag,
   }) async {
+    await _prepareEventForPublish(event);
     final useOptimisticCache = _canOptimisticallyCache(event.kind);
 
     if (useOptimisticCache) {
@@ -535,10 +548,7 @@ class NostrClient {
         relayTypes: relayTypes,
       );
 
-      return CountResult(
-        count: events.length,
-        source: CountSource.clientSide,
-      );
+      return CountResult(count: events.length, source: CountSource.clientSide);
     }
   }
 
@@ -595,10 +605,7 @@ class NostrClient {
   /// Falls back to WebSocket query if cache miss.
   ///
   /// Results from websocket are cached for future queries.
-  Future<Event?> fetchProfile(
-    String pubkey, {
-    bool useCache = true,
-  }) async {
+  Future<Event?> fetchProfile(String pubkey, {bool useCache = true}) async {
     // 1. Check cache first
     final dao = _nostrEventsDao;
     if (useCache && dao != null) {
@@ -863,19 +870,30 @@ class NostrClient {
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
-    final likeEvent = await _nostr.sendLike(
-      eventId,
-      pubkey: targetAuthorPubkey,
-      content: content,
-      addressableId: addressableId,
-      targetKind: targetKind,
-      tempRelays: tempRelays,
-      targetRelays: targetRelays,
+    final tags = <List<String>>[
+      ['e', eventId],
+      if (addressableId != null && addressableId.isNotEmpty)
+        ['a', addressableId],
+      if (targetAuthorPubkey != null && targetAuthorPubkey.isNotEmpty)
+        ['p', targetAuthorPubkey],
+      if (targetKind != null) ['k', targetKind.toString()],
+    ];
+
+    final likeEvent = Event(
+      publicKey,
+      EventKind.reaction,
+      tags,
+      content ?? '+',
     );
-    if (likeEvent != null) {
-      _cacheEvent(likeEvent);
+
+    final result = await publishEvent(
+      likeEvent,
+      targetRelays: targetRelays ?? tempRelays,
+    );
+    if (result case PublishSuccess(:final event)) {
+      return event;
     }
-    return likeEvent;
+    return null;
   }
 
   /// Sends a user profile (Kind 0 metadata event).
@@ -912,17 +930,23 @@ class NostrClient {
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
-    final repostEvent = await _nostr.sendRepost(
-      eventId,
-      relayAddr: relayAddr,
-      content: content,
-      tempRelays: tempRelays,
-      targetRelays: targetRelays,
+    final tags = <List<String>>[
+      if (relayAddr != null && relayAddr.isNotEmpty)
+        ['e', eventId, relayAddr]
+      else
+        ['e', eventId],
+    ];
+
+    final repostEvent = Event(publicKey, EventKind.repost, tags, content);
+
+    final result = await publishEvent(
+      repostEvent,
+      targetRelays: targetRelays ?? tempRelays,
     );
-    if (repostEvent != null) {
-      _cacheEvent(repostEvent);
+    if (result case PublishSuccess(:final event)) {
+      return event;
     }
-    return repostEvent;
+    return null;
   }
 
   /// Sends a generic repost (Kind 16) for addressable events.
@@ -963,12 +987,7 @@ class NostrClient {
       tags.add(['e', eventId]);
     }
 
-    final event = Event(
-      publicKey,
-      EventKind.genericRepost,
-      tags,
-      content,
-    );
+    final event = Event(publicKey, EventKind.genericRepost, tags, content);
 
     final sentEvent = await _nostr.sendEvent(
       event,
@@ -992,16 +1011,19 @@ class NostrClient {
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
-    final deletionEvent = await _nostr.deleteEvent(
-      eventId,
-      tempRelays: tempRelays,
-      targetRelays: targetRelays,
+    final deletionEvent = Event(publicKey, EventKind.eventDeletion, [
+      ['e', eventId],
+    ], 'delete');
+
+    final result = await publishEvent(
+      deletionEvent,
+      targetRelays: targetRelays ?? tempRelays,
     );
-    if (deletionEvent != null) {
-      // Delete target event from local database
-      _handleDeletionEvent(deletionEvent);
+    if (result case PublishSuccess(:final event)) {
+      _handleDeletionEvent(event);
+      return event;
     }
-    return deletionEvent;
+    return null;
   }
 
   /// Deletes multiple events
@@ -1013,16 +1035,22 @@ class NostrClient {
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
-    final deletionEvent = await _nostr.deleteEvents(
-      eventIds,
-      tempRelays: tempRelays,
-      targetRelays: targetRelays,
+    final deletionEvent = Event(
+      publicKey,
+      EventKind.eventDeletion,
+      eventIds.map((eventId) => ['e', eventId]).toList(),
+      'delete',
     );
-    if (deletionEvent != null) {
-      // Delete target events from local database
-      _handleDeletionEvent(deletionEvent);
+
+    final result = await publishEvent(
+      deletionEvent,
+      targetRelays: targetRelays ?? tempRelays,
+    );
+    if (result case PublishSuccess(:final event)) {
+      _handleDeletionEvent(event);
+      return event;
     }
-    return deletionEvent;
+    return null;
   }
 
   /// Sends a contact list
@@ -1034,16 +1062,21 @@ class NostrClient {
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
-    final contactListEvent = await _nostr.sendContactList(
-      contacts,
+    final contactListEvent = Event(
+      publicKey,
+      EventKind.contactList,
+      contacts.toJson(),
       content,
-      tempRelays: tempRelays,
-      targetRelays: targetRelays,
     );
-    if (contactListEvent != null) {
-      _cacheEvent(contactListEvent);
+
+    final result = await publishEvent(
+      contactListEvent,
+      targetRelays: targetRelays ?? tempRelays,
+    );
+    if (result case PublishSuccess(:final event)) {
+      return event;
     }
-    return contactListEvent;
+    return null;
   }
 
   /// Known NIP-50 compatible search relays.
@@ -1078,10 +1111,7 @@ class NostrClient {
   /// Searches for user profiles using NIP-50 search.
   ///
   /// Includes known NIP-50 relays for better coverage.
-  Stream<Event> searchUsers(
-    String query, {
-    int? limit,
-  }) {
+  Stream<Event> searchUsers(String query, {int? limit}) {
     final filter = Filter(
       kinds: const [EventKind.metadata],
       limit: limit ?? 100,
@@ -1098,10 +1128,7 @@ class NostrClient {
   ///
   /// Unlike [searchUsers], this returns a Future that completes once,
   /// making it suitable for one-time search operations.
-  Future<List<Event>> queryUsers(
-    String query, {
-    int? limit,
-  }) {
+  Future<List<Event>> queryUsers(String query, {int? limit}) {
     final filter = Filter(
       kinds: const [EventKind.metadata],
       limit: limit ?? 100,

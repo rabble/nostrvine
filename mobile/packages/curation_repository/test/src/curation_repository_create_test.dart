@@ -137,7 +137,7 @@ void main() {
       },
     );
 
-    test('creates event with correct tags', () async {
+    test('creates event with correct content tags before publish', () async {
       final signedEvent = Event(
         _testPubkey,
         30005,
@@ -186,9 +186,9 @@ void main() {
       final imageTag = tags.firstWhere((tag) => tag[0] == 'image');
       expect(imageTag[1], 'https://example.com/img.jpg');
 
-      // Verify client attribution tag
-      final clientTag = tags.firstWhere((tag) => tag[0] == 'client');
-      expect(clientTag[1], 'diVine');
+      // Client attribution is injected centrally during publish, not
+      // in repository-specific tag construction.
+      expect(tags.where((tag) => tag[0] == 'client'), isEmpty);
 
       // Verify video references as 'e' tags
       final eTags = tags.where((tag) => tag[0] == 'e').toList();

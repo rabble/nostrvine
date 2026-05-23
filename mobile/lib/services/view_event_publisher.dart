@@ -57,9 +57,6 @@ class ViewEventPublisher {
   final AuthService _authService;
   final String _defaultRelayHint;
 
-  /// Client identifier for analytics
-  static const String _clientId = 'divine-mobile/1.0';
-
   /// Publish a video view event.
   ///
   /// [video] - The video that was viewed
@@ -145,8 +142,6 @@ class ViewEventPublisher {
           ['source', _sourceToString(source)],
         // Loop count (optional, omitted if 0 or null)
         if (loopCount != null && loopCount > 0) ['loops', loopCount.toString()],
-        // Client identifier (optional)
-        ['client', _clientId],
       ];
 
       Log.debug(
@@ -268,7 +263,6 @@ class ViewEventPublisher {
           ['source', _sourceToString(source), sourceDetail]
         else
           ['source', _sourceToString(source)],
-        ['client', _clientId],
       ];
 
       final event = await _authService.createAndSignEvent(

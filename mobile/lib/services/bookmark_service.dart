@@ -220,9 +220,7 @@ class BookmarkService with NostrListServiceMixin {
 
   /// Remove a video event from global bookmarks (kind 10003 `e` tag).
   Future<bool> removeVideoFromGlobalBookmarks(String videoEventId) async {
-    return removeFromGlobalBookmarks(
-      BookmarkItem(type: 'e', id: videoEventId),
-    );
+    return removeFromGlobalBookmarks(BookmarkItem(type: 'e', id: videoEventId));
   }
 
   /// If [videoEventId] is globally bookmarked, removes it; otherwise adds it.
@@ -615,9 +613,7 @@ class BookmarkService with NostrListServiceMixin {
       }
 
       // Create NIP-51 kind 10003 tags
-      final tags = <List<String>>[
-        ['client', 'diVine'],
-      ];
+      final tags = <List<String>>[];
 
       // Add bookmark items as tags
       for (final item in _globalBookmarks) {
@@ -665,7 +661,6 @@ class BookmarkService with NostrListServiceMixin {
       final tags = <List<String>>[
         ['d', set.id], // Identifier for replaceable event
         ['title', set.name],
-        ['client', 'diVine'],
       ];
 
       // Add description if present

@@ -254,8 +254,6 @@ class VideoMetadataUpdateService {
         ]);
       }
 
-      tags.add(['client', 'diVine']);
-
       if (editorState.allowAudioReuse) {
         tags.add(['allow_audio_reuse', 'true']);
       }

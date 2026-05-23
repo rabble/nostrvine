@@ -77,7 +77,7 @@ void main() {
       ['imeta', 'url https://cdn.example.com/video.mp4', 'm video/mp4'],
       ['title', 'Test Video'],
       ['t', 'test'],
-      ['client', 'diVine'],
+      Nip89ClientTag.tag,
     ];
 
     final existingEvent = VideoEvent(

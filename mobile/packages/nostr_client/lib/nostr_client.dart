@@ -6,6 +6,7 @@
 library;
 
 export 'src/models/models.dart';
+export 'src/nip89_client_tag.dart';
 export 'src/nostr_client.dart';
 export 'src/publish_result.dart';
 export 'src/relay_manager.dart';

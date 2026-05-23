@@ -1130,6 +1130,8 @@
   "nostrSettingsExperimentalFeaturesSubtitle": "Toggle feature flags that may hiccup.",
   "nostrSettingsKeyManagement": "Key Management",
   "nostrSettingsKeyManagementSubtitle": "Export, backup, and restore your Nostr keys",
+  "nostrSettingsClientAttribution": "Client Attribution",
+  "nostrSettingsClientAttributionSubtitle": "Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly.",
   "nostrSettingsRemoveKeys": "Remove Keys from Device",
   "nostrSettingsRemoveKeysSubtitle": "Delete your private key from this device only. Your content stays on relays, but you'll need your nsec backup to access your account again.",
   "nostrSettingsCouldNotRemoveKeys": "Could not remove keys from this device. Please try again.",

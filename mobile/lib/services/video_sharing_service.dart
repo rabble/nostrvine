@@ -171,7 +171,6 @@ class VideoSharingService {
   }) async {
     final tags = <List<String>>[
       ['p', recipientPubkey],
-      ['client', 'diVine'],
       ['e', video.id],
     ];
 

@@ -2,6 +2,7 @@
 // ABOUTME: Verifies AuthService automatically adds staging-relay.divine.video relay requirement
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 void main() {
@@ -71,7 +72,7 @@ void main() {
     test('vine tag should be automatically added to existing tags', () async {
       // Simulate adding vine tag to existing tags
       final existingTags = [
-        ['client', 'diVine'],
+        Nip89ClientTag.tag,
         ['t', 'hashtag'],
         ['p', 'somepubkey'],
       ];
@@ -80,7 +81,7 @@ void main() {
       finalTags.add(['h', 'vine']);
 
       expect(finalTags, containsOnce(['h', 'vine']));
-      expect(finalTags, containsOnce(['client', 'diVine']));
+      expect(finalTags, containsOnce(Nip89ClientTag.tag));
       expect(finalTags, containsOnce(['t', 'hashtag']));
       expect(finalTags, containsOnce(['p', 'somepubkey']));
 

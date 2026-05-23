@@ -3586,6 +3586,18 @@ abstract class AppLocalizations {
   /// **'Export, backup, and restore your Nostr keys'**
   String get nostrSettingsKeyManagementSubtitle;
 
+  /// No description provided for @nostrSettingsClientAttribution.
+  ///
+  /// In en, this message translates to:
+  /// **'Client Attribution'**
+  String get nostrSettingsClientAttribution;
+
+  /// No description provided for @nostrSettingsClientAttributionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly.'**
+  String get nostrSettingsClientAttributionSubtitle;
+
   /// No description provided for @nostrSettingsRemoveKeys.
   ///
   /// In en, this message translates to:

@@ -16,6 +16,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:models/models.dart'
     show BugReportData, BugReportResult, LogEntry;
+import 'package:nostr_client/nostr_client.dart' show Nip89ClientTag;
 import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/services/error_analytics_tracker.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -325,7 +326,7 @@ class BugReportService {
         recipientPubkey: recipientPubkey,
         content: messageContent,
         additionalTags: [
-          ['client', 'diVine_bug_report'],
+          Nip89ClientTag.tag,
           ['report_id', data.reportId],
           ['app_version', data.appVersion],
           if (bugReportUrl != null) ['bug_report_url', bugReportUrl],
@@ -920,10 +921,7 @@ class BugReportService {
       );
 
       if (location == null) {
-        Log.info(
-          'Log export cancelled by user',
-          category: LogCategory.system,
-        );
+        Log.info('Log export cancelled by user', category: LogCategory.system);
         return const LogExportResult.cancelled();
       }
 

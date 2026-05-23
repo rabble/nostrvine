@@ -2028,6 +2028,13 @@ class AppLocalizationsSv extends AppLocalizations {
       'Exportera, säkerhetskopiera och återställ dina Nostr-nycklar';
 
   @override
+  String get nostrSettingsClientAttribution => 'Client Attribution';
+
+  @override
+  String get nostrSettingsClientAttributionSubtitle =>
+      'Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly.';
+
+  @override
   String get nostrSettingsRemoveKeys => 'Ta bort nycklar från enheten';
 
   @override

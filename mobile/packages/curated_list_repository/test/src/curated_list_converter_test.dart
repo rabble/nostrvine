@@ -146,14 +146,8 @@ void main() {
           list.videoEventIds,
           contains('34235:pubkey123:horizontal-video'),
         );
-        expect(
-          list.videoEventIds,
-          contains('34236:pubkey456:vertical-video'),
-        );
-        expect(
-          list.videoEventIds,
-          contains('34237:pubkey789:live-video'),
-        );
+        expect(list.videoEventIds, contains('34236:pubkey456:vertical-video'));
+        expect(list.videoEventIds, contains('34237:pubkey789:live-video'));
       });
 
       test('ignores a-tags with non-video kinds', () {
@@ -284,7 +278,7 @@ void main() {
         expect(tags, contains(equals(['title', 'My List'])));
       });
 
-      test('includes client tag', () {
+      test('does not inline a client tag', () {
         final list = CuratedList(
           id: 'my-list',
           name: 'Test',
@@ -295,7 +289,7 @@ void main() {
 
         final tags = CuratedListConverter.toEventTags(list);
 
-        expect(tags, contains(equals(['client', 'diVine'])));
+        expect(tags.any((tag) => tag.first == 'client'), isFalse);
       });
 
       test('includes description when present', () {
@@ -478,10 +472,7 @@ void main() {
           ],
         );
 
-        expect(
-          CuratedListConverter.extractDTag(event),
-          equals('my-list-id'),
-        );
+        expect(CuratedListConverter.extractDTag(event), equals('my-list-id'));
       });
 
       test('returns first d-tag when multiple exist', () {

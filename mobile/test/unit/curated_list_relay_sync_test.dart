@@ -126,7 +126,7 @@ void main() {
           ['t', 'demo'],
           ['e', 'video1'],
           ['e', 'video2'],
-          ['client', 'diVine'],
+          Nip89ClientTag.tag,
           [
             'expiration',
             '${(DateTime.now().millisecondsSinceEpoch ~/ 1000) + 3600}',

@@ -1927,6 +1927,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get nostrSettingsKeyManagementSubtitle => 'Nostr 鍵をエクスポート、バックアップ、復元';
 
   @override
+  String get nostrSettingsClientAttribution => 'Client Attribution';
+
+  @override
+  String get nostrSettingsClientAttributionSubtitle =>
+      'Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly.';
+
+  @override
   String get nostrSettingsRemoveKeys => 'このデバイスから鍵を削除';
 
   @override

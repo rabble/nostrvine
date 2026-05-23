@@ -295,7 +295,6 @@ class ContentBlocklistRepository {
       final tags = <List<String>>[
         ['d', 'block'],
         ['title', 'Block List'],
-        ['client', 'diVine'],
       ];
 
       for (final pubkey in _runtimeBlocklist) {
@@ -391,9 +390,7 @@ class ContentBlocklistRepository {
     if (!_runtimeBlocklist.contains(pubkey)) {
       _runtimeBlocklist.add(pubkey);
       await _saveBlockedUsers();
-      _emitChange(
-        BlocklistChange(pubkey: pubkey, op: BlocklistOp.blocked),
-      );
+      _emitChange(BlocklistChange(pubkey: pubkey, op: BlocklistOp.blocked));
       _notifyChanged();
       await _publishBlockListToNostr();
 
@@ -421,9 +418,7 @@ class ContentBlocklistRepository {
     if (_runtimeBlocklist.contains(pubkey)) {
       _runtimeBlocklist.remove(pubkey);
       await _saveBlockedUsers();
-      _emitChange(
-        BlocklistChange(pubkey: pubkey, op: BlocklistOp.unblocked),
-      );
+      _emitChange(BlocklistChange(pubkey: pubkey, op: BlocklistOp.unblocked));
       _notifyChanged();
       await _publishBlockListToNostr();
 
@@ -618,10 +613,7 @@ class ContentBlocklistRepository {
       // Filter 2: Our own block list (for relay-based restoration)
       // Omit the d-tag constraint here — not all relays support #d
       // filtering, and _handleBlockListEvent already checks for d=block.
-      final ownFilter = Filter(
-        authors: [ourPubkey],
-        kinds: const [30000],
-      );
+      final ownFilter = Filter(authors: [ourPubkey], kinds: const [30000]);
 
       nostrService
           .subscribe([othersFilter, ownFilter])
@@ -757,9 +749,7 @@ class ContentBlocklistRepository {
     _runtimeBlocklist.addAll(added);
     unawaited(_saveBlockedUsers());
     for (final pubkey in added) {
-      _emitChange(
-        BlocklistChange(pubkey: pubkey, op: BlocklistOp.blocked),
-      );
+      _emitChange(BlocklistChange(pubkey: pubkey, op: BlocklistOp.blocked));
     }
     _notifyChanged();
 

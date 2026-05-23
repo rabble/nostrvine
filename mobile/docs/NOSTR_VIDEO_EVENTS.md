@@ -250,7 +250,7 @@ The `.content` field is optional and could contain a free-form note.
 | `e` | `["e", "<event-id>", "<relay-url>"]` | Event ID reference (specific version viewed) | **Required** |
 | `viewed` | `["viewed", "<start>", "<end>"]` | Start/end timestamps in seconds (can repeat) | **Required** |
 | `source` | `["source", "<source-type>"]` | Traffic source: `home`, `discovery`, `profile`, `share`, `search` | Optional |
-| `client` | `["client", "<client-identifier>"]` | Client identifier (e.g., "divine-mobile/1.0") | Optional |
+| `client` | `["client", "<name>", "31990:<app-pubkey>:<d-identifier>", "<relay-url>"]` | NIP-89 client attribution for Divine | Optional |
 
 ### Traffic Sources
 
@@ -276,7 +276,7 @@ The `.content` field is optional and could contain a free-form note.
     ["e", "<event-id>", "<relay-url>"],
     ["viewed", "0", "6"],
     ["source", "discovery"],
-    ["client", "divine-mobile/1.0"]
+    ["client", "Divine", "31990:d95aa8fc0eff8e488952495b8064991d27fb96ed8652f12cdedc5a4e8b5ae540:divine-mobile", "wss://relay.divine.video"]
   ]
 }
 ```

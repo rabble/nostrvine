@@ -7,6 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:nostr_sdk/utils/hash_util.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockNostr extends Mock implements Nostr {}
 
@@ -64,12 +65,15 @@ Event _createTestEvent({
 // =============================================================================
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('NostrClient', () {
     late _MockNostr mockNostr;
     late _MockRelayManager mockRelayManager;
     late NostrClient client;
 
     setUpAll(() {
+      SharedPreferences.setMockInitialValues(const <String, Object>{});
       registerFallbackValue(_FakeEvent());
       registerFallbackValue(_FakeFilter());
       registerFallbackValue(_FakeContactList());
@@ -1359,9 +1363,8 @@ void main() {
         final likeEvent = _createTestEvent(kind: EventKind.reaction);
 
         when(
-          () => mockNostr.sendLike(
+          () => mockNostr.sendEvent(
             any(),
-            content: any(named: 'content'),
             tempRelays: any(named: 'tempRelays'),
             targetRelays: any(named: 'targetRelays'),
           ),
@@ -1370,11 +1373,25 @@ void main() {
         final result = await client.sendLike(eventId);
 
         expect(result, equals(likeEvent));
-        verify(
-          () => mockNostr.sendLike(
-            eventId,
-          ),
-        ).called(1);
+        final captured =
+            verify(
+                  () => mockNostr.sendEvent(
+                    captureAny(),
+                    tempRelays: any(named: 'tempRelays'),
+                    targetRelays: any(named: 'targetRelays'),
+                  ),
+                ).captured.single
+                as Event;
+        expect(captured.kind, EventKind.reaction);
+        expect(captured.content, '+');
+        expect(captured.tags.firstWhere((tag) => tag[0] == 'e'), [
+          'e',
+          eventId,
+        ]);
+        expect(
+          captured.tags.firstWhere((tag) => tag[0] == 'client'),
+          Nip89ClientTag.tag,
+        );
       });
 
       test('sends like with custom content', () async {
@@ -1383,9 +1400,8 @@ void main() {
         final likeEvent = _createTestEvent(kind: EventKind.reaction);
 
         when(
-          () => mockNostr.sendLike(
+          () => mockNostr.sendEvent(
             any(),
-            content: any(named: 'content'),
             tempRelays: any(named: 'tempRelays'),
             targetRelays: any(named: 'targetRelays'),
           ),
@@ -1393,12 +1409,16 @@ void main() {
 
         await client.sendLike(eventId, content: content);
 
-        verify(
-          () => mockNostr.sendLike(
-            eventId,
-            content: content,
-          ),
-        ).called(1);
+        final captured =
+            verify(
+                  () => mockNostr.sendEvent(
+                    captureAny(),
+                    tempRelays: any(named: 'tempRelays'),
+                    targetRelays: any(named: 'targetRelays'),
+                  ),
+                ).captured.single
+                as Event;
+        expect(captured.content, content);
       });
 
       test('sends like with relay parameters', () async {
@@ -1408,9 +1428,8 @@ void main() {
         final likeEvent = _createTestEvent(kind: EventKind.reaction);
 
         when(
-          () => mockNostr.sendLike(
+          () => mockNostr.sendEvent(
             any(),
-            content: any(named: 'content'),
             tempRelays: any(named: 'tempRelays'),
             targetRelays: any(named: 'targetRelays'),
           ),
@@ -1423,9 +1442,9 @@ void main() {
         );
 
         verify(
-          () => mockNostr.sendLike(
-            eventId,
-            tempRelays: tempRelays,
+          () => mockNostr.sendEvent(
+            any(),
+            tempRelays: targetRelays,
             targetRelays: targetRelays,
           ),
         ).called(1);
@@ -1435,9 +1454,8 @@ void main() {
         const eventId = 'event-to-like';
 
         when(
-          () => mockNostr.sendLike(
+          () => mockNostr.sendEvent(
             any(),
-            content: any(named: 'content'),
             tempRelays: any(named: 'tempRelays'),
             targetRelays: any(named: 'targetRelays'),
           ),
@@ -1565,10 +1583,8 @@ void main() {
         final repostEvent = _createTestEvent(kind: EventKind.repost);
 
         when(
-          () => mockNostr.sendRepost(
+          () => mockNostr.sendEvent(
             any(),
-            relayAddr: any(named: 'relayAddr'),
-            content: any(named: 'content'),
             tempRelays: any(named: 'tempRelays'),
             targetRelays: any(named: 'targetRelays'),
           ),
@@ -1577,11 +1593,25 @@ void main() {
         final result = await client.sendRepost(eventId);
 
         expect(result, equals(repostEvent));
-        verify(
-          () => mockNostr.sendRepost(
-            eventId,
-          ),
-        ).called(1);
+        final captured =
+            verify(
+                  () => mockNostr.sendEvent(
+                    captureAny(),
+                    tempRelays: any(named: 'tempRelays'),
+                    targetRelays: any(named: 'targetRelays'),
+                  ),
+                ).captured.single
+                as Event;
+        expect(captured.kind, EventKind.repost);
+        expect(captured.content, isEmpty);
+        expect(captured.tags.firstWhere((tag) => tag[0] == 'e'), [
+          'e',
+          eventId,
+        ]);
+        expect(
+          captured.tags.firstWhere((tag) => tag[0] == 'client'),
+          Nip89ClientTag.tag,
+        );
       });
 
       test('sends repost with all parameters', () async {
@@ -1593,10 +1623,8 @@ void main() {
         final repostEvent = _createTestEvent(kind: EventKind.repost);
 
         when(
-          () => mockNostr.sendRepost(
+          () => mockNostr.sendEvent(
             any(),
-            relayAddr: any(named: 'relayAddr'),
-            content: any(named: 'content'),
             tempRelays: any(named: 'tempRelays'),
             targetRelays: any(named: 'targetRelays'),
           ),
@@ -1610,25 +1638,27 @@ void main() {
           targetRelays: targetRelays,
         );
 
-        verify(
-          () => mockNostr.sendRepost(
-            eventId,
-            relayAddr: relayAddr,
-            content: content,
-            tempRelays: tempRelays,
+        final verification = verify(
+          () => mockNostr.sendEvent(
+            captureAny(),
+            tempRelays: targetRelays,
             targetRelays: targetRelays,
           ),
-        ).called(1);
+        );
+        final captured = verification.captured.single as Event;
+        expect(captured.content, content);
+        expect(
+          captured.tags.firstWhere((tag) => tag[0] == 'e'),
+          ['e', eventId, relayAddr],
+        );
       });
 
       test('returns null when sendRepost fails', () async {
         const eventId = 'event-to-repost';
 
         when(
-          () => mockNostr.sendRepost(
+          () => mockNostr.sendEvent(
             any(),
-            relayAddr: any(named: 'relayAddr'),
-            content: any(named: 'content'),
             tempRelays: any(named: 'tempRelays'),
             targetRelays: any(named: 'targetRelays'),
           ),
@@ -1790,7 +1820,7 @@ void main() {
         final deleteEvent = _createTestEvent(kind: EventKind.eventDeletion);
 
         when(
-          () => mockNostr.deleteEvent(
+          () => mockNostr.sendEvent(
             any(),
             tempRelays: any(named: 'tempRelays'),
             targetRelays: any(named: 'targetRelays'),
@@ -1800,11 +1830,25 @@ void main() {
         final result = await client.deleteEvent(eventId);
 
         expect(result, equals(deleteEvent));
-        verify(
-          () => mockNostr.deleteEvent(
-            eventId,
-          ),
-        ).called(1);
+        final captured =
+            verify(
+                  () => mockNostr.sendEvent(
+                    captureAny(),
+                    tempRelays: any(named: 'tempRelays'),
+                    targetRelays: any(named: 'targetRelays'),
+                  ),
+                ).captured.single
+                as Event;
+        expect(captured.kind, EventKind.eventDeletion);
+        expect(captured.content, 'delete');
+        expect(captured.tags.firstWhere((tag) => tag[0] == 'e'), [
+          'e',
+          eventId,
+        ]);
+        expect(
+          captured.tags.firstWhere((tag) => tag[0] == 'client'),
+          Nip89ClientTag.tag,
+        );
       });
 
       test('deletes event with relay parameters', () async {
@@ -1814,7 +1858,7 @@ void main() {
         final deleteEvent = _createTestEvent(kind: EventKind.eventDeletion);
 
         when(
-          () => mockNostr.deleteEvent(
+          () => mockNostr.sendEvent(
             any(),
             tempRelays: any(named: 'tempRelays'),
             targetRelays: any(named: 'targetRelays'),
@@ -1828,9 +1872,9 @@ void main() {
         );
 
         verify(
-          () => mockNostr.deleteEvent(
-            eventId,
-            tempRelays: tempRelays,
+          () => mockNostr.sendEvent(
+            any(),
+            tempRelays: targetRelays,
             targetRelays: targetRelays,
           ),
         ).called(1);
@@ -1840,7 +1884,7 @@ void main() {
         const eventId = 'event-to-delete';
 
         when(
-          () => mockNostr.deleteEvent(
+          () => mockNostr.sendEvent(
             any(),
             tempRelays: any(named: 'tempRelays'),
             targetRelays: any(named: 'targetRelays'),
@@ -1859,7 +1903,7 @@ void main() {
         final deleteEvent = _createTestEvent(kind: EventKind.eventDeletion);
 
         when(
-          () => mockNostr.deleteEvents(
+          () => mockNostr.sendEvent(
             any(),
             tempRelays: any(named: 'tempRelays'),
             targetRelays: any(named: 'targetRelays'),
@@ -1869,11 +1913,24 @@ void main() {
         final result = await client.deleteEvents(eventIds);
 
         expect(result, equals(deleteEvent));
-        verify(
-          () => mockNostr.deleteEvents(
-            eventIds,
-          ),
-        ).called(1);
+        final captured =
+            verify(
+                  () => mockNostr.sendEvent(
+                    captureAny(),
+                    targetRelays: any(named: 'targetRelays'),
+                  ),
+                ).captured.single
+                as Event;
+        expect(captured.kind, EventKind.eventDeletion);
+        expect(captured.content, 'delete');
+        expect(
+          captured.tags.where((tag) => tag[0] == 'e').toList(),
+          eventIds.map((eventId) => ['e', eventId]).toList(),
+        );
+        expect(
+          captured.tags.firstWhere((tag) => tag[0] == 'client'),
+          Nip89ClientTag.tag,
+        );
       });
 
       test('deletes events with relay parameters', () async {
@@ -1883,7 +1940,7 @@ void main() {
         final deleteEvent = _createTestEvent(kind: EventKind.eventDeletion);
 
         when(
-          () => mockNostr.deleteEvents(
+          () => mockNostr.sendEvent(
             any(),
             tempRelays: any(named: 'tempRelays'),
             targetRelays: any(named: 'targetRelays'),
@@ -1897,9 +1954,9 @@ void main() {
         );
 
         verify(
-          () => mockNostr.deleteEvents(
-            eventIds,
-            tempRelays: tempRelays,
+          () => mockNostr.sendEvent(
+            any(),
+            tempRelays: targetRelays,
             targetRelays: targetRelays,
           ),
         ).called(1);
@@ -1909,7 +1966,7 @@ void main() {
         final eventIds = ['event-1', 'event-2'];
 
         when(
-          () => mockNostr.deleteEvents(
+          () => mockNostr.sendEvent(
             any(),
             tempRelays: any(named: 'tempRelays'),
             targetRelays: any(named: 'targetRelays'),
@@ -1929,8 +1986,7 @@ void main() {
         final contactListEvent = _createTestEvent(kind: EventKind.contactList);
 
         when(
-          () => mockNostr.sendContactList(
-            any(),
+          () => mockNostr.sendEvent(
             any(),
             tempRelays: any(named: 'tempRelays'),
             targetRelays: any(named: 'targetRelays'),
@@ -1940,12 +1996,20 @@ void main() {
         final result = await client.sendContactList(contacts, content);
 
         expect(result, equals(contactListEvent));
-        verify(
-          () => mockNostr.sendContactList(
-            contacts,
-            content,
-          ),
-        ).called(1);
+        final captured =
+            verify(
+                  () => mockNostr.sendEvent(
+                    captureAny(),
+                    targetRelays: any(named: 'targetRelays'),
+                  ),
+                ).captured.single
+                as Event;
+        expect(captured.kind, EventKind.contactList);
+        expect(captured.content, content);
+        expect(
+          captured.tags.firstWhere((tag) => tag[0] == 'client'),
+          Nip89ClientTag.tag,
+        );
       });
 
       test('sends contact list with relay parameters', () async {
@@ -1956,8 +2020,7 @@ void main() {
         final contactListEvent = _createTestEvent(kind: EventKind.contactList);
 
         when(
-          () => mockNostr.sendContactList(
-            any(),
+          () => mockNostr.sendEvent(
             any(),
             tempRelays: any(named: 'tempRelays'),
             targetRelays: any(named: 'targetRelays'),
@@ -1972,10 +2035,9 @@ void main() {
         );
 
         verify(
-          () => mockNostr.sendContactList(
-            contacts,
-            content,
-            tempRelays: tempRelays,
+          () => mockNostr.sendEvent(
+            any(),
+            tempRelays: targetRelays,
             targetRelays: targetRelays,
           ),
         ).called(1);
@@ -1986,8 +2048,7 @@ void main() {
         const content = '{"relay":"preferences"}';
 
         when(
-          () => mockNostr.sendContactList(
-            any(),
+          () => mockNostr.sendEvent(
             any(),
             tempRelays: any(named: 'tempRelays'),
             targetRelays: any(named: 'targetRelays'),

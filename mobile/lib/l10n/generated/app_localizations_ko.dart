@@ -1936,6 +1936,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get nostrSettingsKeyManagementSubtitle => 'Nostr 키를 내보내고, 백업하고, 복원해요';
 
   @override
+  String get nostrSettingsClientAttribution => 'Client Attribution';
+
+  @override
+  String get nostrSettingsClientAttributionSubtitle =>
+      'Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly.';
+
+  @override
   String get nostrSettingsRemoveKeys => '기기에서 키 제거';
 
   @override

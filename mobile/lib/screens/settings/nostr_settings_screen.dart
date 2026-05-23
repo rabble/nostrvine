@@ -7,6 +7,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nostr_client/nostr_client.dart' show Nip89ClientTag;
 import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyStorageException;
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
@@ -15,6 +16,7 @@ import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
@@ -113,6 +115,7 @@ class NostrSettingsScreen extends ConsumerWidget {
                   subtitle: context.l10n.nostrSettingsKeyManagementSubtitle,
                   onTap: () => context.push(KeyManagementScreen.path),
                 ),
+                const _ClientAttributionToggle(),
                 _SettingsTile(
                   icon: Icons.alternate_email,
                   title: context.l10n.nostrSettingsNip05Address,
@@ -239,6 +242,40 @@ class _DeleteAccountTile extends StatelessWidget {
         authService: authService,
         screenName: 'NostrSettingsScreen',
       ),
+    );
+  }
+}
+
+class _ClientAttributionToggle extends ConsumerWidget {
+  const _ClientAttributionToggle();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final enabledAsync = ref.watch(nip89ClientTagEnabledProvider);
+    final enabled = enabledAsync.value ?? true;
+
+    return SwitchListTile.adaptive(
+      value: enabled,
+      onChanged: enabledAsync.isLoading
+          ? null
+          : (value) async {
+              await Nip89ClientTag.setEnabled(enabled: value);
+              ref.invalidate(nip89ClientTagEnabledProvider);
+            },
+      title: Text(
+        context.l10n.nostrSettingsClientAttribution,
+        style: const TextStyle(
+          color: VineTheme.whiteText,
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      subtitle: Text(
+        context.l10n.nostrSettingsClientAttributionSubtitle,
+        style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
+      ),
+      activeThumbColor: VineTheme.vineGreen,
+      secondary: const Icon(Icons.travel_explore, color: VineTheme.vineGreen),
     );
   }
 }
