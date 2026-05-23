@@ -537,6 +537,60 @@ void main() {
     );
 
     blocTest<PeopleListsBloc, PeopleListsState>(
+      'restores exact prior lists and reverse index when delete publish fails',
+      build: buildBloc,
+      setUp: () {
+        when(
+          () => repository.deleteList(
+            ownerPubkey: _ownerA,
+            listId: 'list-1',
+          ),
+        ).thenAnswer(
+          (_) async => const PeopleListPublishResult.failed(),
+        );
+      },
+      seed: () {
+        final priorLists = [
+          _buildList(
+            id: 'list-1',
+            name: 'Friends',
+            pubkeys: const [_memberAlice],
+          ),
+        ];
+        return PeopleListsState(
+          status: PeopleListsStatus.ready,
+          ownerPubkey: _ownerA,
+          lists: priorLists,
+          listIdsByPubkey: const {
+            _memberAlice: {'list-1'},
+          },
+        );
+      },
+      act: (bloc) => bloc.add(
+        const PeopleListsDeleteRequested(listId: 'list-1'),
+      ),
+      verify: (bloc) {
+        final expectedLists = [
+          _buildList(
+            id: 'list-1',
+            name: 'Friends',
+            pubkeys: const [_memberAlice],
+          ),
+        ];
+        expect(bloc.state.status, equals(PeopleListsStatus.failure));
+        expect(bloc.state.pendingMutations, isEmpty);
+        expect(bloc.state.lastSubmittedEventId, isNull);
+        expect(bloc.state.lists, equals(expectedLists));
+        expect(
+          bloc.state.listIdsByPubkey,
+          equals({
+            _memberAlice: {'list-1'},
+          }),
+        );
+      },
+    );
+
+    blocTest<PeopleListsBloc, PeopleListsState>(
       'reports submitted from repository without claiming relay confirmation',
       build: buildBloc,
       setUp: () {

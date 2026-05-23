@@ -235,6 +235,8 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
       PeopleListsMutationKind.deleteList,
       listId: event.listId,
     );
+    final previousLists = List<UserList>.of(state.lists, growable: false);
+    final previousIndex = _copyReverseIndex(state.listIdsByPubkey);
 
     // Optimistically remove the list and any reverse-index entries.
     final optimisticLists = state.lists
@@ -256,12 +258,26 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
         ownerPubkey: owner,
         listId: event.listId,
       );
+      if (!result.submitted) {
+        emit(
+          _withoutMutation(state, mutation.id, failed: true).copyWith(
+            lists: previousLists,
+            listIdsByPubkey: previousIndex,
+          ),
+        );
+        return;
+      }
       emit(
         _withoutMutation(state, mutation.id, resultEventId: result.eventId),
       );
     } catch (e, stackTrace) {
       addError(e, stackTrace);
-      emit(_withoutMutation(state, mutation.id, failed: true));
+      emit(
+        _withoutMutation(state, mutation.id, failed: true).copyWith(
+          lists: previousLists,
+          listIdsByPubkey: previousIndex,
+        ),
+      );
     }
   }
 
