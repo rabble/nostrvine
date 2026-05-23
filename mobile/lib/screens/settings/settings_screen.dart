@@ -23,6 +23,7 @@ import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/apps/apps_permissions_screen.dart';
+import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/badges/badges_screen.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
@@ -192,9 +193,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     onSwitchAccount: _handleSwitchAccount,
                     accountSwitchingEnabled: accountSwitchingEnabled,
                   ),
-                  // TODO(#3786): restore the "Secure account" tile once the
-                  // key-safe proof-of-possession upgrade lands. The upgrade is
-                  // paused in #3359 — it used to transmit the user's nsec.
+                  if (authService.isAnonymous)
+                    _SettingsTile(
+                      icon: Icons.security,
+                      title: context.l10n.settingsSecureAccount,
+                      onTap: () => context.push(SecureAccountScreen.path),
+                    ),
                   if (!authService.isAnonymous &&
                       authService.hasExpiredOAuthSession)
                     _SettingsTile(

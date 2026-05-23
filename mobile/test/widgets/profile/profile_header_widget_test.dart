@@ -823,32 +823,28 @@ void main() {
     });
 
     group('Action Label', () {
-      testWidgets(
-        'hides the action label for an anonymous user with a custom name '
-        '(secure-account paused #3359)',
-        (tester) async {
-          final testProfile = createTestProfile(displayName: 'Test User');
+      testWidgets('shows Secure label when anonymous with custom name', (
+        tester,
+      ) async {
+        final testProfile = createTestProfile(displayName: 'Test User');
 
-          await tester.pumpWidget(
-            buildTestWidget(
-              userIdHex: testUserHex,
-              isOwnProfile: true,
-              profile: testProfile,
-              isAnonymous: true,
-            ),
-          );
-          await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: testProfile,
+            isAnonymous: true,
+          ),
+        );
+        await tester.pumpAndSettle();
 
-          // Was [secureAccount] before #3359; the upgrade prompt is now gated
-          // and the profile already has a name, so nothing is pending.
-          expect(find.text('Secure your account'), findsNothing);
-          expect(find.text('Complete your profile'), findsNothing);
-        },
-      );
+        expect(find.text('Secure your account'), findsOneWidget);
+        // 1 action — badge shows "1"
+        expect(find.text('1'), findsOneWidget);
+      });
 
       testWidgets(
-        'shows the Complete-profile label (not Secure) for an anonymous user '
-        'with no name (#3359)',
+        'shows Secure label with count badge when anonymous and no name',
         (tester) async {
           final profileWithDefaultName = createTestProfile();
 
@@ -862,10 +858,10 @@ void main() {
           );
           await tester.pumpAndSettle();
 
-          // Was [secureAccount, completeProfile] (badge "2") before #3359.
-          // The secure-account prompt is paused, leaving only completeProfile.
-          expect(find.text('Secure your account'), findsNothing);
-          expect(find.text('Complete your profile'), findsOneWidget);
+          // Secure takes precedence
+          expect(find.text('Secure your account'), findsOneWidget);
+          // 2 actions — red badge with "2"
+          expect(find.text('2'), findsOneWidget);
         },
       );
 
@@ -918,13 +914,13 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // secureAccount is gated (#3359), so the pill is the completeProfile
-        // action; tapping it opens the sheet for that action.
-        await tester.tap(find.text('Complete your profile'));
+        // Tap on the action label
+        await tester.tap(find.text('Secure your account'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Complete Your Profile'), findsOneWidget);
-        expect(find.text('Update Your Profile'), findsOneWidget);
+        // The bottom sheet should show the first action
+        expect(find.text('Secure Your Account'), findsOneWidget);
+        expect(find.text('Add Email & Password'), findsOneWidget);
         expect(find.text('Maybe Later'), findsOneWidget);
       });
     });
@@ -989,8 +985,7 @@ void main() {
       );
 
       testWidgets(
-        'anonymous users see no action pill and no session-expired sheet when '
-        'the session is expired (#3359)',
+        'shows secure account label for anonymous users with expired session',
         (tester) async {
           final testProfile = createTestProfile(displayName: 'Test User');
           SharedPreferences.setMockInitialValues({});
@@ -1008,10 +1003,8 @@ void main() {
           );
           await tester.pumpAndSettle();
 
-          // secure-account pill gated (#3359); the session-expired sheet only
-          // shows for non-anonymous users.
-          expect(find.text('Secure your account'), findsNothing);
-          expect(find.text('Complete your profile'), findsNothing);
+          // Anonymous users see the action label pill, not session expired
+          expect(find.text('Secure your account'), findsOneWidget);
           expect(find.text('Session Expired'), findsNothing);
         },
       );

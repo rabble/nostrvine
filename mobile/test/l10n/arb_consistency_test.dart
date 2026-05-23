@@ -480,10 +480,6 @@ const _knownUntranslatedDebt = {
   // Translators will pick this up in a follow-up pass; until then non-English
   // locales fall back to the English source.
   'feedLoadingMore',
-  // Added by the #3359 secure-account nsec-leak fix: the upgrade flow is
-  // paused behind a notice until the proof-of-possession path (#3786) lands.
-  // Non-English locales fall back to English until the next translation pass.
-  'authSecureAccountUnavailableMessage',
 };
 
 Map<String, Object?> _readArb(File file) {

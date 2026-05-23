@@ -1614,10 +1614,6 @@
   "authUnexpectedError": "An unexpected error occurred. Please try again.",
   "authUpdatePassword": "Update password",
   "authSecureAccountTitle": "Secure account",
-  "authSecureAccountUnavailableMessage": "Securing your account is paused for a quick security update. Your keys stay safe on this device — check back soon.",
-  "@authSecureAccountUnavailableMessage": {
-    "description": "Shown on the secure-account screen while the email/password upgrade is temporarily disabled (divine-mobile#3359 / #3786). Reassures the user their keys remain safe on-device."
-  },
   "authUnableToAccessKeys": "Unable to access your keys. Please try again.",
   "authRegistrationFailed": "Registration failed",
   "authRegistrationComplete": "Registration complete. Please check your email.",

@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:keycast_flutter/src/crypto/key_utils.dart';
 import 'package:keycast_flutter/src/models/exceptions.dart';
 import 'package:keycast_flutter/src/models/keycast_session.dart';
 import 'package:keycast_flutter/src/oauth/callback_result.dart';
@@ -161,12 +162,21 @@ class KeycastOAuth {
   ///   - 'consent': Force consent screen even if previously approved
   ///   - 'none': Silent auth only, fail if interaction required
   Future<(String url, String verifier)> getAuthorizationUrl({
+    String? nsec,
     String scope = 'policy:social',
     bool defaultRegister = true,
     String? authorizationHandle,
     String? prompt,
   }) async {
-    final verifier = Pkce.generateVerifier();
+    String? byokPubkey;
+    if (nsec != null) {
+      byokPubkey = KeyUtils.derivePublicKeyFromNsec(nsec);
+      if (byokPubkey == null) {
+        return ('', '');
+      }
+    }
+
+    final verifier = Pkce.generateVerifier(nsec: nsec);
     final challenge = Pkce.generateChallenge(verifier);
 
     final params = <String, String>{
@@ -177,6 +187,10 @@ class KeycastOAuth {
       'code_challenge_method': 'S256',
       'default_register': defaultRegister.toString(),
     };
+
+    if (byokPubkey != null) {
+      params['byok_pubkey'] = byokPubkey;
+    }
 
     final handle = authorizationHandle ?? await getAuthorizationHandle();
     if (handle != null) {
@@ -263,13 +277,21 @@ class KeycastOAuth {
   /// polling.
   /// After registration, poll [pollForCode] until email is verified, then
   /// [exchangeCode].
+  ///
+  /// [nsec] - Optional: import existing Nostr key instead of generating new one
   Future<(HeadlessRegisterResult, String verifier)> headlessRegister({
     required String email,
     required String password,
     String scope = 'policy:social',
+    String? nsec,
     String? state,
   }) async {
-    final verifier = Pkce.generateVerifier();
+    String? byokPubkey;
+    if (nsec != null) {
+      byokPubkey = KeyUtils.derivePublicKeyFromNsec(nsec);
+    }
+
+    final verifier = Pkce.generateVerifier(nsec: nsec);
     final challenge = Pkce.generateChallenge(verifier);
 
     try {
@@ -282,6 +304,10 @@ class KeycastOAuth {
         'code_challenge': challenge,
         'code_challenge_method': 'S256',
       };
+
+      if (byokPubkey != null) {
+        body['nsec'] = nsec;
+      }
 
       if (state != null) {
         body['state'] = state;

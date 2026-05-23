@@ -5258,12 +5258,6 @@ abstract class AppLocalizations {
   /// **'Secure account'**
   String get authSecureAccountTitle;
 
-  /// Shown on the secure-account screen while the email/password upgrade is temporarily disabled (divine-mobile#3359 / #3786). Reassures the user their keys remain safe on-device.
-  ///
-  /// In en, this message translates to:
-  /// **'Securing your account is paused for a quick security update. Your keys stay safe on this device — check back soon.'**
-  String get authSecureAccountUnavailableMessage;
-
   /// No description provided for @authUnableToAccessKeys.
   ///
   /// In en, this message translates to:

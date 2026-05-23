@@ -2996,10 +2996,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get authSecureAccountTitle => 'Account beveiligen';
 
   @override
-  String get authSecureAccountUnavailableMessage =>
-      'Securing your account is paused for a quick security update. Your keys stay safe on this device — check back soon.';
-
-  @override
   String get authUnableToAccessKeys =>
       'Toegang tot je sleutels mislukt. Probeer het opnieuw.';
 

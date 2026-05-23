@@ -2852,10 +2852,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get authSecureAccountTitle => '계정 보호';
 
   @override
-  String get authSecureAccountUnavailableMessage =>
-      'Securing your account is paused for a quick security update. Your keys stay safe on this device — check back soon.';
-
-  @override
   String get authUnableToAccessKeys => '키에 접근할 수 없어요. 다시 시도해보세요.';
 
   @override

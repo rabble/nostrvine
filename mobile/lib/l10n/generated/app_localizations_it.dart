@@ -3020,10 +3020,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get authSecureAccountTitle => 'Metti al sicuro l\'account';
 
   @override
-  String get authSecureAccountUnavailableMessage =>
-      'Securing your account is paused for a quick security update. Your keys stay safe on this device — check back soon.';
-
-  @override
   String get authUnableToAccessKeys =>
       'Impossibile accedere alle tue chiavi. Riprova.';
 

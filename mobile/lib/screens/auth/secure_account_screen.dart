@@ -1,61 +1,390 @@
-// ABOUTME: Secure-account upgrade entry point. The key-importing upgrade was
-// ABOUTME: removed (#3359); shows a paused notice until #3786 restores it.
+// ABOUTME: Secure account screen for existing anonymous users
+// ABOUTME: Allows adding email/password to an existing anonymous account
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:keycast_flutter/keycast_flutter.dart';
+import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
+import 'package:openvine/l10n/email_verification_error_l10n.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/widgets/auth_back_button.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/utils/validators.dart';
+import 'package:openvine/widgets/auth/auth_error_box.dart';
+import 'package:openvine/widgets/auth/auth_form_scaffold.dart';
+import 'package:unified_logger/unified_logger.dart';
 
-/// Secure-account upgrade screen.
-///
-/// The email/password upgrade used to export the user's local nsec and send it
-/// to Keycast over the wire — in the registration request body and embedded in
-/// the PKCE `code_verifier` — leaking the private key (#3359). That path is
-/// removed entirely.
-///
-/// Until the key-safe proof-of-possession registration lands (#3786), this
-/// screen shows a notice instead of the registration form. Falling through to
-/// the server's auto-generate path would silently re-create the user's
-/// identity under a new server-managed key (and wipe their local social-graph
-/// caches via `shouldClearDataForUser`), so the upgrade is paused rather than
-/// regressed.
-// TODO(#3786): restore the secure-account upgrade via proof-of-possession.
-class SecureAccountScreen extends StatelessWidget {
-  const SecureAccountScreen({super.key});
-
+class SecureAccountScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.
   static const routeName = 'secure-account';
 
   /// Path for this route.
   static const path = '/secure-account';
 
+  const SecureAccountScreen({super.key});
+
+  @override
+  ConsumerState<SecureAccountScreen> createState() =>
+      _SecureAccountScreenState();
+}
+
+class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  bool _isLoading = false;
+  String? _emailError;
+  String? _passwordError;
+  String? _confirmPasswordError;
+  String? _generalError;
+
+  void _setGeneralError(String? message) {
+    if (mounted) {
+      setState(() => _generalError = message);
+    }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleSubmit() async {
+    final messages = AuthValidationMessages.fromL10n(context.l10n);
+    final emailError = Validators.validateEmail(
+      _emailController.text.trim(),
+      messages: messages,
+    );
+    final passwordError = Validators.validatePassword(
+      _passwordController.text,
+      messages: messages,
+    );
+    final confirmPasswordError = Validators.validateConfirmPassword(
+      _confirmPasswordController.text,
+      password: _passwordController.text,
+      messages: messages,
+    );
+
+    if (emailError != null ||
+        passwordError != null ||
+        confirmPasswordError != null) {
+      setState(() {
+        _emailError = emailError;
+        _passwordError = passwordError;
+        _confirmPasswordError = confirmPasswordError;
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _emailError = null;
+      _passwordError = null;
+      _confirmPasswordError = null;
+      _generalError = null;
+    });
+
+    final l10n = context.l10n;
+    try {
+      final oauth = ref.read(oauthClientProvider);
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
+
+      // Use authService.exportNsec() which accesses keys from secure storage
+      // This works for both auto-generated and imported keys
+      final authService = ref.read(authServiceProvider);
+      final nsec = await authService.exportNsec();
+
+      if (nsec == null) {
+        _setGeneralError(l10n.authUnableToAccessKeys);
+        return;
+      }
+
+      await _handleRegister(
+        oauth: oauth,
+        email: email,
+        password: password,
+        nsec: nsec,
+      );
+    } catch (e) {
+      Log.error(
+        'Auth error: $e',
+        name: 'SecureAccountScreen',
+        category: LogCategory.auth,
+      );
+      _setGeneralError(l10n.authUnexpectedError);
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _handleRegister({
+    required KeycastOAuth oauth,
+    required String email,
+    required String password,
+    required String nsec,
+  }) async {
+    final (result, verifier) = await oauth.headlessRegister(
+      email: email,
+      nsec: nsec,
+      password: password,
+      scope: 'policy:full',
+    );
+
+    if (!result.success) {
+      _setGeneralError(
+        result.errorDescription ?? context.l10n.authRegistrationFailed,
+      );
+      return;
+    }
+
+    if (result.verificationRequired && result.deviceCode != null) {
+      // Start polling
+      if (mounted) {
+        context.read<EmailVerificationCubit>().startPolling(
+          deviceCode: result.deviceCode!,
+          verifier: verifier,
+          email: email,
+        );
+
+        // Show verification dialog but let user continue
+        _showVerificationDialog(email);
+      }
+    } else {
+      _setGeneralError(context.l10n.authRegistrationComplete);
+    }
+  }
+
+  void _showVerificationDialog(String email) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => PopScope(
+        canPop: false,
+        child: _VerificationDialog(
+          email: email,
+          onContinue: () {
+            Navigator.of(dialogContext).pop();
+            _continueToApp();
+          },
+          onSuccess: () {
+            // Signal password managers to save credentials BEFORE we unmount
+            // the form via navigation.
+            if (!mounted) return;
+            TextInput.finishAutofillContext();
+            context.go(ExploreScreen.path);
+          },
+        ),
+      ),
+    );
+  }
+
+  void _continueToApp() {
+    if (!mounted) return;
+    // Signal password managers to save credentials BEFORE we unmount
+    // the form via navigation.
+    TextInput.finishAutofillContext();
+    context.go(ExploreScreen.path);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 8),
-              const AuthBackButton(),
-              const SizedBox(height: 32),
-              Text(
-                l10n.authSecureAccountTitle,
-                style: VineTheme.headlineLargeFont(),
+    return AuthFormScaffold(
+      title: context.l10n.authSecureAccountTitle,
+      emailController: _emailController,
+      passwordController: _passwordController,
+      confirmPasswordController: _confirmPasswordController,
+      emailLabel: context.l10n.authEmailLabel,
+      passwordLabel: context.l10n.authPasswordLabel,
+      confirmPasswordLabel: context.l10n.authConfirmPasswordLabel,
+      emailError: _emailError,
+      passwordError: _passwordError,
+      confirmPasswordError: _confirmPasswordError,
+      enabled: !_isLoading,
+      onEmailChanged: (_) {
+        if (_emailError != null) setState(() => _emailError = null);
+      },
+      onPasswordChanged: (_) {
+        if (_passwordError != null || _confirmPasswordError != null) {
+          setState(() {
+            _passwordError = null;
+            _confirmPasswordError = null;
+          });
+        }
+      },
+      onConfirmPasswordChanged: (_) {
+        if (_confirmPasswordError != null) {
+          setState(() => _confirmPasswordError = null);
+        }
+      },
+      errorWidget: _generalError != null
+          ? AuthErrorBox(message: _generalError!)
+          : null,
+      primaryButton: DivineButton(
+        expanded: true,
+        label: context.l10n.authSecureAccountTitle,
+        isLoading: _isLoading,
+        onPressed: _handleSubmit,
+      ),
+    );
+  }
+}
+
+/// Reactive dialog that watches verification state and auto-closes on success
+class _VerificationDialog extends ConsumerWidget {
+  const _VerificationDialog({
+    required this.email,
+    required this.onContinue,
+    required this.onSuccess,
+  });
+
+  final String email;
+  final VoidCallback onContinue;
+  final VoidCallback onSuccess;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authService = ref.watch(authServiceProvider);
+
+    return BlocBuilder<EmailVerificationCubit, EmailVerificationState>(
+      builder: (context, verificationState) {
+        // Auto-close when verification completes (user is no longer anonymous)
+        if (!verificationState.isPolling &&
+            verificationState.errorCode == null &&
+            !authService.isAnonymous) {
+          // Use post-frame callback to avoid calling Navigator during build
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            onSuccess();
+          });
+        }
+
+        // Show error state if verification failed
+        final errorCode = verificationState.errorCode;
+        if (errorCode != null) {
+          return AlertDialog(
+            backgroundColor: VineTheme.cardBackground,
+            title: const Row(
+              children: [
+                Icon(Icons.error_outline, color: VineTheme.error),
+                SizedBox(width: 12),
+                Text(
+                  'Verification Failed',
+                  style: TextStyle(color: VineTheme.whiteText),
+                ),
+              ],
+            ),
+            content: Text(
+              context.l10n.emailVerificationErrorMessage(errorCode),
+              style: const TextStyle(color: VineTheme.secondaryText),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text(
+                  'Close',
+                  style: TextStyle(color: VineTheme.vineGreen),
+                ),
               ),
-              const SizedBox(height: 24),
+            ],
+          );
+        }
+
+        // Show success state briefly before auto-closing
+        if (!authService.isAnonymous) {
+          return const AlertDialog(
+            backgroundColor: VineTheme.cardBackground,
+            title: Row(
+              children: [
+                Icon(Icons.check_circle, color: VineTheme.vineGreen),
+                SizedBox(width: 12),
+                Text(
+                  'Account Secured!',
+                  style: TextStyle(color: VineTheme.whiteText),
+                ),
+              ],
+            ),
+            content: Text(
+              'Your account is now linked to your email.',
+              style: TextStyle(color: VineTheme.onSurfaceVariant),
+            ),
+          );
+        }
+
+        // Show waiting state
+        return AlertDialog(
+          backgroundColor: VineTheme.cardBackground,
+          title: const Row(
+            children: [
+              Icon(Icons.email_outlined, color: VineTheme.vineGreen),
+              SizedBox(width: 12),
               Text(
-                l10n.authSecureAccountUnavailableMessage,
-                style: VineTheme.bodyLargeFont(color: VineTheme.secondaryText),
+                'Verify Your Email',
+                style: TextStyle(color: VineTheme.whiteText),
               ),
             ],
           ),
-        ),
-      ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'We sent a verification link to:',
+                style: TextStyle(color: VineTheme.secondaryText),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                email,
+                style: const TextStyle(
+                  color: VineTheme.whiteText,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Click the link in your email to complete registration. '
+                'You can continue using the app in the meantime.',
+                style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              const Row(
+                children: [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: VineTheme.vineGreen,
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Text(
+                    'Waiting for verification...',
+                    style: TextStyle(color: VineTheme.vineGreen, fontSize: 12),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: onContinue,
+              child: const Text(
+                'Continue to App',
+                style: TextStyle(color: VineTheme.vineGreen),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

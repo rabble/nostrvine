@@ -7,40 +7,20 @@ import 'package:openvine/widgets/profile/profile_actions_sheet/profile_action_ty
 void main() {
   group(ProfileActionType, () {
     group('pending', () {
-      test('never emits secureAccount while the upgrade is paused (#3359)', () {
-        // The secureAccount prompt is paused until the key-safe
-        // proof-of-possession upgrade lands (#3786), so pending() never emits
-        // it regardless of anonymity / profile / session state.
-        for (final hasProfileInfo in [false, true]) {
-          for (final expired in [false, true]) {
-            final actions = ProfileActionType.pending(
-              isOwnProfile: true,
-              isAnonymous: true,
-              hasExpiredSession: expired,
-              hasAnyProfileInfo: hasProfileInfo,
-            );
-            expect(actions, isNot(contains(ProfileActionType.secureAccount)));
-          }
-        }
+      test('returns both actions when anonymous without profile info', () {
+        final actions = ProfileActionType.pending(
+          isOwnProfile: true,
+          isAnonymous: true,
+          hasExpiredSession: false,
+          hasAnyProfileInfo: false,
+        );
+
+        expect(actions, hasLength(2));
+        expect(actions[0], equals(ProfileActionType.secureAccount));
+        expect(actions[1], equals(ProfileActionType.completeProfile));
       });
 
-      test(
-        'emits only completeProfile for an anonymous user without profile info',
-        () {
-          // Was [secureAccount, completeProfile] before #3359.
-          final actions = ProfileActionType.pending(
-            isOwnProfile: true,
-            isAnonymous: true,
-            hasExpiredSession: false,
-            hasAnyProfileInfo: false,
-          );
-
-          expect(actions, equals([ProfileActionType.completeProfile]));
-        },
-      );
-
-      test('is empty for an anonymous user who has profile info (#3359)', () {
-        // Was [secureAccount] before #3359 paused the upgrade prompt.
+      test('returns only secureAccount when anonymous with profile info', () {
         final actions = ProfileActionType.pending(
           isOwnProfile: true,
           isAnonymous: true,
@@ -48,7 +28,7 @@ void main() {
           hasAnyProfileInfo: true,
         );
 
-        expect(actions, isEmpty);
+        expect(actions, equals([ProfileActionType.secureAccount]));
       });
 
       test(
@@ -87,11 +67,22 @@ void main() {
         expect(actions, isEmpty);
       });
 
+      test('shows secureAccount for anonymous even with expired session', () {
+        final actions = ProfileActionType.pending(
+          isOwnProfile: true,
+          isAnonymous: true,
+          hasExpiredSession: true,
+          hasAnyProfileInfo: false,
+        );
+
+        expect(actions, hasLength(2));
+        expect(actions[0], equals(ProfileActionType.secureAccount));
+        expect(actions[1], equals(ProfileActionType.completeProfile));
+      });
+
       test(
-        'is empty for an anonymous user with profile info and expired session '
-        '(#3359)',
+        'returns only secureAccount when session expired and has profile info',
         () {
-          // Was [secureAccount] before #3359 paused the upgrade prompt.
           final actions = ProfileActionType.pending(
             isOwnProfile: true,
             isAnonymous: true,
@@ -99,7 +90,7 @@ void main() {
             hasAnyProfileInfo: true,
           );
 
-          expect(actions, isEmpty);
+          expect(actions, equals([ProfileActionType.secureAccount]));
         },
       );
     });

@@ -105,22 +105,6 @@ class PendingVerificationService {
         return null;
       }
 
-      // Migration guard (divinevideo/divine-mobile#3359): pre-fix builds
-      // embedded the user's nsec in the PKCE verifier as a `<random>.<nsec1…>`
-      // suffix. Discard any persisted verifier still carrying that material so
-      // it can never be replayed to the token endpoint, and force a clean
-      // re-registration. `nsec1` cannot occur in a fresh base64url verifier.
-      if (verifier.contains('nsec1')) {
-        Log.info(
-          'Discarding pending verification with a legacy nsec-bearing verifier '
-          'for ${redactEmailForLogs(email)}, clearing',
-          name: 'PendingVerificationService',
-          category: LogCategory.auth,
-        );
-        await clear();
-        return null;
-      }
-
       // Parse createdAt, default to epoch if missing (legacy data)
       final createdAt = createdAtStr != null
           ? DateTime.tryParse(createdAtStr) ??

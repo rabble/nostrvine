@@ -407,22 +407,19 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets(
-      'hides the Secure Your Account tile while the upgrade is paused (#3359)',
-      (tester) async {
-        when(() => mockAuthService.isAnonymous).thenReturn(true);
+    testWidgets('renders Secure Your Account tile for anonymous users', (
+      tester,
+    ) async {
+      when(() => mockAuthService.isAnonymous).thenReturn(true);
 
-        await tester.pumpWidget(buildSubject());
-        await tester.pumpAndSettle();
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
 
-        // Upgrade paused until #3786 restores a key-safe path; the tile is
-        // hidden even for anonymous users.
-        expect(find.text('Secure Your Account'), findsNothing);
+      expect(find.text('Secure Your Account'), findsOneWidget);
 
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump();
-      },
-    );
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
 
     testWidgets('renders Session Expired tile when session expired', (
       tester,
@@ -439,8 +436,8 @@ void main() {
     });
 
     testWidgets(
-      'shows neither the secure-account nor session-expired tile for '
-      'anonymous users (#3359)',
+      'shows secure account tile instead of session expired for anonymous '
+      'users',
       (tester) async {
         when(() => mockAuthService.isAnonymous).thenReturn(true);
         when(() => mockAuthService.hasExpiredOAuthSession).thenReturn(true);
@@ -474,9 +471,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Secure-account upgrade is paused (#3359); the session-expired tile
-        // is gated on !isAnonymous — an anonymous user sees neither.
-        expect(find.text('Secure Your Account'), findsNothing);
+        expect(find.text('Secure Your Account'), findsOneWidget);
         expect(find.text('Session Expired'), findsNothing);
 
         await tester.pumpWidget(const SizedBox());

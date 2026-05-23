@@ -2952,10 +2952,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get authSecureAccountTitle => 'حساب آمن';
 
   @override
-  String get authSecureAccountUnavailableMessage =>
-      'Securing your account is paused for a quick security update. Your keys stay safe on this device — check back soon.';
-
-  @override
   String get authUnableToAccessKeys =>
       'تعذّر الوصول إلى مفاتيحك. حاول مرّة أخرى.';
 
