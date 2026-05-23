@@ -21,6 +21,9 @@ import '../helpers/test_provider_overrides.dart';
 class _MockPeopleListsBloc extends MockBloc<PeopleListsEvent, PeopleListsState>
     implements PeopleListsBloc {}
 
+const _ownerPubkey =
+    'f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0';
+
 UserList _buildList({
   String id = 'list-1',
   String name = 'Close Friends',
@@ -36,6 +39,26 @@ UserList _buildList({
     updatedAt: now,
     isEditable: isEditable,
   );
+}
+
+Future<void> _pumpPeopleListScreen(
+  WidgetTester tester, {
+  required PeopleListsBloc bloc,
+  required UserList list,
+}) async {
+  await tester.pumpWidget(
+    testProviderScope(
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: BlocProvider<PeopleListsBloc>.value(
+          value: bloc,
+          child: UserListPeopleScreen(listId: list.id),
+        ),
+      ),
+    ),
+  );
+  await tester.pump();
 }
 
 void main() {
@@ -245,6 +268,185 @@ void main() {
         await tester.pump();
 
         expect(find.byIcon(Icons.person_add_alt_1), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'shows delete action when current list is editable',
+      (tester) async {
+        final bloc = _MockPeopleListsBloc();
+        final list = _buildList(
+          id: 'owned-list',
+          name: 'Owned List',
+        );
+        whenListen(
+          bloc,
+          const Stream<PeopleListsState>.empty(),
+          initialState: PeopleListsState(
+            status: PeopleListsStatus.ready,
+            ownerPubkey: _ownerPubkey,
+            lists: [list],
+          ),
+        );
+
+        await _pumpPeopleListScreen(tester, bloc: bloc, list: list);
+
+        expect(find.byTooltip('List actions'), findsOneWidget);
+
+        await tester.tap(find.byTooltip('List actions'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Delete list'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'hides delete action menu when current list is read-only',
+      (tester) async {
+        final bloc = _MockPeopleListsBloc();
+        final list = _buildList(
+          id: 'divine-team',
+          name: 'Divine Team',
+          isEditable: false,
+        );
+        whenListen(
+          bloc,
+          const Stream<PeopleListsState>.empty(),
+          initialState: PeopleListsState(
+            status: PeopleListsStatus.ready,
+            ownerPubkey: _ownerPubkey,
+            lists: [list],
+          ),
+        );
+
+        await _pumpPeopleListScreen(tester, bloc: bloc, list: list);
+
+        expect(find.byTooltip('List actions'), findsNothing);
+        expect(find.text('Delete list'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'delete confirmation cancel does not dispatch',
+      (tester) async {
+        final bloc = _MockPeopleListsBloc();
+        final list = _buildList(
+          id: 'cancel-delete-list',
+          name: 'Cancel Delete List',
+        );
+        whenListen(
+          bloc,
+          const Stream<PeopleListsState>.empty(),
+          initialState: PeopleListsState(
+            status: PeopleListsStatus.ready,
+            ownerPubkey: _ownerPubkey,
+            lists: [list],
+          ),
+        );
+
+        await _pumpPeopleListScreen(tester, bloc: bloc, list: list);
+
+        await tester.tap(find.byTooltip('List actions'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Delete list'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Delete list?'), findsOneWidget);
+        expect(
+          find.text(
+            'This removes the list for everyone. The people in it will not be unfollowed.',
+          ),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.text('Cancel'));
+        await tester.pumpAndSettle();
+
+        verifyNever(() => bloc.add(any()));
+        expect(find.text('Cancel Delete List'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'delete confirmation confirm dispatches delete request and pops route',
+      (tester) async {
+        final bloc = _MockPeopleListsBloc();
+        final list = _buildList(
+          id: 'confirm-delete-list',
+          name: 'Confirm Delete List',
+        );
+        whenListen(
+          bloc,
+          const Stream<PeopleListsState>.empty(),
+          initialState: PeopleListsState(
+            status: PeopleListsStatus.ready,
+            ownerPubkey: _ownerPubkey,
+            lists: [list],
+          ),
+        );
+
+        final router = GoRouter(
+          initialLocation: '/',
+          routes: [
+            GoRoute(
+              path: '/',
+              builder: (context, state) => Scaffold(
+                body: Center(
+                  child: ElevatedButton(
+                    onPressed: () => context.push(
+                      '/people-lists/${Uri.encodeComponent(list.id)}',
+                    ),
+                    child: const Text('Open list'),
+                  ),
+                ),
+              ),
+            ),
+            GoRoute(
+              path: UserListPeopleScreen.path,
+              name: UserListPeopleScreen.routeName,
+              builder: (context, state) {
+                final listId = state.pathParameters['listId'];
+                if (listId == null || listId.isEmpty) {
+                  return const Scaffold(
+                    body: Center(child: Text('Invalid list')),
+                  );
+                }
+                return UserListPeopleScreen(listId: listId);
+              },
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          testProviderScope(
+            child: BlocProvider<PeopleListsBloc>.value(
+              value: bloc,
+              child: MaterialApp.router(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                routerConfig: router,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.tap(find.text('Open list'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byTooltip('List actions'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Delete list'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Delete'));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => bloc.add(
+            const PeopleListsDeleteRequested(listId: 'confirm-delete-list'),
+          ),
+        ).called(1);
+        expect(find.text('Confirm Delete List'), findsNothing);
+        expect(find.text('Open list'), findsOneWidget);
       },
     );
 

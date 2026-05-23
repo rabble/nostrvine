@@ -21,6 +21,8 @@ import 'package:openvine/widgets/scroll_to_hide_mixin.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+enum _PeopleListAction { delete }
+
 /// Screen that renders a single NIP-51 kind 30000 people list.
 ///
 /// The screen is addressed by [listId] and selects the matching [UserList]
@@ -157,6 +159,49 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
     );
   }
 
+  Future<void> _confirmDeleteList(UserList userList) async {
+    final l10n = context.l10n;
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: VineTheme.surfaceContainer,
+        title: Text(
+          l10n.peopleListsDeleteConfirmTitle,
+          style: VineTheme.titleMediumFont(),
+        ),
+        content: Text(
+          l10n.peopleListsDeleteConfirmBody,
+          style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(
+              l10n.commonCancel,
+              style: VineTheme.labelMediumFont(color: VineTheme.secondaryText),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(
+              l10n.commonDelete,
+              style: VineTheme.labelMediumFont(color: VineTheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete != true || !mounted) return;
+
+    context.read<PeopleListsBloc>().add(
+      PeopleListsDeleteRequested(listId: userList.id),
+    );
+    if (context.canPop()) {
+      context.pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final userList = widget.userList;
@@ -176,6 +221,17 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
                     semanticLabel:
                         context.l10n.peopleListsAddPeopleSemanticLabel,
                     onPressed: () => _navigateToAddPeople(userList.id),
+                  ),
+              ],
+              customActions: [
+                if (userList.isEditable)
+                  _PeopleListActionsMenu(
+                    onSelected: (action) {
+                      switch (action) {
+                        case _PeopleListAction.delete:
+                          _confirmDeleteList(userList);
+                      }
+                    },
                   ),
               ],
             )
@@ -475,6 +531,34 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
           style: const TextStyle(color: VineTheme.likeRed),
         ),
       ),
+    );
+  }
+}
+
+class _PeopleListActionsMenu extends StatelessWidget {
+  const _PeopleListActionsMenu({required this.onSelected});
+
+  final ValueChanged<_PeopleListAction> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<_PeopleListAction>(
+      tooltip: context.l10n.peopleListsActionsTooltip,
+      color: VineTheme.surfaceContainer,
+      icon: const DivineIcon(
+        icon: DivineIconName.dotsThreeVertical,
+        color: VineTheme.whiteText,
+      ),
+      onSelected: onSelected,
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: _PeopleListAction.delete,
+          child: Text(
+            context.l10n.listDeleteAction,
+            style: const TextStyle(color: VineTheme.primaryText),
+          ),
+        ),
+      ],
     );
   }
 }

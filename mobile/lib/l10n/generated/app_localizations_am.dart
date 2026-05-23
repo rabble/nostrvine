@@ -5461,6 +5461,19 @@ class AppLocalizationsAm extends AppLocalizations {
   String get curatedListUnfollowFailed => 'Couldn\'t unfollow list';
 
   @override
+  String get peopleListsActionsTooltip => 'List actions';
+
+  @override
+  String get listDeleteAction => 'Delete list';
+
+  @override
+  String get peopleListsDeleteConfirmTitle => 'Delete list?';
+
+  @override
+  String get peopleListsDeleteConfirmBody =>
+      'This removes the list for everyone. The people in it will not be unfollowed.';
+
+  @override
   String get commonRetry => 'እንደገና ይሞክሩ';
 
   @override
