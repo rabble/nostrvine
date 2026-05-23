@@ -161,6 +161,26 @@ void main() {
     );
 
     blocTest<InviteStatusCubit, InviteStatusState>(
+      'load emits error on non-401 invite api failure',
+      setUp: () {
+        when(() => mockInviteApiClient.getInviteStatus()).thenThrow(
+          const InviteApiException(
+            'Invite service unavailable',
+            statusCode: 500,
+            code: InviteApiErrorCode.internalError,
+          ),
+        );
+      },
+      build: buildCubit,
+      act: (cubit) => cubit.load(),
+      expect: () => [
+        const InviteStatusState(status: InviteStatusLoadingStatus.loading),
+        const InviteStatusState(status: InviteStatusLoadingStatus.error),
+      ],
+      errors: () => [isA<InviteApiException>()],
+    );
+
+    blocTest<InviteStatusCubit, InviteStatusState>(
       'generateInvite creates one code then reloads invite status',
       setUp: () {
         when(() => mockInviteApiClient.generateInvite()).thenAnswer(
@@ -184,6 +204,26 @@ void main() {
         verify(() => mockInviteApiClient.generateInvite()).called(1);
         verify(() => mockInviteApiClient.getInviteStatus()).called(1);
       },
+    );
+
+    blocTest<InviteStatusCubit, InviteStatusState>(
+      'generateInvite emits error on non-401 invite api failure',
+      setUp: () {
+        when(() => mockInviteApiClient.generateInvite()).thenThrow(
+          const InviteApiException(
+            'Invite service unavailable',
+            statusCode: 500,
+            code: InviteApiErrorCode.internalError,
+          ),
+        );
+      },
+      build: buildCubit,
+      act: (cubit) => cubit.generateInvite(),
+      expect: () => [
+        const InviteStatusState(status: InviteStatusLoadingStatus.loading),
+        const InviteStatusState(status: InviteStatusLoadingStatus.error),
+      ],
+      errors: () => [isA<InviteApiException>()],
     );
 
     test(

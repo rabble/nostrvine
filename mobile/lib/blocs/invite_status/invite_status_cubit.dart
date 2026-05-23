@@ -32,15 +32,14 @@ class InviteStatusCubit extends Cubit<InviteStatusState> {
           inviteStatus: inviteStatus,
         ),
       );
-    } on InviteApiException catch (e) {
-      if (e.statusCode == 401) {
-        _emitIfOpen(previousState);
-        return;
-      }
-      rethrow;
+    } on InviteApiException catch (e, stackTrace) {
+      _handleInviteApiException(
+        previousState: previousState,
+        error: e,
+        stackTrace: stackTrace,
+      );
     } catch (e, stackTrace) {
-      addError(e, stackTrace);
-      _emitIfOpen(state.copyWith(status: InviteStatusLoadingStatus.error));
+      _emitErrorState(error: e, stackTrace: stackTrace);
     }
   }
 
@@ -59,20 +58,40 @@ class InviteStatusCubit extends Cubit<InviteStatusState> {
           inviteStatus: inviteStatus,
         ),
       );
-    } on InviteApiException catch (e) {
-      if (e.statusCode == 401) {
-        _emitIfOpen(previousState);
-        return;
-      }
-      rethrow;
+    } on InviteApiException catch (e, stackTrace) {
+      _handleInviteApiException(
+        previousState: previousState,
+        error: e,
+        stackTrace: stackTrace,
+      );
     } catch (e, stackTrace) {
-      addError(e, stackTrace);
-      _emitIfOpen(state.copyWith(status: InviteStatusLoadingStatus.error));
+      _emitErrorState(error: e, stackTrace: stackTrace);
     }
   }
 
   void _emitIfOpen(InviteStatusState nextState) {
     if (isClosed) return;
     emit(nextState);
+  }
+
+  void _handleInviteApiException({
+    required InviteStatusState previousState,
+    required InviteApiException error,
+    required StackTrace stackTrace,
+  }) {
+    if (error.statusCode == 401) {
+      _emitIfOpen(previousState);
+      return;
+    }
+
+    _emitErrorState(error: error, stackTrace: stackTrace);
+  }
+
+  void _emitErrorState({
+    required Object error,
+    required StackTrace stackTrace,
+  }) {
+    addError(error, stackTrace);
+    _emitIfOpen(state.copyWith(status: InviteStatusLoadingStatus.error));
   }
 }
