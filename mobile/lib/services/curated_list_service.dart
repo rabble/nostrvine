@@ -213,6 +213,7 @@ class CuratedListService extends ChangeNotifier {
     try {
       final now = DateTime.now();
       final listId = id ?? 'list_${now.millisecondsSinceEpoch}';
+      final ownerPubkey = _currentAuthenticatedPubkey();
 
       final newList = CuratedList(
         id: listId,
@@ -220,6 +221,7 @@ class CuratedListService extends ChangeNotifier {
         description: description,
         imageUrl: imageUrl,
         videoEventIds: const [],
+        pubkey: ownerPubkey,
         createdAt: now,
         updatedAt: now,
         isPublic: isPublic,
@@ -512,11 +514,7 @@ class CuratedListService extends ChangeNotifier {
       }
 
       if (list.isPublic) {
-        if (!_authService.isAuthenticated) {
-          return false;
-        }
-
-        final currentPubkey = _authService.currentPublicKeyHex;
+        final currentPubkey = _currentAuthenticatedPubkey();
         if (currentPubkey == null || currentPubkey.isEmpty) {
           return false;
         }
@@ -553,11 +551,13 @@ class CuratedListService extends ChangeNotifier {
       );
 
       return true;
-    } catch (e) {
+    } catch (e, stackTrace) {
       Log.error(
         'Failed to delete owned curated list: $e',
         name: 'CuratedListService',
         category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
       );
       return false;
     }
@@ -928,11 +928,7 @@ class CuratedListService extends ChangeNotifier {
 
   /// Check whether the current user owns a locally cached curated list.
   bool isOwnedList(String listId) {
-    if (!_authService.isAuthenticated) {
-      return false;
-    }
-
-    final currentPubkey = _authService.currentPublicKeyHex;
+    final currentPubkey = _currentAuthenticatedPubkey();
     if (currentPubkey == null || currentPubkey.isEmpty) {
       return false;
     }
@@ -944,10 +940,23 @@ class CuratedListService extends ChangeNotifier {
 
     final ownerPubkey = list.pubkey;
     if (ownerPubkey == null) {
-      return !_subscribedListIds.contains(listId);
+      return false;
     }
 
     return ownerPubkey == currentPubkey;
+  }
+
+  String? _currentAuthenticatedPubkey() {
+    if (!_authService.isAuthenticated) {
+      return null;
+    }
+
+    final currentPubkey = _authService.currentPublicKeyHex;
+    if (currentPubkey == null || currentPubkey.isEmpty) {
+      return null;
+    }
+
+    return currentPubkey;
   }
 
   /// Get readable summary of lists containing a video
@@ -1105,6 +1114,7 @@ class CuratedListService extends ChangeNotifier {
   /// Save subscribed list IDs to local storage
   Future<void> _saveSubscribedListIds() async {
     try {
+      notifyListeners();
       final subscribedJson = _subscribedListIds.toList();
       await _prefs.setString(
         subscribedListsStorageKey,

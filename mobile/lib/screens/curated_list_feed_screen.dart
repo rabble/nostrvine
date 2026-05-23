@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show SemanticsService;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
@@ -160,10 +161,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
               const SizedBox(height: 16),
               Text(
                 context.l10n.curatedListFailedToLoad,
-                style: const TextStyle(
-                  color: VineTheme.likeRed,
-                  fontSize: 18,
-                ),
+                style: const TextStyle(color: VineTheme.likeRed, fontSize: 18),
               ),
               const SizedBox(height: 8),
               Padding(
@@ -352,39 +350,19 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
       return const [];
     }
 
-    return [_buildListActionsMenu(action)];
-  }
-
-  Widget _buildListActionsMenu(_CuratedListAction action) {
-    return PopupMenuButton<_CuratedListAction>(
-      tooltip: context.l10n.curatedListActionsTooltip,
-      color: VineTheme.surfaceContainer,
-      icon: const DivineIcon(
-        icon: DivineIconName.dotsThreeVertical,
-        color: VineTheme.whiteText,
+    return [
+      _CuratedListActionsMenu(
+        action: action,
+        onSelected: (action) {
+          switch (action) {
+            case _CuratedListAction.delete:
+              _confirmDeleteList();
+            case _CuratedListAction.unfollow:
+              _unfollowList();
+          }
+        },
       ),
-      onSelected: (action) {
-        switch (action) {
-          case _CuratedListAction.delete:
-            _confirmDeleteList();
-          case _CuratedListAction.unfollow:
-            _unfollowList();
-        }
-      },
-      itemBuilder: (context) => [
-        PopupMenuItem(
-          value: action,
-          child: Text(
-            switch (action) {
-              _CuratedListAction.delete => context.l10n.listDeleteAction,
-              _CuratedListAction.unfollow =>
-                context.l10n.curatedListUnfollowAction,
-            },
-            style: const TextStyle(color: VineTheme.primaryText),
-          ),
-        ),
-      ],
-    );
+    ];
   }
 
   _CuratedListAction? _primaryListAction() {
@@ -458,22 +436,28 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
     }
 
     if (!didDelete) {
+      final message = context.l10n.curatedListDeleteFailed;
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        message,
+        Directionality.of(context),
+      );
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.curatedListDeleteFailed),
-          backgroundColor: VineTheme.likeRed,
-        ),
+        SnackBar(content: Text(message), backgroundColor: VineTheme.error),
       );
       return;
     }
 
     ref.invalidate(curatedListsProvider);
+    final message = context.l10n.curatedListDeletedSnack;
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      message,
+      Directionality.of(context),
+    );
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.l10n.curatedListDeletedSnack),
-        backgroundColor: VineTheme.vineGreen,
-      ),
+      SnackBar(content: Text(message), backgroundColor: VineTheme.vineGreen),
     );
 
     if (context.canPop()) {
@@ -491,23 +475,28 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
     }
 
     if (!didUnfollow) {
+      final message = context.l10n.curatedListUnfollowFailed;
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        message,
+        Directionality.of(context),
+      );
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.curatedListUnfollowFailed),
-          backgroundColor: VineTheme.likeRed,
-        ),
+        SnackBar(content: Text(message), backgroundColor: VineTheme.error),
       );
       return;
     }
 
     ref.invalidate(curatedListsProvider);
-    setState(() {});
+    final message = context.l10n.curatedListUnfollowedSnack;
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      message,
+      Directionality.of(context),
+    );
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.l10n.curatedListUnfollowedSnack),
-        backgroundColor: VineTheme.vineGreen,
-      ),
+      SnackBar(content: Text(message), backgroundColor: VineTheme.vineGreen),
     );
   }
 
@@ -570,5 +559,38 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
         });
       }
     }
+  }
+}
+
+class _CuratedListActionsMenu extends StatelessWidget {
+  const _CuratedListActionsMenu({
+    required this.action,
+    required this.onSelected,
+  });
+
+  final _CuratedListAction action;
+  final ValueChanged<_CuratedListAction> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<_CuratedListAction>(
+      tooltip: context.l10n.curatedListActionsTooltip,
+      color: VineTheme.surfaceContainer,
+      icon: const DivineIcon(
+        icon: DivineIconName.dotsThreeVertical,
+        color: VineTheme.whiteText,
+      ),
+      onSelected: onSelected,
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: action,
+          child: Text(switch (action) {
+            _CuratedListAction.delete => context.l10n.listDeleteAction,
+            _CuratedListAction.unfollow =>
+              context.l10n.curatedListUnfollowAction,
+          }, style: const TextStyle(color: VineTheme.primaryText)),
+        ),
+      ],
+    );
   }
 }

@@ -35,6 +35,7 @@ void main() {
   group(CuratedListFeedScreen, () {
     late _MockCuratedListService mockService;
     var isSubscribed = true;
+    final l10n = lookupAppLocalizations(const Locale('en'));
 
     setUp(() {
       mockService = _MockCuratedListService();
@@ -93,19 +94,18 @@ void main() {
       return app;
     }
 
-    testWidgets(
-      'shows unfollow list action for subscribed external list',
-      (tester) async {
-        await tester.pumpWidget(buildSubject());
-        await tester.pump();
+    testWidgets('shows unfollow list action for subscribed external list', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pump();
 
-        await tester.tap(find.byTooltip('List actions'));
-        await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip(l10n.curatedListActionsTooltip));
+      await tester.pumpAndSettle();
 
-        expect(find.text('Unfollow list'), findsOneWidget);
-        expect(find.text('Delete list'), findsNothing);
-      },
-    );
+      expect(find.text(l10n.curatedListUnfollowAction), findsOneWidget);
+      expect(find.text(l10n.listDeleteAction), findsNothing);
+    });
 
     testWidgets('hides list actions for unsubscribed external list', (
       tester,
@@ -115,9 +115,9 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pump();
 
-      expect(find.byTooltip('List actions'), findsNothing);
-      expect(find.text('Unfollow list'), findsNothing);
-      expect(find.text('Delete list'), findsNothing);
+      expect(find.byTooltip(l10n.curatedListActionsTooltip), findsNothing);
+      expect(find.text(l10n.curatedListUnfollowAction), findsNothing);
+      expect(find.text(l10n.listDeleteAction), findsNothing);
     });
 
     testWidgets('omits custom app bar actions for unsubscribed external list', (
@@ -135,9 +135,7 @@ void main() {
     testWidgets('shows delete action for owned subscribed list', (
       tester,
     ) async {
-      when(
-        () => mockService.isSubscribedToList('owned-list'),
-      ).thenReturn(true);
+      when(() => mockService.isSubscribedToList('owned-list')).thenReturn(true);
       when(() => mockService.isOwnedList('owned-list')).thenReturn(true);
 
       await tester.pumpWidget(
@@ -149,17 +147,15 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byTooltip('List actions'));
+      await tester.tap(find.byTooltip(l10n.curatedListActionsTooltip));
       await tester.pumpAndSettle();
 
-      expect(find.text('Delete list'), findsOneWidget);
-      expect(find.text('Unfollow list'), findsNothing);
+      expect(find.text(l10n.listDeleteAction), findsOneWidget);
+      expect(find.text(l10n.curatedListUnfollowAction), findsNothing);
     });
 
     testWidgets('delete confirms then calls service and pops', (tester) async {
-      when(
-        () => mockService.isSubscribedToList('owned-list'),
-      ).thenReturn(true);
+      when(() => mockService.isSubscribedToList('owned-list')).thenReturn(true);
       when(() => mockService.isOwnedList('owned-list')).thenReturn(true);
       when(
         () => mockService.deleteOwnedList('owned-list'),
@@ -178,21 +174,19 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byTooltip('List actions'));
+      await tester.tap(find.byTooltip(l10n.curatedListActionsTooltip));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Delete list'));
+      await tester.tap(find.text(l10n.listDeleteAction));
       await tester.pumpAndSettle();
-      expect(find.text('Delete list?'), findsOneWidget);
+      expect(find.text(l10n.curatedListDeleteConfirmTitle), findsOneWidget);
 
-      await tester.tap(find.text('Delete'));
+      await tester.tap(find.text(l10n.commonDelete));
       await tester.pumpAndSettle();
 
-      verify(
-        () => mockService.deleteOwnedList('owned-list'),
-      ).called(1);
+      verify(() => mockService.deleteOwnedList('owned-list')).called(1);
       verify(() => goRouter.pop<Object?>()).called(1);
-      expect(find.text('Deleted list'), findsOneWidget);
-      expect(find.text('Unfollow list'), findsNothing);
+      expect(find.text(l10n.curatedListDeletedSnack), findsOneWidget);
+      expect(find.text(l10n.curatedListUnfollowAction), findsNothing);
     });
 
     testWidgets('unfollow calls service and updates action state', (
@@ -208,15 +202,19 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pump();
 
-      await tester.tap(find.byTooltip('List actions'));
+      await tester.tap(find.byTooltip(l10n.curatedListActionsTooltip));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Unfollow list'));
+      await tester.tap(find.text(l10n.curatedListUnfollowAction));
       await tester.pumpAndSettle();
 
       verify(() => mockService.unsubscribeFromList('external-list')).called(1);
-      expect(find.text('Unfollowed list'), findsOneWidget);
-      expect(find.byTooltip('List actions'), findsNothing);
-      expect(find.text('Unfollow list'), findsNothing);
+      expect(find.text(l10n.curatedListUnfollowedSnack), findsOneWidget);
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pump();
+
+      expect(find.byTooltip(l10n.curatedListActionsTooltip), findsNothing);
+      expect(find.text(l10n.curatedListUnfollowAction), findsNothing);
     });
   });
 }

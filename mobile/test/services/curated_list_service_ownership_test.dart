@@ -39,15 +39,13 @@ void main() {
       );
     });
 
-    test(
-      'returns false for local null-pubkey list when not authenticated',
-      () async {
-        final list = await service.createList(name: 'Local List');
+    test('returns false for local list when not authenticated', () async {
+      final list = await service.createList(name: 'Local List');
 
-        expect(list, isNotNull);
-        expect(service.isOwnedList(list!.id), isFalse);
-      },
-    );
+      expect(list, isNotNull);
+      expect(list!.pubkey, isNull);
+      expect(service.isOwnedList(list.id), isFalse);
+    });
 
     test('returns false when list is missing', () {
       when(() => mockAuth.isAuthenticated).thenReturn(true);
@@ -55,14 +53,40 @@ void main() {
       expect(service.isOwnedList('missing-list'), isFalse);
     });
 
-    test('returns true for authenticated local null-pubkey list', () async {
-      when(() => mockAuth.isAuthenticated).thenReturn(true);
+    test(
+      'returns true for authenticated local list created by current user',
+      () async {
+        when(() => mockAuth.isAuthenticated).thenReturn(true);
 
-      final list = await service.createList(name: 'Local List');
+        final list = await service.createList(name: 'Local List');
+        final localList = list!;
 
-      expect(list, isNotNull);
-      expect(service.isOwnedList(list!.id), isTrue);
-    });
+        expect(localList.pubkey, currentPubkey);
+        expect(service.isOwnedList(localList.id), isTrue);
+      },
+    );
+
+    test(
+      'returns false for legacy local list without stored owner pubkey',
+      () async {
+        when(() => mockAuth.isAuthenticated).thenReturn(true);
+        final now = DateTime(2026);
+
+        await service.subscribeToList(
+          'legacy-local-list',
+          CuratedList(
+            id: 'legacy-local-list',
+            name: 'Legacy Local List',
+            videoEventIds: const [],
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+        await service.unsubscribeFromList('legacy-local-list');
+
+        expect(service.isOwnedList('legacy-local-list'), isFalse);
+      },
+    );
 
     test('returns true for authenticated current-user remote list', () async {
       when(() => mockAuth.isAuthenticated).thenReturn(true);

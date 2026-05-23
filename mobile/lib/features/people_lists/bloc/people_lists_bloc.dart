@@ -59,9 +59,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
   }) : _repository = repository,
        _ownerPubkeyStream = ownerPubkeyStream,
        _clock = clock ?? _defaultClock,
-       super(
-         PeopleListsState(ownerPubkey: initialOwnerPubkey),
-       ) {
+       super(PeopleListsState(ownerPubkey: initialOwnerPubkey)) {
     on<PeopleListsStarted>(_onStarted);
     on<PeopleListsOwnerChanged>(_onOwnerChanged, transformer: sequential());
     on<PeopleListsRepositoryListsChanged>(_onRepositoryListsChanged);
@@ -113,9 +111,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
   ) async {
     await _ownerSubscription?.cancel();
     _ownerSubscription = _ownerPubkeyStream.listen(
-      (ownerPubkey) => add(
-        PeopleListsOwnerChanged(ownerPubkey: ownerPubkey),
-      ),
+      (ownerPubkey) => add(PeopleListsOwnerChanged(ownerPubkey: ownerPubkey)),
       onError: (Object error, StackTrace stackTrace) {
         addError(error, stackTrace);
       },
@@ -200,9 +196,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
       return;
     }
 
-    final mutation = _buildMutation(
-      PeopleListsMutationKind.createList,
-    );
+    final mutation = _buildMutation(PeopleListsMutationKind.createList);
     emit(_withMutation(state, mutation, status: PeopleListsStatus.submitting));
 
     try {
@@ -213,9 +207,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
         imageUrl: event.imageUrl,
         initialPubkeys: event.initialPubkeys,
       );
-      emit(
-        _withoutMutation(state, mutation.id, resultEventId: result.eventId),
-      );
+      emit(_withoutMutation(state, mutation.id, resultEventId: result.eventId));
     } catch (e, stackTrace) {
       addError(e, stackTrace);
       emit(_withoutMutation(state, mutation.id, failed: true));
@@ -260,23 +252,23 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
       );
       if (!result.submitted) {
         emit(
-          _withoutMutation(state, mutation.id, failed: true).copyWith(
-            lists: previousLists,
-            listIdsByPubkey: previousIndex,
-          ),
+          _withoutMutation(
+            state,
+            mutation.id,
+            failed: true,
+          ).copyWith(lists: previousLists, listIdsByPubkey: previousIndex),
         );
         return;
       }
-      emit(
-        _withoutMutation(state, mutation.id, resultEventId: result.eventId),
-      );
+      emit(_withoutMutation(state, mutation.id, resultEventId: result.eventId));
     } catch (e, stackTrace) {
       addError(e, stackTrace);
       emit(
-        _withoutMutation(state, mutation.id, failed: true).copyWith(
-          lists: previousLists,
-          listIdsByPubkey: previousIndex,
-        ),
+        _withoutMutation(
+          state,
+          mutation.id,
+          failed: true,
+        ).copyWith(lists: previousLists, listIdsByPubkey: previousIndex),
       );
     }
   }
@@ -285,11 +277,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
     PeopleListsPubkeyAddRequested event,
     Emitter<PeopleListsState> emit,
   ) async {
-    await _performAdd(
-      listId: event.listId,
-      pubkey: event.pubkey,
-      emit: emit,
-    );
+    await _performAdd(listId: event.listId, pubkey: event.pubkey, emit: emit);
   }
 
   Future<void> _onPubkeyRemoveRequested(
@@ -322,11 +310,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
         emit: emit,
       );
     } else {
-      await _performAdd(
-        listId: event.listId,
-        pubkey: event.pubkey,
-        emit: emit,
-      );
+      await _performAdd(listId: event.listId, pubkey: event.pubkey, emit: emit);
     }
   }
 
@@ -381,16 +365,25 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
         listId: listId,
         pubkey: pubkey,
       );
-      emit(
-        _withoutMutation(state, mutation.id, resultEventId: result.eventId),
-      );
+      if (!result.submitted) {
+        emit(
+          _withoutMutation(
+            state,
+            mutation.id,
+            failed: true,
+          ).copyWith(lists: previousLists, listIdsByPubkey: previousIndex),
+        );
+        return;
+      }
+      emit(_withoutMutation(state, mutation.id, resultEventId: result.eventId));
     } catch (e, stackTrace) {
       addError(e, stackTrace);
       emit(
-        _withoutMutation(state, mutation.id, failed: true).copyWith(
-          lists: previousLists,
-          listIdsByPubkey: previousIndex,
-        ),
+        _withoutMutation(
+          state,
+          mutation.id,
+          failed: true,
+        ).copyWith(lists: previousLists, listIdsByPubkey: previousIndex),
       );
     }
   }
@@ -442,16 +435,25 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
         listId: listId,
         pubkey: pubkey,
       );
-      emit(
-        _withoutMutation(state, mutation.id, resultEventId: result.eventId),
-      );
+      if (!result.submitted) {
+        emit(
+          _withoutMutation(
+            state,
+            mutation.id,
+            failed: true,
+          ).copyWith(lists: previousLists, listIdsByPubkey: previousIndex),
+        );
+        return;
+      }
+      emit(_withoutMutation(state, mutation.id, resultEventId: result.eventId));
     } catch (e, stackTrace) {
       addError(e, stackTrace);
       emit(
-        _withoutMutation(state, mutation.id, failed: true).copyWith(
-          lists: previousLists,
-          listIdsByPubkey: previousIndex,
-        ),
+        _withoutMutation(
+          state,
+          mutation.id,
+          failed: true,
+        ).copyWith(lists: previousLists, listIdsByPubkey: previousIndex),
       );
     }
   }
@@ -488,13 +490,9 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
     PeopleListsMutation mutation, {
     PeopleListsStatus? status,
   }) {
-    final next = Map<String, PeopleListsMutation>.from(
-      current.pendingMutations,
-    )..[mutation.id] = mutation;
-    return current.copyWith(
-      status: status,
-      pendingMutations: next,
-    );
+    final next = Map<String, PeopleListsMutation>.from(current.pendingMutations)
+      ..[mutation.id] = mutation;
+    return current.copyWith(status: status, pendingMutations: next);
   }
 
   PeopleListsState _withoutMutation(
@@ -503,9 +501,8 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
     String? resultEventId,
     bool failed = false,
   }) {
-    final next = Map<String, PeopleListsMutation>.from(
-      current.pendingMutations,
-    )..remove(mutationId);
+    final next = Map<String, PeopleListsMutation>.from(current.pendingMutations)
+      ..remove(mutationId);
     // Recovery contract: a fresh failure pins `failure`; otherwise, once
     // the last pending mutation drains, reset any sticky `failure` back
     // to `ready` so the UI isn't stuck if the repository never re-emits.

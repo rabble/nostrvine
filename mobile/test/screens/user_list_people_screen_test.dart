@@ -63,6 +63,8 @@ Future<void> _pumpPeopleListScreen(
 
 void main() {
   group(UserListPeopleScreen, () {
+    final l10n = lookupAppLocalizations(const Locale('en'));
+
     test('exposes route name and path constants', () {
       expect(UserListPeopleScreen.routeName, equals('people-list-members'));
       expect(UserListPeopleScreen.path, equals('/people-lists/:listId'));
@@ -72,9 +74,7 @@ void main() {
       'constructor accepts listId and selects matching list from bloc',
       (tester) async {
         final bloc = _MockPeopleListsBloc();
-        final list = _buildList(
-          name: 'Selected List',
-        );
+        final list = _buildList(name: 'Selected List');
         whenListen(
           bloc,
           const Stream<PeopleListsState>.empty(),
@@ -168,9 +168,7 @@ void main() {
         whenListen(
           bloc,
           const Stream<PeopleListsState>.empty(),
-          initialState: const PeopleListsState(
-            status: PeopleListsStatus.ready,
-          ),
+          initialState: const PeopleListsState(status: PeopleListsStatus.ready),
         );
 
         await tester.pumpWidget(
@@ -188,184 +186,166 @@ void main() {
 
         await tester.pump();
 
-        expect(find.textContaining('List not found'), findsOneWidget);
+        expect(find.text(l10n.peopleListsListNotFoundTitle), findsOneWidget);
       },
     );
 
-    testWidgets(
-      'shows the add-people action when current list is editable',
-      (tester) async {
-        final bloc = _MockPeopleListsBloc();
-        final list = _buildList(
-          id: 'punk-friends',
-          name: 'Punk Friends',
-        );
-        whenListen(
-          bloc,
-          const Stream<PeopleListsState>.empty(),
-          initialState: PeopleListsState(
-            status: PeopleListsStatus.ready,
-            ownerPubkey:
-                'f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0',
-            lists: [list],
-          ),
-        );
+    testWidgets('shows the add-people action when current list is editable', (
+      tester,
+    ) async {
+      final bloc = _MockPeopleListsBloc();
+      final list = _buildList(id: 'punk-friends', name: 'Punk Friends');
+      whenListen(
+        bloc,
+        const Stream<PeopleListsState>.empty(),
+        initialState: PeopleListsState(
+          status: PeopleListsStatus.ready,
+          ownerPubkey:
+              'f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0',
+          lists: [list],
+        ),
+      );
 
-        await tester.pumpWidget(
-          testProviderScope(
-            child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: BlocProvider<PeopleListsBloc>.value(
-                value: bloc,
-                child: UserListPeopleScreen(listId: list.id),
-              ),
+      await tester.pumpWidget(
+        testProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: BlocProvider<PeopleListsBloc>.value(
+              value: bloc,
+              child: UserListPeopleScreen(listId: list.id),
             ),
           ),
-        );
+        ),
+      );
 
-        await tester.pump();
+      await tester.pump();
 
-        expect(find.byIcon(Icons.person_add_alt_1), findsOneWidget);
-      },
-    );
+      expect(find.byIcon(Icons.person_add_alt_1), findsOneWidget);
+    });
 
-    testWidgets(
-      'hides the add-people action when current list is read-only',
-      (tester) async {
-        final bloc = _MockPeopleListsBloc();
-        // Read-only lists (e.g. Divine Team) carry isEditable: false and must
-        // not expose the add-people action — editing them is forbidden.
-        final list = _buildList(
-          id: 'divine-team',
-          name: 'Divine Team',
-          isEditable: false,
-        );
-        whenListen(
-          bloc,
-          const Stream<PeopleListsState>.empty(),
-          initialState: PeopleListsState(
-            status: PeopleListsStatus.ready,
-            ownerPubkey:
-                'f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0',
-            lists: [list],
-          ),
-        );
+    testWidgets('hides the add-people action when current list is read-only', (
+      tester,
+    ) async {
+      final bloc = _MockPeopleListsBloc();
+      // Read-only lists (e.g. Divine Team) carry isEditable: false and must
+      // not expose the add-people action — editing them is forbidden.
+      final list = _buildList(
+        id: 'divine-team',
+        name: 'Divine Team',
+        isEditable: false,
+      );
+      whenListen(
+        bloc,
+        const Stream<PeopleListsState>.empty(),
+        initialState: PeopleListsState(
+          status: PeopleListsStatus.ready,
+          ownerPubkey:
+              'f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0',
+          lists: [list],
+        ),
+      );
 
-        await tester.pumpWidget(
-          testProviderScope(
-            child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: BlocProvider<PeopleListsBloc>.value(
-                value: bloc,
-                child: UserListPeopleScreen(listId: list.id),
-              ),
+      await tester.pumpWidget(
+        testProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: BlocProvider<PeopleListsBloc>.value(
+              value: bloc,
+              child: UserListPeopleScreen(listId: list.id),
             ),
           ),
-        );
+        ),
+      );
 
-        await tester.pump();
+      await tester.pump();
 
-        expect(find.byIcon(Icons.person_add_alt_1), findsNothing);
-      },
-    );
+      expect(find.byIcon(Icons.person_add_alt_1), findsNothing);
+    });
 
-    testWidgets(
-      'shows delete action when current list is editable',
-      (tester) async {
-        final bloc = _MockPeopleListsBloc();
-        final list = _buildList(
-          id: 'owned-list',
-          name: 'Owned List',
-        );
-        whenListen(
-          bloc,
-          const Stream<PeopleListsState>.empty(),
-          initialState: PeopleListsState(
-            status: PeopleListsStatus.ready,
-            ownerPubkey: _ownerPubkey,
-            lists: [list],
-          ),
-        );
+    testWidgets('shows delete action when current list is editable', (
+      tester,
+    ) async {
+      final bloc = _MockPeopleListsBloc();
+      final list = _buildList(id: 'owned-list', name: 'Owned List');
+      whenListen(
+        bloc,
+        const Stream<PeopleListsState>.empty(),
+        initialState: PeopleListsState(
+          status: PeopleListsStatus.ready,
+          ownerPubkey: _ownerPubkey,
+          lists: [list],
+        ),
+      );
 
-        await _pumpPeopleListScreen(tester, bloc: bloc, list: list);
+      await _pumpPeopleListScreen(tester, bloc: bloc, list: list);
 
-        expect(find.byTooltip('List actions'), findsOneWidget);
+      expect(find.byTooltip(l10n.peopleListsActionsTooltip), findsOneWidget);
 
-        await tester.tap(find.byTooltip('List actions'));
-        await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip(l10n.peopleListsActionsTooltip));
+      await tester.pumpAndSettle();
 
-        expect(find.text('Delete list'), findsOneWidget);
-      },
-    );
+      expect(find.text(l10n.listDeleteAction), findsOneWidget);
+    });
 
-    testWidgets(
-      'hides delete action menu when current list is read-only',
-      (tester) async {
-        final bloc = _MockPeopleListsBloc();
-        final list = _buildList(
-          id: 'divine-team',
-          name: 'Divine Team',
-          isEditable: false,
-        );
-        whenListen(
-          bloc,
-          const Stream<PeopleListsState>.empty(),
-          initialState: PeopleListsState(
-            status: PeopleListsStatus.ready,
-            ownerPubkey: _ownerPubkey,
-            lists: [list],
-          ),
-        );
+    testWidgets('hides delete action menu when current list is read-only', (
+      tester,
+    ) async {
+      final bloc = _MockPeopleListsBloc();
+      final list = _buildList(
+        id: 'divine-team',
+        name: 'Divine Team',
+        isEditable: false,
+      );
+      whenListen(
+        bloc,
+        const Stream<PeopleListsState>.empty(),
+        initialState: PeopleListsState(
+          status: PeopleListsStatus.ready,
+          ownerPubkey: _ownerPubkey,
+          lists: [list],
+        ),
+      );
 
-        await _pumpPeopleListScreen(tester, bloc: bloc, list: list);
+      await _pumpPeopleListScreen(tester, bloc: bloc, list: list);
 
-        expect(find.byTooltip('List actions'), findsNothing);
-        expect(find.text('Delete list'), findsNothing);
-      },
-    );
+      expect(find.byTooltip(l10n.peopleListsActionsTooltip), findsNothing);
+      expect(find.text(l10n.listDeleteAction), findsNothing);
+    });
 
-    testWidgets(
-      'delete confirmation cancel does not dispatch',
-      (tester) async {
-        final bloc = _MockPeopleListsBloc();
-        final list = _buildList(
-          id: 'cancel-delete-list',
-          name: 'Cancel Delete List',
-        );
-        whenListen(
-          bloc,
-          const Stream<PeopleListsState>.empty(),
-          initialState: PeopleListsState(
-            status: PeopleListsStatus.ready,
-            ownerPubkey: _ownerPubkey,
-            lists: [list],
-          ),
-        );
+    testWidgets('delete confirmation cancel does not dispatch', (tester) async {
+      final bloc = _MockPeopleListsBloc();
+      final list = _buildList(
+        id: 'cancel-delete-list',
+        name: 'Cancel Delete List',
+      );
+      whenListen(
+        bloc,
+        const Stream<PeopleListsState>.empty(),
+        initialState: PeopleListsState(
+          status: PeopleListsStatus.ready,
+          ownerPubkey: _ownerPubkey,
+          lists: [list],
+        ),
+      );
 
-        await _pumpPeopleListScreen(tester, bloc: bloc, list: list);
+      await _pumpPeopleListScreen(tester, bloc: bloc, list: list);
 
-        await tester.tap(find.byTooltip('List actions'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Delete list'));
-        await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip(l10n.peopleListsActionsTooltip));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.listDeleteAction));
+      await tester.pumpAndSettle();
 
-        expect(find.text('Delete list?'), findsOneWidget);
-        expect(
-          find.text(
-            'This removes the list for everyone. The people in it will not be unfollowed.',
-          ),
-          findsOneWidget,
-        );
+      expect(find.text(l10n.peopleListsDeleteConfirmTitle), findsOneWidget);
+      expect(find.text(l10n.peopleListsDeleteConfirmBody), findsOneWidget);
 
-        await tester.tap(find.text('Cancel'));
-        await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.commonCancel));
+      await tester.pumpAndSettle();
 
-        verifyNever(() => bloc.add(any()));
-        expect(find.text('Cancel Delete List'), findsOneWidget);
-      },
-    );
+      verifyNever(() => bloc.add(any()));
+      expect(find.text('Cancel Delete List'), findsOneWidget);
+    });
 
     testWidgets(
       'delete confirmation confirm dispatches delete request and pops after success',
@@ -435,11 +415,11 @@ void main() {
         await tester.tap(find.text('Open list'));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byTooltip('List actions'));
+        await tester.tap(find.byTooltip(l10n.peopleListsActionsTooltip));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Delete list'));
+        await tester.tap(find.text(l10n.listDeleteAction));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Delete'));
+        await tester.tap(find.text(l10n.commonDelete));
         await tester.pumpAndSettle();
 
         verify(
@@ -476,68 +456,67 @@ void main() {
       },
     );
 
-    testWidgets(
-      'delete failure keeps route open and shows failure feedback',
-      (tester) async {
-        final bloc = _MockPeopleListsBloc();
-        final list = _buildList(
-          id: 'failed-delete-list',
-          name: 'Failed Delete List',
-        );
-        final controller = StreamController<PeopleListsState>.broadcast();
-        addTearDown(controller.close);
-        whenListen(
-          bloc,
-          controller.stream,
-          initialState: PeopleListsState(
-            status: PeopleListsStatus.ready,
+    testWidgets('delete failure keeps route open and shows failure feedback', (
+      tester,
+    ) async {
+      final bloc = _MockPeopleListsBloc();
+      final list = _buildList(
+        id: 'failed-delete-list',
+        name: 'Failed Delete List',
+      );
+      final controller = StreamController<PeopleListsState>.broadcast();
+      addTearDown(controller.close);
+      whenListen(
+        bloc,
+        controller.stream,
+        initialState: PeopleListsState(
+          status: PeopleListsStatus.ready,
+          ownerPubkey: _ownerPubkey,
+          lists: [list],
+        ),
+      );
+
+      await _pumpPeopleListScreen(tester, bloc: bloc, list: list);
+
+      await tester.tap(find.byTooltip(l10n.peopleListsActionsTooltip));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.listDeleteAction));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.commonDelete));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => bloc.add(
+          const PeopleListsDeleteRequested(listId: 'failed-delete-list'),
+        ),
+      ).called(1);
+
+      controller
+        ..add(
+          const PeopleListsState(
+            status: PeopleListsStatus.submitting,
+            ownerPubkey: _ownerPubkey,
+            pendingMutations: {
+              'delete-1': PeopleListsMutation(
+                id: 'delete-1',
+                kind: PeopleListsMutationKind.deleteList,
+                listId: 'failed-delete-list',
+              ),
+            },
+          ),
+        )
+        ..add(
+          PeopleListsState(
+            status: PeopleListsStatus.failure,
             ownerPubkey: _ownerPubkey,
             lists: [list],
           ),
         );
+      await tester.pumpAndSettle();
 
-        await _pumpPeopleListScreen(tester, bloc: bloc, list: list);
-
-        await tester.tap(find.byTooltip('List actions'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Delete list'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Delete'));
-        await tester.pumpAndSettle();
-
-        verify(
-          () => bloc.add(
-            const PeopleListsDeleteRequested(listId: 'failed-delete-list'),
-          ),
-        ).called(1);
-
-        controller
-          ..add(
-            const PeopleListsState(
-              status: PeopleListsStatus.submitting,
-              ownerPubkey: _ownerPubkey,
-              pendingMutations: {
-                'delete-1': PeopleListsMutation(
-                  id: 'delete-1',
-                  kind: PeopleListsMutationKind.deleteList,
-                  listId: 'failed-delete-list',
-                ),
-              },
-            ),
-          )
-          ..add(
-            PeopleListsState(
-              status: PeopleListsStatus.failure,
-              ownerPubkey: _ownerPubkey,
-              lists: [list],
-            ),
-          );
-        await tester.pumpAndSettle();
-
-        expect(find.text('Failed Delete List'), findsOneWidget);
-        expect(find.text("Couldn't delete list"), findsOneWidget);
-      },
-    );
+      expect(find.text('Failed Delete List'), findsOneWidget);
+      expect(find.text(l10n.peopleListsDeleteFailed), findsOneWidget);
+    });
 
     testWidgets(
       'long-press on a member of an editable list shows remove confirmation',
@@ -548,9 +527,7 @@ void main() {
         whenListen(
           bloc,
           const Stream<PeopleListsState>.empty(),
-          initialState: const PeopleListsState(
-            status: PeopleListsStatus.ready,
-          ),
+          initialState: const PeopleListsState(status: PeopleListsStatus.ready),
         );
 
         await tester.pumpWidget(
@@ -590,9 +567,7 @@ void main() {
         whenListen(
           bloc,
           const Stream<PeopleListsState>.empty(),
-          initialState: const PeopleListsState(
-            status: PeopleListsStatus.ready,
-          ),
+          initialState: const PeopleListsState(status: PeopleListsStatus.ready),
         );
 
         await tester.pumpWidget(
@@ -631,58 +606,55 @@ void main() {
       },
     );
 
-    testWidgets(
-      'undo snackbar dispatches PeopleListsPubkeyAddRequested',
-      (tester) async {
-        final bloc = _MockPeopleListsBloc();
-        const memberPubkey =
-            '1111222233334444555566667777888899990000aaaabbbbccccddddeeeeffff';
-        whenListen(
-          bloc,
-          const Stream<PeopleListsState>.empty(),
-          initialState: const PeopleListsState(
-            status: PeopleListsStatus.ready,
-          ),
-        );
+    testWidgets('undo snackbar dispatches PeopleListsPubkeyAddRequested', (
+      tester,
+    ) async {
+      final bloc = _MockPeopleListsBloc();
+      const memberPubkey =
+          '1111222233334444555566667777888899990000aaaabbbbccccddddeeeeffff';
+      whenListen(
+        bloc,
+        const Stream<PeopleListsState>.empty(),
+        initialState: const PeopleListsState(status: PeopleListsStatus.ready),
+      );
 
-        await tester.pumpWidget(
-          testProviderScope(
-            child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: BlocProvider<PeopleListsBloc>.value(
-                value: bloc,
-                child: const Scaffold(
-                  body: PeopleCarousel(
-                    pubkeys: [memberPubkey],
-                    listId: 'list-1',
-                    canRemove: true,
-                  ),
+      await tester.pumpWidget(
+        testProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: BlocProvider<PeopleListsBloc>.value(
+              value: bloc,
+              child: const Scaffold(
+                body: PeopleCarousel(
+                  pubkeys: [memberPubkey],
+                  listId: 'list-1',
+                  canRemove: true,
                 ),
               ),
             ),
           ),
-        );
-        await tester.pump();
+        ),
+      );
+      await tester.pump();
 
-        await tester.longPress(find.byType(UserAvatar).first);
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Remove'));
-        await tester.pumpAndSettle();
+      await tester.longPress(find.byType(UserAvatar).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Remove'));
+      await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Undo'));
-        await tester.pumpAndSettle();
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
 
-        verify(
-          () => bloc.add(
-            const PeopleListsPubkeyAddRequested(
-              listId: 'list-1',
-              pubkey: memberPubkey,
-            ),
+      verify(
+        () => bloc.add(
+          const PeopleListsPubkeyAddRequested(
+            listId: 'list-1',
+            pubkey: memberPubkey,
           ),
-        ).called(1);
-      },
-    );
+        ),
+      ).called(1);
+    });
 
     testWidgets(
       'long-press on a read-only list member does NOT show remove dialog',
@@ -693,9 +665,7 @@ void main() {
         whenListen(
           bloc,
           const Stream<PeopleListsState>.empty(),
-          initialState: const PeopleListsState(
-            status: PeopleListsStatus.ready,
-          ),
+          initialState: const PeopleListsState(status: PeopleListsStatus.ready),
         );
 
         // Wrap in GoRouter since long-press still triggers onTap (no-op
@@ -715,9 +685,8 @@ void main() {
             ),
             GoRoute(
               path: '/profile/:npub',
-              builder: (context, state) => const Scaffold(
-                body: Text('profile'),
-              ),
+              builder: (context, state) =>
+                  const Scaffold(body: Text('profile')),
             ),
           ],
         );
@@ -746,60 +715,59 @@ void main() {
   });
 
   group('GoRouter /people-lists/:listId', () {
-    testWidgets(
-      'route uses handwritten GoRoute and resolves listId path param',
-      (tester) async {
-        final bloc = _MockPeopleListsBloc();
-        final list = _buildList(id: 'routed-list', name: 'Routed List');
-        whenListen(
-          bloc,
-          const Stream<PeopleListsState>.empty(),
-          initialState: PeopleListsState(
-            status: PeopleListsStatus.ready,
-            ownerPubkey:
-                'bb11cc22dd33ee44ff55aa66bb11cc22dd33ee44ff55aa66bb11cc22dd33ee44',
-            lists: [list],
+    testWidgets('route uses handwritten GoRoute and resolves listId path param', (
+      tester,
+    ) async {
+      final bloc = _MockPeopleListsBloc();
+      final list = _buildList(id: 'routed-list', name: 'Routed List');
+      whenListen(
+        bloc,
+        const Stream<PeopleListsState>.empty(),
+        initialState: PeopleListsState(
+          status: PeopleListsStatus.ready,
+          ownerPubkey:
+              'bb11cc22dd33ee44ff55aa66bb11cc22dd33ee44ff55aa66bb11cc22dd33ee44',
+          lists: [list],
+        ),
+      );
+
+      final router = GoRouter(
+        initialLocation: '/people-lists/${Uri.encodeComponent(list.id)}',
+        routes: [
+          GoRoute(
+            path: UserListPeopleScreen.path,
+            name: UserListPeopleScreen.routeName,
+            builder: (context, state) {
+              final listId = state.pathParameters['listId'];
+              if (listId == null || listId.isEmpty) {
+                return const Scaffold(
+                  body: Center(child: Text('Invalid list')),
+                );
+              }
+              return UserListPeopleScreen(listId: listId);
+            },
           ),
-        );
+        ],
+      );
 
-        final router = GoRouter(
-          initialLocation: '/people-lists/${Uri.encodeComponent(list.id)}',
-          routes: [
-            GoRoute(
-              path: UserListPeopleScreen.path,
-              name: UserListPeopleScreen.routeName,
-              builder: (context, state) {
-                final listId = state.pathParameters['listId'];
-                if (listId == null || listId.isEmpty) {
-                  return const Scaffold(
-                    body: Center(child: Text('Invalid list')),
-                  );
-                }
-                return UserListPeopleScreen(listId: listId);
-              },
-            ),
-          ],
-        );
-
-        await tester.pumpWidget(
-          testProviderScope(
-            child: BlocProvider<PeopleListsBloc>.value(
-              value: bloc,
-              child: MaterialApp.router(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                routerConfig: router,
-              ),
+      await tester.pumpWidget(
+        testProviderScope(
+          child: BlocProvider<PeopleListsBloc>.value(
+            value: bloc,
+            child: MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: router,
             ),
           ),
-        );
+        ),
+      );
 
-        await tester.pump();
+      await tester.pump();
 
-        expect(find.byType(UserListPeopleScreen), findsOneWidget);
-        expect(find.text('Routed List'), findsOneWidget);
-      },
-    );
+      expect(find.byType(UserListPeopleScreen), findsOneWidget);
+      expect(find.text('Routed List'), findsOneWidget);
+    });
 
     testWidgets(
       'route falls back to invalid-list scaffold with back button for '

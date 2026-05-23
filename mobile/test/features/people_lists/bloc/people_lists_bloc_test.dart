@@ -276,10 +276,7 @@ void main() {
             pubkey: _memberBob,
           ),
         ).called(1);
-        expect(
-          bloc.state.listIdsByPubkey[_memberBob],
-          equals({'list-1'}),
-        );
+        expect(bloc.state.listIdsByPubkey[_memberBob], equals({'list-1'}));
         expect(bloc.state.pendingMutations, isEmpty);
       },
     );
@@ -330,10 +327,7 @@ void main() {
             pubkey: _memberAlice,
           ),
         ).called(1);
-        expect(
-          bloc.state.listIdsByPubkey.containsKey(_memberAlice),
-          isFalse,
-        );
+        expect(bloc.state.listIdsByPubkey.containsKey(_memberAlice), isFalse);
         expect(bloc.state.pendingMutations, isEmpty);
       },
     );
@@ -385,6 +379,53 @@ void main() {
         expect(bloc.state.status, equals(PeopleListsStatus.failure));
         expect(bloc.state.pendingMutations, isEmpty);
         expect(bloc.state.lists, equals(expectedLists));
+        expect(
+          bloc.state.listIdsByPubkey,
+          equals({
+            _memberAlice: {'list-1'},
+          }),
+        );
+      },
+    );
+
+    blocTest<PeopleListsBloc, PeopleListsState>(
+      'restores exact prior lists and reverse index when add pubkey is not submitted',
+      build: buildBloc,
+      setUp: () {
+        when(
+          () => repository.addPubkey(
+            ownerPubkey: _ownerA,
+            listId: 'list-1',
+            pubkey: _memberBob,
+          ),
+        ).thenAnswer((_) async => const PeopleListPublishResult.failed());
+      },
+      seed: () {
+        final priorLists = [
+          _buildList(
+            id: 'list-1',
+            name: 'Friends',
+            pubkeys: const [_memberAlice],
+          ),
+        ];
+        return PeopleListsState(
+          status: PeopleListsStatus.ready,
+          ownerPubkey: _ownerA,
+          lists: priorLists,
+          listIdsByPubkey: const {
+            _memberAlice: {'list-1'},
+          },
+        );
+      },
+      act: (bloc) => bloc.add(
+        const PeopleListsPubkeyAddRequested(
+          listId: 'list-1',
+          pubkey: _memberBob,
+        ),
+      ),
+      verify: (bloc) {
+        expect(bloc.state.status, equals(PeopleListsStatus.failure));
+        expect(bloc.state.pendingMutations, isEmpty);
         expect(
           bloc.state.listIdsByPubkey,
           equals({
@@ -453,6 +494,55 @@ void main() {
     );
 
     blocTest<PeopleListsBloc, PeopleListsState>(
+      'restores exact prior lists and reverse index when remove pubkey is not submitted',
+      build: buildBloc,
+      setUp: () {
+        when(
+          () => repository.removePubkey(
+            ownerPubkey: _ownerA,
+            listId: 'list-1',
+            pubkey: _memberAlice,
+          ),
+        ).thenAnswer((_) async => const PeopleListPublishResult.failed());
+      },
+      seed: () {
+        final priorLists = [
+          _buildList(
+            id: 'list-1',
+            name: 'Friends',
+            pubkeys: const [_memberAlice, _memberBob],
+          ),
+        ];
+        return PeopleListsState(
+          status: PeopleListsStatus.ready,
+          ownerPubkey: _ownerA,
+          lists: priorLists,
+          listIdsByPubkey: const {
+            _memberAlice: {'list-1'},
+            _memberBob: {'list-1'},
+          },
+        );
+      },
+      act: (bloc) => bloc.add(
+        const PeopleListsPubkeyRemoveRequested(
+          listId: 'list-1',
+          pubkey: _memberAlice,
+        ),
+      ),
+      verify: (bloc) {
+        expect(bloc.state.status, equals(PeopleListsStatus.failure));
+        expect(bloc.state.pendingMutations, isEmpty);
+        expect(
+          bloc.state.listIdsByPubkey,
+          equals({
+            _memberAlice: {'list-1'},
+            _memberBob: {'list-1'},
+          }),
+        );
+      },
+    );
+
+    blocTest<PeopleListsBloc, PeopleListsState>(
       'emits optimistic state for create list before repository returns',
       build: buildBloc,
       setUp: () {
@@ -495,10 +585,7 @@ void main() {
       build: buildBloc,
       setUp: () {
         when(
-          () => repository.deleteList(
-            ownerPubkey: _ownerA,
-            listId: 'list-1',
-          ),
+          () => repository.deleteList(ownerPubkey: _ownerA, listId: 'list-1'),
         ).thenAnswer(
           (_) async => const PeopleListPublishResult.submitted(
             eventId:
@@ -520,15 +607,11 @@ void main() {
           _memberAlice: {'list-1'},
         },
       ),
-      act: (bloc) => bloc.add(
-        const PeopleListsDeleteRequested(listId: 'list-1'),
-      ),
+      act: (bloc) =>
+          bloc.add(const PeopleListsDeleteRequested(listId: 'list-1')),
       verify: (bloc) {
         verify(
-          () => repository.deleteList(
-            ownerPubkey: _ownerA,
-            listId: 'list-1',
-          ),
+          () => repository.deleteList(ownerPubkey: _ownerA, listId: 'list-1'),
         ).called(1);
         // Optimistic delete removes the list and any reverse index entries.
         expect(bloc.state.lists, isEmpty);
@@ -541,13 +624,8 @@ void main() {
       build: buildBloc,
       setUp: () {
         when(
-          () => repository.deleteList(
-            ownerPubkey: _ownerA,
-            listId: 'list-1',
-          ),
-        ).thenAnswer(
-          (_) async => const PeopleListPublishResult.failed(),
-        );
+          () => repository.deleteList(ownerPubkey: _ownerA, listId: 'list-1'),
+        ).thenAnswer((_) async => const PeopleListPublishResult.failed());
       },
       seed: () {
         final priorLists = [
@@ -566,9 +644,8 @@ void main() {
           },
         );
       },
-      act: (bloc) => bloc.add(
-        const PeopleListsDeleteRequested(listId: 'list-1'),
-      ),
+      act: (bloc) =>
+          bloc.add(const PeopleListsDeleteRequested(listId: 'list-1')),
       verify: (bloc) {
         final expectedLists = [
           _buildList(
@@ -785,10 +862,7 @@ void main() {
           ),
         ).called(1);
         // Net result: Bob is absent again.
-        expect(
-          bloc.state.listIdsByPubkey.containsKey(_memberBob),
-          isFalse,
-        );
+        expect(bloc.state.listIdsByPubkey.containsKey(_memberBob), isFalse);
       },
     );
 

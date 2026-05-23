@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show SemanticsService;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -83,14 +84,22 @@ class _UserListPeopleScreenState extends State<UserListPeopleScreen> {
           _pendingDeleteListId = null;
         });
         if (failed) {
+          final message = context.l10n.peopleListsDeleteFailed;
+          SemanticsService.sendAnnouncement(
+            View.of(context),
+            message,
+            Directionality.of(context),
+          );
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(context.l10n.peopleListsDeleteFailed),
-              backgroundColor: VineTheme.error,
-            ),
+            SnackBar(content: Text(message), backgroundColor: VineTheme.error),
           );
           return;
         }
+        SemanticsService.sendAnnouncement(
+          View.of(context),
+          context.l10n.curatedListDeletedSnack,
+          Directionality.of(context),
+        );
         if (context.canPop()) {
           context.pop();
         }
@@ -215,9 +224,7 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
   int? _activeVideoIndex;
 
   void _navigateToAddPeople(String listId) {
-    context.push(
-      '/people-lists/${Uri.encodeComponent(listId)}/add-people',
-    );
+    context.push('/people-lists/${Uri.encodeComponent(listId)}/add-people');
   }
 
   Future<void> _confirmDeleteList(UserList userList) async {
@@ -705,9 +712,7 @@ class _PeopleAvatarItem extends ConsumerWidget {
     if (shouldRemove != true || !context.mounted) return;
 
     final bloc = context.read<PeopleListsBloc>()
-      ..add(
-        PeopleListsPubkeyRemoveRequested(listId: listId, pubkey: pubkey),
-      );
+      ..add(PeopleListsPubkeyRemoveRequested(listId: listId, pubkey: pubkey));
 
     final messenger = ScaffoldMessenger.of(context);
     messenger.showSnackBar(
