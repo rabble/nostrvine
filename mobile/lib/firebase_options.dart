@@ -1,5 +1,5 @@
-// ABOUTME: Firebase configuration options for different platforms
-// ABOUTME: Generated placeholder config - replace with real Firebase project config
+// ABOUTME: Per-platform Firebase options consumed by Firebase.initializeApp.
+// ABOUTME: Supported platforms + project config: docs/CRASH_REPORTING_SETUP.md.
 
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'

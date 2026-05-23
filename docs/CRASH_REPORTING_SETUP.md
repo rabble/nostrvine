@@ -1,129 +1,109 @@
-# iOS TestFlight Crash Reporting Setup
+# Crash Reporting Setup (Firebase Crashlytics)
 
-## Problem Solved
-The app was crashing on iOS TestFlight but working fine in the Xcode simulator. Root causes identified:
-1. **SQLite database initialization failures** on iOS due to sandbox restrictions
-2. **No crash reporting** - flying blind without visibility into production crashes
-3. **Poor error handling** during service initialization
+Divine uses **Firebase Crashlytics** for production crash and non-fatal error
+reporting. The active Firebase project is **`openvine-co`** (bundle id
+`co.openvine.app`).
 
-## Solution Implemented
+> This file is the operational setup / runbook. For the *error-handling
+> contract* — what gets forwarded to Crashlytics vs logged locally — see
+> [`mobile/docs/ERROR_HANDLING.md`](../mobile/docs/ERROR_HANDLING.md) and
+> `.claude/rules/error_handling.md`.
 
-### 1. Firebase Crashlytics Integration
-Added comprehensive crash reporting to capture all production crashes with:
-- Stack traces
-- Device information
-- Custom logging of initialization steps
-- Startup performance metrics
+## Supported platforms
 
-### 2. Robust Error Handling
-- Embedded relay gracefully handles SQLite failures on iOS
-- NostrService continues with limited functionality if initialization fails
-- All service failures are logged to Crashlytics
+| Platform | Firebase config | Symbol upload | Status |
+|----------|-----------------|---------------|--------|
+| iOS | `openvine-co` — `firebase_options.dart`, `ios/Runner/GoogleService-Info.plist` | ✅ dSYMs via Codemagic | Production |
+| macOS | `openvine-co` — `macos/Runner/GoogleService-Info.plist` | — | Production (reuses the iOS appId — see note below) |
+| Android | `openvine-co` — `android/app/google-services.json` | ⚠️ not yet wired | `firebase_options.dart` Android options + mapping upload are being reconciled in #3343 |
+| Web / Windows / Linux | none | — | Not supported; init is gated off |
 
-### 3. Diagnostic Logging
-- Each initialization step is logged
-- Startup time is tracked and reported
-- Failures include context about what was being attempted
+`isFirebaseSupported` (`mobile/lib/utils/platform_support.dart`) is the single
+gate for whether Firebase initializes on the current platform. Crashlytics is
+a mobile/desktop SDK; web is not a Crashlytics target.
 
-## Setup Instructions
+> **macOS note:** `firebase_options.dart` currently gives macOS the same appId
+> as iOS (`1:972941478875:ios:…`). Confirm this is intentional during the
+> #3343 config reconciliation; a distinct macOS app may warrant its own appId.
 
-### 1. Create Firebase Project
+> **Android note:** `google-services.json` already points at `openvine-co`, but
+> `DefaultFirebaseOptions.android` is still a placeholder, so
+> `Firebase.initializeApp` does not yet initialise Android against the real
+> project. Reconciling the Android options (and adding mapping-file upload to
+> CI) is tracked in #3343.
+
+## Configuration files
+
+| File | Role |
+|------|------|
+| `mobile/lib/firebase_options.dart` | `DefaultFirebaseOptions.currentPlatform`, passed to `Firebase.initializeApp` in `CrashReportingService.initialize()` |
+| `mobile/firebase.json` | FlutterFire platform manifest (`uploadDebugSymbols: true` for iOS/macOS) |
+| `mobile/ios/Runner/GoogleService-Info.plist` | iOS native config |
+| `mobile/macos/Runner/GoogleService-Info.plist` | macOS native config |
+| `mobile/android/app/google-services.json` | Android native config (`openvine-co`) |
+
+## Regenerating config
+
+Config is managed by FlutterFire and requires access to the `openvine-co`
+Firebase console:
+
 ```bash
-# Install Firebase CLI
-npm install -g firebase-tools
-
-# Login to Firebase
-firebase login
-
-# Create new project
-firebase projects:create openvine-production
-
-# Configure Flutter app
-flutterfire configure
+# from mobile/
+dart pub global activate flutterfire_cli
+flutterfire configure --project=openvine-co
 ```
 
-### 2. Enable Crashlytics
-1. Go to [Firebase Console](https://console.firebase.google.com)
-2. Select your project
-3. Navigate to Crashlytics
-4. Follow setup instructions
+This rewrites `firebase_options.dart`, `firebase.json`, and the native config
+files for the selected platforms. Avoid hand-editing generated values except
+as a documented stopgap.
 
-### 3. Replace Placeholder Config
-The current config is a placeholder. Replace these files with real Firebase config:
-- `ios/Runner/GoogleService-Info.plist`
-- `lib/firebase_options.dart`
+## iOS/macOS dSYM upload (Codemagic)
 
-### 4. Build for TestFlight
-```bash
-./build_ios.sh release
-```
+Release builds upload Crashlytics debug symbols automatically. See
+`codemagic.yaml` → the **Upload dSYMs to Firebase Crashlytics** step
+(`&upload_dsyms_to_crashlytics`), which:
 
-### 5. Monitor Crashes
-View crash reports at:
-https://console.firebase.google.com/project/[YOUR-PROJECT]/crashlytics
+1. Locates `build/ios/archive/Runner.xcarchive/dSYMs` (fails the build if absent).
+2. Finds the Crashlytics `upload-symbols` tool from the SPM / Pods build under
+   `~/Library/Developer/Xcode/DerivedData` (or a `FirebaseCrashlytics` path).
+3. Runs:
+   ```bash
+   upload-symbols -gsp ios/Runner/GoogleService-Info.plist -p ios "$DSYM_DIR"
+   ```
 
-## Debugging TestFlight Crashes
+Without this, iOS crash stacks arrive in Crashlytics unsymbolicated.
 
-### What Gets Logged
-- App startup time
-- Each service initialization (success/failure)
-- Embedded relay initialization status
-- SQLite database creation attempts
-- Network connection status
-- Memory warnings
+> **Android mapping upload is not yet wired** (tracked in #3343): the
+> `com.google.firebase.crashlytics` Gradle plugin and a `firebaseCrashlytics`
+> mapping-file upload step still need to be added before Android release
+> crashes symbolicate.
 
-### Custom Keys Set
-- `environment`: testflight/production
-- `build_mode`: debug/release
-- `startup_time_ms`: Total startup duration
+## Custom keys on every report
 
-### Reading Crash Reports
-1. **Crash-free rate**: Shows percentage of users without crashes
-2. **Issues**: Groups similar crashes together
-3. **Stack trace**: Shows exact line where crash occurred
-4. **Breadcrumbs**: Shows initialization steps before crash
-5. **Device info**: iOS version, device model, available memory
+Set in `CrashReportingService.initialize()` and helpers:
 
-## Common iOS Issues
+- `environment` — `ENVIRONMENT` build define (default `production`)
+- `build_mode` — `debug` / `release`
+- `cache_hit_rate`, `cache_total_lookups` — refreshed on background
 
-### SQLite Permission Errors
-- **Symptom**: Database initialization fails
-- **Cause**: iOS sandbox restrictions
-- **Solution**: App now uses in-memory fallback
+Bloc/Cubit errors are additionally annotated by `DivineBlocObserver`, which
+forwards to Crashlytics **only** when the error implements `ReportableError`
+(see `ERROR_HANDLING.md` for the decision matrix and the enriched per-error
+context keys).
 
-### Memory Pressure
-- **Symptom**: Crash after loading many videos
-- **Cause**: iOS aggressive memory management
-- **Solution**: Implement proper cleanup in VideoManager
+## Verifying a crash lands
 
-### Network Restrictions
-- **Symptom**: Can't connect to relays
-- **Cause**: iOS App Transport Security
-- **Solution**: Already configured in Info.plist
+1. Build a release (or profile) build on a supported platform — collection is
+   **disabled in debug builds** (`setCrashlyticsCollectionEnabled(!kDebugMode)`).
+2. Trigger a test non-fatal — e.g. `FirebaseCrashlytics.instance.recordError(...)`
+   or a `Reportable` Bloc error.
+3. Confirm it appears at
+   <https://console.firebase.google.com/project/openvine-co/crashlytics>.
 
-## Testing Checklist
+## Debugging crashes
 
-Before TestFlight deployment:
-- [ ] Run `flutter analyze` - fix all errors
-- [ ] Test on physical iOS device via Xcode
-- [ ] Verify Firebase project is configured
-- [ ] Check bundle ID matches Firebase config
-- [ ] Increment build number in pubspec.yaml
-- [ ] Archive and upload via Xcode
-
-## Emergency Rollback
-
-If crashes persist after deployment:
-1. **Immediate**: Stop TestFlight testing
-2. **Analyze**: Check Firebase Crashlytics for patterns
-3. **Debug**: Use logged initialization steps to identify failure point
-4. **Fix**: Apply targeted fix based on crash data
-5. **Test**: Deploy to internal testers first
-
-## Support
-
-For crash analysis help:
-1. Share crash report from Firebase
-2. Include device model and iOS version
-3. Note any specific user actions before crash
-4. Check initialization logs in Crashlytics
+Crashlytics groups by issue and shows the stack, breadcrumbs (initialisation
+steps logged via `logInitializationStep`), custom keys, and device info.
+Historical iOS-specific failure modes (SQLite sandbox restrictions, memory
+pressure, App Transport Security) and their fixes are in this file's git
+history.
