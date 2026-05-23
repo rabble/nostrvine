@@ -166,18 +166,14 @@ class _TagsPickerViewState extends State<_TagsPickerView> {
 
   void _addTag(String raw) {
     context.read<TagsPickerBloc>().add(TagsPickerTagsAdded([raw]));
-    _resetSearchInput();
-  }
-
-  void _resetSearchInput() {
+    // Clear the text field without firing _onSearchChanged — otherwise the
+    // listener would dispatch TagsPickerQueryChanged('') which wipes the
+    // bloc's query and suggestions. Keeping them visible lets the user
+    // rapidly select multiple related tags without re-typing the query.
     _previousText = '';
-    // Synchronously clear the bloc's query/suggestions so stale results are
-    // never visible after a tag is committed. The controller clear below will
-    // also trigger _onSearchChanged which dispatches a debounced
-    // TagsPickerQueryChanged('') — that's fine, it will be a no-op once the
-    // query is already ''.
-    context.read<TagsPickerBloc>().add(const TagsPickerSearchReset());
+    _searchController.removeListener(_onSearchChanged);
     _searchController.value = const TextEditingValue();
+    _searchController.addListener(_onSearchChanged);
   }
 
   void _removeTag(String tag) {
@@ -322,11 +318,8 @@ class _TagsPickerViewState extends State<_TagsPickerView> {
         Expanded(
           child: BlocBuilder<TagsPickerBloc, TagsPickerState>(
             builder: (context, state) {
-              if (state.query.isEmpty) {
-                if (state.selectedTags.isEmpty) {
-                  return const _EmptyState();
-                }
-                return const SizedBox.shrink();
+              if (state.query.isEmpty && state.selectedTags.isEmpty) {
+                return const _EmptyState();
               }
 
               final sanitized = state.sanitizedQuery;
@@ -561,11 +554,15 @@ class _TagChipState extends State<_TagChip>
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Padding(
-                padding: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
-                child: Text(
-                  widget.label,
-                  style: VineTheme.titleSmallFont(color: VineTheme.onSurface),
+              Flexible(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
+                  child: Text(
+                    widget.label,
+                    style: VineTheme.titleSmallFont(color: VineTheme.onSurface),
+                    maxLines: 1,
+                    overflow: .ellipsis,
+                  ),
                 ),
               ),
               Semantics(

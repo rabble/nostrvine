@@ -88,7 +88,7 @@ void main() {
     );
 
     testWidgets(
-      'tapping a suggestion clears the field and resets the search results',
+      'tapping a suggestion clears the field but keeps search results visible',
       (tester) async {
         when(
           () => hashtagRepository.searchHashtags(
@@ -119,23 +119,24 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
-        final musicSuggestion = find.text('music');
+        expect(find.text('music'), findsOneWidget);
 
-        expect(musicSuggestion, findsOneWidget);
-
-        await tester.tap(musicSuggestion);
+        await tester.tap(find.text('music'));
+        await tester.pump();
         await tester.pump();
 
-        // Immediate post-tap state: the synchronous TagsPickerSearchReset must
-        // have cleared the query and suggestions before the debounce fires.
+        // Field is cleared immediately.
         expect(
           tester.widget<TextField>(searchField).controller?.text,
           isEmpty,
         );
-        // No suggestion chip for the previous query ('mus') should be visible.
-        expect(find.text('mus'), findsNothing);
-        // Selected chip is present.
+        // The tapped tag is now a selected chip, and the suggestion chip for
+        // 'music' is filtered out by the bloc (it's already selected).
         expect(find.text('music'), findsOneWidget);
+        // The previous query results remain visible so the user can rapidly
+        // select multiple related tags. 'mus' appears as a suggestion chip
+        // (canAddQuery is true for the preserved query).
+        expect(find.text('mus'), findsOneWidget);
 
         await tester.pump(const Duration(milliseconds: 400));
       },
