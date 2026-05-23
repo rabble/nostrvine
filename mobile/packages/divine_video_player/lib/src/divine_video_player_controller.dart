@@ -4,6 +4,8 @@ import 'package:divine_video_player/src/audio_track.dart';
 import 'package:divine_video_player/src/linux/linux_video_player_backend.dart';
 import 'package:divine_video_player/src/video_clip.dart';
 import 'package:divine_video_player/src/video_player_state.dart';
+import 'package:divine_video_player/src/web/web_video_player_backend.dart';
+import 'package:divine_video_player/src/web/web_video_player_backend_factory.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -64,9 +66,20 @@ class DivineVideoPlayerController {
   static LinuxVideoPlayerBackendFactory linuxBackendFactory =
       MediaKitLinuxVideoPlayerBackend.new;
 
+  /// Factory used to create the Web backend implementation.
+  ///
+  /// Replace in tests to inject a fake backend without a real browser.
+  @visibleForTesting
+  static WebVideoPlayerBackendFactory webBackendFactory =
+      createDefaultWebVideoPlayerBackend;
+
   /// Test hook that forces Linux backend selection regardless of platform.
   @visibleForTesting
   static bool? debugForceLinuxBackend;
+
+  /// Test hook that forces Web backend selection regardless of platform.
+  @visibleForTesting
+  static bool? debugForceWebBackend;
 
   /// Seeded from the current time so that IDs are unique across hot
   /// restarts. Without this, Dart's static reset would reuse id 0
@@ -158,6 +171,7 @@ class DivineVideoPlayerController {
   late final MethodChannel _methodChannel;
   late final EventChannel _eventChannel;
   LinuxVideoPlayerBackend? _linuxBackend;
+  WebVideoPlayerBackend? _webBackend;
 
   final _stateController = StreamController<DivineVideoPlayerState>.broadcast();
 
@@ -167,6 +181,7 @@ class DivineVideoPlayerController {
   var _initialized = false;
   var _disposed = false;
   var _isLinuxBackend = false;
+  var _isWebBackend = false;
   var _firstFrameCompleter = Completer<bool>();
 
   /// The texture ID returned by the native side when [useTexture] is
@@ -181,6 +196,9 @@ class DivineVideoPlayerController {
 
   /// Whether this controller instance is backed by the Linux Dart backend.
   bool get usesLinuxBackend => _isLinuxBackend;
+
+  /// Whether this controller instance is backed by the web HTML backend.
+  bool get usesWebBackend => _isWebBackend;
 
   /// The current player state.
   DivineVideoPlayerState get state => _state;
@@ -217,8 +235,16 @@ class DivineVideoPlayerController {
     }
 
     _playerId = _nextId++;
-    _isLinuxBackend = debugForceLinuxBackend ?? _usesLinuxBackend;
-    if (_isLinuxBackend) {
+    _isWebBackend = debugForceWebBackend ?? kIsWeb;
+    _isLinuxBackend =
+        !_isWebBackend && (debugForceLinuxBackend ?? _usesLinuxBackend);
+    if (_isWebBackend) {
+      _webBackend = webBackendFactory();
+      await _webBackend!.initialize(
+        onStateChanged: _handleWebState,
+        onError: _handleEventError,
+      );
+    } else if (_isLinuxBackend) {
       _linuxBackend = linuxBackendFactory();
       await _linuxBackend!.initialize(
         onStateChanged: _handleLinuxState,
@@ -276,6 +302,10 @@ class DivineVideoPlayerController {
     if (_firstFrameCompleter.isCompleted) {
       _firstFrameCompleter = Completer<bool>();
     }
+    if (_isWebBackend) {
+      await _webBackend!.setClips(clips, startPosition: startPosition);
+      return;
+    }
     if (_isLinuxBackend) {
       await _linuxBackend!.setClips(clips, startPosition: startPosition);
       return;
@@ -290,6 +320,7 @@ class DivineVideoPlayerController {
   /// Starts or resumes playback.
   Future<void> play() async {
     _ensureInitialized();
+    if (_isWebBackend) return _webBackend!.play();
     if (_isLinuxBackend) return _linuxBackend!.play();
     await _methodChannel.invokeMethod<void>('play');
   }
@@ -297,6 +328,7 @@ class DivineVideoPlayerController {
   /// Pauses playback.
   Future<void> pause() async {
     _ensureInitialized();
+    if (_isWebBackend) return _webBackend!.pause();
     if (_isLinuxBackend) return _linuxBackend!.pause();
     await _methodChannel.invokeMethod<void>('pause');
   }
@@ -308,6 +340,7 @@ class DivineVideoPlayerController {
   /// be reused by calling [setSource] or [setClips] again.
   Future<void> stop() async {
     _ensureInitialized();
+    if (_isWebBackend) return _webBackend!.stop();
     if (_isLinuxBackend) return _linuxBackend!.stop();
     await _methodChannel.invokeMethod<void>('stop');
   }
@@ -315,6 +348,7 @@ class DivineVideoPlayerController {
   /// Seeks to [position] on the global timeline.
   Future<void> seekTo(Duration position) async {
     _ensureInitialized();
+    if (_isWebBackend) return _webBackend!.seekTo(position);
     if (_isLinuxBackend) return _linuxBackend!.seekTo(position);
     await _methodChannel.invokeMethod<void>('seekTo', {
       'positionMs': position.inMilliseconds,
@@ -325,6 +359,7 @@ class DivineVideoPlayerController {
   Future<void> setVolume(double volume) async {
     _ensureInitialized();
     final vol = volume.clamp(0.0, 1.0);
+    if (_isWebBackend) return _webBackend!.setVolume(vol);
     if (_isLinuxBackend) return _linuxBackend!.setVolume(vol);
     _state = _state.copyWith(volume: vol);
     _stateController.add(_state);
@@ -334,6 +369,7 @@ class DivineVideoPlayerController {
   /// Sets the playback speed multiplier.
   Future<void> setPlaybackSpeed(double speed) async {
     _ensureInitialized();
+    if (_isWebBackend) return _webBackend!.setPlaybackSpeed(speed);
     if (_isLinuxBackend) return _linuxBackend!.setPlaybackSpeed(speed);
     await _methodChannel.invokeMethod<void>('setPlaybackSpeed', {
       'speed': speed,
@@ -346,6 +382,7 @@ class DivineVideoPlayerController {
   /// clips finish.
   Future<void> setLooping({required bool looping}) async {
     _ensureInitialized();
+    if (_isWebBackend) return _webBackend!.setLooping(looping: looping);
     if (_isLinuxBackend) return _linuxBackend!.setLooping(looping: looping);
     await _methodChannel.invokeMethod<void>('setLooping', {'looping': looping});
   }
@@ -353,6 +390,7 @@ class DivineVideoPlayerController {
   /// Jumps playback to the start of the clip at [index].
   Future<void> jumpToClip(int index) async {
     _ensureInitialized();
+    if (_isWebBackend) return _webBackend!.jumpToClip(index);
     if (_isLinuxBackend) return _linuxBackend!.jumpToClip(index);
     await _methodChannel.invokeMethod<void>('jumpToClip', {'index': index});
   }
@@ -365,6 +403,7 @@ class DivineVideoPlayerController {
   /// Replaces any previously set audio tracks.
   Future<void> setAudioTracks(List<AudioTrack> tracks) async {
     _ensureInitialized();
+    if (_isWebBackend) return _webBackend!.setAudioTracks(tracks);
     if (_isLinuxBackend) return _linuxBackend!.setAudioTracks(tracks);
     await _methodChannel.invokeMethod<void>('setAudioTracks', {
       'tracks': tracks.map((t) => t.toMap()).toList(),
@@ -374,6 +413,7 @@ class DivineVideoPlayerController {
   /// Removes all overlay audio tracks.
   Future<void> removeAllAudioTracks() async {
     _ensureInitialized();
+    if (_isWebBackend) return _webBackend!.removeAllAudioTracks();
     if (_isLinuxBackend) return _linuxBackend!.removeAllAudioTracks();
     await _methodChannel.invokeMethod<void>('removeAllAudioTracks');
   }
@@ -384,6 +424,7 @@ class DivineVideoPlayerController {
   /// Has no effect if [index] is out of range.
   Future<void> setAudioTrackVolume(int index, double volume) async {
     _ensureInitialized();
+    if (_isWebBackend) return _webBackend!.setAudioTrackVolume(index, volume);
     if (_isLinuxBackend) {
       return _linuxBackend!.setAudioTrackVolume(index, volume);
     }
@@ -407,7 +448,9 @@ class DivineVideoPlayerController {
     _eventSubscription = null;
 
     await Future.wait<void>([
-      if (_initialized && _isLinuxBackend)
+      if (_initialized && _isWebBackend)
+        _webBackend!.dispose()
+      else if (_initialized && _isLinuxBackend)
         _linuxBackend!.dispose()
       else if (_initialized)
         _globalChannel.invokeMethod<void>('dispose', {'id': _playerId}),
@@ -451,6 +494,16 @@ class DivineVideoPlayerController {
     }
   }
 
+  void _handleWebState(DivineVideoPlayerState state) {
+    _state = state;
+    if (_state.isFirstFrameRendered && !_firstFrameCompleter.isCompleted) {
+      _firstFrameCompleter.complete(true);
+    }
+    if (!_stateController.isClosed) {
+      _stateController.add(_state);
+    }
+  }
+
   void _handleEventError(Object error) {
     _state = _state.copyWith(status: PlaybackStatus.error);
     if (!_stateController.isClosed) {
@@ -468,5 +521,14 @@ class DivineVideoPlayerController {
       throw StateError('Linux view is not available.');
     }
     return _linuxBackend!.buildView();
+  }
+
+  /// Builds the web video surface for this controller instance.
+  @internal
+  Widget buildWebView() {
+    if (!_isWebBackend || _webBackend == null) {
+      throw StateError('Web view is not available.');
+    }
+    return _webBackend!.buildView();
   }
 }

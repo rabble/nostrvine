@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:divine_video_player/divine_video_player.dart';
 import 'package:divine_video_player/src/linux/linux_video_player_backend.dart';
+import 'package:divine_video_player/src/web/web_video_player_backend_factory.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -23,6 +24,9 @@ void main() {
     DivineVideoPlayerController.debugForceLinuxBackend = null;
     DivineVideoPlayerController.linuxBackendFactory =
         MediaKitLinuxVideoPlayerBackend.new;
+    DivineVideoPlayerController.debugForceWebBackend = null;
+    DivineVideoPlayerController.webBackendFactory =
+        createDefaultWebVideoPlayerBackend;
     globalCalls = <MethodCall>[];
     playerCalls = <MethodCall>[];
     eventController = StreamController<Map<Object?, Object?>>.broadcast();
@@ -33,6 +37,9 @@ void main() {
     DivineVideoPlayerController.debugForceLinuxBackend = null;
     DivineVideoPlayerController.linuxBackendFactory =
         MediaKitLinuxVideoPlayerBackend.new;
+    DivineVideoPlayerController.debugForceWebBackend = null;
+    DivineVideoPlayerController.webBackendFactory =
+        createDefaultWebVideoPlayerBackend;
     await eventController.close();
   });
 

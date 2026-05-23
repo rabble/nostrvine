@@ -127,7 +127,7 @@ class ControllerSubscriptions {
         }
       }
 
-      if (armed && position <= startThreshold && lastPosition > position) {
+      if (armed && position <= startThreshold && lastPosition >= position) {
         armed = false;
         onLoopCompleted();
       }

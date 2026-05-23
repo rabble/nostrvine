@@ -42,7 +42,9 @@ class DivineVideoPlayer extends StatelessWidget {
     final ctrl = controller!;
 
     final Widget surface;
-    if (ctrl.usesLinuxBackend) {
+    if (ctrl.usesWebBackend) {
+      surface = ctrl.buildWebView();
+    } else if (ctrl.usesLinuxBackend) {
       surface = ctrl.buildLinuxView();
     } else if (ctrl.useTexture && ctrl.textureId != null) {
       // SurfaceProducer does not forward ExoPlayer's GL transform matrix
