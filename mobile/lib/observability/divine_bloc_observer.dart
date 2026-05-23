@@ -1,5 +1,5 @@
 // ABOUTME: BlocObserver that forwards Bloc errors to Crashlytics + UnifiedLogger
-// ABOUTME: Enriches forwarded reports with the bloc's last event/state/transition
+// ABOUTME: Wired once in main.dart before runApp; covers addError, handler throws, emit failures, and attaches last event/state/transition
 
 import 'dart:async';
 
@@ -14,6 +14,7 @@ import 'package:unified_logger/unified_logger.dart';
 const String kBlocLastEventKey = 'bloc.lastEvent';
 const String kBlocLastStateKey = 'bloc.lastState';
 const String kBlocLastTransitionAtKey = 'bloc.lastTransitionAt';
+const String kBlocDiagnosticNotObserved = '<not observed>';
 
 /// Forwards Bloc/Cubit errors to the project's crash reporter and the unified
 /// log.
@@ -98,34 +99,30 @@ class DivineBlocObserver extends BlocObserver {
   }
 
   void _attachDiagnosticKeys(_BlocDiagnostics? diagnostics) {
-    if (diagnostics == null) return;
-    final event = diagnostics.lastEvent;
-    if (event != null) {
-      unawaited(
-        _crashReporting.setCustomKey(
-          kBlocLastEventKey,
-          sanitizeForCrashReport(event.toString()),
-        ),
-      );
-    }
-    final state = diagnostics.lastState;
-    if (state != null) {
-      unawaited(
-        _crashReporting.setCustomKey(
-          kBlocLastStateKey,
-          sanitizeForCrashReport(state.toString()),
-        ),
-      );
-    }
-    final transitionAt = diagnostics.lastTransitionAt;
-    if (transitionAt != null) {
-      unawaited(
-        _crashReporting.setCustomKey(
-          kBlocLastTransitionAtKey,
-          transitionAt.toUtc().toIso8601String(),
-        ),
-      );
-    }
+    unawaited(
+      _crashReporting.setCustomKey(
+        kBlocLastEventKey,
+        _stringValueOrSentinel(diagnostics?.lastEvent),
+      ),
+    );
+    unawaited(
+      _crashReporting.setCustomKey(
+        kBlocLastStateKey,
+        _stringValueOrSentinel(diagnostics?.lastState),
+      ),
+    );
+    unawaited(
+      _crashReporting.setCustomKey(
+        kBlocLastTransitionAtKey,
+        diagnostics?.lastTransitionAt?.toUtc().toIso8601String() ??
+            kBlocDiagnosticNotObserved,
+      ),
+    );
+  }
+
+  String _stringValueOrSentinel(Object? value) {
+    if (value == null) return kBlocDiagnosticNotObserved;
+    return sanitizeForCrashReport(value.toString());
   }
 }
 

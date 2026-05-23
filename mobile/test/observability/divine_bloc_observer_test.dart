@@ -76,11 +76,7 @@ void main() {
       final cubit = _CountCubit();
       addTearDown(cubit.close);
 
-      observer.onError(
-        cubit,
-        Reportable(StateError('x')),
-        StackTrace.current,
-      );
+      observer.onError(cubit, Reportable(StateError('x')), StackTrace.current);
 
       verify(
         () => mockCrash.recordError(
@@ -193,19 +189,13 @@ void main() {
         final error = Reportable(StateError('boom'), context: 'test');
         observer.onError(bloc, error, StackTrace.current);
 
-        // _recordEnriched runs unawaited; drain the microtask before verifying.
+        // _attachDiagnosticKeys runs unawaited; drain the microtask before
+        // verifying.
         await Future<void>.delayed(Duration.zero);
 
         verifyInOrder([
           () => mockCrash.setCustomKey(kBlocLastEventKey, 'IncrementPressed'),
           () => mockCrash.setCustomKey(kBlocLastStateKey, '1'),
-          () => mockCrash.recordError(
-            error,
-            any<StackTrace?>(),
-            reason: any(named: 'reason'),
-          ),
-        ]);
-        verify(
           () => mockCrash.setCustomKey(
             kBlocLastTransitionAtKey,
             any<dynamic>(
@@ -214,12 +204,17 @@ void main() {
               ),
             ),
           ),
-        ).called(1);
+          () => mockCrash.recordError(
+            error,
+            any<StackTrace?>(),
+            reason: any(named: 'reason'),
+          ),
+        ]);
       },
     );
 
     test(
-      'does not set diagnostic keys when no event or state was observed',
+      'overwrites missing diagnostics with sentinels before recordError',
       () async {
         final cubit = _CountCubit();
         addTearDown(cubit.close);
@@ -231,7 +226,82 @@ void main() {
         );
         await Future<void>.delayed(Duration.zero);
 
-        verifyNever(() => mockCrash.setCustomKey(any(), any<dynamic>()));
+        verifyInOrder([
+          () => mockCrash.setCustomKey(
+            kBlocLastEventKey,
+            kBlocDiagnosticNotObserved,
+          ),
+          () => mockCrash.setCustomKey(
+            kBlocLastStateKey,
+            kBlocDiagnosticNotObserved,
+          ),
+          () => mockCrash.setCustomKey(
+            kBlocLastTransitionAtKey,
+            kBlocDiagnosticNotObserved,
+          ),
+          () => mockCrash.recordError(
+            any<dynamic>(),
+            any<StackTrace?>(),
+            reason: any(named: 'reason'),
+          ),
+        ]);
+      },
+    );
+
+    test(
+      'does not leak a previous bloc event into a later cubit error report',
+      () async {
+        final bloc = _CounterBloc();
+        final cubit = _CountCubit();
+        addTearDown(bloc.close);
+        addTearDown(cubit.close);
+
+        observer
+          ..onEvent(bloc, 'IncrementPressed')
+          ..onChange(bloc, const Change<int>(currentState: 0, nextState: 1))
+          ..onError(bloc, Reportable(StateError('first')), StackTrace.current)
+          ..onError(
+            cubit,
+            Reportable(StateError('second')),
+            StackTrace.current,
+          );
+
+        await Future<void>.delayed(Duration.zero);
+
+        verifyInOrder([
+          () => mockCrash.setCustomKey(kBlocLastEventKey, 'IncrementPressed'),
+          () => mockCrash.setCustomKey(kBlocLastStateKey, '1'),
+          () => mockCrash.setCustomKey(
+            kBlocLastTransitionAtKey,
+            any<dynamic>(
+              that: predicate<dynamic>(
+                (v) => v is String && DateTime.tryParse(v) != null,
+              ),
+            ),
+          ),
+          () => mockCrash.recordError(
+            any<dynamic>(that: isA<ReportableError>()),
+            any<StackTrace?>(),
+            reason: any(named: 'reason'),
+          ),
+          () => mockCrash.setCustomKey(
+            kBlocLastEventKey,
+            kBlocDiagnosticNotObserved,
+          ),
+          () => mockCrash.setCustomKey(
+            kBlocLastStateKey,
+            kBlocDiagnosticNotObserved,
+          ),
+          () => mockCrash.setCustomKey(
+            kBlocLastTransitionAtKey,
+            kBlocDiagnosticNotObserved,
+          ),
+          () => mockCrash.recordError(
+            any<dynamic>(that: isA<ReportableError>()),
+            any<StackTrace?>(),
+            reason: any(named: 'reason'),
+          ),
+        ]);
       },
     );
 
