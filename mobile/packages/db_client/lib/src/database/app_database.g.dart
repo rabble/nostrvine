@@ -12200,6 +12200,901 @@ class OutgoingDmsCompanion extends UpdateCompanion<OutgoingDmRow> {
   }
 }
 
+class $PendingViewEventsTable extends PendingViewEvents
+    with TableInfo<$PendingViewEventsTable, PendingViewEventRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PendingViewEventsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _videoIdMeta = const VerificationMeta(
+    'videoId',
+  );
+  @override
+  late final GeneratedColumn<String> videoId = GeneratedColumn<String>(
+    'video_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _videoPubkeyMeta = const VerificationMeta(
+    'videoPubkey',
+  );
+  @override
+  late final GeneratedColumn<String> videoPubkey = GeneratedColumn<String>(
+    'video_pubkey',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _videoVineIdMeta = const VerificationMeta(
+    'videoVineId',
+  );
+  @override
+  late final GeneratedColumn<String> videoVineId = GeneratedColumn<String>(
+    'video_vine_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _userPubkeyMeta = const VerificationMeta(
+    'userPubkey',
+  );
+  @override
+  late final GeneratedColumn<String> userPubkey = GeneratedColumn<String>(
+    'user_pubkey',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _watchDurationMsMeta = const VerificationMeta(
+    'watchDurationMs',
+  );
+  @override
+  late final GeneratedColumn<int> watchDurationMs = GeneratedColumn<int>(
+    'watch_duration_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _totalDurationMsMeta = const VerificationMeta(
+    'totalDurationMs',
+  );
+  @override
+  late final GeneratedColumn<int> totalDurationMs = GeneratedColumn<int>(
+    'total_duration_ms',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _loopCountMeta = const VerificationMeta(
+    'loopCount',
+  );
+  @override
+  late final GeneratedColumn<int> loopCount = GeneratedColumn<int>(
+    'loop_count',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _trafficSourceMeta = const VerificationMeta(
+    'trafficSource',
+  );
+  @override
+  late final GeneratedColumn<String> trafficSource = GeneratedColumn<String>(
+    'traffic_source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceDetailMeta = const VerificationMeta(
+    'sourceDetail',
+  );
+  @override
+  late final GeneratedColumn<String> sourceDetail = GeneratedColumn<String>(
+    'source_detail',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _retryCountMeta = const VerificationMeta(
+    'retryCount',
+  );
+  @override
+  late final GeneratedColumn<int> retryCount = GeneratedColumn<int>(
+    'retry_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _lastErrorMeta = const VerificationMeta(
+    'lastError',
+  );
+  @override
+  late final GeneratedColumn<String> lastError = GeneratedColumn<String>(
+    'last_error',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastAttemptAtMeta = const VerificationMeta(
+    'lastAttemptAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastAttemptAt =
+      GeneratedColumn<DateTime>(
+        'last_attempt_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    videoId,
+    videoPubkey,
+    videoVineId,
+    userPubkey,
+    watchDurationMs,
+    totalDurationMs,
+    loopCount,
+    trafficSource,
+    sourceDetail,
+    status,
+    retryCount,
+    lastError,
+    lastAttemptAt,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'pending_view_events';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PendingViewEventRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('video_id')) {
+      context.handle(
+        _videoIdMeta,
+        videoId.isAcceptableOrUnknown(data['video_id']!, _videoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_videoIdMeta);
+    }
+    if (data.containsKey('video_pubkey')) {
+      context.handle(
+        _videoPubkeyMeta,
+        videoPubkey.isAcceptableOrUnknown(
+          data['video_pubkey']!,
+          _videoPubkeyMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_videoPubkeyMeta);
+    }
+    if (data.containsKey('video_vine_id')) {
+      context.handle(
+        _videoVineIdMeta,
+        videoVineId.isAcceptableOrUnknown(
+          data['video_vine_id']!,
+          _videoVineIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('user_pubkey')) {
+      context.handle(
+        _userPubkeyMeta,
+        userPubkey.isAcceptableOrUnknown(data['user_pubkey']!, _userPubkeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userPubkeyMeta);
+    }
+    if (data.containsKey('watch_duration_ms')) {
+      context.handle(
+        _watchDurationMsMeta,
+        watchDurationMs.isAcceptableOrUnknown(
+          data['watch_duration_ms']!,
+          _watchDurationMsMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_watchDurationMsMeta);
+    }
+    if (data.containsKey('total_duration_ms')) {
+      context.handle(
+        _totalDurationMsMeta,
+        totalDurationMs.isAcceptableOrUnknown(
+          data['total_duration_ms']!,
+          _totalDurationMsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('loop_count')) {
+      context.handle(
+        _loopCountMeta,
+        loopCount.isAcceptableOrUnknown(data['loop_count']!, _loopCountMeta),
+      );
+    }
+    if (data.containsKey('traffic_source')) {
+      context.handle(
+        _trafficSourceMeta,
+        trafficSource.isAcceptableOrUnknown(
+          data['traffic_source']!,
+          _trafficSourceMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_trafficSourceMeta);
+    }
+    if (data.containsKey('source_detail')) {
+      context.handle(
+        _sourceDetailMeta,
+        sourceDetail.isAcceptableOrUnknown(
+          data['source_detail']!,
+          _sourceDetailMeta,
+        ),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('retry_count')) {
+      context.handle(
+        _retryCountMeta,
+        retryCount.isAcceptableOrUnknown(data['retry_count']!, _retryCountMeta),
+      );
+    }
+    if (data.containsKey('last_error')) {
+      context.handle(
+        _lastErrorMeta,
+        lastError.isAcceptableOrUnknown(data['last_error']!, _lastErrorMeta),
+      );
+    }
+    if (data.containsKey('last_attempt_at')) {
+      context.handle(
+        _lastAttemptAtMeta,
+        lastAttemptAt.isAcceptableOrUnknown(
+          data['last_attempt_at']!,
+          _lastAttemptAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PendingViewEventRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PendingViewEventRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      videoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}video_id'],
+      )!,
+      videoPubkey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}video_pubkey'],
+      )!,
+      videoVineId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}video_vine_id'],
+      ),
+      userPubkey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_pubkey'],
+      )!,
+      watchDurationMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}watch_duration_ms'],
+      )!,
+      totalDurationMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}total_duration_ms'],
+      ),
+      loopCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}loop_count'],
+      ),
+      trafficSource: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}traffic_source'],
+      )!,
+      sourceDetail: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_detail'],
+      ),
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      retryCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}retry_count'],
+      )!,
+      lastError: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_error'],
+      ),
+      lastAttemptAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_attempt_at'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $PendingViewEventsTable createAlias(String alias) {
+    return $PendingViewEventsTable(attachedDatabase, alias);
+  }
+}
+
+class PendingViewEventRow extends DataClass
+    implements Insertable<PendingViewEventRow> {
+  final String id;
+  final String videoId;
+  final String videoPubkey;
+  final String? videoVineId;
+  final String userPubkey;
+  final int watchDurationMs;
+  final int? totalDurationMs;
+  final int? loopCount;
+  final String trafficSource;
+  final String? sourceDetail;
+  final String status;
+  final int retryCount;
+  final String? lastError;
+  final DateTime? lastAttemptAt;
+  final DateTime createdAt;
+  const PendingViewEventRow({
+    required this.id,
+    required this.videoId,
+    required this.videoPubkey,
+    this.videoVineId,
+    required this.userPubkey,
+    required this.watchDurationMs,
+    this.totalDurationMs,
+    this.loopCount,
+    required this.trafficSource,
+    this.sourceDetail,
+    required this.status,
+    required this.retryCount,
+    this.lastError,
+    this.lastAttemptAt,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['video_id'] = Variable<String>(videoId);
+    map['video_pubkey'] = Variable<String>(videoPubkey);
+    if (!nullToAbsent || videoVineId != null) {
+      map['video_vine_id'] = Variable<String>(videoVineId);
+    }
+    map['user_pubkey'] = Variable<String>(userPubkey);
+    map['watch_duration_ms'] = Variable<int>(watchDurationMs);
+    if (!nullToAbsent || totalDurationMs != null) {
+      map['total_duration_ms'] = Variable<int>(totalDurationMs);
+    }
+    if (!nullToAbsent || loopCount != null) {
+      map['loop_count'] = Variable<int>(loopCount);
+    }
+    map['traffic_source'] = Variable<String>(trafficSource);
+    if (!nullToAbsent || sourceDetail != null) {
+      map['source_detail'] = Variable<String>(sourceDetail);
+    }
+    map['status'] = Variable<String>(status);
+    map['retry_count'] = Variable<int>(retryCount);
+    if (!nullToAbsent || lastError != null) {
+      map['last_error'] = Variable<String>(lastError);
+    }
+    if (!nullToAbsent || lastAttemptAt != null) {
+      map['last_attempt_at'] = Variable<DateTime>(lastAttemptAt);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  PendingViewEventsCompanion toCompanion(bool nullToAbsent) {
+    return PendingViewEventsCompanion(
+      id: Value(id),
+      videoId: Value(videoId),
+      videoPubkey: Value(videoPubkey),
+      videoVineId: videoVineId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(videoVineId),
+      userPubkey: Value(userPubkey),
+      watchDurationMs: Value(watchDurationMs),
+      totalDurationMs: totalDurationMs == null && nullToAbsent
+          ? const Value.absent()
+          : Value(totalDurationMs),
+      loopCount: loopCount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(loopCount),
+      trafficSource: Value(trafficSource),
+      sourceDetail: sourceDetail == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceDetail),
+      status: Value(status),
+      retryCount: Value(retryCount),
+      lastError: lastError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastError),
+      lastAttemptAt: lastAttemptAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastAttemptAt),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory PendingViewEventRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PendingViewEventRow(
+      id: serializer.fromJson<String>(json['id']),
+      videoId: serializer.fromJson<String>(json['videoId']),
+      videoPubkey: serializer.fromJson<String>(json['videoPubkey']),
+      videoVineId: serializer.fromJson<String?>(json['videoVineId']),
+      userPubkey: serializer.fromJson<String>(json['userPubkey']),
+      watchDurationMs: serializer.fromJson<int>(json['watchDurationMs']),
+      totalDurationMs: serializer.fromJson<int?>(json['totalDurationMs']),
+      loopCount: serializer.fromJson<int?>(json['loopCount']),
+      trafficSource: serializer.fromJson<String>(json['trafficSource']),
+      sourceDetail: serializer.fromJson<String?>(json['sourceDetail']),
+      status: serializer.fromJson<String>(json['status']),
+      retryCount: serializer.fromJson<int>(json['retryCount']),
+      lastError: serializer.fromJson<String?>(json['lastError']),
+      lastAttemptAt: serializer.fromJson<DateTime?>(json['lastAttemptAt']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'videoId': serializer.toJson<String>(videoId),
+      'videoPubkey': serializer.toJson<String>(videoPubkey),
+      'videoVineId': serializer.toJson<String?>(videoVineId),
+      'userPubkey': serializer.toJson<String>(userPubkey),
+      'watchDurationMs': serializer.toJson<int>(watchDurationMs),
+      'totalDurationMs': serializer.toJson<int?>(totalDurationMs),
+      'loopCount': serializer.toJson<int?>(loopCount),
+      'trafficSource': serializer.toJson<String>(trafficSource),
+      'sourceDetail': serializer.toJson<String?>(sourceDetail),
+      'status': serializer.toJson<String>(status),
+      'retryCount': serializer.toJson<int>(retryCount),
+      'lastError': serializer.toJson<String?>(lastError),
+      'lastAttemptAt': serializer.toJson<DateTime?>(lastAttemptAt),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  PendingViewEventRow copyWith({
+    String? id,
+    String? videoId,
+    String? videoPubkey,
+    Value<String?> videoVineId = const Value.absent(),
+    String? userPubkey,
+    int? watchDurationMs,
+    Value<int?> totalDurationMs = const Value.absent(),
+    Value<int?> loopCount = const Value.absent(),
+    String? trafficSource,
+    Value<String?> sourceDetail = const Value.absent(),
+    String? status,
+    int? retryCount,
+    Value<String?> lastError = const Value.absent(),
+    Value<DateTime?> lastAttemptAt = const Value.absent(),
+    DateTime? createdAt,
+  }) => PendingViewEventRow(
+    id: id ?? this.id,
+    videoId: videoId ?? this.videoId,
+    videoPubkey: videoPubkey ?? this.videoPubkey,
+    videoVineId: videoVineId.present ? videoVineId.value : this.videoVineId,
+    userPubkey: userPubkey ?? this.userPubkey,
+    watchDurationMs: watchDurationMs ?? this.watchDurationMs,
+    totalDurationMs: totalDurationMs.present
+        ? totalDurationMs.value
+        : this.totalDurationMs,
+    loopCount: loopCount.present ? loopCount.value : this.loopCount,
+    trafficSource: trafficSource ?? this.trafficSource,
+    sourceDetail: sourceDetail.present ? sourceDetail.value : this.sourceDetail,
+    status: status ?? this.status,
+    retryCount: retryCount ?? this.retryCount,
+    lastError: lastError.present ? lastError.value : this.lastError,
+    lastAttemptAt: lastAttemptAt.present
+        ? lastAttemptAt.value
+        : this.lastAttemptAt,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  PendingViewEventRow copyWithCompanion(PendingViewEventsCompanion data) {
+    return PendingViewEventRow(
+      id: data.id.present ? data.id.value : this.id,
+      videoId: data.videoId.present ? data.videoId.value : this.videoId,
+      videoPubkey: data.videoPubkey.present
+          ? data.videoPubkey.value
+          : this.videoPubkey,
+      videoVineId: data.videoVineId.present
+          ? data.videoVineId.value
+          : this.videoVineId,
+      userPubkey: data.userPubkey.present
+          ? data.userPubkey.value
+          : this.userPubkey,
+      watchDurationMs: data.watchDurationMs.present
+          ? data.watchDurationMs.value
+          : this.watchDurationMs,
+      totalDurationMs: data.totalDurationMs.present
+          ? data.totalDurationMs.value
+          : this.totalDurationMs,
+      loopCount: data.loopCount.present ? data.loopCount.value : this.loopCount,
+      trafficSource: data.trafficSource.present
+          ? data.trafficSource.value
+          : this.trafficSource,
+      sourceDetail: data.sourceDetail.present
+          ? data.sourceDetail.value
+          : this.sourceDetail,
+      status: data.status.present ? data.status.value : this.status,
+      retryCount: data.retryCount.present
+          ? data.retryCount.value
+          : this.retryCount,
+      lastError: data.lastError.present ? data.lastError.value : this.lastError,
+      lastAttemptAt: data.lastAttemptAt.present
+          ? data.lastAttemptAt.value
+          : this.lastAttemptAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PendingViewEventRow(')
+          ..write('id: $id, ')
+          ..write('videoId: $videoId, ')
+          ..write('videoPubkey: $videoPubkey, ')
+          ..write('videoVineId: $videoVineId, ')
+          ..write('userPubkey: $userPubkey, ')
+          ..write('watchDurationMs: $watchDurationMs, ')
+          ..write('totalDurationMs: $totalDurationMs, ')
+          ..write('loopCount: $loopCount, ')
+          ..write('trafficSource: $trafficSource, ')
+          ..write('sourceDetail: $sourceDetail, ')
+          ..write('status: $status, ')
+          ..write('retryCount: $retryCount, ')
+          ..write('lastError: $lastError, ')
+          ..write('lastAttemptAt: $lastAttemptAt, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    videoId,
+    videoPubkey,
+    videoVineId,
+    userPubkey,
+    watchDurationMs,
+    totalDurationMs,
+    loopCount,
+    trafficSource,
+    sourceDetail,
+    status,
+    retryCount,
+    lastError,
+    lastAttemptAt,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PendingViewEventRow &&
+          other.id == this.id &&
+          other.videoId == this.videoId &&
+          other.videoPubkey == this.videoPubkey &&
+          other.videoVineId == this.videoVineId &&
+          other.userPubkey == this.userPubkey &&
+          other.watchDurationMs == this.watchDurationMs &&
+          other.totalDurationMs == this.totalDurationMs &&
+          other.loopCount == this.loopCount &&
+          other.trafficSource == this.trafficSource &&
+          other.sourceDetail == this.sourceDetail &&
+          other.status == this.status &&
+          other.retryCount == this.retryCount &&
+          other.lastError == this.lastError &&
+          other.lastAttemptAt == this.lastAttemptAt &&
+          other.createdAt == this.createdAt);
+}
+
+class PendingViewEventsCompanion extends UpdateCompanion<PendingViewEventRow> {
+  final Value<String> id;
+  final Value<String> videoId;
+  final Value<String> videoPubkey;
+  final Value<String?> videoVineId;
+  final Value<String> userPubkey;
+  final Value<int> watchDurationMs;
+  final Value<int?> totalDurationMs;
+  final Value<int?> loopCount;
+  final Value<String> trafficSource;
+  final Value<String?> sourceDetail;
+  final Value<String> status;
+  final Value<int> retryCount;
+  final Value<String?> lastError;
+  final Value<DateTime?> lastAttemptAt;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const PendingViewEventsCompanion({
+    this.id = const Value.absent(),
+    this.videoId = const Value.absent(),
+    this.videoPubkey = const Value.absent(),
+    this.videoVineId = const Value.absent(),
+    this.userPubkey = const Value.absent(),
+    this.watchDurationMs = const Value.absent(),
+    this.totalDurationMs = const Value.absent(),
+    this.loopCount = const Value.absent(),
+    this.trafficSource = const Value.absent(),
+    this.sourceDetail = const Value.absent(),
+    this.status = const Value.absent(),
+    this.retryCount = const Value.absent(),
+    this.lastError = const Value.absent(),
+    this.lastAttemptAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PendingViewEventsCompanion.insert({
+    required String id,
+    required String videoId,
+    required String videoPubkey,
+    this.videoVineId = const Value.absent(),
+    required String userPubkey,
+    required int watchDurationMs,
+    this.totalDurationMs = const Value.absent(),
+    this.loopCount = const Value.absent(),
+    required String trafficSource,
+    this.sourceDetail = const Value.absent(),
+    required String status,
+    this.retryCount = const Value.absent(),
+    this.lastError = const Value.absent(),
+    this.lastAttemptAt = const Value.absent(),
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       videoId = Value(videoId),
+       videoPubkey = Value(videoPubkey),
+       userPubkey = Value(userPubkey),
+       watchDurationMs = Value(watchDurationMs),
+       trafficSource = Value(trafficSource),
+       status = Value(status),
+       createdAt = Value(createdAt);
+  static Insertable<PendingViewEventRow> custom({
+    Expression<String>? id,
+    Expression<String>? videoId,
+    Expression<String>? videoPubkey,
+    Expression<String>? videoVineId,
+    Expression<String>? userPubkey,
+    Expression<int>? watchDurationMs,
+    Expression<int>? totalDurationMs,
+    Expression<int>? loopCount,
+    Expression<String>? trafficSource,
+    Expression<String>? sourceDetail,
+    Expression<String>? status,
+    Expression<int>? retryCount,
+    Expression<String>? lastError,
+    Expression<DateTime>? lastAttemptAt,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (videoId != null) 'video_id': videoId,
+      if (videoPubkey != null) 'video_pubkey': videoPubkey,
+      if (videoVineId != null) 'video_vine_id': videoVineId,
+      if (userPubkey != null) 'user_pubkey': userPubkey,
+      if (watchDurationMs != null) 'watch_duration_ms': watchDurationMs,
+      if (totalDurationMs != null) 'total_duration_ms': totalDurationMs,
+      if (loopCount != null) 'loop_count': loopCount,
+      if (trafficSource != null) 'traffic_source': trafficSource,
+      if (sourceDetail != null) 'source_detail': sourceDetail,
+      if (status != null) 'status': status,
+      if (retryCount != null) 'retry_count': retryCount,
+      if (lastError != null) 'last_error': lastError,
+      if (lastAttemptAt != null) 'last_attempt_at': lastAttemptAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PendingViewEventsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? videoId,
+    Value<String>? videoPubkey,
+    Value<String?>? videoVineId,
+    Value<String>? userPubkey,
+    Value<int>? watchDurationMs,
+    Value<int?>? totalDurationMs,
+    Value<int?>? loopCount,
+    Value<String>? trafficSource,
+    Value<String?>? sourceDetail,
+    Value<String>? status,
+    Value<int>? retryCount,
+    Value<String?>? lastError,
+    Value<DateTime?>? lastAttemptAt,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return PendingViewEventsCompanion(
+      id: id ?? this.id,
+      videoId: videoId ?? this.videoId,
+      videoPubkey: videoPubkey ?? this.videoPubkey,
+      videoVineId: videoVineId ?? this.videoVineId,
+      userPubkey: userPubkey ?? this.userPubkey,
+      watchDurationMs: watchDurationMs ?? this.watchDurationMs,
+      totalDurationMs: totalDurationMs ?? this.totalDurationMs,
+      loopCount: loopCount ?? this.loopCount,
+      trafficSource: trafficSource ?? this.trafficSource,
+      sourceDetail: sourceDetail ?? this.sourceDetail,
+      status: status ?? this.status,
+      retryCount: retryCount ?? this.retryCount,
+      lastError: lastError ?? this.lastError,
+      lastAttemptAt: lastAttemptAt ?? this.lastAttemptAt,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (videoId.present) {
+      map['video_id'] = Variable<String>(videoId.value);
+    }
+    if (videoPubkey.present) {
+      map['video_pubkey'] = Variable<String>(videoPubkey.value);
+    }
+    if (videoVineId.present) {
+      map['video_vine_id'] = Variable<String>(videoVineId.value);
+    }
+    if (userPubkey.present) {
+      map['user_pubkey'] = Variable<String>(userPubkey.value);
+    }
+    if (watchDurationMs.present) {
+      map['watch_duration_ms'] = Variable<int>(watchDurationMs.value);
+    }
+    if (totalDurationMs.present) {
+      map['total_duration_ms'] = Variable<int>(totalDurationMs.value);
+    }
+    if (loopCount.present) {
+      map['loop_count'] = Variable<int>(loopCount.value);
+    }
+    if (trafficSource.present) {
+      map['traffic_source'] = Variable<String>(trafficSource.value);
+    }
+    if (sourceDetail.present) {
+      map['source_detail'] = Variable<String>(sourceDetail.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (retryCount.present) {
+      map['retry_count'] = Variable<int>(retryCount.value);
+    }
+    if (lastError.present) {
+      map['last_error'] = Variable<String>(lastError.value);
+    }
+    if (lastAttemptAt.present) {
+      map['last_attempt_at'] = Variable<DateTime>(lastAttemptAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PendingViewEventsCompanion(')
+          ..write('id: $id, ')
+          ..write('videoId: $videoId, ')
+          ..write('videoPubkey: $videoPubkey, ')
+          ..write('videoVineId: $videoVineId, ')
+          ..write('userPubkey: $userPubkey, ')
+          ..write('watchDurationMs: $watchDurationMs, ')
+          ..write('totalDurationMs: $totalDurationMs, ')
+          ..write('loopCount: $loopCount, ')
+          ..write('trafficSource: $trafficSource, ')
+          ..write('sourceDetail: $sourceDetail, ')
+          ..write('status: $status, ')
+          ..write('retryCount: $retryCount, ')
+          ..write('lastError: $lastError, ')
+          ..write('lastAttemptAt: $lastAttemptAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -12225,6 +13120,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $DmMessageReactionsTable(this);
   late final $ConversationsTable conversations = $ConversationsTable(this);
   late final $OutgoingDmsTable outgoingDms = $OutgoingDmsTable(this);
+  late final $PendingViewEventsTable pendingViewEvents =
+      $PendingViewEventsTable(this);
   late final UserProfilesDao userProfilesDao = UserProfilesDao(
     this as AppDatabase,
   );
@@ -12271,6 +13168,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final OutgoingDmsDao outgoingDmsDao = OutgoingDmsDao(
     this as AppDatabase,
   );
+  late final PendingViewEventsDao pendingViewEventsDao = PendingViewEventsDao(
+    this as AppDatabase,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -12293,6 +13193,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     dmMessageReactions,
     conversations,
     outgoingDms,
+    pendingViewEvents,
   ];
 }
 
@@ -17937,6 +18838,427 @@ typedef $$OutgoingDmsTableProcessedTableManager =
       OutgoingDmRow,
       PrefetchHooks Function()
     >;
+typedef $$PendingViewEventsTableCreateCompanionBuilder =
+    PendingViewEventsCompanion Function({
+      required String id,
+      required String videoId,
+      required String videoPubkey,
+      Value<String?> videoVineId,
+      required String userPubkey,
+      required int watchDurationMs,
+      Value<int?> totalDurationMs,
+      Value<int?> loopCount,
+      required String trafficSource,
+      Value<String?> sourceDetail,
+      required String status,
+      Value<int> retryCount,
+      Value<String?> lastError,
+      Value<DateTime?> lastAttemptAt,
+      required DateTime createdAt,
+      Value<int> rowid,
+    });
+typedef $$PendingViewEventsTableUpdateCompanionBuilder =
+    PendingViewEventsCompanion Function({
+      Value<String> id,
+      Value<String> videoId,
+      Value<String> videoPubkey,
+      Value<String?> videoVineId,
+      Value<String> userPubkey,
+      Value<int> watchDurationMs,
+      Value<int?> totalDurationMs,
+      Value<int?> loopCount,
+      Value<String> trafficSource,
+      Value<String?> sourceDetail,
+      Value<String> status,
+      Value<int> retryCount,
+      Value<String?> lastError,
+      Value<DateTime?> lastAttemptAt,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+class $$PendingViewEventsTableFilterComposer
+    extends Composer<_$AppDatabase, $PendingViewEventsTable> {
+  $$PendingViewEventsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get videoId => $composableBuilder(
+    column: $table.videoId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get videoPubkey => $composableBuilder(
+    column: $table.videoPubkey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get videoVineId => $composableBuilder(
+    column: $table.videoVineId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userPubkey => $composableBuilder(
+    column: $table.userPubkey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get watchDurationMs => $composableBuilder(
+    column: $table.watchDurationMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get totalDurationMs => $composableBuilder(
+    column: $table.totalDurationMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get loopCount => $composableBuilder(
+    column: $table.loopCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get trafficSource => $composableBuilder(
+    column: $table.trafficSource,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceDetail => $composableBuilder(
+    column: $table.sourceDetail,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get retryCount => $composableBuilder(
+    column: $table.retryCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastError => $composableBuilder(
+    column: $table.lastError,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastAttemptAt => $composableBuilder(
+    column: $table.lastAttemptAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PendingViewEventsTableOrderingComposer
+    extends Composer<_$AppDatabase, $PendingViewEventsTable> {
+  $$PendingViewEventsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get videoId => $composableBuilder(
+    column: $table.videoId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get videoPubkey => $composableBuilder(
+    column: $table.videoPubkey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get videoVineId => $composableBuilder(
+    column: $table.videoVineId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userPubkey => $composableBuilder(
+    column: $table.userPubkey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get watchDurationMs => $composableBuilder(
+    column: $table.watchDurationMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get totalDurationMs => $composableBuilder(
+    column: $table.totalDurationMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get loopCount => $composableBuilder(
+    column: $table.loopCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get trafficSource => $composableBuilder(
+    column: $table.trafficSource,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceDetail => $composableBuilder(
+    column: $table.sourceDetail,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get retryCount => $composableBuilder(
+    column: $table.retryCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastError => $composableBuilder(
+    column: $table.lastError,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastAttemptAt => $composableBuilder(
+    column: $table.lastAttemptAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PendingViewEventsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PendingViewEventsTable> {
+  $$PendingViewEventsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get videoId =>
+      $composableBuilder(column: $table.videoId, builder: (column) => column);
+
+  GeneratedColumn<String> get videoPubkey => $composableBuilder(
+    column: $table.videoPubkey,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get videoVineId => $composableBuilder(
+    column: $table.videoVineId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get userPubkey => $composableBuilder(
+    column: $table.userPubkey,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get watchDurationMs => $composableBuilder(
+    column: $table.watchDurationMs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get totalDurationMs => $composableBuilder(
+    column: $table.totalDurationMs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get loopCount =>
+      $composableBuilder(column: $table.loopCount, builder: (column) => column);
+
+  GeneratedColumn<String> get trafficSource => $composableBuilder(
+    column: $table.trafficSource,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sourceDetail => $composableBuilder(
+    column: $table.sourceDetail,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<int> get retryCount => $composableBuilder(
+    column: $table.retryCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get lastError =>
+      $composableBuilder(column: $table.lastError, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastAttemptAt => $composableBuilder(
+    column: $table.lastAttemptAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$PendingViewEventsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PendingViewEventsTable,
+          PendingViewEventRow,
+          $$PendingViewEventsTableFilterComposer,
+          $$PendingViewEventsTableOrderingComposer,
+          $$PendingViewEventsTableAnnotationComposer,
+          $$PendingViewEventsTableCreateCompanionBuilder,
+          $$PendingViewEventsTableUpdateCompanionBuilder,
+          (
+            PendingViewEventRow,
+            BaseReferences<
+              _$AppDatabase,
+              $PendingViewEventsTable,
+              PendingViewEventRow
+            >,
+          ),
+          PendingViewEventRow,
+          PrefetchHooks Function()
+        > {
+  $$PendingViewEventsTableTableManager(
+    _$AppDatabase db,
+    $PendingViewEventsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PendingViewEventsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PendingViewEventsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PendingViewEventsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> videoId = const Value.absent(),
+                Value<String> videoPubkey = const Value.absent(),
+                Value<String?> videoVineId = const Value.absent(),
+                Value<String> userPubkey = const Value.absent(),
+                Value<int> watchDurationMs = const Value.absent(),
+                Value<int?> totalDurationMs = const Value.absent(),
+                Value<int?> loopCount = const Value.absent(),
+                Value<String> trafficSource = const Value.absent(),
+                Value<String?> sourceDetail = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<int> retryCount = const Value.absent(),
+                Value<String?> lastError = const Value.absent(),
+                Value<DateTime?> lastAttemptAt = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PendingViewEventsCompanion(
+                id: id,
+                videoId: videoId,
+                videoPubkey: videoPubkey,
+                videoVineId: videoVineId,
+                userPubkey: userPubkey,
+                watchDurationMs: watchDurationMs,
+                totalDurationMs: totalDurationMs,
+                loopCount: loopCount,
+                trafficSource: trafficSource,
+                sourceDetail: sourceDetail,
+                status: status,
+                retryCount: retryCount,
+                lastError: lastError,
+                lastAttemptAt: lastAttemptAt,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String videoId,
+                required String videoPubkey,
+                Value<String?> videoVineId = const Value.absent(),
+                required String userPubkey,
+                required int watchDurationMs,
+                Value<int?> totalDurationMs = const Value.absent(),
+                Value<int?> loopCount = const Value.absent(),
+                required String trafficSource,
+                Value<String?> sourceDetail = const Value.absent(),
+                required String status,
+                Value<int> retryCount = const Value.absent(),
+                Value<String?> lastError = const Value.absent(),
+                Value<DateTime?> lastAttemptAt = const Value.absent(),
+                required DateTime createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => PendingViewEventsCompanion.insert(
+                id: id,
+                videoId: videoId,
+                videoPubkey: videoPubkey,
+                videoVineId: videoVineId,
+                userPubkey: userPubkey,
+                watchDurationMs: watchDurationMs,
+                totalDurationMs: totalDurationMs,
+                loopCount: loopCount,
+                trafficSource: trafficSource,
+                sourceDetail: sourceDetail,
+                status: status,
+                retryCount: retryCount,
+                lastError: lastError,
+                lastAttemptAt: lastAttemptAt,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PendingViewEventsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PendingViewEventsTable,
+      PendingViewEventRow,
+      $$PendingViewEventsTableFilterComposer,
+      $$PendingViewEventsTableOrderingComposer,
+      $$PendingViewEventsTableAnnotationComposer,
+      $$PendingViewEventsTableCreateCompanionBuilder,
+      $$PendingViewEventsTableUpdateCompanionBuilder,
+      (
+        PendingViewEventRow,
+        BaseReferences<
+          _$AppDatabase,
+          $PendingViewEventsTable,
+          PendingViewEventRow
+        >,
+      ),
+      PendingViewEventRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -17975,4 +19297,6 @@ class $AppDatabaseManager {
       $$ConversationsTableTableManager(_db, _db.conversations);
   $$OutgoingDmsTableTableManager get outgoingDms =>
       $$OutgoingDmsTableTableManager(_db, _db.outgoingDms);
+  $$PendingViewEventsTableTableManager get pendingViewEvents =>
+      $$PendingViewEventsTableTableManager(_db, _db.pendingViewEvents);
 }

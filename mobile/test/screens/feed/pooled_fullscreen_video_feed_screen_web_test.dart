@@ -16,6 +16,7 @@ import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
+import 'package:openvine/widgets/video_metrics_tracker.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart'
     as video_platform;
@@ -124,6 +125,7 @@ void main() {
       await tester.pump();
 
       expect(find.byType(WebVideoFeed), findsOneWidget);
+      expect(find.byType(VideoMetricsTracker), findsOneWidget);
       expect(find.byType(VideoOverlayActions), findsOneWidget);
     }, skip: !kIsWeb);
 

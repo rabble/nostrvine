@@ -365,6 +365,117 @@ void main() {
         },
       );
 
+      test('upgrade path — recreates pending_view_events when missing', () async {
+        await database.customStatement('DROP TABLE pending_view_events');
+
+        final droppedCheck = await database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' "
+              "AND name='pending_view_events'",
+            )
+            .get();
+        expect(
+          droppedCheck,
+          isEmpty,
+          reason: 'precondition: pending_view_events must be missing',
+        );
+
+        await database.close();
+        database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+
+        final tableCheck = await database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' "
+              "AND name='pending_view_events'",
+            )
+            .get();
+        expect(
+          tableCheck,
+          hasLength(1),
+          reason: 'pending_view_events must be re-created on reopen',
+        );
+
+        final indexNames = await _collectIndexNames(
+          database,
+          'pending_view_events',
+        );
+        expect(
+          indexNames,
+          containsAll(<String>{
+            'idx_pending_view_events_user_status',
+            'idx_pending_view_events_created_at',
+          }),
+        );
+
+        final dao = database.pendingViewEventsDao;
+        await dao.enqueue(
+          PendingViewEvent(
+            id: 'upgrade-view-id',
+            videoId:
+                'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+            videoPubkey: testPubkey,
+            userPubkey: testPubkey,
+            watchDurationMs: 2500,
+            trafficSource: 'home',
+            status: PendingViewEventStatus.pending,
+            createdAt: DateTime.utc(2026, 5),
+          ),
+        );
+
+        final fetched = await dao.getById('upgrade-view-id');
+        expect(fetched, isNotNull);
+        expect(fetched!.status, PendingViewEventStatus.pending);
+        expect(fetched.watchDurationMs, 2500);
+      });
+
+      test(
+        'schema parity — pending_view_events fresh-install matches runtime '
+        'CREATE-IF-NOT-EXISTS path',
+        () async {
+          final freshColumns = await _collectTableInfo(
+            database,
+            'pending_view_events',
+          );
+          final freshIndexes = await _collectIndexNames(
+            database,
+            'pending_view_events',
+          );
+
+          expect(
+            freshColumns,
+            isNotEmpty,
+            reason:
+                'precondition: fresh install should have pending_view_events',
+          );
+
+          await database.customStatement('DROP TABLE pending_view_events');
+          for (final indexName in freshIndexes) {
+            await database.customStatement('DROP INDEX IF EXISTS $indexName');
+          }
+          await database.close();
+
+          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+          await database
+              .customSelect(
+                "SELECT name FROM sqlite_master WHERE type='table' "
+                "AND name='pending_view_events'",
+              )
+              .get();
+
+          final recreatedColumns = await _collectTableInfo(
+            database,
+            'pending_view_events',
+          );
+          final recreatedIndexes = await _collectIndexNames(
+            database,
+            'pending_view_events',
+          );
+
+          expect(recreatedColumns, equals(freshColumns));
+          expect(recreatedIndexes, equals(freshIndexes));
+        },
+      );
+
       test('does not delete non-expired data', () async {
         final eventsDao = database.nostrEventsDao;
         final profileStatsDao = database.profileStatsDao;

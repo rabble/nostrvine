@@ -54,6 +54,7 @@ import 'package:openvine/widgets/video_feed_item/video_author_info_section.dart'
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/video_feed_item/video_interactions_bloc_key.dart';
 import 'package:openvine/widgets/video_feed_item/video_player_subtitle_layer.dart';
+import 'package:openvine/widgets/video_metrics_tracker.dart';
 import 'package:openvine/widgets/web_video_auth_header_provider.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
 import 'package:openvine/widgets/web_video_player.dart';
@@ -891,6 +892,8 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                                         currentIndex: state.currentIndex,
                                         hasMore: state.canLoadMore,
                                         isLoadingMore: state.isLoadingMore,
+                                        trafficSource: widget.trafficSource,
+                                        sourceDetail: widget.sourceDetail,
                                         onActiveVideoChanged: (video, index) {
                                           _resumeAutoAdvanceAfterSwipe();
                                           FeedPerformanceTracker()
@@ -962,6 +965,9 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                                                   video.pubkey,
                                               controller: controller,
                                               contextTitle: widget.contextTitle,
+                                              trafficSource:
+                                                  widget.trafficSource,
+                                              sourceDetail: widget.sourceDetail,
                                               onInteracted:
                                                   _suppressAutoAdvance,
                                             );
@@ -1154,6 +1160,8 @@ class _WebFullscreenItem extends ConsumerWidget {
     required this.isOwnVideo,
     this.controller,
     this.contextTitle,
+    this.trafficSource = ViewTrafficSource.unknown,
+    this.sourceDetail,
     this.onInteracted,
   });
 
@@ -1162,6 +1170,8 @@ class _WebFullscreenItem extends ConsumerWidget {
   final bool isOwnVideo;
   final VideoPlayerController? controller;
   final String? contextTitle;
+  final ViewTrafficSource trafficSource;
+  final String? sourceDetail;
   final VoidCallback? onInteracted;
 
   @override
@@ -1206,70 +1216,76 @@ class _WebFullscreenItem extends ConsumerWidget {
                 ..add(const VideoInteractionsFetchRequested()),
         ),
       ],
-      child: Stack(
-        children: [
-          VideoOverlayActions(
-            video: video,
-            isVisible: true,
-            isActive: isActive,
-            hasBottomNavigation: false,
-            contextTitle: contextTitle,
-            isFullscreen: true,
-            topOffset: isOwnVideo ? 64 : 8,
-            onInteracted: onInteracted,
-            omitAuthorBlock: true,
-            // See _PooledFullscreenItemContent.build for the rationale —
-            // the action column lives in this outer Stack so it shares the
-            // same bottom anchor as the author info below and the two
-            // cannot vertically drift apart.
-            omitActionColumn: true,
-            // Top-of-screen scrim so the transparent app bar's white
-            // title / back button / More popover stay readable over
-            // light video frames.
-            showTopGradient: true,
-          ),
-          // 20 px above the Stack bottom (= comment-bar top). See
-          // _PooledFullscreenItemContent.build for why we drop the
-          // `viewPadding.bottom` term that the home feed uses.
-          PositionedDirectional(
-            bottom: 20,
-            start: 16,
-            end: 80,
-            child: AnimatedOpacity(
-              opacity: isActive ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 200),
-              child: VideoAuthorInfoSection(
-                video: video,
-                hasTextContent:
-                    video.content.isNotEmpty ||
-                    (video.title != null && video.title!.isNotEmpty),
-                subtitleLayer: video.hasSubtitles && controller != null
-                    ? VideoPlayerSubtitleLayer(
-                        video: video,
-                        controller: controller!,
-                      )
-                    : null,
-                onInteracted: onInteracted,
-              ),
+      child: VideoMetricsTracker(
+        video: video,
+        controller: isActive ? controller : null,
+        trafficSource: trafficSource,
+        sourceDetail: sourceDetail,
+        child: Stack(
+          children: [
+            VideoOverlayActions(
+              video: video,
+              isVisible: true,
+              isActive: isActive,
+              hasBottomNavigation: false,
+              contextTitle: contextTitle,
+              isFullscreen: true,
+              topOffset: isOwnVideo ? 64 : 8,
+              onInteracted: onInteracted,
+              omitAuthorBlock: true,
+              // See _PooledFullscreenItemContent.build for the rationale —
+              // the action column lives in this outer Stack so it shares the
+              // same bottom anchor as the author info below and the two
+              // cannot vertically drift apart.
+              omitActionColumn: true,
+              // Top-of-screen scrim so the transparent app bar's white
+              // title / back button / More popover stay readable over
+              // light video frames.
+              showTopGradient: true,
             ),
-          ),
-          PositionedDirectional(
-            bottom: 20,
-            end: 12,
-            child: AnimatedOpacity(
-              opacity: isActive ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 200),
-              child: KeyboardAwareTopFade(
-                child: VideoOverlayActionColumn(
+            // 20 px above the Stack bottom (= comment-bar top). See
+            // _PooledFullscreenItemContent.build for why we drop the
+            // `viewPadding.bottom` term that the home feed uses.
+            PositionedDirectional(
+              bottom: 20,
+              start: 16,
+              end: 80,
+              child: AnimatedOpacity(
+                opacity: isActive ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 200),
+                child: VideoAuthorInfoSection(
                   video: video,
-                  isFullscreen: true,
+                  hasTextContent:
+                      video.content.isNotEmpty ||
+                      (video.title != null && video.title!.isNotEmpty),
+                  subtitleLayer: video.hasSubtitles && controller != null
+                      ? VideoPlayerSubtitleLayer(
+                          video: video,
+                          controller: controller!,
+                        )
+                      : null,
                   onInteracted: onInteracted,
                 ),
               ),
             ),
-          ),
-          _WebFullscreenLoadingModerationOverlay(video: video),
-        ],
+            PositionedDirectional(
+              bottom: 20,
+              end: 12,
+              child: AnimatedOpacity(
+                opacity: isActive ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 200),
+                child: KeyboardAwareTopFade(
+                  child: VideoOverlayActionColumn(
+                    video: video,
+                    isFullscreen: true,
+                    onInteracted: onInteracted,
+                  ),
+                ),
+              ),
+            ),
+            _WebFullscreenLoadingModerationOverlay(video: video),
+          ],
+        ),
       ),
     );
   }

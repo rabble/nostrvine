@@ -34,6 +34,7 @@ const _notificationRetentionDays = 7;
     DmMessageReactions,
     Conversations,
     OutgoingDms,
+    PendingViewEvents,
   ],
   daos: [
     UserProfilesDao,
@@ -53,6 +54,7 @@ const _notificationRetentionDays = 7;
     DmReactionsDao,
     ConversationsDao,
     OutgoingDmsDao,
+    PendingViewEventsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -530,6 +532,41 @@ class AppDatabase extends _$AppDatabase {
     await customStatement('''
       CREATE INDEX IF NOT EXISTS idx_dm_reactions_owner_created
       ON dm_message_reactions (owner_pubkey, created_at)
+    ''');
+
+    final pendingViewEventsResult = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type='table' "
+      "AND name='pending_view_events'",
+    ).get();
+
+    if (pendingViewEventsResult.isEmpty) {
+      await customStatement('''
+        CREATE TABLE pending_view_events (
+          id TEXT NOT NULL PRIMARY KEY,
+          video_id TEXT NOT NULL,
+          video_pubkey TEXT NOT NULL,
+          video_vine_id TEXT,
+          user_pubkey TEXT NOT NULL,
+          watch_duration_ms INTEGER NOT NULL,
+          total_duration_ms INTEGER,
+          loop_count INTEGER,
+          traffic_source TEXT NOT NULL,
+          source_detail TEXT,
+          status TEXT NOT NULL,
+          retry_count INTEGER NOT NULL DEFAULT 0,
+          last_error TEXT,
+          last_attempt_at INTEGER,
+          created_at INTEGER NOT NULL
+        )
+      ''');
+    }
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_pending_view_events_user_status
+      ON pending_view_events (user_pubkey, status)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_pending_view_events_created_at
+      ON pending_view_events (created_at)
     ''');
 
     // Populate new columns from existing JSON data blobs

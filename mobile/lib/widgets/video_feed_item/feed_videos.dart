@@ -24,7 +24,10 @@ import 'package:openvine/screens/feed/feed_auto_advance_error_listener.dart';
 import 'package:openvine/screens/feed/pooled_age_restricted_retry.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
+import 'package:openvine/services/view_event_publisher.dart'
+    show ViewTrafficSource;
 import 'package:openvine/utils/scroll_driven_opacity.dart';
+import 'package:openvine/widgets/divine_video_metrics_tracker.dart';
 import 'package:openvine/widgets/video_feed_item/blurred_video_backdrop.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
@@ -47,6 +50,8 @@ class FeedVideos extends ConsumerStatefulWidget {
     this.hasMore = false,
     this.isLoadingMore = false,
     this.onActiveVideoChanged,
+    this.trafficSource = ViewTrafficSource.unknown,
+    this.sourceDetail,
     super.key,
   });
 
@@ -76,6 +81,9 @@ class FeedVideos extends ConsumerStatefulWidget {
 
   /// Called when the active (visible) video changes.
   final void Function(VideoEvent video, int index)? onActiveVideoChanged;
+
+  final ViewTrafficSource trafficSource;
+  final String? sourceDetail;
 
   @override
   ConsumerState<FeedVideos> createState() => FeedVideosState();
@@ -302,14 +310,22 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
           if (index < 0 || index >= widget.videos.length) {
             return const SizedBox.shrink();
           }
-          return _Overlay(
+          final video = widget.videos[index];
+          return DivineVideoMetricsTracker(
+            video: video,
             controller: controller,
-            video: widget.videos[index],
-            index: index,
-            isActive: isActive,
-            contextTitle: widget.contextTitle,
-            onToggleAutoAdvance: _toggleAutoAdvance,
-            onSuppressAutoAdvance: _suppressAutoAdvance,
+            isActive: isFeedActive && isActive,
+            trafficSource: widget.trafficSource,
+            sourceDetail: widget.sourceDetail,
+            child: _Overlay(
+              controller: controller,
+              video: video,
+              index: index,
+              isActive: isActive,
+              contextTitle: widget.contextTitle,
+              onToggleAutoAdvance: _toggleAutoAdvance,
+              onSuppressAutoAdvance: _suppressAutoAdvance,
+            ),
           );
         },
       ),

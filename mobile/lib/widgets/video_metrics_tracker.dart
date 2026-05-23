@@ -8,7 +8,10 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/services/analytics_service.dart';
+import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
+import 'package:openvine/services/seen_videos_service.dart';
 import 'package:openvine/services/view_event_publisher.dart'
     show ViewTrafficSource;
 import 'package:unified_logger/unified_logger.dart';
@@ -22,8 +25,9 @@ class VideoMetricsTracker extends ConsumerStatefulWidget {
     required this.child,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
+    @visibleForTesting DateTime Function()? clock,
     super.key,
-  });
+  }) : _clock = clock ?? DateTime.now;
 
   final VideoEvent video;
   final VideoPlayerController? controller;
@@ -34,6 +38,8 @@ class VideoMetricsTracker extends ConsumerStatefulWidget {
 
   /// Additional context for the traffic source (e.g., hashtag name).
   final String? sourceDetail;
+
+  final DateTime Function() _clock;
 
   @override
   ConsumerState<VideoMetricsTracker> createState() =>
@@ -57,15 +63,19 @@ class _VideoMetricsTrackerState extends ConsumerState<VideoMetricsTracker> {
   bool _hasCompletedPlaybackTrace = false;
 
   // Save provider references for safe access during dispose
-  dynamic _analyticsService;
-  dynamic _authService;
-  dynamic _seenVideosService;
+  late AnalyticsService _analyticsService;
+  ProviderSubscription<AnalyticsService>? _analyticsServiceSubscription;
+  late AuthService _authService;
+  late SeenVideosService _seenVideosService;
 
   @override
   void initState() {
     super.initState();
-    // CRITICAL: Save provider references BEFORE any async work
     _analyticsService = ref.read(analyticsServiceProvider);
+    _analyticsServiceSubscription = ref.listenManual<AnalyticsService>(
+      analyticsServiceProvider,
+      (_, next) => _analyticsService = next,
+    );
     _authService = ref.read(authServiceProvider);
     _seenVideosService = ref.read(seenVideosServiceProvider);
     _initializeTracking();
@@ -75,15 +85,39 @@ class _VideoMetricsTrackerState extends ConsumerState<VideoMetricsTracker> {
   void didUpdateWidget(VideoMetricsTracker oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // If video changed, send end event for previous video and start tracking new one
-    if (oldWidget.video.id != widget.video.id) {
-      _sendVideoEndEvent();
+    final videoChanged = oldWidget.video.id != widget.video.id;
+    final controllerChanged = oldWidget.controller != widget.controller;
+    final becameInactive =
+        oldWidget.controller != null && widget.controller == null;
+    final becameActive =
+        oldWidget.controller == null && widget.controller != null;
+
+    if (videoChanged) {
+      _sendVideoEndEvent(
+        finalizedVideo: oldWidget.video,
+        finalizedController: oldWidget.controller,
+      );
+      _positionTimer?.cancel();
+      _removeControllerListeners(oldWidget.controller);
       _resetTracking();
       _initializeTracking();
+      return;
     }
 
-    // If controller changed, update listeners
-    if (oldWidget.controller != widget.controller) {
+    if (becameInactive) {
+      _sendVideoEndEvent(finalizedController: oldWidget.controller);
+      _positionTimer?.cancel();
+      _removeControllerListeners(oldWidget.controller);
+      return;
+    }
+
+    if (becameActive) {
+      _resetTracking();
+      _initializeTracking();
+      return;
+    }
+
+    if (controllerChanged) {
       _removeControllerListeners(oldWidget.controller);
       _addControllerListeners();
     }
@@ -177,19 +211,21 @@ class _VideoMetricsTrackerState extends ConsumerState<VideoMetricsTracker> {
     });
   }
 
-  void _updateWatchDuration() {
+  void _updateWatchDuration({VideoPlayerController? controller}) {
     if (_viewStartTime == null) return;
 
-    final controller = widget.controller;
-    if (controller == null || !controller.value.isInitialized) return;
+    final activeController = controller ?? widget.controller;
+    if (activeController == null || !activeController.value.isInitialized) {
+      return;
+    }
 
     // Only count time when video is actually playing
-    if (controller.value.isPlaying) {
-      final now = DateTime.now();
+    if (activeController.value.isPlaying) {
+      final now = widget._clock();
       final sessionDuration = now.difference(_viewStartTime!);
 
       // Update total watch duration (capped by actual video length to handle pauses)
-      final videoDuration = controller.value.duration;
+      final videoDuration = activeController.value.duration;
       if (videoDuration > Duration.zero) {
         final effectiveDuration = sessionDuration > videoDuration
             ? videoDuration
@@ -200,7 +236,7 @@ class _VideoMetricsTrackerState extends ConsumerState<VideoMetricsTracker> {
   }
 
   void _trackViewStart() {
-    _viewStartTime = DateTime.now();
+    _viewStartTime = widget._clock();
     _hasTrackedView = true;
     _hasSentEndEvent = false;
 
@@ -219,14 +255,18 @@ class _VideoMetricsTrackerState extends ConsumerState<VideoMetricsTracker> {
     );
   }
 
-  void _sendVideoEndEvent() {
+  void _sendVideoEndEvent({
+    VideoEvent? finalizedVideo,
+    VideoPlayerController? finalizedController,
+  }) {
     if (!_hasTrackedView || _hasSentEndEvent) return;
     if (_viewStartTime == null) return;
 
-    _updateWatchDuration(); // Final update
+    _updateWatchDuration(controller: finalizedController); // Final update
 
-    final controller = widget.controller;
+    final controller = finalizedController ?? widget.controller;
     final totalDuration = controller?.value.duration;
+    final video = finalizedVideo ?? widget.video;
 
     // Only send if we have meaningful data
     if (_totalWatchDuration.inSeconds > 0) {
@@ -235,7 +275,7 @@ class _VideoMetricsTrackerState extends ConsumerState<VideoMetricsTracker> {
         // CRITICAL: Never use ref.read() in dispose-related methods
         // Analytics service publishes Kind 22236 Nostr view event
         _analyticsService.trackDetailedVideoViewWithUser(
-          widget.video,
+          video,
           userId: _authService.currentPublicKeyHex,
           source: 'mobile',
           eventType: 'view_end',
@@ -252,7 +292,7 @@ class _VideoMetricsTrackerState extends ConsumerState<VideoMetricsTracker> {
 
         // Persist to local storage for "show fresh content" feature
         _seenVideosService.recordVideoView(
-          widget.video.id,
+          video.id,
           loopCount: _loopCount,
           watchDuration: _totalWatchDuration,
         );
@@ -289,6 +329,7 @@ class _VideoMetricsTrackerState extends ConsumerState<VideoMetricsTracker> {
     _positionTimer?.cancel();
     _sendVideoEndEvent(); // Send final metrics when widget is disposed
     _removeControllerListeners(widget.controller);
+    _analyticsServiceSubscription?.close();
     super.dispose();
   }
 

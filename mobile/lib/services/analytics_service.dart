@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:db_client/db_client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/services/background_activity_manager.dart';
@@ -22,12 +23,19 @@ import 'package:unified_logger/unified_logger.dart';
 class AnalyticsService implements BackgroundAwareService {
   AnalyticsService({
     ViewEventPublisher? viewEventPublisher,
+    PendingViewEventsDao? pendingViewEventsDao,
+    Future<void> Function()? flushPendingViewEvents,
     @visibleForTesting bool? disableNostrPublishing,
   }) : _viewEventPublisher = viewEventPublisher,
+       _pendingViewEventsDao = pendingViewEventsDao,
+       _flushPendingViewEvents = flushPendingViewEvents,
        _disableNostrPublishing = disableNostrPublishing ?? false;
 
   /// The view event publisher for Kind 22236 Nostr events.
   ViewEventPublisher? _viewEventPublisher;
+
+  final PendingViewEventsDao? _pendingViewEventsDao;
+  final Future<void> Function()? _flushPendingViewEvents;
 
   /// Testing flag to disable Nostr publishing in unit tests.
   final bool _disableNostrPublishing;
@@ -210,19 +218,94 @@ class AnalyticsService implements BackgroundAwareService {
       category: LogCategory.video,
     );
 
-    // Publish Kind 22236 Nostr view event for view_end with meaningful data
     if (eventType == 'view_end' &&
         watchDuration != null &&
         watchDuration.inSeconds >= 1 &&
         !_disableNostrPublishing) {
-      _publishNostrViewEvent(
+      final enqueued = await _enqueuePendingViewEvent(
         video: video,
+        userPubkey: userId,
         watchDuration: watchDuration,
+        totalDuration: totalDuration,
         trafficSource: trafficSource,
         sourceDetail: sourceDetail,
         loopCount: loopCount,
       );
+      if (!enqueued) {
+        _publishNostrViewEvent(
+          video: video,
+          watchDuration: watchDuration,
+          trafficSource: trafficSource,
+          sourceDetail: sourceDetail,
+          loopCount: loopCount,
+        );
+      }
     }
+  }
+
+  Future<bool> _enqueuePendingViewEvent({
+    required VideoEvent video,
+    required String? userPubkey,
+    required Duration watchDuration,
+    required Duration? totalDuration,
+    required ViewTrafficSource trafficSource,
+    String? sourceDetail,
+    int? loopCount,
+  }) async {
+    final dao = _pendingViewEventsDao;
+    if (dao == null || userPubkey == null) return false;
+
+    final createdAt = DateTime.now();
+    try {
+      await dao.enqueue(
+        PendingViewEvent(
+          id: '${video.id}_${userPubkey}_${createdAt.microsecondsSinceEpoch}',
+          videoId: video.id,
+          videoPubkey: video.pubkey,
+          videoVineId: video.vineId,
+          userPubkey: userPubkey,
+          watchDurationMs: watchDuration.inMilliseconds,
+          totalDurationMs: totalDuration?.inMilliseconds,
+          loopCount: loopCount,
+          trafficSource: _trafficSourceToString(trafficSource),
+          sourceDetail: sourceDetail,
+          status: PendingViewEventStatus.pending,
+          createdAt: createdAt,
+        ),
+      );
+    } catch (e) {
+      Log.warning(
+        'Failed to enqueue pending view event: $e',
+        name: 'AnalyticsService',
+        category: LogCategory.video,
+      );
+      return false;
+    }
+
+    try {
+      await _flushPendingViewEvents?.call();
+    } catch (e) {
+      Log.debug(
+        'Failed to flush pending view events immediately: $e',
+        name: 'AnalyticsService',
+        category: LogCategory.video,
+      );
+    }
+    return true;
+  }
+
+  String _trafficSourceToString(ViewTrafficSource source) {
+    return switch (source) {
+      ViewTrafficSource.home => 'home',
+      ViewTrafficSource.discoveryNew => 'discovery:new',
+      ViewTrafficSource.discoveryClassic => 'discovery:classic',
+      ViewTrafficSource.discoveryForYou => 'discovery:foryou',
+      ViewTrafficSource.discoveryPopular => 'discovery:popular',
+      ViewTrafficSource.profile => 'profile',
+      ViewTrafficSource.share => 'share',
+      ViewTrafficSource.search => 'search',
+      ViewTrafficSource.unknown => 'unknown',
+    };
   }
 
   /// Publish Kind 22236 ephemeral view event to Nostr relays.

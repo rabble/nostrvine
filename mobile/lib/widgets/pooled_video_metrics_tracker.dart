@@ -8,6 +8,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/services/analytics_service.dart';
+import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/seen_videos_service.dart';
 import 'package:openvine/services/view_event_publisher.dart'
     show ViewTrafficSource;
 import 'package:pooled_video_player/pooled_video_player.dart';
@@ -26,8 +29,9 @@ class PooledVideoMetricsTracker extends ConsumerStatefulWidget {
     required this.child,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
+    @visibleForTesting DateTime Function()? clock,
     super.key,
-  });
+  }) : _clock = clock ?? DateTime.now;
 
   final VideoEvent video;
   final Player player;
@@ -39,6 +43,8 @@ class PooledVideoMetricsTracker extends ConsumerStatefulWidget {
 
   /// Additional context for the traffic source (e.g., hashtag name).
   final String? sourceDetail;
+
+  final DateTime Function() _clock;
 
   @override
   ConsumerState<PooledVideoMetricsTracker> createState() =>
@@ -59,14 +65,19 @@ class _PooledVideoMetricsTrackerState
 
   // Save provider references for safe access during dispose
   // CRITICAL: Never use ref.read() in dispose-related methods
-  dynamic _analyticsService;
-  dynamic _authService;
-  dynamic _seenVideosService;
+  late AnalyticsService _analyticsService;
+  ProviderSubscription<AnalyticsService>? _analyticsServiceSubscription;
+  late AuthService _authService;
+  late SeenVideosService _seenVideosService;
 
   @override
   void initState() {
     super.initState();
     _analyticsService = ref.read(analyticsServiceProvider);
+    _analyticsServiceSubscription = ref.listenManual<AnalyticsService>(
+      analyticsServiceProvider,
+      (_, next) => _analyticsService = next,
+    );
     _authService = ref.read(authServiceProvider);
     _seenVideosService = ref.read(seenVideosServiceProvider);
 
@@ -81,7 +92,7 @@ class _PooledVideoMetricsTrackerState
 
     // Video changed — publish for old video, start tracking new one
     if (oldWidget.video.id != widget.video.id) {
-      _finalizeAndPublish();
+      _finalizeAndPublish(finalizedVideo: oldWidget.video);
       _resetTracking();
       if (widget.isActive) _startTracking();
       return;
@@ -144,10 +155,10 @@ class _PooledVideoMetricsTrackerState
     _playingSub = player.stream.playing.listen((isPlaying) {
       if (isPlaying && !_isPlaying) {
         // Started playing
-        _lastPlayStartTime = DateTime.now();
+        _lastPlayStartTime = widget._clock();
       } else if (!isPlaying && _isPlaying && _lastPlayStartTime != null) {
         // Stopped playing — accumulate watch time
-        _totalWatchDuration += DateTime.now().difference(_lastPlayStartTime!);
+        _totalWatchDuration += widget._clock().difference(_lastPlayStartTime!);
         _lastPlayStartTime = null;
       }
       _isPlaying = isPlaying;
@@ -179,7 +190,7 @@ class _PooledVideoMetricsTrackerState
     try {
       if (player.state.playing) {
         _isPlaying = true;
-        _lastPlayStartTime = DateTime.now();
+        _lastPlayStartTime = widget._clock();
       }
     } catch (_) {
       // Player may be disposed
@@ -193,17 +204,17 @@ class _PooledVideoMetricsTrackerState
     _positionSub = null;
   }
 
-  void _finalizeAndPublish() {
+  void _finalizeAndPublish({VideoEvent? finalizedVideo}) {
     // Accumulate any remaining playing time
     if (_isPlaying && _lastPlayStartTime != null) {
-      _totalWatchDuration += DateTime.now().difference(_lastPlayStartTime!);
+      _totalWatchDuration += widget._clock().difference(_lastPlayStartTime!);
       _lastPlayStartTime = null;
     }
     _isPlaying = false;
-    _publishEvents();
+    _publishEvents(finalizedVideo ?? widget.video);
   }
 
-  void _publishEvents() {
+  void _publishEvents(VideoEvent video) {
     if (_hasSentEndEvent) return;
     if (_totalWatchDuration.inSeconds < 1) return;
 
@@ -219,7 +230,7 @@ class _PooledVideoMetricsTrackerState
 
       // Analytics service — publishes Kind 22236 Nostr view event
       _analyticsService.trackDetailedVideoViewWithUser(
-        widget.video,
+        video,
         userId: _authService.currentPublicKeyHex,
         source: 'mobile',
         eventType: 'view_end',
@@ -238,7 +249,7 @@ class _PooledVideoMetricsTrackerState
 
       // Persist to local storage for "show fresh content" feature
       _seenVideosService.recordVideoView(
-        widget.video.id,
+        video.id,
         loopCount: _loopCount,
         watchDuration: _totalWatchDuration,
       );
@@ -271,6 +282,7 @@ class _PooledVideoMetricsTrackerState
   void dispose() {
     _cancelSubscriptions();
     _finalizeAndPublish();
+    _analyticsServiceSubscription?.close();
     super.dispose();
   }
 

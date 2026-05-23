@@ -159,6 +159,59 @@ final class OutgoingDmRetryServiceProvider
 String _$outgoingDmRetryServiceHash() =>
     r'ccbee39cf920a0847be410ca804e048200962d38';
 
+/// Auto-sweep service for the durable `pending_view_events` queue.
+
+@ProviderFor(viewEventRetryService)
+const viewEventRetryServiceProvider = ViewEventRetryServiceProvider._();
+
+/// Auto-sweep service for the durable `pending_view_events` queue.
+
+final class ViewEventRetryServiceProvider
+    extends
+        $FunctionalProvider<
+          ViewEventRetryService?,
+          ViewEventRetryService?,
+          ViewEventRetryService?
+        >
+    with $Provider<ViewEventRetryService?> {
+  /// Auto-sweep service for the durable `pending_view_events` queue.
+  const ViewEventRetryServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'viewEventRetryServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$viewEventRetryServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<ViewEventRetryService?> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ViewEventRetryService? create(Ref ref) {
+    return viewEventRetryService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ViewEventRetryService? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ViewEventRetryService?>(value),
+    );
+  }
+}
+
+String _$viewEventRetryServiceHash() =>
+    r'3d2bf5f8def6302b9cb64d60bc35e8a792dcc15f';
+
 /// Analytics service with opt-out support.
 ///
 /// Publishes Kind 22236 ephemeral Nostr view events via [ViewEventPublisher].
@@ -214,7 +267,7 @@ final class AnalyticsServiceProvider
   }
 }
 
-String _$analyticsServiceHash() => r'e6375a363ad078b11017d729f4a53e062b855f4e';
+String _$analyticsServiceHash() => r'afdabdf0b1d7c769d7b1219062de928f17d34633';
 
 /// Hashtag cache service for persistent hashtag storage
 

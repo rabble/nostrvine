@@ -27,6 +27,7 @@ import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/feed_settings_menu.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
+import 'package:openvine/widgets/pooled_video_metrics_tracker.dart';
 import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
 import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
@@ -767,7 +768,10 @@ void main() {
       );
     }
 
-    void stubControllerForVideo(VideoEvent video) {
+    void stubControllerForVideo(
+      VideoEvent video, {
+      VideoIndexState indexState = const VideoIndexState(),
+    }) {
       when(() => videoFeedController.videoCount).thenReturn(1);
       when(
         () => videoFeedController.videos,
@@ -776,7 +780,7 @@ void main() {
       when(() => videoFeedController.onPageChanged(any())).thenReturn(null);
       when(
         () => videoFeedController.getIndexNotifier(any()),
-      ).thenReturn(ValueNotifier(const VideoIndexState()));
+      ).thenReturn(ValueNotifier(indexState));
     }
 
     testWidgets(
@@ -851,6 +855,34 @@ void main() {
         expect(pooledVideoFeed.physics, isA<AlwaysScrollableScrollPhysics>());
       },
     );
+
+    testWidgets('mounts a metrics tracker for pooled feed playback', (
+      tester,
+    ) async {
+      final positionController = StreamController<Duration>.broadcast();
+      addTearDown(positionController.close);
+      final player = _stubPlayer(positionController.stream);
+      final testVideo = createTestVideoEvent();
+      final state = VideoFeedBlocState(
+        status: VideoFeedStatus.success,
+        videos: [testVideo],
+      );
+
+      stubControllerForVideo(
+        testVideo,
+        indexState: VideoIndexState(player: player),
+      );
+
+      await tester.pumpWidget(buildSubject(state));
+      await tester.pump();
+
+      final tracker = tester.widget<PooledVideoMetricsTracker>(
+        find.byType(PooledVideoMetricsTracker),
+      );
+
+      expect(tracker.video.id, equals(testVideo.id));
+      expect(tracker.isActive, isTrue);
+    });
   });
 
   group('VideoFeedView native-player branch', () {

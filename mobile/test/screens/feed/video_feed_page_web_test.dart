@@ -5,9 +5,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
+import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
-import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
+import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
+import 'package:openvine/widgets/video_metrics_tracker.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart'
     as video_platform;
@@ -19,10 +21,14 @@ import '../../test_data/video_test_data.dart';
 class MockVideoFeedBloc extends MockBloc<VideoFeedEvent, VideoFeedBlocState>
     implements VideoFeedBloc {}
 
+class _MockVideoVolumeCubit extends MockCubit<VideoVolumeState>
+    implements VideoVolumeCubit {}
+
 void main() {
   group('VideoFeedView web', () {
     late MockVideoFeedBloc mockBloc;
     late MockProfileRepository mockProfileRepository;
+    late _MockVideoVolumeCubit videoVolumeCubit;
     late video_platform.VideoPlayerPlatform originalPlatform;
     late FakeVideoPlayerController webController;
 
@@ -33,17 +39,21 @@ void main() {
     setUp(() {
       mockBloc = MockVideoFeedBloc();
       mockProfileRepository = createMockProfileRepository();
+      videoVolumeCubit = _MockVideoVolumeCubit();
       originalPlatform = video_platform.VideoPlayerPlatform.instance;
       video_platform.VideoPlayerPlatform.instance = FakeVideoPlayerPlatform();
       webController = FakeVideoPlayerController();
       when(() => mockBloc.stream).thenAnswer((_) => const Stream.empty());
+      when(() => videoVolumeCubit.state).thenReturn(const VideoVolumeState());
     });
 
     tearDown(() {
       video_platform.VideoPlayerPlatform.instance = originalPlatform;
     });
 
-    testWidgets('renders Auto action in the home web overlay', (tester) async {
+    testWidgets('renders action column in the home web overlay', (
+      tester,
+    ) async {
       final video = createTestVideoEvent(
         id: 'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234',
         pubkey:
@@ -70,6 +80,7 @@ void main() {
               BlocProvider<VideoPlaybackStatusCubit>(
                 create: (_) => VideoPlaybackStatusCubit(),
               ),
+              BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
             ],
             child: VideoFeedView(
               webControllerFactory: ({required url, required headers}) =>
@@ -81,7 +92,8 @@ void main() {
       await tester.pump();
 
       expect(find.byType(WebVideoFeed), findsOneWidget);
-      expect(find.byType(AutoActionButton), findsOneWidget);
+      expect(find.byType(VideoMetricsTracker), findsOneWidget);
+      expect(find.byType(VideoOverlayActionColumn), findsOneWidget);
     }, skip: !kIsWeb);
   });
 }

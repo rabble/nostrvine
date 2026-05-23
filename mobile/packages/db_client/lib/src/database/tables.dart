@@ -1163,3 +1163,59 @@ class OutgoingDms extends Table {
     ),
   ];
 }
+
+/// Durable queue of finalized video view events awaiting relay publish.
+@DataClassName('PendingViewEventRow')
+class PendingViewEvents extends Table {
+  @override
+  String get tableName => 'pending_view_events';
+
+  TextColumn get id => text()();
+
+  TextColumn get videoId => text().named('video_id')();
+
+  TextColumn get videoPubkey => text().named('video_pubkey')();
+
+  TextColumn get videoVineId => text().nullable().named('video_vine_id')();
+
+  TextColumn get userPubkey => text().named('user_pubkey')();
+
+  IntColumn get watchDurationMs => integer().named('watch_duration_ms')();
+
+  IntColumn get totalDurationMs =>
+      integer().nullable().named('total_duration_ms')();
+
+  IntColumn get loopCount => integer().nullable().named('loop_count')();
+
+  TextColumn get trafficSource => text().named('traffic_source')();
+
+  TextColumn get sourceDetail => text().nullable().named('source_detail')();
+
+  TextColumn get status => text()();
+
+  IntColumn get retryCount =>
+      integer().withDefault(const Constant(0)).named('retry_count')();
+
+  TextColumn get lastError => text().nullable().named('last_error')();
+
+  DateTimeColumn get lastAttemptAt =>
+      dateTime().nullable().named('last_attempt_at')();
+
+  DateTimeColumn get createdAt => dateTime().named('created_at')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  List<Index> get indexes => [
+    Index(
+      'idx_pending_view_events_user_status',
+      'CREATE INDEX IF NOT EXISTS idx_pending_view_events_user_status '
+          'ON pending_view_events (user_pubkey, status)',
+    ),
+    Index(
+      'idx_pending_view_events_created_at',
+      'CREATE INDEX IF NOT EXISTS idx_pending_view_events_created_at '
+          'ON pending_view_events (created_at)',
+    ),
+  ];
+}

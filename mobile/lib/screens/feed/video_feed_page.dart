@@ -33,15 +33,19 @@ import 'package:openvine/screens/feed/feed_video_overlay.dart';
 import 'package:openvine/screens/feed/pooled_age_restricted_retry.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/startup_performance_service.dart';
+import 'package:openvine/services/view_event_publisher.dart'
+    show ViewTrafficSource;
 import 'package:openvine/utils/pooled_player_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/nav_rounded_shell.dart';
+import 'package:openvine/widgets/pooled_video_metrics_tracker.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
 import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_interactions_bloc_key.dart';
 import 'package:openvine/widgets/video_feed_item/video_loading_placeholder.dart';
+import 'package:openvine/widgets/video_metrics_tracker.dart';
 import 'package:openvine/widgets/web_video_auth_header_provider.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
 import 'package:openvine/widgets/web_video_player.dart';
@@ -51,6 +55,7 @@ import 'package:pooled_video_player/pooled_video_player.dart'
     as pvp
     show VideoErrorType;
 import 'package:unified_logger/unified_logger.dart';
+import 'package:video_player/video_player.dart';
 
 class VideoFeedPage extends ConsumerWidget {
   /// Route name for this screen.
@@ -641,6 +646,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                         isActive: _isNewFeedActive,
                         hasMore: state.hasMore,
                         isLoadingMore: state.isLoadingMore,
+                        trafficSource: ViewTrafficSource.home,
                         onActiveVideoChanged: (video, index) {
                           _resumeAutoAdvanceAfterSwipe();
                           FeedPerformanceTracker().startVideoSwipeTracking(
@@ -704,6 +710,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                                 video: video,
                                 index: index,
                                 isActive: isActive,
+                                controller: controller,
                                 pagePosition: _pagePosition,
                                 contextTitle: state.feedContextTitle,
                                 listSources: listSources,
@@ -1103,6 +1110,7 @@ class _WebVideoFeedItem extends ConsumerWidget {
     required this.index,
     required this.isActive,
     required this.pagePosition,
+    this.controller,
     this.contextTitle,
     this.listSources,
     this.onInteracted,
@@ -1111,6 +1119,7 @@ class _WebVideoFeedItem extends ConsumerWidget {
   final VideoEvent video;
   final int index;
   final bool isActive;
+  final VideoPlayerController? controller;
   final ValueNotifier<double> pagePosition;
   final String? contextTitle;
   final Set<String>? listSources;
@@ -1145,13 +1154,18 @@ class _WebVideoFeedItem extends ConsumerWidget {
             )
             ..add(const VideoInteractionsSubscriptionRequested())
             ..add(const VideoInteractionsFetchRequested()),
-      child: FeedVideoOverlay(
+      child: VideoMetricsTracker(
         video: video,
-        isActive: isActive,
-        pagePosition: pagePosition,
-        index: index,
-        listSources: listSources,
-        onInteracted: onInteracted,
+        controller: isActive ? controller : null,
+        trafficSource: ViewTrafficSource.home,
+        child: FeedVideoOverlay(
+          video: video,
+          isActive: isActive,
+          pagePosition: pagePosition,
+          index: index,
+          listSources: listSources,
+          onInteracted: onInteracted,
+        ),
       ),
     );
   }
@@ -1280,35 +1294,45 @@ class _PooledVideoFeedItemContentState
               ),
             );
           },
-          overlayBuilder: (context, videoController, player, feedController) =>
-              FeedAutoAdvanceCompletionListener(
-                player: player,
-                isEnabled: widget.isActive && widget.isAutoAdvanceActive,
-                onCompleted: widget.onAutoAdvanceCompleted ?? () {},
-                child: Stack(
-                  children: [
-                    FeedVideoOverlay(
-                      video: video,
-                      isActive: widget.isActive,
-                      pagePosition: widget.pagePosition,
-                      index: widget.index,
-                      player: player,
-                      firstFrameFuture:
-                          videoController?.waitUntilFirstFrameRendered,
-                      listSources: widget.listSources,
-                      onInteracted: widget.onInteracted,
-                      onContentWarningRevealed: () {
-                        _contentWarningRevealed = true;
-                      },
-                    ),
-                    Positioned.fill(
-                      child: DoubleTapHeartOverlay(trigger: _heartTrigger),
-                    ),
-                    if (!video.isFromDivineServer)
-                      _SlowExternalVideoOverlay(index: widget.index),
-                  ],
+          overlayBuilder: (context, videoController, player, feedController) {
+            final overlay = Stack(
+              children: [
+                FeedVideoOverlay(
+                  video: video,
+                  isActive: widget.isActive,
+                  pagePosition: widget.pagePosition,
+                  index: widget.index,
+                  player: player,
+                  firstFrameFuture:
+                      videoController?.waitUntilFirstFrameRendered,
+                  listSources: widget.listSources,
+                  onInteracted: widget.onInteracted,
+                  onContentWarningRevealed: () {
+                    _contentWarningRevealed = true;
+                  },
                 ),
-              ),
+                Positioned.fill(
+                  child: DoubleTapHeartOverlay(trigger: _heartTrigger),
+                ),
+                if (!video.isFromDivineServer)
+                  _SlowExternalVideoOverlay(index: widget.index),
+              ],
+            );
+            return FeedAutoAdvanceCompletionListener(
+              player: player,
+              isEnabled: widget.isActive && widget.isAutoAdvanceActive,
+              onCompleted: widget.onAutoAdvanceCompleted ?? () {},
+              child: player == null
+                  ? overlay
+                  : PooledVideoMetricsTracker(
+                      video: video,
+                      player: player,
+                      isActive: widget.isActive,
+                      trafficSource: ViewTrafficSource.home,
+                      child: overlay,
+                    ),
+            );
+          },
         ),
       ),
     );

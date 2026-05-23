@@ -1827,6 +1827,10 @@ class _DivineAppState extends ConsumerState<DivineApp> {
     // without an explicit read it would never be created. See #4124.
     ref.watch(outgoingDmRetryServiceProvider);
 
+    // Eagerly create the view-event retry service so foreground sweeps
+    // run for the durable pending_view_events queue without a UI consumer.
+    ref.watch(viewEventRetryServiceProvider);
+
     // Eagerly create the notification realtime bridge so WS arrivals
     // land in the new repository snapshot the moment the repository is
     // available. The provider returns `null` until the repo is built;

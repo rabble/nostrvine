@@ -23,8 +23,13 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
+import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
+import 'package:openvine/services/seen_videos_service.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
+import 'package:openvine/services/view_event_publisher.dart'
+    show ViewTrafficSource;
+import 'package:openvine/widgets/divine_video_metrics_tracker.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
@@ -65,6 +70,31 @@ class _MockLikesRepository extends Mock implements LikesRepository {}
 class _MockCommentsRepository extends Mock implements CommentsRepository {}
 
 class _MockRepostsRepository extends Mock implements RepostsRepository {}
+
+class _NoopAnalyticsService extends AnalyticsService {
+  @override
+  Future<void> trackDetailedVideoViewWithUser(
+    VideoEvent video, {
+    required String? userId,
+    required String source,
+    required String eventType,
+    Duration? watchDuration,
+    Duration? totalDuration,
+    int? loopCount,
+    bool? completedVideo,
+    ViewTrafficSource trafficSource = ViewTrafficSource.unknown,
+    String? sourceDetail,
+  }) async {}
+}
+
+class _NoopSeenVideosService extends SeenVideosService {
+  @override
+  Future<void> recordVideoView(
+    String videoId, {
+    int? loopCount,
+    Duration? watchDuration,
+  }) async {}
+}
 
 // ---------------------------------------------------------------------------
 // Test data
@@ -161,7 +191,9 @@ List _buildOverrides({
   RepostsRepository? repostsRepository,
 }) {
   return [
-    ...getStandardTestOverrides(),
+    ...getStandardTestOverrides(mockAuthService: createMockAuthService()),
+    analyticsServiceProvider.overrideWithValue(_NoopAnalyticsService()),
+    seenVideosServiceProvider.overrideWithValue(_NoopSeenVideosService()),
     connectionStatusServiceProvider.overrideWithValue(
       _MockConnectionStatusService(),
     ),
@@ -472,6 +504,21 @@ void main() {
       );
       expect(feed.isActive, isFalse);
     });
+
+    testWidgets(
+      'mounts $DivineVideoMetricsTracker for active native playback',
+      (
+        tester,
+      ) async {
+        InfiniteVideoFeed.debugIsSupportedOverride = true;
+        final video = _makeVideo();
+
+        await _pumpFeedVideos(tester, videos: [video]);
+        await tester.pump(const Duration(seconds: 4));
+
+        expect(find.byType(DivineVideoMetricsTracker), findsOneWidget);
+      },
+    );
 
     testWidgets('route-aware callbacks toggle InfiniteVideoFeed activity', (
       tester,

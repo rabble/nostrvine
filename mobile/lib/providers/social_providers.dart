@@ -34,6 +34,7 @@ import 'package:openvine/services/pending_action_service.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
+import 'package:openvine/services/view_event_retry_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -215,13 +216,64 @@ OutgoingDmRetryService? outgoingDmRetryService(Ref ref) {
   return service;
 }
 
+/// Auto-sweep service for the durable `pending_view_events` queue.
+@Riverpod(keepAlive: true)
+ViewEventRetryService? viewEventRetryService(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+
+  ref.watch(currentAuthStateProvider);
+
+  final userPubkey = authService.currentPublicKeyHex;
+  if (userPubkey == null) return null;
+
+  final readiness = ref.watch(nostrSessionProvider);
+  if (!readiness.isReadyForActiveClient || readiness.pubkey != userPubkey) {
+    return null;
+  }
+
+  final db = ref.watch(databaseProvider);
+  final viewPublisher = ref.watch(viewEventPublisherProvider);
+  final foregroundController = StreamController<bool>();
+  ref.onDispose(foregroundController.close);
+
+  final service = ViewEventRetryService(
+    viewEventPublisher: viewPublisher,
+    pendingViewEventsDao: db.pendingViewEventsDao,
+    userPubkey: userPubkey,
+    appForegroundStream: foregroundController.stream,
+  );
+
+  service.initialize().catchError((e) {
+    Log.error(
+      'Failed to initialize ViewEventRetryService',
+      name: 'AppProviders',
+      error: e,
+    );
+  });
+
+  ref.listen<bool>(appForegroundProvider, (_, next) {
+    if (!foregroundController.isClosed) {
+      foregroundController.add(next);
+    }
+  }, fireImmediately: true);
+
+  ref.onDispose(service.dispose);
+  return service;
+}
+
 /// Analytics service with opt-out support.
 ///
 /// Publishes Kind 22236 ephemeral Nostr view events via [ViewEventPublisher].
 @Riverpod(keepAlive: true) // Keep alive to maintain singleton behavior
 AnalyticsService analyticsService(Ref ref) {
+  final db = ref.watch(databaseProvider);
   final viewPublisher = ref.watch(viewEventPublisherProvider);
-  final service = AnalyticsService(viewEventPublisher: viewPublisher);
+  final retryService = ref.watch(viewEventRetryServiceProvider);
+  final service = AnalyticsService(
+    viewEventPublisher: viewPublisher,
+    pendingViewEventsDao: db.pendingViewEventsDao,
+    flushPendingViewEvents: retryService?.sweep,
+  );
 
   // Ensure cleanup on disposal
   ref.onDispose(service.dispose);

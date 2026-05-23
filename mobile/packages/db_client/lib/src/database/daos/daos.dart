@@ -10,6 +10,7 @@ export 'notifications_dao.dart';
 export 'outgoing_dms_dao.dart';
 export 'pending_actions_dao.dart';
 export 'pending_uploads_dao.dart';
+export 'pending_view_events_dao.dart';
 export 'personal_reactions_dao.dart';
 export 'personal_reposts_dao.dart';
 export 'profile_stats_dao.dart';
