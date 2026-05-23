@@ -3,10 +3,14 @@
 
 import 'package:flutter/foundation.dart';
 
-/// Whether Firebase (and Firebase-dependent services like Crashlytics and
-/// Firebase Messaging) is supported on the current platform.
+/// Whether Firebase Core config can initialize on the current platform.
 ///
-/// Firebase supports Android, iOS, macOS, and web. It does NOT support
+/// This is a coarse platform gate used before touching
+/// `DefaultFirebaseOptions.currentPlatform`. Service-specific callers may still
+/// need additional checks; for example, app startup keeps Crashlytics gated off
+/// on web even though Firebase Core itself supports web.
+///
+/// Firebase Core supports Android, iOS, macOS, and web. It does NOT support
 /// Linux or Windows — `DefaultFirebaseOptions.currentPlatform` throws
 /// `UnsupportedError` on those platforms.
 ///

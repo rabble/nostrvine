@@ -15,12 +15,13 @@ reporting. The active Firebase project is **`openvine-co`** (bundle id
 |----------|-----------------|---------------|--------|
 | iOS | `openvine-co` — `firebase_options.dart`, `ios/Runner/GoogleService-Info.plist` | ✅ dSYMs via Codemagic | Production |
 | macOS | `openvine-co` — `macos/Runner/GoogleService-Info.plist` | — | Production (reuses the iOS appId — see note below) |
-| Android | `openvine-co` — `android/app/google-services.json` | ⚠️ not yet wired | `firebase_options.dart` Android options + mapping upload are being reconciled in #3343 |
+| Android | `openvine-co` — `android/app/google-services.json` | ⚠️ wired, but no mapping file is produced while R8 is disabled | `firebase_options.dart` Android options are still being reconciled in #3343 |
 | Web / Windows / Linux | none | — | Not supported; init is gated off |
 
-`isFirebaseSupported` (`mobile/lib/utils/platform_support.dart`) is the single
-gate for whether Firebase initializes on the current platform. Crashlytics is
-a mobile/desktop SDK; web is not a Crashlytics target.
+`isFirebaseSupported` (`mobile/lib/utils/platform_support.dart`) is a
+coarse-grained platform helper for Firebase-backed services. Crash reporting is
+currently initialized only when startup passes both `isFirebaseSupported` and
+`!kIsWeb`, so web remains intentionally gated off in app startup.
 
 > **macOS note:** `firebase_options.dart` currently gives macOS the same appId
 > as iOS (`1:972941478875:ios:…`). Confirm this is intentional during the
@@ -29,8 +30,10 @@ a mobile/desktop SDK; web is not a Crashlytics target.
 > **Android note:** `google-services.json` already points at `openvine-co`, but
 > `DefaultFirebaseOptions.android` is still a placeholder, so
 > `Firebase.initializeApp` does not yet initialise Android against the real
-> project. Reconciling the Android options (and adding mapping-file upload to
-> CI) is tracked in #3343.
+> project. The Crashlytics Gradle plugin is already applied and release builds
+> already enable mapping/native symbol upload, but R8 is currently disabled, so
+> no obfuscation mapping file is produced. Reconciling the Android options (and
+> re-enabling R8 when ready) is tracked in #3343.
 
 ## Configuration files
 
@@ -73,18 +76,19 @@ Release builds upload Crashlytics debug symbols automatically. See
 
 Without this, iOS crash stacks arrive in Crashlytics unsymbolicated.
 
-> **Android mapping upload is not yet wired** (tracked in #3343): the
-> `com.google.firebase.crashlytics` Gradle plugin and a `firebaseCrashlytics`
-> mapping-file upload step still need to be added before Android release
-> crashes symbolicate.
+> **Android note:** Crashlytics upload wiring is already present in Gradle, but
+> Android release symbolication is still incomplete in practice because R8 is
+> currently disabled, so no mapping file is generated to upload. That cleanup
+> remains tracked in #3343.
 
 ## Custom keys on every report
 
-Set in `CrashReportingService.initialize()` and helpers:
+Set by `CrashReportingService.initialize()` and follow-up helpers:
 
 - `environment` — `ENVIRONMENT` build define (default `production`)
 - `build_mode` — `debug` / `release`
-- `cache_hit_rate`, `cache_total_lookups` — refreshed on background
+- `cache_hit_rate`, `cache_total_lookups` — set by
+  `updateCacheMetricsKeys()` when the app backgrounds
 
 Bloc/Cubit errors are additionally annotated by `DivineBlocObserver`, which
 forwards to Crashlytics **only** when the error implements `ReportableError`
