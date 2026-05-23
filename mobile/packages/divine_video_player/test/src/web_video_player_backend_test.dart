@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:divine_video_player/divine_video_player.dart';
 import 'package:divine_video_player/src/audio_track.dart' as divine;
 import 'package:divine_video_player/src/web/web_video_player_backend.dart';
@@ -189,6 +191,20 @@ void main() {
         expect(states.first.position, equals(const Duration(seconds: 2)));
       });
 
+      test('first frame state completes firstFrameRendered', () async {
+        var completed = false;
+        unawaited(controller.firstFrameRendered.then((_) => completed = true));
+
+        await controller.initialize();
+
+        fakeWeb.emitState(
+          const DivineVideoPlayerState(isFirstFrameRendered: true),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(completed, isTrue);
+      });
+
       test('error from backend sets error status on stateStream', () async {
         final states = <DivineVideoPlayerState>[];
         controller.stateStream.listen(states.add);
@@ -200,6 +216,18 @@ void main() {
 
         expect(states, hasLength(1));
         expect(states.first.status, equals(PlaybackStatus.error));
+      });
+    });
+
+    group('buildWebView', () {
+      test('throws before the web backend is initialized', () {
+        expect(() => controller.buildWebView(), throwsStateError);
+      });
+
+      test('returns the backend view after initialization', () async {
+        await controller.initialize();
+
+        expect(controller.buildWebView(), isA<SizedBox>());
       });
     });
 

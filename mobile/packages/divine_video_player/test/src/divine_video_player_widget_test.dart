@@ -1,5 +1,7 @@
 import 'package:divine_video_player/divine_video_player.dart';
 import 'package:divine_video_player/src/linux/linux_video_player_backend.dart';
+import 'package:divine_video_player/src/web/web_video_player_backend.dart';
+import 'package:divine_video_player/src/web/web_video_player_backend_factory.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -14,6 +16,8 @@ void main() {
     DivineVideoPlayerController.resetIdCounterForTesting();
     DivineVideoPlayerController.debugForceLinuxBackend = null;
     DivineVideoPlayerController.linuxBackendFactory = _FakeLinuxBackend.new;
+    DivineVideoPlayerController.debugForceWebBackend = null;
+    DivineVideoPlayerController.webBackendFactory = _FakeWebBackend.new;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
           const MethodChannel('divine_video_player'),
@@ -34,7 +38,11 @@ void main() {
     DivineVideoPlayerController.debugForceLinuxBackend = null;
     DivineVideoPlayerController.linuxBackendFactory =
         MediaKitLinuxVideoPlayerBackend.new;
+    DivineVideoPlayerController.debugForceWebBackend = null;
+    DivineVideoPlayerController.webBackendFactory =
+        createDefaultWebVideoPlayerBackend;
     _FakeLinuxBackend.instance = null;
+    _FakeWebBackend.instance = null;
   });
 
   Future<DivineVideoPlayerController> initLinuxController({
@@ -53,6 +61,22 @@ void main() {
     return linuxController;
   }
 
+  Future<DivineVideoPlayerController> initWebController({
+    bool firstFrameRendered = false,
+  }) async {
+    DivineVideoPlayerController.debugForceWebBackend = true;
+    final webController = DivineVideoPlayerController();
+    await webController.initialize();
+    _FakeWebBackend.instance!.emitState(
+      DivineVideoPlayerState(
+        status: PlaybackStatus.ready,
+        clipCount: 1,
+        isFirstFrameRendered: firstFrameRendered,
+      ),
+    );
+    return webController;
+  }
+
   group(DivineVideoPlayer, () {
     testWidgets('renders Linux backend view on Linux', (tester) async {
       final linuxController = await initLinuxController();
@@ -65,6 +89,19 @@ void main() {
       );
 
       expect(find.text('Linux player view'), findsOneWidget);
+    });
+
+    testWidgets('renders Web backend view on web', (tester) async {
+      final webController = await initWebController();
+
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: DivineVideoPlayer(controller: webController),
+        ),
+      );
+
+      expect(find.text('Web player view'), findsOneWidget);
     });
 
     testWidgets('renders Text for unsupported fuchsia', (tester) async {
@@ -330,6 +367,71 @@ class _FakeLinuxBackend implements LinuxVideoPlayerBackend {
 
   @override
   Widget buildView() => const Text('Linux player view');
+
+  @override
+  Future<void> dispose() async {}
+
+  @override
+  Future<void> jumpToClip(int index) async {}
+
+  @override
+  Future<void> pause() async {}
+
+  @override
+  Future<void> play() async {}
+
+  @override
+  Future<void> removeAllAudioTracks() async {}
+
+  @override
+  Future<void> seekTo(Duration position) async {}
+
+  @override
+  Future<void> setAudioTrackVolume(int index, double volume) async {}
+
+  @override
+  Future<void> setAudioTracks(List<AudioTrack> tracks) async {}
+
+  @override
+  Future<void> setClips(
+    List<VideoClip> clips, {
+    Duration? startPosition,
+  }) async {}
+
+  @override
+  Future<void> setLooping({required bool looping}) async {}
+
+  @override
+  Future<void> setPlaybackSpeed(double speed) async {}
+
+  @override
+  Future<void> setVolume(double volume) async {}
+
+  @override
+  Future<void> stop() async {}
+}
+
+class _FakeWebBackend implements WebVideoPlayerBackend {
+  _FakeWebBackend() {
+    instance = this;
+  }
+
+  static _FakeWebBackend? instance;
+
+  late void Function(DivineVideoPlayerState state) _onStateChanged;
+
+  @override
+  Future<void> initialize({
+    required void Function(DivineVideoPlayerState state) onStateChanged,
+    required void Function(Object error) onError,
+  }) async {
+    _onStateChanged = onStateChanged;
+  }
+
+  void emitState(DivineVideoPlayerState state) => _onStateChanged(state);
+
+  @override
+  Widget buildView() => const Text('Web player view');
 
   @override
   Future<void> dispose() async {}
