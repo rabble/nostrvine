@@ -1,5 +1,5 @@
 // ABOUTME: BlocObserver that forwards Bloc errors to Crashlytics + UnifiedLogger
-// ABOUTME: Wired once in main.dart before runApp; covers addError, handler throws, emit failures
+// ABOUTME: Enriches forwarded reports with the bloc's last event/state/transition
 
 import 'dart:async';
 
@@ -7,6 +7,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:unified_logger/unified_logger.dart';
+
+/// Crashlytics custom-key names for the per-bloc diagnostics attached when a
+/// [ReportableError] is forwarded. Public so dashboards and tests share one
+/// source of truth.
+const String kBlocLastEventKey = 'bloc.lastEvent';
+const String kBlocLastStateKey = 'bloc.lastState';
+const String kBlocLastTransitionAtKey = 'bloc.lastTransitionAt';
 
 /// Forwards Bloc/Cubit errors to the project's crash reporter and the unified
 /// log.
@@ -23,6 +30,15 @@ import 'package:unified_logger/unified_logger.dart';
 /// 4xx responses, validation failures) flood the dashboard and drown the
 /// real bugs. See the decision matrix in `.claude/rules/error_handling.md`.
 ///
+/// On a forwarded error the observer also attaches the bloc's most recent
+/// event, state, and transition time as Crashlytics custom keys
+/// ([kBlocLastEventKey] / [kBlocLastStateKey] / [kBlocLastTransitionAtKey]),
+/// each sanitized through [sanitizeForCrashReport]. Event and state are
+/// tracked per bloc via [onEvent] / [onChange] with no IO until [onError]
+/// fires, so the hot path stays allocation-light. The triage gap this closes
+/// is the one that made the #3503 auth-timing investigation expensive. See
+/// #3758.
+///
 /// Wire once at app start, before `runApp`:
 ///
 /// ```dart
@@ -35,6 +51,30 @@ class DivineBlocObserver extends BlocObserver {
 
   final CrashReportingService _crashReporting;
 
+  /// Per-bloc diagnostics. An [Expando] holds its keys weakly, so a bloc's
+  /// entry becomes collectible the moment the bloc itself is — observing every
+  /// bloc in the app does not retain any of them.
+  final Expando<_BlocDiagnostics> _diagnostics = Expando<_BlocDiagnostics>(
+    'DivineBlocObserver',
+  );
+
+  _BlocDiagnostics _diagnosticsFor(BlocBase<dynamic> bloc) =>
+      _diagnostics[bloc] ??= _BlocDiagnostics();
+
+  @override
+  void onEvent(Bloc<dynamic, dynamic> bloc, Object? event) {
+    super.onEvent(bloc, event);
+    _diagnosticsFor(bloc).lastEvent = event;
+  }
+
+  @override
+  void onChange(BlocBase<dynamic> bloc, Change<dynamic> change) {
+    super.onChange(bloc, change);
+    _diagnosticsFor(bloc)
+      ..lastState = change.nextState
+      ..lastTransitionAt = DateTime.now();
+  }
+
   @override
   void onError(BlocBase<dynamic> bloc, Object error, StackTrace stackTrace) {
     super.onError(bloc, error, stackTrace);
@@ -46,10 +86,53 @@ class DivineBlocObserver extends BlocObserver {
       stackTrace: stackTrace,
     );
     if (error is! ReportableError) return;
+    // Dispatch the diagnostic keys before recordError so they attach to the
+    // report it emits. Both are fire-and-forget, but invoked synchronously and
+    // in order, so the platform-channel messages stay ordered without blocking
+    // the bloc error path. recordError and setCustomKey each swallow their own
+    // failures and return early when uninitialized (see
+    // crash_reporting_service.dart).
+    _attachDiagnosticKeys(_diagnostics[bloc]);
     final reason = sanitizeForCrashReport('Bloc.addError $runtimeType');
-    // CrashReportingService.recordError swallows its own failures (returns
-    // early when uninitialized, wraps the FirebaseCrashlytics call in
-    // try/catch); see crash_reporting_service.dart for the contract.
     unawaited(_crashReporting.recordError(error, stackTrace, reason: reason));
   }
+
+  void _attachDiagnosticKeys(_BlocDiagnostics? diagnostics) {
+    if (diagnostics == null) return;
+    final event = diagnostics.lastEvent;
+    if (event != null) {
+      unawaited(
+        _crashReporting.setCustomKey(
+          kBlocLastEventKey,
+          sanitizeForCrashReport(event.toString()),
+        ),
+      );
+    }
+    final state = diagnostics.lastState;
+    if (state != null) {
+      unawaited(
+        _crashReporting.setCustomKey(
+          kBlocLastStateKey,
+          sanitizeForCrashReport(state.toString()),
+        ),
+      );
+    }
+    final transitionAt = diagnostics.lastTransitionAt;
+    if (transitionAt != null) {
+      unawaited(
+        _crashReporting.setCustomKey(
+          kBlocLastTransitionAtKey,
+          transitionAt.toUtc().toIso8601String(),
+        ),
+      );
+    }
+  }
+}
+
+/// Latest observed event, state, and transition time for a single bloc,
+/// attached as Crashlytics custom keys when that bloc forwards an error.
+class _BlocDiagnostics {
+  Object? lastEvent;
+  Object? lastState;
+  DateTime? lastTransitionAt;
 }

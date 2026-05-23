@@ -19,6 +19,16 @@ class _CountCubit extends Cubit<int> {
   void boom(Object error, StackTrace stackTrace) => addError(error, stackTrace);
 }
 
+class _CounterBloc extends Bloc<String, int> {
+  _CounterBloc() : super(0) {
+    on<String>((event, emit) => emit(state + 1));
+  }
+}
+
+class _NoteCubit extends Cubit<String> {
+  _NoteCubit() : super('');
+}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(StackTrace.current);
@@ -37,6 +47,9 @@ void main() {
           any<StackTrace?>(),
           reason: any(named: 'reason'),
         ),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockCrash.setCustomKey(any(), any<dynamic>()),
       ).thenAnswer((_) async {});
       observer = DivineBlocObserver(crashReporting: mockCrash);
     });
@@ -164,6 +177,90 @@ void main() {
             reason: 'Bloc.addError _CountCubit',
           ),
         ).called(1);
+      },
+    );
+
+    test(
+      'attaches last event and state as custom keys before recordError',
+      () async {
+        final bloc = _CounterBloc();
+        addTearDown(bloc.close);
+
+        observer
+          ..onEvent(bloc, 'IncrementPressed')
+          ..onChange(bloc, const Change<int>(currentState: 0, nextState: 1));
+
+        final error = Reportable(StateError('boom'), context: 'test');
+        observer.onError(bloc, error, StackTrace.current);
+
+        // _recordEnriched runs unawaited; drain the microtask before verifying.
+        await Future<void>.delayed(Duration.zero);
+
+        verifyInOrder([
+          () => mockCrash.setCustomKey(kBlocLastEventKey, 'IncrementPressed'),
+          () => mockCrash.setCustomKey(kBlocLastStateKey, '1'),
+          () => mockCrash.recordError(
+            error,
+            any<StackTrace?>(),
+            reason: any(named: 'reason'),
+          ),
+        ]);
+        verify(
+          () => mockCrash.setCustomKey(
+            kBlocLastTransitionAtKey,
+            any<dynamic>(
+              that: predicate<dynamic>(
+                (v) => v is String && DateTime.tryParse(v) != null,
+              ),
+            ),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'does not set diagnostic keys when no event or state was observed',
+      () async {
+        final cubit = _CountCubit();
+        addTearDown(cubit.close);
+
+        observer.onError(
+          cubit,
+          Reportable(StateError('x')),
+          StackTrace.current,
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        verifyNever(() => mockCrash.setCustomKey(any(), any<dynamic>()));
+      },
+    );
+
+    test(
+      'sanitizes the state snapshot before attaching it as a custom key',
+      () async {
+        final cubit = _NoteCubit();
+        addTearDown(cubit.close);
+
+        const npub =
+            'npub1abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvw';
+        observer
+          ..onChange(
+            cubit,
+            const Change<String>(
+              currentState: '',
+              nextState: 'pubkey $npub failed',
+            ),
+          )
+          ..onError(cubit, Reportable(StateError('x')), StackTrace.current);
+        await Future<void>.delayed(Duration.zero);
+
+        final captured = verify(
+          () =>
+              mockCrash.setCustomKey(kBlocLastStateKey, captureAny<dynamic>()),
+        ).captured;
+        expect(captured, hasLength(1));
+        expect(captured.single, contains('npub1<redacted>'));
+        expect(captured.single, isNot(contains(npub)));
       },
     );
   });

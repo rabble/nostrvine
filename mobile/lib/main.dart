@@ -944,6 +944,16 @@ Future<void> _startOpenVineApp() async {
   // investigation as a missing observability hook. See #3526.
   Bloc.observer = DivineBlocObserver();
 
+  // Tag every crash report with the running build so per-error triage doesn't
+  // have to cross-reference the release dashboard. Set once, not per-error.
+  // See #3758.
+  unawaited(
+    CrashReportingService.instance.setCustomKey(
+      'build_tag',
+      '${packageInfo.version}+${packageInfo.buildNumber}',
+    ),
+  );
+
   runApp(
     UncontrolledProviderScope(
       container: container,
