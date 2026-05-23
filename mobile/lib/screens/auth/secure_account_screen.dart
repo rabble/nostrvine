@@ -45,12 +45,7 @@ class SecureAccountScreen extends StatelessWidget {
               const SizedBox(height: 32),
               Text(
                 l10n.authSecureAccountTitle,
-                style: const TextStyle(
-                  fontFamily: VineTheme.fontFamilyBricolage,
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: VineTheme.whiteText,
-                ),
+                style: VineTheme.headlineLargeFont(),
               ),
               const SizedBox(height: 24),
               Text(
