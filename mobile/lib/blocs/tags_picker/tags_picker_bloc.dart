@@ -48,10 +48,7 @@ TagsPickerInputParseResult parseTagsPickerInput({
   required String previousText,
 }) {
   if (!text.contains(_separatorPattern)) {
-    return TagsPickerInputParseResult(
-      completed: const [],
-      remainder: text,
-    );
+    return TagsPickerInputParseResult(completed: const [], remainder: text);
   }
   final parts = text.split(_separatorPattern);
   // Heuristic: input that grew by >1 character in a single notifier tick
@@ -88,7 +85,9 @@ class TagsPickerBloc extends Bloc<TagsPickerEvent, TagsPickerState> {
   }) : _hashtagRepository = hashtagRepository,
        super(TagsPickerState(selectedTags: Set.of(initialTags))) {
     on<TagsPickerTagsAdded>(_onTagsAdded);
+    on<TagsPickerSuggestionSelected>(_onSuggestionSelected);
     on<TagsPickerTagRemoved>(_onTagRemoved);
+    on<TagsPickerSearchCleared>(_onSearchCleared);
     on<TagsPickerQueryChanged>(
       _onQueryChanged,
       transformer: debounceRestartable(),
@@ -97,29 +96,25 @@ class TagsPickerBloc extends Bloc<TagsPickerEvent, TagsPickerState> {
 
   final HashtagRepository _hashtagRepository;
 
-  void _onTagsAdded(
-    TagsPickerTagsAdded event,
+  void _onTagsAdded(TagsPickerTagsAdded event, Emitter<TagsPickerState> emit) {
+    final updated = _addSanitizedTags(
+      selectedTags: state.selectedTags,
+      rawTokens: event.rawTokens,
+    );
+    if (updated == null) return;
+    emit(state.copyWith(selectedTags: updated));
+  }
+
+  void _onSuggestionSelected(
+    TagsPickerSuggestionSelected event,
     Emitter<TagsPickerState> emit,
   ) {
-    final updated = Set<String>.of(state.selectedTags);
-    var changed = false;
-    for (final raw in event.rawTokens) {
-      final tag = raw.replaceAll(_sanitizePattern, '');
-      if (tag.isEmpty) continue;
-      final exists = updated.any(
-        (t) => t.toLowerCase() == tag.toLowerCase(),
-      );
-      if (exists) continue;
-      updated.add(tag);
-      changed = true;
-    }
-    if (!changed) return;
-    emit(
-      state.copyWith(
-        selectedTags: updated,
-        suggestions: _filterSuggestions(state.suggestions, updated),
-      ),
+    final updated = _addSanitizedTags(
+      selectedTags: state.selectedTags,
+      rawTokens: [event.tag],
     );
+    if (updated == null) return;
+    emit(state.copyWith(selectedTags: updated));
   }
 
   void _onTagRemoved(
@@ -129,6 +124,19 @@ class TagsPickerBloc extends Bloc<TagsPickerEvent, TagsPickerState> {
     if (!state.selectedTags.contains(event.tag)) return;
     final updated = Set<String>.of(state.selectedTags)..remove(event.tag);
     emit(state.copyWith(selectedTags: updated));
+  }
+
+  void _onSearchCleared(
+    TagsPickerSearchCleared event,
+    Emitter<TagsPickerState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        status: TagsPickerStatus.initial,
+        query: '',
+        searchResults: const [],
+      ),
+    );
   }
 
   Future<void> _onQueryChanged(
@@ -141,39 +149,38 @@ class TagsPickerBloc extends Bloc<TagsPickerEvent, TagsPickerState> {
         state.copyWith(
           status: TagsPickerStatus.initial,
           query: '',
-          suggestions: const [],
+          searchResults: const [],
         ),
       );
       return;
     }
 
-    emit(
-      state.copyWith(
-        status: TagsPickerStatus.searching,
-        query: query,
-      ),
-    );
+    emit(state.copyWith(status: TagsPickerStatus.searching, query: query));
 
     // HashtagRepository.searchHashtags is documented as never-throws and
     // falls back to an empty list on any upstream failure, so we don't need
     // a try/catch or a separate failure status here.
     final results = await _hashtagRepository.searchHashtags(query: query);
     emit(
-      state.copyWith(
-        status: TagsPickerStatus.success,
-        suggestions: _filterSuggestions(results, state.selectedTags),
-      ),
+      state.copyWith(status: TagsPickerStatus.success, searchResults: results),
     );
   }
 
-  static List<String> _filterSuggestions(
-    List<String> suggestions,
-    Set<String> selected,
-  ) {
-    if (suggestions.isEmpty) return suggestions;
-    final lowerSelected = selected.map((t) => t.toLowerCase()).toSet();
-    return suggestions
-        .where((s) => !lowerSelected.contains(s.toLowerCase()))
-        .toList();
+  static Set<String>? _addSanitizedTags({
+    required Set<String> selectedTags,
+    required List<String> rawTokens,
+  }) {
+    final updated = Set<String>.of(selectedTags);
+    var changed = false;
+    for (final raw in rawTokens) {
+      final tag = raw.replaceAll(_sanitizePattern, '');
+      if (tag.isEmpty) continue;
+      final exists = updated.any((t) => t.toLowerCase() == tag.toLowerCase());
+      if (exists) continue;
+      updated.add(tag);
+      changed = true;
+    }
+    if (!changed) return null;
+    return updated;
   }
 }

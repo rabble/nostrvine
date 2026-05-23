@@ -31,6 +31,7 @@ void main() {
       expect(bloc.state.selectedTags, {'foo', 'bar'});
       expect(bloc.state.status, TagsPickerStatus.initial);
       expect(bloc.state.query, isEmpty);
+      expect(bloc.state.searchResults, isEmpty);
       expect(bloc.state.suggestions, isEmpty);
       bloc.close();
     });
@@ -41,11 +42,10 @@ void main() {
         build: createBloc,
         act: (b) => b.add(const TagsPickerTagsAdded(['#foo!', 'bar-baz'])),
         expect: () => [
-          isA<TagsPickerState>().having(
-            (s) => s.selectedTags,
-            'selectedTags',
-            {'foo', 'barbaz'},
-          ),
+          isA<TagsPickerState>().having((s) => s.selectedTags, 'selectedTags', {
+            'foo',
+            'barbaz',
+          }),
         ],
       );
 
@@ -54,11 +54,10 @@ void main() {
         build: () => createBloc(initial: {'Foo'}),
         act: (b) => b.add(const TagsPickerTagsAdded(['FOO', 'bar'])),
         expect: () => [
-          isA<TagsPickerState>().having(
-            (s) => s.selectedTags,
-            'selectedTags',
-            {'Foo', 'bar'},
-          ),
+          isA<TagsPickerState>().having((s) => s.selectedTags, 'selectedTags', {
+            'Foo',
+            'bar',
+          }),
         ],
       );
 
@@ -74,11 +73,11 @@ void main() {
         build: createBloc,
         act: (b) => b.add(const TagsPickerTagsAdded(['foo', 'bar', 'baz'])),
         expect: () => [
-          isA<TagsPickerState>().having(
-            (s) => s.selectedTags,
-            'selectedTags',
-            {'foo', 'bar', 'baz'},
-          ),
+          isA<TagsPickerState>().having((s) => s.selectedTags, 'selectedTags', {
+            'foo',
+            'bar',
+            'baz',
+          }),
         ],
       );
 
@@ -87,7 +86,7 @@ void main() {
         build: createBloc,
         seed: () => const TagsPickerState(
           query: 'foo',
-          suggestions: ['foo', 'foobar', 'other'],
+          searchResults: ['foo', 'foobar', 'other'],
           status: TagsPickerStatus.success,
         ),
         act: (b) => b.add(const TagsPickerTagsAdded(['foo'])),
@@ -99,17 +98,59 @@ void main() {
       );
     });
 
+    group('TagsPickerSuggestionSelected', () {
+      blocTest<TagsPickerBloc, TagsPickerState>(
+        'preserves the active query while filtering visible suggestions',
+        build: createBloc,
+        seed: () => const TagsPickerState(
+          query: 'mus',
+          searchResults: ['music', 'musician'],
+          status: TagsPickerStatus.success,
+        ),
+        act: (b) => b.add(const TagsPickerSuggestionSelected('music')),
+        expect: () => [
+          isA<TagsPickerState>()
+              .having((s) => s.selectedTags, 'selectedTags', {'music'})
+              .having((s) => s.query, 'query', 'mus')
+              .having((s) => s.searchResults, 'searchResults', [
+                'music',
+                'musician',
+              ])
+              .having((s) => s.suggestions, 'suggestions', ['musician']),
+        ],
+      );
+    });
+
     group('TagsPickerTagRemoved', () {
       blocTest<TagsPickerBloc, TagsPickerState>(
         'removes a previously selected tag',
         build: () => createBloc(initial: {'foo', 'bar'}),
         act: (b) => b.add(const TagsPickerTagRemoved('foo')),
         expect: () => [
-          isA<TagsPickerState>().having(
-            (s) => s.selectedTags,
-            'selectedTags',
-            {'bar'},
-          ),
+          isA<TagsPickerState>().having((s) => s.selectedTags, 'selectedTags', {
+            'bar',
+          }),
+        ],
+      );
+
+      blocTest<TagsPickerBloc, TagsPickerState>(
+        'restores a removed suggestion while keeping the active search',
+        build: createBloc,
+        seed: () => const TagsPickerState(
+          selectedTags: {'music'},
+          query: 'mus',
+          searchResults: ['music', 'musician'],
+          status: TagsPickerStatus.success,
+        ),
+        act: (b) => b.add(const TagsPickerTagRemoved('music')),
+        expect: () => [
+          isA<TagsPickerState>()
+              .having((s) => s.selectedTags, 'selectedTags', <String>{})
+              .having((s) => s.query, 'query', 'mus')
+              .having((s) => s.suggestions, 'suggestions', [
+                'music',
+                'musician',
+              ]),
         ],
       );
 
@@ -141,6 +182,10 @@ void main() {
               .having((s) => s.query, 'query', 'mus'),
           isA<TagsPickerState>()
               .having((s) => s.status, 'status', TagsPickerStatus.success)
+              .having((s) => s.searchResults, 'searchResults', [
+                'music',
+                'musician',
+              ])
               .having((s) => s.suggestions, 'suggestions', ['musician']),
         ],
         verify: (_) {
@@ -153,19 +198,27 @@ void main() {
         build: createBloc,
         seed: () => const TagsPickerState(
           query: 'old',
-          suggestions: ['old'],
+          searchResults: ['old'],
           status: TagsPickerStatus.success,
         ),
         act: (b) => b.add(const TagsPickerQueryChanged('   ')),
         wait: debounce,
-        expect: () => [
-          const TagsPickerState(),
-        ],
+        expect: () => [const TagsPickerState()],
         verify: (_) {
-          verifyNever(
-            () => repo.searchHashtags(query: any(named: 'query')),
-          );
+          verifyNever(() => repo.searchHashtags(query: any(named: 'query')));
         },
+      );
+
+      blocTest<TagsPickerBloc, TagsPickerState>(
+        'clears search state immediately on TagsPickerSearchCleared',
+        build: createBloc,
+        seed: () => const TagsPickerState(
+          query: 'old',
+          searchResults: ['old'],
+          status: TagsPickerStatus.success,
+        ),
+        act: (b) => b.add(const TagsPickerSearchCleared()),
+        expect: () => [const TagsPickerState()],
       );
     });
 
@@ -176,10 +229,7 @@ void main() {
       });
 
       test('false when query already in selectedTags (case-insensitive)', () {
-        const state = TagsPickerState(
-          query: 'FOO',
-          selectedTags: {'foo'},
-        );
+        const state = TagsPickerState(query: 'FOO', selectedTags: {'foo'});
         expect(state.canAddQuery, isFalse);
       });
 
@@ -214,19 +264,13 @@ void main() {
     });
 
     test('paste of multiple tokens commits all (no remainder kept)', () {
-      final r = parseTagsPickerInput(
-        text: 'foo, bar, baz',
-        previousText: '',
-      );
+      final r = parseTagsPickerInput(text: 'foo, bar, baz', previousText: '');
       expect(r.completed, ['foo', 'bar', 'baz']);
       expect(r.remainder, '');
     });
 
     test('paste with trailing separator still commits all tokens', () {
-      final r = parseTagsPickerInput(
-        text: 'foo bar baz ',
-        previousText: '',
-      );
+      final r = parseTagsPickerInput(text: 'foo bar baz ', previousText: '');
       expect(r.completed, ['foo', 'bar', 'baz']);
       expect(r.remainder, '');
     });
@@ -258,10 +302,7 @@ void main() {
       // Sanitization is the bloc's job (TagsPickerTagsAdded). The parser
       // must not silently drop tokens that contain non-alphanumeric chars,
       // otherwise the bloc never sees them and can't normalize them.
-      final r = parseTagsPickerInput(
-        text: '#foo, #bar',
-        previousText: '',
-      );
+      final r = parseTagsPickerInput(text: '#foo, #bar', previousText: '');
       expect(r.completed, ['#foo', '#bar']);
       expect(r.remainder, '');
     });

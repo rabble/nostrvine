@@ -22,6 +22,16 @@ final class TagsPickerTagsAdded extends TagsPickerEvent {
   List<Object?> get props => [rawTokens];
 }
 
+/// User selected a suggestion chip while keeping the current search active.
+final class TagsPickerSuggestionSelected extends TagsPickerEvent {
+  const TagsPickerSuggestionSelected(this.tag);
+
+  final String tag;
+
+  @override
+  List<Object?> get props => [tag];
+}
+
 /// User removed a previously selected tag.
 final class TagsPickerTagRemoved extends TagsPickerEvent {
   const TagsPickerTagRemoved(this.tag);
@@ -40,4 +50,9 @@ final class TagsPickerQueryChanged extends TagsPickerEvent {
 
   @override
   List<Object?> get props => [query];
+}
+
+/// Clears the current query and search results immediately.
+final class TagsPickerSearchCleared extends TagsPickerEvent {
+  const TagsPickerSearchCleared();
 }

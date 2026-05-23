@@ -42,9 +42,7 @@ class VideoMetadataTagsSelector extends ConsumerWidget {
   Future<void> _openSheet(BuildContext context, WidgetRef ref) async {
     FocusManager.instance.primaryFocus?.unfocus();
 
-    final current = ref.read(
-      videoEditorProvider.select((s) => s.tags),
-    );
+    final current = ref.read(videoEditorProvider.select((s) => s.tags));
 
     final result = await showVideoMetadataTagsSelector(
       context,
@@ -58,9 +56,7 @@ class VideoMetadataTagsSelector extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tags = ref.watch(
-      videoEditorProvider.select((s) => s.tags),
-    );
+    final tags = ref.watch(videoEditorProvider.select((s) => s.tags));
 
     return VideoMetadataSelectionTile(
       onTap: () => _openSheet(context, ref),
@@ -74,10 +70,7 @@ class VideoMetadataTagsSelector extends ConsumerWidget {
 // ─── Sheet ─────────────────────────────────────────────────────────────────
 
 class _TagsPickerSheet extends ConsumerWidget {
-  const _TagsPickerSheet({
-    required this.initialTags,
-    this.scrollController,
-  });
+  const _TagsPickerSheet({required this.initialTags, this.scrollController});
 
   final Set<String> initialTags;
   final ScrollController? scrollController;
@@ -111,6 +104,7 @@ class _TagsPickerView extends StatefulWidget {
 class _TagsPickerViewState extends State<_TagsPickerView> {
   final _searchController = TextEditingController();
   String _previousText = '';
+  bool _suppressNextEmptyChange = false;
 
   @override
   void initState() {
@@ -126,12 +120,15 @@ class _TagsPickerViewState extends State<_TagsPickerView> {
 
   void _onSearchChanged() {
     final text = _searchController.text;
+    if (_suppressNextEmptyChange && text.isEmpty) {
+      _suppressNextEmptyChange = false;
+      _previousText = '';
+      return;
+    }
+    _suppressNextEmptyChange = false;
     final previous = _previousText;
 
-    final parsed = parseTagsPickerInput(
-      text: text,
-      previousText: previous,
-    );
+    final parsed = parseTagsPickerInput(text: text, previousText: previous);
 
     // No committable tokens. Two sub-cases:
     //   1. No separator at all (typical typing) — forward as search query.
@@ -166,14 +163,16 @@ class _TagsPickerViewState extends State<_TagsPickerView> {
 
   void _addTag(String raw) {
     context.read<TagsPickerBloc>().add(TagsPickerTagsAdded([raw]));
-    // Clear the text field without firing _onSearchChanged — otherwise the
-    // listener would dispatch TagsPickerQueryChanged('') which wipes the
-    // bloc's query and suggestions. Keeping them visible lets the user
-    // rapidly select multiple related tags without re-typing the query.
+    context.read<TagsPickerBloc>().add(const TagsPickerSearchCleared());
     _previousText = '';
-    _searchController.removeListener(_onSearchChanged);
-    _searchController.value = const TextEditingValue();
-    _searchController.addListener(_onSearchChanged);
+    _searchController.clear();
+  }
+
+  void _addSuggestionTag(String raw) {
+    context.read<TagsPickerBloc>().add(TagsPickerSuggestionSelected(raw));
+    _previousText = '';
+    _suppressNextEmptyChange = true;
+    _searchController.clear();
   }
 
   void _removeTag(String tag) {
@@ -318,8 +317,11 @@ class _TagsPickerViewState extends State<_TagsPickerView> {
         Expanded(
           child: BlocBuilder<TagsPickerBloc, TagsPickerState>(
             builder: (context, state) {
-              if (state.query.isEmpty && state.selectedTags.isEmpty) {
-                return const _EmptyState();
+              if (state.query.isEmpty) {
+                if (state.selectedTags.isEmpty) {
+                  return const _EmptyState();
+                }
+                return const SizedBox.shrink();
               }
 
               final sanitized = state.sanitizedQuery;
@@ -360,7 +362,7 @@ class _TagsPickerViewState extends State<_TagsPickerView> {
                       _SuggestionChip(
                         key: ValueKey(tag),
                         label: tag,
-                        onTap: () => _addTag(tag),
+                        onTap: () => _addSuggestionTag(tag),
                       ),
                   ],
                 ),
@@ -377,11 +379,7 @@ class _TagsPickerViewState extends State<_TagsPickerView> {
 
 /// Chip for a search-result hashtag — tap to add it to the selection.
 class _SuggestionChip extends StatelessWidget {
-  const _SuggestionChip({
-    required this.label,
-    required this.onTap,
-    super.key,
-  });
+  const _SuggestionChip({required this.label, required this.onTap, super.key});
 
   final String label;
   final VoidCallback onTap;
@@ -413,12 +411,7 @@ class _SuggestionChip extends StatelessWidget {
                 ),
               ),
               const Padding(
-                padding: EdgeInsets.only(
-                  left: 8,
-                  right: 12,
-                  top: 8,
-                  bottom: 8,
-                ),
+                padding: EdgeInsets.only(left: 8, right: 12, top: 8, bottom: 8),
                 child: DivineIcon(
                   icon: .plus,
                   size: 16,
@@ -461,10 +454,7 @@ class _EmptyState extends StatelessWidget {
 }
 
 class _SelectedTagsChipRow extends StatelessWidget {
-  const _SelectedTagsChipRow({
-    required this.tags,
-    required this.onRemove,
-  });
+  const _SelectedTagsChipRow({required this.tags, required this.onRemove});
 
   final List<String> tags;
   final ValueChanged<String> onRemove;
@@ -490,11 +480,7 @@ class _SelectedTagsChipRow extends StatelessWidget {
 }
 
 class _TagChip extends StatefulWidget {
-  const _TagChip({
-    required this.label,
-    required this.onRemove,
-    super.key,
-  });
+  const _TagChip({required this.label, required this.onRemove, super.key});
 
   final String label;
   final VoidCallback onRemove;

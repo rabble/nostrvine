@@ -10,7 +10,7 @@ enum TagsPickerStatus {
   /// A debounced search is in flight.
   searching,
 
-  /// Search completed; [TagsPickerState.suggestions] is populated (possibly
+  /// Search completed; [TagsPickerState.searchResults] is populated (possibly
   /// empty if the repository found no matches or fell back silently).
   success,
 }
@@ -20,7 +20,7 @@ final class TagsPickerState extends Equatable {
   const TagsPickerState({
     this.selectedTags = const <String>{},
     this.query = '',
-    this.suggestions = const <String>[],
+    this.searchResults = const <String>[],
     this.status = TagsPickerStatus.initial,
   });
 
@@ -30,12 +30,20 @@ final class TagsPickerState extends Equatable {
   /// Current (trimmed) query driving the suggestion list.
   final String query;
 
-  /// Suggestions returned by [HashtagRepository], minus anything that has
-  /// already been selected.
-  final List<String> suggestions;
+  /// Raw search results returned by [HashtagRepository] for [query].
+  final List<String> searchResults;
 
   /// Lifecycle of the suggestion search.
   final TagsPickerStatus status;
+
+  /// Search results minus anything that has already been selected.
+  List<String> get suggestions {
+    if (searchResults.isEmpty) return searchResults;
+    final lowerSelected = selectedTags.map((t) => t.toLowerCase()).toSet();
+    return searchResults
+        .where((s) => !lowerSelected.contains(s.toLowerCase()))
+        .toList();
+  }
 
   /// The sanitized query — i.e. what would be added if the user committed it.
   String get sanitizedQuery => query.replaceAll(_sanitizePattern, '');
@@ -52,17 +60,17 @@ final class TagsPickerState extends Equatable {
   TagsPickerState copyWith({
     Set<String>? selectedTags,
     String? query,
-    List<String>? suggestions,
+    List<String>? searchResults,
     TagsPickerStatus? status,
   }) {
     return TagsPickerState(
       selectedTags: selectedTags ?? this.selectedTags,
       query: query ?? this.query,
-      suggestions: suggestions ?? this.suggestions,
+      searchResults: searchResults ?? this.searchResults,
       status: status ?? this.status,
     );
   }
 
   @override
-  List<Object?> get props => [selectedTags, query, suggestions, status];
+  List<Object?> get props => [selectedTags, query, searchResults, status];
 }
