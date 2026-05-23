@@ -1072,10 +1072,7 @@ class NotificationRepository {
       final dTag = group
           .map((n) => n.referencedDTag)
           .firstWhere((d) => d != null, orElse: () => null);
-      final addressableId = _buildVideoAddressableId(
-        dTag,
-        ownerPubkey: video?.pubkey,
-      );
+      final addressableId = _buildRecipientOwnedVideoAddressableId(dTag);
       // Prefer thumbnail from the notification payload — it comes directly from
       // the server and is stable even after a metadata update (unlike the stats
       // lookup which uses the mutable event ID and may 404 post-edit).
@@ -1209,9 +1206,8 @@ class NotificationRepository {
         );
         return null;
       }
-      final addressableId = _buildVideoAddressableId(
+      final addressableId = _buildRecipientOwnedVideoAddressableId(
         raw.referencedDTag,
-        ownerPubkey: video?.pubkey,
       );
       return VideoNotification(
         id: raw.dedupeKey,
@@ -1291,16 +1287,16 @@ class NotificationRepository {
     _ => null,
   };
 
-  /// Builds the stable NIP-33 addressable ID for a referenced video whose
-  /// owner is known.
-  /// Returns null when the server didn't provide a usable [dTag].
-  static String? _buildVideoAddressableId(
-    String? dTag, {
-    required String? ownerPubkey,
-  }) {
+  /// Builds the stable NIP-33 addressable ID for a video owned by the
+  /// current notification recipient.
+  ///
+  /// Video-anchored notifications are already validated against the current
+  /// user when Funnelcake can resolve ownership. Using [_userPubkey] keeps
+  /// route construction stable when the referenced event ID is stale and the
+  /// metadata lookup misses.
+  String? _buildRecipientOwnedVideoAddressableId(String? dTag) {
     if (dTag == null || dTag.isEmpty) return null;
-    if (ownerPubkey == null || ownerPubkey.isEmpty) return null;
-    return '${NIP71VideoKinds.addressableShortVideo}:$ownerPubkey:$dTag';
+    return '${NIP71VideoKinds.addressableShortVideo}:$_userPubkey:$dTag';
   }
 
   /// Returns the stable NIP-33 addressable ID for an actor-anchored
