@@ -75,6 +75,47 @@ void main() {
       expect(errors, isEmpty);
     });
 
+    test('setClips applies first clip volume and playback speed', () async {
+      await backend.setClips(
+        const [
+          VideoClip(
+            uri: 'data:video/mp4;base64,AAAA',
+            volume: 0.4,
+            playbackSpeed: 1.5,
+          ),
+        ],
+      );
+
+      expect(backend.debugVideoElement.volume, 0.4);
+      expect(backend.debugVideoElement.muted, isFalse);
+      expect(backend.debugVideoElement.playbackRate, 1.5);
+      expect(states.last.volume, 0.4);
+      expect(states.last.playbackSpeed, 1.5);
+    });
+
+    test('timeupdate loops clipped ranges back to clip start', () async {
+      await backend.setClips(
+        const [
+          VideoClip(
+            uri: 'data:video/mp4;base64,AAAA',
+            start: Duration(seconds: 1),
+            end: Duration(seconds: 3),
+          ),
+        ],
+      );
+      await backend.setLooping(looping: true);
+
+      backend.debugVideoElement.currentTime = 3;
+      backend.debugVideoElement.dispatchEvent(web.Event('timeupdate'));
+      await Future<void>.delayed(Duration.zero);
+
+      expect(backend.debugVideoElement.currentTime, 1);
+      expect(states.last.status, isNot(PlaybackStatus.completed));
+      expect(states.last.position, Duration.zero);
+      expect(states.last.isLooping, isTrue);
+      expect(errors, isEmpty);
+    });
+
     test('setVolume zero also mutes the video element', () async {
       await backend.setVolume(0);
 

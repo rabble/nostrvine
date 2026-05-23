@@ -208,6 +208,7 @@ class HtmlVideoElementBackend implements WebVideoPlayerBackend {
     final clip = clips.first;
     _clipStart = clip.start;
     _clipEnd = clip.end;
+    final clipVolume = clip.volume.clamp(0.0, 1.0);
 
     _emitState(
       _state.copyWith(
@@ -216,13 +217,19 @@ class HtmlVideoElementBackend implements WebVideoPlayerBackend {
         currentClipIndex: 0,
         position: Duration.zero,
         bufferedPosition: Duration.zero,
+        volume: clipVolume,
+        playbackSpeed: clip.playbackSpeed,
         isFirstFrameRendered: false,
         clearError: true,
       ),
     );
 
-    _videoElement.src = clip.uri;
-    _videoElement.load();
+    _videoElement
+      ..volume = clipVolume
+      ..muted = clipVolume == 0
+      ..src = clip.uri
+      ..load()
+      ..playbackRate = clip.playbackSpeed;
 
     // Apply initial seek: respect the clip's `start`, then layer the
     // controller-supplied `startPosition` on top.
@@ -240,10 +247,22 @@ class HtmlVideoElementBackend implements WebVideoPlayerBackend {
     if (clipEnd != null) {
       final endSeconds = _toSeconds(clipEnd);
       if (_videoElement.currentTime >= endSeconds) {
-        _videoElement.pause();
         final clampedPosition = clipEnd > _clipStart
             ? clipEnd - _clipStart
             : Duration.zero;
+        if (_videoElement.loop) {
+          _videoElement.currentTime = _toSeconds(_clipStart);
+          _emitState(
+            _state.copyWith(
+              status: _videoElement.paused
+                  ? PlaybackStatus.paused
+                  : PlaybackStatus.playing,
+              position: Duration.zero,
+            ),
+          );
+          return;
+        }
+        _videoElement.pause();
         _emitState(
           _state.copyWith(
             status: PlaybackStatus.completed,
