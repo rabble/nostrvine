@@ -1,0 +1,105 @@
+// ABOUTME: Unit tests for CuratedListService ownership checks.
+// ABOUTME: Verifies local list ownership is scoped to authenticated users.
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' hide LogCategory;
+import 'package:nostr_client/nostr_client.dart';
+import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/curated_list_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockAuthService extends Mock implements AuthService {}
+
+void main() {
+  group('CuratedListService.isOwnedList', () {
+    const currentPubkey =
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    const otherPubkey =
+        'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+
+    late CuratedListService service;
+    late _MockAuthService mockAuth;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final mockNostr = _MockNostrClient();
+      mockAuth = _MockAuthService();
+
+      when(() => mockAuth.isAuthenticated).thenReturn(false);
+      when(() => mockAuth.currentPublicKeyHex).thenReturn(currentPubkey);
+
+      service = CuratedListService(
+        nostrService: mockNostr,
+        authService: mockAuth,
+        prefs: prefs,
+      );
+    });
+
+    test(
+      'returns false for local null-pubkey list when not authenticated',
+      () async {
+        final list = await service.createList(name: 'Local List');
+
+        expect(list, isNotNull);
+        expect(service.isOwnedList(list!.id), isFalse);
+      },
+    );
+
+    test('returns false when list is missing', () {
+      when(() => mockAuth.isAuthenticated).thenReturn(true);
+
+      expect(service.isOwnedList('missing-list'), isFalse);
+    });
+
+    test('returns true for authenticated local null-pubkey list', () async {
+      when(() => mockAuth.isAuthenticated).thenReturn(true);
+
+      final list = await service.createList(name: 'Local List');
+
+      expect(list, isNotNull);
+      expect(service.isOwnedList(list!.id), isTrue);
+    });
+
+    test('returns true for authenticated current-user remote list', () async {
+      when(() => mockAuth.isAuthenticated).thenReturn(true);
+      final now = DateTime(2026);
+
+      await service.subscribeToList(
+        'current-user-list',
+        CuratedList(
+          id: 'current-user-list',
+          name: 'Current User List',
+          videoEventIds: const [],
+          pubkey: currentPubkey,
+          createdAt: now,
+          updatedAt: now,
+        ),
+      );
+
+      expect(service.isOwnedList('current-user-list'), isTrue);
+    });
+
+    test('returns false for authenticated other-user remote list', () async {
+      when(() => mockAuth.isAuthenticated).thenReturn(true);
+      final now = DateTime(2026);
+
+      await service.subscribeToList(
+        'other-user-list',
+        CuratedList(
+          id: 'other-user-list',
+          name: 'Other User List',
+          videoEventIds: const [],
+          pubkey: otherPubkey,
+          createdAt: now,
+          updatedAt: now,
+        ),
+      );
+
+      expect(service.isOwnedList('other-user-list'), isFalse);
+    });
+  });
+}

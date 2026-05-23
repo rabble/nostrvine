@@ -9824,6 +9824,30 @@ abstract class AppLocalizations {
   /// **'Video not available'**
   String get curatedListVideoNotAvailable;
 
+  /// No description provided for @curatedListActionsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'List actions'**
+  String get curatedListActionsTooltip;
+
+  /// No description provided for @curatedListUnfollowAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Unfollow list'**
+  String get curatedListUnfollowAction;
+
+  /// No description provided for @curatedListUnfollowedSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'Unfollowed list'**
+  String get curatedListUnfollowedSnack;
+
+  /// No description provided for @curatedListUnfollowFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t unfollow list'**
+  String get curatedListUnfollowFailed;
+
   /// No description provided for @commonRetry.
   ///
   /// In en, this message translates to:

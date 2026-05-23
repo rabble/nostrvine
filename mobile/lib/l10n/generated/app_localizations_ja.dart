@@ -5334,6 +5334,18 @@ class AppLocalizationsJa extends AppLocalizations {
   String get curatedListVideoNotAvailable => '動画は利用できないよ';
 
   @override
+  String get curatedListActionsTooltip => 'List actions';
+
+  @override
+  String get curatedListUnfollowAction => 'Unfollow list';
+
+  @override
+  String get curatedListUnfollowedSnack => 'Unfollowed list';
+
+  @override
+  String get curatedListUnfollowFailed => 'Couldn\'t unfollow list';
+
+  @override
   String get commonRetry => 'もう一回';
 
   @override

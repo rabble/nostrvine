@@ -5610,6 +5610,18 @@ class AppLocalizationsIt extends AppLocalizations {
   String get curatedListVideoNotAvailable => 'Video non disponibile';
 
   @override
+  String get curatedListActionsTooltip => 'List actions';
+
+  @override
+  String get curatedListUnfollowAction => 'Unfollow list';
+
+  @override
+  String get curatedListUnfollowedSnack => 'Unfollowed list';
+
+  @override
+  String get curatedListUnfollowFailed => 'Couldn\'t unfollow list';
+
+  @override
   String get commonRetry => 'Riprova';
 
   @override

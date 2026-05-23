@@ -18,6 +18,8 @@ import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+enum _CuratedListAction { unfollow }
+
 class CuratedListFeedScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.
   static const routeName = 'list';
@@ -84,6 +86,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
               showBackButton: true,
               onBackPressed: context.pop,
               actions: [_buildSubscribeAction()],
+              customActions: _buildListCustomActions(),
             )
           : null,
       body: videosAsync.when(
@@ -340,6 +343,85 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
       iconColor: isSubscribed ? VineTheme.vineGreen : VineTheme.whiteText,
       onPressed: _isTogglingSubscription ? null : _toggleSubscription,
       tooltip: isSubscribed ? 'Subscribed' : 'Subscribe',
+    );
+  }
+
+  List<Widget> _buildListCustomActions() {
+    if (!_canUnfollowExternalList()) {
+      return const [];
+    }
+
+    return [_buildListActionsMenu()];
+  }
+
+  Widget _buildListActionsMenu() {
+    return PopupMenuButton<_CuratedListAction>(
+      tooltip: context.l10n.curatedListActionsTooltip,
+      color: VineTheme.surfaceContainer,
+      icon: const DivineIcon(
+        icon: DivineIconName.dotsThreeVertical,
+        color: VineTheme.whiteText,
+      ),
+      onSelected: (action) {
+        switch (action) {
+          case _CuratedListAction.unfollow:
+            _unfollowList();
+        }
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: _CuratedListAction.unfollow,
+          child: Text(
+            context.l10n.curatedListUnfollowAction,
+            style: const TextStyle(color: VineTheme.primaryText),
+          ),
+        ),
+      ],
+    );
+  }
+
+  bool _canUnfollowExternalList() {
+    final serviceAsync = ref.watch(curatedListsStateProvider);
+    final service = ref.read(curatedListsStateProvider.notifier).service;
+
+    return serviceAsync.whenOrNull(
+          data: (_) {
+            final isSubscribed =
+                service?.isSubscribedToList(widget.listId) ?? false;
+            final isOwned = service?.isOwnedList(widget.listId) ?? false;
+            return isSubscribed && !isOwned;
+          },
+        ) ??
+        false;
+  }
+
+  Future<void> _unfollowList() async {
+    final service = ref.read(curatedListsStateProvider.notifier).service;
+    final didUnfollow =
+        await service?.unsubscribeFromList(widget.listId) ?? false;
+
+    if (!mounted) {
+      return;
+    }
+
+    if (!didUnfollow) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.curatedListUnfollowFailed),
+          backgroundColor: VineTheme.likeRed,
+        ),
+      );
+      return;
+    }
+
+    ref.invalidate(curatedListsProvider);
+    setState(() {});
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(context.l10n.curatedListUnfollowedSnack),
+        backgroundColor: VineTheme.vineGreen,
+      ),
     );
   }
 

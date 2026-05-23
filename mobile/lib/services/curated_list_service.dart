@@ -834,6 +834,30 @@ class CuratedListService extends ChangeNotifier {
     return _subscribedListIds.contains(listId);
   }
 
+  /// Check whether the current user owns a locally cached curated list.
+  bool isOwnedList(String listId) {
+    if (!_authService.isAuthenticated) {
+      return false;
+    }
+
+    final currentPubkey = _authService.currentPublicKeyHex;
+    if (currentPubkey == null || currentPubkey.isEmpty) {
+      return false;
+    }
+
+    final list = getListById(listId);
+    if (list == null) {
+      return false;
+    }
+
+    final ownerPubkey = list.pubkey;
+    if (ownerPubkey == null) {
+      return true;
+    }
+
+    return ownerPubkey == currentPubkey;
+  }
+
   /// Get readable summary of lists containing a video
   String getVideoListSummary(String videoEventId) {
     final listsContaining = getListsContainingVideo(videoEventId);

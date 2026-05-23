@@ -272,6 +272,12 @@ const _knownUntranslatedDebt = {
   'curatedListFailedToLoad',
   'curatedListNoVideosAvailable',
   'curatedListVideoNotAvailable',
+  // Added by curated list overflow actions. Existing locales fall back to
+  // English until the next translation pass.
+  'curatedListActionsTooltip',
+  'curatedListUnfollowAction',
+  'curatedListUnfollowedSnack',
+  'curatedListUnfollowFailed',
   'appsPermissionsTitle',
   'appsPermissionsEmptyTitle',
   'appsPermissionsEmptySubtitle',
