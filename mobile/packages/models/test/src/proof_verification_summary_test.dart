@@ -52,6 +52,10 @@ void main() {
       expect(video.proofModeDeviceAttestation, isNull);
       expect(video.proofModePgpFingerprint, isNull);
       expect(video.proofModeC2paManifestId, isNull);
+      expect(video.hasProofModeManifest, isFalse);
+      expect(video.hasProofModeDeviceAttestation, isFalse);
+      expect(video.hasProofModePgpFingerprint, isFalse);
+      expect(video.hasProofModeC2paManifestId, isFalse);
       expect(video.hasProofMode, isFalse);
       expect(video.hasBasicProof, isFalse);
       expect(video.isVerifiedMobile, isFalse);
@@ -81,6 +85,10 @@ void main() {
       expect(video.proofModeDeviceAttestation, isNull);
       expect(video.proofModePgpFingerprint, isNull);
       expect(video.proofModeC2paManifestId, isNull);
+      expect(video.hasProofModeManifest, isFalse);
+      expect(video.hasProofModeDeviceAttestation, isFalse);
+      expect(video.hasProofModePgpFingerprint, isFalse);
+      expect(video.hasProofModeC2paManifestId, isFalse);
       expect(video.hasProofMode, isFalse);
       expect(video.hasBasicProof, isFalse);
     });
@@ -114,9 +122,13 @@ void main() {
       );
 
       expect(mobileVideo.hasProofMode, isTrue);
+      expect(mobileVideo.hasProofModeManifest, isTrue);
+      expect(mobileVideo.hasProofModeDeviceAttestation, isTrue);
       expect(mobileVideo.isVerifiedMobile, isTrue);
       expect(mobileVideo.isVerifiedWeb, isFalse);
       expect(webVideo.hasProofMode, isTrue);
+      expect(webVideo.hasProofModeManifest, isTrue);
+      expect(webVideo.hasProofModePgpFingerprint, isTrue);
       expect(webVideo.isVerifiedMobile, isFalse);
       expect(webVideo.isVerifiedWeb, isTrue);
     });
@@ -127,17 +139,141 @@ void main() {
           status: 'present',
           level: 'basic_proof',
           version: 1,
-          checks: {
-            'proofmode_present': true,
-            'proofmode_parse_ok': true,
-          },
+          checks: {'proofmode_present': true, 'proofmode_parse_ok': true},
         ),
       );
 
       expect(video.hasProofMode, isTrue);
+      expect(video.hasProofModeManifest, isTrue);
       expect(video.hasBasicProof, isTrue);
       expect(video.isVerifiedMobile, isFalse);
       expect(video.isVerifiedWeb, isFalse);
+    });
+
+    test(
+      'present summary without explicit level still maps to basic proof',
+      () {
+        final video = _videoWithProofSummary(
+          const ProofVerificationSummary(
+            status: 'present',
+            version: 1,
+            checks: {'proofmode_present': true, 'proofmode_parse_ok': true},
+          ),
+        );
+
+        expect(video.proofModeVerificationLevel, isNull);
+        expect(video.hasProofModeManifest, isTrue);
+        expect(video.hasProofMode, isTrue);
+        expect(video.hasBasicProof, isTrue);
+        expect(video.isVerifiedMobile, isFalse);
+        expect(video.isVerifiedWeb, isFalse);
+      },
+    );
+
+    test(
+      'verified summary without explicit level does not infer web/mobile',
+      () {
+        final video = _videoWithProofSummary(
+          const ProofVerificationSummary(
+            status: 'verified',
+            version: 1,
+            checks: {'proofmode_present': true, 'proofmode_parse_ok': true},
+          ),
+        );
+
+        expect(video.proofModeVerificationLevel, isNull);
+        expect(video.hasProofMode, isTrue);
+        expect(video.hasBasicProof, isTrue);
+        expect(video.isVerifiedMobile, isFalse);
+        expect(video.isVerifiedWeb, isFalse);
+      },
+    );
+
+    test('raw proof tags stay authoritative over compact summary fallback', () {
+      final video = VideoEvent(
+        id: 'test-id',
+        pubkey: 'test-pubkey',
+        createdAt: 1700000000,
+        content: 'test',
+        timestamp: DateTime.fromMillisecondsSinceEpoch(
+          1700000000 * 1000,
+          isUtc: true,
+        ),
+        rawTags: const {
+          'verification': 'verified_mobile',
+          'proofmode': '{"pgpSignature":"raw-signature"}',
+          'device_attestation': 'raw-attestation',
+          'c2pa_manifest_id': 'raw-c2pa',
+        },
+        proofSummary: const ProofVerificationSummary(
+          status: 'present',
+          level: 'basic_proof',
+          version: 1,
+          checks: {
+            'proofmode_present': false,
+            'device_attestation_present': false,
+            'pgp_signature_present': false,
+            'c2pa_manifest_present': false,
+          },
+        ),
+      );
+
+      expect(video.proofModeVerificationLevel, 'verified_mobile');
+      expect(video.proofModeManifest, '{"pgpSignature":"raw-signature"}');
+      expect(video.proofModeDeviceAttestation, 'raw-attestation');
+      expect(video.proofModePgpFingerprint, 'raw-signature');
+      expect(video.proofModeC2paManifestId, 'raw-c2pa');
+      expect(video.hasProofModeManifest, isTrue);
+      expect(video.hasProofModeDeviceAttestation, isTrue);
+      expect(video.hasProofModePgpFingerprint, isTrue);
+      expect(video.hasProofModeC2paManifestId, isTrue);
+      expect(video.isVerifiedMobile, isTrue);
+      expect(video.hasBasicProof, isFalse);
+    });
+
+    test('fromJson accepts numeric timestamps and version doubles', () {
+      final summary = ProofVerificationSummary.fromJson(const {
+        'status': 'present',
+        'level': 'basic_proof',
+        'checked_at': 1779494400.0,
+        'version': 1.0,
+        'checks': {'proofmode_present': true},
+      });
+
+      expect(summary.version, 1);
+      expect(
+        summary.checkedAt,
+        DateTime.fromMillisecondsSinceEpoch(1779494400 * 1000, isUtc: true),
+      );
+    });
+
+    test('round-trips through toJson and fromJson', () {
+      final summary = ProofVerificationSummary.fromJson(
+        const ProofVerificationSummary(
+          status: 'verified',
+          level: 'verified_web',
+          version: 2,
+          checks: {
+            'proofmode_present': true,
+            'proofmode_parse_ok': true,
+            'pgp_signature_present': true,
+          },
+        ).toJson(),
+      );
+
+      expect(
+        summary,
+        const ProofVerificationSummary(
+          status: 'verified',
+          level: 'verified_web',
+          version: 2,
+          checks: {
+            'proofmode_present': true,
+            'proofmode_parse_ok': true,
+            'pgp_signature_present': true,
+          },
+        ),
+      );
     });
   });
 }

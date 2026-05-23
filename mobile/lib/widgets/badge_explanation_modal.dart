@@ -292,19 +292,19 @@ class _ProofCheckList extends StatelessWidget {
       children: [
         _ProofCheckItem(
           label: context.l10n.badgeExplanationDeviceAttestation,
-          passed: video.proofModeDeviceAttestation != null,
+          passed: video.hasProofModeDeviceAttestation,
         ),
         _ProofCheckItem(
           label: context.l10n.badgeExplanationPgpSignature,
-          passed: video.proofModePgpFingerprint != null,
+          passed: video.hasProofModePgpFingerprint,
         ),
         _ProofCheckItem(
           label: context.l10n.badgeExplanationC2paCredentials,
-          passed: video.proofModeC2paManifestId != null,
+          passed: video.hasProofModeC2paManifestId,
         ),
         _ProofCheckItem(
           label: context.l10n.badgeExplanationProofManifest,
-          passed: video.proofModeManifest != null,
+          passed: video.hasProofModeManifest,
         ),
       ],
     );
