@@ -1,5 +1,7 @@
 // ABOUTME: Unit tests for InviteStatusCubit
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:invite_api_client/invite_api_client.dart';
@@ -31,8 +33,11 @@ void main() {
       mockInviteApiClient = _MockInviteApiClient();
     });
 
-    InviteStatusCubit buildCubit() =>
-        InviteStatusCubit(inviteApiClient: mockInviteApiClient);
+    InviteStatusCubit buildCubit({bool Function()? isInviteAuthReady}) =>
+        InviteStatusCubit(
+          inviteApiClient: mockInviteApiClient,
+          isInviteAuthReady: isInviteAuthReady,
+        );
 
     test('initial state is correct', () {
       final cubit = buildCubit();
@@ -96,6 +101,16 @@ void main() {
     );
 
     blocTest<InviteStatusCubit, InviteStatusState>(
+      'load does not fetch when invite auth is not ready',
+      build: () => buildCubit(isInviteAuthReady: () => false),
+      act: (cubit) => cubit.load(),
+      expect: () => <InviteStatusState>[],
+      verify: (_) {
+        verifyNever(() => mockInviteApiClient.getInviteStatus());
+      },
+    );
+
+    blocTest<InviteStatusCubit, InviteStatusState>(
       'load after error re-fetches successfully',
       setUp: () {
         when(
@@ -116,15 +131,41 @@ void main() {
     );
 
     blocTest<InviteStatusCubit, InviteStatusState>(
+      'load restores previous state on expected 401 auth gap',
+      setUp: () {
+        when(() => mockInviteApiClient.getInviteStatus()).thenThrow(
+          const InviteApiException(
+            'Authorization header required',
+            statusCode: 401,
+            code: InviteApiErrorCode.authRequired,
+          ),
+        );
+      },
+      build: buildCubit,
+      seed: () => const InviteStatusState(
+        status: InviteStatusLoadingStatus.loaded,
+        inviteStatus: testStatus,
+      ),
+      act: (cubit) => cubit.load(),
+      expect: () => [
+        const InviteStatusState(
+          status: InviteStatusLoadingStatus.loading,
+          inviteStatus: testStatus,
+        ),
+        const InviteStatusState(
+          status: InviteStatusLoadingStatus.loaded,
+          inviteStatus: testStatus,
+        ),
+      ],
+      errors: () => <Object>[],
+    );
+
+    blocTest<InviteStatusCubit, InviteStatusState>(
       'generateInvite creates one code then reloads invite status',
       setUp: () {
-        when(
-          () => mockInviteApiClient.generateInvite(),
-        ).thenAnswer(
-          (_) async => const GenerateInviteResult(
-            code: 'WX56-3MKT',
-            remaining: 4,
-          ),
+        when(() => mockInviteApiClient.generateInvite()).thenAnswer(
+          (_) async =>
+              const GenerateInviteResult(code: 'WX56-3MKT', remaining: 4),
         );
         when(
           () => mockInviteApiClient.getInviteStatus(),
@@ -142,6 +183,43 @@ void main() {
       verify: (_) {
         verify(() => mockInviteApiClient.generateInvite()).called(1);
         verify(() => mockInviteApiClient.getInviteStatus()).called(1);
+      },
+    );
+
+    test(
+      'load does not emit after close when request completes late',
+      () async {
+        final completer = Completer<InviteStatus>();
+        when(
+          () => mockInviteApiClient.getInviteStatus(),
+        ).thenAnswer((_) => completer.future);
+
+        final cubit = buildCubit();
+        final emittedStates = <InviteStatusState>[];
+        final subscription = cubit.stream.listen(emittedStates.add);
+
+        unawaited(cubit.load());
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          emittedStates,
+          equals([
+            const InviteStatusState(status: InviteStatusLoadingStatus.loading),
+          ]),
+        );
+
+        await cubit.close();
+        completer.complete(testStatus);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          emittedStates,
+          equals([
+            const InviteStatusState(status: InviteStatusLoadingStatus.loading),
+          ]),
+        );
+
+        await subscription.cancel();
       },
     );
 

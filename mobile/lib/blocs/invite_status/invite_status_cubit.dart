@@ -8,46 +8,71 @@ import 'package:invite_api_client/invite_api_client.dart';
 part 'invite_status_state.dart';
 
 class InviteStatusCubit extends Cubit<InviteStatusState> {
-  InviteStatusCubit({required InviteApiClient inviteApiClient})
-    : _inviteApiClient = inviteApiClient,
-      super(const InviteStatusState());
+  InviteStatusCubit({
+    required InviteApiClient inviteApiClient,
+    bool Function()? isInviteAuthReady,
+  }) : _inviteApiClient = inviteApiClient,
+       _isInviteAuthReady = isInviteAuthReady ?? (() => true),
+       super(const InviteStatusState());
 
   final InviteApiClient _inviteApiClient;
+  final bool Function() _isInviteAuthReady;
 
   Future<void> load() async {
     if (state.status == InviteStatusLoadingStatus.loading) return;
+    if (!_isInviteAuthReady()) return;
 
+    final previousState = state;
     emit(state.copyWith(status: InviteStatusLoadingStatus.loading));
     try {
       final inviteStatus = await _inviteApiClient.getInviteStatus();
-      emit(
+      _emitIfOpen(
         state.copyWith(
           status: InviteStatusLoadingStatus.loaded,
           inviteStatus: inviteStatus,
         ),
       );
+    } on InviteApiException catch (e) {
+      if (e.statusCode == 401) {
+        _emitIfOpen(previousState);
+        return;
+      }
+      rethrow;
     } catch (e, stackTrace) {
       addError(e, stackTrace);
-      emit(state.copyWith(status: InviteStatusLoadingStatus.error));
+      _emitIfOpen(state.copyWith(status: InviteStatusLoadingStatus.error));
     }
   }
 
   Future<void> generateInvite() async {
     if (state.status == InviteStatusLoadingStatus.loading) return;
+    if (!_isInviteAuthReady()) return;
 
+    final previousState = state;
     emit(state.copyWith(status: InviteStatusLoadingStatus.loading));
     try {
       await _inviteApiClient.generateInvite();
       final inviteStatus = await _inviteApiClient.getInviteStatus();
-      emit(
+      _emitIfOpen(
         state.copyWith(
           status: InviteStatusLoadingStatus.loaded,
           inviteStatus: inviteStatus,
         ),
       );
+    } on InviteApiException catch (e) {
+      if (e.statusCode == 401) {
+        _emitIfOpen(previousState);
+        return;
+      }
+      rethrow;
     } catch (e, stackTrace) {
       addError(e, stackTrace);
-      emit(state.copyWith(status: InviteStatusLoadingStatus.error));
+      _emitIfOpen(state.copyWith(status: InviteStatusLoadingStatus.error));
     }
+  }
+
+  void _emitIfOpen(InviteStatusState nextState) {
+    if (isClosed) return;
+    emit(nextState);
   }
 }

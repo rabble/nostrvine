@@ -1926,6 +1926,8 @@ class _DivineAppState extends ConsumerState<DivineApp> {
           BlocProvider(
             create: (context) => InviteStatusCubit(
               inviteApiClient: context.read<InviteApiClient>(),
+              isInviteAuthReady: () =>
+                  ref.read(nip98AuthServiceProvider).canCreateTokens,
             ),
           ),
           BlocProvider(
