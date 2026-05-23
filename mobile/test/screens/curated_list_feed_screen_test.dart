@@ -13,29 +13,22 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/services/curated_list_service.dart';
 
+import '../helpers/go_router.dart';
 import '../helpers/test_provider_overrides.dart';
 
 class _MockCuratedListService extends Mock implements CuratedListService {}
 
 class _TestCuratedListsState extends CuratedListsState {
-  _TestCuratedListsState(this._mockService);
+  _TestCuratedListsState(this._mockService, this._list);
 
   final CuratedListService? _mockService;
+  final CuratedList _list;
 
   @override
   CuratedListService? get service => _mockService;
 
   @override
-  Future<List<CuratedList>> build() async => [
-    CuratedList(
-      id: 'external-list',
-      name: 'External List',
-      videoEventIds: const [],
-      pubkey: 'external-pubkey',
-      createdAt: DateTime(2026),
-      updatedAt: DateTime(2026),
-    ),
-  ];
+  Future<List<CuratedList>> build() async => [_list];
 }
 
 void main() {
@@ -50,33 +43,54 @@ void main() {
       when(
         () => mockService.isSubscribedToList('external-list'),
       ).thenAnswer((_) => isSubscribed);
-      when(
-        () => (mockService as dynamic).isOwnedList('external-list') as bool,
-      ).thenReturn(false);
+      when(() => mockService.isOwnedList('external-list')).thenReturn(false);
       when(
         () => mockService.unsubscribeFromList('external-list'),
       ).thenAnswer((_) async => true);
+      when(
+        () => mockService.deleteOwnedList('owned-list'),
+      ).thenAnswer((_) async => true);
     });
 
-    Widget buildSubject() {
-      return ProviderScope(
+    Widget buildSubject({
+      String listId = 'external-list',
+      String listName = 'External List',
+      String authorPubkey = 'external-pubkey',
+      MockGoRouter? goRouter,
+    }) {
+      final list = CuratedList(
+        id: listId,
+        name: listName,
+        videoEventIds: const [],
+        pubkey: authorPubkey,
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+      );
+
+      final screen = CuratedListFeedScreen(
+        listId: listId,
+        listName: listName,
+        videoIds: const [],
+        authorPubkey: authorPubkey,
+      );
+
+      final app = ProviderScope(
         overrides: [
           ...getStandardTestOverrides(),
           curatedListsStateProvider.overrideWith(
-            () => _TestCuratedListsState(mockService),
+            () => _TestCuratedListsState(mockService, list),
           ),
         ],
-        child: const MaterialApp(
+        child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: CuratedListFeedScreen(
-            listId: 'external-list',
-            listName: 'External List',
-            videoIds: [],
-            authorPubkey: 'external-pubkey',
-          ),
+          home: goRouter == null
+              ? screen
+              : MockGoRouterProvider(goRouter: goRouter, child: screen),
         ),
       );
+
+      return app;
     }
 
     testWidgets(
@@ -118,17 +132,67 @@ void main() {
       expect(appBar.customActions, isEmpty);
     });
 
-    testWidgets('hides list actions for owned subscribed list', (tester) async {
+    testWidgets('shows delete action for owned subscribed list', (
+      tester,
+    ) async {
       when(
-        () => (mockService as dynamic).isOwnedList('external-list') as bool,
+        () => mockService.isSubscribedToList('owned-list'),
       ).thenReturn(true);
+      when(() => mockService.isOwnedList('owned-list')).thenReturn(true);
 
-      await tester.pumpWidget(buildSubject());
+      await tester.pumpWidget(
+        buildSubject(
+          listId: 'owned-list',
+          listName: 'Owned List',
+          authorPubkey: 'owned-pubkey',
+        ),
+      );
       await tester.pump();
 
-      expect(find.byTooltip('List actions'), findsNothing);
+      await tester.tap(find.byTooltip('List actions'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Delete list'), findsOneWidget);
       expect(find.text('Unfollow list'), findsNothing);
-      expect(find.text('Delete list'), findsNothing);
+    });
+
+    testWidgets('delete confirms then calls service and pops', (tester) async {
+      when(
+        () => mockService.isSubscribedToList('owned-list'),
+      ).thenReturn(true);
+      when(() => mockService.isOwnedList('owned-list')).thenReturn(true);
+      when(
+        () => mockService.deleteOwnedList('owned-list'),
+      ).thenAnswer((_) async => true);
+      final goRouter = MockGoRouter();
+      when(goRouter.canPop).thenReturn(true);
+      when(() => goRouter.pop<Object?>()).thenReturn(null);
+
+      await tester.pumpWidget(
+        buildSubject(
+          listId: 'owned-list',
+          listName: 'Owned List',
+          authorPubkey: 'owned-pubkey',
+          goRouter: goRouter,
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byTooltip('List actions'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Delete list'));
+      await tester.pumpAndSettle();
+      expect(find.text('Delete list?'), findsOneWidget);
+
+      await tester.tap(find.text('Delete'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockService.deleteOwnedList('owned-list'),
+      ).called(1);
+      verify(() => goRouter.pop<Object?>()).called(1);
+      expect(find.text('Deleted list'), findsOneWidget);
+      expect(find.text('Unfollow list'), findsNothing);
     });
 
     testWidgets('unfollow calls service and updates action state', (

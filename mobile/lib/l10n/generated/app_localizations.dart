@@ -9848,6 +9848,30 @@ abstract class AppLocalizations {
   /// **'Couldn\'t unfollow list'**
   String get curatedListUnfollowFailed;
 
+  /// No description provided for @curatedListDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete list?'**
+  String get curatedListDeleteConfirmTitle;
+
+  /// No description provided for @curatedListDeleteConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes the list from relays. Videos in the list will not be deleted.'**
+  String get curatedListDeleteConfirmBody;
+
+  /// No description provided for @curatedListDeletedSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted list'**
+  String get curatedListDeletedSnack;
+
+  /// No description provided for @curatedListDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t delete list'**
+  String get curatedListDeleteFailed;
+
   /// No description provided for @peopleListsActionsTooltip.
   ///
   /// In en, this message translates to:

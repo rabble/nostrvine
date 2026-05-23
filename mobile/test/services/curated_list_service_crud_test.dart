@@ -9,6 +9,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
@@ -19,6 +20,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 class _MockNostrClient extends Mock implements NostrClient {}
 
 class _MockAuthService extends Mock implements AuthService {}
+
+const _ownerPubkey =
+    '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+const _otherPubkey =
+    'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
 
 void main() {
   group('CuratedListService - CRUD Operations', () {
@@ -47,14 +53,14 @@ void main() {
 
       // Setup common mocks
       when(() => mockAuth.isAuthenticated).thenReturn(true);
-      when(
-        () => mockAuth.currentPublicKeyHex,
-      ).thenReturn('test_pubkey_123456789abcdef');
+      when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownerPubkey);
 
       // Mock successful event publishing
-      when(() => mockNostr.publishEvent(any())).thenAnswer((invocation) async {
-        return PublishSuccess(
-          event: invocation.positionalArguments[0] as Event,
+      when(() => mockNostr.publishEvent(any())).thenAnswer((invocation) {
+        return Future<PublishResult>.value(
+          PublishSuccess(
+            event: invocation.positionalArguments[0] as Event,
+          ),
         );
       });
 
@@ -70,17 +76,30 @@ void main() {
           content: any(named: 'content'),
           tags: any(named: 'tags'),
         ),
-      ).thenAnswer(
-        (_) async => Event.fromJson({
-          'id': 'test_event_id',
-          'pubkey': 'test_pubkey_123456789abcdef',
-          'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          'kind': 30005,
-          'tags': [],
-          'content': 'test content',
-          'sig': 'test_signature',
-        }),
-      );
+      ).thenAnswer((invocation) {
+        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+        final kind = invocation.namedArguments[#kind] as int;
+        final content = invocation.namedArguments[#content] as String;
+        final tags = invocation.namedArguments[#tags] as List<List<String>>;
+
+        return Future.value(
+          Event.fromJson({
+            'id': sha256
+                .convert(
+                  utf8.encode(
+                    json.encode([0, _ownerPubkey, now, kind, tags, content]),
+                  ),
+                )
+                .toString(),
+            'pubkey': _ownerPubkey,
+            'created_at': now,
+            'kind': kind,
+            'tags': tags,
+            'content': content,
+            'sig': 'test_signature',
+          }),
+        );
+      });
 
       service = CuratedListService(
         nostrService: mockNostr,
@@ -138,7 +157,7 @@ void main() {
                   utf8.encode(
                     json.encode([
                       0,
-                      'test_pubkey_123456789abcdef',
+                      _ownerPubkey,
                       now,
                       30005,
                       invocation.namedArguments[#tags] as List<List<String>>,
@@ -147,7 +166,7 @@ void main() {
                   ),
                 )
                 .toString(),
-            'pubkey': 'test_pubkey_123456789abcdef',
+            'pubkey': _ownerPubkey,
             'created_at': now,
             'kind': 30005,
             'tags': invocation.namedArguments[#tags] as List<List<String>>,
@@ -172,8 +191,7 @@ void main() {
             final filter = filters.first;
 
             if (filter.kinds?.contains(30005) ?? false) {
-              if (filter.authors?.contains('test_pubkey_123456789abcdef') ??
-                  false) {
+              if (filter.authors?.contains(_ownerPubkey) ?? false) {
                 return Stream.fromIterable(
                   lists.map((l) {
                     final tags = l.getEventTags();
@@ -186,7 +204,7 @@ void main() {
                             utf8.encode(
                               json.encode([
                                 0,
-                                'test_pubkey_123456789abcdef',
+                                _ownerPubkey,
                                 DateTime.now().millisecondsSinceEpoch ~/ 1000,
                                 30005,
                                 tags,
@@ -195,7 +213,7 @@ void main() {
                             ),
                           )
                           .toString(),
-                      'pubkey': 'test_pubkey_123456789abcdef',
+                      'pubkey': _ownerPubkey,
                       'created_at':
                           DateTime.now().millisecondsSinceEpoch ~/ 1000,
                       'kind': 30005,
@@ -263,7 +281,7 @@ void main() {
           (_) => Stream.value(
             Event.fromJson({
               'id': 'relay_list_event',
-              'pubkey': 'test_pubkey_123456789abcdef',
+              'pubkey': _ownerPubkey,
               'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
               'kind': 30005,
               'tags': [
@@ -599,6 +617,85 @@ void main() {
 
         expect(service.lists.length, 1);
         expect(service.hasDefaultList(), isTrue);
+      });
+    });
+
+    group('deleteOwnedList()', () {
+      test('publishes NIP-09 deletion for owned kind 30005 list', () async {
+        final list = await service.createList(name: 'Owned Public List');
+
+        final result = await service.deleteOwnedList(list!.id);
+
+        expect(result, isTrue);
+        expect(service.getListById(list.id), isNull);
+
+        final published =
+            verify(
+                  () => mockNostr.publishEvent(captureAny()),
+                ).captured.single
+                as Event;
+        expect(published.kind, EventKind.eventDeletion);
+        expect(published.content, 'Deleted curated list ${list.id}');
+        expect(
+          published.tags,
+          contains(equals(['a', '30005:$_ownerPubkey:${list.id}'])),
+        );
+        expect(published.tags, contains(equals(['k', '30005'])));
+      });
+
+      test('keeps local list when publish fails', () async {
+        final list = await service.createList(name: 'Owned Public List');
+        reset(mockNostr);
+        when(() => mockNostr.publishEvent(any())).thenAnswer(
+          (_) => Future<PublishResult>.value(const PublishFailed()),
+        );
+
+        final result = await service.deleteOwnedList(list!.id);
+
+        expect(result, isFalse);
+        expect(service.getListById(list.id), isNotNull);
+      });
+
+      test(
+        'removes owned private list without publishing deletion event',
+        () async {
+          final list = await service.createList(
+            name: 'Owned Private List',
+            isPublic: false,
+          );
+
+          final result = await service.deleteOwnedList(list!.id);
+
+          expect(result, isTrue);
+          expect(service.getListById(list.id), isNull);
+          verifyNever(() => mockNostr.publishEvent(any()));
+        },
+      );
+
+      test('returns false for default, missing, and unowned list', () async {
+        await service.initialize();
+        final missingResult = await service.deleteOwnedList('missing-list');
+        final defaultResult = await service.deleteOwnedList(
+          CuratedListService.defaultListId,
+        );
+        final now = DateTime(2026);
+        final unownedList = CuratedList(
+          id: 'unowned-list',
+          name: 'Unowned List',
+          pubkey: _otherPubkey,
+          videoEventIds: const [],
+          createdAt: now,
+          updatedAt: now,
+        );
+        await service.subscribeToList(unownedList.id, unownedList);
+
+        final unownedResult = await service.deleteOwnedList(unownedList.id);
+
+        expect(missingResult, isFalse);
+        expect(defaultResult, isFalse);
+        expect(unownedResult, isFalse);
+        expect(service.hasDefaultList(), isTrue);
+        expect(service.getListById(unownedList.id), isNotNull);
       });
     });
 

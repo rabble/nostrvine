@@ -5608,6 +5608,19 @@ class AppLocalizationsPt extends AppLocalizations {
   String get curatedListUnfollowFailed => 'Couldn\'t unfollow list';
 
   @override
+  String get curatedListDeleteConfirmTitle => 'Delete list?';
+
+  @override
+  String get curatedListDeleteConfirmBody =>
+      'This removes the list from relays. Videos in the list will not be deleted.';
+
+  @override
+  String get curatedListDeletedSnack => 'Deleted list';
+
+  @override
+  String get curatedListDeleteFailed => 'Couldn\'t delete list';
+
+  @override
   String get peopleListsActionsTooltip => 'List actions';
 
   @override

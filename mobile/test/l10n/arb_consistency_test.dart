@@ -278,6 +278,12 @@ const _knownUntranslatedDebt = {
   'curatedListUnfollowAction',
   'curatedListUnfollowedSnack',
   'curatedListUnfollowFailed',
+  // Added by owned curated-list delete actions. Existing locales fall back to
+  // English until the next translation pass.
+  'curatedListDeleteConfirmTitle',
+  'curatedListDeleteConfirmBody',
+  'curatedListDeletedSnack',
+  'curatedListDeleteFailed',
   // Added by owned people-list delete actions. Existing locales fall back to
   // English until the next translation pass.
   'peopleListsActionsTooltip',

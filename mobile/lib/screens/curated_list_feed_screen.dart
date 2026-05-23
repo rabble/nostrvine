@@ -18,7 +18,7 @@ import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-enum _CuratedListAction { unfollow }
+enum _CuratedListAction { delete, unfollow }
 
 class CuratedListFeedScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.
@@ -347,14 +347,15 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
   }
 
   List<Widget> _buildListCustomActions() {
-    if (!_canUnfollowExternalList()) {
+    final action = _primaryListAction();
+    if (action == null) {
       return const [];
     }
 
-    return [_buildListActionsMenu()];
+    return [_buildListActionsMenu(action)];
   }
 
-  Widget _buildListActionsMenu() {
+  Widget _buildListActionsMenu(_CuratedListAction action) {
     return PopupMenuButton<_CuratedListAction>(
       tooltip: context.l10n.curatedListActionsTooltip,
       color: VineTheme.surfaceContainer,
@@ -364,15 +365,21 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
       ),
       onSelected: (action) {
         switch (action) {
+          case _CuratedListAction.delete:
+            _confirmDeleteList();
           case _CuratedListAction.unfollow:
             _unfollowList();
         }
       },
       itemBuilder: (context) => [
         PopupMenuItem(
-          value: _CuratedListAction.unfollow,
+          value: action,
           child: Text(
-            context.l10n.curatedListUnfollowAction,
+            switch (action) {
+              _CuratedListAction.delete => context.l10n.listDeleteAction,
+              _CuratedListAction.unfollow =>
+                context.l10n.curatedListUnfollowAction,
+            },
             style: const TextStyle(color: VineTheme.primaryText),
           ),
         ),
@@ -380,19 +387,98 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
     );
   }
 
-  bool _canUnfollowExternalList() {
+  _CuratedListAction? _primaryListAction() {
     final serviceAsync = ref.watch(curatedListsStateProvider);
     final service = ref.read(curatedListsStateProvider.notifier).service;
 
     return serviceAsync.whenOrNull(
-          data: (_) {
-            final isSubscribed =
-                service?.isSubscribedToList(widget.listId) ?? false;
-            final isOwned = service?.isOwnedList(widget.listId) ?? false;
-            return isSubscribed && !isOwned;
-          },
-        ) ??
-        false;
+      data: (_) {
+        final isOwned = service?.isOwnedList(widget.listId) ?? false;
+        if (isOwned) {
+          return _CuratedListAction.delete;
+        }
+
+        final isSubscribed =
+            service?.isSubscribedToList(widget.listId) ?? false;
+        if (isSubscribed) {
+          return _CuratedListAction.unfollow;
+        }
+
+        return null;
+      },
+    );
+  }
+
+  Future<void> _confirmDeleteList() async {
+    final l10n = context.l10n;
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: VineTheme.surfaceContainer,
+        title: Text(
+          l10n.curatedListDeleteConfirmTitle,
+          style: VineTheme.titleMediumFont(),
+        ),
+        content: Text(
+          l10n.curatedListDeleteConfirmBody,
+          style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(
+              l10n.commonCancel,
+              style: VineTheme.labelMediumFont(color: VineTheme.secondaryText),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(
+              l10n.commonDelete,
+              style: VineTheme.labelMediumFont(color: VineTheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete != true || !mounted) {
+      return;
+    }
+
+    await _deleteOwnedList();
+  }
+
+  Future<void> _deleteOwnedList() async {
+    final service = ref.read(curatedListsStateProvider.notifier).service;
+    final didDelete = await service?.deleteOwnedList(widget.listId) ?? false;
+
+    if (!mounted) {
+      return;
+    }
+
+    if (!didDelete) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.curatedListDeleteFailed),
+          backgroundColor: VineTheme.likeRed,
+        ),
+      );
+      return;
+    }
+
+    ref.invalidate(curatedListsProvider);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(context.l10n.curatedListDeletedSnack),
+        backgroundColor: VineTheme.vineGreen,
+      ),
+    );
+
+    if (context.canPop()) {
+      context.pop();
+    }
   }
 
   Future<void> _unfollowList() async {
