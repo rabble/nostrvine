@@ -21,7 +21,6 @@ import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/collaborator_invite_local_state_adapter.dart';
-import 'package:openvine/services/collaborator_invite_recovery_service.dart';
 import 'package:openvine/services/collaborator_invite_state_store.dart';
 import 'package:openvine/services/collaborator_response_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
@@ -55,28 +54,31 @@ final collaboratorInviteStateStoreProvider =
       );
     });
 
-final collaboratorInviteRecoveryServiceProvider =
-    Provider<CollaboratorInviteRecoveryService?>((ref) {
-      final authService = ref.watch(authServiceProvider);
-      ref.watch(currentAuthStateProvider);
+final collaboratorInviteRecoveryRepositoryProvider = Provider<DmRepository?>((
+  ref,
+) {
+  final authService = ref.watch(authServiceProvider);
+  ref.watch(currentAuthStateProvider);
+  final readiness = ref.watch(nostrSessionProvider);
 
-      final userPubkey = authService.currentPublicKeyHex;
-      if (userPubkey == null || userPubkey.isEmpty) return null;
+  final userPubkey = authService.currentPublicKeyHex;
+  if (userPubkey == null || userPubkey.isEmpty) return null;
+  if (!readiness.isReadyForActiveClient || readiness.pubkey != userPubkey) {
+    return null;
+  }
 
-      return CollaboratorInviteRecoveryService(
-        dmRepository: ref.watch(dmRepositoryProvider),
-        outgoingDmsDao: ref.watch(databaseProvider).outgoingDmsDao,
-        ownerPubkey: userPubkey,
-      );
-    });
+  return ref.watch(dmRepositoryProvider);
+});
 
 final pendingCollaboratorInviteGroupsProvider =
     StreamProvider<List<PendingCollaboratorInviteGroup>>((ref) {
-      final service = ref.watch(collaboratorInviteRecoveryServiceProvider);
-      if (service == null) {
+      final repository = ref.watch(
+        collaboratorInviteRecoveryRepositoryProvider,
+      );
+      if (repository == null) {
         return Stream.value(const <PendingCollaboratorInviteGroup>[]);
       }
-      return service.watchPendingInviteGroups();
+      return repository.watchPendingCollaboratorInviteGroups();
     });
 
 /// Per-video collaborator confirmation status. Returns `null` until

@@ -189,6 +189,14 @@ const _knownUntranslatedDebt = {
   'invitesClaimed',
   'invitesCouldNotLoad',
   'invitesRetry',
+  'profileCollaboratorInvitePendingHeadline',
+  'profileCollaboratorInvitePendingDetail',
+  'profileCollaboratorInvitePendingDetailWithTitle',
+  'profileCollaboratorInviteRetryAction',
+  'profileCollaboratorInviteRetryingAction',
+  'profileCollaboratorInviteRetryUnavailable',
+  'profileCollaboratorInviteRetryResult',
+  'videoPublishCollaboratorInviteWarning',
   // Added while sweeping obvious remaining hardcoded UI strings for Amharic.
   // Existing locales fall back to English until the next full translation pass.
   'commonBack',

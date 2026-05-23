@@ -201,6 +201,34 @@
   "profileFollowersLabel": "Followers",
   "profileFollowingStatLabel": "Following",
   "profileVideosLabel": "Videos",
+  "profileCollaboratorInvitePendingHeadline": "{count, plural, =1{1 collaborator invite still needs to send} other{{count} collaborator invites still need to send}}",
+  "@profileCollaboratorInvitePendingHeadline": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "profileCollaboratorInvitePendingDetail": "We kept the invite queued. Retry it here.",
+  "profileCollaboratorInvitePendingDetailWithTitle": "For \"{title}\". Retry it here.",
+  "@profileCollaboratorInvitePendingDetailWithTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "profileCollaboratorInviteRetryAction": "Retry",
+  "profileCollaboratorInviteRetryingAction": "Retrying",
+  "profileCollaboratorInviteRetryUnavailable": "Collaborator invite retry is unavailable right now.",
+  "profileCollaboratorInviteRetryResult": "{count, plural, =0{Collaborator invites sent.} =1{1 collaborator invite still needs to send.} other{{count} collaborator invites still need to send.}}",
+  "@profileCollaboratorInviteRetryResult": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "profileFollowerCountUsers": "{count} users",
   "@profileFollowerCountUsers": {
     "placeholders": {
@@ -2958,6 +2986,14 @@
       "url": {
         "type": "String",
         "example": "https://divine.video/video/abc123"
+      }
+    }
+  },
+  "videoPublishCollaboratorInviteWarning": "Video posted, but {count, plural, =1{1 collaborator invite did not send.} other{{count} collaborator invites did not send.}}",
+  "@videoPublishCollaboratorInviteWarning": {
+    "placeholders": {
+      "count": {
+        "type": "int"
       }
     }
   },

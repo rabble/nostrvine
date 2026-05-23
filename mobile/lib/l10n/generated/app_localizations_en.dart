@@ -382,6 +382,48 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileVideosLabel => 'Videos';
 
   @override
+  String profileCollaboratorInvitePendingHeadline(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count collaborator invites still need to send',
+      one: '1 collaborator invite still needs to send',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get profileCollaboratorInvitePendingDetail =>
+      'We kept the invite queued. Retry it here.';
+
+  @override
+  String profileCollaboratorInvitePendingDetailWithTitle(String title) {
+    return 'For \"$title\". Retry it here.';
+  }
+
+  @override
+  String get profileCollaboratorInviteRetryAction => 'Retry';
+
+  @override
+  String get profileCollaboratorInviteRetryingAction => 'Retrying';
+
+  @override
+  String get profileCollaboratorInviteRetryUnavailable =>
+      'Collaborator invite retry is unavailable right now.';
+
+  @override
+  String profileCollaboratorInviteRetryResult(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count collaborator invites still need to send.',
+      one: '1 collaborator invite still needs to send.',
+      zero: 'Collaborator invites sent.',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String profileFollowerCountUsers(int count) {
     return '$count users';
   }
@@ -5415,6 +5457,17 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String collaboratorInviteDmBodyUntitled(String url) {
     return 'You were invited to collaborate on a video: $url\n\nOpen diVine to review and accept.';
+  }
+
+  @override
+  String videoPublishCollaboratorInviteWarning(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count collaborator invites did not send.',
+      one: '1 collaborator invite did not send.',
+    );
+    return 'Video posted, but $_temp0';
   }
 
   @override

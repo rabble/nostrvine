@@ -37,6 +37,11 @@ abstract class DmRepositoryReportableSites {
   static const String finalizeAfterRecipientFailure =
       'finalizeAfterRecipientFailure';
 
+  /// `retryPendingCollaboratorInvites*`: `recoverFullSend` threw while
+  /// replaying a queued collaborator invite row.
+  static const String retryPendingCollaboratorInviteUnexpectedThrow =
+      'retryPendingCollaboratorInvite.unexpectedThrow';
+
   /// `sendMessage` outer transaction catch: persisting the local
   /// message row or running `_finalizeAfterRecipientSuccess` threw
   /// after the recipient publish landed.

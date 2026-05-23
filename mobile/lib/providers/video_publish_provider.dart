@@ -14,6 +14,7 @@ import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/current_app_l10n.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/video_publish/video_publish_provider_state.dart';
@@ -298,11 +299,11 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
   }
 
   @visibleForTesting
-  String collaboratorInviteWarningMessage(int failedCount) {
-    final noun = failedCount == 1
-        ? '1 collaborator invite did'
-        : '$failedCount collaborator invites did';
-    return 'Video posted, but $noun not send.';
+  String collaboratorInviteWarningMessage(
+    AppLocalizations l10n,
+    int failedCount,
+  ) {
+    return l10n.videoPublishCollaboratorInviteWarning(failedCount);
   }
 
   /// Publishes the video with ProofMode attestation and navigates to
@@ -507,17 +508,18 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
   }) {
     final targetContext = NavigatorKeys.root.currentContext;
     if (targetContext == null || !targetContext.mounted) return;
+    final l10n = targetContext.l10n;
 
     final messenger = ScaffoldMessenger.maybeOf(targetContext);
     if (messenger == null) return;
 
     messenger.showSnackBar(
       SnackBar(
-        content: Text(collaboratorInviteWarningMessage(warnings.length)),
+        content: Text(collaboratorInviteWarningMessage(l10n, warnings.length)),
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 8),
         action: SnackBarAction(
-          label: 'Retry',
+          label: l10n.profileCollaboratorInviteRetryAction,
           onPressed: () {
             unawaited(
               _retryCollaboratorInvites(
@@ -535,28 +537,35 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
     required ScaffoldMessengerState messenger,
     required List<CollaboratorInviteWarning> warnings,
   }) async {
-    final service = ref.read(collaboratorInviteRecoveryServiceProvider);
-    if (service == null) {
+    final targetContext = NavigatorKeys.root.currentContext;
+    if (targetContext == null || !targetContext.mounted) return;
+    final l10n = targetContext.l10n;
+    final repository = ref.read(collaboratorInviteRecoveryRepositoryProvider);
+    if (repository == null) {
       messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Collaborator invite retry is unavailable right now.'),
+        SnackBar(
+          content: Text(l10n.profileCollaboratorInviteRetryUnavailable),
           behavior: SnackBarBehavior.floating,
         ),
       );
       return;
     }
 
-    final summary = await service.retryPendingInvitesForVideo(
+    final summary = await repository.retryPendingCollaboratorInvitesForVideo(
       videoAddress: warnings.first.videoAddress,
       collaboratorPubkeys: warnings.map(
         (warning) => warning.collaboratorPubkey,
       ),
     );
-    final message = summary.failureCount == 0
-        ? 'Collaborator invites sent.'
-        : collaboratorInviteWarningMessage(summary.failureCount);
     messenger.showSnackBar(
-      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+      SnackBar(
+        content: Text(
+          summary.failureCount == 0
+              ? l10n.profileCollaboratorInviteRetryResult(0)
+              : collaboratorInviteWarningMessage(l10n, summary.failureCount),
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 

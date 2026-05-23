@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:db_client/db_client.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,7 +15,6 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/collaborator_invite_recovery_service.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/widgets/profile/profile_videos_grid.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -27,8 +27,7 @@ class _MockBackgroundPublishBloc
     extends MockBloc<BackgroundPublishEvent, BackgroundPublishState>
     implements BackgroundPublishBloc {}
 
-class _MockCollaboratorInviteRecoveryService extends Mock
-    implements CollaboratorInviteRecoveryService {}
+class _MockDmRepository extends Mock implements DmRepository {}
 
 const _ownPubkey =
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -79,12 +78,12 @@ void main() {
   group(ProfileVideosGrid, () {
     late _MockAuthService mockAuth;
     late _MockBackgroundPublishBloc mockBloc;
-    late _MockCollaboratorInviteRecoveryService mockInviteRecoveryService;
+    late _MockDmRepository mockDmRepository;
 
     setUp(() {
       mockAuth = _MockAuthService();
       mockBloc = _MockBackgroundPublishBloc();
-      mockInviteRecoveryService = _MockCollaboratorInviteRecoveryService();
+      mockDmRepository = _MockDmRepository();
       when(() => mockBloc.state).thenReturn(const BackgroundPublishState());
       debugProfileVideosGridBuildCount = 0;
     });
@@ -95,11 +94,12 @@ void main() {
       bool isLoading = false,
       String? errorMessage,
       List<PendingCollaboratorInviteGroup> pendingInviteGroups = const [],
+      Locale? locale,
     }) {
       return testProviderScope(
         additionalOverrides: [
-          collaboratorInviteRecoveryServiceProvider.overrideWithValue(
-            mockInviteRecoveryService,
+          collaboratorInviteRecoveryRepositoryProvider.overrideWithValue(
+            mockDmRepository,
           ),
           pendingCollaboratorInviteGroupsProvider.overrideWith(
             (ref) => Stream.value(pendingInviteGroups),
@@ -109,6 +109,7 @@ void main() {
         child: BlocProvider<BackgroundPublishBloc>.value(
           value: mockBloc,
           child: MaterialApp(
+            locale: locale,
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
@@ -129,42 +130,37 @@ void main() {
         tester,
       ) async {
         when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+        final l10n = lookupAppLocalizations(const Locale('en'));
 
         await tester.pumpWidget(buildSubject(userIdHex: _otherPubkey));
 
-        expect(find.text('No videos yet'), findsOneWidget);
-        expect(
-          find.text("The world is waiting. Follow them so you don't miss it."),
-          findsOneWidget,
-        );
+        expect(find.text(l10n.profileNoVideosTitle), findsOneWidget);
+        expect(find.text(l10n.profileNoVideosOtherSubtitle), findsOneWidget);
       });
 
       testWidgets('empty state with own profile message when own profile', (
         tester,
       ) async {
         when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+        final l10n = lookupAppLocalizations(const Locale('en'));
 
         await tester.pumpWidget(buildSubject(userIdHex: _ownPubkey));
 
-        expect(find.text('No videos yet'), findsOneWidget);
-        expect(
-          find.text(
-            'Your stage is set. Start posting and your videos will live here.',
-          ),
-          findsOneWidget,
-        );
+        expect(find.text(l10n.profileNoVideosTitle), findsOneWidget);
+        expect(find.text(l10n.profileNoVideosOwnSubtitle), findsOneWidget);
       });
 
       testWidgets('loading state when isLoading is true and no videos', (
         tester,
       ) async {
         when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+        final l10n = lookupAppLocalizations(const Locale('en'));
 
         await tester.pumpWidget(
           buildSubject(userIdHex: _ownPubkey, isLoading: true),
         );
 
-        expect(find.text('Loading videos...'), findsOneWidget);
+        expect(find.text(l10n.profileLoadingVideos), findsOneWidget);
       });
 
       testWidgets('error state when errorMessage is provided and no videos', (
@@ -198,6 +194,7 @@ void main() {
       ) async {
         when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
         final videos = _createTestVideos(pubkey: _ownPubkey);
+        final l10n = lookupAppLocalizations(const Locale('en'));
         final pendingInviteGroups = [
           PendingCollaboratorInviteGroup(
             creatorPubkey: _ownPubkey,
@@ -228,11 +225,19 @@ void main() {
         await tester.pump();
 
         expect(
-          find.text('1 collaborator invite still needs to send'),
+          find.text(l10n.profileCollaboratorInvitePendingHeadline(1)),
           findsOneWidget,
         );
-        expect(find.text('For "Beach post". Retry it here.'), findsOneWidget);
-        expect(find.text('Retry'), findsOneWidget);
+        expect(
+          find.text(
+            l10n.profileCollaboratorInvitePendingDetailWithTitle('Beach post'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n.profileCollaboratorInviteRetryAction),
+          findsOneWidget,
+        );
       });
 
       testWidgets('does not show pending invite banner on another profile', (
@@ -240,6 +245,7 @@ void main() {
       ) async {
         when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
         final videos = _createTestVideos(pubkey: _otherPubkey);
+        final l10n = lookupAppLocalizations(const Locale('en'));
         final pendingInviteGroups = [
           PendingCollaboratorInviteGroup(
             creatorPubkey: _ownPubkey,
@@ -269,9 +275,57 @@ void main() {
         await tester.pump();
 
         expect(
-          find.text('1 collaborator invite still needs to send'),
+          find.text(l10n.profileCollaboratorInvitePendingHeadline(1)),
           findsNothing,
         );
+      });
+
+      testWidgets('pending invite banner copy is localized by locale', (
+        tester,
+      ) async {
+        when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+        final pendingInviteGroups = [
+          PendingCollaboratorInviteGroup(
+            creatorPubkey: _ownPubkey,
+            videoAddress: '34236:$_ownPubkey:video-1',
+            invites: [
+              PendingCollaboratorInvite(
+                rumorId: 'rumor-1',
+                collaboratorPubkey: _otherPubkey,
+                creatorPubkey: _ownPubkey,
+                videoAddress: '34236:$_ownPubkey:video-1',
+                recipientWrapStatus: OutgoingWrapStatus.failed,
+                selfWrapStatus: OutgoingWrapStatus.failed,
+                retryCount: 1,
+                queuedAt: DateTime.utc(2026, 5, 22, 13),
+              ),
+            ],
+          ),
+        ];
+        final en = lookupAppLocalizations(const Locale('en'));
+        final de = lookupAppLocalizations(const Locale('de'));
+
+        await tester.pumpWidget(
+          buildSubject(
+            userIdHex: _ownPubkey,
+            videos: _createTestVideos(pubkey: _ownPubkey),
+            pendingInviteGroups: pendingInviteGroups,
+            locale: const Locale('de'),
+          ),
+        );
+        await tester.pump();
+
+        expect(
+          find.text(de.profileCollaboratorInvitePendingHeadline(1)),
+          findsOneWidget,
+        );
+        expect(
+          Localizations.localeOf(
+            tester.element(find.byType(ProfileVideosGrid)),
+          ),
+          const Locale('de'),
+        );
+        expect(de.localeName, isNot(equals(en.localeName)));
       });
 
       testWidgets('retry banner action uses queue-backed recovery', (
@@ -279,10 +333,7 @@ void main() {
       ) async {
         when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
         when(
-          () => mockInviteRecoveryService.retryPendingInvitesForVideo(
-            videoAddress: any(named: 'videoAddress'),
-            collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
-          ),
+          () => mockDmRepository.retryPendingCollaboratorInvites(any()),
         ).thenAnswer(
           (_) async => const CollaboratorInviteRetrySummary(
             attemptedCount: 1,
@@ -318,17 +369,27 @@ void main() {
         );
         await tester.pump();
 
-        await tester.tap(find.text('Retry'));
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.profileCollaboratorInviteRetryAction));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
 
         verify(
-          () => mockInviteRecoveryService.retryPendingInvitesForVideo(
-            videoAddress: '34236:$_ownPubkey:video-1',
-            collaboratorPubkeys: {_otherPubkey},
+          () => mockDmRepository.retryPendingCollaboratorInvites(
+            any(
+              that: predicate<Iterable<PendingCollaboratorInvite>>(
+                (invites) =>
+                    invites.length == 1 &&
+                    invites.single.rumorId == 'rumor-1' &&
+                    invites.single.collaboratorPubkey == _otherPubkey,
+              ),
+            ),
           ),
         ).called(1);
-        expect(find.text('Collaborator invites sent.'), findsOneWidget);
+        expect(
+          find.text(l10n.profileCollaboratorInviteRetryResult(0)),
+          findsOneWidget,
+        );
       });
     });
 

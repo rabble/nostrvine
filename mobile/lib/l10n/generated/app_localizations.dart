@@ -760,6 +760,48 @@ abstract class AppLocalizations {
   /// **'Videos'**
   String get profileVideosLabel;
 
+  /// No description provided for @profileCollaboratorInvitePendingHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 collaborator invite still needs to send} other{{count} collaborator invites still need to send}}'**
+  String profileCollaboratorInvitePendingHeadline(int count);
+
+  /// No description provided for @profileCollaboratorInvitePendingDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'We kept the invite queued. Retry it here.'**
+  String get profileCollaboratorInvitePendingDetail;
+
+  /// No description provided for @profileCollaboratorInvitePendingDetailWithTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'For \"{title}\". Retry it here.'**
+  String profileCollaboratorInvitePendingDetailWithTitle(String title);
+
+  /// No description provided for @profileCollaboratorInviteRetryAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get profileCollaboratorInviteRetryAction;
+
+  /// No description provided for @profileCollaboratorInviteRetryingAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Retrying'**
+  String get profileCollaboratorInviteRetryingAction;
+
+  /// No description provided for @profileCollaboratorInviteRetryUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Collaborator invite retry is unavailable right now.'**
+  String get profileCollaboratorInviteRetryUnavailable;
+
+  /// No description provided for @profileCollaboratorInviteRetryResult.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Collaborator invites sent.} =1{1 collaborator invite still needs to send.} other{{count} collaborator invites still need to send.}}'**
+  String profileCollaboratorInviteRetryResult(int count);
+
   /// No description provided for @profileFollowerCountUsers.
   ///
   /// In en, this message translates to:
@@ -9565,6 +9607,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You were invited to collaborate on a video: {url}\n\nOpen diVine to review and accept.'**
   String collaboratorInviteDmBodyUntitled(String url);
+
+  /// No description provided for @videoPublishCollaboratorInviteWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Video posted, but {count, plural, =1{1 collaborator invite did not send.} other{{count} collaborator invites did not send.}}'**
+  String videoPublishCollaboratorInviteWarning(int count);
 
   /// SnackBar text shown in a DM conversation when a send fails (relay error, signer error, network error). Paired with the retry action `dmSendFailedRetry`.
   ///

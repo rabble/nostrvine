@@ -5,6 +5,7 @@ import 'dart:async' show FutureOr;
 import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:dm_repository/dm_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -18,7 +19,7 @@ import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
-import 'package:openvine/services/collaborator_invite_recovery_service.dart';
+import 'package:openvine/widgets/profile/pending_collaborator_invite_banner_cubit.dart';
 import 'package:openvine/widgets/profile/profile_tab_empty_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_error_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_loading_more_sliver.dart';
@@ -502,137 +503,160 @@ class _VideoGridTile extends StatelessWidget {
   );
 }
 
-class _PendingCollaboratorInviteBanner extends ConsumerStatefulWidget {
+class _PendingCollaboratorInviteBanner extends ConsumerWidget {
   const _PendingCollaboratorInviteBanner({required this.group});
 
   final PendingCollaboratorInviteGroup group;
 
   @override
-  ConsumerState<_PendingCollaboratorInviteBanner> createState() =>
-      _PendingCollaboratorInviteBannerState();
-}
-
-class _PendingCollaboratorInviteBannerState
-    extends ConsumerState<_PendingCollaboratorInviteBanner> {
-  bool _isRetrying = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final group = widget.group;
-    final inviteCount = group.inviteCount;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final group = this.group;
     final title = group.title?.trim();
-    final headline = inviteCount == 1
-        ? '1 collaborator invite still needs to send'
-        : '$inviteCount collaborator invites still need to send';
-    final detail = title == null || title.isEmpty
-        ? 'We kept the invite queued. Retry it here.'
-        : 'For "$title". Retry it here.';
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: VineTheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: VineTheme.outlineMuted, width: 1.5),
+    return BlocProvider(
+      key: ValueKey(ref.watch(collaboratorInviteRecoveryRepositoryProvider)),
+      create: (_) => PendingCollaboratorInviteBannerCubit(
+        ref.read(collaboratorInviteRecoveryRepositoryProvider),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Padding(
-              padding: EdgeInsets.only(top: 2),
-              child: Icon(
-                Icons.outgoing_mail,
-                color: VineTheme.vineGreen,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    headline,
-                    style: VineTheme.titleMediumFont(
-                      color: VineTheme.onSurface,
-                    ),
+      child:
+          BlocListener<
+            PendingCollaboratorInviteBannerCubit,
+            PendingCollaboratorInviteBannerState
+          >(
+            listenWhen: (previous, current) =>
+                previous.feedback != current.feedback &&
+                current.feedback !=
+                    PendingCollaboratorInviteBannerFeedback.none,
+            listener: (context, state) {
+              final messenger = ScaffoldMessenger.maybeOf(context);
+              if (messenger == null) return;
+              final l10n = context.l10n;
+              final message = switch (state.feedback) {
+                PendingCollaboratorInviteBannerFeedback.retryUnavailable =>
+                  l10n.profileCollaboratorInviteRetryUnavailable,
+                PendingCollaboratorInviteBannerFeedback.retryCompleted =>
+                  l10n.profileCollaboratorInviteRetryResult(
+                    state.remainingInviteCount,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    detail,
-                    style: VineTheme.bodySmallFont(
-                      color: VineTheme.onSurfaceVariant,
-                    ),
-                  ),
-                  if (group.lastError case final error?)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Text(
-                        error,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: VineTheme.bodySmallFont(
-                          color: VineTheme.secondaryText,
+                PendingCollaboratorInviteBannerFeedback.none => null,
+              };
+              if (message == null) return;
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text(message),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            child:
+                BlocBuilder<
+                  PendingCollaboratorInviteBannerCubit,
+                  PendingCollaboratorInviteBannerState
+                >(
+                  builder: (context, state) {
+                    return DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: VineTheme.surfaceContainer,
+                        borderRadius: BorderRadius.circular(
+                          _PendingInviteBannerTokens.borderRadius,
+                        ),
+                        border: Border.all(
+                          color: VineTheme.outlineMuted,
+                          width: _PendingInviteBannerTokens.borderWidth,
                         ),
                       ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            DivineButton(
-              label: _isRetrying ? 'Retrying' : 'Retry',
-              size: DivineButtonSize.small,
-              onPressed: _isRetrying ? null : _retry,
-            ),
-          ],
-        ),
-      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(
+                          _PendingInviteBannerTokens.padding,
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Padding(
+                              padding: EdgeInsets.only(
+                                top: _PendingInviteBannerTokens.iconTopPadding,
+                              ),
+                              child: ExcludeSemantics(
+                                child: DivineIcon(
+                                  icon: DivineIconName.envelopeSimple,
+                                  color: VineTheme.vineGreen,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(
+                              width: _PendingInviteBannerTokens.contentSpacing,
+                            ),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    context.l10n
+                                        .profileCollaboratorInvitePendingHeadline(
+                                          group.inviteCount,
+                                        ),
+                                    style: VineTheme.titleMediumFont(
+                                      color: VineTheme.onSurface,
+                                    ),
+                                  ),
+                                  const SizedBox(
+                                    height:
+                                        _PendingInviteBannerTokens.textSpacing,
+                                  ),
+                                  Text(
+                                    title == null || title.isEmpty
+                                        ? context
+                                              .l10n
+                                              .profileCollaboratorInvitePendingDetail
+                                        : context.l10n
+                                              .profileCollaboratorInvitePendingDetailWithTitle(
+                                                title,
+                                              ),
+                                    style: VineTheme.bodySmallFont(
+                                      color: VineTheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(
+                              width: _PendingInviteBannerTokens.contentSpacing,
+                            ),
+                            DivineButton(
+                              label: state.isRetrying
+                                  ? context
+                                        .l10n
+                                        .profileCollaboratorInviteRetryingAction
+                                  : context
+                                        .l10n
+                                        .profileCollaboratorInviteRetryAction,
+                              size: DivineButtonSize.small,
+                              onPressed: state.isRetrying
+                                  ? null
+                                  : () {
+                                      context
+                                          .read<
+                                            PendingCollaboratorInviteBannerCubit
+                                          >()
+                                          .retry(group);
+                                    },
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+          ),
     );
   }
+}
 
-  Future<void> _retry() async {
-    final messenger = ScaffoldMessenger.maybeOf(context);
-    final service = ref.read(collaboratorInviteRecoveryServiceProvider);
-    if (messenger == null) return;
-    if (service == null) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Collaborator invite retry is unavailable right now.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
-
-    setState(() {
-      _isRetrying = true;
-    });
-
-    try {
-      final summary = await service.retryPendingInvitesForVideo(
-        videoAddress: widget.group.videoAddress,
-        collaboratorPubkeys: widget.group.collaboratorPubkeys,
-      );
-      if (!mounted) return;
-
-      final message = switch (summary.failureCount) {
-        0 => 'Collaborator invites sent.',
-        _ =>
-          summary.failureCount == 1
-              ? '1 collaborator invite still needs to send.'
-              : '${summary.failureCount} collaborator invites still need to send.',
-      };
-      messenger.showSnackBar(
-        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isRetrying = false;
-        });
-      }
-    }
-  }
+abstract final class _PendingInviteBannerTokens {
+  static const double borderRadius = 18;
+  static const double borderWidth = 1.5;
+  static const double padding = 14;
+  static const double iconTopPadding = 2;
+  static const double contentSpacing = 12;
+  static const double textSpacing = 4;
 }

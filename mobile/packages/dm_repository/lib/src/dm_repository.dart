@@ -10,6 +10,7 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:db_client/db_client.dart';
+import 'package:dm_repository/src/collaborator_invite_recovery.dart';
 import 'package:dm_repository/src/dm_decryption_worker.dart';
 import 'package:dm_repository/src/dm_repository_reportable_sites.dart';
 import 'package:dm_repository/src/dm_sync_state.dart';
@@ -57,11 +58,7 @@ typedef Nip04Decryptor =
 /// Implementations MUST NOT throw — the repository invokes after the
 /// existing `Log.error` and any throw would defeat the swallow.
 typedef DmRepositoryErrorReporter =
-    void Function(
-      Object error,
-      StackTrace stackTrace, {
-      required String site,
-    });
+    void Function(Object error, StackTrace stackTrace, {required String site});
 
 /// Supported NIP-17 rumor event kinds.
 const Set<int> _supportedDmKinds = {
@@ -1351,6 +1348,134 @@ class DmRepository {
     return result;
   }
 
+  /// Watches the durable outgoing DM queue for collaborator invites whose
+  /// recipient delivery still needs recovery.
+  ///
+  /// Returns an empty stream when the queue DAO is not wired or the
+  /// repository has not been scoped to an authenticated owner yet.
+  Stream<List<PendingCollaboratorInviteGroup>>
+  watchPendingCollaboratorInviteGroups() {
+    final dao = _outgoingDmsDao;
+    final ownerPubkey = _ownerPubkey;
+    if (dao == null || ownerPubkey == null) {
+      return Stream.value(const <PendingCollaboratorInviteGroup>[]);
+    }
+
+    return dao.watchAllForOwner(ownerPubkey).map((rows) {
+      final pending = rows
+          .map((row) => _tryParsePendingCollaboratorInvite(row, ownerPubkey))
+          .whereType<PendingCollaboratorInvite>()
+          .where((invite) => invite.requiresRecipientRecovery)
+          .toList(growable: false);
+
+      final grouped = <String, List<PendingCollaboratorInvite>>{};
+      for (final invite in pending) {
+        grouped.putIfAbsent(invite.videoAddress, () => []).add(invite);
+      }
+
+      final groups =
+          grouped.entries
+              .map((entry) {
+                final invites = entry.value.toList(growable: false)
+                  ..sort((a, b) => a.queuedAt.compareTo(b.queuedAt));
+                final first = invites.first;
+                return PendingCollaboratorInviteGroup(
+                  creatorPubkey: first.creatorPubkey,
+                  videoAddress: first.videoAddress,
+                  title: first.title,
+                  thumbnailUrl: first.thumbnailUrl,
+                  relayHint: first.relayHint,
+                  invites: invites,
+                );
+              })
+              .toList(growable: false)
+            ..sort(
+              (a, b) =>
+                  b.invites.first.queuedAt.compareTo(a.invites.first.queuedAt),
+            );
+
+      return groups;
+    });
+  }
+
+  /// Retries the given queued collaborator invites by replaying their original
+  /// rumors through [recoverFullSend].
+  Future<CollaboratorInviteRetrySummary> retryPendingCollaboratorInvites(
+    Iterable<PendingCollaboratorInvite> invites,
+  ) async {
+    final matchingInvites = invites
+        .where((invite) => invite.requiresRecipientRecovery)
+        .toList(growable: false);
+    if (matchingInvites.isEmpty) {
+      return const CollaboratorInviteRetrySummary(
+        attemptedCount: 0,
+        successCount: 0,
+        failureCount: 0,
+      );
+    }
+
+    var attempted = 0;
+    var success = 0;
+    for (final invite in matchingInvites) {
+      attempted++;
+      try {
+        final result = await recoverFullSend(rumorId: invite.rumorId);
+        if (result.success) {
+          success++;
+        } else {
+          Log.warning(
+            'Collaborator invite retry failed for rumor ${invite.rumorId} '
+            '(recipient=${invite.collaboratorPubkey}, '
+            'video=${invite.videoAddress}): ${result.error}',
+            category: LogCategory.system,
+          );
+        }
+      } on Object catch (error, stackTrace) {
+        Log.error(
+          'Collaborator invite retry threw for rumor ${invite.rumorId} '
+          '(recipient=${invite.collaboratorPubkey}, '
+          'video=${invite.videoAddress}): $error',
+          category: LogCategory.system,
+          error: error,
+          stackTrace: stackTrace,
+        );
+        _errorReporter?.call(
+          error,
+          stackTrace,
+          site: DmRepositoryReportableSites
+              .retryPendingCollaboratorInviteUnexpectedThrow,
+        );
+      }
+    }
+
+    return CollaboratorInviteRetrySummary(
+      attemptedCount: attempted,
+      successCount: success,
+      failureCount: attempted - success,
+    );
+  }
+
+  /// Finds queued collaborator invites for a specific video and retries the
+  /// unresolved rows whose collaborator pubkeys match [collaboratorPubkeys].
+  Future<CollaboratorInviteRetrySummary>
+  retryPendingCollaboratorInvitesForVideo({
+    required String videoAddress,
+    Iterable<String> collaboratorPubkeys = const [],
+  }) async {
+    final groups = await watchPendingCollaboratorInviteGroups().first;
+    final targetPubkeys = collaboratorPubkeys.toSet();
+    final matchingInvites = groups
+        .where((group) => group.videoAddress == videoAddress)
+        .expand((group) => group.invites)
+        .where((invite) {
+          if (targetPubkeys.isEmpty) return true;
+          return targetPubkeys.contains(invite.collaboratorPubkey);
+        })
+        .toList(growable: false);
+
+    return retryPendingCollaboratorInvites(matchingInvites);
+  }
+
   /// Apply the queue-row transition for a successful per-recipient
   /// rumor publish. Shared between [sendMessage] and [sendGroupMessage]
   /// so both call sites agree on the partial-vs-full delivery
@@ -1411,6 +1536,43 @@ class DmRepository {
       );
       // Don't rethrow — caller already gets the failure result. The
       // queue row stays retryable and the next sweep can pick it up.
+    }
+  }
+
+  PendingCollaboratorInvite? _tryParsePendingCollaboratorInvite(
+    OutgoingDm row,
+    String ownerPubkey,
+  ) {
+    try {
+      final json = jsonDecode(row.rumorEventJson);
+      if (json is! Map<String, dynamic>) return null;
+      final rumorEvent = Event.fromJson(json);
+      final metadata = parseCollaboratorInviteRumor(rumorEvent);
+      if (metadata == null || metadata.creatorPubkey != ownerPubkey) {
+        return null;
+      }
+
+      return PendingCollaboratorInvite(
+        rumorId: row.id,
+        collaboratorPubkey: row.recipientPubkey,
+        creatorPubkey: metadata.creatorPubkey,
+        videoAddress: metadata.videoAddress,
+        title: metadata.title,
+        thumbnailUrl: metadata.thumbnailUrl,
+        relayHint: metadata.relayHint,
+        recipientWrapStatus: row.recipientWrapStatus,
+        selfWrapStatus: row.selfWrapStatus,
+        retryCount: row.retryCount,
+        queuedAt: row.queuedAt,
+        lastError: row.recipientWrapLastError ?? row.selfWrapLastError,
+      );
+    } on Object catch (error, stackTrace) {
+      Log.warning(
+        'Skipping outgoing_dms row ${row.id}; failed to parse '
+        'collaborator invite rumor JSON: $error\n$stackTrace',
+        category: LogCategory.system,
+      );
+      return null;
     }
   }
 

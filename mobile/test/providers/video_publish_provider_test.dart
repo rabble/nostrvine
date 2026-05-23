@@ -3,10 +3,12 @@
 
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show NativeProofData;
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/models/video_reply_context.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
@@ -121,16 +123,20 @@ void main() {
     );
 
     test('collaborator invite warning message handles singular failure', () {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
       expect(
-        notifier.collaboratorInviteWarningMessage(1),
-        'Video posted, but 1 collaborator invite did not send.',
+        notifier.collaboratorInviteWarningMessage(l10n, 1),
+        l10n.videoPublishCollaboratorInviteWarning(1),
       );
     });
 
     test('collaborator invite warning message handles plural failures', () {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
       expect(
-        notifier.collaboratorInviteWarningMessage(2),
-        'Video posted, but 2 collaborator invites did not send.',
+        notifier.collaboratorInviteWarningMessage(l10n, 2),
+        l10n.videoPublishCollaboratorInviteWarning(2),
       );
     });
 

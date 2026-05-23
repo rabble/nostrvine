@@ -1,6 +1,7 @@
 // ABOUTME: Publishes collaborator acceptance events.
 // ABOUTME: Acceptance is a collaborator-authored public response to a video address.
 
+import 'package:dm_repository/dm_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/constants/collaboration_event_kinds.dart';
@@ -79,10 +80,10 @@ class CollaboratorResponseService {
     final relayHint = invite.relayHint ?? defaultRelayHint;
     return [
       ['d', invite.videoAddress],
-      ['a', invite.videoAddress, relayHint, 'root'],
-      ['p', invite.creatorPubkey],
-      ['role', invite.role],
-      ['status', 'accepted'],
+      [CollaboratorInviteTags.address, invite.videoAddress, relayHint, 'root'],
+      [CollaboratorInviteTags.pubkey, invite.creatorPubkey],
+      [CollaboratorInviteTags.role, invite.role],
+      ['status', CollaboratorInviteTags.acceptedStatus],
     ];
   }
 }

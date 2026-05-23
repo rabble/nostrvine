@@ -23,9 +23,7 @@ class CollaboratorInviteResult extends Equatable {
 }
 
 class CollaboratorInviteBatchResult extends Equatable {
-  const CollaboratorInviteBatchResult({
-    required this.results,
-  });
+  const CollaboratorInviteBatchResult({required this.results});
 
   final Map<String, CollaboratorInviteResult> results;
 
@@ -129,10 +127,7 @@ class CollaboratorInviteService {
     return CollaboratorInviteBatchResult(results: results);
   }
 
-  String _buildContent({
-    required String videoAddress,
-    String? title,
-  }) {
+  String _buildContent({required String videoAddress, String? title}) {
     final url = _videoUrlFor(videoAddress);
     final cleanTitle = title?.trim();
     if (cleanTitle == null || cleanTitle.isEmpty) {
@@ -160,13 +155,14 @@ class CollaboratorInviteService {
     String? thumbnailUrl,
   }) {
     return [
-      ['divine', 'collab-invite'],
-      ['a', videoAddress, relayHint, 'root'],
-      ['p', creatorPubkey],
-      ['role', 'Collaborator'],
-      if (title != null && title.trim().isNotEmpty) ['title', title.trim()],
+      [CollaboratorInviteTags.markerName, CollaboratorInviteTags.markerValue],
+      [CollaboratorInviteTags.address, videoAddress, relayHint, 'root'],
+      [CollaboratorInviteTags.pubkey, creatorPubkey],
+      [CollaboratorInviteTags.role, CollaboratorInviteTags.collaboratorRole],
+      if (title != null && title.trim().isNotEmpty)
+        [CollaboratorInviteTags.title, title.trim()],
       if (thumbnailUrl != null && thumbnailUrl.trim().isNotEmpty)
-        ['thumb', thumbnailUrl.trim()],
+        [CollaboratorInviteTags.thumbnail, thumbnailUrl.trim()],
     ];
   }
 }
