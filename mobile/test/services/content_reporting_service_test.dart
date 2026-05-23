@@ -374,8 +374,9 @@ void main() {
         final clientTags = tags.where((t) => t[0] == 'client').toList();
         expect(
           clientTags,
-          hasLength(1),
-          reason: 'Missing client tag for ${reason.name}',
+          isEmpty,
+          reason:
+              'Client tag should be injected during signing for ${reason.name}',
         );
 
         final lNamespaceTags = tags.where((t) => t[0] == 'L').toList();

@@ -173,9 +173,8 @@ void main() {
         final sourceTag = tags.firstWhere((t) => t[0] == 'source');
         expect(sourceTag[1], equals('home'));
 
-        // Check client
-        final clientTag = tags.firstWhere((t) => t[0] == 'client');
-        expect(clientTag[1], contains('divine-mobile'));
+        // Client attribution is added centrally during signing/publish.
+        expect(tags.where((t) => t[0] == 'client'), isEmpty);
       });
 
       test('falls back to event ID when vineId is null', () async {
