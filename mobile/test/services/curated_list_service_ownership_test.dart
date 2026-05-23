@@ -101,5 +101,26 @@ void main() {
 
       expect(service.isOwnedList('other-user-list'), isFalse);
     });
+
+    test(
+      'returns false for authenticated subscribed list without owner',
+      () async {
+        when(() => mockAuth.isAuthenticated).thenReturn(true);
+        final now = DateTime(2026);
+
+        await service.subscribeToList(
+          'unknown-owner-list',
+          CuratedList(
+            id: 'unknown-owner-list',
+            name: 'Unknown Owner List',
+            videoEventIds: const [],
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+
+        expect(service.isOwnedList('unknown-owner-list'), isFalse);
+      },
+    );
   });
 }

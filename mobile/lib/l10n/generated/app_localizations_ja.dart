@@ -5372,6 +5372,9 @@ class AppLocalizationsJa extends AppLocalizations {
       'This removes the list for everyone. The people in it will not be unfollowed.';
 
   @override
+  String get peopleListsDeleteFailed => 'Couldn\'t delete list';
+
+  @override
   String get commonRetry => 'もう一回';
 
   @override

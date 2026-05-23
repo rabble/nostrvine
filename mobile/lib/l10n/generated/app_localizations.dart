@@ -9896,6 +9896,12 @@ abstract class AppLocalizations {
   /// **'This removes the list for everyone. The people in it will not be unfollowed.'**
   String get peopleListsDeleteConfirmBody;
 
+  /// No description provided for @peopleListsDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t delete list'**
+  String get peopleListsDeleteFailed;
+
   /// No description provided for @commonRetry.
   ///
   /// In en, this message translates to:

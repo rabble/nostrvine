@@ -28,7 +28,7 @@ enum _PeopleListAction { delete }
 /// The screen is addressed by [listId] and selects the matching [UserList]
 /// from [PeopleListsBloc] with a [BlocSelector], so edits made elsewhere
 /// (add/remove member, rename) are reflected without rebuilding the route.
-class UserListPeopleScreen extends StatelessWidget {
+class UserListPeopleScreen extends StatefulWidget {
   const UserListPeopleScreen({required this.listId, super.key});
 
   /// GoRouter name for this route.
@@ -41,20 +41,77 @@ class UserListPeopleScreen extends StatelessWidget {
   final String listId;
 
   @override
+  State<UserListPeopleScreen> createState() => _UserListPeopleScreenState();
+}
+
+class _UserListPeopleScreenState extends State<UserListPeopleScreen> {
+  String? _pendingDeleteListId;
+
+  void _deleteList(String listId) {
+    setState(() {
+      _pendingDeleteListId = listId;
+    });
+    context.read<PeopleListsBloc>().add(
+      PeopleListsDeleteRequested(listId: listId),
+    );
+  }
+
+  bool _deleteSettled(PeopleListsState previous, PeopleListsState current) {
+    final pendingListId = _pendingDeleteListId;
+    if (pendingListId == null) return false;
+
+    final hadPendingDelete = previous.pendingMutations.values.any(
+      (mutation) =>
+          mutation.kind == PeopleListsMutationKind.deleteList &&
+          mutation.listId == pendingListId,
+    );
+    final hasPendingDelete = current.pendingMutations.values.any(
+      (mutation) =>
+          mutation.kind == PeopleListsMutationKind.deleteList &&
+          mutation.listId == pendingListId,
+    );
+    return hadPendingDelete && !hasPendingDelete;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocSelector<PeopleListsBloc, PeopleListsState, UserList?>(
-      selector: (state) {
-        for (final list in state.lists) {
-          if (list.id == listId) return list;
+    return BlocListener<PeopleListsBloc, PeopleListsState>(
+      listenWhen: _deleteSettled,
+      listener: (context, state) {
+        final failed = state.status == PeopleListsStatus.failure;
+        setState(() {
+          _pendingDeleteListId = null;
+        });
+        if (failed) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(context.l10n.peopleListsDeleteFailed),
+              backgroundColor: VineTheme.error,
+            ),
+          );
+          return;
         }
-        return null;
-      },
-      builder: (context, userList) {
-        if (userList == null) {
-          return const _ListNotFoundView();
+        if (context.canPop()) {
+          context.pop();
         }
-        return _UserListPeopleView(userList: userList);
       },
+      child: BlocSelector<PeopleListsBloc, PeopleListsState, UserList?>(
+        selector: (state) {
+          for (final list in state.lists) {
+            if (list.id == widget.listId) return list;
+          }
+          return null;
+        },
+        builder: (context, userList) {
+          if (userList == null) {
+            return const _ListNotFoundView();
+          }
+          return _UserListPeopleView(
+            userList: userList,
+            onDeleteConfirmed: _deleteList,
+          );
+        },
+      ),
     );
   }
 }
@@ -140,9 +197,13 @@ class _PeopleListAppBarTitle extends StatelessWidget {
 
 /// Body view for a resolved [UserList].
 class _UserListPeopleView extends ConsumerStatefulWidget {
-  const _UserListPeopleView({required this.userList});
+  const _UserListPeopleView({
+    required this.userList,
+    required this.onDeleteConfirmed,
+  });
 
   final UserList userList;
+  final ValueChanged<String> onDeleteConfirmed;
 
   @override
   ConsumerState<_UserListPeopleView> createState() =>
@@ -194,12 +255,7 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
 
     if (shouldDelete != true || !mounted) return;
 
-    context.read<PeopleListsBloc>().add(
-      PeopleListsDeleteRequested(listId: userList.id),
-    );
-    if (context.canPop()) {
-      context.pop();
-    }
+    widget.onDeleteConfirmed(userList.id);
   }
 
   @override

@@ -944,7 +944,7 @@ class CuratedListService extends ChangeNotifier {
 
     final ownerPubkey = list.pubkey;
     if (ownerPubkey == null) {
-      return true;
+      return !_subscribedListIds.contains(listId);
     }
 
     return ownerPubkey == currentPubkey;

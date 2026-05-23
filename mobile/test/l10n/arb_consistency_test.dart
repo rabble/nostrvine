@@ -290,6 +290,7 @@ const _knownUntranslatedDebt = {
   'listDeleteAction',
   'peopleListsDeleteConfirmTitle',
   'peopleListsDeleteConfirmBody',
+  'peopleListsDeleteFailed',
   'appsPermissionsTitle',
   'appsPermissionsEmptyTitle',
   'appsPermissionsEmptySubtitle',

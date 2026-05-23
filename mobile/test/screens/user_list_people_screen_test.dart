@@ -368,16 +368,18 @@ void main() {
     );
 
     testWidgets(
-      'delete confirmation confirm dispatches delete request and pops route',
+      'delete confirmation confirm dispatches delete request and pops after success',
       (tester) async {
         final bloc = _MockPeopleListsBloc();
         final list = _buildList(
           id: 'confirm-delete-list',
           name: 'Confirm Delete List',
         );
+        final controller = StreamController<PeopleListsState>.broadcast();
+        addTearDown(controller.close);
         whenListen(
           bloc,
-          const Stream<PeopleListsState>.empty(),
+          controller.stream,
           initialState: PeopleListsState(
             status: PeopleListsStatus.ready,
             ownerPubkey: _ownerPubkey,
@@ -445,8 +447,95 @@ void main() {
             const PeopleListsDeleteRequested(listId: 'confirm-delete-list'),
           ),
         ).called(1);
+        expect(find.text('Confirm Delete List'), findsOneWidget);
+
+        controller
+          ..add(
+            const PeopleListsState(
+              status: PeopleListsStatus.submitting,
+              ownerPubkey: _ownerPubkey,
+              pendingMutations: {
+                'delete-1': PeopleListsMutation(
+                  id: 'delete-1',
+                  kind: PeopleListsMutationKind.deleteList,
+                  listId: 'confirm-delete-list',
+                ),
+              },
+            ),
+          )
+          ..add(
+            const PeopleListsState(
+              status: PeopleListsStatus.ready,
+              ownerPubkey: _ownerPubkey,
+            ),
+          );
+        await tester.pumpAndSettle();
+
         expect(find.text('Confirm Delete List'), findsNothing);
         expect(find.text('Open list'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'delete failure keeps route open and shows failure feedback',
+      (tester) async {
+        final bloc = _MockPeopleListsBloc();
+        final list = _buildList(
+          id: 'failed-delete-list',
+          name: 'Failed Delete List',
+        );
+        final controller = StreamController<PeopleListsState>.broadcast();
+        addTearDown(controller.close);
+        whenListen(
+          bloc,
+          controller.stream,
+          initialState: PeopleListsState(
+            status: PeopleListsStatus.ready,
+            ownerPubkey: _ownerPubkey,
+            lists: [list],
+          ),
+        );
+
+        await _pumpPeopleListScreen(tester, bloc: bloc, list: list);
+
+        await tester.tap(find.byTooltip('List actions'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Delete list'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Delete'));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => bloc.add(
+            const PeopleListsDeleteRequested(listId: 'failed-delete-list'),
+          ),
+        ).called(1);
+
+        controller
+          ..add(
+            const PeopleListsState(
+              status: PeopleListsStatus.submitting,
+              ownerPubkey: _ownerPubkey,
+              pendingMutations: {
+                'delete-1': PeopleListsMutation(
+                  id: 'delete-1',
+                  kind: PeopleListsMutationKind.deleteList,
+                  listId: 'failed-delete-list',
+                ),
+              },
+            ),
+          )
+          ..add(
+            PeopleListsState(
+              status: PeopleListsStatus.failure,
+              ownerPubkey: _ownerPubkey,
+              lists: [list],
+            ),
+          );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Failed Delete List'), findsOneWidget);
+        expect(find.text("Couldn't delete list"), findsOneWidget);
       },
     );
 
