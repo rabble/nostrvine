@@ -31,9 +31,10 @@ class HtmlVideoElementBackend implements WebVideoPlayerBackend {
     return 'divine_video_player_view_$_viewTypeCounter';
   }
 
-  // Lookup table that lets the registered view-factory closure reference the
-  // element without capturing `this` — entries are removed on dispose so
-  // elements can be GC'd.
+  // Lookup table that lets the registered view-factory closure resolve the
+  // current element without capturing `this`. Entries are removed on dispose,
+  // but the platform-view factory itself remains registered for the session
+  // because `platformViewRegistry` does not expose an unregister API.
   static final Map<String, web.HTMLVideoElement> _elementRegistry = {};
 
   final String _viewType;
@@ -479,12 +480,7 @@ class HtmlVideoElementBackend implements WebVideoPlayerBackend {
       name: 'divine_video_player',
       category: LogCategory.video,
     );
-    _emitState(
-      _state.copyWith(
-        status: PlaybackStatus.error,
-        errorMessage: message,
-      ),
-    );
+    _emitState(_state.copyWith(status: PlaybackStatus.error));
     _onError?.call(StateError(message));
   }
 

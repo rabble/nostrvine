@@ -289,6 +289,55 @@ void main() {
         },
       );
 
+      test(
+        'does not fire when the reset position repeats without moving backward',
+        () async {
+          final controller = FakeController();
+          var loopFired = false;
+
+          subs.subscribeToAutoAdvance(
+            0,
+            controller,
+            maxLoopDuration: const Duration(seconds: 10),
+            endThreshold: const Duration(milliseconds: 200),
+            startThreshold: const Duration(milliseconds: 100),
+            isCurrent: () => true,
+            onLoopCompleted: () => loopFired = true,
+          );
+
+          controller.pushState(
+            const DivineVideoPlayerState(
+              status: PlaybackStatus.playing,
+              position: Duration(milliseconds: 9900),
+              duration: Duration(seconds: 10),
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+
+          controller.pushState(
+            const DivineVideoPlayerState(
+              status: PlaybackStatus.playing,
+              position: Duration(milliseconds: 50),
+              duration: Duration(seconds: 10),
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+
+          loopFired = false;
+
+          controller.pushState(
+            const DivineVideoPlayerState(
+              status: PlaybackStatus.playing,
+              position: Duration(milliseconds: 50),
+              duration: Duration(seconds: 10),
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+
+          expect(loopFired, isFalse);
+        },
+      );
+
       test('does not fire when not current', () async {
         final controller = FakeController();
         var loopFired = false;
@@ -349,10 +398,7 @@ void main() {
         () async {
           final controller = FakeController()
             ..pushState(
-              const DivineVideoPlayerState(
-                videoWidth: 1280,
-                videoHeight: 720,
-              ),
+              const DivineVideoPlayerState(videoWidth: 1280, videoHeight: 720),
             );
           var count = 0;
 
@@ -368,10 +414,7 @@ void main() {
           // Further state pushes must not re-fire (no subscription was
           // created).
           controller.pushState(
-            const DivineVideoPlayerState(
-              videoWidth: 1920,
-              videoHeight: 1080,
-            ),
+            const DivineVideoPlayerState(videoWidth: 1920, videoHeight: 1080),
           );
           await Future<void>.delayed(Duration.zero);
           expect(count, equals(1));
@@ -421,43 +464,30 @@ void main() {
         expect(fired, isTrue);
       });
 
-      test(
-        'fires onFirstFrame synchronously when already rendered',
-        () async {
-          final controller = FakeController()
-            ..pushState(
-              const DivineVideoPlayerState(isFirstFrameRendered: true),
-            );
-          var count = 0;
+      test('fires onFirstFrame synchronously when already rendered', () async {
+        final controller = FakeController()
+          ..pushState(const DivineVideoPlayerState(isFirstFrameRendered: true));
+        var count = 0;
 
-          subs.subscribeToFirstFrame(
-            0,
-            controller,
-            onFirstFrame: () => count++,
-          );
+        subs.subscribeToFirstFrame(0, controller, onFirstFrame: () => count++);
 
-          // Synchronous fire — no async gap needed.
-          expect(count, equals(1));
+        // Synchronous fire — no async gap needed.
+        expect(count, equals(1));
 
-          // Further state pushes must not re-fire (no subscription was
-          // created).
-          controller.pushState(
-            const DivineVideoPlayerState(isFirstFrameRendered: true),
-          );
-          await Future<void>.delayed(Duration.zero);
-          expect(count, equals(1));
-        },
-      );
+        // Further state pushes must not re-fire (no subscription was
+        // created).
+        controller.pushState(
+          const DivineVideoPlayerState(isFirstFrameRendered: true),
+        );
+        await Future<void>.delayed(Duration.zero);
+        expect(count, equals(1));
+      });
 
       test('fires only once even on further state updates', () async {
         final controller = FakeController();
         var count = 0;
 
-        subs.subscribeToFirstFrame(
-          0,
-          controller,
-          onFirstFrame: () => count++,
-        );
+        subs.subscribeToFirstFrame(0, controller, onFirstFrame: () => count++);
 
         controller.pushState(
           const DivineVideoPlayerState(isFirstFrameRendered: true),

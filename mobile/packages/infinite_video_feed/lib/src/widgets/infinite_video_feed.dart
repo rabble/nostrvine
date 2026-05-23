@@ -58,9 +58,14 @@ class InfiniteVideoFeed extends StatefulWidget {
   /// Whether the native video player is supported on the current platform.
   ///
   /// Returns `true` on Android, iOS, macOS, Linux, and web. Returns `false`
-  /// on Windows.
+  /// on Windows and every other unsupported platform.
   static bool get isSupported =>
-      _isSupportedOverrideForTesting ?? (kIsWeb || !Platform.isWindows);
+      _isSupportedOverrideForTesting ??
+      (kIsWeb ||
+          Platform.isAndroid ||
+          Platform.isIOS ||
+          Platform.isMacOS ||
+          Platform.isLinux);
 
   static bool? _isSupportedOverrideForTesting;
 
