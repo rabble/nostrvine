@@ -77,6 +77,16 @@ VideoEvent _fullVideo() => VideoEvent(
   contentWarningLabels: const ['nudity'],
   moderationLabels: const ['ml-noisy-label'],
   warnLabels: const ['nudity'],
+  proofSummary: ProofVerificationSummary(
+    status: 'present',
+    level: 'basic_proof',
+    checkedAt: DateTime.fromMillisecondsSinceEpoch(
+      1779494400 * 1000,
+      isUtc: true,
+    ),
+    version: 1,
+    checks: const {'proofmode_present': true},
+  ),
 );
 
 const _expectedKeys = <String>{
@@ -124,6 +134,7 @@ const _expectedKeys = <String>{
   'textTrackRef',
   'textTrackContent',
   'contentWarningLabels',
+  'proofSummary',
 };
 
 const _excludedDerivedGetters = <String>{

@@ -1225,6 +1225,54 @@ void main() {
     });
 
     group('toVideoEvent', () {
+      test(
+        'uses REST proof summary when compact video rows omit raw proof tags',
+        () {
+          final stats = VideoStats.fromJson(const {
+            'event': {
+              'id': 'test-id',
+              'pubkey': 'test-pubkey',
+              'created_at': 1700000000,
+              'kind': 34236,
+              'content': 'Test',
+              'tags': [
+                ['d', 'video-1'],
+                ['url', 'https://example.com/video.mp4'],
+              ],
+              'proof': {
+                'status': 'present',
+                'level': 'basic_proof',
+                'checked_at': 1779494400,
+                'version': 1,
+                'checks': {
+                  'proofmode_present': true,
+                  'proofmode_parse_ok': true,
+                  'pgp_signature_present': true,
+                  'pgp_signature_valid': null,
+                  'device_attestation_present': false,
+                  'device_attestation_valid': null,
+                  'c2pa_manifest_present': false,
+                  'c2pa_manifest_valid': null,
+                },
+              },
+            },
+            'stats': {
+              'reactions': 0,
+              'comments': 0,
+              'reposts': 0,
+              'engagement_score': 0,
+            },
+          });
+
+          final video = stats.toVideoEvent();
+
+          expect(video.rawTags['proofmode'], isNull);
+          expect(video.proofSummary?.status, equals('present'));
+          expect(video.hasProofMode, isTrue);
+          expect(video.hasBasicProof, isTrue);
+        },
+      );
+
       test('converts to VideoEvent with all fields', () {
         final stats = VideoStats(
           id: 'test-id',

@@ -43,6 +43,7 @@ class VideoStats {
     this.textTrackContent,
     this.categories = const [],
     this.collaboratorPubkeys = const [],
+    this.proofSummary,
     List<String> moderationLabels = const [],
     @Deprecated('Use moderationLabels') List<String>? contentLabels,
   }) : moderationLabels = contentLabels ?? moderationLabels;
@@ -186,6 +187,9 @@ class VideoStats {
       json['moderation_labels'] ??
           eventData['moderation_labels'] ??
           statsData['moderation_labels'],
+    );
+    final proofSummary = _parseProofSummary(
+      json['proof'] ?? eventData['proof'] ?? statsData['proof'],
     );
     // Also check for blurhash and summary in tags (NIP-71 standard)
     // Collect ALL tags into rawTags so nothing is lost (ProofMode, C2PA, etc.)
@@ -388,6 +392,7 @@ class VideoStats {
       textTrackRef: textTrackRef,
       textTrackContent: textTrackContent,
       moderationLabels: moderationLabels,
+      proofSummary: proofSummary,
     );
   }
 
@@ -491,6 +496,9 @@ class VideoStats {
   /// promoted into [VideoEvent.contentWarningLabels].
   final List<String> moderationLabels;
 
+  /// Compact backend-computed proof verification result for list/feed cards.
+  final ProofVerificationSummary? proofSummary;
+
   /// Deprecated alias for [moderationLabels].
   @Deprecated('Use moderationLabels')
   List<String> get contentLabels => moderationLabels;
@@ -543,6 +551,7 @@ class VideoStats {
       contentWarningLabels: contentWarningLabels,
       collaboratorPubkeys: collaboratorPubkeys,
       moderationLabels: moderationLabels,
+      proofSummary: proofSummary,
       rawTags: {
         ...rawTags,
         // Note: Do NOT inject engagement `loops` here — rawTags['loops']
@@ -579,6 +588,11 @@ List<String> _parseModerationLabels(dynamic value) {
     }
   }
   return labels;
+}
+
+ProofVerificationSummary? _parseProofSummary(dynamic value) {
+  if (value is! Map<String, dynamic>) return null;
+  return ProofVerificationSummary.fromJson(value);
 }
 
 String? _normalizeModerationLabel(String value) {

@@ -11,6 +11,134 @@ import 'package:models/src/video_attribution.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:text_sanitizer/text_sanitizer.dart';
 
+/// Compact backend-computed ProofMode verification result for feed/list rows.
+@immutable
+class ProofVerificationSummary {
+  const ProofVerificationSummary({
+    required this.status,
+    required this.version,
+    this.level,
+    this.checkedAt,
+    this.checks = const {},
+  });
+
+  factory ProofVerificationSummary.fromJson(Map<String, dynamic> json) {
+    final rawChecks = json['checks'];
+    final checks = rawChecks is Map<String, dynamic>
+        ? rawChecks.map(
+            (key, value) => MapEntry(key, value is bool ? value : null),
+          )
+        : const <String, bool?>{};
+
+    final checkedAt = json['checked_at'];
+    return ProofVerificationSummary(
+      status: json['status']?.toString() ?? 'unknown',
+      level: json['level']?.toString(),
+      checkedAt: checkedAt is int
+          ? DateTime.fromMillisecondsSinceEpoch(
+              checkedAt * 1000,
+              isUtc: true,
+            )
+          : null,
+      version: json['version'] is int ? json['version'] as int : 0,
+      checks: checks,
+    );
+  }
+
+  final String status;
+  final String? level;
+  final DateTime? checkedAt;
+  final int version;
+  final Map<String, bool?> checks;
+
+  bool get isUnknown => status == 'unknown';
+  bool get isInvalid => status == 'invalid';
+  bool get isPresent => status == 'present';
+  bool get isVerified => status == 'verified';
+  bool get canUseAsProofSignal => !isUnknown && !isInvalid;
+  bool get hasUsableProofmode =>
+      canUseAsProofSignal &&
+      proofmodePresent == true &&
+      proofmodeParseOk != false;
+  bool get hasUsableDeviceAttestation =>
+      canUseAsProofSignal &&
+      deviceAttestationPresent == true &&
+      deviceAttestationValid != false;
+  bool get hasUsablePgpSignature =>
+      canUseAsProofSignal &&
+      pgpSignaturePresent == true &&
+      pgpSignatureValid != false;
+  bool get hasUsableC2paManifest =>
+      canUseAsProofSignal &&
+      c2paManifestPresent == true &&
+      c2paManifestValid != false;
+  bool get hasProofSignal =>
+      hasUsableProofmode ||
+      hasUsableDeviceAttestation ||
+      hasUsablePgpSignature ||
+      hasUsableC2paManifest;
+
+  bool? get proofmodePresent => checks['proofmode_present'];
+  bool? get proofmodeParseOk => checks['proofmode_parse_ok'];
+  bool? get pgpSignaturePresent => checks['pgp_signature_present'];
+  bool? get pgpSignatureValid => checks['pgp_signature_valid'];
+  bool? get deviceAttestationPresent => checks['device_attestation_present'];
+  bool? get deviceAttestationValid => checks['device_attestation_valid'];
+  bool? get c2paManifestPresent => checks['c2pa_manifest_present'];
+  bool? get c2paManifestValid => checks['c2pa_manifest_valid'];
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'status': status,
+    'level': level,
+    'checked_at': checkedAt == null
+        ? null
+        : checkedAt!.millisecondsSinceEpoch ~/ 1000,
+    'version': version,
+    'checks': checks,
+  };
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is ProofVerificationSummary &&
+        other.status == status &&
+        other.level == level &&
+        other.checkedAt == checkedAt &&
+        other.version == version &&
+        _nullableBoolMapEquals(other.checks, checks);
+  }
+
+  @override
+  int get hashCode {
+    final checkHashes =
+        checks.entries
+            .map((entry) => Object.hash(entry.key, entry.value))
+            .toList()
+          ..sort();
+    return Object.hash(
+      status,
+      level,
+      checkedAt,
+      version,
+      Object.hashAll(checkHashes),
+    );
+  }
+}
+
+bool _nullableBoolMapEquals(
+  Map<String, bool?> first,
+  Map<String, bool?> second,
+) {
+  if (identical(first, second)) return true;
+  if (first.length != second.length) return false;
+  for (final entry in first.entries) {
+    if (!second.containsKey(entry.key) || second[entry.key] != entry.value) {
+      return false;
+    }
+  }
+  return true;
+}
+
 /// Represents a video event (NIP-71 compliant kinds 22, 34236)
 @immutable
 class VideoEvent {
@@ -64,6 +192,7 @@ class VideoEvent {
     this.contentWarningLabels = const [],
     this.moderationLabels = const [],
     this.warnLabels = const [],
+    this.proofSummary,
   });
 
   /// Create VideoEvent from Nostr event
@@ -582,6 +711,9 @@ class VideoEvent {
   /// When non-empty, the video should be shown with a blur overlay.
   final List<String> warnLabels;
 
+  /// Compact proof verification summary returned by Funnelcake REST feeds.
+  final ProofVerificationSummary? proofSummary;
+
   /// Whether this video has any content warnings.
   bool get hasContentWarning => contentWarningLabels.isNotEmpty;
 
@@ -722,17 +854,31 @@ class VideoEvent {
 
   /// ProofMode: Get verification level from tags (NIP-145)
   String? get proofModeVerificationLevel {
-    return rawTags['verification'];
+    final rawLevel = rawTags['verification'];
+    if (rawLevel != null && rawLevel.isNotEmpty) return rawLevel;
+    if (proofSummary?.isVerified != true) return null;
+    final summaryLevel = proofSummary?.level;
+    return summaryLevel != null && summaryLevel.isNotEmpty
+        ? summaryLevel
+        : null;
   }
 
   /// ProofMode: Get proof manifest from tags (NIP-145)
   String? get proofModeManifest {
-    return rawTags['proofmode'];
+    final rawManifest = rawTags['proofmode'];
+    if (rawManifest != null && rawManifest.isNotEmpty) return rawManifest;
+    return proofSummary?.hasUsableProofmode == true ? 'summary:present' : null;
   }
 
   /// ProofMode: Get device attestation from tags (NIP-145)
   String? get proofModeDeviceAttestation {
-    return rawTags['device_attestation'];
+    final rawAttestation = rawTags['device_attestation'];
+    if (rawAttestation != null && rawAttestation.isNotEmpty) {
+      return rawAttestation;
+    }
+    return proofSummary?.hasUsableDeviceAttestation == true
+        ? 'summary:present'
+        : null;
   }
 
   /// ProofMode: Get PGP signature from the embedded `proofmode` manifest.
@@ -745,12 +891,19 @@ class VideoEvent {
   String? get proofModePgpFingerprint {
     final signature = proofModeManifestJson?['pgpSignature'];
     if (signature is String && signature.isNotEmpty) return signature;
+    if (proofSummary?.hasUsablePgpSignature == true) return 'summary:present';
     return null;
   }
 
   /// ProofMode: Get C2PA Manifest Id
   String? get proofModeC2paManifestId {
-    return rawTags['c2pa_manifest_id'];
+    final rawManifestId = rawTags['c2pa_manifest_id'];
+    if (rawManifestId != null && rawManifestId.isNotEmpty) {
+      return rawManifestId;
+    }
+    return proofSummary?.hasUsableC2paManifest == true
+        ? 'summary:present'
+        : null;
   }
 
   /// Parsed `proofmode` tag manifest, or `null` when the tag is missing or
@@ -796,26 +949,50 @@ class VideoEvent {
 
   /// ProofMode: Check if video has any proof
   bool get hasProofMode {
+    final rawHasProof =
+        rawTags['verification'] != null ||
+        rawTags['proofmode'] != null ||
+        rawTags['device_attestation'] != null ||
+        rawTags['c2pa_manifest_id'] != null;
+    if (rawHasProof) return true;
+
     return proofModeVerificationLevel != null ||
         proofModeManifest != null ||
         proofModePgpFingerprint != null ||
         proofModeDeviceAttestation != null ||
-        proofModeC2paManifestId != null;
+        proofModeC2paManifestId != null ||
+        (proofSummary?.hasProofSignal ?? false);
   }
 
   /// ProofMode: Check if video is verified mobile (highest level)
   bool get isVerifiedMobile {
-    return proofModeVerificationLevel == 'verified_mobile';
+    final rawLevel = rawTags['verification'];
+    if (rawLevel != null && rawLevel.isNotEmpty) {
+      return rawLevel == 'verified_mobile';
+    }
+    return proofSummary?.isVerified == true &&
+        proofSummary?.level == 'verified_mobile';
   }
 
   /// ProofMode: Check if video is verified web (medium level)
   bool get isVerifiedWeb {
-    return proofModeVerificationLevel == 'verified_web';
+    final rawLevel = rawTags['verification'];
+    if (rawLevel != null && rawLevel.isNotEmpty) {
+      return rawLevel == 'verified_web';
+    }
+    return proofSummary?.isVerified == true &&
+        proofSummary?.level == 'verified_web';
   }
 
   /// ProofMode: Check if video has basic proof (low level)
   bool get hasBasicProof {
-    return proofModeVerificationLevel == 'basic_proof';
+    final rawLevel = rawTags['verification'];
+    if (rawLevel != null && rawLevel.isNotEmpty) {
+      return rawLevel == 'basic_proof';
+    }
+    return proofSummary?.hasProofSignal == true &&
+        (proofSummary?.level == 'basic_proof' ||
+            proofSummary?.status == 'present');
   }
 
   /// Original Vine: Check if this is a recovered original vine from the
@@ -1126,6 +1303,7 @@ class VideoEvent {
     List<String>? contentWarningLabels,
     List<String>? moderationLabels,
     List<String>? warnLabels,
+    ProofVerificationSummary? proofSummary,
   }) => VideoEvent(
     id: id ?? this.id,
     pubkey: pubkey ?? this.pubkey,
@@ -1182,6 +1360,7 @@ class VideoEvent {
     contentWarningLabels: contentWarningLabels ?? this.contentWarningLabels,
     moderationLabels: moderationLabels ?? this.moderationLabels,
     warnLabels: warnLabels ?? this.warnLabels,
+    proofSummary: proofSummary ?? this.proofSummary,
   );
 
   @override
@@ -1255,6 +1434,7 @@ class VideoEvent {
     'textTrackRef': textTrackRef,
     'textTrackContent': textTrackContent,
     'contentWarningLabels': contentWarningLabels,
+    'proofSummary': proofSummary?.toJson(),
   };
 
   /// Create a VideoEvent instance representing a repost
