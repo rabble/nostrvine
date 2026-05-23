@@ -206,9 +206,10 @@ class _PausedVideoOverlayState extends State<PausedVideoOverlay>
         final isPaused = snapshot.data?.isPaused ?? false;
         final isPlaying = snapshot.data?.isPlaying ?? false;
 
+        final hasVisiblePausedFrame = isPaused && isFirstFrameRendered;
         final shouldShow =
             widget.isVisible &&
-            _hasStartedPlaying &&
+            (_hasStartedPlaying || hasVisiblePausedFrame) &&
             isPaused &&
             !isBuffering &&
             isFirstFrameRendered;

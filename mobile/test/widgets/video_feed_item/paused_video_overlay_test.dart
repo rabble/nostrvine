@@ -1,0 +1,81 @@
+import 'dart:async';
+
+import 'package:divine_video_player/divine_video_player.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/widgets/video_feed_item/center_playback_control.dart';
+import 'package:openvine/widgets/video_feed_item/paused_video_overlay.dart';
+
+class _FakeDivineVideoPlayerController extends DivineVideoPlayerController {
+  _FakeDivineVideoPlayerController() : super();
+
+  final _streamController =
+      StreamController<DivineVideoPlayerState>.broadcast();
+  DivineVideoPlayerState _state = const DivineVideoPlayerState();
+
+  @override
+  DivineVideoPlayerState get state => _state;
+
+  @override
+  Stream<DivineVideoPlayerState> get stateStream => _streamController.stream;
+
+  void pushState(DivineVideoPlayerState state) {
+    _state = state;
+    _streamController.add(state);
+  }
+
+  @override
+  Future<void> dispose() => _streamController.close();
+}
+
+void main() {
+  group(PausedVideoOverlay, () {
+    late _FakeDivineVideoPlayerController controller;
+
+    setUp(() {
+      controller = _FakeDivineVideoPlayerController();
+    });
+
+    tearDown(() async {
+      await controller.dispose();
+    });
+
+    Widget buildSubject() {
+      return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: PausedVideoOverlay(controller: controller),
+        ),
+      );
+    }
+
+    Finder findPlayControl() => find.byWidgetPredicate(
+      (widget) =>
+          widget is CenterPlaybackControl &&
+          widget.state == CenterPlaybackControlState.play,
+    );
+
+    testWidgets(
+      'shows play affordance for a first-frame paused controller even when '
+      'visible playback was never observed',
+      (tester) async {
+        await tester.pumpWidget(buildSubject());
+
+        controller.pushState(
+          const DivineVideoPlayerState(
+            status: PlaybackStatus.paused,
+            isFirstFrameRendered: true,
+            videoWidth: 1280,
+            videoHeight: 720,
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 220));
+
+        expect(findPlayControl(), findsOneWidget);
+      },
+    );
+  });
+}
