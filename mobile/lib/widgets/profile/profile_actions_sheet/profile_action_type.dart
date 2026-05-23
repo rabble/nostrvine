@@ -33,7 +33,10 @@ enum ProfileActionType {
     if (!isOwnProfile) return const [];
 
     return [
-      if (isAnonymous) secureAccount,
+      // The "Secure account" prompt is paused (#3359): the email/password
+      // upgrade transmitted the user's nsec, and its key-safe replacement is
+      // tracked in #3786. `isAnonymous` is retained for that restoration.
+      // TODO(#3786): re-add `if (isAnonymous) secureAccount,` here.
       if (!hasAnyProfileInfo) completeProfile,
     ];
   }

@@ -152,6 +152,17 @@ jobs:
             exit 1
           fi
           echo "✅ VGV tag count OK: current=$current, baseline=$baseline"
+  nsec-leak-guard:
+    name: NSec Leak Guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 🛡️ Verify production code does not use nsec as a payload key
+        # Locks in the Phase 1 fix for divinevideo/divine-mobile#3359 — fails
+        # if any production .dart file under mobile/lib or mobile/packages
+        # re-introduces nsec as a JSON / map key in an HTTP body. The guard
+        # script uses POSIX find + grep -E, no extra deps needed.
+        run: bash mobile/tools/ci/grep_for_nsec_payload.sh
   mobile-ci:
     name: Mobile CI
     if: ${{ always() }}
@@ -161,6 +172,7 @@ jobs:
       - analyze
       - tests
       - vgv-tag-gate
+      - nsec-leak-guard
     runs-on: ubuntu-24.04-16core
     steps:
       - name: Verify upstream jobs
@@ -170,18 +182,21 @@ jobs:
           ANALYZE_RESULT: ${{ needs.analyze.result }}
           TESTS_RESULT: ${{ needs.tests.result }}
           VGV_TAG_GATE_RESULT: ${{ needs.vgv-tag-gate.result }}
+          NSEC_LEAK_GUARD_RESULT: ${{ needs.nsec-leak-guard.result }}
         run: |
           echo "generated-files: ${GENERATED_FILES_RESULT}"
           echo "format: ${FORMAT_RESULT}"
           echo "analyze: ${ANALYZE_RESULT}"
           echo "tests: ${TESTS_RESULT}"
           echo "vgv-tag-gate: ${VGV_TAG_GATE_RESULT}"
+          echo "nsec-leak-guard: ${NSEC_LEAK_GUARD_RESULT}"
 
           if [[ "${GENERATED_FILES_RESULT}" != "success" || \
                 "${FORMAT_RESULT}" != "success" || \
                 "${ANALYZE_RESULT}" != "success" || \
                 "${TESTS_RESULT}" != "success" || \
-                "${VGV_TAG_GATE_RESULT}" != "success" ]]; then
+                "${VGV_TAG_GATE_RESULT}" != "success" || \
+                "${NSEC_LEAK_GUARD_RESULT}" != "success" ]]; then
             echo "One or more Mobile CI jobs failed."
             exit 1
           fi

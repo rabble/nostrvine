@@ -2920,6 +2920,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get authSecureAccountTitle => 'Amankan akun';
 
   @override
+  String get authSecureAccountUnavailableMessage =>
+      'Securing your account is paused for a quick security update. Your keys stay safe on this device — check back soon.';
+
+  @override
   String get authUnableToAccessKeys =>
       'Tidak bisa mengakses kuncimu. Silakan coba lagi.';
 

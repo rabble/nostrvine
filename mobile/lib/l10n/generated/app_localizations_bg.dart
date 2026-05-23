@@ -2989,6 +2989,10 @@ class AppLocalizationsBg extends AppLocalizations {
   String get authSecureAccountTitle => 'Защитен акаунт';
 
   @override
+  String get authSecureAccountUnavailableMessage =>
+      'Securing your account is paused for a quick security update. Your keys stay safe on this device — check back soon.';
+
+  @override
   String get authUnableToAccessKeys =>
       'Няма достъп до ключовете ти. Опитай пак.';
 

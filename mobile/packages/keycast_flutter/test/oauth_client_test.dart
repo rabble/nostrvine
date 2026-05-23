@@ -71,31 +71,18 @@ void main() {
         expect(uri.queryParameters['default_register'], 'false');
       });
 
-      test('omits byok_pubkey when nsec not provided', () async {
+      test('never sets byok_pubkey and never embeds an nsec (#3359)', () async {
+        // Pre-fix code accepted an nsec, derived byok_pubkey into the query,
+        // and suffixed the verifier with the nsec. That surface is removed:
+        // the URL must carry no byok_pubkey and the verifier no nsec/dot.
         final oauth = KeycastOAuth(config: config);
-        final (url, _) = await oauth.getAuthorizationUrl();
+        final (url, verifier) = await oauth.getAuthorizationUrl();
 
         final uri = Uri.parse(url);
         expect(uri.queryParameters.containsKey('byok_pubkey'), isFalse);
-      });
-
-      test('includes byok_pubkey when nsec provided', () async {
-        final oauth = KeycastOAuth(config: config);
-        final (url, verifier) = await oauth.getAuthorizationUrl(
-          nsec:
-              'nsec1vl029mgpspedva04g90vltkh6fvh240zqtv9k0t9af8935ke9laqsnlfe5',
-        );
-
-        final uri = Uri.parse(url);
-        expect(uri.queryParameters.containsKey('byok_pubkey'), isTrue);
-        expect(uri.queryParameters['byok_pubkey']?.length, 64);
-        expect(verifier, contains('.nsec1'));
-      });
-
-      test('returns null URL for invalid nsec', () async {
-        final oauth = KeycastOAuth(config: config);
-        final (url, _) = await oauth.getAuthorizationUrl(nsec: 'invalid');
-        expect(url, isEmpty);
+        expect(uri.toString(), isNot(contains('nsec1')));
+        expect(verifier, isNot(contains('nsec1')));
+        expect(verifier, isNot(contains('.')));
       });
     });
 
@@ -368,14 +355,18 @@ void main() {
         expect(result.success, isTrue);
       });
 
-      test('includes nsec in body when provided', () async {
+      test('never sends an nsec in the body or embeds it in the verifier '
+          '(#3359)', () async {
+        // Capture the body and assert OUTSIDE the mock closure: an in-closure
+        // expect() failure would be swallowed by headlessRegister's try/catch
+        // and surface as a benign "network error", greening a real leak.
+        String? capturedBody;
         final mockClient = MockClient((request) async {
-          final body = jsonDecode(request.body) as Map<String, dynamic>;
-          expect(body['nsec'], contains('nsec1'));
+          capturedBody = request.body;
           return http.Response(
             jsonEncode({
               'success': true,
-              'pubkey': 'byok_pubkey',
+              'pubkey': 'server_pubkey',
               'verification_required': true,
             }),
             200,
@@ -383,12 +374,18 @@ void main() {
         });
 
         final oauth = KeycastOAuth(config: config, httpClient: mockClient);
-        await oauth.headlessRegister(
+        final (result, verifier) = await oauth.headlessRegister(
           email: 'test@example.com',
           password: 'password123',
-          nsec:
-              'nsec1vl029mgpspedva04g90vltkh6fvh240zqtv9k0t9af8935ke9laqsnlfe5',
         );
+
+        expect(result.success, isTrue);
+        expect(capturedBody, isNotNull);
+        final body = jsonDecode(capturedBody!) as Map<String, dynamic>;
+        expect(body.containsKey('nsec'), isFalse);
+        expect(capturedBody, isNot(contains('nsec1')));
+        expect(verifier, isNot(contains('nsec1')));
+        expect(verifier, isNot(contains('.')));
       });
 
       test('includes state parameter when provided', () async {

@@ -291,10 +291,14 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
           if (result.code != null && _pendingVerifier != null) {
             await _exchangeCodeAndLogin(result.code!, _pendingVerifier!);
           } else {
-            // Edge case: completion detected but missing code or verifier
+            // Edge case: completion detected but missing code or verifier.
+            // Never log the verifier value — it is the PKCE secret and, on
+            // pre-fix installs, could carry the nsec (#3359). Log presence
+            // booleans only.
             Log.error(
               'Verification complete but missing code or verifier! '
-              'code=${result.code}, verifier=$_pendingVerifier',
+              'hasCode=${result.code != null}, '
+              'hasVerifier=${_pendingVerifier != null}',
               name: 'EmailVerificationCubit',
               category: LogCategory.auth,
             );

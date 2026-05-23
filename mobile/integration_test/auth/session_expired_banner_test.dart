@@ -42,12 +42,15 @@ void main() {
         final authService = container.read(authServiceProvider);
 
         // ════════════════════════════════════════════════════════════
-        // Phase 1: Generate local keys, then register with Keycast
-        //          passing the nsec so both share the same pubkey.
+        // Phase 1: Generate local keys, then register with Keycast so the
+        //          local key shares the account's pubkey (BYOK binding).
         //
-        // This mirrors the real "started anonymous → secured account"
-        // flow where the user's local nsec is imported into Keycast
-        // via headlessRegister(nsec: ...).
+        // SKIPPED (#3359): the nsec-passing path was removed because it
+        // leaked the user's private key over the wire. This banner only
+        // appears because the local key shares the OAuth pubkey and keeps
+        // the user authenticated after the session expires — i.e. it relies
+        // on BYOK identity preservation. #3786 restores that binding via
+        // proof-of-possession (byok_pubkey + byok_proof); re-enable then.
         // ════════════════════════════════════════════════════════════
 
         // 1a. Generate local private key
@@ -60,13 +63,14 @@ void main() {
         final localPubkey = keyContainer!.publicKeyHex;
         logPhase('Phase 1a: local keys generated — pubkey=$localPubkey');
 
-        // 1b. Register with Keycast passing the same nsec
+        // 1b. Register with Keycast. #3786 will re-bind the local pubkey here
+        // via proof-of-possession (byok_pubkey + byok_proof) instead of the
+        // removed nsec transfer.
         final oauthClient = container.read(oauthClientProvider);
         final result = (await tester.runAsync(
           () => oauthClient.headlessRegister(
             email: testEmail,
             password: testPassword,
-            nsec: nsec,
             scope: 'policy:full',
           ),
         ))!;
@@ -227,6 +231,10 @@ void main() {
         restoreErrorHandler(originalOnError);
         restoreErrorWidgetBuilder(originalErrorBuilder);
       },
+      // Skipped pending #3786 (see Phase 1 comment): the expired-session
+      // banner relies on the BYOK local-key fallback that the #3359 nsec
+      // strip removes until proof-of-possession binding is restored.
+      skip: true,
       timeout: const Timeout(Duration(minutes: 5)),
     );
   });
