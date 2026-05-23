@@ -3250,8 +3250,6 @@
     "nostrSettingsExperimentalFeaturesSubtitle": "Zet feature flags aan die soms haperen.",
     "nostrSettingsKeyManagement": "Sleutelbeheer",
     "nostrSettingsKeyManagementSubtitle": "Exporteer, back-up en herstel je Nostr-sleutels",
-    "nostrSettingsClientAttribution": "Client Attribution",
-    "nostrSettingsClientAttributionSubtitle": "Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly.",
     "nostrSettingsRemoveKeys": "Sleutels van apparaat verwijderen",
     "nostrSettingsRemoveKeysSubtitle": "Verwijder je privésleutel alleen van dit apparaat. Je inhoud blijft op relays staan, maar je hebt je nsec-back-up nodig om weer bij je account te komen.",
     "nostrSettingsCouldNotRemoveKeys": "Sleutels konden niet van dit apparaat verwijderd worden. Probeer het opnieuw.",

@@ -989,17 +989,14 @@ class NostrClient {
 
     final event = Event(publicKey, EventKind.genericRepost, tags, content);
 
-    final sentEvent = await _nostr.sendEvent(
+    final result = await publishEvent(
       event,
-      tempRelays: tempRelays,
-      targetRelays: targetRelays,
+      targetRelays: targetRelays ?? tempRelays,
     );
-
-    if (sentEvent != null) {
-      _cacheEvent(sentEvent);
+    if (result case PublishSuccess(:final event)) {
+      return event;
     }
-
-    return sentEvent;
+    return null;
   }
 
   /// Deletes an event

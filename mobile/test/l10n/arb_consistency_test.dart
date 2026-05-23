@@ -150,6 +150,10 @@ const _knownUntranslatedDebt = {
   'nostrSettingsExperimentalFeaturesSubtitle',
   'nostrSettingsKeyManagement',
   'nostrSettingsKeyManagementSubtitle',
+  // Added by the NIP-89 client attribution settings toggle. Existing locales
+  // fall back to English until the next full translation pass.
+  'nostrSettingsClientAttribution',
+  'nostrSettingsClientAttributionSubtitle',
   'nostrSettingsRemoveKeys',
   'nostrSettingsRemoveKeysSubtitle',
   'nostrSettingsCouldNotRemoveKeys',

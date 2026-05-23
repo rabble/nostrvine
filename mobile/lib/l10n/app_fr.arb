@@ -3250,8 +3250,6 @@
     "nostrSettingsExperimentalFeaturesSubtitle": "Active des feature flags qui peuvent avoir des ratés.",
     "nostrSettingsKeyManagement": "Gestion des clés",
     "nostrSettingsKeyManagementSubtitle": "Exporte, sauvegarde et restaure tes clés Nostr",
-    "nostrSettingsClientAttribution": "Client Attribution",
-    "nostrSettingsClientAttributionSubtitle": "Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly.",
     "nostrSettingsRemoveKeys": "Retirer les clés de l'appareil",
     "nostrSettingsRemoveKeysSubtitle": "Supprime ta clé privée de cet appareil uniquement. Ton contenu reste sur les relays, mais tu auras besoin de ta sauvegarde nsec pour accéder à nouveau à ton compte.",
     "nostrSettingsCouldNotRemoveKeys": "Impossible de retirer les clés de cet appareil. Réessaie.",

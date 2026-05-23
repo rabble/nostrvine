@@ -1714,6 +1714,7 @@ void main() {
             ['k', '$targetKind'],
             ['a', addressableId],
             ['p', authorPubkey],
+            Nip89ClientTag.tag,
           ]),
         );
       });
@@ -1746,7 +1747,7 @@ void main() {
             verify(
                   () => mockNostr.sendEvent(
                     captureAny(),
-                    tempRelays: tempRelays,
+                    tempRelays: targetRelays,
                     targetRelays: targetRelays,
                   ),
                 ).captured.single
@@ -1800,17 +1801,19 @@ void main() {
                 ).captured.single
                 as Event;
 
-        // Verify tags are in correct order: k, a, p
-        expect(captured.tags.length, equals(3));
+        // Verify tags are in correct order: k, a, p, client
+        expect(captured.tags.length, equals(4));
         final tag0 = captured.tags[0] as List<dynamic>;
         final tag1 = captured.tags[1] as List<dynamic>;
         final tag2 = captured.tags[2] as List<dynamic>;
+        final tag3 = captured.tags[3] as List<dynamic>;
         expect(tag0[0], equals('k'));
         expect(tag0[1], equals('$targetKind'));
         expect(tag1[0], equals('a'));
         expect(tag1[1], equals(addressableId));
         expect(tag2[0], equals('p'));
         expect(tag2[1], equals(authorPubkey));
+        expect(tag3, equals(Nip89ClientTag.tag));
       });
     });
 

@@ -2082,8 +2082,6 @@
     "nostrSettingsExperimentalFeaturesSubtitle": "I-toggle ang mga feature flag na maaaring magka-hiccup.",
     "nostrSettingsKeyManagement": "Key Management",
     "nostrSettingsKeyManagementSubtitle": "I-export, i-backup, at i-restore ang iyong Nostr keys",
-    "nostrSettingsClientAttribution": "Client Attribution",
-    "nostrSettingsClientAttributionSubtitle": "Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly.",
     "nostrSettingsRemoveKeys": "Alisin ang mga Key sa Device",
     "nostrSettingsRemoveKeysSubtitle": "Burahin ang private key mo sa device na ito lang. Mananatili ang content mo sa mga relay, pero kakailanganin mo ang nsec backup mo para ma-access ulit ang account mo.",
     "nostrSettingsCouldNotRemoveKeys": "Hindi naalis ang mga key sa device na ito. Subukan ulit.",

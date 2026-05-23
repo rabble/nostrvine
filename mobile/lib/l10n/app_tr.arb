@@ -3250,8 +3250,6 @@
     "nostrSettingsExperimentalFeaturesSubtitle": "Aksaklık çıkarabilecek özellik bayraklarını aç/kapat.",
     "nostrSettingsKeyManagement": "Anahtar Yönetimi",
     "nostrSettingsKeyManagementSubtitle": "Nostr anahtarlarını dışa aktar, yedekle ve geri yükle",
-    "nostrSettingsClientAttribution": "Client Attribution",
-    "nostrSettingsClientAttributionSubtitle": "Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly.",
     "nostrSettingsRemoveKeys": "Anahtarları Cihazdan Kaldır",
     "nostrSettingsRemoveKeysSubtitle": "Özel anahtarını yalnızca bu cihazdan sil. İçeriğin rölelerde kalır, ancak hesabına tekrar erişmek için nsec yedeğine ihtiyacın olur.",
     "nostrSettingsCouldNotRemoveKeys": "Anahtarlar bu cihazdan kaldırılamadı. Lütfen tekrar dene.",
