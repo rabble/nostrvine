@@ -279,6 +279,7 @@ class HtmlVideoElementBackend implements WebVideoPlayerBackend {
         category: LogCategory.video,
       );
       _onError?.call(error);
+      return;
     }
     _refreshState();
   }

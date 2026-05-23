@@ -81,5 +81,26 @@ void main() {
       expect(backend.debugVideoElement.volume, 0);
       expect(backend.debugVideoElement.muted, isTrue);
     });
+
+    test('play rejection does not overwrite the emitted error state', () async {
+      await backend.dispose();
+      states = <DivineVideoPlayerState>[];
+      errors = <Object>[];
+      backend = HtmlVideoElementBackend();
+      await backend.initialize(
+        onStateChanged: states.add,
+        onError: (error) {
+          errors.add(error);
+          states.add(
+            const DivineVideoPlayerState(status: PlaybackStatus.error),
+          );
+        },
+      );
+
+      await backend.play();
+
+      expect(errors, hasLength(1));
+      expect(states.last.status, PlaybackStatus.error);
+    });
   });
 }
