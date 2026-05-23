@@ -3243,6 +3243,8 @@
     "nostrSettingsExperimentalFeaturesSubtitle": "バグるかもしれない機能フラグを切り替える。",
     "nostrSettingsKeyManagement": "鍵の管理",
     "nostrSettingsKeyManagementSubtitle": "Nostr 鍵をエクスポート、バックアップ、復元",
+    "nostrSettingsClientAttribution": "Client Attribution",
+    "nostrSettingsClientAttributionSubtitle": "Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly.",
     "nostrSettingsRemoveKeys": "このデバイスから鍵を削除",
     "nostrSettingsRemoveKeysSubtitle": "このデバイスから秘密鍵だけを消すよ。コンテンツはリレーに残るけど、もう一回アカウントを使うには nsec のバックアップが必要になるよ。",
     "nostrSettingsCouldNotRemoveKeys": "このデバイスから鍵を削除できなかった。もう一回試してみて。",

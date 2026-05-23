@@ -3250,6 +3250,8 @@
     "nostrSettingsExperimentalFeaturesSubtitle": "Ative flags de recursos que podem dar chilique.",
     "nostrSettingsKeyManagement": "Gerenciamento de chaves",
     "nostrSettingsKeyManagementSubtitle": "Exporte, faça backup e restaure suas chaves Nostr",
+    "nostrSettingsClientAttribution": "Client Attribution",
+    "nostrSettingsClientAttributionSubtitle": "Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly.",
     "nostrSettingsRemoveKeys": "Remover chaves do dispositivo",
     "nostrSettingsRemoveKeysSubtitle": "Apague sua chave privada apenas deste dispositivo. Seu conteúdo continua nos relays, mas você vai precisar do backup da nsec para acessar sua conta de novo.",
     "nostrSettingsCouldNotRemoveKeys": "Não foi possível remover as chaves deste dispositivo. Tente novamente.",

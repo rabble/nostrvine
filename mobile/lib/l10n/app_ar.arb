@@ -3243,6 +3243,8 @@
     "nostrSettingsExperimentalFeaturesSubtitle": "تعديلات قد تتعثّر.",
     "nostrSettingsKeyManagement": "إدارة المفاتيح",
     "nostrSettingsKeyManagementSubtitle": "تصدير مفاتيح Nostr ونسخها واستعادتها",
+    "nostrSettingsClientAttribution": "Client Attribution",
+    "nostrSettingsClientAttributionSubtitle": "Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly.",
     "nostrSettingsRemoveKeys": "إزالة المفاتيح من الجهاز",
     "nostrSettingsRemoveKeysSubtitle": "احذف مفتاحك الخاص من هذا الجهاز فقط. سيبقى محتواك على المحولات، لكنّك ستحتاج إلى نسخة nsec الاحتياطية للوصول إلى حسابك مرّة أخرى.",
     "nostrSettingsCouldNotRemoveKeys": "تعذّرت إزالة المفاتيح من هذا الجهاز. حاول مرّة أخرى.",
