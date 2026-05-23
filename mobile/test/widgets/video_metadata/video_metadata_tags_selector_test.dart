@@ -122,6 +122,9 @@ void main() {
         expect(find.text('music'), findsOneWidget);
 
         await tester.tap(find.text('music'));
+        // Two pumps: the first flushes the tap + bloc emit, the second lets
+        // the listener-swap inside `_addTag` settle after the controller
+        // value is replaced.
         await tester.pump();
         await tester.pump();
 
