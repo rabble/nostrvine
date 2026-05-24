@@ -859,16 +859,16 @@ class AppLocalizationsPl extends AppLocalizations {
       'Przesyłanie zdjęcia profilowego nie jest jeszcze dostępne w wersji webowej. Użyj aplikacji na iOS lub Androida albo wklej URL obrazu.';
 
   @override
-  String get profileSetupBannerSectionTitle => 'Banner';
+  String get profileSetupBannerSectionTitle => 'Baner';
 
   @override
-  String get profileSetupBannerUploadButton => 'Upload photo';
+  String get profileSetupBannerUploadButton => 'Prześlij zdjęcie';
 
   @override
-  String get profileSetupBannerClearButton => 'Clear banner';
+  String get profileSetupBannerClearButton => 'Wyczyść baner';
 
   @override
-  String get profileSetupBannerUploadSuccess => 'Banner updated';
+  String get profileSetupBannerUploadSuccess => 'Baner zaktualizowany';
 
   @override
   String get profileSetupUsernameChecking => 'Sprawdzanie dostępności...';
@@ -1204,7 +1204,8 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'Edytuj film';
 
   @override
-  String get videoPlayerTapHint => 'Tap to play or pause. Double tap to like.';
+  String get videoPlayerTapHint =>
+      'Dotknij, aby odtworzyć lub wstrzymać. Dotknij dwukrotnie, aby polubić.';
 
   @override
   String get videoSettingsMenuOpen => 'Otwórz ustawienia odtwarzania';
@@ -2374,7 +2375,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get notificationSettingsMarkAllAsReadFailed =>
-      'Failed to mark all as read';
+      'Nie udało się oznaczyć wszystkich jako przeczytane';
 
   @override
   String get notificationSettingsResetToDefaults =>
@@ -2693,15 +2694,6 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get authTermsPrefix =>
       'Wybierając opcję powyżej, potwierdzasz, że masz przynajmniej 16 lat i zgadzasz się z ';
-
-  @override
-  String get authMinAgeNotice => 'Divine accounts are for ages 16 and up.';
-
-  @override
-  String get authUnder16Prefix => 'Not 16 yet? That\'s OK. ';
-
-  @override
-  String get authUnder16ChoicesCta => 'Here are your choices.';
 
   @override
   String get authTermsOfService => 'Regulaminem';
@@ -4405,7 +4397,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String userPickerRemoveSelectionSemantics(String name) {
-    return 'Remove $name';
+    return 'Usuń $name';
   }
 
   @override
@@ -5874,10 +5866,11 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get videoMetadataEditCoverFailedSnackbar =>
-      'Couldn\'t update the cover. Try again.';
+      'Nie udało się zaktualizować okładki. Spróbuj ponownie.';
 
   @override
-  String get videoMetadataEditCoverSuccessAnnouncement => 'Cover updated';
+  String get videoMetadataEditCoverSuccessAnnouncement =>
+      'Zaktualizowano okładkę';
 
   @override
   String get videoMetadataTags => 'Tagi';
@@ -7342,22 +7335,22 @@ class AppLocalizationsPl extends AppLocalizations {
       'Podziel wybrany klip';
 
   @override
-  String get videoEditorExtractAudioLabel => 'Extract Audio';
+  String get videoEditorExtractAudioLabel => 'Wyodrębnij dźwięk';
 
   @override
-  String get videoEditorClipAudioTitle => 'Clip Audio';
+  String get videoEditorClipAudioTitle => 'Dźwięk klipu';
 
   @override
   String get videoEditorExtractAudioFromClipSemanticLabel =>
-      'Extract audio from clip and mute original';
+      'Wyodrębnij dźwięk z klipu i wycisz oryginał';
 
   @override
   String get videoEditorExtractAudioNoLocalFile =>
-      'Cannot extract audio: clip is not locally available.';
+      'Nie można wyodrębnić audio: klip nie jest dostępny lokalnie.';
 
   @override
   String get videoEditorExtractAudioFailed =>
-      'Could not extract audio. Please try again.';
+      'Nie udało się wyodrębnić audio. Spróbuj ponownie.';
 
   @override
   String get videoEditorSpeedLabel => 'Prędkość';
@@ -7988,9 +7981,6 @@ class AppLocalizationsPl extends AppLocalizations {
       'We can\'t give you an account yet';
 
   @override
-  String get minorAccountReviewUnder13WhyTitle => 'Here\'s why';
-
-  @override
   String get minorAccountReviewUnder13PublicBody =>
       'Divine isn\'t built for kids under 13 and the social media rules around the world tie our hands.\n\nA lot of things on the internet push you to lie to get what you want, and we hate that. It\'s the wrong lesson for life, and we\'re not going to teach it to you here.';
 
@@ -8008,6 +7998,22 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get minorAccountReviewUnder13ComeBackBody =>
       'You can come back and apply for your own account. Between 13 and 15 you\'ll just need a parent or guardian\'s consent.';
+
+  @override
+  String get minorAccountReviewUnder13HonestyTitle =>
+      'Why we won\'t tell you to just click back';
+
+  @override
+  String get minorAccountReviewUnder13HonestyBody =>
+      'A lot of the internet is set up to reward people for saying whatever gets them through the gate. We don\'t think that\'s great. Yes, you could go back and say you\'re older than you are, but that wouldn\'t be honest, and we\'re not going to coach you into lying to get what you want.';
+
+  @override
+  String get minorAccountReviewUnder13LegalTitle =>
+      'Why the answer is still no';
+
+  @override
+  String get minorAccountReviewUnder13LegalBody =>
+      'We\'re trying to help young people use Divine in ways that are healthy and positive for them and the people around them. We also have to follow laws that are different in different places. So, if you\'re under 13, the answer is that you can\'t have your own account today.';
 
   @override
   String get minorAccountReviewTeenBody =>
@@ -8286,31 +8292,44 @@ class AppLocalizationsPl extends AppLocalizations {
       'Połącz swoje konta w mediach społecznościowych, żeby ludzie wiedzieli, że to naprawdę ty.';
 
   @override
-  String get videoMetadataEditCoverTitle => 'Edit cover';
+  String get videoMetadataEditCoverTitle => 'Edytuj okładkę';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => 'Close cover editor';
+  String get videoMetadataEditCoverCloseSemanticLabel =>
+      'Zamknij edytor okładki';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Confirm cover selection';
+      'Potwierdź wybór okładki';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
-      'Seek through video to select cover frame';
+      'Przewijaj wideo, aby wybrać klatkę okładki';
 
   @override
-  String get videoMetadataTagsPickerSearchHint => 'Search or add tags';
+  String get videoMetadataTagsPickerSearchHint => 'Szukaj lub dodaj tagi';
 
   @override
   String get videoMetadataTagsPickerEmptyHint =>
-      'Add tags to help people discover your video';
+      'Dodaj tagi, aby inni odkryli Twój film';
 
   @override
-  String get videoMetadataTagsPickerNoResults => 'No matching tags';
+  String get videoMetadataTagsPickerNoResults => 'Brak pasujących tagów';
 
   @override
   String videoMetadataTagsPickerAddTag(String tag) {
-    return 'Add \"#$tag\"';
+    return 'Dodaj „#$tag\"';
   }
+
+  @override
+  String get authMinAgeNotice => 'Divine accounts are for ages 16 and up.';
+
+  @override
+  String get authUnder16Prefix => 'Not 16 yet? That\'s OK. ';
+
+  @override
+  String get authUnder16ChoicesCta => 'Here are your choices.';
+
+  @override
+  String get minorAccountReviewUnder13WhyTitle => 'Here\'s why';
 }

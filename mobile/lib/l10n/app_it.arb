@@ -3647,13 +3647,6 @@
     },
     "bugReportRemoveImage": "Remove image",
     "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
     "videoMetadataEditCoverTitle": "Modifica copertina",
     "videoMetadataEditCoverCloseSemanticLabel": "Chiudi editor copertina",
     "videoMetadataEditCoverConfirmSemanticLabel": "Conferma selezione copertina",
@@ -3798,12 +3791,6 @@
     },
     "minorAccountReviewUnder13PublicTitle": "We can't give you an account yet",
     "minorAccountReviewUnder13PublicBody": "Divine isn't built for kids under 13 and the social media rules around the world tie our hands.\n\nA lot of things on the internet push you to lie to get what you want, and we hate that. It's the wrong lesson for life, and we're not going to teach it to you here.",
-    "minorAccountReviewUnder13EmailTitle": "Email Divine support",
-    "minorAccountReviewUnder13ParentTitle": "What the parent or guardian should include",
-    "minorAccountReviewUnder13ParentBody": "Tell us the account belongs to someone under 13 and share the details needed for our team to review the situation.",
-    "minorAccountReviewUnder13EmailCta": "Email Divine support",
-    "minorAccountReviewUnder13PublicEmailSubject": "Under-13 account review help",
-    "minorAccountReviewUnder13PublicEmailBody": "Hi Divine support,\n\nI am the parent or guardian for a child under 13 and I am contacting Divine about account review help.\n\nThanks.",
     "minorAccountReviewTeenBody": "If this account belongs to someone 13 to 15, use the moderation message or support path to follow the parental consent instructions.",
     "minorAccountReviewParentConsentTitle": "If the account will belong to someone 13 to 15",
     "minorAccountReviewParentConsentBody": "If parent or guardian contact is not possible or would put someone at risk, email Divine support and let us know.\n\nOtherwise, a parent or guardian should email Divine support with a short private video so our team can review the account and help with next steps.",

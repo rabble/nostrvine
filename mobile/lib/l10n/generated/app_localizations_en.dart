@@ -2624,15 +2624,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'By selecting an option below, you confirm you are at least 16 years old and agree to the ';
 
   @override
-  String get authMinAgeNotice => 'Divine accounts are for ages 16 and up.';
-
-  @override
-  String get authUnder16Prefix => 'Not 16 yet? That\'s OK. ';
-
-  @override
-  String get authUnder16ChoicesCta => 'Here are your choices.';
-
-  @override
   String get authTermsOfService => 'Terms of Service';
 
   @override
@@ -7819,9 +7810,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'We can\'t give you an account yet';
 
   @override
-  String get minorAccountReviewUnder13WhyTitle => 'Here\'s why';
-
-  @override
   String get minorAccountReviewUnder13PublicBody =>
       'Divine isn\'t built for kids under 13 and the social media rules around the world tie our hands.\n\nA lot of things on the internet push you to lie to get what you want, and we hate that. It\'s the wrong lesson for life, and we\'re not going to teach it to you here.';
 
@@ -7839,6 +7827,22 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get minorAccountReviewUnder13ComeBackBody =>
       'You can come back and apply for your own account. Between 13 and 15 you\'ll just need a parent or guardian\'s consent.';
+
+  @override
+  String get minorAccountReviewUnder13HonestyTitle =>
+      'Why we won\'t tell you to just click back';
+
+  @override
+  String get minorAccountReviewUnder13HonestyBody =>
+      'A lot of the internet is set up to reward people for saying whatever gets them through the gate. We don\'t think that\'s great. Yes, you could go back and say you\'re older than you are, but that wouldn\'t be honest, and we\'re not going to coach you into lying to get what you want.';
+
+  @override
+  String get minorAccountReviewUnder13LegalTitle =>
+      'Why the answer is still no';
+
+  @override
+  String get minorAccountReviewUnder13LegalBody =>
+      'We\'re trying to help young people use Divine in ways that are healthy and positive for them and the people around them. We also have to follow laws that are different in different places. So, if you\'re under 13, the answer is that you can\'t have your own account today.';
 
   @override
   String get minorAccountReviewTeenBody =>
@@ -8143,4 +8147,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String videoMetadataTagsPickerAddTag(String tag) {
     return 'Add \"#$tag\"';
   }
+
+  @override
+  String get authMinAgeNotice => 'Divine accounts are for ages 16 and up.';
+
+  @override
+  String get authUnder16Prefix => 'Not 16 yet? That\'s OK. ';
+
+  @override
+  String get authUnder16ChoicesCta => 'Here are your choices.';
+
+  @override
+  String get minorAccountReviewUnder13WhyTitle => 'Here\'s why';
 }

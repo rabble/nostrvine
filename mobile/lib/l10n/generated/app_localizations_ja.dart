@@ -788,16 +788,16 @@ class AppLocalizationsJa extends AppLocalizations {
       'プロフィール画像のアップロードは、まだWebでは使えないよ。iOSかAndroidのアプリを使うか、画像URLを貼り付けてね。';
 
   @override
-  String get profileSetupBannerSectionTitle => 'Banner';
+  String get profileSetupBannerSectionTitle => 'バナー';
 
   @override
-  String get profileSetupBannerUploadButton => 'Upload photo';
+  String get profileSetupBannerUploadButton => '写真をアップロード';
 
   @override
-  String get profileSetupBannerClearButton => 'Clear banner';
+  String get profileSetupBannerClearButton => 'バナーをクリア';
 
   @override
-  String get profileSetupBannerUploadSuccess => 'Banner updated';
+  String get profileSetupBannerUploadSuccess => 'バナーを更新したよ';
 
   @override
   String get profileSetupUsernameChecking => '使えるか確認中...';
@@ -1108,7 +1108,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => '動画を編集';
 
   @override
-  String get videoPlayerTapHint => 'Tap to play or pause. Double tap to like.';
+  String get videoPlayerTapHint => 'タップで再生・一時停止。ダブルタップでいいね。';
 
   @override
   String get videoSettingsMenuOpen => '再生設定を開く';
@@ -2187,8 +2187,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get notificationSettingsAllMarkedAsRead => 'すべての通知を既読にしたよ';
 
   @override
-  String get notificationSettingsMarkAllAsReadFailed =>
-      'Failed to mark all as read';
+  String get notificationSettingsMarkAllAsReadFailed => 'すべて既読にできなかったよ';
 
   @override
   String get notificationSettingsResetToDefaults => '設定を既定値にリセットしたよ';
@@ -2493,15 +2492,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get authTermsPrefix => '上のオプションを選ぶと、16歳以上であることを確認し、次に同意したことになるよ: ';
-
-  @override
-  String get authMinAgeNotice => 'Divine accounts are for ages 16 and up.';
-
-  @override
-  String get authUnder16Prefix => 'Not 16 yet? That\'s OK. ';
-
-  @override
-  String get authUnder16ChoicesCta => 'Here are your choices.';
 
   @override
   String get authTermsOfService => '利用規約';
@@ -4098,7 +4088,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String userPickerRemoveSelectionSemantics(String name) {
-    return 'Remove $name';
+    return '$nameを削除';
   }
 
   @override
@@ -5513,10 +5503,10 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get videoMetadataEditCoverFailedSnackbar =>
-      'Couldn\'t update the cover. Try again.';
+      'カバーを更新できませんでした。もう一度お試しください。';
 
   @override
-  String get videoMetadataEditCoverSuccessAnnouncement => 'Cover updated';
+  String get videoMetadataEditCoverSuccessAnnouncement => 'カバーを更新しました';
 
   @override
   String get videoMetadataTags => 'タグ';
@@ -6908,22 +6898,21 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorSplitSelectedClipSemanticLabel => '選択したクリップを分割';
 
   @override
-  String get videoEditorExtractAudioLabel => 'Extract Audio';
+  String get videoEditorExtractAudioLabel => '音声を抽出';
 
   @override
-  String get videoEditorClipAudioTitle => 'Clip Audio';
+  String get videoEditorClipAudioTitle => 'クリップ音声';
 
   @override
   String get videoEditorExtractAudioFromClipSemanticLabel =>
-      'Extract audio from clip and mute original';
+      'クリップから音声を抽出してオリジナルをミュート';
 
   @override
   String get videoEditorExtractAudioNoLocalFile =>
-      'Cannot extract audio: clip is not locally available.';
+      '音声を抽出できません：クリップがローカルで利用できません。';
 
   @override
-  String get videoEditorExtractAudioFailed =>
-      'Could not extract audio. Please try again.';
+  String get videoEditorExtractAudioFailed => '音声を抽出できませんでした。もう一度お試しください。';
 
   @override
   String get videoEditorSpeedLabel => '速度';
@@ -7527,9 +7516,6 @@ class AppLocalizationsJa extends AppLocalizations {
       'We can\'t give you an account yet';
 
   @override
-  String get minorAccountReviewUnder13WhyTitle => 'Here\'s why';
-
-  @override
   String get minorAccountReviewUnder13PublicBody =>
       'Divine isn\'t built for kids under 13 and the social media rules around the world tie our hands.\n\nA lot of things on the internet push you to lie to get what you want, and we hate that. It\'s the wrong lesson for life, and we\'re not going to teach it to you here.';
 
@@ -7547,6 +7533,22 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get minorAccountReviewUnder13ComeBackBody =>
       'You can come back and apply for your own account. Between 13 and 15 you\'ll just need a parent or guardian\'s consent.';
+
+  @override
+  String get minorAccountReviewUnder13HonestyTitle =>
+      'Why we won\'t tell you to just click back';
+
+  @override
+  String get minorAccountReviewUnder13HonestyBody =>
+      'A lot of the internet is set up to reward people for saying whatever gets them through the gate. We don\'t think that\'s great. Yes, you could go back and say you\'re older than you are, but that wouldn\'t be honest, and we\'re not going to coach you into lying to get what you want.';
+
+  @override
+  String get minorAccountReviewUnder13LegalTitle =>
+      'Why the answer is still no';
+
+  @override
+  String get minorAccountReviewUnder13LegalBody =>
+      'We\'re trying to help young people use Divine in ways that are healthy and positive for them and the people around them. We also have to follow laws that are different in different places. So, if you\'re under 13, the answer is that you can\'t have your own account today.';
 
   @override
   String get minorAccountReviewTeenBody =>
@@ -7824,31 +7826,41 @@ class AppLocalizationsJa extends AppLocalizations {
       'ソーシャルメディアのアカウントをつないで、本物のあなただと伝えよう。';
 
   @override
-  String get videoMetadataEditCoverTitle => 'Edit cover';
+  String get videoMetadataEditCoverTitle => 'カバーを編集';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => 'Close cover editor';
+  String get videoMetadataEditCoverCloseSemanticLabel => 'カバーエディターを閉じる';
 
   @override
-  String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Confirm cover selection';
+  String get videoMetadataEditCoverConfirmSemanticLabel => 'カバー選択を確認';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
-      'Seek through video to select cover frame';
+      'カバーフレームを選択するために動画をシーク';
 
   @override
-  String get videoMetadataTagsPickerSearchHint => 'Search or add tags';
+  String get videoMetadataTagsPickerSearchHint => 'タグを検索または追加';
 
   @override
-  String get videoMetadataTagsPickerEmptyHint =>
-      'Add tags to help people discover your video';
+  String get videoMetadataTagsPickerEmptyHint => 'タグを追加して動画を見つけてもらおう';
 
   @override
-  String get videoMetadataTagsPickerNoResults => 'No matching tags';
+  String get videoMetadataTagsPickerNoResults => '一致するタグがありません';
 
   @override
   String videoMetadataTagsPickerAddTag(String tag) {
-    return 'Add \"#$tag\"';
+    return '「#$tag」を追加';
   }
+
+  @override
+  String get authMinAgeNotice => 'Divine accounts are for ages 16 and up.';
+
+  @override
+  String get authUnder16Prefix => 'Not 16 yet? That\'s OK. ';
+
+  @override
+  String get authUnder16ChoicesCta => 'Here are your choices.';
+
+  @override
+  String get minorAccountReviewUnder13WhyTitle => 'Here\'s why';
 }

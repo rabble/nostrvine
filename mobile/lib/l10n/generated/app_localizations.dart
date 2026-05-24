@@ -4598,24 +4598,6 @@ abstract class AppLocalizations {
   /// **'By selecting an option below, you confirm you are at least 16 years old and agree to the '**
   String get authTermsPrefix;
 
-  /// Welcome-screen notice above the sign-in / create-account buttons explaining the minimum age for self-signup.
-  ///
-  /// In en, this message translates to:
-  /// **'Divine accounts are for ages 16 and up.'**
-  String get authMinAgeNotice;
-
-  /// Lead-in white text rendered on the welcome screen immediately before the green 'Here are your choices.' link.
-  ///
-  /// In en, this message translates to:
-  /// **'Not 16 yet? That\'s OK. '**
-  String get authUnder16Prefix;
-
-  /// Inline green call-to-action on the welcome screen that opens the family-guidance flow for under-16 users.
-  ///
-  /// In en, this message translates to:
-  /// **'Here are your choices.'**
-  String get authUnder16ChoicesCta;
-
   /// No description provided for @authTermsOfService.
   ///
   /// In en, this message translates to:
@@ -13686,12 +13668,6 @@ abstract class AppLocalizations {
   /// **'We can\'t give you an account yet'**
   String get minorAccountReviewUnder13PublicTitle;
 
-  /// No description provided for @minorAccountReviewUnder13WhyTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Here\'s why'**
-  String get minorAccountReviewUnder13WhyTitle;
-
   /// No description provided for @minorAccountReviewUnder13PublicBody.
   ///
   /// In en, this message translates to:
@@ -13721,6 +13697,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You can come back and apply for your own account. Between 13 and 15 you\'ll just need a parent or guardian\'s consent.'**
   String get minorAccountReviewUnder13ComeBackBody;
+
+  /// No description provided for @minorAccountReviewUnder13HonestyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Why we won\'t tell you to just click back'**
+  String get minorAccountReviewUnder13HonestyTitle;
+
+  /// No description provided for @minorAccountReviewUnder13HonestyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A lot of the internet is set up to reward people for saying whatever gets them through the gate. We don\'t think that\'s great. Yes, you could go back and say you\'re older than you are, but that wouldn\'t be honest, and we\'re not going to coach you into lying to get what you want.'**
+  String get minorAccountReviewUnder13HonestyBody;
+
+  /// No description provided for @minorAccountReviewUnder13LegalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Why the answer is still no'**
+  String get minorAccountReviewUnder13LegalTitle;
+
+  /// No description provided for @minorAccountReviewUnder13LegalBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'re trying to help young people use Divine in ways that are healthy and positive for them and the people around them. We also have to follow laws that are different in different places. So, if you\'re under 13, the answer is that you can\'t have your own account today.'**
+  String get minorAccountReviewUnder13LegalBody;
 
   /// No description provided for @minorAccountReviewTeenBody.
   ///
@@ -14219,6 +14219,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add \"#{tag}\"'**
   String videoMetadataTagsPickerAddTag(String tag);
+
+  /// Welcome-screen notice above the sign-in / create-account buttons explaining the minimum age for self-signup.
+  ///
+  /// In en, this message translates to:
+  /// **'Divine accounts are for ages 16 and up.'**
+  String get authMinAgeNotice;
+
+  /// Lead-in white text rendered on the welcome screen immediately before the green 'Here are your choices.' link.
+  ///
+  /// In en, this message translates to:
+  /// **'Not 16 yet? That\'s OK. '**
+  String get authUnder16Prefix;
+
+  /// Inline green call-to-action on the welcome screen that opens the family-guidance flow for under-16 users.
+  ///
+  /// In en, this message translates to:
+  /// **'Here are your choices.'**
+  String get authUnder16ChoicesCta;
+
+  /// No description provided for @minorAccountReviewUnder13WhyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Here\'s why'**
+  String get minorAccountReviewUnder13WhyTitle;
 }
 
 class _AppLocalizationsDelegate

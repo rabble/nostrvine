@@ -858,16 +858,16 @@ class AppLocalizationsBg extends AppLocalizations {
       'Качването на профилна снимка все още не е налично в уеб. Използвай приложението за iOS или Android или постави URL на изображение.';
 
   @override
-  String get profileSetupBannerSectionTitle => 'Banner';
+  String get profileSetupBannerSectionTitle => 'Банер';
 
   @override
-  String get profileSetupBannerUploadButton => 'Upload photo';
+  String get profileSetupBannerUploadButton => 'Качи снимка';
 
   @override
-  String get profileSetupBannerClearButton => 'Clear banner';
+  String get profileSetupBannerClearButton => 'Изчисти банера';
 
   @override
-  String get profileSetupBannerUploadSuccess => 'Banner updated';
+  String get profileSetupBannerUploadSuccess => 'Банерът е обновен';
 
   @override
   String get profileSetupUsernameChecking => 'Проверява се наличността...';
@@ -1201,7 +1201,8 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'Редактиране на видео';
 
   @override
-  String get videoPlayerTapHint => 'Tap to play or pause. Double tap to like.';
+  String get videoPlayerTapHint =>
+      'Докоснете за пускане или пауза. Докоснете два пъти, за да харесате.';
 
   @override
   String get videoSettingsMenuOpen => 'Отвори настройките за възпроизвеждане';
@@ -2341,7 +2342,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get notificationSettingsMarkAllAsReadFailed =>
-      'Failed to mark all as read';
+      'Неуспешно маркиране на всички като прочетени';
 
   @override
   String get notificationSettingsResetToDefaults =>
@@ -2664,15 +2665,6 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get authTermsPrefix =>
       'Като избереш опция по-горе, потвърждаваш, че си на 16 или повече и се съгласяваш с';
-
-  @override
-  String get authMinAgeNotice => 'Divine accounts are for ages 16 and up.';
-
-  @override
-  String get authUnder16Prefix => 'Not 16 yet? That\'s OK. ';
-
-  @override
-  String get authUnder16ChoicesCta => 'Here are your choices.';
 
   @override
   String get authTermsOfService => 'Условия за ползване';
@@ -7263,22 +7255,22 @@ class AppLocalizationsBg extends AppLocalizations {
       'Разделете избрания клип';
 
   @override
-  String get videoEditorExtractAudioLabel => 'Extract Audio';
+  String get videoEditorExtractAudioLabel => 'Извличане на аудио';
 
   @override
-  String get videoEditorClipAudioTitle => 'Clip Audio';
+  String get videoEditorClipAudioTitle => 'Аудио от клип';
 
   @override
   String get videoEditorExtractAudioFromClipSemanticLabel =>
-      'Extract audio from clip and mute original';
+      'Извлечи аудио от клип и заглуши оригинала';
 
   @override
   String get videoEditorExtractAudioNoLocalFile =>
-      'Cannot extract audio: clip is not locally available.';
+      'Не може да се извлече аудио: клипът не е наличен локално.';
 
   @override
   String get videoEditorExtractAudioFailed =>
-      'Could not extract audio. Please try again.';
+      'Не можа да се извлече аудио. Моля, опитайте отново.';
 
   @override
   String get videoEditorSpeedLabel => 'Скорост';
@@ -7918,9 +7910,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'We can\'t give you an account yet';
 
   @override
-  String get minorAccountReviewUnder13WhyTitle => 'Here\'s why';
-
-  @override
   String get minorAccountReviewUnder13PublicBody =>
       'Divine isn\'t built for kids under 13 and the social media rules around the world tie our hands.\n\nA lot of things on the internet push you to lie to get what you want, and we hate that. It\'s the wrong lesson for life, and we\'re not going to teach it to you here.';
 
@@ -7938,6 +7927,22 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get minorAccountReviewUnder13ComeBackBody =>
       'You can come back and apply for your own account. Between 13 and 15 you\'ll just need a parent or guardian\'s consent.';
+
+  @override
+  String get minorAccountReviewUnder13HonestyTitle =>
+      'Why we won\'t tell you to just click back';
+
+  @override
+  String get minorAccountReviewUnder13HonestyBody =>
+      'A lot of the internet is set up to reward people for saying whatever gets them through the gate. We don\'t think that\'s great. Yes, you could go back and say you\'re older than you are, but that wouldn\'t be honest, and we\'re not going to coach you into lying to get what you want.';
+
+  @override
+  String get minorAccountReviewUnder13LegalTitle =>
+      'Why the answer is still no';
+
+  @override
+  String get minorAccountReviewUnder13LegalBody =>
+      'We\'re trying to help young people use Divine in ways that are healthy and positive for them and the people around them. We also have to follow laws that are different in different places. So, if you\'re under 13, the answer is that you can\'t have your own account today.';
 
   @override
   String get minorAccountReviewTeenBody =>
@@ -8230,17 +8235,30 @@ class AppLocalizationsBg extends AppLocalizations {
       'Seek through video to select cover frame';
 
   @override
-  String get videoMetadataTagsPickerSearchHint => 'Search or add tags';
+  String get videoMetadataTagsPickerSearchHint =>
+      'Търсене или добавяне на тагове';
 
   @override
   String get videoMetadataTagsPickerEmptyHint =>
-      'Add tags to help people discover your video';
+      'Добавете тагове, за да открият хората вашето видео';
 
   @override
-  String get videoMetadataTagsPickerNoResults => 'No matching tags';
+  String get videoMetadataTagsPickerNoResults => 'Няма съвпадащи тагове';
 
   @override
   String videoMetadataTagsPickerAddTag(String tag) {
-    return 'Add \"#$tag\"';
+    return 'Добавяне на „#$tag\"';
   }
+
+  @override
+  String get authMinAgeNotice => 'Divine accounts are for ages 16 and up.';
+
+  @override
+  String get authUnder16Prefix => 'Not 16 yet? That\'s OK. ';
+
+  @override
+  String get authUnder16ChoicesCta => 'Here are your choices.';
+
+  @override
+  String get minorAccountReviewUnder13WhyTitle => 'Here\'s why';
 }
