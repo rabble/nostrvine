@@ -1,11 +1,11 @@
 @Tags(['skip_very_good_optimization'])
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/notifications/widgets/notification_avatar_stack.dart';
 import 'package:openvine/widgets/user_avatar.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 
 void main() {
   const actor1 = ActorInfo(
@@ -40,14 +40,14 @@ void main() {
       await tester.pumpWidget(buildSubject(actors: const [actor1]));
       await tester.pump();
 
-      expect(find.byType(CachedNetworkImage), findsOneWidget);
+      expect(find.byType(VineCachedImage), findsOneWidget);
     });
 
     testWidgets('renders two avatars for two actors', (tester) async {
       await tester.pumpWidget(buildSubject(actors: const [actor1, actor2]));
       await tester.pump();
 
-      expect(find.byType(CachedNetworkImage), findsNWidgets(2));
+      expect(find.byType(VineCachedImage), findsNWidgets(2));
     });
 
     testWidgets('renders three avatars for three actors', (tester) async {
@@ -57,8 +57,8 @@ void main() {
       await tester.pump();
 
       expect(find.byType(UserAvatar), findsNWidgets(3));
-      // actor1 and actor2 have URLs => CachedNetworkImage
-      expect(find.byType(CachedNetworkImage), findsNWidgets(2));
+      // actor1 and actor2 have URLs => VineCachedImage.
+      expect(find.byType(VineCachedImage), findsNWidgets(2));
     });
 
     testWidgets('renders overflow circle when overflowCount > 0', (
@@ -95,7 +95,7 @@ void main() {
 
       // Only first 3 actors shown (not 4); actor1 and actor2 have URLs.
       expect(find.byType(UserAvatar), findsNWidgets(3));
-      expect(find.byType(CachedNetworkImage), findsNWidgets(2));
+      expect(find.byType(VineCachedImage), findsNWidgets(2));
     });
   });
 }

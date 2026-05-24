@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:media_cache/media_cache.dart';
@@ -32,36 +31,41 @@ void main() {
   group(VineCachedImage, () {
     const testUrl = 'https://example.com/image.jpg';
 
-    testWidgets('renders $CachedNetworkImage with correct imageUrl', (
+    testWidgets('renders Image with a MediaCacheImageProvider', (tester) async {
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: VineCachedImage(imageUrl: testUrl),
+        ),
+      );
+
+      expect(find.byType(Image), findsOneWidget);
+
+      final image = tester.widget<Image>(find.byType(Image));
+      final provider = image.image as MediaCacheImageProvider;
+      expect(provider.url, equals(testUrl));
+      expect(provider.cacheManager, same(openVineImageCache));
+    });
+
+    testWidgets('uses ResizeImage when memCache sizing is provided', (
       tester,
     ) async {
       await tester.pumpWidget(
         const Directionality(
           textDirection: TextDirection.ltr,
-          child: VineCachedImage(imageUrl: testUrl),
+          child: VineCachedImage(
+            imageUrl: testUrl,
+            memCacheWidth: 256,
+            memCacheHeight: 512,
+          ),
         ),
       );
 
-      expect(find.byType(CachedNetworkImage), findsOneWidget);
-
-      final cached = tester.widget<CachedNetworkImage>(
-        find.byType(CachedNetworkImage),
-      );
-      expect(cached.imageUrl, equals(testUrl));
-    });
-
-    testWidgets('uses openVineImageCache as cacheManager', (tester) async {
-      await tester.pumpWidget(
-        const Directionality(
-          textDirection: TextDirection.ltr,
-          child: VineCachedImage(imageUrl: testUrl),
-        ),
-      );
-
-      final cached = tester.widget<CachedNetworkImage>(
-        find.byType(CachedNetworkImage),
-      );
-      expect(cached.cacheManager, equals(openVineImageCache));
+      final image = tester.widget<Image>(find.byType(Image));
+      final resized = image.image as ResizeImage;
+      expect(resized.width, 256);
+      expect(resized.height, 512);
+      expect(resized.imageProvider, isA<MediaCacheImageProvider>());
     });
 
     testWidgets('defaults fit to BoxFit.cover', (tester) async {
@@ -72,10 +76,8 @@ void main() {
         ),
       );
 
-      final cached = tester.widget<CachedNetworkImage>(
-        find.byType(CachedNetworkImage),
-      );
-      expect(cached.fit, equals(BoxFit.cover));
+      final image = tester.widget<Image>(find.byType(Image));
+      expect(image.fit, equals(BoxFit.cover));
     });
 
     testWidgets('defaults alignment to Alignment.center', (tester) async {
@@ -86,10 +88,8 @@ void main() {
         ),
       );
 
-      final cached = tester.widget<CachedNetworkImage>(
-        find.byType(CachedNetworkImage),
-      );
-      expect(cached.alignment, equals(Alignment.center));
+      final image = tester.widget<Image>(find.byType(Image));
+      expect(image.alignment, equals(Alignment.center));
     });
 
     testWidgets('passes width and height through', (tester) async {
@@ -100,11 +100,9 @@ void main() {
         ),
       );
 
-      final cached = tester.widget<CachedNetworkImage>(
-        find.byType(CachedNetworkImage),
-      );
-      expect(cached.width, equals(100));
-      expect(cached.height, equals(200));
+      final image = tester.widget<Image>(find.byType(Image));
+      expect(image.width, equals(100));
+      expect(image.height, equals(200));
     });
 
     testWidgets('passes fit and alignment through', (tester) async {
@@ -119,32 +117,9 @@ void main() {
         ),
       );
 
-      final cached = tester.widget<CachedNetworkImage>(
-        find.byType(CachedNetworkImage),
-      );
-      expect(cached.fit, equals(BoxFit.contain));
-      expect(cached.alignment, equals(Alignment.topCenter));
-    });
-
-    testWidgets('passes memCacheWidth and memCacheHeight through', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        const Directionality(
-          textDirection: TextDirection.ltr,
-          child: VineCachedImage(
-            imageUrl: testUrl,
-            memCacheWidth: 256,
-            memCacheHeight: 512,
-          ),
-        ),
-      );
-
-      final cached = tester.widget<CachedNetworkImage>(
-        find.byType(CachedNetworkImage),
-      );
-      expect(cached.memCacheWidth, equals(256));
-      expect(cached.memCacheHeight, equals(512));
+      final image = tester.widget<Image>(find.byType(Image));
+      expect(image.fit, equals(BoxFit.contain));
+      expect(image.alignment, equals(Alignment.topCenter));
     });
 
     testWidgets('defaults fadeInDuration to 500ms', (tester) async {
@@ -155,10 +130,10 @@ void main() {
         ),
       );
 
-      final cached = tester.widget<CachedNetworkImage>(
-        find.byType(CachedNetworkImage),
+      final image = tester.widget<VineCachedImage>(
+        find.byType(VineCachedImage),
       );
-      expect(cached.fadeInDuration, equals(const Duration(milliseconds: 500)));
+      expect(image.fadeInDuration, equals(const Duration(milliseconds: 500)));
     });
 
     testWidgets('defaults fadeOutDuration to 1000ms', (tester) async {
@@ -169,13 +144,10 @@ void main() {
         ),
       );
 
-      final cached = tester.widget<CachedNetworkImage>(
-        find.byType(CachedNetworkImage),
+      final image = tester.widget<VineCachedImage>(
+        find.byType(VineCachedImage),
       );
-      expect(
-        cached.fadeOutDuration,
-        equals(const Duration(milliseconds: 1000)),
-      );
+      expect(image.fadeOutDuration, equals(const Duration(milliseconds: 1000)));
     });
 
     testWidgets('passes fadeInDuration and fadeOutDuration through', (
@@ -192,11 +164,11 @@ void main() {
         ),
       );
 
-      final cached = tester.widget<CachedNetworkImage>(
-        find.byType(CachedNetworkImage),
+      final image = tester.widget<VineCachedImage>(
+        find.byType(VineCachedImage),
       );
-      expect(cached.fadeInDuration, equals(Duration.zero));
-      expect(cached.fadeOutDuration, equals(const Duration(milliseconds: 200)));
+      expect(image.fadeInDuration, equals(Duration.zero));
+      expect(image.fadeOutDuration, equals(const Duration(milliseconds: 200)));
     });
   });
 }

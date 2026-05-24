@@ -35,17 +35,19 @@
 /// }
 /// ```
 ///
-/// ## Image Caching with CachedNetworkImage
+/// ## Image Caching with MediaCacheImageProvider
 ///
 /// ```dart
 /// final imageCache = MediaCacheManager(
 ///   config: MediaCacheConfig.image(cacheKey: 'my_image_cache'),
 /// );
 ///
-/// // Use with CachedNetworkImage widget
-/// CachedNetworkImage(
-///   imageUrl: 'https://example.com/image.jpg',
-///   cacheManager: imageCache,
+/// // Use with Image widget
+/// Image(
+///   image: MediaCacheImageProvider(
+///     'https://example.com/image.jpg',
+///     cacheManager: imageCache,
+///   ),
 /// )
 /// ```
 library;
@@ -53,6 +55,7 @@ library;
 export 'src/cancellable_cache_operation.dart' show CancellableCacheOperation;
 export 'src/cancellable_downloader.dart'
     show CancellableDownload, CancellableDownloader, HttpCancellableDownloader;
+export 'src/media_cache_image_provider.dart' show MediaCacheImageProvider;
 export 'src/media_cache_manager.dart'
     show CacheMetrics, MediaCacheConfig, MediaCacheManager;
 export 'src/safe_cache_info_repository.dart'

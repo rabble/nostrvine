@@ -1,5 +1,4 @@
 import 'package:blurhash_service/blurhash_service.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,6 +6,7 @@ import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/blurhash_display.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 
 import '../test_data/video_test_data.dart';
 
@@ -64,8 +64,8 @@ void main() {
       // Widget should build without error
       expect(find.byType(VideoThumbnailWidget), findsOneWidget);
 
-      // Should create a CachedNetworkImage widget when thumbnail URL exists
-      expect(find.byType(CachedNetworkImage), findsOneWidget);
+      // Should create a VineCachedImage widget when thumbnail URL exists.
+      expect(find.byType(VineCachedImage), findsOneWidget);
     });
 
     testWidgets(
@@ -92,7 +92,7 @@ void main() {
         );
 
         expect(find.byType(Image), findsOneWidget);
-        expect(find.byType(CachedNetworkImage), findsNothing);
+        expect(find.byType(VineCachedImage), findsNothing);
       },
     );
 
@@ -119,8 +119,8 @@ void main() {
       // (current implementation uses flat color instead of blurhash)
       expect(find.byType(Container), findsWidgets);
 
-      // Should not show CachedNetworkImage since no thumbnail URL
-      expect(find.byType(CachedNetworkImage), findsNothing);
+      // Should not show VineCachedImage since no thumbnail URL.
+      expect(find.byType(VineCachedImage), findsNothing);
     });
 
     testWidgets('displays thumbnail with flat background when both exist', (
@@ -140,8 +140,8 @@ void main() {
         ),
       );
 
-      // Should show CachedNetworkImage for thumbnail
-      expect(find.byType(CachedNetworkImage), findsOneWidget);
+      // Should show VineCachedImage for thumbnail.
+      expect(find.byType(VineCachedImage), findsOneWidget);
       expect(find.byType(Stack), findsAtLeastNWidgets(1));
     });
 
@@ -167,8 +167,8 @@ void main() {
         // Should show Container with surfaceContainer color as placeholder
         expect(find.byType(Container), findsWidgets);
 
-        // Should not show CachedNetworkImage since no thumbnail URL
-        expect(find.byType(CachedNetworkImage), findsNothing);
+        // Should not show VineCachedImage since no thumbnail URL.
+        expect(find.byType(VineCachedImage), findsNothing);
       },
     );
 
@@ -232,8 +232,8 @@ void main() {
         ),
       );
 
-      // Initially shows CachedNetworkImage for thumbnail
-      expect(find.byType(CachedNetworkImage), findsOneWidget);
+      // Initially shows VineCachedImage for thumbnail.
+      expect(find.byType(VineCachedImage), findsOneWidget);
 
       // Update to video with only blurhash (no thumbnail)
       await tester.pumpWidget(
@@ -252,8 +252,8 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Should now show flat placeholder (no CachedNetworkImage)
-      expect(find.byType(CachedNetworkImage), findsNothing);
+      // Should now show flat placeholder (no VineCachedImage).
+      expect(find.byType(VineCachedImage), findsNothing);
       expect(find.byType(Container), findsWidgets);
     });
 
@@ -402,7 +402,7 @@ void main() {
 
       // Should show flat placeholder, not loading indicator or image
       expect(find.byType(Container), findsWidgets);
-      expect(find.byType(CachedNetworkImage), findsNothing);
+      expect(find.byType(VineCachedImage), findsNothing);
     });
 
     testWidgets('handles empty thumbnail URL as null', (tester) async {
@@ -430,7 +430,7 @@ void main() {
 
       // Should treat empty URL as null and show flat placeholder
       expect(find.byType(Container), findsWidgets);
-      expect(find.byType(CachedNetworkImage), findsNothing);
+      expect(find.byType(VineCachedImage), findsNothing);
     });
   });
 }

@@ -3,13 +3,13 @@
 
 import 'dart:typed_data';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/user_avatar.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 
 import '../helpers/golden_test_devices.dart';
 
@@ -166,7 +166,7 @@ void main() {
     });
 
     group('Image Loading States', () {
-      testWidgets('shows CachedNetworkImage when imageUrl is provided', (
+      testWidgets('shows VineCachedImage when imageUrl is provided', (
         tester,
       ) async {
         const testImageUrl = 'https://example.com/avatar.jpg';
@@ -179,13 +179,13 @@ void main() {
           ),
         );
 
-        expect(find.byType(CachedNetworkImage), findsOneWidget);
+        expect(find.byType(VineCachedImage), findsOneWidget);
 
-        final cachedImage = tester.widget<CachedNetworkImage>(
-          find.byType(CachedNetworkImage),
+        final image = tester.widget<VineCachedImage>(
+          find.byType(VineCachedImage),
         );
-        expect(cachedImage.imageUrl, testImageUrl);
-        expect(cachedImage.fit, BoxFit.cover);
+        expect(image.imageUrl, testImageUrl);
+        expect(image.fit, BoxFit.cover);
         expect(_clipSize(tester), const Size.square(44));
       });
 
@@ -200,7 +200,7 @@ void main() {
           ),
         );
 
-        expect(find.byType(CachedNetworkImage), findsNothing);
+        expect(find.byType(VineCachedImage), findsNothing);
         expect(find.byType(Image), findsNothing);
         expect(_gradientFinder(), findsAtLeastNWidgets(1));
       });
@@ -218,7 +218,7 @@ void main() {
           ),
         );
 
-        expect(find.byType(CachedNetworkImage), findsNothing);
+        expect(find.byType(VineCachedImage), findsNothing);
         expect(find.byType(Image), findsNothing);
         expect(_gradientFinder(), findsAtLeastNWidgets(1));
       });
@@ -238,7 +238,7 @@ void main() {
           ),
         );
 
-        expect(find.byType(CachedNetworkImage), findsNothing);
+        expect(find.byType(VineCachedImage), findsNothing);
         expect(find.byType(Image), findsOneWidget);
         final image = tester.widget<Image>(find.byType(Image));
         expect(image.image, same(provider));
@@ -290,10 +290,10 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        final cachedImage = tester.widget<CachedNetworkImage>(
-          find.byType(CachedNetworkImage),
+        final image = tester.widget<VineCachedImage>(
+          find.byType(VineCachedImage),
         );
-        expect(cachedImage.errorWidget, isNotNull);
+        expect(image.errorWidget, isNotNull);
       });
 
       testWidgets('shows placeholder while image is loading', (tester) async {
@@ -309,10 +309,10 @@ void main() {
           ),
         );
 
-        final cachedImage = tester.widget<CachedNetworkImage>(
-          find.byType(CachedNetworkImage),
+        final image = tester.widget<VineCachedImage>(
+          find.byType(VineCachedImage),
         );
-        expect(cachedImage.placeholder, isNotNull);
+        expect(image.placeholder, isNotNull);
       });
     });
 
@@ -590,7 +590,7 @@ void main() {
         );
 
         expect(find.byType(UserAvatar), findsNWidgets(3));
-        expect(find.byType(CachedNetworkImage), findsOneWidget);
+        expect(find.byType(VineCachedImage), findsOneWidget);
       });
     });
 

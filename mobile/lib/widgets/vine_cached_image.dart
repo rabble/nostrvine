@@ -1,15 +1,21 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/widgets.dart';
 import 'package:media_cache/media_cache.dart';
+
+/// Signature used to build a loading placeholder.
+typedef PlaceholderWidgetBuilder =
+    Widget Function(BuildContext context, String imageUrl);
+
+/// Signature used to build an error widget.
+typedef LoadingErrorWidgetBuilder =
+    Widget Function(BuildContext context, String imageUrl, Object error);
 
 /// Global image cache singleton backed by [MediaCacheManager].
 final openVineImageCache = MediaCacheManager(
   config: const MediaCacheConfig.image(cacheKey: 'openvine_image_cache'),
 );
 
-/// A wrapper around [CachedNetworkImage] that always uses
-/// [openVineImageCache] as the cache manager.
-class VineCachedImage extends StatelessWidget {
+/// A wrapper around [Image] that always uses [openVineImageCache].
+class VineCachedImage extends StatefulWidget {
   const VineCachedImage({
     required this.imageUrl,
     super.key,
@@ -38,20 +44,145 @@ class VineCachedImage extends StatelessWidget {
   final Duration fadeOutDuration;
 
   @override
+  State<VineCachedImage> createState() => _VineCachedImageState();
+}
+
+class _VineCachedImageState extends State<VineCachedImage> {
+  ImageStream? _imageStream;
+  ImageStreamListener? _listener;
+  Object? _error;
+  bool _hasImage = false;
+
+  ImageProvider<Object> get _imageProvider => ResizeImage.resizeIfNeeded(
+    widget.memCacheWidth,
+    widget.memCacheHeight,
+    MediaCacheImageProvider(widget.imageUrl, cacheManager: openVineImageCache),
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _resolveImageStream();
+  }
+
+  @override
+  void didUpdateWidget(covariant VineCachedImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.imageUrl != widget.imageUrl ||
+        oldWidget.memCacheWidth != widget.memCacheWidth ||
+        oldWidget.memCacheHeight != widget.memCacheHeight) {
+      _resolveImageStream();
+    }
+  }
+
+  @override
+  void dispose() {
+    _removeImageListener();
+    super.dispose();
+  }
+
+  void _resolveImageStream() {
+    final newStream = _imageProvider.resolve(
+      createLocalImageConfiguration(context),
+    );
+    if (_imageStream?.key == newStream.key) {
+      return;
+    }
+
+    _removeImageListener();
+    _imageStream = newStream;
+    _error = null;
+    _hasImage = false;
+
+    _listener = ImageStreamListener(
+      (image, synchronousCall) {
+        image.dispose();
+        if (!mounted || _hasImage) return;
+        setState(() {
+          _hasImage = true;
+          _error = null;
+        });
+      },
+      onError: (Object error, StackTrace? stackTrace) {
+        if (!mounted) return;
+        setState(() {
+          _error = error;
+          _hasImage = false;
+        });
+      },
+    );
+    _imageStream!.addListener(_listener!);
+  }
+
+  void _removeImageListener() {
+    if (_imageStream != null && _listener != null) {
+      _imageStream!.removeListener(_listener!);
+    }
+    _imageStream = null;
+    _listener = null;
+  }
+
+  Widget _buildPlaceholder() {
+    if (widget.placeholder == null) {
+      return SizedBox(width: widget.width, height: widget.height);
+    }
+    return KeyedSubtree(
+      key: const ValueKey('placeholder'),
+      child: widget.placeholder!(context, widget.imageUrl),
+    );
+  }
+
+  Widget _buildErrorWidget(Object error) {
+    if (widget.errorWidget == null) {
+      return SizedBox(width: widget.width, height: widget.height);
+    }
+    return KeyedSubtree(
+      key: const ValueKey('error'),
+      child: widget.errorWidget!(context, widget.imageUrl, error),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return CachedNetworkImage(
-      imageUrl: imageUrl,
-      width: width,
-      height: height,
-      fit: fit,
-      alignment: alignment,
-      cacheManager: openVineImageCache,
-      placeholder: placeholder,
-      errorWidget: errorWidget,
-      memCacheWidth: memCacheWidth,
-      memCacheHeight: memCacheHeight,
-      fadeInDuration: fadeInDuration,
-      fadeOutDuration: fadeOutDuration,
+    if (_error != null) {
+      return _buildErrorWidget(_error!);
+    }
+
+    final image = Image(
+      image: _imageProvider,
+      width: widget.width,
+      height: widget.height,
+      fit: widget.fit,
+      alignment: widget.alignment,
+      errorBuilder: (context, error, stackTrace) => _buildErrorWidget(error),
+    );
+
+    if (widget.placeholder == null) {
+      return AnimatedOpacity(
+        key: const ValueKey('image'),
+        opacity: _hasImage ? 1 : 0,
+        duration: widget.fadeInDuration,
+        child: image,
+      );
+    }
+
+    return Stack(
+      fit: StackFit.passthrough,
+      children: [
+        IgnorePointer(
+          child: AnimatedOpacity(
+            opacity: _hasImage ? 0 : 1,
+            duration: widget.fadeOutDuration,
+            child: _buildPlaceholder(),
+          ),
+        ),
+        AnimatedOpacity(
+          key: const ValueKey('image'),
+          opacity: _hasImage ? 1 : 0,
+          duration: widget.fadeInDuration,
+          child: image,
+        ),
+      ],
     );
   }
 }
