@@ -18,8 +18,6 @@ void main() {
       'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210';
   const videoIdA =
       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-  const videoIdB =
-      'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
   const authorPubkey =
       'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
 
@@ -162,7 +160,7 @@ void main() {
 
     group('getRetryableForUser', () {
       test(
-        'returns pending and failed rows including exhausted retries oldest first',
+        'returns retryable pending, failed, and exhausted rows oldest first',
         () async {
           await dao.enqueue(
             makeEvent(
@@ -182,7 +180,6 @@ void main() {
           await dao.enqueue(
             makeEvent(
               id: 'pending-new',
-              status: PendingViewEventStatus.pending,
               createdAt: DateTime.utc(2026, 5, 3),
             ),
           );
@@ -198,7 +195,6 @@ void main() {
             makeEvent(
               id: 'other-user',
               userPubkey: userB,
-              status: PendingViewEventStatus.pending,
               createdAt: DateTime.utc(2026, 5, 5),
             ),
           );
@@ -227,9 +223,7 @@ void main() {
               status: PendingViewEventStatus.publishing,
             ),
           );
-          await dao.enqueue(
-            makeEvent(id: 'pending-a', status: PendingViewEventStatus.pending),
-          );
+          await dao.enqueue(makeEvent(id: 'pending-a'));
           await dao.enqueue(
             makeEvent(
               id: 'publishing-b',

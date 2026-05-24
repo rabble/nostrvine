@@ -365,7 +365,7 @@ void main() {
         },
       );
 
-      test('upgrade path — recreates pending_view_events when missing', () async {
+      test('upgrade path recreates pending_view_events when missing', () async {
         await database.customStatement('DROP TABLE pending_view_events');
 
         final droppedCheck = await database
@@ -411,8 +411,7 @@ void main() {
         await dao.enqueue(
           PendingViewEvent(
             id: 'upgrade-view-id',
-            videoId:
-                'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+            videoId: testPubkey,
             videoPubkey: testPubkey,
             userPubkey: testPubkey,
             watchDurationMs: 2500,
