@@ -186,12 +186,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     final index = state.clips.indexWhere((c) => c.id == event.clipId);
     if (index == -1) return;
 
-    final nextClip = normalizeClipUpdate(
-      clips: state.clips,
-      clipIndex: index,
-      currentClip: state.clips[index],
-      proposedClip: event.clip,
-    );
+    final nextClip = state.clips[index].copyWith();
     final newClips = List<DivineVideoClip>.of(state.clips)..[index] = nextClip;
 
     emit(state.copyWith(clips: List.unmodifiable(newClips)));
