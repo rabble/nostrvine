@@ -1,7 +1,6 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -11,17 +10,16 @@ import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_edi
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_controls.dart';
 
 /// Controls shown when a clip is in editing mode: Delete, Copy, Split, Done.
-class TimelineClipControls extends ConsumerStatefulWidget {
+class TimelineClipControls extends StatefulWidget {
   const TimelineClipControls({required this.playheadPosition, super.key});
 
   final ValueNotifier<Duration> playheadPosition;
 
   @override
-  ConsumerState<TimelineClipControls> createState() =>
-      _TimelineClipControlsState();
+  State<TimelineClipControls> createState() => _TimelineClipControlsState();
 }
 
-class _TimelineClipControlsState extends ConsumerState<TimelineClipControls> {
+class _TimelineClipControlsState extends State<TimelineClipControls> {
   @override
   Widget build(BuildContext context) {
     final clips = context.select((ClipEditorBloc b) => b.state.clips);
@@ -31,8 +29,8 @@ class _TimelineClipControlsState extends ConsumerState<TimelineClipControls> {
     );
 
     return VideoEditorTimelineControls(
-      onDelete: isLastClip ? null : () => _deleteClip(context, ref),
-      onDuplicated: () => _duplicateClip(context, ref),
+      onDelete: isLastClip ? null : () => _deleteClip(context),
+      onDuplicated: () => _duplicateClip(context),
       onSplit: () => _splitClip(context),
       onSpeed: () => _setPlaybackSpeed(context),
       onExtractAudio: () => _requestExtractAudio(context),
@@ -88,7 +86,7 @@ class _TimelineClipControlsState extends ConsumerState<TimelineClipControls> {
     );
   }
 
-  void _deleteClip(BuildContext context, WidgetRef ref) {
+  void _deleteClip(BuildContext context) {
     final bloc = context.read<ClipEditorBloc>();
     final state = bloc.state;
     final clipId = state.clips[state.currentClipIndex].id;
@@ -106,7 +104,7 @@ class _TimelineClipControlsState extends ConsumerState<TimelineClipControls> {
     );
   }
 
-  void _duplicateClip(BuildContext context, WidgetRef ref) {
+  void _duplicateClip(BuildContext context) {
     final bloc = context.read<ClipEditorBloc>();
     final state = bloc.state;
     final clip = state.clips[state.currentClipIndex];
