@@ -2087,11 +2087,11 @@ class AppLocalizationsRo extends AppLocalizations {
       'Exportă, fă backup și restaurează cheile tale Nostr';
 
   @override
-  String get nostrSettingsClientAttribution => 'Client Attribution';
+  String get nostrSettingsClientAttribution => 'Atribuirea clientului';
 
   @override
   String get nostrSettingsClientAttributionSubtitle =>
-      'Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly.';
+      'Include o etichetă de client Divine în evenimentele pe care le publici, ca alte aplicații Nostr să le poată atribui corect.';
 
   @override
   String get nostrSettingsRemoveKeys => 'Elimină cheile de pe dispozitiv';

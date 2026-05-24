@@ -2014,11 +2014,11 @@ class AppLocalizationsTr extends AppLocalizations {
       'Nostr anahtarlarını dışa aktar, yedekle ve geri yükle';
 
   @override
-  String get nostrSettingsClientAttribution => 'Client Attribution';
+  String get nostrSettingsClientAttribution => 'İstemci Atfı';
 
   @override
   String get nostrSettingsClientAttributionSubtitle =>
-      'Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly.';
+      'Yayınladığın etkinliklere Divine istemci etiketini ekle, böylece diğer Nostr uygulamaları bunları doğru şekilde atfedebilir.';
 
   @override
   String get nostrSettingsRemoveKeys => 'Anahtarları Cihazdan Kaldır';

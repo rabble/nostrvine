@@ -2067,11 +2067,11 @@ class AppLocalizationsFil extends AppLocalizations {
       'I-export, i-backup, at i-restore ang iyong Nostr keys';
 
   @override
-  String get nostrSettingsClientAttribution => 'Client Attribution';
+  String get nostrSettingsClientAttribution => 'Pagkilala sa kliyente';
 
   @override
   String get nostrSettingsClientAttributionSubtitle =>
-      'Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly.';
+      'Maglagay ng Divine client tag sa mga event na pina-publish mo para maituro ito nang tama ng ibang Nostr apps.';
 
   @override
   String get nostrSettingsRemoveKeys => 'Alisin ang mga Key sa Device';

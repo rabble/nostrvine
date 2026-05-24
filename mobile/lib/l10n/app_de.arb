@@ -3250,6 +3250,8 @@
     "nostrSettingsExperimentalFeaturesSubtitle": "Feature-Flags an- und ausschalten — kann holpern.",
     "nostrSettingsKeyManagement": "Schlüsselverwaltung",
     "nostrSettingsKeyManagementSubtitle": "Deine Nostr-Schlüssel exportieren, sichern und wiederherstellen",
+    "nostrSettingsClientAttribution": "Client-Zuordnung",
+    "nostrSettingsClientAttributionSubtitle": "Füge den Events, die du veröffentlichst, einen Divine-Client-Tag hinzu, damit andere Nostr-Apps sie korrekt zuordnen können.",
     "nostrSettingsRemoveKeys": "Schlüssel vom Gerät entfernen",
     "nostrSettingsRemoveKeysSubtitle": "Lösch deinen privaten Schlüssel nur von diesem Gerät. Deine Inhalte bleiben auf den Relays, aber du brauchst dein nsec-Backup, um wieder auf dein Konto zuzugreifen.",
     "nostrSettingsCouldNotRemoveKeys": "Schlüssel konnten nicht von diesem Gerät entfernt werden. Versuch es nochmal.",

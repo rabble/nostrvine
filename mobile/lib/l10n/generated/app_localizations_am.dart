@@ -1995,11 +1995,11 @@ class AppLocalizationsAm extends AppLocalizations {
       'የNostr ቁልፎችዎን ወደ ውጭ ይላኩ፣ ምትኬ ያስቀምጡ እና ይመልሱ';
 
   @override
-  String get nostrSettingsClientAttribution => 'Client Attribution';
+  String get nostrSettingsClientAttribution => 'የደንበኛ መለያ';
 
   @override
   String get nostrSettingsClientAttributionSubtitle =>
-      'Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly.';
+      'በሚያትሟቸው ክስተቶች ላይ የDivine ደንበኛ መለያ ያክሉ፣ ሌሎች የNostr መተግበሪያዎች በትክክል እንዲጠቅሷቸው።';
 
   @override
   String get nostrSettingsRemoveKeys => 'ቁልፎችን ከመሣሪያው አስወግድ';

@@ -3384,6 +3384,8 @@
     "nostrSettingsExperimentalFeaturesSubtitle": "Превключвай функции, които може да се държат странно.",
     "nostrSettingsKeyManagement": "Управление на ключове",
     "nostrSettingsKeyManagementSubtitle": "Експортирай, архивирай и възстановявай Nostr ключовете си",
+    "nostrSettingsClientAttribution": "Атрибуция на клиента",
+    "nostrSettingsClientAttributionSubtitle": "Добавяй клиентски таг на Divine към събитията, които публикуваш, за да могат другите Nostr приложения да ги приписват правилно.",
     "nostrSettingsRemoveKeys": "Махни ключовете от устройството",
     "nostrSettingsRemoveKeysSubtitle": "Изтрий частния си ключ само от това устройство. Съдържанието ти остава на релетата, но ще ти трябва nsec резервно копие, за да влезеш отново в акаунта си.",
     "nostrSettingsCouldNotRemoveKeys": "Не успяхме да махнем ключовете от това устройство. Опитай пак.",

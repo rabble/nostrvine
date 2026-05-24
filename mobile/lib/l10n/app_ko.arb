@@ -2539,6 +2539,8 @@
     "nostrSettingsExperimentalFeaturesSubtitle": "삐걱댈 수 있는 기능 플래그를 켜고 꺼봐요.",
     "nostrSettingsKeyManagement": "키 관리",
     "nostrSettingsKeyManagementSubtitle": "Nostr 키를 내보내고, 백업하고, 복원해요",
+    "nostrSettingsClientAttribution": "클라이언트 표시",
+    "nostrSettingsClientAttributionSubtitle": "게시하는 이벤트에 Divine 클라이언트 태그를 포함해 다른 Nostr 앱이 올바르게 표시할 수 있게 해요.",
     "nostrSettingsRemoveKeys": "기기에서 키 제거",
     "nostrSettingsRemoveKeysSubtitle": "이 기기에서만 개인 키를 삭제해요. 콘텐츠는 릴레이에 그대로 남지만, 다시 계정에 접근하려면 nsec 백업이 필요해요.",
     "nostrSettingsCouldNotRemoveKeys": "이 기기에서 키를 제거하지 못했어요. 다시 시도해주세요.",

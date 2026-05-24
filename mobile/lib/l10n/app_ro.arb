@@ -3250,6 +3250,8 @@
     "nostrSettingsExperimentalFeaturesSubtitle": "Activează indicatoare de funcții care s-ar putea să sughițe.",
     "nostrSettingsKeyManagement": "Gestionare chei",
     "nostrSettingsKeyManagementSubtitle": "Exportă, fă backup și restaurează cheile tale Nostr",
+    "nostrSettingsClientAttribution": "Atribuirea clientului",
+    "nostrSettingsClientAttributionSubtitle": "Include o etichetă de client Divine în evenimentele pe care le publici, ca alte aplicații Nostr să le poată atribui corect.",
     "nostrSettingsRemoveKeys": "Elimină cheile de pe dispozitiv",
     "nostrSettingsRemoveKeysSubtitle": "Șterge cheia ta privată doar de pe acest dispozitiv. Conținutul tău rămâne pe relay-uri, dar vei avea nevoie de backup-ul nsec ca să-ți accesezi din nou contul.",
     "nostrSettingsCouldNotRemoveKeys": "N-am putut elimina cheile de pe acest dispozitiv. Încearcă din nou.",

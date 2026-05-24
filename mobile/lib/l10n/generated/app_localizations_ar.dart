@@ -2011,11 +2011,11 @@ class AppLocalizationsAr extends AppLocalizations {
       'تصدير مفاتيح Nostr ونسخها واستعادتها';
 
   @override
-  String get nostrSettingsClientAttribution => 'Client Attribution';
+  String get nostrSettingsClientAttribution => 'إسناد العميل';
 
   @override
   String get nostrSettingsClientAttributionSubtitle =>
-      'Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly.';
+      'أضِف وسم عميل Divine إلى الأحداث التي تنشرها حتى تتمكن تطبيقات Nostr الأخرى من إسنادها بشكل صحيح.';
 
   @override
   String get nostrSettingsRemoveKeys => 'إزالة المفاتيح من الجهاز';

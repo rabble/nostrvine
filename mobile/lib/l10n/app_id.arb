@@ -3250,6 +3250,8 @@
     "nostrSettingsExperimentalFeaturesSubtitle": "Aktifkan fitur eksperimen yang mungkin bermasalah.",
     "nostrSettingsKeyManagement": "Manajemen Kunci",
     "nostrSettingsKeyManagementSubtitle": "Ekspor, backup, dan pulihkan kunci Nostr-mu",
+    "nostrSettingsClientAttribution": "Atribusi klien",
+    "nostrSettingsClientAttributionSubtitle": "Tambahkan tag klien Divine ke event yang kamu publikasikan agar aplikasi Nostr lain bisa mengatribusikannya dengan benar.",
     "nostrSettingsRemoveKeys": "Hapus Kunci dari Perangkat",
     "nostrSettingsRemoveKeysSubtitle": "Hapus kunci privatmu hanya dari perangkat ini. Kontenmu tetap di relay, tapi kamu butuh backup nsec untuk masuk lagi.",
     "nostrSettingsCouldNotRemoveKeys": "Gagal menghapus kunci dari perangkat ini. Coba lagi.",

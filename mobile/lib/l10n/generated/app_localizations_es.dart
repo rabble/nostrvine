@@ -2056,11 +2056,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'Exportá, respaldá y restaurá tus claves de Nostr';
 
   @override
-  String get nostrSettingsClientAttribution => 'Client Attribution';
+  String get nostrSettingsClientAttribution => 'Atribución del cliente';
 
   @override
   String get nostrSettingsClientAttributionSubtitle =>
-      'Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly.';
+      'Incluí una etiqueta de cliente Divine en los eventos que publicás para que otras apps de Nostr puedan atribuirlos correctamente.';
 
   @override
   String get nostrSettingsRemoveKeys => 'Quitar claves del dispositivo';

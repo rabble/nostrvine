@@ -2007,11 +2007,11 @@ class AppLocalizationsId extends AppLocalizations {
       'Ekspor, backup, dan pulihkan kunci Nostr-mu';
 
   @override
-  String get nostrSettingsClientAttribution => 'Client Attribution';
+  String get nostrSettingsClientAttribution => 'Atribusi klien';
 
   @override
   String get nostrSettingsClientAttributionSubtitle =>
-      'Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly.';
+      'Tambahkan tag klien Divine ke event yang kamu publikasikan agar aplikasi Nostr lain bisa mengatribusikannya dengan benar.';
 
   @override
   String get nostrSettingsRemoveKeys => 'Hapus Kunci dari Perangkat';

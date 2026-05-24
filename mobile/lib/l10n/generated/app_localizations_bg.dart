@@ -2070,11 +2070,11 @@ class AppLocalizationsBg extends AppLocalizations {
       'Експортирай, архивирай и възстановявай Nostr ключовете си';
 
   @override
-  String get nostrSettingsClientAttribution => 'Client Attribution';
+  String get nostrSettingsClientAttribution => 'Атрибуция на клиента';
 
   @override
   String get nostrSettingsClientAttributionSubtitle =>
-      'Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly.';
+      'Добавяй клиентски таг на Divine към събитията, които публикуваш, за да могат другите Nostr приложения да ги приписват правилно.';
 
   @override
   String get nostrSettingsRemoveKeys => 'Махни ключовете от устройството';

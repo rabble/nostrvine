@@ -983,6 +983,8 @@
     "nostrSettingsExperimentalFeaturesSubtitle": "ሊያደናቅፉ የሚችሉ የባህሪ ባንዲራዎችን ቀይር።",
     "nostrSettingsKeyManagement": "የቁልፍ አስተዳደር",
     "nostrSettingsKeyManagementSubtitle": "የNostr ቁልፎችዎን ወደ ውጭ ይላኩ፣ ምትኬ ያስቀምጡ እና ይመልሱ",
+    "nostrSettingsClientAttribution": "የደንበኛ መለያ",
+    "nostrSettingsClientAttributionSubtitle": "በሚያትሟቸው ክስተቶች ላይ የDivine ደንበኛ መለያ ያክሉ፣ ሌሎች የNostr መተግበሪያዎች በትክክል እንዲጠቅሷቸው።",
     "nostrSettingsRemoveKeys": "ቁልፎችን ከመሣሪያው አስወግድ",
     "nostrSettingsRemoveKeysSubtitle": "የግል ቁልፍዎን ከዚህ መሣሪያ ብቻ ይሰርዙ። ይዘትዎ በቅብብሎሾች ላይ ይቆያል፣ ግን መለያዎን እንደገና ለመጠቀም የnsec ምትኬዎን ያስፈልግዎታል።",
     "nostrSettingsCouldNotRemoveKeys": "ቁልፎችን ከዚህ መሣሪያ ማስወገድ አልተቻለም። እባክዎ እንደገና ይሞክሩ።",

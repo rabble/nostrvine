@@ -3250,6 +3250,8 @@
     "nostrSettingsExperimentalFeaturesSubtitle": "Slå på funktioner som kan hicka.",
     "nostrSettingsKeyManagement": "Nyckelhantering",
     "nostrSettingsKeyManagementSubtitle": "Exportera, säkerhetskopiera och återställ dina Nostr-nycklar",
+    "nostrSettingsClientAttribution": "Klientattribuering",
+    "nostrSettingsClientAttributionSubtitle": "Lägg till en Divine-klienttagg på events du publicerar så att andra Nostr-appar kan attribuera dem korrekt.",
     "nostrSettingsRemoveKeys": "Ta bort nycklar från enheten",
     "nostrSettingsRemoveKeysSubtitle": "Radera din privata nyckel från endast den här enheten. Ditt innehåll stannar på relerna, men du behöver din nsec-säkerhetskopia för att komma åt kontot igen.",
     "nostrSettingsCouldNotRemoveKeys": "Kunde inte ta bort nycklar från enheten. Försök igen.",

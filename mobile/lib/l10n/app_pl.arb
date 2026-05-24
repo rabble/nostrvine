@@ -3250,6 +3250,8 @@
     "nostrSettingsExperimentalFeaturesSubtitle": "Włączaj flagi funkcji, które mogą czkać.",
     "nostrSettingsKeyManagement": "Zarządzanie kluczami",
     "nostrSettingsKeyManagementSubtitle": "Eksportuj, twórz kopie zapasowe i przywracaj swoje klucze Nostr",
+    "nostrSettingsClientAttribution": "Atrybucja klienta",
+    "nostrSettingsClientAttributionSubtitle": "Dodawaj tag klienta Divine do publikowanych zdarzeń, aby inne aplikacje Nostr mogły je poprawnie przypisać.",
     "nostrSettingsRemoveKeys": "Usuń klucze z urządzenia",
     "nostrSettingsRemoveKeysSubtitle": "Usuń swój klucz prywatny tylko z tego urządzenia. Twoje treści zostają na przekaźnikach, ale do ponownego dostępu do konta potrzebna będzie kopia zapasowa nsec.",
     "nostrSettingsCouldNotRemoveKeys": "Nie udało się usunąć kluczy z tego urządzenia. Spróbuj ponownie.",
