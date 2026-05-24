@@ -16,7 +16,7 @@ concurrency:
 jobs:
   ensure-issue:
     name: ensure-linked-issue
-    runs-on: ubuntu-24.04-16core
+    runs-on: ubuntu-24.04-4core
     if: github.actor != 'dependabot[bot]'
     steps:
       - name: Ensure PR has a linked tracking issue
