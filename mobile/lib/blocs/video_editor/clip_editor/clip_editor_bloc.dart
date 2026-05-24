@@ -94,15 +94,11 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
   final AudioExtractionService _audioExtractionService;
   final SplitClipFn _splitClip;
 
-  static DivineVideoClip normalizeClipUpdate({
+  static ({double min, double max})? allowedPlaybackSpeedRange({
     required List<DivineVideoClip> clips,
     required int clipIndex,
-    required DivineVideoClip currentClip,
-    required DivineVideoClip proposedClip,
+    required DivineVideoClip clip,
   }) {
-    final nextSpeed = proposedClip.playbackSpeed;
-    if (nextSpeed == null || nextSpeed <= 0) return proposedClip;
-
     var otherPlaybackDuration = Duration.zero;
     for (var i = 0; i < clips.length; i++) {
       if (i == clipIndex) continue;
@@ -112,21 +108,45 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     final remainingPlaybackUs =
         (VideoEditorConstants.maxDuration - otherPlaybackDuration)
             .inMicroseconds;
-    final trimmedUs = proposedClip.trimmedDuration.inMicroseconds;
-    if (trimmedUs <= 0) return proposedClip;
-    if (remainingPlaybackUs <= 0) return currentClip;
+    final trimmedUs = clip.trimmedDuration.inMicroseconds;
+    if (trimmedUs <= 0) {
+      return (
+        min: VideoEditorConstants.clipSpeedMin,
+        max: VideoEditorConstants.clipSpeedMax,
+      );
+    }
+    if (remainingPlaybackUs <= 0) return null;
 
     final minAllowedSpeed = trimmedUs / remainingPlaybackUs;
     if (minAllowedSpeed > VideoEditorConstants.clipSpeedMax) {
-      return currentClip;
+      return null;
     }
 
-    final clampedSpeed = nextSpeed.clamp(
-      minAllowedSpeed > VideoEditorConstants.clipSpeedMin
+    return (
+      min: minAllowedSpeed > VideoEditorConstants.clipSpeedMin
           ? minAllowedSpeed
           : VideoEditorConstants.clipSpeedMin,
-      VideoEditorConstants.clipSpeedMax,
+      max: VideoEditorConstants.clipSpeedMax,
     );
+  }
+
+  static DivineVideoClip normalizeClipUpdate({
+    required List<DivineVideoClip> clips,
+    required int clipIndex,
+    required DivineVideoClip currentClip,
+    required DivineVideoClip proposedClip,
+  }) {
+    final nextSpeed = proposedClip.playbackSpeed;
+    if (nextSpeed == null || nextSpeed <= 0) return proposedClip;
+
+    final allowedRange = allowedPlaybackSpeedRange(
+      clips: clips,
+      clipIndex: clipIndex,
+      clip: proposedClip,
+    );
+    if (allowedRange == null) return currentClip;
+
+    final clampedSpeed = nextSpeed.clamp(allowedRange.min, allowedRange.max);
     if (clampedSpeed == nextSpeed) return proposedClip;
     return proposedClip.copyWith(playbackSpeed: clampedSpeed);
   }
@@ -186,13 +206,38 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     final index = state.clips.indexWhere((c) => c.id == event.clipId);
     if (index == -1) return;
 
+    final currentClip = state.clips[index];
     final nextClip = normalizeClipUpdate(
       clips: state.clips,
       clipIndex: index,
-      currentClip: state.clips[index],
+      currentClip: currentClip,
       proposedClip: event.clip,
     );
     final newClips = List<DivineVideoClip>.of(state.clips)..[index] = nextClip;
+
+    final previousSpeed = currentClip.playbackSpeed ?? 1.0;
+    final requestedSpeed = event.clip.playbackSpeed;
+    final appliedSpeed = nextClip.playbackSpeed ?? 1.0;
+    if (requestedSpeed != null && requestedSpeed > 0) {
+      if ((requestedSpeed - appliedSpeed).abs() > 1e-9) {
+        Log.info(
+          '⚡ Clip speed constrained: clip=${event.clipId} '
+          'requested=${requestedSpeed.toStringAsFixed(2)} '
+          'applied=${appliedSpeed.toStringAsFixed(2)}',
+          name: 'ClipEditorBloc',
+          category: LogCategory.video,
+        );
+      }
+      if ((previousSpeed - appliedSpeed).abs() > 1e-9) {
+        Log.info(
+          '⚡ Clip speed updated: clip=${event.clipId} '
+          'from=${previousSpeed.toStringAsFixed(2)} '
+          'to=${appliedSpeed.toStringAsFixed(2)}',
+          name: 'ClipEditorBloc',
+          category: LogCategory.video,
+        );
+      }
+    }
 
     emit(state.copyWith(clips: List.unmodifiable(newClips)));
   }

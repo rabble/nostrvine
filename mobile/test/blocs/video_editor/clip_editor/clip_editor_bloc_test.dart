@@ -351,6 +351,26 @@ void main() {
           );
         },
       );
+
+      test(
+        'reports the effective playback speed range for the selected clip',
+        () {
+          final clips = [
+            _createClip(id: 'a', duration: const Duration(seconds: 2)),
+            _createClip(id: 'b', duration: const Duration(seconds: 6)),
+          ];
+
+          final range = ClipEditorBloc.allowedPlaybackSpeedRange(
+            clips: clips,
+            clipIndex: 1,
+            clip: clips[1],
+          );
+
+          expect(range, isNotNull);
+          expect(range!.min, closeTo(1.3953488372, 1e-9));
+          expect(range.max, VideoEditorConstants.clipSpeedMax);
+        },
+      );
     });
 
     // =========================================================

@@ -66,6 +66,115 @@ class VideoEditorCanvas extends StatelessWidget {
     proVideoController.setPlayTime(startPosition);
   }
 
+  @visibleForTesting
+  static Duration clampPlaybackPositionToClips({
+    required Duration position,
+    required List<DivineVideoClip> clips,
+  }) {
+    final totalDuration = clips.fold(
+      Duration.zero,
+      (sum, clip) => sum + clip.playbackDuration,
+    );
+    if (position < Duration.zero) return Duration.zero;
+    if (position > totalDuration) return totalDuration;
+    return position;
+  }
+
+  @visibleForTesting
+  static Duration remapPlaybackPositionForClipUpdate({
+    required List<DivineVideoClip> previousClips,
+    required List<DivineVideoClip> currentClips,
+    required Duration currentPosition,
+  }) {
+    if (currentClips.isEmpty) return Duration.zero;
+    if (previousClips.isEmpty) {
+      return clampPlaybackPositionToClips(
+        position: currentPosition,
+        clips: currentClips,
+      );
+    }
+
+    final previousTotalDuration = previousClips.fold(
+      Duration.zero,
+      (sum, clip) => sum + clip.playbackDuration,
+    );
+    if (previousTotalDuration <= Duration.zero) {
+      return clampPlaybackPositionToClips(
+        position: currentPosition,
+        clips: currentClips,
+      );
+    }
+
+    final normalizedPosition = currentPosition < previousTotalDuration
+        ? currentPosition
+        : previousTotalDuration;
+
+    var previousPrefix = Duration.zero;
+    DivineVideoClip? previousClip;
+    for (var i = 0; i < previousClips.length; i++) {
+      final clip = previousClips[i];
+      final clipEnd = previousPrefix + clip.playbackDuration;
+      if (normalizedPosition < clipEnd || i == previousClips.length - 1) {
+        previousClip = clip;
+        break;
+      }
+      previousPrefix = clipEnd;
+    }
+
+    if (previousClip == null) {
+      return clampPlaybackPositionToClips(
+        position: normalizedPosition,
+        clips: currentClips,
+      );
+    }
+    final resolvedPreviousClip = previousClip;
+
+    final currentClipIndex = currentClips.indexWhere(
+      (clip) => clip.id == resolvedPreviousClip.id,
+    );
+    if (currentClipIndex == -1) {
+      return clampPlaybackPositionToClips(
+        position: normalizedPosition,
+        clips: currentClips,
+      );
+    }
+
+    final relativePlaybackPosition = normalizedPosition - previousPrefix;
+    final previousSpeed = resolvedPreviousClip.playbackSpeed ?? 1.0;
+    final relativeSourceMicroseconds = previousSpeed == 1.0
+        ? relativePlaybackPosition.inMicroseconds
+        : (relativePlaybackPosition.inMicroseconds * previousSpeed).round();
+    final sourcePosition =
+        resolvedPreviousClip.trimStart +
+        Duration(microseconds: relativeSourceMicroseconds);
+
+    final currentClip = currentClips[currentClipIndex];
+    final clampedSourcePosition = sourcePosition < currentClip.trimStart
+        ? currentClip.trimStart
+        : sourcePosition > currentClip.trimStart + currentClip.trimmedDuration
+        ? currentClip.trimStart + currentClip.trimmedDuration
+        : sourcePosition;
+    final relativeSourcePosition =
+        clampedSourcePosition - currentClip.trimStart;
+    final currentSpeed = currentClip.playbackSpeed ?? 1.0;
+    final remappedLocalPlayback = currentSpeed == 1.0
+        ? relativeSourcePosition
+        : Duration(
+            microseconds: (relativeSourcePosition.inMicroseconds / currentSpeed)
+                .round(),
+          );
+
+    var currentPrefix = Duration.zero;
+    for (var i = 0; i < currentClipIndex; i++) {
+      currentPrefix += currentClips[i].playbackDuration;
+    }
+
+    return clampPlaybackPositionToClips(
+      position: currentPrefix + remappedLocalPlayback,
+      clips: currentClips,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isSubEditorOpen = context.select(
@@ -123,6 +232,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
   bool _isInitialized = false;
   bool _isImportingHistory = false;
+  List<DivineVideoClip> _lastAppliedClips = const [];
 
   bool get _isLayerBeingTransformed => _selectedLayer != null;
 
@@ -289,9 +399,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
         final speed = clip.playbackSpeed ?? 1.0;
         final relativePlayback = speed == 1.0
             ? relative
-            : Duration(
-                microseconds: (relative.inMicroseconds / speed).round(),
-              );
+            : Duration(microseconds: (relative.inMicroseconds / speed).round());
         return precedingDuration + relativePlayback;
       }
       // Accumulate in playback time (trimmedDuration ÷ speed) so that
@@ -384,21 +492,12 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     }
 
     final clips = ref.read(clipManagerProvider).clips;
-    final currentPosition = context
-        .read<VideoEditorMainBloc>()
-        .state
-        .currentPosition;
-    _videoPlayer?.setClips([
-      for (final clip in clips)
-        if (clip.video.file?.path case final path?)
-          VideoClip(
-            uri: path,
-            start: clip.trimStart,
-            end: clip.duration - clip.trimEnd,
-            volume: clip.volume,
-            playbackSpeed: clip.playbackSpeed ?? 1.0,
-          ),
-    ], startPosition: currentPosition);
+    final currentPosition = VideoEditorCanvas.clampPlaybackPositionToClips(
+      position: context.read<VideoEditorMainBloc>().state.currentPosition,
+      clips: clips,
+    );
+    _setPlayerTimelinePosition(currentPosition);
+    unawaited(_applyPlayerClips(clips, startPosition: currentPosition));
   }
 
   /// Creates the [ProVideoController] (only once, not tied to a file).
@@ -459,18 +558,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
     await _videoPlayer!.initialize();
     if (!mounted) return;
-    await _videoPlayer!.setClips(
-      [
-        for (final clip in clips)
-          if (clip.video.file?.path case final path?)
-            VideoClip(
-              uri: path,
-              start: clip.trimStart,
-              end: clip.duration - clip.trimEnd,
-              volume: clip.volume,
-              playbackSpeed: clip.playbackSpeed ?? 1.0,
-            ),
-      ],
+    await _applyPlayerClips(
+      clips,
       startPosition: startPosition != null && startPosition > Duration.zero
           ? startPosition
           : null,
@@ -500,6 +589,42 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       name: 'VideoEditorCanvas',
       category: LogCategory.video,
     );
+  }
+
+  List<VideoClip> _buildPlayerClips(List<DivineVideoClip> clips) {
+    return [
+      for (final clip in clips)
+        if (clip.video.file?.path case final path?)
+          VideoClip(
+            uri: path,
+            start: clip.trimStart,
+            end: clip.duration - clip.trimEnd,
+            volume: clip.volume,
+            playbackSpeed: clip.playbackSpeed ?? 1.0,
+          ),
+    ];
+  }
+
+  Future<void> _applyPlayerClips(
+    List<DivineVideoClip> clips, {
+    Duration? startPosition,
+  }) async {
+    final player = _videoPlayer;
+    if (player == null || clips.isEmpty) return;
+    await player.setClips(
+      _buildPlayerClips(clips),
+      startPosition: startPosition,
+    );
+    _lastAppliedClips = List<DivineVideoClip>.unmodifiable(clips);
+  }
+
+  void _setPlayerTimelinePosition(Duration position) {
+    final bloc = context.read<VideoEditorMainBloc>();
+    if (bloc.state.currentPosition != position) {
+      bloc.add(VideoEditorPositionChanged(position));
+    }
+    _lastReportedPosition = position;
+    _proVideoController.setPlayTime(position);
   }
 
   /// Syncs native audio overlay tracks from the [TimelineOverlayBloc]
@@ -806,22 +931,13 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
         // builds a composition with `renderSize == .zero` on iOS,
         // which crashes `AVPlayerItem.setVideoComposition:`.
         if (clips.isEmpty || !_isPlayerInitialized) return;
-        final currentPosition = context
-            .read<VideoEditorMainBloc>()
-            .state
-            .currentPosition;
+        final currentPosition = VideoEditorCanvas.clampPlaybackPositionToClips(
+          position: context.read<VideoEditorMainBloc>().state.currentPosition,
+          clips: clips,
+        );
 
-        _videoPlayer?.setClips([
-          for (final clip in clips)
-            if (clip.video.file?.path case final path?)
-              VideoClip(
-                uri: path,
-                start: clip.trimStart,
-                end: clip.duration - clip.trimEnd,
-                volume: clip.volume,
-                playbackSpeed: clip.playbackSpeed ?? 1.0,
-              ),
-        ], startPosition: currentPosition);
+        _setPlayerTimelinePosition(currentPosition);
+        unawaited(_applyPlayerClips(clips, startPosition: currentPosition));
       },
     );
 
@@ -835,22 +951,13 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
         final clips = ref.read(clipManagerProvider).clips;
         if (clips.isEmpty || !_isPlayerInitialized) return;
-        final currentPosition = context
-            .read<VideoEditorMainBloc>()
-            .state
-            .currentPosition;
+        final currentPosition = VideoEditorCanvas.clampPlaybackPositionToClips(
+          position: context.read<VideoEditorMainBloc>().state.currentPosition,
+          clips: clips,
+        );
 
-        _videoPlayer?.setClips([
-          for (final clip in clips)
-            if (clip.video.file?.path case final path?)
-              VideoClip(
-                uri: path,
-                start: clip.trimStart,
-                end: clip.duration - clip.trimEnd,
-                volume: clip.volume,
-                playbackSpeed: clip.playbackSpeed ?? 1.0,
-              ),
-        ], startPosition: currentPosition);
+        _setPlayerTimelinePosition(currentPosition);
+        unawaited(_applyPlayerClips(clips, startPosition: currentPosition));
       },
     );
 
@@ -932,14 +1039,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             _seekEpoch++;
             _pendingSeekPosition = null;
             _isSeeking = false;
-            _videoPlayer?.setClips([
-              VideoClip(
-                uri: path,
-                end: clip.duration,
-                volume: clip.volume,
-                playbackSpeed: clip.playbackSpeed ?? 1.0,
-              ),
-            ]);
+            unawaited(
+              _applyPlayerClips([
+                clip.copyWith(trimStart: Duration.zero, trimEnd: Duration.zero),
+              ]),
+            );
           },
         ),
         BlocListener<ClipEditorBloc, ClipEditorState>(
@@ -1051,11 +1155,32 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
             // Seek to the trim handle's release point when restoring the composite.
             final trimEndPosition = _consumeTrimEndStartPosition(state.clips);
-            final startPosition = trimEndPosition ?? bloc.state.currentPosition;
-            // Sync so subsequent re-emits read the post-seek position.
-            if (trimEndPosition != null) {
-              bloc.add(VideoEditorPositionChanged(trimEndPosition));
+            var startPosition = trimEndPosition ?? bloc.state.currentPosition;
+            final previousClips = _lastAppliedClips;
+            if (trimEndPosition == null &&
+                previousClips.isNotEmpty &&
+                previousClips.length == state.clips.length) {
+              final previousIds = previousClips.map((clip) => clip.id).toList();
+              final currentIds = state.clips.map((clip) => clip.id).toList();
+              if (listEquals(previousIds, currentIds)) {
+                startPosition =
+                    VideoEditorCanvas.remapPlaybackPositionForClipUpdate(
+                      previousClips: previousClips,
+                      currentClips: state.clips,
+                      currentPosition: bloc.state.currentPosition,
+                    );
+                if (startPosition != bloc.state.currentPosition) {
+                  Log.info(
+                    '⚡ Clip preview remapped: '
+                    'fromMs=${bloc.state.currentPosition.inMilliseconds} '
+                    'toMs=${startPosition.inMilliseconds}',
+                    name: 'VideoEditorCanvas',
+                    category: LogCategory.video,
+                  );
+                }
+              }
             }
+            _setPlayerTimelinePosition(startPosition);
             // Composition swap back — invalidate in-flight single-clip seeks.
             _seekEpoch++;
             _pendingSeekPosition = null;
@@ -1065,23 +1190,16 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             final ownerEpoch = _seekEpoch;
 
             try {
-              await _videoPlayer?.setClips([
-                for (final clip in state.clips)
-                  if (clip.video.file?.path case final path?)
-                    VideoClip(
-                      uri: path,
-                      start: clip.trimStart,
-                      end: clip.duration - clip.trimEnd,
-                      volume: clip.volume,
-                      playbackSpeed: clip.playbackSpeed ?? 1.0,
-                    ),
-              ], startPosition: startPosition);
+              await _applyPlayerClips(
+                state.clips,
+                startPosition: startPosition,
+              );
               if (mounted) {
                 VideoEditorCanvas.syncPositionAfterTrimRelease(
                   mainBloc: bloc,
                   proVideoController: _proVideoController,
                   startPosition: startPosition,
-                  trimEndAlreadyDispatched: trimEndPosition != null,
+                  trimEndAlreadyDispatched: true,
                 );
               }
             } catch (e, s) {

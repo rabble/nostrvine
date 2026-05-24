@@ -8,9 +8,16 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 
 class VideoEditorClipSpeedSheet extends StatefulWidget {
-  const VideoEditorClipSpeedSheet({super.key, this.initialSpeed = 1.0});
+  const VideoEditorClipSpeedSheet({
+    super.key,
+    this.initialSpeed = 1.0,
+    this.minSpeed = VideoEditorConstants.clipSpeedMin,
+    this.maxSpeed = VideoEditorConstants.clipSpeedMax,
+  });
 
   final double initialSpeed;
+  final double minSpeed;
+  final double maxSpeed;
 
   @override
   State<VideoEditorClipSpeedSheet> createState() =>
@@ -23,11 +30,11 @@ class _VideoEditorClipSpeedSheetState extends State<VideoEditorClipSpeedSheet> {
   @override
   void initState() {
     super.initState();
+    final minSpeed = widget.minSpeed <= widget.maxSpeed
+        ? widget.minSpeed
+        : widget.maxSpeed;
     _speed = ValueNotifier(
-      widget.initialSpeed.clamp(
-        VideoEditorConstants.clipSpeedMin,
-        VideoEditorConstants.clipSpeedMax,
-      ),
+      widget.initialSpeed.clamp(minSpeed, widget.maxSpeed),
     );
   }
 
@@ -74,7 +81,13 @@ class _VideoEditorClipSpeedSheetState extends State<VideoEditorClipSpeedSheet> {
           color: VineTheme.outlinedDisabled,
         ),
         const SizedBox(height: 16),
-        _SpeedControlBar(speed: _speed),
+        _SpeedControlBar(
+          speed: _speed,
+          minSpeed: widget.minSpeed <= widget.maxSpeed
+              ? widget.minSpeed
+              : widget.maxSpeed,
+          maxSpeed: widget.maxSpeed,
+        ),
         const SizedBox(height: 16),
       ],
     );
@@ -82,9 +95,15 @@ class _VideoEditorClipSpeedSheetState extends State<VideoEditorClipSpeedSheet> {
 }
 
 class _SpeedControlBar extends StatelessWidget {
-  const _SpeedControlBar({required this.speed});
+  const _SpeedControlBar({
+    required this.speed,
+    required this.minSpeed,
+    required this.maxSpeed,
+  });
 
   final ValueNotifier<double> speed;
+  final double minSpeed;
+  final double maxSpeed;
 
   @override
   Widget build(BuildContext context) {
@@ -103,14 +122,13 @@ class _SpeedControlBar extends StatelessWidget {
             valueListenable: speed,
             builder: (_, value, _) => DivineSlider(
               value: value,
-              min: VideoEditorConstants.clipSpeedMin,
-              max: VideoEditorConstants.clipSpeedMax,
-              divisions:
-                  ((VideoEditorConstants.clipSpeedMax -
-                              VideoEditorConstants.clipSpeedMin) /
-                          VideoEditorConstants.clipSpeedStep)
-                      .round(),
-              onChanged: (v) => speed.value = v,
+              min: minSpeed,
+              max: maxSpeed,
+              divisions: maxSpeed > minSpeed
+                  ? ((maxSpeed - minSpeed) / VideoEditorConstants.clipSpeedStep)
+                        .round()
+                  : 1,
+              onChanged: maxSpeed > minSpeed ? (v) => speed.value = v : null,
             ),
           ),
         ],

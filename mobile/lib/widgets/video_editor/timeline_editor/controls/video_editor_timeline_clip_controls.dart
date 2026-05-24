@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
@@ -54,40 +55,50 @@ class _TimelineClipControlsState extends ConsumerState<TimelineClipControls> {
 
   Future<void> _setPlaybackSpeed(BuildContext context) async {
     final bloc = context.read<ClipEditorBloc>();
-    final state = bloc.state;
-    if (state.currentClipIndex < 0 ||
-        state.currentClipIndex >= state.clips.length) {
+    final initialState = bloc.state;
+    if (initialState.currentClipIndex < 0 ||
+        initialState.currentClipIndex >= initialState.clips.length) {
       return;
     }
-    final clip = state.clips[state.currentClipIndex];
+    final clip = initialState.clips[initialState.currentClipIndex];
     final editor = VideoEditorScope.of(context).requireEditor;
+    final allowedRange = ClipEditorBloc.allowedPlaybackSpeedRange(
+      clips: initialState.clips,
+      clipIndex: initialState.currentClipIndex,
+      clip: clip,
+    );
 
     final result = await VineBottomSheet.show<double>(
       context: context,
       expanded: false,
       scrollable: false,
       isScrollControlled: true,
-      body: VideoEditorClipSpeedSheet(initialSpeed: clip.playbackSpeed ?? 1.0),
+      body: VideoEditorClipSpeedSheet(
+        initialSpeed: clip.playbackSpeed ?? 1.0,
+        minSpeed: allowedRange?.min ?? VideoEditorConstants.clipSpeedMin,
+        maxSpeed: allowedRange?.max ?? VideoEditorConstants.clipSpeedMax,
+      ),
     );
 
     if (result == null || !mounted) return;
 
+    final state = bloc.state;
+    final clipIndex = state.clips.indexWhere(
+      (candidate) => candidate.id == clip.id,
+    );
+    if (clipIndex == -1) return;
+    final currentClip = state.clips[clipIndex];
     final updated = ClipEditorBloc.normalizeClipUpdate(
       clips: state.clips,
-      clipIndex: state.currentClipIndex,
-      currentClip: clip,
-      proposedClip: clip.copyWith(playbackSpeed: result),
+      clipIndex: clipIndex,
+      currentClip: currentClip,
+      proposedClip: currentClip.copyWith(playbackSpeed: result),
     );
+    final updatedClips = state.clips
+        .map((c) => c.id == clip.id ? updated : c)
+        .toList(growable: false);
     bloc.add(ClipEditorClipUpdated(clipId: clip.id, clip: updated));
-
-    editor.addHistory(
-      meta: {
-        ...editor.stateManager.activeMeta,
-        VideoEditorConstants.clipsStateHistoryKey: state.clips
-            .map((c) => c.id == clip.id ? updated.toJson() : c.toJson())
-            .toList(),
-      },
-    );
+    editor.setClipState(updatedClips);
   }
 
   void _requestExtractAudio(BuildContext context) {

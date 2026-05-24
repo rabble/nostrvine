@@ -18,7 +18,11 @@ class _HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) => const Scaffold(body: Text('home'));
 }
 
-Widget _buildSubject({double initialSpeed = 1.0}) {
+Widget _buildSubject({
+  double initialSpeed = 1.0,
+  double minSpeed = VideoEditorConstants.clipSpeedMin,
+  double maxSpeed = VideoEditorConstants.clipSpeedMax,
+}) {
   return MaterialApp.router(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
@@ -31,7 +35,11 @@ Widget _buildSubject({double initialSpeed = 1.0}) {
             GoRoute(
               path: 'speed',
               builder: (context, state) => Scaffold(
-                body: VideoEditorClipSpeedSheet(initialSpeed: initialSpeed),
+                body: VideoEditorClipSpeedSheet(
+                  initialSpeed: initialSpeed,
+                  minSpeed: minSpeed,
+                  maxSpeed: maxSpeed,
+                ),
               ),
             ),
           ],
@@ -81,6 +89,17 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(DivineSlider), findsOneWidget);
+      });
+
+      testWidgets('uses the provided min and max speeds', (tester) async {
+        await tester.pumpWidget(
+          _buildSubject(initialSpeed: 1.5, minSpeed: 1.4, maxSpeed: 2.5),
+        );
+        await tester.pumpAndSettle();
+
+        final slider = tester.widget<DivineSlider>(find.byType(DivineSlider));
+        expect(slider.min, 1.4);
+        expect(slider.max, 2.5);
       });
 
       testWidgets('shows cancel and confirm buttons', (tester) async {
@@ -144,6 +163,17 @@ void main() {
         final expected =
             '${VideoEditorConstants.clipSpeedMax.toStringAsFixed(2)}×';
         expect(find.text(expected), findsOneWidget);
+      });
+
+      testWidgets('clamps below the provided minSpeed to minSpeed', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          _buildSubject(minSpeed: 1.4),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('1.40×'), findsOneWidget);
       });
     });
 
