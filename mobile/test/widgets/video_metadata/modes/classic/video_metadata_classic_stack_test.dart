@@ -110,7 +110,7 @@ void main() {
     });
 
     testWidgetsWithSurfaceSize(
-      '$VideoMetadataFormFields disables optional sections',
+      '$VideoMetadataFormFields keeps the full post controls available',
       (
         tester,
       ) async {
@@ -119,11 +119,12 @@ void main() {
         final formFields = tester.widget<VideoMetadataFormFields>(
           find.byType(VideoMetadataFormFields),
         );
-        expect(formFields.enableTags, isFalse);
-        expect(formFields.enableExpiration, isFalse);
-        expect(formFields.enableContentWarning, isFalse);
-        expect(formFields.enableCollaborators, isFalse);
-        expect(formFields.enableInspiredBy, isFalse);
+        expect(formFields.enableTags, isTrue);
+        expect(formFields.enableExpiration, isTrue);
+        expect(formFields.enableContentWarning, isTrue);
+        expect(formFields.enableCollaborators, isTrue);
+        expect(formFields.enableInspiredBy, isTrue);
+        expect(formFields.enableVideoReply, isTrue);
       },
     );
   });

@@ -25,14 +25,7 @@ class VideoMetadataClassicStack extends StatelessWidget {
                 spacing: 16,
                 children: [
                   VideoMetadataClassicPreviewThumbnail(),
-                  VideoMetadataFormFields(
-                    enableTags: false,
-                    enableExpiration: false,
-                    enableContentWarning: false,
-                    enableCollaborators: false,
-                    enableInspiredBy: false,
-                    enableVideoReply: false,
-                  ),
+                  VideoMetadataFormFields(),
                 ],
               ),
             ),
