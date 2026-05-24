@@ -428,7 +428,19 @@ internal class DivineVideoPlayerInstance(
         // time, which is what ExoPlayer.seekTo expects.
         val resolved = resolveGlobalPosition(globalMs)
 
-        exoPlayer.seekTo(resolved.first, resolved.second)
+        val targetIndex = resolved.first
+        exoPlayer.seekTo(targetIndex, resolved.second)
+
+        // Apply the target clip's per-clip speed and volume immediately.
+        // ExoPlayer does not fire onPositionDiscontinuity / onMediaItemTransition
+        // with a speed-update path for manual seeks — only AUTO_TRANSITION is
+        // covered there. Without this, seeking from clip 2 (e.g. 0.25×) back
+        // to clip 1 (e.g. 3×) leaves the player running at 0.25× indefinitely.
+        exoPlayer.volume = (clipVolumes.getOrElse(targetIndex) { 1.0f }) * volume.toFloat()
+        exoPlayer.setPlaybackParameters(
+            PlaybackParameters(clipSpeeds.getOrElse(targetIndex) { 1.0f }),
+        )
+
         syncAudioOverlays()
 
         // Safety timeout — complete after 500ms if the callback never fires.

@@ -5,6 +5,7 @@ import android.graphics.SurfaceTexture
 import android.os.Handler
 import android.view.Surface
 import androidx.media3.common.PlaybackException
+import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import io.flutter.plugin.common.BinaryMessenger
@@ -341,5 +342,60 @@ class DivineVideoPlayerInstanceTest {
         instance.dispose()
 
         verify(exactly = 1) { result.success(null) }
+    }
+
+    // -- seekTo per-clip speed --
+
+    /**
+     * Regression test for the seek-backward speed bug:
+     * Clip 0 at 3× (source 3 s → 1 s on the timeline),
+     * clip 1 at 0.25× (source 4 s → 16 s on the timeline).
+     *
+     * After setClips the player is at clip 0.  When the user seeks to a
+     * position inside clip 0 the player must apply clip 0's speed (3×),
+     * NOT whatever speed was last active before the seek.
+     */
+    @Test
+    fun `seekTo applies the target clip speed so seeking backward from slow clip restores fast clip speed`() {
+        capturePlayerListener()
+
+        // Clip 0: 3 s source at 3× → 1 000 ms of playback timeline (offset 0..1000).
+        // Clip 1: 4 s source at 0.25× → 16 000 ms of playback timeline (offset 1000..17000).
+        instance.onMethodCall(
+            MethodCall(
+                "setClips",
+                mapOf(
+                    "clips" to listOf(
+                        mapOf(
+                            "uri" to "file:///a.mp4",
+                            "startMs" to 0,
+                            "endMs" to 3000,
+                            "playbackSpeed" to 3.0,
+                        ),
+                        mapOf(
+                            "uri" to "file:///b.mp4",
+                            "startMs" to 0,
+                            "endMs" to 4000,
+                            "playbackSpeed" to 0.25,
+                        ),
+                    ),
+                ),
+            ),
+            mockk(relaxed = true),
+        )
+
+        // Discard calls made by setClips so only the seekTo invocation is verified.
+        clearMocks(mockPlayer, answers = false, recordedCalls = true)
+
+        // Seek to global 500 ms → resolves to clip 0 (offset range 0–1000 ms).
+        instance.onMethodCall(
+            MethodCall("seekTo", mapOf("positionMs" to 500)),
+            mockk(relaxed = true),
+        )
+
+        // Clip 0's speed (3×) must be applied.
+        verify { mockPlayer.setPlaybackParameters(PlaybackParameters(3.0f)) }
+        // Clip 1's speed must NOT be applied.
+        verify(exactly = 0) { mockPlayer.setPlaybackParameters(PlaybackParameters(0.25f)) }
     }
 }
