@@ -24,6 +24,11 @@ class _ThrowingCancellableDownloader implements CancellableDownloader {
   Future<void> close() async {}
 }
 
+Future<File?> _cancelAndWait(CancellableCacheOperation operation) async {
+  operation.cancel();
+  return operation.file;
+}
+
 void main() {
   setUpTestEnvironment();
 
@@ -1374,6 +1379,57 @@ void main() {
           expect(opFile, isNotNull);
           expect(cfFile!.path, equals(opFile!.path));
           expect(downloadCallCount, equals(1));
+        },
+      );
+
+      test(
+        'cacheFile in-flight: cancelling the joined cancellable op '
+        'completes it locally without cancelling the shared download',
+        () async {
+          final mockFile = MockFile();
+          final mockFileInfo = MockFileInfo();
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final downloadCompleter = Completer<FileInfo>();
+          var downloadCallCount = 0;
+
+          when(mockFile.existsSync).thenReturn(true);
+          when(() => mockFile.path).thenReturn('/test/path/shared_cancel.mp4');
+          when(() => mockFileInfo.file).thenReturn(mockFile);
+
+          final fakeDownloader = FakeCancellableDownloader();
+          cacheManager = TestableMediaCacheManager(
+            config: MediaCacheConfig(
+              cacheKey: 'cross_dedup_cf_cancel_$timestamp',
+              enableSyncManifest: true,
+            ),
+            downloaderOverride: fakeDownloader,
+            mockGetFileFromCache: (key) async => null,
+            mockDownloadFile: (url, {key, authHeaders}) {
+              downloadCallCount++;
+              return downloadCompleter.future;
+            },
+          );
+
+          final cacheFileFuture = cacheManager.cacheFile(
+            'https://example.com/shared_cancel.mp4',
+            key: 'shared_cancel_key',
+          );
+          await Future<void>.delayed(const Duration(milliseconds: 1));
+
+          final op = cacheManager.cacheFileCancellable(
+            'https://example.com/shared_cancel.mp4',
+            key: 'shared_cancel_key',
+          );
+          final joinedFile = await _cancelAndWait(op);
+          expect(joinedFile, isNull);
+
+          downloadCompleter.complete(mockFileInfo);
+          final cacheFileResult = await cacheFileFuture;
+
+          expect(cacheFileResult, isNotNull);
+          expect(cacheFileResult!.path, equals(mockFile.path));
+          expect(downloadCallCount, equals(1));
+          expect(fakeDownloader.downloads, isEmpty);
         },
       );
 
