@@ -72,6 +72,8 @@ void main() {
     VideoInteractionsBloc createBloc({
       String? addressableId,
       int? initialLikeCount,
+      int? initialCommentCount,
+      int? initialRepostCount,
     }) => VideoInteractionsBloc(
       eventId: testEventId,
       authorPubkey: testAuthorPubkey,
@@ -80,6 +82,8 @@ void main() {
       repostsRepository: mockRepostsRepository,
       addressableId: addressableId,
       initialLikeCount: initialLikeCount,
+      initialCommentCount: initialCommentCount,
+      initialRepostCount: initialRepostCount,
     );
 
     test('initial state is initial with default values', () {
@@ -93,9 +97,15 @@ void main() {
       bloc.close();
     });
 
-    test('initial state seeds likeCount from initialLikeCount', () {
-      final bloc = createBloc(initialLikeCount: 42);
+    test('initial state seeds engagement counts from initial counts', () {
+      final bloc = createBloc(
+        initialLikeCount: 42,
+        initialCommentCount: 3,
+        initialRepostCount: 7,
+      );
       expect(bloc.state.likeCount, equals(42));
+      expect(bloc.state.commentCount, equals(3));
+      expect(bloc.state.repostCount, equals(7));
       bloc.close();
     });
 
@@ -131,12 +141,59 @@ void main() {
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
-        // Regression for #4159: the relay must always be queried for a fresh
-        // count even when initialLikeCount was seeded from the Funnelcake REST
-        // API (e.g. notification tap). REST counts are indexed asynchronously
-        // and may lag behind real-time relay data, causing the like count to
-        // appear stale until the user navigates away and back.
-        'always fetches relay like count even when seeded with initialLikeCount',
+        'does not overwrite seeded engagement counts with relay counts',
+        setUp: () {
+          when(
+            () => mockLikesRepository.isLiked(testEventId),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockRepostsRepository.isReposted(testAddressableId),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockLikesRepository.getLikeCount(
+              testEventId,
+              addressableId: testAddressableId,
+            ),
+          ).thenAnswer((_) async => 100);
+          when(
+            () => mockCommentsRepository.getCommentsCount(
+              testEventId,
+              rootAddressableId: testAddressableId,
+            ),
+          ).thenAnswer((_) async => 7);
+          when(
+            () => mockRepostsRepository.getRepostCount(testAddressableId),
+          ).thenAnswer((_) async => 32);
+        },
+        build: () => createBloc(addressableId: testAddressableId),
+        seed: () => const VideoInteractionsState(
+          likeCount: 1,
+          commentCount: 0,
+          repostCount: 0,
+        ),
+        act: (bloc) => bloc.add(const VideoInteractionsFetchRequested()),
+        expect: () => [
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.loading,
+            likeCount: 1,
+            commentCount: 0,
+            repostCount: 0,
+          ),
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            likeCount: 1,
+            commentCount: 0,
+            repostCount: 0,
+          ),
+        ],
+      );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        // The relay is still queried so unseeded blocs can use live counts,
+        // but a seeded display count from the feed payload must not be
+        // replaced by relay COUNT results, which can aggregate unrelated
+        // historical reactions.
+        'fetches relay like count but preserves seeded initialLikeCount',
         setUp: () {
           when(
             () => mockLikesRepository.isLiked(testEventId),
@@ -163,7 +220,7 @@ void main() {
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
             isLiked: true,
-            likeCount: 120, // Updated to relay count, not the stale REST seed.
+            likeCount: 100,
             repostCount: 5,
             commentCount: 10,
           ),
@@ -176,12 +233,12 @@ void main() {
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
-        // Companion to the non-addressable case above: production notification
-        // taps for Kind 34236 videos pass both eventId and addressableId to
-        // getLikeCount(), so the relay query must still fire even when the
-        // count was pre-seeded and an addressableId is present.
-        'always fetches relay like count when seeded with initialLikeCount '
-        'and addressableId',
+        // Companion to the non-addressable case above: production feed items
+        // for Kind 34236 videos pass both eventId and addressableId to
+        // getLikeCount(), so the relay query still fires but the pre-seeded
+        // count remains the display source of truth.
+        'fetches relay like count with addressableId but preserves seeded '
+        'initialLikeCount',
         setUp: () {
           when(
             () => mockLikesRepository.isLiked(testEventId),
@@ -217,7 +274,7 @@ void main() {
           ),
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
-            likeCount: 75, // Updated to relay count, not the stale REST seed.
+            likeCount: 50,
             repostCount: 2,
             commentCount: 3,
           ),
@@ -285,13 +342,11 @@ void main() {
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
-        // Companion to the addressable case above: for non-addressable
-        // videos (kind 22) the event_id never changes, so a relay 0 is
-        // authoritative and must still overwrite a stale seed. This pins
-        // the PR #4253 contract — relay is the source of truth — for the
-        // case where the #4432 guard does not apply.
-        'still overwrites a seeded likeCount with a relay 0 for '
-        'non-addressable videos (preserves #4253 contract)',
+        // Even for non-addressable videos, seeded feed counts are the display
+        // baseline. A relay 0 should not erase a count the feed payload
+        // already rendered.
+        'preserves a seeded likeCount over a relay 0 for non-addressable '
+        'videos',
         setUp: () {
           when(
             () => mockLikesRepository.isLiked(testEventId),
@@ -315,7 +370,7 @@ void main() {
           ),
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
-            likeCount: 0, // Relay 0 wins — no addressable id to gate on.
+            likeCount: 5,
             repostCount: 0,
             commentCount: 0,
           ),

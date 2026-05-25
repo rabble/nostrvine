@@ -20,10 +20,10 @@ part 'video_interactions_state.dart';
 ///
 /// This bloc is created per-VideoFeedItem and manages:
 /// - Like status (from LikesRepository)
-/// - Like count (from relays via LikesRepository)
+/// - Like count (from seeded feed payload, or relay fallback when unseeded)
 /// - Repost status (from RepostsRepository)
-/// - Repost count (from video metadata)
-/// - Comment count (from relays via CommentsRepository)
+/// - Repost count (from seeded feed payload, or relay fallback when unseeded)
+/// - Comment count (from seeded feed payload, or relay fallback when unseeded)
 ///
 /// The bloc subscribes to the repository's liked/reposted IDs streams to stay
 /// in sync when interactions change from other sources (e.g., profile grids).
@@ -37,6 +37,8 @@ class VideoInteractionsBloc
     required RepostsRepository repostsRepository,
     String? addressableId,
     int? initialLikeCount,
+    int? initialCommentCount,
+    int? initialRepostCount,
     bool includeVideoReplies = false,
   }) : _eventId = eventId,
        _authorPubkey = authorPubkey,
@@ -45,7 +47,13 @@ class VideoInteractionsBloc
        _repostsRepository = repostsRepository,
        _addressableId = addressableId,
        _includeVideoReplies = includeVideoReplies,
-       super(VideoInteractionsState(likeCount: initialLikeCount)) {
+       super(
+         VideoInteractionsState(
+           likeCount: initialLikeCount,
+           repostCount: initialRepostCount,
+           commentCount: initialCommentCount,
+         ),
+       ) {
     on<VideoInteractionsFetchRequested>(_onFetchRequested);
     // Toggle handlers fire-and-forget the publish (see _onLikeToggled),
     // so they return in microseconds and do not benefit from a
@@ -136,6 +144,7 @@ class VideoInteractionsBloc
     final preFetchLikeCount = state.likeCount;
     final preFetchIsReposted = state.isReposted;
     final preFetchRepostCount = state.repostCount;
+    final preFetchCommentCount = state.commentCount;
 
     emit(state.copyWith(status: VideoInteractionsStatus.loading));
 
@@ -156,11 +165,9 @@ class VideoInteractionsBloc
           ? _repostsRepository.getRepostCount(_addressableId)
           : _repostsRepository.getRepostCountByEventId(_eventId);
 
-      // Always fetch a fresh count from relay. When initialLikeCount was
-      // seeded from Funnelcake REST (e.g. notification tap), the cached REST
-      // value may lag behind real-time relay data and show a stale (lower)
-      // count. The initial state already shows the seeded value immediately;
-      // this round-trip updates it to the accurate relay count once it arrives.
+      // Fetch a relay count for blocs that were not seeded from the feed
+      // payload. Seeded counts stay authoritative below because relay COUNT
+      // results can include unrelated historical reactions.
       final likeCountFuture = _likesRepository.getLikeCount(
         _eventId,
         addressableId: _addressableId,
@@ -177,22 +184,16 @@ class VideoInteractionsBloc
       ]);
 
       final fetchedLikeCount = results[0];
-      final commentCount = results[1];
-      final repostCount = results[2];
+      final fetchedCommentCount = results[1];
+      final fetchedRepostCount = results[2];
 
-      // For addressable videos, treat a relay-fetched 0 as "no fresh info"
-      // when we already have a non-zero pre-fetch count. After a metadata
-      // edit the new event_id has no #e reactions yet, and the #a COUNT on
-      // the divine relay for kind 7 is unreliable — letting that 0 stomp
-      // the carried-forward nostrLikeCount (or Vine originalLikes portion)
-      // surfaces as #4432 ("likes went to zero after editing"). Mirrors the
-      // skip-zero guard in VideoEventService._executeLikeCountBatchFetch.
-      final likeCount =
-          (_addressableId != null &&
-              fetchedLikeCount == 0 &&
-              (preFetchLikeCount ?? 0) > 0)
-          ? preFetchLikeCount!
-          : fetchedLikeCount;
+      // Feed/Funnelcake counts are the display baseline. Relay COUNT queries
+      // are still useful when a bloc has no seeded count, but they must not
+      // replace counts we already rendered from the video payload: the relay
+      // can aggregate unrelated historical reactions and surface bogus spikes.
+      final likeCount = preFetchLikeCount ?? fetchedLikeCount;
+      final commentCount = preFetchCommentCount ?? fetchedCommentCount;
+      final repostCount = preFetchRepostCount ?? fetchedRepostCount;
 
       emit(
         state.copyWith(
@@ -205,7 +206,9 @@ class VideoInteractionsBloc
           repostCount: state.repostCount == preFetchRepostCount
               ? repostCount
               : null,
-          commentCount: commentCount,
+          commentCount: state.commentCount == preFetchCommentCount
+              ? commentCount
+              : null,
         ),
       );
     } catch (e, stackTrace) {

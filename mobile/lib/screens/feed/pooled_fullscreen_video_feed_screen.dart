@@ -1130,9 +1130,11 @@ class _PooledFullscreenItem extends ConsumerWidget {
               repostsRepository: repostsRepository,
               addressableId: addressableId,
               includeVideoReplies: showVideoReplies,
-              initialLikeCount: video.nostrLikeCount != null
-                  ? video.totalLikes
-                  : null,
+              initialLikeCount: video.totalLikes,
+              initialCommentCount: video.originalComments ?? 0,
+              initialRepostCount:
+                  (video.reposterPubkeys?.length ?? 0) +
+                  (video.originalReposts ?? 0),
             )
             ..add(const VideoInteractionsSubscriptionRequested())
             ..add(const VideoInteractionsFetchRequested()),
@@ -1208,9 +1210,11 @@ class _WebFullscreenItem extends ConsumerWidget {
                   commentsRepository: commentsRepository,
                   repostsRepository: repostsRepository,
                   addressableId: addressableId,
-                  initialLikeCount: video.nostrLikeCount != null
-                      ? video.totalLikes
-                      : null,
+                  initialLikeCount: video.totalLikes,
+                  initialCommentCount: video.originalComments ?? 0,
+                  initialRepostCount:
+                      (video.reposterPubkeys?.length ?? 0) +
+                      (video.originalReposts ?? 0),
                 )
                 ..add(const VideoInteractionsSubscriptionRequested())
                 ..add(const VideoInteractionsFetchRequested()),
