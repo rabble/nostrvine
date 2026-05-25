@@ -307,6 +307,39 @@ void main() {
     expect(key.currentState!.debugPlayerKeyCount, 1);
   });
 
+  testWidgets('retryPlayback applies verified headers to recreated player', (
+    tester,
+  ) async {
+    final key = GlobalKey<WebVideoFeedState>();
+    final requestHeaders = <Map<String, String>>[];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: WebVideoFeed(
+          key: key,
+          videos: [_makeVideo()],
+          controllerFactory: ({required url, required headers}) {
+            requestHeaders.add(headers);
+            return _FakeVideoPlayerController();
+          },
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(requestHeaders, equals([const <String, String>{}]));
+
+    const verifiedHeaders = {'Authorization': 'Bearer verified'};
+    key.currentState!.retryPlayback(0, headers: verifiedHeaders);
+    await tester.pump();
+    await tester.pump();
+
+    expect(
+      requestHeaders,
+      equals([const <String, String>{}, verifiedHeaders]),
+    );
+  });
+
   testWidgets(
     'drops controller entries when WebVideoPlayer items are disposed',
     (tester) async {

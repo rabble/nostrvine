@@ -1347,7 +1347,7 @@ class _WebFullscreenLoadingModerationOverlayState
       widget.video.id,
       PlaybackStatus.ready,
     );
-    widget.feedKey.currentState?.retryPlayback(widget.index);
+    widget.feedKey.currentState?.retryPlayback(widget.index, headers: headers);
     setState(() {
       _dismissedAfterVerify = true;
     });

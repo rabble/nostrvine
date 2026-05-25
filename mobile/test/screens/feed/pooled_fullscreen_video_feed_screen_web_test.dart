@@ -243,6 +243,7 @@ void main() {
         );
         final moderationService = _MockVideoModerationStatusService();
         final mediaAuthInterceptor = _FakeMediaAuthInterceptor();
+        final requestHeaders = <Map<String, String>>[];
         when(() => mockBloc.state).thenReturn(state);
         when(() => moderationService.fetchStatus(sha256)).thenAnswer(
           (_) async => const VideoModerationStatus(
@@ -276,8 +277,10 @@ void main() {
                 ),
               ],
               child: FullscreenFeedContent(
-                webControllerFactory: ({required url, required headers}) =>
-                    webController,
+                webControllerFactory: ({required url, required headers}) {
+                  requestHeaders.add(headers);
+                  return FakeVideoPlayerController();
+                },
               ),
             ),
           ),
@@ -293,6 +296,13 @@ void main() {
         await tester.pump();
 
         expect(mediaAuthInterceptor.didHandleUnauthorizedMedia, isTrue);
+        expect(
+          requestHeaders,
+          equals([
+            const <String, String>{},
+            const {'Authorization': 'Bearer test'},
+          ]),
+        );
         expect(find.text(l10n.videoErrorAgeRestricted), findsNothing);
       },
       skip: !kIsWeb,

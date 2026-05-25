@@ -162,6 +162,7 @@ class WebVideoFeedState extends State<WebVideoFeed> {
   final Map<int, VoidCallback> _controllerListeners = {};
   final Map<int, Duration> _lastPositions = {};
   final Map<int, bool> _armedForCompletion = {};
+  final Map<String, Map<String, String>> _requestHeadersByVideoId = {};
 
   int get currentIndex => _currentIndex;
   int get videoCount => widget.videos.length;
@@ -203,6 +204,8 @@ class WebVideoFeedState extends State<WebVideoFeed> {
   void _pruneStaleEntries() {
     final validCount = widget.videos.length;
     _playerKeys.removeWhere((index, _) => index >= validCount);
+    final validIds = widget.videos.map((video) => video.id).toSet();
+    _requestHeadersByVideoId.removeWhere((id, _) => !validIds.contains(id));
     final current = _controllers.value;
     final pruned = <int, VideoPlayerController>{
       for (final entry in current.entries)
@@ -249,9 +252,12 @@ class WebVideoFeedState extends State<WebVideoFeed> {
     });
   }
 
-  void retryPlayback(int index) {
+  void retryPlayback(int index, {Map<String, String>? headers}) {
     if (!mounted || index < 0 || index >= widget.videos.length) return;
 
+    if (headers != null) {
+      _requestHeadersByVideoId[widget.videos[index].id] = headers;
+    }
     final controller = _controllers.value[index];
     if (controller != null) {
       _detachCompletionListener(index, controller);
@@ -394,7 +400,7 @@ class WebVideoFeedState extends State<WebVideoFeed> {
           isActive: isActive,
           videoUrl: playbackUrl,
           playerKey: playerKey,
-          headers: widget.headers,
+          headers: _requestHeadersByVideoId[video.id] ?? widget.headers,
           controllerFactory: widget.controllerFactory,
           controllersListenable: _controllers,
           itemBuilder: widget.itemBuilder,
