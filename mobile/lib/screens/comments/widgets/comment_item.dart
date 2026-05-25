@@ -150,20 +150,18 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                             alignment: Alignment.centerLeft,
                             child: ConstrainedBox(
                               constraints: const BoxConstraints(maxWidth: 248),
-                              child: ClipRRect(
+                              child: VideoCommentPlayer(
+                                videoUrl: widget.comment.videoUrl!,
+                                thumbnailUrl: widget.comment.thumbnailUrl,
+                                blurhash: widget.comment.videoBlurhash,
                                 borderRadius: BorderRadius.circular(12),
-                                child: VideoCommentPlayer(
-                                  videoUrl: widget.comment.videoUrl!,
-                                  thumbnailUrl: widget.comment.thumbnailUrl,
-                                  blurhash: widget.comment.videoBlurhash,
-                                  onOpenVideo: () => context.push(
-                                    VideoDetailScreen.pathForId(
-                                      widget.comment.id,
-                                    ),
-                                    extra: VideoDetailRouteExtra(
-                                      initialVideo: widget.comment
-                                          .toSyntheticVideoEvent(),
-                                    ),
+                                onOpenVideo: () => context.push(
+                                  VideoDetailScreen.pathForId(
+                                    widget.comment.id,
+                                  ),
+                                  extra: VideoDetailRouteExtra(
+                                    initialVideo: widget.comment
+                                        .toSyntheticVideoEvent(),
                                   ),
                                 ),
                               ),

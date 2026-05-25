@@ -10,6 +10,31 @@ void main() {
     VisibilityDetectorController.instance.updateInterval = Duration.zero;
   });
 
+  testWidgets('clips to the provided border radius', (tester) async {
+    const borderRadius = BorderRadius.all(Radius.circular(12));
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: VideoCommentPlayer(
+            videoUrl: 'https://media.divine.video/comment-video.mp4',
+            borderRadius: borderRadius,
+          ),
+        ),
+      ),
+    );
+
+    final clip = tester.widget<ClipRRect>(
+      find.ancestor(
+        of: find.byType(VisibilityDetector),
+        matching: find.byType(ClipRRect),
+      ),
+    );
+    expect(clip.borderRadius, borderRadius);
+  });
+
   testWidgets('opens the full video page from the inline comment player', (
     tester,
   ) async {

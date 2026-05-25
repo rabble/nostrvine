@@ -274,13 +274,10 @@ void main() {
     );
     await tester.pump();
 
-    final clipFinder = find.ancestor(
-      of: find.byType(VideoCommentPlayer),
-      matching: find.byType(ClipRRect),
+    final player = tester.widget<VideoCommentPlayer>(
+      find.byType(VideoCommentPlayer),
     );
-    expect(clipFinder, findsOneWidget);
-    final clipRRect = tester.widget<ClipRRect>(clipFinder);
-    expect(clipRRect.borderRadius, BorderRadius.circular(12));
+    expect(player.borderRadius, BorderRadius.circular(12));
 
     // Drain VisibilityDetector's 500ms debounce and the identity skeleton's
     // 7s fallthrough so no pending timers leak into the next test.

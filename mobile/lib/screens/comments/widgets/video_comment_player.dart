@@ -13,6 +13,7 @@ class VideoCommentPlayer extends StatefulWidget {
     required this.videoUrl,
     this.thumbnailUrl,
     this.blurhash,
+    this.borderRadius,
     this.onOpenVideo,
     super.key,
   });
@@ -20,6 +21,7 @@ class VideoCommentPlayer extends StatefulWidget {
   final String videoUrl;
   final String? thumbnailUrl;
   final String? blurhash;
+  final BorderRadiusGeometry? borderRadius;
   final VoidCallback? onOpenVideo;
 
   @override
@@ -102,7 +104,7 @@ class _VideoCommentPlayerState extends State<VideoCommentPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    return VisibilityDetector(
+    final player = VisibilityDetector(
       key: Key('video-comment-${widget.videoUrl}'),
       onVisibilityChanged: _onVisibilityChanged,
       child: AspectRatio(
@@ -155,6 +157,16 @@ class _VideoCommentPlayerState extends State<VideoCommentPlayer> {
           ),
         ),
       ),
+    );
+
+    final borderRadius = widget.borderRadius;
+    if (borderRadius == null) {
+      return player;
+    }
+
+    return ClipRRect(
+      borderRadius: borderRadius,
+      child: player,
     );
   }
 }
