@@ -105,55 +105,52 @@ class _VideoCommentPlayerState extends State<VideoCommentPlayer> {
     return VisibilityDetector(
       key: Key('video-comment-${widget.videoUrl}'),
       onVisibilityChanged: _onVisibilityChanged,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: AspectRatio(
-          aspectRatio: 9 / 16,
-          child: DecoratedBox(
-            decoration: const BoxDecoration(color: VineTheme.containerLow),
-            child: GestureDetector(
-              onTap: _togglePlay,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  if (_controller?.value.isInitialized ?? false)
-                    VideoPlayer(_controller!)
-                  else if (widget.thumbnailUrl?.isNotEmpty ?? false)
-                    VineCachedImage(
-                      imageUrl: widget.thumbnailUrl!,
-                      errorWidget: (_, _, _) => const _VideoPlaceholder(),
-                    )
-                  else
-                    const _VideoPlaceholder(),
-                  if (_isInitializing)
-                    const Center(
-                      child: SizedBox.square(
-                        dimension: 28,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: VineTheme.onSurface,
-                        ),
-                      ),
-                    )
-                  else if (!_isPlaying)
-                    const _PlayOverlay(),
-                  if (_controller?.value.isInitialized ?? false)
-                    Positioned(
-                      right: 8,
-                      bottom: 8,
-                      child: _MuteButton(
-                        isMuted: _isMuted,
-                        onTap: _toggleMute,
+      child: AspectRatio(
+        aspectRatio: 9 / 16,
+        child: DecoratedBox(
+          decoration: const BoxDecoration(color: VineTheme.containerLow),
+          child: GestureDetector(
+            onTap: _togglePlay,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (_controller?.value.isInitialized ?? false)
+                  VideoPlayer(_controller!)
+                else if (widget.thumbnailUrl?.isNotEmpty ?? false)
+                  VineCachedImage(
+                    imageUrl: widget.thumbnailUrl!,
+                    errorWidget: (_, _, _) => const _VideoPlaceholder(),
+                  )
+                else
+                  const _VideoPlaceholder(),
+                if (_isInitializing)
+                  const Center(
+                    child: SizedBox.square(
+                      dimension: 28,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: VineTheme.onSurface,
                       ),
                     ),
-                  if (widget.onOpenVideo != null)
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: _OpenVideoButton(onTap: widget.onOpenVideo!),
+                  )
+                else if (!_isPlaying)
+                  const _PlayOverlay(),
+                if (_controller?.value.isInitialized ?? false)
+                  Positioned(
+                    right: 8,
+                    bottom: 8,
+                    child: _MuteButton(
+                      isMuted: _isMuted,
+                      onTap: _toggleMute,
                     ),
-                ],
-              ),
+                  ),
+                if (widget.onOpenVideo != null)
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: _OpenVideoButton(onTap: widget.onOpenVideo!),
+                  ),
+              ],
             ),
           ),
         ),

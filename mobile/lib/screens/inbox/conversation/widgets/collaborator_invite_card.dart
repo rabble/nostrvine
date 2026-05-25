@@ -157,6 +157,9 @@ class _CardChrome extends ConsumerWidget {
           ),
           decoration: BoxDecoration(
             color: VineTheme.surfaceContainerHigh,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          foregroundDecoration: BoxDecoration(
             border: Border.all(color: VineTheme.outlineMuted),
             borderRadius: BorderRadius.circular(16),
           ),
@@ -270,9 +273,9 @@ class _InvitePreviewSurface extends StatelessWidget {
             thumbnailUrl: thumbnailUrl,
           ),
           PositionedDirectional(
-            start: 12,
-            end: 12,
-            bottom: 12,
+            start: 0,
+            end: 0,
+            bottom: 0,
             child: IgnorePointer(
               child: _InviteGradientCopy(
                 title: title,
@@ -432,7 +435,7 @@ class _InviteGradientCopy extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.only(top: 48),
+        padding: const EdgeInsetsGeometry.fromSTEB(12, 48, 12, 12),
         child: _InviteCopy(
           previewTitle: previewTitle,
           title: title,
