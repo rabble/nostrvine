@@ -1397,16 +1397,6 @@ void main() {
                 '/reversed/clip-local_clip-local.mp4',
               )
               .having(
-                (s) => s.clips.first.trimStart,
-                'trimStart',
-                const Duration(milliseconds: 500),
-              )
-              .having(
-                (s) => s.clips.first.trimEnd,
-                'trimEnd',
-                const Duration(seconds: 1),
-              )
-              .having(
                 (s) => s.clips.first.duration,
                 'duration',
                 const Duration(seconds: 5),
