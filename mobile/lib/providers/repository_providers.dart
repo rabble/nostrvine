@@ -21,14 +21,16 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
-// TODO(#4506): Remove this back-import after 9c finishes splitting
-// providers.
-import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/relay_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/providers/social_providers.dart';
+import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/services/badges/badge_repository.dart';
 import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';

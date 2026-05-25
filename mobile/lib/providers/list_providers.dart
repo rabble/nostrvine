@@ -7,9 +7,11 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
-import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/video_events_providers.dart';
+import 'package:openvine/providers/video_providers.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
 

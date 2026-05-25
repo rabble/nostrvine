@@ -9,7 +9,9 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:models/models.dart' show VideoEvent;
 import 'package:openvine/extensions/video_event_extensions.dart';
-import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/moderation_providers.dart';
+import 'package:openvine/providers/upload_media_providers.dart';
+import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/broken_video_tracker.dart'
     show BrokenVideoTracker;

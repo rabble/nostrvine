@@ -4,8 +4,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' show NIP71VideoKinds;
 import 'package:openvine/models/environment_config.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
+import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/services/environment_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 

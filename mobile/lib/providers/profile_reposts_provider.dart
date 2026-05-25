@@ -2,7 +2,7 @@
 // ABOUTME: Gets reposts directly from videoEventService for a specific user
 
 import 'package:models/models.dart';
-import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/video_providers.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'profile_reposts_provider.g.dart';

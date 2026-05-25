@@ -1,7 +1,7 @@
 // ABOUTME: Riverpod wiring for importing classic Vines into the clip library.
 // ABOUTME: Keeps the import service testable while using app cache and storage services.
 
-import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/services/classic_vine_clip_import_service.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';

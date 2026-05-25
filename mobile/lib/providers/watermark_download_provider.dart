@@ -1,7 +1,7 @@
 // ABOUTME: Riverpod provider for WatermarkDownloadService
 // ABOUTME: Constructs service with MediaCacheManager and GallerySaveService dependencies
 
-import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/permissions_providers.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/watermark_download_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';

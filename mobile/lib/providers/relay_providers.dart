@@ -6,8 +6,8 @@ import 'dart:async';
 
 import 'package:nostr_client/nostr_client.dart'
     show RelayConnectionStatus, RelayState;
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/relay_statistics_service.dart';

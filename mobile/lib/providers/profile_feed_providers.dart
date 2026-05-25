@@ -2,7 +2,7 @@
 // ABOUTME: Returns videos for a specific user's profile based on route context
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/npub_hex.dart';

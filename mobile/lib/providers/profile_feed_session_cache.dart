@@ -1,7 +1,7 @@
 import 'dart:collection';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/services/auth_service.dart' show AuthState;
 import 'package:openvine/state/video_feed_state.dart';
 
