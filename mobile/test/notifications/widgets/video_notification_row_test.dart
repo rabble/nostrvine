@@ -64,6 +64,12 @@ Future<void> _pump(
   Locale? locale,
   double textScaleFactor = 1,
 }) async {
+  // Pin a tall, deterministic surface: the 2× stacked layout needs the
+  // vertical room production's scrollable list gives it, and pinning makes
+  // the file immune to surface-size leaks under the shared-isolate CI run
+  // (`very_good test --optimization`). Reset after each test. See #4719.
+  await tester.binding.setSurfaceSize(const Size(420, 1200));
+  addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(
     MaterialApp(
       locale: locale,
@@ -340,7 +346,7 @@ void main() {
           ),
           textScaleFactor: 2,
         );
-        await tester.pump();
+        await tester.pumpAndSettle();
 
         expect(tester.takeException(), isNull);
       });
