@@ -122,30 +122,16 @@ class _VineCachedImageState extends State<VineCachedImage> {
     _listener = null;
   }
 
-  Widget _buildPlaceholder() {
-    if (widget.placeholder == null) {
-      return SizedBox(width: widget.width, height: widget.height);
-    }
-    return KeyedSubtree(
-      key: const ValueKey('placeholder'),
-      child: widget.placeholder!(context, widget.imageUrl),
-    );
-  }
-
-  Widget _buildErrorWidget(Object error) {
-    if (widget.errorWidget == null) {
-      return SizedBox(width: widget.width, height: widget.height);
-    }
-    return KeyedSubtree(
-      key: const ValueKey('error'),
-      child: widget.errorWidget!(context, widget.imageUrl, error),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_error != null) {
-      return _buildErrorWidget(_error!);
+      return _ErrorWidget(
+        error: _error!,
+        imageUrl: widget.imageUrl,
+        width: widget.width,
+        height: widget.height,
+        errorWidget: widget.errorWidget,
+      );
     }
 
     final image = Image(
@@ -154,7 +140,13 @@ class _VineCachedImageState extends State<VineCachedImage> {
       height: widget.height,
       fit: widget.fit,
       alignment: widget.alignment,
-      errorBuilder: (context, error, stackTrace) => _buildErrorWidget(error),
+      errorBuilder: (context, error, stackTrace) => _ErrorWidget(
+        error: error,
+        imageUrl: widget.imageUrl,
+        width: widget.width,
+        height: widget.height,
+        errorWidget: widget.errorWidget,
+      ),
     );
 
     if (widget.placeholder == null) {
@@ -173,7 +165,12 @@ class _VineCachedImageState extends State<VineCachedImage> {
           child: AnimatedOpacity(
             opacity: _hasImage ? 0 : 1,
             duration: widget.fadeOutDuration,
-            child: _buildPlaceholder(),
+            child: _Placeholder(
+              imageUrl: widget.imageUrl,
+              width: widget.width,
+              height: widget.height,
+              placeholder: widget.placeholder,
+            ),
           ),
         ),
         AnimatedOpacity(
@@ -183,6 +180,58 @@ class _VineCachedImageState extends State<VineCachedImage> {
           child: image,
         ),
       ],
+    );
+  }
+}
+
+class _Placeholder extends StatelessWidget {
+  const _Placeholder({
+    required this.imageUrl,
+    required this.width,
+    required this.height,
+    required this.placeholder,
+  });
+
+  final String imageUrl;
+  final double? width;
+  final double? height;
+  final PlaceholderWidgetBuilder? placeholder;
+
+  @override
+  Widget build(BuildContext context) {
+    if (placeholder == null) {
+      return SizedBox(width: width, height: height);
+    }
+    return KeyedSubtree(
+      key: const ValueKey('placeholder'),
+      child: placeholder!(context, imageUrl),
+    );
+  }
+}
+
+class _ErrorWidget extends StatelessWidget {
+  const _ErrorWidget({
+    required this.error,
+    required this.imageUrl,
+    required this.width,
+    required this.height,
+    required this.errorWidget,
+  });
+
+  final Object error;
+  final String imageUrl;
+  final double? width;
+  final double? height;
+  final LoadingErrorWidgetBuilder? errorWidget;
+
+  @override
+  Widget build(BuildContext context) {
+    if (errorWidget == null) {
+      return SizedBox(width: width, height: height);
+    }
+    return KeyedSubtree(
+      key: const ValueKey('error'),
+      child: errorWidget!(context, imageUrl, error),
     );
   }
 }

@@ -100,21 +100,63 @@ void main() {
       await tearDownTestDirectories();
     });
 
+    test('obtainKey returns the provider synchronously', () async {
+      const url = 'https://example.com/image.jpg';
+      final cacheManager = _MockMediaCacheManager();
+      final provider = MediaCacheImageProvider(url, cacheManager: cacheManager);
+
+      final key = await provider.obtainKey(ImageConfiguration.empty);
+
+      expect(key, same(provider));
+    });
+
     test(
-      'obtainKey returns the provider synchronously',
-      () async {
+      'equal providers with separate but equal authHeaders share a hash code',
+      () {
         const url = 'https://example.com/image.jpg';
         final cacheManager = _MockMediaCacheManager();
-        final provider = MediaCacheImageProvider(
+        final first = MediaCacheImageProvider(
           url,
           cacheManager: cacheManager,
+          authHeaders: const {
+            'Authorization': 'Bearer token',
+            'X-Trace': 'abc123',
+          },
+        );
+        final second = MediaCacheImageProvider(
+          url,
+          cacheManager: cacheManager,
+          authHeaders: const {
+            'X-Trace': 'abc123',
+            'Authorization': 'Bearer token',
+          },
         );
 
-        final key = await provider.obtainKey(ImageConfiguration.empty);
-
-        expect(key, same(provider));
+        expect(first, equals(second));
+        expect(first.hashCode, equals(second.hashCode));
       },
     );
+
+    test('cacheKey and scale still participate in equality', () {
+      const url = 'https://example.com/image.jpg';
+      final cacheManager = _MockMediaCacheManager();
+      final base = MediaCacheImageProvider(url, cacheManager: cacheManager);
+      final customCacheKey = MediaCacheImageProvider(
+        url,
+        cacheManager: cacheManager,
+        cacheKey: 'custom-key',
+      );
+      final customScale = MediaCacheImageProvider(
+        url,
+        cacheManager: cacheManager,
+        scale: 2,
+      );
+
+      expect(base, isNot(equals(customCacheKey)));
+      expect(base.hashCode, isNot(equals(customCacheKey.hashCode)));
+      expect(base, isNot(equals(customScale)));
+      expect(base.hashCode, isNot(equals(customScale.hashCode)));
+    });
 
     test(
       'cancels in-flight download when the last listener is removed',
@@ -132,10 +174,7 @@ void main() {
           () => cacheManager.getFileFromCache(url),
         ).thenAnswer((_) async => null);
         when(
-          () => cacheManager.cacheFileCancellable(
-            url,
-            key: url,
-          ),
+          () => cacheManager.cacheFileCancellable(url, key: url),
         ).thenReturn(operation);
 
         final provider = MediaCacheImageProvider(
@@ -155,10 +194,7 @@ void main() {
 
         verify(() => cacheManager.getFileFromCache(url)).called(1);
         verify(
-          () => cacheManager.cacheFileCancellable(
-            url,
-            key: url,
-          ),
+          () => cacheManager.cacheFileCancellable(url, key: url),
         ).called(1);
         expect(download.isCancelled, isFalse);
 
@@ -184,10 +220,7 @@ void main() {
           () => cacheManager.getFileFromCache(url),
         ).thenAnswer((_) async => null);
         when(
-          () => cacheManager.cacheFileCancellable(
-            url,
-            key: url,
-          ),
+          () => cacheManager.cacheFileCancellable(url, key: url),
         ).thenReturn(operation);
 
         final provider = MediaCacheImageProvider(
@@ -212,10 +245,7 @@ void main() {
 
         verify(() => cacheManager.getFileFromCache(url)).called(1);
         verify(
-          () => cacheManager.cacheFileCancellable(
-            url,
-            key: url,
-          ),
+          () => cacheManager.cacheFileCancellable(url, key: url),
         ).called(1);
 
         completer.removeListener(firstListener);
@@ -257,12 +287,9 @@ void main() {
           }
           throw StateError('stop after verifying decode entry');
         });
-        final listener = ImageStreamListener(
-          (image, synchronousCall) {
-            image.dispose();
-          },
-          onError: (error, stackTrace) {},
-        );
+        final listener = ImageStreamListener((image, synchronousCall) {
+          image.dispose();
+        }, onError: (error, stackTrace) {});
 
         completer.addListener(listener);
         await decodeAttempted.future;
@@ -270,189 +297,145 @@ void main() {
         expect(decodeCalled, isTrue);
         verify(() => cacheManager.getFileFromCache(url)).called(1);
         verifyNever(
-          () => cacheManager.cacheFileCancellable(
-            any(),
-            key: any(named: 'key'),
-          ),
+          () =>
+              cacheManager.cacheFileCancellable(any(), key: any(named: 'key')),
         );
 
         completer.removeListener(listener);
       },
     );
 
-    test(
-      'decodes a downloaded dart:io file after cache miss',
-      () async {
-        const url = 'https://example.com/downloaded-image.png';
-        final cacheManager = _MockMediaCacheManager();
-        final imageFile = File(
-          '$testTempPath/downloaded-image.png',
-        )..writeAsBytesSync(Uint8List.fromList(_transparentPng));
-        final download = FakeCancellableDownload(
-          url: url,
-          targetFile: imageFile,
-          headers: null,
-        );
-        final operation = CancellableCacheOperation.fromDownload(download);
+    test('decodes a downloaded dart:io file after cache miss', () async {
+      const url = 'https://example.com/downloaded-image.png';
+      final cacheManager = _MockMediaCacheManager();
+      final imageFile = File('$testTempPath/downloaded-image.png')
+        ..writeAsBytesSync(Uint8List.fromList(_transparentPng));
+      final download = FakeCancellableDownload(
+        url: url,
+        targetFile: imageFile,
+        headers: null,
+      );
+      final operation = CancellableCacheOperation.fromDownload(download);
 
-        when(
-          () => cacheManager.getFileFromCache(url),
-        ).thenAnswer((_) async => null);
-        when(
-          () => cacheManager.cacheFileCancellable(
-            url,
-            key: url,
-          ),
-        ).thenReturn(operation);
+      when(
+        () => cacheManager.getFileFromCache(url),
+      ).thenAnswer((_) async => null);
+      when(
+        () => cacheManager.cacheFileCancellable(url, key: url),
+      ).thenReturn(operation);
 
-        var decodeCalled = false;
-        final decodeAttempted = Completer<void>();
-        final provider = MediaCacheImageProvider(
-          url,
-          cacheManager: cacheManager,
-        );
-        final completer = provider.loadImage(provider, (
-          buffer, {
-          getTargetSize,
-        }) {
-          decodeCalled = true;
-          if (!decodeAttempted.isCompleted) {
-            decodeAttempted.complete();
-          }
-          throw StateError('stop after verifying decode entry');
-        });
-        final listener = ImageStreamListener(
-          (image, synchronousCall) {
-            image.dispose();
-          },
-          onError: (error, stackTrace) {},
-        );
+      var decodeCalled = false;
+      final decodeAttempted = Completer<void>();
+      final provider = MediaCacheImageProvider(url, cacheManager: cacheManager);
+      final completer = provider.loadImage(provider, (buffer, {getTargetSize}) {
+        decodeCalled = true;
+        if (!decodeAttempted.isCompleted) {
+          decodeAttempted.complete();
+        }
+        throw StateError('stop after verifying decode entry');
+      });
+      final listener = ImageStreamListener((image, synchronousCall) {
+        image.dispose();
+      }, onError: (error, stackTrace) {});
 
-        completer.addListener(listener);
-        await Future<void>.delayed(Duration.zero);
-        download.completeWith(imageFile);
-        await decodeAttempted.future;
+      completer.addListener(listener);
+      await Future<void>.delayed(Duration.zero);
+      download.completeWith(imageFile);
+      await decodeAttempted.future;
 
-        expect(decodeCalled, isTrue);
-        verify(() => cacheManager.getFileFromCache(url)).called(1);
-        verify(
-          () => cacheManager.cacheFileCancellable(
-            url,
-            key: url,
-          ),
-        ).called(1);
+      expect(decodeCalled, isTrue);
+      verify(() => cacheManager.getFileFromCache(url)).called(1);
+      verify(() => cacheManager.cacheFileCancellable(url, key: url)).called(1);
 
-        completer.removeListener(listener);
-      },
-    );
+      completer.removeListener(listener);
+    });
 
-    test(
-      'evicts and stops decode when the download resolves null',
-      () async {
-        const url = 'https://example.com/cancelled-image.png';
-        final cacheManager = _MockMediaCacheManager();
-        final download = FakeCancellableDownload(
-          url: url,
-          targetFile: File('$testTempPath/cancelled-image.png'),
-          headers: null,
-        );
-        final operation = CancellableCacheOperation.fromDownload(download);
+    test('evicts and stops decode when the download resolves null', () async {
+      const url = 'https://example.com/cancelled-image.png';
+      final cacheManager = _MockMediaCacheManager();
+      final download = FakeCancellableDownload(
+        url: url,
+        targetFile: File('$testTempPath/cancelled-image.png'),
+        headers: null,
+      );
+      final operation = CancellableCacheOperation.fromDownload(download);
 
-        when(
-          () => cacheManager.getFileFromCache(url),
-        ).thenAnswer((_) async => null);
-        when(
-          () => cacheManager.cacheFileCancellable(
-            url,
-            key: url,
-          ),
-        ).thenReturn(operation);
+      when(
+        () => cacheManager.getFileFromCache(url),
+      ).thenAnswer((_) async => null);
+      when(
+        () => cacheManager.cacheFileCancellable(url, key: url),
+      ).thenReturn(operation);
 
-        final provider = MediaCacheImageProvider(
-          url,
-          cacheManager: cacheManager,
-        );
-        final errors = <Object>[];
-        final completer = provider.loadImage(provider, (
-          buffer, {
-          getTargetSize,
-        }) {
-          throw StateError('decode should not run after null result');
-        });
-        final listener = ImageStreamListener(
-          (image, synchronousCall) {
-            image.dispose();
-          },
-          onError: (error, stackTrace) {
-            errors.add(error);
-          },
-        );
+      final provider = MediaCacheImageProvider(url, cacheManager: cacheManager);
+      final errors = <Object>[];
+      final completer = provider.loadImage(provider, (buffer, {getTargetSize}) {
+        throw StateError('decode should not run after null result');
+      });
+      final listener = ImageStreamListener(
+        (image, synchronousCall) {
+          image.dispose();
+        },
+        onError: (error, stackTrace) {
+          errors.add(error);
+        },
+      );
 
-        completer.addListener(listener);
-        await Future<void>.delayed(Duration.zero);
-        download.completeNull();
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+      completer.addListener(listener);
+      await Future<void>.delayed(Duration.zero);
+      download.completeNull();
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
-        expect(errors, hasLength(1));
-        expect(
-          errors.single.toString(),
-          contains('MediaCacheImageProvider load cancelled'),
-        );
-        expect(
-          PaintingBinding.instance.imageCache.containsKey(provider),
-          isFalse,
-        );
+      expect(errors, hasLength(1));
+      expect(
+        errors.single.toString(),
+        contains('MediaCacheImageProvider load cancelled'),
+      );
+      expect(
+        PaintingBinding.instance.imageCache.containsKey(provider),
+        isFalse,
+      );
 
-        completer.removeListener(listener);
-      },
-    );
+      completer.removeListener(listener);
+    });
 
-    test(
-      'throws for an empty cached file',
-      () async {
-        const url = 'https://example.com/empty-image.png';
-        final cacheManager = _MockMediaCacheManager();
-        final imageFile = const LocalFileSystem().file(
-          '$testTempPath/empty-image.png',
-        )..writeAsBytesSync(Uint8List(0));
+    test('throws for an empty cached file', () async {
+      const url = 'https://example.com/empty-image.png';
+      final cacheManager = _MockMediaCacheManager();
+      final imageFile = const LocalFileSystem().file(
+        '$testTempPath/empty-image.png',
+      )..writeAsBytesSync(Uint8List(0));
 
-        final fileInfo = MockFileInfo();
-        when(() => fileInfo.file).thenReturn(imageFile);
-        when(
-          () => cacheManager.getFileFromCache(url),
-        ).thenAnswer((_) async => fileInfo);
+      final fileInfo = MockFileInfo();
+      when(() => fileInfo.file).thenReturn(imageFile);
+      when(
+        () => cacheManager.getFileFromCache(url),
+      ).thenAnswer((_) async => fileInfo);
 
-        final provider = MediaCacheImageProvider(
-          url,
-          cacheManager: cacheManager,
-        );
-        final errors = <Object>[];
-        final completer = provider.loadImage(provider, (
-          buffer, {
-          getTargetSize,
-        }) {
-          throw StateError('decode should not run for an empty file');
-        });
-        final listener = ImageStreamListener(
-          (image, synchronousCall) {
-            image.dispose();
-          },
-          onError: (error, stackTrace) {
-            errors.add(error);
-          },
-        );
+      final provider = MediaCacheImageProvider(url, cacheManager: cacheManager);
+      final errors = <Object>[];
+      final completer = provider.loadImage(provider, (buffer, {getTargetSize}) {
+        throw StateError('decode should not run for an empty file');
+      });
+      final listener = ImageStreamListener(
+        (image, synchronousCall) {
+          image.dispose();
+        },
+        onError: (error, stackTrace) {
+          errors.add(error);
+        },
+      );
 
-        completer.addListener(listener);
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+      completer.addListener(listener);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
-        expect(errors, hasLength(1));
-        expect(errors.single, isA<StateError>());
-        expect(errors.single.toString(), contains('is empty'));
+      expect(errors, hasLength(1));
+      expect(errors.single, isA<StateError>());
+      expect(errors.single.toString(), contains('is empty'));
 
-        completer.removeListener(listener);
-      },
-    );
+      completer.removeListener(listener);
+    });
   });
 }

@@ -152,7 +152,10 @@ class MediaCacheImageProvider extends ImageProvider<MediaCacheImageProvider> {
     scale,
     cacheKey,
     Object.hashAllUnordered(
-      authHeaders?.entries ?? const <MapEntry<String, String>>[],
+      authHeaders?.entries.map(
+            (entry) => Object.hash(entry.key, entry.value),
+          ) ??
+          const <int>[],
     ),
   );
 
