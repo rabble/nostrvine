@@ -1759,6 +1759,8 @@
     "videoEditorExtractAudioFailed": "Hindi na-extract ang audio. Pakisubukang muli.",
     "videoEditorSpeedLabel": "Bilis",
     "videoEditorSetClipSpeedSemanticLabel": "Itakda ang bilis ng playback para sa napiling clip",
+    "videoEditorReverseLabel": "Baligtad",
+    "videoEditorReverseClipSemanticLabel": "I-toggle ang pabalik na pagpapalaro para sa napiling clip",
     "videoEditorSpeedSheetTitle": "Bilis ng Clip",
     "videoEditorFinishTimelineEditingSemanticLabel": "Tapusin ang pag-edit ng timeline",
     "videoEditorAudioPlayPreviewSemanticLabel": "I-play ang preview",

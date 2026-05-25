@@ -7,11 +7,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:models/models.dart' as model;
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_clip_controls.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_controls.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 
 class _MockClipEditorBloc extends MockBloc<ClipEditorEvent, ClipEditorState>
     implements ClipEditorBloc {}
@@ -66,6 +69,40 @@ void main() {
 
       verify(() => bloc.add(const ClipEditorEditingStopped())).called(1);
     });
+
+    testWidgets(
+      'dispatches ClipEditorClipReverseRequested when reverse pressed',
+      (
+        tester,
+      ) async {
+        final state = ClipEditorState(
+          clips: [
+            DivineVideoClip(
+              id: 'clip-1',
+              video: EditorVideo.file('/tmp/clip-1.mp4'),
+              duration: Duration(seconds: 3),
+              recordedAt: DateTime(2025),
+              targetAspectRatio: model.AspectRatio.vertical,
+              originalAspectRatio: 9 / 16,
+            ),
+          ],
+        );
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        when(() => bloc.state).thenReturn(state);
+
+        await tester.pumpWidget(build());
+
+        await tester.tap(
+          find.bySemanticsLabel(l10n.videoEditorReverseClipSemanticLabel),
+        );
+        await tester.pump();
+
+        verify(
+          () =>
+              bloc.add(const ClipEditorClipReverseRequested(clipId: 'clip-1')),
+        ).called(1);
+      },
+    );
 
     // Regression test for Fix 2: Done button is disabled while audio
     // extraction is running so the user cannot dismiss the busy state

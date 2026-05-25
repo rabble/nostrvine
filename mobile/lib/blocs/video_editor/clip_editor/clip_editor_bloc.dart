@@ -6,6 +6,7 @@ import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
+import 'package:openvine/services/video_editor/video_editor_reverse_service.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart' show EditorVideo;
 import 'package:unified_logger/unified_logger.dart';
@@ -31,6 +32,14 @@ typedef SplitClipFn =
       onClipRendered,
     });
 
+/// Function signature matching [VideoEditorReverseService.reverseClip], used as
+/// an injectable seam so tests can swap in a pure-Dart fake.
+typedef ReverseClipFn =
+    Future<EditorVideo> Function({
+      required DivineVideoClip sourceClip,
+      required String renderId,
+    });
+
 /// BLoC for managing video clip editor state.
 ///
 /// Owns a local copy of the clip list so that all mutations (add, remove,
@@ -48,9 +57,11 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     required this.onFinalClipInvalidated,
     AudioExtractionService? audioExtractionService,
     SplitClipFn? splitClip,
+    ReverseClipFn? reverseClip,
   }) : _audioExtractionService =
            audioExtractionService ?? AudioExtractionService(),
        _splitClip = splitClip ?? VideoEditorSplitService.splitClip,
+       _reverseClip = reverseClip ?? VideoEditorReverseService.reverseClip,
        super(const ClipEditorState()) {
     // Clip data
     on<ClipEditorInitialized>(_onInitialized);
@@ -82,6 +93,12 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       transformer: droppable(),
     );
 
+    // Reverse
+    on<ClipEditorClipReverseRequested>(
+      _onClipReverseRequested,
+      transformer: droppable(),
+    );
+
     // Volume
     on<ClipEditorClipVolumeChanged>(
       _onClipVolumeChanged,
@@ -96,6 +113,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
   final void Function() onFinalClipInvalidated;
   final AudioExtractionService _audioExtractionService;
   final SplitClipFn _splitClip;
+  final ReverseClipFn _reverseClip;
 
   // === CLIP DATA ===
 
@@ -530,6 +548,135 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         clipsVolumeRevision: state.clipsVolumeRevision + 1,
       ),
     );
+  }
+
+  // === REVERSE ===
+
+  Future<void> _onClipReverseRequested(
+    ClipEditorClipReverseRequested event,
+    Emitter<ClipEditorState> emit,
+  ) async {
+    final index = state.clips.indexWhere((c) => c.id == event.clipId);
+    if (index == -1) return;
+
+    final clip = state.clips[index];
+    final videoPath = clip.video.file?.path;
+
+    if (videoPath == null) {
+      Log.warning(
+        '⚠️ Reverse skipped: clip ${clip.id} has no local file',
+        name: 'ClipEditorBloc',
+        category: LogCategory.video,
+      );
+      emit(state.copyWith(lastReverseResult: ClipReverseNoLocalFile()));
+      return;
+    }
+
+    if (clip.reversed && clip.forwardVideoPath != null) {
+      final restoredClip = clip.copyWith(
+        video: EditorVideo.file(clip.forwardVideoPath),
+        trimStart: clip.trimEnd,
+        trimEnd: clip.trimStart,
+        reversed: false,
+      );
+      final newClips = List<DivineVideoClip>.of(state.clips)
+        ..[index] = restoredClip;
+      emit(
+        state.copyWith(
+          clips: List.unmodifiable(newClips),
+          lastReverseResult: ClipReverseSuccess(),
+        ),
+      );
+      onFinalClipInvalidated.call();
+      return;
+    }
+
+    if (!clip.reversed && clip.reversedVideoPath != null) {
+      final restoredClip = clip.copyWith(
+        video: EditorVideo.file(clip.reversedVideoPath),
+        reversed: true,
+      );
+      final newClips = List<DivineVideoClip>.of(state.clips)
+        ..[index] = restoredClip;
+      emit(
+        state.copyWith(
+          clips: List.unmodifiable(newClips),
+          lastReverseResult: ClipReverseSuccess(),
+        ),
+      );
+      onFinalClipInvalidated.call();
+      return;
+    }
+
+    emit(state.copyWith(isReversing: true, reversingClipId: clip.id));
+
+    try {
+      final reversedVideo = await _reverseClip(
+        sourceClip: clip,
+        renderId: clip.id,
+      );
+
+      final currentClips = state.clips;
+      final currentIndex = currentClips.indexWhere((c) => c.id == clip.id);
+      if (currentIndex == -1) {
+        Log.warning(
+          '⚠️ Reverse result discarded: clip ${clip.id} no longer exists',
+          name: 'ClipEditorBloc',
+          category: LogCategory.video,
+        );
+        emit(
+          state.copyWith(
+            isReversing: false,
+            clearReversingClipId: true,
+            lastReverseResult: ClipReverseDiscarded(),
+          ),
+        );
+        return;
+      }
+
+      final currentClip = currentClips[currentIndex];
+      final updatedClip = currentClip.copyWith(
+        video: reversedVideo,
+        reversed: !clip.reversed,
+        forwardVideoPath: currentClip.forwardVideoPath ?? videoPath,
+        reversedVideoPath:
+            reversedVideo.file?.path ?? currentClip.reversedVideoPath,
+      );
+      final newClips = List<DivineVideoClip>.of(currentClips)
+        ..[currentIndex] = updatedClip;
+
+      emit(
+        state.copyWith(
+          clips: List.unmodifiable(newClips),
+          isReversing: false,
+          clearReversingClipId: true,
+          lastReverseResult: ClipReverseSuccess(),
+        ),
+      );
+
+      onFinalClipInvalidated.call();
+    } catch (e, stackTrace) {
+      final error = switch (e) {
+        StateError() || TypeError() || RangeError() => Reportable(
+          e,
+          context: '_onClipReverseRequested',
+        ),
+        _ => e,
+      };
+      addError(error, stackTrace);
+      Log.error(
+        '❌ Failed to reverse clip ${clip.id}: $e',
+        name: 'ClipEditorBloc',
+        category: LogCategory.video,
+      );
+      emit(
+        state.copyWith(
+          isReversing: false,
+          clearReversingClipId: true,
+          lastReverseResult: ClipReverseFailure(),
+        ),
+      );
+    }
   }
 
   // === AUDIO EXTRACTION ===

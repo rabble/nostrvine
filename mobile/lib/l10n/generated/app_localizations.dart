@@ -13814,6 +13814,18 @@ abstract class AppLocalizations {
   /// **'Set playback speed for selected clip'**
   String get videoEditorSetClipSpeedSemanticLabel;
 
+  /// Label for the Reverse button in the timeline clip controls.
+  ///
+  /// In en, this message translates to:
+  /// **'Reverse'**
+  String get videoEditorReverseLabel;
+
+  /// Accessibility label for the Reverse button in the timeline clip controls.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle reverse playback for selected clip'**
+  String get videoEditorReverseClipSemanticLabel;
+
   /// Title of the bottom sheet for adjusting clip playback speed.
   ///
   /// In en, this message translates to:

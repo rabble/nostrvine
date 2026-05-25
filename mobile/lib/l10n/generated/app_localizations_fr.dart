@@ -8038,6 +8038,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Définir la vitesse de lecture du clip sélectionné';
 
   @override
+  String get videoEditorReverseLabel => 'Inverser';
+
+  @override
+  String get videoEditorReverseClipSemanticLabel =>
+      'Activer ou désactiver la lecture inversée du clip sélectionné';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'Vitesse du clip';
 
   @override

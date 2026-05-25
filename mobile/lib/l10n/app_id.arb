@@ -2858,6 +2858,8 @@
     "videoEditorExtractAudioFailed": "Tidak dapat mengekstrak audio. Silakan coba lagi.",
     "videoEditorSpeedLabel": "Kecepatan",
     "videoEditorSetClipSpeedSemanticLabel": "Atur kecepatan putar untuk klip yang dipilih",
+    "videoEditorReverseLabel": "Balik",
+    "videoEditorReverseClipSemanticLabel": "Aktifkan atau nonaktifkan pemutaran terbalik untuk klip yang dipilih",
     "videoEditorSpeedSheetTitle": "Kecepatan Klip",
     "videoEditorStickersDivineOriginals": "Divine Orisinal",
     "videoEditorStickerSearchHint": "Cari stiker...",

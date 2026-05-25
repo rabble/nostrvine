@@ -166,6 +166,13 @@ Future<void> _fakeSplitClipThenFail({
   throw StateError('render failed');
 }
 
+Future<EditorVideo> _fakeReverseClip({
+  required DivineVideoClip sourceClip,
+  required String renderId,
+}) async {
+  return EditorVideo.file('/reversed/${sourceClip.id}_$renderId.mp4');
+}
+
 void main() {
   group(ClipEditorBloc, () {
     late List<DivineVideoClip> twoClips;
@@ -197,11 +204,13 @@ void main() {
     ClipEditorBloc buildBloc({
       AudioExtractionService? audioExtractionService,
       SplitClipFn? splitClip,
+      ReverseClipFn? reverseClip,
     }) {
       return ClipEditorBloc(
         onFinalClipInvalidated: () {},
         audioExtractionService: audioExtractionService,
         splitClip: splitClip,
+        reverseClip: reverseClip,
       );
     }
 
@@ -212,6 +221,7 @@ void main() {
       expect(bloc.state.splitPosition, equals(Duration.zero));
       expect(bloc.state.isEditing, isFalse);
       expect(bloc.state.isTrimDragging, isFalse);
+      expect(bloc.state.isReversing, isFalse);
       expect(bloc.state.totalDuration, equals(Duration.zero));
       bloc.close();
     });
@@ -1242,6 +1252,202 @@ void main() {
       );
     });
 
+    group('ClipEditorClipReverseRequested', () {
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'emits no-local-file result when clip has no local file',
+        build: buildBloc,
+        seed: () => ClipEditorState(clips: [_createClipNoFile()]),
+        act: (bloc) => bloc.add(
+          const ClipEditorClipReverseRequested(clipId: 'clip-no-file'),
+        ),
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) => s.lastReverseResult,
+            'lastReverseResult',
+            isA<ClipReverseNoLocalFile>(),
+          ),
+        ],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'renders reversed clip, preserves trim bounds, and toggles reversed flag',
+        build: () => buildBloc(reverseClip: _fakeReverseClip),
+        seed: () => ClipEditorState(clips: [_createClipWithFile()]),
+        act: (bloc) => bloc.add(
+          const ClipEditorClipReverseRequested(clipId: 'clip-local'),
+        ),
+        expect: () => [
+          isA<ClipEditorState>()
+              .having((s) => s.isReversing, 'isReversing', isTrue)
+              .having(
+                (s) => s.reversingClipId,
+                'reversingClipId',
+                'clip-local',
+              ),
+          isA<ClipEditorState>()
+              .having((s) => s.isReversing, 'isReversing', isFalse)
+              .having((s) => s.reversingClipId, 'reversingClipId', isNull)
+              .having((s) => s.clips.first.reversed, 'reversed', isTrue)
+              .having(
+                (s) => s.clips.first.trimStart,
+                'trimStart',
+                const Duration(seconds: 1),
+              )
+              .having(
+                (s) => s.clips.first.trimEnd,
+                'trimEnd',
+                const Duration(milliseconds: 500),
+              )
+              .having(
+                (s) => s.clips.first.duration,
+                'duration',
+                const Duration(seconds: 5),
+              )
+              .having(
+                (s) => s.clips.first.forwardVideoPath,
+                'forwardVideoPath',
+                '/path/clip-local.mp4',
+              )
+              .having(
+                (s) => s.clips.first.reversedVideoPath,
+                'reversedVideoPath',
+                '/reversed/clip-local_clip-local.mp4',
+              )
+              .having(
+                (s) => s.lastReverseResult,
+                'lastReverseResult',
+                isA<ClipReverseSuccess>(),
+              ),
+        ],
+        verify: (bloc) {
+          expect(
+            bloc.state.clips.first.video.file?.path,
+            equals('/reversed/clip-local_clip-local.mp4'),
+          );
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'restores cached forward clip without calling reverse service',
+        build: () => buildBloc(
+          reverseClip: ({required sourceClip, required renderId}) async {
+            throw StateError('reverse service should not be called');
+          },
+        ),
+        seed: () => ClipEditorState(
+          clips: [
+            _createClipWithFile().copyWith(
+              video: EditorVideo.file('/reversed/clip-local_clip-local.mp4'),
+              trimStart: const Duration(milliseconds: 500),
+              trimEnd: const Duration(seconds: 1),
+              reversed: true,
+              forwardVideoPath: '/path/clip-local.mp4',
+              reversedVideoPath: '/reversed/clip-local_clip-local.mp4',
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const ClipEditorClipReverseRequested(clipId: 'clip-local'),
+        ),
+        expect: () => [
+          isA<ClipEditorState>()
+              .having((s) => s.clips.first.reversed, 'reversed', isFalse)
+              .having(
+                (s) => s.clips.first.video.file?.path,
+                'videoPath',
+                '/path/clip-local.mp4',
+              )
+              .having(
+                (s) => s.clips.first.trimStart,
+                'trimStart',
+                const Duration(seconds: 1),
+              )
+              .having(
+                (s) => s.clips.first.trimEnd,
+                'trimEnd',
+                const Duration(milliseconds: 500),
+              ),
+        ],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'reuses cached reversed clip without calling reverse service again',
+        build: () => buildBloc(
+          reverseClip: ({required sourceClip, required renderId}) async {
+            throw StateError('reverse service should not be called');
+          },
+        ),
+        seed: () => ClipEditorState(
+          clips: [
+            _createClipWithFile().copyWith(
+              forwardVideoPath: '/path/clip-local.mp4',
+              reversedVideoPath: '/reversed/clip-local_clip-local.mp4',
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const ClipEditorClipReverseRequested(clipId: 'clip-local'),
+        ),
+        expect: () => [
+          isA<ClipEditorState>()
+              .having((s) => s.clips.first.reversed, 'reversed', isTrue)
+              .having(
+                (s) => s.clips.first.video.file?.path,
+                'videoPath',
+                '/reversed/clip-local_clip-local.mp4',
+              )
+              .having(
+                (s) => s.clips.first.trimStart,
+                'trimStart',
+                const Duration(milliseconds: 500),
+              )
+              .having(
+                (s) => s.clips.first.trimEnd,
+                'trimEnd',
+                const Duration(seconds: 1),
+              )
+              .having(
+                (s) => s.clips.first.duration,
+                'duration',
+                const Duration(seconds: 5),
+              ),
+        ],
+      );
+
+      test(
+        'discards reverse result when source clip is removed in-flight',
+        () async {
+          final completer = Completer<EditorVideo>();
+          final clip = _createClipWithFile();
+          final bloc = buildBloc(
+            reverseClip: ({required sourceClip, required renderId}) =>
+                completer.future,
+          );
+
+          bloc.add(ClipEditorInitialized([clip]));
+          await Future<void>.delayed(Duration.zero);
+
+          bloc.add(const ClipEditorClipReverseRequested(clipId: 'clip-local'));
+          await Future<void>.delayed(Duration.zero);
+          expect(bloc.state.isReversing, isTrue);
+
+          bloc.add(const ClipEditorClipRemoved('clip-local'));
+          await Future<void>.delayed(Duration.zero);
+          expect(bloc.state.clips, isEmpty);
+
+          completer.complete(EditorVideo.file('/reversed/discarded.mp4'));
+          await Future<void>.delayed(Duration.zero);
+
+          expect(bloc.state.isReversing, isFalse);
+          expect(bloc.state.reversingClipId, isNull);
+          expect(bloc.state.clips, isEmpty);
+          expect(bloc.state.lastReverseResult, isA<ClipReverseDiscarded>());
+
+          await bloc.close();
+        },
+      );
+    });
+
     // =========================================================
     // EVENT EQUALITY
     // =========================================================
@@ -1273,6 +1479,13 @@ void main() {
         expect(
           const ClipEditorSplitPositionChanged(Duration(seconds: 1)),
           equals(const ClipEditorSplitPositionChanged(Duration(seconds: 1))),
+        );
+      });
+
+      test('$ClipEditorClipReverseRequested with same id are equal', () {
+        expect(
+          const ClipEditorClipReverseRequested(clipId: 'x'),
+          equals(const ClipEditorClipReverseRequested(clipId: 'x')),
         );
       });
 

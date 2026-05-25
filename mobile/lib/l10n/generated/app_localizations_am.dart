@@ -7794,6 +7794,13 @@ class AppLocalizationsAm extends AppLocalizations {
       'ለተመረጠው ክሊፕ የማጫወቻ ፍጥነት ያዘጋጁ';
 
   @override
+  String get videoEditorReverseLabel => 'ወደ ኋላ';
+
+  @override
+  String get videoEditorReverseClipSemanticLabel =>
+      'ለተመረጠው ክሊፕ የኋላ ወደ ፊት ማጫወቻ ቀይር';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'የክሊፕ ፍጥነት';
 
   @override

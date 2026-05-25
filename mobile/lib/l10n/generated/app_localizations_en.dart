@@ -7930,6 +7930,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Set playback speed for selected clip';
 
   @override
+  String get videoEditorReverseLabel => 'Reverse';
+
+  @override
+  String get videoEditorReverseClipSemanticLabel =>
+      'Toggle reverse playback for selected clip';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'Clip Speed';
 
   @override

@@ -2851,6 +2851,8 @@
     "videoEditorExtractAudioFailed": "تعذّر استخراج الصوت. يرجى المحاولة مجددًا.",
     "videoEditorSpeedLabel": "السرعة",
     "videoEditorSetClipSpeedSemanticLabel": "تعيين سرعة التشغيل للمقطع المحدد",
+    "videoEditorReverseLabel": "عكس",
+    "videoEditorReverseClipSemanticLabel": "تبديل تشغيل المقطع المحدد بشكل معكوس",
     "videoEditorSpeedSheetTitle": "سرعة المقطع",
     "videoEditorStickersDivineOriginals": "Divine الأصلية",
     "videoEditorStickerSearchHint": "البحث في الملصقات...",

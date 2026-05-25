@@ -2857,6 +2857,8 @@
     "videoEditorExtractAudioFailed": "Nie udało się wyodrębnić audio. Spróbuj ponownie.",
     "videoEditorSpeedLabel": "Prędkość",
     "videoEditorSetClipSpeedSemanticLabel": "Ustaw prędkość odtwarzania dla wybranego klipu",
+    "videoEditorReverseLabel": "Odwróć",
+    "videoEditorReverseClipSemanticLabel": "Włącz lub wyłącz odwrotne odtwarzanie dla wybranego klipu",
     "videoEditorSpeedSheetTitle": "Prędkość klipu",
     "videoEditorFinishTimelineEditingSemanticLabel": "Zakończ edycję osi czasu",
     "videoEditorAudioPlayPreviewSemanticLabel": "Odtwórz podgląd",

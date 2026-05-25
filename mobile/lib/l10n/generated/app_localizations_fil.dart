@@ -8023,6 +8023,13 @@ class AppLocalizationsFil extends AppLocalizations {
       'Itakda ang bilis ng playback para sa napiling clip';
 
   @override
+  String get videoEditorReverseLabel => 'Baligtad';
+
+  @override
+  String get videoEditorReverseClipSemanticLabel =>
+      'I-toggle ang pabalik na pagpapalaro para sa napiling clip';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'Bilis ng Clip';
 
   @override

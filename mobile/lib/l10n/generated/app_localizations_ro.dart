@@ -8106,6 +8106,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Setați viteza de redare pentru clipul selectat';
 
   @override
+  String get videoEditorReverseLabel => 'Invers';
+
+  @override
+  String get videoEditorReverseClipSemanticLabel =>
+      'Activați sau dezactivați redarea inversă pentru clipul selectat';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'Viteza clipului';
 
   @override

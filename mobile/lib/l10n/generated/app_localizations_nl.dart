@@ -7972,6 +7972,13 @@ class AppLocalizationsNl extends AppLocalizations {
       'Afspeelsnelheid voor geselecteerd clip instellen';
 
   @override
+  String get videoEditorReverseLabel => 'Omgekeerd';
+
+  @override
+  String get videoEditorReverseClipSemanticLabel =>
+      'Omgekeerde weergave voor geselecteerde clip in-/uitschakelen';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'Clipsnelheid';
 
   @override

@@ -174,6 +174,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   bool _isTrimmingLayer = false;
   bool _isTrimmingClip = false;
   bool _isDraggingLayer = false;
+  bool _skipNextClipSnapshotSync = false;
 
   /// Guards against duplicate [addHistory] calls when both
   /// [ClipEditorBloc.clipsVolumeRevision] and
@@ -659,6 +660,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       );
       if (!mounted || clips.isEmpty || _isImportingHistory) return;
 
+      if (_skipNextClipSnapshotSync) {
+        _skipNextClipSnapshotSync = false;
+        return;
+      }
+
       // Only update if clips actually changed to avoid unnecessary rebuilds
       // and autosave triggers. DivineVideoClip uses reference equality, so
       // we compare the editable properties explicitly.
@@ -1078,10 +1084,74 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             scope.requireEditor.setTimelineMarkers(state.timelineMarkers);
           },
         ),
-        // Update native player clip boundaries when trim handle is
-        // released or for non-trim clip changes (reorder, add, remove).
         BlocListener<ClipEditorBloc, ClipEditorState>(
           listenWhen: (previous, current) {
+            return !identical(
+                  previous.lastReverseResult,
+                  current.lastReverseResult,
+                ) &&
+                current.lastReverseResult is ClipReverseSuccess;
+          },
+          listener: (context, state) async {
+            if (state.clips.isEmpty || !_isPlayerInitialized) return;
+
+            _skipNextClipSnapshotSync = true;
+            ref.read(clipManagerProvider.notifier).replaceClips(state.clips);
+
+            final currentPosition = context
+                .read<VideoEditorMainBloc>()
+                .state
+                .currentPosition;
+
+            _seekEpoch++;
+            _pendingSeekPosition = null;
+            _isSeeking = true;
+            final ownerEpoch = _seekEpoch;
+
+            try {
+              await _videoPlayer?.setClips([
+                for (final clip in state.clips)
+                  if (clip.video.file?.path case final path?)
+                    VideoClip(
+                      uri: path,
+                      start: clip.trimStart,
+                      end: clip.duration - clip.trimEnd,
+                      volume: clip.volume,
+                      playbackSpeed: clip.playbackSpeed ?? 1.0,
+                    ),
+              ], startPosition: currentPosition);
+
+              if (!mounted) return;
+              _lastReportedPosition = currentPosition;
+              _proVideoController.setPlayTime(currentPosition);
+            } catch (e, s) {
+              Log.error(
+                'setClips failed after reverse completion: $e',
+                name: 'VideoEditorCanvas',
+                category: LogCategory.video,
+                error: e,
+                stackTrace: s,
+              );
+            } finally {
+              if (_seekEpoch == ownerEpoch) {
+                _isSeeking = false;
+              }
+            }
+          },
+        ),
+        // Update native player clip boundaries when trim handle is
+        // released or for non-trim clip changes (reorder, add, remove).
+        // Reverse completion is handled by the dedicated listener above.
+        BlocListener<ClipEditorBloc, ClipEditorState>(
+          listenWhen: (previous, current) {
+            // Reverse completion is handled by the dedicated listener above.
+            if (!identical(
+                  previous.lastReverseResult,
+                  current.lastReverseResult,
+                ) &&
+                current.lastReverseResult is ClipReverseSuccess) {
+              return false;
+            }
             return VideoEditorCanvas.shouldSyncPlayerForClipStateChange(
               previous: previous,
               current: current,

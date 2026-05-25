@@ -22,6 +22,9 @@ class ClipEditorState extends Equatable {
     this.lastAudioExtraction,
     this.isSplitting = false,
     this.lastSplitFailure,
+    this.isReversing = false,
+    this.reversingClipId,
+    this.lastReverseResult,
   });
 
   /// Local copy of clips managed by this editor session.
@@ -90,6 +93,18 @@ class ClipEditorState extends Equatable {
   /// fresh signal even when fields happen to repeat.
   final ClipAudioExtractionResult? lastAudioExtraction;
 
+  /// Whether a reverse render operation is currently running.
+  final bool isReversing;
+
+  /// Clip ID used as the render-progress stream key while reversing.
+  final String? reversingClipId;
+
+  /// Last completed reverse-render result.
+  ///
+  /// Consumed by the widget layer to persist clip history after a successful
+  /// reverse render.
+  final ClipReverseResult? lastReverseResult;
+
   /// Total wall-clock duration of all clips (respecting trim and playback speed).
   Duration get totalDuration =>
       clips.fold(Duration.zero, (sum, clip) => sum + clip.playbackDuration);
@@ -112,6 +127,10 @@ class ClipEditorState extends Equatable {
     ClipAudioExtractionResult? lastAudioExtraction,
     bool? isSplitting,
     ClipSplitFailure? lastSplitFailure,
+    bool? isReversing,
+    String? reversingClipId,
+    bool clearReversingClipId = false,
+    ClipReverseResult? lastReverseResult,
   }) {
     return ClipEditorState(
       clips: clips ?? this.clips,
@@ -131,6 +150,11 @@ class ClipEditorState extends Equatable {
       lastAudioExtraction: lastAudioExtraction ?? this.lastAudioExtraction,
       isSplitting: isSplitting ?? this.isSplitting,
       lastSplitFailure: lastSplitFailure ?? this.lastSplitFailure,
+      isReversing: isReversing ?? this.isReversing,
+      reversingClipId: clearReversingClipId
+          ? null
+          : (reversingClipId ?? this.reversingClipId),
+      lastReverseResult: lastReverseResult ?? this.lastReverseResult,
     );
   }
 
@@ -152,6 +176,9 @@ class ClipEditorState extends Equatable {
     isSplitting,
     // Identity-only: each ClipSplitFailure is a fresh instance per failure.
     identityHashCode(lastSplitFailure),
+    isReversing,
+    reversingClipId,
+    identityHashCode(lastReverseResult),
   ];
 }
 
@@ -218,3 +245,20 @@ final class ClipAudioExtractionFailure extends ClipAudioExtractionResult {}
 /// Identity-compared so each failure produces a distinct notification even
 /// when the same error type repeats consecutively.
 final class ClipSplitFailure {}
+
+// === REVERSE RESULT ===
+
+/// One-shot signal describing the outcome of a reverse-render operation.
+sealed class ClipReverseResult {}
+
+/// Reverse render succeeded; widget should persist the updated clip state.
+final class ClipReverseSuccess extends ClipReverseResult {}
+
+/// Reverse render was attempted but the clip has no locally available file.
+final class ClipReverseNoLocalFile extends ClipReverseResult {}
+
+/// Reverse render completed but the source clip was removed in-flight.
+final class ClipReverseDiscarded extends ClipReverseResult {}
+
+/// Reverse render failed.
+final class ClipReverseFailure extends ClipReverseResult {}

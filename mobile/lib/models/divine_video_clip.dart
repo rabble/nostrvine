@@ -27,6 +27,9 @@ class DivineVideoClip {
     this.trimEnd = Duration.zero,
     this.volume = 1,
     this.playbackSpeed,
+    this.reversed = false,
+    this.forwardVideoPath,
+    this.reversedVideoPath,
     this.proofManifestJson,
     this.deletedAt,
   }) : _thumbnailTimestamp = thumbnailTimestamp,
@@ -67,6 +70,15 @@ class DivineVideoClip {
   /// Playback speed multiplier for this clip (e.g. 0.5 = half speed, 2.0 = double speed).
   /// Null means normal speed (1.0).
   final double? playbackSpeed;
+
+  /// Whether this clip plays in reverse.
+  final bool reversed;
+
+  /// Cached forward file path used to restore the clip after a reverse toggle.
+  final String? forwardVideoPath;
+
+  /// Cached reversed file path so repeated reverse toggles can reuse it.
+  final String? reversedVideoPath;
 
   /// JSON-encoded ProofMode / C2PA attestation data for this individual clip.
   final String? proofManifestJson;
@@ -139,10 +151,17 @@ class DivineVideoClip {
     double? volume,
     double? playbackSpeed,
     bool clearPlaybackSpeed = false,
+    bool? reversed,
+    String? forwardVideoPath,
+    bool clearForwardVideoPath = false,
+    String? reversedVideoPath,
+    bool clearReversedVideoPath = false,
     String? proofManifestJson,
     bool clearProofManifestJson = false,
     DateTime? deletedAt,
   }) {
+    final isNewLogicalClip = id != null && id != this.id;
+
     return DivineVideoClip(
       id: id ?? this.id,
       video: video ?? this.video,
@@ -161,6 +180,17 @@ class DivineVideoClip {
       playbackSpeed: clearPlaybackSpeed
           ? null
           : (playbackSpeed ?? this.playbackSpeed),
+      reversed: reversed ?? this.reversed,
+      forwardVideoPath: isNewLogicalClip
+          ? null
+          : clearForwardVideoPath
+          ? null
+          : (forwardVideoPath ?? this.forwardVideoPath),
+      reversedVideoPath: isNewLogicalClip
+          ? null
+          : clearReversedVideoPath
+          ? null
+          : (reversedVideoPath ?? this.reversedVideoPath),
       proofManifestJson: clearProofManifestJson
           ? null
           : (proofManifestJson ?? this.proofManifestJson),
@@ -191,6 +221,11 @@ class DivineVideoClip {
       'trimEndMs': trimEnd.inMilliseconds,
       'volume': volume,
       if (playbackSpeed != null) 'playbackSpeed': playbackSpeed,
+      if (reversed) 'reversed': true,
+      if (forwardVideoPath != null)
+        'forwardVideoPath': p.basename(forwardVideoPath!),
+      if (reversedVideoPath != null)
+        'reversedVideoPath': p.basename(reversedVideoPath!),
       if (proofManifestJson != null) 'proofManifestJson': proofManifestJson,
     };
   }
@@ -244,6 +279,17 @@ class DivineVideoClip {
       trimEnd: Duration(milliseconds: (json['trimEndMs'] as int?) ?? 0),
       volume: (json['volume'] as num?)?.toDouble() ?? 1,
       playbackSpeed: (json['playbackSpeed'] as num?)?.toDouble(),
+      reversed: (json['reversed'] as bool?) ?? false,
+      forwardVideoPath: resolvePath(
+        json['forwardVideoPath'] as String?,
+        documentsPath,
+        useOriginalPath: useOriginalPath,
+      ),
+      reversedVideoPath: resolvePath(
+        json['reversedVideoPath'] as String?,
+        documentsPath,
+        useOriginalPath: useOriginalPath,
+      ),
       proofManifestJson: json['proofManifestJson'] as String?,
     );
   }

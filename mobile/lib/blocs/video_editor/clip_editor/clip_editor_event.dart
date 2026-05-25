@@ -191,6 +191,18 @@ class ClipEditorAudioExtractionRequested extends ClipEditorEvent {
   List<Object?> get props => [clipTitle];
 }
 
+// === REVERSE ===
+
+/// Request reverse rendering for the clip with [clipId].
+class ClipEditorClipReverseRequested extends ClipEditorEvent {
+  const ClipEditorClipReverseRequested({required this.clipId});
+
+  final String clipId;
+
+  @override
+  List<Object?> get props => [clipId];
+}
+
 // === VOLUME ===
 
 /// Update the volume of a clip by its ID.

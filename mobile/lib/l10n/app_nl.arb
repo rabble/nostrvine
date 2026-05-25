@@ -2857,6 +2857,8 @@
     "videoEditorExtractAudioFailed": "Kon audio niet extraheren. Probeer het opnieuw.",
     "videoEditorSpeedLabel": "Snelheid",
     "videoEditorSetClipSpeedSemanticLabel": "Afspeelsnelheid voor geselecteerd clip instellen",
+    "videoEditorReverseLabel": "Omgekeerd",
+    "videoEditorReverseClipSemanticLabel": "Omgekeerde weergave voor geselecteerde clip in-/uitschakelen",
     "videoEditorSpeedSheetTitle": "Clipsnelheid",
     "videoEditorFinishTimelineEditingSemanticLabel": "Bewerken van tijdlijn voltooien",
     "videoEditorAudioPlayPreviewSemanticLabel": "Voorbeeld afspelen",

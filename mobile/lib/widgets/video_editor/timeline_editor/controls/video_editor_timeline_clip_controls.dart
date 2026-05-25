@@ -32,6 +32,11 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
       ),
     );
     final isLastClip = clipCount <= 1;
+    final isReversed = context.select((ClipEditorBloc b) {
+      final index = b.state.currentClipIndex;
+      final clips = b.state.clips;
+      return index >= 0 && index < clips.length && clips[index].reversed;
+    });
 
     return VideoEditorTimelineControls(
       onDelete: isLastClip ? null : () => _deleteClip(context),
@@ -39,6 +44,8 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
       onSplit: isSplitting ? null : () => _splitClip(context),
       onSpeed: () => _setPlaybackSpeed(context),
       onExtractAudio: () => _requestExtractAudio(context),
+      onReversed: () => _reverseClip(context),
+      isReversed: isReversed,
       isExtractingAudio: isExtractingAudio,
       // Done is gated while extraction is in flight purely as a UX cue —
       // the success/failure side effect itself is handled by an editor-
@@ -53,6 +60,17 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
               );
             },
     );
+  }
+
+  void _reverseClip(BuildContext context) {
+    final bloc = context.read<ClipEditorBloc>();
+    final state = bloc.state;
+    if (state.currentClipIndex < 0 ||
+        state.currentClipIndex >= state.clips.length) {
+      return;
+    }
+    final clip = state.clips[state.currentClipIndex];
+    bloc.add(ClipEditorClipReverseRequested(clipId: clip.id));
   }
 
   Future<void> _setPlaybackSpeed(BuildContext context) async {

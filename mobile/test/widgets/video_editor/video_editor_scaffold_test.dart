@@ -2,6 +2,7 @@
 // ABOUTME: Verifies loading UI and FAB visibility rules.
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -123,6 +124,32 @@ void main() {
 
       expect(find.bySemanticsLabel('Add element'), findsNothing);
     });
+
+    testWidgets(
+      'shows reverse progress overlay while clip reverse is running',
+      (
+        tester,
+      ) async {
+        final clipBloc = _MockClipEditorBloc();
+        const reversingState = ClipEditorState(
+          isReversing: true,
+          reversingClipId: 'clip-1',
+        );
+
+        when(() => clipBloc.state).thenReturn(reversingState);
+        whenListen(
+          clipBloc,
+          const Stream<ClipEditorState>.empty(),
+          initialState: reversingState,
+        );
+
+        await tester.pumpWidget(
+          buildWidget(isLoading: false, clipBlocOverride: clipBloc),
+        );
+
+        expect(find.byType(PartialCircleSpinner), findsOneWidget);
+      },
+    );
 
     testWidgets(
       'writes history on extraction success even when handled above clip controls',

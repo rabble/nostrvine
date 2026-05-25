@@ -2865,6 +2865,8 @@
     "videoEditorExtractAudioFailed": "No se pudo extraer el audio. Por favor, inténtalo de nuevo.",
     "videoEditorSpeedLabel": "Velocidad",
     "videoEditorSetClipSpeedSemanticLabel": "Establecer la velocidad de reproducción del clip seleccionado",
+    "videoEditorReverseLabel": "Invertir",
+    "videoEditorReverseClipSemanticLabel": "Activar o desactivar la reproducción inversa del clip seleccionado",
     "videoEditorSpeedSheetTitle": "Velocidad del clip",
     "videoEditorFinishTimelineEditingSemanticLabel": "Terminar edición de la línea de tiempo",
     "videoEditorAudioPlayPreviewSemanticLabel": "Reproducir vista previa",

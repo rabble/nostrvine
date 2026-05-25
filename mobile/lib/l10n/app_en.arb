@@ -4456,6 +4456,14 @@
   "@videoEditorSetClipSpeedSemanticLabel": {
     "description": "Accessibility label for the Set Speed button in the timeline clip controls."
   },
+  "videoEditorReverseLabel": "Reverse",
+  "@videoEditorReverseLabel": {
+    "description": "Label for the Reverse button in the timeline clip controls."
+  },
+  "videoEditorReverseClipSemanticLabel": "Toggle reverse playback for selected clip",
+  "@videoEditorReverseClipSemanticLabel": {
+    "description": "Accessibility label for the Reverse button in the timeline clip controls."
+  },
   "videoEditorSpeedSheetTitle": "Clip Speed",
   "@videoEditorSpeedSheetTitle": {
     "description": "Title of the bottom sheet for adjusting clip playback speed."

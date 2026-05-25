@@ -2858,6 +2858,8 @@
     "videoEditorExtractAudioFailed": "Ses çıkarılamadı. Lütfen tekrar deneyin.",
     "videoEditorSpeedLabel": "Hız",
     "videoEditorSetClipSpeedSemanticLabel": "Seçili klip için oynatma hızını ayarla",
+    "videoEditorReverseLabel": "Tersine Çevir",
+    "videoEditorReverseClipSemanticLabel": "Seçili klip için ters oynatmayı aç veya kapat",
     "videoEditorSpeedSheetTitle": "Klip Hızı",
     "videoEditorStickersDivineOriginals": "Divine Orijinaller",
     "videoEditorStickerSearchHint": "Çıkartma ara...",

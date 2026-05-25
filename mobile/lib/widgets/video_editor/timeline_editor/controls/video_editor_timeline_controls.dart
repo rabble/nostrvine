@@ -11,6 +11,8 @@ class VideoEditorTimelineControls extends StatelessWidget {
     this.onDuplicated,
     this.onSplit,
     this.onSpeed,
+    this.onReversed,
+    this.isReversed = false,
     this.onExtractAudio,
     this.isExtractingAudio = false,
     super.key,
@@ -21,6 +23,8 @@ class VideoEditorTimelineControls extends StatelessWidget {
   final VoidCallback? onDuplicated;
   final VoidCallback? onSplit;
   final VoidCallback? onSpeed;
+  final VoidCallback? onReversed;
+  final bool isReversed;
   final VoidCallback? onExtractAudio;
   final bool isExtractingAudio;
   final VoidCallback? onDone;
@@ -94,6 +98,15 @@ class VideoEditorTimelineControls extends StatelessWidget {
                       semanticLabel:
                           context.l10n.videoEditorSetClipSpeedSemanticLabel,
                       onPressed: onSpeed,
+                    ),
+                  if (onReversed != null)
+                    _ControlButton(
+                      icon: .arrowCounterClockwise,
+                      label: context.l10n.videoEditorReverseLabel,
+                      semanticLabel:
+                          context.l10n.videoEditorReverseClipSemanticLabel,
+                      onPressed: onReversed,
+                      type: isReversed ? .primary : .secondary,
                     ),
                   if (onExtractAudio != null)
                     _ControlButton(

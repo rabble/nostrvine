@@ -2857,6 +2857,8 @@
     "videoEditorExtractAudioFailed": "Kunde inte extrahera ljud. Försök igen.",
     "videoEditorSpeedLabel": "Hastighet",
     "videoEditorSetClipSpeedSemanticLabel": "Ange uppspelningshastighet för valt klipp",
+    "videoEditorReverseLabel": "Baklänges",
+    "videoEditorReverseClipSemanticLabel": "Aktivera eller inaktivera omvänd uppspelning för valt klipp",
     "videoEditorSpeedSheetTitle": "Klipphastighet",
     "videoEditorFinishTimelineEditingSemanticLabel": "Avsluta redigering av tidslinje",
     "videoEditorAudioPlayPreviewSemanticLabel": "Spela förhandsvisning",

@@ -2147,6 +2147,8 @@
     "videoEditorExtractAudioFailed": "오디오를 추출할 수 없었습니다. 다시 시도해 주세요.",
     "videoEditorSpeedLabel": "속도",
     "videoEditorSetClipSpeedSemanticLabel": "선택한 클립의 재생 속도 설정",
+    "videoEditorReverseLabel": "역재생",
+    "videoEditorReverseClipSemanticLabel": "선택한 클립의 역방향 재생 전환",
     "videoEditorSpeedSheetTitle": "클립 속도",
     "videoEditorStickersDivineOriginals": "Divine 오리지널",
     "videoEditorStickerSearchHint": "스티커 검색...",

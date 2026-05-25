@@ -7941,6 +7941,13 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ange uppspelningshastighet för valt klipp';
 
   @override
+  String get videoEditorReverseLabel => 'Baklänges';
+
+  @override
+  String get videoEditorReverseClipSemanticLabel =>
+      'Aktivera eller inaktivera omvänd uppspelning för valt klipp';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'Klipphastighet';
 
   @override

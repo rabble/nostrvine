@@ -7912,6 +7912,13 @@ class AppLocalizationsId extends AppLocalizations {
       'Atur kecepatan putar untuk klip yang dipilih';
 
   @override
+  String get videoEditorReverseLabel => 'Balik';
+
+  @override
+  String get videoEditorReverseClipSemanticLabel =>
+      'Aktifkan atau nonaktifkan pemutaran terbalik untuk klip yang dipilih';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'Kecepatan Klip';
 
   @override

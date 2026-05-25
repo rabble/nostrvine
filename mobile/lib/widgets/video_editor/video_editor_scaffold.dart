@@ -7,6 +7,7 @@ import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
@@ -19,6 +20,8 @@ import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_acti
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_overlay_actions.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline.dart';
+import 'package:pro_video_editor/core/models/video/progress_model.dart';
+import 'package:pro_video_editor/core/platform/platform_interface.dart';
 
 /// A scaffold widget that provides the standard layout for the video editor.
 ///
@@ -44,8 +47,10 @@ class VideoEditorScaffold extends StatelessWidget {
         resizeToAvoidBottomInset: false,
         floatingActionButton: const _AddElementFab(),
         body: _SplitFailureListener(
-          child: _AudioExtractionResultListener(
-            child: _ScaffoldBody(isLoading: isLoading),
+          child: _ClipReverseResultListener(
+            child: _AudioExtractionResultListener(
+              child: _ScaffoldBody(isLoading: isLoading),
+            ),
           ),
         ),
       ),
@@ -60,23 +65,31 @@ class _ScaffoldBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Stack(
+      fit: .expand,
+      clipBehavior: .none,
       children: [
-        Expanded(
-          child: Stack(
-            fit: .expand,
-            clipBehavior: .none,
-            children: [
-              if (isLoading)
-                const BrandedLoadingScaffold()
-              else
-                const VideoEditorCanvas(),
+        Column(
+          children: [
+            Expanded(
+              child: Stack(
+                fit: .expand,
+                clipBehavior: .none,
+                children: [
+                  if (isLoading)
+                    const BrandedLoadingScaffold()
+                  else
+                    const VideoEditorCanvas(),
 
-              const _OverlayControls(),
-            ],
-          ),
+                  const _OverlayControls(),
+                ],
+              ),
+            ),
+            const _TimelineSection(),
+          ],
         ),
-        const _TimelineSection(),
+
+        const _ReverseProgressOverlay(),
       ],
     );
   }
@@ -105,6 +118,29 @@ class _SplitFailureListener extends StatelessWidget {
       },
       child: child,
     );
+  }
+}
+
+class _ClipReverseResultListener extends StatelessWidget {
+  const _ClipReverseResultListener({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<ClipEditorBloc, ClipEditorState>(
+      listenWhen: (prev, curr) =>
+          !identical(prev.lastReverseResult, curr.lastReverseResult) &&
+          curr.lastReverseResult != null,
+      listener: _onReverseResult,
+      child: child,
+    );
+  }
+
+  void _onReverseResult(BuildContext context, ClipEditorState state) {
+    if (state.lastReverseResult case ClipReverseSuccess()) {
+      VideoEditorScope.of(context).requireEditor.setClipState(state.clips);
+    }
   }
 }
 
@@ -278,6 +314,46 @@ class _OverlayControls extends StatelessWidget {
         ),
         // Fallback
         _ => const VideoEditorMainOverlayActions(),
+      },
+    );
+  }
+}
+
+class _ReverseProgressOverlay extends StatelessWidget {
+  const _ReverseProgressOverlay();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocSelector<
+      ClipEditorBloc,
+      ClipEditorState,
+      ({bool isReversing, String? renderId})
+    >(
+      selector: (state) => (
+        isReversing: state.isReversing,
+        renderId: state.reversingClipId,
+      ),
+      builder: (context, reverseState) {
+        if (!reverseState.isReversing || reverseState.renderId == null) {
+          return const SizedBox.shrink();
+        }
+
+        return ColoredBox(
+          color: VineTheme.scrim65,
+          child: Center(
+            child: RepaintBoundary(
+              child: StreamBuilder<ProgressModel>(
+                stream: ProVideoEditor.instance.progressStreamById(
+                  reverseState.renderId!,
+                ),
+                builder: (context, snapshot) {
+                  final progress = snapshot.data?.progress ?? 0;
+                  return PartialCircleSpinner(progress: progress);
+                },
+              ),
+            ),
+          ),
+        );
       },
     );
   }
