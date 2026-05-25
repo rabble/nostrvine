@@ -435,7 +435,7 @@ class _InviteGradientCopy extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsetsGeometry.fromSTEB(12, 48, 12, 12),
+        padding: const EdgeInsetsDirectional.fromSTEB(12, 48, 12, 12),
         child: _InviteCopy(
           previewTitle: previewTitle,
           title: title,
