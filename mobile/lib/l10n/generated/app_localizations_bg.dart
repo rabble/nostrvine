@@ -4298,6 +4298,11 @@ class AppLocalizationsBg extends AppLocalizations {
   String get uploadPublishedMessage => 'Видеото е публикувано в профила ти';
 
   @override
+  String uploadPublishedMultipleMessage(int count) {
+    return '$count видеа са публикувани в профила ти';
+  }
+
+  @override
   String get uploadFailedMessage => 'Качването не мина - опитай пак';
 
   @override

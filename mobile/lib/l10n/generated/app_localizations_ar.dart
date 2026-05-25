@@ -4208,6 +4208,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get uploadPublishedMessage => 'تم نشر الفيديو في ملفك الشخصي';
 
   @override
+  String uploadPublishedMultipleMessage(int count) {
+    return 'تم نشر $count مقاطع فيديو في ملفك الشخصي';
+  }
+
+  @override
   String get uploadFailedMessage => 'فشل الرفع - يُرجى المحاولة مرة أخرى';
 
   @override

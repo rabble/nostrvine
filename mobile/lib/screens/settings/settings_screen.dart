@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/blocs/settings_account/settings_account_cubit.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
@@ -56,6 +57,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String _appVersion = '';
   late final SettingsAccountCubit _accountCubit;
 
+  /// Subscription used to defer login-options navigation until a background
+  /// video upload finishes when a session-expiry refresh fails mid-publish.
+  StreamSubscription<BackgroundPublishState>? _deferredNavSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -69,6 +74,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   void dispose() {
+    _deferredNavSubscription?.cancel();
     _accountCubit.close();
     super.dispose();
   }
@@ -82,11 +88,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _handleSessionExpired() async {
     final authService = ref.read(authServiceProvider);
-    final router = GoRouter.of(context);
     final refreshed = await authService.tryRefreshExpiredSession();
     if (!mounted) return;
-    if (!refreshed) {
-      router.go(WelcomeScreen.loginOptionsPath);
+    if (refreshed) return;
+
+    // Refresh definitively failed. If a background upload is in progress,
+    // do not interrupt it by navigating now. Instead, wait for the upload
+    // to finish and then route to login-options automatically.
+    final publishBloc = context.read<BackgroundPublishBloc>();
+    if (publishBloc.state.hasUploadInProgress) {
+      _deferredNavSubscription?.cancel();
+      _deferredNavSubscription = publishBloc.stream.listen((state) {
+        if (!state.hasUploadInProgress) {
+          _deferredNavSubscription?.cancel();
+          _deferredNavSubscription = null;
+          if (mounted) {
+            GoRouter.of(context).go(WelcomeScreen.loginOptionsPath);
+          }
+        }
+      });
+    } else {
+      GoRouter.of(context).go(WelcomeScreen.loginOptionsPath);
     }
   }
 

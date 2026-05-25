@@ -4065,6 +4065,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get uploadPublishedMessage => '프로필에 영상을 게시했어요';
 
   @override
+  String uploadPublishedMultipleMessage(int count) {
+    return '프로필에 영상 $count개를 게시했어요';
+  }
+
+  @override
   String get uploadFailedMessage => '업로드에 실패했어요 - 다시 시도해 주세요';
 
   @override

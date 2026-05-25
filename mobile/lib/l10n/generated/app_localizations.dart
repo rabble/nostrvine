@@ -7406,6 +7406,12 @@ abstract class AppLocalizations {
   /// **'Video published to your profile'**
   String get uploadPublishedMessage;
 
+  /// Snackbar shown after multiple background uploads succeed, e.g. after a re-auth redirect during which several publishes completed.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} videos published to your profile'**
+  String uploadPublishedMultipleMessage(int count);
+
   /// No description provided for @uploadFailedMessage.
   ///
   /// In en, this message translates to:

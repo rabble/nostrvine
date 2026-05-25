@@ -4377,6 +4377,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get uploadPublishedMessage => 'Videoclip publicat pe profilul tău';
 
   @override
+  String uploadPublishedMultipleMessage(int count) {
+    return '$count videoclipuri publicate pe profilul tău';
+  }
+
+  @override
   String get uploadFailedMessage => 'Încărcarea a eșuat - încearcă din nou';
 
   @override

@@ -2332,6 +2332,16 @@
   "uploadProcessingMessage": "Processing video - this may take a few minutes",
   "uploadReadyToPublishMessage": "Video processed successfully and ready to publish",
   "uploadPublishedMessage": "Video published to your profile",
+  "uploadPublishedMultipleMessage": "{count} videos published to your profile",
+  "@uploadPublishedMultipleMessage": {
+    "description": "Snackbar shown after multiple background uploads succeed, e.g. after a re-auth redirect during which several publishes completed.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
   "uploadFailedMessage": "Upload failed - please try again",
   "uploadRetryingMessage": "Retrying upload...",
   "uploadPausedMessage": "Upload paused by user",

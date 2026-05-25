@@ -4360,6 +4360,11 @@ class AppLocalizationsPl extends AppLocalizations {
   String get uploadPublishedMessage => 'Film opublikowany na twoim profilu';
 
   @override
+  String uploadPublishedMultipleMessage(int count) {
+    return '$count filmy opublikowane na twoim profilu';
+  }
+
+  @override
   String get uploadFailedMessage => 'Przesyłanie nieudane - spróbuj ponownie';
 
   @override

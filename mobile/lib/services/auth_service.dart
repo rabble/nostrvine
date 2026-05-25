@@ -229,6 +229,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   String? _lastError;
   bool _storageErrorOccurred = false;
   bool _hasExpiredOAuthSession = false;
+  bool _isRpcUpgradeInProgress = false;
   Future<bool>? _pendingRefresh;
   Future<KeycastSession?>? _pendingOAuthRefresh;
   KeycastRpc? _keycastSigner;
@@ -402,6 +403,15 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// The user's identity is intact but remote signing is unavailable.
   /// UI should prompt re-login instead of "Secure Your Account".
   bool get hasExpiredOAuthSession => _hasExpiredOAuthSession;
+
+  /// True while a background OAuth RPC upgrade is in progress during startup.
+  /// The session-expired sheet should be suppressed until this resolves so the
+  /// UI does not prompt re-login before the silent refresh has definitively failed.
+  bool get isRpcUpgradeInProgress => _isRpcUpgradeInProgress;
+
+  /// True while a [tryRefreshExpiredSession] call is in flight.
+  /// Callers can use this to avoid redundant UI prompts while refresh is pending.
+  bool get isRefreshInProgress => _pendingRefresh != null;
 
   /// Timeout for background RPC refresh during local-first startup.
   @visibleForTesting
@@ -579,6 +589,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       category: LogCategory.auth,
     );
 
+    _isRpcUpgradeInProgress = true;
     try {
       if (_oauthClient == null) {
         _setRpcCapability(AuthRpcCapability.unavailable);
@@ -618,6 +629,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         name: 'AuthService',
         category: LogCategory.auth,
       );
+    } finally {
+      _isRpcUpgradeInProgress = false;
+      // Nudge the auth stream so widgets re-evaluate whether the
+      // session-expired sheet should be shown now that the upgrade has resolved.
+      _authStateController.add(_authState);
     }
 
     _setRpcCapability(AuthRpcCapability.unavailable);

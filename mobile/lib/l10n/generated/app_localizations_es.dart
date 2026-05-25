@@ -4299,6 +4299,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get uploadPublishedMessage => 'Video publicado en tu perfil';
 
   @override
+  String uploadPublishedMultipleMessage(int count) {
+    return '$count videos publicados en tu perfil';
+  }
+
+  @override
   String get uploadFailedMessage => 'Falló la subida — probá de nuevo';
 
   @override

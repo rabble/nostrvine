@@ -10,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/other_profile/other_profile_bloc.dart';
 import 'package:openvine/features/people_lists/view/people_list_membership_indicator.dart';
@@ -122,9 +123,14 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
   bool _identityTimeoutExpired = false;
   bool? _wasLoadingIdentity;
 
+  /// Subscription used to defer login-options navigation until a background
+  /// video upload finishes when a session-expiry refresh fails mid-publish.
+  StreamSubscription<BackgroundPublishState>? _deferredNavSubscription;
+
   @override
   void dispose() {
     _identitySkeletonTimer?.cancel();
+    _deferredNavSubscription?.cancel();
     super.dispose();
   }
 
@@ -216,20 +222,26 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
     final authService = ref.watch(authServiceProvider);
 
     // Watch auth state to rebuild when auth state changes
-    // (e.g., after email verification completes)
+    // (e.g., after email verification completes, or after background RPC
+    // upgrade resolves — the auth stream emits a nudge in both cases)
     ref.watch(currentAuthStateProvider);
     final isAnonymous = authService.isAnonymous;
     final hasExpiredSession = authService.hasExpiredOAuthSession;
+    final isRpcUpgradeInProgress = authService.isRpcUpgradeInProgress;
     final prefs = ref.watch(sharedPreferencesProvider);
     final isDivineLoginBannerHidden = isDivineLoginBannerDismissed(
       prefs,
       widget.userIdHex,
     );
 
-    // Show session expired bottom sheet for non-anonymous users
+    // Show session expired bottom sheet for non-anonymous users, but only
+    // after the background RPC upgrade has definitively resolved. Showing the
+    // sheet while the silent refresh is still in flight would send the user
+    // to the login screen even when the refresh ultimately succeeds.
     if (widget.isOwnProfile &&
         !isAnonymous &&
         hasExpiredSession &&
+        !isRpcUpgradeInProgress &&
         !isDivineLoginBannerHidden) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) {
@@ -380,7 +392,16 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
         Navigator.of(context).pop();
         final authService = ref.read(authServiceProvider);
         final refreshed = await authService.tryRefreshExpiredSession();
-        if (context.mounted && !refreshed) {
+        if (!context.mounted) return;
+        if (refreshed) return;
+
+        // Refresh definitively failed. If a background upload is in progress,
+        // do not interrupt it by navigating now. Instead, wait for the upload
+        // to finish and then route to login-options automatically.
+        final publishBloc = context.read<BackgroundPublishBloc>();
+        if (publishBloc.state.hasUploadInProgress) {
+          _navigateToLoginOptionsAfterUpload(context, publishBloc);
+        } else {
           GoRouter.of(context).go(WelcomeScreen.loginOptionsPath);
         }
       },
@@ -391,6 +412,25 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
         if (context.mounted) Navigator.of(context).pop();
       },
     );
+  }
+
+  /// Subscribes to [BackgroundPublishBloc] and navigates to login-options the
+  /// moment the last in-flight upload finishes. Cancels any previous deferred
+  /// nav subscription so only one listener is ever registered at a time.
+  void _navigateToLoginOptionsAfterUpload(
+    BuildContext context,
+    BackgroundPublishBloc publishBloc,
+  ) {
+    _deferredNavSubscription?.cancel();
+    _deferredNavSubscription = publishBloc.stream.listen((state) {
+      if (!state.hasUploadInProgress) {
+        _deferredNavSubscription?.cancel();
+        _deferredNavSubscription = null;
+        if (context.mounted) {
+          GoRouter.of(context).go(WelcomeScreen.loginOptionsPath);
+        }
+      }
+    });
   }
 
   void _showActionsSheet(

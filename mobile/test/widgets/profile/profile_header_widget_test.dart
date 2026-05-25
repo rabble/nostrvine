@@ -13,6 +13,7 @@ import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
@@ -20,6 +21,7 @@ import 'package:openvine/features/feature_flags/providers/feature_flag_providers
 import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
 import 'package:openvine/features/people_lists/view/people_list_membership_indicator.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
@@ -30,6 +32,7 @@ import 'package:openvine/widgets/user_avatar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
+import '../../helpers/go_router.dart';
 import '../../helpers/test_provider_overrides.dart';
 
 class _MockMyProfileBloc extends MockBloc<MyProfileEvent, MyProfileState>
@@ -41,6 +44,10 @@ class _MockOthersFollowersBloc
 
 class _MockPeopleListsBloc extends MockBloc<PeopleListsEvent, PeopleListsState>
     implements PeopleListsBloc {}
+
+class _MockBackgroundPublishBloc
+    extends MockBloc<BackgroundPublishEvent, BackgroundPublishState>
+    implements BackgroundPublishBloc {}
 
 // Mock classes
 class MockFollowRepository extends Mock implements FollowRepository {
@@ -132,10 +139,14 @@ class MockAuthService extends Mock implements AuthService {
   MockAuthService({
     this.isAnonymousValue = false,
     this.hasExpiredOAuthSessionValue = false,
+    this.isRpcUpgradeInProgressValue = false,
+    this.tryRefreshResult = false,
   });
 
   final bool isAnonymousValue;
   final bool hasExpiredOAuthSessionValue;
+  final bool isRpcUpgradeInProgressValue;
+  final bool tryRefreshResult;
 
   @override
   bool get isAnonymous => isAnonymousValue;
@@ -152,11 +163,23 @@ class MockAuthService extends Mock implements AuthService {
 
   @override
   bool get hasExpiredOAuthSession => hasExpiredOAuthSessionValue;
+
+  @override
+  bool get isRpcUpgradeInProgress => isRpcUpgradeInProgressValue;
+
+  @override
+  Future<bool> tryRefreshExpiredSession() async => tryRefreshResult;
 }
 
 const testUserHex =
     '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738';
 const _dismissedDivineLoginBannerPrefix = 'dismissed_divine_login_banner_';
+
+/// Minimal fake [DivineVideoDraft] for use in [BackgroundUpload] test fixtures.
+class _FakeDraft extends Fake implements DivineVideoDraft {
+  @override
+  String get id => 'fake-draft-id';
+}
 
 void main() {
   group('ProfileHeaderWidget', () {
@@ -209,16 +232,32 @@ void main() {
       bool profileIsLoading = false,
       bool isAnonymous = false,
       bool hasExpiredSession = false,
+      bool isRpcUpgradeInProgress = false,
+      bool tryRefreshResult = false,
       SharedPreferences? sharedPreferences,
       String? displayNameHint,
       String? avatarUrlHint,
       MyProfileState? myProfileState,
       bool curatedListsEnabled = false,
       PeopleListsState? peopleListsState,
+      BackgroundPublishState? backgroundPublishState,
+      Stream<BackgroundPublishState>? backgroundPublishStream,
     }) {
       final authService = MockAuthService(
         isAnonymousValue: isAnonymous,
         hasExpiredOAuthSessionValue: hasExpiredSession,
+        isRpcUpgradeInProgressValue: isRpcUpgradeInProgress,
+        tryRefreshResult: tryRefreshResult,
+      );
+
+      final mockPublishBloc = _MockBackgroundPublishBloc();
+      final publishState =
+          backgroundPublishState ?? const BackgroundPublishState();
+      when(() => mockPublishBloc.state).thenReturn(publishState);
+      whenListen(
+        mockPublishBloc,
+        backgroundPublishStream ?? const Stream<BackgroundPublishState>.empty(),
+        initialState: publishState,
       );
 
       Widget header = ProfileHeaderWidget(
@@ -264,6 +303,13 @@ void main() {
           child: header,
         );
       }
+
+      // Wrap with BackgroundPublishBloc — available everywhere in the real app
+      // tree and required by the session-expired nav deferral logic.
+      header = BlocProvider<BackgroundPublishBloc>.value(
+        value: mockPublishBloc,
+        child: header,
+      );
 
       return ProviderScope(
         overrides: [
@@ -1006,6 +1052,205 @@ void main() {
           // Anonymous users see the action label pill, not session expired
           expect(find.text('Secure your account'), findsOneWidget);
           expect(find.text('Session Expired'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'does not show session expired sheet while RPC upgrade is in progress',
+        (tester) async {
+          // Regression for #4626: the sheet must be suppressed while a
+          // background OAuth upgrade is still in flight to avoid routing the
+          // user to /welcome/login-options before the silent refresh has had a
+          // chance to complete.
+          final testProfile = createTestProfile(displayName: 'Test User');
+          SharedPreferences.setMockInitialValues({});
+          final prefs = await SharedPreferences.getInstance();
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              profile: testProfile,
+              hasExpiredSession: true,
+              isRpcUpgradeInProgress: true,
+              sharedPreferences: prefs,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          // Sheet must NOT appear while upgrade is running.
+          expect(find.text('Session Expired'), findsNothing);
+          expect(find.text('Sign in'), findsNothing);
+          expect(find.text('Maybe Later'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'sheet does not appear after successful RPC upgrade clears the '
+        'expired-session flag',
+        (tester) async {
+          // Regression for #4626: when the background upgrade succeeds the
+          // session-expired flag is cleared. The widget must not show the sheet
+          // at any point — neither while the upgrade is running (suppressed by
+          // isRpcUpgradeInProgress) nor after it succeeds (hasExpiredOAuthSession
+          // is false).
+          final testProfile = createTestProfile(displayName: 'Test User');
+          SharedPreferences.setMockInitialValues({});
+          final prefs = await SharedPreferences.getInstance();
+
+          // Phase 1: session expired, upgrade in progress → sheet suppressed.
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              profile: testProfile,
+              hasExpiredSession: true,
+              isRpcUpgradeInProgress: true,
+              sharedPreferences: prefs,
+            ),
+          );
+          await tester.pumpAndSettle();
+          expect(find.text('Session Expired'), findsNothing);
+
+          // Phase 2: upgrade succeeds — session flag cleared.
+          // Rebuild with hasExpiredSession: false to simulate what happens
+          // after a successful upgrade nudges the widget to re-evaluate.
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              profile: testProfile,
+              sharedPreferences: prefs,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          // Sheet must not appear — session is no longer expired.
+          expect(find.text('Session Expired'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'defers nav to login-options until background upload finishes '
+        'when refresh fails and upload is in progress',
+        (tester) async {
+          // Regression for #4626: tapping "Sign in" when an upload is active
+          // must not navigate immediately. Navigation is deferred until the
+          // BackgroundPublishBloc's hasUploadInProgress becomes false.
+          final testProfile = createTestProfile(displayName: 'Test User');
+          SharedPreferences.setMockInitialValues({});
+          final prefs = await SharedPreferences.getInstance();
+
+          // Simulate an in-flight upload followed by completion.
+          final publishStreamController =
+              StreamController<BackgroundPublishState>();
+          addTearDown(publishStreamController.close);
+
+          final mockPublishBloc = _MockBackgroundPublishBloc();
+          // Upload is in progress initially.
+          final inProgressState = BackgroundPublishState(
+            uploads: [
+              BackgroundUpload(
+                draft: _FakeDraft(),
+                result: null,
+                progress: 0.5,
+              ),
+            ],
+          );
+          when(() => mockPublishBloc.state).thenReturn(inProgressState);
+          whenListen(
+            mockPublishBloc,
+            publishStreamController.stream,
+            initialState: inProgressState,
+          );
+
+          final authService = MockAuthService(
+            hasExpiredOAuthSessionValue: true,
+            // tryRefreshResult defaults to false — refresh will fail
+          );
+
+          // Use a mock GoRouter so go() calls are verifiable, not errors.
+          final mockGoRouter = MockGoRouter();
+          when(() => mockGoRouter.go(any())).thenReturn(null);
+
+          await tester.pumpWidget(
+            MockGoRouterProvider(
+              goRouter: mockGoRouter,
+              child: ProviderScope(
+                overrides: [
+                  ...getStandardTestOverrides(
+                    mockNostrService: mockNostrClient,
+                    mockSharedPreferences: prefs,
+                    mockNip05VerificationService:
+                        createMockNip05VerificationService(),
+                    mockFollowRepository: mockFollowRepository,
+                  ),
+                  fetchUserProfileProvider(testUserHex).overrideWith(
+                    (ref) async => testProfile,
+                  ),
+                  userProfileStatsReactiveProvider(testUserHex).overrideWith(
+                    (ref) => const Stream.empty(),
+                  ),
+                  authServiceProvider.overrideWithValue(authService),
+                  currentAuthStateProvider.overrideWith(
+                    (ref) => AuthState.authenticated,
+                  ),
+                  isFeatureEnabledProvider(
+                    FeatureFlag.curatedLists,
+                  ).overrideWith((ref) => false),
+                ],
+                child: MaterialApp(
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  home: BlocProvider<BackgroundPublishBloc>.value(
+                    value: mockPublishBloc,
+                    child: BlocProvider<MyProfileBloc>(
+                      create: (_) {
+                        final bloc = _MockMyProfileBloc();
+                        when(() => bloc.state).thenReturn(
+                          MyProfileUpdated(profile: testProfile),
+                        );
+                        return bloc;
+                      },
+                      child: const Scaffold(
+                        body: SingleChildScrollView(
+                          child: ProfileHeaderWidget(
+                            userIdHex: testUserHex,
+                            isOwnProfile: true,
+                            videoCount: 0,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          // Session expired sheet should be visible.
+          expect(find.text('Session Expired'), findsWidgets);
+
+          // Tap "Sign in" — triggers tryRefreshExpiredSession (returns false)
+          // and the upload-in-progress guard should subscribe for deferred nav.
+          await tester.tap(find.text('Sign in').last);
+          await tester.pumpAndSettle();
+
+          // Navigation must NOT have fired yet — upload is still active.
+          verifyNever(() => mockGoRouter.go(any()));
+
+          // Simulate upload completing.
+          publishStreamController.add(const BackgroundPublishState());
+          await tester.pump();
+
+          // Navigation must now have fired exactly once to login-options.
+          verify(
+            () => mockGoRouter.go(
+              any(that: contains('login-options')),
+            ),
+          ).called(1);
         },
       );
     });

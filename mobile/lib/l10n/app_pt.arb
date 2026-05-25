@@ -1804,6 +1804,7 @@
     "uploadProcessingMessage": "Processando vídeo - isso pode levar alguns minutos",
     "uploadReadyToPublishMessage": "Vídeo processado com sucesso e pronto para publicar",
     "uploadPublishedMessage": "Vídeo publicado no seu perfil",
+  "uploadPublishedMultipleMessage": "{count} videos published to your profile",
     "uploadFailedMessage": "Falha no envio - tente novamente",
     "uploadRetryingMessage": "Tentando enviar novamente...",
     "uploadPausedMessage": "Envio pausado pelo usuário",

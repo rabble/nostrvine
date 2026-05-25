@@ -4162,6 +4162,11 @@ class AppLocalizationsAm extends AppLocalizations {
   String get uploadPublishedMessage => 'ቪዲዮ ወደ መገለጫዎ ታትሟል';
 
   @override
+  String uploadPublishedMultipleMessage(int count) {
+    return '$count ቪዲዮዎች ወደ መገለጫዎ ታትሟቸዋል';
+  }
+
+  @override
   String get uploadFailedMessage => 'ሰቀላው አልተሳካም - እባክዎ እንደገና ይሞክሩ';
 
   @override

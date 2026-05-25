@@ -1801,6 +1801,7 @@
     "uploadProcessingMessage": "Video işleniyor - bu birkaç dakika sürebilir",
     "uploadReadyToPublishMessage": "Video başarıyla işlendi ve yayınlamaya hazır",
     "uploadPublishedMessage": "Video profiline yayınlandı",
+  "uploadPublishedMultipleMessage": "{count} videos published to your profile",
     "uploadFailedMessage": "Yükleme başarısız - lütfen tekrar dene",
     "uploadRetryingMessage": "Yükleme yeniden deneniyor...",
     "uploadPausedMessage": "Yükleme kullanıcı tarafından duraklatıldı",
