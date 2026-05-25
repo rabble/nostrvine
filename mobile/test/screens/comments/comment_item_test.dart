@@ -274,12 +274,12 @@ void main() {
     );
     await tester.pump();
 
-    final clipRRect = tester.widget<ClipRRect>(
-      find.ancestor(
-        of: find.byType(VideoCommentPlayer),
-        matching: find.byType(ClipRRect),
-      ),
+    final clipFinder = find.ancestor(
+      of: find.byType(VideoCommentPlayer),
+      matching: find.byType(ClipRRect),
     );
+    expect(clipFinder, findsOneWidget);
+    final clipRRect = tester.widget<ClipRRect>(clipFinder);
     expect(clipRRect.borderRadius, BorderRadius.circular(12));
 
     // Drain VisibilityDetector's 500ms debounce and the identity skeleton's
