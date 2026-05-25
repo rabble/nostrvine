@@ -7,8 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:models/models.dart' as model;
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' as model;
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -80,7 +80,7 @@ void main() {
             DivineVideoClip(
               id: 'clip-1',
               video: EditorVideo.file('/tmp/clip-1.mp4'),
-              duration: Duration(seconds: 3),
+              duration: const Duration(seconds: 3),
               recordedAt: DateTime(2025),
               targetAspectRatio: model.AspectRatio.vertical,
               originalAspectRatio: 9 / 16,
