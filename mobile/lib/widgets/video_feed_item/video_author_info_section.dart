@@ -13,6 +13,7 @@ import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/user_avatar.dart';
+import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
@@ -110,8 +111,9 @@ class VideoAuthorInfoSection extends ConsumerWidget {
                       container: true,
                       explicitChildNodes: true,
                       label: context.l10n.videoAuthorSemanticLabel(displayName),
-                      child: Text(
-                        displayName,
+                      child: UserName.fromPubKey(
+                        video.pubkey,
+                        embeddedName: video.authorName,
                         style: VineTheme.titleSmallFont(),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
