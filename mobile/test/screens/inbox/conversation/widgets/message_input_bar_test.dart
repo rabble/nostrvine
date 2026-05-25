@@ -10,6 +10,9 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/message_input_bar.dart';
 
 void main() {
+  Finder findSendButton(AppLocalizations l10n) =>
+      find.bySemanticsLabel(l10n.dmMessageSendLabel);
+
   group(MessageInputBar, () {
     group('renders', () {
       testWidgets('renders $TextField with hint text', (tester) async {
@@ -75,7 +78,8 @@ void main() {
         await tester.enterText(find.byType(TextField), '  Hello  ');
         await tester.pump();
 
-        await tester.tap(find.byType(DivineIcon));
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(findSendButton(l10n));
         await tester.pump();
 
         expect(sentText, equals('Hello'));
@@ -93,7 +97,8 @@ void main() {
         await tester.enterText(find.byType(TextField), 'Hello');
         await tester.pump();
 
-        await tester.tap(find.byType(DivineIcon));
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(findSendButton(l10n));
         await tester.pump();
 
         final textField = tester.widget<TextField>(find.byType(TextField));
@@ -177,7 +182,8 @@ void main() {
         await tester.enterText(find.byType(TextField), 'line one\nline two');
         await tester.pump();
 
-        await tester.tap(find.byType(DivineIcon));
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(findSendButton(l10n));
         await tester.pump();
 
         expect(sentText, equals('line one\nline two'));
