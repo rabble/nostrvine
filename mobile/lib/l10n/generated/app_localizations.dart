@@ -9734,6 +9734,66 @@ abstract class AppLocalizations {
   /// **'Retrying reaction'**
   String get dmReactionChipRetryAnnouncement;
 
+  /// Hint text in the search field of the full emoji picker opened from the DM reaction '+' button.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get emojiPickerSearchHint;
+
+  /// Title for the 'Recent' category in the full emoji picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get emojiCategoryRecent;
+
+  /// Title for the 'Smileys & People' category in the full emoji picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Smileys & People'**
+  String get emojiCategorySmileys;
+
+  /// Title for the 'Animals & Nature' category in the full emoji picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Animals & Nature'**
+  String get emojiCategoryAnimals;
+
+  /// Title for the 'Food & Drink' category in the full emoji picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Food & Drink'**
+  String get emojiCategoryFood;
+
+  /// Title for the 'Activities' category in the full emoji picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Activities'**
+  String get emojiCategoryActivities;
+
+  /// Title for the 'Travel & Places' category in the full emoji picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Travel & Places'**
+  String get emojiCategoryTravel;
+
+  /// Title for the 'Objects' category in the full emoji picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Objects'**
+  String get emojiCategoryObjects;
+
+  /// Title for the 'Symbols' category in the full emoji picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Symbols'**
+  String get emojiCategorySymbols;
+
+  /// Title for the 'Flags' category in the full emoji picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Flags'**
+  String get emojiCategoryFlags;
+
   /// Label for the Bold formatting action in the DM composer's text-selection context menu. Wraps the selected text with markdown bold markers (e.g. **text**).
   ///
   /// In en, this message translates to:

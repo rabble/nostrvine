@@ -5592,6 +5592,36 @@ class AppLocalizationsBg extends AppLocalizations {
   String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
 
   @override
+  String get emojiPickerSearchHint => 'Търсене';
+
+  @override
+  String get emojiCategoryRecent => 'Скорошни';
+
+  @override
+  String get emojiCategorySmileys => 'Емотикони и хора';
+
+  @override
+  String get emojiCategoryAnimals => 'Животни и природа';
+
+  @override
+  String get emojiCategoryFood => 'Храна и напитки';
+
+  @override
+  String get emojiCategoryActivities => 'Дейности';
+
+  @override
+  String get emojiCategoryTravel => 'Пътувания и места';
+
+  @override
+  String get emojiCategoryObjects => 'Обекти';
+
+  @override
+  String get emojiCategorySymbols => 'Символи';
+
+  @override
+  String get emojiCategoryFlags => 'Знамена';
+
+  @override
   String get dmFormatBold => 'Получер';
 
   @override

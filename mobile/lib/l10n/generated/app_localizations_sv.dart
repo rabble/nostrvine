@@ -5539,6 +5539,36 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
 
   @override
+  String get emojiPickerSearchHint => 'Sök';
+
+  @override
+  String get emojiCategoryRecent => 'Senaste';
+
+  @override
+  String get emojiCategorySmileys => 'Smileys och personer';
+
+  @override
+  String get emojiCategoryAnimals => 'Djur och natur';
+
+  @override
+  String get emojiCategoryFood => 'Mat och dryck';
+
+  @override
+  String get emojiCategoryActivities => 'Aktiviteter';
+
+  @override
+  String get emojiCategoryTravel => 'Resor och platser';
+
+  @override
+  String get emojiCategoryObjects => 'Objekt';
+
+  @override
+  String get emojiCategorySymbols => 'Symboler';
+
+  @override
+  String get emojiCategoryFlags => 'Flaggor';
+
+  @override
   String get dmFormatBold => 'Fet';
 
   @override

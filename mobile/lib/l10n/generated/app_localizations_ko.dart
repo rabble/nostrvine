@@ -5329,6 +5329,36 @@ class AppLocalizationsKo extends AppLocalizations {
   String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
 
   @override
+  String get emojiPickerSearchHint => '검색';
+
+  @override
+  String get emojiCategoryRecent => '최근 사용';
+
+  @override
+  String get emojiCategorySmileys => '스마일리 및 사람';
+
+  @override
+  String get emojiCategoryAnimals => '동물 및 자연';
+
+  @override
+  String get emojiCategoryFood => '음식 및 음료';
+
+  @override
+  String get emojiCategoryActivities => '활동';
+
+  @override
+  String get emojiCategoryTravel => '여행 및 장소';
+
+  @override
+  String get emojiCategoryObjects => '사물';
+
+  @override
+  String get emojiCategorySymbols => '기호';
+
+  @override
+  String get emojiCategoryFlags => '깃발';
+
+  @override
   String get dmFormatBold => '굵게';
 
   @override

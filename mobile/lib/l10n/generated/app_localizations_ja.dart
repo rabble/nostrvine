@@ -5312,6 +5312,36 @@ class AppLocalizationsJa extends AppLocalizations {
   String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
 
   @override
+  String get emojiPickerSearchHint => '検索';
+
+  @override
+  String get emojiCategoryRecent => '最近使った絵文字';
+
+  @override
+  String get emojiCategorySmileys => 'スマイリーと人々';
+
+  @override
+  String get emojiCategoryAnimals => '動物と自然';
+
+  @override
+  String get emojiCategoryFood => '食べ物と飲み物';
+
+  @override
+  String get emojiCategoryActivities => 'アクティビティ';
+
+  @override
+  String get emojiCategoryTravel => '旅行と場所';
+
+  @override
+  String get emojiCategoryObjects => '物';
+
+  @override
+  String get emojiCategorySymbols => '記号';
+
+  @override
+  String get emojiCategoryFlags => '旗';
+
+  @override
   String get dmFormatBold => '太字';
 
   @override

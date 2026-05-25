@@ -5608,6 +5608,36 @@ class AppLocalizationsFil extends AppLocalizations {
   String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
 
   @override
+  String get emojiPickerSearchHint => 'Maghanap';
+
+  @override
+  String get emojiCategoryRecent => 'Kamakailan';
+
+  @override
+  String get emojiCategorySmileys => 'Mga Smiley at Tao';
+
+  @override
+  String get emojiCategoryAnimals => 'Mga Hayop at Kalikasan';
+
+  @override
+  String get emojiCategoryFood => 'Pagkain at Inumin';
+
+  @override
+  String get emojiCategoryActivities => 'Mga Aktibidad';
+
+  @override
+  String get emojiCategoryTravel => 'Paglalakbay at Mga Lugar';
+
+  @override
+  String get emojiCategoryObjects => 'Mga Bagay';
+
+  @override
+  String get emojiCategorySymbols => 'Mga Simbolo';
+
+  @override
+  String get emojiCategoryFlags => 'Mga Bandila';
+
+  @override
   String get dmFormatBold => 'Makapal';
 
   @override

@@ -5427,6 +5427,36 @@ class AppLocalizationsAm extends AppLocalizations {
   String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
 
   @override
+  String get emojiPickerSearchHint => 'ፍለጋ';
+
+  @override
+  String get emojiCategoryRecent => 'የቅርብ ጊዜ';
+
+  @override
+  String get emojiCategorySmileys => 'ፈገግታዎች እና ሰዎች';
+
+  @override
+  String get emojiCategoryAnimals => 'እንስሳት እና ተፈጥሮ';
+
+  @override
+  String get emojiCategoryFood => 'ምግብ እና መጠጥ';
+
+  @override
+  String get emojiCategoryActivities => 'እንቅስቃሴዎች';
+
+  @override
+  String get emojiCategoryTravel => 'ጉዞ እና ቦታዎች';
+
+  @override
+  String get emojiCategoryObjects => 'ቁሶች';
+
+  @override
+  String get emojiCategorySymbols => 'ምልክቶች';
+
+  @override
+  String get emojiCategoryFlags => 'ባንዲራዎች';
+
+  @override
   String get dmFormatBold => 'ደማቅ';
 
   @override

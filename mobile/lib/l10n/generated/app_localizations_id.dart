@@ -5514,6 +5514,36 @@ class AppLocalizationsId extends AppLocalizations {
   String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
 
   @override
+  String get emojiPickerSearchHint => 'Cari';
+
+  @override
+  String get emojiCategoryRecent => 'Terbaru';
+
+  @override
+  String get emojiCategorySmileys => 'Smiley & Orang';
+
+  @override
+  String get emojiCategoryAnimals => 'Hewan & Alam';
+
+  @override
+  String get emojiCategoryFood => 'Makanan & Minuman';
+
+  @override
+  String get emojiCategoryActivities => 'Aktivitas';
+
+  @override
+  String get emojiCategoryTravel => 'Perjalanan & Tempat';
+
+  @override
+  String get emojiCategoryObjects => 'Objek';
+
+  @override
+  String get emojiCategorySymbols => 'Simbol';
+
+  @override
+  String get emojiCategoryFlags => 'Bendera';
+
+  @override
   String get dmFormatBold => 'Tebal';
 
   @override

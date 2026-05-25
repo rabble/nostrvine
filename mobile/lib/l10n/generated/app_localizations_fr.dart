@@ -5611,6 +5611,36 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
 
   @override
+  String get emojiPickerSearchHint => 'Rechercher';
+
+  @override
+  String get emojiCategoryRecent => 'Récents';
+
+  @override
+  String get emojiCategorySmileys => 'Smileys et personnes';
+
+  @override
+  String get emojiCategoryAnimals => 'Animaux et nature';
+
+  @override
+  String get emojiCategoryFood => 'Nourriture et boissons';
+
+  @override
+  String get emojiCategoryActivities => 'Activités';
+
+  @override
+  String get emojiCategoryTravel => 'Voyages et lieux';
+
+  @override
+  String get emojiCategoryObjects => 'Objets';
+
+  @override
+  String get emojiCategorySymbols => 'Symboles';
+
+  @override
+  String get emojiCategoryFlags => 'Drapeaux';
+
+  @override
   String get dmFormatBold => 'Gras';
 
   @override

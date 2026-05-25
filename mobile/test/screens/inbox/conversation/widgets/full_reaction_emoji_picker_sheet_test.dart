@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/full_reaction_emoji_picker_sheet.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
@@ -72,6 +73,37 @@ void main() {
 
       expect(completed, isTrue);
       expect(selected, isNull);
+    });
+
+    group('buildI18n', () {
+      test('maps every category label to its localized value', () {
+        final en = lookupAppLocalizations(const Locale('en'));
+        final i18n = FullReactionEmojiPickerSheet.buildI18n(en);
+
+        expect(i18n.search, en.emojiPickerSearchHint);
+        expect(i18n.categoryRecent, en.emojiCategoryRecent);
+        expect(i18n.categorySmileys, en.emojiCategorySmileys);
+        expect(i18n.categoryAnimals, en.emojiCategoryAnimals);
+        expect(i18n.categoryFood, en.emojiCategoryFood);
+        expect(i18n.categoryActivities, en.emojiCategoryActivities);
+        expect(i18n.categoryTravel, en.emojiCategoryTravel);
+        expect(i18n.categoryObjects, en.emojiCategoryObjects);
+        expect(i18n.categorySymbols, en.emojiCategorySymbols);
+        expect(i18n.categoryFlags, en.emojiCategoryFlags);
+      });
+
+      test('follows the active locale instead of hardcoded English', () {
+        final en = lookupAppLocalizations(const Locale('en'));
+        final de = lookupAppLocalizations(const Locale('de'));
+
+        // German labels differ from English, proving the picker reads from
+        // l10n rather than the package's hardcoded English defaults.
+        expect(de.emojiCategorySmileys, isNot(en.emojiCategorySmileys));
+        expect(
+          FullReactionEmojiPickerSheet.buildI18n(de).categorySmileys,
+          de.emojiCategorySmileys,
+        );
+      });
     });
   });
 }

@@ -3077,6 +3077,46 @@
   "@dmReactionChipRetryAnnouncement": {
     "description": "Live-region announcement on chip retry."
   },
+  "emojiPickerSearchHint": "Search",
+  "@emojiPickerSearchHint": {
+    "description": "Hint text in the search field of the full emoji picker opened from the DM reaction '+' button."
+  },
+  "emojiCategoryRecent": "Recent",
+  "@emojiCategoryRecent": {
+    "description": "Title for the 'Recent' category in the full emoji picker."
+  },
+  "emojiCategorySmileys": "Smileys & People",
+  "@emojiCategorySmileys": {
+    "description": "Title for the 'Smileys & People' category in the full emoji picker."
+  },
+  "emojiCategoryAnimals": "Animals & Nature",
+  "@emojiCategoryAnimals": {
+    "description": "Title for the 'Animals & Nature' category in the full emoji picker."
+  },
+  "emojiCategoryFood": "Food & Drink",
+  "@emojiCategoryFood": {
+    "description": "Title for the 'Food & Drink' category in the full emoji picker."
+  },
+  "emojiCategoryActivities": "Activities",
+  "@emojiCategoryActivities": {
+    "description": "Title for the 'Activities' category in the full emoji picker."
+  },
+  "emojiCategoryTravel": "Travel & Places",
+  "@emojiCategoryTravel": {
+    "description": "Title for the 'Travel & Places' category in the full emoji picker."
+  },
+  "emojiCategoryObjects": "Objects",
+  "@emojiCategoryObjects": {
+    "description": "Title for the 'Objects' category in the full emoji picker."
+  },
+  "emojiCategorySymbols": "Symbols",
+  "@emojiCategorySymbols": {
+    "description": "Title for the 'Symbols' category in the full emoji picker."
+  },
+  "emojiCategoryFlags": "Flags",
+  "@emojiCategoryFlags": {
+    "description": "Title for the 'Flags' category in the full emoji picker."
+  },
   "dmFormatBold": "Bold",
   "@dmFormatBold": {
     "description": "Label for the Bold formatting action in the DM composer's text-selection context menu. Wraps the selected text with markdown bold markers (e.g. **text**)."

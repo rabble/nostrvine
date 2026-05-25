@@ -5520,6 +5520,36 @@ class AppLocalizationsTr extends AppLocalizations {
   String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
 
   @override
+  String get emojiPickerSearchHint => 'Ara';
+
+  @override
+  String get emojiCategoryRecent => 'Son Kullanılanlar';
+
+  @override
+  String get emojiCategorySmileys => 'İfadeler ve İnsanlar';
+
+  @override
+  String get emojiCategoryAnimals => 'Hayvanlar ve Doğa';
+
+  @override
+  String get emojiCategoryFood => 'Yiyecek ve İçecek';
+
+  @override
+  String get emojiCategoryActivities => 'Etkinlikler';
+
+  @override
+  String get emojiCategoryTravel => 'Seyahat ve Yerler';
+
+  @override
+  String get emojiCategoryObjects => 'Nesneler';
+
+  @override
+  String get emojiCategorySymbols => 'Semboller';
+
+  @override
+  String get emojiCategoryFlags => 'Bayraklar';
+
+  @override
   String get dmFormatBold => 'Kalın';
 
   @override

@@ -5687,6 +5687,36 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
 
   @override
+  String get emojiPickerSearchHint => 'Căutare';
+
+  @override
+  String get emojiCategoryRecent => 'Recente';
+
+  @override
+  String get emojiCategorySmileys => 'Emoticoane și persoane';
+
+  @override
+  String get emojiCategoryAnimals => 'Animale și natură';
+
+  @override
+  String get emojiCategoryFood => 'Mâncare și băutură';
+
+  @override
+  String get emojiCategoryActivities => 'Activități';
+
+  @override
+  String get emojiCategoryTravel => 'Călătorii și locuri';
+
+  @override
+  String get emojiCategoryObjects => 'Obiecte';
+
+  @override
+  String get emojiCategorySymbols => 'Simboluri';
+
+  @override
+  String get emojiCategoryFlags => 'Steaguri';
+
+  @override
   String get dmFormatBold => 'Aldin';
 
   @override
