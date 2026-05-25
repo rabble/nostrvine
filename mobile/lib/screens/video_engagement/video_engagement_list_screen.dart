@@ -57,14 +57,18 @@ class VideoEngagementListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final likesRepository = ref.watch(likesRepositoryProvider);
     final repostsRepository = ref.watch(repostsRepositoryProvider);
+    final profileRepository = ref.watch(profileRepositoryProvider);
 
     return BlocProvider<VideoEngagementBloc>(
-      key: ValueKey((likesRepository, repostsRepository, eventId, type)),
+      key: ValueKey(
+        (likesRepository, repostsRepository, profileRepository, eventId, type),
+      ),
       create: (_) => VideoEngagementBloc(
         eventId: eventId,
         type: type,
         likesRepository: likesRepository,
         repostsRepository: repostsRepository,
+        profileRepository: profileRepository,
         addressableId: addressableId,
       )..add(const VideoEngagementLoadRequested()),
       child: const VideoEngagementListView(),

@@ -377,7 +377,10 @@ class NotificationRepository {
       row.timestamp * 1000,
       isUtc: true,
     ).toLocal();
-    final actor = ActorInfo(pubkey: row.fromPubkey, displayName: 'Loading…');
+    final actor = ActorInfo(
+      pubkey: row.fromPubkey,
+      displayName: UserProfile.defaultDisplayNameFor(row.fromPubkey),
+    );
 
     // Video-anchored kinds — reconstruct VideoNotification using the cached
     // targetEventId (which `_itemToCacheRow` writes as videoEventId).

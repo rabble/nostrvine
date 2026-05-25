@@ -1,20 +1,26 @@
 // ABOUTME: Tests for VideoEngagementBloc — likers / reposters list loading.
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_engagement/video_engagement_bloc.dart';
+import 'package:profile_repository/profile_repository.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 
 class _MockLikesRepository extends Mock implements LikesRepository {}
 
 class _MockRepostsRepository extends Mock implements RepostsRepository {}
 
+class _MockProfileRepository extends Mock implements ProfileRepository {}
+
 void main() {
   group(VideoEngagementBloc, () {
     late _MockLikesRepository likesRepository;
     late _MockRepostsRepository repostsRepository;
+    late _MockProfileRepository profileRepository;
 
     const testEventId = 'event-id-1';
     const testAddressableId = '34236:authorpubkey:dtag';
@@ -25,6 +31,14 @@ void main() {
     setUp(() {
       likesRepository = _MockLikesRepository();
       repostsRepository = _MockRepostsRepository();
+      profileRepository = _MockProfileRepository();
+
+      // Default stub — batch fetch returns empty map (cache miss is fine).
+      when(
+        () => profileRepository.fetchBatchProfiles(
+          pubkeys: any(named: 'pubkeys'),
+        ),
+      ).thenAnswer((_) async => {});
     });
 
     VideoEngagementBloc createBloc({
@@ -35,6 +49,7 @@ void main() {
       type: type,
       likesRepository: likesRepository,
       repostsRepository: repostsRepository,
+      profileRepository: profileRepository,
       addressableId: addressableId,
     );
 
@@ -181,6 +196,64 @@ void main() {
           ),
         ],
         errors: () => [isA<FetchRepostersFailedException>()],
+      );
+    });
+
+    group('profile batch prefetch', () {
+      blocTest<VideoEngagementBloc, VideoEngagementState>(
+        'calls fetchBatchProfiles with likers pubkeys after successful fetch',
+        setUp: () {
+          when(
+            () => likesRepository.fetchEventLikers(
+              eventId: testEventId,
+              addressableId: testAddressableId,
+            ),
+          ).thenAnswer((_) async => const [liker1, liker2]);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const VideoEngagementLoadRequested()),
+        verify: (_) {
+          verify(
+            () => profileRepository.fetchBatchProfiles(
+              pubkeys: [liker1, liker2],
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<VideoEngagementBloc, VideoEngagementState>(
+        'emits success even when fetchBatchProfiles times out',
+        setUp: () {
+          when(
+            () => likesRepository.fetchEventLikers(
+              eventId: testEventId,
+              addressableId: testAddressableId,
+            ),
+          ).thenAnswer((_) async => const [liker1]);
+          // Simulate the TimeoutException that .timeout(2s) throws when the
+          // profile fetch exceeds the deadline. The catchError in the bloc must
+          // swallow it so success is still emitted.
+          when(
+            () => profileRepository.fetchBatchProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).thenAnswer(
+            (_) => Future.error(TimeoutException('profile prefetch timed out')),
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const VideoEngagementLoadRequested()),
+        expect: () => [
+          const VideoEngagementState(
+            type: VideoEngagementType.likers,
+            status: VideoEngagementStatus.loading,
+          ),
+          const VideoEngagementState(
+            type: VideoEngagementType.likers,
+            status: VideoEngagementStatus.success,
+            pubkeys: [liker1],
+          ),
+        ],
       );
     });
 
