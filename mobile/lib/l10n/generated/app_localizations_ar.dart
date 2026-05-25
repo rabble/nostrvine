@@ -4209,7 +4209,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String uploadPublishedMultipleMessage(int count) {
-    return 'تم نشر $count مقاطع فيديو في ملفك الشخصي';
+    return '$count videos published to your profile';
   }
 
   @override

@@ -4163,7 +4163,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String uploadPublishedMultipleMessage(int count) {
-    return '$count ቪዲዮዎች ወደ መገለጫዎ ታትሟቸዋል';
+    return '$count videos published to your profile';
   }
 
   @override

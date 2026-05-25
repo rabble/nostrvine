@@ -4378,7 +4378,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String uploadPublishedMultipleMessage(int count) {
-    return '$count videoclipuri publicate pe profilul tău';
+    return '$count videos published to your profile';
   }
 
   @override

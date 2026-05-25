@@ -4051,7 +4051,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String uploadPublishedMultipleMessage(int count) {
-    return '$count本の動画をプロフィールに公開したよ';
+    return '$count videos published to your profile';
   }
 
   @override

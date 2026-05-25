@@ -4312,7 +4312,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String uploadPublishedMultipleMessage(int count) {
-    return '$count videos na-publish sa profile mo';
+    return '$count videos published to your profile';
   }
 
   @override

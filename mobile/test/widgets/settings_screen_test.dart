@@ -43,6 +43,7 @@ class _FakeDraft extends Fake implements DivineVideoDraft {
   @override
   String get id => 'settings-fake-draft';
 }
+
 class _MockDraftStorageService extends Mock implements DraftStorageService {}
 
 class _MockInviteStatusCubit extends MockCubit<InviteStatusState>

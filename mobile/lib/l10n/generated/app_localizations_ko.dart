@@ -4066,7 +4066,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String uploadPublishedMultipleMessage(int count) {
-    return '프로필에 영상 $count개를 게시했어요';
+    return '$count videos published to your profile';
   }
 
   @override

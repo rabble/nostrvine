@@ -4305,7 +4305,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String uploadPublishedMultipleMessage(int count) {
-    return '$count Videos in deinem Profil veröffentlicht';
+    return '$count videos published to your profile';
   }
 
   @override

@@ -4299,7 +4299,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String uploadPublishedMultipleMessage(int count) {
-    return '$count видеа са публикувани в профила ти';
+    return '$count videos published to your profile';
   }
 
   @override

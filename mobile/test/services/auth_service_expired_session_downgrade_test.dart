@@ -334,10 +334,8 @@ void main() {
             // refreshSession returns immediately. Pump the event queue until
             // the upgrade finishes — it should complete well within 1 second.
             final deadline = DateTime.now().add(const Duration(seconds: 3));
-            while (
-              authService.isRpcUpgradeInProgress &&
-              DateTime.now().isBefore(deadline)
-            ) {
+            while (authService.isRpcUpgradeInProgress &&
+                DateTime.now().isBefore(deadline)) {
               await Future<void>.delayed(const Duration(milliseconds: 10));
             }
 
@@ -391,10 +389,8 @@ void main() {
             // _pendingOAuthRefresh single-flight slot being held by the
             // background upgrade, which would conflate call counts.
             final deadline = DateTime.now().add(const Duration(seconds: 5));
-            while (
-              authService.isRpcUpgradeInProgress &&
-              DateTime.now().isBefore(deadline)
-            ) {
+            while (authService.isRpcUpgradeInProgress &&
+                DateTime.now().isBefore(deadline)) {
               await Future<void>.delayed(const Duration(milliseconds: 10));
             }
 

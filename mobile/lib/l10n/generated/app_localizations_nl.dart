@@ -4269,7 +4269,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String uploadPublishedMultipleMessage(int count) {
-    return '$count video\'s gepubliceerd op je profiel';
+    return '$count videos published to your profile';
   }
 
   @override
