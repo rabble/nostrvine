@@ -125,6 +125,65 @@ void main() {
       });
     });
 
+    group('multiline composition', () {
+      testWidgets('grows from 1 to 5 lines and uses the multiline keyboard', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: MessageInputBar(onSend: (_) {})),
+          ),
+        );
+
+        final field = tester.widget<TextField>(find.byType(TextField));
+        expect(field.minLines, 1);
+        expect(field.maxLines, 5);
+        expect(field.keyboardType, TextInputType.multiline);
+      });
+
+      testWidgets('Return inserts a newline instead of sending', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: MessageInputBar(onSend: (_) {})),
+          ),
+        );
+
+        final field = tester.widget<TextField>(find.byType(TextField));
+        expect(field.textInputAction, TextInputAction.newline);
+        expect(field.onSubmitted, isNull);
+      });
+
+      testWidgets('preserves internal newlines in the sent message', (
+        tester,
+      ) async {
+        String? sentText;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MessageInputBar(onSend: (text) => sentText = text),
+            ),
+          ),
+        );
+
+        await tester.enterText(find.byType(TextField), 'line one\nline two');
+        await tester.pump();
+
+        await tester.tap(find.byType(DivineIcon));
+        await tester.pump();
+
+        expect(sentText, equals('line one\nline two'));
+      });
+    });
+
     group('selection toolbar', () {
       /// Pumps the input bar, enters [seedText], selects the range
       /// `[selStart, selEnd]`, and invokes the TextField's
@@ -274,46 +333,44 @@ void main() {
         expect(harness.controller.text, equals('use `foo()` here'));
       });
 
-      testWidgets(
-        'Bold on already-bold selection unwraps the surrounding **',
-        (tester) async {
-          // `**hi**` — select just the inner `hi` so the surrounding
-          // `**` markers can be detected and stripped.
-          final harness = await pumpAndBuildToolbar(
-            tester,
-            seedText: 'say **hi** please',
-            selStart: 6,
-            selEnd: 8,
-          );
-          final toolbar = harness.toolbar as AdaptiveTextSelectionToolbar;
-          toolbar.buttonItems!.first.onPressed!();
-          await tester.pump();
-          expect(harness.controller.text, equals('say hi please'));
-        },
-      );
+      testWidgets('Bold on already-bold selection unwraps the surrounding **', (
+        tester,
+      ) async {
+        // `**hi**` — select just the inner `hi` so the surrounding
+        // `**` markers can be detected and stripped.
+        final harness = await pumpAndBuildToolbar(
+          tester,
+          seedText: 'say **hi** please',
+          selStart: 6,
+          selEnd: 8,
+        );
+        final toolbar = harness.toolbar as AdaptiveTextSelectionToolbar;
+        toolbar.buttonItems!.first.onPressed!();
+        await tester.pump();
+        expect(harness.controller.text, equals('say hi please'));
+      });
 
-      testWidgets(
-        'selection labels resolve from l10n, not hardcoded English',
-        (tester) async {
-          // Sanity guard against accidentally hardcoding the label —
-          // if the widget ever stops reading from context.l10n, this
-          // test breaks loudly.
-          final harness = await pumpAndBuildToolbar(
-            tester,
-            seedText: 'hello',
-            selStart: 0,
-            selEnd: 5,
-          );
-          final toolbar = harness.toolbar as AdaptiveTextSelectionToolbar;
-          final labels = toolbar.buttonItems!.take(4).map((b) => b.label);
-          expect(labels, [
-            lookupAppLocalizations(const Locale('en')).dmFormatBold,
-            lookupAppLocalizations(const Locale('en')).dmFormatItalic,
-            lookupAppLocalizations(const Locale('en')).dmFormatStrikethrough,
-            lookupAppLocalizations(const Locale('en')).dmFormatCode,
-          ]);
-        },
-      );
+      testWidgets('selection labels resolve from l10n, not hardcoded English', (
+        tester,
+      ) async {
+        // Sanity guard against accidentally hardcoding the label —
+        // if the widget ever stops reading from context.l10n, this
+        // test breaks loudly.
+        final harness = await pumpAndBuildToolbar(
+          tester,
+          seedText: 'hello',
+          selStart: 0,
+          selEnd: 5,
+        );
+        final toolbar = harness.toolbar as AdaptiveTextSelectionToolbar;
+        final labels = toolbar.buttonItems!.take(4).map((b) => b.label);
+        expect(labels, [
+          lookupAppLocalizations(const Locale('en')).dmFormatBold,
+          lookupAppLocalizations(const Locale('en')).dmFormatItalic,
+          lookupAppLocalizations(const Locale('en')).dmFormatStrikethrough,
+          lookupAppLocalizations(const Locale('en')).dmFormatCode,
+        ]);
+      });
     });
   });
 }

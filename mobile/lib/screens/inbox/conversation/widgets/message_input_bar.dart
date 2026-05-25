@@ -77,33 +77,37 @@ class _MessageInputBarState extends State<MessageInputBar> {
       child: SafeArea(
         top: false,
         child: Container(
-          height: 48,
+          constraints: const BoxConstraints(minHeight: 48),
           decoration: BoxDecoration(
             color: VineTheme.surfaceContainer,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
+            // Anchor send button to pill bottom as the field grows.
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               // Text input
               Expanded(
-                child: MediaQuery.withNoTextScaling(
-                  child: TextField(
-                    controller: _controller,
-                    style: VineTheme.bodyLargeFont(),
-                    cursorColor: VineTheme.primary,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => _handleSend(),
-                    contextMenuBuilder: _buildContextMenu,
-                    decoration: InputDecoration(
-                      hintText: context.l10n.dmMessageInputHint,
-                      hintStyle: VineTheme.bodyLargeFont(
-                        color: VineTheme.onSurfaceMuted,
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
+                // Field honours font scaling (#4620): no withNoTextScaling.
+                child: TextField(
+                  controller: _controller,
+                  style: VineTheme.bodyLargeFont(),
+                  cursorColor: VineTheme.primary,
+                  keyboardType: TextInputType.multiline,
+                  // Return = newline; send via button only (#4620).
+                  textInputAction: TextInputAction.newline,
+                  minLines: 1,
+                  maxLines: 5,
+                  contextMenuBuilder: _buildContextMenu,
+                  decoration: InputDecoration(
+                    hintText: context.l10n.dmMessageInputHint,
+                    hintStyle: VineTheme.bodyLargeFont(
+                      color: VineTheme.onSurfaceMuted,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
                     ),
                   ),
                 ),
@@ -111,7 +115,7 @@ class _MessageInputBarState extends State<MessageInputBar> {
               // Send button
               if (_hasText)
                 Padding(
-                  padding: const EdgeInsetsDirectional.only(end: 4),
+                  padding: const EdgeInsetsDirectional.only(end: 4, bottom: 4),
                   child: GestureDetector(
                     onTap: _handleSend,
                     child: Container(
