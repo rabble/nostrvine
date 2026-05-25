@@ -62,6 +62,14 @@ void main() {
 
         expect(service.isEnabled(FeatureFlag.newCameraUI), isTrue);
       });
+
+      test('enables web HLS auth playback by default', () async {
+        when(() => mockPrefs.getBool(any())).thenReturn(null);
+
+        await service.initialize();
+
+        expect(service.isEnabled(FeatureFlag.hlsAuthWebPlayer), isTrue);
+      });
     });
 
     group('flag management', () {

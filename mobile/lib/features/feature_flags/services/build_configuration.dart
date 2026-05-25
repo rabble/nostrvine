@@ -39,7 +39,10 @@ class BuildConfiguration {
       case FeatureFlag.accountSwitching:
         return const bool.fromEnvironment('FF_ACCOUNT_SWITCHING');
       case FeatureFlag.hlsAuthWebPlayer:
-        return const bool.fromEnvironment('FF_HLS_AUTH_WEB_PLAYER');
+        return const bool.fromEnvironment(
+          'FF_HLS_AUTH_WEB_PLAYER',
+          defaultValue: true,
+        );
       case FeatureFlag.profileListFeatures:
         return const bool.fromEnvironment('FF_PROFILE_LIST_FEATURES');
       case FeatureFlag.contentPolicyV2:
