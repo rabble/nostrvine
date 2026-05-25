@@ -17,9 +17,11 @@ import 'package:openvine/blocs/comments/comment_reactions/comment_reactions_bloc
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/comments/widgets/comment_item.dart';
+import 'package:openvine/screens/comments/widgets/video_comment_player.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../builders/comment_builder.dart';
 
@@ -50,6 +52,7 @@ const _testRootAuthorPubkey =
 
 void main() {
   setUpAll(() {
+    VisibilityDetectorController.instance.updateInterval = Duration.zero;
     registerFallbackValue(const CommentReplyToggled(''));
     registerFallbackValue(
       const CommentReactionsErrorCleared(),
@@ -226,6 +229,63 @@ void main() {
     expect(capturedExtra?.initialVideo?.title, comment.content);
     expect(capturedExtra?.initialVideo?.isVideoReply, isTrue);
     expect(capturedExtra?.initialVideo?.replyRootRouteId, _testRootEventId);
+  });
+
+  testWidgets('wraps the inline video player with rounded corners', (
+    tester,
+  ) async {
+    final mocks = buildMocks();
+    final comment = CommentBuilder()
+        .withAuthorPubkey(_testHexPubkey)
+        .withRootEventId(_testRootEventId)
+        .withRootAuthorPubkey(_testRootAuthorPubkey)
+        .withContent('Ferns')
+        .build()
+        .copyWith(
+          videoUrl: 'https://media.divine.video/some-video.mp4',
+          thumbnailUrl: 'https://media.divine.video/some-thumb.jpg',
+          videoDimensions: '1080x1920',
+          videoDuration: 6,
+        );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          nostrServiceProvider.overrideWithValue(const _FakeNostrClient()),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: MultiBlocProvider(
+              providers: [
+                BlocProvider<CommentComposerBloc>.value(value: mocks.composer),
+                BlocProvider<CommentReactionsBloc>.value(
+                  value: mocks.reactions,
+                ),
+              ],
+              child: SingleChildScrollView(
+                child: CommentItem(comment: comment),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final clipRRect = tester.widget<ClipRRect>(
+      find.ancestor(
+        of: find.byType(VideoCommentPlayer),
+        matching: find.byType(ClipRRect),
+      ),
+    );
+    expect(clipRRect.borderRadius, BorderRadius.circular(12));
+
+    // Drain VisibilityDetector's 500ms debounce and the identity skeleton's
+    // 7s fallthrough so no pending timers leak into the next test.
+    await tester.pump(const Duration(seconds: 8));
+    await tester.pumpAndSettle();
   });
 
   group('Identity skeleton (#4163 follow-up)', () {
