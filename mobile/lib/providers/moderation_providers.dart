@@ -6,18 +6,22 @@ import 'dart:async';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:content_policy/content_policy.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/providers/app_providers.dart'
-    hide feedAspectRatioPreferenceServiceProvider;
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/preferences_providers.dart';
+import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/account_label_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
+import 'package:openvine/services/blocklist_content_filter.dart';
 import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 part 'moderation_providers.g.dart';
 
@@ -226,4 +230,21 @@ void blocklistSyncBridge(Ref ref) {
   ref.listen<NostrSessionReadiness>(nostrSessionProvider, (_, next) {
     unawaited(startSync(next));
   });
+}
+
+/// Builds the blocked-author video filter, selecting the content-policy engine
+/// when [FeatureFlag.contentPolicyV2] is enabled and falling back to the
+/// blocklist filter otherwise.
+BlockedVideoFilter createBlockedAuthorFilter(Ref ref) {
+  final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
+  final flagService = ref.watch(featureFlagServiceProvider);
+  if (flagService.isEnabled(FeatureFlag.contentPolicyV2)) {
+    final engine = ref.watch(contentPolicyEngineProvider);
+    return createPolicyEngineFilter(
+      engine,
+      () => blocklistRepository.currentState,
+    );
+  }
+
+  return createBlocklistFilter(blocklistRepository);
 }
