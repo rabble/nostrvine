@@ -378,21 +378,13 @@ class _MessageList extends StatelessWidget {
     if (!context.mounted) return;
 
     if (result.emoji != null) {
-      context.read<ConversationReactionsCubit>().add(
-        ConversationReactionToggled(
-          conversationId: message.conversationId,
-          messageId: message.id,
-          messageAuthorPubkey: message.senderPubkey,
-          emoji: result.emoji!,
-        ),
-      );
+      _toggleReaction(context, message, result.emoji!);
       return;
     }
     if (result.openFullPicker) {
-      // Full picker integration is staged for v1 by triggering the
-      // emoji_picker_flutter sheet. Caller-side gating keeps this
-      // off the critical path while the dependency is wired in.
-      // TODO(#4633): wire full emoji_picker_flutter sheet.
+      final emoji = await FullReactionEmojiPickerSheet.show(context: context);
+      if (emoji == null || !context.mounted) return;
+      _toggleReaction(context, message, emoji);
       return;
     }
     final action = result.action;
@@ -415,6 +407,17 @@ class _MessageList extends StatelessWidget {
           senderPubkey: message.senderPubkey,
         );
     }
+  }
+
+  void _toggleReaction(BuildContext context, DmMessage message, String emoji) {
+    context.read<ConversationReactionsCubit>().add(
+      ConversationReactionToggled(
+        conversationId: message.conversationId,
+        messageId: message.id,
+        messageAuthorPubkey: message.senderPubkey,
+        emoji: emoji,
+      ),
+    );
   }
 
   @override

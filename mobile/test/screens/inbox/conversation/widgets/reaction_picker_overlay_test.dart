@@ -69,15 +69,37 @@ void main() {
       expect(find.text('Copy text'), findsNothing);
     });
 
-    testWidgets('dismisses after selecting the full-picker affordance', (
+    testWidgets('"+" affordance dismisses and pops openFullPicker', (
       tester,
     ) async {
-      await openOverlay(tester);
+      ReactionPickerResult? result;
+      await tester.pumpWidget(
+        testMaterialApp(
+          home: Builder(
+            builder: (context) {
+              return Scaffold(
+                body: TextButton(
+                  onPressed: () async {
+                    result = await ReactionPickerOverlay.show(
+                      context: context,
+                      isSent: false,
+                    );
+                  },
+                  child: const Text('open'),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
 
       await tester.tap(find.bySemanticsLabel('Add custom emoji reaction'));
       await tester.pumpAndSettle();
 
       expect(find.bySemanticsLabel('Add custom emoji reaction'), findsNothing);
+      expect(result?.openFullPicker, isTrue);
     });
 
     testWidgets('omits picker row when showPicker is false', (tester) async {

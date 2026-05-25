@@ -21,6 +21,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_view.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/widgets.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../../builders/video_event_builder.dart';
@@ -1206,6 +1207,26 @@ void main() {
             find.text(l10n.dmMessageActionDeleteForEveryone),
             findsNothing,
           );
+        },
+      );
+
+      // Closes #4710: the "+" affordance was a no-op stub. Proves the
+      // long-press → "+" path now dismisses the reaction overlay and
+      // opens the full emoji picker.
+      testWidgets(
+        'tapping "+" in the reaction row opens the full emoji picker',
+        (tester) async {
+          await pumpWithMessage(tester);
+
+          await tester.longPress(find.text('Hello there!'));
+          await tester.pumpAndSettle();
+
+          await tester.tap(
+            find.bySemanticsLabel(l10n.dmReactionAddCustomA11yLabel),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.byType(EmojiEditor), findsOneWidget);
         },
       );
     });
