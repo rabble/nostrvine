@@ -3019,6 +3019,10 @@
   "@dmMessageInputHint": {
     "description": "Placeholder text shown inside the compose field at the bottom of a DM conversation when the user hasn't typed anything yet."
   },
+  "dmMessageSendLabel": "Send message",
+  "@dmMessageSendLabel": {
+    "description": "Screen-reader label for the send button at the bottom of a DM conversation."
+  },
   "dmMessageBubbleSentHint": "Sent message",
   "@dmMessageBubbleSentHint": {
     "description": "Accessibility hint announcing that a direct message bubble was sent by the current user"

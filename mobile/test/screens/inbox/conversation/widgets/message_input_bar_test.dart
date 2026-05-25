@@ -182,6 +182,22 @@ void main() {
 
         expect(sentText, equals('line one\nline two'));
       });
+
+      testWidgets('send button exposes an accessible label', (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: MessageInputBar(onSend: (_) {})),
+          ),
+        );
+
+        await tester.enterText(find.byType(TextField), 'Hello');
+        await tester.pump();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.bySemanticsLabel(l10n.dmMessageSendLabel), findsOneWidget);
+      });
     });
 
     group('selection toolbar', () {

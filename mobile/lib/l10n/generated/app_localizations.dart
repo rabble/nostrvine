@@ -9656,6 +9656,12 @@ abstract class AppLocalizations {
   /// **'Say something…'**
   String get dmMessageInputHint;
 
+  /// Screen-reader label for the send button at the bottom of a DM conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Send message'**
+  String get dmMessageSendLabel;
+
   /// Accessibility hint announcing that a direct message bubble was sent by the current user
   ///
   /// In en, this message translates to:

@@ -5442,6 +5442,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dmMessageInputHint => 'Say something…';
 
   @override
+  String get dmMessageSendLabel => 'Send message';
+
+  @override
   String get dmMessageBubbleSentHint => 'Sent message';
 
   @override

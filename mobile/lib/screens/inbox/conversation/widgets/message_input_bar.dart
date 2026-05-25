@@ -116,33 +116,38 @@ class _MessageInputBarState extends State<MessageInputBar> {
               if (_hasText)
                 Padding(
                   padding: const EdgeInsetsDirectional.only(end: 4, bottom: 4),
-                  child: GestureDetector(
-                    onTap: _handleSend,
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: VineTheme.primary,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: widget.isSending
-                          ? const Center(
-                              child: SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
+                  child: Semantics(
+                    identifier: 'dm_message_send_button',
+                    button: true,
+                    label: context.l10n.dmMessageSendLabel,
+                    child: SizedBox.square(
+                      dimension: 40,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: VineTheme.primary,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: widget.isSending
+                            ? const Center(
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: VineTheme.surfaceBackground,
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              )
+                            : IconButton(
+                                onPressed: _handleSend,
+                                padding: EdgeInsets.zero,
+                                icon: const DivineIcon(
+                                  icon: DivineIconName.arrowUp,
                                   color: VineTheme.surfaceBackground,
-                                  strokeWidth: 2,
+                                  size: 20,
                                 ),
                               ),
-                            )
-                          : const Center(
-                              child: DivineIcon(
-                                icon: DivineIconName.arrowUp,
-                                color: VineTheme.surfaceBackground,
-                                size: 20,
-                              ),
-                            ),
+                      ),
                     ),
                   ),
                 ),
