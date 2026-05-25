@@ -231,8 +231,13 @@ class WebVideoFeedState extends State<WebVideoFeed> {
   /// framework's locked unmount tick. Mutating `_controllers.value`
   /// synchronously would re-enter sibling `ValueListenableBuilder`s and
   /// trip "setState() called when widget tree was locked".
-  void _onPlayerDisposed(int index) {
-    _playerKeys.remove(index);
+  void _onPlayerDisposed(
+    int index,
+    GlobalKey<WebVideoPlayerState> disposedKey,
+  ) {
+    if (identical(_playerKeys[index], disposedKey)) {
+      _playerKeys.remove(index);
+    }
     final current = _controllers.value;
     final controller = current[index];
     if (controller == null) return;
@@ -242,6 +247,20 @@ class WebVideoFeedState extends State<WebVideoFeed> {
       if (!mounted) return;
       _controllers.value = next;
     });
+  }
+
+  void retryPlayback(int index) {
+    if (!mounted || index < 0 || index >= widget.videos.length) return;
+
+    final controller = _controllers.value[index];
+    if (controller != null) {
+      _detachCompletionListener(index, controller);
+      _controllers.value = Map<int, VideoPlayerController>.of(
+        _controllers.value,
+      )..remove(index);
+    }
+    _playerKeys.remove(index);
+    setState(() {});
   }
 
   Future<void> animateToPage(int index) async {
@@ -392,7 +411,7 @@ class WebVideoFeedState extends State<WebVideoFeed> {
           },
           onDisposed: () {
             if (!mounted) return;
-            _onPlayerDisposed(index);
+            _onPlayerDisposed(index, playerKey);
           },
           onError: () {
             if (!mounted) return;

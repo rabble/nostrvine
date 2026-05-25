@@ -35,6 +35,7 @@ import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
+import 'package:openvine/widgets/web_video_player.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -313,6 +314,7 @@ void main() {
       FullscreenFeedState? state,
       List<dynamic>? additionalOverrides,
       VideoFeedControllerFactory? controllerFactory,
+      WebVideoPlayerControllerFactory? webControllerFactory,
       String? contextTitle,
     }) {
       final effectiveState = state ?? const FullscreenFeedState();
@@ -344,6 +346,7 @@ void main() {
             controllerFactory:
                 controllerFactory ??
                 ((videos, initialIndex) => defaultController),
+            webControllerFactory: webControllerFactory,
           ),
         ),
       );

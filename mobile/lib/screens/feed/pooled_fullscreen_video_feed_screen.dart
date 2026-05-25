@@ -959,7 +959,9 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                                           }) {
                                             return _WebFullscreenItem(
                                               video: video,
+                                              index: index,
                                               isActive: isActive,
+                                              feedKey: _webFeedKey,
                                               isOwnVideo:
                                                   currentUserPubkey ==
                                                   video.pubkey,
@@ -1158,7 +1160,9 @@ class _PooledFullscreenItem extends ConsumerWidget {
 class _WebFullscreenItem extends ConsumerWidget {
   const _WebFullscreenItem({
     required this.video,
+    required this.index,
     required this.isActive,
+    required this.feedKey,
     required this.isOwnVideo,
     this.controller,
     this.contextTitle,
@@ -1168,7 +1172,9 @@ class _WebFullscreenItem extends ConsumerWidget {
   });
 
   final VideoEvent video;
+  final int index;
   final bool isActive;
+  final GlobalKey<WebVideoFeedState> feedKey;
   final bool isOwnVideo;
   final VideoPlayerController? controller;
   final String? contextTitle;
@@ -1287,7 +1293,11 @@ class _WebFullscreenItem extends ConsumerWidget {
                 ),
               ),
             ),
-            _WebFullscreenLoadingModerationOverlay(video: video),
+            _WebFullscreenLoadingModerationOverlay(
+              video: video,
+              index: index,
+              feedKey: feedKey,
+            ),
           ],
         ),
       ),
@@ -1296,9 +1306,15 @@ class _WebFullscreenItem extends ConsumerWidget {
 }
 
 class _WebFullscreenLoadingModerationOverlay extends ConsumerStatefulWidget {
-  const _WebFullscreenLoadingModerationOverlay({required this.video});
+  const _WebFullscreenLoadingModerationOverlay({
+    required this.video,
+    required this.index,
+    required this.feedKey,
+  });
 
   final VideoEvent video;
+  final int index;
+  final GlobalKey<WebVideoFeedState> feedKey;
 
   @override
   ConsumerState<_WebFullscreenLoadingModerationOverlay> createState() =>
@@ -1327,6 +1343,11 @@ class _WebFullscreenLoadingModerationOverlayState
         );
     if (headers == null || !mounted) return;
 
+    context.read<VideoPlaybackStatusCubit>().report(
+      widget.video.id,
+      PlaybackStatus.ready,
+    );
+    widget.feedKey.currentState?.retryPlayback(widget.index);
     setState(() {
       _dismissedAfterVerify = true;
     });

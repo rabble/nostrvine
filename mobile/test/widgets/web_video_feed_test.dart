@@ -276,6 +276,37 @@ void main() {
     expect(activeIndex, 1);
   });
 
+  testWidgets('retryPlayback recreates the player for an index', (
+    tester,
+  ) async {
+    final key = GlobalKey<WebVideoFeedState>();
+    final createdControllers = <_FakeVideoPlayerController>[];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: WebVideoFeed(
+          key: key,
+          videos: [_makeVideo()],
+          controllerFactory: ({required url, required headers}) {
+            final controller = _FakeVideoPlayerController();
+            createdControllers.add(controller);
+            return controller;
+          },
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(createdControllers, hasLength(1));
+
+    key.currentState!.retryPlayback(0);
+    await tester.pump();
+    await tester.pump();
+
+    expect(createdControllers, hasLength(2));
+    expect(key.currentState!.debugPlayerKeyCount, 1);
+  });
+
   testWidgets(
     'drops controller entries when WebVideoPlayer items are disposed',
     (tester) async {
