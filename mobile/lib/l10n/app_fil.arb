@@ -1427,6 +1427,8 @@
     "dmStatusFailed": "Nabigong ipadala",
     "dmStatusDeliveredSelfFailed": "Naipadala. Hindi mag-sync sa iba mong device.",
     "dmConversationLoadError": "Hindi na-load ang mga message",
+    "dmMessageInputHint": "Say something…",
+    "dmMessageSendLabel": "Send message",
     "inboxReportedUser": "Na-report si {displayName}",
     "inboxBlockedUser": "Na-block si {displayName}",
     "inboxUnblockedUser": "Na-unblock si {displayName}",

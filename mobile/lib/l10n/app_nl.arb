@@ -2488,6 +2488,8 @@
     "dmStatusFailed": "Versturen mislukt",
     "dmStatusDeliveredSelfFailed": "Bezorgd. Wordt niet gesynchroniseerd met je andere apparaten.",
     "dmConversationLoadError": "Berichten konden niet worden geladen",
+    "dmMessageInputHint": "Say something…",
+    "dmMessageSendLabel": "Send message",
     "reportDialogCancel": "Annuleren",
     "reportDialogReport": "Rapporteren",
     "routerInvalidCreator": "Ongeldige maker",

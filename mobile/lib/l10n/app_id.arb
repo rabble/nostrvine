@@ -2487,6 +2487,8 @@
     "dmStatusFailed": "Gagal mengirim",
     "dmStatusDeliveredSelfFailed": "Terkirim. Tidak akan tersinkron ke perangkat lainmu.",
     "dmConversationLoadError": "Pesan tidak dapat dimuat",
+    "dmMessageInputHint": "Say something…",
+    "dmMessageSendLabel": "Send message",
     "reportDialogCancel": "Batal",
     "reportDialogReport": "Laporkan",
     "routerInvalidCreator": "Kreator tidak valid",

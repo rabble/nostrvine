@@ -2488,6 +2488,8 @@
     "dmStatusFailed": "Falha ao enviar",
     "dmStatusDeliveredSelfFailed": "Entregue. Não será sincronizado com seus outros dispositivos.",
     "dmConversationLoadError": "Não foi possível carregar as mensagens",
+    "dmMessageInputHint": "Say something…",
+    "dmMessageSendLabel": "Send message",
     "reportDialogCancel": "Cancelar",
     "reportDialogReport": "Denunciar",
     "routerInvalidCreator": "Criador inválido",

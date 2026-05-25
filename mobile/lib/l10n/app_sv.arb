@@ -2488,6 +2488,8 @@
     "dmStatusFailed": "Kunde inte skicka",
     "dmStatusDeliveredSelfFailed": "Levererat. Synkas inte till dina andra enheter.",
     "dmConversationLoadError": "Det gick inte att läsa in meddelandena",
+    "dmMessageInputHint": "Say something…",
+    "dmMessageSendLabel": "Send message",
     "reportDialogCancel": "Avbryt",
     "reportDialogReport": "Rapportera",
     "routerInvalidCreator": "Ogiltig skapare",

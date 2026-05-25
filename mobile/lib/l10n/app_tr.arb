@@ -2487,6 +2487,8 @@
     "dmStatusFailed": "Gönderilemedi",
     "dmStatusDeliveredSelfFailed": "Teslim edildi. Diğer cihazlarınla eşitlenmeyecek.",
     "dmConversationLoadError": "Mesajlar yüklenemedi",
+    "dmMessageInputHint": "Say something…",
+    "dmMessageSendLabel": "Send message",
     "reportDialogCancel": "İptal",
     "reportDialogReport": "Bildir",
     "routerInvalidCreator": "Geçersiz içerik üretici",

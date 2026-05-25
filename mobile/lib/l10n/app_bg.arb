@@ -2520,6 +2520,8 @@
     "dmStatusFailed": "Изпращането не успя",
     "dmStatusDeliveredSelfFailed": "Доставено. Няма да се синхронизира с другите ти устройства.",
     "dmConversationLoadError": "Съобщенията не се заредиха",
+    "dmMessageInputHint": "Say something…",
+    "dmMessageSendLabel": "Send message",
     "reportDialogCancel": "Отказ",
     "reportDialogReport": "Докладвай",
     "exploreVideoId": "ID: {id}",

@@ -2480,6 +2480,8 @@
     "dmStatusFailed": "送信できなかった",
     "dmStatusDeliveredSelfFailed": "配信済み。ほかのデバイスには同期されない。",
     "dmConversationLoadError": "メッセージを読み込めなかった",
+    "dmMessageInputHint": "Say something…",
+    "dmMessageSendLabel": "Send message",
     "reportDialogCancel": "キャンセル",
     "reportDialogReport": "報告",
     "routerInvalidCreator": "無効なクリエイター",

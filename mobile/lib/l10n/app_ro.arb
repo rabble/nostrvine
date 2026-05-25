@@ -2488,6 +2488,8 @@
     "dmStatusFailed": "N-am putut trimite",
     "dmStatusDeliveredSelfFailed": "Livrat. Nu se va sincroniza cu celelalte dispozitive.",
     "dmConversationLoadError": "Mesajele nu au putut fi încărcate",
+    "dmMessageInputHint": "Say something…",
+    "dmMessageSendLabel": "Send message",
     "reportDialogCancel": "Anulează",
     "reportDialogReport": "Raportează",
     "routerInvalidCreator": "Creator invalid",

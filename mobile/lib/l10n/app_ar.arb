@@ -2480,6 +2480,8 @@
     "dmStatusFailed": "فشل الإرسال",
     "dmStatusDeliveredSelfFailed": "تم التسليم. لن تتم المزامنة مع أجهزتك الأخرى.",
     "dmConversationLoadError": "تعذّر تحميل الرسائل",
+    "dmMessageInputHint": "Say something…",
+    "dmMessageSendLabel": "Send message",
     "reportDialogCancel": "إلغاء",
     "reportDialogReport": "إبلاغ",
     "routerInvalidCreator": "منشئ غير صالح",

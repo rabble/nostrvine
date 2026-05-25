@@ -1776,6 +1776,8 @@
     "dmStatusFailed": "보내지 못했어요",
     "dmStatusDeliveredSelfFailed": "전달됐어요. 다른 기기에는 동기화되지 않아요.",
     "dmConversationLoadError": "메시지를 불러오지 못했어요",
+    "dmMessageInputHint": "Say something…",
+    "dmMessageSendLabel": "Send message",
     "reportDialogCancel": "취소",
     "reportDialogReport": "신고",
     "routerInvalidCreator": "유효하지 않은 크리에이터",

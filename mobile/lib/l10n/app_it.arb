@@ -2488,6 +2488,8 @@
     "dmStatusFailed": "Invio non riuscito",
     "dmStatusDeliveredSelfFailed": "Consegnato. Non si sincronizzerà con i tuoi altri dispositivi.",
     "dmConversationLoadError": "Impossibile caricare i messaggi",
+    "dmMessageInputHint": "Say something…",
+    "dmMessageSendLabel": "Send message",
     "reportDialogCancel": "Annulla",
     "reportDialogReport": "Segnala",
     "routerInvalidCreator": "Creatore non valido",
