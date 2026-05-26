@@ -63,8 +63,8 @@ Widget _buildHarness({
       supportedLocales: AppLocalizations.supportedLocales,
       home: BlocProvider<BackgroundPublishBloc>.value(
         value: publishBloc,
-        child: app.UploadFailureListener(
-          child: const Scaffold(body: SizedBox.shrink()),
+        child: const app.UploadFailureListener(
+          child: Scaffold(body: SizedBox.shrink()),
         ),
       ),
     ),

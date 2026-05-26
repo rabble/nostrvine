@@ -1027,7 +1027,12 @@ void main() {
           );
           await tester.pumpAndSettle();
 
-          expect(find.text(lookupAppLocalizations(const Locale('en')).profileSessionExpired), findsNothing);
+          expect(
+            find.text(
+              lookupAppLocalizations(const Locale('en')).profileSessionExpired,
+            ),
+            findsNothing,
+          );
         },
       );
 
@@ -1114,7 +1119,9 @@ void main() {
           );
           await tester.pumpAndSettle();
           expect(
-            find.text(lookupAppLocalizations(const Locale('en')).profileSessionExpired),
+            find.text(
+              lookupAppLocalizations(const Locale('en')).profileSessionExpired,
+            ),
             findsNothing,
           );
 
@@ -1133,7 +1140,9 @@ void main() {
 
           // Sheet must not appear — session is no longer expired.
           expect(
-            find.text(lookupAppLocalizations(const Locale('en')).profileSessionExpired),
+            find.text(
+              lookupAppLocalizations(const Locale('en')).profileSessionExpired,
+            ),
             findsNothing,
           );
         },

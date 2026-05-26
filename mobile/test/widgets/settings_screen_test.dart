@@ -640,7 +640,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Session Expired tile is present.
-      expect(find.text(l10n.settingsSessionExpired), findsOneWidget);
+        expect(find.text(l10n.settingsSessionExpired), findsOneWidget);
 
         // Tap the tile — triggers _handleSessionExpired.
         await tester.tap(find.text(l10n.settingsSessionExpired));

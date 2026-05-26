@@ -2082,7 +2082,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
               );
             }
           },
-            child: UpdateDialogListener(
+          child: UpdateDialogListener(
             child: UploadFailureListener(
               child: GeoBlockingGate(
                 child: AppLifecycleHandler(
