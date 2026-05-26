@@ -3,6 +3,22 @@ import 'package:test/test.dart';
 
 void main() {
   group('VideoUrlResolver', () {
+    group('fixOpenvineTypo', () {
+      test('corrects the apt.openvine.co typo when present', () {
+        expect(
+          VideoUrlResolver.fixOpenvineTypo('https://apt.openvine.co/v.mp4'),
+          equals('https://api.openvine.co/v.mp4'),
+        );
+      });
+
+      test('returns the original URL when no typo is present', () {
+        expect(
+          VideoUrlResolver.fixOpenvineTypo('https://api.openvine.co/v.mp4'),
+          equals('https://api.openvine.co/v.mp4'),
+        );
+      });
+    });
+
     group('isValidVideoUrl', () {
       test('accepts well-formed http and https URLs with a host', () {
         expect(
@@ -24,10 +40,7 @@ void main() {
           VideoUrlResolver.isValidVideoUrl('ftp://example.com/v.mp4'),
           isFalse,
         );
-        expect(
-          VideoUrlResolver.isValidVideoUrl('file:///tmp/v.mp4'),
-          isFalse,
-        );
+        expect(VideoUrlResolver.isValidVideoUrl('file:///tmp/v.mp4'), isFalse);
       });
 
       test('rejects a string with no host', () {
@@ -64,9 +77,7 @@ void main() {
 
       test('ranks stream.divine.video HLS above generic HLS', () {
         expect(
-          VideoUrlResolver.scoreVideoUrl(
-            'https://stream.divine.video/v.m3u8',
-          ),
+          VideoUrlResolver.scoreVideoUrl('https://stream.divine.video/v.m3u8'),
           equals(105),
         );
         expect(
@@ -119,10 +130,7 @@ void main() {
           VideoUrlResolver.scoreVideoUrl('https://e.com/v.mpd'),
           equals(10),
         );
-        expect(
-          VideoUrlResolver.scoreVideoUrl('https://e.com/v'),
-          equals(50),
-        );
+        expect(VideoUrlResolver.scoreVideoUrl('https://e.com/v'), equals(50));
       });
     });
 

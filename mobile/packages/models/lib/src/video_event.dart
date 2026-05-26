@@ -264,16 +264,7 @@ class VideoEvent {
           // Check if this is a valid video URL
           if (tagValue.isNotEmpty &&
               VideoUrlResolver.isValidVideoUrl(tagValue)) {
-            if (tagValue.contains('apt.openvine.co')) {
-              // Fix typo: apt.openvine.co -> api.openvine.co
-              final fixedUrl = tagValue.replaceAll(
-                'apt.openvine.co',
-                'api.openvine.co',
-              );
-              videoUrlCandidates.add(fixedUrl);
-            } else {
-              videoUrlCandidates.add(tagValue);
-            }
+            videoUrlCandidates.add(VideoUrlResolver.fixOpenvineTypo(tagValue));
           }
         case 'streaming':
           // Handle streaming tag with HLS/DASH URLs
@@ -292,16 +283,9 @@ class VideoEvent {
                 // Check if this is a valid video URL and add to candidates
                 if (value.isNotEmpty &&
                     VideoUrlResolver.isValidVideoUrl(value)) {
-                  if (value.contains('apt.openvine.co')) {
-                    // Fix typo: apt.openvine.co -> api.openvine.co
-                    final fixedUrl = value.replaceAll(
-                      'apt.openvine.co',
-                      'api.openvine.co',
-                    );
-                    videoUrlCandidates.add(fixedUrl);
-                  } else {
-                    videoUrlCandidates.add(value);
-                  }
+                  videoUrlCandidates.add(
+                    VideoUrlResolver.fixOpenvineTypo(value),
+                  );
                 }
               // POSTEL'S LAW: Accept various video URL keys that
               // different clients may use
@@ -564,11 +548,7 @@ class VideoEvent {
 
     // If we still have a broken apt.openvine.co URL, fix it
     if (videoUrl?.contains('apt.openvine.co') ?? false) {
-      final fixedUrl = videoUrl!.replaceAll(
-        'apt.openvine.co',
-        'api.openvine.co',
-      );
-      videoUrl = fixedUrl;
+      videoUrl = VideoUrlResolver.fixOpenvineTypo(videoUrl!);
     }
 
     // Use 'd' tag if available, otherwise fallback to event ID

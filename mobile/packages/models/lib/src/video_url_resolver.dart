@@ -8,7 +8,7 @@ class VideoUrlResolver {
   VideoUrlResolver._();
 
   /// Corrects the common `apt.openvine.co` typo to `api.openvine.co`.
-  static String _fixOpenvineTypo(String url) {
+  static String fixOpenvineTypo(String url) {
     if (url.contains('apt.openvine.co')) {
       return url.replaceAll('apt.openvine.co', 'api.openvine.co');
     }
@@ -22,7 +22,7 @@ class VideoUrlResolver {
   static bool isValidVideoUrl(String url) {
     if (url.isEmpty) return false;
 
-    final correctedUrl = _fixOpenvineTypo(url);
+    final correctedUrl = fixOpenvineTypo(url);
 
     try {
       final uri = Uri.parse(correctedUrl);
@@ -130,7 +130,7 @@ class VideoUrlResolver {
     for (final match in matches) {
       var url = match.group(0);
       if (url != null) {
-        url = _fixOpenvineTypo(url);
+        url = fixOpenvineTypo(url);
         if (isValidVideoUrl(url)) {
           return url;
         }
@@ -150,7 +150,7 @@ class VideoUrlResolver {
       for (var i = 1; i < tag.length; i++) {
         var value = tag[i];
         if (value.isNotEmpty) {
-          value = _fixOpenvineTypo(value);
+          value = fixOpenvineTypo(value);
           if (isValidVideoUrl(value)) {
             return value;
           }
