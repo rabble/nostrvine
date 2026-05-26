@@ -3,40 +3,73 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/blocs/account_content_labels/account_content_labels_cubit.dart';
+import 'package:openvine/blocs/account_content_labels/account_content_labels_state.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_content_label_name.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/providers/app_providers.dart';
 
-class AccountContentLabelsTile extends ConsumerStatefulWidget {
+/// Page: provides an [AccountContentLabelsCubit] scoped to this tile.
+class AccountContentLabelsTile extends ConsumerWidget {
   const AccountContentLabelsTile({super.key});
 
   @override
-  ConsumerState<AccountContentLabelsTile> createState() =>
-      _AccountContentLabelsTileState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final service = ref.watch(accountLabelServiceProvider);
+    return BlocProvider(
+      key: ValueKey(service),
+      create: (_) => AccountContentLabelsCubit(service: service)..load(),
+      child: const _AccountContentLabelsTileView(),
+    );
+  }
 }
 
-class _AccountContentLabelsTileState
-    extends ConsumerState<AccountContentLabelsTile> {
-  Set<ContentLabel> _accountLabels = {};
+class _AccountContentLabelsTileView extends StatelessWidget {
+  const _AccountContentLabelsTileView();
 
   @override
-  void initState() {
-    super.initState();
-    _loadLabels();
+  Widget build(BuildContext context) {
+    return BlocBuilder<AccountContentLabelsCubit, AccountContentLabelsState>(
+      builder: (context, state) {
+        return ListTile(
+          leading: const Icon(
+            Icons.warning_amber_rounded,
+            color: VineTheme.vineGreen,
+          ),
+          title: Text(
+            context.l10n.contentPreferencesAccountLabels,
+            style: const TextStyle(
+              color: VineTheme.whiteText,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          subtitle: Text(
+            state.labels.isNotEmpty
+                ? state.labels
+                      .map(
+                        (label) =>
+                            localizedContentLabelName(context.l10n, label),
+                      )
+                      .join(', ')
+                : context.l10n.contentPreferencesAccountLabelsEmpty,
+            style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
+          ),
+          trailing: const Icon(Icons.chevron_right, color: VineTheme.lightText),
+          onTap: () => _selectLabels(context, state.labels),
+        );
+      },
+    );
   }
 
-  Future<void> _loadLabels() async {
-    final service = ref.read(accountLabelServiceProvider);
-    if (mounted) {
-      setState(() {
-        _accountLabels = service.accountLabels;
-      });
-    }
-  }
-
-  Future<void> _selectLabels() async {
+  Future<void> _selectLabels(
+    BuildContext context,
+    Set<ContentLabel> current,
+  ) async {
+    final cubit = context.read<AccountContentLabelsCubit>();
     final result = await showModalBottomSheet<Set<ContentLabel>>(
       context: context,
       backgroundColor: VineTheme.cardBackground,
@@ -44,46 +77,12 @@ class _AccountContentLabelsTileState
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       isScrollControlled: true,
-      builder: (_) => _AccountLabelMultiSelect(selected: _accountLabels),
+      builder: (_) => _AccountLabelMultiSelect(selected: current),
     );
 
-    if (result != null && mounted) {
-      final service = ref.read(accountLabelServiceProvider);
-      await service.setAccountLabels(result);
-      setState(() {
-        _accountLabels = result;
-      });
+    if (result != null) {
+      await cubit.setLabels(result);
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: const Icon(
-        Icons.warning_amber_rounded,
-        color: VineTheme.vineGreen,
-      ),
-      title: Text(
-        context.l10n.contentPreferencesAccountLabels,
-        style: const TextStyle(
-          color: VineTheme.whiteText,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      subtitle: Text(
-        _accountLabels.isNotEmpty
-            ? _accountLabels
-                  .map(
-                    (label) => localizedContentLabelName(context.l10n, label),
-                  )
-                  .join(', ')
-            : context.l10n.contentPreferencesAccountLabelsEmpty,
-        style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
-      ),
-      trailing: const Icon(Icons.chevron_right, color: VineTheme.lightText),
-      onTap: _selectLabels,
-    );
   }
 }
 
