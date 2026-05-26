@@ -1,0 +1,68 @@
+// ABOUTME: Screen-scoped Cubit for the notification settings screen.
+// ABOUTME: Owns the notification preferences and the local push/sound/vibration
+// ABOUTME: toggles, persisting preference changes via NotificationPreferencesService.
+
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/notification_settings/notification_settings_state.dart';
+import 'package:openvine/models/notification_preferences.dart';
+import 'package:openvine/services/notification_preferences_service.dart';
+
+/// Cubit backing `NotificationSettingsScreen`.
+///
+/// Holds the notification [NotificationSettingsState.preferences] (persisted)
+/// and the local-only push/sound/vibration toggles. Preference mutations are
+/// written through [NotificationPreferencesService]; the local toggles are not
+/// persisted (matching the pre-migration behavior).
+class NotificationSettingsCubit extends Cubit<NotificationSettingsState> {
+  NotificationSettingsCubit({
+    required NotificationPreferencesService preferencesService,
+  }) : _preferencesService = preferencesService,
+       super(const NotificationSettingsState());
+
+  final NotificationPreferencesService _preferencesService;
+
+  /// Loads the persisted preferences. `loadPreferences` is itself defensive
+  /// (returns defaults on storage/decoding errors), so this does not throw.
+  Future<void> load() async {
+    emit(state.copyWith(status: NotificationSettingsStatus.loading));
+    final preferences = await _preferencesService.loadPreferences();
+    emit(
+      state.copyWith(
+        status: NotificationSettingsStatus.ready,
+        preferences: preferences,
+      ),
+    );
+  }
+
+  /// Applies [preferences] optimistically, then persists them.
+  Future<void> setPreferences(NotificationPreferences preferences) async {
+    emit(state.copyWith(preferences: preferences));
+    await _preferencesService.updatePreferences(preferences);
+  }
+
+  void setSystemEnabled(bool value) =>
+      emit(state.copyWith(systemEnabled: value));
+
+  void setPushNotificationsEnabled(bool value) =>
+      emit(state.copyWith(pushNotificationsEnabled: value));
+
+  void setSoundEnabled(bool value) => emit(state.copyWith(soundEnabled: value));
+
+  void setVibrationEnabled(bool value) =>
+      emit(state.copyWith(vibrationEnabled: value));
+
+  /// Resets preferences and local toggles to their defaults and persists.
+  Future<void> resetToDefaults() async {
+    const defaults = NotificationPreferences();
+    emit(
+      state.copyWith(
+        preferences: defaults,
+        systemEnabled: true,
+        pushNotificationsEnabled: true,
+        soundEnabled: true,
+        vibrationEnabled: true,
+      ),
+    );
+    await _preferencesService.updatePreferences(defaults);
+  }
+}
