@@ -78,20 +78,20 @@ void main() {
     });
 
     testWidgets(
-      'marks all notifications read when the inbox page is unmounted',
+      'does not mark notifications read when the inbox page is unmounted',
       (tester) async {
         await tester.pumpWidget(buildSubject());
         await tester.pumpAndSettle();
         verifyNever(() => mockNotificationRepo.markAllAsRead());
 
-        // Replace the subtree with an empty widget to trigger dispose.
-        // Mirrors the user toggling the Messages segment within InboxView
-        // (the notifications KeyedSubtree gets swapped out) or leaving
-        // the inbox tab entirely (ShellRoute unmounts the subtree).
+        // Leaving the inbox (toggling to the Messages segment so the
+        // notifications KeyedSubtree is swapped out, or leaving the inbox tab
+        // so the ShellRoute unmounts the subtree) must NOT auto-zero unread
+        // state. Read transitions are deliberate only. See #4729.
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pumpAndSettle();
 
-        verify(() => mockNotificationRepo.markAllAsRead()).called(1);
+        verifyNever(() => mockNotificationRepo.markAllAsRead());
       },
     );
 

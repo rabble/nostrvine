@@ -13,7 +13,6 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/bloc/notification_feed_bloc.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/notifications/view/notifications_view.dart';
-import 'package:openvine/notifications/widgets/mark_all_read_on_dispose.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/settings/invites_screen.dart';
 
@@ -52,10 +51,7 @@ class InboxNotificationsPage extends ConsumerWidget {
         notificationRepository: notificationRepository,
         followRepository: followRepository,
       )..add(const NotificationFeedStarted()),
-      child: MarkAllReadOnDispose(
-        repository: notificationRepository,
-        child: const _InboxNotificationsScaffold(),
-      ),
+      child: const _InboxNotificationsScaffold(),
     );
   }
 }
