@@ -51,9 +51,8 @@ void main() {
       home: const ContentFiltersScreen(),
     );
 
-    AppLocalizations l10nOf(WidgetTester tester) => AppLocalizations.of(
-      tester.element(find.byType(ContentFiltersScreen)),
-    );
+    AppLocalizations l10nOf(WidgetTester tester) =>
+        AppLocalizations.of(tester.element(find.byType(ContentFiltersScreen)));
 
     testWidgets('renders the category groups once loaded', (tester) async {
       await tester.pumpWidget(buildSubject());
@@ -63,6 +62,21 @@ void main() {
       expect(find.text(l10n.contentFiltersAdultContent), findsOneWidget);
       expect(find.text(l10n.contentFiltersViolenceGore), findsOneWidget);
       expect(find.text(l10n.contentFiltersSubstances), findsOneWidget);
+    });
+
+    testWidgets('renders the full supported Other label set', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      final l10n = l10nOf(tester);
+      await tester.scrollUntilVisible(
+        find.text(l10n.contentLabelDeepfake),
+        200,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.contentLabelDeepfake), findsOneWidget);
+      expect(find.text(l10n.contentLabelSpam), findsOneWidget);
+      expect(find.text(l10n.contentLabelScam), findsOneWidget);
     });
 
     testWidgets('shows the age-gate banner when not verified', (tester) async {
@@ -87,22 +101,20 @@ void main() {
       );
     });
 
-    testWidgets(
-      'tapping a segment persists the preference via the service',
-      (tester) async {
-        when(() => ageService.isAdultContentVerified).thenReturn(true);
+    testWidgets('tapping a segment persists the preference via the service', (
+      tester,
+    ) async {
+      when(() => ageService.isAdultContentVerified).thenReturn(true);
 
-        await tester.pumpWidget(buildSubject());
-        await tester.pumpAndSettle();
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
 
-        await tester.tap(find.text(l10nOf(tester).contentFiltersWarn).first);
-        await tester.pump();
+      await tester.tap(find.text(l10nOf(tester).contentFiltersWarn).first);
+      await tester.pump();
 
-        verify(
-          () =>
-              filterService.setPreference(any(), ContentFilterPreference.warn),
-        ).called(1);
-      },
-    );
+      verify(
+        () => filterService.setPreference(any(), ContentFilterPreference.warn),
+      ).called(1);
+    });
   });
 }

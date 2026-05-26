@@ -114,7 +114,7 @@ void main() {
     );
 
     blocTest<ContentFiltersCubit, ContentFiltersState>(
-      'setPreference emits nothing when the service rejects the change',
+      'setPreference emits nothing when the re-read stored value is unchanged',
       seed: () => ContentFiltersState(
         status: ContentFiltersStatus.ready,
         preferences: {
