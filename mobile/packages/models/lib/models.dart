@@ -51,5 +51,6 @@ export 'src/video_event_filters.dart';
 export 'src/video_reply_visibility.dart';
 export 'src/video_state.dart';
 export 'src/video_stats.dart';
+export 'src/video_url_resolver.dart';
 export 'src/video_views_response.dart';
 export 'src/vine_sound.dart';

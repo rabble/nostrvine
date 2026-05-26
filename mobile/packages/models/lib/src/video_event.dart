@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'package:meta/meta.dart';
 import 'package:models/src/nip71_video_kinds.dart';
 import 'package:models/src/video_attribution.dart';
+import 'package:models/src/video_url_resolver.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:text_sanitizer/text_sanitizer.dart';
 
@@ -261,7 +262,8 @@ class VideoEvent {
       switch (tagName) {
         case 'url':
           // Check if this is a valid video URL
-          if (tagValue.isNotEmpty && _isValidVideoUrl(tagValue)) {
+          if (tagValue.isNotEmpty &&
+              VideoUrlResolver.isValidVideoUrl(tagValue)) {
             if (tagValue.contains('apt.openvine.co')) {
               // Fix typo: apt.openvine.co -> api.openvine.co
               final fixedUrl = tagValue.replaceAll(
@@ -276,7 +278,8 @@ class VideoEvent {
         case 'streaming':
           // Handle streaming tag with HLS/DASH URLs
           // Format: ["streaming", "url", "format"] e.g., ["streaming", "https://cdn.divine.video/.../video.m3u8", "hls"]
-          if (tagValue.isNotEmpty && _isValidVideoUrl(tagValue)) {
+          if (tagValue.isNotEmpty &&
+              VideoUrlResolver.isValidVideoUrl(tagValue)) {
             videoUrlCandidates.add(tagValue);
           }
         case 'imeta':
@@ -287,7 +290,8 @@ class VideoEvent {
             switch (key) {
               case 'url':
                 // Check if this is a valid video URL and add to candidates
-                if (value.isNotEmpty && _isValidVideoUrl(value)) {
+                if (value.isNotEmpty &&
+                    VideoUrlResolver.isValidVideoUrl(value)) {
                   if (value.contains('apt.openvine.co')) {
                     // Fix typo: apt.openvine.co -> api.openvine.co
                     final fixedUrl = value.replaceAll(
@@ -309,7 +313,8 @@ class VideoEvent {
               case 'mp4':
               case 'video':
                 // Alternative video URL keys - add as candidates if valid
-                if (value.isNotEmpty && _isValidVideoUrl(value)) {
+                if (value.isNotEmpty &&
+                    VideoUrlResolver.isValidVideoUrl(value)) {
                   videoUrlCandidates.add(value);
                 }
               case 'm':
@@ -322,12 +327,14 @@ class VideoEvent {
                 dimensions ??= value;
               case 'thumb':
                 // Thumbnail URL
-                if (value.isNotEmpty && _isValidVideoUrl(value)) {
+                if (value.isNotEmpty &&
+                    VideoUrlResolver.isValidVideoUrl(value)) {
                   thumbnailUrl ??= value;
                 }
               case 'image':
                 // NIP-92 uses 'image' for thumbnail in imeta
-                if (value.isNotEmpty && _isValidVideoUrl(value)) {
+                if (value.isNotEmpty &&
+                    VideoUrlResolver.isValidVideoUrl(value)) {
                   thumbnailUrl ??= value;
                 }
               case 'blurhash':
@@ -356,7 +363,8 @@ class VideoEvent {
           fileSize = int.tryParse(tagValue);
         case 'thumb':
           // Thumbnail URL - prefer static thumbnails for grid display
-          if (tagValue.isNotEmpty && _isValidVideoUrl(tagValue)) {
+          if (tagValue.isNotEmpty &&
+              VideoUrlResolver.isValidVideoUrl(tagValue)) {
             thumbnailUrl = tagValue;
           }
         case 'preview':
@@ -369,7 +377,8 @@ class VideoEvent {
           }
         case 'image':
           // Alternative to 'thumb' tag - some clients use 'image' instead
-          if (tagValue.isNotEmpty && _isValidVideoUrl(tagValue)) {
+          if (tagValue.isNotEmpty &&
+              VideoUrlResolver.isValidVideoUrl(tagValue)) {
             thumbnailUrl ??= tagValue;
           }
         case 'd':
@@ -413,15 +422,18 @@ class VideoEvent {
             final url = tagValue;
             final type = tag[2];
 
-            if (type == 'video' && url.isNotEmpty && _isValidVideoUrl(url)) {
+            if (type == 'video' &&
+                url.isNotEmpty &&
+                VideoUrlResolver.isValidVideoUrl(url)) {
               videoUrl ??= url;
             } else if (type == 'thumbnail' &&
                 url.isNotEmpty &&
-                _isValidVideoUrl(url) &&
+                VideoUrlResolver.isValidVideoUrl(url) &&
                 !url.contains('picsum.photos')) {
               thumbnailUrl ??= url;
             }
-          } else if (tagValue.isNotEmpty && _isValidVideoUrl(tagValue)) {
+          } else if (tagValue.isNotEmpty &&
+              VideoUrlResolver.isValidVideoUrl(tagValue)) {
             // Fallback: if no type annotation, treat as video URL
             videoUrlCandidates.add(tagValue);
           }
@@ -451,12 +463,14 @@ class VideoEvent {
             }
           }
           // Also check if it's a media URL in disguise (legacy behavior)
-          if (tagValue.isNotEmpty && _isValidVideoUrl(tagValue)) {
+          if (tagValue.isNotEmpty &&
+              VideoUrlResolver.isValidVideoUrl(tagValue)) {
             videoUrlCandidates.add(tagValue);
           }
         case 'i':
           // External identity - sometimes used for media
-          if (tagValue.isNotEmpty && _isValidVideoUrl(tagValue)) {
+          if (tagValue.isNotEmpty &&
+              VideoUrlResolver.isValidVideoUrl(tagValue)) {
             videoUrlCandidates.add(tagValue);
           }
         case 'p':
@@ -505,7 +519,8 @@ class VideoEvent {
           }
         default:
           // POSTEL'S LAW: Check if any unknown tag contains a valid video URL
-          if (tagValue.isNotEmpty && _isValidVideoUrl(tagValue)) {
+          if (tagValue.isNotEmpty &&
+              VideoUrlResolver.isValidVideoUrl(tagValue)) {
             videoUrlCandidates.add(tagValue);
           }
       }
@@ -532,15 +547,15 @@ class VideoEvent {
     // POSTEL'S LAW: Be liberal in what you accept
     // Apply comprehensive fallback logic to find video URLs
     if (videoUrl == null || videoUrl.isEmpty) {
-      videoUrl = _extractVideoUrlFromContent(event.content);
+      videoUrl = VideoUrlResolver.extractVideoUrlFromContent(event.content);
     }
 
     // Select best video URL from all candidates
     if (videoUrlCandidates.isNotEmpty) {
-      videoUrl = _selectBestVideoUrl(videoUrlCandidates);
+      videoUrl = VideoUrlResolver.selectBestVideoUrl(videoUrlCandidates);
     } else {
       // If no candidates found, use the old fallback method
-      videoUrl = _findAnyVideoUrlInTags(event.tags);
+      videoUrl = VideoUrlResolver.findAnyVideoUrlInTags(event.tags);
     }
 
     // Note: Removed Classic Vine hardening that was forcing api.openvine.co
@@ -1466,166 +1481,6 @@ class VideoEvent {
         reposterPubkeys ?? [reposterPubkey], // Default to single reposter
     repostedAt: repostedAt,
   );
-
-  /// Check if a URL is a valid video URL
-  static bool _isValidVideoUrl(String url) {
-    if (url.isEmpty) return false;
-
-    // Fix common typo: apt.openvine.co -> api.openvine.co
-    var correctedUrl = url;
-    if (url.contains('apt.openvine.co')) {
-      correctedUrl = url.replaceAll('apt.openvine.co', 'api.openvine.co');
-    }
-
-    try {
-      final uri = Uri.parse(correctedUrl);
-
-      // Must be HTTP or HTTPS
-      if (!['http', 'https'].contains(uri.scheme.toLowerCase())) {
-        return false;
-      }
-
-      // Must have a valid host
-      if (uri.host.isEmpty) return false;
-
-      // Accept any valid HTTP/HTTPS URL
-      // This is an open protocol - people can host videos anywhere
-      // The video player will determine if it can actually play the content
-      return true;
-    } on FormatException {
-      return false;
-    }
-  }
-
-  /// Score video URL by format preference
-  /// Higher scores = better format preference
-  /// For short videos (6 seconds): MP4 is ALWAYS better than HLS
-  /// - MP4: Single file, fast download, universal support
-  /// - HLS: Manifest + segments, slower, overkill for short videos
-  static int _scoreVideoUrl(String url) {
-    final urlLower = url.toLowerCase();
-
-    // Reject broken vine.co URLs immediately (but NOT openvine.co,
-    // divine.video, etc.). Only reject URLs from the dead vine.co domain
-    if (urlLower.contains('//vine.co/') ||
-        urlLower.contains('//www.vine.co/') ||
-        urlLower.startsWith('vine.co/')) {
-      return -1;
-    }
-
-    // POSTEL'S LAW: Deprioritize known broken URL patterns
-    // The cdn.divine.video/*/manifest/video.m3u8 pattern is often broken
-    // Prefer stream.divine.video HLS or direct MP4 files
-    if (urlLower.contains('cdn.divine.video') &&
-        urlLower.contains('/manifest/')) {
-      return 5;
-    }
-
-    // ALWAYS prefer MP4 over HLS for short videos (6 seconds)
-    // HLS adaptive bitrate is pointless for content this short
-    // MP4 is simpler, faster (single file vs manifest + segments)
-
-    // Direct MP4 from cdn.divine.video (blob storage) - highest priority
-    if (urlLower.contains('.mp4') && urlLower.contains('cdn.divine.video')) {
-      return 115;
-    }
-
-    // Any other MP4 - still preferred
-    if (urlLower.contains('.mp4')) return 110;
-
-    // BunnyStream HLS (stream.divine.video) - reliable streaming
-    if (urlLower.contains('.m3u8') &&
-        urlLower.contains('stream.divine.video')) {
-      return 105;
-    }
-
-    // Generic HLS fallback
-    if (urlLower.contains('.m3u8') || urlLower.contains('hls')) return 100;
-
-    // WebM is good for web
-    if (urlLower.contains('.webm')) return 90;
-
-    // MOV is decent but large
-    if (urlLower.contains('.mov')) return 70;
-
-    // AVI is supported but not optimal
-    if (urlLower.contains('.avi')) return 60;
-
-    // DASH can be problematic
-    if (urlLower.contains('.mpd') || urlLower.contains('dash')) return 10;
-
-    // Generic URLs get medium priority
-    return 50;
-  }
-
-  /// Select the best video URL from multiple candidates
-  static String? _selectBestVideoUrl(List<String> candidates) {
-    if (candidates.isEmpty) return null;
-
-    // Score all candidates and pick the highest scoring one
-    String? bestUrl;
-    var bestScore = -1;
-
-    for (final url in candidates) {
-      final isValid = _isValidVideoUrl(url);
-      if (isValid) {
-        final score = _scoreVideoUrl(url);
-        if (score > bestScore) {
-          bestScore = score;
-          bestUrl = url;
-        }
-      }
-    }
-
-    return bestUrl;
-  }
-
-  /// Extract video URL from event content text (fallback strategy)
-  static String? _extractVideoUrlFromContent(String content) {
-    // Look for URLs in the content using regex
-    final urlRegex = RegExp(r'https?://[^\s]+');
-    final matches = urlRegex.allMatches(content);
-
-    for (final match in matches) {
-      var url = match.group(0);
-      if (url != null) {
-        // Fix common typo: apt.openvine.co -> api.openvine.co
-        if (url.contains('apt.openvine.co')) {
-          url = url.replaceAll('apt.openvine.co', 'api.openvine.co');
-        }
-        if (_isValidVideoUrl(url)) {
-          return url;
-        }
-      }
-    }
-
-    return null;
-  }
-
-  /// Find any potential video URL in all tags (aggressive fallback)
-  static String? _findAnyVideoUrlInTags(List<dynamic> tags) {
-    for (final tagRaw in tags) {
-      if (tagRaw is! List || tagRaw.isEmpty) continue;
-
-      final tag = tagRaw.map((e) => e.toString()).toList();
-
-      // Check all tag values for potential URLs
-      for (var i = 1; i < tag.length; i++) {
-        var value = tag[i];
-        if (value.isNotEmpty) {
-          // Fix common typo: apt.openvine.co -> api.openvine.co
-          if (value.contains('apt.openvine.co')) {
-            value = value.replaceAll('apt.openvine.co', 'api.openvine.co');
-          }
-          if (_isValidVideoUrl(value)) {
-            return value;
-          }
-        }
-      }
-    }
-
-    return null;
-  }
 }
 
 /// Exception thrown when parsing video events
