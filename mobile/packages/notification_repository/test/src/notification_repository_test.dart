@@ -199,13 +199,14 @@ void main() {
     String pubkey = userPubkey,
     String? thumbnail,
     String? title,
+    String? dTag,
   }) {
     return VideoStats(
       id: id,
       pubkey: pubkey,
       createdAt: DateTime(2025),
       kind: 34236,
-      dTag: 'd_$id',
+      dTag: dTag ?? 'd_$id',
       title: title ?? '',
       thumbnail: thumbnail ?? '',
       videoUrl: 'https://example.com/$id.mp4',
@@ -782,20 +783,21 @@ void main() {
         expect(item.actors.first.displayName, equals('Sally Strawberry'));
       });
 
-      test('grouped video notifications build addressable id when the '
-          'recipient authoritatively owns the referenced video', () async {
+      test('grouped video notifications build the addressable id from the '
+          'authoritative VideoStats d-tag when the recipient owns the '
+          'referenced video (#4730)', () async {
         stubNotifications([
           makeNotification(
             id: 'l1',
             sourcePubkey: 'pub_a',
             referencedEventId: 'video_x',
-            referencedDTag: 'vine-id',
+            referencedDTag: 'payload-dtag',
           ),
           makeNotification(
             id: 'l2',
             sourcePubkey: 'pub_b',
             referencedEventId: 'video_x',
-            referencedDTag: 'vine-id',
+            referencedDTag: 'payload-dtag',
           ),
         ]);
         stubProfiles({
@@ -803,8 +805,40 @@ void main() {
           'pub_b': makeProfile('pub_b', displayName: 'Bob'),
         });
         // Authoritative ownership: video stats resolve and the owner is the
-        // recipient (makeVideoStats defaults pubkey == userPubkey).
+        // recipient (makeVideoStats defaults pubkey == userPubkey, d-tag
+        // 'd_video_x'). The payload referencedDTag intentionally DIFFERS so the
+        // assertion proves the route uses the authoritative VideoStats d-tag,
+        // not the payload — a mismatched referenced_video block can't poison
+        // the route.
         stubVideoStats('video_x', makeVideoStats(id: 'video_x'));
+
+        final page = await repository.getNotifications();
+
+        expect(page.items, hasLength(1));
+        final item = page.items.single as VideoNotification;
+        expect(
+          item.videoAddressableId,
+          equals(
+            '${NIP71VideoKinds.addressableShortVideo}:'
+            '$userPubkey:d_video_x',
+          ),
+        );
+      });
+
+      test('grouped video notifications fall back to the payload d-tag when '
+          'the authoritative VideoStats omits one (#4730)', () async {
+        stubNotifications([
+          makeNotification(
+            id: 'l1',
+            sourcePubkey: 'pub_a',
+            referencedEventId: 'video_x',
+            referencedDTag: 'vine-id',
+          ),
+        ]);
+        stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
+        // Owner confirmed, but VideoStats carries no d-tag → use the payload
+        // d-tag rather than drop the stable route.
+        stubVideoStats('video_x', makeVideoStats(id: 'video_x', dTag: ''));
 
         final page = await repository.getNotifications();
 
@@ -856,8 +890,10 @@ void main() {
       test('comment with empty referencedEventId leaves addressable id null '
           'and keeps the root video event id (#4730)', () async {
         // NIP-22 comment whose referenced_event_id is empty carries the video
-        // via rootEventId. Metadata is fetched by referencedEventId, so the
-        // owner is unknown here — the addressable must not be synthesized.
+        // via rootEventId. The page-load path fetches metadata by
+        // referenced_event_id only (not rootEventId), so ownership of the root
+        // video is unconfirmed here and the addressable must not be
+        // synthesized — navigation falls back to the rootEventId resolver.
         stubNotifications([
           makeNotification(
             id: 'c1',
@@ -881,8 +917,8 @@ void main() {
         expect(item.videoEventId, equals('video_root'));
       });
 
-      test('grouped video notifications leave addressable id null when d-tag '
-          'is null or empty', () async {
+      test('grouped video notifications leave addressable id null when neither '
+          'VideoStats nor the payload carries a usable d-tag', () async {
         stubNotifications([
           makeNotification(
             id: 'l1',
@@ -900,6 +936,10 @@ void main() {
           'pub_a': makeProfile('pub_a', displayName: 'Alice'),
           'pub_b': makeProfile('pub_b', displayName: 'Bob'),
         });
+        // Owner confirmed, but no d-tag from either source → cannot synthesize.
+        // (Without this stub the row would be null for the unrelated
+        // ownership-unknown reason, masking the d-tag branch under test.)
+        stubVideoStats('video_x', makeVideoStats(id: 'video_x', dTag: ''));
 
         final page = await repository.getNotifications();
 
@@ -2376,13 +2416,17 @@ void main() {
         },
       );
 
-      test('builds addressable id for realtime video notifications when the '
-          'recipient authoritatively owns the referenced video', () async {
+      test('builds the realtime addressable id from the authoritative '
+          'VideoStats d-tag when the recipient owns the referenced video '
+          '(#4730)', () async {
         stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
+        // Owner == recipient, VideoStats d-tag 'd_video_x'. The payload
+        // referencedDTag DIFFERS so the route is proven to come from the
+        // authoritative VideoStats d-tag, not the payload.
         stubVideoStats('video_x', makeVideoStats(id: 'video_x'));
 
         final result = await repository.enrichOne(
-          raw(referencedDTag: 'vine-id'),
+          raw(referencedDTag: 'payload-dtag'),
         );
 
         expect(result, isA<VideoNotification>());
@@ -2391,7 +2435,7 @@ void main() {
           video.videoAddressableId,
           equals(
             '${NIP71VideoKinds.addressableShortVideo}:'
-            '$userPubkey:vine-id',
+            '$userPubkey:d_video_x',
           ),
         );
       });

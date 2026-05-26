@@ -1294,21 +1294,33 @@ class NotificationRepository {
   /// Builds the stable NIP-33 addressable ID for a video the current
   /// recipient *authoritatively* owns, or null when ownership is unknown.
   ///
-  /// Synthesizing a recipient-owned route is only safe when [video] confirms
-  /// the referenced video's owner is the recipient. When the metadata lookup
-  /// missed — a stale/edited event id, a fetch failure, or a comment whose
-  /// `referenced_event_id` is empty — ownership is unknown, so we return null
-  /// and let navigation fall back to the canonical `referencedEventId` rather
-  /// than guess the recipient owns it and point at another creator's video.
-  /// An empty owner pubkey is treated as unknown for the same reason. See
-  /// #4730.
+  /// Only safe when [video] confirms the referenced video's owner is the
+  /// recipient. On a metadata miss — a stale/edited event id, a fetch failure,
+  /// or a comment whose `referenced_event_id` is empty — ownership is unknown,
+  /// so we return null and let navigation fall back to the canonical
+  /// `referencedEventId`. The synthesized id is always scoped to [_userPubkey],
+  /// so a wrong guess would surface the recipient's *own* (or a non-existent)
+  /// video — never another creator's — and failing safe avoids that. An empty
+  /// owner pubkey is treated as unknown for the same reason.
+  ///
+  /// The d-tag comes from the authoritative [video], falling back to the
+  /// payload [dTag] only when `VideoStats` omits one, so a `referenced_video`
+  /// block that disagrees with `referenced_event_id` can't build a mismatched
+  /// route.
+  ///
+  /// Known gaps (deferred, see #4730): the stable route is lost on a metadata
+  /// miss for the recipient's own *edited* video; and the page-load path
+  /// fetches only `referenced_event_id` metadata, so `root_event_id`-anchored
+  /// comments confirm ownership on the realtime path only.
   String? _recipientOwnedVideoAddressableId({
     required String? dTag,
     required VideoStats? video,
   }) {
-    if (dTag == null || dTag.isEmpty) return null;
     if (video == null || video.pubkey != _userPubkey) return null;
-    return '${NIP71VideoKinds.addressableShortVideo}:$_userPubkey:$dTag';
+    final resolvedDTag = _nonEmpty(video.dTag) ?? _nonEmpty(dTag);
+    if (resolvedDTag == null) return null;
+    return '${NIP71VideoKinds.addressableShortVideo}'
+        ':$_userPubkey:$resolvedDTag';
   }
 
   /// Returns the stable NIP-33 addressable ID for an actor-anchored
