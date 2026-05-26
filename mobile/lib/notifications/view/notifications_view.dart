@@ -175,8 +175,9 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
     );
 
     // Route the kind -> destination decision through the shared contract so
-    // the in-app, push, and local tap paths cannot drift. The executors
-    // (here vs main.dart) keep their own navigation mechanics.
+    // the in-app, push, and local tap paths share one target-selection policy.
+    // The executors (here vs main.dart) still keep their own navigation
+    // mechanics after that decision is made.
     switch (notification) {
       case VideoNotification(
         :final videoEventId,
@@ -196,8 +197,12 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
               notificationKind: type,
             );
           case OpenProfileTarget(:final actorPubkey):
+            // Exhaustiveness-only: VideoNotification currently always resolves
+            // to OpenVideoTarget because it always carries a video target.
             _navigateToProfile(context, actorPubkey);
           case OpenInboxTarget():
+            // Exhaustiveness-only: VideoNotification currently always resolves
+            // to OpenVideoTarget because it always carries a video target.
             break;
         }
       case ActorNotification(

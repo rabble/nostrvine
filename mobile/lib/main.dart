@@ -295,7 +295,8 @@ pushNotificationTapTarget({
 /// Routes a notification tap (FCM system push, local notification, or
 /// cold-start) to a destination using the shared [resolveNotificationTapTarget]
 /// contract — the same contract the in-app notification rows use, so the three
-/// entry points cannot drift.
+/// entry points share one target-selection policy even though each executor
+/// keeps its own navigation mechanics.
 ///
 /// [referencedEventId] is the event acted upon (present for like/comment/
 /// repost). [eventId] is the source event itself, used as the target for

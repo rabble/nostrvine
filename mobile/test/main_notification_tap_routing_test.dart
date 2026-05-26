@@ -72,6 +72,18 @@ void main() {
       expect(result.targetEventId, equals(sourceEvent));
     });
 
+    test('mention without a video target falls back to the actor profile', () {
+      final result = app.pushNotificationTapTarget(
+        referencedEventId: null,
+        eventId: null,
+        notificationType: 'mention',
+        senderPubkey: actor,
+      );
+
+      expect(result.target, const OpenProfileTarget(actor));
+      expect(result.targetEventId, isNull);
+    });
+
     test('prefers referencedEventId over eventId as the video target', () {
       final result = app.pushNotificationTapTarget(
         referencedEventId: videoEvent,

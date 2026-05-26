@@ -8,8 +8,8 @@ import 'package:models/models.dart' show NotificationKind;
 ///
 /// Built from either a `NotificationItem` (in-app row tap) or a push/local
 /// payload (`type` + `referencedEventId`/`eventId` [+ `senderPubkey`]). All
-/// three entry points resolve through [resolveNotificationTapTarget] so they
-/// cannot drift on where a tap lands.
+/// three entry points resolve through [resolveNotificationTapTarget] so the
+/// kind -> destination decision cannot drift.
 ///
 /// This is intentionally Flutter-free: it decides *what* to open, not *how*.
 /// Each executor maps the target to its own navigation mechanism (the in-app
@@ -75,7 +75,8 @@ bool notificationKindOpensComments(NotificationKind? kind) =>
 /// `divine-push-service` sends a lowercase, five-value vocabulary
 /// (`like`/`comment`/`follow`/`mention`/`repost`). It never sends `reply`,
 /// `likeComment`, or `system`. Unknown / absent values return `null`, which
-/// [resolveNotificationTapTarget] treats as a best-effort video-or-inbox tap.
+/// [resolveNotificationTapTarget] treats as a best-effort video/profile/inbox
+/// tap.
 NotificationKind? notificationKindFromPushType(String? type) {
   switch (type) {
     case 'like':
@@ -89,6 +90,8 @@ NotificationKind? notificationKindFromPushType(String? type) {
     case 'repost':
       return NotificationKind.repost;
     default:
+      // Keep unknown values non-fatal: a mistyped or legacy-cased payload
+      // should still fall back to the best available target.
       return null;
   }
 }
