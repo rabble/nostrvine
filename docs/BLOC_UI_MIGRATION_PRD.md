@@ -80,6 +80,31 @@ When multiple deps are captured, use a record:
 key: ValueKey((likesRepo, repostsRepo, eventId, type)),
 ```
 
+## CI Enforcement (ratchets)
+
+The ownership boundary and disallowed patterns above are enforced in CI by shell
+guards under `mobile/scripts/` (run in the `generated-files` job of
+`.github/workflows/mobile_ci.yaml`). `custom_lint` / `riverpod_lint` are
+currently disabled by an rxdart version conflict, so enforcement is shell-based.
+
+| Guard | Enforces | Model |
+|-------|----------|-------|
+| `check_riverpod_boundary.sh` | No new `@riverpod` / `StateProvider` for UI state outside allowed provider dirs | Zero-tolerance (directory exclusion) |
+| `check_ui_service_boundary.sh` | Screens/widgets must not import `package:openvine/services/` directly — reach data through a BLoC/Cubit | **Ratchet**: frozen baseline of pre-existing violators; new ones fail, baseline may only shrink |
+
+**Working with the UI→service ratchet.** Pre-existing violators are frozen in
+`mobile/scripts/baseline/ui_service_imports.txt`. When you migrate a screen or
+widget off a direct service import, the guard reports the file as a stale
+baseline entry; lock the win in by regenerating the baseline:
+
+```bash
+UPDATE_BASELINE=1 bash mobile/scripts/check_ui_service_boundary.sh
+```
+
+A genuinely intentional exception (e.g. a self-registering infrastructure
+service) is added to the baseline with a trailing `# reason`, surfaced in review.
+The baseline never grows without that justification.
+
 ## Canonical Template Screens
 
 These three screens are the correct reference implementations to copy from when writing new
