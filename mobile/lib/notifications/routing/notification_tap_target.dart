@@ -1,0 +1,132 @@
+// ABOUTME: Source-agnostic decision for where a notification tap should go.
+// ABOUTME: One contract shared by in-app row taps, FCM push taps, and local taps.
+
+import 'package:equatable/equatable.dart';
+import 'package:models/models.dart' show NotificationKind;
+
+/// Normalized destination for a notification tap.
+///
+/// Built from either a `NotificationItem` (in-app row tap) or a push/local
+/// payload (`type` + `referencedEventId`/`eventId` [+ `senderPubkey`]). All
+/// three entry points resolve through [resolveNotificationTapTarget] so they
+/// cannot drift on where a tap lands.
+///
+/// This is intentionally Flutter-free: it decides *what* to open, not *how*.
+/// Each executor maps the target to its own navigation mechanism (the in-app
+/// path opens [PooledFullscreenVideoFeedScreen] with a pre-fetched stream; the
+/// push path pushes a video `DeepLink` / navigates to the profile or inbox).
+sealed class NotificationTapTarget extends Equatable {
+  const NotificationTapTarget();
+}
+
+/// Open the video associated with the notification.
+///
+/// The executor owns resolving the concrete route id (preferring a stable
+/// NIP-33 addressable id, otherwise walking the target event to its root
+/// video) and the fallback when that resolution fails.
+class OpenVideoTarget extends NotificationTapTarget {
+  const OpenVideoTarget({required this.autoOpenComments});
+
+  /// Whether the opened video should auto-expand its comments.
+  final bool autoOpenComments;
+
+  @override
+  List<Object?> get props => [autoOpenComments];
+}
+
+/// Open the actor's profile (e.g. a follow notification, or a tap whose video
+/// target could not be determined).
+class OpenProfileTarget extends NotificationTapTarget {
+  const OpenProfileTarget(this.actorPubkey);
+
+  /// Hex pubkey of the actor whose profile to open.
+  final String actorPubkey;
+
+  @override
+  List<Object?> get props => [actorPubkey];
+}
+
+/// Deterministic safe fallback: open the notifications inbox.
+///
+/// Used when a tap carries no resolvable video target and no actor pubkey, so
+/// an unresolved tap lands somewhere sensible instead of silently doing
+/// nothing.
+class OpenInboxTarget extends NotificationTapTarget {
+  const OpenInboxTarget();
+
+  @override
+  List<Object?> get props => const [];
+}
+
+/// Whether a tap of [kind] should open the video with its comments expanded.
+///
+/// Single source of truth for the auto-open-comments policy across every
+/// entry point. The push path historically keyed this off a `'reply'` string
+/// the backend never sends, so comments never auto-opened from a push; routing
+/// through this helper fixes that drift.
+bool notificationKindOpensComments(NotificationKind? kind) =>
+    kind == NotificationKind.comment ||
+    kind == NotificationKind.reply ||
+    kind == NotificationKind.likeComment ||
+    kind == NotificationKind.mention;
+
+/// Maps the push wire `type` to a [NotificationKind].
+///
+/// `divine-push-service` sends a lowercase, five-value vocabulary
+/// (`like`/`comment`/`follow`/`mention`/`repost`). It never sends `reply`,
+/// `likeComment`, or `system`. Unknown / absent values return `null`, which
+/// [resolveNotificationTapTarget] treats as a best-effort video-or-inbox tap.
+NotificationKind? notificationKindFromPushType(String? type) {
+  switch (type) {
+    case 'like':
+      return NotificationKind.like;
+    case 'comment':
+      return NotificationKind.comment;
+    case 'follow':
+      return NotificationKind.follow;
+    case 'mention':
+      return NotificationKind.mention;
+    case 'repost':
+      return NotificationKind.repost;
+    default:
+      return null;
+  }
+}
+
+/// Decides where a notification tap should go.
+///
+/// [hasVideoTarget] is supplied by the caller: `true` when it holds a video
+/// event id, a stable addressable id, or a target event id that can be walked
+/// to a video. The id mechanics stay in the executor so this decision is pure
+/// and testable in isolation.
+///
+/// Policy:
+/// * `follow` → the actor's profile (or the inbox if no pubkey is known).
+/// * `system` → the inbox.
+/// * any other kind with a video target → the video, with comments auto-opened
+///   per [notificationKindOpensComments].
+/// * any other kind without a video target → the actor's profile, or the inbox
+///   when no pubkey is known.
+NotificationTapTarget resolveNotificationTapTarget({
+  required NotificationKind? kind,
+  required bool hasVideoTarget,
+  String? actorPubkey,
+}) {
+  if (kind == NotificationKind.follow) {
+    return _profileOrInbox(actorPubkey);
+  }
+  if (kind == NotificationKind.system) {
+    return const OpenInboxTarget();
+  }
+  if (hasVideoTarget) {
+    return OpenVideoTarget(
+      autoOpenComments: notificationKindOpensComments(kind),
+    );
+  }
+  return _profileOrInbox(actorPubkey);
+}
+
+NotificationTapTarget _profileOrInbox(String? actorPubkey) =>
+    (actorPubkey != null && actorPubkey.isNotEmpty)
+    ? OpenProfileTarget(actorPubkey)
+    : const OpenInboxTarget();

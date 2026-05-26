@@ -10,6 +10,7 @@ import 'package:models/models.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/notifications/bloc/notification_feed_bloc.dart';
+import 'package:openvine/notifications/routing/notification_tap_target.dart';
 import 'package:openvine/notifications/widgets/widgets.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -173,55 +174,64 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
       NotificationFeedItemTapped(notification.id),
     );
 
+    // Route the kind -> destination decision through the shared contract so
+    // the in-app, push, and local tap paths cannot drift. The executors
+    // (here vs main.dart) keep their own navigation mechanics.
     switch (notification) {
       case VideoNotification(
         :final videoEventId,
         :final videoAddressableId,
         :final type,
       ):
-        await _navigateToVideo(
-          context,
-          videoEventId,
-          videoAddressableId: videoAddressableId,
-          notificationKind: type,
+        final target = resolveNotificationTapTarget(
+          kind: type,
+          hasVideoTarget: true,
         );
+        switch (target) {
+          case OpenVideoTarget():
+            await _navigateToVideo(
+              context,
+              videoEventId,
+              videoAddressableId: videoAddressableId,
+              notificationKind: type,
+            );
+          case OpenProfileTarget(:final actorPubkey):
+            _navigateToProfile(context, actorPubkey);
+          case OpenInboxTarget():
+            break;
+        }
       case ActorNotification(
         :final actor,
         :final type,
         :final targetEventId,
         :final videoAddressableId,
       ):
-        switch (type) {
-          case NotificationKind.follow:
-            _navigateToProfile(context, actor.pubkey);
-          case NotificationKind.mention:
-          case NotificationKind.likeComment:
-          case NotificationKind.reply:
-            // targetEventId is the event the resolver will walk to find the
-            // root video. Falls back to the actor's profile only for mentions,
-            // where the mention may have no video context at all.
-            if (targetEventId != null && targetEventId.isNotEmpty) {
-              final navigated = await _navigateToVideo(
-                context,
-                targetEventId,
-                videoAddressableId: videoAddressableId,
-                notificationKind: type,
-              );
-              if (!navigated &&
-                  type == NotificationKind.mention &&
-                  context.mounted) {
-                _navigateToProfile(context, actor.pubkey);
-              }
-            } else {
+        final hasVideoTarget =
+            targetEventId != null && targetEventId.isNotEmpty;
+        final target = resolveNotificationTapTarget(
+          kind: type,
+          hasVideoTarget: hasVideoTarget,
+          actorPubkey: actor.pubkey,
+        );
+        switch (target) {
+          case OpenVideoTarget():
+            // targetEventId is the event the resolver walks to find the root
+            // video. A mention with no resolvable video falls back to the
+            // actor's profile.
+            final navigated = await _navigateToVideo(
+              context,
+              targetEventId!,
+              videoAddressableId: videoAddressableId,
+              notificationKind: type,
+            );
+            if (!navigated &&
+                type == NotificationKind.mention &&
+                context.mounted) {
               _navigateToProfile(context, actor.pubkey);
             }
-          case NotificationKind.system:
-            break;
-          case NotificationKind.like:
-          case NotificationKind.comment:
-          case NotificationKind.repost:
-            // Not represented as ActorNotification, but pattern-match
-            // exhaustivity requires these.
+          case OpenProfileTarget(:final actorPubkey):
+            _navigateToProfile(context, actorPubkey);
+          case OpenInboxTarget():
             break;
         }
     }
@@ -252,11 +262,9 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
     final videoEventService = ref.read(videoEventServiceProvider);
     final videosRepository = ref.read(videosRepositoryProvider);
 
-    final shouldAutoOpenComments =
-        notificationKind == NotificationKind.comment ||
-        notificationKind == NotificationKind.reply ||
-        notificationKind == NotificationKind.likeComment ||
-        notificationKind == NotificationKind.mention;
+    final shouldAutoOpenComments = notificationKindOpensComments(
+      notificationKind,
+    );
 
     // Resolve the navigation target.
     //

@@ -50,6 +50,7 @@ import 'package:openvine/l10n/resolve_app_ui_locale.dart';
 import 'package:openvine/network/vine_cdn_http_overrides.dart'
     if (dart.library.html) 'package:openvine/utils/platform_io_web.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
+import 'package:openvine/notifications/routing/notification_tap_target.dart';
 import 'package:openvine/notifications/services/notification_realtime_bridge.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/observability/divine_bloc_observer.dart';
@@ -65,6 +66,7 @@ import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
@@ -81,7 +83,7 @@ import 'package:openvine/services/nip98_auth_service.dart' show HttpMethod;
 import 'package:openvine/services/notification_helpers.dart'
     show parseFcmPayload;
 import 'package:openvine/services/notification_service.dart'
-    show NotificationPayloadKind, NotificationTapEvent;
+    show NotificationTapEvent;
 import 'package:openvine/services/notification_target_resolver.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
@@ -92,6 +94,7 @@ import 'package:openvine/services/video_format_preference.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/platform_support.dart';
 import 'package:openvine/utils/recoverable_flutter_error.dart';
 import 'package:openvine/utils/sensitive_uri_for_logs.dart';
@@ -144,10 +147,14 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     body: body,
     notificationDetails: details,
     payload: jsonEncode({
+      // Preserve the full normalized payload so a tap on this background-built
+      // notification routes identically to a system push tap. The FCM wire key
+      // 'type' maps to the internal 'notificationType'. senderPubkey carries
+      // the actor so follow taps (which have no referencedEventId) can route.
       'referencedEventId': data['referencedEventId'],
-      // Normalise at the boundary: FCM wire key is 'type'; the internal
-      // payload (read by NotificationService) uses 'notificationType'.
+      'eventId': data['eventId'],
       'notificationType': data['type'],
+      'senderPubkey': data['senderPubkey'],
     }),
   );
 }
@@ -256,29 +263,93 @@ VideoDeepLinkNavAction resolveVideoDeepLinkNavAction({
   return VideoDeepLinkNavAction.push;
 }
 
-/// Resolves [referencedEventId] from a push notification payload to a video
-/// event ID, then pushes a [DeepLink] into [deepLinkService].
+/// Resolves a push/local payload to a [NotificationTapTarget] and the event id
+/// to navigate to, via the shared [resolveNotificationTapTarget] contract.
 ///
-/// For `notificationType == "reply"` (and other comment-type notifications),
-/// [referencedEventId] is the ID of a Kind 1111 comment event, not a video.
-/// [NotificationTargetResolver] fetches that event from the relay, walks its
-/// NIP-22 `E` / NIP-10 `e` tags, and returns the root video event ID.
-///
-/// For video-type events the resolver returns the same ID unchanged.
-Future<void> _resolveAndPushNotificationDeepLink({
-  required String referencedEventId,
+/// `referencedEventId` (the event acted upon) is preferred as the video target;
+/// it is absent for follow/mention, which fall back to `eventId` (the source
+/// event). Extracted and `@visibleForTesting` so the push-side per-kind routing
+/// can be asserted without a navigator — mirrors [resolveVideoDeepLinkNavAction].
+@visibleForTesting
+({NotificationTapTarget target, String? targetEventId})
+pushNotificationTapTarget({
+  required String? referencedEventId,
+  required String? eventId,
   required String? notificationType,
+  required String? senderPubkey,
+}) {
+  final targetEventId =
+      (referencedEventId != null && referencedEventId.isNotEmpty)
+      ? referencedEventId
+      : eventId;
+  return (
+    target: resolveNotificationTapTarget(
+      kind: notificationKindFromPushType(notificationType),
+      hasVideoTarget: targetEventId != null && targetEventId.isNotEmpty,
+      actorPubkey: senderPubkey,
+    ),
+    targetEventId: targetEventId,
+  );
+}
+
+/// Routes a notification tap (FCM system push, local notification, or
+/// cold-start) to a destination using the shared [resolveNotificationTapTarget]
+/// contract — the same contract the in-app notification rows use, so the three
+/// entry points cannot drift.
+///
+/// [referencedEventId] is the event acted upon (present for like/comment/
+/// repost). [eventId] is the source event itself, used as the target for
+/// mentions, which carry no `referencedEventId`. [senderPubkey] is the actor —
+/// it opens a profile for follows and is the safe fallback when a video target
+/// cannot be resolved.
+Future<void> _routeNotificationTap({
+  required String? referencedEventId,
+  required String? eventId,
+  required String? notificationType,
+  required String? senderPubkey,
   required ProviderContainer container,
 }) async {
-  final deepLinkService = container.read(deepLinkServiceProvider);
-  final autoOpenComments = notificationType == NotificationPayloadKind.reply;
+  final (:target, :targetEventId) = pushNotificationTapTarget(
+    referencedEventId: referencedEventId,
+    eventId: eventId,
+    notificationType: notificationType,
+    senderPubkey: senderPubkey,
+  );
 
+  switch (target) {
+    case OpenProfileTarget(:final actorPubkey):
+      _navigateToNotificationProfile(container, actorPubkey);
+    case OpenInboxTarget():
+      _navigateToNotificationInbox(container);
+    case OpenVideoTarget(:final autoOpenComments):
+      await _resolveAndPushVideoLink(
+        container: container,
+        targetEventId: targetEventId!,
+        autoOpenComments: autoOpenComments,
+        fallbackPubkey: senderPubkey,
+      );
+  }
+}
+
+/// Resolves [targetEventId] to a root video and pushes a video [DeepLink].
+///
+/// For comment/reply targets [targetEventId] is a Kind 1111 comment event, not
+/// a video; [NotificationTargetResolver] walks its NIP-22 `E` / NIP-10 `e`
+/// tags to the root video. When resolution fails the tap falls back to the
+/// actor's profile (or the inbox if no pubkey is known) instead of silently
+/// doing nothing.
+Future<void> _resolveAndPushVideoLink({
+  required ProviderContainer container,
+  required String targetEventId,
+  required bool autoOpenComments,
+  required String? fallbackPubkey,
+}) async {
   String? videoEventId;
   try {
     videoEventId = await NotificationTargetResolver(
       videoEventService: container.read(videoEventServiceProvider),
       nostrService: container.read(nostrServiceProvider),
-    ).resolveVideoEventIdFromNotificationTarget(referencedEventId);
+    ).resolveVideoEventIdFromNotificationTarget(targetEventId);
   } catch (e) {
     Log.error(
       'Failed to resolve notification target: $e',
@@ -289,28 +360,44 @@ Future<void> _resolveAndPushNotificationDeepLink({
 
   if (videoEventId == null) {
     Log.warning(
-      'Could not resolve notification target to a video, '
-      'referencedEventId=$referencedEventId type=$notificationType',
+      'Could not resolve notification target to a video '
+      '(targetEventId=$targetEventId) — falling back',
       name: 'main',
       category: LogCategory.system,
     );
+    if (fallbackPubkey != null && fallbackPubkey.isNotEmpty) {
+      _navigateToNotificationProfile(container, fallbackPubkey);
+    } else {
+      _navigateToNotificationInbox(container);
+    }
     return;
   }
 
-  Log.info(
-    'Resolved notification target: $referencedEventId → $videoEventId '
-    '(type=$notificationType, autoOpenComments=$autoOpenComments)',
-    name: 'main',
-    category: LogCategory.system,
-  );
+  container
+      .read(deepLinkServiceProvider)
+      .pushLink(
+        DeepLink(
+          type: DeepLinkType.video,
+          videoRef: videoEventId,
+          autoOpenComments: autoOpenComments,
+        ),
+      );
+}
 
-  deepLinkService.pushLink(
-    DeepLink(
-      type: DeepLinkType.video,
-      videoRef: videoEventId,
-      autoOpenComments: autoOpenComments,
-    ),
-  );
+/// Opens the actor's profile. Used for follow taps and as the fallback when a
+/// video target cannot be resolved.
+void _navigateToNotificationProfile(
+  ProviderContainer container,
+  String actorPubkeyHex,
+) {
+  final npub = NostrKeyUtils.encodePubKey(actorPubkeyHex);
+  container.read(goRouterProvider).push(OtherProfileScreen.pathForNpub(npub));
+}
+
+/// Opens the notifications inbox — the deterministic safe fallback when a tap
+/// carries no resolvable target and no actor pubkey.
+void _navigateToNotificationInbox(ProviderContainer container) {
+  container.read(goRouterProvider).go(NotificationsPage.pathForIndex());
 }
 
 StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
@@ -511,16 +598,17 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
           final parsed = parseFcmPayload(initialMessage.data);
           if (parsed != null) {
             Log.info(
-              'App launched from push notification, '
-              'target: ${parsed.referencedEventId} '
-              '(type: ${parsed.notificationType})',
+              'App launched from push notification (type: '
+              '${parsed.notificationType})',
               name: 'main',
               category: LogCategory.system,
             );
             unawaited(
-              _resolveAndPushNotificationDeepLink(
+              _routeNotificationTap(
                 referencedEventId: parsed.referencedEventId,
+                eventId: parsed.eventId,
                 notificationType: parsed.notificationType,
+                senderPubkey: parsed.senderPubkey,
                 container: container,
               ),
             );
@@ -532,16 +620,17 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
           final parsed = parseFcmPayload(message.data);
           if (parsed != null) {
             Log.info(
-              'Push notification tapped (background), '
-              'target: ${parsed.referencedEventId} '
-              '(type: ${parsed.notificationType})',
+              'Push notification tapped (background) (type: '
+              '${parsed.notificationType})',
               name: 'main',
               category: LogCategory.system,
             );
             unawaited(
-              _resolveAndPushNotificationDeepLink(
+              _routeNotificationTap(
                 referencedEventId: parsed.referencedEventId,
+                eventId: parsed.eventId,
                 notificationType: parsed.notificationType,
+                senderPubkey: parsed.senderPubkey,
                 container: container,
               ),
             );
@@ -1225,15 +1314,16 @@ class _DivineAppState extends ConsumerState<DivineApp> {
         .notificationTapStream
         .listen((tapEvent) {
           Log.info(
-            '🔔 Local notification tap: eventId=${tapEvent.referencedEventId} '
-            'type=${tapEvent.notificationType}',
+            '🔔 Local notification tap (type: ${tapEvent.notificationType})',
             name: 'DeepLinkHandler',
             category: LogCategory.ui,
           );
           unawaited(
-            _resolveAndPushNotificationDeepLink(
+            _routeNotificationTap(
               referencedEventId: tapEvent.referencedEventId,
+              eventId: tapEvent.eventId,
               notificationType: tapEvent.notificationType,
+              senderPubkey: tapEvent.senderPubkey,
               container: container,
             ),
           );

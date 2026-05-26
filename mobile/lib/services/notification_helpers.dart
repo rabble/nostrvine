@@ -63,25 +63,47 @@ String? extractAddressableId(Event event) {
   return (kind: kind, pubkey: pubkey, dTag: dTag);
 }
 
-/// Normalises a raw push-notification payload map into the two fields the
-/// deep-link resolver needs.
+/// Normalises a raw push-notification payload map into the fields the tap
+/// router needs.
 ///
-/// Translates the wire key `'type'` to `notificationType` so callers see one
-/// shape regardless of whether the payload came from the FCM wire (`type`)
-/// or a locally-emitted notification JSON (`notificationType`).
+/// Mirrors the `divine-push-service` data-only contract: `type` (lowercase
+/// `like`/`comment`/`follow`/`mention`/`repost`), `referencedEventId` (present
+/// only when the source event has an `e` tag — i.e. like/comment/repost),
+/// `eventId` (the source event itself, always present), and `senderPubkey`
+/// (the actor). Translates the wire key `'type'` to `notificationType` so
+/// callers see one shape whether the payload came from the FCM wire or a
+/// locally-emitted notification JSON.
 ///
-/// Returns `null` when the payload carries no `referencedEventId`, so the
-/// caller can short-circuit before reaching the deep-link resolver.
-({String referencedEventId, String? notificationType})? parseFcmPayload(
-  Map<String, dynamic> data,
-) {
-  final referencedEventId = data['referencedEventId'] as String?;
-  if (referencedEventId == null || referencedEventId.isEmpty) return null;
-  final notificationType =
-      data['type'] as String? ?? data['notificationType'] as String?;
+/// Returns `null` only when the payload carries nothing routable — no
+/// `referencedEventId`, no `eventId`, and no `senderPubkey`. A `follow`/
+/// `mention` carries no `referencedEventId` but is still routable (via
+/// `senderPubkey` / `eventId`), so those are no longer dropped.
+({
+  String? referencedEventId,
+  String? eventId,
+  String? notificationType,
+  String? senderPubkey,
+})?
+parseFcmPayload(Map<String, dynamic> data) {
+  String? nonEmpty(String key) {
+    final value = data[key];
+    return value is String && value.isNotEmpty ? value : null;
+  }
+
+  final referencedEventId = nonEmpty('referencedEventId');
+  final eventId = nonEmpty('eventId');
+  final senderPubkey = nonEmpty('senderPubkey');
+  final notificationType = nonEmpty('type') ?? nonEmpty('notificationType');
+
+  if (referencedEventId == null && eventId == null && senderPubkey == null) {
+    return null;
+  }
+
   return (
     referencedEventId: referencedEventId,
+    eventId: eventId,
     notificationType: notificationType,
+    senderPubkey: senderPubkey,
   );
 }
 

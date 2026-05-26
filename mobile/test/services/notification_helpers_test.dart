@@ -423,58 +423,89 @@ void main() {
   });
 
   group('parseFcmPayload', () {
-    test('returns null when referencedEventId is missing', () {
+    test('returns null when the payload carries nothing routable', () {
       expect(parseFcmPayload(const {}), isNull);
+      // A type with no event id and no sender pubkey is not routable.
       expect(parseFcmPayload(const {'type': 'like'}), isNull);
-    });
-
-    test('returns null when referencedEventId is an empty string', () {
       expect(parseFcmPayload(const {'referencedEventId': ''}), isNull);
     });
 
-    test(
-      'returns the referenced event id with a null type when type missing',
-      () {
-        final result = parseFcmPayload(const {
-          'referencedEventId': 'event_abc',
-        });
-
-        expect(result, isNotNull);
-        expect(result!.referencedEventId, equals('event_abc'));
-        expect(result.notificationType, isNull);
-      },
-    );
-
-    test('reads the FCM wire key "type" into notificationType', () {
+    test('parses a like payload (referencedEventId + sender)', () {
       final result = parseFcmPayload(const {
-        'referencedEventId': 'event_abc',
-        'type': 'reply',
+        'type': 'like',
+        'eventId': 'reaction_event',
+        'referencedEventId': 'video_event',
+        'senderPubkey': 'actor_hex',
       });
 
       expect(result, isNotNull);
-      expect(result!.referencedEventId, equals('event_abc'));
-      expect(result.notificationType, equals('reply'));
+      expect(result!.notificationType, equals('like'));
+      expect(result.referencedEventId, equals('video_event'));
+      expect(result.eventId, equals('reaction_event'));
+      expect(result.senderPubkey, equals('actor_hex'));
     });
 
-    test('reads local notification JSON key "notificationType"', () {
+    test('parses a follow payload via senderPubkey (no referencedEventId)', () {
+      // The push service sends follows with senderPubkey + eventId but no
+      // referencedEventId — these must no longer be dropped.
       final result = parseFcmPayload(const {
-        'referencedEventId': 'event_abc',
-        'notificationType': 'reply',
+        'type': 'follow',
+        'eventId': 'contact_list_event',
+        'senderPubkey': 'follower_hex',
       });
 
       expect(result, isNotNull);
-      expect(result!.referencedEventId, equals('event_abc'));
-      expect(result.notificationType, equals('reply'));
+      expect(result!.notificationType, equals('follow'));
+      expect(result.referencedEventId, isNull);
+      expect(result.senderPubkey, equals('follower_hex'));
+      expect(result.eventId, equals('contact_list_event'));
     });
 
-    test('prefers FCM wire key when both type fields are present', () {
+    test('parses a mention payload via eventId (no referencedEventId)', () {
+      final result = parseFcmPayload(const {
+        'type': 'mention',
+        'eventId': 'mention_note',
+        'senderPubkey': 'mentioner_hex',
+      });
+
+      expect(result, isNotNull);
+      expect(result!.referencedEventId, isNull);
+      expect(result.eventId, equals('mention_note'));
+      expect(result.senderPubkey, equals('mentioner_hex'));
+    });
+
+    test('notificationType is null when absent', () {
+      final result = parseFcmPayload(const {'eventId': 'evt'});
+
+      expect(result, isNotNull);
+      expect(result!.notificationType, isNull);
+    });
+
+    test('reads the FCM wire key "type"', () {
+      final result = parseFcmPayload(const {
+        'referencedEventId': 'event_abc',
+        'type': 'comment',
+      });
+
+      expect(result!.notificationType, equals('comment'));
+    });
+
+    test('reads the local notification JSON key "notificationType"', () {
+      final result = parseFcmPayload(const {
+        'referencedEventId': 'event_abc',
+        'notificationType': 'comment',
+      });
+
+      expect(result!.notificationType, equals('comment'));
+    });
+
+    test('prefers the FCM wire key when both type fields are present', () {
       final result = parseFcmPayload(const {
         'referencedEventId': 'event_abc',
         'type': 'mention',
-        'notificationType': 'reply',
+        'notificationType': 'comment',
       });
 
-      expect(result, isNotNull);
       expect(result!.notificationType, equals('mention'));
     });
 
@@ -485,24 +516,23 @@ void main() {
       final result = parseFcmPayload(const {
         'referencedEventId': fullEventId,
         'type': 'like',
+        'senderPubkey': 'actor',
       });
 
       expect(result!.referencedEventId, equals(fullEventId));
     });
 
-    test('handles each known notification kind', () {
-      const kinds = ['like', 'reply', 'comment', 'mention', 'repost', 'follow'];
+    test('parses each push-service notification kind', () {
+      // The push service emits a lowercase five-value vocabulary.
+      const kinds = ['like', 'comment', 'follow', 'mention', 'repost'];
       for (final kind in kinds) {
         final result = parseFcmPayload({
-          'referencedEventId': 'evt_$kind',
           'type': kind,
+          'eventId': 'evt_$kind',
+          'senderPubkey': 'actor_$kind',
         });
 
-        expect(
-          result,
-          isNotNull,
-          reason: '$kind payload should parse to non-null',
-        );
+        expect(result, isNotNull, reason: '$kind payload should parse');
         expect(result!.notificationType, equals(kind));
       }
     });

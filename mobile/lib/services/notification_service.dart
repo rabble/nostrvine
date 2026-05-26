@@ -21,32 +21,36 @@ enum NotificationType {
 @immutable
 class NotificationTapEvent {
   const NotificationTapEvent({
-    required this.referencedEventId,
-    required this.notificationType,
+    this.referencedEventId,
+    this.eventId,
+    this.notificationType,
+    this.senderPubkey,
   });
 
-  final String referencedEventId;
+  /// The event acted upon (present for like/comment/repost). Null for
+  /// follow/mention, which the push service sends without an `e` tag.
+  final String? referencedEventId;
+
+  /// The source event itself (the like/comment/follow/mention event).
+  final String? eventId;
   final String? notificationType;
+
+  /// Hex pubkey of the actor — used to route follows (and unresolved taps)
+  /// to a profile.
+  final String? senderPubkey;
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is NotificationTapEvent &&
           referencedEventId == other.referencedEventId &&
-          notificationType == other.notificationType;
+          eventId == other.eventId &&
+          notificationType == other.notificationType &&
+          senderPubkey == other.senderPubkey;
 
   @override
-  int get hashCode => Object.hash(referencedEventId, notificationType);
-}
-
-/// Push-notification kind values as they appear in the FCM payload `type` field
-/// and in the local-notification JSON payload `notificationType` field.
-///
-/// Use these constants instead of bare string literals so that the routing
-/// policy (e.g. "open comments for replies") is defined in one place.
-abstract final class NotificationPayloadKind {
-  /// The originating notification was a reply to one of the user's videos.
-  static const String reply = 'reply';
+  int get hashCode =>
+      Object.hash(referencedEventId, eventId, notificationType, senderPubkey);
 }
 
 /// Notification data structure
@@ -481,13 +485,25 @@ class NotificationService {
 
     try {
       final data = jsonDecode(payload) as Map<String, dynamic>;
-      final referencedEventId = data['referencedEventId'] as String?;
-      final notificationType = data['notificationType'] as String?;
-      if (referencedEventId != null && referencedEventId.isNotEmpty) {
+      String? field(String key) {
+        final value = data[key];
+        return value is String && value.isNotEmpty ? value : null;
+      }
+
+      final referencedEventId = field('referencedEventId');
+      final eventId = field('eventId');
+      final senderPubkey = field('senderPubkey');
+      // A follow/mention carries no referencedEventId but is still routable
+      // via senderPubkey / eventId, so emit whenever any of the three exist.
+      if (referencedEventId != null ||
+          eventId != null ||
+          senderPubkey != null) {
         _emitNotificationTap(
           NotificationTapEvent(
             referencedEventId: referencedEventId,
-            notificationType: notificationType,
+            eventId: eventId,
+            notificationType: field('notificationType'),
+            senderPubkey: senderPubkey,
           ),
         );
       }
@@ -498,12 +514,7 @@ class NotificationService {
       // JSON payloads (referencedEventId + notificationType) for at least one
       // full app-store release cycle and telemetry confirms this path is
       // never reached. See issue for the full removal plan.
-      _emitNotificationTap(
-        NotificationTapEvent(
-          referencedEventId: payload,
-          notificationType: null,
-        ),
-      );
+      _emitNotificationTap(NotificationTapEvent(referencedEventId: payload));
     }
   }
 

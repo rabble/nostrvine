@@ -308,18 +308,43 @@ void main() {
       expect(events, isEmpty);
     });
 
-    test('does not emit when referencedEventId is absent', () async {
+    test('does not emit when nothing routable is present', () async {
       final events = <NotificationTapEvent>[];
       final sub = service.notificationTapStream.listen(events.add);
       addTearDown(sub.cancel);
 
+      // No referencedEventId, eventId, or senderPubkey → nothing to route.
       service.handleNotificationTapPayload(
-        jsonEncode({'notificationType': 'reaction'}),
+        jsonEncode({'notificationType': 'comment'}),
       );
 
       await Future<void>.delayed(Duration.zero);
 
       expect(events, isEmpty);
+    });
+
+    test('emits a follow tap via senderPubkey (no referencedEventId)', () async {
+      final events = <NotificationTapEvent>[];
+      final sub = service.notificationTapStream.listen(events.add);
+      addTearDown(sub.cancel);
+
+      // Follows carry senderPubkey + eventId but no referencedEventId; the tap
+      // must still emit so the router can open the actor's profile.
+      service.handleNotificationTapPayload(
+        jsonEncode({
+          'notificationType': 'follow',
+          'eventId': 'contact_list_event',
+          'senderPubkey': 'follower_hex',
+        }),
+      );
+
+      await Future<void>.delayed(Duration.zero);
+
+      expect(events, hasLength(1));
+      expect(events.single.referencedEventId, isNull);
+      expect(events.single.senderPubkey, equals('follower_hex'));
+      expect(events.single.eventId, equals('contact_list_event'));
+      expect(events.single.notificationType, equals('follow'));
     });
 
     test('no-ops gracefully when the stream has no listeners', () {
