@@ -581,5 +581,22 @@ void main() {
       expect(payload['eventId'], equals('contact_event'));
       expect(payload['referencedEventId'], isNull);
     });
+
+    test('normalizes empty-string routing fields to null', () {
+      final payload = localNotificationTapPayload(const {
+        'type': 'like',
+        'eventId': 'like_event',
+        // An empty referencedEventId on the wire must not survive as '' on the
+        // local payload; the writer shares parseFcmPayload's normalization, so
+        // empty and absent are treated identically.
+        'referencedEventId': '',
+        'senderPubkey': 'actor_hex',
+      });
+
+      expect(payload['referencedEventId'], isNull);
+      expect(payload['eventId'], equals('like_event'));
+      expect(payload['notificationType'], equals('like'));
+      expect(payload['senderPubkey'], equals('actor_hex'));
+    });
   });
 }

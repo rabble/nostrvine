@@ -63,6 +63,30 @@ String? extractAddressableId(Event event) {
   return (kind: kind, pubkey: pubkey, dTag: dTag);
 }
 
+/// Field names shared between the writer of the local-notification tap payload
+/// ([localNotificationTapPayload]) and its readers ([parseFcmPayload] and
+/// `NotificationService.handleNotificationTapPayload`). Centralised so the
+/// three sites cannot drift apart when a routing field is added or renamed.
+abstract class NotificationPayloadKeys {
+  /// FCM wire key for the notification type (lowercase
+  /// `like`/`comment`/`follow`/`mention`/`repost`). Stored on a locally-emitted
+  /// payload under [notificationType].
+  static const String wireType = 'type';
+
+  /// The event acted upon (present for like/comment/repost; absent for
+  /// follow/mention, which carry no `e` tag).
+  static const String referencedEventId = 'referencedEventId';
+
+  /// The source event itself (the like/comment/follow/mention event).
+  static const String eventId = 'eventId';
+
+  /// Normalised notification type carried on a locally-emitted payload.
+  static const String notificationType = 'notificationType';
+
+  /// Hex pubkey of the actor — used to route follows and unresolved taps.
+  static const String senderPubkey = 'senderPubkey';
+}
+
 /// Normalises a raw push-notification payload map into the fields the tap
 /// router needs.
 ///
@@ -90,10 +114,12 @@ parseFcmPayload(Map<String, dynamic> data) {
     return value is String && value.isNotEmpty ? value : null;
   }
 
-  final referencedEventId = nonEmpty('referencedEventId');
-  final eventId = nonEmpty('eventId');
-  final senderPubkey = nonEmpty('senderPubkey');
-  final notificationType = nonEmpty('type') ?? nonEmpty('notificationType');
+  final referencedEventId = nonEmpty(NotificationPayloadKeys.referencedEventId);
+  final eventId = nonEmpty(NotificationPayloadKeys.eventId);
+  final senderPubkey = nonEmpty(NotificationPayloadKeys.senderPubkey);
+  final notificationType =
+      nonEmpty(NotificationPayloadKeys.wireType) ??
+      nonEmpty(NotificationPayloadKeys.notificationType);
 
   if (referencedEventId == null && eventId == null && senderPubkey == null) {
     return null;
@@ -110,18 +136,24 @@ parseFcmPayload(Map<String, dynamic> data) {
 /// Builds the normalized local-notification tap payload from an FCM [data] map.
 ///
 /// Single source of truth for the JSON shape carried on a locally-displayed
-/// notification, so the background/system-push path and the foreground path
-/// cannot drift. The FCM wire key `type` is stored as `notificationType`;
-/// `senderPubkey` is preserved so follow/mention taps (which carry no
-/// `referencedEventId`) can still route. The shape is the inverse of what
-/// [parseFcmPayload] / `NotificationService.handleNotificationTapPayload`
-/// consume on tap.
+/// notification, so the background and foreground paths cannot drift. Built by
+/// running [data] through [parseFcmPayload] and re-keying the result, so the
+/// writer shares the readers' empty-string normalization through one point
+/// rather than re-deriving it.
+///
+/// The FCM wire key `type` is stored under [NotificationPayloadKeys.
+/// notificationType]; `senderPubkey` is preserved so follow/mention taps (which
+/// carry no `referencedEventId`) can still route. Consumed on tap by
+/// `NotificationService.handleNotificationTapPayload`. Always returns a map
+/// (all-null when nothing routable is present) — the notification still shows
+/// and the tap simply no-ops.
 Map<String, dynamic> localNotificationTapPayload(Map<String, dynamic> data) {
+  final parsed = parseFcmPayload(data);
   return {
-    'referencedEventId': data['referencedEventId'],
-    'eventId': data['eventId'],
-    'notificationType': data['type'],
-    'senderPubkey': data['senderPubkey'],
+    NotificationPayloadKeys.referencedEventId: parsed?.referencedEventId,
+    NotificationPayloadKeys.eventId: parsed?.eventId,
+    NotificationPayloadKeys.notificationType: parsed?.notificationType,
+    NotificationPayloadKeys.senderPubkey: parsed?.senderPubkey,
   };
 }
 
