@@ -2859,6 +2859,7 @@
     "videoEditorSetClipSpeedSemanticLabel": "Wiedergabegeschwindigkeit für ausgewählten Clip festlegen",
     "videoEditorReverseLabel": "Rückwärts",
     "videoEditorReverseClipSemanticLabel": "Rückwärtswiedergabe für ausgewählten Clip umschalten",
+    "videoEditorReverseProgressLabel": "Einen Moment, wir drehen deinen Clip rückwärts",
     "videoEditorSpeedSheetTitle": "Clip-Geschwindigkeit",
     "videoEditorFinishTimelineEditingSemanticLabel": "Timeline-Bearbeitung abschließen",
     "videoEditorAudioPlayPreviewSemanticLabel": "Vorschau abspielen",

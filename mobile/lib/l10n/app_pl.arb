@@ -2859,6 +2859,7 @@
     "videoEditorSetClipSpeedSemanticLabel": "Ustaw prędkość odtwarzania dla wybranego klipu",
     "videoEditorReverseLabel": "Odwróć",
     "videoEditorReverseClipSemanticLabel": "Włącz lub wyłącz odwrotne odtwarzanie dla wybranego klipu",
+    "videoEditorReverseProgressLabel": "Chwileczkę, odwracamy Twój klip",
     "videoEditorSpeedSheetTitle": "Prędkość klipu",
     "videoEditorFinishTimelineEditingSemanticLabel": "Zakończ edycję osi czasu",
     "videoEditorAudioPlayPreviewSemanticLabel": "Odtwórz podgląd",

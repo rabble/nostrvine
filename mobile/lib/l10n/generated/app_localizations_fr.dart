@@ -8045,6 +8045,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Activer ou désactiver la lecture inversée du clip sélectionné';
 
   @override
+  String get videoEditorReverseProgressLabel =>
+      'Un instant, nous inversons votre clip';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'Vitesse du clip';
 
   @override

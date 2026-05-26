@@ -7683,6 +7683,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorReverseClipSemanticLabel => '선택한 클립의 역방향 재생 전환';
 
   @override
+  String get videoEditorReverseProgressLabel => '잠시만요. 클립을 역재생으로 변환하고 있어요';
+
+  @override
   String get videoEditorSpeedSheetTitle => '클립 속도';
 
   @override

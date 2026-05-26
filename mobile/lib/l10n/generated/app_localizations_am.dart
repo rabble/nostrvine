@@ -7801,6 +7801,10 @@ class AppLocalizationsAm extends AppLocalizations {
       'ለተመረጠው ክሊፕ የኋላ ወደ ፊት ማጫወቻ ቀይር';
 
   @override
+  String get videoEditorReverseProgressLabel =>
+      'አንድ ትንሽ ቆይ፣ ክሊፕዎን ወደ ኋላ እየቀየርን ነው';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'የክሊፕ ፍጥነት';
 
   @override

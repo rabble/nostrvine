@@ -13826,6 +13826,12 @@ abstract class AppLocalizations {
   /// **'Toggle reverse playback for selected clip'**
   String get videoEditorReverseClipSemanticLabel;
 
+  /// Status text shown while the selected clip is being rendered in reverse for preview playback.
+  ///
+  /// In en, this message translates to:
+  /// **'One moment, we\'re reversing your clip'**
+  String get videoEditorReverseProgressLabel;
+
   /// Title of the bottom sheet for adjusting clip playback speed.
   ///
   /// In en, this message translates to:

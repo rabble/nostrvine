@@ -3421,6 +3421,7 @@
     "videoEditorSetClipSpeedSemanticLabel": "ለተመረጠው ክሊፕ የማጫወቻ ፍጥነት ያዘጋጁ",
     "videoEditorReverseLabel": "ወደ ኋላ",
     "videoEditorReverseClipSemanticLabel": "ለተመረጠው ክሊፕ የኋላ ወደ ፊት ማጫወቻ ቀይር",
+    "videoEditorReverseProgressLabel": "አንድ ትንሽ ቆይ፣ ክሊፕዎን ወደ ኋላ እየቀየርን ነው",
     "videoEditorSpeedSheetTitle": "የክሊፕ ፍጥነት",
     "videoEditorFinishTimelineEditingSemanticLabel": "የጊዜ መስመር አርትዖትን ጨርስ",
     "videoEditorAudioPlayPreviewSemanticLabel": "ቅድመ እይታን አጫውት።",

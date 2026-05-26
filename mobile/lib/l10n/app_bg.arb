@@ -3111,6 +3111,7 @@
     "videoEditorSetClipSpeedSemanticLabel": "Задаване на скорост на възпроизвеждане за избрания клип",
     "videoEditorReverseLabel": "Обратно",
     "videoEditorReverseClipSemanticLabel": "Включване или изключване на обратно възпроизвеждане за избрания клип",
+    "videoEditorReverseProgressLabel": "Момент, обръщаме клипа ви",
     "videoEditorSpeedSheetTitle": "Скорост на клипа",
     "videoEditorFinishTimelineEditingSemanticLabel": "Завършете редактирането на времевата линия",
     "videoEditorAudioPlayPreviewSemanticLabel": "Пусни предварителен преглед",

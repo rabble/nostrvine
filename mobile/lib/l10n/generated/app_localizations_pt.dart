@@ -7989,6 +7989,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Ativar ou desativar a reprodução inversa para o clipe selecionado';
 
   @override
+  String get videoEditorReverseProgressLabel =>
+      'Um momento, estamos invertendo seu clipe';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'Velocidade do clipe';
 
   @override

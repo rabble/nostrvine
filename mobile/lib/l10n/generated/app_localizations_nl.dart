@@ -7979,6 +7979,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Omgekeerde weergave voor geselecteerde clip in-/uitschakelen';
 
   @override
+  String get videoEditorReverseProgressLabel =>
+      'Een moment, we draaien je clip om';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'Clipsnelheid';
 
   @override

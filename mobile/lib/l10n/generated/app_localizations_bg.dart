@@ -8016,6 +8016,9 @@ class AppLocalizationsBg extends AppLocalizations {
       'Включване или изключване на обратно възпроизвеждане за избрания клип';
 
   @override
+  String get videoEditorReverseProgressLabel => 'Момент, обръщаме клипа ви';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'Скорост на клипа';
 
   @override

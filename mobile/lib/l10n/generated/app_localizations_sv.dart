@@ -7948,6 +7948,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Aktivera eller inaktivera omvänd uppspelning för valt klipp';
 
   @override
+  String get videoEditorReverseProgressLabel =>
+      'Ett ögonblick, vi vänder ditt klipp baklänges';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'Klipphastighet';
 
   @override

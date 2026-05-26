@@ -4464,6 +4464,10 @@
   "@videoEditorReverseClipSemanticLabel": {
     "description": "Accessibility label for the Reverse button in the timeline clip controls."
   },
+  "videoEditorReverseProgressLabel": "One moment, we're reversing your clip",
+  "@videoEditorReverseProgressLabel": {
+    "description": "Status text shown while the selected clip is being rendered in reverse for preview playback."
+  },
   "videoEditorSpeedSheetTitle": "Clip Speed",
   "@videoEditorSpeedSheetTitle": {
     "description": "Title of the bottom sheet for adjusting clip playback speed."

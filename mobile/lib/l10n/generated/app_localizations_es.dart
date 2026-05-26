@@ -8014,6 +8014,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Activar o desactivar la reproducción inversa del clip seleccionado';
 
   @override
+  String get videoEditorReverseProgressLabel =>
+      'Un momento, estamos invirtiendo tu clip';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'Velocidad del clip';
 
   @override

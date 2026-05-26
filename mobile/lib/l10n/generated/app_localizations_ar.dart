@@ -7880,6 +7880,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'تبديل تشغيل المقطع المحدد بشكل معكوس';
 
   @override
+  String get videoEditorReverseProgressLabel =>
+      'لحظة من فضلك، نحن نعكس المقطع الخاص بك';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'سرعة المقطع';
 
   @override

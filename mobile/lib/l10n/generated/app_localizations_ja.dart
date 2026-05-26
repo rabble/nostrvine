@@ -7661,6 +7661,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorReverseClipSemanticLabel => '選択したクリップの逆再生を切り替え';
 
   @override
+  String get videoEditorReverseProgressLabel => '少々お待ちください。クリップを逆再生用に処理しています';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'クリップの速度';
 
   @override

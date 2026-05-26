@@ -2859,6 +2859,7 @@
     "videoEditorSetClipSpeedSemanticLabel": "Setați viteza de redare pentru clipul selectat",
     "videoEditorReverseLabel": "Invers",
     "videoEditorReverseClipSemanticLabel": "Activați sau dezactivați redarea inversă pentru clipul selectat",
+    "videoEditorReverseProgressLabel": "O clipă, inversăm clipul tău",
     "videoEditorSpeedSheetTitle": "Viteza clipului",
     "videoEditorFinishTimelineEditingSemanticLabel": "Finalizează editarea cronologiei",
     "videoEditorAudioPlayPreviewSemanticLabel": "Redă previzualizarea",

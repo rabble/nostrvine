@@ -339,17 +339,31 @@ class _ReverseProgressOverlay extends StatelessWidget {
         }
 
         return ColoredBox(
-          color: VineTheme.scrim65,
+          color: VineTheme.backgroundColor.withAlpha(210),
           child: Center(
             child: RepaintBoundary(
-              child: StreamBuilder<ProgressModel>(
-                stream: ProVideoEditor.instance.progressStreamById(
-                  reverseState.renderId!,
-                ),
-                builder: (context, snapshot) {
-                  final progress = snapshot.data?.progress ?? 0;
-                  return PartialCircleSpinner(progress: progress);
-                },
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                spacing: 24,
+                children: [
+                  StreamBuilder<ProgressModel>(
+                    stream: ProVideoEditor.instance.progressStreamById(
+                      reverseState.renderId!,
+                    ),
+                    builder: (context, snapshot) {
+                      final progress = snapshot.data?.progress ?? 0;
+                      return PartialCircleSpinner(progress: progress);
+                    },
+                  ),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 240),
+                    child: Text(
+                      context.l10n.videoEditorReverseProgressLabel,
+                      textAlign: TextAlign.center,
+                      style: VineTheme.bodyMediumFont(),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

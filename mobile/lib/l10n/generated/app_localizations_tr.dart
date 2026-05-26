@@ -7917,6 +7917,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Seçili klip için ters oynatmayı aç veya kapat';
 
   @override
+  String get videoEditorReverseProgressLabel =>
+      'Bir saniye, klibini tersine çeviriyoruz';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'Klip Hızı';
 
   @override

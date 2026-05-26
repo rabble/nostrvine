@@ -2853,6 +2853,7 @@
     "videoEditorSetClipSpeedSemanticLabel": "選択したクリップの再生速度を設定",
     "videoEditorReverseLabel": "逆再生",
     "videoEditorReverseClipSemanticLabel": "選択したクリップの逆再生を切り替え",
+    "videoEditorReverseProgressLabel": "少々お待ちください。クリップを逆再生用に処理しています",
     "videoEditorSpeedSheetTitle": "クリップの速度",
     "videoEditorStickersDivineOriginals": "Divine オリジナル",
     "videoEditorStickerSearchHint": "ステッカーを検索...",

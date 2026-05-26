@@ -8095,6 +8095,10 @@ class AppLocalizationsPl extends AppLocalizations {
       'Włącz lub wyłącz odwrotne odtwarzanie dla wybranego klipu';
 
   @override
+  String get videoEditorReverseProgressLabel =>
+      'Chwileczkę, odwracamy Twój klip';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'Prędkość klipu';
 
   @override

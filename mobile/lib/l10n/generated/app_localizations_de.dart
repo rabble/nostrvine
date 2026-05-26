@@ -8029,6 +8029,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Rückwärtswiedergabe für ausgewählten Clip umschalten';
 
   @override
+  String get videoEditorReverseProgressLabel =>
+      'Einen Moment, wir drehen deinen Clip rückwärts';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'Clip-Geschwindigkeit';
 
   @override

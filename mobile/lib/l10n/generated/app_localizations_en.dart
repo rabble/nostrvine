@@ -7937,6 +7937,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Toggle reverse playback for selected clip';
 
   @override
+  String get videoEditorReverseProgressLabel =>
+      'One moment, we\'re reversing your clip';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'Clip Speed';
 
   @override

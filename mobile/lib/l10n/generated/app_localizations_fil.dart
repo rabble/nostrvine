@@ -8030,6 +8030,10 @@ class AppLocalizationsFil extends AppLocalizations {
       'I-toggle ang pabalik na pagpapalaro para sa napiling clip';
 
   @override
+  String get videoEditorReverseProgressLabel =>
+      'Sandali lang, nirereverse namin ang clip mo';
+
+  @override
   String get videoEditorSpeedSheetTitle => 'Bilis ng Clip';
 
   @override

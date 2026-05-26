@@ -2867,6 +2867,7 @@
     "videoEditorSetClipSpeedSemanticLabel": "Establecer la velocidad de reproducción del clip seleccionado",
     "videoEditorReverseLabel": "Invertir",
     "videoEditorReverseClipSemanticLabel": "Activar o desactivar la reproducción inversa del clip seleccionado",
+    "videoEditorReverseProgressLabel": "Un momento, estamos invirtiendo tu clip",
     "videoEditorSpeedSheetTitle": "Velocidad del clip",
     "videoEditorFinishTimelineEditingSemanticLabel": "Terminar edición de la línea de tiempo",
     "videoEditorAudioPlayPreviewSemanticLabel": "Reproducir vista previa",

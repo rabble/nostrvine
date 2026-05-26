@@ -2860,6 +2860,7 @@
     "videoEditorSetClipSpeedSemanticLabel": "Atur kecepatan putar untuk klip yang dipilih",
     "videoEditorReverseLabel": "Balik",
     "videoEditorReverseClipSemanticLabel": "Aktifkan atau nonaktifkan pemutaran terbalik untuk klip yang dipilih",
+    "videoEditorReverseProgressLabel": "Tunggu sebentar, kami sedang membalik klip Anda",
     "videoEditorSpeedSheetTitle": "Kecepatan Klip",
     "videoEditorStickersDivineOriginals": "Divine Orisinal",
     "videoEditorStickerSearchHint": "Cari stiker...",

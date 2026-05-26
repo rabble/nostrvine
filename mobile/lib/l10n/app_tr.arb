@@ -2860,6 +2860,7 @@
     "videoEditorSetClipSpeedSemanticLabel": "Seçili klip için oynatma hızını ayarla",
     "videoEditorReverseLabel": "Tersine Çevir",
     "videoEditorReverseClipSemanticLabel": "Seçili klip için ters oynatmayı aç veya kapat",
+    "videoEditorReverseProgressLabel": "Bir saniye, klibini tersine çeviriyoruz",
     "videoEditorSpeedSheetTitle": "Klip Hızı",
     "videoEditorStickersDivineOriginals": "Divine Orijinaller",
     "videoEditorStickerSearchHint": "Çıkartma ara...",

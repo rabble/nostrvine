@@ -2859,6 +2859,7 @@
     "videoEditorSetClipSpeedSemanticLabel": "Ange uppspelningshastighet för valt klipp",
     "videoEditorReverseLabel": "Baklänges",
     "videoEditorReverseClipSemanticLabel": "Aktivera eller inaktivera omvänd uppspelning för valt klipp",
+    "videoEditorReverseProgressLabel": "Ett ögonblick, vi vänder ditt klipp baklänges",
     "videoEditorSpeedSheetTitle": "Klipphastighet",
     "videoEditorFinishTimelineEditingSemanticLabel": "Avsluta redigering av tidslinje",
     "videoEditorAudioPlayPreviewSemanticLabel": "Spela förhandsvisning",

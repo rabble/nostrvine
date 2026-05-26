@@ -2853,6 +2853,7 @@
     "videoEditorSetClipSpeedSemanticLabel": "تعيين سرعة التشغيل للمقطع المحدد",
     "videoEditorReverseLabel": "عكس",
     "videoEditorReverseClipSemanticLabel": "تبديل تشغيل المقطع المحدد بشكل معكوس",
+    "videoEditorReverseProgressLabel": "لحظة من فضلك، نحن نعكس المقطع الخاص بك",
     "videoEditorSpeedSheetTitle": "سرعة المقطع",
     "videoEditorStickersDivineOriginals": "Divine الأصلية",
     "videoEditorStickerSearchHint": "البحث في الملصقات...",

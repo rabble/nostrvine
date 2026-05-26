@@ -2859,6 +2859,7 @@
     "videoEditorSetClipSpeedSemanticLabel": "Afspeelsnelheid voor geselecteerd clip instellen",
     "videoEditorReverseLabel": "Omgekeerd",
     "videoEditorReverseClipSemanticLabel": "Omgekeerde weergave voor geselecteerde clip in-/uitschakelen",
+    "videoEditorReverseProgressLabel": "Een moment, we draaien je clip om",
     "videoEditorSpeedSheetTitle": "Clipsnelheid",
     "videoEditorFinishTimelineEditingSemanticLabel": "Bewerken van tijdlijn voltooien",
     "videoEditorAudioPlayPreviewSemanticLabel": "Voorbeeld afspelen",
