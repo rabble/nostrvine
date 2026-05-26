@@ -782,8 +782,8 @@ void main() {
         expect(item.actors.first.displayName, equals('Sally Strawberry'));
       });
 
-      test('grouped video notifications build addressable id from '
-          'the current user pubkey and d-tag', () async {
+      test('grouped video notifications build addressable id when the '
+          'recipient authoritatively owns the referenced video', () async {
         stubNotifications([
           makeNotification(
             id: 'l1',
@@ -802,6 +802,9 @@ void main() {
           'pub_a': makeProfile('pub_a', displayName: 'Alice'),
           'pub_b': makeProfile('pub_b', displayName: 'Bob'),
         });
+        // Authoritative ownership: video stats resolve and the owner is the
+        // recipient (makeVideoStats defaults pubkey == userPubkey).
+        stubVideoStats('video_x', makeVideoStats(id: 'video_x'));
 
         final page = await repository.getNotifications();
 
@@ -816,8 +819,12 @@ void main() {
         );
       });
 
-      test('grouped video notifications still build addressable id when '
-          'video stats miss for a stale referenced event id', () async {
+      test('grouped video notifications leave addressable id null when the '
+          'referenced video owner is unknown (#4730)', () async {
+        // No video stats stubbed → ownership cannot be confirmed (e.g. a
+        // stale/edited event id). Synthesizing a recipient-owned addressable
+        // here could point at the wrong creator's video, so we leave it null
+        // and fall back to the canonical referencedEventId for navigation.
         stubNotifications([
           makeNotification(
             id: 'l1',
@@ -841,13 +848,37 @@ void main() {
 
         expect(page.items, hasLength(1));
         final item = page.items.single as VideoNotification;
-        expect(
-          item.videoAddressableId,
-          equals(
-            '${NIP71VideoKinds.addressableShortVideo}:'
-            '$userPubkey:vine-id',
+        expect(item.videoAddressableId, isNull);
+        // Canonical navigation target is preserved for the resolver fallback.
+        expect(item.videoEventId, equals('video_x'));
+      });
+
+      test('comment with empty referencedEventId leaves addressable id null '
+          'and keeps the root video event id (#4730)', () async {
+        // NIP-22 comment whose referenced_event_id is empty carries the video
+        // via rootEventId. Metadata is fetched by referencedEventId, so the
+        // owner is unknown here — the addressable must not be synthesized.
+        stubNotifications([
+          makeNotification(
+            id: 'c1',
+            sourcePubkey: 'pub_a',
+            sourceKind: 1111,
+            notificationType: 'comment',
+            referencedEventId: '',
+            rootEventId: 'video_root',
+            referencedDTag: 'vine-id',
+            content: 'nice one',
           ),
-        );
+        ]);
+        stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
+
+        final page = await repository.getNotifications();
+
+        expect(page.items, hasLength(1));
+        final item = page.items.single as VideoNotification;
+        expect(item.type, equals(NotificationKind.comment));
+        expect(item.videoAddressableId, isNull);
+        expect(item.videoEventId, equals('video_root'));
       });
 
       test('grouped video notifications leave addressable id null when d-tag '
@@ -2345,9 +2376,10 @@ void main() {
         },
       );
 
-      test('builds addressable id from the current user pubkey and d-tag '
-          'for realtime video notifications', () async {
+      test('builds addressable id for realtime video notifications when the '
+          'recipient authoritatively owns the referenced video', () async {
         stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
+        stubVideoStats('video_x', makeVideoStats(id: 'video_x'));
 
         final result = await repository.enrichOne(
           raw(referencedDTag: 'vine-id'),
@@ -2364,8 +2396,10 @@ void main() {
         );
       });
 
-      test('builds addressable id for realtime video notifications when '
-          'video stats miss for a stale referenced event id', () async {
+      test('leaves realtime addressable id null when the referenced video '
+          'owner is unknown (#4730)', () async {
+        // No video stats stubbed → ownership unconfirmed; fall back to the
+        // canonical referencedEventId rather than guess recipient ownership.
         stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
 
         final result = await repository.enrichOne(
@@ -2374,13 +2408,8 @@ void main() {
 
         expect(result, isA<VideoNotification>());
         final video = result! as VideoNotification;
-        expect(
-          video.videoAddressableId,
-          equals(
-            '${NIP71VideoKinds.addressableShortVideo}:'
-            '$userPubkey:vine-id',
-          ),
-        );
+        expect(video.videoAddressableId, isNull);
+        expect(video.videoEventId, equals('video_x'));
       });
 
       test('leaves addressable id null when realtime d-tag is empty', () async {

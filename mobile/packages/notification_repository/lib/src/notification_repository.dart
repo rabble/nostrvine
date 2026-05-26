@@ -1072,7 +1072,10 @@ class NotificationRepository {
       final dTag = group
           .map((n) => n.referencedDTag)
           .firstWhere((d) => d != null, orElse: () => null);
-      final addressableId = _buildRecipientOwnedVideoAddressableId(dTag);
+      final addressableId = _recipientOwnedVideoAddressableId(
+        dTag: dTag,
+        video: video,
+      );
       // Prefer thumbnail from the notification payload — it comes directly from
       // the server and is stable even after a metadata update (unlike the stats
       // lookup which uses the mutable event ID and may 404 post-edit).
@@ -1206,8 +1209,9 @@ class NotificationRepository {
         );
         return null;
       }
-      final addressableId = _buildRecipientOwnedVideoAddressableId(
-        raw.referencedDTag,
+      final addressableId = _recipientOwnedVideoAddressableId(
+        dTag: raw.referencedDTag,
+        video: video,
       );
       return VideoNotification(
         id: raw.dedupeKey,
@@ -1287,15 +1291,23 @@ class NotificationRepository {
     _ => null,
   };
 
-  /// Builds the stable NIP-33 addressable ID for a video owned by the
-  /// current notification recipient.
+  /// Builds the stable NIP-33 addressable ID for a video the current
+  /// recipient *authoritatively* owns, or null when ownership is unknown.
   ///
-  /// Video-anchored notifications are already validated against the current
-  /// user when Funnelcake can resolve ownership. Using [_userPubkey] keeps
-  /// route construction stable when the referenced event ID is stale and the
-  /// metadata lookup misses.
-  String? _buildRecipientOwnedVideoAddressableId(String? dTag) {
+  /// Synthesizing a recipient-owned route is only safe when [video] confirms
+  /// the referenced video's owner is the recipient. When the metadata lookup
+  /// missed — a stale/edited event id, a fetch failure, or a comment whose
+  /// `referenced_event_id` is empty — ownership is unknown, so we return null
+  /// and let navigation fall back to the canonical `referencedEventId` rather
+  /// than guess the recipient owns it and point at another creator's video.
+  /// An empty owner pubkey is treated as unknown for the same reason. See
+  /// #4730.
+  String? _recipientOwnedVideoAddressableId({
+    required String? dTag,
+    required VideoStats? video,
+  }) {
     if (dTag == null || dTag.isEmpty) return null;
+    if (video == null || video.pubkey != _userPubkey) return null;
     return '${NIP71VideoKinds.addressableShortVideo}:$_userPubkey:$dTag';
   }
 
