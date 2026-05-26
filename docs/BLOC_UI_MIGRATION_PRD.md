@@ -90,20 +90,23 @@ currently disabled by an rxdart version conflict, so enforcement is shell-based.
 | Guard | Enforces | Model |
 |-------|----------|-------|
 | `check_riverpod_boundary.sh` | No new `@riverpod` / `StateProvider` for UI state outside allowed provider dirs | Zero-tolerance (directory exclusion) |
-| `check_ui_service_boundary.sh` | Screens/widgets must not import `package:openvine/services/` directly — reach data through a BLoC/Cubit | **Ratchet**: frozen baseline of pre-existing violators; new ones fail, baseline may only shrink |
+| `check_ui_service_boundary.sh` | UI (screens, widgets, feature `screens`/`widgets`/`view` subdirs) must not import a service (`package:openvine/services/` or relative `../services/`, either quote style) — reach data through a BLoC/Cubit | **True ratchet vs `origin/main`**: NEW (undeclared), STALE (fixed but still baselined), and GROWTH (baseline grew vs `origin/main`) all fail; baseline may only shrink |
 
 **Working with the UI→service ratchet.** Pre-existing violators are frozen in
-`mobile/scripts/baseline/ui_service_imports.txt`. When you migrate a screen or
-widget off a direct service import, the guard reports the file as a stale
-baseline entry; lock the win in by regenerating the baseline:
+`mobile/scripts/baseline/ui_service_imports.txt`, and the guard compares the
+branch's baseline against `origin/main`'s — so the baseline **cannot grow in-PR**:
+adding a new UI→service import and re-running `UPDATE_BASELINE` fails the GROWTH
+check. The only allowed direction is shrinking. When you migrate a screen/widget
+off a direct service import, the guard flags it as stale — regenerate to lock the
+win in:
 
 ```bash
 UPDATE_BASELINE=1 bash mobile/scripts/check_ui_service_boundary.sh
 ```
 
-A genuinely intentional exception (e.g. a self-registering infrastructure
-service) is added to the baseline with a trailing `# reason`, surfaced in review.
-The baseline never grows without that justification.
+A trailing `# reason` documents why an *existing* frozen entry crosses the
+boundary; it is not a way to add new ones (the ratchet is intentionally
+shrink-only).
 
 ## Canonical Template Screens
 

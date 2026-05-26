@@ -43,7 +43,11 @@ jobs:
       - name: 🚧 Verify Riverpod boundary (@riverpod / StateProvider locations)
         run: bash scripts/check_riverpod_boundary.sh
       - name: 🚧 Verify UI does not import services directly (layering ratchet)
-        run: bash scripts/check_ui_service_boundary.sh
+        run: |
+          # Provide origin/main so the ratchet can compare the baseline against
+          # the base ref and fail on growth (shallow checkout otherwise lacks it).
+          git fetch --quiet --depth=1 origin main || true
+          bash scripts/check_ui_service_boundary.sh
       - name: 🔨 Verify generated files are up-to-date
         run: |
           dart run build_runner build --delete-conflicting-outputs

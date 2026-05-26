@@ -1,51 +1,60 @@
 #!/usr/bin/env bash
-# Fails CI when a NEW file under mobile/lib/screens/ or mobile/lib/widgets/
-# imports the service layer (package:openvine/services/...) directly, thereby
-# bypassing the BLoC/Cubit layer.
+# Fails CI when a NEW file in the UI layer imports the service layer
+# (package:openvine/services/... or a relative ../services/...), bypassing
+# the BLoC/Cubit layer.
 #
-# Rule enforced:
-#   • Presentation code (screens, widgets) must reach data through a
-#     BLoC/Cubit, not import package:openvine/services/ directly.
-#     (UI -> BLoC/Cubit -> Repository -> Client; see .claude/rules/architecture.md
-#     and docs/BLOC_UI_MIGRATION_PRD.md.)
+# UI layer scoped here:
+#   • mobile/lib/screens/**
+#   • mobile/lib/widgets/**
+#   • mobile/lib/features/**/{screens,widgets,view,views}/**  (co-located UI)
+# Non-presentation feature code (features/**/providers, services, models,
+# startup, etc.) is intentionally NOT guarded — it legitimately wires services.
 #
-# Ratchet, not a clean sweep:
-#   There are pre-existing direct-import violations that cannot all be fixed in
-#   one PR. They are frozen in scripts/baseline/ui_service_imports.txt. This
-#   guard fails only on:
-#     • NEW   violations — a screen/widget not in the baseline imports services.
-#     • STALE baseline entries — a baselined file no longer imports services
-#       (so the win must be locked in by shrinking the baseline). The baseline
-#       may only ever shrink.
+# Rule: presentation must reach data through a BLoC/Cubit, never import a
+# service directly (UI -> BLoC/Cubit -> Repository -> Client; see
+# .claude/rules/architecture.md and docs/BLOC_UI_MIGRATION_PRD.md).
 #
-# Baseline file (scripts/baseline/ui_service_imports.txt):
-#   • One mobile-relative path per line (e.g. lib/widgets/foo.dart).
-#   • An optional trailing "# reason" documents a reviewed, intentional
-#     exception (e.g. a self-registering infrastructure service).
-#   • Regenerate after fixing or intentionally adding a file:
-#       UPDATE_BASELINE=1 bash mobile/scripts/check_ui_service_boundary.sh
+# True ratchet (compares against origin/main, not just the in-branch baseline):
+#   Pre-existing violators are frozen in scripts/baseline/ui_service_imports.txt.
+#   The guard fails on:
+#     • NEW    — a current violation not declared in the (in-branch) baseline.
+#     • STALE  — a baselined file that no longer imports services (fixed; the
+#                baseline must shrink to lock the win in).
+#     • GROWTH — the in-branch baseline contains entries not present in the
+#                baseline on the base ref (default origin/main). This closes the
+#                bypass where a PR adds a violation, reruns UPDATE_BASELINE, and
+#                commits the grown baseline: the baseline may only ever shrink.
+#   On the commit that first introduces the baseline (absent on the base ref),
+#   the GROWTH check is skipped (bootstrap).
 #
-# Known limitations (tracked for a fast-follow):
-#   • Only lib/screens/ + lib/widgets/ are scoped; UI under lib/features/**
-#     is not yet covered.
-#   • Relative imports ("../../services/x.dart") are not detected; the codebase
-#     overwhelmingly uses package: imports (very_good_analysis prefers them).
+# Baseline file format: one mobile-relative path per line; an optional trailing
+# "# reason" documents intent. Regenerate after FIXING a file (never to add a
+# new violation — that fails GROWTH):
+#   UPDATE_BASELINE=1 bash mobile/scripts/check_ui_service_boundary.sh
+#
+# Env overrides:
+#   BASELINE_BASE_REF   git ref to compare the baseline against (default origin/main).
 #
 # Usage:
-#   bash mobile/scripts/check_ui_service_boundary.sh                    # verify
-#   UPDATE_BASELINE=1 bash mobile/scripts/check_ui_service_boundary.sh  # regenerate
+#   bash mobile/scripts/check_ui_service_boundary.sh
 #   (run from the repository root or from mobile/)
 
 set -euo pipefail
 
-# Byte-wise, locale-independent ordering so `sort`/`comm` agree across macOS
-# (local) and Linux (CI) — otherwise the baseline diff can falsely flag
-# NEW/STALE entries on a different collation.
+# Byte-wise, locale-independent ordering so sort/comm agree across macOS (local)
+# and Linux (CI); otherwise the baseline diff can falsely flag NEW/STALE/GROWTH.
 export LC_ALL=C
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MOBILE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+REPO_ROOT="$(cd "$MOBILE_DIR/.." && pwd)"
 BASELINE_FILE="$SCRIPT_DIR/baseline/ui_service_imports.txt"
+BASELINE_REPO_PATH="mobile/scripts/baseline/ui_service_imports.txt"
+BASE_REF="${BASELINE_BASE_REF:-origin/main}"
+
+# A service import: `import` + ws + quote + (package:openvine/services/ OR a
+# relative ../services/ path). Matches single- and double-quoted forms.
+IMPORT_RE="^import[[:space:]]+['\"](package:openvine/services/|(\.\./)+services/)"
 
 GLOBAL_EXCLUDES=(
   -not -path "*/.dart_tool/*"
@@ -55,40 +64,44 @@ GLOBAL_EXCLUDES=(
   -not -name "*.mocks.dart"
 )
 
-# Current violators: files under lib/screens or lib/widgets with a top-level
-# import of package:openvine/services/...  Emitted as mobile-relative paths.
+# Current violators across the UI layer, emitted as mobile-relative paths.
 current_violations() {
-  find "$MOBILE_DIR/lib/screens" "$MOBILE_DIR/lib/widgets" \
-    "${GLOBAL_EXCLUDES[@]}" \
-    -name "*.dart" -print0 2>/dev/null \
-  | xargs -0 grep -l -E "^import 'package:openvine/services/" 2>/dev/null \
-  | sed "s#^$MOBILE_DIR/##" \
-  | sort \
-  || true
+  {
+    find "$MOBILE_DIR/lib/screens" "$MOBILE_DIR/lib/widgets" \
+      "${GLOBAL_EXCLUDES[@]}" \
+      -name "*.dart" -print0 2>/dev/null \
+    | xargs -0 grep -lE "$IMPORT_RE" 2>/dev/null || true
+
+    find "$MOBILE_DIR/lib/features" \
+      "${GLOBAL_EXCLUDES[@]}" \
+      -name "*.dart" \
+      \( -path "*/screens/*" -o -path "*/widgets/*" -o -path "*/view/*" -o -path "*/views/*" \) \
+      -print0 2>/dev/null \
+    | xargs -0 grep -lE "$IMPORT_RE" 2>/dev/null || true
+  } | sed "s#^$MOBILE_DIR/##" | LC_ALL=C sort -u
 }
 
-# Effective baseline paths (strip trailing "# reason" comments and blank lines).
+# Strip trailing "# reason" comments and blank lines from a baseline stream.
+strip_baseline() {
+  sed 's/[[:space:]]*#.*//; s/[[:space:]]*$//' | grep -v '^$' | LC_ALL=C sort || true
+}
+
 baseline_paths() {
-  if [[ -f "$BASELINE_FILE" ]]; then
-    sed 's/[[:space:]]*#.*//; s/[[:space:]]*$//' "$BASELINE_FILE" \
-      | grep -v '^$' \
-      | sort \
-      || true
-  fi
+  [[ -f "$BASELINE_FILE" ]] && strip_baseline < "$BASELINE_FILE" || true
 }
 
 CURRENT="$(current_violations)"
 
 # ---------------------------------------------------------------------------
-# Regenerate mode: rewrite the baseline from the current violations.
+# Regenerate mode.
 # ---------------------------------------------------------------------------
 if [[ "${UPDATE_BASELINE:-0}" == "1" ]]; then
   mkdir -p "$(dirname "$BASELINE_FILE")"
   {
-    echo "# Frozen baseline: UI files (lib/screens, lib/widgets) that import the"
-    echo "# service layer (package:openvine/services/) directly, bypassing BLoC."
-    echo "# Generated by scripts/check_ui_service_boundary.sh. The baseline may"
-    echo "# only shrink. A trailing '# reason' marks a reviewed exception."
+    echo "# Frozen baseline: UI files (lib/screens, lib/widgets, feature UI subdirs)"
+    echo "# that import the service layer directly, bypassing BLoC. Generated by"
+    echo "# scripts/check_ui_service_boundary.sh. The baseline may only SHRINK"
+    echo "# (growth fails CI vs origin/main). A trailing '# reason' marks intent."
     printf '%s\n' "$CURRENT" | grep -v '^$' || true
   } > "$BASELINE_FILE"
   count="$(printf '%s\n' "$CURRENT" | grep -c . || true)"
@@ -98,19 +111,37 @@ fi
 
 BASELINE="$(baseline_paths)"
 
-# NEW   = present now, not in the baseline.
-# STALE = in the baseline, no longer present (fixed; baseline must shrink).
-NEW="$(comm -13 <(printf '%s\n' "$BASELINE") <(printf '%s\n' "$CURRENT") | grep -v '^$' || true)"
-STALE="$(comm -23 <(printf '%s\n' "$BASELINE") <(printf '%s\n' "$CURRENT") | grep -v '^$' || true)"
+# Baseline on the base ref (origin/main), for the GROWTH ratchet check.
+# Returns 0 + sets MAIN_BASELINE; 2 if absent on base ref (bootstrap); 1 if
+# the base ref itself is unavailable.
+MAIN_BASELINE=""
+load_base_baseline() {
+  if ! git -C "$REPO_ROOT" rev-parse --verify --quiet "$BASE_REF" >/dev/null 2>&1; then
+    git -C "$REPO_ROOT" fetch --quiet --depth=1 origin main 2>/dev/null || true
+  fi
+  if ! git -C "$REPO_ROOT" rev-parse --verify --quiet "$BASE_REF" >/dev/null 2>&1; then
+    return 1
+  fi
+  local raw
+  if ! raw="$(git -C "$REPO_ROOT" show "$BASE_REF:$BASELINE_REPO_PATH" 2>/dev/null)"; then
+    return 2
+  fi
+  MAIN_BASELINE="$(printf '%s\n' "$raw" | strip_baseline)"
+  return 0
+}
 
 fail=0
 
+# NEW: current violations not declared in the in-branch baseline.
+NEW="$(comm -13 <(printf '%s\n' "$BASELINE") <(printf '%s\n' "$CURRENT") | grep -v '^$' || true)"
 if [[ -n "$NEW" ]]; then
   echo "FAIL [ui_service_boundary]: NEW direct service-layer import(s) in the UI layer:"
   echo "$NEW" | sed 's/^/  /'
   fail=1
 fi
 
+# STALE: baselined files that no longer import services.
+STALE="$(comm -23 <(printf '%s\n' "$BASELINE") <(printf '%s\n' "$CURRENT") | grep -v '^$' || true)"
 if [[ -n "$STALE" ]]; then
   echo "FAIL [ui_service_boundary]: baseline entries that no longer import services:"
   echo "$STALE" | sed 's/^/  /'
@@ -119,14 +150,36 @@ if [[ -n "$STALE" ]]; then
   fail=1
 fi
 
+# GROWTH: in-branch baseline must not add entries vs the base ref's baseline.
+set +e
+load_base_baseline
+base_status=$?
+set -e
+case "$base_status" in
+  0)
+    GROWTH="$(comm -23 <(printf '%s\n' "$BASELINE") <(printf '%s\n' "$MAIN_BASELINE") | grep -v '^$' || true)"
+    if [[ -n "$GROWTH" ]]; then
+      echo "FAIL [ui_service_boundary]: baseline GREW vs ${BASE_REF} (the ratchet may only shrink):"
+      echo "$GROWTH" | sed 's/^/  /'
+      echo "  -> New UI->service imports are not allowed. Migrate the file onto a"
+      echo "     BLoC/Cubit instead of adding it to the baseline."
+      fail=1
+    fi
+    ;;
+  2)
+    echo "NOTE [ui_service_boundary]: no baseline on ${BASE_REF} yet (introducing the guard); skipping growth check."
+    ;;
+  *)
+    echo "NOTE [ui_service_boundary]: ${BASE_REF} unavailable; skipping growth check (local run?). NEW/STALE still enforced."
+    ;;
+esac
+
 if [[ "$fail" -eq 0 ]]; then
-  echo "OK: No new UI -> service-layer boundary violations (baseline frozen)."
+  echo "OK: No new UI -> service-layer boundary violations (baseline frozen, ratcheted vs ${BASE_REF})."
 else
   echo ""
-  echo "Screens/widgets must reach data through a BLoC/Cubit, not import"
-  echo "package:openvine/services/ directly."
+  echo "Screens/widgets/feature-UI must reach data through a BLoC/Cubit, not import"
+  echo "package:openvine/services/ (or a relative ../services/) directly."
   echo "See .claude/rules/architecture.md and docs/BLOC_UI_MIGRATION_PRD.md."
-  echo "If this import is a reviewed, intentional exception, add the file to"
-  echo "scripts/baseline/ui_service_imports.txt with a trailing '# reason'."
   exit 1
 fi
