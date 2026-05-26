@@ -90,7 +90,7 @@ currently disabled by an rxdart version conflict, so enforcement is shell-based.
 | Guard | Enforces | Model |
 |-------|----------|-------|
 | `check_riverpod_boundary.sh` | No new `@riverpod` / `StateProvider` for UI state outside allowed provider dirs | Zero-tolerance (directory exclusion) |
-| `check_ui_service_boundary.sh` | UI (screens, widgets, feature `screens`/`widgets`/`view` subdirs) must not import a service (`package:openvine/services/` or relative `../services/`, either quote style) — reach data through a BLoC/Cubit | **True ratchet vs `origin/main`**: NEW (undeclared), STALE (fixed but still baselined), and GROWTH (baseline grew vs `origin/main`) all fail; baseline may only shrink |
+| `check_ui_service_boundary.sh` | UI files under `mobile/lib/**/{screens,widgets,view,views}/**` must not import a service (`package:openvine/services/` or relative `../services/`, either quote style) — reach data through a BLoC/Cubit | **True ratchet vs `origin/main`**: NEW (undeclared), STALE (fixed but still baselined), and GROWTH (baseline grew vs `origin/main`) all fail; baseline may only shrink |
 
 **Working with the UI→service ratchet.** Pre-existing violators are frozen in
 `mobile/scripts/baseline/ui_service_imports.txt`, and the guard compares the
@@ -107,8 +107,8 @@ UPDATE_BASELINE=1 bash mobile/scripts/check_ui_service_boundary.sh
 ```
 
 A trailing `# reason` documents why an *existing* frozen entry crosses the
-boundary; it is not a way to add new ones (the ratchet is intentionally
-shrink-only).
+boundary; regeneration preserves those annotations for surviving entries. It is
+not a way to add new ones (the ratchet is intentionally shrink-only).
 
 ## Canonical Template Screens
 
