@@ -7,6 +7,10 @@ import 'package:openvine/main.dart' as app;
 
 void main() {
   group('shouldRenderLocalPushNotification', () {
+    // Unit-tests the pure decision predicate only. The background handler that
+    // consumes it (_firebaseMessagingBackgroundHandler) calls
+    // Firebase.initializeApp() and the local-notifications plugin, so its
+    // early-return is verified on-device, not here (#4731).
     test('does not render when the OS already presents the notification — an '
         'iOS alert push surfaces RemoteMessage.notification', () {
       const message = RemoteMessage(
@@ -40,6 +44,31 @@ void main() {
       const message = RemoteMessage(
         notification: RemoteNotification(title: 't', body: 'b'),
         data: {'body': 'b'},
+      );
+
+      expect(app.shouldRenderLocalPushNotification(message), isFalse);
+    });
+
+    test(
+      'does not render a data-only message whose body is an empty string',
+      () {
+        const message = RemoteMessage(data: {'body': '', 'type': 'like'});
+
+        expect(app.shouldRenderLocalPushNotification(message), isFalse);
+      },
+    );
+
+    test('does not render when the data body is not a string', () {
+      const message = RemoteMessage(data: <String, dynamic>{'body': 1});
+
+      expect(app.shouldRenderLocalPushNotification(message), isFalse);
+    });
+
+    test('does not render when the OS presents the alert and the data '
+        'carries no body', () {
+      const message = RemoteMessage(
+        notification: RemoteNotification(title: 'New follower', body: 'bob'),
+        data: {'type': 'follow'},
       );
 
       expect(app.shouldRenderLocalPushNotification(message), isFalse);
