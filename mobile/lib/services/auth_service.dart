@@ -409,10 +409,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// UI does not prompt re-login before the silent refresh has definitively failed.
   bool get isRpcUpgradeInProgress => _isRpcUpgradeInProgress;
 
-  /// True while a [tryRefreshExpiredSession] call is in flight.
-  /// Callers can use this to avoid redundant UI prompts while refresh is pending.
-  bool get isRefreshInProgress => _pendingRefresh != null;
-
   /// Timeout for background RPC refresh during local-first startup.
   @visibleForTesting
   static const rpcRefreshTimeout = Duration(seconds: 10);

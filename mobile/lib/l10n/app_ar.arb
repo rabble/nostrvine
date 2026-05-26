@@ -1794,7 +1794,7 @@
     "uploadProcessingMessage": "جارٍ معالجة الفيديو - قد يستغرق هذا بضع دقائق",
     "uploadReadyToPublishMessage": "تمت معالجة الفيديو بنجاح وهو جاهز للنشر",
     "uploadPublishedMessage": "تم نشر الفيديو في ملفك الشخصي",
-  "uploadPublishedMultipleMessage": "{count} videos published to your profile",
+  "uploadPublishedCountMessage": "{count, plural, =1{تم نشر الفيديو في ملفك الشخصي} other{{count} videos published to your profile}}",
     "uploadFailedMessage": "فشل الرفع - يُرجى المحاولة مرة أخرى",
     "uploadRetryingMessage": "جارٍ إعادة محاولة الرفع...",
     "uploadPausedMessage": "أوقف المستخدم الرفع مؤقتًا",

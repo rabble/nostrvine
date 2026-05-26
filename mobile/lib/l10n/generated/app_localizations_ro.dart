@@ -4377,8 +4377,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get uploadPublishedMessage => 'Videoclip publicat pe profilul tău';
 
   @override
-  String uploadPublishedMultipleMessage(int count) {
-    return '$count videos published to your profile';
+  String uploadPublishedCountMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count videos published to your profile',
+      one: 'Videoclip publicat pe profilul tău',
+    );
+    return '$_temp0';
   }
 
   @override

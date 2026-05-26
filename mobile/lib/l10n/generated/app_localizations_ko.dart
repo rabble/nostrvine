@@ -4065,8 +4065,14 @@ class AppLocalizationsKo extends AppLocalizations {
   String get uploadPublishedMessage => '프로필에 영상을 게시했어요';
 
   @override
-  String uploadPublishedMultipleMessage(int count) {
-    return '$count videos published to your profile';
+  String uploadPublishedCountMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count videos published to your profile',
+      one: '프로필에 영상을 게시했어요',
+    );
+    return '$_temp0';
   }
 
   @override

@@ -2114,7 +2114,7 @@
     "uploadProcessingMessage": "ቪዲዮን በመስራት ላይ - ይህ ጥቂት ደቂቃዎችን ሊወስድ ይችላል።",
     "uploadReadyToPublishMessage": "ቪዲዮው በተሳካ ሁኔታ ተከናውኗል እና ለመታተም ዝግጁ ነው።",
     "uploadPublishedMessage": "ቪዲዮ ወደ መገለጫዎ ታትሟል",
-  "uploadPublishedMultipleMessage": "{count} videos published to your profile",
+  "uploadPublishedCountMessage": "{count, plural, =1{ቪዲዮ ወደ መገለጫዎ ታትሟል} other{{count} videos published to your profile}}",
     "uploadFailedMessage": "ሰቀላው አልተሳካም - እባክዎ እንደገና ይሞክሩ",
     "uploadRetryingMessage": "ሰቀላን እንደገና በመሞከር ላይ...",
     "uploadPausedMessage": "ሰቀላው ባለበት ቆሟል",

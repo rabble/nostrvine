@@ -445,7 +445,7 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      expect(find.text('Secure Your Account'), findsOneWidget);
+      expect(find.text(l10n.settingsSecureAccount), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
@@ -459,7 +459,7 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      expect(find.text('Session Expired'), findsOneWidget);
+      expect(find.text(l10n.settingsSessionExpired), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
@@ -501,8 +501,8 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Secure Your Account'), findsOneWidget);
-        expect(find.text('Session Expired'), findsNothing);
+        expect(find.text(l10n.settingsSecureAccount), findsOneWidget);
+        expect(find.text(l10n.settingsSessionExpired), findsNothing);
 
         await tester.pumpWidget(const SizedBox());
         await tester.pump();
@@ -517,7 +517,7 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      expect(find.text('Secure Your Account'), findsNothing);
+      expect(find.text(l10n.settingsSecureAccount), findsNothing);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
@@ -640,10 +640,10 @@ void main() {
         await tester.pumpAndSettle();
 
         // Session Expired tile is present.
-        expect(find.text('Session Expired'), findsOneWidget);
+      expect(find.text(l10n.settingsSessionExpired), findsOneWidget);
 
         // Tap the tile — triggers _handleSessionExpired.
-        await tester.tap(find.text('Session Expired'));
+        await tester.tap(find.text(l10n.settingsSessionExpired));
         await tester.pumpAndSettle();
 
         // Navigation must NOT have fired yet — upload is still in progress.

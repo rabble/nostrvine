@@ -1804,7 +1804,7 @@
     "uploadProcessingMessage": "Bearbetar video – det här kan ta några minuter",
     "uploadReadyToPublishMessage": "Videon bearbetades och är redo att publiceras",
     "uploadPublishedMessage": "Videon publicerad till din profil",
-  "uploadPublishedMultipleMessage": "{count} videos published to your profile",
+  "uploadPublishedCountMessage": "{count, plural, =1{Videon publicerad till din profil} other{{count} videos published to your profile}}",
     "uploadFailedMessage": "Uppladdning misslyckades – försök igen",
     "uploadRetryingMessage": "Försöker ladda upp igen...",
     "uploadPausedMessage": "Uppladdning pausad av användaren",

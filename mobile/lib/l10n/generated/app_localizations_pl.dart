@@ -4360,8 +4360,14 @@ class AppLocalizationsPl extends AppLocalizations {
   String get uploadPublishedMessage => 'Film opublikowany na twoim profilu';
 
   @override
-  String uploadPublishedMultipleMessage(int count) {
-    return '$count videos published to your profile';
+  String uploadPublishedCountMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count videos published to your profile',
+      one: 'Film opublikowany na twoim profilu',
+    );
+    return '$_temp0';
   }
 
   @override

@@ -2082,8 +2082,8 @@ class _DivineAppState extends ConsumerState<DivineApp> {
               );
             }
           },
-          child: UpdateDialogListener(
-            child: _UploadFailureListener(
+            child: UpdateDialogListener(
+            child: UploadFailureListener(
               child: GeoBlockingGate(
                 child: AppLifecycleHandler(
                   child: BlocBuilder<LocaleCubit, LocaleState>(
@@ -2135,19 +2135,22 @@ class _DivineAppState extends ConsumerState<DivineApp> {
 /// through re-auth after an expired-session redirect — the success count is
 /// buffered and a confirmation snackbar is shown the moment authentication is
 /// restored.
-class _UploadFailureListener extends StatefulWidget {
-  const _UploadFailureListener({required this.child});
+@visibleForTesting
+class UploadFailureListener extends StatefulWidget {
+  const UploadFailureListener({required this.child, super.key});
 
   final Widget child;
 
   @override
-  State<_UploadFailureListener> createState() => _UploadFailureListenerState();
+  State<UploadFailureListener> createState() => UploadFailureListenerState();
 }
 
-class _UploadFailureListenerState extends State<_UploadFailureListener> {
-  var _lastKnownFailedIds = <String>{};
-  var _lastKnownInProgressIds = <String>{};
-  var _pendingSuccessCount = 0;
+/// State for [UploadFailureListener]. Public for testing.
+@visibleForTesting
+class UploadFailureListenerState extends State<UploadFailureListener> {
+  var lastKnownFailedIds = <String>{};
+  var lastKnownInProgressIds = <String>{};
+  var pendingSuccessCount = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -2169,11 +2172,11 @@ class _UploadFailureListenerState extends State<_UploadFailureListener> {
 
         // IDs that were in-progress and are now gone from state entirely
         // (not in progress, not in failures) → they succeeded.
-        final succeededIds = _lastKnownInProgressIds
+        final succeededIds = lastKnownInProgressIds
             .difference(currentInProgressIds)
             .difference(currentFailedIds);
 
-        _lastKnownInProgressIds = currentInProgressIds;
+        lastKnownInProgressIds = currentInProgressIds;
 
         if (succeededIds.isNotEmpty) {
           if (authService.isAuthenticated) {
@@ -2181,13 +2184,13 @@ class _UploadFailureListenerState extends State<_UploadFailureListener> {
             _showPublishSuccessSnackbar(context, succeededIds.length);
           } else {
             // Buffer for when auth is restored after re-auth redirect.
-            _pendingSuccessCount += succeededIds.length;
+            pendingSuccessCount += succeededIds.length;
           }
         }
 
         // Don't show failure sheets while the user is not authenticated
         // (e.g. still on the login screen after a cold start).
-        // Also don't update _lastKnownFailedIds so these failures are
+        // Also don't update lastKnownFailedIds so these failures are
         // detected as "new" once the user eventually authenticates.
         if (!authService.isAuthenticated) {
           // Flush any buffered successes once auth is restored.
@@ -2195,13 +2198,13 @@ class _UploadFailureListenerState extends State<_UploadFailureListener> {
         }
 
         // Auth is now confirmed — flush buffered successes from re-auth window.
-        if (_pendingSuccessCount > 0) {
-          _showPublishSuccessSnackbar(context, _pendingSuccessCount);
-          _pendingSuccessCount = 0;
+        if (pendingSuccessCount > 0) {
+          _showPublishSuccessSnackbar(context, pendingSuccessCount);
+          pendingSuccessCount = 0;
         }
 
-        final newFailedIds = currentFailedIds.difference(_lastKnownFailedIds);
-        _lastKnownFailedIds = currentFailedIds;
+        final newFailedIds = currentFailedIds.difference(lastKnownFailedIds);
+        lastKnownFailedIds = currentFailedIds;
 
         if (newFailedIds.isEmpty) return;
 
@@ -2221,18 +2224,19 @@ class _UploadFailureListenerState extends State<_UploadFailureListener> {
 
 /// Shows a snackbar confirming that [count] background uploads completed.
 ///
-/// Uses [ScaffoldMessenger] via [NavigatorKeys.root] so it works from any
-/// route, including the welcome/login screen during a re-auth redirect.
+/// Uses [ScaffoldMessenger] via [NavigatorKeys.root] to reach the root
+/// [Scaffold] — this is required because the listener's [BuildContext] may
+/// not have a [Scaffold] ancestor when the snackbar fires during a re-auth
+/// redirect. The l10n strings are resolved from the passed-in [context]
+/// (the BlocListener's context), which always has localisation ancestors.
 void _showPublishSuccessSnackbar(BuildContext context, int count) {
   final navContext = NavigatorKeys.root.currentContext;
   if (navContext == null || !navContext.mounted) return;
-  final l10n = navContext.l10n;
+  final l10n = context.l10n;
   ScaffoldMessenger.of(navContext).showSnackBar(
     SnackBar(
       content: Text(
-        count == 1
-            ? l10n.uploadPublishedMessage
-            : l10n.uploadPublishedMultipleMessage(count),
+        l10n.uploadPublishedCountMessage(count),
         style: VineTheme.bodyMediumFont(),
       ),
       backgroundColor: VineTheme.navGreen,

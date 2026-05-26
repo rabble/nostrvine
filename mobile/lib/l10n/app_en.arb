@@ -2332,9 +2332,9 @@
   "uploadProcessingMessage": "Processing video - this may take a few minutes",
   "uploadReadyToPublishMessage": "Video processed successfully and ready to publish",
   "uploadPublishedMessage": "Video published to your profile",
-  "uploadPublishedMultipleMessage": "{count} videos published to your profile",
-  "@uploadPublishedMultipleMessage": {
-    "description": "Snackbar shown after multiple background uploads succeed, e.g. after a re-auth redirect during which several publishes completed.",
+  "uploadPublishedCountMessage": "{count, plural, =1{Video published to your profile} other{{count} videos published to your profile}}",
+  "@uploadPublishedCountMessage": {
+    "description": "Snackbar shown after one or more background uploads succeed, e.g. after a re-auth redirect during which uploads completed.",
     "placeholders": {
       "count": {
         "type": "int",

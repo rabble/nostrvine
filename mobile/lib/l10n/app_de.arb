@@ -1804,7 +1804,7 @@
     "uploadProcessingMessage": "Video wird verarbeitet — das kann ein paar Minuten dauern",
     "uploadReadyToPublishMessage": "Video erfolgreich verarbeitet und bereit zur Veröffentlichung",
     "uploadPublishedMessage": "Video in deinem Profil veröffentlicht",
-  "uploadPublishedMultipleMessage": "{count} videos published to your profile",
+  "uploadPublishedCountMessage": "{count, plural, =1{Video in deinem Profil veröffentlicht} other{{count} videos published to your profile}}",
     "uploadFailedMessage": "Upload fehlgeschlagen — bitte versuch es nochmal",
     "uploadRetryingMessage": "Upload wird erneut versucht...",
     "uploadPausedMessage": "Upload vom Nutzer pausiert",

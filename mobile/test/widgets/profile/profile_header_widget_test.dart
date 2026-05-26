@@ -996,9 +996,10 @@ void main() {
           // Expired" / "Sign in" / "Maybe Later" via the actions list, so
           // assert at least one of each — finding all three at the same time
           // confirms the sheet itself opened.
-          expect(find.text('Session Expired'), findsWidgets);
-          expect(find.text('Sign in'), findsWidgets);
-          expect(find.text('Maybe Later'), findsWidgets);
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          expect(find.text(l10n.profileSessionExpired), findsWidgets);
+          expect(find.text(l10n.profileSignInButton), findsWidgets);
+          expect(find.text(l10n.profileMaybeLaterLabel), findsWidgets);
         },
       );
 
@@ -1026,7 +1027,7 @@ void main() {
           );
           await tester.pumpAndSettle();
 
-          expect(find.text('Session Expired'), findsNothing);
+          expect(find.text(lookupAppLocalizations(const Locale('en')).profileSessionExpired), findsNothing);
         },
       );
 
@@ -1050,8 +1051,9 @@ void main() {
           await tester.pumpAndSettle();
 
           // Anonymous users see the action label pill, not session expired
+          final l10n = lookupAppLocalizations(const Locale('en'));
           expect(find.text('Secure your account'), findsOneWidget);
-          expect(find.text('Session Expired'), findsNothing);
+          expect(find.text(l10n.profileSessionExpired), findsNothing);
         },
       );
 
@@ -1079,9 +1081,10 @@ void main() {
           await tester.pumpAndSettle();
 
           // Sheet must NOT appear while upgrade is running.
-          expect(find.text('Session Expired'), findsNothing);
-          expect(find.text('Sign in'), findsNothing);
-          expect(find.text('Maybe Later'), findsNothing);
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          expect(find.text(l10n.profileSessionExpired), findsNothing);
+          expect(find.text(l10n.profileSignInButton), findsNothing);
+          expect(find.text(l10n.profileMaybeLaterLabel), findsNothing);
         },
       );
 
@@ -1110,7 +1113,10 @@ void main() {
             ),
           );
           await tester.pumpAndSettle();
-          expect(find.text('Session Expired'), findsNothing);
+          expect(
+            find.text(lookupAppLocalizations(const Locale('en')).profileSessionExpired),
+            findsNothing,
+          );
 
           // Phase 2: upgrade succeeds — session flag cleared.
           // Rebuild with hasExpiredSession: false to simulate what happens
@@ -1126,7 +1132,10 @@ void main() {
           await tester.pumpAndSettle();
 
           // Sheet must not appear — session is no longer expired.
-          expect(find.text('Session Expired'), findsNothing);
+          expect(
+            find.text(lookupAppLocalizations(const Locale('en')).profileSessionExpired),
+            findsNothing,
+          );
         },
       );
 
@@ -1231,11 +1240,12 @@ void main() {
           await tester.pumpAndSettle();
 
           // Session expired sheet should be visible.
-          expect(find.text('Session Expired'), findsWidgets);
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          expect(find.text(l10n.profileSessionExpired), findsWidgets);
 
           // Tap "Sign in" — triggers tryRefreshExpiredSession (returns false)
           // and the upload-in-progress guard should subscribe for deferred nav.
-          await tester.tap(find.text('Sign in').last);
+          await tester.tap(find.text(l10n.profileSignInButton).last);
           await tester.pumpAndSettle();
 
           // Navigation must NOT have fired yet — upload is still active.

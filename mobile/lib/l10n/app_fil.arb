@@ -1109,7 +1109,7 @@
     "uploadProcessingMessage": "Pino-process ang video - maaaring tumagal ng ilang minuto",
     "uploadReadyToPublishMessage": "Matagumpay na na-process ang video at handa nang i-publish",
     "uploadPublishedMessage": "Na-publish na ang video sa profile mo",
-  "uploadPublishedMultipleMessage": "{count} videos published to your profile",
+  "uploadPublishedCountMessage": "{count, plural, =1{Na-publish na ang video sa profile mo} other{{count} videos published to your profile}}",
     "uploadFailedMessage": "Hindi nag-upload - subukan ulit",
     "uploadRetryingMessage": "Sinusubukan ulit i-upload...",
     "uploadPausedMessage": "Naka-pause ang upload ng user",
