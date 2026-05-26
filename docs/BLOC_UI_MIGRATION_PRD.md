@@ -96,7 +96,9 @@ currently disabled by an rxdart version conflict, so enforcement is shell-based.
 `mobile/scripts/baseline/ui_service_imports.txt`, and the guard compares the
 branch's baseline against `origin/main`'s — so the baseline **cannot grow in-PR**:
 adding a new UI→service import and re-running `UPDATE_BASELINE` fails the GROWTH
-check. The only allowed direction is shrinking. When you migrate a screen/widget
+check. The check **fails closed**: if `origin/main`'s baseline can't be loaded the
+guard fails (CI fetches the base ref first); a local/offline run can opt out with
+`UI_SERVICE_ALLOW_NO_BASE=1`. The only allowed direction is shrinking. When you migrate a screen/widget
 off a direct service import, the guard flags it as stale — regenerate to lock the
 win in:
 

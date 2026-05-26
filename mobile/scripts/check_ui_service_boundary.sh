@@ -33,7 +33,10 @@
 #   UPDATE_BASELINE=1 bash mobile/scripts/check_ui_service_boundary.sh
 #
 # Env overrides:
-#   BASELINE_BASE_REF   git ref to compare the baseline against (default origin/main).
+#   BASELINE_BASE_REF       git ref to compare the baseline against (default origin/main).
+#   UI_SERVICE_ALLOW_NO_BASE=1  skip the growth check when the base ref cannot be
+#                           loaded. Intended for local/offline runs only — the guard
+#                           otherwise FAILS CLOSED (CI must never silently skip it).
 #
 # Usage:
 #   bash mobile/scripts/check_ui_service_boundary.sh
@@ -112,8 +115,13 @@ fi
 BASELINE="$(baseline_paths)"
 
 # Baseline on the base ref (origin/main), for the GROWTH ratchet check.
-# Returns 0 + sets MAIN_BASELINE; 2 if absent on base ref (bootstrap); 1 if
-# the base ref itself is unavailable.
+# Return codes:
+#   0 — loaded; MAIN_BASELINE set.
+#   2 — base ref resolves but the baseline file is absent on it (bootstrap: the
+#       commit that introduces the guard). Growth check not applicable.
+#   1 — base ref cannot be resolved (fetch/ref failure).
+#   3 — base ref + file exist but the blob could not be read (unexpected).
+# Callers MUST fail closed on 1/3 — the ratchet cannot be verified.
 MAIN_BASELINE=""
 load_base_baseline() {
   if ! git -C "$REPO_ROOT" rev-parse --verify --quiet "$BASE_REF" >/dev/null 2>&1; then
@@ -122,9 +130,12 @@ load_base_baseline() {
   if ! git -C "$REPO_ROOT" rev-parse --verify --quiet "$BASE_REF" >/dev/null 2>&1; then
     return 1
   fi
+  if ! git -C "$REPO_ROOT" cat-file -e "$BASE_REF:$BASELINE_REPO_PATH" 2>/dev/null; then
+    return 2
+  fi
   local raw
   if ! raw="$(git -C "$REPO_ROOT" show "$BASE_REF:$BASELINE_REPO_PATH" 2>/dev/null)"; then
-    return 2
+    return 3
   fi
   MAIN_BASELINE="$(printf '%s\n' "$raw" | strip_baseline)"
   return 0
@@ -170,7 +181,18 @@ case "$base_status" in
     echo "NOTE [ui_service_boundary]: no baseline on ${BASE_REF} yet (introducing the guard); skipping growth check."
     ;;
   *)
-    echo "NOTE [ui_service_boundary]: ${BASE_REF} unavailable; skipping growth check (local run?). NEW/STALE still enforced."
+    # Base baseline could not be loaded (status 1/3) — FAIL CLOSED so the growth
+    # ratchet can never silently degrade to best-effort in CI. Soft-skip only
+    # when a human explicitly opts out for a local/offline run.
+    if [[ "${UI_SERVICE_ALLOW_NO_BASE:-0}" == "1" ]]; then
+      echo "NOTE [ui_service_boundary]: ${BASE_REF} unavailable; skipping growth check (UI_SERVICE_ALLOW_NO_BASE=1, local opt-out)."
+    else
+      echo "FAIL [ui_service_boundary]: could not load the baseline from ${BASE_REF}, so the"
+      echo "  growth ratchet cannot be verified — failing closed. Ensure ${BASE_REF} is"
+      echo "  fetched (CI runs 'git fetch --depth=1 origin main' before this guard)."
+      echo "  For a local run without a base ref, set UI_SERVICE_ALLOW_NO_BASE=1 to skip."
+      fail=1
+    fi
     ;;
 esac
 

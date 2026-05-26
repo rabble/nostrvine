@@ -45,8 +45,10 @@ jobs:
       - name: 🚧 Verify UI does not import services directly (layering ratchet)
         run: |
           # Provide origin/main so the ratchet can compare the baseline against
-          # the base ref and fail on growth (shallow checkout otherwise lacks it).
-          git fetch --quiet --depth=1 origin main || true
+          # the base ref. The fetch is intentionally not error-suppressed: a
+          # fetch failure must fail the job (the guard fails closed when the
+          # base baseline cannot be loaded).
+          git fetch --quiet --depth=1 origin main
           bash scripts/check_ui_service_boundary.sh
       - name: 🔨 Verify generated files are up-to-date
         run: |
