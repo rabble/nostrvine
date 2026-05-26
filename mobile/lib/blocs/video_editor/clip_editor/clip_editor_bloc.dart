@@ -594,6 +594,8 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     if (!clip.reversed && clip.reversedVideoPath != null) {
       final restoredClip = clip.copyWith(
         video: EditorVideo.file(clip.reversedVideoPath),
+        trimStart: clip.trimEnd,
+        trimEnd: clip.trimStart,
         reversed: true,
       );
       final newClips = List<DivineVideoClip>.of(state.clips)
@@ -637,6 +639,8 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       final currentClip = currentClips[currentIndex];
       final updatedClip = currentClip.copyWith(
         video: reversedVideo,
+        trimStart: currentClip.trimEnd,
+        trimEnd: currentClip.trimStart,
         reversed: !clip.reversed,
         forwardVideoPath: currentClip.forwardVideoPath ?? videoPath,
         reversedVideoPath:

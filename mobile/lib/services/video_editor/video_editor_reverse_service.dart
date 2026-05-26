@@ -22,6 +22,16 @@ class VideoEditorReverseService {
       documentsPath,
       '${sourceClip.id}_reversed.mp4',
     );
+
+    // Defensive: refuse to render when the input path collides with the
+    // output path. We delete the output file before rendering, so a collision
+    // would destroy the source video in-place.
+    if (p.equals(inputPath, outputPath)) {
+      throw StateError(
+        'Reverse render aborted: input path equals output path ($inputPath)',
+      );
+    }
+
     final outputFile = File(outputPath);
 
     Log.info(

@@ -19,8 +19,7 @@ import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_acti
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_overlay_actions.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline.dart';
-import 'package:pro_video_editor/core/models/video/progress_model.dart';
-import 'package:pro_video_editor/core/platform/platform_interface.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 
 /// A scaffold widget that provides the standard layout for the video editor.
 ///

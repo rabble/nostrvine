@@ -1270,7 +1270,7 @@ void main() {
       );
 
       blocTest<ClipEditorBloc, ClipEditorState>(
-        'renders reversed clip, preserves trim bounds, and toggles reversed flag',
+        'renders reversed clip, swaps trim bounds, and toggles reversed flag',
         build: () => buildBloc(reverseClip: _fakeReverseClip),
         seed: () => ClipEditorState(clips: [_createClipWithFile()]),
         act: (bloc) => bloc.add(
@@ -1291,12 +1291,12 @@ void main() {
               .having(
                 (s) => s.clips.first.trimStart,
                 'trimStart',
-                const Duration(seconds: 1),
+                const Duration(milliseconds: 500),
               )
               .having(
                 (s) => s.clips.first.trimEnd,
                 'trimEnd',
-                const Duration(milliseconds: 500),
+                const Duration(seconds: 1),
               )
               .having(
                 (s) => s.clips.first.duration,
@@ -1371,7 +1371,7 @@ void main() {
       );
 
       blocTest<ClipEditorBloc, ClipEditorState>(
-        'reuses cached reversed clip without calling reverse service again',
+        'reuses cached reversed clip and swaps trim bounds',
         build: () => buildBloc(
           reverseClip: ({required sourceClip, required renderId}) async {
             throw StateError('reverse service should not be called');
@@ -1395,6 +1395,16 @@ void main() {
                 (s) => s.clips.first.video.file?.path,
                 'videoPath',
                 '/reversed/clip-local_clip-local.mp4',
+              )
+              .having(
+                (s) => s.clips.first.trimStart,
+                'trimStart',
+                const Duration(milliseconds: 500),
+              )
+              .having(
+                (s) => s.clips.first.trimEnd,
+                'trimEnd',
+                const Duration(seconds: 1),
               )
               .having(
                 (s) => s.clips.first.duration,

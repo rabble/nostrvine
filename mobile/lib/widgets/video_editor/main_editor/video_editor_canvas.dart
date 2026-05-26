@@ -174,6 +174,12 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   bool _isTrimmingLayer = false;
   bool _isTrimmingClip = false;
   bool _isDraggingLayer = false;
+
+  /// One-shot guard set by the reverse-success [BlocListener] before it
+  /// imperatively rebuilds the player with the reversed clip list. The next
+  /// [ClipEditorState] clip-snapshot diff would otherwise re-trigger the
+  /// generic clip-sync path and overwrite the just-applied reversed source.
+  /// Consumed (cleared) by the clip-snapshot listener on its next pass.
   bool _skipNextClipSnapshotSync = false;
 
   /// Guards against duplicate [addHistory] calls when both
