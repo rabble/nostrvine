@@ -3,10 +3,12 @@
 // ABOUTME: Requires: local Docker stack running (mise run local_up)
 // ABOUTME: Run with: mise run e2e_test (passes --dart-define=DEFAULT_ENV=LOCAL automatically)
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/main.dart' as app;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
@@ -28,6 +30,7 @@ void main() {
       'register, verify, forgot password, reset, login, verify feedback',
       ($) async {
         final tester = $.tester;
+        final l10n = lookupAppLocalizations(const Locale('en'));
         // ── Setup: suppress non-critical errors ──
         final originalOnError = suppressSetStateErrors();
         final originalErrorBuilder = saveErrorWidgetBuilder();
@@ -55,7 +58,7 @@ void main() {
         // Cannot use pumpAndSettle — EmailVerificationCubit polls every 3s
         final foundVerifyScreen = await waitForText(
           tester,
-          'Complete your registration',
+          l10n.authCompleteRegistration,
         );
         expect(
           foundVerifyScreen,
@@ -79,9 +82,7 @@ void main() {
         final container = ProviderScope.containerOf(
           tester.element(find.byType(MaterialApp)),
         );
-        final emailListener = container.read(
-          emailVerificationListenerProvider,
-        );
+        final emailListener = container.read(emailVerificationListenerProvider);
         await emailListener.handleUri(
           Uri.parse(
             'https://login.divine.video/verify-email?token=$verifyToken',
@@ -91,7 +92,7 @@ void main() {
         // Wait for polling to detect verification and navigate away
         final leftVerifyScreen = await waitForTextGone(
           tester,
-          'Complete your registration',
+          l10n.authCompleteRegistration,
         );
         expect(
           leftVerifyScreen,
@@ -144,20 +145,21 @@ void main() {
         await navigateToLoginOptions(tester);
 
         // Tap "Forgot password?" link
-        final forgotPasswordLink = find.text('Forgot password?');
+        final forgotPasswordLink = find.text(l10n.authForgotPassword);
         expect(
           forgotPasswordLink,
           findsOneWidget,
-          reason: 'Login screen should show "Forgot password?" link',
+          reason: 'Login screen should show "${l10n.authForgotPassword}" link',
         );
         await tester.tap(forgotPasswordLink);
         await tester.pumpAndSettle(const Duration(seconds: 1));
 
         // Assert: forgot password bottom sheet is showing
         expect(
-          find.text('Reset Password'),
+          find.text(l10n.forgotPasswordTitle),
           findsOneWidget,
-          reason: 'Forgot password sheet should show "Reset Password"',
+          reason:
+              'Forgot password sheet should show "${l10n.forgotPasswordTitle}"',
         );
 
         // Enter email in the bottom sheet's TextFormField
@@ -172,15 +174,15 @@ void main() {
         // Tap "Email Reset Link" button
         final sendResetButton = find.widgetWithText(
           ElevatedButton,
-          'Email Reset Link',
+          l10n.forgotPasswordSendLink,
         );
         expect(sendResetButton, findsOneWidget);
         await tester.tap(sendResetButton);
 
-        // Wait for confirmation snackbar (substring match — full text is long)
-        final foundEmailSent = await waitForWidget(
+        // Wait for confirmation snackbar
+        final foundEmailSent = await waitForText(
           tester,
-          find.textContaining('password reset link has been sent'),
+          l10n.authPasswordResetSent,
         );
         expect(
           foundEmailSent,
@@ -215,7 +217,7 @@ void main() {
         // Wait for ResetPasswordScreen to appear
         final foundResetScreen = await waitForText(
           tester,
-          'New Password',
+          l10n.authNewPasswordLabel,
           maxSeconds: 10,
         );
         expect(
@@ -231,26 +233,41 @@ void main() {
         ).clearSnackBars();
         await tester.pump(const Duration(milliseconds: 500));
 
-        // Enter new password and submit.
-        // The reset screen uses a DivineAuthTextField. Use first TextField
-        // (login screen TextFields may still be in the tree during transition).
-        final newPasswordField = find.byType(TextField);
-        expect(newPasswordField, findsWidgets);
-        await tester.enterText(newPasswordField.first, newPassword);
+        // Enter both password fields on the reset screen using the field labels
+        // so stale route-transition widgets cannot be matched accidentally.
+        final newPasswordField = find.descendant(
+          of: find.widgetWithText(
+            DivineAuthTextField,
+            l10n.authNewPasswordLabel,
+          ),
+          matching: find.byType(TextField),
+        );
+        final confirmNewPasswordField = find.descendant(
+          of: find.widgetWithText(
+            DivineAuthTextField,
+            l10n.authConfirmNewPasswordLabel,
+          ),
+          matching: find.byType(TextField),
+        );
+        expect(newPasswordField, findsOneWidget);
+        expect(confirmNewPasswordField, findsOneWidget);
+        await tester.enterText(newPasswordField, newPassword);
+        await tester.pumpAndSettle();
+        await tester.enterText(confirmNewPasswordField, newPassword);
         await tester.pumpAndSettle();
 
         // Dismiss keyboard
         await tester.tapAt(const Offset(10, 100));
         await tester.pumpAndSettle();
 
-        final resetButton = find.text('Update password');
+        final resetButton = find.text(l10n.authUpdatePassword);
         expect(resetButton, findsOneWidget);
         await tester.tap(resetButton);
 
         // Wait for success snackbar
         final foundResetSuccess = await waitForText(
           tester,
-          'Password reset successful. Please log in.',
+          l10n.authPasswordResetSuccess,
         );
         expect(
           foundResetSuccess,
@@ -270,9 +287,7 @@ void main() {
 
         // Navigate to welcome by using GoRouter.go() to clear
         // the stale reset-password token from the URL.
-        final router = GoRouter.of(
-          tester.element(find.byType(Scaffold).first),
-        );
+        final router = GoRouter.of(tester.element(find.byType(Scaffold).first));
         router.go('/welcome');
         await pumpUntilSettled(tester, maxSeconds: 3);
 
@@ -482,9 +497,7 @@ void main() {
             // sheet. Using Navigator.pop on the root navigator because
             // the sheet is opened with useRootNavigator: true and
             // tapAt on scrim is unreliable when keyboard shifts layout.
-            await tester.testTextInput.receiveAction(
-              TextInputAction.done,
-            );
+            await tester.testTextInput.receiveAction(TextInputAction.done);
             await tester.pump(const Duration(milliseconds: 500));
 
             // Pop the modal bottom sheet route from root navigator
@@ -499,9 +512,7 @@ void main() {
             }
             logPhase('Phase 3f complete -- comment posted');
           } else {
-            logPhase(
-              'Phase 3f -- comment field not found, skipping',
-            );
+            logPhase('Phase 3f -- comment field not found, skipping');
           }
 
           // ══════════════════════════════════════════════════════════

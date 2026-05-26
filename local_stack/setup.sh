@@ -65,7 +65,12 @@ source "$ENV_FILE"
 if [ -z "${SERVER_NSEC:-}" ]; then
   nsec="$(openssl rand -hex 32)"
   if grep -q "^SERVER_NSEC=" "$ENV_FILE"; then
-    sed -i "s/^SERVER_NSEC=.*/SERVER_NSEC=$nsec/" "$ENV_FILE"
+    tmp_env="$(mktemp)"
+    awk -v nsec="$nsec" '
+      /^SERVER_NSEC=/ { print "SERVER_NSEC=" nsec; next }
+      { print }
+    ' "$ENV_FILE" > "$tmp_env"
+    mv "$tmp_env" "$ENV_FILE"
   else
     echo "SERVER_NSEC=$nsec" >> "$ENV_FILE"
   fi

@@ -4,6 +4,9 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
+
+AppLocalizations get _en => lookupAppLocalizations(const Locale('en'));
 
 /// Navigate from the welcome screen to the create account screen.
 ///
@@ -11,11 +14,11 @@ import 'package:flutter_test/flutter_test.dart';
 /// Taps "Create a new Divine account" to reach the registration screen.
 /// Waits for the invite guard to resolve and the form to appear.
 Future<void> navigateToCreateAccount(WidgetTester tester) async {
-  final createButton = find.text('Create a new Divine account');
+  final createButton = find.text(_en.authCreateNewAccount);
   expect(
     createButton,
     findsOneWidget,
-    reason: 'Welcome screen should show "Create a new Divine account"',
+    reason: 'Welcome screen should show "${_en.authCreateNewAccount}"',
   );
   await tester.tap(createButton);
   await tester.pumpAndSettle(const Duration(seconds: 1));
@@ -38,13 +41,13 @@ Future<void> navigateToCreateAccount(WidgetTester tester) async {
 
 /// Navigate from the welcome screen to the login options screen.
 ///
-/// Taps "Sign in with a different account" to reach the sign-in screen.
+/// Taps the localized sign-in CTA to reach the sign-in screen.
 Future<void> navigateToLoginOptions(WidgetTester tester) async {
-  final signInButton = find.text('Sign in with a different account');
+  final signInButton = find.text(_en.authSignInDifferentAccount);
   expect(
     signInButton,
     findsOneWidget,
-    reason: 'Welcome screen should show "Sign in with a different account"',
+    reason: 'Welcome screen should show "${_en.authSignInDifferentAccount}"',
   );
   await tester.tap(signInButton);
   await tester.pumpAndSettle(const Duration(seconds: 1));
@@ -84,7 +87,7 @@ Future<void> registerNewUser(
   // Submit — use widgetWithText to avoid matching the page title
   final submitButton = find.widgetWithText(
     DivineButton,
-    'Create account',
+    _en.authCreateAccountTitle,
   );
   expect(submitButton, findsOneWidget);
   await tester.tap(submitButton);
@@ -115,7 +118,7 @@ Future<void> loginWithCredentials(
   await tester.pumpAndSettle();
 
   // Submit — use widgetWithText to avoid matching the page title
-  final submitButton = find.widgetWithText(DivineButton, 'Sign in');
+  final submitButton = find.widgetWithText(DivineButton, _en.authSignInButton);
   expect(submitButton, findsOneWidget);
   await tester.tap(submitButton);
 }
@@ -161,10 +164,7 @@ Future<bool> waitForTextGone(
 ///
 /// Valid identifiers: 'home_tab', 'explore_tab', 'inbox_tab',
 /// 'profile_tab'.
-Future<void> tapBottomNavTab(
-  WidgetTester tester,
-  String semanticId,
-) async {
+Future<void> tapBottomNavTab(WidgetTester tester, String semanticId) async {
   final tab = find.byWidgetPredicate(
     (widget) =>
         widget is Semantics && widget.properties.identifier == semanticId,
