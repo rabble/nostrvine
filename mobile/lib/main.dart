@@ -610,6 +610,31 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
           }
         }
 
+        // Local-notification cold-start: Android pushes are data-only and
+        // rendered by flutter_local_notifications, so a tap that launches the
+        // app from a terminated state arrives here — not via getInitialMessage,
+        // which only covers OS-rendered pushes (iOS).
+        final launchTap = await container
+            .read(notificationServiceProvider)
+            .takeLaunchNotificationTap();
+        if (launchTap != null) {
+          Log.info(
+            'App launched from local notification (type: '
+            '${launchTap.notificationType})',
+            name: 'main',
+            category: LogCategory.system,
+          );
+          unawaited(
+            _routeNotificationTap(
+              referencedEventId: launchTap.referencedEventId,
+              eventId: launchTap.eventId,
+              notificationType: launchTap.notificationType,
+              senderPubkey: launchTap.senderPubkey,
+              container: container,
+            ),
+          );
+        }
+
         // Handle taps on notifications while app is in background
         FirebaseMessaging.onMessageOpenedApp.listen((message) {
           final parsed = parseFcmPayload(message.data);

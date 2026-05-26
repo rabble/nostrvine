@@ -7,6 +7,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:openvine/services/notification_helpers.dart'
+    show NotificationPayloadKeys;
 import 'package:unified_logger/unified_logger.dart';
 
 /// Types of notifications
@@ -145,7 +147,7 @@ class NotificationService {
   bool _disposed = false;
 
   // Flutter local notifications plugin instance
-  final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
+  FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
   bool _pluginInitialized = false;
   StreamController<NotificationTapEvent>? _notificationTapController;
@@ -161,6 +163,19 @@ class NotificationService {
       (_notificationTapController ??=
               StreamController<NotificationTapEvent>.broadcast())
           .stream;
+
+  /// Test seam: swap in a mock [plugin] and mark the service ready so
+  /// [sendLocal] and [takeLaunchNotificationTap] exercise the plugin directly
+  /// without touching real platform channels.
+  @visibleForTesting
+  void debugConfigurePlugin(
+    FlutterLocalNotificationsPlugin plugin, {
+    bool permissionsGranted = true,
+  }) {
+    _flutterLocalNotificationsPlugin = plugin;
+    _pluginInitialized = true;
+    _permissionsGranted = permissionsGranted;
+  }
 
   /// Initialize notification service
   ///
@@ -481,7 +496,16 @@ class NotificationService {
       category: LogCategory.system,
     );
 
-    if (payload == null || payload.isEmpty) return;
+    final event = _parseTapPayload(payload);
+    if (event != null) _emitNotificationTap(event);
+  }
+
+  /// Parses a local-notification tap [payload] into a [NotificationTapEvent],
+  /// or null when nothing routable is present. Shared by the live-tap path
+  /// ([_handleNotificationTapPayload]) and the cold-start path
+  /// ([takeLaunchNotificationTap]) so the two cannot diverge.
+  NotificationTapEvent? _parseTapPayload(String? payload) {
+    if (payload == null || payload.isEmpty) return null;
 
     try {
       final data = jsonDecode(payload) as Map<String, dynamic>;
@@ -490,23 +514,24 @@ class NotificationService {
         return value is String && value.isNotEmpty ? value : null;
       }
 
-      final referencedEventId = field('referencedEventId');
-      final eventId = field('eventId');
-      final senderPubkey = field('senderPubkey');
+      final referencedEventId = field(
+        NotificationPayloadKeys.referencedEventId,
+      );
+      final eventId = field(NotificationPayloadKeys.eventId);
+      final senderPubkey = field(NotificationPayloadKeys.senderPubkey);
       // A follow/mention carries no referencedEventId but is still routable
-      // via senderPubkey / eventId, so emit whenever any of the three exist.
-      if (referencedEventId != null ||
-          eventId != null ||
-          senderPubkey != null) {
-        _emitNotificationTap(
-          NotificationTapEvent(
-            referencedEventId: referencedEventId,
-            eventId: eventId,
-            notificationType: field('notificationType'),
-            senderPubkey: senderPubkey,
-          ),
-        );
+      // via senderPubkey / eventId, so route whenever any of the three exist.
+      if (referencedEventId == null &&
+          eventId == null &&
+          senderPubkey == null) {
+        return null;
       }
+      return NotificationTapEvent(
+        referencedEventId: referencedEventId,
+        eventId: eventId,
+        notificationType: field(NotificationPayloadKeys.notificationType),
+        senderPubkey: senderPubkey,
+      );
     } catch (e) {
       // Malformed payload (non-JSON, non-object, or unexpected shape).
       // Log a warning and discard — do not propagate to the Flutter error path.
@@ -515,6 +540,37 @@ class NotificationService {
         name: 'NotificationService',
         category: LogCategory.system,
       );
+      return null;
+    }
+  }
+
+  /// Returns the tap event for a locally-displayed notification that launched
+  /// the app from a *terminated* state, or null when the app was not launched
+  /// by such a tap. One-shot — consult once during startup.
+  ///
+  /// Complements FCM's `getInitialMessage`, which only covers OS-rendered
+  /// pushes (iOS, where the push service's APNS alert is shown by the OS). On
+  /// Android the push is data-only and rendered by this plugin, so a
+  /// terminated-app tap is delivered only through
+  /// `getNotificationAppLaunchDetails` — never via [notificationTapStream],
+  /// whose callback requires a live isolate.
+  Future<NotificationTapEvent?> takeLaunchNotificationTap() async {
+    if (kIsWeb) return null;
+    try {
+      if (!_pluginInitialized) {
+        await _initializePlugin();
+      }
+      final details = await _flutterLocalNotificationsPlugin
+          .getNotificationAppLaunchDetails();
+      if (details == null || !details.didNotificationLaunchApp) return null;
+      return _parseTapPayload(details.notificationResponse?.payload);
+    } catch (e) {
+      Log.error(
+        'Failed to read launch notification details: $e',
+        name: 'NotificationService',
+        category: LogCategory.system,
+      );
+      return null;
     }
   }
 
