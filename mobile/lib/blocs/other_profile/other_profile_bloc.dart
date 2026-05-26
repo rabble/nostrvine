@@ -68,12 +68,14 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
     final cachedProfile = await _profileRepository.getCachedProfile(
       pubkey: pubkey,
     );
+    if (isClosed) return;
     emit(OtherProfileLoading(profile: cachedProfile));
 
     try {
       final freshProfile = await _profileRepository.fetchFreshProfile(
         pubkey: pubkey,
       );
+      if (isClosed) return;
       if (freshProfile != null) {
         emit(OtherProfileLoaded(profile: freshProfile, isFresh: true));
         add(const VerifiedClaimsRequested());
@@ -86,6 +88,7 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
         );
       }
     } catch (e) {
+      if (isClosed) return;
       if (cachedProfile != null) {
         emit(OtherProfileLoaded(profile: cachedProfile, isFresh: false));
         add(const VerifiedClaimsRequested());
@@ -115,6 +118,7 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
       final freshProfile = await _profileRepository.fetchFreshProfile(
         pubkey: pubkey,
       );
+      if (isClosed) return;
       if (freshProfile != null) {
         emit(OtherProfileLoaded(profile: freshProfile, isFresh: true));
         add(const VerifiedClaimsRequested());
@@ -127,6 +131,7 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
         );
       }
     } catch (e) {
+      if (isClosed) return;
       if (currentProfile != null) {
         emit(OtherProfileLoaded(profile: currentProfile, isFresh: false));
         add(const VerifiedClaimsRequested());
@@ -156,6 +161,7 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
         pubkey: profile.pubkey,
         tags: profile.rawTags,
       );
+      if (isClosed) return;
       final latest = state;
       if (latest is OtherProfileLoaded &&
           latest.profile.pubkey == profile.pubkey) {
@@ -165,6 +171,7 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
       // Verifier failures are expected (network/4xx/5xx/timeout). Per
       // .claude/rules/error_handling.md they are NOT Reportable.
       addError(e, stackTrace);
+      if (isClosed) return;
       final latest = state;
       if (latest is OtherProfileLoaded &&
           latest.profile.pubkey == profile.pubkey) {
