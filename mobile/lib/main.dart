@@ -81,7 +81,7 @@ import 'package:openvine/services/logging_config_service.dart';
 import 'package:openvine/services/mention_resolution_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart' show HttpMethod;
 import 'package:openvine/services/notification_helpers.dart'
-    show parseFcmPayload;
+    show localNotificationTapPayload, parseFcmPayload;
 import 'package:openvine/services/notification_service.dart'
     show NotificationTapEvent;
 import 'package:openvine/services/notification_target_resolver.dart';
@@ -146,16 +146,10 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     title: title,
     body: body,
     notificationDetails: details,
-    payload: jsonEncode({
-      // Preserve the full normalized payload so a tap on this background-built
-      // notification routes identically to a system push tap. The FCM wire key
-      // 'type' maps to the internal 'notificationType'. senderPubkey carries
-      // the actor so follow taps (which have no referencedEventId) can route.
-      'referencedEventId': data['referencedEventId'],
-      'eventId': data['eventId'],
-      'notificationType': data['type'],
-      'senderPubkey': data['senderPubkey'],
-    }),
+    // Carry the normalized tap payload (shared with the foreground path via
+    // localNotificationTapPayload) so a tap on this background-built
+    // notification routes identically to a system push tap.
+    payload: jsonEncode(localNotificationTapPayload(data)),
   );
 }
 

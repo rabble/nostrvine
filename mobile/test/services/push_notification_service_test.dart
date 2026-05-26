@@ -2,6 +2,7 @@
 // ABOUTME: deregistration, preference updates, and foreground message handling.
 
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -13,6 +14,8 @@ import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/models/notification_preferences.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/nostr_identity.dart';
+import 'package:openvine/services/notification_helpers.dart'
+    show localNotificationTapPayload;
 import 'package:openvine/services/notification_service.dart';
 import 'package:openvine/services/push_notification_service.dart';
 
@@ -930,28 +933,78 @@ void main() {
     });
 
     group('handleForegroundMessage', () {
+      test('displays a local notification carrying the normalized tap '
+          'payload', () async {
+        when(
+          () => mockNotificationService.sendLocal(
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenAnswer((_) async {});
+
+        const data = {
+          'title': 'New comment',
+          'body': 'alice commented',
+          'type': 'comment',
+          'eventId': 'comment_event',
+          'referencedEventId': 'video_event',
+          'senderPubkey': 'alice_hex',
+        };
+
+        final service = buildService();
+        await service.handleForegroundMessage(data);
+
+        final payload =
+            verify(
+                  () => mockNotificationService.sendLocal(
+                    title: 'New comment',
+                    body: 'alice commented',
+                    payload: captureAny(named: 'payload'),
+                  ),
+                ).captured.single
+                as String;
+        // The foreground banner attaches exactly the shared payload shape.
+        expect(jsonDecode(payload), equals(localNotificationTapPayload(data)));
+        expect((jsonDecode(payload) as Map)['notificationType'], 'comment');
+        service.dispose();
+      });
+
       test(
-        'sends local notification with title and body from message',
+        'preserves senderPubkey for a follow (no referencedEventId)',
         () async {
           when(
             () => mockNotificationService.sendLocal(
               title: any(named: 'title'),
               body: any(named: 'body'),
+              payload: any(named: 'payload'),
             ),
           ).thenAnswer((_) async {});
 
-          final service = buildService();
-          await service.handleForegroundMessage({
-            'title': 'New Like',
-            'body': 'Someone liked your video',
-          });
+          const data = {
+            'title': 'New follower',
+            'body': 'bob started following you',
+            'type': 'follow',
+            'eventId': 'contact_event',
+            'senderPubkey': 'bob_hex',
+          };
 
-          verify(
-            () => mockNotificationService.sendLocal(
-              title: 'New Like',
-              body: 'Someone liked your video',
-            ),
-          ).called(1);
+          final service = buildService();
+          await service.handleForegroundMessage(data);
+
+          final payload =
+              verify(
+                    () => mockNotificationService.sendLocal(
+                      title: any(named: 'title'),
+                      body: any(named: 'body'),
+                      payload: captureAny(named: 'payload'),
+                    ),
+                  ).captured.single
+                  as String;
+          final decoded = jsonDecode(payload) as Map<String, dynamic>;
+          expect(decoded['notificationType'], 'follow');
+          expect(decoded['senderPubkey'], 'bob_hex');
+          expect(decoded['referencedEventId'], isNull);
           service.dispose();
         },
       );
@@ -961,6 +1014,7 @@ void main() {
           () => mockNotificationService.sendLocal(
             title: any(named: 'title'),
             body: any(named: 'body'),
+            payload: any(named: 'payload'),
           ),
         ).thenAnswer((_) async {});
 
@@ -973,6 +1027,7 @@ void main() {
           () => mockNotificationService.sendLocal(
             title: 'diVine',
             body: 'Someone liked your video',
+            payload: any(named: 'payload'),
           ),
         ).called(1);
         service.dispose();
@@ -986,6 +1041,7 @@ void main() {
           () => mockNotificationService.sendLocal(
             title: any(named: 'title'),
             body: any(named: 'body'),
+            payload: any(named: 'payload'),
           ),
         );
         service.dispose();

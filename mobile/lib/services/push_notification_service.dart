@@ -13,6 +13,8 @@ import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/models/notification_preferences.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/nostr_identity.dart';
+import 'package:openvine/services/notification_helpers.dart'
+    show localNotificationTapPayload;
 import 'package:openvine/services/notification_service.dart';
 import 'package:openvine/utils/nostr_timestamp.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -305,7 +307,15 @@ class PushNotificationService {
 
     final title = (data['title'] as String?) ?? 'diVine';
 
-    await _notificationService.sendLocal(title: title, body: body);
+    // Carry the normalized tap payload so a tap on this foreground-displayed
+    // notification routes through the shared contract exactly like a
+    // background/system-push tap (previously the payload was dropped here, so
+    // foreground taps could not deep-link).
+    await _notificationService.sendLocal(
+      title: title,
+      body: body,
+      payload: jsonEncode(localNotificationTapPayload(data)),
+    );
   }
 
   /// Releases resources held by this service.

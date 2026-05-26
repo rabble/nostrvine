@@ -549,4 +549,37 @@ void main() {
       expect(result.notificationType, equals('like'));
     });
   });
+
+  group('localNotificationTapPayload', () {
+    test('maps FCM type to notificationType and preserves routing fields', () {
+      final payload = localNotificationTapPayload(const {
+        'type': 'comment',
+        'eventId': 'comment_event',
+        'referencedEventId': 'video_event',
+        'senderPubkey': 'actor_hex',
+        'title': 'New comment',
+        'body': 'ignored for routing',
+      });
+
+      expect(payload, {
+        'referencedEventId': 'video_event',
+        'eventId': 'comment_event',
+        'notificationType': 'comment',
+        'senderPubkey': 'actor_hex',
+      });
+    });
+
+    test('preserves senderPubkey for a follow with no referencedEventId', () {
+      final payload = localNotificationTapPayload(const {
+        'type': 'follow',
+        'eventId': 'contact_event',
+        'senderPubkey': 'follower_hex',
+      });
+
+      expect(payload['notificationType'], equals('follow'));
+      expect(payload['senderPubkey'], equals('follower_hex'));
+      expect(payload['eventId'], equals('contact_event'));
+      expect(payload['referencedEventId'], isNull);
+    });
+  });
 }

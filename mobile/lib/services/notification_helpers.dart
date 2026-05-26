@@ -107,6 +107,24 @@ parseFcmPayload(Map<String, dynamic> data) {
   );
 }
 
+/// Builds the normalized local-notification tap payload from an FCM [data] map.
+///
+/// Single source of truth for the JSON shape carried on a locally-displayed
+/// notification, so the background/system-push path and the foreground path
+/// cannot drift. The FCM wire key `type` is stored as `notificationType`;
+/// `senderPubkey` is preserved so follow/mention taps (which carry no
+/// `referencedEventId`) can still route. The shape is the inverse of what
+/// [parseFcmPayload] / `NotificationService.handleNotificationTapPayload`
+/// consume on tap.
+Map<String, dynamic> localNotificationTapPayload(Map<String, dynamic> data) {
+  return {
+    'referencedEventId': data['referencedEventId'],
+    'eventId': data['eventId'],
+    'notificationType': data['type'],
+    'senderPubkey': data['senderPubkey'],
+  };
+}
+
 /// Resolves the actor name from a user profile with fallback priority:
 /// 1. name field
 /// 2. displayName field

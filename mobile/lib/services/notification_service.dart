@@ -524,8 +524,18 @@ class NotificationService {
     controller.add(event);
   }
 
-  /// Send a local notification with title and body
-  Future<void> sendLocal({required String title, required String body}) async {
+  /// Send a local notification with [title], [body], and an optional tap
+  /// [payload].
+  ///
+  /// [payload] is the normalized JSON string consumed by
+  /// [_handleNotificationTapPayload] on tap; pass it (built via
+  /// `localNotificationTapPayload`) so foreground-displayed notifications route
+  /// the same way as background/system-push ones.
+  Future<void> sendLocal({
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
     Log.debug(
       '📱 Sending local notification: $title',
       name: 'NotificationService',
@@ -604,6 +614,7 @@ class NotificationService {
         title: title,
         body: body,
         notificationDetails: notificationDetails,
+        payload: payload,
       );
 
       Log.debug(

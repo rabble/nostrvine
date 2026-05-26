@@ -4,6 +4,8 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/services/notification_helpers.dart'
+    show localNotificationTapPayload;
 import 'package:openvine/services/notification_service.dart';
 
 void main() {
@@ -387,6 +389,31 @@ void main() {
       expect(events.single.senderPubkey, equals('follower_hex'));
       expect(events.single.eventId, equals('contact_list_event'));
       expect(events.single.notificationType, equals('follow'));
+    });
+
+    test('a foreground-built local payload round-trips to a routable tap '
+        'event', () async {
+      final events = <NotificationTapEvent>[];
+      final sub = service.notificationTapStream.listen(events.add);
+      addTearDown(sub.cancel);
+
+      // The exact payload the foreground path now attaches (built from FCM
+      // data via the shared helper); tapping it must yield a routable event.
+      final payload = jsonEncode(
+        localNotificationTapPayload(const {
+          'type': 'follow',
+          'eventId': 'contact_event',
+          'senderPubkey': 'follower_hex',
+        }),
+      );
+      service.handleNotificationTapPayload(payload);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(events, hasLength(1));
+      expect(events.single.notificationType, equals('follow'));
+      expect(events.single.senderPubkey, equals('follower_hex'));
+      expect(events.single.eventId, equals('contact_event'));
+      expect(events.single.referencedEventId, isNull);
     });
 
     test('no-ops gracefully when the stream has no listeners', () {
