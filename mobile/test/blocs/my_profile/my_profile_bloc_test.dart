@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -11,6 +12,18 @@ import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:profile_repository/profile_repository.dart';
 
 class _MockProfileRepository extends Mock implements ProfileRepository {}
+
+/// Captures errors routed through [Bloc.onError] so a test can assert that a
+/// bloc closed mid-flight records no error when its awaited work resumes.
+class _ErrorCapturingObserver extends BlocObserver {
+  final List<Object> errors = <Object>[];
+
+  @override
+  void onError(BlocBase<dynamic> bloc, Object error, StackTrace stackTrace) {
+    errors.add(error);
+    super.onError(bloc, error, stackTrace);
+  }
+}
 
 void main() {
   group(MyProfileBloc, () {
@@ -48,6 +61,14 @@ void main() {
 
     MyProfileBloc createBloc({String pubkey = testPubkey}) =>
         MyProfileBloc(profileRepository: mockProfileRepository, pubkey: pubkey);
+
+    _ErrorCapturingObserver captureBlocErrors() {
+      final observer = _ErrorCapturingObserver();
+      final previousObserver = Bloc.observer;
+      Bloc.observer = observer;
+      addTearDown(() => Bloc.observer = previousObserver);
+      return observer;
+    }
 
     test('initial state is $MyProfileInitial', () {
       final bloc = createBloc();
@@ -992,6 +1013,79 @@ void main() {
           verify(
             () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
           ).called(1);
+        },
+      );
+    });
+
+    group('after close (lifecycle regression)', () {
+      test(
+        'records no error when closed before the fresh profile resolves on load',
+        () async {
+          final observer = captureBlocErrors();
+          final freshCompleter = Completer<UserProfile?>();
+          when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => createTestProfile());
+          when(
+            () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
+          ).thenAnswer((_) => freshCompleter.future);
+
+          final bloc = createBloc()..add(const MyProfileLoadRequested());
+
+          await pumpEventQueue();
+          await bloc.close();
+          freshCompleter.complete(createTestProfile());
+          await pumpEventQueue();
+
+          expect(observer.errors, isEmpty);
+        },
+      );
+
+      test(
+        'records no error when closed before the fresh fetch throws on load',
+        () async {
+          final observer = captureBlocErrors();
+          final freshCompleter = Completer<UserProfile?>();
+          when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => createTestProfile());
+          when(
+            () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
+          ).thenAnswer((_) => freshCompleter.future);
+
+          final bloc = createBloc()..add(const MyProfileLoadRequested());
+
+          await pumpEventQueue();
+          await bloc.close();
+          freshCompleter.completeError(Exception('network error'));
+          await pumpEventQueue();
+
+          expect(observer.errors, isEmpty);
+        },
+      );
+
+      test(
+        'records no error when closed before the profile stream emits',
+        () async {
+          final observer = captureBlocErrors();
+          final streamController = StreamController<UserProfile?>();
+          when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => createTestProfile());
+          when(
+            () => mockProfileRepository.watchProfile(pubkey: testPubkey),
+          ).thenAnswer((_) => streamController.stream);
+
+          final bloc = createBloc()
+            ..add(const MyProfileSubscriptionRequested());
+
+          await pumpEventQueue();
+          await bloc.close();
+          streamController.add(createTestProfile());
+          await pumpEventQueue();
+          await streamController.close();
+
+          expect(observer.errors, isEmpty);
         },
       );
     });

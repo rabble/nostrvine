@@ -44,6 +44,7 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
     final cachedProfile = await _profileRepository.getCachedProfile(
       pubkey: pubkey,
     );
+    if (isClosed) return;
     emit(
       MyProfileLoading(
         profile: cachedProfile,
@@ -57,6 +58,7 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
       final freshProfile = await _profileRepository.fetchFreshProfile(
         pubkey: pubkey,
       );
+      if (isClosed) return;
 
       if (freshProfile != null) {
         emit(
@@ -82,6 +84,7 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
         emit(const MyProfileError(errorType: MyProfileErrorType.notFound));
       }
     } on Exception {
+      if (isClosed) return;
       if (cachedProfile != null) {
         emit(
           MyProfileLoaded(
@@ -109,6 +112,7 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
     final cachedProfile = await _profileRepository.getCachedProfile(
       pubkey: pubkey,
     );
+    if (isClosed) return;
     emit(
       MyProfileLoading(
         profile: cachedProfile,
@@ -120,6 +124,7 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
     await emit.forEach<UserProfile?>(
       _profileRepository.watchProfile(pubkey: pubkey),
       onData: (profile) {
+        if (isClosed) return state;
         if (profile != null) {
           add(const VerifiedClaimsRequested());
           return MyProfileUpdated(
@@ -170,6 +175,7 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
         pubkey: profile.pubkey,
         tags: profile.rawTags,
       );
+      if (isClosed) return;
       // State may have changed mid-await; re-check before emitting.
       final latest = state;
       if (latest is MyProfileLoaded &&
@@ -184,6 +190,7 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
       // .claude/rules/error_handling.md they are NOT Reportable. Surface as
       // empty list rather than blocking the UI.
       addError(e, stackTrace);
+      if (isClosed) return;
       final latest = state;
       if (latest is MyProfileLoaded &&
           latest.profile.pubkey == profile.pubkey) {
