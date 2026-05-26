@@ -45,14 +45,6 @@ final class NotificationFeedItemTapped extends NotificationFeedEvent {
   List<Object?> get props => [notificationId];
 }
 
-/// Mark all notifications as read.
-final class NotificationFeedMarkAllRead extends NotificationFeedEvent {
-  const NotificationFeedMarkAllRead();
-
-  @override
-  List<Object?> get props => [];
-}
-
 /// Follow back a user from a follow notification.
 final class NotificationFeedFollowBack extends NotificationFeedEvent {
   const NotificationFeedFollowBack(this.pubkey);

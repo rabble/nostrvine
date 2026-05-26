@@ -97,7 +97,6 @@ void main() {
       when(
         () => mockNotificationRepo.markAsRead(any()),
       ).thenAnswer((_) async {});
-      when(() => mockNotificationRepo.markAllAsRead()).thenAnswer((_) async {});
     });
 
     tearDown(() async {
@@ -528,47 +527,6 @@ void main() {
         },
         build: createBloc,
         act: (bloc) => bloc.add(NotificationFeedItemTapped('v1')),
-        errors: () => [
-          isA<Reportable<Object>>().having(
-            (r) => r.unwrap(),
-            'unwrap',
-            isA<StateError>(),
-          ),
-        ],
-      );
-    });
-
-    group('NotificationFeedMarkAllRead', () {
-      blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'forwards to repository.markAllAsRead',
-        build: createBloc,
-        act: (bloc) => bloc.add(NotificationFeedMarkAllRead()),
-        verify: (_) {
-          verify(() => mockNotificationRepo.markAllAsRead()).called(1);
-        },
-      );
-
-      blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'forwards repository errors via addError',
-        setUp: () {
-          when(
-            () => mockNotificationRepo.markAllAsRead(),
-          ).thenThrow(Exception('boom'));
-        },
-        build: createBloc,
-        act: (bloc) => bloc.add(NotificationFeedMarkAllRead()),
-        errors: () => [isA<Exception>()],
-      );
-
-      blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'wraps unexpected Error from markAllAsRead as Reportable',
-        setUp: () {
-          when(
-            () => mockNotificationRepo.markAllAsRead(),
-          ).thenThrow(StateError('invariant'));
-        },
-        build: createBloc,
-        act: (bloc) => bloc.add(NotificationFeedMarkAllRead()),
         errors: () => [
           isA<Reportable<Object>>().having(
             (r) => r.unwrap(),

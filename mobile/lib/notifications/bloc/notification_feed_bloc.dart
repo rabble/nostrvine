@@ -45,7 +45,6 @@ class NotificationFeedBloc
       transformer: droppable(),
     );
     on<NotificationFeedItemTapped>(_onItemTapped);
-    on<NotificationFeedMarkAllRead>(_onMarkAllRead);
     on<NotificationFeedFollowBack>(
       _onFollowBack,
       transformer: sequential(),
@@ -259,34 +258,6 @@ class NotificationFeedBloc
         Reportable(
           e,
           context: NotificationFeedBlocReportableSites.onItemTapped,
-        ),
-        s,
-      );
-    }
-  }
-
-  /// Handle mark-all-as-read — forwards to the repository. Rollback on
-  /// failure (PR #4034 semantics) is implemented at the repository
-  /// layer so the badge cubit and the feed bloc recover consistently.
-  Future<void> _onMarkAllRead(
-    NotificationFeedMarkAllRead event,
-    Emitter<NotificationFeedState> emit,
-  ) async {
-    try {
-      await _notificationRepository.markAllAsRead();
-    } on Exception catch (e, s) {
-      // `NotificationRepository.markAllAsRead` propagates
-      // `FunnelcakeException` and local Drift DAO write failures
-      // after rolling the optimistic snapshot back (PR #4034
-      // semantics). Per .claude/rules/error_handling.md they are
-      // NOT Reportable.
-      addError(e, s);
-    } catch (e, s) {
-      // Errors (StateError, TypeError) — matrix-YES invariant.
-      addError(
-        Reportable(
-          e,
-          context: NotificationFeedBlocReportableSites.onMarkAllRead,
         ),
         s,
       );

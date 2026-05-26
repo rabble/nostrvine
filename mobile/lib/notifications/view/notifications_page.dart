@@ -17,7 +17,7 @@ import 'package:openvine/providers/app_providers.dart';
 /// `NotificationFeedStarted` on mount, which triggers `repository.refresh()`.
 /// The resulting snapshot flows through the repository's snapshot stream and
 /// propagates to the badge cubit automatically. Read state changes only on
-/// explicit item taps or mark-all actions.
+/// explicit per-item taps here; bulk mark-all lives in notification settings.
 class NotificationsPage extends ConsumerWidget {
   /// Creates a [NotificationsPage].
   const NotificationsPage({super.key});

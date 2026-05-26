@@ -34,10 +34,6 @@ abstract class NotificationFeedBlocReportableSites {
   /// Realistically a Drift DAO `TypeError` from a row-shape mismatch.
   static const String onItemTapped = '_onItemTapped';
 
-  /// `_onMarkAllRead` generic-catch arm — same coverage as
-  /// [onItemTapped], dispatched from the bulk mark-read CTA.
-  static const String onMarkAllRead = '_onMarkAllRead';
-
   /// `_onFollowBack` generic-catch arm — `Error` types that escape
   /// `FollowRepository.follow`'s Exception-only throws, plus a
   /// hypothetical `TypeError` from the post-await `_applyFollowState`
