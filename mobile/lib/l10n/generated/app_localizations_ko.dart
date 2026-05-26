@@ -4069,7 +4069,7 @@ class AppLocalizationsKo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count videos published to your profile',
+      other: '프로필에 영상 $count개를 게시했어요',
       one: '프로필에 영상을 게시했어요',
     );
     return '$_temp0';

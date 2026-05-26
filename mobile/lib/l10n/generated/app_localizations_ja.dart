@@ -4054,7 +4054,7 @@ class AppLocalizationsJa extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count videos published to your profile',
+      other: '$count本の動画をプロフィールに公開したよ',
       one: '動画をプロフィールに公開したよ',
     );
     return '$_temp0';

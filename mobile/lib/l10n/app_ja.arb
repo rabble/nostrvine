@@ -1794,7 +1794,7 @@
     "uploadProcessingMessage": "動画を処理中 - 数分かかるかも",
     "uploadReadyToPublishMessage": "動画の処理が完了、公開の準備OKだよ",
     "uploadPublishedMessage": "動画をプロフィールに公開したよ",
-  "uploadPublishedCountMessage": "{count, plural, =1{動画をプロフィールに公開したよ} other{{count} videos published to your profile}}",
+  "uploadPublishedCountMessage": "{count, plural, =1{動画をプロフィールに公開したよ} other{{count}本の動画をプロフィールに公開したよ}}",
     "uploadFailedMessage": "アップロードがうまくいかなかった - もう一回試してみて",
     "uploadRetryingMessage": "アップロードを再試行中...",
     "uploadPausedMessage": "アップロードを一時停止したよ",

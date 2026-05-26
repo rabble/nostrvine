@@ -4315,7 +4315,7 @@ class AppLocalizationsFil extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count videos published to your profile',
+      other: 'Na-publish na ang $count na video sa profile mo',
       one: 'Na-publish na ang video sa profile mo',
     );
     return '$_temp0';

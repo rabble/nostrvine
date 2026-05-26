@@ -4238,7 +4238,7 @@ class AppLocalizationsTr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count videos published to your profile',
+      other: '$count video profiline yayınlandı',
       one: 'Video profiline yayınlandı',
     );
     return '$_temp0';

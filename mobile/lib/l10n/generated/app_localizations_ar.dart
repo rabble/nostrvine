@@ -4212,7 +4212,7 @@ class AppLocalizationsAr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count videos published to your profile',
+      other: 'تم نشر $count مقاطع فيديو في ملفك الشخصي',
       one: 'تم نشر الفيديو في ملفك الشخصي',
     );
     return '$_temp0';

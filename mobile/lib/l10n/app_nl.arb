@@ -1804,7 +1804,7 @@
     "uploadProcessingMessage": "Video verwerken — dit kan een paar minuten duren",
     "uploadReadyToPublishMessage": "Video succesvol verwerkt en klaar om te publiceren",
     "uploadPublishedMessage": "Video gepubliceerd op je profiel",
-  "uploadPublishedCountMessage": "{count, plural, =1{Video gepubliceerd op je profiel} other{{count} videos published to your profile}}",
+  "uploadPublishedCountMessage": "{count, plural, =1{Video gepubliceerd op je profiel} other{{count} videos gepubliceerd op je profiel}}",
     "uploadFailedMessage": "Upload mislukt — probeer het opnieuw",
     "uploadRetryingMessage": "Upload opnieuw proberen...",
     "uploadPausedMessage": "Upload gepauzeerd door gebruiker",

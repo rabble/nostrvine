@@ -1801,7 +1801,7 @@
     "uploadProcessingMessage": "Memproses video - ini mungkin butuh beberapa menit",
     "uploadReadyToPublishMessage": "Video berhasil diproses dan siap dipublikasikan",
     "uploadPublishedMessage": "Video dipublikasikan ke profilmu",
-  "uploadPublishedCountMessage": "{count, plural, =1{Video dipublikasikan ke profilmu} other{{count} videos published to your profile}}",
+  "uploadPublishedCountMessage": "{count, plural, =1{Video dipublikasikan ke profilmu} other{{count} video dipublikasikan ke profilmu}}",
     "uploadFailedMessage": "Unggah gagal - silakan coba lagi",
     "uploadRetryingMessage": "Mencoba unggah lagi...",
     "uploadPausedMessage": "Unggahan dijeda oleh pengguna",

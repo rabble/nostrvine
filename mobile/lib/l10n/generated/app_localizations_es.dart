@@ -4303,7 +4303,7 @@ class AppLocalizationsEs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count videos published to your profile',
+      other: '$count videos publicados en tu perfil',
       one: 'Video publicado en tu perfil',
     );
     return '$_temp0';
