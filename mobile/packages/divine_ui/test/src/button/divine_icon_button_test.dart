@@ -14,6 +14,7 @@ void main() {
       Color? backgroundColor,
       Color? foregroundColor,
       String? semanticLabel,
+      String? semanticLongPressHint,
     }) {
       return MaterialApp(
         home: Scaffold(
@@ -27,6 +28,7 @@ void main() {
               backgroundColor: backgroundColor,
               foregroundColor: foregroundColor,
               semanticLabel: semanticLabel,
+              semanticLongPressHint: semanticLongPressHint,
             ),
           ),
         ),
@@ -57,6 +59,30 @@ void main() {
           findsOneWidget,
         );
       });
+
+      testWidgets('applies semantic long-press hint when set', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            semanticLongPressHint: 'Mute all tracks',
+            onLongPress: () {},
+          ),
+        );
+
+        final semantics = tester.getSemantics(find.byType(DivineIconButton));
+        expect(semantics.hintOverrides?.onLongPressHint, 'Mute all tracks');
+      });
+
+      testWidgets(
+        'has no long-press hint when semanticLongPressHint is null',
+        (tester) async {
+          await tester.pumpWidget(buildTestWidget(onPressed: () {}));
+
+          final semantics = tester.getSemantics(
+            find.byType(DivineIconButton),
+          );
+          expect(semantics.hintOverrides?.onLongPressHint, isNull);
+        },
+      );
     });
 
     group('interaction', () {

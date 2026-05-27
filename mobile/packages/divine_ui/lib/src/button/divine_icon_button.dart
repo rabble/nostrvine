@@ -42,7 +42,8 @@ enum DivineIconButtonSize {
 /// An icon-only button component following the Divine design system.
 ///
 /// The button's appearance is determined by [type] and [size]. The disabled
-/// state is automatically applied when [onPressed] is null.
+/// state is automatically applied when both [onPressed] and [onLongPress] are
+/// null.
 ///
 /// Both [DivineIconButtonSize.base] and [DivineIconButtonSize.small] have
 /// the same 48px tap target. The small variant appears 40px with a 4px
@@ -80,6 +81,7 @@ class DivineIconButton extends StatelessWidget {
     this.foregroundColor,
     this.semanticLabel,
     this.semanticValue,
+    this.semanticLongPressHint,
     super.key,
   });
 
@@ -87,7 +89,9 @@ class DivineIconButton extends StatelessWidget {
   final DivineIconName icon;
 
   /// Called when the button is tapped.
-  /// If null, the button is displayed in its disabled state.
+  ///
+  /// If both [onPressed] and [onLongPress] are null, the button is displayed
+  /// in its disabled state.
   final VoidCallback? onPressed;
 
   /// Called when the user long-presses.
@@ -111,6 +115,11 @@ class DivineIconButton extends StatelessWidget {
   /// Semantic value for accessibility (e.g. a count or status).
   final String? semanticValue;
 
+  /// Hint announced by screen readers to describe the long-press action.
+  ///
+  /// Only meaningful when [onLongPress] is set.
+  final String? semanticLongPressHint;
+
   @override
   Widget build(BuildContext context) {
     return _DivineIconButtonContent(
@@ -123,6 +132,7 @@ class DivineIconButton extends StatelessWidget {
       foregroundColor: foregroundColor,
       semanticLabel: semanticLabel,
       semanticValue: semanticValue,
+      semanticLongPressHint: semanticLongPressHint,
     );
   }
 }
@@ -138,6 +148,7 @@ class _DivineIconButtonContent extends StatelessWidget {
     this.foregroundColor,
     this.semanticLabel,
     this.semanticValue,
+    this.semanticLongPressHint,
   });
 
   final DivineIconName icon;
@@ -149,6 +160,7 @@ class _DivineIconButtonContent extends StatelessWidget {
   final Color? foregroundColor;
   final String? semanticLabel;
   final String? semanticValue;
+  final String? semanticLongPressHint;
 
   static const _borderWidth = 2.0;
 
@@ -239,6 +251,7 @@ class _DivineIconButtonContent extends StatelessWidget {
     Widget button = Semantics(
       label: semanticLabel,
       value: semanticValue,
+      onLongPressHint: semanticLongPressHint,
       button: true,
       enabled: _isEnabled,
       child: Padding(

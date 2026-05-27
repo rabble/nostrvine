@@ -141,6 +141,7 @@ class _VolumeButton extends StatelessWidget {
           : (hasModifiedVolume ? VineTheme.accentYellow : null),
       backgroundColor: isVolumeEditMode ? VineTheme.accentYellow : null,
       semanticLabel: context.l10n.videoEditorVolumeSemanticLabel,
+      semanticLongPressHint: context.l10n.videoEditorVolumeLongPressHint,
       onPressed: () => context.read<VideoEditorMainBloc>().add(
         const VideoEditorVolumeEditModeToggled(),
       ),
