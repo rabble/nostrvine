@@ -11,12 +11,4 @@ void main() {
     expect(contents, contains('locateFile'));
     expect(contents, contains('pointer-events: none'));
   });
-
-  test('web video player ignores pointer input on the platform view', () {
-    final contents = File(
-      'lib/widgets/web_video_player.dart',
-    ).readAsStringSync();
-
-    expect(contents, contains('IgnorePointer'));
-  });
 }

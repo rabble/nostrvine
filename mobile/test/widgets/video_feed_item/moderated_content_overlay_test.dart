@@ -124,15 +124,15 @@ void main() {
     ) async {
       await pumpOverlay(tester, status: PlaybackStatus.forbidden);
 
-      // The overlay must NOT show the usual FeedVideoOverlay chrome.
+      // The overlay must NOT show the usual interactive feed chrome.
       final videoAuthorSemanticsPrefix = RegExp(
         '^${RegExp.escape(enL10n.videoAuthorSemanticLabel(''))}',
       );
       expect(find.bySemanticsLabel(videoAuthorSemanticsPrefix), findsNothing);
       // The description tap target uses an action-oriented label
-      // ("Open video details") in FeedVideoOverlay; either that or the
-      // older content-echoing label would still indicate chrome leaked
-      // through, so we assert both are absent.
+      // ("Open video details"); either that or the older content-echoing
+      // label would still indicate chrome leaked through, so we assert both
+      // are absent.
       expect(find.bySemanticsLabel('Open video details'), findsNothing);
       expect(
         find.bySemanticsLabel(RegExp('Video description: .*')),

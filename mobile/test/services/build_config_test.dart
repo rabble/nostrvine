@@ -108,34 +108,6 @@ void main() {
       );
     });
 
-    test('nativeFeedPlayer should map to FF_NATIVE_FEED_PLAYER env var', () {
-      const config = BuildConfiguration();
-
-      expect(
-        config.getEnvironmentKey(FeatureFlag.nativeFeedPlayer),
-        equals('FF_NATIVE_FEED_PLAYER'),
-      );
-    });
-
-    test(
-      'nativeFeedPlayer absent env should intentionally default to false',
-      () {
-        const config = BuildConfiguration();
-
-        expect(
-          config.getDefault(FeatureFlag.nativeFeedPlayer),
-          isFalse,
-          reason:
-              'FF_NATIVE_FEED_PLAYER is opt-in and should remain disabled '
-              'when unset.',
-        );
-        expect(
-          config.getDefault(FeatureFlag.nativeFeedPlayer),
-          equals(const bool.fromEnvironment('FF_NATIVE_FEED_PLAYER')),
-        );
-      },
-    );
-
     test('feed auto advance is not feature flagged', () {
       expect(
         FeatureFlag.values.map((flag) => flag.name),

@@ -63,10 +63,10 @@ final activeVideoIdProvider = Provider<String?>((ref) {
   AsyncValue<VideoFeedState> videosAsync;
   switch (ctx.type) {
     case RouteType.home:
-      // Home feed uses PooledVideoFeed which manages its own playback
-      // via VideoFeedController. Return null to let it handle internally.
+      // Home feed uses FeedVideos, which manages playback internally.
+      // Return null to let the feed own active-player coordination.
       Log.debug(
-        '[ACTIVE] Home route (self-managed by PooledVideoFeed)',
+        '[ACTIVE] Home route (self-managed by FeedVideos)',
         name: 'ActiveVideoProvider',
         category: LogCategory.system,
       );

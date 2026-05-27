@@ -3,8 +3,7 @@ part of 'video_volume_cubit.dart';
 /// State for [VideoVolumeCubit].
 ///
 /// Volume is binary: `1.0` (unmuted) or `0.0` (muted). The actual loudness
-/// is controlled by the device's hardware volume — media_kit only sees
-/// `0` or `100`.
+/// is controlled by the device's hardware volume.
 class VideoVolumeState extends Equatable {
   const VideoVolumeState({this.volume = 1.0});
 

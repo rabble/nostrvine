@@ -1,5 +1,5 @@
-// ABOUTME: Tracks per-video playback status reported by the pooled video
-// ABOUTME: player. Feed UIs read this to swap in moderated-content overlays.
+// ABOUTME: Tracks per-video playback status reported by the native feed player.
+// ABOUTME: Feed UIs read this to swap in moderated-content overlays.
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
@@ -8,7 +8,7 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_state
 ///
 /// Widgets in the feed listen for the active video's entry and swap in
 /// specialized overlays (moderated content, not found, retry) when the
-/// pooled video player reports an error.
+/// native feed player reports an error.
 class VideoPlaybackStatusCubit extends Cubit<VideoPlaybackStatusState> {
   /// Creates a cubit. [maxEntries] caps the internal LRU map; defaults
   /// to the [VideoPlaybackStatusState] default when null.

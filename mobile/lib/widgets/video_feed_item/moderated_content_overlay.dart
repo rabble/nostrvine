@@ -1,5 +1,5 @@
 // ABOUTME: Full-screen overlay shown when the active video has a 401/403
-// ABOUTME: playback failure. Replaces the normal FeedVideoOverlay entirely.
+// ABOUTME: playback failure. Replaces the normal interactive feed overlay.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';

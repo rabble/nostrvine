@@ -107,7 +107,7 @@ enum RouteType {
   nip05Settings, // NIP-05 management nested under Nostr settings
   blueskySettings, // Bluesky crosspost publishing settings
   secureAccount,
-  pooledVideoFeed, // Pooled fullscreen video feed (uses pooled_video_player)
+  pooledVideoFeed, // Fullscreen video feed route
   videoDetail, // Video detail screen (deep link to specific video)
   conversation, // DM conversation detail (pushed from inbox)
   messageRequests, // Message requests inbox (pushed from inbox)

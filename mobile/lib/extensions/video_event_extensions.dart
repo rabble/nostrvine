@@ -7,7 +7,6 @@ import 'package:models/models.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/m3u8_resolver_service.dart';
 import 'package:openvine/services/video_format_preference.dart';
-import 'package:pooled_video_player/pooled_video_player.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Get quality string based on bandwidth tracker recommendation (3-tier)
@@ -363,21 +362,4 @@ extension VideoEventAppExtensions on VideoEvent {
       return videoUrl; // Fallback to original if resolution fails
     }
   }
-}
-
-/// Collection helpers for converting [VideoEvent] objects into pooled-player
-/// items with the same platform-aware URL selection used elsewhere in the app.
-extension VideoEventCollectionAppExtensions on Iterable<VideoEvent> {
-  /// Convert videos to pooled-player items, filtering out null URLs and
-  /// normalizing Divine-hosted playback URLs for the current platform.
-  List<VideoItem> toPooledVideoItems() =>
-      where((video) => video.videoUrl != null)
-          .map(
-            (video) => VideoItem(
-              id: video.id,
-              url: video.getOptimalVideoUrlForPlatform() ?? video.videoUrl!,
-              originalUrl: video.videoUrl,
-            ),
-          )
-          .toList();
 }

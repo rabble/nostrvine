@@ -226,9 +226,7 @@ void main() {
           ),
         ],
         verify: (_) {
-          verify(
-            () => mockLikesRepository.getLikeCount(testEventId),
-          ).called(1);
+          verify(() => mockLikesRepository.getLikeCount(testEventId)).called(1);
         },
       );
 
@@ -262,10 +260,8 @@ void main() {
             () => mockRepostsRepository.getRepostCount(testAddressableId),
           ).thenAnswer((_) async => 2);
         },
-        build: () => createBloc(
-          addressableId: testAddressableId,
-          initialLikeCount: 50,
-        ),
+        build: () =>
+            createBloc(addressableId: testAddressableId, initialLikeCount: 50),
         act: (bloc) => bloc.add(const VideoInteractionsFetchRequested()),
         expect: () => [
           const VideoInteractionsState(
@@ -322,10 +318,8 @@ void main() {
             () => mockRepostsRepository.getRepostCount(testAddressableId),
           ).thenAnswer((_) async => 0);
         },
-        build: () => createBloc(
-          addressableId: testAddressableId,
-          initialLikeCount: 5,
-        ),
+        build: () =>
+            createBloc(addressableId: testAddressableId, initialLikeCount: 5),
         act: (bloc) => bloc.add(const VideoInteractionsFetchRequested()),
         expect: () => [
           const VideoInteractionsState(
@@ -862,7 +856,7 @@ void main() {
       // `Nostr.ensurePublicKey`. The bloc must roll back the optimistic
       // flip and surface the StateError via `addError` — not crash and
       // not leave the heart filled. The fix in
-      // `_PooledVideoFeedItem.build` (video_feed_page.dart) prevents the
+      // the feed overlay wiring prevents the
       // stale snapshot in the first place; this test pins the bloc-side
       // behaviour so a future change to `ensurePublicKey`'s error type
       // doesn't silently drop the rollback.
@@ -1167,41 +1161,38 @@ void main() {
         ).called(1);
       });
 
-      test(
-        'does not addError after close when _publishLike completes '
-        'post-close (regression #4605)',
-        () async {
-          // _publishLike runs fire-and-forget via unawaited. The user can
-          // scroll the feed and tear down this video's bloc before the
-          // publish settles; the catch arm must not addError on a closed
-          // bloc.
-          final completer = Completer<bool>();
-          when(
-            () => mockLikesRepository.toggleLike(
-              eventId: testEventId,
-              authorPubkey: testAuthorPubkey,
-            ),
-          ).thenAnswer((_) => completer.future);
+      test('does not addError after close when _publishLike completes '
+          'post-close (regression #4605)', () async {
+        // _publishLike runs fire-and-forget via unawaited. The user can
+        // scroll the feed and tear down this video's bloc before the
+        // publish settles; the catch arm must not addError on a closed
+        // bloc.
+        final completer = Completer<bool>();
+        when(
+          () => mockLikesRepository.toggleLike(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+          ),
+        ).thenAnswer((_) => completer.future);
 
-          final observer = _CapturingObserver();
-          final priorObserver = Bloc.observer;
-          Bloc.observer = observer;
-          addTearDown(() => Bloc.observer = priorObserver);
+        final observer = _CapturingObserver();
+        final priorObserver = Bloc.observer;
+        Bloc.observer = observer;
+        addTearDown(() => Bloc.observer = priorObserver);
 
-          final bloc = createBloc(initialLikeCount: 10)
-            ..add(const VideoInteractionsLikeToggled());
-          // Let the handler dispatch the optimistic emit and reach the
-          // unawaited(_publishLike).
-          await Future<void>.delayed(Duration.zero);
+        final bloc = createBloc(initialLikeCount: 10)
+          ..add(const VideoInteractionsLikeToggled());
+        // Let the handler dispatch the optimistic emit and reach the
+        // unawaited(_publishLike).
+        await Future<void>.delayed(Duration.zero);
 
-          await bloc.close();
+        await bloc.close();
 
-          completer.completeError(Exception('relay rejected'));
-          await Future<void>.delayed(Duration.zero);
+        completer.completeError(Exception('relay rejected'));
+        await Future<void>.delayed(Duration.zero);
 
-          expect(observer.errors, isEmpty);
-        },
-      );
+        expect(observer.errors, isEmpty);
+      });
     });
 
     group('VideoInteractionsRepostToggled', () {
@@ -1451,36 +1442,33 @@ void main() {
         },
       );
 
-      test(
-        'does not addError after close when _publishRepost completes '
-        'post-close (regression #4605)',
-        () async {
-          final completer = Completer<bool>();
-          when(
-            () => mockRepostsRepository.toggleRepost(
-              addressableId: testAddressableId,
-              originalAuthorPubkey: testAuthorPubkey,
-              eventId: testEventId,
-            ),
-          ).thenAnswer((_) => completer.future);
+      test('does not addError after close when _publishRepost completes '
+          'post-close (regression #4605)', () async {
+        final completer = Completer<bool>();
+        when(
+          () => mockRepostsRepository.toggleRepost(
+            addressableId: testAddressableId,
+            originalAuthorPubkey: testAuthorPubkey,
+            eventId: testEventId,
+          ),
+        ).thenAnswer((_) => completer.future);
 
-          final observer = _CapturingObserver();
-          final priorObserver = Bloc.observer;
-          Bloc.observer = observer;
-          addTearDown(() => Bloc.observer = priorObserver);
+        final observer = _CapturingObserver();
+        final priorObserver = Bloc.observer;
+        Bloc.observer = observer;
+        addTearDown(() => Bloc.observer = priorObserver);
 
-          final bloc = createBloc(addressableId: testAddressableId)
-            ..add(const VideoInteractionsRepostToggled());
-          await Future<void>.delayed(Duration.zero);
+        final bloc = createBloc(addressableId: testAddressableId)
+          ..add(const VideoInteractionsRepostToggled());
+        await Future<void>.delayed(Duration.zero);
 
-          await bloc.close();
+        await bloc.close();
 
-          completer.completeError(Exception('relay rejected'));
-          await Future<void>.delayed(Duration.zero);
+        completer.completeError(Exception('relay rejected'));
+        await Future<void>.delayed(Duration.zero);
 
-          expect(observer.errors, isEmpty);
-        },
-      );
+        expect(observer.errors, isEmpty);
+      });
     });
 
     group('VideoInteractionsSubscriptionRequested', () {

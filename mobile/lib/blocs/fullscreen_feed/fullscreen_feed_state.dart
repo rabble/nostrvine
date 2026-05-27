@@ -67,12 +67,6 @@ final class FullscreenFeedState extends Equatable {
   /// Whether we have videos to display.
   bool get hasVideos => videos.isNotEmpty;
 
-  /// Videos converted to [VideoItem] for the pooled video player.
-  ///
-  /// Filters out videos without URLs and maps to the format needed by
-  /// [VideoFeedController].
-  List<VideoItem> get pooledVideos => videos.toPooledVideoItems();
-
   /// Metadata-sensitive signature for detecting updates to videos that keep
   /// the same IDs and order but change user-visible fields like loop counts.
   List<String> get videoUpdateSignature => videos
@@ -87,9 +81,6 @@ final class FullscreenFeedState extends Equatable {
         ].join('|'),
       )
       .toList(growable: false);
-
-  /// Whether we have pooled videos ready for playback.
-  bool get hasPooledVideos => pooledVideos.isNotEmpty;
 
   /// Create a copy with updated values. [pendingSkipTarget] accepts
   /// `null` explicitly via [clearPendingSkipTarget] — the default

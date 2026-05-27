@@ -445,7 +445,7 @@ class __OverlayState extends ConsumerState<_Overlay> {
     unawaited(feedState.animateToPage(widget.index + 1));
   }
 
-  /// Triggers age verification and retries pooled playback with viewer auth.
+  /// Triggers age verification and retries playback with viewer auth.
   Future<void> _verifyAgeForVideo() async {
     await retryAgeRestrictedPooledVideo(
       context: context,
@@ -476,7 +476,7 @@ class __OverlayState extends ConsumerState<_Overlay> {
     final video = widget.video;
     final pagePositionListenable = _pagePositionListenable;
 
-    // See _PooledFullscreenItem.build for the watch + key rationale. #3503.
+    // Keep the BlocProvider keyed by repository identities. #3503.
     final likesRepository = ref.watch(likesRepositoryProvider);
     final commentsRepository = ref.watch(commentsRepositoryProvider);
     final repostsRepository = ref.watch(repostsRepositoryProvider);
@@ -593,13 +593,12 @@ class __OverlayState extends ConsumerState<_Overlay> {
                         : null,
                     child: Stack(
                       children: [
-                        if (widget.controller != null) ...[
+                        if (widget.controller != null)
                           PausedVideoOverlay(
                             controller: widget.controller!,
                             isVisible: widget.isActive,
                             onVolumeToggle: (v) => _feedState?.setVolume(v),
                           ),
-                        ],
                         _FeedItemActions(
                           video: video,
                           index: widget.index,

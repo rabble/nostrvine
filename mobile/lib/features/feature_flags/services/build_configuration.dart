@@ -52,8 +52,6 @@ class BuildConfiguration {
         );
       case FeatureFlag.advancedRelaySettings:
         return const bool.fromEnvironment('FF_ADVANCED_RELAY_SETTINGS');
-      case FeatureFlag.nativeFeedPlayer:
-        return const bool.fromEnvironment('FF_NATIVE_FEED_PLAYER');
     }
   }
 
@@ -98,8 +96,6 @@ class BuildConfiguration {
         return 'FF_VIDEO_REPLIES';
       case FeatureFlag.advancedRelaySettings:
         return 'FF_ADVANCED_RELAY_SETTINGS';
-      case FeatureFlag.nativeFeedPlayer:
-        return 'FF_NATIVE_FEED_PLAYER';
     }
   }
 }

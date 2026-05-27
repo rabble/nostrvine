@@ -6,7 +6,6 @@ import 'package:models/models.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
-import 'package:pooled_video_player/pooled_video_player.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 VideoEvent _createVideoWithUrl(String url, {Map<String, String>? rawTags}) {
@@ -258,38 +257,6 @@ void main() {
       final fallback = video.getFallbackUrl();
 
       expect(primary, isNot(equals(fallback)));
-    });
-  });
-
-  group('toPooledVideoItems', () {
-    test('uses MP4 720p URL for Divine-hosted pooled playback', () {
-      const hash =
-          '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
-      final video = _createVideoWithUrl('https://media.divine.video/$hash');
-
-      final items = <VideoEvent>[video].toPooledVideoItems();
-
-      expect(items, hasLength(1));
-      expect(items.single, isA<VideoItem>());
-      expect(items.single.id, video.id);
-      expect(
-        items.single.url,
-        equals('https://media.divine.video/$hash/720p.mp4'),
-      );
-    });
-
-    test('filters out videos with null URLs', () {
-      final now = DateTime.fromMillisecondsSinceEpoch(1704067200 * 1000);
-      final videoWithoutUrl = VideoEvent(
-        id: 'deadbeef',
-        pubkey:
-            'bbbb1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab',
-        createdAt: 1704067200,
-        content: '',
-        timestamp: now,
-      );
-
-      expect(<VideoEvent>[videoWithoutUrl].toPooledVideoItems(), isEmpty);
     });
   });
 }

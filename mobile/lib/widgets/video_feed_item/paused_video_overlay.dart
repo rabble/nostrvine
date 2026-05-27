@@ -46,12 +46,18 @@ class _PausedVideoOverlayState extends State<PausedVideoOverlay>
   /// Whether the transient unpause pause-icon is currently visible.
   bool _showUnpauseFeedback = false;
 
+  /// Pending promotion of a stable visible-paused state to "started".
+  /// Used to suppress the brief paused-frame flash that can be emitted
+  /// during a swipe to the next video.
+  Timer? _stablePauseTimer;
+
   late final AnimationController _unpauseFeedbackController;
   late final Animation<double> _unpauseFeedbackOpacity;
 
   static const _unpauseFadeStartDelay = Duration(milliseconds: 50);
   static const _unpauseHideDelay = Duration(milliseconds: 550);
   static const _minPauseForFeedback = Duration(milliseconds: 150);
+  static const _stablePauseDelay = Duration(milliseconds: 300);
 
   @override
   void initState() {
@@ -90,6 +96,8 @@ class _PausedVideoOverlayState extends State<PausedVideoOverlay>
     if (!identical(oldWidget.controller, widget.controller)) {
       unawaited(_subscription?.cancel());
       _cancelUnpauseFeedbackTimers();
+      _stablePauseTimer?.cancel();
+      _stablePauseTimer = null;
       _hasStartedPlaying = false;
       _previouslyPaused = false;
       _pausedAt = null;
@@ -102,8 +110,12 @@ class _PausedVideoOverlayState extends State<PausedVideoOverlay>
     // Reset the latch on visibility transitions so the overlay doesn't
     // flash when swiping back to an already-loaded video that is briefly
     // paused before playback resumes.
-    if (oldWidget.isVisible != widget.isVisible && _hasStartedPlaying) {
-      setState(() => _hasStartedPlaying = false);
+    if (oldWidget.isVisible != widget.isVisible) {
+      _stablePauseTimer?.cancel();
+      _stablePauseTimer = null;
+      if (_hasStartedPlaying) {
+        setState(() => _hasStartedPlaying = false);
+      }
     }
   }
 
@@ -128,15 +140,42 @@ class _PausedVideoOverlayState extends State<PausedVideoOverlay>
         });
       }
       _pausedAt = null;
+      _stablePauseTimer?.cancel();
+      _stablePauseTimer = null;
       return;
     }
 
     if (state.status == PlaybackStatus.playing &&
         widget.isVisible &&
         !_hasStartedPlaying) {
+      _stablePauseTimer?.cancel();
+      _stablePauseTimer = null;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _hasStartedPlaying = true;
       });
+    }
+
+    // Suppress the brief paused-frame flash emitted when a new video
+    // becomes visible: only promote a
+    // visible-paused state to "showable" after it has been stable for
+    // [_stablePauseDelay]. A real user-paused video sits in this state
+    // long enough to be promoted; a swipe transition resolves to
+    // playing before the timer fires.
+    if (isPaused && widget.isVisible && !_hasStartedPlaying) {
+      _stablePauseTimer ??= Timer(_stablePauseDelay, () {
+        _stablePauseTimer = null;
+        if (!mounted) return;
+        final current = widget.controller.state;
+        if (!widget.isVisible ||
+            !current.isPaused ||
+            !current.isFirstFrameRendered) {
+          return;
+        }
+        setState(() => _hasStartedPlaying = true);
+      });
+    } else if (!isPaused) {
+      _stablePauseTimer?.cancel();
+      _stablePauseTimer = null;
     }
 
     if (isPaused && !wasPaused) {
@@ -175,6 +214,8 @@ class _PausedVideoOverlayState extends State<PausedVideoOverlay>
   void dispose() {
     unawaited(_subscription?.cancel());
     _cancelUnpauseFeedbackTimers();
+    _stablePauseTimer?.cancel();
+    _stablePauseTimer = null;
     _unpauseFeedbackController.dispose();
     super.dispose();
   }
@@ -206,10 +247,9 @@ class _PausedVideoOverlayState extends State<PausedVideoOverlay>
         final isPaused = snapshot.data?.isPaused ?? false;
         final isPlaying = snapshot.data?.isPlaying ?? false;
 
-        final hasVisiblePausedFrame = isPaused && isFirstFrameRendered;
         final shouldShow =
             widget.isVisible &&
-            (_hasStartedPlaying || hasVisiblePausedFrame) &&
+            _hasStartedPlaying &&
             isPaused &&
             !isBuffering &&
             isFirstFrameRendered;

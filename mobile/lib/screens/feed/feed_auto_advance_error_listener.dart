@@ -6,8 +6,8 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_state
 /// Fires [onSkipBrokenVideo] once when the active feed item's video enters a
 /// non-ready [PlaybackStatus] (error / forbidden / not-found / age-restricted).
 ///
-/// Needed because [FeedAutoAdvanceCompletionListener] only fires when the
-/// player crosses a loop boundary — a broken video never emits positions,
+/// Needed because loop-completion detection only fires when the player crosses
+/// a loop boundary — a broken video never emits positions,
 /// so without this, Auto gets stuck on the error overlay.
 ///
 /// Gated on [isAutoAdvanceActive] and [isActive] so background / preloaded

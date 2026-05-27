@@ -1,8 +1,7 @@
 /// Shared defaults for auto-advance detection and timing.
 ///
-/// These thresholds are used both by native (`FeedAutoAdvanceCompletionListener`)
-/// and web (`WebVideoFeed`) completion detection so the behaviour matches across
-/// platforms.
+/// These thresholds are used by feed loop-completion detection so the
+/// behaviour matches across platforms.
 abstract final class FeedAutoAdvanceDefaults {
   /// Position considered "near the start" when detecting a loop crossing.
   ///

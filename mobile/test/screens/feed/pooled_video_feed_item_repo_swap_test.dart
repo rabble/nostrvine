@@ -3,10 +3,7 @@
 // of the three repository providers (likes, comments, reposts) is rebuilt.
 //
 // The production sites mirror this pattern at:
-//   - mobile/lib/screens/feed/video_feed_page.dart (_PooledVideoFeedItem,
-//     _WebVideoFeedItem)
-//   - mobile/lib/screens/feed/pooled_fullscreen_video_feed_screen.dart
-//     (_PooledFullscreenItem, _WebFullscreenItem)
+//   - mobile/lib/widgets/video_feed_item/feed_videos.dart (_Overlay)
 // Each does `ref.watch(...)` on the three repos and gates the BlocProvider
 // with a composite ValueKey of the three identity hashes. When any
 // provider rebuilds (auth flip / sign-out / account switch), the key
@@ -31,10 +28,10 @@ class _MockCommentsRepository extends Mock implements CommentsRepository {}
 
 class _MockRepostsRepository extends Mock implements RepostsRepository {}
 
-/// Mirror of the production BlocProvider pattern from `_PooledVideoFeedItem`
-/// in `mobile/lib/screens/feed/video_feed_page.dart`. Kept in this test
+/// Mirror of the production BlocProvider pattern from `_Overlay` in
+/// `mobile/lib/widgets/video_feed_item/feed_videos.dart`. Kept in this test
 /// file because the production widget is private; reviewers should verify
-/// this fixture stays in sync with the four production call sites.
+/// this fixture stays in sync with the production call site.
 class _Fixture extends ConsumerWidget {
   const _Fixture();
 
@@ -150,11 +147,7 @@ void main() {
         // Capture the bloc that was created when the fixture first built.
         final probeContext = tester.element(find.byType(_Probe));
         final blocA = BlocProvider.of<VideoInteractionsBloc>(probeContext);
-        expect(
-          blocA.isClosed,
-          isFalse,
-          reason: 'initial bloc should be alive',
-        );
+        expect(blocA.isClosed, isFalse, reason: 'initial bloc should be alive');
 
         // Flip the toggle. likesRepositoryProvider rebuilds, _Fixture's
         // watch fires, the composite ValueKey changes, BlocProvider

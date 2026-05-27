@@ -7,7 +7,7 @@ import 'package:equatable/equatable.dart';
 import 'package:infinite_video_feed/infinite_video_feed.dart'
     show VideoErrorType;
 
-/// Per-video playback status reported by the pooled video player.
+/// Per-video playback status reported by the native feed player.
 enum PlaybackStatus {
   /// Loading or ready for playback. The default when no status has been
   /// recorded for an event.

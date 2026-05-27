@@ -15,10 +15,8 @@ import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
-import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:openvine/widgets/video_reply_parent_link.dart';
-import 'package:pooled_video_player/pooled_video_player.dart';
 
 /// The bottom-left video metadata block: optional inline caption pill,
 /// author avatar + name + loop count, optional title and description.
@@ -30,7 +28,6 @@ class VideoAuthorInfoSection extends ConsumerWidget {
   const VideoAuthorInfoSection({
     required this.video,
     required this.hasTextContent,
-    this.player,
     this.subtitleLayer,
     this.onInteracted,
     super.key,
@@ -39,12 +36,8 @@ class VideoAuthorInfoSection extends ConsumerWidget {
   final VideoEvent video;
   final bool hasTextContent;
 
-  /// When provided and [VideoEvent.hasSubtitles] is true, the inline
-  /// caption pill streams the current cue from the player and renders
-  /// it 16 px above the author row.
-  final Player? player;
-
-  /// Layout-neutral subtitle widget for non-pooled player integrations.
+  /// Layout-neutral subtitle widget rendered above the author row when
+  /// [VideoEvent.hasSubtitles] is true.
   final Widget? subtitleLayer;
 
   final VoidCallback? onInteracted;
@@ -63,16 +56,9 @@ class VideoAuthorInfoSection extends ConsumerWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         // Caption pill — sits 16 px above the author row, matching Figma
-        if (video.hasSubtitles) ...[
-          if (subtitleLayer != null)
-            subtitleLayer!
-          else if (player != null)
-            SubtitleCueStreamPill(
-              video: video,
-              positionStream: player!.stream.position,
-            ),
-          if (subtitleLayer != null || player != null)
-            const SizedBox(height: 16),
+        if (video.hasSubtitles && subtitleLayer != null) ...[
+          subtitleLayer!,
+          const SizedBox(height: 16),
         ],
         if (video.isVideoReply) ...[
           VideoReplyParentLink(

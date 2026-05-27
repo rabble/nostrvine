@@ -103,7 +103,6 @@ import 'package:openvine/widgets/geo_blocking_gate.dart';
 import 'package:openvine/widgets/upload_failure_sheet.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:permissions_service/permissions_service.dart';
-import 'package:pooled_video_player/pooled_video_player.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:window_manager/window_manager.dart';
@@ -453,21 +452,6 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
     optional: true,
   );
 
-  if (!kIsWeb) {
-    coordinator.registerService(
-      name: 'MediaPlayback',
-      phase: StartupPhase.essential,
-      initialize: () async {
-        await _runTimedStartupTask(
-          phaseName: 'media_playback',
-          initializationStep: 'Initializing media playback pool',
-          task: _initializeMediaPlayback,
-        );
-      },
-      optional: true,
-    );
-  }
-
   coordinator.registerService(
     name: 'HiveStorage',
     phase: StartupPhase.standard,
@@ -675,7 +659,7 @@ Future<void> _startOpenVineApp() async {
   StartupPerformanceService.instance.startPhase('bindings');
 
   // NOTE: Native video players (AVPlayer on iOS/macOS, ExoPlayer on Android)
-  // do not require explicit initialization like media_kit did.
+  // do not require explicit player-wide initialization.
   // They initialize automatically when VideoPlayerController is first created.
   //
   // NOTE: video_player_web_hls auto-registers for HLS support on web.
@@ -1115,11 +1099,6 @@ Future<void> _configurePlaybackAudioSession() async {
       ),
     ),
   );
-}
-
-Future<void> _initializeMediaPlayback() async {
-  MediaKit.ensureInitialized();
-  await PlayerPool.init();
 }
 
 Future<void> _initializeHiveStorage() => Hive.initFlutter();
@@ -1887,9 +1866,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
         draftService: ref.read(draftStorageServiceProvider),
         mentionResolutionService: profileRepository == null
             ? null
-            : MentionResolutionService(
-                profileRepository: profileRepository,
-              ),
+            : MentionResolutionService(profileRepository: profileRepository),
         collaboratorInviteService: CollaboratorInviteService(
           dmRepository: ref.read(dmRepositoryProvider),
           l10n: currentAppL10n(ref.read(sharedPreferencesProvider)),

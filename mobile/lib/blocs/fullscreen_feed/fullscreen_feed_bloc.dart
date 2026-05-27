@@ -14,7 +14,6 @@ import 'package:media_cache/media_cache.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/services/media_availability_checker.dart';
-import 'package:pooled_video_player/pooled_video_player.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 part 'fullscreen_feed_event.dart';
@@ -52,7 +51,7 @@ const _maxConcurrentCacheDownloads = 1;
 ///
 /// **Playback hooks integration:**
 /// - Background caching triggered via [FullscreenFeedVideoCacheStarted]
-/// - Loop enforcement handled by [VideoFeedController.maxLoopDuration]
+/// - Loop enforcement handled by the FeedVideos player configuration
 /// - Cache resolution happens at the player level (individual_video_providers)
 class FullscreenFeedBloc
     extends Bloc<FullscreenFeedEvent, FullscreenFeedState> {
@@ -90,10 +89,7 @@ class FullscreenFeedBloc
     );
     // Sequential: removal mutates videos + currentIndex + removedVideoIds
     // together; concurrent emits for different ids must not interleave.
-    on<FullscreenFeedVideoRemoved>(
-      _onVideoRemoved,
-      transformer: sequential(),
-    );
+    on<FullscreenFeedVideoRemoved>(_onVideoRemoved, transformer: sequential());
     on<FullscreenFeedSkipAcknowledged>(_onSkipAcknowledged);
   }
 

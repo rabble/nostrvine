@@ -80,8 +80,8 @@ class VideoVolumeCubit extends Cubit<VideoVolumeState> {
   final SharedPreferences _prefs;
   StreamSubscription<double>? _systemVolumeSubscription;
 
-  /// Called by [VideoFeedController.onVolumeChanged] when the user toggles
-  /// mute or adjusts volume via the in-app UI.
+  /// Called by the feed player when the user toggles mute or adjusts volume
+  /// via the in-app UI.
   ///
   /// Values are clamped to the binary set `{0.0, 1.0}`: any positive
   /// [newVolume] is treated as unmuted (`1.0`).

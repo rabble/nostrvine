@@ -45,9 +45,7 @@ void main() {
       return MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: PausedVideoOverlay(controller: controller),
-        ),
+        home: Scaffold(body: PausedVideoOverlay(controller: controller)),
       );
     }
 
@@ -72,9 +70,48 @@ void main() {
           ),
         );
         await tester.pump();
+        // Stable paused state is promoted after a short debounce, then
+        // the AnimatedSwitcher fades the play affordance in. Wait long
+        // enough for both.
+        await tester.pump(const Duration(milliseconds: 350));
         await tester.pump(const Duration(milliseconds: 220));
 
         expect(findPlayControl(), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'suppresses transient first-frame paused state that resolves quickly',
+      (tester) async {
+        await tester.pumpWidget(buildSubject());
+
+        controller.pushState(
+          const DivineVideoPlayerState(
+            status: PlaybackStatus.paused,
+            isFirstFrameRendered: true,
+            videoWidth: 1280,
+            videoHeight: 720,
+          ),
+        );
+        await tester.pump();
+        expect(findPlayControl(), findsNothing);
+
+        await tester.pump(const Duration(milliseconds: 150));
+        expect(findPlayControl(), findsNothing);
+
+        controller.pushState(
+          const DivineVideoPlayerState(
+            status: PlaybackStatus.playing,
+            isFirstFrameRendered: true,
+            videoWidth: 1280,
+            videoHeight: 720,
+          ),
+        );
+        await tester.pump();
+        expect(findPlayControl(), findsNothing);
+
+        await tester.pump(const Duration(milliseconds: 350));
+        expect(findPlayControl(), findsNothing);
       },
     );
   });

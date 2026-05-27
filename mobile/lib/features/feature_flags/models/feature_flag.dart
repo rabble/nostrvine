@@ -2,12 +2,6 @@
 // ABOUTME: Provides type-safe flag definitions with display names and descriptions
 
 enum FeatureFlag {
-  nativeFeedPlayer(
-    'Native Feed Player',
-    'Use the native platform video player in the feed (iOS, Android, macOS). '
-        'Disable to fall back to the legacy pooled player. '
-        'Has no effect on web.',
-  ),
   newCameraUI('New Camera UI', 'Enhanced camera interface with new controls'),
   enhancedAnalytics(
     'Enhanced Analytics',

@@ -5,7 +5,6 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:pooled_video_player/pooled_video_player.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 const _logName = 'PooledAgeRestrictedRetry';
@@ -42,22 +41,10 @@ Future<void> retryAgeRestrictedPooledVideo({
     return;
   }
 
-  final feedController = VideoPoolProvider.maybeFeedOf(context);
-  if (feedController == null) {
-    Log.warning(
-      'Skipping age-restricted retry: no VideoPoolProvider feed controller '
-      'in context for event ${video.id}',
-      name: _logName,
-      category: LogCategory.video,
-    );
-    return;
-  }
-
   context.read<VideoPlaybackStatusCubit>().report(
     video.id,
     PlaybackStatus.ready,
   );
-  feedController.updateRequestHeadersAndRetry(index, headers);
 }
 
 String? _resolveSha256(VideoEvent video) {

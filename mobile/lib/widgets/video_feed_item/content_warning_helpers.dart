@@ -1,5 +1,5 @@
 // ABOUTME: Shared content warning overlay and label helpers.
-// ABOUTME: Used by FeedVideoOverlay, PooledFullscreenVideoFeedScreen,
+// ABOUTME: Used by FeedVideos, PooledFullscreenVideoFeedScreen,
 // ABOUTME: and the old VideoFeedItem.
 
 import 'dart:ui' as ui;

@@ -329,8 +329,8 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
 
       // Deduplicate by event ID. Funnelcake and Nostr can return
       // overlapping videos when Funnelcake runs out and we fall through
-      // to Nostr. Without dedup, PooledVideoFeed's internal dedup
-      // causes a count mismatch that breaks the pagination trigger.
+      // to Nostr. Without dedup, feed-level player dedup can cause a
+      // count mismatch that breaks the pagination trigger.
       final seenIds = <String>{};
       final updatedVideos = <VideoEvent>[];
       for (final video in [...state.videos, ...validNewVideos]) {
