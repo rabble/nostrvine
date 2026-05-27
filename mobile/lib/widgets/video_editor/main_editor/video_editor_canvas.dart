@@ -175,6 +175,13 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   bool _isTrimmingClip = false;
   bool _isDraggingLayer = false;
 
+  /// Guards against duplicate [addHistory] calls when both
+  /// [ClipEditorBloc.clipsVolumeRevision] and
+  /// [TimelineOverlayBloc.audioTracksRevision] change in the same frame
+  /// (e.g. mute-all toggle). When both revision counters fire, only one
+  /// combined undo point is written instead of two separate ones.
+  bool _isVolumeSavePending = false;
+
   /// Most recent live-preview seek target captured while a layer trim
   /// handle is being dragged. Used at gesture end to sync the
   /// VideoEditorMainBloc's currentPosition (and thus the UI timeline
@@ -263,6 +270,27 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     } else {
       _videoPlayer?.play();
     }
+  }
+
+  /// Coalesces volume-history writes from clip and audio revision changes.
+  ///
+  /// Both the [ClipEditorBloc] (clipsVolumeRevision) and
+  /// [TimelineOverlayBloc] (audioTracksRevision) BlocListeners call this
+  /// helper. If both revision counters fire in the same frame — as happens
+  /// during a mute-all toggle — the [addPostFrameCallback] runs only once,
+  /// writing a single combined undo point that covers clips + audio rather
+  /// than two separate entries.
+  void _scheduleVolumeHistoryWrite() {
+    if (_isVolumeSavePending) return;
+    _isVolumeSavePending = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _isVolumeSavePending = false;
+      if (!mounted) return;
+      VideoEditorScope.of(context).editor?.setVolumeState(
+        clips: context.read<ClipEditorBloc>().state.clips,
+        audioTracks: context.read<TimelineOverlayBloc>().state.audioTracks,
+      );
+    });
   }
 
   /// Handles seek requests from BLoC (e.g. timeline scrubbing).
@@ -1031,14 +1059,15 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           },
         ),
         // Persist audio track volume changes to the ProImageEditor undo
-        // history.  audioTracksRevision is incremented exclusively by
-        // TimelineOverlayAudioVolumeChanged, so this listener fires once
-        // per volume-dial release and creates exactly one undo point.
+        // history. Both this listener and the clipsVolumeRevision listener
+        // below call _scheduleVolumeHistoryWrite, which coalesces concurrent
+        // revision bumps (e.g. mute-all toggle) into a single combined undo
+        // point instead of two separate entries.
         BlocListener<TimelineOverlayBloc, TimelineOverlayState>(
           listenWhen: (previous, current) =>
               previous.audioTracksRevision != current.audioTracksRevision,
           listener: (context, state) {
-            scope.requireEditor.setSoundVolumes(state.audioTracks);
+            _scheduleVolumeHistoryWrite();
           },
         ),
         BlocListener<TimelineOverlayBloc, TimelineOverlayState>(
@@ -1115,15 +1144,15 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           },
         ),
         // Persist clip volume changes to the ProImageEditor undo history.
-        // clipsVolumeRevision is incremented exclusively by
-        // ClipEditorClipVolumeChanged, so this listener creates exactly one
-        // undo point per volume-dial release without duplicating the history
-        // entries written by trim/reorder operations.
+        // Both this listener and the audioTracksRevision listener above
+        // call _scheduleVolumeHistoryWrite, which coalesces concurrent
+        // revision bumps (e.g. mute-all toggle) into a single combined undo
+        // point instead of two separate entries.
         BlocListener<ClipEditorBloc, ClipEditorState>(
           listenWhen: (previous, current) =>
               previous.clipsVolumeRevision != current.clipsVolumeRevision,
           listener: (context, state) {
-            scope.requireEditor.setClipState(state.clips);
+            _scheduleVolumeHistoryWrite();
           },
         ),
         BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
