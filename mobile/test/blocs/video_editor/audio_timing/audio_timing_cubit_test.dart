@@ -160,9 +160,9 @@ void main() {
         'restores previous offset from sound startOffset',
         build: () => buildCubit(
           sound: _createTestSound(
-            // maxDuration = 6.3s, scrollable = 20 - 6.3 = 13.7s
-            // For offset 0.5: startTime = 0.5 * 13.7 = 6.85s
-            startOffset: const Duration(milliseconds: 6850),
+            // minRemainingAudio = 0.5s, scrollable = 20 - 0.5 = 19.5s
+            // For offset 0.5: startTime = 0.5 * 19.5 = 9.75s
+            startOffset: const Duration(milliseconds: 9750),
           ),
         ),
         act: (cubit) => cubit.initialize(),
@@ -179,12 +179,14 @@ void main() {
       );
 
       blocTest<AudioTimingCubit, AudioTimingState>(
-        'uses offset 0 when audio is shorter than maxDuration',
-        build: () => buildCubit(sound: _createTestSound(duration: 3)),
+        'uses offset 0 when audio is shorter than minRemainingAudio',
+        build: () => buildCubit(
+          sound: _createTestSound(duration: 0.3),
+        ),
         act: (cubit) => cubit.initialize(),
         expect: () => [
           isA<AudioTimingState>()
-              .having((s) => s.audioDuration, 'audioDuration', 3)
+              .having((s) => s.audioDuration, 'audioDuration', 0.3)
               .having((s) => s.startOffset, 'startOffset', 0),
           isA<AudioTimingState>().having(
             (s) => s.isPlaying,
@@ -468,25 +470,27 @@ void main() {
     });
 
     group('calculateStartOffset', () {
-      test('returns Duration.zero when audio is shorter than maxDuration', () {
-        final cubit = buildCubit(sound: _createTestSound(duration: 3));
-        // Simulate initialized state
-        cubit.emit(const AudioTimingState(audioDuration: 3, startOffset: 0.5));
+      test('returns Duration.zero when audio is shorter than minRemaining', () {
+        final cubit = buildCubit(sound: _createTestSound(duration: 0.3));
+        // audioDuration (0.3s) <= minRemainingAudioSecs (0.5s),
+        // so scrollable = 0 → always zero
+        cubit.emit(
+          const AudioTimingState(audioDuration: 0.3, startOffset: 0.5),
+        );
 
-        // Audio (3s) < maxDuration (6.3s), so scrollable = 0 → always zero
         expect(cubit.calculateStartOffset(), equals(Duration.zero));
         cubit.close();
       });
 
       test('returns correct offset for 20s audio at midpoint', () {
         final cubit = buildCubit(sound: _createTestSound());
-        // maxDuration = 6.3s, scrollable = 20 - 6.3 = 13.7s
-        // At offset 0.5: startTime = 0.5 * 13.7 = 6.85s = 6850ms
+        // minRemaining = 0.5s, scrollable = 20 - 0.5 = 19.5s
+        // At offset 0.5: startTime = 0.5 * 19.5 = 9.75s = 9750ms
         cubit.emit(const AudioTimingState(audioDuration: 20, startOffset: 0.5));
 
         expect(
           cubit.calculateStartOffset(),
-          equals(const Duration(milliseconds: 6850)),
+          equals(const Duration(milliseconds: 9750)),
         );
         cubit.close();
       });
@@ -501,15 +505,36 @@ void main() {
 
       test('returns maximum offset at 1.0', () {
         final cubit = buildCubit(sound: _createTestSound());
-        // scrollable = 20 - 6.3 = 13.7s
+        // scrollable = 20 - 0.5 = 19.5s
         cubit.emit(const AudioTimingState(audioDuration: 20, startOffset: 1.0));
 
         expect(
           cubit.calculateStartOffset(),
-          equals(const Duration(milliseconds: 13700)),
+          equals(const Duration(milliseconds: 19500)),
         );
         cubit.close();
       });
+
+      test(
+        'allows start offset past audioDuration - maxDuration '
+        '(short remainder)',
+        () {
+          // 10s audio, video maxDuration = 6.3s.
+          // Old behaviour capped startOffset at 10 - 6.3 = 3.7s.
+          // New behaviour allows up to 10 - 0.5 = 9.5s, leaving 0.5s of
+          // audio playback for the remainder of the video.
+          final cubit = buildCubit(sound: _createTestSound(duration: 10));
+          cubit.emit(
+            const AudioTimingState(audioDuration: 10, startOffset: 1.0),
+          );
+
+          expect(
+            cubit.calculateStartOffset(),
+            equals(const Duration(milliseconds: 9500)),
+          );
+          cubit.close();
+        },
+      );
     });
 
     group('player state changes', () {

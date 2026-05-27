@@ -402,20 +402,35 @@ class _VideoDurationTimeline extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width - 32;
     final segmentWidth = screenWidth * selectionWidthRatio;
-
-    // Calculate scrollable distance based on audio duration
-    final maxDurationSecs =
-        VideoEditorConstants.maxDuration.inMilliseconds / 1000.0;
     final audioDurationSecs = audioDuration ?? 0;
 
-    // Short audio: no scrolling (segment fills timeline relative to audio)
-    // Long audio: scrollable distance proportional to excess audio
+    // Scrollable distance lets the segment's left edge reach
+    // `audioDuration - minRemainingAudio`, so users can pick a late start
+    // even when the trailing audio is shorter than the video duration.
+    // `screenWidth` represents `audioDurationSecs` worth of time, so the
+    // minimum-remaining slice occupies this many pixels on screen.
     final double maxScrollableDistance;
-    if (audioDurationSecs <= 0 || audioDurationSecs <= maxDurationSecs) {
+    if (audioDurationSecs <= 0 ||
+        audioDurationSecs <= AudioTimingCubit.minRemainingAudioSecs) {
       maxScrollableDistance = 0;
     } else {
-      maxScrollableDistance = screenWidth - segmentWidth;
+      final minRemainingWidth =
+          screenWidth *
+          (AudioTimingCubit.minRemainingAudioSecs / audioDurationSecs);
+      maxScrollableDistance = (screenWidth - minRemainingWidth).clamp(
+        0.0,
+        double.infinity,
+      );
     }
+
+    final segmentLeft = startOffset * maxScrollableDistance;
+    // Shrink the segment when the remaining audio is shorter than the video's
+    // max duration, mirroring how [AudioTimingCubit] clamps the playable clip
+    // to the tail of the source.
+    final effectiveSegmentWidth = segmentWidth.clamp(
+      0.0,
+      (screenWidth - segmentLeft).clamp(0.0, double.infinity),
+    );
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -458,9 +473,9 @@ class _VideoDurationTimeline extends StatelessWidget {
               child: Stack(
                 children: [
                   Positioned(
-                    left: startOffset * maxScrollableDistance,
+                    left: segmentLeft,
                     child: Container(
-                      width: segmentWidth,
+                      width: effectiveSegmentWidth,
                       height: 8,
                       decoration: BoxDecoration(
                         color: VineTheme.vineGreen,
@@ -530,14 +545,42 @@ class _AudioWaveformSelector extends StatelessWidget {
           selectionWidth * (audioDurationSecs / maxDurationSecs);
     }
 
-    // Calculate how far the waveform can scroll
-    final maxScrollableDistance = (fullWaveformWidth - selectionWidth).clamp(
-      0.0,
-      double.infinity,
-    );
+    // Calculate how far the waveform can scroll.
+    //
+    // The selection's left edge (in audio time) can range from 0 to
+    // `audioDuration - minRemainingAudio`, allowing users to pick a late
+    // start even when the trailing audio is shorter than the video.
+    // `selectionWidth` represents `maxDuration` worth of audio in pixels,
+    // so the minimum-remaining slice occupies `selectionWidth * (minRem /
+    // maxDuration)` pixels and must remain inside the selection.
+    final double maxScrollableDistance;
+    if (audioDurationSecs <= 0 ||
+        audioDurationSecs <= AudioTimingCubit.minRemainingAudioSecs) {
+      maxScrollableDistance = 0;
+    } else {
+      final minVisibleWidth =
+          selectionWidth *
+          (AudioTimingCubit.minRemainingAudioSecs / maxDurationSecs);
+      maxScrollableDistance = (fullWaveformWidth - minVisibleWidth).clamp(
+        0.0,
+        double.infinity,
+      );
+    }
     // Waveform position: at offset 0, waveform starts at selection left edge
     // at offset 1, waveform ends at selection right edge
     final waveformLeft = selectionLeft - startOffset * maxScrollableDistance;
+
+    // Shrink the green selection when the trailing audio is shorter than the
+    // video's max duration, so the box matches the actual playable clip
+    // (mirrors [AudioTimingCubit._setClippedAudioSource]'s end clamp).
+    final waveformRight = waveformLeft + fullWaveformWidth;
+    final remainingSelectionWidth = (waveformRight - selectionLeft).clamp(
+      0.0,
+      double.infinity,
+    );
+    final effectiveSelectionWidth = selectionWidth < remainingSelectionWidth
+        ? selectionWidth
+        : remainingSelectionWidth;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -588,7 +631,7 @@ class _AudioWaveformSelector extends StatelessWidget {
                     top: 0,
                     bottom: 0,
                     child: Container(
-                      width: selectionWidth,
+                      width: effectiveSelectionWidth,
                       decoration: BoxDecoration(
                         color: VineTheme.primary,
                         borderRadius: .circular(24),
@@ -642,7 +685,7 @@ class _AudioWaveformSelector extends StatelessWidget {
                     top: 0,
                     bottom: 0,
                     child: Container(
-                      width: selectionWidth,
+                      width: effectiveSelectionWidth,
                       decoration: BoxDecoration(
                         borderRadius: .circular(24),
                         border: Border.all(

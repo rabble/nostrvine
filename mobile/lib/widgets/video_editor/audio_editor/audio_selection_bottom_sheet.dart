@@ -101,6 +101,7 @@ class _AudioSelectionBottomSheetState
   AudioEvent? _selectedItem;
   AudioCategory _category = .divine;
   String _searchQuery = '';
+  bool _isLoadingAudio = false;
 
   late final _tabController = TabController(
     length: AudioCategory.values.length,
@@ -188,10 +189,12 @@ class _AudioSelectionBottomSheetState
       var resolvedSound = sound;
       if (shouldReload) {
         await _audioService.stop();
+        if (mounted) setState(() => _isLoadingAudio = true);
         final loadedDuration =
             sound.isLocalImport && sound.localFilePath != null
             ? await _audioService.loadAudioFromFile(sound.localFilePath!)
             : await _audioService.loadAudio(sound.url!);
+        if (mounted) setState(() => _isLoadingAudio = false);
         _loadedSoundId = sound.id;
         // Backfill missing duration so the selection overlay and list
         // tile can show a correct timestamp for Nostr sounds that don't
@@ -479,6 +482,7 @@ class _AudioSelectionBottomSheetState
                 ? AudioEditorSelectionOverlay(
                     audio: _selectedItem!,
                     audioService: _audioService,
+                    isLoading: _isLoadingAudio,
                     onTapDone: _handleDoneSelection,
                     onTogglePlayState: _togglePlayPause,
                   )

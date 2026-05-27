@@ -46,17 +46,30 @@ class AudioTimingCubit extends Cubit<AudioTimingState> {
 
   static const _logName = 'AudioTimingCubit';
 
+  /// Minimum amount of audio (in seconds) that must remain playable after
+  /// the chosen start offset.
+  ///
+  /// Bounds the scrollable range so users can position the start anywhere
+  /// from `0` up to `audioDuration - minRemainingAudioSecs`, even when the
+  /// remaining audio is shorter than the video's max duration. The video
+  /// will simply play unscored audio for the trailing portion.
+  static const double minRemainingAudioSecs = 0.5;
+
   /// Maximum video duration in seconds.
   static double get _maxDurationSecs =>
       VideoEditorConstants.maxDuration.inMilliseconds / 1000.0;
 
   /// The scrollable audio range in seconds.
   ///
-  /// This is the amount of audio that extends beyond the video duration.
-  /// Returns 0 if audio is shorter than the video duration.
+  /// Allows the start offset to span from `0` to
+  /// `audioDuration - minRemainingAudioSecs`. Returns 0 when the audio is
+  /// shorter than [minRemainingAudioSecs].
   double get _scrollableAudioSecs {
     final audioDuration = state.audioDuration ?? 0;
-    return (audioDuration - _maxDurationSecs).clamp(0.0, double.infinity);
+    return (audioDuration - minRemainingAudioSecs).clamp(
+      0.0,
+      double.infinity,
+    );
   }
 
   /// Initializes the cubit: computes initial offset, starts playback.
@@ -74,7 +87,7 @@ class AudioTimingCubit extends Cubit<AudioTimingState> {
 
     // Restore previous selection offset (normalized 0-1)
     var initialOffset = 0.0;
-    final scrollableAudioSecs = (audioDuration - _maxDurationSecs).clamp(
+    final scrollableAudioSecs = (audioDuration - minRemainingAudioSecs).clamp(
       0.0,
       double.infinity,
     );

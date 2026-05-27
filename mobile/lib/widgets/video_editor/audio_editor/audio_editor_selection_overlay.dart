@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:sound_service/sound_service.dart';
 
 class AudioEditorSelectionOverlay extends StatelessWidget {
@@ -13,6 +14,7 @@ class AudioEditorSelectionOverlay extends StatelessWidget {
     required this.audioService,
     required this.onTogglePlayState,
     required this.onTapDone,
+    this.isLoading = false,
     super.key,
   });
 
@@ -20,6 +22,7 @@ class AudioEditorSelectionOverlay extends StatelessWidget {
   final AudioPlaybackService audioService;
   final VoidCallback onTogglePlayState;
   final VoidCallback onTapDone;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -78,6 +81,7 @@ class AudioEditorSelectionOverlay extends StatelessWidget {
 
             _AudioPlaybackProgressButton(
               audioService: audioService,
+              isLoading: isLoading,
               onPressed: onTogglePlayState,
             ),
             DivineIconButton(
@@ -98,63 +102,73 @@ class _AudioPlaybackProgressButton extends StatelessWidget {
   const _AudioPlaybackProgressButton({
     required this.audioService,
     required this.onPressed,
+    this.isLoading = false,
   });
 
   final AudioPlaybackService audioService;
   final VoidCallback onPressed;
+  final bool isLoading;
 
   static const double _buttonVisualSize = 42;
   static const double _buttonBorderRadius = 16;
+  static const _switchDuration = Duration(milliseconds: 300);
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<bool>(
-      stream: audioService.playingStream,
-      initialData: audioService.isPlaying,
-      builder: (context, playingSnapshot) {
-        final isPlaying = playingSnapshot.data ?? false;
-        return StreamBuilder<Duration?>(
-          stream: audioService.durationStream,
-          initialData: audioService.duration,
-          builder: (context, durationSnapshot) {
-            return StreamBuilder<Duration>(
-              stream: audioService.positionStream,
-              initialData: Duration.zero,
-              builder: (context, positionSnapshot) {
-                final durationMs = durationSnapshot.data?.inMilliseconds ?? 0;
-                final positionMs = positionSnapshot.data?.inMilliseconds ?? 0;
-                final progress = durationMs <= 0
-                    ? 0.0
-                    : (positionMs / durationMs).clamp(0.0, 1.0);
+    return AnimatedSwitcher(
+      duration: _switchDuration,
+      child: isLoading
+          ? const BrandedLoadingIndicator(size: _buttonVisualSize)
+          : StreamBuilder<bool>(
+              stream: audioService.playingStream,
+              initialData: audioService.isPlaying,
+              builder: (context, playingSnapshot) {
+                final isPlaying = playingSnapshot.data ?? false;
+                return StreamBuilder<Duration?>(
+                  stream: audioService.durationStream,
+                  initialData: audioService.duration,
+                  builder: (context, durationSnapshot) {
+                    return StreamBuilder<Duration>(
+                      stream: audioService.positionStream,
+                      initialData: Duration.zero,
+                      builder: (context, positionSnapshot) {
+                        final durationMs =
+                            durationSnapshot.data?.inMilliseconds ?? 0;
+                        final positionMs =
+                            positionSnapshot.data?.inMilliseconds ?? 0;
+                        final progress = durationMs <= 0
+                            ? 0.0
+                            : (positionMs / durationMs).clamp(0.0, 1.0);
 
-                return SizedBox.square(
-                  dimension: _buttonVisualSize,
-                  child: CustomPaint(
-                    foregroundPainter: _CircularProgressBorderPainter(
-                      progress: progress,
-                      borderRadius: _buttonBorderRadius,
-                    ),
-                    child: Center(
-                      child: DivineIconButton(
-                        type: .ghostSecondary,
-                        icon: isPlaying ? .pauseFill : .playFill,
-                        semanticLabel: isPlaying
-                            ? context
-                                  .l10n
-                                  .videoEditorAudioPausePreviewSemanticLabel
-                            : context
-                                  .l10n
-                                  .videoEditorAudioPlayPreviewSemanticLabel,
-                        onPressed: onPressed,
-                      ),
-                    ),
-                  ),
+                        return SizedBox.square(
+                          dimension: _buttonVisualSize,
+                          child: CustomPaint(
+                            foregroundPainter: _CircularProgressBorderPainter(
+                              progress: progress,
+                              borderRadius: _buttonBorderRadius,
+                            ),
+                            child: Center(
+                              child: DivineIconButton(
+                                type: .ghostSecondary,
+                                icon: isPlaying ? .pauseFill : .playFill,
+                                semanticLabel: isPlaying
+                                    ? context
+                                          .l10n
+                                          .videoEditorAudioPausePreviewSemanticLabel
+                                    : context
+                                          .l10n
+                                          .videoEditorAudioPlayPreviewSemanticLabel,
+                                onPressed: onPressed,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
                 );
               },
-            );
-          },
-        );
-      },
+            ),
     );
   }
 }
