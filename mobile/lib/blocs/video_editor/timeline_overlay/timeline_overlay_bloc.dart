@@ -48,7 +48,10 @@ class TimelineOverlayBloc
       _onAudioVolumeChanged,
       transformer: sequential(),
     );
-    on<TimelineOverlayAllAudioVolumeChanged>(_onAllAudioVolumeChanged);
+    on<TimelineOverlayAllAudioVolumeChanged>(
+      _onAllAudioVolumeChanged,
+      transformer: sequential(),
+    );
   }
 
   static const _markerMatchTolerance = Duration(milliseconds: 50);
@@ -581,8 +584,7 @@ class TimelineOverlayBloc
     Emitter<TimelineOverlayState> emit,
   ) {
     final nextVolume = event.volume.clamp(0.0, 1.0);
-    final affected =
-        state.audioTracks.where((t) => !t.isOriginalSound);
+    final affected = state.audioTracks.where((t) => !t.isOriginalSound);
     if (affected.isEmpty) return;
     if (affected.every((t) => t.volume == nextVolume)) return;
     final updated = state.audioTracks

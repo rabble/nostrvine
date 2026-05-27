@@ -1,5 +1,6 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -70,6 +71,10 @@ void main() {
 
         final semantics = tester.getSemantics(find.byType(DivineIconButton));
         expect(semantics.hintOverrides?.onLongPressHint, 'Mute all tracks');
+        expect(
+          semantics.getSemanticsData().hasAction(SemanticsAction.longPress),
+          isTrue,
+        );
       });
 
       testWidgets(

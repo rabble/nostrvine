@@ -1020,8 +1020,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             // AudioEvent equality is identity-based (excludes volume), so
             // Equatable cannot detect a volume-only change via the
             // audioTracks list. audioTracksRevision is incremented by
-            // TimelineOverlayAudioVolumeChanged to make the state distinct
-            // and force the listener to fire here.
+            // user-driven audio volume change events to make the state
+            // distinct and force the listener to fire here.
             if (previous.audioTracksRevision != current.audioTracksRevision) {
               return true;
             }

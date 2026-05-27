@@ -251,6 +251,7 @@ class _DivineIconButtonContent extends StatelessWidget {
     Widget button = Semantics(
       label: semanticLabel,
       value: semanticValue,
+      onLongPress: onLongPress,
       onLongPressHint: semanticLongPressHint,
       button: true,
       enabled: _isEnabled,
