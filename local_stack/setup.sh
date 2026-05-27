@@ -5,9 +5,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="$SCRIPT_DIR/.env"
 ENV_EXAMPLE="$SCRIPT_DIR/.env.example"
 
-# ── Prerequisites ────────────────────────────────────────────────────────────
+# shellcheck source=android_sdk.sh
+source "$SCRIPT_DIR/android_sdk.sh"
 
-echo "Checking prerequisites..."
+# Track whether we actually performed setup work (used to suppress the summary
+# on no-op runs, since local_up now runs setup.sh on every invocation).
+DID_WORK=false
+
+# ── Prerequisites ────────────────────────────────────────────────────────────
 
 has_errors=false
 
@@ -48,13 +53,12 @@ if [ "$has_errors" = true ]; then
   exit 1
 fi
 
-echo "All prerequisites found."
-
 # ── .env file ────────────────────────────────────────────────────────────────
 
 if [ ! -f "$ENV_FILE" ]; then
   cp "$ENV_EXAMPLE" "$ENV_FILE"
   echo "Created $ENV_FILE from template."
+  DID_WORK=true
 fi
 
 # shellcheck source=/dev/null
@@ -75,23 +79,37 @@ if [ -z "${SERVER_NSEC:-}" ]; then
     echo "SERVER_NSEC=$nsec" >> "$ENV_FILE"
   fi
   echo "Generated SERVER_NSEC and wrote to .env"
+  DID_WORK=true
 fi
 
 # ── Keycast master.key ───────────────────────────────────────────────────────
+
+# Docker creates master.key as a directory when the host path is missing at
+# container start (bind-mount race). Detect and remove so the file path is free.
+if [ -d "$SCRIPT_DIR/master.key" ]; then
+  echo "Removing stray master.key/ directory (Docker bind-mount race)..."
+  rmdir "$SCRIPT_DIR/master.key" 2>/dev/null || {
+    echo "master.key/ is non-empty — inspect manually before deleting it." >&2
+    exit 1
+  }
+  echo "Next 'mise run local_up' will recreate the keycast container with the file mount."
+  DID_WORK=true
+fi
 
 if [ ! -f "$SCRIPT_DIR/master.key" ]; then
   echo "Generating keycast master.key..."
   openssl rand 32 | base64 > "$SCRIPT_DIR/master.key"
   echo "master.key generated at $SCRIPT_DIR/master.key"
-else
-  echo "master.key already exists."
+  DID_WORK=true
 fi
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 
-echo ""
-echo "Setup complete. Next steps:"
-echo "  cd mobile"
-echo "  mise run local_up       # start all services"
-echo "  mise run local_status   # verify health"
-echo "  mise run local_logs     # inspect startup"
+if [ "$DID_WORK" = true ]; then
+  echo ""
+  echo "Setup complete. Next steps:"
+  echo "  cd mobile"
+  echo "  mise run local_up       # start all services"
+  echo "  mise run local_status   # verify health"
+  echo "  mise run local_logs     # inspect startup"
+fi

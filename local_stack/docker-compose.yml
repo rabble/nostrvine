@@ -248,6 +248,7 @@ services:
   # ---------------------------------------------------------------------------
   e2e-seed:
     build: ./seed
+    profiles: ["seed"]
     depends_on:
       funnelcake-relay:
         condition: service_started

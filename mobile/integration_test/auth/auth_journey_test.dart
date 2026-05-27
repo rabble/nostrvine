@@ -3,7 +3,6 @@
 // ABOUTME: Requires: local Docker stack running (mise run local_up)
 // ABOUTME: Run with: mise run e2e_test (passes --dart-define=DEFAULT_ENV=LOCAL automatically)
 
-import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -233,32 +232,9 @@ void main() {
         ).clearSnackBars();
         await tester.pump(const Duration(milliseconds: 500));
 
-        // Enter both password fields on the reset screen using the field labels
-        // so stale route-transition widgets cannot be matched accidentally.
-        final newPasswordField = find.descendant(
-          of: find.widgetWithText(
-            DivineAuthTextField,
-            l10n.authNewPasswordLabel,
-          ),
-          matching: find.byType(TextField),
-        );
-        final confirmNewPasswordField = find.descendant(
-          of: find.widgetWithText(
-            DivineAuthTextField,
-            l10n.authConfirmNewPasswordLabel,
-          ),
-          matching: find.byType(TextField),
-        );
-        expect(newPasswordField, findsOneWidget);
-        expect(confirmNewPasswordField, findsOneWidget);
-        await tester.enterText(newPasswordField, newPassword);
-        await tester.pumpAndSettle();
-        await tester.enterText(confirmNewPasswordField, newPassword);
-        await tester.pumpAndSettle();
-
-        // Dismiss keyboard
-        await tester.tapAt(const Offset(10, 100));
-        await tester.pumpAndSettle();
+        // Enter new password and submit. The reset screen requires both the
+        // password and confirmation fields before it calls the reset API.
+        await enterResetPassword(tester, newPassword);
 
         final resetButton = find.text(l10n.authUpdatePassword);
         expect(resetButton, findsOneWidget);

@@ -18,14 +18,13 @@ MOBILE_DIR="$(cd "${SCRIPT_DIR}/../mobile" && pwd)"
 COMPOSE_FILE="${SCRIPT_DIR}/docker-compose.yml"
 MERGE_SCRIPT="${SCRIPT_DIR}/merge_logs.py"
 
+# shellcheck source=android_sdk.sh
+source "${SCRIPT_DIR}/android_sdk.sh"
+
 # --- Ensure DISPLAY is set for emulator (Hyprland/XWayland) ---
-if [[ -z "${DISPLAY:-}" ]]; then
-    if [[ -S /tmp/.X11-unix/X1 ]]; then
-        export DISPLAY=:1
-        echo "Note: Set DISPLAY=:1 (XWayland) for emulator camera support." >&2
-    elif [[ -S /tmp/.X11-unix/X0 ]]; then
-        export DISPLAY=:0
-    fi
+DISPLAY_TO_USE="$(detect_x11_display)"
+if [[ -n "$DISPLAY_TO_USE" ]]; then
+    export DISPLAY="$DISPLAY_TO_USE"
 fi
 
 TEST_PATH="${1:-integration_test/auth/}"
@@ -77,6 +76,11 @@ if [[ -z "$DEVICE" ]]; then
 fi
 echo "Device:     ${DEVICE}" >&2
 
+PATROL_EXTRA_ARGS=()
+if [[ "${PATROL_NO_UNINSTALL:-}" == "true" ]]; then
+    PATROL_EXTRA_ARGS+=(--no-uninstall)
+fi
+
 # --- Start logcat capture (background, flutter/app logs with timestamps) ---
 echo "Starting logcat capture..." >&2
 adb -s "$DEVICE" logcat -c 2>/dev/null || true
@@ -92,6 +96,7 @@ PATH="$HOME/.pub-cache/bin:$PATH" patrol test \
     --target "$TEST_PATH" \
     --dart-define=DEFAULT_ENV=LOCAL \
     --dart-define=INVITE_SERVER_URL=http://10.0.2.2:43004 \
+    "${PATROL_EXTRA_ARGS[@]}" \
     2>&1 | tee "$APP_LOG"
 TEST_EXIT="${PIPESTATUS[0]}"
 set -e
@@ -116,6 +121,20 @@ if [[ $TEST_EXIT -eq 0 ]]; then
     echo "Tests PASSED." >&2
 else
     echo "Tests FAILED (exit ${TEST_EXIT})." >&2
+
+    # Auto-surface install failures: patrol reports "Total: 0" with Gradle exit 1
+    # when the APK install failed (e.g. INSTALL_FAILED_INSUFFICIENT_STORAGE), not
+    # when a test is missing. The native test report has the real failure.
+    if grep -qE 'Total:[[:space:]]+0([^0-9]|$)' "$APP_LOG" 2>/dev/null; then
+        echo "" >&2
+        echo "Patrol reported Total: 0 with non-zero exit — likely APK install failure, not a missing Dart test." >&2
+        while IFS= read -r -d '' f; do
+            if grep -q "<failure\|<error" "$f" 2>/dev/null; then
+                echo "--- $(basename "$f") ---" >&2
+                grep -A 2 "<failure\|<error" "$f" | head -12 >&2 || true
+            fi
+        done < <(find "${MOBILE_DIR}/build" -path '*androidTest-results*' -name 'TEST-*.xml' -print0 2>/dev/null)
+    fi
 fi
 echo "" >&2
 echo "Report: ${REPORT_FILE} (${ENTRY_COUNT} entries)" >&2

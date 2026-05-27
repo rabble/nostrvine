@@ -12,6 +12,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/reset_password.dart';
 
+import '../../../integration_test/helpers/navigation_helpers.dart';
 import '../../helpers/autofill_context_mock.dart';
 import '../../helpers/test_provider_overrides.dart';
 
@@ -133,6 +134,36 @@ void main() {
           );
 
           expect(usernameField, findsNothing);
+        },
+      );
+
+      testWidgets(
+        'reset password helper fills confirmation field before submit',
+        (tester) async {
+          when(
+            () => mockOAuth.resetPassword(
+              token: any(named: 'token'),
+              newPassword: any(named: 'newPassword'),
+            ),
+          ).thenAnswer(
+            (_) async => ResetPasswordResult(success: true),
+          );
+
+          await tester.pumpWidget(buildTestWidget());
+          await tester.pumpAndSettle();
+
+          await enterResetPassword(tester, 'NewSecure123!');
+          await tester.tap(
+            find.widgetWithText(DivineButton, 'Update password'),
+          );
+          await tester.pump();
+
+          verify(
+            () => mockOAuth.resetPassword(
+              token: 'test-token-abc123',
+              newPassword: 'NewSecure123!',
+            ),
+          ).called(1);
         },
       );
 

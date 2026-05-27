@@ -3,13 +3,16 @@ flutter = "3.41.9"
 
 [tasks.local_up]
 description = "Start all local E2E services"
+depends = ["local_setup"]
 run = """
-docker compose -f ../local_stack/docker-compose.yml up -d
-docker compose -f ../local_stack/docker-compose.yml up -d --wait \
-  keycast keycast-postgres keycast-redis \
-  funnelcake-relay funnelcake-api funnelcake-proxy funnelcake-redis funnelcake-clickhouse \
-  minio blossom blossom-proxy invite
-docker compose -f ../local_stack/docker-compose.yml run --rm e2e-seed
+bash ../local_stack/up.sh
+"""
+
+[tasks.local_up_cached]
+description = "Start stack using cached images (offline / rate-limited / image-pull failures)"
+depends = ["local_setup"]
+run = """
+bash ../local_stack/up.sh --pull=missing
 """
 
 [tasks.local_down]
@@ -35,9 +38,10 @@ run = "docker compose -f ../local_stack/docker-compose.yml ps"
 
 [tasks.local_reset]
 description = "Wipe all local data (relay, DB, blossom) and restart fresh"
+depends = ["local_setup"]
 run = """
 docker compose -f ../local_stack/docker-compose.yml down -v
-docker compose -f ../local_stack/docker-compose.yml up -d --wait
+bash ../local_stack/up.sh
 """
 
 [tasks.local_setup]
@@ -68,3 +72,15 @@ run = "bash ../scripts/install-hooks.sh"
 description = "Run E2E tests with log profiling (starts Docker stack, captures merged timeline)"
 depends = ["setup_hooks", "local_up"]
 run = "bash ../local_stack/profile.sh {{ arg(i=0, name='test_path', default='integration_test/auth/') }}"
+
+[tasks.emulator]
+description = "Launch Android emulator (auto-detects DISPLAY, XWayland on Linux)"
+run = "bash ../local_stack/emulator.sh"
+
+[tasks.emulator_headless]
+description = "Launch Android emulator headless (offscreen, no window)"
+run = "bash ../local_stack/emulator.sh --headless"
+
+[tasks.emulator_wipe]
+description = "Launch Android emulator with -wipe-data (nuclear option for storage issues)"
+run = "bash ../local_stack/emulator.sh --wipe"

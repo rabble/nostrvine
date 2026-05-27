@@ -123,6 +123,36 @@ Future<void> loginWithCredentials(
   await tester.tap(submitButton);
 }
 
+/// Fill the reset password form's new-password and confirmation fields.
+Future<void> enterResetPassword(
+  WidgetTester tester,
+  String password,
+) async {
+  final newPasswordField = find.descendant(
+    of: find.widgetWithText(DivineAuthTextField, _en.authNewPasswordLabel),
+    matching: find.byType(TextField),
+  );
+  final confirmPasswordField = find.descendant(
+    of: find.widgetWithText(
+      DivineAuthTextField,
+      _en.authConfirmNewPasswordLabel,
+    ),
+    matching: find.byType(TextField),
+  );
+
+  expect(newPasswordField, findsOneWidget);
+  expect(confirmPasswordField, findsOneWidget);
+
+  await tester.enterText(newPasswordField, password);
+  await tester.pumpAndSettle();
+  await tester.enterText(confirmPasswordField, password);
+  await tester.pumpAndSettle();
+
+  // Dismiss keyboard before tapping the pinned submit button.
+  await tester.tapAt(const Offset(10, 100));
+  await tester.pumpAndSettle();
+}
+
 /// Wait for a widget with the given text to appear, using pump loops.
 ///
 /// Cannot use pumpAndSettle when polling timers are active (e.g.
