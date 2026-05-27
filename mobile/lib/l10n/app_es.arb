@@ -2858,6 +2858,7 @@
     "videoEditorAudioPlayPreviewSemanticLabel": "Reproducir vista previa",
     "videoEditorAudioPausePreviewSemanticLabel": "Pausar vista previa",
     "videoEditorAudioUntitledSound": "Sonido sin título",
+    "videoEditorVolumeLongPressHint": "Silenciar o activar todas las pistas",
     "videoEditorAudioUntitled": "Sin título",
     "videoEditorAudioAddAudio": "Agregar audio",
     "videoEditorAudioNoSoundsAvailableTitle": "No hay sonidos disponibles",

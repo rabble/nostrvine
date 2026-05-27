@@ -7226,6 +7226,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoEditorAudioUntitledSound => 'Namnlöst ljud';
 
   @override
+  String get videoEditorVolumeLongPressHint => 'Tysta eller slå på alla spår';
+
+  @override
   String get videoEditorAudioUntitled => 'Namnlös';
 
   @override

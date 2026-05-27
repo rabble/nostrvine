@@ -2,6 +2,7 @@
 // ABOUTME: Covers clip/custom-audio rendering and volume interactions.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
@@ -114,6 +115,24 @@ void main() {
       expect(volumePreviewNotifier.value, isNull);
       expect(overlayBloc.state.audioTracks.first.volume, lessThan(0.1));
       expect(overlayBloc.state.audioTracksRevision, 1);
+    });
+
+    testWidgets('clip arc exposes long-press semantic action and hint', (
+      tester,
+    ) async {
+      clipBloc.add(ClipEditorInitialized([_createTestClip(id: 'clip-a')]));
+
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(buildWidget());
+      await tester.pump();
+
+      final data = tester.getSemantics(find.bySemanticsLabel('Clip 1'));
+      expect(
+        data.getSemanticsData().hasAction(SemanticsAction.longPress),
+        isTrue,
+      );
+
+      handle.dispose();
     });
   });
 }

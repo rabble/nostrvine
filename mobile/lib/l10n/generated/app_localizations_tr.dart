@@ -7193,6 +7193,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorAudioUntitledSound => 'Başlıksız ses';
 
   @override
+  String get videoEditorVolumeLongPressHint =>
+      'Tüm parçaları sessize al veya aç';
+
+  @override
   String get videoEditorAudioUntitled => 'Başlıksız';
 
   @override

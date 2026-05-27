@@ -12620,6 +12620,12 @@ abstract class AppLocalizations {
   /// **'Untitled sound'**
   String get videoEditorAudioUntitledSound;
 
+  /// Semantic long-press hint for a volume arc control. Screen readers announce this as the long-press affordance, which mutes or unmutes all timeline tracks at once.
+  ///
+  /// In en, this message translates to:
+  /// **'Mute or unmute all tracks'**
+  String get videoEditorVolumeLongPressHint;
+
   /// No description provided for @videoEditorAudioUntitled.
   ///
   /// In en, this message translates to:

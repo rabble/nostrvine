@@ -3102,6 +3102,7 @@
     "videoEditorAudioPlayPreviewSemanticLabel": "Пусни предварителен преглед",
     "videoEditorAudioPausePreviewSemanticLabel": "Пауза на прегледа",
     "videoEditorAudioUntitledSound": "Звук без заглавие",
+    "videoEditorVolumeLongPressHint": "Заглуши или включи всички писти",
     "videoEditorAudioUntitled": "Без заглавие",
     "videoEditorAudioAddAudio": "Добави аудио",
     "videoEditorAudioNoSoundsAvailableTitle": "Няма налични звуци",

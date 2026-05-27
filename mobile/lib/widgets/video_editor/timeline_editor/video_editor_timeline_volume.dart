@@ -85,6 +85,8 @@ class VideoEditorTimelineVolume extends StatelessWidget {
                         semanticLabel: context.l10n.videoEditorClipVolumeLabel(
                           i + 1,
                         ),
+                        semanticLongPressHint:
+                            context.l10n.videoEditorVolumeLongPressHint,
                         volume: clips[i].volume,
                         volumePreviewNotifier: volumePreviewNotifier,
                         onChanged: (v) => context.read<ClipEditorBloc>().add(
@@ -114,6 +116,8 @@ class VideoEditorTimelineVolume extends StatelessWidget {
                                 customTracks[i].title!.isNotEmpty
                             ? customTracks[i].title!
                             : context.l10n.videoEditorAudioUntitledSound,
+                        semanticLongPressHint:
+                            context.l10n.videoEditorVolumeLongPressHint,
                         volume: customTracks[i].volume,
                         volumePreviewNotifier: volumePreviewNotifier,
                         onChanged: (v) =>
@@ -145,6 +149,7 @@ class _VolumeArc extends StatefulWidget {
     required this.volumePreviewNotifier,
     required this.onChanged,
     this.onLongPress,
+    this.semanticLongPressHint,
   });
 
   final double height;
@@ -160,6 +165,9 @@ class _VolumeArc extends StatefulWidget {
 
   /// Called on long press — mutes/unmutes all clips and audio tracks at once.
   final VoidCallback? onLongPress;
+
+  /// Hint text announced by screen readers for the long-press action.
+  final String? semanticLongPressHint;
 
   @override
   State<_VolumeArc> createState() => _VolumeArcState();
@@ -248,6 +256,8 @@ class _VolumeArcState extends State<_VolumeArc> {
         label: widget.semanticLabel,
         slider: true,
         value: '${(_localVolume * 100).round()}%',
+        onLongPressHint: widget.semanticLongPressHint,
+        onLongPress: widget.onLongPress,
         child: SizedBox(
           height: widget.height,
           child: GestureDetector(

@@ -7195,6 +7195,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoEditorAudioUntitledSound => 'Suara tanpa judul';
 
   @override
+  String get videoEditorVolumeLongPressHint =>
+      'Bisukan atau aktifkan semua trek';
+
+  @override
   String get videoEditorAudioUntitled => 'Tanpa judul';
 
   @override

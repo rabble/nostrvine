@@ -7158,6 +7158,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorAudioUntitledSound => 'صوت بدون عنوان';
 
   @override
+  String get videoEditorVolumeLongPressHint =>
+      'كتم صوت جميع المسارات أو إلغاء الكتم';
+
+  @override
   String get videoEditorAudioUntitled => 'بدون عنوان';
 
   @override

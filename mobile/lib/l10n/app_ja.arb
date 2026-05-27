@@ -2727,6 +2727,7 @@
     "videoEditorAudioPlayPreviewSemanticLabel": "プレビューを再生",
     "videoEditorAudioUntitled": "タイトルなし",
     "videoEditorAudioUntitledSound": "タイトルなしのサウンド",
+    "videoEditorVolumeLongPressHint": "すべてのトラックをミュートまたはミュート解除",
     "videoEditorCannotSplitProcessing": "処理中はクリップを分割できません。しばらくお待ちください。",
     "videoEditorClipDeleted": "クリップを削除しました",
     "videoEditorClipSaveFailed": "クリップの保存に失敗しました",

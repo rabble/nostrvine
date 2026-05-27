@@ -2850,6 +2850,7 @@
     "videoEditorAudioPlayPreviewSemanticLabel": "Riproduci anteprima",
     "videoEditorAudioPausePreviewSemanticLabel": "Metti in pausa anteprima",
     "videoEditorAudioUntitledSound": "Suono senza titolo",
+    "videoEditorVolumeLongPressHint": "Silenzia o riattiva tutte le tracce",
     "videoEditorAudioUntitled": "Senza titolo",
     "videoEditorAudioAddAudio": "Aggiungi audio",
     "videoEditorAudioNoSoundsAvailableTitle": "Nessun suono disponibile",

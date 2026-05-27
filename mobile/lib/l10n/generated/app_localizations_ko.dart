@@ -6957,6 +6957,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorAudioUntitledSound => '제목 없는 사운드';
 
   @override
+  String get videoEditorVolumeLongPressHint => '모든 트랙 음소거 또는 해제';
+
+  @override
   String get videoEditorAudioUntitled => '제목 없음';
 
   @override

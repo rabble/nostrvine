@@ -2727,6 +2727,7 @@
     "videoEditorAudioPlayPreviewSemanticLabel": "تشغيل المعاينة",
     "videoEditorAudioUntitled": "بدون عنوان",
     "videoEditorAudioUntitledSound": "صوت بدون عنوان",
+    "videoEditorVolumeLongPressHint": "كتم صوت جميع المسارات أو إلغاء الكتم",
     "videoEditorCannotSplitProcessing": "لا يمكن تقسيم المقطع أثناء معالجته. يرجى الانتظار.",
     "videoEditorClipDeleted": "تم حذف المقطع",
     "videoEditorClipSaveFailed": "فشل حفظ المقطع",

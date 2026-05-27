@@ -2850,6 +2850,7 @@
     "videoEditorAudioPlayPreviewSemanticLabel": "Redă previzualizarea",
     "videoEditorAudioPausePreviewSemanticLabel": "Pune previzualizarea pe pauză",
     "videoEditorAudioUntitledSound": "Sunet fără titlu",
+    "videoEditorVolumeLongPressHint": "Dezactivați sau activați sunetul tuturor pistelor",
     "videoEditorAudioUntitled": "Fără titlu",
     "videoEditorAudioAddAudio": "Adaugă audio",
     "videoEditorAudioNoSoundsAvailableTitle": "Nu sunt sunete disponibile",

@@ -7307,6 +7307,10 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoEditorAudioUntitledSound => 'Walang pamagat na sound';
 
   @override
+  String get videoEditorVolumeLongPressHint =>
+      'I-mute o i-unmute ang lahat ng track';
+
+  @override
   String get videoEditorAudioUntitled => 'Walang Pamagat';
 
   @override

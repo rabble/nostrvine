@@ -1752,6 +1752,7 @@
     "videoEditorAudioPlayPreviewSemanticLabel": "I-play ang preview",
     "videoEditorAudioPausePreviewSemanticLabel": "I-pause ang preview",
     "videoEditorAudioUntitledSound": "Walang pamagat na sound",
+    "videoEditorVolumeLongPressHint": "I-mute o i-unmute ang lahat ng track",
     "videoEditorAudioUntitled": "Walang Pamagat",
     "videoEditorAudioAddAudio": "Magdagdag ng audio",
     "videoEditorAudioNoSoundsAvailableTitle": "Walang available na sound",

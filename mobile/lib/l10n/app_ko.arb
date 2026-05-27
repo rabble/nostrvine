@@ -2023,6 +2023,7 @@
     "videoEditorAudioPlayPreviewSemanticLabel": "미리보기 재생",
     "videoEditorAudioUntitled": "제목 없음",
     "videoEditorAudioUntitledSound": "제목 없는 사운드",
+    "videoEditorVolumeLongPressHint": "모든 트랙 음소거 또는 해제",
     "videoEditorCannotSplitProcessing": "처리 중에는 클립을 분할할 수 없습니다. 잠시 기다려 주세요.",
     "videoEditorClipDeleted": "클립이 삭제되었습니다",
     "videoEditorClipSaveFailed": "클립 저장 실패",

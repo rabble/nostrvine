@@ -7265,6 +7265,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditorAudioUntitledSound => 'Som sem título';
 
   @override
+  String get videoEditorVolumeLongPressHint =>
+      'Silenciar ou ativar todas as faixas';
+
+  @override
   String get videoEditorAudioUntitled => 'Sem título';
 
   @override

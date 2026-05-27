@@ -2734,6 +2734,7 @@
     "videoEditorAudioPlayPreviewSemanticLabel": "Putar pratinjau",
     "videoEditorAudioUntitled": "Tanpa judul",
     "videoEditorAudioUntitledSound": "Suara tanpa judul",
+    "videoEditorVolumeLongPressHint": "Bisukan atau aktifkan semua trek",
     "videoEditorCannotSplitProcessing": "Tidak dapat membagi klip saat sedang diproses. Harap tunggu.",
     "videoEditorClipDeleted": "Klip dihapus",
     "videoEditorClipSaveFailed": "Gagal menyimpan klip",

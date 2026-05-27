@@ -7391,6 +7391,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorAudioUntitledSound => 'Sunet fără titlu';
 
   @override
+  String get videoEditorVolumeLongPressHint =>
+      'Dezactivați sau activați sunetul tuturor pistelor';
+
+  @override
   String get videoEditorAudioUntitled => 'Fără titlu';
 
   @override

@@ -7294,6 +7294,10 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorAudioUntitledSound => 'Звук без заглавие';
 
   @override
+  String get videoEditorVolumeLongPressHint =>
+      'Заглуши или включи всички писти';
+
+  @override
   String get videoEditorAudioUntitled => 'Без заглавие';
 
   @override

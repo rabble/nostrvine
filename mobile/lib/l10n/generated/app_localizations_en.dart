@@ -7212,6 +7212,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditorAudioUntitledSound => 'Untitled sound';
 
   @override
+  String get videoEditorVolumeLongPressHint => 'Mute or unmute all tracks';
+
+  @override
   String get videoEditorAudioUntitled => 'Untitled';
 
   @override

@@ -4213,6 +4213,10 @@
   "videoEditorAudioPlayPreviewSemanticLabel": "Play preview",
   "videoEditorAudioPausePreviewSemanticLabel": "Pause preview",
   "videoEditorAudioUntitledSound": "Untitled sound",
+  "videoEditorVolumeLongPressHint": "Mute or unmute all tracks",
+  "@videoEditorVolumeLongPressHint": {
+    "description": "Semantic long-press hint for a volume arc control. Screen readers announce this as the long-press affordance, which mutes or unmutes all timeline tracks at once."
+  },
   "videoEditorAudioUntitled": "Untitled",
   "videoEditorAudioAddAudio": "Add audio",
   "videoEditorAudioNoSoundsAvailableTitle": "No sounds available",

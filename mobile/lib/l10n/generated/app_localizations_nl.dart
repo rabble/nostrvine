@@ -7255,6 +7255,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoEditorAudioUntitledSound => 'Naamloos geluid';
 
   @override
+  String get videoEditorVolumeLongPressHint =>
+      'Alle tracks dempen of hervatten';
+
+  @override
   String get videoEditorAudioUntitled => 'Naamloos';
 
   @override

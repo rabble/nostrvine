@@ -2850,6 +2850,7 @@
     "videoEditorAudioPlayPreviewSemanticLabel": "Reproduzir prévia",
     "videoEditorAudioPausePreviewSemanticLabel": "Pausar prévia",
     "videoEditorAudioUntitledSound": "Som sem título",
+    "videoEditorVolumeLongPressHint": "Silenciar ou ativar todas as faixas",
     "videoEditorAudioUntitled": "Sem título",
     "videoEditorAudioAddAudio": "Adicionar áudio",
     "videoEditorAudioNoSoundsAvailableTitle": "Nenhum som disponível",

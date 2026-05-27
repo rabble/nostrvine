@@ -7076,6 +7076,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorAudioUntitledSound => 'ርዕስ አልባ ድምጽ';
 
   @override
+  String get videoEditorVolumeLongPressHint => 'ሁሉንም ትራኮች ያጥፉ ወይም ያብሩ';
+
+  @override
   String get videoEditorAudioUntitled => 'ርዕስ አልባ';
 
   @override

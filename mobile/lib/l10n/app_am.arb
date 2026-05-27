@@ -3412,6 +3412,7 @@
     "videoEditorAudioPlayPreviewSemanticLabel": "ቅድመ እይታን አጫውት።",
     "videoEditorAudioPausePreviewSemanticLabel": "ቅድመ እይታን ባለበት አቁም",
     "videoEditorAudioUntitledSound": "ርዕስ አልባ ድምጽ",
+    "videoEditorVolumeLongPressHint": "ሁሉንም ትራኮች ያጥፉ ወይም ያብሩ",
     "videoEditorAudioUntitled": "ርዕስ አልባ",
     "videoEditorAudioAddAudio": "ኦዲዮ ያክሉ",
     "videoEditorAudioNoSoundsAvailableTitle": "ምንም ድምፆች የሉም",

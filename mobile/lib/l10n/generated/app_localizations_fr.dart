@@ -7323,6 +7323,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get videoEditorAudioUntitledSound => 'Son sans titre';
 
   @override
+  String get videoEditorVolumeLongPressHint =>
+      'Couper ou rétablir le son de toutes les pistes';
+
+  @override
   String get videoEditorAudioUntitled => 'Sans titre';
 
   @override

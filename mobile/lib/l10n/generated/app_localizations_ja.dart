@@ -6934,6 +6934,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorAudioUntitledSound => 'タイトルなしのサウンド';
 
   @override
+  String get videoEditorVolumeLongPressHint => 'すべてのトラックをミュートまたはミュート解除';
+
+  @override
   String get videoEditorAudioUntitled => 'タイトルなし';
 
   @override

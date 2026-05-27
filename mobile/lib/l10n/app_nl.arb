@@ -2850,6 +2850,7 @@
     "videoEditorAudioPlayPreviewSemanticLabel": "Voorbeeld afspelen",
     "videoEditorAudioPausePreviewSemanticLabel": "Voorbeeld pauzeren",
     "videoEditorAudioUntitledSound": "Naamloos geluid",
+    "videoEditorVolumeLongPressHint": "Alle tracks dempen of hervatten",
     "videoEditorAudioUntitled": "Naamloos",
     "videoEditorAudioAddAudio": "Audio toevoegen",
     "videoEditorAudioNoSoundsAvailableTitle": "Geen geluiden beschikbaar",

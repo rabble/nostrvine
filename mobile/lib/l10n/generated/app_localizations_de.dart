@@ -7305,6 +7305,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoEditorAudioUntitledSound => 'Unbenannter Sound';
 
   @override
+  String get videoEditorVolumeLongPressHint =>
+      'Alle Spuren stumm schalten oder aktivieren';
+
+  @override
   String get videoEditorAudioUntitled => 'Unbenannt';
 
   @override

@@ -2734,6 +2734,7 @@
     "videoEditorAudioPlayPreviewSemanticLabel": "Önizlemeyi oynat",
     "videoEditorAudioUntitled": "Başlıksız",
     "videoEditorAudioUntitledSound": "Başlıksız ses",
+    "videoEditorVolumeLongPressHint": "Tüm parçaları sessize al veya aç",
     "videoEditorCannotSplitProcessing": "Klip işlenirken bölünemez. Lütfen bekleyin.",
     "videoEditorClipDeleted": "Klip silindi",
     "videoEditorClipSaveFailed": "Klip kaydedilemedi",

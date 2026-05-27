@@ -2850,6 +2850,7 @@
     "videoEditorAudioPlayPreviewSemanticLabel": "Spela förhandsvisning",
     "videoEditorAudioPausePreviewSemanticLabel": "Pausa förhandsvisning",
     "videoEditorAudioUntitledSound": "Namnlöst ljud",
+    "videoEditorVolumeLongPressHint": "Tysta eller slå på alla spår",
     "videoEditorAudioUntitled": "Namnlös",
     "videoEditorAudioAddAudio": "Lägg till ljud",
     "videoEditorAudioNoSoundsAvailableTitle": "Inga ljud tillgängliga",

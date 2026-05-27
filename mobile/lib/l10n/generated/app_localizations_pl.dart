@@ -7373,6 +7373,10 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoEditorAudioUntitledSound => 'Nienazwany dźwięk';
 
   @override
+  String get videoEditorVolumeLongPressHint =>
+      'Wycisz lub wyłącz wyciszenie wszystkich ścieżek';
+
+  @override
   String get videoEditorAudioUntitled => 'Bez tytułu';
 
   @override
