@@ -87,7 +87,10 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       _onClipVolumeChanged,
       transformer: sequential(),
     );
-    on<ClipEditorAllClipsVolumeChanged>(_onAllClipsVolumeChanged);
+    on<ClipEditorAllClipsVolumeChanged>(
+      _onAllClipsVolumeChanged,
+      transformer: sequential(),
+    );
   }
 
   final void Function() onFinalClipInvalidated;
