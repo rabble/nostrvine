@@ -337,6 +337,53 @@ void main() {
         ),
         expect: () => <TimelineOverlayState>[],
       );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'is no-op when only original-sound tracks are present',
+        build: TimelineOverlayBloc.new,
+        seed: () => TimelineOverlayState(
+          audioTracks: [
+            _audioEvent(
+              id: 'video_clip-a',
+              start: Duration.zero,
+              end: const Duration(seconds: 3),
+            ),
+            _audioEvent(
+              id: 'video_clip-b',
+              start: const Duration(seconds: 3),
+              end: const Duration(seconds: 6),
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const TimelineOverlayAllAudioVolumeChanged(volume: 0.0),
+        ),
+        expect: () => <TimelineOverlayState>[],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'is no-op when every custom track is already at the clamped '
+        'target volume',
+        build: TimelineOverlayBloc.new,
+        seed: () => TimelineOverlayState(
+          audioTracks: [
+            _audioEvent(
+              id: 'sound-1',
+              start: const Duration(seconds: 1),
+              end: const Duration(seconds: 4),
+            ),
+            _audioEvent(
+              id: 'sound-2',
+              start: const Duration(seconds: 5),
+              end: const Duration(seconds: 8),
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const TimelineOverlayAllAudioVolumeChanged(volume: 2.0),
+        ),
+        expect: () => <TimelineOverlayState>[],
+      );
     });
 
     group(TimelineOverlayItemMoved, () {
