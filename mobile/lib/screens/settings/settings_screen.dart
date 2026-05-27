@@ -9,7 +9,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
-import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/blocs/settings_account/settings_account_cubit.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
@@ -25,7 +24,6 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/apps/apps_permissions_screen.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
-import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/badges/badges_screen.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
@@ -37,6 +35,7 @@ import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/nip05_verification_service.dart';
+import 'package:openvine/utils/deferred_login_options_navigator.dart';
 import 'package:openvine/utils/nostr_apps_platform_support.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -56,10 +55,7 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String _appVersion = '';
   late final SettingsAccountCubit _accountCubit;
-
-  /// Subscription used to defer login-options navigation until a background
-  /// video upload finishes when a session-expiry refresh fails mid-publish.
-  StreamSubscription<BackgroundPublishState>? _deferredNavSubscription;
+  final _deferredLoginOptionsNavigator = DeferredLoginOptionsNavigator();
 
   @override
   void initState() {
@@ -74,7 +70,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   void dispose() {
-    _deferredNavSubscription?.cancel();
+    _deferredLoginOptionsNavigator.dispose();
     _accountCubit.close();
     super.dispose();
   }
@@ -92,33 +88,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (!mounted) return;
     if (refreshed) return;
 
-    // Refresh definitively failed. If a background upload is in progress,
-    // do not interrupt it by navigating now. Instead, wait for the upload
-    // to finish and then route to login-options automatically.
-    //
-    // Subscribe BEFORE checking current state to close the window where the
-    // last upload could complete between the check and the listen call.
-    // After subscribing, immediately re-check; if already clear, navigate now
-    // and cancel — no further emission is needed.
-    final publishBloc = context.read<BackgroundPublishBloc>();
-    _deferredNavSubscription?.cancel();
-    _deferredNavSubscription = publishBloc.stream.listen((state) {
-      if (!state.hasUploadInProgress) {
-        _deferredNavSubscription?.cancel();
-        _deferredNavSubscription = null;
-        if (mounted) {
-          GoRouter.of(context).go(WelcomeScreen.loginOptionsPath);
-        }
-      }
-    });
-    // Re-check current state now that the listener is attached. If the last
-    // upload already finished before we subscribed, no further emission will
-    // arrive and we must navigate immediately.
-    if (!publishBloc.state.hasUploadInProgress) {
-      _deferredNavSubscription?.cancel();
-      _deferredNavSubscription = null;
-      GoRouter.of(context).go(WelcomeScreen.loginOptionsPath);
-    }
+    _deferredLoginOptionsNavigator.goAfterUploadsComplete(
+      context: context,
+      publishBloc: context.read(),
+    );
   }
 
   Future<void> _handleSwitchAccount() async {

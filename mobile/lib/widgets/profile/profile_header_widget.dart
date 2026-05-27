@@ -10,7 +10,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
-import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/other_profile/other_profile_bloc.dart';
 import 'package:openvine/features/people_lists/view/people_list_membership_indicator.dart';
@@ -21,10 +20,10 @@ import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/widgets/followers_screen_router.dart';
 import 'package:openvine/router/widgets/following_screen_router.dart';
-import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
+import 'package:openvine/utils/deferred_login_options_navigator.dart';
 import 'package:openvine/utils/divine_login_banner_dismissal.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
@@ -122,15 +121,12 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
   Timer? _identitySkeletonTimer;
   bool _identityTimeoutExpired = false;
   bool? _wasLoadingIdentity;
-
-  /// Subscription used to defer login-options navigation until a background
-  /// video upload finishes when a session-expiry refresh fails mid-publish.
-  StreamSubscription<BackgroundPublishState>? _deferredNavSubscription;
+  final _deferredLoginOptionsNavigator = DeferredLoginOptionsNavigator();
 
   @override
   void dispose() {
     _identitySkeletonTimer?.cancel();
-    _deferredNavSubscription?.cancel();
+    _deferredLoginOptionsNavigator.dispose();
     super.dispose();
   }
 
@@ -160,21 +156,19 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
           .select<
             MyProfileBloc,
             ({UserProfile? profile, bool isInitialOrLoading})
-          >(
-            (bloc) {
-              final state = bloc.state;
-              return (
-                profile: switch (state) {
-                  MyProfileUpdated(:final profile) => profile,
-                  MyProfileLoaded(:final profile) => profile,
-                  MyProfileLoading(:final profile) => profile,
-                  _ => null,
-                },
-                isInitialOrLoading:
-                    state is MyProfileInitial || state is MyProfileLoading,
-              );
-            },
-          );
+          >((bloc) {
+            final state = bloc.state;
+            return (
+              profile: switch (state) {
+                MyProfileUpdated(:final profile) => profile,
+                MyProfileLoaded(:final profile) => profile,
+                MyProfileLoading(:final profile) => profile,
+                _ => null,
+              },
+              isInitialOrLoading:
+                  state is MyProfileInitial || state is MyProfileLoading,
+            );
+          });
       effectiveProfile = selection.profile ?? widget.profile;
       // Skeleton on the user's own profile is appropriate only while we
       // genuinely have nothing to show. As soon as a cached profile is
@@ -395,10 +389,10 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
         if (!context.mounted) return;
         if (refreshed) return;
 
-        // Refresh definitively failed. Route to login-options, deferring
-        // until any in-flight background upload finishes.
-        final publishBloc = context.read<BackgroundPublishBloc>();
-        _navigateToLoginOptionsAfterUpload(context, publishBloc);
+        _deferredLoginOptionsNavigator.goAfterUploadsComplete(
+          context: context,
+          publishBloc: context.read(),
+        );
       },
       secondaryButtonText: l10n.profileMaybeLaterLabel,
       onSecondaryPressed: () async {
@@ -407,40 +401,6 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
         if (context.mounted) Navigator.of(context).pop();
       },
     );
-  }
-
-  /// Subscribes to [BackgroundPublishBloc] and navigates to login-options the
-  /// moment the last in-flight upload finishes. Cancels any previous deferred
-  /// nav subscription so only one listener is ever registered at a time.
-  ///
-  /// Subscribes BEFORE checking current state to close the window where the
-  /// last upload could complete between the check and the listen call.
-  /// After subscribing, immediately re-checks; if already clear, navigates now
-  /// and cancels — no further emission is needed.
-  void _navigateToLoginOptionsAfterUpload(
-    BuildContext context,
-    BackgroundPublishBloc publishBloc,
-  ) {
-    _deferredNavSubscription?.cancel();
-    _deferredNavSubscription = publishBloc.stream.listen((state) {
-      if (!state.hasUploadInProgress) {
-        _deferredNavSubscription?.cancel();
-        _deferredNavSubscription = null;
-        if (context.mounted) {
-          GoRouter.of(context).go(WelcomeScreen.loginOptionsPath);
-        }
-      }
-    });
-    // Re-check current state now that the listener is attached. If the last
-    // upload already finished before we subscribed, no further emission will
-    // arrive and we must navigate immediately.
-    if (!publishBloc.state.hasUploadInProgress) {
-      _deferredNavSubscription?.cancel();
-      _deferredNavSubscription = null;
-      if (context.mounted) {
-        GoRouter.of(context).go(WelcomeScreen.loginOptionsPath);
-      }
-    }
   }
 
   void _showActionsSheet(
