@@ -208,3 +208,14 @@ class ClipEditorClipVolumeChanged extends ClipEditorEvent {
   @override
   List<Object?> get props => [clipId, volume];
 }
+
+/// Set the same [volume] on every clip.
+/// [volume] is clamped to [0.0, 1.0] by the handler.
+class ClipEditorAllClipsVolumeChanged extends ClipEditorEvent {
+  const ClipEditorAllClipsVolumeChanged({required this.volume});
+
+  final double volume;
+
+  @override
+  List<Object?> get props => [volume];
+}

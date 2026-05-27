@@ -7,6 +7,7 @@ import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bl
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_volume_mute_toggle.dart';
 import 'package:time_formatter/time_formatter.dart';
 
 class VideoEditorTimelineHeader extends StatelessWidget {
@@ -143,6 +144,7 @@ class _VolumeButton extends StatelessWidget {
       onPressed: () => context.read<VideoEditorMainBloc>().add(
         const VideoEditorVolumeEditModeToggled(),
       ),
+      onLongPress: () => toggleAllTimelineVolumeMuted(context),
     );
   }
 }

@@ -252,6 +252,93 @@ void main() {
       );
     });
 
+    group(TimelineOverlayAllAudioVolumeChanged, () {
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'clamps below 0 to 0 on every custom track and bumps history revision',
+        build: TimelineOverlayBloc.new,
+        seed: () => TimelineOverlayState(
+          audioTracks: [
+            _audioEvent(
+              id: 'sound-1',
+              start: const Duration(seconds: 1),
+              end: const Duration(seconds: 4),
+            ),
+            _audioEvent(
+              id: 'sound-2',
+              start: const Duration(seconds: 5),
+              end: const Duration(seconds: 8),
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const TimelineOverlayAllAudioVolumeChanged(volume: -1.0),
+        ),
+        expect: () => [
+          isA<TimelineOverlayState>()
+              .having(
+                (s) => s.audioTracks.map((t) => t.volume).toList(),
+                'audio volumes',
+                [0.0, 0.0],
+              )
+              .having((s) => s.audioTracksRevision, 'audioTracksRevision', 1)
+              .having(
+                (s) => s.audioTracksPlayerRevision,
+                'audioTracksPlayerRevision',
+                0,
+              ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'preserves original-sound tracks (id starts with `video_`) and '
+        'only mutes custom tracks',
+        build: TimelineOverlayBloc.new,
+        seed: () => TimelineOverlayState(
+          audioTracks: [
+            _audioEvent(
+              id: 'video_clip-a',
+              start: Duration.zero,
+              end: const Duration(seconds: 3),
+            ),
+            _audioEvent(
+              id: 'sound-1',
+              start: const Duration(seconds: 1),
+              end: const Duration(seconds: 4),
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const TimelineOverlayAllAudioVolumeChanged(volume: 0.0),
+        ),
+        expect: () => [
+          isA<TimelineOverlayState>()
+              .having(
+                (s) => s.audioTracks
+                    .firstWhere((t) => t.id == 'video_clip-a')
+                    .volume,
+                'original-sound volume',
+                1.0,
+              )
+              .having(
+                (s) =>
+                    s.audioTracks.firstWhere((t) => t.id == 'sound-1').volume,
+                'custom track volume',
+                0.0,
+              ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'is no-op when there are no audio tracks',
+        build: TimelineOverlayBloc.new,
+        seed: TimelineOverlayState.new,
+        act: (bloc) => bloc.add(
+          const TimelineOverlayAllAudioVolumeChanged(volume: 0.0),
+        ),
+        expect: () => <TimelineOverlayState>[],
+      );
+    });
+
     group(TimelineOverlayItemMoved, () {
       blocTest<TimelineOverlayBloc, TimelineOverlayState>(
         'shifts startTime and endTime by same delta',

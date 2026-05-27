@@ -73,6 +73,7 @@ class DivineIconButton extends StatelessWidget {
   const DivineIconButton({
     required this.icon,
     required this.onPressed,
+    this.onLongPress,
     this.type = DivineIconButtonType.primary,
     this.size = DivineIconButtonSize.base,
     this.backgroundColor,
@@ -88,6 +89,9 @@ class DivineIconButton extends StatelessWidget {
   /// Called when the button is tapped.
   /// If null, the button is displayed in its disabled state.
   final VoidCallback? onPressed;
+
+  /// Called when the user long-presses.
+  final VoidCallback? onLongPress;
 
   /// The visual style type of the button.
   final DivineIconButtonType type;
@@ -112,6 +116,7 @@ class DivineIconButton extends StatelessWidget {
     return _DivineIconButtonContent(
       icon: icon,
       onPressed: onPressed,
+      onLongPress: onLongPress,
       type: type,
       size: size,
       backgroundColor: backgroundColor,
@@ -126,6 +131,7 @@ class _DivineIconButtonContent extends StatelessWidget {
   const _DivineIconButtonContent({
     required this.icon,
     required this.onPressed,
+    required this.onLongPress,
     required this.type,
     required this.size,
     this.backgroundColor,
@@ -136,6 +142,7 @@ class _DivineIconButtonContent extends StatelessWidget {
 
   final DivineIconName icon;
   final VoidCallback? onPressed;
+  final VoidCallback? onLongPress;
   final DivineIconButtonType type;
   final DivineIconButtonSize size;
   final Color? backgroundColor;
@@ -145,7 +152,7 @@ class _DivineIconButtonContent extends StatelessWidget {
 
   static const _borderWidth = 2.0;
 
-  bool get _isEnabled => onPressed != null;
+  bool get _isEnabled => onPressed != null || onLongPress != null;
 
   /// Inner padding around the icon.
   double get _padding => switch (size) {
@@ -243,6 +250,7 @@ class _DivineIconButtonContent extends StatelessWidget {
             type: .transparency,
             child: InkWell(
               onTap: onPressed,
+              onLongPress: onLongPress,
               borderRadius: BorderRadius.circular(_borderRadius),
               splashColor: _iconColor.withValues(alpha: 0.1),
               highlightColor: _iconColor.withValues(alpha: 0.05),

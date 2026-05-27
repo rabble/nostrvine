@@ -8,6 +8,7 @@ void main() {
     Widget buildTestWidget({
       DivineIconName icon = DivineIconName.x,
       VoidCallback? onPressed,
+      VoidCallback? onLongPress,
       DivineIconButtonType type = DivineIconButtonType.primary,
       DivineIconButtonSize size = DivineIconButtonSize.base,
       Color? backgroundColor,
@@ -20,6 +21,7 @@ void main() {
             child: DivineIconButton(
               icon: icon,
               onPressed: onPressed,
+              onLongPress: onLongPress,
               type: type,
               size: size,
               backgroundColor: backgroundColor,
@@ -79,6 +81,36 @@ void main() {
 
         expect(pressed, isFalse);
       });
+
+      testWidgets('calls onLongPress when long-pressed', (tester) async {
+        var longPressed = false;
+        await tester.pumpWidget(
+          buildTestWidget(
+            onPressed: () {},
+            onLongPress: () => longPressed = true,
+          ),
+        );
+
+        await tester.longPress(find.byType(DivineIconButton));
+        await tester.pumpAndSettle();
+
+        expect(longPressed, isTrue);
+      });
+
+      testWidgets(
+        'is enabled and fires onLongPress when only onLongPress is set',
+        (tester) async {
+          var longPressed = false;
+          await tester.pumpWidget(
+            buildTestWidget(onLongPress: () => longPressed = true),
+          );
+
+          await tester.longPress(find.byType(DivineIconButton));
+          await tester.pumpAndSettle();
+
+          expect(longPressed, isTrue);
+        },
+      );
     });
 
     group('icon sizing', () {

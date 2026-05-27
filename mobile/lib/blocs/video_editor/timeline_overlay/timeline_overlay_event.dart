@@ -209,3 +209,14 @@ class TimelineOverlayAudioVolumeChanged extends TimelineOverlayEvent {
   @override
   List<Object?> get props => [trackId, volume];
 }
+
+/// Set the same [volume] on every non-original-sound audio track.
+/// [volume] is clamped to [0.0, 1.0] by the handler.
+class TimelineOverlayAllAudioVolumeChanged extends TimelineOverlayEvent {
+  const TimelineOverlayAllAudioVolumeChanged({required this.volume});
+
+  final double volume;
+
+  @override
+  List<Object?> get props => [volume];
+}

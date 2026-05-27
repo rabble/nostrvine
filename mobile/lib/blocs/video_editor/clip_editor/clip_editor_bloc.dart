@@ -87,6 +87,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       _onClipVolumeChanged,
       transformer: sequential(),
     );
+    on<ClipEditorAllClipsVolumeChanged>(_onAllClipsVolumeChanged);
   }
 
   final void Function() onFinalClipInvalidated;
@@ -502,6 +503,23 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     if (state.clips[index].volume == nextVolume) return;
     final updated = List<DivineVideoClip>.of(state.clips);
     updated[index] = updated[index].copyWith(volume: nextVolume);
+    emit(
+      state.copyWith(
+        clips: List.unmodifiable(updated),
+        clipsVolumeRevision: state.clipsVolumeRevision + 1,
+      ),
+    );
+  }
+
+  void _onAllClipsVolumeChanged(
+    ClipEditorAllClipsVolumeChanged event,
+    Emitter<ClipEditorState> emit,
+  ) {
+    final nextVolume = event.volume.clamp(0.0, 1.0);
+    final updated = state.clips
+        .map((c) => c.copyWith(volume: nextVolume))
+        .toList(growable: false);
+    if (updated.isEmpty) return;
     emit(
       state.copyWith(
         clips: List.unmodifiable(updated),

@@ -2,11 +2,13 @@ import 'dart:math' as math;
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_volume_mute_toggle.dart';
 
 /// Panel shown when the user taps the volume button in the timeline header.
 ///
@@ -91,6 +93,8 @@ class VideoEditorTimelineVolume extends StatelessWidget {
                             volume: v,
                           ),
                         ),
+                        onLongPress: () =>
+                            toggleAllTimelineVolumeMuted(context),
                       ),
                   ],
                 ),
@@ -119,6 +123,8 @@ class VideoEditorTimelineVolume extends StatelessWidget {
                                 volume: v,
                               ),
                             ),
+                        onLongPress: () =>
+                            toggleAllTimelineVolumeMuted(context),
                       ),
                   ],
                 ),
@@ -138,6 +144,7 @@ class _VolumeArc extends StatefulWidget {
     required this.volume,
     required this.volumePreviewNotifier,
     required this.onChanged,
+    this.onLongPress,
   });
 
   final double height;
@@ -150,6 +157,9 @@ class _VolumeArc extends StatefulWidget {
   /// pointer tracking, which would trigger the
   /// `!_debugDuringDeviceUpdate` assertion in mouse_tracker.dart.
   final ValueChanged<double> onChanged;
+
+  /// Called on long press — mutes/unmutes all clips and audio tracks at once.
+  final VoidCallback? onLongPress;
 
   @override
   State<_VolumeArc> createState() => _VolumeArcState();
@@ -246,12 +256,14 @@ class _VolumeArcState extends State<_VolumeArc> {
             // fires onTap when the gesture didn't escalate to a pan, so
             // taps and drags don't conflict.
             onTap: () {
+              HapticFeedback.lightImpact();
               final next = _localVolume > 0.001
                   ? 0.0
                   : (_lastUnmutedVolume > 0 ? _lastUnmutedVolume : 1.0);
               setState(() => _localVolume = next);
               widget.onChanged(next);
             },
+            onLongPress: widget.onLongPress,
             // Press-and-drag: relative gesture. Up = louder, down =
             // quieter. The arc itself is not directly hit-tested.
             onPanStart: _onPanStart,
