@@ -282,19 +282,61 @@ void main() {
       expect(events.single.notificationType, isNull);
     });
 
-    test('handles legacy bare event-ID payload (non-JSON)', () async {
+    test('does not emit and does not throw on non-JSON payload', () async {
       final events = <NotificationTapEvent>[];
       final sub = service.notificationTapStream.listen(events.add);
       addTearDown(sub.cancel);
 
-      service.handleNotificationTapPayload('legacyEventId999');
+      expect(
+        () => service.handleNotificationTapPayload('not-json-at-all'),
+        returnsNormally,
+      );
 
       await Future<void>.delayed(Duration.zero);
 
-      expect(events, hasLength(1));
-      expect(events.single.referencedEventId, equals('legacyEventId999'));
-      expect(events.single.notificationType, isNull);
+      expect(events, isEmpty);
     });
+
+    test(
+      'does not emit and does not throw when JSON is not an object',
+      () async {
+        final events = <NotificationTapEvent>[];
+        final sub = service.notificationTapStream.listen(events.add);
+        addTearDown(sub.cancel);
+
+        // A JSON array is valid JSON but not a Map<String, dynamic>.
+        expect(
+          () => service.handleNotificationTapPayload('[1,2,3]'),
+          returnsNormally,
+        );
+
+        await Future<void>.delayed(Duration.zero);
+
+        expect(events, isEmpty);
+      },
+    );
+
+    test(
+      'does not emit and does not throw when referencedEventId is not a string',
+      () async {
+        final events = <NotificationTapEvent>[];
+        final sub = service.notificationTapStream.listen(events.add);
+        addTearDown(sub.cancel);
+
+        // referencedEventId is a number, not a String — field() returns null,
+        // and the emit guard should suppress without throwing.
+        expect(
+          () => service.handleNotificationTapPayload(
+            jsonEncode({'referencedEventId': 12345}),
+          ),
+          returnsNormally,
+        );
+
+        await Future<void>.delayed(Duration.zero);
+
+        expect(events, isEmpty);
+      },
+    );
 
     test('does not emit when payload is null', () async {
       final events = <NotificationTapEvent>[];

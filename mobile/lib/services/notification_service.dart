@@ -507,14 +507,14 @@ class NotificationService {
           ),
         );
       }
-    } catch (_) {
-      // Legacy payloads were bare event IDs (plain strings, not JSON).
-      // Treat the whole payload as a referencedEventId with unknown type.
-      // TODO(#4329): Remove this fallback once all clients have been emitting
-      // JSON payloads (referencedEventId + notificationType) for at least one
-      // full app-store release cycle and telemetry confirms this path is
-      // never reached. See issue for the full removal plan.
-      _emitNotificationTap(NotificationTapEvent(referencedEventId: payload));
+    } catch (e) {
+      // Malformed payload (non-JSON, non-object, or unexpected shape).
+      // Log a warning and discard — do not propagate to the Flutter error path.
+      Log.warning(
+        'Notification tap payload could not be parsed, ignoring: $e',
+        name: 'NotificationService',
+        category: LogCategory.system,
+      );
     }
   }
 
