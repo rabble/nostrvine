@@ -1204,7 +1204,11 @@ void main() {
       blocTest<ClipEditorBloc, ClipEditorState>(
         'clamps above 1 to 1 on every clip',
         build: buildBloc,
-        seed: () => ClipEditorState(clips: twoClips),
+        seed: () => ClipEditorState(
+          clips: twoClips
+              .map((c) => c.copyWith(volume: 0.5))
+              .toList(growable: false),
+        ),
         act: (bloc) => bloc.add(
           const ClipEditorAllClipsVolumeChanged(volume: 2.0),
         ),
@@ -1223,6 +1227,16 @@ void main() {
         seed: () => const ClipEditorState(),
         act: (bloc) => bloc.add(
           const ClipEditorAllClipsVolumeChanged(volume: 0.0),
+        ),
+        expect: () => <ClipEditorState>[],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'is no-op when every clip already has the clamped target volume',
+        build: buildBloc,
+        seed: () => ClipEditorState(clips: twoClips),
+        act: (bloc) => bloc.add(
+          const ClipEditorAllClipsVolumeChanged(volume: 2.0),
         ),
         expect: () => <ClipEditorState>[],
       );

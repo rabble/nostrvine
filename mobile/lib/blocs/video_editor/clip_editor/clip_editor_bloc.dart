@@ -519,10 +519,11 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     Emitter<ClipEditorState> emit,
   ) {
     final nextVolume = event.volume.clamp(0.0, 1.0);
+    if (state.clips.isEmpty) return;
+    if (state.clips.every((c) => c.volume == nextVolume)) return;
     final updated = state.clips
         .map((c) => c.copyWith(volume: nextVolume))
         .toList(growable: false);
-    if (updated.isEmpty) return;
     emit(
       state.copyWith(
         clips: List.unmodifiable(updated),
