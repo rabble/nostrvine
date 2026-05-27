@@ -77,7 +77,12 @@ class BackgroundPublishBloc
           .where((upload) => upload.draft.id != event.draft.id)
           .toList();
 
-      emit(state.copyWith(uploads: updatedUploads));
+      emit(
+        state.copyWith(
+          uploads: updatedUploads,
+          recentlySucceededIds: {event.draft.id},
+        ),
+      );
 
       // Draft is no longer needed after successful publish
       unawaited(_draftStorageService.deleteDraft(event.draft.id));

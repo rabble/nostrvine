@@ -95,19 +95,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     // Refresh definitively failed. If a background upload is in progress,
     // do not interrupt it by navigating now. Instead, wait for the upload
     // to finish and then route to login-options automatically.
+    //
+    // Subscribe BEFORE checking current state to close the window where the
+    // last upload could complete between the check and the listen call.
+    // After subscribing, immediately re-check; if already clear, navigate now
+    // and cancel — no further emission is needed.
     final publishBloc = context.read<BackgroundPublishBloc>();
-    if (publishBloc.state.hasUploadInProgress) {
-      _deferredNavSubscription?.cancel();
-      _deferredNavSubscription = publishBloc.stream.listen((state) {
-        if (!state.hasUploadInProgress) {
-          _deferredNavSubscription?.cancel();
-          _deferredNavSubscription = null;
-          if (mounted) {
-            GoRouter.of(context).go(WelcomeScreen.loginOptionsPath);
-          }
+    _deferredNavSubscription?.cancel();
+    _deferredNavSubscription = publishBloc.stream.listen((state) {
+      if (!state.hasUploadInProgress) {
+        _deferredNavSubscription?.cancel();
+        _deferredNavSubscription = null;
+        if (mounted) {
+          GoRouter.of(context).go(WelcomeScreen.loginOptionsPath);
         }
-      });
-    } else {
+      }
+    });
+    // Re-check current state now that the listener is attached. If the last
+    // upload already finished before we subscribed, no further emission will
+    // arrive and we must navigate immediately.
+    if (!publishBloc.state.hasUploadInProgress) {
+      _deferredNavSubscription?.cancel();
+      _deferredNavSubscription = null;
       GoRouter.of(context).go(WelcomeScreen.loginOptionsPath);
     }
   }

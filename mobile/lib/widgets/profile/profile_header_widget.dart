@@ -395,15 +395,10 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
         if (!context.mounted) return;
         if (refreshed) return;
 
-        // Refresh definitively failed. If a background upload is in progress,
-        // do not interrupt it by navigating now. Instead, wait for the upload
-        // to finish and then route to login-options automatically.
+        // Refresh definitively failed. Route to login-options, deferring
+        // until any in-flight background upload finishes.
         final publishBloc = context.read<BackgroundPublishBloc>();
-        if (publishBloc.state.hasUploadInProgress) {
-          _navigateToLoginOptionsAfterUpload(context, publishBloc);
-        } else {
-          GoRouter.of(context).go(WelcomeScreen.loginOptionsPath);
-        }
+        _navigateToLoginOptionsAfterUpload(context, publishBloc);
       },
       secondaryButtonText: l10n.profileMaybeLaterLabel,
       onSecondaryPressed: () async {
@@ -417,6 +412,11 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
   /// Subscribes to [BackgroundPublishBloc] and navigates to login-options the
   /// moment the last in-flight upload finishes. Cancels any previous deferred
   /// nav subscription so only one listener is ever registered at a time.
+  ///
+  /// Subscribes BEFORE checking current state to close the window where the
+  /// last upload could complete between the check and the listen call.
+  /// After subscribing, immediately re-checks; if already clear, navigates now
+  /// and cancels — no further emission is needed.
   void _navigateToLoginOptionsAfterUpload(
     BuildContext context,
     BackgroundPublishBloc publishBloc,
@@ -431,6 +431,16 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
         }
       }
     });
+    // Re-check current state now that the listener is attached. If the last
+    // upload already finished before we subscribed, no further emission will
+    // arrive and we must navigate immediately.
+    if (!publishBloc.state.hasUploadInProgress) {
+      _deferredNavSubscription?.cancel();
+      _deferredNavSubscription = null;
+      if (context.mounted) {
+        GoRouter.of(context).go(WelcomeScreen.loginOptionsPath);
+      }
+    }
   }
 
   void _showActionsSheet(

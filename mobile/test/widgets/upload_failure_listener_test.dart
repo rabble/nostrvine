@@ -1,6 +1,7 @@
 // ABOUTME: Widget tests for the UploadFailureListener success-tracking state machine.
 // ABOUTME: Covers: success while authenticated, success buffered during re-auth then
-// ABOUTME: flushed on restore, and a vanished failed upload not miscounted as success.
+// ABOUTME: flushed on restore, BackgroundPublishVanished not miscounted as success,
+// ABOUTME: and BackgroundPublishBloc state-test coverage for recentlySucceededIds.
 
 import 'dart:async';
 
@@ -85,6 +86,16 @@ BackgroundUpload _failed(String id) => BackgroundUpload(
   progress: 1.0,
 );
 
+/// A [BackgroundPublishState] that carries a success signal for [id], with no
+/// remaining uploads — mirrors what the bloc emits on [PublishSuccess].
+BackgroundPublishState _succeededState(String id) => BackgroundPublishState(
+  recentlySucceededIds: {id},
+);
+
+/// A [BackgroundPublishState] where upload [id] disappeared without a success
+/// signal — mirrors what the bloc emits on [BackgroundPublishVanished].
+BackgroundPublishState _vanishedState() => const BackgroundPublishState();
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -114,29 +125,18 @@ void main() {
     testWidgets(
       'shows snackbar immediately when upload succeeds while authenticated',
       (tester) async {
-        // Start with an empty state (no uploads), then add an in-progress
-        // upload, then mark it as complete — mirroring the real app lifecycle.
         stubPublishBloc(const BackgroundPublishState());
-
         when(() => authService.isAuthenticated).thenReturn(true);
 
         await tester.pumpWidget(
           _buildHarness(publishBloc: publishBloc, authService: authService),
         );
 
-        // Step 1: Upload starts (in-progress) — listener records the ID.
-        publishStream.add(
-          BackgroundPublishState(uploads: [_inProgress('draft-1')]),
-        );
-        await tester.pump();
-
-        // Step 2: Upload completes — draft-1 disappears from state entirely
-        // (neither in-progress nor failed).
-        publishStream.add(const BackgroundPublishState());
+        // Bloc emits a state with recentlySucceededIds populated (true success).
+        publishStream.add(_succeededState('draft-1'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 50));
 
-        // A success snackbar must be visible.
         final l10n = lookupAppLocalizations(const Locale('en'));
         expect(
           find.text(l10n.uploadPublishedCountMessage(1)),
@@ -148,32 +148,23 @@ void main() {
     testWidgets(
       'buffers success while unauthenticated then flushes on re-auth',
       (tester) async {
-        // Start empty, then add in-progress upload.
         stubPublishBloc(const BackgroundPublishState());
-
         when(() => authService.isAuthenticated).thenReturn(false);
 
         await tester.pumpWidget(
           _buildHarness(publishBloc: publishBloc, authService: authService),
         );
 
-        // Upload starts while user is NOT authenticated.
-        publishStream.add(
-          BackgroundPublishState(uploads: [_inProgress('draft-2')]),
-        );
-        await tester.pump();
-
-        // Upload succeeds while still unauthenticated: draft-2 disappears.
-        publishStream.add(const BackgroundPublishState());
+        // Upload succeeds while user is NOT authenticated.
+        publishStream.add(_succeededState('draft-2'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 50));
 
-        // No snackbar yet — auth is not restored.
         final l10n = lookupAppLocalizations(const Locale('en'));
+        // No snackbar yet — auth is not restored.
         expect(find.text(l10n.uploadPublishedCountMessage(1)), findsNothing);
 
-        // Auth is now restored. Emit a new state to trigger the listener
-        // again, this time with isAuthenticated == true.
+        // Auth is now restored. Emit another state to trigger the listener.
         when(() => authService.isAuthenticated).thenReturn(true);
         publishStream.add(const BackgroundPublishState());
         await tester.pump();
@@ -188,46 +179,28 @@ void main() {
     );
 
     testWidgets(
-      'does not count a vanished failed upload as a success',
+      'does not show snackbar when upload vanishes via BackgroundPublishVanished',
       (tester) async {
-        // Start empty, user is NOT authenticated yet (prevents failure sheets
-        // from showing, keeping the test focused on success counting).
-        stubPublishBloc(const BackgroundPublishState());
-        when(() => authService.isAuthenticated).thenReturn(false);
+        // BackgroundPublishVanished emits a state with an empty
+        // recentlySucceededIds — no success signal should be shown.
+        stubPublishBloc(
+          BackgroundPublishState(uploads: [_inProgress('draft-vanish')]),
+        );
+        when(() => authService.isAuthenticated).thenReturn(true);
 
         await tester.pumpWidget(
           _buildHarness(publishBloc: publishBloc, authService: authService),
         );
 
-        // Both the in-progress and the pre-existing failed upload appear
-        // together. With auth=false the failure sheet is suppressed, and the
-        // listener records draft-3 as in-progress and draft-fail as failed.
-        publishStream.add(
-          BackgroundPublishState(
-            uploads: [_inProgress('draft-3'), _failed('draft-fail')],
-          ),
-        );
-        await tester.pump();
-
-        // Now auth is restored. The failed upload is dismissed (removed from
-        // state) and the in-progress upload also disappears (succeeds). Only
-        // draft-3 was ever in-progress, so success count must be 1, not 2.
-        when(() => authService.isAuthenticated).thenReturn(true);
-        publishStream.add(const BackgroundPublishState());
+        // Upload vanishes — draft removed from state but no success signal.
+        publishStream.add(_vanishedState());
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 50));
 
+        // No snackbar must appear for a vanished upload.
         final l10n = lookupAppLocalizations(const Locale('en'));
-        // Must show exactly 1 success.
-        expect(
-          find.text(l10n.uploadPublishedCountMessage(1)),
-          findsOneWidget,
-        );
-        // The plural "2 videos …" form must not appear.
-        expect(
-          find.text(l10n.uploadPublishedCountMessage(2)),
-          findsNothing,
-        );
+        expect(find.text(l10n.uploadPublishedCountMessage(1)), findsNothing);
+        expect(find.text(l10n.uploadPublishedCountMessage(2)), findsNothing);
       },
     );
   });

@@ -1272,6 +1272,111 @@ void main() {
           ).called(1);
         },
       );
+
+      testWidgets(
+        'navigates immediately when upload finishes before stream listener '
+        'attaches — regression for check/listen race',
+        (tester) async {
+          // Regression: the upload completes between the state read and the
+          // stream.listen() call. With the old code (check-then-listen), no
+          // further emission would arrive and navigation would be silently lost.
+          // With the fix (listen-then-recheck), the recheck fires navigation.
+          final testProfile = createTestProfile(displayName: 'Test User');
+          SharedPreferences.setMockInitialValues({});
+          final prefs = await SharedPreferences.getInstance();
+
+          // Bloc already has no upload in progress — simulates upload having
+          // finished just before _navigateToLoginOptionsAfterUpload attaches.
+          final mockPublishBloc = _MockBackgroundPublishBloc();
+          when(() => mockPublishBloc.state).thenReturn(
+            const BackgroundPublishState(),
+          );
+          // Stream produces no further emissions — the critical race condition.
+          whenListen(
+            mockPublishBloc,
+            const Stream<BackgroundPublishState>.empty(),
+            initialState: const BackgroundPublishState(),
+          );
+
+          final authService = MockAuthService(
+            hasExpiredOAuthSessionValue: true,
+            // tryRefreshResult defaults to false — refresh will fail.
+          );
+
+          final mockGoRouter = MockGoRouter();
+          when(() => mockGoRouter.go(any())).thenReturn(null);
+
+          await tester.pumpWidget(
+            MockGoRouterProvider(
+              goRouter: mockGoRouter,
+              child: ProviderScope(
+                overrides: [
+                  ...getStandardTestOverrides(
+                    mockNostrService: mockNostrClient,
+                    mockSharedPreferences: prefs,
+                    mockNip05VerificationService:
+                        createMockNip05VerificationService(),
+                    mockFollowRepository: mockFollowRepository,
+                  ),
+                  fetchUserProfileProvider(testUserHex).overrideWith(
+                    (ref) async => testProfile,
+                  ),
+                  userProfileStatsReactiveProvider(testUserHex).overrideWith(
+                    (ref) => const Stream.empty(),
+                  ),
+                  authServiceProvider.overrideWithValue(authService),
+                  currentAuthStateProvider.overrideWith(
+                    (ref) => AuthState.authenticated,
+                  ),
+                  isFeatureEnabledProvider(
+                    FeatureFlag.curatedLists,
+                  ).overrideWith((ref) => false),
+                ],
+                child: MaterialApp(
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  home: BlocProvider<BackgroundPublishBloc>.value(
+                    value: mockPublishBloc,
+                    child: BlocProvider<MyProfileBloc>(
+                      create: (_) {
+                        final bloc = _MockMyProfileBloc();
+                        when(() => bloc.state).thenReturn(
+                          MyProfileUpdated(profile: testProfile),
+                        );
+                        return bloc;
+                      },
+                      child: const Scaffold(
+                        body: SingleChildScrollView(
+                          child: ProfileHeaderWidget(
+                            userIdHex: testUserHex,
+                            isOwnProfile: true,
+                            videoCount: 0,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          expect(find.text(l10n.profileSessionExpired), findsWidgets);
+
+          // Tap "Sign in" — triggers the deferred-nav helper.
+          await tester.tap(find.text(l10n.profileSignInButton).last);
+          await tester.pumpAndSettle();
+
+          // Navigation must have fired immediately — re-check after subscribe
+          // detected no upload in progress (no stream emission needed).
+          verify(
+            () => mockGoRouter.go(any(that: contains('login-options'))),
+          ).called(1);
+        },
+      );
     });
 
     group('MyProfile state fallbacks (own profile)', () {

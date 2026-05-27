@@ -28,18 +28,34 @@ class BackgroundUpload extends Equatable {
 }
 
 class BackgroundPublishState extends Equatable {
-  const BackgroundPublishState({this.uploads = const []});
+  const BackgroundPublishState({
+    this.uploads = const [],
+    this.recentlySucceededIds = const {},
+  });
 
   final List<BackgroundUpload> uploads;
+
+  /// Draft IDs that completed with [PublishSuccess] in the most recent
+  /// state transition. Cleared on the next emission that does not add new
+  /// successes. Used by [UploadFailureListener] to distinguish true publish
+  /// success from [BackgroundPublishVanished], which also removes an upload
+  /// without a success result.
+  final Set<String> recentlySucceededIds;
 
   /// Returns true if there is any upload in progress (no result yet).
   bool get hasUploadInProgress =>
       uploads.any((upload) => upload.result == null);
 
-  BackgroundPublishState copyWith({List<BackgroundUpload>? uploads}) {
-    return BackgroundPublishState(uploads: uploads ?? this.uploads);
+  BackgroundPublishState copyWith({
+    List<BackgroundUpload>? uploads,
+    Set<String>? recentlySucceededIds,
+  }) {
+    return BackgroundPublishState(
+      uploads: uploads ?? this.uploads,
+      recentlySucceededIds: recentlySucceededIds ?? const {},
+    );
   }
 
   @override
-  List<Object?> get props => [uploads];
+  List<Object?> get props => [uploads, recentlySucceededIds];
 }

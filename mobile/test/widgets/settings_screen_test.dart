@@ -666,5 +666,57 @@ void main() {
         await tester.pump();
       },
     );
+
+    testWidgets(
+      'navigates immediately when upload finishes before stream listener '
+      'attaches — regression for check/listen race',
+      (tester) async {
+        // Regression for the subscribe/re-check race: the upload completes
+        // between the state read and the stream.listen() call. With the old
+        // code (check-then-listen), no further emission would ever arrive and
+        // navigation would be silently lost. With the fix (listen-then-recheck),
+        // the recheck immediately fires navigation.
+        //
+        // We model this by giving the bloc a state that already has no upload
+        // in progress before _handleSessionExpired even runs. The stream emits
+        // nothing further. Navigation must still fire exactly once.
+        final emptyState = const BackgroundPublishState();
+        final mockPublishBloc = _MockBackgroundPublishBloc();
+        when(() => mockPublishBloc.state).thenReturn(emptyState);
+        // Stream produces no further emissions after subscribe — simulating
+        // the race where the last upload completed just before listen().
+        whenListen(
+          mockPublishBloc,
+          const Stream<BackgroundPublishState>.empty(),
+          initialState: emptyState,
+        );
+
+        when(() => mockAuthService.hasExpiredOAuthSession).thenReturn(true);
+        when(
+          () => mockAuthService.tryRefreshExpiredSession(),
+        ).thenAnswer((_) async => false);
+
+        final mockGoRouter = MockGoRouter();
+        when(() => mockGoRouter.go(any())).thenReturn(null);
+
+        await tester.pumpWidget(
+          buildSubject(goRouter: mockGoRouter, publishBloc: mockPublishBloc),
+        );
+        await tester.pumpAndSettle();
+
+        // Tap Session Expired tile — triggers _handleSessionExpired.
+        await tester.tap(find.text(l10n.settingsSessionExpired));
+        await tester.pumpAndSettle();
+
+        // Navigation must have fired immediately because re-check after
+        // subscribe detected no upload in progress.
+        verify(
+          () => mockGoRouter.go(any(that: contains('login-options'))),
+        ).called(1);
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      },
+    );
   });
 }

@@ -132,7 +132,8 @@ void main() {
                 BackgroundUpload(draft: draft, result: null, progress: 0),
               ],
             ),
-            const BackgroundPublishState(),
+            // Success: upload removed and recentlySucceededIds populated.
+            BackgroundPublishState(recentlySucceededIds: {draftId}),
           ],
           verify: (_) {
             verify(
@@ -240,8 +241,10 @@ void main() {
             ),
           ),
           expect: () => [
-            // Only emits the final state after success, no duplicate added
-            const BackgroundPublishState(),
+            // Only emits the final state after success, no duplicate added.
+            // recentlySucceededIds is populated so UploadFailureListener can
+            // distinguish a true success from BackgroundPublishVanished.
+            BackgroundPublishState(recentlySucceededIds: {draftId}),
           ],
         );
       });
@@ -379,6 +382,26 @@ void main() {
           ).called(1);
         },
       );
+
+      blocTest(
+        'does NOT populate recentlySucceededIds — '
+        'regression: vanished upload must not trigger a success snackbar',
+        build: () => BackgroundPublishBloc(
+          videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+          draftStorageService: mockDraftStorageService,
+        ),
+        seed: () => BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(draft: draft, result: null, progress: 1.0),
+          ],
+        ),
+        act: (bloc) => bloc.add(BackgroundPublishVanished(draftId: draftId)),
+        verify: (bloc) {
+          // recentlySucceededIds must be empty — Vanished is not a publish
+          // success and must never trigger a success snackbar.
+          expect(bloc.state.recentlySucceededIds, isEmpty);
+        },
+      );
     });
 
     group('BackgroundPublishFailed', () {
@@ -486,8 +509,9 @@ void main() {
               BackgroundUpload(draft: draft, result: null, progress: 0),
             ],
           ),
-          // Finally: successful retry removes the upload
-          const BackgroundPublishState(),
+          // Finally: successful retry removes the upload, recentlySucceededIds
+          // is populated so UploadFailureListener shows a success snackbar.
+          BackgroundPublishState(recentlySucceededIds: {draftId}),
         ],
         verify: (_) {
           verify(() => mockPublishService.publishVideo(draft: draft)).called(1);
