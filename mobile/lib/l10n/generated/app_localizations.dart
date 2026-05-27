@@ -4016,60 +4016,6 @@ abstract class AppLocalizations {
   /// **'When someone reposts your videos'**
   String get notificationSettingsRepostsSubtitle;
 
-  /// No description provided for @notificationSettingsSystem.
-  ///
-  /// In en, this message translates to:
-  /// **'System'**
-  String get notificationSettingsSystem;
-
-  /// No description provided for @notificationSettingsSystemSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'App updates and system messages'**
-  String get notificationSettingsSystemSubtitle;
-
-  /// No description provided for @notificationSettingsPushNotificationsSection.
-  ///
-  /// In en, this message translates to:
-  /// **'Push Notifications'**
-  String get notificationSettingsPushNotificationsSection;
-
-  /// No description provided for @notificationSettingsPushNotifications.
-  ///
-  /// In en, this message translates to:
-  /// **'Push Notifications'**
-  String get notificationSettingsPushNotifications;
-
-  /// No description provided for @notificationSettingsPushNotificationsSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Receive notifications when app is closed'**
-  String get notificationSettingsPushNotificationsSubtitle;
-
-  /// No description provided for @notificationSettingsSound.
-  ///
-  /// In en, this message translates to:
-  /// **'Sound'**
-  String get notificationSettingsSound;
-
-  /// No description provided for @notificationSettingsSoundSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Play sound for notifications'**
-  String get notificationSettingsSoundSubtitle;
-
-  /// No description provided for @notificationSettingsVibration.
-  ///
-  /// In en, this message translates to:
-  /// **'Vibration'**
-  String get notificationSettingsVibration;
-
-  /// No description provided for @notificationSettingsVibrationSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Vibrate for notifications'**
-  String get notificationSettingsVibrationSubtitle;
-
   /// No description provided for @notificationSettingsActions.
   ///
   /// In en, this message translates to:

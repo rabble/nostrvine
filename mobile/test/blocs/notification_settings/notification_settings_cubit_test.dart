@@ -1,5 +1,5 @@
 // ABOUTME: Unit tests for NotificationSettingsCubit — load, preference
-// ABOUTME: persistence, local-only toggles, and reset-to-defaults.
+// ABOUTME: persistence, and reset-to-defaults.
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -70,45 +70,10 @@ void main() {
     );
 
     blocTest<NotificationSettingsCubit, NotificationSettingsState>(
-      'local system/push/sound/vibration toggles update state only',
-      build: buildCubit,
-      act: (cubit) => cubit
-        ..setSystemEnabled(false)
-        ..setPushNotificationsEnabled(false)
-        ..setSoundEnabled(false)
-        ..setVibrationEnabled(false),
-      expect: () => const [
-        NotificationSettingsState(systemEnabled: false),
-        NotificationSettingsState(
-          systemEnabled: false,
-          pushNotificationsEnabled: false,
-        ),
-        NotificationSettingsState(
-          systemEnabled: false,
-          pushNotificationsEnabled: false,
-          soundEnabled: false,
-        ),
-        NotificationSettingsState(
-          systemEnabled: false,
-          pushNotificationsEnabled: false,
-          soundEnabled: false,
-          vibrationEnabled: false,
-        ),
-      ],
-      verify: (_) {
-        verifyNever(() => service.updatePreferences(any()));
-      },
-    );
-
-    blocTest<NotificationSettingsCubit, NotificationSettingsState>(
       'resetToDefaults restores defaults and persists them',
       seed: () => const NotificationSettingsState(
         status: NotificationSettingsStatus.ready,
         preferences: NotificationPreferences(likesEnabled: false),
-        systemEnabled: false,
-        pushNotificationsEnabled: false,
-        soundEnabled: false,
-        vibrationEnabled: false,
       ),
       build: buildCubit,
       act: (cubit) => cubit.resetToDefaults(),

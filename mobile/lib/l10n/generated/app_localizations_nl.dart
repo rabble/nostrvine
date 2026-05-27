@@ -2289,36 +2289,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Wanneer iemand je video\'s repost';
 
   @override
-  String get notificationSettingsSystem => 'Systeem';
-
-  @override
-  String get notificationSettingsSystemSubtitle =>
-      'App-updates en systeemberichten';
-
-  @override
-  String get notificationSettingsPushNotificationsSection => 'Pushmeldingen';
-
-  @override
-  String get notificationSettingsPushNotifications => 'Pushmeldingen';
-
-  @override
-  String get notificationSettingsPushNotificationsSubtitle =>
-      'Ontvang meldingen als de app gesloten is';
-
-  @override
-  String get notificationSettingsSound => 'Geluid';
-
-  @override
-  String get notificationSettingsSoundSubtitle =>
-      'Speel geluid af bij meldingen';
-
-  @override
-  String get notificationSettingsVibration => 'Trillen';
-
-  @override
-  String get notificationSettingsVibrationSubtitle => 'Trillen bij meldingen';
-
-  @override
   String get notificationSettingsActions => 'Acties';
 
   @override

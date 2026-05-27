@@ -2277,36 +2277,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'När någon återpublicerar dina videor';
 
   @override
-  String get notificationSettingsSystem => 'System';
-
-  @override
-  String get notificationSettingsSystemSubtitle =>
-      'Appuppdateringar och systemmeddelanden';
-
-  @override
-  String get notificationSettingsPushNotificationsSection => 'Push-aviseringar';
-
-  @override
-  String get notificationSettingsPushNotifications => 'Push-aviseringar';
-
-  @override
-  String get notificationSettingsPushNotificationsSubtitle =>
-      'Få aviseringar när appen är stängd';
-
-  @override
-  String get notificationSettingsSound => 'Ljud';
-
-  @override
-  String get notificationSettingsSoundSubtitle =>
-      'Spela upp ljud för aviseringar';
-
-  @override
-  String get notificationSettingsVibration => 'Vibration';
-
-  @override
-  String get notificationSettingsVibrationSubtitle => 'Vibrera vid aviseringar';
-
-  @override
   String get notificationSettingsActions => 'Åtgärder';
 
   @override

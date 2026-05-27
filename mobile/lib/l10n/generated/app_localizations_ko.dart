@@ -2179,34 +2179,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get notificationSettingsRepostsSubtitle => '누군가 내 영상을 리포스트할 때';
 
   @override
-  String get notificationSettingsSystem => '시스템';
-
-  @override
-  String get notificationSettingsSystemSubtitle => '앱 업데이트와 시스템 메시지';
-
-  @override
-  String get notificationSettingsPushNotificationsSection => '푸시 알림';
-
-  @override
-  String get notificationSettingsPushNotifications => '푸시 알림';
-
-  @override
-  String get notificationSettingsPushNotificationsSubtitle =>
-      '앱이 꺼져 있을 때도 알림 받기';
-
-  @override
-  String get notificationSettingsSound => '소리';
-
-  @override
-  String get notificationSettingsSoundSubtitle => '알림 소리 재생';
-
-  @override
-  String get notificationSettingsVibration => '진동';
-
-  @override
-  String get notificationSettingsVibrationSubtitle => '알림 시 진동';
-
-  @override
   String get notificationSettingsActions => '작업';
 
   @override

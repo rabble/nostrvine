@@ -77,7 +77,7 @@ class NotificationSettingsView extends StatelessWidget {
       onBackPressed: context.pop,
       actions: [
         DiVineAppBarAction(
-          icon: const MaterialIconSource(Icons.refresh),
+          icon: SvgIconSource(DivineIconName.arrowClockwise.assetPath),
           tooltip: context.l10n.notificationSettingsResetTooltip,
           onPressed: () => _onResetPressed(context),
         ),
@@ -100,11 +100,10 @@ class NotificationSettingsView extends StatelessWidget {
                     16 + MediaQuery.viewPaddingOf(context).bottom,
                   ),
                   children: [
-                    // Notification Types Section
-                    _buildSectionHeader(context.l10n.notificationSettingsTypes),
+                    _SectionHeader(context.l10n.notificationSettingsTypes),
                     const SizedBox(height: 8),
-                    _buildNotificationCard(
-                      icon: Icons.favorite,
+                    _NotificationCard(
+                      icon: DivineIconName.heart,
                       iconColor: VineTheme.likeRed,
                       title: context.l10n.notificationSettingsLikes,
                       subtitle: context.l10n.notificationSettingsLikesSubtitle,
@@ -113,8 +112,8 @@ class NotificationSettingsView extends StatelessWidget {
                         prefs.copyWith(likesEnabled: value),
                       ),
                     ),
-                    _buildNotificationCard(
-                      icon: Icons.chat_bubble,
+                    _NotificationCard(
+                      icon: DivineIconName.chat,
                       iconColor: VineTheme.commentBlue,
                       title: context.l10n.notificationSettingsComments,
                       subtitle:
@@ -124,8 +123,8 @@ class NotificationSettingsView extends StatelessWidget {
                         prefs.copyWith(commentsEnabled: value),
                       ),
                     ),
-                    _buildNotificationCard(
-                      icon: Icons.person_add,
+                    _NotificationCard(
+                      icon: DivineIconName.user,
                       iconColor: VineTheme.vineGreen,
                       title: context.l10n.notificationSettingsFollows,
                       subtitle:
@@ -135,8 +134,8 @@ class NotificationSettingsView extends StatelessWidget {
                         prefs.copyWith(followsEnabled: value),
                       ),
                     ),
-                    _buildNotificationCard(
-                      icon: Icons.alternate_email,
+                    _NotificationCard(
+                      icon: DivineIconName.chat,
                       iconColor: VineTheme.warning,
                       title: context.l10n.notificationSettingsMentions,
                       subtitle:
@@ -146,8 +145,8 @@ class NotificationSettingsView extends StatelessWidget {
                         prefs.copyWith(mentionsEnabled: value),
                       ),
                     ),
-                    _buildNotificationCard(
-                      icon: Icons.repeat,
+                    _NotificationCard(
+                      icon: DivineIconName.repeat,
                       iconColor: VineTheme.vineGreenLight,
                       title: context.l10n.notificationSettingsReposts,
                       subtitle:
@@ -157,60 +156,11 @@ class NotificationSettingsView extends StatelessWidget {
                         prefs.copyWith(repostsEnabled: value),
                       ),
                     ),
-                    _buildNotificationCard(
-                      icon: Icons.phone_android,
-                      iconColor: VineTheme.lightText,
-                      title: context.l10n.notificationSettingsSystem,
-                      subtitle: context.l10n.notificationSettingsSystemSubtitle,
-                      value: state.systemEnabled,
-                      onChanged: cubit.setSystemEnabled,
-                    ),
-
                     const SizedBox(height: 24),
-
-                    // Push Notification Settings
-                    _buildSectionHeader(
-                      context.l10n.notificationSettingsPushNotificationsSection,
-                    ),
+                    _SectionHeader(context.l10n.notificationSettingsActions),
                     const SizedBox(height: 8),
-                    _buildNotificationCard(
-                      icon: Icons.notifications,
-                      iconColor: VineTheme.vineGreen,
-                      title: context.l10n.notificationSettingsPushNotifications,
-                      subtitle: context
-                          .l10n
-                          .notificationSettingsPushNotificationsSubtitle,
-                      value: state.pushNotificationsEnabled,
-                      onChanged: cubit.setPushNotificationsEnabled,
-                    ),
-                    _buildNotificationCard(
-                      icon: Icons.volume_up,
-                      iconColor: VineTheme.commentBlue,
-                      title: context.l10n.notificationSettingsSound,
-                      subtitle: context.l10n.notificationSettingsSoundSubtitle,
-                      value: state.soundEnabled,
-                      onChanged: cubit.setSoundEnabled,
-                    ),
-                    _buildNotificationCard(
-                      icon: Icons.vibration,
-                      iconColor: VineTheme.vineGreen,
-                      title: context.l10n.notificationSettingsVibration,
-                      subtitle:
-                          context.l10n.notificationSettingsVibrationSubtitle,
-                      value: state.vibrationEnabled,
-                      onChanged: cubit.setVibrationEnabled,
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Actions
-                    _buildSectionHeader(
-                      context.l10n.notificationSettingsActions,
-                    ),
-                    const SizedBox(height: 8),
-
-                    _buildActionCard(
-                      icon: Icons.check_circle,
+                    _ActionCard(
+                      icon: DivineIconName.checkCircle,
                       iconColor: VineTheme.vineGreenLight,
                       title: context.l10n.notificationSettingsMarkAllAsRead,
                       subtitle: context
@@ -220,11 +170,8 @@ class NotificationSettingsView extends StatelessWidget {
                           ? null
                           : () => _onMarkAllAsReadPressed(context),
                     ),
-
                     const SizedBox(height: 24),
-
-                    // Info Section
-                    _buildInfoCard(context),
+                    const _InfoCard(),
                   ],
                 );
               },
@@ -260,8 +207,15 @@ class NotificationSettingsView extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildSectionHeader(String title) => Text(
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader(this.title);
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) => Text(
     title,
     style: const TextStyle(
       fontSize: 18,
@@ -269,15 +223,27 @@ class NotificationSettingsView extends StatelessWidget {
       color: VineTheme.primaryText,
     ),
   );
+}
 
-  Widget _buildNotificationCard({
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    required String subtitle,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) => Card(
+class _NotificationCard extends StatelessWidget {
+  const _NotificationCard({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final DivineIconName icon;
+  final Color iconColor;
+  final String title;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) => Card(
     color: VineTheme.cardBackground,
     margin: const EdgeInsets.only(bottom: 8),
     child: ListTile(
@@ -287,7 +253,7 @@ class NotificationSettingsView extends StatelessWidget {
           color: iconColor.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, color: iconColor, size: 24),
+        child: DivineIcon(icon: icon, color: iconColor),
       ),
       title: Text(
         title,
@@ -307,14 +273,25 @@ class NotificationSettingsView extends StatelessWidget {
       ),
     ),
   );
+}
 
-  Widget _buildActionCard({
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    required String subtitle,
-    required VoidCallback? onTap,
-  }) => Card(
+class _ActionCard extends StatelessWidget {
+  const _ActionCard({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final DivineIconName icon;
+  final Color iconColor;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => Card(
     color: VineTheme.cardBackground,
     margin: const EdgeInsets.only(bottom: 8),
     child: ListTile(
@@ -324,7 +301,7 @@ class NotificationSettingsView extends StatelessWidget {
           color: iconColor.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, color: iconColor, size: 24),
+        child: DivineIcon(icon: icon, color: iconColor),
       ),
       title: Text(
         title,
@@ -337,16 +314,21 @@ class NotificationSettingsView extends StatelessWidget {
         subtitle,
         style: const TextStyle(color: VineTheme.secondaryText, fontSize: 12),
       ),
-      trailing: const Icon(
-        Icons.arrow_forward_ios,
+      trailing: const DivineIcon(
+        icon: DivineIconName.caretRight,
         color: VineTheme.lightText,
         size: 16,
       ),
       onTap: onTap,
     ),
   );
+}
 
-  Widget _buildInfoCard(BuildContext context) => Card(
+class _InfoCard extends StatelessWidget {
+  const _InfoCard();
+
+  @override
+  Widget build(BuildContext context) => Card(
     color: VineTheme.cardBackground,
     child: Padding(
       padding: const EdgeInsets.all(16),
@@ -355,8 +337,8 @@ class NotificationSettingsView extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.info_outline,
+              const DivineIcon(
+                icon: DivineIconName.info,
                 color: VineTheme.commentBlue,
                 size: 20,
               ),

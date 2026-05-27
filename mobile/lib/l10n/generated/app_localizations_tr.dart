@@ -2262,37 +2262,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Biri videolarını yeniden paylaştığında';
 
   @override
-  String get notificationSettingsSystem => 'Sistem';
-
-  @override
-  String get notificationSettingsSystemSubtitle =>
-      'Uygulama güncellemeleri ve sistem mesajları';
-
-  @override
-  String get notificationSettingsPushNotificationsSection =>
-      'Anlık Bildirimler';
-
-  @override
-  String get notificationSettingsPushNotifications => 'Anlık Bildirimler';
-
-  @override
-  String get notificationSettingsPushNotificationsSubtitle =>
-      'Uygulama kapalıyken bildirim al';
-
-  @override
-  String get notificationSettingsSound => 'Ses';
-
-  @override
-  String get notificationSettingsSoundSubtitle => 'Bildirimler için ses çal';
-
-  @override
-  String get notificationSettingsVibration => 'Titreşim';
-
-  @override
-  String get notificationSettingsVibrationSubtitle =>
-      'Bildirimler için titreşim';
-
-  @override
   String get notificationSettingsActions => 'İşlemler';
 
   @override

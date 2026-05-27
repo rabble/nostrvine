@@ -2318,38 +2318,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'Kapag may nag-repost ng iyong mga video';
 
   @override
-  String get notificationSettingsSystem => 'System';
-
-  @override
-  String get notificationSettingsSystemSubtitle =>
-      'Mga app update at system message';
-
-  @override
-  String get notificationSettingsPushNotificationsSection =>
-      'Push Notification';
-
-  @override
-  String get notificationSettingsPushNotifications => 'Push Notification';
-
-  @override
-  String get notificationSettingsPushNotificationsSubtitle =>
-      'Tumanggap ng notification kahit nakasara ang app';
-
-  @override
-  String get notificationSettingsSound => 'Tunog';
-
-  @override
-  String get notificationSettingsSoundSubtitle =>
-      'Magpatugtog ng tunog para sa mga notification';
-
-  @override
-  String get notificationSettingsVibration => 'Vibration';
-
-  @override
-  String get notificationSettingsVibrationSubtitle =>
-      'Mag-vibrate para sa mga notification';
-
-  @override
   String get notificationSettingsActions => 'Mga Aksyon';
 
   @override

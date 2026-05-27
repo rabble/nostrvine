@@ -2352,38 +2352,6 @@ class AppLocalizationsPl extends AppLocalizations {
       'Gdy ktoś repostuje twoje filmy';
 
   @override
-  String get notificationSettingsSystem => 'System';
-
-  @override
-  String get notificationSettingsSystemSubtitle =>
-      'Aktualizacje aplikacji i wiadomości systemowe';
-
-  @override
-  String get notificationSettingsPushNotificationsSection =>
-      'Powiadomienia push';
-
-  @override
-  String get notificationSettingsPushNotifications => 'Powiadomienia push';
-
-  @override
-  String get notificationSettingsPushNotificationsSubtitle =>
-      'Otrzymuj powiadomienia, gdy aplikacja jest zamknięta';
-
-  @override
-  String get notificationSettingsSound => 'Dźwięk';
-
-  @override
-  String get notificationSettingsSoundSubtitle =>
-      'Odtwarzaj dźwięk dla powiadomień';
-
-  @override
-  String get notificationSettingsVibration => 'Wibracje';
-
-  @override
-  String get notificationSettingsVibrationSubtitle =>
-      'Wibruj przy powiadomieniach';
-
-  @override
   String get notificationSettingsActions => 'Akcje';
 
   @override

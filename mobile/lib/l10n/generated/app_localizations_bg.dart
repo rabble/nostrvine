@@ -2319,37 +2319,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Когато някой препубликува видеата ти';
 
   @override
-  String get notificationSettingsSystem => 'Система';
-
-  @override
-  String get notificationSettingsSystemSubtitle =>
-      'Актуализации на приложения и системни съобщения';
-
-  @override
-  String get notificationSettingsPushNotificationsSection =>
-      'Насочени известия';
-
-  @override
-  String get notificationSettingsPushNotifications => 'Насочени известия';
-
-  @override
-  String get notificationSettingsPushNotificationsSubtitle =>
-      'Получавай известия, когато приложението е затворено';
-
-  @override
-  String get notificationSettingsSound => 'Звук';
-
-  @override
-  String get notificationSettingsSoundSubtitle =>
-      'Възпроизвеждане на звук за известия';
-
-  @override
-  String get notificationSettingsVibration => 'Вибрация';
-
-  @override
-  String get notificationSettingsVibrationSubtitle => 'Вибриране за известия';
-
-  @override
   String get notificationSettingsActions => 'Действия';
 
   @override

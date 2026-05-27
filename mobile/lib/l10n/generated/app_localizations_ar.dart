@@ -2257,36 +2257,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'عندما يعيد أحدهم نشر فيديوهاتك';
 
   @override
-  String get notificationSettingsSystem => 'النظام';
-
-  @override
-  String get notificationSettingsSystemSubtitle =>
-      'تحديثات التطبيق ورسائل النظام';
-
-  @override
-  String get notificationSettingsPushNotificationsSection =>
-      'الإشعارات الفورية';
-
-  @override
-  String get notificationSettingsPushNotifications => 'الإشعارات الفورية';
-
-  @override
-  String get notificationSettingsPushNotificationsSubtitle =>
-      'تلقّ الإشعارات حتى عند إغلاق التطبيق';
-
-  @override
-  String get notificationSettingsSound => 'الصوت';
-
-  @override
-  String get notificationSettingsSoundSubtitle => 'تشغيل صوت للإشعارات';
-
-  @override
-  String get notificationSettingsVibration => 'الاهتزاز';
-
-  @override
-  String get notificationSettingsVibrationSubtitle => 'اهتزاز للإشعارات';
-
-  @override
   String get notificationSettingsActions => 'الإجراءات';
 
   @override

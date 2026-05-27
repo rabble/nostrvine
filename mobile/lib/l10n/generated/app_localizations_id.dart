@@ -2256,36 +2256,6 @@ class AppLocalizationsId extends AppLocalizations {
       'Saat ada yang me-repost videomu';
 
   @override
-  String get notificationSettingsSystem => 'Sistem';
-
-  @override
-  String get notificationSettingsSystemSubtitle =>
-      'Pembaruan aplikasi dan pesan sistem';
-
-  @override
-  String get notificationSettingsPushNotificationsSection => 'Notifikasi Push';
-
-  @override
-  String get notificationSettingsPushNotifications => 'Notifikasi Push';
-
-  @override
-  String get notificationSettingsPushNotificationsSubtitle =>
-      'Terima notifikasi saat aplikasi tertutup';
-
-  @override
-  String get notificationSettingsSound => 'Suara';
-
-  @override
-  String get notificationSettingsSoundSubtitle =>
-      'Mainkan suara untuk notifikasi';
-
-  @override
-  String get notificationSettingsVibration => 'Getaran';
-
-  @override
-  String get notificationSettingsVibrationSubtitle => 'Getar untuk notifikasi';
-
-  @override
   String get notificationSettingsActions => 'Aksi';
 
   @override

@@ -2306,38 +2306,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Cuando alguien repostea tus videos';
 
   @override
-  String get notificationSettingsSystem => 'Sistema';
-
-  @override
-  String get notificationSettingsSystemSubtitle =>
-      'Actualizaciones de la app y mensajes del sistema';
-
-  @override
-  String get notificationSettingsPushNotificationsSection =>
-      'Notificaciones push';
-
-  @override
-  String get notificationSettingsPushNotifications => 'Notificaciones push';
-
-  @override
-  String get notificationSettingsPushNotificationsSubtitle =>
-      'Recibí notificaciones con la app cerrada';
-
-  @override
-  String get notificationSettingsSound => 'Sonido';
-
-  @override
-  String get notificationSettingsSoundSubtitle =>
-      'Reproducir sonido en las notificaciones';
-
-  @override
-  String get notificationSettingsVibration => 'Vibración';
-
-  @override
-  String get notificationSettingsVibrationSubtitle =>
-      'Vibrar en las notificaciones';
-
-  @override
   String get notificationSettingsActions => 'Acciones';
 
   @override

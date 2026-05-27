@@ -2365,37 +2365,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Când cineva âți redistribuie videoclipurile';
 
   @override
-  String get notificationSettingsSystem => 'Sistem';
-
-  @override
-  String get notificationSettingsSystemSubtitle =>
-      'Actualizări de aplicație și mesaje de sistem';
-
-  @override
-  String get notificationSettingsPushNotificationsSection => 'Notificări push';
-
-  @override
-  String get notificationSettingsPushNotifications => 'Notificări push';
-
-  @override
-  String get notificationSettingsPushNotificationsSubtitle =>
-      'Primește notificări când aplicația e închisă';
-
-  @override
-  String get notificationSettingsSound => 'Sunet';
-
-  @override
-  String get notificationSettingsSoundSubtitle =>
-      'Redă sunet pentru notificări';
-
-  @override
-  String get notificationSettingsVibration => 'Vibrație';
-
-  @override
-  String get notificationSettingsVibrationSubtitle =>
-      'Vibrează pentru notificări';
-
-  @override
   String get notificationSettingsActions => 'Acțiuni';
 
   @override

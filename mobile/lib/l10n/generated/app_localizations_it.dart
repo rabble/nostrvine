@@ -2306,36 +2306,6 @@ class AppLocalizationsIt extends AppLocalizations {
       'Quando qualcuno ripubblica i tuoi video';
 
   @override
-  String get notificationSettingsSystem => 'Sistema';
-
-  @override
-  String get notificationSettingsSystemSubtitle =>
-      'Aggiornamenti dell\'app e messaggi di sistema';
-
-  @override
-  String get notificationSettingsPushNotificationsSection => 'Notifiche push';
-
-  @override
-  String get notificationSettingsPushNotifications => 'Notifiche push';
-
-  @override
-  String get notificationSettingsPushNotificationsSubtitle =>
-      'Ricevi notifiche quando l\'app è chiusa';
-
-  @override
-  String get notificationSettingsSound => 'Suono';
-
-  @override
-  String get notificationSettingsSoundSubtitle =>
-      'Riproduci suono per le notifiche';
-
-  @override
-  String get notificationSettingsVibration => 'Vibrazione';
-
-  @override
-  String get notificationSettingsVibrationSubtitle => 'Vibra per le notifiche';
-
-  @override
   String get notificationSettingsActions => 'Azioni';
 
   @override

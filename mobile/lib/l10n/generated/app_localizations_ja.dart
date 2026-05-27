@@ -2169,34 +2169,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get notificationSettingsRepostsSubtitle => '誰かがあなたの動画をリポストした時';
 
   @override
-  String get notificationSettingsSystem => 'システム';
-
-  @override
-  String get notificationSettingsSystemSubtitle => 'アプリのアップデートとシステムメッセージ';
-
-  @override
-  String get notificationSettingsPushNotificationsSection => 'プッシュ通知';
-
-  @override
-  String get notificationSettingsPushNotifications => 'プッシュ通知';
-
-  @override
-  String get notificationSettingsPushNotificationsSubtitle =>
-      'アプリを閉じてても通知を受け取る';
-
-  @override
-  String get notificationSettingsSound => 'サウンド';
-
-  @override
-  String get notificationSettingsSoundSubtitle => '通知音を鳴らす';
-
-  @override
-  String get notificationSettingsVibration => 'バイブレーション';
-
-  @override
-  String get notificationSettingsVibrationSubtitle => '通知の時にブルッとする';
-
-  @override
   String get notificationSettingsActions => 'アクション';
 
   @override

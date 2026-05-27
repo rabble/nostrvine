@@ -2241,35 +2241,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get notificationSettingsRepostsSubtitle => 'አንድ ሰው ቪዲዮዎችህን በድጋሚ ሲለጥፍ';
 
   @override
-  String get notificationSettingsSystem => 'ስርዓት';
-
-  @override
-  String get notificationSettingsSystemSubtitle =>
-      'የመተግበሪያ ዝመናዎች እና የስርዓት መልዕክቶች';
-
-  @override
-  String get notificationSettingsPushNotificationsSection => 'ማሳወቂያዎችን ግፋ';
-
-  @override
-  String get notificationSettingsPushNotifications => 'ማሳወቂያዎችን ግፋ';
-
-  @override
-  String get notificationSettingsPushNotificationsSubtitle =>
-      'መተግበሪያ ሲዘጋ ማሳወቂያዎችን ይቀበሉ';
-
-  @override
-  String get notificationSettingsSound => 'ድምፅ';
-
-  @override
-  String get notificationSettingsSoundSubtitle => 'ለማሳወቂያዎች ድምጽን ያጫውቱ';
-
-  @override
-  String get notificationSettingsVibration => 'ንዝረት';
-
-  @override
-  String get notificationSettingsVibrationSubtitle => 'ለማሳወቂያዎች ንዘር';
-
-  @override
   String get notificationSettingsActions => 'ድርጊቶች';
 
   @override

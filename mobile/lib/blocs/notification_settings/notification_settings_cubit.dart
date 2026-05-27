@@ -1,6 +1,6 @@
 // ABOUTME: Screen-scoped Cubit for the notification settings screen.
-// ABOUTME: Owns the notification preferences and the local push/sound/vibration
-// ABOUTME: toggles, persisting preference changes via NotificationPreferencesService.
+// ABOUTME: Owns the notification preferences, persisting changes via
+// ABOUTME: NotificationPreferencesService.
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/notification_settings/notification_settings_state.dart';
@@ -9,10 +9,8 @@ import 'package:openvine/services/notification_preferences_service.dart';
 
 /// Cubit backing `NotificationSettingsScreen`.
 ///
-/// Holds the notification [NotificationSettingsState.preferences] (persisted)
-/// and the local-only push/sound/vibration toggles. Preference mutations are
-/// written through [NotificationPreferencesService]; the local toggles are not
-/// persisted (matching the pre-migration behavior).
+/// Holds the notification [NotificationSettingsState.preferences] and writes
+/// mutations through [NotificationPreferencesService].
 class NotificationSettingsCubit extends Cubit<NotificationSettingsState> {
   NotificationSettingsCubit({
     required NotificationPreferencesService preferencesService,
@@ -40,29 +38,10 @@ class NotificationSettingsCubit extends Cubit<NotificationSettingsState> {
     await _preferencesService.updatePreferences(preferences);
   }
 
-  void setSystemEnabled(bool value) =>
-      emit(state.copyWith(systemEnabled: value));
-
-  void setPushNotificationsEnabled(bool value) =>
-      emit(state.copyWith(pushNotificationsEnabled: value));
-
-  void setSoundEnabled(bool value) => emit(state.copyWith(soundEnabled: value));
-
-  void setVibrationEnabled(bool value) =>
-      emit(state.copyWith(vibrationEnabled: value));
-
-  /// Resets preferences and local toggles to their defaults and persists.
+  /// Resets preferences to their defaults and persists them.
   Future<void> resetToDefaults() async {
     const defaults = NotificationPreferences();
-    emit(
-      state.copyWith(
-        preferences: defaults,
-        systemEnabled: true,
-        pushNotificationsEnabled: true,
-        soundEnabled: true,
-        vibrationEnabled: true,
-      ),
-    );
+    emit(state.copyWith(preferences: defaults));
     await _preferencesService.updatePreferences(defaults);
   }
 }

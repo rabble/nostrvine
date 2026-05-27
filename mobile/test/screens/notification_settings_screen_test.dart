@@ -1,6 +1,7 @@
 // ABOUTME: Widget tests for NotificationSettingsScreen — verifies the
 // ABOUTME: mark-all-as-read action card's success snackbar, failure
-// ABOUTME: snackbar, and disabled-when-repo-null behaviour.
+// ABOUTME: snackbar, disabled-when-repo-null behaviour, and that toggling a
+// ABOUTME: notification-type switch persists the flipped preference.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -23,6 +24,10 @@ class _MockNotificationPreferencesService extends Mock
     implements NotificationPreferencesService {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(const NotificationPreferences());
+  });
+
   group(NotificationSettingsScreen, () {
     late _MockNotificationRepository mockRepo;
     late _MockNotificationPreferencesService mockPrefsService;
@@ -33,6 +38,9 @@ void main() {
       when(
         mockPrefsService.loadPreferences,
       ).thenAnswer((_) async => const NotificationPreferences());
+      when(
+        () => mockPrefsService.updatePreferences(any()),
+      ).thenAnswer((_) async {});
     });
 
     Widget buildSubject({NotificationRepository? repo}) {
@@ -64,6 +72,10 @@ void main() {
           200,
           scrollable: find.byType(Scrollable).first,
         );
+        await tester.ensureVisible(
+          find.text(l10n.notificationSettingsMarkAllAsRead),
+        );
+        await tester.pumpAndSettle();
 
         await tester.tap(find.text(l10n.notificationSettingsMarkAllAsRead));
         await tester.pump();
@@ -96,6 +108,10 @@ void main() {
           200,
           scrollable: find.byType(Scrollable).first,
         );
+        await tester.ensureVisible(
+          find.text(l10n.notificationSettingsMarkAllAsRead),
+        );
+        await tester.pumpAndSettle();
 
         await tester.tap(find.text(l10n.notificationSettingsMarkAllAsRead));
         await tester.pump();
@@ -136,6 +152,35 @@ void main() {
               .first,
         );
         expect(cardListTile.onTap, isNull);
+      },
+    );
+
+    testWidgets(
+      'toggling a notification-type switch persists the flipped preference',
+      (tester) async {
+        await tester.pumpWidget(buildSubject(repo: mockRepo));
+        await tester.pumpAndSettle();
+
+        final l10n = AppLocalizations.of(
+          tester.element(find.byType(NotificationSettingsScreen)),
+        );
+
+        final likesSwitch = find.descendant(
+          of: find.ancestor(
+            of: find.text(l10n.notificationSettingsLikes),
+            matching: find.byType(Card),
+          ),
+          matching: find.byType(Switch),
+        );
+
+        await tester.tap(likesSwitch);
+        await tester.pump();
+
+        verify(
+          () => mockPrefsService.updatePreferences(
+            const NotificationPreferences(likesEnabled: false),
+          ),
+        ).called(1);
       },
     );
   });
