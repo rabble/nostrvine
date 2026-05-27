@@ -79,13 +79,6 @@ BackgroundUpload _inProgress(String id) => BackgroundUpload(
   progress: 0.5,
 );
 
-/// Creates a [BackgroundUpload] with a [PublishError] result.
-BackgroundUpload _failed(String id) => BackgroundUpload(
-  draft: _FakeDraft(id),
-  result: const PublishError('Upload failed'),
-  progress: 1.0,
-);
-
 /// A [BackgroundPublishState] that carries a success signal for [id], with no
 /// remaining uploads — mirrors what the bloc emits on [PublishSuccess].
 BackgroundPublishState _succeededState(String id) => BackgroundPublishState(

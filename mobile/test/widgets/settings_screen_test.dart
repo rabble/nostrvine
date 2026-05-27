@@ -680,7 +680,7 @@ void main() {
         // We model this by giving the bloc a state that already has no upload
         // in progress before _handleSessionExpired even runs. The stream emits
         // nothing further. Navigation must still fire exactly once.
-        final emptyState = const BackgroundPublishState();
+        const emptyState = BackgroundPublishState();
         final mockPublishBloc = _MockBackgroundPublishBloc();
         when(() => mockPublishBloc.state).thenReturn(emptyState);
         // Stream produces no further emissions after subscribe — simulating

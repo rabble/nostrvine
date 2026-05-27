@@ -133,7 +133,7 @@ void main() {
               ],
             ),
             // Success: upload removed and recentlySucceededIds populated.
-            BackgroundPublishState(recentlySucceededIds: {draftId}),
+            const BackgroundPublishState(recentlySucceededIds: {draftId}),
           ],
           verify: (_) {
             verify(
@@ -244,7 +244,7 @@ void main() {
             // Only emits the final state after success, no duplicate added.
             // recentlySucceededIds is populated so UploadFailureListener can
             // distinguish a true success from BackgroundPublishVanished.
-            BackgroundPublishState(recentlySucceededIds: {draftId}),
+            const BackgroundPublishState(recentlySucceededIds: {draftId}),
           ],
         );
       });
@@ -511,7 +511,7 @@ void main() {
           ),
           // Finally: successful retry removes the upload, recentlySucceededIds
           // is populated so UploadFailureListener shows a success snackbar.
-          BackgroundPublishState(recentlySucceededIds: {draftId}),
+          const BackgroundPublishState(recentlySucceededIds: {draftId}),
         ],
         verify: (_) {
           verify(() => mockPublishService.publishVideo(draft: draft)).called(1);
