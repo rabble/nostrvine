@@ -1,4 +1,4 @@
-// ABOUTME: Imports archived classic Vine videos into the local clip library.
+// ABOUTME: Imports videos into the local clip library.
 // ABOUTME: Copies cached media into documents so saved clip paths survive app restarts.
 
 import 'dart:io';
@@ -11,16 +11,16 @@ import 'package:path/path.dart' as p;
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-typedef ClassicVineVideoDownloader =
+typedef VideoClipDownloader =
     Future<File?> Function({required String url, required String cacheKey});
 
-typedef ClassicVineThumbnailExtractor =
-    Future<ClassicVineThumbnail?> Function({
+typedef VideoClipThumbnailExtractor =
+    Future<VideoClipThumbnail?> Function({
       required String videoPath,
       required Duration targetTimestamp,
     });
 
-typedef ClassicVineLastFrameExtractor =
+typedef VideoClipLastFrameExtractor =
     Future<String?> Function({
       required String videoPath,
       required Duration videoDuration,
@@ -29,31 +29,32 @@ typedef ClassicVineLastFrameExtractor =
 typedef DocumentsPathProvider = Future<String> Function();
 typedef Clock = DateTime Function();
 
-class ClassicVineThumbnail {
-  const ClassicVineThumbnail({required this.path, required this.timestamp});
+typedef VideoMetadataReader = Future<VideoMetadata> Function(EditorVideo video);
+
+class VideoClipThumbnail {
+  const VideoClipThumbnail({required this.path, required this.timestamp});
 
   final String path;
   final Duration timestamp;
 }
 
-sealed class ClassicVineClipImportResult {
-  const ClassicVineClipImportResult();
+sealed class VideoClipImportResult {
+  const VideoClipImportResult();
 }
 
-final class ClassicVineClipImportSuccess extends ClassicVineClipImportResult {
-  const ClassicVineClipImportSuccess(this.clip);
+final class VideoClipImportSuccess extends VideoClipImportResult {
+  const VideoClipImportSuccess(this.clip);
 
   final DivineVideoClip clip;
 }
 
-final class ClassicVineClipImportFailure extends ClassicVineClipImportResult {
-  const ClassicVineClipImportFailure(this.reason);
+final class VideoClipImportFailure extends VideoClipImportResult {
+  const VideoClipImportFailure(this.reason);
 
-  final ClassicVineClipImportFailureReason reason;
+  final VideoClipImportFailureReason reason;
 }
 
-enum ClassicVineClipImportFailureReason {
-  notClassicVine,
+enum VideoClipImportFailureReason {
   missingVideoUrl,
   unsupportedPlatform,
   downloadFailed,
@@ -61,50 +62,48 @@ enum ClassicVineClipImportFailureReason {
   saveFailed,
 }
 
-class ClassicVineClipImportService {
-  ClassicVineClipImportService({
+class VideoClipImportService {
+  VideoClipImportService({
     required ClipLibraryService clipLibraryService,
     required DocumentsPathProvider getDocumentsPath,
-    required ClassicVineVideoDownloader downloadVideo,
-    required ClassicVineThumbnailExtractor extractThumbnail,
-    required ClassicVineLastFrameExtractor extractLastFrame,
+    required VideoClipDownloader downloadVideo,
+    required VideoClipThumbnailExtractor extractThumbnail,
+    required VideoClipLastFrameExtractor extractLastFrame,
     Clock? now,
+    VideoMetadataReader? readVideoMetadata,
   }) : _clipLibraryService = clipLibraryService,
        _getDocumentsPath = getDocumentsPath,
        _downloadVideo = downloadVideo,
        _extractThumbnail = extractThumbnail,
        _extractLastFrame = extractLastFrame,
-       _now = now ?? DateTime.now;
+       _now = now ?? DateTime.now,
+       _readVideoMetadata =
+           readVideoMetadata ?? ProVideoEditor.instance.getMetadata;
 
-  static const _logName = 'ClassicVineClipImportService';
+  static const _logName = 'VideoClipImportService';
 
   final ClipLibraryService _clipLibraryService;
   final DocumentsPathProvider _getDocumentsPath;
-  final ClassicVineVideoDownloader _downloadVideo;
-  final ClassicVineThumbnailExtractor _extractThumbnail;
-  final ClassicVineLastFrameExtractor _extractLastFrame;
+  final VideoClipDownloader _downloadVideo;
+  final VideoClipThumbnailExtractor _extractThumbnail;
+  final VideoClipLastFrameExtractor _extractLastFrame;
   final Clock _now;
+  final VideoMetadataReader _readVideoMetadata;
 
-  Future<ClassicVineClipImportResult> importToLibrary(
+  Future<VideoClipImportResult> importToLibrary(
     models.VideoEvent video,
   ) async {
-    if (!video.isOriginalVine) {
-      return const ClassicVineClipImportFailure(
-        ClassicVineClipImportFailureReason.notClassicVine,
-      );
-    }
-
     final playableUrl = await video.getPlayableUrl();
     if (playableUrl == null || playableUrl.isEmpty) {
-      return const ClassicVineClipImportFailure(
-        ClassicVineClipImportFailureReason.missingVideoUrl,
+      return const VideoClipImportFailure(
+        VideoClipImportFailureReason.missingVideoUrl,
       );
     }
 
     final documentsPath = await _getDocumentsPath();
     if (documentsPath.isEmpty) {
-      return const ClassicVineClipImportFailure(
-        ClassicVineClipImportFailureReason.unsupportedPlatform,
+      return const VideoClipImportFailure(
+        VideoClipImportFailureReason.unsupportedPlatform,
       );
     }
 
@@ -113,8 +112,8 @@ class ClassicVineClipImportService {
       cacheKey: video.id,
     );
     if (downloaded == null || !downloaded.existsSync()) {
-      return const ClassicVineClipImportFailure(
-        ClassicVineClipImportFailureReason.downloadFailed,
+      return const VideoClipImportFailure(
+        VideoClipImportFailureReason.downloadFailed,
       );
     }
 
@@ -138,6 +137,8 @@ class ClassicVineClipImportService {
         videoDuration: duration,
       );
 
+      final actualRatio = await _resolveAspectRatio(video, copiedVideo);
+
       final clip = DivineVideoClip(
         id: clipId,
         video: EditorVideo.file(copiedVideo.path),
@@ -145,30 +146,30 @@ class ClassicVineClipImportService {
         recordedAt: _now(),
         thumbnailPath: thumbnail?.path,
         thumbnailTimestamp: thumbnail?.timestamp,
-        originalAspectRatio: _aspectRatioFor(video) ?? 1,
-        targetAspectRatio: models.AspectRatio.square,
+        originalAspectRatio: actualRatio ?? 1,
+        targetAspectRatio: _targetAspectRatioFor(video, actualRatio),
         ghostFramePath: ghostFramePath,
       );
 
       await _clipLibraryService.saveClip(clip);
-      return ClassicVineClipImportSuccess(clip);
+      return VideoClipImportSuccess(clip);
     } on FileSystemException catch (e) {
       Log.warning(
-        'Failed to copy classic Vine into documents: $e',
+        'Failed to copy video into documents: $e',
         name: _logName,
         category: LogCategory.video,
       );
-      return const ClassicVineClipImportFailure(
-        ClassicVineClipImportFailureReason.copyFailed,
+      return const VideoClipImportFailure(
+        VideoClipImportFailureReason.copyFailed,
       );
     } catch (e) {
       Log.warning(
-        'Failed to save classic Vine clip: $e',
+        'Failed to save video clip: $e',
         name: _logName,
         category: LogCategory.video,
       );
-      return const ClassicVineClipImportFailure(
-        ClassicVineClipImportFailureReason.saveFailed,
+      return const VideoClipImportFailure(
+        VideoClipImportFailureReason.saveFailed,
       );
     }
   }
@@ -189,7 +190,8 @@ class ClassicVineClipImportService {
       RegExp('[^a-zA-Z0-9_-]'),
       '_',
     );
-    return 'classic_vine_${safeStableId}_${_now().microsecondsSinceEpoch}';
+    final prefix = video.isOriginalVine ? 'classic_vine' : 'own_video';
+    return '${prefix}_${safeStableId}_${_now().microsecondsSinceEpoch}';
   }
 
   Duration _durationFor(models.VideoEvent video) {
@@ -218,5 +220,60 @@ class ClassicVineClipImportService {
     if (width == null || height == null || height == 0) return null;
 
     return width / height;
+  }
+
+  /// Resolves the real aspect ratio of the source video.
+  ///
+  /// Prefers the dimensions advertised in the Nostr event. Falls back to
+  /// probing the downloaded file with [ProVideoEditor.getMetadata] when the
+  /// event has no usable `dim` tag (common for own uploads that bypass the
+  /// transcoding pipeline).
+  Future<double?> _resolveAspectRatio(
+    models.VideoEvent video,
+    File copiedVideo,
+  ) async {
+    final fromEvent = _aspectRatioFor(video);
+    if (fromEvent != null) return fromEvent;
+
+    try {
+      final metadata = await _readVideoMetadata(
+        EditorVideo.file(copiedVideo.path),
+      );
+      var width = metadata.resolution.width;
+      var height = metadata.resolution.height;
+      if (width <= 0 || height <= 0) return null;
+      // Swap dimensions for portrait-rotated captures so the ratio reflects
+      // the displayed orientation rather than the raw frame.
+      if (metadata.rotation == 90 || metadata.rotation == 270) {
+        final swap = width;
+        width = height;
+        height = swap;
+      }
+      return width / height;
+    } catch (e) {
+      Log.warning(
+        'Failed to read video metadata for aspect ratio: $e',
+        name: _logName,
+        category: LogCategory.video,
+      );
+      return null;
+    }
+  }
+
+  /// Determines the target crop aspect ratio for the editor.
+  ///
+  /// Classic Vines are always 1:1 square originals.
+  /// Own videos use [actualRatio]: ratios close to 1 (>= 0.9) map to square,
+  /// everything narrower maps to 9:16. Falls back to 9:16 when the ratio is
+  /// unknown, matching the default capture orientation.
+  models.AspectRatio _targetAspectRatioFor(
+    models.VideoEvent video,
+    double? actualRatio,
+  ) {
+    if (video.isOriginalVine) return models.AspectRatio.square;
+    if (actualRatio != null && actualRatio >= 0.9) {
+      return models.AspectRatio.square;
+    }
+    return models.AspectRatio.vertical;
   }
 }

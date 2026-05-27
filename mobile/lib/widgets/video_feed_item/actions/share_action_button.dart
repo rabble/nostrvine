@@ -15,9 +15,9 @@ import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/classic_vine_clip_import_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/providers/video_clip_import_provider.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/watermark_text_resolver.dart';
@@ -138,8 +138,8 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
       followRepository: ref.read(followRepositoryProvider),
       bookmarkServiceFuture: ref.read(bookmarkServiceProvider.future),
       cacheManager: openVineImageCache,
-      classicVineClipImportService: ref.read(
-        classicVineClipImportServiceProvider,
+      videoClipImportService: ref.read(
+        videoClipImportServiceProvider,
       ),
     )..add(const ShareSheetContactsLoadRequested());
   }
@@ -168,7 +168,8 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
   @override
   Widget build(BuildContext context) {
     final isOwnContent = _isUserOwnContent();
-    final canAddClassicVineToClips = widget.video.isOriginalVine && !kIsWeb;
+    final canAddVideoToClips =
+        (widget.video.isOriginalVine || isOwnContent) && !kIsWeb;
 
     return BlocProvider.value(
       value: _shareSheetBloc,
@@ -184,9 +185,9 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
           onAddToList: _handleAddToList,
           onSaveOriginal: isOwnContent ? _handleSaveOriginal : null,
           onSaveWithWatermark: _handleSaveWithWatermark,
-          onAddClassicVineToClips: canAddClassicVineToClips
+          onAddVideoToClips: canAddVideoToClips
               ? () => _shareSheetBloc.add(
-                  const ShareSheetAddClassicVineToClipsRequested(),
+                  const ShareSheetAddVideoToClipsRequested(),
                 )
               : null,
         ),
@@ -239,7 +240,7 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
             widget.inheritedLookupContext,
           );
         }
-      case ShareSheetClassicVineClipImportResult(:final succeeded):
+      case ShareSheetVideoClipImportResult(:final succeeded):
         _safePop(context);
         messenger.showSnackBar(
           DivineSnackbarContainer.snackBar(
@@ -369,7 +370,7 @@ class _UnifiedShareSheetView extends StatelessWidget {
     required this.onFindPeople,
     required this.onAddToList,
     required this.onSaveWithWatermark,
-    this.onAddClassicVineToClips,
+    this.onAddVideoToClips,
     this.onSaveOriginal,
   });
 
@@ -380,7 +381,7 @@ class _UnifiedShareSheetView extends StatelessWidget {
   final VoidCallback onAddToList;
   final Future<void> Function()? onSaveOriginal;
   final Future<void> Function() onSaveWithWatermark;
-  final VoidCallback? onAddClassicVineToClips;
+  final VoidCallback? onAddVideoToClips;
 
   @override
   Widget build(BuildContext context) {
@@ -433,7 +434,7 @@ class _UnifiedShareSheetView extends StatelessWidget {
                         onSave: () => bloc.add(const ShareSheetSaveRequested()),
                         onSaveOriginal: onSaveOriginal,
                         onSaveWithWatermark: onSaveWithWatermark,
-                        onAddClassicVineToClips: onAddClassicVineToClips,
+                        onAddVideoToClips: onAddVideoToClips,
                         onAddToList: onAddToList,
                         onCopyLink: () =>
                             bloc.add(const ShareSheetCopyLinkRequested()),

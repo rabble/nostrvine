@@ -15,7 +15,7 @@ import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:openvine/blocs/share_sheet/reportable_sites.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/bookmark_service.dart';
-import 'package:openvine/services/classic_vine_clip_import_service.dart';
+import 'package:openvine/services/video_clip_import_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -42,7 +42,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
     required FollowRepository followRepository,
     Future<BookmarkService?>? bookmarkServiceFuture,
     BaseCacheManager? cacheManager,
-    ClassicVineClipImportService? classicVineClipImportService,
+    VideoClipImportService? videoClipImportService,
   }) : _video = video,
        _relayUrl = relayUrl,
        _videoSharingService = videoSharingService,
@@ -50,7 +50,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
        _followRepository = followRepository,
        _bookmarkServiceFuture = bookmarkServiceFuture,
        _cacheManager = cacheManager,
-       _classicVineClipImportService = classicVineClipImportService,
+       _videoClipImportService = videoClipImportService,
        super(const ShareSheetState()) {
     on<ShareSheetContactsLoadRequested>(_onContactsLoadRequested);
     on<ShareSheetQuickSendRequested>(
@@ -61,8 +61,8 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
     on<ShareSheetRecipientCleared>(_onRecipientCleared);
     on<ShareSheetSendRequested>(_onSendRequested, transformer: droppable());
     on<ShareSheetSaveRequested>(_onSaveRequested, transformer: droppable());
-    on<ShareSheetAddClassicVineToClipsRequested>(
-      _onAddClassicVineToClipsRequested,
+    on<ShareSheetAddVideoToClipsRequested>(
+      _onAddVideoToClipsRequested,
       transformer: droppable(),
     );
     on<ShareSheetCopyLinkRequested>(_onCopyLinkRequested);
@@ -78,7 +78,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
   final FollowRepository _followRepository;
   final Future<BookmarkService?>? _bookmarkServiceFuture;
   final BaseCacheManager? _cacheManager;
-  final ClassicVineClipImportService? _classicVineClipImportService;
+  final VideoClipImportService? _videoClipImportService;
 
   void _addUnexpectedError(
     Object error,
@@ -374,23 +374,23 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
   }
 
   // --------------------------------------------------------------------------
-  // Add classic Vine to clips
+  // Add video to clips
   // --------------------------------------------------------------------------
 
-  Future<void> _onAddClassicVineToClipsRequested(
-    ShareSheetAddClassicVineToClipsRequested event,
+  Future<void> _onAddVideoToClipsRequested(
+    ShareSheetAddVideoToClipsRequested event,
     Emitter<ShareSheetState> emit,
   ) async {
-    final importer = _classicVineClipImportService;
+    final importer = _videoClipImportService;
     if (importer == null) {
       Log.warning(
-        'Classic Vine clip importer unavailable',
+        'Video clip importer unavailable',
         name: 'ShareSheetBloc',
         category: LogCategory.ui,
       );
       emit(
         state.copyWith(
-          actionResult: ShareSheetClassicVineClipImportResult(succeeded: false),
+          actionResult: ShareSheetVideoClipImportResult(succeeded: false),
         ),
       );
       return;
@@ -400,8 +400,8 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       final result = await importer.importToLibrary(_video);
       emit(
         state.copyWith(
-          actionResult: ShareSheetClassicVineClipImportResult(
-            succeeded: result is ClassicVineClipImportSuccess,
+          actionResult: ShareSheetVideoClipImportResult(
+            succeeded: result is VideoClipImportSuccess,
           ),
         ),
       );
@@ -409,16 +409,16 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       _addUnexpectedError(
         e,
         stackTrace,
-        ShareSheetBlocReportableSites.onAddClassicVineToClipsRequested,
+        ShareSheetBlocReportableSites.onAddVideoToClipsRequested,
       );
       Log.error(
-        'Failed to import classic Vine clip: $e',
+        'Failed to import video clip: $e',
         name: 'ShareSheetBloc',
         category: LogCategory.ui,
       );
       emit(
         state.copyWith(
-          actionResult: ShareSheetClassicVineClipImportResult(succeeded: false),
+          actionResult: ShareSheetVideoClipImportResult(succeeded: false),
         ),
       );
     }

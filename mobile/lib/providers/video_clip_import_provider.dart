@@ -1,20 +1,20 @@
-// ABOUTME: Riverpod wiring for importing classic Vines into the clip library.
+// ABOUTME: Riverpod wiring for importing videos into the clip library.
 // ABOUTME: Keeps the import service testable while using app cache and storage services.
 
 import 'package:openvine/providers/social_providers.dart';
-import 'package:openvine/services/classic_vine_clip_import_service.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
+import 'package:openvine/services/video_clip_import_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'classic_vine_clip_import_provider.g.dart';
+part 'video_clip_import_provider.g.dart';
 
 @riverpod
-ClassicVineClipImportService classicVineClipImportService(Ref ref) {
+VideoClipImportService videoClipImportService(Ref ref) {
   final mediaCache = ref.watch(mediaCacheProvider);
 
-  return ClassicVineClipImportService(
+  return VideoClipImportService(
     clipLibraryService: ref.watch(clipLibraryServiceProvider),
     getDocumentsPath: getDocumentsPath,
     downloadVideo: ({required String url, required String cacheKey}) async {
@@ -28,7 +28,7 @@ ClassicVineClipImportService classicVineClipImportService(Ref ref) {
         targetTimestamp: targetTimestamp,
       );
       if (result == null) return null;
-      return ClassicVineThumbnail(
+      return VideoClipThumbnail(
         path: result.path,
         timestamp: result.timestamp,
       );

@@ -18,10 +18,10 @@ import 'package:openvine/features/people_lists/view/add_to_people_lists_sheet.da
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/classic_vine_clip_import_provider.dart';
+import 'package:openvine/providers/video_clip_import_provider.dart';
 import 'package:openvine/services/bookmark_service.dart';
-import 'package:openvine/services/classic_vine_clip_import_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
+import 'package:openvine/services/video_clip_import_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/video_feed_item/actions/share_action_button.dart';
@@ -37,8 +37,8 @@ class _MockVideoSharingService extends Mock implements VideoSharingService {}
 
 class _MockProfileRepository extends Mock implements ProfileRepository {}
 
-class _MockClassicVineClipImportService extends Mock
-    implements ClassicVineClipImportService {}
+class _MockVideoClipImportService extends Mock
+    implements VideoClipImportService {}
 
 class _FakeVideoEvent extends Fake implements VideoEvent {}
 
@@ -83,7 +83,7 @@ void main() {
   late _MockBookmarkService mockBookmarkService;
   late _MockVideoSharingService mockVideoSharingService;
   late _MockProfileRepository mockProfileRepository;
-  late _MockClassicVineClipImportService mockClassicVineClipImportService;
+  late _MockVideoClipImportService mockVideoClipImportService;
 
   setUpAll(() {
     registerFallbackValue(_FakeVideoEvent());
@@ -104,13 +104,13 @@ void main() {
 
     mockBookmarkService = _MockBookmarkService();
     mockVideoSharingService = _MockVideoSharingService();
-    mockClassicVineClipImportService = _MockClassicVineClipImportService();
+    mockVideoClipImportService = _MockVideoClipImportService();
     _FakeCuratedListsState.fakeLists = [];
 
     when(
-      () => mockClassicVineClipImportService.importToLibrary(any()),
+      () => mockVideoClipImportService.importToLibrary(any()),
     ).thenAnswer(
-      (_) async => ClassicVineClipImportSuccess(_FakeDivineVideoClip()),
+      (_) async => VideoClipImportSuccess(_FakeDivineVideoClip()),
     );
     when(
       () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
@@ -142,8 +142,8 @@ void main() {
         videoSharingServiceProvider.overrideWith(
           (ref) => mockVideoSharingService,
         ),
-        classicVineClipImportServiceProvider.overrideWithValue(
-          mockClassicVineClipImportService,
+        videoClipImportServiceProvider.overrideWithValue(
+          mockVideoClipImportService,
         ),
         curatedListsStateProvider.overrideWith(_FakeCuratedListsState.new),
         isFeatureEnabledProvider(
@@ -231,15 +231,16 @@ void main() {
       expect(find.text('Add to clips'), findsOneWidget);
     });
 
-    testWidgets('More actions row hides Add to clips for non-classic videos', (
-      tester,
-    ) async {
-      await tester.pumpWidget(buildSubject());
-      await tester.tap(find.byType(ShareActionButton));
-      await tester.pumpAndSettle();
+    testWidgets(
+      'More actions row hides Add to clips for non-classic, non-own videos',
+      (tester) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.tap(find.byType(ShareActionButton));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Add to clips'), findsNothing);
-    });
+        expect(find.text('Add to clips'), findsNothing);
+      },
+    );
 
     testWidgets('tapping Add to clips shows success snackbar', (tester) async {
       final classicVideo = _testVideo(
@@ -256,7 +257,7 @@ void main() {
 
       expect(find.text('Added to clips'), findsOneWidget);
       verify(
-        () => mockClassicVineClipImportService.importToLibrary(classicVideo),
+        () => mockVideoClipImportService.importToLibrary(classicVideo),
       ).called(1);
     });
 

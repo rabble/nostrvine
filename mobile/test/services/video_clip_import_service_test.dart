@@ -1,18 +1,22 @@
-// ABOUTME: Tests for importing classic Vine videos into the local clip library.
+// ABOUTME: Tests for importing videos into the local clip library.
 // ABOUTME: Covers validation, file copying, clip creation, and save failures.
 
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' as models;
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/services/classic_vine_clip_import_service.dart';
 import 'package:openvine/services/clip_library_service.dart';
+import 'package:openvine/services/video_clip_import_service.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 
 class _MockClipLibraryService extends Mock implements ClipLibraryService {}
 
 class _FakeDivineVideoClip extends Fake implements DivineVideoClip {}
+
+const _defaultVineId = 'vine-123';
 
 models.VideoEvent _video({
   String id = 'classic-vine-event-id',
@@ -20,6 +24,7 @@ models.VideoEvent _video({
   int? duration = 6,
   String? dimensions = '480x480',
   Map<String, String> rawTags = const {'platform': 'vine'},
+  String? vineId = _defaultVineId,
 }) {
   return models.VideoEvent(
     id: id,
@@ -34,7 +39,7 @@ models.VideoEvent _video({
     duration: duration,
     dimensions: dimensions,
     rawTags: rawTags,
-    vineId: 'vine-123',
+    vineId: vineId,
   );
 }
 
@@ -65,13 +70,13 @@ void main() {
     }
   });
 
-  ClassicVineClipImportService buildService({
+  VideoClipImportService buildService({
     Future<File?> Function({
       required String url,
       required String cacheKey,
     })?
     downloadVideo,
-    Future<ClassicVineThumbnail?> Function({
+    Future<VideoClipThumbnail?> Function({
       required String videoPath,
       required Duration targetTimestamp,
     })?
@@ -81,9 +86,10 @@ void main() {
       required Duration videoDuration,
     })?
     extractLastFrame,
+    Future<VideoMetadata> Function(EditorVideo video)? readVideoMetadata,
     DateTime? now,
   }) {
-    return ClassicVineClipImportService(
+    return VideoClipImportService(
       clipLibraryService: clipLibraryService,
       getDocumentsPath: () async => docsDir.path,
       downloadVideo:
@@ -94,7 +100,7 @@ void main() {
           ({required videoPath, required targetTimestamp}) async {
             final thumbnail = File('${docsDir.path}/thumb.jpg')
               ..writeAsBytesSync(const [1, 2, 3]);
-            return ClassicVineThumbnail(
+            return VideoClipThumbnail(
               path: thumbnail.path,
               timestamp: targetTimestamp,
             );
@@ -106,6 +112,7 @@ void main() {
               ..writeAsBytesSync(const [4, 5, 6]);
             return ghost.path;
           },
+      readVideoMetadata: readVideoMetadata,
       now: () => now ?? DateTime.utc(2026, 4, 27, 12),
     );
   }
@@ -115,8 +122,8 @@ void main() {
 
     final result = await service.importToLibrary(_video());
 
-    expect(result, isA<ClassicVineClipImportSuccess>());
-    final success = result as ClassicVineClipImportSuccess;
+    expect(result, isA<VideoClipImportSuccess>());
+    final success = result as VideoClipImportSuccess;
     expect(success.clip.id, startsWith('classic_vine_vine-123_'));
     expect(success.clip.duration, const Duration(seconds: 6));
     expect(success.clip.targetAspectRatio, models.AspectRatio.square);
@@ -137,23 +144,133 @@ void main() {
     expect(captured.id, success.clip.id);
   });
 
-  test('rejects non-classic videos without saving', () async {
+  test('imports an own (non-classic) video as a saved library clip', () async {
     final service = buildService();
 
     final result = await service.importToLibrary(
-      _video(rawTags: const {'platform': 'divine'}),
-    );
-
-    expect(
-      result,
-      isA<ClassicVineClipImportFailure>().having(
-        (result) => result.reason,
-        'reason',
-        ClassicVineClipImportFailureReason.notClassicVine,
+      _video(
+        id: 'own-video-event-id',
+        rawTags: const {'platform': 'divine'},
+        vineId: null,
       ),
     );
-    verifyNever(() => clipLibraryService.saveClip(any()));
+
+    expect(result, isA<VideoClipImportSuccess>());
+    final success = result as VideoClipImportSuccess;
+    expect(success.clip.id, startsWith('own_video_own-video-event-id_'));
+    verify(() => clipLibraryService.saveClip(any())).called(1);
   });
+
+  test(
+    'falls back to ProVideoEditor metadata when event dimensions are missing '
+    'and resolves a vertical target ratio',
+    () async {
+      final service = buildService(
+        readVideoMetadata: (video) async => VideoMetadata(
+          duration: const Duration(seconds: 6),
+          extension: 'mp4',
+          fileSize: 1024,
+          resolution: const Size(1080, 1920),
+          rotation: 0,
+          bitrate: 1000,
+        ),
+      );
+
+      final result = await service.importToLibrary(
+        _video(
+          id: 'own-no-dims',
+          rawTags: const {'platform': 'divine'},
+          vineId: null,
+          dimensions: null,
+        ),
+      );
+
+      final success = result as VideoClipImportSuccess;
+      expect(success.clip.targetAspectRatio, models.AspectRatio.vertical);
+      expect(success.clip.originalAspectRatio, closeTo(1080 / 1920, 0.001));
+    },
+  );
+
+  test(
+    'falls back to ProVideoEditor metadata for square own videos without '
+    'dimensions',
+    () async {
+      final service = buildService(
+        readVideoMetadata: (video) async => VideoMetadata(
+          duration: const Duration(seconds: 6),
+          extension: 'mp4',
+          fileSize: 1024,
+          resolution: const Size(720, 720),
+          rotation: 0,
+          bitrate: 1000,
+        ),
+      );
+
+      final result = await service.importToLibrary(
+        _video(
+          id: 'own-square',
+          rawTags: const {'platform': 'divine'},
+          vineId: null,
+          dimensions: null,
+        ),
+      );
+
+      final success = result as VideoClipImportSuccess;
+      expect(success.clip.targetAspectRatio, models.AspectRatio.square);
+      expect(success.clip.originalAspectRatio, 1);
+    },
+  );
+
+  test(
+    'swaps width and height when metadata reports a 90 degree rotation',
+    () async {
+      final service = buildService(
+        readVideoMetadata: (video) async => VideoMetadata(
+          duration: const Duration(seconds: 6),
+          extension: 'mp4',
+          fileSize: 1024,
+          resolution: const Size(1920, 1080),
+          rotation: 90,
+          bitrate: 1000,
+        ),
+      );
+
+      final result = await service.importToLibrary(
+        _video(
+          id: 'own-rotated',
+          rawTags: const {'platform': 'divine'},
+          vineId: null,
+          dimensions: null,
+        ),
+      );
+
+      final success = result as VideoClipImportSuccess;
+      expect(success.clip.targetAspectRatio, models.AspectRatio.vertical);
+      expect(success.clip.originalAspectRatio, closeTo(1080 / 1920, 0.001));
+    },
+  );
+
+  test(
+    'falls back to vertical target ratio when metadata probe throws',
+    () async {
+      final service = buildService(
+        readVideoMetadata: (video) async => throw StateError('probe failed'),
+      );
+
+      final result = await service.importToLibrary(
+        _video(
+          id: 'own-probe-fail',
+          rawTags: const {'platform': 'divine'},
+          vineId: null,
+          dimensions: null,
+        ),
+      );
+
+      final success = result as VideoClipImportSuccess;
+      expect(success.clip.targetAspectRatio, models.AspectRatio.vertical);
+      expect(success.clip.originalAspectRatio, 1);
+    },
+  );
 
   test('returns missingVideoUrl when no playable URL is available', () async {
     final service = buildService();
@@ -162,10 +279,10 @@ void main() {
 
     expect(
       result,
-      isA<ClassicVineClipImportFailure>().having(
+      isA<VideoClipImportFailure>().having(
         (result) => result.reason,
         'reason',
-        ClassicVineClipImportFailureReason.missingVideoUrl,
+        VideoClipImportFailureReason.missingVideoUrl,
       ),
     );
     verifyNever(() => clipLibraryService.saveClip(any()));
@@ -180,10 +297,10 @@ void main() {
 
     expect(
       result,
-      isA<ClassicVineClipImportFailure>().having(
+      isA<VideoClipImportFailure>().having(
         (result) => result.reason,
         'reason',
-        ClassicVineClipImportFailureReason.downloadFailed,
+        VideoClipImportFailureReason.downloadFailed,
       ),
     );
     verifyNever(() => clipLibraryService.saveClip(any()));

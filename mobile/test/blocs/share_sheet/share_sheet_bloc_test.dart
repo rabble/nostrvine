@@ -13,7 +13,7 @@ import 'package:openvine/blocs/share_sheet/share_sheet_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/bookmark_service.dart';
-import 'package:openvine/services/classic_vine_clip_import_service.dart';
+import 'package:openvine/services/video_clip_import_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:profile_repository/profile_repository.dart';
 
@@ -25,8 +25,8 @@ class _MockFollowRepository extends Mock implements FollowRepository {}
 
 class _MockBookmarkService extends Mock implements BookmarkService {}
 
-class _MockClassicVineClipImportService extends Mock
-    implements ClassicVineClipImportService {}
+class _MockVideoClipImportService extends Mock
+    implements VideoClipImportService {}
 
 class _MockCacheManager extends Mock implements BaseCacheManager {}
 
@@ -106,7 +106,7 @@ void main() {
       Future<BookmarkService?>? bookmarkServiceFuture,
       String relayUrl = 'wss://relay.test.example',
       BaseCacheManager? cacheManager,
-      ClassicVineClipImportService? classicVineClipImportService,
+      VideoClipImportService? videoClipImportService,
     }) => ShareSheetBloc(
       video: testVideo,
       relayUrl: relayUrl,
@@ -116,7 +116,7 @@ void main() {
       bookmarkServiceFuture:
           bookmarkServiceFuture ?? Future.value(mockBookmarkService),
       cacheManager: cacheManager,
-      classicVineClipImportService: classicVineClipImportService,
+      videoClipImportService: videoClipImportService,
     );
 
     test('initial state is correct', () {
@@ -844,31 +844,30 @@ void main() {
     });
 
     // -----------------------------------------------------------------------
-    // Add classic Vine to clips
+    // Add video to clips
     // -----------------------------------------------------------------------
 
-    group('ShareSheetAddClassicVineToClipsRequested', () {
-      late _MockClassicVineClipImportService mockImporter;
+    group('ShareSheetAddVideoToClipsRequested', () {
+      late _MockVideoClipImportService mockImporter;
 
       setUp(() {
-        mockImporter = _MockClassicVineClipImportService();
+        mockImporter = _MockVideoClipImportService();
       });
 
       blocTest<ShareSheetBloc, ShareSheetState>(
-        'emits import success when classic Vine is added to clips',
+        'emits import success when video is added to clips',
         setUp: () {
           when(() => mockImporter.importToLibrary(any())).thenAnswer(
-            (_) async => ClassicVineClipImportSuccess(_FakeDivineVideoClip()),
+            (_) async => VideoClipImportSuccess(_FakeDivineVideoClip()),
           );
         },
-        build: () => createBloc(classicVineClipImportService: mockImporter),
-        act: (bloc) =>
-            bloc.add(const ShareSheetAddClassicVineToClipsRequested()),
+        build: () => createBloc(videoClipImportService: mockImporter),
+        act: (bloc) => bloc.add(const ShareSheetAddVideoToClipsRequested()),
         expect: () => [
           isA<ShareSheetState>().having(
             (state) => state.actionResult,
             'actionResult',
-            isA<ShareSheetClassicVineClipImportResult>().having(
+            isA<ShareSheetVideoClipImportResult>().having(
               (result) => result.succeeded,
               'succeeded',
               isTrue,
@@ -884,19 +883,18 @@ void main() {
         'emits import failure when importer cannot add the clip',
         setUp: () {
           when(() => mockImporter.importToLibrary(any())).thenAnswer(
-            (_) async => const ClassicVineClipImportFailure(
-              ClassicVineClipImportFailureReason.downloadFailed,
+            (_) async => const VideoClipImportFailure(
+              VideoClipImportFailureReason.downloadFailed,
             ),
           );
         },
-        build: () => createBloc(classicVineClipImportService: mockImporter),
-        act: (bloc) =>
-            bloc.add(const ShareSheetAddClassicVineToClipsRequested()),
+        build: () => createBloc(videoClipImportService: mockImporter),
+        act: (bloc) => bloc.add(const ShareSheetAddVideoToClipsRequested()),
         expect: () => [
           isA<ShareSheetState>().having(
             (state) => state.actionResult,
             'actionResult',
-            isA<ShareSheetClassicVineClipImportResult>().having(
+            isA<ShareSheetVideoClipImportResult>().having(
               (result) => result.succeeded,
               'succeeded',
               isFalse,
@@ -908,13 +906,12 @@ void main() {
       blocTest<ShareSheetBloc, ShareSheetState>(
         'emits import failure when importer is unavailable',
         build: createBloc,
-        act: (bloc) =>
-            bloc.add(const ShareSheetAddClassicVineToClipsRequested()),
+        act: (bloc) => bloc.add(const ShareSheetAddVideoToClipsRequested()),
         expect: () => [
           isA<ShareSheetState>().having(
             (state) => state.actionResult,
             'actionResult',
-            isA<ShareSheetClassicVineClipImportResult>().having(
+            isA<ShareSheetVideoClipImportResult>().having(
               (result) => result.succeeded,
               'succeeded',
               isFalse,
@@ -930,9 +927,8 @@ void main() {
             () => mockImporter.importToLibrary(any()),
           ).thenThrow(Exception('download failed'));
         },
-        build: () => createBloc(classicVineClipImportService: mockImporter),
-        act: (bloc) =>
-            bloc.add(const ShareSheetAddClassicVineToClipsRequested()),
+        build: () => createBloc(videoClipImportService: mockImporter),
+        act: (bloc) => bloc.add(const ShareSheetAddVideoToClipsRequested()),
         errors: () => [
           isA<Reportable<Object>>().having(
             (error) => error.unwrap(),
@@ -944,7 +940,7 @@ void main() {
           isA<ShareSheetState>().having(
             (state) => state.actionResult,
             'actionResult',
-            isA<ShareSheetClassicVineClipImportResult>().having(
+            isA<ShareSheetVideoClipImportResult>().having(
               (result) => result.succeeded,
               'succeeded',
               isFalse,

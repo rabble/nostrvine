@@ -15,7 +15,7 @@ class _MoreActionsSection extends ConsumerWidget {
     required this.onShareVia,
     required this.onCopyEventJson,
     required this.onCopyEventId,
-    this.onAddClassicVineToClips,
+    this.onAddVideoToClips,
     this.onSaveOriginal,
   });
 
@@ -29,7 +29,7 @@ class _MoreActionsSection extends ConsumerWidget {
   final VoidCallback onShareVia;
   final VoidCallback onCopyEventJson;
   final VoidCallback onCopyEventId;
-  final VoidCallback? onAddClassicVineToClips;
+  final VoidCallback? onAddVideoToClips;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -59,11 +59,11 @@ class _MoreActionsSection extends ConsumerWidget {
             : context.l10n.shareSheetSaveVideo,
         onTap: onSaveWithWatermark,
       ),
-      if (onAddClassicVineToClips != null)
+      if (onAddVideoToClips != null)
         _ActionData(
           icon: DivineIconName.filmSlate,
           label: context.l10n.shareSheetAddToClips,
-          onTap: onAddClassicVineToClips!,
+          onTap: onAddVideoToClips!,
         ),
       if (showCuratedLists)
         _ActionData(

@@ -65,8 +65,8 @@ class ShareSheetSaveResult extends ShareSheetActionResult {
   final bool wasBookmarkedBeforeToggle;
 }
 
-class ShareSheetClassicVineClipImportResult extends ShareSheetActionResult {
-  ShareSheetClassicVineClipImportResult({required this.succeeded});
+class ShareSheetVideoClipImportResult extends ShareSheetActionResult {
+  ShareSheetVideoClipImportResult({required this.succeeded});
 
   final bool succeeded;
 }

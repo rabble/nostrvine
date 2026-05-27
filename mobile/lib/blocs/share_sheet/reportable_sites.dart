@@ -9,8 +9,8 @@ abstract class ShareSheetBlocReportableSites {
   static const String onQuickSendRequested = '_onQuickSendRequested';
   static const String onSendRequested = '_onSendRequested';
   static const String onSaveRequested = '_onSaveRequested';
-  static const String onAddClassicVineToClipsRequested =
-      '_onAddClassicVineToClipsRequested';
+  static const String onAddVideoToClipsRequested =
+      '_onAddVideoToClipsRequested';
   static const String onCopyLinkRequested = '_onCopyLinkRequested';
   static const String onShareViaRequested = '_onShareViaRequested';
   static const String onCopyEventJsonRequested = '_onCopyEventJsonRequested';
