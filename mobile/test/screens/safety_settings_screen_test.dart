@@ -2,6 +2,7 @@
 // ABOUTME: Tests section headers, blocked users list, muted content, filters, and report history
 
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
+import 'package:content_policy/content_policy.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,6 +19,7 @@ import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
+import 'package:openvine/services/video_event_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MockContentBlocklistRepository extends Mock
@@ -26,6 +28,13 @@ class MockContentBlocklistRepository extends Mock
 
   @override
   Set<String> get runtimeBlockedUsers => Set.unmodifiable(_runtimeBlocklist);
+
+  /// The `SafetySettingsCubit` subscribes to this stream to refresh the
+  /// blocked-users list reactively. Tests don't need to emit on it; an empty
+  /// broadcast stream keeps the subscription happy without firing events.
+  @override
+  Stream<ContentPolicyState> get stateStream =>
+      const Stream<ContentPolicyState>.empty();
 
   @override
   Future<void> blockUser(String pubkey, {String? ourPubkey}) async {
@@ -39,6 +48,11 @@ class MockContentBlocklistRepository extends Mock
 
   @override
   bool isBlocked(String pubkey) => _runtimeBlocklist.contains(pubkey);
+}
+
+class MockVideoEventService extends Mock implements VideoEventService {
+  @override
+  int filterAdultContentFromExistingVideos() => 0;
 }
 
 class MockContentReportingService extends Mock
@@ -90,6 +104,7 @@ void main() {
     late MockFollowRepository mockFollowRepository;
     late MockAgeVerificationService mockAgeVerificationService;
     late MockContentFilterService mockContentFilterService;
+    late MockVideoEventService mockVideoEventService;
     late DivineHostFilterService divineHostFilterService;
 
     setUp(() async {
@@ -102,6 +117,7 @@ void main() {
       mockFollowRepository = MockFollowRepository();
       mockAgeVerificationService = MockAgeVerificationService();
       mockContentFilterService = MockContentFilterService();
+      mockVideoEventService = MockVideoEventService();
       divineHostFilterService = DivineHostFilterService(prefs);
 
       when(
@@ -164,6 +180,7 @@ void main() {
           contentFilterServiceProvider.overrideWithValue(
             mockContentFilterService,
           ),
+          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           divineHostFilterServiceProvider.overrideWithValue(
             divineHostFilterService,
           ),
