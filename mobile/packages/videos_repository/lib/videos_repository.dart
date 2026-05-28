@@ -13,5 +13,6 @@ export 'src/popular_videos_page.dart';
 export 'src/video_content_filter.dart';
 export 'src/video_event_filter.dart';
 export 'src/video_local_storage.dart';
+export 'src/video_merge_helpers.dart';
 export 'src/video_search_sort.dart';
 export 'src/videos_repository.dart';

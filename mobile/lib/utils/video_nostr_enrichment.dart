@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' show Filter;
-import 'package:openvine/utils/video_event_merge_utils.dart';
 import 'package:unified_logger/unified_logger.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 /// Enrich REST API videos with full Nostr event data.
 ///

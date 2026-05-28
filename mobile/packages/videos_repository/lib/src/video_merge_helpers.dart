@@ -1,11 +1,16 @@
-// ABOUTME: Shared merge helpers for profile and Nostr enrichment code paths
-// ABOUTME: Keeps engagement parity with Funnelcake when relay/Nostr copies
-// ABOUTME: disagree (#3384); no imports from profile_feed to avoid cycles.
+/// Shared merge helpers for profile and Nostr enrichment code paths.
+///
+/// Keeps engagement parity with Funnelcake when relay/Nostr copies disagree
+/// (#3384). Lives in `videos_repository` because both the package's author-feed
+/// composition and the app-layer Nostr enrichment utility consume them — the
+/// repository is the canonical owner of the merge policy.
+library;
 
 import 'dart:math' as math;
 
-/// [primary] wins on duplicate keys after spreading `{...secondary, ...primary}`,
-/// except `views`: the higher parsed non-negative count wins (#3384).
+/// Merges raw video tags with primary-wins semantics on duplicate keys
+/// (`{...secondary, ...primary}`), except `views`: the higher parsed
+/// non-negative count wins (#3384).
 ///
 /// Used by profile relay/REST merge and by Nostr enrichment (#3384).
 Map<String, String> mergeVideoRawTagsPrimaryWins(

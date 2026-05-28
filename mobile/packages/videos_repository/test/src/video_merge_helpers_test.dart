@@ -1,7 +1,7 @@
 // ABOUTME: Unit tests for shared profile/enrichment tag merge (#3384).
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/utils/video_event_merge_utils.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 void main() {
   group('mergeVideoRawTagsPrimaryWins', () {

@@ -16,10 +16,10 @@ import 'package:openvine/providers/profile_feed_session_cache.dart';
 import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/state/video_feed_state.dart';
-import 'package:openvine/utils/video_event_merge_utils.dart';
 import 'package:openvine/utils/video_nostr_enrichment.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 part 'profile_feed_provider.g.dart';
 
