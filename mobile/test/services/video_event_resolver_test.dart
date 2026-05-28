@@ -113,21 +113,23 @@ void main() {
       expect(result, isNull);
     });
 
-    test('owner bypass returns video even when shouldHideVideo is true',
-        () async {
-      final video = _videoEvent(id: eventId, pubkey: ownerPubkey);
-      when(() => videoService.getVideoEventById(eventId)).thenReturn(video);
-      when(() => videoService.shouldHideVideo(video)).thenReturn(true);
-      viewerPubkey = ownerPubkey;
+    test(
+      'owner bypass returns video even when shouldHideVideo is true',
+      () async {
+        final video = _videoEvent(id: eventId, pubkey: ownerPubkey);
+        when(() => videoService.getVideoEventById(eventId)).thenReturn(video);
+        when(() => videoService.shouldHideVideo(video)).thenReturn(true);
+        viewerPubkey = ownerPubkey;
 
-      final resolver = build(subscribe: (_) => const Stream.empty());
-      final result = await resolver.resolveById(
-        eventId,
-        allowOwnContentBypass: true,
-      );
+        final resolver = build(subscribe: (_) => const Stream.empty());
+        final result = await resolver.resolveById(
+          eventId,
+          allowOwnContentBypass: true,
+        );
 
-      expect(result, same(video));
-    });
+        expect(result, same(video));
+      },
+    );
 
     test('without bypass, hidden video resolves to null', () async {
       final video = _videoEvent(id: eventId, pubkey: ownerPubkey);
