@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/upload_progress/upload_progress_cubit.dart';
 import 'package:openvine/blocs/upload_progress/upload_progress_state.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/pending_upload.dart';
 
 /// Dialog that shows upload progress and blocks user interaction until complete.
@@ -56,9 +57,9 @@ class _UploadProgressView extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Uploading video...',
-                  style: TextStyle(
+                Text(
+                  context.l10n.uploadUploadingVideo,
+                  style: const TextStyle(
                     color: VineTheme.whiteText,
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
