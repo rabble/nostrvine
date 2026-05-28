@@ -1,16 +1,33 @@
 // ABOUTME: Comprehensive widget test for ALL settings screens scaffold structure
 // ABOUTME: Ensures all settings screens use consistent Vine theme (green AppBar, black background)
 
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 
+class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
+
 void main() {
   group('All Settings Screens Scaffold Consistency', () {
+    late _MockBlossomUploadService mockBlossomService;
+
+    setUp(() {
+      mockBlossomService = _MockBlossomUploadService();
+      when(
+        () => mockBlossomService.isBlossomEnabled(),
+      ).thenAnswer((_) async => false);
+      when(
+        () => mockBlossomService.getBlossomServer(),
+      ).thenAnswer((_) async => null);
+    });
+
     testWidgets('RelaySettingsScreen has nav green AppBar', (tester) async {
       await tester.pumpWidget(
         const ProviderScope(
@@ -36,8 +53,11 @@ void main() {
 
     testWidgets('BlossomSettingsScreen has nav green AppBar', (tester) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
+        ProviderScope(
+          overrides: [
+            blossomUploadServiceProvider.overrideWithValue(mockBlossomService),
+          ],
+          child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: BlossomSettingsScreen(),
