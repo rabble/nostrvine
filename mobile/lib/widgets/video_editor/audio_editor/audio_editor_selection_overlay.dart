@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -89,7 +90,7 @@ class AudioEditorSelectionOverlay extends StatelessWidget {
               size: .small,
               icon: .caretRight,
               semanticLabel: context.l10n.videoEditorDoneSemanticLabel,
-              onPressed: onTapDone,
+              onPressed: isLoading ? null : onTapDone,
             ),
           ],
         ),
@@ -111,12 +112,11 @@ class _AudioPlaybackProgressButton extends StatelessWidget {
 
   static const double _buttonVisualSize = 42;
   static const double _buttonBorderRadius = 16;
-  static const _switchDuration = Duration(milliseconds: 300);
 
   @override
   Widget build(BuildContext context) {
     return AnimatedSwitcher(
-      duration: _switchDuration,
+      duration: VineTheme.defaultAnimationDuration,
       child: isLoading
           ? const BrandedLoadingIndicator(size: _buttonVisualSize)
           : StreamBuilder<bool>(

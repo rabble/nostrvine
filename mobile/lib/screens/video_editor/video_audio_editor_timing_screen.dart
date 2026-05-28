@@ -550,17 +550,23 @@ class _AudioWaveformSelector extends StatelessWidget {
     // The selection's left edge (in audio time) can range from 0 to
     // `audioDuration - minRemainingAudio`, allowing users to pick a late
     // start even when the trailing audio is shorter than the video.
-    // `selectionWidth` represents `maxDuration` worth of audio in pixels,
-    // so the minimum-remaining slice occupies `selectionWidth * (minRem /
-    // maxDuration)` pixels and must remain inside the selection.
+    // `selectionWidth` always represents min(audioDurationSecs, maxDurationSecs)
+    // worth of audio — full duration for short clips, maxDuration for long ones —
+    // so the minimum-remaining slice width must use the same basis as the
+    // denominator.
     final double maxScrollableDistance;
     if (audioDurationSecs <= 0 ||
         audioDurationSecs <= AudioTimingCubit.minRemainingAudioSecs) {
       maxScrollableDistance = 0;
     } else {
+      // For short audio selectionWidth represents audioDurationSecs;
+      // for long audio it represents maxDurationSecs.
+      final waveformBasisSecs = audioDurationSecs < maxDurationSecs
+          ? audioDurationSecs
+          : maxDurationSecs;
       final minVisibleWidth =
           selectionWidth *
-          (AudioTimingCubit.minRemainingAudioSecs / maxDurationSecs);
+          (AudioTimingCubit.minRemainingAudioSecs / waveformBasisSecs);
       maxScrollableDistance = (fullWaveformWidth - minVisibleWidth).clamp(
         0.0,
         double.infinity,

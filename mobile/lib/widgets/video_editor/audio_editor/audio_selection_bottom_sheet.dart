@@ -190,19 +190,22 @@ class _AudioSelectionBottomSheetState
       if (shouldReload) {
         await _audioService.stop();
         if (mounted) setState(() => _isLoadingAudio = true);
-        final loadedDuration =
-            sound.isLocalImport && sound.localFilePath != null
-            ? await _audioService.loadAudioFromFile(sound.localFilePath!)
-            : await _audioService.loadAudio(sound.url!);
-        if (mounted) setState(() => _isLoadingAudio = false);
-        _loadedSoundId = sound.id;
-        // Backfill missing duration so the selection overlay and list
-        // tile can show a correct timestamp for Nostr sounds that don't
-        // carry a duration tag.
-        if (sound.duration == null && loadedDuration != null) {
-          resolvedSound = sound.copyWith(
-            duration: loadedDuration.inMilliseconds / 1000.0,
-          );
+        try {
+          final loadedDuration =
+              sound.isLocalImport && sound.localFilePath != null
+              ? await _audioService.loadAudioFromFile(sound.localFilePath!)
+              : await _audioService.loadAudio(sound.url!);
+          _loadedSoundId = sound.id;
+          // Backfill missing duration so the selection overlay and list
+          // tile can show a correct timestamp for Nostr sounds that don't
+          // carry a duration tag.
+          if (sound.duration == null && loadedDuration != null) {
+            resolvedSound = sound.copyWith(
+              duration: loadedDuration.inMilliseconds / 1000.0,
+            );
+          }
+        } finally {
+          if (mounted) setState(() => _isLoadingAudio = false);
         }
       }
 
@@ -211,6 +214,7 @@ class _AudioSelectionBottomSheetState
           _selectedItem = resolvedSound;
         });
       }
+      if (!mounted) return;
       // Blocks here for the entire duration of playback — only
       // releases once the song finishes playing to the end or was paused.
       await _audioService.play();
@@ -223,7 +227,7 @@ class _AudioSelectionBottomSheetState
     } finally {
       if (_selectedItem == sound) {
         await _audioService.pause();
-        setState(() {});
+        if (mounted) setState(() {});
       }
     }
   }

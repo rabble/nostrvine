@@ -402,6 +402,9 @@ class VineTheme {
   /// Duration of a single skeleton shimmer sweep.
   static const Duration skeletonDuration = Duration(milliseconds: 1500);
 
+  /// Default duration for UI animations and transitions.
+  static const Duration defaultAnimationDuration = Duration(milliseconds: 300);
+
   /// Tab text style using Bricolage Grotesque bold.
   static TextStyle tabTextStyle({Color color = whiteText}) =>
       GoogleFonts.bricolageGrotesque(
