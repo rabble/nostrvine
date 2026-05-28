@@ -14,6 +14,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
+import 'package:openvine/services/video_event_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockNostrService extends Mock implements NostrClient {}
@@ -23,6 +24,8 @@ class _MockRelayCapabilityService extends Mock
 
 class _MockRelayStatisticsService extends Mock
     implements RelayStatisticsService {}
+
+class _MockVideoEventService extends Mock implements VideoEventService {}
 
 void main() {
   testWidgets(
@@ -36,6 +39,7 @@ void main() {
       final nostrService = _MockNostrService();
       final capabilityService = _MockRelayCapabilityService();
       final statsService = _MockRelayStatisticsService();
+      final videoEventService = _MockVideoEventService();
       final stats = RelayStatistics(relayUrl: 'wss://relay.divine.video')
         ..isConnected = true;
 
@@ -59,6 +63,7 @@ void main() {
           relayStatisticsStreamProvider.overrideWith(
             (_) => Stream.value({'wss://relay.divine.video': stats}),
           ),
+          videoEventServiceProvider.overrideWithValue(videoEventService),
         ],
       );
       addTearDown(container.dispose);
@@ -90,6 +95,7 @@ void main() {
 
       final capabilityService = _MockRelayCapabilityService();
       final statsService = _MockRelayStatisticsService();
+      final videoEventService = _MockVideoEventService();
 
       when(() => nostrService.configuredRelays).thenReturn(const []);
       when(() => nostrService.connectedRelayCount).thenReturn(0);
@@ -106,6 +112,7 @@ void main() {
           relayStatisticsStreamProvider.overrideWith(
             (_) => const Stream<Map<String, RelayStatistics>>.empty(),
           ),
+          videoEventServiceProvider.overrideWithValue(videoEventService),
         ],
       );
       addTearDown(container.dispose);
