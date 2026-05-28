@@ -82,6 +82,11 @@ class VideoClipImportService {
 
   static const _logName = 'VideoClipImportService';
 
+  /// Aspect-ratio threshold at or above which an own video is square-cropped.
+  /// Videos meeting this threshold — including landscape videos wider than 1:1
+  /// — are intentionally mapped to [models.AspectRatio.square].
+  static const double _squareishMinAspectRatio = 0.9;
+
   final ClipLibraryService _clipLibraryService;
   final DocumentsPathProvider _getDocumentsPath;
   final VideoClipDownloader _downloadVideo;
@@ -263,15 +268,16 @@ class VideoClipImportService {
   /// Determines the target crop aspect ratio for the editor.
   ///
   /// Classic Vines are always 1:1 square originals.
-  /// Own videos use [actualRatio]: ratios close to 1 (>= 0.9) map to square,
-  /// everything narrower maps to 9:16. Falls back to 9:16 when the ratio is
+  /// Own videos use [actualRatio]: ratios >= [_squareishMinAspectRatio]
+  /// (including landscape videos wider than 1:1) intentionally map to square.
+  /// Everything narrower maps to 9:16. Falls back to 9:16 when the ratio is
   /// unknown, matching the default capture orientation.
   models.AspectRatio _targetAspectRatioFor(
     models.VideoEvent video,
     double? actualRatio,
   ) {
     if (video.isOriginalVine) return models.AspectRatio.square;
-    if (actualRatio != null && actualRatio >= 0.9) {
+    if (actualRatio != null && actualRatio >= _squareishMinAspectRatio) {
       return models.AspectRatio.square;
     }
     return models.AspectRatio.vertical;

@@ -222,6 +222,40 @@ void main() {
   );
 
   test(
+    'maps landscape own video to square target ratio',
+    () async {
+      final service = buildService(
+        readVideoMetadata: (video) async => VideoMetadata(
+          duration: const Duration(seconds: 6),
+          extension: 'mp4',
+          fileSize: 1024,
+          resolution: const Size(1920, 1080),
+          rotation: 0,
+          bitrate: 1000,
+        ),
+      );
+
+      final result = await service.importToLibrary(
+        _video(
+          id: 'own-landscape',
+          rawTags: const {'platform': 'divine'},
+          vineId: null,
+          dimensions: null,
+        ),
+      );
+
+      final success = result as VideoClipImportSuccess;
+      // Landscape videos (ratio > 1.0) satisfy _squareishMinAspectRatio and
+      // intentionally map to square to match the clip library's crop policy.
+      expect(success.clip.targetAspectRatio, models.AspectRatio.square);
+      expect(
+        success.clip.originalAspectRatio,
+        closeTo(1920 / 1080, 0.001),
+      );
+    },
+  );
+
+  test(
     'swaps width and height when metadata reports a 90 degree rotation',
     () async {
       final service = buildService(
