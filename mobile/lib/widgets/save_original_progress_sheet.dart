@@ -3,8 +3,11 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/save_original_progress/save_original_progress_cubit.dart';
+import 'package:openvine/blocs/save_original_progress/save_original_progress_state.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/watermark_download_provider.dart';
@@ -13,9 +16,6 @@ import 'package:openvine/widgets/retry_after_settings_on_resume.dart';
 import 'package:share_plus/share_plus.dart';
 
 /// Shows a bottom sheet that tracks original video save progress.
-///
-/// Call this to start the save-original flow. The sheet displays
-/// progress through downloading and saving stages (no watermark step).
 Future<void> showSaveOriginalSheet({
   required BuildContext context,
   required WidgetRef ref,
@@ -34,47 +34,53 @@ Future<void> showSaveOriginalSheet({
   );
 }
 
-class _SaveOriginalProgressSheet extends StatefulWidget {
+class _SaveOriginalProgressSheet extends StatelessWidget {
   const _SaveOriginalProgressSheet({required this.video, required this.ref});
 
   final VideoEvent video;
   final WidgetRef ref;
 
   @override
-  State<_SaveOriginalProgressSheet> createState() =>
-      _SaveOriginalProgressSheetState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => SaveOriginalProgressCubit(
+        service: ref.read(watermarkDownloadServiceProvider),
+        video: video,
+      )..start(),
+      child: _SaveOriginalProgressView(ref: ref),
+    );
+  }
 }
 
-class _SaveOriginalProgressSheetState extends State<_SaveOriginalProgressSheet>
-    with RetryAfterSettingsOnResume {
-  OriginalSaveStage _stage = OriginalSaveStage.downloading;
-  WatermarkDownloadResult? _result;
-  bool _isProcessing = true;
+class _SaveOriginalProgressView extends StatefulWidget {
+  const _SaveOriginalProgressView({required this.ref});
+
+  final WidgetRef ref;
 
   @override
-  void initState() {
-    super.initState();
-    _startDownload();
-  }
+  State<_SaveOriginalProgressView> createState() =>
+      _SaveOriginalProgressViewState();
+}
 
-  Future<void> _startDownload() async {
-    final service = widget.ref.read(watermarkDownloadServiceProvider);
-
-    final result = await service.downloadOriginal(
-      video: widget.video,
-      onProgress: (stage) {
-        if (mounted) {
-          setState(() => _stage = stage);
-        }
+class _SaveOriginalProgressViewState extends State<_SaveOriginalProgressView>
+    with RetryAfterSettingsOnResume {
+  Future<void> _openSettings() async {
+    final permissionsService = widget.ref.read(permissionsServiceProvider);
+    final cubit = context.read<SaveOriginalProgressCubit>();
+    await openSettingsAndRetryOnResume(
+      openSettings: permissionsService.openAppSettings,
+      retry: () async {
+        if (!mounted) return;
+        cubit.reset();
+        await cubit.start();
       },
     );
+  }
 
-    if (mounted) {
-      setState(() {
-        _result = result;
-        _isProcessing = false;
-      });
-    }
+  Future<void> _shareFile(WatermarkDownloadSuccess success) async {
+    await SharePlus.instance.share(
+      ShareParams(files: [XFile(success.filePath)]),
+    );
   }
 
   @override
@@ -83,182 +89,174 @@ class _SaveOriginalProgressSheetState extends State<_SaveOriginalProgressSheet>
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle bar
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: VineTheme.onSurfaceMuted,
-                borderRadius: BorderRadius.circular(2),
-              ),
+        child:
+            BlocBuilder<SaveOriginalProgressCubit, SaveOriginalProgressState>(
+              builder: (context, state) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: VineTheme.onSurfaceMuted,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    if (state.isProcessing) ...[
+                      const SizedBox(
+                        width: 32,
+                        height: 32,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 3,
+                          color: VineTheme.vineGreen,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        _stageLabel(state.stage, l10n),
+                        style: VineTheme.titleMediumFont(),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _stageDescription(state.stage, l10n),
+                        style: VineTheme.bodySmallFont(
+                          color: VineTheme.secondaryText,
+                        ),
+                      ),
+                    ] else
+                      ..._resultChildren(context, state.result, l10n),
+                    const SizedBox(height: 8),
+                  ],
+                );
+              },
             ),
-            const SizedBox(height: 24),
-
-            if (_isProcessing) ...[
-              const SizedBox(
-                width: 32,
-                height: 32,
-                child: CircularProgressIndicator(
-                  strokeWidth: 3,
-                  color: VineTheme.vineGreen,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(_stageLabel(l10n), style: VineTheme.titleMediumFont()),
-              const SizedBox(height: 8),
-              Text(
-                _stageDescription(l10n),
-                style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
-              ),
-            ] else if (_result is WatermarkDownloadSuccess) ...[
-              const DivineIcon(
-                icon: DivineIconName.checkCircle,
-                color: VineTheme.vineGreen,
-                size: 48,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                l10n.saveOriginalSavedToCameraRoll,
-                style: VineTheme.titleMediumFont(),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: _shareFile,
-                  icon: const DivineIcon(
-                    icon: DivineIconName.share,
-                    color: VineTheme.onPrimary,
-                  ),
-                  label: Text(l10n.saveOriginalShare),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: VineTheme.vineGreen,
-                    foregroundColor: VineTheme.onPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(
-                  l10n.saveOriginalDone,
-                  style: VineTheme.labelLargeFont(
-                    color: VineTheme.secondaryText,
-                  ),
-                ),
-              ),
-            ] else if (_result is WatermarkDownloadPermissionDenied) ...[
-              const DivineIcon(
-                icon: DivineIconName.lockSimple,
-                color: VineTheme.vineGreen,
-                size: 48,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                l10n.saveOriginalPhotosAccessNeeded,
-                style: VineTheme.titleMediumFont(),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                l10n.saveOriginalPhotosAccessMessage,
-                style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: _openSettings,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: VineTheme.vineGreen,
-                    foregroundColor: VineTheme.onPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  child: Text(l10n.saveOriginalOpenSettings),
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(
-                  l10n.saveOriginalNotNow,
-                  style: VineTheme.labelLargeFont(
-                    color: VineTheme.secondaryText,
-                  ),
-                ),
-              ),
-            ] else if (_result is WatermarkDownloadFailure) ...[
-              const DivineIcon(
-                icon: DivineIconName.warningCircle,
-                color: VineTheme.error,
-                size: 48,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                l10n.saveOriginalDownloadFailed,
-                style: VineTheme.titleMediumFont(),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                (_result! as WatermarkDownloadFailure).reason,
-                style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(
-                  l10n.saveOriginalDismiss,
-                  style: VineTheme.labelLargeFont(
-                    color: VineTheme.secondaryText,
-                  ),
-                ),
-              ),
-            ],
-
-            const SizedBox(height: 8),
-          ],
-        ),
       ),
     );
   }
 
-  String _stageLabel(AppLocalizations l10n) => switch (_stage) {
-    OriginalSaveStage.downloading => l10n.saveOriginalDownloadingVideo,
-    OriginalSaveStage.saving => l10n.saveOriginalSavingToCameraRoll,
-  };
-
-  String _stageDescription(AppLocalizations l10n) => switch (_stage) {
-    OriginalSaveStage.downloading => l10n.saveOriginalFetchingVideo,
-    OriginalSaveStage.saving => l10n.saveOriginalSavingVideo,
-  };
-
-  Future<void> _openSettings() async {
-    final permissionsService = widget.ref.read(permissionsServiceProvider);
-    await openSettingsAndRetryOnResume(
-      openSettings: permissionsService.openAppSettings,
-      retry: () async {
-        if (!mounted) return;
-        setState(() {
-          _result = null;
-          _stage = OriginalSaveStage.downloading;
-          _isProcessing = true;
-        });
-        await _startDownload();
-      },
-    );
+  List<Widget> _resultChildren(
+    BuildContext context,
+    WatermarkDownloadResult? result,
+    AppLocalizations l10n,
+  ) {
+    return switch (result) {
+      WatermarkDownloadSuccess() => [
+        const DivineIcon(
+          icon: DivineIconName.checkCircle,
+          color: VineTheme.vineGreen,
+          size: 48,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          l10n.saveOriginalSavedToCameraRoll,
+          style: VineTheme.titleMediumFont(),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: () => _shareFile(result),
+            icon: const DivineIcon(
+              icon: DivineIconName.share,
+              color: VineTheme.onPrimary,
+            ),
+            label: Text(l10n.saveOriginalShare),
+            style: FilledButton.styleFrom(
+              backgroundColor: VineTheme.vineGreen,
+              foregroundColor: VineTheme.onPrimary,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(
+            l10n.saveOriginalDone,
+            style: VineTheme.labelLargeFont(color: VineTheme.secondaryText),
+          ),
+        ),
+      ],
+      WatermarkDownloadPermissionDenied() => [
+        const DivineIcon(
+          icon: DivineIconName.lockSimple,
+          color: VineTheme.vineGreen,
+          size: 48,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          l10n.saveOriginalPhotosAccessNeeded,
+          style: VineTheme.titleMediumFont(),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          l10n.saveOriginalPhotosAccessMessage,
+          style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+            onPressed: _openSettings,
+            style: FilledButton.styleFrom(
+              backgroundColor: VineTheme.vineGreen,
+              foregroundColor: VineTheme.onPrimary,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+            child: Text(l10n.saveOriginalOpenSettings),
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(
+            l10n.saveOriginalNotNow,
+            style: VineTheme.labelLargeFont(color: VineTheme.secondaryText),
+          ),
+        ),
+      ],
+      WatermarkDownloadFailure(:final reason) => [
+        const DivineIcon(
+          icon: DivineIconName.warningCircle,
+          color: VineTheme.error,
+          size: 48,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          l10n.saveOriginalDownloadFailed,
+          style: VineTheme.titleMediumFont(),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          reason,
+          style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 16),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(
+            l10n.saveOriginalDismiss,
+            style: VineTheme.labelLargeFont(color: VineTheme.secondaryText),
+          ),
+        ),
+      ],
+      null => const [],
+    };
   }
 
-  Future<void> _shareFile() async {
-    final result = _result;
-    if (result is WatermarkDownloadSuccess) {
-      await SharePlus.instance.share(
-        ShareParams(files: [XFile(result.filePath)]),
-      );
-    }
-  }
+  String _stageLabel(OriginalSaveStage stage, AppLocalizations l10n) =>
+      switch (stage) {
+        OriginalSaveStage.downloading => l10n.saveOriginalDownloadingVideo,
+        OriginalSaveStage.saving => l10n.saveOriginalSavingToCameraRoll,
+      };
+
+  String _stageDescription(OriginalSaveStage stage, AppLocalizations l10n) =>
+      switch (stage) {
+        OriginalSaveStage.downloading => l10n.saveOriginalFetchingVideo,
+        OriginalSaveStage.saving => l10n.saveOriginalSavingVideo,
+      };
 }
