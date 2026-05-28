@@ -2380,6 +2380,7 @@ void main() {
         String notificationType = 'reaction',
         String? referencedEventId = 'video_x',
         String? referencedDTag,
+        String? rootEventId,
         bool isReferencedVideo = true,
       }) {
         return RelayNotification(
@@ -2392,6 +2393,7 @@ void main() {
           read: false,
           referencedEventId: referencedEventId,
           referencedDTag: referencedDTag,
+          rootEventId: rootEventId,
           isReferencedVideo: isReferencedVideo,
         );
       }
@@ -2440,6 +2442,32 @@ void main() {
         );
       });
 
+      test('falls back to the payload d-tag for realtime video '
+          'notifications when the authoritative VideoStats omits one '
+          '(#4768)', () async {
+        // Realtime twin of the page-load test "grouped video notifications
+        // fall back to the payload d-tag when the authoritative VideoStats
+        // omits one (#4730)". Owner confirmed, but VideoStats carries no
+        // d-tag → use the payload referencedDTag rather than drop the stable
+        // route.
+        stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
+        stubVideoStats('video_x', makeVideoStats(id: 'video_x', dTag: ''));
+
+        final result = await repository.enrichOne(
+          raw(referencedDTag: 'payload-dtag'),
+        );
+
+        expect(result, isA<VideoNotification>());
+        final video = result! as VideoNotification;
+        expect(
+          video.videoAddressableId,
+          equals(
+            '${NIP71VideoKinds.addressableShortVideo}:'
+            '$userPubkey:payload-dtag',
+          ),
+        );
+      });
+
       test('leaves realtime addressable id null when the referenced video '
           'owner is unknown (#4730)', () async {
         // No video stats stubbed → ownership unconfirmed; fall back to the
@@ -2454,6 +2482,39 @@ void main() {
         final video = result! as VideoNotification;
         expect(video.videoAddressableId, isNull);
         expect(video.videoEventId, equals('video_x'));
+      });
+
+      test('builds the realtime addressable id for a rootEventId-anchored '
+          'comment when the recipient owns the root video (#4768)', () async {
+        // Realtime twin of the page-load empty-referencedEventId comment test
+        // (#4730): enrichOne fetches metadata by the rootEventId anchor
+        // (page-load uses referenced_event_id only), so root-video ownership
+        // IS confirmed and the addressable IS synthesized. The differing
+        // payload referencedDTag proves the route uses the VideoStats d-tag.
+        stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
+        stubVideoStats('video_root', makeVideoStats(id: 'video_root'));
+
+        final result = await repository.enrichOne(
+          raw(
+            sourceKind: 1111,
+            notificationType: 'comment',
+            referencedEventId: '',
+            rootEventId: 'video_root',
+            referencedDTag: 'payload-dtag',
+          ),
+        );
+
+        expect(result, isA<VideoNotification>());
+        final video = result! as VideoNotification;
+        expect(video.type, equals(NotificationKind.comment));
+        expect(video.videoEventId, equals('video_root'));
+        expect(
+          video.videoAddressableId,
+          equals(
+            '${NIP71VideoKinds.addressableShortVideo}:'
+            '$userPubkey:d_video_root',
+          ),
+        );
       });
 
       test('leaves addressable id null when realtime d-tag is empty', () async {
