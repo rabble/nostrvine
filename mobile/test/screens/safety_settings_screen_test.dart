@@ -22,7 +22,7 @@ import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class MockContentBlocklistRepository extends Mock
+class _MockContentBlocklistRepository extends Mock
     implements ContentBlocklistRepository {
   final Set<String> _runtimeBlocklist = {};
 
@@ -50,15 +50,15 @@ class MockContentBlocklistRepository extends Mock
   bool isBlocked(String pubkey) => _runtimeBlocklist.contains(pubkey);
 }
 
-class MockVideoEventService extends Mock implements VideoEventService {
+class _MockVideoEventService extends Mock implements VideoEventService {
   @override
   int filterAdultContentFromExistingVideos() => 0;
 }
 
-class MockContentReportingService extends Mock
+class _MockContentReportingService extends Mock
     implements ContentReportingService {}
 
-class MockAccountLabelService extends Mock implements AccountLabelService {
+class _MockAccountLabelService extends Mock implements AccountLabelService {
   @override
   Set<ContentLabel> get accountLabels => const {};
 
@@ -69,12 +69,12 @@ class MockAccountLabelService extends Mock implements AccountLabelService {
   Future<void> initialize() async {}
 }
 
-class MockModerationLabelService extends Mock
+class _MockModerationLabelService extends Mock
     implements ModerationLabelService {}
 
-class MockFollowRepository extends Mock implements FollowRepository {}
+class _MockFollowRepository extends Mock implements FollowRepository {}
 
-class MockAgeVerificationService extends Mock
+class _MockAgeVerificationService extends Mock
     implements AgeVerificationService {
   @override
   bool get isAdultContentVerified => false;
@@ -83,7 +83,7 @@ class MockAgeVerificationService extends Mock
   Future<void> initialize() async {}
 }
 
-class MockContentFilterService extends Mock implements ContentFilterService {
+class _MockContentFilterService extends Mock implements ContentFilterService {
   @override
   bool get isInitialized => true;
 
@@ -97,27 +97,27 @@ class MockContentFilterService extends Mock implements ContentFilterService {
 void main() {
   group('SafetySettingsScreen Widget Tests', () {
     final l10n = lookupAppLocalizations(const Locale('en'));
-    late MockContentBlocklistRepository mockBlocklistRepository;
-    late MockContentReportingService mockReportingService;
-    late MockAccountLabelService mockAccountLabelService;
-    late MockModerationLabelService mockModerationLabelService;
-    late MockFollowRepository mockFollowRepository;
-    late MockAgeVerificationService mockAgeVerificationService;
-    late MockContentFilterService mockContentFilterService;
-    late MockVideoEventService mockVideoEventService;
+    late _MockContentBlocklistRepository mockBlocklistRepository;
+    late _MockContentReportingService mockReportingService;
+    late _MockAccountLabelService mockAccountLabelService;
+    late _MockModerationLabelService mockModerationLabelService;
+    late _MockFollowRepository mockFollowRepository;
+    late _MockAgeVerificationService mockAgeVerificationService;
+    late _MockContentFilterService mockContentFilterService;
+    late _MockVideoEventService mockVideoEventService;
     late DivineHostFilterService divineHostFilterService;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
-      mockBlocklistRepository = MockContentBlocklistRepository();
-      mockReportingService = MockContentReportingService();
-      mockAccountLabelService = MockAccountLabelService();
-      mockModerationLabelService = MockModerationLabelService();
-      mockFollowRepository = MockFollowRepository();
-      mockAgeVerificationService = MockAgeVerificationService();
-      mockContentFilterService = MockContentFilterService();
-      mockVideoEventService = MockVideoEventService();
+      mockBlocklistRepository = _MockContentBlocklistRepository();
+      mockReportingService = _MockContentReportingService();
+      mockAccountLabelService = _MockAccountLabelService();
+      mockModerationLabelService = _MockModerationLabelService();
+      mockFollowRepository = _MockFollowRepository();
+      mockAgeVerificationService = _MockAgeVerificationService();
+      mockContentFilterService = _MockContentFilterService();
+      mockVideoEventService = _MockVideoEventService();
       divineHostFilterService = DivineHostFilterService(prefs);
 
       when(
@@ -397,7 +397,7 @@ void main() {
 
   group('SafetySettingsScreen Blocked Users Section - Unit Tests', () {
     test('runtimeBlockedUsers returns blocked users set', () {
-      final service = MockContentBlocklistRepository();
+      final service = _MockContentBlocklistRepository();
 
       // Initially empty
       expect(service.runtimeBlockedUsers, isEmpty);
@@ -412,7 +412,7 @@ void main() {
     });
 
     test('unblockUser removes user from blocked list', () {
-      final service = MockContentBlocklistRepository();
+      final service = _MockContentBlocklistRepository();
 
       service.blockUser('user_to_unblock');
       expect(service.runtimeBlockedUsers.contains('user_to_unblock'), isTrue);
@@ -422,7 +422,7 @@ void main() {
     });
 
     test('isBlocked returns correct status', () {
-      final service = MockContentBlocklistRepository();
+      final service = _MockContentBlocklistRepository();
 
       expect(service.isBlocked('some_user'), isFalse);
 
