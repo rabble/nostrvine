@@ -40,6 +40,10 @@ void main() {
       when(
         () => mockAudioSharingService.isAudioSharingEnabled,
       ).thenReturn(false);
+      when(
+        () => mockAudioSharingService.setAudioSharingEnabled(any()),
+      ).thenAnswer((_) async {});
+      when(() => mockLanguageService.initialize()).thenAnswer((_) async {});
       when(() => mockLanguageService.contentLanguage).thenReturn('en');
       when(() => mockLanguageService.isCustomLanguageSet).thenReturn(false);
       when(() => mockAccountLabelService.accountLabels).thenReturn({});
