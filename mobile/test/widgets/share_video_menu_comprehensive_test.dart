@@ -135,7 +135,9 @@ void main() {
       bool curatedListsEnabled = true,
       bool debugToolsEnabled = true,
       VideoEvent? video,
+      MockAuthService? mockAuthService,
     }) => testProviderScope(
+      mockAuthService: mockAuthService,
       additionalOverrides: [
         profileRepositoryProvider.overrideWithValue(mockProfileRepository),
         bookmarkServiceProvider.overrideWith((ref) => mockBookmarkService),
@@ -239,6 +241,33 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Add to clips'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'More actions row shows Add to clips for non-classic video owned by current user',
+      (tester) async {
+        final authService = createMockAuthService();
+        when(() => authService.isAuthenticated).thenReturn(true);
+        when(
+          () => authService.currentPublicKeyHex,
+        ).thenReturn(testVideo.pubkey);
+
+        await tester.pumpWidget(
+          buildSubject(mockAuthService: authService),
+        );
+        await tester.tap(find.byType(ShareActionButton));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Add to clips'), findsOneWidget);
+
+        await tester.tap(find.text('Add to clips'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Added to clips'), findsOneWidget);
+        verify(
+          () => mockVideoClipImportService.importToLibrary(testVideo),
+        ).called(1);
       },
     );
 
