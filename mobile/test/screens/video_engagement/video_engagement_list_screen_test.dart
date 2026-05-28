@@ -192,6 +192,7 @@ void main() {
                 type: VideoEngagementType.likers,
                 likesRepository: likesRepository,
                 repostsRepository: repostsRepository,
+                profileRepository: null,
               ),
               child: const VideoEngagementListView(),
             ),

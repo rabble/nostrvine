@@ -61,7 +61,14 @@ class VideoEngagementListScreen extends ConsumerWidget {
 
     return BlocProvider<VideoEngagementBloc>(
       key: ValueKey(
-        (likesRepository, repostsRepository, profileRepository, eventId, type),
+        (
+          likesRepository,
+          repostsRepository,
+          profileRepository,
+          eventId,
+          type,
+          addressableId,
+        ),
       ),
       create: (_) => VideoEngagementBloc(
         eventId: eventId,
