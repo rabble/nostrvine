@@ -25,6 +25,7 @@ class _MockAccountLabelService extends Mock implements AccountLabelService {}
 
 void main() {
   group('ContentPreferencesScreen Audio Sharing Toggle', () {
+    final l10n = lookupAppLocalizations(const Locale('en'));
     late _MockAudioSharingPreferenceService mockAudioSharingService;
     late _MockLanguagePreferenceService mockLanguageService;
     late _MockAccountLabelService mockAccountLabelService;
@@ -77,9 +78,9 @@ void main() {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      expect(find.text('Make my audio available for reuse'), findsOneWidget);
+      expect(find.text(l10n.contentPreferencesAudioSharing), findsOneWidget);
       expect(
-        find.text('When enabled, others can use audio from your videos'),
+        find.text(l10n.contentPreferencesAudioSharingSubtitle),
         findsOneWidget,
       );
 
@@ -100,7 +101,7 @@ void main() {
             widget is SwitchListTile &&
             widget.title is Text &&
             (widget.title! as Text).data ==
-                'Make my audio available for reuse' &&
+                l10n.contentPreferencesAudioSharing &&
             !widget.value,
       );
       expect(switchFinder, findsOneWidget);
@@ -122,7 +123,7 @@ void main() {
             widget is SwitchListTile &&
             widget.title is Text &&
             (widget.title! as Text).data ==
-                'Make my audio available for reuse' &&
+                l10n.contentPreferencesAudioSharing &&
             widget.value,
       );
       expect(switchFinder, findsOneWidget);
@@ -146,7 +147,7 @@ void main() {
         (widget) =>
             widget is SwitchListTile &&
             widget.title is Text &&
-            (widget.title! as Text).data == 'Make my audio available for reuse',
+            (widget.title! as Text).data == l10n.contentPreferencesAudioSharing,
       );
 
       await tester.tap(switchFinder);
@@ -169,7 +170,7 @@ void main() {
             widget is SwitchListTile &&
             widget.title is Text &&
             (widget.title! as Text).data ==
-                'Make my audio available for reuse' &&
+                l10n.contentPreferencesAudioSharing &&
             widget.activeThumbColor == VineTheme.vineGreen,
       );
       expect(switchFinder, findsOneWidget);
