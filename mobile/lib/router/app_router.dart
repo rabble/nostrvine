@@ -1096,16 +1096,18 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, st) => const VideoMetadataScreen(),
       ),
       GoRoute(
-        path: VideoMetadataEditScreen.path,
+        path: '${VideoMetadataEditScreen.path}/:videoId',
         name: VideoMetadataEditScreen.routeName,
         builder: (ctx, st) {
-          // TODO(#4390): Replace this extra-only route with an ID-based resolver
-          // so /video-edit can be reconstructed from URL state.
-          final video = st.extra as VideoEvent?;
-          if (video == null) {
+          final videoId = st.pathParameters['videoId'];
+          if (videoId == null || videoId.isEmpty) {
             return RouteErrorScreen(message: ctx.l10n.routeInvalidVideoId);
           }
-          return VideoMetadataEditScreen(video: video);
+          final prefetched = st.extra as VideoEvent?;
+          return VideoMetadataEditScreen(
+            videoId: videoId,
+            prefetched: prefetched,
+          );
         },
       ),
       GoRoute(

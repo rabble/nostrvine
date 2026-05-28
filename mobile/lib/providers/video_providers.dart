@@ -29,6 +29,7 @@ import 'package:openvine/services/seen_videos_service.dart';
 import 'package:openvine/services/subscribed_list_video_cache.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_publisher.dart';
+import 'package:openvine/services/video_event_resolver.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_filter_builder.dart';
 import 'package:openvine/services/video_metadata_update_service.dart';
@@ -250,6 +251,23 @@ VideoSharingService? videoSharingService(Ref ref) {
     authService: authService,
     profileRepository: profileRepository,
     dmRepository: dmRepository,
+  );
+}
+
+/// Unified resolver for fetching a [VideoEvent] by its event id, with
+/// in-memory → personal cache → relay fallback. See [VideoEventResolver].
+@Riverpod(keepAlive: true)
+VideoEventResolver videoEventResolver(Ref ref) {
+  final nostrService = ref.watch(nostrServiceProvider);
+  final videoEventService = ref.watch(videoEventServiceProvider);
+  final personalEventCache = ref.watch(personalEventCacheServiceProvider);
+  final authService = ref.watch(authServiceProvider);
+
+  return VideoEventResolver(
+    videoEventService: videoEventService,
+    personalEventCache: personalEventCache,
+    subscribe: nostrService.subscribe,
+    viewerPubkeyHex: () => authService.currentPublicKeyHex,
   );
 }
 

@@ -932,7 +932,10 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
   );
 
   void _showEditDialog() {
-    context.push(VideoMetadataEditScreen.path, extra: widget.video);
+    context.push(
+      VideoMetadataEditScreen.pathFor(widget.video.id),
+      extra: widget.video,
+    );
   }
 
   /// Show delete confirmation dialog
@@ -1462,7 +1465,7 @@ class _CreateBookmarkSetDialogState
 
 /// Public helper to show the edit screen for a video from anywhere.
 void showEditDialogForVideo(BuildContext context, VideoEvent video) {
-  context.push(VideoMetadataEditScreen.path, extra: video);
+  context.push(VideoMetadataEditScreen.pathFor(video.id), extra: video);
 }
 
 /// Action tile for "Use this sound" feature.

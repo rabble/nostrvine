@@ -278,6 +278,10 @@ RouteContext parseRoute(String path) {
       return const RouteContext(type: RouteType.videoMetadata);
 
     case 'video-edit':
+      if (segments.length > 1) {
+        final videoId = _safeDecode(segments[1]);
+        return RouteContext(type: RouteType.videoEdit, videoId: videoId);
+      }
       return const RouteContext(type: RouteType.videoEdit);
 
     case 'settings':
@@ -536,6 +540,9 @@ String buildRoute(RouteContext context) {
       return VideoMetadataScreen.path;
 
     case RouteType.videoEdit:
+      if (context.videoId != null) {
+        return VideoMetadataEditScreen.pathFor(context.videoId!);
+      }
       return VideoMetadataEditScreen.path;
 
     case RouteType.settings:

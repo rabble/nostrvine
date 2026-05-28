@@ -557,6 +557,62 @@ final class VideoSharingServiceProvider
 String _$videoSharingServiceHash() =>
     r'c67ca5b381903ab2a6d29bc2f64e057661279598';
 
+/// Unified resolver for fetching a [VideoEvent] by its event id, with
+/// in-memory → personal cache → relay fallback. See [VideoEventResolver].
+
+@ProviderFor(videoEventResolver)
+const videoEventResolverProvider = VideoEventResolverProvider._();
+
+/// Unified resolver for fetching a [VideoEvent] by its event id, with
+/// in-memory → personal cache → relay fallback. See [VideoEventResolver].
+
+final class VideoEventResolverProvider
+    extends
+        $FunctionalProvider<
+          VideoEventResolver,
+          VideoEventResolver,
+          VideoEventResolver
+        >
+    with $Provider<VideoEventResolver> {
+  /// Unified resolver for fetching a [VideoEvent] by its event id, with
+  /// in-memory → personal cache → relay fallback. See [VideoEventResolver].
+  const VideoEventResolverProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'videoEventResolverProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$videoEventResolverHash();
+
+  @$internal
+  @override
+  $ProviderElement<VideoEventResolver> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  VideoEventResolver create(Ref ref) {
+    return videoEventResolver(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(VideoEventResolver value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<VideoEventResolver>(value),
+    );
+  }
+}
+
+String _$videoEventResolverHash() =>
+    r'a076181f7238f6f3cb91443d714872abb5805ee0';
+
 /// Service that orchestrates the video-metadata-edit republish flow.
 
 @ProviderFor(videoMetadataUpdateService)

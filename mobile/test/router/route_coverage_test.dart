@@ -393,6 +393,13 @@ void main() {
         final context = parseRoute('/video-edit');
         expect(context.type, RouteType.videoEdit);
       });
+      test('/video-edit/:videoId parses videoId', () {
+        final context = parseRoute(
+          VideoMetadataEditScreen.pathFor('test-id-abc'),
+        );
+        expect(context.type, RouteType.videoEdit);
+        expect(context.videoId, 'test-id-abc');
+      });
     });
 
     group('Edge cases', () {
@@ -454,7 +461,7 @@ void main() {
       'settings': SettingsScreen.path,
       'badges': BadgesScreen.path,
       'relay settings': RelaySettingsScreen.path,
-      'video edit': VideoMetadataEditScreen.path,
+      'video edit': VideoMetadataEditScreen.pathFor('test-id-abc'),
       'invites': InvitesScreen.path,
       'people list create': CreatePeopleListPage.path,
       'people list members': '/people-lists/list%3A123',
@@ -490,7 +497,7 @@ void main() {
         RouteType.videoRecorder: VideoRecorderScreen.path,
         RouteType.videoEditor: VideoEditorScreen.path,
         RouteType.videoMetadata: VideoMetadataScreen.path,
-        RouteType.videoEdit: VideoMetadataEditScreen.path,
+        RouteType.videoEdit: VideoMetadataEditScreen.pathFor('test-id-abc'),
         RouteType.importKey: KeyImportScreen.path,
         RouteType.invites: InvitesScreen.path,
         RouteType.badges: BadgesScreen.path,
