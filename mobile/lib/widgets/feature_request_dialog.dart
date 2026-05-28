@@ -6,36 +6,50 @@ import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/blocs/feature_request/feature_request_cubit.dart';
+import 'package:openvine/blocs/feature_request/feature_request_state.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/widgets/support_dialog_utils.dart';
-import 'package:unified_logger/unified_logger.dart';
 
-/// Dialog for collecting and submitting feature requests
-class FeatureRequestDialog extends StatefulWidget {
+/// Dialog for collecting and submitting feature requests.
+///
+/// `BlocProvider` wraps the inner [_FeatureRequestForm] so the form's
+/// `TextEditingController`s (the hybrid pattern) stay in the View while
+/// the submission lifecycle lives in [FeatureRequestCubit].
+class FeatureRequestDialog extends StatelessWidget {
   const FeatureRequestDialog({super.key, this.userPubkey});
 
   final String? userPubkey;
 
   @override
-  State<FeatureRequestDialog> createState() => _FeatureRequestDialogState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => FeatureRequestCubit(),
+      child: _FeatureRequestForm(userPubkey: userPubkey),
+    );
+  }
 }
 
-class _FeatureRequestDialogState extends State<FeatureRequestDialog> {
+class _FeatureRequestForm extends StatefulWidget {
+  const _FeatureRequestForm({this.userPubkey});
+
+  final String? userPubkey;
+
+  @override
+  State<_FeatureRequestForm> createState() => _FeatureRequestFormState();
+}
+
+class _FeatureRequestFormState extends State<_FeatureRequestForm> {
   final _subjectController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _usefulnessController = TextEditingController();
   final _whenToUseController = TextEditingController();
-  bool _isSubmitting = false;
-  String? _resultMessage;
-  bool? _isSuccess;
-  bool _isDisposed = false;
   Timer? _closeTimer;
 
   @override
   void dispose() {
-    _isDisposed = true;
     _closeTimer?.cancel();
     _subjectController.dispose();
     _descriptionController.dispose();
@@ -45,210 +59,176 @@ class _FeatureRequestDialogState extends State<FeatureRequestDialog> {
   }
 
   bool get _canSubmit =>
-      !_isSubmitting &&
       _subjectController.text.trim().isNotEmpty &&
       _descriptionController.text.trim().isNotEmpty;
 
-  Future<void> _submitRequest() async {
-    if (!_canSubmit) return;
-
-    setState(() {
-      _isSubmitting = true;
-      _resultMessage = null;
-      _isSuccess = null;
+  void _scheduleAutoClose(BuildContext context) {
+    _closeTimer = Timer(const Duration(milliseconds: 1500), () {
+      if (!mounted) return;
+      context.pop();
     });
-
-    try {
-      // Submit feature request to Zendesk
-      final subject = _subjectController.text.trim();
-      final success = await ZendeskSupportService.createFeatureRequest(
-        subject: subject,
-        description: _descriptionController.text.trim(),
-        usefulness: _usefulnessController.text.trim(),
-        whenToUse: _whenToUseController.text.trim(),
-        userPubkey: widget.userPubkey,
-      );
-
-      if (!_isDisposed && mounted) {
-        setState(() {
-          _isSubmitting = false;
-          _isSuccess = success;
-          if (success) {
-            _resultMessage = context.l10n.featureRequestSuccessMessage;
-          } else {
-            _resultMessage = context.l10n.featureRequestSendFailed;
-          }
-        });
-
-        // Close dialog after delay if successful
-        if (success) {
-          _closeTimer = Timer(const Duration(milliseconds: 1500), () {
-            if (!_isDisposed && mounted) {
-              context.pop();
-            }
-          });
-        }
-      }
-    } catch (e, stackTrace) {
-      Log.error(
-        'Error submitting feature request: $e',
-        category: LogCategory.system,
-        error: e,
-        stackTrace: stackTrace,
-      );
-
-      if (!_isDisposed && mounted) {
-        setState(() {
-          _isSubmitting = false;
-          _isSuccess = false;
-          _resultMessage = context.l10n.featureRequestFailedWithError('$e');
-        });
-      }
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: VineTheme.cardBackground,
-      title: Text(
-        context.l10n.supportRequestFeature,
-        style: const TextStyle(color: VineTheme.whiteText),
-      ),
-      content: SizedBox(
-        width: 400,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Subject field (required)
-              TextField(
-                controller: _subjectController,
-                enabled: !_isSubmitting,
-                style: const TextStyle(color: VineTheme.whiteText),
-                decoration: buildSupportInputDecoration(
-                  label: context.l10n.supportSubjectRequiredLabel,
-                  hint: context.l10n.featureRequestSubjectHint,
-                  helper: context.l10n.supportRequiredHelper,
-                ),
-                onChanged: (_) => setState(() {}),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Description field (required)
-              TextField(
-                controller: _descriptionController,
-                maxLines: 3,
-                enabled: !_isSubmitting,
-                style: const TextStyle(color: VineTheme.whiteText),
-                decoration: buildSupportInputDecoration(
-                  label: context.l10n.featureRequestDescriptionRequiredLabel,
-                  hint: context.l10n.featureRequestDescriptionHint,
-                  helper: context.l10n.supportRequiredHelper,
-                ),
-                onChanged: (_) => setState(() {}),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Usefulness field
-              TextField(
-                controller: _usefulnessController,
-                maxLines: 3,
-                enabled: !_isSubmitting,
-                style: const TextStyle(color: VineTheme.whiteText),
-                decoration: buildSupportInputDecoration(
-                  label: context.l10n.featureRequestUsefulnessLabel,
-                  hint: context.l10n.featureRequestUsefulnessHint,
-                ),
-                onChanged: (_) => setState(() {}),
-              ),
-
-              const SizedBox(height: 16),
-
-              // When to use field
-              TextField(
-                controller: _whenToUseController,
-                maxLines: 2,
-                enabled: !_isSubmitting,
-                style: const TextStyle(color: VineTheme.whiteText),
-                decoration: buildSupportInputDecoration(
-                  label: context.l10n.featureRequestWhenLabel,
-                  hint: context.l10n.featureRequestWhenHint,
-                ),
-                onChanged: (_) => setState(() {}),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Loading indicator
-              if (_isSubmitting)
-                const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: CircularProgressIndicator(
-                      color: VineTheme.vineGreen,
-                    ),
-                  ),
-                ),
-
-              // Result message
-              if (_resultMessage != null && !_isSubmitting)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: _isSuccess == true
-                        ? VineTheme.vineGreen.withValues(alpha: 0.2)
-                        : Colors.red.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: _isSuccess == true
-                          ? VineTheme.vineGreen
-                          : Colors.red,
-                    ),
-                  ),
-                  child: Text(
-                    _resultMessage!,
-                    style: TextStyle(
-                      color: _isSuccess == true
-                          ? VineTheme.vineGreen
-                          : Colors.red,
-                    ),
-                  ),
-                ),
-            ],
+    return BlocConsumer<FeatureRequestCubit, FeatureRequestState>(
+      listenWhen: (prev, curr) =>
+          prev.status != curr.status &&
+          curr.status == FeatureRequestStatus.success,
+      listener: (context, _) => _scheduleAutoClose(context),
+      builder: (context, state) {
+        final isSubmitting = state.status == FeatureRequestStatus.submitting;
+        final isSuccess = state.status == FeatureRequestStatus.success;
+        final isFailure = state.status == FeatureRequestStatus.failure;
+        return AlertDialog(
+          backgroundColor: VineTheme.cardBackground,
+          title: Text(
+            context.l10n.supportRequestFeature,
+            style: const TextStyle(color: VineTheme.whiteText),
           ),
-        ),
-      ),
-      actions: [
-        // Cancel button (hide after success)
-        if (_isSuccess != true)
-          TextButton(
-            onPressed: _isSubmitting ? null : context.pop,
-            child: Text(
-              context.l10n.commonCancel,
-              style: const TextStyle(color: Colors.grey),
+          content: SizedBox(
+            width: 400,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextField(
+                    controller: _subjectController,
+                    enabled: !isSubmitting,
+                    style: const TextStyle(color: VineTheme.whiteText),
+                    decoration: buildSupportInputDecoration(
+                      label: context.l10n.supportSubjectRequiredLabel,
+                      hint: context.l10n.featureRequestSubjectHint,
+                      helper: context.l10n.supportRequiredHelper,
+                    ),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _descriptionController,
+                    maxLines: 3,
+                    enabled: !isSubmitting,
+                    style: const TextStyle(color: VineTheme.whiteText),
+                    decoration: buildSupportInputDecoration(
+                      label:
+                          context.l10n.featureRequestDescriptionRequiredLabel,
+                      hint: context.l10n.featureRequestDescriptionHint,
+                      helper: context.l10n.supportRequiredHelper,
+                    ),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _usefulnessController,
+                    maxLines: 3,
+                    enabled: !isSubmitting,
+                    style: const TextStyle(color: VineTheme.whiteText),
+                    decoration: buildSupportInputDecoration(
+                      label: context.l10n.featureRequestUsefulnessLabel,
+                      hint: context.l10n.featureRequestUsefulnessHint,
+                    ),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _whenToUseController,
+                    maxLines: 2,
+                    enabled: !isSubmitting,
+                    style: const TextStyle(color: VineTheme.whiteText),
+                    decoration: buildSupportInputDecoration(
+                      label: context.l10n.featureRequestWhenLabel,
+                      hint: context.l10n.featureRequestWhenHint,
+                    ),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: 16),
+                  if (isSubmitting)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(16),
+                        child: CircularProgressIndicator(
+                          color: VineTheme.vineGreen,
+                        ),
+                      ),
+                    ),
+                  if (isSuccess)
+                    _ResultBanner(
+                      message: context.l10n.featureRequestSuccessMessage,
+                      isSuccess: true,
+                    ),
+                  if (isFailure)
+                    _ResultBanner(
+                      message: context.l10n.featureRequestSendFailed,
+                      isSuccess: false,
+                    ),
+                ],
+              ),
             ),
           ),
+          actions: [
+            if (!isSuccess)
+              TextButton(
+                onPressed: isSubmitting ? null : context.pop,
+                child: Text(
+                  context.l10n.commonCancel,
+                  style: const TextStyle(color: VineTheme.lightText),
+                ),
+              ),
+            ElevatedButton(
+              onPressed: isSuccess
+                  ? context.pop
+                  : (_canSubmit && !isSubmitting
+                        ? () => context.read<FeatureRequestCubit>().submit(
+                            subject: _subjectController.text,
+                            description: _descriptionController.text,
+                            usefulness: _usefulnessController.text,
+                            whenToUse: _whenToUseController.text,
+                            userPubkey: widget.userPubkey,
+                          )
+                        : null),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: VineTheme.vineGreen,
+                foregroundColor: VineTheme.whiteText,
+              ),
+              child: Text(
+                isSuccess
+                    ? context.l10n.commonClose
+                    : context.l10n.featureRequestSendRequest,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
 
-        // Send/Close button
-        ElevatedButton(
-          onPressed: _isSuccess == true
-              ? context.pop
-              : (_canSubmit ? _submitRequest : null),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: VineTheme.vineGreen,
-            foregroundColor: VineTheme.whiteText,
-          ),
-          child: Text(
-            _isSuccess == true
-                ? context.l10n.commonClose
-                : context.l10n.featureRequestSendRequest,
-          ),
+class _ResultBanner extends StatelessWidget {
+  const _ResultBanner({required this.message, required this.isSuccess});
+
+  final String message;
+  final bool isSuccess;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isSuccess
+            ? VineTheme.vineGreen.withValues(alpha: 0.2)
+            : VineTheme.error.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isSuccess ? VineTheme.vineGreen : VineTheme.error,
         ),
-      ],
+      ),
+      child: Text(
+        message,
+        style: TextStyle(
+          color: isSuccess ? VineTheme.vineGreen : VineTheme.error,
+        ),
+      ),
     );
   }
 }
