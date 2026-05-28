@@ -1,0 +1,264 @@
+part of 'video_recorder_bloc.dart';
+
+/// Base event type for [VideoRecorderBloc].
+///
+/// Most events correspond 1:1 to methods on the legacy
+/// [VideoRecorderNotifier]; the names are kept close to the original
+/// for review-time grepability of the port.
+sealed class VideoRecorderEvent extends Equatable {
+  const VideoRecorderEvent();
+
+  @override
+  List<Object?> get props => [];
+}
+
+/// Initializes the camera. Restores last-used recorder mode and lens
+/// from preferences.
+final class VideoRecorderInitializeRequested extends VideoRecorderEvent {
+  const VideoRecorderInitializeRequested({
+    this.videoQuality = VideoEditorConstants.quality,
+  });
+
+  final DivineVideoQuality videoQuality;
+
+  @override
+  List<Object?> get props => [videoQuality];
+}
+
+/// Forwarded from `WidgetsBindingObserver.didChangeAppLifecycleState`.
+final class VideoRecorderAppLifecycleChanged extends VideoRecorderEvent {
+  const VideoRecorderAppLifecycleChanged(this.state);
+
+  final AppLifecycleState state;
+
+  @override
+  List<Object?> get props => [state];
+}
+
+/// Temporarily pauses remote record control (volume buttons / Bluetooth).
+///
+/// Call when opening screens that need to play audio (e.g. Sounds picker)
+/// to release MediaSession to the system audio session.
+final class VideoRecorderRemoteRecordPaused extends VideoRecorderEvent {
+  const VideoRecorderRemoteRecordPaused();
+}
+
+/// Resumes remote record control after [VideoRecorderRemoteRecordPaused].
+final class VideoRecorderRemoteRecordResumed extends VideoRecorderEvent {
+  const VideoRecorderRemoteRecordResumed();
+}
+
+/// Cycles flash mode `off → torch → auto → off`.
+final class VideoRecorderFlashToggled extends VideoRecorderEvent {
+  const VideoRecorderFlashToggled();
+}
+
+/// Toggles aspect ratio between square (1:1) and vertical (9:16).
+final class VideoRecorderAspectRatioToggled extends VideoRecorderEvent {
+  const VideoRecorderAspectRatioToggled();
+}
+
+/// Sets aspect ratio directly.
+final class VideoRecorderAspectRatioSet extends VideoRecorderEvent {
+  const VideoRecorderAspectRatioSet(this.ratio);
+
+  final model.AspectRatio ratio;
+
+  @override
+  List<Object?> get props => [ratio];
+}
+
+/// Switches between front and back camera.
+final class VideoRecorderCameraSwitched extends VideoRecorderEvent {
+  const VideoRecorderCameraSwitched();
+}
+
+/// Switches to a specific camera lens.
+final class VideoRecorderLensSet extends VideoRecorderEvent {
+  const VideoRecorderLensSet(this.lens);
+
+  final DivineCameraLens lens;
+
+  @override
+  List<Object?> get props => [lens];
+}
+
+/// Sets camera zoom level (clamped to camera's min/max).
+final class VideoRecorderZoomLevelSet extends VideoRecorderEvent {
+  const VideoRecorderZoomLevelSet(this.value);
+
+  final double value;
+
+  @override
+  List<Object?> get props => [value];
+}
+
+/// Sets camera focus point (normalized 0..1 coordinates). The point is
+/// auto-hidden ~800ms later.
+final class VideoRecorderFocusPointSet extends VideoRecorderEvent {
+  const VideoRecorderFocusPointSet(this.value);
+
+  final Offset value;
+
+  @override
+  List<Object?> get props => [value];
+}
+
+/// Sets camera exposure point (normalized 0..1 coordinates).
+final class VideoRecorderExposurePointSet extends VideoRecorderEvent {
+  const VideoRecorderExposurePointSet(this.value);
+
+  final Offset value;
+
+  @override
+  List<Object?> get props => [value];
+}
+
+/// Record-button tap. Dispatches start or stop depending on current
+/// recording state.
+final class VideoRecorderRecordingToggleRequested extends VideoRecorderEvent {
+  const VideoRecorderRecordingToggleRequested();
+}
+
+/// Starts recording, including the optional countdown timer.
+///
+/// Registered with `transformer: sequential()` to make start/stop a
+/// FIFO queue and remove the race conditions the provider papered over
+/// with `_isStartingRecording` / `_isStoppingRecording` flags.
+final class VideoRecorderRecordingStartRequested extends VideoRecorderEvent {
+  const VideoRecorderRecordingStartRequested();
+}
+
+/// Stops recording and processes the resulting clip (metadata,
+/// thumbnail, ghost frame). When [result] is supplied, the camera
+/// auto-stopped (e.g. recording limit reached) and the recording
+/// itself is already finalized.
+///
+/// Registered with `transformer: sequential()` — see
+/// [VideoRecorderRecordingStartRequested].
+final class VideoRecorderRecordingStopRequested extends VideoRecorderEvent {
+  const VideoRecorderRecordingStopRequested({this.result});
+
+  final EditorVideo? result;
+
+  @override
+  List<Object?> get props => [result];
+}
+
+/// Adjusts zoom by vertical drag offset during a long-press gesture.
+final class VideoRecorderZoomedByLongPress extends VideoRecorderEvent {
+  const VideoRecorderZoomedByLongPress(this.offsetFromOrigin);
+
+  final Offset offsetFromOrigin;
+
+  @override
+  List<Object?> get props => [offsetFromOrigin];
+}
+
+/// Pinch-to-zoom gesture started — captures the base zoom level.
+final class VideoRecorderScaleStarted extends VideoRecorderEvent {
+  const VideoRecorderScaleStarted(this.details);
+
+  final ScaleStartDetails details;
+
+  @override
+  List<Object?> get props => [details];
+}
+
+/// Pinch-to-zoom gesture update — drives the snap-to-1x detent.
+final class VideoRecorderScaleUpdated extends VideoRecorderEvent {
+  const VideoRecorderScaleUpdated(this.details);
+
+  final ScaleUpdateDetails details;
+
+  @override
+  List<Object?> get props => [details];
+}
+
+/// Disposes the camera service so the next route can take over the
+/// AVAudioSession cleanly. The View dispatches this just before
+/// navigating to a screen that owns the camera, after the push
+/// transition is past the visible frame. Pair with
+/// [VideoRecorderInitializeRequested] on return.
+final class VideoRecorderCameraPausedForNavigation extends VideoRecorderEvent {
+  const VideoRecorderCameraPausedForNavigation();
+}
+
+/// Sets the recorder mode. Capture↔classic transitions clear recorded
+/// clips and reset the editor; transitions involving
+/// [VideoRecorderMode.upload] preserve both.
+final class VideoRecorderRecorderModeSet extends VideoRecorderEvent {
+  const VideoRecorderRecorderModeSet(
+    this.mode, {
+    this.keepAutosavedDraft = false,
+  });
+
+  final VideoRecorderMode mode;
+
+  /// When true the autosaved draft in the database is preserved.
+  /// Used during initialization to restore the saved mode without
+  /// destroying the previous session's draft.
+  final bool keepAutosavedDraft;
+
+  @override
+  List<Object?> get props => [mode, keepAutosavedDraft];
+}
+
+/// Cycles timer duration `off → 3s → 10s → off`.
+final class VideoRecorderTimerCycled extends VideoRecorderEvent {
+  const VideoRecorderTimerCycled();
+}
+
+/// Resets recorder state to its initial values.
+final class VideoRecorderResetRequested extends VideoRecorderEvent {
+  const VideoRecorderResetRequested();
+}
+
+/// Toggles the ghost-frame overlay of the last clip on the preview.
+final class VideoRecorderShowLastClipOverlayToggled extends VideoRecorderEvent {
+  const VideoRecorderShowLastClipOverlayToggled();
+}
+
+/// Toggles the rule-of-thirds grid overlay on the preview.
+final class VideoRecorderGridLinesToggled extends VideoRecorderEvent {
+  const VideoRecorderGridLinesToggled();
+}
+
+// === Internal events dispatched from service callbacks ===
+
+/// Internal event: camera service reported a state change
+/// (capabilities, sensor, force rebuild). Dispatched from the
+/// `CameraService.onUpdateState` callback.
+final class _VideoRecorderCameraStateChanged extends VideoRecorderEvent {
+  const _VideoRecorderCameraStateChanged({this.cameraRebuildCount});
+
+  final int? cameraRebuildCount;
+
+  @override
+  List<Object?> get props => [cameraRebuildCount];
+}
+
+/// Internal event: a remote-record trigger fired (volume button /
+/// Bluetooth media key). Dispatched from the
+/// `CameraService.onRemoteRecordTrigger` callback.
+final class _VideoRecorderRemoteRecordTriggered extends VideoRecorderEvent {
+  const _VideoRecorderRemoteRecordTriggered();
+}
+
+/// Internal event: the camera auto-stopped recording (e.g. hit the
+/// recording limit). Dispatched from the `CameraService.onAutoStopped`
+/// callback.
+final class _VideoRecorderAutoStopped extends VideoRecorderEvent {
+  const _VideoRecorderAutoStopped(this.video);
+
+  final EditorVideo video;
+
+  @override
+  List<Object?> get props => [video];
+}
+
+/// Internal event: the focus-point auto-hide timer fired. Resets
+/// [VideoRecorderBlocState.focusPoint] back to [Offset.zero].
+final class _VideoRecorderFocusPointTimerFired extends VideoRecorderEvent {
+  const _VideoRecorderFocusPointTimerFired();
+}
