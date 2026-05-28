@@ -59,7 +59,6 @@ lib/widgets/composable_video_grid.dart
 lib/widgets/content_warning.dart
 lib/widgets/delete_account_dialog.dart
 lib/widgets/divine_video_metrics_tracker.dart
-lib/widgets/feature_request_dialog.dart
 lib/widgets/find_people_sheet.dart
 lib/widgets/for_you_tab.dart
 lib/widgets/gallery_permission_sheet.dart
