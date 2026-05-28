@@ -38,8 +38,8 @@ class ContentPreferencesScreen extends ConsumerWidget {
             children: [
               const _LanguageSetting(),
               ListTile(
-                leading: const Icon(
-                  Icons.filter_list,
+                leading: const DivineIcon(
+                  icon: DivineIconName.funnelSimple,
                   color: VineTheme.vineGreen,
                 ),
                 title: Text(
@@ -57,8 +57,8 @@ class ContentPreferencesScreen extends ConsumerWidget {
                     fontSize: 14,
                   ),
                 ),
-                trailing: const Icon(
-                  Icons.chevron_right,
+                trailing: const DivineIcon(
+                  icon: DivineIconName.caretRight,
                   color: VineTheme.lightText,
                 ),
                 onTap: () => context.push(ContentFiltersScreen.path),
@@ -96,7 +96,10 @@ class _LanguageSettingState extends ConsumerState<_LanguageSetting> {
           );
 
     return ListTile(
-      leading: const Icon(Icons.language, color: VineTheme.vineGreen),
+      leading: const DivineIcon(
+        icon: DivineIconName.globe,
+        color: VineTheme.vineGreen,
+      ),
       title: Text(
         context.l10n.contentPreferencesContentLanguage,
         style: const TextStyle(
@@ -109,7 +112,10 @@ class _LanguageSettingState extends ConsumerState<_LanguageSetting> {
         subtitle,
         style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
       ),
-      trailing: const Icon(Icons.chevron_right, color: VineTheme.lightText),
+      trailing: const DivineIcon(
+        icon: DivineIconName.caretRight,
+        color: VineTheme.lightText,
+      ),
       onTap: () => _showLanguagePicker(languageService),
     );
   }
@@ -275,7 +281,10 @@ class _AudioSharingToggleState extends ConsumerState<_AudioSharingToggle> {
         style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
       ),
       activeThumbColor: VineTheme.vineGreen,
-      secondary: const Icon(Icons.music_note, color: VineTheme.vineGreen),
+      secondary: const DivineIcon(
+        icon: DivineIconName.musicNote,
+        color: VineTheme.vineGreen,
+      ),
     );
   }
 }
@@ -327,7 +336,10 @@ class _AudioDeviceSelectorState extends ConsumerState<_AudioDeviceSelector> {
             currentDisplayName,
             style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
           ),
-          trailing: const Icon(Icons.chevron_right, color: VineTheme.lightText),
+          trailing: const DivineIcon(
+            icon: DivineIconName.caretRight,
+            color: VineTheme.lightText,
+          ),
           onTap: () => _showAudioDevicePicker(devices, currentDevice),
         );
       },

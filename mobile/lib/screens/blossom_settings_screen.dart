@@ -200,8 +200,8 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
                           children: [
                             Row(
                               children: [
-                                Icon(
-                                  Icons.info_outline,
+                                DivineIcon(
+                                  icon: DivineIconName.info,
                                   color: VineTheme.vineGreen.withValues(
                                     alpha: 0.8,
                                   ),
@@ -376,7 +376,10 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
           url,
           style: const TextStyle(color: VineTheme.onSurfaceMuted, fontSize: 12),
         ),
-        trailing: const Icon(Icons.arrow_forward, color: VineTheme.vineGreen),
+        trailing: const DivineIcon(
+          icon: DivineIconName.arrowRight,
+          color: VineTheme.vineGreen,
+        ),
         onTap: () {
           setState(() {
             _serverController.text = url;

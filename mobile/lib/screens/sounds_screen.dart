@@ -276,7 +276,10 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
         decoration: InputDecoration(
           hintText: context.l10n.soundsSearchHint,
           hintStyle: const TextStyle(color: VineTheme.onSurfaceMuted),
-          prefixIcon: const Icon(Icons.search, color: VineTheme.onSurfaceMuted),
+          prefixIcon: const DivineIcon(
+            icon: DivineIconName.search,
+            color: VineTheme.onSurfaceMuted,
+          ),
           filled: true,
           fillColor: VineTheme.backgroundColor,
           border: OutlineInputBorder(
@@ -495,8 +498,8 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
-              const Icon(
-                Icons.music_note,
+              const DivineIcon(
+                icon: DivineIconName.musicNote,
                 color: VineTheme.vineGreen,
                 size: 20,
               ),
@@ -609,7 +612,11 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 64, color: VineTheme.likeRed),
+            const DivineIcon(
+              icon: DivineIconName.warningCircle,
+              size: 64,
+              color: VineTheme.likeRed,
+            ),
             const SizedBox(height: 16),
             Text(
               context.l10n.soundsFailedToLoad,
@@ -635,7 +642,7 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
               onPressed: () {
                 ref.invalidate(trendingSoundsProvider);
               },
-              icon: const Icon(Icons.refresh),
+              icon: const DivineIcon(icon: DivineIconName.arrowClockwise),
               label: Text(context.l10n.soundsRetry),
               style: ElevatedButton.styleFrom(
                 backgroundColor: VineTheme.vineGreen,

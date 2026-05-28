@@ -122,8 +122,8 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
                     children: [
                       Row(
                         children: [
-                          const Icon(
-                            Icons.info_outline,
+                          const DivineIcon(
+                            icon: DivineIconName.info,
                             color: VineTheme.lightText,
                             size: 20,
                           ),
@@ -183,8 +183,8 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(
-                                Icons.error_outline,
+                              const DivineIcon(
+                                icon: DivineIconName.warningCircle,
                                 color: VineTheme.warning,
                                 size: 64,
                               ),
@@ -214,8 +214,8 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
                               const SizedBox(height: 32),
                               ElevatedButton.icon(
                                 onPressed: _restoreDefaultRelay,
-                                icon: const Icon(
-                                  Icons.restore,
+                                icon: const DivineIcon(
+                                  icon: DivineIconName.arrowCounterClockwise,
                                   color: VineTheme.whiteText,
                                 ),
                                 label: Text(
@@ -235,8 +235,8 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
                               const SizedBox(height: 12),
                               ElevatedButton.icon(
                                 onPressed: _showAddRelayDialog,
-                                icon: const Icon(
-                                  Icons.add,
+                                icon: const DivineIcon(
+                                  icon: DivineIconName.plus,
                                   color: VineTheme.whiteText,
                                 ),
                                 label: Text(
@@ -266,8 +266,8 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
                                   Expanded(
                                     child: ElevatedButton.icon(
                                       onPressed: _showAddRelayDialog,
-                                      icon: const Icon(
-                                        Icons.add,
+                                      icon: const DivineIcon(
+                                        icon: DivineIconName.plus,
                                         color: VineTheme.whiteText,
                                       ),
                                       label: Text(
@@ -289,8 +289,8 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
                                   Expanded(
                                     child: ElevatedButton.icon(
                                       onPressed: _retryConnection,
-                                      icon: const Icon(
-                                        Icons.refresh,
+                                      icon: const DivineIcon(
+                                        icon: DivineIconName.arrowClockwise,
                                         color: VineTheme.whiteText,
                                       ),
                                       label: Text(
@@ -365,13 +365,21 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              icon: const Icon(Icons.delete, color: VineTheme.error, size: 20),
+              icon: const DivineIcon(
+                icon: DivineIconName.trash,
+                color: VineTheme.error,
+                size: 20,
+              ),
               onPressed: () => _removeRelay(relayUrl),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.expand_more, color: VineTheme.lightText, size: 20),
+            const DivineIcon(
+              icon: DivineIconName.caretDown,
+              color: VineTheme.lightText,
+              size: 20,
+            ),
           ],
         ),
         iconColor: VineTheme.lightText,

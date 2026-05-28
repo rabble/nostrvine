@@ -123,8 +123,8 @@ class _WatermarkDownloadProgressSheetState
               style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
             ),
           ] else if (_result is WatermarkDownloadSuccess) ...[
-            const Icon(
-              Icons.check_circle,
+            const DivineIcon(
+              icon: DivineIconName.checkCircle,
               color: VineTheme.vineGreen,
               size: 48,
             ),
@@ -138,7 +138,10 @@ class _WatermarkDownloadProgressSheetState
               width: double.infinity,
               child: FilledButton.icon(
                 onPressed: _shareFile,
-                icon: const Icon(Icons.share),
+                icon: const DivineIcon(
+                  icon: DivineIconName.share,
+                  color: VineTheme.onPrimary,
+                ),
                 label: Text(context.l10n.watermarkDownloadShare),
                 style: FilledButton.styleFrom(
                   backgroundColor: VineTheme.vineGreen,
@@ -156,8 +159,8 @@ class _WatermarkDownloadProgressSheetState
               ),
             ),
           ] else if (_result is WatermarkDownloadPermissionDenied) ...[
-            const Icon(
-              Icons.lock_outline,
+            const DivineIcon(
+              icon: DivineIconName.lockSimple,
               color: VineTheme.vineGreen,
               size: 48,
             ),
@@ -194,7 +197,11 @@ class _WatermarkDownloadProgressSheetState
               ),
             ),
           ] else if (_result is WatermarkDownloadFailure) ...[
-            const Icon(Icons.error_outline, color: VineTheme.error, size: 48),
+            const DivineIcon(
+              icon: DivineIconName.warningCircle,
+              color: VineTheme.error,
+              size: 48,
+            ),
             const SizedBox(height: 16),
             Text(
               context.l10n.watermarkDownloadFailed,

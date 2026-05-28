@@ -107,8 +107,8 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
                   children: [
                     _buildSectionHeader(context.l10n.safetySettingsWhatYouSee),
                     ListTile(
-                      leading: const Icon(
-                        Icons.filter_list,
+                      leading: const DivineIcon(
+                        icon: DivineIconName.funnelSimple,
                         color: VineTheme.vineGreen,
                       ),
                       title: Text(
@@ -119,8 +119,8 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
                         context.l10n.contentPreferencesContentFiltersSubtitle,
                         style: const TextStyle(color: VineTheme.secondaryText),
                       ),
-                      trailing: const Icon(
-                        Icons.chevron_right,
+                      trailing: const DivineIcon(
+                        icon: DivineIconName.caretRight,
                         color: VineTheme.lightText,
                       ),
                       onTap: () => context.push(ContentFiltersScreen.path),
@@ -130,8 +130,8 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
                     SwitchListTile(
                       value: _showDivineHostedOnly,
                       onChanged: _setShowDivineHostedOnly,
-                      secondary: const Icon(
-                        Icons.verified,
+                      secondary: const DivineIcon(
+                        icon: DivineIconName.sealCheck,
                         color: VineTheme.vineGreen,
                       ),
                       title: Text(
@@ -217,7 +217,10 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
       value: true,
       // The built-in Divine moderation labeler is always on by product design.
       onChanged: null,
-      secondary: const Icon(Icons.verified_user, color: VineTheme.vineGreen),
+      secondary: const DivineIcon(
+        icon: DivineIconName.shieldCheck,
+        color: VineTheme.vineGreen,
+      ),
       title: Text(
         context.l10n.safetySettingsDivine,
         style: const TextStyle(color: VineTheme.whiteText),
