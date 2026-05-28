@@ -5,9 +5,12 @@ import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show AudioEvent;
+import 'package:openvine/blocs/sounds/sounds_cubit.dart';
+import 'package:openvine/blocs/sounds/sounds_state.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/saved_sounds_provider.dart';
@@ -17,31 +20,11 @@ import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/sound_tile.dart';
-import 'package:sound_service/sound_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-/// A screen for browsing and selecting sounds for use in recordings.
-///
-/// Displays:
-/// - Featured sounds (bundled meme sounds from app assets)
-/// - Trending sounds from Nostr (Kind 1063 events)
-/// - Search input for filtering all sounds
-/// - Combined sounds in a vertical list
-///
-/// Usage:
-/// ```dart
-/// Navigator.push(
-///   context,
-///   MaterialPageRoute(
-///     builder: (_) => SoundsScreen(
-///       onSoundSelected: (sound) {
-///         // Handle sound selection
-///       },
-///     ),
-///   ),
-/// );
-/// ```
-class SoundsScreen extends ConsumerStatefulWidget {
+/// Page: bridges `AudioPlaybackService` and `SavedSoundsNotifier.saveSound`
+/// into [SoundsCubit].
+class SoundsScreen extends ConsumerWidget {
   /// Creates a SoundsScreen.
   ///
   /// [onSoundSelected] is called when the user selects a sound.
@@ -52,44 +35,40 @@ class SoundsScreen extends ConsumerStatefulWidget {
   final void Function(AudioEvent sound)? onSoundSelected;
 
   @override
-  ConsumerState<SoundsScreen> createState() => _SoundsScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final audioService = ref.watch(audioPlaybackServiceProvider);
+    final savedSoundsNotifier = ref.read(savedSoundsProvider.notifier);
+    return BlocProvider(
+      key: ValueKey(audioService),
+      create: (_) => SoundsCubit(
+        audioPlaybackService: audioService,
+        saveSound: savedSoundsNotifier.saveSound,
+      ),
+      child: SoundsView(onSoundSelected: onSoundSelected),
+    );
+  }
 }
 
-class _SoundsScreenState extends ConsumerState<SoundsScreen> {
-  final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
-  String? _previewingSoundId;
-  bool _isLoadingPreview = false;
+/// View: renders the sounds browser from Cubit state + Riverpod-provided
+/// sound lists. Owns the search `TextEditingController` (controllers stay
+/// in the View — the hybrid pattern established by #4744 WS-1 #5).
+class SoundsView extends ConsumerStatefulWidget {
+  @visibleForTesting
+  const SoundsView({this.onSoundSelected, super.key});
 
-  /// Cached reference to the audio service for use in dispose
-  AudioPlaybackService? _audioService;
+  final void Function(AudioEvent sound)? onSoundSelected;
+
+  @override
+  ConsumerState<SoundsView> createState() => _SoundsViewState();
+}
+
+class _SoundsViewState extends ConsumerState<SoundsView> {
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void dispose() {
-    // Stop any playing preview using cached reference (safe in dispose)
-    if (_previewingSoundId != null && _audioService != null) {
-      _audioService!.stop();
-    }
     _searchController.dispose();
     super.dispose();
-  }
-
-  Future<void> _stopPreview() async {
-    if (_previewingSoundId != null) {
-      _audioService ??= ref.read(audioPlaybackServiceProvider);
-      await _audioService!.stop();
-      if (mounted) {
-        setState(() {
-          _previewingSoundId = null;
-        });
-      }
-    }
-  }
-
-  void _onSearchChanged(String query) {
-    setState(() {
-      _searchQuery = query.toLowerCase();
-    });
   }
 
   void _onSoundTap(AudioEvent sound) {
@@ -99,17 +78,17 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
       category: LogCategory.ui,
     );
 
-    if (widget.onSoundSelected != null) {
-      widget.onSoundSelected!(sound);
+    final onSoundSelected = widget.onSoundSelected;
+    if (onSoundSelected != null) {
+      onSoundSelected(sound);
     } else {
       unawaited(_saveSoundToLibrary(sound));
     }
   }
 
   Future<void> _saveSoundToLibrary(AudioEvent sound) async {
-    final result = await ref
-        .read(savedSoundsProvider.notifier)
-        .saveSound(sound);
+    final cubit = context.read<SoundsCubit>();
+    final result = await cubit.saveSound(sound);
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -125,94 +104,34 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
   }
 
   Future<void> _onPreviewTap(AudioEvent sound) async {
-    // If already loading, ignore taps
-    if (_isLoadingPreview) return;
-
-    // Cache the audio service reference for dispose safety
-    _audioService ??= ref.read(audioPlaybackServiceProvider);
-    final audioService = _audioService!;
-
-    // If tapping the same sound, toggle play/stop
-    if (_previewingSoundId == sound.id) {
-      Log.info(
-        'Stopping preview: ${sound.title} (${sound.id})',
-        name: 'SoundsScreen',
-        category: LogCategory.ui,
-      );
-      await _stopPreview();
-      return;
-    }
-
-    // Check if sound has a URL to play
-    if (sound.url == null || sound.url!.isEmpty) {
-      Log.warning(
-        'Cannot preview sound: no URL available (${sound.id})',
-        name: 'SoundsScreen',
-        category: LogCategory.ui,
-      );
-      if (mounted) {
+    final cubit = context.read<SoundsCubit>();
+    final outcome = await cubit.previewSound(sound);
+    if (!mounted) return;
+    switch (outcome) {
+      case PreviewSoundOutcome.ignored:
+      case PreviewSoundOutcome.stopped:
+      case PreviewSoundOutcome.completed:
+        return;
+      case PreviewSoundOutcome.unavailable:
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(context.l10n.soundsPreviewUnavailable),
             duration: const Duration(seconds: 2),
           ),
         );
-      }
-      return;
-    }
-
-    Log.info(
-      'Starting preview: ${sound.title} (${sound.id})',
-      name: 'SoundsScreen',
-      category: LogCategory.ui,
-    );
-
-    setState(() {
-      _isLoadingPreview = true;
-    });
-
-    try {
-      // Stop any currently playing audio before loading a new track
-      await audioService.stop();
-      await audioService.loadAudio(sound.url!);
-
-      if (mounted) {
-        setState(() {
-          _previewingSoundId = sound.id;
-          _isLoadingPreview = false;
-        });
-      }
-
-      await audioService.play();
-    } catch (e) {
-      Log.error(
-        'Failed to preview sound: $e',
-        name: 'SoundsScreen',
-        category: LogCategory.ui,
-      );
-      if (mounted) {
+      case PreviewSoundOutcome.failed:
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(context.l10n.soundsPreviewFailed('$e')),
+            content: Text(context.l10n.soundsPreviewFailed('')),
             duration: const Duration(seconds: 2),
           ),
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _previewingSoundId = null;
-          _isLoadingPreview = false;
-        });
-      }
     }
   }
 
   Future<void> _onDetailTap(AudioEvent sound) async {
-    // Bundled sounds don't have detail pages
-    if (sound.isBundled) {
-      return;
-    }
+    // Bundled sounds don't have detail pages.
+    if (sound.isBundled) return;
 
     Log.info(
       'Navigate to sound detail: ${sound.title} (${sound.id})',
@@ -220,23 +139,10 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
       category: LogCategory.ui,
     );
 
-    // Stop any playing preview before navigating - must await to ensure it stops
-    await _stopPreview();
-
+    // Stop any playing preview before navigating.
+    await context.read<SoundsCubit>().stopPreview();
     if (!mounted) return;
-
     context.push(SoundDetailScreen.pathForId(sound.id), extra: sound);
-  }
-
-  List<AudioEvent> _filterSounds(List<AudioEvent> sounds) {
-    if (_searchQuery.isEmpty) {
-      return sounds;
-    }
-
-    return sounds.where((sound) {
-      final title = sound.title?.toLowerCase() ?? '';
-      return title.contains(_searchQuery);
-    }).toList();
   }
 
   @override
@@ -254,24 +160,34 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
         ),
         body: Column(
           children: [
-            // Search input
-            _buildSearchInput(),
-
-            // Content
-            Expanded(child: _buildContent()),
+            _SearchInput(controller: _searchController),
+            Expanded(
+              child: _SoundsContent(
+                onSoundTap: _onSoundTap,
+                onPreviewTap: _onPreviewTap,
+                onDetailTap: _onDetailTap,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildSearchInput() {
+class _SearchInput extends StatelessWidget {
+  const _SearchInput({required this.controller});
+
+  final TextEditingController controller;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       color: VineTheme.cardBackground,
       child: TextField(
-        controller: _searchController,
-        onChanged: _onSearchChanged,
+        controller: controller,
+        onChanged: (query) => context.read<SoundsCubit>().setSearchQuery(query),
         style: const TextStyle(color: VineTheme.whiteText),
         decoration: InputDecoration(
           hintText: context.l10n.soundsSearchHint,
@@ -294,12 +210,24 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
       ),
     );
   }
+}
 
-  Widget _buildContent() {
+class _SoundsContent extends ConsumerWidget {
+  const _SoundsContent({
+    required this.onSoundTap,
+    required this.onPreviewTap,
+    required this.onDetailTap,
+  });
+
+  final void Function(AudioEvent) onSoundTap;
+  final void Function(AudioEvent) onPreviewTap;
+  final void Function(AudioEvent) onDetailTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final bundledSoundsAsync = ref.watch(soundLibraryServiceProvider);
     final nostrSoundsAsync = ref.watch(trendingSoundsProvider);
 
-    // Convert bundled VineSounds to AudioEvents
     final bundledSounds =
         bundledSoundsAsync.whenOrNull(
           data: (service) {
@@ -311,98 +239,140 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
         <AudioEvent>[];
 
     return nostrSoundsAsync.when(
-      data: (nostrSounds) => _buildSoundsContent(
+      data: (nostrSounds) => _SoundsBody(
         bundledSounds: bundledSounds,
         nostrSounds: nostrSounds,
+        onSoundTap: onSoundTap,
+        onPreviewTap: onPreviewTap,
+        onDetailTap: onDetailTap,
       ),
       loading: () => bundledSounds.isNotEmpty
-          ? _buildSoundsContent(bundledSounds: bundledSounds, nostrSounds: [])
+          ? _SoundsBody(
+              bundledSounds: bundledSounds,
+              nostrSounds: const [],
+              onSoundTap: onSoundTap,
+              onPreviewTap: onPreviewTap,
+              onDetailTap: onDetailTap,
+            )
           : const Center(child: BrandedLoadingIndicator()),
       error: (error, stack) => bundledSounds.isNotEmpty
-          ? _buildSoundsContent(bundledSounds: bundledSounds, nostrSounds: [])
-          : _buildErrorState(error),
+          ? _SoundsBody(
+              bundledSounds: bundledSounds,
+              nostrSounds: const [],
+              onSoundTap: onSoundTap,
+              onPreviewTap: onPreviewTap,
+              onDetailTap: onDetailTap,
+            )
+          : _ErrorState(error: error),
     );
   }
+}
 
-  Widget _buildSoundsContent({
-    required List<AudioEvent> bundledSounds,
-    required List<AudioEvent> nostrSounds,
-  }) {
+class _SoundsBody extends StatelessWidget {
+  const _SoundsBody({
+    required this.bundledSounds,
+    required this.nostrSounds,
+    required this.onSoundTap,
+    required this.onPreviewTap,
+    required this.onDetailTap,
+  });
+
+  final List<AudioEvent> bundledSounds;
+  final List<AudioEvent> nostrSounds;
+  final void Function(AudioEvent) onSoundTap;
+  final void Function(AudioEvent) onPreviewTap;
+  final void Function(AudioEvent) onDetailTap;
+
+  @override
+  Widget build(BuildContext context) {
     final allSounds = [...bundledSounds, ...nostrSounds];
+    if (allSounds.isEmpty) return const _EmptyState();
 
-    if (allSounds.isEmpty) {
-      return _buildEmptyState();
-    }
+    final cubit = context.read<SoundsCubit>();
+    final searchQuery = context.select(
+      (SoundsCubit c) => c.state.searchQuery,
+    );
 
-    final filteredBundled = _filterSounds(bundledSounds);
-    final filteredNostr = _filterSounds(nostrSounds);
+    final filteredBundled = cubit.filterSounds(bundledSounds);
+    final filteredNostr = cubit.filterSounds(nostrSounds);
     final filteredAll = [...filteredBundled, ...filteredNostr];
 
-    // If search is active but no results
-    if (_searchQuery.isNotEmpty && filteredAll.isEmpty) {
-      return _buildNoResultsState();
+    if (searchQuery.isNotEmpty && filteredAll.isEmpty) {
+      return const _NoResultsState();
     }
 
-    return RefreshIndicator(
-      color: VineTheme.onPrimary,
-      backgroundColor: VineTheme.vineGreen,
-      onRefresh: () async {
-        await ref.read(trendingSoundsProvider.notifier).refresh();
-      },
+    return _SoundsRefreshable(
       child: ListView(
         children: [
-          // Featured sounds section (bundled meme sounds) - show when not searching
-          if (_searchQuery.isEmpty && bundledSounds.isNotEmpty) ...[
-            _buildFeaturedSoundsSection(bundledSounds),
+          if (searchQuery.isEmpty && bundledSounds.isNotEmpty) ...[
+            _FeaturedSoundsSection(
+              sounds: bundledSounds,
+              onSoundTap: onSoundTap,
+              onPreviewTap: onPreviewTap,
+            ),
             const SizedBox(height: 16),
           ],
-
-          // Trending Nostr sounds section (only show when not searching)
-          if (_searchQuery.isEmpty && nostrSounds.isNotEmpty) ...[
-            _buildTrendingSoundsSection(nostrSounds),
+          if (searchQuery.isEmpty && nostrSounds.isNotEmpty) ...[
+            _TrendingSoundsSection(
+              sounds: nostrSounds,
+              onSoundTap: onSoundTap,
+              onPreviewTap: onPreviewTap,
+              onDetailTap: onDetailTap,
+            ),
             const SizedBox(height: 16),
           ],
-
-          // All sounds section (search results or combined list)
-          _buildAllSoundsSection(
-            _searchQuery.isNotEmpty ? filteredAll : allSounds,
+          _AllSoundsSection(
+            sounds: searchQuery.isNotEmpty ? filteredAll : allSounds,
+            isSearching: searchQuery.isNotEmpty,
+            onSoundTap: onSoundTap,
+            onPreviewTap: onPreviewTap,
+            onDetailTap: onDetailTap,
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildFeaturedSoundsSection(List<AudioEvent> sounds) {
-    // Take first 10 bundled sounds as featured
+class _SoundsRefreshable extends ConsumerWidget {
+  const _SoundsRefreshable({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return RefreshIndicator(
+      color: VineTheme.onPrimary,
+      backgroundColor: VineTheme.vineGreen,
+      onRefresh: () => ref.read(trendingSoundsProvider.notifier).refresh(),
+      child: child,
+    );
+  }
+}
+
+class _FeaturedSoundsSection extends StatelessWidget {
+  const _FeaturedSoundsSection({
+    required this.sounds,
+    required this.onSoundTap,
+    required this.onPreviewTap,
+  });
+
+  final List<AudioEvent> sounds;
+  final void Function(AudioEvent) onSoundTap;
+  final void Function(AudioEvent) onPreviewTap;
+
+  @override
+  Widget build(BuildContext context) {
     final featuredSounds = sounds.take(10).toList();
-
-    if (featuredSounds.isEmpty) {
-      return const SizedBox.shrink();
-    }
+    if (featuredSounds.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              const Icon(Icons.star, color: VineTheme.vineGreen, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                context.l10n.soundsFeaturedSounds,
-                style: const TextStyle(
-                  color: VineTheme.whiteText,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
+        _SectionHeader(
+          icon: Icons.star,
+          label: context.l10n.soundsFeaturedSounds,
         ),
-
-        // Horizontal list
         SizedBox(
           height: 100,
           child: ListView.builder(
@@ -413,12 +383,11 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
               final sound = featuredSounds[index];
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: SoundTile(
+                child: _SoundTileSelector(
                   sound: sound,
                   compact: true,
-                  isPlaying: _previewingSoundId == sound.id,
-                  onTap: () => _onSoundTap(sound),
-                  onPlayPreview: () => _onPreviewTap(sound),
+                  onSoundTap: onSoundTap,
+                  onPreviewTap: onPreviewTap,
                 ),
               );
             },
@@ -427,42 +396,33 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
       ],
     );
   }
+}
 
-  Widget _buildTrendingSoundsSection(List<AudioEvent> sounds) {
-    // Take first 10 sounds as trending
+class _TrendingSoundsSection extends StatelessWidget {
+  const _TrendingSoundsSection({
+    required this.sounds,
+    required this.onSoundTap,
+    required this.onPreviewTap,
+    required this.onDetailTap,
+  });
+
+  final List<AudioEvent> sounds;
+  final void Function(AudioEvent) onSoundTap;
+  final void Function(AudioEvent) onPreviewTap;
+  final void Function(AudioEvent) onDetailTap;
+
+  @override
+  Widget build(BuildContext context) {
     final trendingSounds = sounds.take(10).toList();
-
-    if (trendingSounds.isEmpty) {
-      return const SizedBox.shrink();
-    }
+    if (trendingSounds.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.local_fire_department,
-                color: VineTheme.vineGreen,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                context.l10n.soundsTrendingSounds,
-                style: const TextStyle(
-                  color: VineTheme.whiteText,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
+        _SectionHeader(
+          icon: Icons.local_fire_department,
+          label: context.l10n.soundsTrendingSounds,
         ),
-
-        // Horizontal list
         SizedBox(
           height: 100,
           child: ListView.builder(
@@ -473,13 +433,12 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
               final sound = trendingSounds[index];
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: SoundTile(
+                child: _SoundTileSelector(
                   sound: sound,
                   compact: true,
-                  isPlaying: _previewingSoundId == sound.id,
-                  onTap: () => _onSoundTap(sound),
-                  onPlayPreview: () => _onPreviewTap(sound),
-                  onDetailTap: () => _onDetailTap(sound),
+                  onSoundTap: onSoundTap,
+                  onPreviewTap: onPreviewTap,
+                  onDetailTap: onDetailTap,
                 ),
               );
             },
@@ -488,12 +447,28 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
       ],
     );
   }
+}
 
-  Widget _buildAllSoundsSection(List<AudioEvent> sounds) {
+class _AllSoundsSection extends StatelessWidget {
+  const _AllSoundsSection({
+    required this.sounds,
+    required this.isSearching,
+    required this.onSoundTap,
+    required this.onPreviewTap,
+    required this.onDetailTap,
+  });
+
+  final List<AudioEvent> sounds;
+  final bool isSearching;
+  final void Function(AudioEvent) onSoundTap;
+  final void Function(AudioEvent) onPreviewTap;
+  final void Function(AudioEvent) onDetailTap;
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
@@ -505,9 +480,9 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                _searchQuery.isEmpty
-                    ? context.l10n.soundsAllSounds
-                    : context.l10n.soundsSearchResults,
+                isSearching
+                    ? context.l10n.soundsSearchResults
+                    : context.l10n.soundsAllSounds,
                 style: const TextStyle(
                   color: VineTheme.whiteText,
                   fontSize: 16,
@@ -525,8 +500,6 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
             ],
           ),
         ),
-
-        // Sound tiles
         ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -534,21 +507,84 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
           itemCount: sounds.length,
           itemBuilder: (context, index) {
             final sound = sounds[index];
-            return SoundTile(
+            return _SoundTileSelector(
               sound: sound,
-              isPlaying: _previewingSoundId == sound.id,
-              onTap: () => _onSoundTap(sound),
-              onPlayPreview: () => _onPreviewTap(sound),
-              // Only show detail tap for Nostr sounds (not bundled)
-              onDetailTap: sound.isBundled ? null : () => _onDetailTap(sound),
+              onSoundTap: onSoundTap,
+              onPreviewTap: onPreviewTap,
+              // Bundled sounds don't get a detail-tap affordance.
+              onDetailTap: sound.isBundled ? null : onDetailTap,
             );
           },
         ),
       ],
     );
   }
+}
 
-  Widget _buildEmptyState() {
+class _SoundTileSelector extends StatelessWidget {
+  const _SoundTileSelector({
+    required this.sound,
+    required this.onSoundTap,
+    required this.onPreviewTap,
+    this.onDetailTap,
+    this.compact = false,
+  });
+
+  final AudioEvent sound;
+  final bool compact;
+  final void Function(AudioEvent) onSoundTap;
+  final void Function(AudioEvent) onPreviewTap;
+  final void Function(AudioEvent)? onDetailTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isPlaying = context.select(
+      (SoundsCubit cubit) => cubit.state.previewingSoundId == sound.id,
+    );
+    return SoundTile(
+      sound: sound,
+      compact: compact,
+      isPlaying: isPlaying,
+      onTap: () => onSoundTap(sound),
+      onPlayPreview: () => onPreviewTap(sound),
+      onDetailTap: onDetailTap == null ? null : () => onDetailTap!(sound),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Icon(icon, color: VineTheme.vineGreen, size: 20),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              color: VineTheme.whiteText,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -576,8 +612,13 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
       ),
     );
   }
+}
 
-  Widget _buildNoResultsState() {
+class _NoResultsState extends StatelessWidget {
+  const _NoResultsState();
+
+  @override
+  Widget build(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -604,8 +645,15 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
       ),
     );
   }
+}
 
-  Widget _buildErrorState(Object error) {
+class _ErrorState extends ConsumerWidget {
+  const _ErrorState({required this.error});
+
+  final Object error;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -639,9 +687,7 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: () {
-                ref.invalidate(trendingSoundsProvider);
-              },
+              onPressed: () => ref.invalidate(trendingSoundsProvider),
               icon: const DivineIcon(icon: DivineIconName.arrowClockwise),
               label: Text(context.l10n.soundsRetry),
               style: ElevatedButton.styleFrom(
