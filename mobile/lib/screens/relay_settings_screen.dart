@@ -135,32 +135,40 @@ class _InfoBanner extends StatelessWidget {
             style: const TextStyle(color: VineTheme.lightText, fontSize: 13),
           ),
           const SizedBox(height: 8),
-          GestureDetector(
-            onTap: () => _launchExternalUrl(
-              context,
-              Uri.parse('https://nostr.com'),
-            ),
-            child: Text(
-              context.l10n.relaySettingsLearnMoreNostr,
-              style: const TextStyle(
-                color: VineTheme.vineGreen,
-                fontSize: 13,
-                decoration: TextDecoration.underline,
+          Semantics(
+            button: true,
+            label: context.l10n.relaySettingsLearnMoreNostr,
+            child: GestureDetector(
+              onTap: () => _launchExternalUrl(
+                context,
+                Uri.parse('https://nostr.com'),
+              ),
+              child: Text(
+                context.l10n.relaySettingsLearnMoreNostr,
+                style: const TextStyle(
+                  color: VineTheme.vineGreen,
+                  fontSize: 13,
+                  decoration: TextDecoration.underline,
+                ),
               ),
             ),
           ),
           const SizedBox(height: 4),
-          GestureDetector(
-            onTap: () => _launchExternalUrl(
-              context,
-              Uri.parse('https://nostr.co.uk/relays/'),
-            ),
-            child: Text(
-              context.l10n.relaySettingsFindPublicRelays,
-              style: const TextStyle(
-                color: VineTheme.vineGreen,
-                fontSize: 13,
-                decoration: TextDecoration.underline,
+          Semantics(
+            button: true,
+            label: context.l10n.relaySettingsFindPublicRelays,
+            child: GestureDetector(
+              onTap: () => _launchExternalUrl(
+                context,
+                Uri.parse('https://nostr.co.uk/relays/'),
+              ),
+              child: Text(
+                context.l10n.relaySettingsFindPublicRelays,
+                style: const TextStyle(
+                  color: VineTheme.vineGreen,
+                  fontSize: 13,
+                  decoration: TextDecoration.underline,
+                ),
               ),
             ),
           ),
@@ -675,17 +683,21 @@ class _AddRelayDialogState extends State<_AddRelayDialog> {
             style: const TextStyle(color: VineTheme.lightText),
           ),
           const SizedBox(height: 8),
-          GestureDetector(
-            onTap: () => _launchExternalUrl(
-              context,
-              Uri.parse('https://nostr.co.uk/relays/'),
-            ),
-            child: Text(
-              context.l10n.relaySettingsBrowsePublicRelays,
-              style: const TextStyle(
-                color: VineTheme.vineGreen,
-                fontSize: 13,
-                decoration: TextDecoration.underline,
+          Semantics(
+            button: true,
+            label: context.l10n.relaySettingsBrowsePublicRelays,
+            child: GestureDetector(
+              onTap: () => _launchExternalUrl(
+                context,
+                Uri.parse('https://nostr.co.uk/relays/'),
+              ),
+              child: Text(
+                context.l10n.relaySettingsBrowsePublicRelays,
+                style: const TextStyle(
+                  color: VineTheme.vineGreen,
+                  fontSize: 13,
+                  decoration: TextDecoration.underline,
+                ),
               ),
             ),
           ),
