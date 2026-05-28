@@ -3,6 +3,7 @@
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
+import 'package:content_policy/content_policy.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -31,6 +32,7 @@ import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/feed_aspect_ratio_preference_service.dart';
 import 'package:openvine/services/language_preference_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
+import 'package:openvine/services/video_event_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
@@ -59,6 +61,15 @@ class _MockContentBlocklistRepository extends Mock
     implements ContentBlocklistRepository {
   @override
   Set<String> get runtimeBlockedUsers => const {};
+
+  @override
+  Stream<ContentPolicyState> get stateStream =>
+      const Stream<ContentPolicyState>.empty();
+}
+
+class _MockVideoEventService extends Mock implements VideoEventService {
+  @override
+  int filterAdultContentFromExistingVideos() => 0;
 }
 
 void main() {
@@ -73,6 +84,7 @@ void main() {
   late _MockModerationLabelService moderationLabelService;
   late _MockFollowRepository followRepository;
   late _MockContentBlocklistRepository blocklistRepository;
+  late _MockVideoEventService videoEventService;
   late DivineHostFilterService divineHostFilterService;
 
   setUp(() async {
@@ -88,6 +100,7 @@ void main() {
     moderationLabelService = _MockModerationLabelService();
     followRepository = _MockFollowRepository();
     blocklistRepository = _MockContentBlocklistRepository();
+    videoEventService = _MockVideoEventService();
     divineHostFilterService = DivineHostFilterService(sharedPreferences);
 
     when(() => localeCubit.state).thenReturn(const LocaleState());
@@ -149,6 +162,7 @@ void main() {
     moderationLabelServiceProvider.overrideWithValue(moderationLabelService),
     followRepositoryProvider.overrideWithValue(followRepository),
     contentBlocklistRepositoryProvider.overrideWithValue(blocklistRepository),
+    videoEventServiceProvider.overrideWithValue(videoEventService),
     divineHostFilterServiceProvider.overrideWithValue(divineHostFilterService),
     feedAspectRatioPreferenceServiceProvider.overrideWithValue(
       FeedAspectRatioPreferenceService(sharedPreferences),
