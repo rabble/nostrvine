@@ -42,6 +42,8 @@ jobs:
         run: bash scripts/check_raw_logging.sh
       - name: 🚧 Verify Riverpod boundary (@riverpod / StateProvider locations)
         run: bash scripts/check_riverpod_boundary.sh
+      - name: 🚧 Verify ChangeNotifier boundary (sanctioned-allowlist ratchet)
+        run: bash scripts/check_changenotifier_boundary.sh
       - name: 🚧 Verify UI does not import services directly (layering ratchet)
         run: |
           # Provide origin/main so the ratchet can compare the baseline against

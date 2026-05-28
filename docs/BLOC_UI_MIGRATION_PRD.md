@@ -41,6 +41,39 @@ BLoC/Cubit **owns**:
 - All UI side effects (navigation triggers, snackbar signals, dialog sequencing)
 - All loading/error/success state managed by a screen or feature
 
+## Sanctioned Riverpod (STAYS — not migration targets)
+
+The following files are **DI / infrastructure**, not feature UI state, and are
+out of scope for the #4744 Riverpod → BLoC migration. They are baselined by the
+`check_changenotifier_boundary.sh` ratchet (#4738) so the list cannot silently
+regrow.
+
+**Inclusion criterion:** the file owns infrastructure / a service / a cache /
+router-plumbing / preferences; it holds **0 feature UI state**. Migrating it to
+a UI BLoC would be the wrong layer.
+
+| File | Role |
+|------|------|
+| `lib/providers/individual_video_providers.dart` | Native `VideoPlayerController` lifecycle + fallback/retry/caching (`DisposedControllersTracker extends ChangeNotifier`). |
+| `lib/features/feature_flags/services/feature_flag_service.dart` | Feature-flag service. |
+| `lib/router/app_router.dart` | `_StreamListenable extends ChangeNotifier` — GoRouter `refreshListenable` adapter. |
+| `lib/services/connection_status_service.dart` | Connectivity monitor. |
+| `lib/services/content_filter_service.dart` | Adult-content / category filters. |
+| `lib/services/curated_list_service.dart` | NIP-51 curated lists. |
+| `lib/services/divine_host_filter_service.dart` | Divine-hosted-only filter preference. |
+| `lib/services/environment_service.dart` | Build environment (dev/staging/prod). |
+| `lib/services/feed_aspect_ratio_preference_service.dart` | Feed aspect-ratio preference. |
+| `lib/services/nip05_verification_service.dart` | NIP-05 verification cache. |
+| `lib/services/og_viner_cache_service.dart` | OG Vine cache. |
+| `lib/services/pending_action_service.dart` | Offline action queue. |
+| `lib/services/relay_statistics_service.dart` | Per-relay stats counters. |
+| `lib/services/subscribed_list_video_cache.dart` | Subscribed-list video cache. |
+| `lib/services/video_event_service.dart` | Video-event god-object cache. **Dissolved separately by #4338 Track D**, not by #4744. |
+
+The "ChangeNotifier count trends down" outcome of #4744 is delivered by the
+#4738 ratchet (no new ones land) and by #4338 Track D (god-object removal) —
+**not** by migrating any file in this table.
+
 ## Allowed / Disallowed Patterns
 
 | Pattern | Verdict | Notes |
@@ -90,6 +123,7 @@ currently disabled by an rxdart version conflict, so enforcement is shell-based.
 | Guard | Enforces | Model |
 |-------|----------|-------|
 | `check_riverpod_boundary.sh` | No new `@riverpod` / `StateProvider` for UI state outside allowed provider dirs | Zero-tolerance (directory exclusion) |
+| `check_changenotifier_boundary.sh` | No new `extends ChangeNotifier` outside the file allowlist (the "Sanctioned Riverpod (STAYS)" list above) | Zero-tolerance (file allowlist). Adding a new sanctioned ChangeNotifier requires extending both the docs table and the script's allowlist together. |
 | `check_ui_service_boundary.sh` | UI files under `mobile/lib/**/{screens,widgets,view,views}/**` must not import a service (`package:openvine/services/` or relative `../services/`, either quote style) — reach data through a BLoC/Cubit | **True ratchet vs `origin/main`**: NEW (undeclared), STALE (fixed but still baselined), and GROWTH (baseline grew vs `origin/main`) all fail; baseline may only shrink |
 
 **Working with the UI→service ratchet.** Pre-existing violators are frozen in

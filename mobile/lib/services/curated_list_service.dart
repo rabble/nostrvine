@@ -35,8 +35,11 @@ typedef OnListSubscribedCallback =
 /// Called with listId when a list is unsubscribed
 typedef OnListUnsubscribedCallback = void Function(String listId);
 
-/// Service for managing NIP-51 curated lists
-/// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
+/// Service for managing NIP-51 curated lists.
+///
+/// Sanctioned ChangeNotifier per the "Sanctioned Riverpod (STAYS)" list in
+/// `docs/BLOC_UI_MIGRATION_PRD.md` — this is a Nostr-list cache + sync service,
+/// not feature UI state, and is baselined by `check_changenotifier_boundary.sh`.
 class CuratedListService extends ChangeNotifier {
   CuratedListService({
     required NostrClient nostrService,
