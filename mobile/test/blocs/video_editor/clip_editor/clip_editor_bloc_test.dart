@@ -115,6 +115,26 @@ Future<void> _fakeSplitClip({
   onClipsCreated?.call(startClip, endClip);
 }
 
+Future<void> _fakeSplitClipThenFail({
+  required DivineVideoClip sourceClip,
+  required Duration splitPosition,
+  required void Function(DivineVideoClip startClip, DivineVideoClip endClip)?
+  onClipsCreated,
+  required void Function(DivineVideoClip clip, String thumbnailPath)?
+  onThumbnailExtracted,
+  required void Function(DivineVideoClip clip, EditorVideo video)?
+  onClipRendered,
+}) async {
+  await _fakeSplitClip(
+    sourceClip: sourceClip,
+    splitPosition: splitPosition,
+    onClipsCreated: onClipsCreated,
+    onThumbnailExtracted: onThumbnailExtracted,
+    onClipRendered: onClipRendered,
+  );
+  throw StateError('render failed');
+}
+
 void main() {
   group(ClipEditorBloc, () {
     late List<DivineVideoClip> twoClips;
@@ -596,16 +616,8 @@ void main() {
         act: (bloc) => bloc.add(const ClipEditorSplitRequested()),
         expect: () => [
           isA<ClipEditorState>()
-              .having(
-                (s) => s.isEditing,
-                'isEditing',
-                isFalse,
-              )
-              .having(
-                (s) => s.isSplitting,
-                'isSplitting',
-                isTrue,
-              ),
+              .having((s) => s.isEditing, 'isEditing', isFalse)
+              .having((s) => s.isSplitting, 'isSplitting', isTrue),
           isA<ClipEditorState>()
               .having((s) => s.clips, 'clips', hasLength(2))
               .having((s) => s.isSplitting, 'isSplitting', isTrue),
@@ -613,6 +625,52 @@ void main() {
               .having((s) => s.clips, 'clips', hasLength(2))
               .having((s) => s.isSplitting, 'isSplitting', isFalse),
         ],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'rolls back created split clips when render fails',
+        build: () => buildBloc(splitClip: _fakeSplitClipThenFail),
+        seed: () {
+          final clip = _createClip(
+            id: 'source-clip',
+            duration: const Duration(seconds: 2),
+          );
+          return ClipEditorState(
+            clips: [clip],
+            isEditing: true,
+            splitPosition: const Duration(seconds: 1),
+          );
+        },
+        act: (bloc) => bloc.add(const ClipEditorSplitRequested()),
+        expect: () => [
+          isA<ClipEditorState>()
+              .having((s) => s.isEditing, 'isEditing', isFalse)
+              .having((s) => s.isSplitting, 'isSplitting', isTrue)
+              .having(
+                (s) => s.clips.single.id,
+                'source clip id',
+                'source-clip',
+              ),
+          isA<ClipEditorState>()
+              .having((s) => s.clips, 'clips', hasLength(2))
+              .having((s) => s.isSplitting, 'isSplitting', isTrue)
+              .having((s) => s.lastSplit, 'lastSplit', isNotNull),
+          isA<ClipEditorState>()
+              .having((s) => s.clips, 'clips', hasLength(1))
+              .having(
+                (s) => s.clips.single.id,
+                'restored source clip id',
+                'source-clip',
+              )
+              .having((s) => s.isSplitting, 'isSplitting', isFalse)
+              .having((s) => s.lastSplit, 'lastSplit', isNull)
+              .having(
+                (s) => s.lastSplitFailure,
+                'lastSplitFailure',
+                isA<ClipSplitFailure>(),
+              ),
+        ],
+        errors: () => [isA<StateError>()],
       );
 
       test('validates using VideoEditorSplitService.isValidSplitPosition', () {

@@ -103,6 +103,7 @@ class ClipEditorState extends Equatable {
     bool? isTrimDragging,
     int? clipsVolumeRevision,
     ClipSplitEvent? lastSplit,
+    bool clearLastSplit = false,
     Duration? trimPosition,
     bool clearTrimPosition = false,
     String? trimmingClipId,
@@ -119,7 +120,7 @@ class ClipEditorState extends Equatable {
       isEditing: isEditing ?? this.isEditing,
       isTrimDragging: isTrimDragging ?? this.isTrimDragging,
       clipsVolumeRevision: clipsVolumeRevision ?? this.clipsVolumeRevision,
-      lastSplit: lastSplit ?? this.lastSplit,
+      lastSplit: clearLastSplit ? null : (lastSplit ?? this.lastSplit),
       trimPosition: clearTrimPosition
           ? null
           : (trimPosition ?? this.trimPosition),

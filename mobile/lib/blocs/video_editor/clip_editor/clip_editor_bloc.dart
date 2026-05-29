@@ -287,6 +287,8 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     emit(state.copyWith(isEditing: false, isSplitting: true));
 
     ClipSplitFailure? splitFailure;
+    String? splitStartClipId;
+    String? splitEndClipId;
     try {
       // Emit directly from callbacks instead of dispatching events.
       // Cross-event-type handlers run concurrently in BLoC, which
@@ -298,6 +300,9 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         sourceClip: selectedClip,
         splitPosition: splitPosition,
         onClipsCreated: (startClip, endClip) {
+          splitStartClipId = startClip.id;
+          splitEndClipId = endClip.id;
+
           // splitClip's render phase awaits Future.wait on parallel
           // video renders. If the bloc is closed mid-render (user
           // navigates away from the editor), the late callbacks fire
@@ -378,11 +383,41 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       splitFailure = ClipSplitFailure();
     } finally {
       if (!emit.isDone) {
+        final rollbackClips = splitFailure == null
+            ? null
+            : _clipsWithFailedSplitRolledBack(
+                state.clips,
+                sourceClip: selectedClip,
+                startClipId: splitStartClipId,
+                endClipId: splitEndClipId,
+              );
         emit(
-          state.copyWith(isSplitting: false, lastSplitFailure: splitFailure),
+          state.copyWith(
+            clips: rollbackClips,
+            isSplitting: false,
+            lastSplitFailure: splitFailure,
+            clearLastSplit: splitFailure != null,
+          ),
         );
       }
     }
+  }
+
+  List<DivineVideoClip>? _clipsWithFailedSplitRolledBack(
+    List<DivineVideoClip> clips, {
+    required DivineVideoClip sourceClip,
+    required String? startClipId,
+    required String? endClipId,
+  }) {
+    if (startClipId == null || endClipId == null) return null;
+
+    final startIndex = clips.indexWhere((clip) => clip.id == startClipId);
+    if (startIndex == -1 || startIndex + 1 >= clips.length) return null;
+    if (clips[startIndex + 1].id != endClipId) return null;
+
+    final restoredClips = List<DivineVideoClip>.of(clips)
+      ..replaceRange(startIndex, startIndex + 2, [sourceClip]);
+    return List.unmodifiable(restoredClips);
   }
 
   // === TRIM ===
