@@ -1,51 +1,52 @@
 // ABOUTME: Tests for VideoRecorderBottomBar widget
 // ABOUTME: Validates bottom bar UI, mode selector, library button, and opacity
 
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_bottom_bar.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_library_button.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_mode_selector.dart';
 
-import '../../mocks/mock_camera_service.dart';
-
 class _MockClipLibraryService extends Mock implements ClipLibraryService {}
+
+class _MockVideoRecorderBloc
+    extends MockBloc<VideoRecorderEvent, VideoRecorderBlocState>
+    implements VideoRecorderBloc {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group(VideoRecorderBottomBar, () {
-    late MockCameraService mockCamera;
     late _MockClipLibraryService mockClipLibrary;
+    late _MockVideoRecorderBloc recorderBloc;
 
     setUp(() async {
-      mockCamera = MockCameraService.create(
-        onUpdateState: ({forceCameraRebuild}) {},
-        onAutoStopped: (_) {},
-      );
-      await mockCamera.initialize();
       mockClipLibrary = _MockClipLibraryService();
       when(() => mockClipLibrary.getAllClips()).thenAnswer((_) async => []);
+      recorderBloc = _MockVideoRecorderBloc();
+      when(() => recorderBloc.state).thenReturn(const VideoRecorderBlocState());
     });
 
     Widget buildTestWidget() {
       return ProviderScope(
         overrides: [
-          videoRecorderProvider.overrideWith(
-            () => VideoRecorderNotifier(mockCamera),
-          ),
           clipLibraryServiceProvider.overrideWithValue(mockClipLibrary),
         ],
-        child: const MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: Stack(children: [VideoRecorderBottomBar()])),
+        child: BlocProvider<VideoRecorderBloc>.value(
+          value: recorderBloc,
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: Stack(children: [VideoRecorderBottomBar()])),
+          ),
         ),
       );
     }

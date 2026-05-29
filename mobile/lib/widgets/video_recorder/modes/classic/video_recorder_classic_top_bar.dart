@@ -1,19 +1,20 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/providers/video_recorder_provider.dart';
+import 'package:openvine/widgets/video_recorder/video_recorder_navigation.dart';
 
 class VideoRecorderClassicTopBar extends ConsumerWidget {
   const VideoRecorderClassicTopBar({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final notifier = ref.read(videoRecorderProvider.notifier);
-    final isRecording = ref.watch(
-      videoRecorderProvider.select((p) => p.isRecording),
+    final isRecording = context.select(
+      (VideoRecorderBloc b) => b.state.isRecording,
     );
     final hasClips = ref.watch(clipManagerProvider.select((p) => p.hasClips));
 
@@ -36,7 +37,7 @@ class VideoRecorderClassicTopBar extends ConsumerWidget {
                   type: .ghostSecondary,
                   onPressed: isRecording
                       ? null
-                      : () => notifier.closeVideoRecorder(context),
+                      : () => closeVideoRecorder(context),
                 ),
                 DivineIconButton(
                   icon: .caretRight,
@@ -45,7 +46,7 @@ class VideoRecorderClassicTopBar extends ConsumerWidget {
                   type: .ghostSecondary,
                   onPressed: isRecording || !hasClips
                       ? null
-                      : () => notifier.openVideoEditor(context),
+                      : () => openVideoEditorFromRecorder(context, ref),
                 ),
               ],
             ),

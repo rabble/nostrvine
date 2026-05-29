@@ -1,9 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/providers/video_recorder_provider.dart';
 
 /// Semi-transparent overlay of the last recorded clip's final frame.
 ///
@@ -16,8 +17,8 @@ class VideoRecorderGhostFrame extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final showOverlay = ref.watch(
-      videoRecorderProvider.select((p) => p.showLastClipOverlay),
+    final showOverlay = context.select(
+      (VideoRecorderBloc b) => b.state.showLastClipOverlay,
     );
 
     // Use the last clip that has a ghost frame, not just the last clip.

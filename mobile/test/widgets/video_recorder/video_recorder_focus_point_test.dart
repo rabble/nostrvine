@@ -1,37 +1,33 @@
 // ABOUTME: Tests for VideoRecorderFocusPoint widget
 // ABOUTME: Validates focus point indicator, animations, and position calculations
 
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
-import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_focus_point.dart';
 
-import '../../mocks/mock_camera_service.dart';
+class _MockVideoRecorderBloc
+    extends MockBloc<VideoRecorderEvent, VideoRecorderBlocState>
+    implements VideoRecorderBloc {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('VideoRecorderFocusPoint Widget Tests', () {
-    late MockCameraService mockCamera;
+    late _MockVideoRecorderBloc recorderBloc;
 
-    setUp(() async {
-      TestWidgetsFlutterBinding.ensureInitialized();
-      mockCamera = MockCameraService.create(
-        onUpdateState: ({forceCameraRebuild}) {},
-        onAutoStopped: (_) {},
-      );
-      await mockCamera.initialize();
+    setUp(() {
+      recorderBloc = _MockVideoRecorderBloc();
+      when(() => recorderBloc.state).thenReturn(const VideoRecorderBlocState());
     });
 
     Widget buildTestWidget() {
-      return ProviderScope(
-        overrides: [
-          videoRecorderProvider.overrideWith(
-            () => VideoRecorderNotifier(mockCamera),
-          ),
-        ],
+      return BlocProvider<VideoRecorderBloc>.value(
+        value: recorderBloc,
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
@@ -74,20 +70,14 @@ void main() {
       const cameraSize = Size(400, 600);
       await tester.binding.setSurfaceSize(cameraSize);
       addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      when(() => recorderBloc.state).thenReturn(
+        const VideoRecorderBlocState(focusPoint: Offset(0.5, 0.5)),
+      );
+
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            videoRecorderProvider.overrideWith(() {
-              final notifier = VideoRecorderNotifier(mockCamera);
-              // Set initial state with a focus point
-              Future.microtask(() {
-                notifier.state = notifier.state.copyWith(
-                  focusPoint: const Offset(0.5, 0.5),
-                );
-              });
-              return notifier;
-            }),
-          ],
+        BlocProvider<VideoRecorderBloc>.value(
+          value: recorderBloc,
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,

@@ -1,9 +1,10 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/widgets/video_recorder/shutter_gesture_detector.dart';
 
 /// Circular record button for starting/stopping video recording.
@@ -12,15 +13,13 @@ class RecordButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(
-      videoRecorderProvider.select(
-        (p) => (
-          isRecording: p.isRecording,
-          timerDuration: p.timerDuration,
-          canRecord: p.canRecord,
-          isCameraInitialized: p.isCameraInitialized,
-          recorderMode: p.recorderMode,
-        ),
+    final state = context.select(
+      (VideoRecorderBloc b) => (
+        isRecording: b.state.isRecording,
+        timerDuration: b.state.timerDuration,
+        canRecord: b.state.canRecord,
+        isCameraInitialized: b.state.isCameraInitialized,
+        recorderMode: b.state.recorderMode,
       ),
     );
 
@@ -29,8 +28,6 @@ class RecordButton extends ConsumerWidget {
         (p) => p.remainingDuration > const Duration(milliseconds: 30),
       ),
     );
-
-    final notifier = ref.read(videoRecorderProvider.notifier);
 
     final isLongPressSupported = state.timerDuration == .off;
     final isEnabled =
@@ -50,12 +47,19 @@ class RecordButton extends ConsumerWidget {
         isEnabled: isEnabled,
         isRecording: state.isRecording,
         isLongPressSupported: isLongPressSupported,
-        onTapToggle: notifier.toggleRecording,
-        onLongPressStartRecording: notifier.startRecording,
-        onLongPressStopRecording: notifier.stopRecording,
+        onTapToggle: () => context.read<VideoRecorderBloc>().add(
+          const VideoRecorderRecordingToggleRequested(),
+        ),
+        onLongPressStartRecording: () => context.read<VideoRecorderBloc>().add(
+          const VideoRecorderRecordingStartRequested(),
+        ),
+        onLongPressStopRecording: () => context.read<VideoRecorderBloc>().add(
+          const VideoRecorderRecordingStopRequested(),
+        ),
         onLongPressMoveUpdate: state.isRecording && isLongPressSupported
-            ? (details) =>
-                  notifier.zoomByLongPressMove(details.localOffsetFromOrigin)
+            ? (details) => context.read<VideoRecorderBloc>().add(
+                VideoRecorderZoomedByLongPress(details.localOffsetFromOrigin),
+              )
             : null,
         child: AnimatedOpacity(
           duration: const Duration(milliseconds: 200),

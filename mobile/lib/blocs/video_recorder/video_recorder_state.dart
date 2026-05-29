@@ -2,7 +2,7 @@ part of 'video_recorder_bloc.dart';
 
 /// State for [VideoRecorderBloc].
 ///
-/// Ports [VideoRecorderProviderState] verbatim and adds the mutable
+/// Ports the legacy `VideoRecorderProviderState` verbatim and adds the mutable
 /// instance fields that were previously held on the provider class
 /// (concurrency flags + zoom-snap gesture state) so all observable
 /// data lives in the state stream per `state_management.md`.

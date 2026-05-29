@@ -25,7 +25,7 @@ class _MockVideoEditor extends Mock implements VideoEditorNotifier {}
 
 class _MockSharedPreferences extends Mock implements SharedPreferences {}
 
-/// Mirrors the pattern used by `test/providers/video_recorder_provider_test.dart` —
+/// A fake wakelock platform —
 /// production code calls `WakelockPlus.enable/disable` around every
 /// recording session, which hits a platform channel that isn't bound
 /// in unit tests. Override the platform instance with a fake so the

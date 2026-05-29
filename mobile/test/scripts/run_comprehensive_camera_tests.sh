@@ -65,7 +65,7 @@ main() {
 
     # Unit Tests
     run_test_category "Unit - macOS Camera Service" "test/services/native_macos_camera_test.dart"
-    run_test_category "Unit - Video Recorder Provider" "test/providers/video_recorder_provider_test.dart"
+    run_test_category "Unit - Video Recorder Bloc" "test/blocs/video_recorder/video_recorder_bloc_test.dart"
 
     # Performance Tests
     run_test_category "Performance - Initialization Benchmark" "test/performance/camera_initialization_benchmark_test.dart"

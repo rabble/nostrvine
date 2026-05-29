@@ -3,7 +3,7 @@ part of 'video_recorder_bloc.dart';
 /// Base event type for [VideoRecorderBloc].
 ///
 /// Most events correspond 1:1 to methods on the legacy
-/// [VideoRecorderNotifier]; the names are kept close to the original
+/// `VideoRecorderNotifier`; the names are kept close to the original
 /// for review-time grepability of the port.
 sealed class VideoRecorderEvent extends Equatable {
   const VideoRecorderEvent();

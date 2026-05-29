@@ -3,13 +3,15 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/video_editor_audio_chip.dart';
 import 'package:openvine/widgets/video_editor/video_editor_toolbar.dart';
+import 'package:openvine/widgets/video_recorder/video_recorder_navigation.dart';
 
 /// Top bar with close button, segment bar, and forward button.
 class VideoRecorderTopBar extends ConsumerStatefulWidget {
@@ -26,9 +28,8 @@ class _VideoRecorderTopBarState extends ConsumerState<VideoRecorderTopBar> {
 
   @override
   Widget build(BuildContext context) {
-    final notifier = ref.read(videoRecorderProvider.notifier);
-    final isRecording = ref.watch(
-      videoRecorderProvider.select((s) => s.isRecording),
+    final isRecording = context.select(
+      (VideoRecorderBloc b) => b.state.isRecording,
     );
     final selectedSound = ref.watch(
       videoEditorProvider.select((s) => s.selectedSound),
@@ -51,9 +52,9 @@ class _VideoRecorderTopBarState extends ConsumerState<VideoRecorderTopBar> {
                   doneSemanticLabel:
                       context.l10n.videoRecorderContinueToEditorLabel,
                   doneIcon: DivineIconName.caretRight,
-                  onClose: () => notifier.closeVideoRecorder(context),
+                  onClose: () => closeVideoRecorder(context),
                   onDone: hasClips
-                      ? () => notifier.openVideoEditor(context)
+                      ? () => openVideoEditorFromRecorder(context, ref)
                       : null,
                   center: Flexible(
                     child: VideoEditorAudioChip(
@@ -65,11 +66,15 @@ class _VideoRecorderTopBarState extends ConsumerState<VideoRecorderTopBar> {
                       },
                       onSelectionStarted: () {
                         setState(() => _isSelectingSound = true);
-                        notifier.pauseRemoteRecordControl();
+                        context.read<VideoRecorderBloc>().add(
+                          const VideoRecorderRemoteRecordPaused(),
+                        );
                       },
                       onSelectionEnded: () {
                         setState(() => _isSelectingSound = false);
-                        notifier.resumeRemoteRecordControl();
+                        context.read<VideoRecorderBloc>().add(
+                          const VideoRecorderRemoteRecordResumed(),
+                        );
                       },
                     ),
                   ),

@@ -9,10 +9,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/sound_waveform/sound_waveform_bloc.dart';
+import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/widgets/stereo_waveform_painter.dart';
 
 /// Audio progress bar that displays waveform with recording progress.
@@ -28,8 +28,8 @@ class VideoRecorderAudioProgressBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isRecording = ref.watch(
-      videoRecorderProvider.select((s) => s.isRecording),
+    final isRecording = context.select(
+      (VideoRecorderBloc b) => b.state.isRecording,
     );
     final selectedSound = ref.watch(
       videoEditorProvider.select((s) => s.selectedSound),

@@ -1,10 +1,10 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/providers/video_recorder_provider.dart';
 
-class VideoRecorderClassicActionsBottom extends ConsumerWidget {
+class VideoRecorderClassicActionsBottom extends StatelessWidget {
   const VideoRecorderClassicActionsBottom({super.key});
 
   void _showSnackBar(BuildContext context, String message) {
@@ -14,10 +14,9 @@ class VideoRecorderClassicActionsBottom extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final notifier = ref.read(videoRecorderProvider.notifier);
-    final isRecording = ref.watch(
-      videoRecorderProvider.select((p) => p.isRecording),
+  Widget build(BuildContext context) {
+    final isRecording = context.select(
+      (VideoRecorderBloc b) => b.state.isRecording,
     );
 
     return AnimatedOpacity(
@@ -32,14 +31,18 @@ class VideoRecorderClassicActionsBottom extends ConsumerWidget {
             semanticLabel: context.l10n.videoRecorderSwitchCameraLabel,
             size: .small,
             type: .ghostSecondary,
-            onPressed: notifier.switchCamera,
+            onPressed: () => context.read<VideoRecorderBloc>().add(
+              const VideoRecorderCameraSwitched(),
+            ),
           ),
           DivineIconButton(
             icon: .gridNine,
             semanticLabel: context.l10n.videoRecorderToggleGridLabel,
             size: .small,
             type: .ghostSecondary,
-            onPressed: notifier.toggleGridLines,
+            onPressed: () => context.read<VideoRecorderBloc>().add(
+              const VideoRecorderGridLinesToggled(),
+            ),
           ),
           DivineIconButton(
             icon: .ghost,
@@ -47,10 +50,13 @@ class VideoRecorderClassicActionsBottom extends ConsumerWidget {
             size: .small,
             type: .ghostSecondary,
             onPressed: () {
-              notifier.toggleShowLastClipOverlay();
-              final enabled = ref
-                  .read(videoRecorderProvider)
+              final enabled = !context
+                  .read<VideoRecorderBloc>()
+                  .state
                   .showLastClipOverlay;
+              context.read<VideoRecorderBloc>().add(
+                const VideoRecorderShowLastClipOverlayToggled(),
+              );
               _showSnackBar(
                 context,
                 enabled

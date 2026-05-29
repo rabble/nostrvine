@@ -1,32 +1,34 @@
+import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
-import 'package:openvine/models/video_recorder/video_recorder_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/widgets/video_recorder/modes/capture/video_recorder_capture_actions.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
-import '../../../../mocks/mock_camera_service.dart';
+class _MockVideoRecorderBloc
+    extends MockBloc<VideoRecorderEvent, VideoRecorderBlocState>
+    implements VideoRecorderBloc {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group(VideoRecorderCaptureActions, () {
-    late MockCameraService mockCamera;
+  final l10n = lookupAppLocalizations(const Locale('en'));
 
-    setUp(() async {
-      mockCamera = MockCameraService.create(
-        onUpdateState: ({forceCameraRebuild}) {},
-        onAutoStopped: (_) {},
-      );
-      await mockCamera.initialize();
+  group(VideoRecorderCaptureActions, () {
+    late _MockVideoRecorderBloc recorderBloc;
+
+    setUp(() {
+      recorderBloc = _MockVideoRecorderBloc();
     });
 
     Widget buildWidget({
@@ -36,25 +38,30 @@ void main() {
       bool hasFlash = true,
       List<DivineVideoClip>? clips,
     }) {
+      when(() => recorderBloc.state).thenReturn(
+        VideoRecorderBlocState(
+          recordingState: recordingState,
+          flashMode: flashMode,
+          canSwitchCamera: canSwitchCamera,
+          hasFlash: hasFlash,
+          isCameraInitialized: true,
+          canRecord: true,
+        ),
+      );
+
       return ProviderScope(
         overrides: [
-          videoRecorderProvider.overrideWith(
-            () => _TestVideoRecorderNotifier(
-              mockCamera,
-              recordingState: recordingState,
-              flashMode: flashMode,
-              canSwitchCamera: canSwitchCamera,
-              hasFlash: hasFlash,
-            ),
-          ),
           clipManagerProvider.overrideWith(
             () => _TestClipManagerNotifier(clips: clips ?? []),
           ),
         ],
-        child: const MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: VideoRecorderCaptureActions()),
+        child: BlocProvider<VideoRecorderBloc>.value(
+          value: recorderBloc,
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: VideoRecorderCaptureActions()),
+          ),
         ),
       );
     }
@@ -119,7 +126,10 @@ void main() {
         await tester.pumpWidget(buildWidget());
         await tester.pumpAndSettle();
 
-        expect(find.byTooltip('Toggle flash'), findsOneWidget);
+        expect(
+          find.byTooltip(l10n.videoRecorderToggleFlashLabel),
+          findsOneWidget,
+        );
       });
 
       testWidgets('flash button is disabled when hasFlash is false', (
@@ -129,7 +139,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Find the flash tooltip's InkWell — its onTap should be null
-        final flashTooltip = find.byTooltip('Toggle flash');
+        final flashTooltip = find.byTooltip(l10n.videoRecorderToggleFlashLabel);
         final inkWell = find.descendant(
           of: flashTooltip,
           matching: find.byType(InkWell),
@@ -144,7 +154,9 @@ void main() {
         await tester.pumpWidget(buildWidget(canSwitchCamera: false));
         await tester.pumpAndSettle();
 
-        final switchTooltip = find.byTooltip('Switch camera');
+        final switchTooltip = find.byTooltip(
+          l10n.videoRecorderSwitchCameraLabel,
+        );
         final inkWell = find.descendant(
           of: switchTooltip,
           matching: find.byType(InkWell),
@@ -170,7 +182,9 @@ void main() {
         await tester.pumpWidget(buildWidget(clips: clips));
         await tester.pumpAndSettle();
 
-        final arTooltip = find.byTooltip('Toggle aspect ratio');
+        final arTooltip = find.byTooltip(
+          l10n.videoRecorderToggleAspectRatioLabel,
+        );
         final inkWell = find.descendant(
           of: arTooltip,
           matching: find.byType(InkWell),
@@ -183,7 +197,9 @@ void main() {
         await tester.pumpWidget(buildWidget());
         await tester.pumpAndSettle();
 
-        final arTooltip = find.byTooltip('Toggle aspect ratio');
+        final arTooltip = find.byTooltip(
+          l10n.videoRecorderToggleAspectRatioLabel,
+        );
         final inkWell = find.descendant(
           of: arTooltip,
           matching: find.byType(InkWell),
@@ -193,33 +209,6 @@ void main() {
       });
     });
   });
-}
-
-class _TestVideoRecorderNotifier extends VideoRecorderNotifier {
-  _TestVideoRecorderNotifier(
-    super.cameraService, {
-    this.recordingState = VideoRecorderState.idle,
-    this.flashMode = DivineFlashMode.auto,
-    this.canSwitchCamera = true,
-    this.hasFlash = true,
-  });
-
-  final VideoRecorderState recordingState;
-  final DivineFlashMode flashMode;
-  final bool canSwitchCamera;
-  final bool hasFlash;
-
-  @override
-  VideoRecorderProviderState build() {
-    return VideoRecorderProviderState(
-      recordingState: recordingState,
-      flashMode: flashMode,
-      canSwitchCamera: canSwitchCamera,
-      hasFlash: hasFlash,
-      isCameraInitialized: true,
-      canRecord: true,
-    );
-  }
 }
 
 class _TestClipManagerNotifier extends ClipManagerNotifier {

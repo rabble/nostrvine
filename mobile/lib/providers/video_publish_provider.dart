@@ -28,7 +28,6 @@ import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/upload_media_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_providers.dart';
-import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/providers/video_reply_context_provider.dart';
 import 'package:openvine/router/navigator_keys.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
@@ -168,7 +167,9 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       category: LogCategory.video,
     );
     try {
-      ref.read(videoRecorderProvider.notifier).reset();
+      // The recorder bloc is screen-scoped; it resets to initial state when its
+      // screen unmounts/remounts, so clearAll no longer resets it here (a
+      // Notifier must not dispatch into VideoRecorderBloc).
       ref.read(videoReplyContextProvider.notifier).clear();
       reset();
 

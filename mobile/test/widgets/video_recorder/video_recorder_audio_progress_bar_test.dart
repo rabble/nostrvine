@@ -11,23 +11,24 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/sound_waveform/sound_waveform_bloc.dart';
+import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
-import 'package:openvine/models/video_recorder/video_recorder_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_audio_progress_bar.dart';
 import 'package:pro_video_editor/core/models/video/editor_video_model.dart';
-
-import '../../mocks/mock_camera_service.dart';
 
 class _MockSoundWaveformBloc
     extends MockBloc<SoundWaveformEvent, SoundWaveformState>
     implements SoundWaveformBloc {}
+
+class _MockVideoRecorderBloc
+    extends MockBloc<VideoRecorderEvent, VideoRecorderBlocState>
+    implements VideoRecorderBloc {}
 
 /// Helper to create test AudioEvent instances
 AudioEvent _createTestAudioEvent({
@@ -53,7 +54,7 @@ void main() {
 
   group(VideoRecorderAudioProgressBar, () {
     late _MockSoundWaveformBloc mockBloc;
-    late MockCameraService mockCamera;
+    late _MockVideoRecorderBloc recorderBloc;
 
     final testWaveformData = Float32List.fromList([
       0.1,
@@ -68,13 +69,12 @@ void main() {
       0.5,
     ]);
 
-    setUp(() async {
+    setUp(() {
       mockBloc = _MockSoundWaveformBloc();
-      mockCamera = MockCameraService.create(
-        onUpdateState: ({forceCameraRebuild}) {},
-        onAutoStopped: (_) {},
-      );
-      await mockCamera.initialize();
+      recorderBloc = _MockVideoRecorderBloc();
+      when(
+        () => recorderBloc.state,
+      ).thenReturn(const VideoRecorderBlocState());
     });
 
     Widget buildWidget({
@@ -87,15 +87,12 @@ void main() {
       when(
         () => mockBloc.state,
       ).thenReturn(waveformState ?? const SoundWaveformInitial());
+      when(
+        () => recorderBloc.state,
+      ).thenReturn(VideoRecorderBlocState(recordingState: recordingState));
 
       return ProviderScope(
         overrides: [
-          videoRecorderProvider.overrideWith(
-            () => _TestVideoRecorderNotifier(
-              mockCamera,
-              recordingState: recordingState,
-            ),
-          ),
           videoEditorProvider.overrideWith(
             () => _TestVideoEditorNotifier(selectedSound: selectedSound),
           ),
@@ -106,17 +103,20 @@ void main() {
             ),
           ),
         ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: Stack(
-              children: [
-                BlocProvider<SoundWaveformBloc>.value(
-                  value: mockBloc,
-                  child: const VideoRecorderAudioProgressBar(),
-                ),
-              ],
+        child: BlocProvider<VideoRecorderBloc>.value(
+          value: recorderBloc,
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: Stack(
+                children: [
+                  BlocProvider<SoundWaveformBloc>.value(
+                    value: mockBloc,
+                    child: const VideoRecorderAudioProgressBar(),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -352,21 +352,6 @@ void main() {
       });
     });
   });
-}
-
-/// Test notifier for VideoRecorderProvider
-class _TestVideoRecorderNotifier extends VideoRecorderNotifier {
-  _TestVideoRecorderNotifier(
-    super.cameraService, {
-    this.recordingState = VideoRecorderState.idle,
-  });
-
-  final VideoRecorderState recordingState;
-
-  @override
-  VideoRecorderProviderState build() {
-    return VideoRecorderProviderState(recordingState: recordingState);
-  }
 }
 
 /// Test notifier for VideoEditorProvider

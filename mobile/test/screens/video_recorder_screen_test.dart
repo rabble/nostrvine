@@ -1,9 +1,10 @@
-// ABOUTME: Tests for VideoRecorderScreen - main video recording UI
+// ABOUTME: Tests for VideoRecorderView - main video recording UI
 // ABOUTME: Tests screen initialization, camera setup, UI elements, and lifecycle
 
 @Tags(['skip_very_good_optimization'])
 import 'dart:core';
 
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,13 +12,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
+import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
@@ -27,11 +27,13 @@ import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../mocks/mock_camera_service.dart';
-
 class _MockDraftStorageService extends Mock implements DraftStorageService {}
 
 class _MockClipLibraryService extends Mock implements ClipLibraryService {}
+
+class _MockVideoRecorderBloc
+    extends MockBloc<VideoRecorderEvent, VideoRecorderBlocState>
+    implements VideoRecorderBloc {}
 
 /// Mock for CameraPermissionBloc
 class MockCameraPermissionBloc extends Mock implements CameraPermissionBloc {
@@ -48,7 +50,9 @@ class MockCameraPermissionBloc extends Mock implements CameraPermissionBloc {
   }
 }
 
-/// Helper to build VideoRecorderScreen with required providers
+late VideoRecorderBloc recorderBloc;
+
+/// Helper to build VideoRecorderView with required providers and the mock bloc.
 Widget buildTestWidget({List<Override> overrides = const []}) {
   final mockDraftStorage = _MockDraftStorageService();
   when(
@@ -62,49 +66,49 @@ Widget buildTestWidget({List<Override> overrides = const []}) {
       clipLibraryServiceProvider.overrideWithValue(mockClipLibrary),
       ...overrides,
     ],
-    child: BlocProvider<CameraPermissionBloc>(
-      create: (_) => MockCameraPermissionBloc(),
+    child: MultiBlocProvider(
+      providers: [
+        BlocProvider<VideoRecorderBloc>.value(value: recorderBloc),
+        BlocProvider<CameraPermissionBloc>(
+          create: (_) => MockCameraPermissionBloc(),
+        ),
+      ],
       child: const MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: VideoRecorderScreen(),
+        home: VideoRecorderView(),
       ),
     ),
   );
 }
 
-/// Helper to build VideoRecorderScreen with provider overrides
-Widget buildTestWidgetWithOverrides(List<Override> overrides) {
-  final mockDraftStorage = _MockDraftStorageService();
-  when(
-    () => mockDraftStorage.getDraftById(any()),
-  ).thenAnswer((_) async => null);
-  final mockClipLibrary = _MockClipLibraryService();
-  when(mockClipLibrary.getAllClips).thenAnswer((_) async => []);
-  return ProviderScope(
-    overrides: [
-      draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
-      clipLibraryServiceProvider.overrideWithValue(mockClipLibrary),
-      ...overrides,
-    ],
-    child: BlocProvider<CameraPermissionBloc>(
-      create: (_) => MockCameraPermissionBloc(),
-      child: const MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: VideoRecorderScreen(),
-      ),
-    ),
-  );
-}
+/// Helper to build VideoRecorderView with provider overrides.
+Widget buildTestWidgetWithOverrides(List<Override> overrides) =>
+    buildTestWidget(overrides: overrides);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('VideoRecorderScreen Tests', () {
+  setUpAll(() {
+    registerFallbackValue(
+      const VideoRecorderAppLifecycleChanged(AppLifecycleState.resumed),
+    );
+  });
+
+  group('VideoRecorderView Tests', () {
     late ProviderContainer container;
 
     setUp(() async {
+      recorderBloc = _MockVideoRecorderBloc();
+      when(
+        () => recorderBloc.state,
+      ).thenReturn(
+        const VideoRecorderBlocState(
+          isCameraInitialized: true,
+          canRecord: true,
+        ),
+      );
+
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
       container = ProviderContainer(
@@ -154,14 +158,16 @@ void main() {
     });
 
     group('Initialization', () {
-      testWidgets('initializes recording provider on mount', (tester) async {
+      testWidgets('initializes recording bloc on mount', (tester) async {
         await tester.pumpWidget(buildTestWidget());
 
         await tester.pump();
         await tester.pump(); // Post-frame callback
 
-        // Provider should be read during initialization
-        expect(() => container.read(videoRecorderProvider), returnsNormally);
+        // The View dispatches InitializeRequested from its post-frame callback.
+        verify(
+          () => recorderBloc.add(const VideoRecorderInitializeRequested()),
+        ).called(greaterThanOrEqualTo(1));
       });
 
       testWidgets('registers as WidgetsBindingObserver', (tester) async {
@@ -170,7 +176,7 @@ void main() {
         await tester.pump();
 
         // Observer should be registered (verified by no exception)
-        expect(find.byType(VideoRecorderScreen), findsOneWidget);
+        expect(find.byType(VideoRecorderView), findsOneWidget);
       });
     });
 
@@ -181,19 +187,7 @@ void main() {
         debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
 
         try {
-          final mockCamera = MockCameraService.create(
-            onUpdateState: ({forceCameraRebuild}) {},
-            onAutoStopped: (_) {},
-          );
-          await mockCamera.initialize();
-
-          await tester.pumpWidget(
-            buildTestWidgetWithOverrides([
-              videoRecorderProvider.overrideWith(
-                () => VideoRecorderNotifier(mockCamera),
-              ),
-            ]),
-          );
+          await tester.pumpWidget(buildTestWidget());
 
           await tester.pump();
 
@@ -209,8 +203,12 @@ void main() {
           );
           await tester.pump();
 
-          // Should not crash
-          expect(find.byType(VideoRecorderScreen), findsOneWidget);
+          // The View forwards lifecycle changes to the bloc.
+          verify(
+            () => recorderBloc.add(
+              any(that: isA<VideoRecorderAppLifecycleChanged>()),
+            ),
+          ).called(greaterThanOrEqualTo(1));
         } finally {
           debugDefaultTargetPlatformOverride = null;
         }
@@ -233,89 +231,8 @@ void main() {
         await tester.pump();
 
         // Should have disposed without errors
-        expect(find.byType(VideoRecorderScreen), findsNothing);
+        expect(find.byType(VideoRecorderView), findsNothing);
       });
-
-      testWidgets('destroys notifier on dispose', (tester) async {
-        await tester.pumpWidget(buildTestWidget());
-
-        await tester.pump();
-        await tester.pump(); // Post-frame callback
-
-        // Navigate away
-        await tester.pumpWidget(
-          const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: Text('Other screen')),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        // Should have disposed cleanly
-        expect(find.byType(VideoRecorderScreen), findsNothing);
-      });
-
-      testWidgets(
-        'clears overlayVisibility isPageOpen to false on dispose',
-        (tester) async {
-          final mockDraftStorage = _MockDraftStorageService();
-          when(
-            () => mockDraftStorage.getDraftById(any()),
-          ).thenAnswer((_) async => null);
-          final mockClipLibrary = _MockClipLibraryService();
-          when(mockClipLibrary.getAllClips).thenAnswer((_) async => []);
-
-          final container = ProviderContainer(
-            overrides: [
-              draftStorageServiceProvider.overrideWithValue(
-                mockDraftStorage,
-              ),
-              clipLibraryServiceProvider.overrideWithValue(mockClipLibrary),
-            ],
-          );
-          addTearDown(container.dispose);
-
-          await tester.pumpWidget(
-            UncontrolledProviderScope(
-              container: container,
-              child: BlocProvider<CameraPermissionBloc>(
-                create: (_) => MockCameraPermissionBloc(),
-                child: const MaterialApp(
-                  localizationsDelegates:
-                      AppLocalizations.localizationsDelegates,
-                  supportedLocales: AppLocalizations.supportedLocales,
-                  home: VideoRecorderScreen(),
-                ),
-              ),
-            ),
-          );
-          await tester.pump();
-
-          expect(
-            container.read(overlayVisibilityProvider).isPageOpen,
-            isTrue,
-          );
-
-          await tester.pumpWidget(
-            UncontrolledProviderScope(
-              container: container,
-              child: const MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: Scaffold(body: Text('Other screen')),
-              ),
-            ),
-          );
-          await tester.pump();
-
-          expect(
-            container.read(overlayVisibilityProvider).isPageOpen,
-            isFalse,
-          );
-        },
-      );
     });
 
     group('Screen Layout', () {
@@ -336,7 +253,7 @@ void main() {
 
         await tester.pump();
 
-        final screenSize = tester.getSize(find.byType(VideoRecorderScreen));
+        final screenSize = tester.getSize(find.byType(VideoRecorderView));
         final viewSize =
             tester.view.physicalSize / tester.view.devicePixelRatio;
 
@@ -347,17 +264,13 @@ void main() {
 
     group('State Management', () {
       testWidgets('screen reacts to recording state changes', (tester) async {
-        await tester.pumpWidget(
-          buildTestWidgetWithOverrides([
-            videoRecorderProvider.overrideWith(VideoRecorderNotifier.new),
-          ]),
-        );
+        await tester.pumpWidget(buildTestWidget());
 
         await tester.pump();
         await tester.pump();
 
         // Screen should rebuild when state changes
-        expect(find.byType(VideoRecorderScreen), findsOneWidget);
+        expect(find.byType(VideoRecorderView), findsOneWidget);
       });
 
       testWidgets('maintains state during rebuilds', (tester) async {
@@ -408,53 +321,6 @@ void main() {
     });
 
     group('Screen Integration', () {
-      testWidgets('can be pushed onto navigation stack', (tester) async {
-        final mockDraftStorage = _MockDraftStorageService();
-        when(
-          () => mockDraftStorage.getDraftById(any()),
-        ).thenAnswer((_) async => null);
-        final mockClipLibrary = _MockClipLibraryService();
-        when(mockClipLibrary.getAllClips).thenAnswer((_) async => []);
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
-              clipLibraryServiceProvider.overrideWithValue(mockClipLibrary),
-            ],
-            child: BlocProvider<CameraPermissionBloc>(
-              create: (_) => MockCameraPermissionBloc(),
-              child: MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: Scaffold(
-                  body: Builder(
-                    builder: (context) => ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => BlocProvider<CameraPermissionBloc>(
-                              create: (_) => MockCameraPermissionBloc(),
-                              child: const VideoRecorderScreen(),
-                            ),
-                          ),
-                        );
-                      },
-                      child: const Text('Open Camera'),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-
-        await tester.tap(find.text('Open Camera'));
-        await tester.pumpAndSettle();
-
-        expect(find.byType(VideoRecorderScreen), findsOneWidget);
-      });
-
       testWidgets('can be popped from navigation stack', (tester) async {
         await tester.pumpWidget(buildTestWidget());
 
@@ -471,7 +337,7 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        expect(find.byType(VideoRecorderScreen), findsNothing);
+        expect(find.byType(VideoRecorderView), findsNothing);
         expect(find.text('Home'), findsOneWidget);
       });
     });
@@ -484,7 +350,7 @@ void main() {
         await tester.pump();
 
         // Should build without crashing
-        expect(find.byType(VideoRecorderScreen), findsOneWidget);
+        expect(find.byType(VideoRecorderView), findsOneWidget);
       });
 
       testWidgets('handles multiple rapid lifecycle changes', (tester) async {
@@ -493,19 +359,7 @@ void main() {
         debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
 
         try {
-          final mockCamera = MockCameraService.create(
-            onAutoStopped: (_) {},
-            onUpdateState: ({forceCameraRebuild}) {},
-          );
-          await mockCamera.initialize();
-
-          await tester.pumpWidget(
-            buildTestWidgetWithOverrides([
-              videoRecorderProvider.overrideWith(
-                () => VideoRecorderNotifier(mockCamera),
-              ),
-            ]),
-          );
+          await tester.pumpWidget(buildTestWidget());
 
           await tester.pump();
 
@@ -522,7 +376,7 @@ void main() {
           }
 
           // Should handle without crashing
-          expect(find.byType(VideoRecorderScreen), findsOneWidget);
+          expect(find.byType(VideoRecorderView), findsOneWidget);
         } finally {
           debugDefaultTargetPlatformOverride = null;
         }
@@ -573,12 +427,17 @@ void main() {
               draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
               clipLibraryServiceProvider.overrideWithValue(mockClipLibrary),
             ],
-            child: BlocProvider<CameraPermissionBloc>(
-              create: (_) => MockCameraPermissionBloc(),
+            child: MultiBlocProvider(
+              providers: [
+                BlocProvider<VideoRecorderBloc>.value(value: recorderBloc),
+                BlocProvider<CameraPermissionBloc>(
+                  create: (_) => MockCameraPermissionBloc(),
+                ),
+              ],
               child: const MaterialApp(
                 localizationsDelegates: AppLocalizations.localizationsDelegates,
                 supportedLocales: AppLocalizations.supportedLocales,
-                home: VideoRecorderScreen(),
+                home: VideoRecorderView(),
               ),
             ),
           ),
@@ -639,12 +498,17 @@ void main() {
               draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
               clipLibraryServiceProvider.overrideWithValue(mockClipLibrary),
             ],
-            child: BlocProvider<CameraPermissionBloc>(
-              create: (_) => MockCameraPermissionBloc(),
+            child: MultiBlocProvider(
+              providers: [
+                BlocProvider<VideoRecorderBloc>.value(value: recorderBloc),
+                BlocProvider<CameraPermissionBloc>(
+                  create: (_) => MockCameraPermissionBloc(),
+                ),
+              ],
               child: const MaterialApp(
                 localizationsDelegates: AppLocalizations.localizationsDelegates,
                 supportedLocales: AppLocalizations.supportedLocales,
-                home: VideoRecorderScreen(),
+                home: VideoRecorderView(),
               ),
             ),
           ),
@@ -679,12 +543,17 @@ void main() {
               draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
               clipLibraryServiceProvider.overrideWithValue(mockClipLibrary),
             ],
-            child: BlocProvider<CameraPermissionBloc>(
-              create: (_) => MockCameraPermissionBloc(),
+            child: MultiBlocProvider(
+              providers: [
+                BlocProvider<VideoRecorderBloc>.value(value: recorderBloc),
+                BlocProvider<CameraPermissionBloc>(
+                  create: (_) => MockCameraPermissionBloc(),
+                ),
+              ],
               child: const MaterialApp(
                 localizationsDelegates: AppLocalizations.localizationsDelegates,
                 supportedLocales: AppLocalizations.supportedLocales,
-                home: VideoRecorderScreen(),
+                home: VideoRecorderView(),
               ),
             ),
           ),

@@ -1,26 +1,24 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/providers/video_recorder_provider.dart';
 
 class VideoRecorderCaptureActions extends ConsumerWidget {
   const VideoRecorderCaptureActions({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final notifier = ref.read(videoRecorderProvider.notifier);
-    final state = ref.watch(
-      videoRecorderProvider.select(
-        (p) => (
-          flashMode: p.flashMode,
-          timer: p.timerDuration,
-          aspectRatio: p.aspectRatio,
-          canSwitchCamera: p.canSwitchCamera,
-          hasFlash: p.hasFlash,
-          isRecording: p.isRecording,
-        ),
+    final state = context.select(
+      (VideoRecorderBloc b) => (
+        flashMode: b.state.flashMode,
+        timer: b.state.timerDuration,
+        aspectRatio: b.state.aspectRatio,
+        canSwitchCamera: b.state.canSwitchCamera,
+        hasFlash: b.state.hasFlash,
+        isRecording: b.state.isRecording,
       ),
     );
     final hasClips = ref.watch(clipManagerProvider.select((p) => p.hasClips));
@@ -46,24 +44,38 @@ class VideoRecorderCaptureActions extends ConsumerWidget {
               _IconButton(
                 icon: state.flashMode.icon,
                 label: context.l10n.videoRecorderToggleFlashLabel,
-                onTap: state.hasFlash ? notifier.toggleFlash : null,
+                onTap: state.hasFlash
+                    ? () => context.read<VideoRecorderBloc>().add(
+                        const VideoRecorderFlashToggled(),
+                      )
+                    : null,
               ),
               _IconButton(
                 icon: state.timer.icon,
                 label: context.l10n.videoRecorderCycleTimerLabel,
-                onTap: notifier.cycleTimer,
+                onTap: () => context.read<VideoRecorderBloc>().add(
+                  const VideoRecorderTimerCycled(),
+                ),
               ),
               _IconButton(
                 icon: state.aspectRatio == .square
                     ? .cropSquare
                     : .cropPortrait,
                 label: context.l10n.videoRecorderToggleAspectRatioLabel,
-                onTap: !hasClips ? notifier.toggleAspectRatio : null,
+                onTap: !hasClips
+                    ? () => context.read<VideoRecorderBloc>().add(
+                        const VideoRecorderAspectRatioToggled(),
+                      )
+                    : null,
               ),
               _IconButton(
                 icon: .arrowsClockwise,
                 label: context.l10n.videoRecorderSwitchCameraLabel,
-                onTap: state.canSwitchCamera ? notifier.switchCamera : null,
+                onTap: state.canSwitchCamera
+                    ? () => context.read<VideoRecorderBloc>().add(
+                        const VideoRecorderCameraSwitched(),
+                      )
+                    : null,
               ),
             ],
           ),

@@ -1,12 +1,14 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
+import 'package:openvine/widgets/video_recorder/video_recorder_navigation.dart';
 
 /// Top bar for capture mode with close and confirm buttons.
 class VideoRecorderCaptureTopBar extends ConsumerWidget {
@@ -19,18 +21,8 @@ class VideoRecorderCaptureTopBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final notifier = ref.read(videoRecorderProvider.notifier);
-    final state = ref.watch(
-      videoRecorderProvider.select(
-        (p) => (
-          flashMode: p.flashMode,
-          timer: p.timerDuration,
-          aspectRatio: p.aspectRatio,
-          canSwitchCamera: p.canSwitchCamera,
-          hasFlash: p.hasFlash,
-          isRecording: p.isRecording,
-        ),
-      ),
+    final isRecording = context.select(
+      (VideoRecorderBloc b) => b.state.isRecording,
     );
     final hasClips = ref.watch(clipManagerProvider.select((p) => p.hasClips));
 
@@ -38,7 +30,7 @@ class VideoRecorderCaptureTopBar extends ConsumerWidget {
       left: false,
       child: AnimatedSwitcher(
         duration: _animationDuration,
-        child: state.isRecording
+        child: isRecording
             ? const _RecordingProgressBar()
             : Padding(
                 padding: const EdgeInsetsGeometry.fromLTRB(12, 12, 12, 0),
@@ -54,7 +46,7 @@ class VideoRecorderCaptureTopBar extends ConsumerWidget {
                       type: .ghostSecondary,
                       onPressed: () => fromEditor
                           ? context.pop(false)
-                          : notifier.closeVideoRecorder(context),
+                          : closeVideoRecorder(context),
                     ),
                     AnimatedOpacity(
                       duration: _animationDuration,
@@ -67,7 +59,7 @@ class VideoRecorderCaptureTopBar extends ConsumerWidget {
                         type: .ghostSecondary,
                         onPressed: () => fromEditor
                             ? context.pop(true)
-                            : notifier.openVideoEditor(context),
+                            : openVideoEditorFromRecorder(context, ref),
                       ),
                     ),
                   ],

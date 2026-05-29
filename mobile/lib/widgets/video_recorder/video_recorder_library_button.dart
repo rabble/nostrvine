@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/providers/video_recorder_provider.dart';
+import 'package:openvine/widgets/video_recorder/video_recorder_navigation.dart';
 
 class VideoRecorderLibraryButton extends ConsumerStatefulWidget {
   const VideoRecorderLibraryButton({super.key});
@@ -78,12 +78,11 @@ class _VideoRecorderLibraryButtonState
         child: InkWell(
           onTap: hasClips
               ? () async {
-                  await ref
-                      .read(videoRecorderProvider.notifier)
-                      .openLibrary(context);
+                  await openRecorderLibrary(context);
 
                   // Refresh library thumbnail after returning — user may have
                   // deleted clips or new thumbnails may have been recovered.
+                  if (!context.mounted) return;
                   _loadLibraryThumbnail();
                 }
               : null,

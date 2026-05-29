@@ -22,7 +22,6 @@ import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/preferences_providers.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
-import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/providers/video_reply_context_provider.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
@@ -808,11 +807,10 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       return false;
     }
 
-    // We set the aspect ratio in the video recorder to match the clips,
-    // so the user can't mix them up.
-    ref
-        .read(videoRecorderProvider.notifier)
-        .setAspectRatio(clipsWithThumbnails.first.targetAspectRatio);
+    // Matching the recorder's aspect ratio to the restored clips (so the user
+    // can't mix ratios) is owned by the recorder View after restoreDraft()
+    // returns — see video_recorder_screen.dart. A Notifier must not dispatch
+    // into VideoRecorderBloc.
     Log.info(
       '✅ Draft loaded with ${clipsWithThumbnails.length} clip(s)',
       name: 'VideoEditorNotifier',

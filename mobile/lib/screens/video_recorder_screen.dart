@@ -11,27 +11,35 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/blocs/sound_waveform/sound_waveform_bloc.dart';
+import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
-import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/video_recorder/modes/capture/video_recorder_capture_stack.dart';
 import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_classic_stack.dart';
 import 'package:openvine/widgets/video_recorder/modes/upload/video_recorder_upload_stack.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_bottom_bar.dart';
+import 'package:openvine/widgets/video_recorder/video_recorder_navigation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 const _kWhySixSecondsShownKey = 'why_six_seconds_shown';
 
 /// Video recorder screen with camera preview and recording controls.
-class VideoRecorderScreen extends ConsumerStatefulWidget {
+///
+/// Owns the [VideoRecorderBloc]: it bridges the sibling Riverpod
+/// dependencies the bloc reads (clip manager, video editor, shared
+/// preferences) and re-keys the [BlocProvider] on their identity so a
+/// runtime dependency swap rebuilds the bloc with fresh wiring (see
+/// `state_management.md`).
+class VideoRecorderScreen extends ConsumerWidget {
   /// Creates a video recorder screen.
   const VideoRecorderScreen({super.key, this.fromEditor = false});
 
@@ -48,21 +56,50 @@ class VideoRecorderScreen extends ConsumerStatefulWidget {
   static const path = '/video-recorder';
 
   @override
-  ConsumerState<VideoRecorderScreen> createState() =>
-      _VideoRecorderScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final clipManager = ref.watch(clipManagerProvider.notifier);
+    final videoEditor = ref.watch(videoEditorProvider.notifier);
+    final sharedPreferences = ref.watch(sharedPreferencesProvider);
+
+    return BlocProvider<VideoRecorderBloc>(
+      key: ValueKey((clipManager, videoEditor, sharedPreferences)),
+      create: (_) => VideoRecorderBloc(
+        readClipManager: () => ref.read(clipManagerProvider.notifier),
+        readVideoEditor: () => ref.read(videoEditorProvider.notifier),
+        readVideoEditorState: () => ref.read(videoEditorProvider),
+        readSharedPreferences: () => ref.read(sharedPreferencesProvider),
+      ),
+      child: VideoRecorderView(fromEditor: fromEditor),
+    );
+  }
 }
 
-class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
+/// The recorder UI under the [BlocProvider]. Public for widget tests, which
+/// pump it directly with a mock [VideoRecorderBloc].
+@visibleForTesting
+class VideoRecorderView extends ConsumerStatefulWidget {
+  const VideoRecorderView({super.key, this.fromEditor = false});
+
+  /// Whether the screen is opened from the video editor.
+  final bool fromEditor;
+
+  @override
+  ConsumerState<VideoRecorderView> createState() => _VideoRecorderViewState();
+}
+
+class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
     with WidgetsBindingObserver {
-  VideoRecorderNotifier? _notifier;
   ProviderSubscription<AudioEvent?>? _soundSubscription;
   OverlayVisibility? _overlayVisibilityNotifier;
+  VideoRecorderMode? _lastRecorderMode;
 
   bool get _isAutosavedDraft => ref.read(videoEditorProvider).isAutosavedDraft;
 
   @override
   void initState() {
     super.initState();
+
+    _lastRecorderMode = context.read<VideoRecorderBloc>().state.recorderMode;
 
     WidgetsBinding.instance.addObserver(this);
     _pauseBackgroundPlayback();
@@ -93,8 +130,8 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
     );
   }
 
-  /// Initialize camera and handle permission failures
-  Future<void> _initializeCamera() async {
+  /// Initialize camera and free background video resources.
+  void _initializeCamera() {
     Log.info(
       '📹 _initializeCamera called',
       name: 'VideoRecorderScreen',
@@ -103,16 +140,9 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
 
     _disposeVideoControllers();
 
-    try {
-      _notifier = ref.read(videoRecorderProvider.notifier);
-      await _notifier!.initialize(context: context);
-    } catch (e) {
-      Log.error(
-        '📹 Camera initialization exception: $e',
-        name: 'VideoRecorderScreen',
-        category: LogCategory.video,
-      );
-    }
+    context.read<VideoRecorderBloc>().add(
+      const VideoRecorderInitializeRequested(),
+    );
   }
 
   Future<void> _checkAutosavedChanges() async {
@@ -178,7 +208,18 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
             return;
           }
 
-          ref.read(videoRecorderProvider.notifier).openVideoEditor(context);
+          // Match the restored clips' aspect ratio so the user can't mix
+          // ratios on subsequent recordings. The legacy restoreDraft set this
+          // on the recorder directly; with the bloc the View owns the
+          // cross-feature dispatch.
+          final clips = ref.read(clipManagerProvider).clips;
+          if (clips.isNotEmpty) {
+            context.read<VideoRecorderBloc>().add(
+              VideoRecorderAspectRatioSet(clips.first.targetAspectRatio),
+            );
+          }
+
+          await openVideoEditorFromRecorder(context, ref);
         },
         secondaryButtonText: context.l10n.videoRecorderAutosaveDiscardButton,
         onSecondaryPressed: () {
@@ -306,14 +347,14 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
   }
 
   @override
-  Future<void> didChangeAppLifecycleState(AppLifecycleState state) async {
-    await ref
-        .read(videoRecorderProvider.notifier)
-        .handleAppLifecycleState(state);
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    context.read<VideoRecorderBloc>().add(
+      VideoRecorderAppLifecycleChanged(state),
+    );
   }
 
   @override
-  Future<void> dispose() async {
+  void dispose() {
     try {
       _overlayVisibilityNotifier?.setPageOpen(false);
     } catch (e) {
@@ -323,7 +364,6 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
         category: .video,
       );
     }
-    unawaited(_notifier?.destroy());
     _soundSubscription?.close();
 
     WidgetsBinding.instance.removeObserver(this);
@@ -335,27 +375,6 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
 
   @override
   Widget build(BuildContext context) {
-    // Release the camera while the Upload tab's static explainer is showing,
-    // and re-initialize it when the user returns to a recording mode. Reuses
-    // the recorder's existing pause/resume lifecycle plumbing so we don't
-    // burn battery or trigger the OS recording indicator on a tab with no
-    // preview.
-    ref.listen<VideoRecorderMode>(
-      videoRecorderProvider.select((s) => s.recorderMode),
-      (previous, next) {
-        if (previous == next) return;
-        if (next == VideoRecorderMode.upload) {
-          unawaited(
-            ref
-                .read(videoRecorderProvider.notifier)
-                .handleAppLifecycleState(AppLifecycleState.paused),
-          );
-        } else if (previous == VideoRecorderMode.upload) {
-          unawaited(_initializeCamera());
-        }
-      },
-    );
-
     return BlocProvider<SoundWaveformBloc>(
       create: (context) {
         final bloc = SoundWaveformBloc();
@@ -363,44 +382,64 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
 
         return bloc;
       },
-      child: PopScope(
-        onPopInvokedWithResult: (didPop, value) {
-          if (didPop && !_isAutosavedDraft) {
-            ref
-                .read(videoPublishProvider.notifier)
-                .clearAll(keepAutosavedDraft: true);
+      // Release the camera while the Upload tab's static explainer is showing,
+      // and re-initialize it when the user returns to a recording mode. Reuses
+      // the recorder's existing pause/resume lifecycle plumbing so we don't
+      // burn battery or trigger the OS recording indicator on a tab with no
+      // preview.
+      child: BlocListener<VideoRecorderBloc, VideoRecorderBlocState>(
+        listenWhen: (previous, current) =>
+            previous.recorderMode != current.recorderMode,
+        listener: (context, state) {
+          final previous = _lastRecorderMode;
+          _lastRecorderMode = state.recorderMode;
+          if (state.recorderMode == VideoRecorderMode.upload) {
+            context.read<VideoRecorderBloc>().add(
+              const VideoRecorderAppLifecycleChanged(AppLifecycleState.paused),
+            );
+          } else if (previous == VideoRecorderMode.upload) {
+            _initializeCamera();
           }
         },
-        child: AnnotatedRegion<SystemUiOverlayStyle>(
-          value: VideoEditorConstants.uiOverlayStyle,
-          child: Scaffold(
-            backgroundColor: VineTheme.backgroundCamera,
-            resizeToAvoidBottomInset: false,
-            body: Column(
-              children: [
-                Expanded(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: switch (ref
-                        .watch(videoRecorderProvider)
-                        .recorderMode) {
-                      .capture => VideoRecorderCaptureStack(
-                        fromEditor: widget.fromEditor,
-                      ),
-                      .classic => const VideoRecorderClassicStack(),
-                      .upload => const VideoRecorderUploadStack(),
-                    },
+        child: PopScope(
+          onPopInvokedWithResult: (didPop, value) {
+            if (didPop && !_isAutosavedDraft) {
+              ref
+                  .read(videoPublishProvider.notifier)
+                  .clearAll(keepAutosavedDraft: true);
+            }
+          },
+          child: AnnotatedRegion<SystemUiOverlayStyle>(
+            value: VideoEditorConstants.uiOverlayStyle,
+            child: Scaffold(
+              backgroundColor: VineTheme.backgroundCamera,
+              resizeToAvoidBottomInset: false,
+              body: Column(
+                children: [
+                  Expanded(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      child: switch (context.select(
+                        (VideoRecorderBloc b) => b.state.recorderMode,
+                      )) {
+                        .capture => VideoRecorderCaptureStack(
+                          fromEditor: widget.fromEditor,
+                        ),
+                        .classic => const VideoRecorderClassicStack(),
+                        .upload => const VideoRecorderUploadStack(),
+                      },
+                    ),
                   ),
-                ),
 
-                if (!widget.fromEditor)
-                  const Padding(
-                    padding: .symmetric(vertical: 22),
-                    child: VideoRecorderBottomBar(),
-                  )
-                else
-                  SizedBox(height: MediaQuery.viewPaddingOf(context).bottom),
-              ],
+                  if (!widget.fromEditor)
+                    const Padding(
+                      padding: .symmetric(vertical: 22),
+                      child: VideoRecorderBottomBar(),
+                    )
+                  else
+                    SizedBox(height: MediaQuery.viewPaddingOf(context).bottom),
+                ],
+              ),
             ),
           ),
         ),

@@ -1,31 +1,32 @@
+import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/models/video_recorder/video_recorder_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/widgets/video_recorder/modes/capture/video_recorder_capture_top_bar.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
-import '../../../../mocks/mock_camera_service.dart';
+class _MockVideoRecorderBloc
+    extends MockBloc<VideoRecorderEvent, VideoRecorderBlocState>
+    implements VideoRecorderBloc {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group(VideoRecorderCaptureTopBar, () {
-    late MockCameraService mockCamera;
+    late _MockVideoRecorderBloc recorderBloc;
 
-    setUp(() async {
-      mockCamera = MockCameraService.create(
-        onUpdateState: ({forceCameraRebuild}) {},
-        onAutoStopped: (_) {},
-      );
-      await mockCamera.initialize();
+    setUp(() {
+      recorderBloc = _MockVideoRecorderBloc();
+      when(() => recorderBloc.state).thenReturn(const VideoRecorderBlocState());
     });
 
     Widget buildWidget({
@@ -33,14 +34,16 @@ void main() {
       List<DivineVideoClip>? clips,
       Duration activeRecordingDuration = Duration.zero,
     }) {
+      when(() => recorderBloc.state).thenReturn(
+        VideoRecorderBlocState(
+          recordingState: recordingState,
+          isCameraInitialized: true,
+          canRecord: true,
+        ),
+      );
+
       return ProviderScope(
         overrides: [
-          videoRecorderProvider.overrideWith(
-            () => _TestVideoRecorderNotifier(
-              mockCamera,
-              recordingState: recordingState,
-            ),
-          ),
           clipManagerProvider.overrideWith(
             () => _TestClipManagerNotifier(
               clips: clips ?? [],
@@ -48,10 +51,13 @@ void main() {
             ),
           ),
         ],
-        child: const MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: VideoRecorderCaptureTopBar(fromEditor: false)),
+        child: BlocProvider<VideoRecorderBloc>.value(
+          value: recorderBloc,
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: VideoRecorderCaptureTopBar(fromEditor: false)),
+          ),
         ),
       );
     }
@@ -178,24 +184,6 @@ void main() {
       });
     });
   });
-}
-
-class _TestVideoRecorderNotifier extends VideoRecorderNotifier {
-  _TestVideoRecorderNotifier(
-    super.cameraService, {
-    this.recordingState = VideoRecorderState.idle,
-  });
-
-  final VideoRecorderState recordingState;
-
-  @override
-  VideoRecorderProviderState build() {
-    return VideoRecorderProviderState(
-      recordingState: recordingState,
-      isCameraInitialized: true,
-      canRecord: true,
-    );
-  }
 }
 
 class _TestClipManagerNotifier extends ClipManagerNotifier {

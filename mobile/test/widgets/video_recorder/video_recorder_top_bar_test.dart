@@ -1,46 +1,48 @@
 // ABOUTME: Tests for VideoRecorderTopBar widget
 // ABOUTME: Validates top bar UI, close button, and confirm button
 
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_top_bar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../mocks/mock_camera_service.dart';
+class _MockVideoRecorderBloc
+    extends MockBloc<VideoRecorderEvent, VideoRecorderBlocState>
+    implements VideoRecorderBloc {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('VideoRecorderTopBar Widget Tests', () {
-    late MockCameraService mockCamera;
+    late _MockVideoRecorderBloc recorderBloc;
     late SharedPreferences prefs;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
-      mockCamera = MockCameraService.create(
-        onUpdateState: ({forceCameraRebuild}) {},
-        onAutoStopped: (_) {},
-      );
-      await mockCamera.initialize();
+      recorderBloc = _MockVideoRecorderBloc();
+      when(() => recorderBloc.state).thenReturn(const VideoRecorderBlocState());
     });
 
     Widget buildTestWidget() {
       return ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
-          videoRecorderProvider.overrideWith(
-            () => VideoRecorderNotifier(mockCamera),
-          ),
         ],
-        child: const MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: Stack(children: [VideoRecorderTopBar()])),
+        child: BlocProvider<VideoRecorderBloc>.value(
+          value: recorderBloc,
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: Stack(children: [VideoRecorderTopBar()])),
+          ),
         ),
       );
     }

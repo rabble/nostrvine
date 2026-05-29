@@ -4,10 +4,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
-import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_capture_stack.dart';
 import 'package:openvine/widgets/video_metadata/modes/classic/video_metadata_classic_stack.dart';
 
@@ -42,8 +43,8 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final recorderMode = ref.watch(
-      videoRecorderProvider.select((s) => s.recorderMode),
+    final recorderMode = context.select(
+      (VideoRecorderBloc b) => b.state.recorderMode,
     );
 
     // Cancel video render when user navigates back

@@ -4,21 +4,99 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/providers/video_recorder_provider.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
+import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
+import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:wakelock_plus_platform_interface/wakelock_plus_platform_interface.dart';
+
+import '../mocks/mock_camera_service.dart';
+
+class _MockClipManager extends Mock implements ClipManagerNotifier {}
+
+class _MockVideoEditor extends Mock implements VideoEditorNotifier {}
+
+class _MockSharedPreferences extends Mock implements SharedPreferences {}
+
+/// Mirrors `test/blocs/video_recorder/video_recorder_bloc_test.dart` —
+/// production code calls `WakelockPlus.enable/disable` around every
+/// recording session, which hits a platform channel that isn't bound
+/// in unit tests. Override the platform instance with a fake so the
+/// channel call is a no-op.
+class _FakeWakelockPlatform extends WakelockPlusPlatformInterface {
+  @override
+  Future<void> toggle({required bool enable}) async {}
+
+  @override
+  Future<bool> get enabled async => false;
+}
 
 void main() {
+  late _MockClipManager clipManager;
+  late _MockVideoEditor videoEditor;
+  late _MockSharedPreferences prefs;
+
+  setUpAll(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    wakelockPlusPlatformInstance = _FakeWakelockPlatform();
+  });
+
+  setUp(() {
+    clipManager = _MockClipManager();
+    videoEditor = _MockVideoEditor();
+    prefs = _MockSharedPreferences();
+
+    when(() => clipManager.clips).thenReturn(const []);
+    when(() => clipManager.remainingDuration).thenReturn(
+      const Duration(seconds: 6),
+    );
+    when(() => clipManager.totalDuration).thenReturn(Duration.zero);
+    when(
+      () => clipManager.clearAll(
+        keepAutosavedDraft: any(named: 'keepAutosavedDraft'),
+      ),
+    ).thenAnswer((_) async {});
+
+    when(() => videoEditor.state).thenReturn(VideoEditorProviderState());
+    when(
+      () => videoEditor.reset(
+        keepAutosavedDraft: any(named: 'keepAutosavedDraft'),
+      ),
+    ).thenAnswer((_) async {});
+
+    when(() => prefs.getString(any())).thenReturn(null);
+    when(() => prefs.setString(any(), any())).thenAnswer((_) async => true);
+  });
+
+  /// Builds a bloc backed by the [MockCameraService] fake (no hardware)
+  /// plus the four typedef accessors wired to the mocks above.
+  VideoRecorderBloc buildBloc() {
+    return VideoRecorderBloc(
+      readClipManager: () => clipManager,
+      readVideoEditor: () => videoEditor,
+      readVideoEditorState: VideoEditorProviderState.new,
+      readSharedPreferences: () => prefs,
+      cameraService: MockCameraService.create(
+        onUpdateState: ({forceCameraRebuild}) {},
+        onAutoStopped: (_) {},
+      ),
+    );
+  }
+
   group('Camera Initialization Performance Benchmarks', () {
     test(
       'Camera initialization should complete within acceptable time limits',
       () async {
-        final container = ProviderContainer();
-        final notifier = container.read(videoRecorderProvider.notifier);
+        final bloc = buildBloc();
         final stopwatch = Stopwatch()..start();
 
         try {
-          await notifier.initialize();
+          bloc.add(const VideoRecorderInitializeRequested());
+          await Future<void>.delayed(Duration.zero);
           stopwatch.stop();
 
           // Platform-specific expectations
@@ -38,19 +116,19 @@ void main() {
           print('   Time: ${stopwatch.elapsedMilliseconds}ms');
           print('   Memory before: ${_getMemoryUsage()}MB');
         } finally {
-          container.dispose();
+          await bloc.close();
         }
       },
     );
 
     test('Rapid camera switching performance', () async {
-      final container = ProviderContainer();
-      final notifier = container.read(videoRecorderProvider.notifier);
+      final bloc = buildBloc();
 
       try {
-        await notifier.initialize();
+        bloc.add(const VideoRecorderInitializeRequested());
+        await Future<void>.delayed(Duration.zero);
 
-        if (!notifier.state.canSwitchCamera) {
+        if (!bloc.state.canSwitchCamera) {
           return; // Skip if only one camera
         }
 
@@ -59,7 +137,8 @@ void main() {
         // Perform 10 rapid camera switches
         for (int i = 0; i < 10; i++) {
           final stopwatch = Stopwatch()..start();
-          await notifier.switchCamera();
+          bloc.add(const VideoRecorderCameraSwitched());
+          await Future<void>.delayed(Duration.zero);
           stopwatch.stop();
           switchTimes.add(stopwatch.elapsedMilliseconds);
         }
@@ -86,24 +165,25 @@ void main() {
           reason: 'Maximum camera switch time should be under 1s',
         );
       } finally {
-        container.dispose();
+        await bloc.close();
       }
     });
 
     test('Memory leak detection during long recording session', () async {
-      final container = ProviderContainer();
-      final notifier = container.read(videoRecorderProvider.notifier);
+      final bloc = buildBloc();
 
       try {
-        await notifier.initialize();
+        bloc.add(const VideoRecorderInitializeRequested());
+        await Future<void>.delayed(Duration.zero);
 
         final initialMemory = _getMemoryUsage();
 
         // Simulate 50 recording segments
         for (int i = 0; i < 50; i++) {
-          await notifier.startRecording();
+          bloc.add(const VideoRecorderRecordingStartRequested());
           await Future.delayed(const Duration(milliseconds: 100));
-          await notifier.stopRecording();
+          bloc.add(const VideoRecorderRecordingStopRequested());
+          await Future<void>.delayed(Duration.zero);
         }
 
         final finalMemory = _getMemoryUsage();
@@ -123,7 +203,7 @@ void main() {
               'possible memory leak detected',
         );
       } finally {
-        container.dispose();
+        await bloc.close();
       }
     });
     // TODO(any): Fix and re-enable this test

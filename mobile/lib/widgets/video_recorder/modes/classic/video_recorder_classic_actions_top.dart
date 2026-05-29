@@ -2,10 +2,11 @@ import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/widgets/video_recorder/clip_delete_snackbar.dart';
 
 class VideoRecorderClassicActionsTop extends ConsumerWidget {
@@ -18,8 +19,8 @@ class VideoRecorderClassicActionsTop extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isRecording = ref.watch(
-      videoRecorderProvider.select((p) => p.isRecording),
+    final isRecording = context.select(
+      (VideoRecorderBloc b) => b.state.isRecording,
     );
     final hasClips = ref.watch(clipManagerProvider.select((p) => p.hasClips));
 

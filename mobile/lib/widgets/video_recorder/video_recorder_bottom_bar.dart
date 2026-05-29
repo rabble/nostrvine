@@ -2,23 +2,22 @@
 // ABOUTME: Contains mode selector wheel and library button
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/providers/video_recorder_provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_library_button.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_mode_selector.dart';
 
 /// Bottom bar with record button and camera controls.
-class VideoRecorderBottomBar extends ConsumerWidget {
+class VideoRecorderBottomBar extends StatelessWidget {
   /// Creates a video recorder bottom bar widget.
   const VideoRecorderBottomBar({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final notifier = ref.read(videoRecorderProvider.notifier);
-
-    final state = ref.watch(
-      videoRecorderProvider.select(
-        (p) => (isRecording: p.isRecording, recorderMode: p.recorderMode),
+  Widget build(BuildContext context) {
+    final state = context.select(
+      (VideoRecorderBloc b) => (
+        isRecording: b.state.isRecording,
+        recorderMode: b.state.recorderMode,
       ),
     );
 
@@ -34,7 +33,9 @@ class VideoRecorderBottomBar extends ConsumerWidget {
               Align(
                 child: VideoRecorderModeSelectorWheel(
                   selectedMode: state.recorderMode,
-                  onModeChanged: notifier.setRecorderMode,
+                  onModeChanged: (mode) => context
+                      .read<VideoRecorderBloc>()
+                      .add(VideoRecorderRecorderModeSet(mode)),
                 ),
               ),
               const Align(

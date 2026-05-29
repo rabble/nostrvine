@@ -5,11 +5,11 @@ import 'package:divine_camera/divine_camera.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/providers/video_recorder_provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 
 /// Animated focus point indicator for tap-to-focus functionality.
-class VideoRecorderFocusPoint extends ConsumerStatefulWidget {
+class VideoRecorderFocusPoint extends StatefulWidget {
   /// Creates a focus point indicator widget.
   const VideoRecorderFocusPoint({super.key});
 
@@ -17,12 +17,11 @@ class VideoRecorderFocusPoint extends ConsumerStatefulWidget {
   static const indicatorSize = 88.0;
 
   @override
-  ConsumerState<VideoRecorderFocusPoint> createState() =>
+  State<VideoRecorderFocusPoint> createState() =>
       _VideoRecorderFocusPointState();
 }
 
-class _VideoRecorderFocusPointState
-    extends ConsumerState<VideoRecorderFocusPoint> {
+class _VideoRecorderFocusPointState extends State<VideoRecorderFocusPoint> {
   Offset _lastVisiblePosition = .zero;
 
   /// Whether the preview is currently being mirrored in Flutter.
@@ -74,13 +73,11 @@ class _VideoRecorderFocusPointState
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(
-      videoRecorderProvider.select(
-        (s) => (
-          aspectRatio: s.aspectRatio.value,
-          sensorAspectRatio: s.cameraSensorAspectRatio,
-          focusPoint: s.focusPoint,
-        ),
+    final state = context.select(
+      (VideoRecorderBloc b) => (
+        aspectRatio: b.state.aspectRatio.value,
+        sensorAspectRatio: b.state.cameraSensorAspectRatio,
+        focusPoint: b.state.focusPoint,
       ),
     );
 

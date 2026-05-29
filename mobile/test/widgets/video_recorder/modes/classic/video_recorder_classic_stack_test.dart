@@ -1,56 +1,65 @@
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/models/video_recorder/video_recorder_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_classic_actions_bottom.dart';
 import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_classic_actions_top.dart';
 import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_classic_stack.dart';
 import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_classic_top_bar.dart';
 import 'package:openvine/widgets/video_recorder/preview/video_recorder_camera_preview.dart';
-import 'package:pro_video_editor/pro_video_editor.dart';
 
-import '../../../../mocks/mock_camera_service.dart';
+class _MockVideoRecorderBloc
+    extends MockBloc<VideoRecorderEvent, VideoRecorderBlocState>
+    implements VideoRecorderBloc {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group(VideoRecorderClassicStack, () {
-    late MockCameraService mockCamera;
+  setUpAll(() {
+    registerFallbackValue(const VideoRecorderRecordingStopRequested());
+  });
 
-    setUp(() async {
-      mockCamera = MockCameraService.create(
-        onUpdateState: ({forceCameraRebuild}) {},
-        onAutoStopped: (_) {},
-      );
-      await mockCamera.initialize();
+  group(VideoRecorderClassicStack, () {
+    late _MockVideoRecorderBloc recorderBloc;
+
+    setUp(() {
+      recorderBloc = _MockVideoRecorderBloc();
+      when(() => recorderBloc.state).thenReturn(const VideoRecorderBlocState());
     });
 
     Widget buildWidget({
       VideoRecorderState recordingState = VideoRecorderState.idle,
       List<DivineVideoClip>? clips,
     }) {
+      when(() => recorderBloc.state).thenReturn(
+        VideoRecorderBlocState(
+          recordingState: recordingState,
+          isCameraInitialized: true,
+          canRecord: true,
+        ),
+      );
+
       return ProviderScope(
         overrides: [
-          videoRecorderProvider.overrideWith(
-            () => _TestVideoRecorderNotifier(
-              mockCamera,
-              recordingState: recordingState,
-            ),
-          ),
           clipManagerProvider.overrideWith(
             () => _TestClipManagerNotifier(clips: clips ?? []),
           ),
         ],
-        child: const MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: VideoRecorderClassicStack()),
+        child: BlocProvider<VideoRecorderBloc>.value(
+          value: recorderBloc,
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: VideoRecorderClassicStack()),
+          ),
         ),
       );
     }
@@ -172,26 +181,7 @@ void main() {
 
     group('long press', () {
       testWidgets('long press on preview calls startRecording', (tester) async {
-        late _TestVideoRecorderNotifier notifier;
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              videoRecorderProvider.overrideWith(() {
-                notifier = _TestVideoRecorderNotifier(mockCamera);
-                return notifier;
-              }),
-              clipManagerProvider.overrideWith(
-                () => _TestClipManagerNotifier(clips: []),
-              ),
-            ],
-            child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(body: VideoRecorderClassicStack()),
-            ),
-          ),
-        );
+        await tester.pumpWidget(buildWidget());
         await tester.pumpAndSettle();
 
         await tester.longPress(
@@ -202,32 +192,17 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(notifier.startRecordingCalled, isTrue);
+        verify(
+          () => recorderBloc.add(
+            const VideoRecorderRecordingStartRequested(),
+          ),
+        ).called(1);
       });
 
       testWidgets('long press release on preview calls stopRecording', (
         tester,
       ) async {
-        late _TestVideoRecorderNotifier notifier;
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              videoRecorderProvider.overrideWith(() {
-                notifier = _TestVideoRecorderNotifier(mockCamera);
-                return notifier;
-              }),
-              clipManagerProvider.overrideWith(
-                () => _TestClipManagerNotifier(clips: []),
-              ),
-            ],
-            child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(body: VideoRecorderClassicStack()),
-            ),
-          ),
-        );
+        await tester.pumpWidget(buildWidget());
         await tester.pumpAndSettle();
 
         await tester.longPress(
@@ -238,7 +213,11 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(notifier.stopRecordingCalled, isTrue);
+        verify(
+          () => recorderBloc.add(
+            const VideoRecorderRecordingStopRequested(),
+          ),
+        ).called(1);
       });
     });
 
@@ -249,28 +228,8 @@ void main() {
       testWidgets(
         'long-press release does not stop a tap-started recording',
         (tester) async {
-          late _TestVideoRecorderNotifier notifier;
-
           await tester.pumpWidget(
-            ProviderScope(
-              overrides: [
-                videoRecorderProvider.overrideWith(() {
-                  notifier = _TestVideoRecorderNotifier(
-                    mockCamera,
-                    recordingState: VideoRecorderState.recording,
-                  );
-                  return notifier;
-                }),
-                clipManagerProvider.overrideWith(
-                  () => _TestClipManagerNotifier(clips: const []),
-                ),
-              ],
-              child: const MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: Scaffold(body: VideoRecorderClassicStack()),
-              ),
-            ),
+            buildWidget(recordingState: VideoRecorderState.recording),
           );
           await tester.pumpAndSettle();
 
@@ -286,54 +245,20 @@ void main() {
           await gesture.up();
           await tester.pumpAndSettle();
 
-          expect(
-            notifier.stopRecordingCallCount,
-            equals(0),
-            reason:
-                'stopRecording must not be called when a long-press '
-                'release follows an incidental touch on an already- '
-                'recording shutter (issue #4409).',
+          verifyNever(
+            () => recorderBloc.add(
+              const VideoRecorderRecordingStopRequested(),
+            ),
           );
-          expect(notifier.startRecordingCallCount, equals(0));
+          verifyNever(
+            () => recorderBloc.add(
+              const VideoRecorderRecordingStartRequested(),
+            ),
+          );
         },
       );
     });
   });
-}
-
-class _TestVideoRecorderNotifier extends VideoRecorderNotifier {
-  _TestVideoRecorderNotifier(
-    super.cameraService, {
-    this.recordingState = VideoRecorderState.idle,
-  });
-
-  final VideoRecorderState recordingState;
-
-  var startRecordingCalled = false;
-  var stopRecordingCalled = false;
-  int startRecordingCallCount = 0;
-  int stopRecordingCallCount = 0;
-
-  @override
-  VideoRecorderProviderState build() {
-    return VideoRecorderProviderState(
-      recordingState: recordingState,
-      isCameraInitialized: true,
-      canRecord: true,
-    );
-  }
-
-  @override
-  Future<void> startRecording() async {
-    startRecordingCalled = true;
-    startRecordingCallCount++;
-  }
-
-  @override
-  Future<void> stopRecording([EditorVideo? result]) async {
-    stopRecordingCalled = true;
-    stopRecordingCallCount++;
-  }
 }
 
 class _TestClipManagerNotifier extends ClipManagerNotifier {

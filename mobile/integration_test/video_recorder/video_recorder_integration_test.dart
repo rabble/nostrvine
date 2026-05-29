@@ -8,7 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
-import 'package:openvine/providers/video_recorder_provider.dart';
+import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
 import 'package:patrol/patrol.dart';
@@ -129,11 +129,10 @@ void main() {
       // Wait for camera to initialize
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
-      final container = ProviderScope.containerOf(
-        tester.element(find.byType(VideoRecorderScreen)),
+      final bloc = BlocProvider.of<VideoRecorderBloc>(
+        tester.element(find.byType(VideoRecorderView)),
       );
-      final notifier = container.read(videoRecorderProvider.notifier);
-      final initialZoom = container.read(videoRecorderProvider).zoomLevel;
+      final initialZoom = bloc.state.zoomLevel;
 
       // Simulate pinch zoom out (scale > 1)
       final center = tester.getCenter(find.byType(VideoRecorderScreen));
@@ -159,13 +158,10 @@ void main() {
       await tester.sendEventToBinding(pointer2.up());
       await tester.pump();
 
-      final newZoom = container.read(videoRecorderProvider).zoomLevel;
+      final newZoom = bloc.state.zoomLevel;
 
       // Zoom should have increased
       expect(newZoom, greaterThanOrEqualTo(initialZoom));
-
-      // Cleanup
-      notifier.destroy();
     });
 
     patrolTest('long press on record button starts recording', ($) async {
@@ -179,10 +175,9 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      final container = ProviderScope.containerOf(
-        tester.element(find.byType(VideoRecorderScreen)),
+      final bloc = BlocProvider.of<VideoRecorderBloc>(
+        tester.element(find.byType(VideoRecorderView)),
       );
-      final notifier = container.read(videoRecorderProvider.notifier);
 
       // Find record button
       final recordButton = find.bySemanticsIdentifier(
@@ -198,11 +193,11 @@ void main() {
       ); // Wait for long press to trigger
 
       // Check recording state while still pressing
-      final isRecording = container.read(videoRecorderProvider).isRecording;
+      final isRecording = bloc.state.isRecording;
       expect(isRecording, isTrue);
 
       // Get initial zoom level
-      final initialZoom = container.read(videoRecorderProvider).zoomLevel;
+      final initialZoom = bloc.state.zoomLevel;
 
       // Move finger up (should zoom in)
       await gesture.moveBy(
@@ -212,7 +207,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
 
       // Check zoom changed
-      final zoomAfterMove = container.read(videoRecorderProvider).zoomLevel;
+      final zoomAfterMove = bloc.state.zoomLevel;
       expect(
         zoomAfterMove,
         greaterThan(initialZoom),
@@ -222,9 +217,6 @@ void main() {
       // Release to stop recording
       await gesture.up();
       await tester.pumpAndSettle();
-
-      // Cleanup
-      notifier.destroy();
     });
 
     patrolTest('long press move zooms during recording', ($) async {
@@ -235,10 +227,9 @@ void main() {
       // Wait for camera to initialize
       await tester.pumpAndSettle(const Duration(seconds: 2));
 
-      final container = ProviderScope.containerOf(
-        tester.element(find.byType(VideoRecorderScreen)),
+      final bloc = BlocProvider.of<VideoRecorderBloc>(
+        tester.element(find.byType(VideoRecorderView)),
       );
-      final notifier = container.read(videoRecorderProvider.notifier);
 
       // Find record button
       final recordButton = find.bySemanticsIdentifier(
@@ -252,13 +243,13 @@ void main() {
         const Duration(milliseconds: 600),
       ); // Trigger long press
 
-      final initialZoom = container.read(videoRecorderProvider).zoomLevel;
+      final initialZoom = bloc.state.zoomLevel;
 
       // Move finger up (should zoom in)
       await gesture.moveBy(const Offset(0, -100));
       await tester.pump(const Duration(milliseconds: 100));
 
-      final zoomAfterMove = container.read(videoRecorderProvider).zoomLevel;
+      final zoomAfterMove = bloc.state.zoomLevel;
 
       // Zoom should have changed
       expect(zoomAfterMove, greaterThanOrEqualTo(initialZoom));
@@ -266,9 +257,6 @@ void main() {
       // Release
       await gesture.up();
       await tester.pumpAndSettle();
-
-      // Cleanup
-      notifier.destroy();
     });
   });
 }

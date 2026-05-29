@@ -4,8 +4,8 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/providers/video_recorder_provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/utils/platform_helpers.dart';
 import 'package:openvine/widgets/video_recorder/preview/video_recorder_mobile_preview.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_camera_placeholder.dart';
@@ -16,7 +16,7 @@ import 'package:openvine/widgets/video_recorder/video_recorder_ghost_frame.dart'
 ///
 /// Includes a grid overlay for composition guidance and tap-to-focus
 /// functionality.
-class VideoRecorderCameraPreview extends ConsumerStatefulWidget {
+class VideoRecorderCameraPreview extends StatelessWidget {
   /// Creates a camera preview widget.
   const VideoRecorderCameraPreview({
     this.enableTapToFocus = true,
@@ -28,18 +28,11 @@ class VideoRecorderCameraPreview extends ConsumerStatefulWidget {
   final bool enableTapToFocus;
 
   @override
-  ConsumerState<ConsumerStatefulWidget> createState() =>
-      _VideoRecorderCameraPreviewState();
-}
-
-class _VideoRecorderCameraPreviewState
-    extends ConsumerState<VideoRecorderCameraPreview> {
-  @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
-      builder: (_, constraints) {
-        final aspectRatio = ref.watch(
-          videoRecorderProvider.select((s) => s.aspectRatio),
+      builder: (context, constraints) {
+        final aspectRatio = context.select(
+          (VideoRecorderBloc b) => b.state.aspectRatio,
         );
         // In vertical mode, we use the full available screen size,
         // even if it's not exactly 16:9.
@@ -59,8 +52,8 @@ class _VideoRecorderCameraPreviewState
                 aspectRatio: aspectRatio,
                 child: ClipRRect(
                   clipBehavior: .hardEdge,
-                  borderRadius: widget.borderRadius,
-                  child: _StackItems(enableTapToFocus: widget.enableTapToFocus),
+                  borderRadius: borderRadius,
+                  child: _StackItems(enableTapToFocus: enableTapToFocus),
                 ),
               );
             },
@@ -71,20 +64,18 @@ class _VideoRecorderCameraPreviewState
   }
 }
 
-class _StackItems extends ConsumerWidget {
+class _StackItems extends StatelessWidget {
   const _StackItems({required this.enableTapToFocus});
 
   final bool enableTapToFocus;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(
-      videoRecorderProvider.select(
-        (s) => (
-          isCameraInitialized: s.isCameraInitialized,
-          cameraRebuildCount: s.cameraRebuildCount,
-          initializationErrorMessage: s.initializationErrorMessage,
-        ),
+  Widget build(BuildContext context) {
+    final state = context.select(
+      (VideoRecorderBloc b) => (
+        isCameraInitialized: b.state.isCameraInitialized,
+        cameraRebuildCount: b.state.cameraRebuildCount,
+        initializationErrorMessage: b.state.initializationErrorMessage,
       ),
     );
     return Stack(
@@ -105,15 +96,15 @@ class _StackItems extends ConsumerWidget {
   }
 }
 
-class _CameraPreview extends ConsumerWidget {
+class _CameraPreview extends StatelessWidget {
   const _CameraPreview({required this.enableTapToFocus});
 
   final bool enableTapToFocus;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final sensorAspectRatio = ref.watch(
-      videoRecorderProvider.select((s) => s.cameraSensorAspectRatio),
+  Widget build(BuildContext context) {
+    final sensorAspectRatio = context.select(
+      (VideoRecorderBloc b) => b.state.cameraSensorAspectRatio,
     );
 
     return FittedBox(
@@ -137,14 +128,15 @@ class _CameraPreview extends ConsumerWidget {
   }
 }
 
-class _OverlayGrid extends ConsumerWidget {
+class _OverlayGrid extends StatelessWidget {
   const _OverlayGrid();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final (:isRecording, :showGridLines) = ref.watch(
-      videoRecorderProvider.select(
-        (s) => (isRecording: s.isRecording, showGridLines: s.showGridLines),
+  Widget build(BuildContext context) {
+    final (:isRecording, :showGridLines) = context.select(
+      (VideoRecorderBloc b) => (
+        isRecording: b.state.isRecording,
+        showGridLines: b.state.showGridLines,
       ),
     );
 

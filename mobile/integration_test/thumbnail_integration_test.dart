@@ -7,10 +7,13 @@ import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/main.dart' as app;
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/providers/video_recorder_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:patrol/patrol.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 void main() {
@@ -66,23 +69,46 @@ void main() {
         // Try to test recording provider directly if UI interaction fails
         Log.debug('🔧 Testing VineRecordingProvider directly...');
 
-        final container = ProviderContainer();
-        final notifier = container.read(videoRecorderProvider.notifier);
+        final prefs = await SharedPreferences.getInstance();
+        final container = ProviderContainer(
+          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+        );
+        final bloc = VideoRecorderBloc(
+          readClipManager: () => container.read(clipManagerProvider.notifier),
+          readVideoEditor: () => container.read(videoEditorProvider.notifier),
+          readVideoEditorState: () => container.read(videoEditorProvider),
+          readSharedPreferences: () =>
+              container.read(sharedPreferencesProvider),
+        );
 
         try {
           Log.debug('📷 Initializing recording provider...');
-          await notifier.initialize();
+          bloc.add(const VideoRecorderInitializeRequested());
+          final initState = await bloc.stream.firstWhere(
+            (s) =>
+                s.isCameraInitialized || s.initializationErrorMessage != null,
+          );
+          if (!initState.isCameraInitialized) {
+            throw Exception(
+              'Camera failed to initialize: '
+              '${initState.initializationErrorMessage}',
+            );
+          }
           Log.debug('✅ Recording provider initialized successfully');
 
           Log.debug('🎬 Starting video recording...');
-          await notifier.startRecording();
+          bloc.add(const VideoRecorderRecordingStartRequested());
+          await bloc.stream.firstWhere((s) => s.isRecording);
           Log.debug('✅ Recording started');
 
           // Record for 2 seconds
           await Future.delayed(const Duration(seconds: 2));
 
           Log.debug('⏹️ Stopping recording...');
-          await notifier.stopRecording();
+          bloc.add(const VideoRecorderRecordingStopRequested());
+          await bloc.stream.firstWhere(
+            (s) => !s.isRecording && !s.isStoppingRecording,
+          );
           Log.debug('✅ Recording stopped');
 
           // Check if clip has thumbnail
@@ -121,9 +147,8 @@ void main() {
             Log.debug('ℹ️ This might be due to test environment limitations');
           }
 
-          // Clean up
+          // Clean up (bloc + container disposal happens in the finally block).
           try {
-            container.dispose();
             await File(filePath).delete();
             if (clip.thumbnailPath != null) {
               await File(clip.thumbnailPath!).delete();
@@ -142,6 +167,7 @@ void main() {
             '⚠️ Recording test skipped - camera not available in test environment',
           );
         } finally {
+          await bloc.close();
           container.dispose();
         }
 
