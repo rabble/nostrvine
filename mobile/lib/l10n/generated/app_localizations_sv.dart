@@ -7283,6 +7283,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoEditorFontUnknown => 'Okänt';
 
   @override
+  String get videoEditorSplitFailed => 'Delning misslyckades. Försök igen.';
+
+  @override
   String get videoEditorSplitPlayheadOutsideClip =>
       'Uppspelningshuvudet måste vara inom det valda klippet för att dela.';
 

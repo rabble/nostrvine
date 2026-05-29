@@ -7348,6 +7348,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get videoEditorFontUnknown => 'Sconosciuto';
 
   @override
+  String get videoEditorSplitFailed => 'Divisione non riuscita. Riprovare.';
+
+  @override
   String get videoEditorSplitPlayheadOutsideClip =>
       'La testina di riproduzione deve essere all\'interno del clip selezionato per dividerlo.';
 

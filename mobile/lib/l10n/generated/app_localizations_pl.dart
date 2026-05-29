@@ -7432,6 +7432,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoEditorFontUnknown => 'Nieznana';
 
   @override
+  String get videoEditorSplitFailed => 'Podział nieudany. Spróbuj ponownie.';
+
+  @override
   String get videoEditorSplitPlayheadOutsideClip =>
       'Aby podzielić, głowica odtwarzania musi znajdować się w wybranym klipie.';
 

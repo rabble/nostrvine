@@ -43,8 +43,10 @@ class VideoEditorScaffold extends StatelessWidget {
         backgroundColor: VineTheme.backgroundCamera,
         resizeToAvoidBottomInset: false,
         floatingActionButton: const _AddElementFab(),
-        body: _AudioExtractionResultListener(
-          child: _ScaffoldBody(isLoading: isLoading),
+        body: _SplitFailureListener(
+          child: _AudioExtractionResultListener(
+            child: _ScaffoldBody(isLoading: isLoading),
+          ),
         ),
       ),
     );
@@ -80,6 +82,32 @@ class _ScaffoldBody extends StatelessWidget {
   }
 }
 
+/// Listens to [ClipEditorBloc.state.lastSplitFailure] and shows an error
+/// snackbar when a split rendering operation fails.
+///
+/// Kept at the scaffold level (always mounted) so the snackbar fires even
+/// if the timeline controls are hidden while the render is in flight.
+class _SplitFailureListener extends StatelessWidget {
+  const _SplitFailureListener({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<ClipEditorBloc, ClipEditorState>(
+      listenWhen: (prev, curr) =>
+          !identical(prev.lastSplitFailure, curr.lastSplitFailure) &&
+          curr.lastSplitFailure != null,
+      listener: (context, state) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          DivineSnackbarContainer.snackBar(context.l10n.videoEditorSplitFailed),
+        );
+      },
+      child: child,
+    );
+  }
+}
+
 /// Listens to [ClipEditorBloc.state.lastAudioExtraction] from a widget that
 /// stays mounted for the entire editor session, so the success/failure
 /// side effect (history write or snackbar) survives the user leaving edit
@@ -101,10 +129,7 @@ class _AudioExtractionResultListener extends StatelessWidget {
     );
   }
 
-  void _onAudioExtractionResult(
-    BuildContext context,
-    ClipEditorState state,
-  ) {
+  void _onAudioExtractionResult(BuildContext context, ClipEditorState state) {
     final result = state.lastAudioExtraction;
     if (result == null) return;
 

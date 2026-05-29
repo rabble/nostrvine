@@ -3125,6 +3125,7 @@
     "videoEditorStickerSearchHint": "Търсене на стикери...",
     "videoEditorSelectFontSemanticLabel": "Избери шрифт",
     "videoEditorFontUnknown": "Неизвестен",
+    "videoEditorSplitFailed": "Разделянето не бе успешно. Моля, опитайте отново.",
     "videoEditorSplitPlayheadOutsideClip": "Главата за възпроизвеждане трябва да е в рамките на избрания клип, за да се раздели.",
     "videoEditorTimelineTrimStartSemanticLabel": "Подстригване начало",
     "videoEditorTimelineTrimEndSemanticLabel": "Подстригване на края",

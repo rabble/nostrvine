@@ -7014,6 +7014,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorFontUnknown => '알 수 없음';
 
   @override
+  String get videoEditorSplitFailed => '분할에 실패했습니다. 다시 시도해 주세요.';
+
+  @override
   String get videoEditorSplitPlayheadOutsideClip =>
       '분할하려면 재생 헤드가 선택한 클립 안에 있어야 합니다.';
 

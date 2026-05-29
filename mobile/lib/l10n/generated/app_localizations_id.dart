@@ -7253,6 +7253,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoEditorFontUnknown => 'Tidak dikenal';
 
   @override
+  String get videoEditorSplitFailed => 'Pembagian gagal. Silakan coba lagi.';
+
+  @override
   String get videoEditorSplitPlayheadOutsideClip =>
       'Playhead harus berada di dalam klip yang dipilih untuk membagi.';
 

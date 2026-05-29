@@ -1768,6 +1768,7 @@
     "videoEditorStickerSearchHint": "Maghanap ng mga sticker...",
     "videoEditorSelectFontSemanticLabel": "Pumili ng font",
     "videoEditorFontUnknown": "Hindi alam",
+    "videoEditorSplitFailed": "Nabigo ang paghati. Pakisubukan muli.",
     "videoEditorSplitPlayheadOutsideClip": "Dapat nasa loob ng napiling clip ang playhead para mag-split.",
     "videoEditorTimelineTrimStartSemanticLabel": "I-trim ang simula",
     "videoEditorTimelineTrimEndSemanticLabel": "I-trim ang dulo",

@@ -2110,6 +2110,7 @@
     "videoEditorShowTimelineSemanticLabel": "타임라인 표시",
     "videoEditorSplitClip": "클립 분할",
     "videoEditorSplitLabel": "분할",
+    "videoEditorSplitFailed": "분할에 실패했습니다. 다시 시도해 주세요.",
     "videoEditorSplitPlayheadOutsideClip": "분할하려면 재생 헤드가 선택한 클립 안에 있어야 합니다.",
     "videoEditorSplitPositionInvalid": "분할 위치가 유효하지 않습니다. 각 클립은 최소 {minDurationMs}ms 이상이어야 합니다.",
     "@videoEditorSplitPositionInvalid": {

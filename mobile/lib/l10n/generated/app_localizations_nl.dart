@@ -7313,6 +7313,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoEditorFontUnknown => 'Onbekend';
 
   @override
+  String get videoEditorSplitFailed => 'Splitsen mislukt. Probeer het opnieuw.';
+
+  @override
   String get videoEditorSplitPlayheadOutsideClip =>
       'De afspeelkop moet binnen de geselecteerde clip staan om te splitsen.';
 

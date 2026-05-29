@@ -284,8 +284,9 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     );
 
     // Stop editing mode
-    emit(state.copyWith(isEditing: false));
+    emit(state.copyWith(isEditing: false, isSplitting: true));
 
+    ClipSplitFailure? splitFailure;
     try {
       // Emit directly from callbacks instead of dispatching events.
       // Cross-event-type handlers run concurrently in BLoC, which
@@ -374,6 +375,13 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         name: 'ClipEditorBloc',
         category: LogCategory.video,
       );
+      splitFailure = ClipSplitFailure();
+    } finally {
+      if (!emit.isDone) {
+        emit(
+          state.copyWith(isSplitting: false, lastSplitFailure: splitFailure),
+        );
+      }
     }
   }
 

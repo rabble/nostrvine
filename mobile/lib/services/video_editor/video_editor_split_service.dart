@@ -211,14 +211,7 @@ class VideoEditorSplitService {
         category: .video,
       );
 
-      await Future.wait([
-        ProVideoEditor.instance.renderVideoToFile(outputPath, renderData),
-        // On newer devices, the split operation completes extremely fast. For
-        // that we add a short delay to ensure the progress animation shows
-        // to complete to the user. Without that it will look like a
-        // flickering issue.
-        Future.delayed(const Duration(milliseconds: 300)),
-      ]);
+      await ProVideoEditor.instance.renderVideoToFile(outputPath, renderData);
 
       Log.info(
         '✅ Render complete: ${clip.id}',

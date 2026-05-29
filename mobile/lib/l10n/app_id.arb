@@ -2821,6 +2821,7 @@
     "videoEditorShowTimelineSemanticLabel": "Tampilkan timeline",
     "videoEditorSplitClip": "Bagi klip",
     "videoEditorSplitLabel": "Bagi",
+    "videoEditorSplitFailed": "Pembagian gagal. Silakan coba lagi.",
     "videoEditorSplitPlayheadOutsideClip": "Playhead harus berada di dalam klip yang dipilih untuk membagi.",
     "videoEditorSplitPositionInvalid": "Posisi pembagian tidak valid. Setiap klip harus minimal {minDurationMs}ms.",
     "@videoEditorSplitPositionInvalid": {

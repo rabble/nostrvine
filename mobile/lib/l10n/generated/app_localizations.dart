@@ -12728,6 +12728,12 @@ abstract class AppLocalizations {
   /// **'Unknown'**
   String get videoEditorFontUnknown;
 
+  /// No description provided for @videoEditorSplitFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Split failed. Please try again.'**
+  String get videoEditorSplitFailed;
+
   /// No description provided for @videoEditorSplitPlayheadOutsideClip.
   ///
   /// In en, this message translates to:

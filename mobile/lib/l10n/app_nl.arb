@@ -2872,6 +2872,7 @@
     "videoEditorStickerSearchHint": "Stickers zoeken...",
     "videoEditorSelectFontSemanticLabel": "Lettertype selecteren",
     "videoEditorFontUnknown": "Onbekend",
+    "videoEditorSplitFailed": "Splitsen mislukt. Probeer het opnieuw.",
     "videoEditorSplitPlayheadOutsideClip": "De afspeelkop moet binnen de geselecteerde clip staan om te splitsen.",
     "videoEditorTimelineTrimStartSemanticLabel": "Begin bijsnijden",
     "videoEditorTimelineTrimEndSemanticLabel": "Einde bijsnijden",

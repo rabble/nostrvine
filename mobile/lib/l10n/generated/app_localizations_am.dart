@@ -7133,6 +7133,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorFontUnknown => 'ያልታወቀ';
 
   @override
+  String get videoEditorSplitFailed => 'መከፋፈሉ አልተሳካም። እባክዎ እንደገና ይሞክሩ።';
+
+  @override
   String get videoEditorSplitPlayheadOutsideClip =>
       'የመጫወቻ ቦታ ለመከፋፈል በተመረጠው ቅንጥብ ውስጥ መሆን አለበት።';
 

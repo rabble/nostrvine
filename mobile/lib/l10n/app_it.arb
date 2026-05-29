@@ -2872,6 +2872,7 @@
     "videoEditorStickerSearchHint": "Cerca sticker...",
     "videoEditorSelectFontSemanticLabel": "Seleziona carattere",
     "videoEditorFontUnknown": "Sconosciuto",
+    "videoEditorSplitFailed": "Divisione non riuscita. Riprovare.",
     "videoEditorSplitPlayheadOutsideClip": "La testina di riproduzione deve essere all'interno del clip selezionato per dividerlo.",
     "videoEditorTimelineTrimStartSemanticLabel": "Rifila inizio",
     "videoEditorTimelineTrimEndSemanticLabel": "Rifila fine",

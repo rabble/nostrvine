@@ -7354,6 +7354,10 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorFontUnknown => 'Неизвестен';
 
   @override
+  String get videoEditorSplitFailed =>
+      'Разделянето не бе успешно. Моля, опитайте отново.';
+
+  @override
   String get videoEditorSplitPlayheadOutsideClip =>
       'Главата за възпроизвеждане трябва да е в рамките на избрания клип, за да се раздели.';
 

@@ -2872,6 +2872,7 @@
     "videoEditorStickerSearchHint": "Sök stickers...",
     "videoEditorSelectFontSemanticLabel": "Välj typsnitt",
     "videoEditorFontUnknown": "Okänt",
+    "videoEditorSplitFailed": "Delning misslyckades. Försök igen.",
     "videoEditorSplitPlayheadOutsideClip": "Uppspelningshuvudet måste vara inom det valda klippet för att dela.",
     "videoEditorTimelineTrimStartSemanticLabel": "Trimma start",
     "videoEditorTimelineTrimEndSemanticLabel": "Trimma slut",

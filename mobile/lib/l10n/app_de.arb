@@ -2872,6 +2872,7 @@
     "videoEditorStickerSearchHint": "Sticker suchen...",
     "videoEditorSelectFontSemanticLabel": "Schriftart auswählen",
     "videoEditorFontUnknown": "Unbekannt",
+    "videoEditorSplitFailed": "Teilen fehlgeschlagen. Bitte erneut versuchen.",
     "videoEditorSplitPlayheadOutsideClip": "Der Abspielkopf muss innerhalb des ausgewählten Clips liegen, um zu teilen.",
     "videoEditorTimelineTrimStartSemanticLabel": "Anfang trimmen",
     "videoEditorTimelineTrimEndSemanticLabel": "Ende trimmen",

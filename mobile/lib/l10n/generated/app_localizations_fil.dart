@@ -7364,6 +7364,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoEditorFontUnknown => 'Hindi alam';
 
   @override
+  String get videoEditorSplitFailed => 'Nabigo ang paghati. Pakisubukan muli.';
+
+  @override
   String get videoEditorSplitPlayheadOutsideClip =>
       'Dapat nasa loob ng napiling clip ang playhead para mag-split.';
 

@@ -4238,6 +4238,7 @@
   "videoEditorStickerSearchHint": "Search stickers...",
   "videoEditorSelectFontSemanticLabel": "Select font",
   "videoEditorFontUnknown": "Unknown",
+  "videoEditorSplitFailed": "Split failed. Please try again.",
   "videoEditorSplitPlayheadOutsideClip": "Playhead must be within the selected clip to split.",
   "videoEditorTimelineTrimStartSemanticLabel": "Trim start",
   "videoEditorTimelineTrimEndSemanticLabel": "Trim end",

@@ -2821,6 +2821,7 @@
     "videoEditorShowTimelineSemanticLabel": "Zaman çizelgesini göster",
     "videoEditorSplitClip": "Klibi böl",
     "videoEditorSplitLabel": "Böl",
+    "videoEditorSplitFailed": "Bölme başarısız oldu. Lütfen tekrar deneyin.",
     "videoEditorSplitPlayheadOutsideClip": "Bölmek için oynatma kafası seçili klip içinde olmalıdır.",
     "videoEditorSplitPositionInvalid": "Bölme konumu geçersiz. Her iki klip de en az {minDurationMs}ms uzunluğunda olmalıdır.",
     "@videoEditorSplitPositionInvalid": {

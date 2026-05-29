@@ -140,10 +140,8 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
         BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
           listenWhen: (prev, curr) =>
               !_isUserScrolling && prev.currentPosition != curr.currentPosition,
-          listener: (context, state) => _syncScrollToPosition(
-            state.currentPosition,
-            totalDuration,
-          ),
+          listener: (context, state) =>
+              _syncScrollToPosition(state.currentPosition, totalDuration),
         ),
         BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
           listenWhen: (prev, curr) =>
@@ -375,7 +373,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
       // Same clip: toggle editing on/off.
       bloc.add(const ClipEditorEditingToggled());
     } else {
-      // Different clip: select it and always enter editing.
+      // Different clip: select it and enter editing if not already active.
       bloc.add(ClipEditorClipSelected(index));
       if (!state.isEditing) {
         bloc.add(const ClipEditorEditingStarted());
@@ -783,10 +781,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
         _totalDuration,
       );
 
-  void _syncScrollToPosition(
-    Duration position,
-    Duration totalDuration,
-  ) {
+  void _syncScrollToPosition(Duration position, Duration totalDuration) {
     if (!_scrollController.hasClients) return;
     if (totalDuration == Duration.zero) return;
 
@@ -1034,9 +1029,7 @@ class _TimelineInteractiveBody extends StatelessWidget {
                                 key: const ValueKey('volume'),
                                 volumePreviewNotifier: volumePreviewNotifier,
                               )
-                            : const SizedBox.shrink(
-                                key: ValueKey('empty'),
-                              ),
+                            : const SizedBox.shrink(key: ValueKey('empty')),
                       ),
                     ),
                   ),

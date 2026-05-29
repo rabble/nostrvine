@@ -3433,6 +3433,7 @@
     "videoEditorStickerSearchHint": "ተለጣፊዎችን ፈልግ...",
     "videoEditorSelectFontSemanticLabel": "ቅርጸ-ቁምፊ ይምረጡ",
     "videoEditorFontUnknown": "ያልታወቀ",
+    "videoEditorSplitFailed": "መከፋፈሉ አልተሳካም። እባክዎ እንደገና ይሞክሩ።",
     "videoEditorSplitPlayheadOutsideClip": "የመጫወቻ ቦታ ለመከፋፈል በተመረጠው ቅንጥብ ውስጥ መሆን አለበት።",
     "videoEditorTimelineTrimStartSemanticLabel": "ጅምር ይከርክሙ",
     "videoEditorTimelineTrimEndSemanticLabel": "መጨረሻውን ይከርክሙ",

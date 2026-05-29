@@ -7321,6 +7321,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditorFontUnknown => 'Desconhecida';
 
   @override
+  String get videoEditorSplitFailed => 'Falha na divisão. Tente novamente.';
+
+  @override
   String get videoEditorSplitPlayheadOutsideClip =>
       'A cabeça de reprodução deve estar dentro do clipe selecionado para dividir.';
 

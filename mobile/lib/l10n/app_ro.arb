@@ -2872,6 +2872,7 @@
     "videoEditorStickerSearchHint": "Caută stickere...",
     "videoEditorSelectFontSemanticLabel": "Selectează fontul",
     "videoEditorFontUnknown": "Necunoscut",
+    "videoEditorSplitFailed": "Împărțire eșuată. Vă rugăm să încercați din nou.",
     "videoEditorSplitPlayheadOutsideClip": "Capul de redare trebuie să fie în clipul selectat pentru a împărți.",
     "videoEditorTimelineTrimStartSemanticLabel": "Taie începutul",
     "videoEditorTimelineTrimEndSemanticLabel": "Taie finalul",

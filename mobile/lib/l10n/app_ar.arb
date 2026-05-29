@@ -2814,6 +2814,7 @@
     "videoEditorShowTimelineSemanticLabel": "إظهار الجدول الزمني",
     "videoEditorSplitClip": "تقسيم المقطع",
     "videoEditorSplitLabel": "تقسيم",
+    "videoEditorSplitFailed": "فشل التقسيم. يرجى المحاولة مرة أخرى.",
     "videoEditorSplitPlayheadOutsideClip": "يجب أن يكون رأس التشغيل داخل المقطع المحدد للتقسيم.",
     "videoEditorSplitPositionInvalid": "موضع التقسيم غير صالح. يجب أن يكون كل مقطع {minDurationMs} مللي ثانية على الأقل.",
     "@videoEditorSplitPositionInvalid": {

@@ -2872,6 +2872,7 @@
     "videoEditorStickerSearchHint": "Rechercher des stickers...",
     "videoEditorSelectFontSemanticLabel": "Sélectionner une police",
     "videoEditorFontUnknown": "Inconnue",
+    "videoEditorSplitFailed": "Échec de la division. Veuillez réessayer.",
     "videoEditorSplitPlayheadOutsideClip": "La tête de lecture doit se trouver dans le clip sélectionné pour pouvoir le scinder.",
     "videoEditorTimelineTrimStartSemanticLabel": "Rogner le début",
     "videoEditorTimelineTrimEndSemanticLabel": "Rogner la fin",

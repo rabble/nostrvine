@@ -2872,6 +2872,7 @@
     "videoEditorStickerSearchHint": "Szukaj naklejek...",
     "videoEditorSelectFontSemanticLabel": "Wybierz czcionkę",
     "videoEditorFontUnknown": "Nieznana",
+    "videoEditorSplitFailed": "Podział nieudany. Spróbuj ponownie.",
     "videoEditorSplitPlayheadOutsideClip": "Aby podzielić, głowica odtwarzania musi znajdować się w wybranym klipie.",
     "videoEditorTimelineTrimStartSemanticLabel": "Przytnij początek",
     "videoEditorTimelineTrimEndSemanticLabel": "Przytnij koniec",

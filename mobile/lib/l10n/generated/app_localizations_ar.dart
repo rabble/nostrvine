@@ -7213,6 +7213,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorFontUnknown => 'غير معروف';
 
   @override
+  String get videoEditorSplitFailed => 'فشل التقسيم. يرجى المحاولة مرة أخرى.';
+
+  @override
   String get videoEditorSplitPlayheadOutsideClip =>
       'يجب أن يكون رأس التشغيل داخل المقطع المحدد للتقسيم.';
 

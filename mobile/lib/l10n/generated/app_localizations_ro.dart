@@ -7450,6 +7450,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorFontUnknown => 'Necunoscut';
 
   @override
+  String get videoEditorSplitFailed =>
+      'Împărțire eșuată. Vă rugăm să încercați din nou.';
+
+  @override
   String get videoEditorSplitPlayheadOutsideClip =>
       'Capul de redare trebuie să fie în clipul selectat pentru a împărți.';
 

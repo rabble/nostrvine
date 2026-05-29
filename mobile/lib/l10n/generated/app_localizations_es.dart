@@ -7351,6 +7351,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoEditorFontUnknown => 'Desconocida';
 
   @override
+  String get videoEditorSplitFailed =>
+      'Error al dividir. Por favor, inténtalo de nuevo.';
+
+  @override
   String get videoEditorSplitPlayheadOutsideClip =>
       'El cabezal de reproducción debe estar dentro del clip seleccionado para dividir.';
 

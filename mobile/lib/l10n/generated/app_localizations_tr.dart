@@ -7249,6 +7249,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorFontUnknown => 'Bilinmiyor';
 
   @override
+  String get videoEditorSplitFailed =>
+      'Bölme başarısız oldu. Lütfen tekrar deneyin.';
+
+  @override
   String get videoEditorSplitPlayheadOutsideClip =>
       'Bölmek için oynatma kafası seçili klip içinde olmalıdır.';
 

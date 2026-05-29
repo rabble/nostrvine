@@ -20,6 +20,8 @@ class ClipEditorState extends Equatable {
     this.trimmingClipId,
     this.isExtractingAudio = false,
     this.lastAudioExtraction,
+    this.isSplitting = false,
+    this.lastSplitFailure,
   });
 
   /// Local copy of clips managed by this editor session.
@@ -72,6 +74,15 @@ class ClipEditorState extends Equatable {
   /// Whether an audio extraction operation is currently running.
   final bool isExtractingAudio;
 
+  /// Whether a split operation is currently in progress (rendering).
+  final bool isSplitting;
+
+  /// One-shot signal emitted when a split rendering operation fails.
+  ///
+  /// Identity-compared so the [BlocListener] in the scaffold fires exactly
+  /// once per failure even if the same error type repeats.
+  final ClipSplitFailure? lastSplitFailure;
+
   /// Last completed audio extraction result. Consumed by the widget layer
   /// to write history (on success) or show an error snackbar (on failure).
   ///
@@ -98,6 +109,8 @@ class ClipEditorState extends Equatable {
     bool clearTrimmingClipId = false,
     bool? isExtractingAudio,
     ClipAudioExtractionResult? lastAudioExtraction,
+    bool? isSplitting,
+    ClipSplitFailure? lastSplitFailure,
   }) {
     return ClipEditorState(
       clips: clips ?? this.clips,
@@ -115,6 +128,8 @@ class ClipEditorState extends Equatable {
           : (trimmingClipId ?? this.trimmingClipId),
       isExtractingAudio: isExtractingAudio ?? this.isExtractingAudio,
       lastAudioExtraction: lastAudioExtraction ?? this.lastAudioExtraction,
+      isSplitting: isSplitting ?? this.isSplitting,
+      lastSplitFailure: lastSplitFailure ?? this.lastSplitFailure,
     );
   }
 
@@ -133,6 +148,9 @@ class ClipEditorState extends Equatable {
     isExtractingAudio,
     // Identity-only: each ClipAudioExtractionResult is a fresh instance.
     identityHashCode(lastAudioExtraction),
+    isSplitting,
+    // Identity-only: each ClipSplitFailure is a fresh instance per failure.
+    identityHashCode(lastSplitFailure),
   ];
 }
 
@@ -189,3 +207,13 @@ final class ClipAudioExtractionDiscarded extends ClipAudioExtractionResult {}
 
 /// Extraction failed; widget should show a snackbar.
 final class ClipAudioExtractionFailure extends ClipAudioExtractionResult {}
+
+// === SPLIT FAILURE SIGNAL ===
+
+/// One-shot signal emitted into [ClipEditorState.lastSplitFailure] when a
+/// split rendering operation fails. The scaffold listener uses this to show
+/// an error snackbar to the user.
+///
+/// Identity-compared so each failure produces a distinct notification even
+/// when the same error type repeats consecutively.
+final class ClipSplitFailure {}

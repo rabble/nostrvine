@@ -22,16 +22,19 @@ class TimelineClipControls extends StatefulWidget {
 class _TimelineClipControlsState extends State<TimelineClipControls> {
   @override
   Widget build(BuildContext context) {
-    final clips = context.select((ClipEditorBloc b) => b.state.clips);
-    final isLastClip = clips.length <= 1;
-    final isExtractingAudio = context.select(
-      (ClipEditorBloc b) => b.state.isExtractingAudio,
+    final (clipCount, isExtractingAudio, isSplitting) = context.select(
+      (ClipEditorBloc b) => (
+        b.state.clips.length,
+        b.state.isExtractingAudio,
+        b.state.isSplitting,
+      ),
     );
+    final isLastClip = clipCount <= 1;
 
     return VideoEditorTimelineControls(
       onDelete: isLastClip ? null : () => _deleteClip(context),
       onDuplicated: () => _duplicateClip(context),
-      onSplit: () => _splitClip(context),
+      onSplit: isSplitting ? null : () => _splitClip(context),
       onSpeed: () => _setPlaybackSpeed(context),
       onExtractAudio: () => _requestExtractAudio(context),
       isExtractingAudio: isExtractingAudio,

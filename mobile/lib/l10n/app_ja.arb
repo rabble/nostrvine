@@ -2814,6 +2814,7 @@
     "videoEditorShowTimelineSemanticLabel": "タイムラインを表示",
     "videoEditorSplitClip": "クリップを分割",
     "videoEditorSplitLabel": "分割",
+    "videoEditorSplitFailed": "分割に失敗しました。もう一度お試しください。",
     "videoEditorSplitPlayheadOutsideClip": "分割するには再生ヘッドを選択したクリップ内に置いてください。",
     "videoEditorSplitPositionInvalid": "分割位置が無効です。各クリップは最低{minDurationMs}ms必要です。",
     "@videoEditorSplitPositionInvalid": {

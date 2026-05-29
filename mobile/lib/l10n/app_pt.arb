@@ -2872,6 +2872,7 @@
     "videoEditorStickerSearchHint": "Buscar stickers...",
     "videoEditorSelectFontSemanticLabel": "Selecionar fonte",
     "videoEditorFontUnknown": "Desconhecida",
+    "videoEditorSplitFailed": "Falha na divisão. Tente novamente.",
     "videoEditorSplitPlayheadOutsideClip": "A cabeça de reprodução deve estar dentro do clipe selecionado para dividir.",
     "videoEditorTimelineTrimStartSemanticLabel": "Aparar início",
     "videoEditorTimelineTrimEndSemanticLabel": "Aparar fim",

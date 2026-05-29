@@ -6991,6 +6991,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorFontUnknown => '不明';
 
   @override
+  String get videoEditorSplitFailed => '分割に失敗しました。もう一度お試しください。';
+
+  @override
   String get videoEditorSplitPlayheadOutsideClip =>
       '分割するには再生ヘッドを選択したクリップ内に置いてください。';
 
