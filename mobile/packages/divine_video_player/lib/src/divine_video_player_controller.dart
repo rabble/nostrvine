@@ -296,12 +296,14 @@ class DivineVideoPlayerController {
         'divine_video_player/player_$_playerId/events',
       );
 
-      final result = await _globalChannel
-          .invokeMethod<Map<Object?, Object?>>('create', {
-            'id': _playerId,
-            'useTexture': useTexture,
-            'useLegacySurface': useLegacySurface,
-          });
+      final result = await _globalChannel.invokeMethod<Map<Object?, Object?>>(
+        'create',
+        {
+          'id': _playerId,
+          'useTexture': useTexture,
+          'useLegacySurface': useLegacySurface,
+        },
+      );
       if (useTexture && result != null) {
         _textureId = result['textureId'] as int?;
       }
