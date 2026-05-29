@@ -34,12 +34,14 @@ void main() {
 
     Widget buildWidget({
       VideoRecorderState recordingState = VideoRecorderState.idle,
+      bool showLastClipOverlay = false,
     }) {
       when(() => recorderBloc.state).thenReturn(
         VideoRecorderBlocState(
           recordingState: recordingState,
           isCameraInitialized: true,
           canRecord: true,
+          showLastClipOverlay: showLastClipOverlay,
         ),
       );
       return ProviderScope(
@@ -131,6 +133,39 @@ void main() {
 
         // Should show snackbar
         expect(find.byType(SnackBar), findsOneWidget);
+      });
+
+      // Guards the async-ordering fix: the bloc event is async, so the snackbar
+      // copy must be derived from the negated CURRENT state (the new value),
+      // not re-read after dispatching (which would show the stale, inverted
+      // copy). With a MockBloc the state never changes on add(), so a regression
+      // to reading state post-dispatch flips these assertions.
+      testWidgets('snackbar shows the enabled copy when the overlay was off', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byType(DivineIconButton).at(2));
+        await tester.pump();
+
+        expect(find.text(l10n.videoRecorderGhostFrameEnabled), findsOneWidget);
+        expect(find.text(l10n.videoRecorderGhostFrameDisabled), findsNothing);
+      });
+
+      testWidgets('snackbar shows the disabled copy when the overlay was on', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.pumpWidget(buildWidget(showLastClipOverlay: true));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byType(DivineIconButton).at(2));
+        await tester.pump();
+
+        expect(find.text(l10n.videoRecorderGhostFrameDisabled), findsOneWidget);
+        expect(find.text(l10n.videoRecorderGhostFrameEnabled), findsNothing);
       });
     });
   });

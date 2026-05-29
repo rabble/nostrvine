@@ -111,8 +111,19 @@ void main() {
           );
           Log.debug('✅ Recording stopped');
 
-          // Check if clip has thumbnail
+          // The stop handler emits the idle state before it finishes the
+          // metadata/thumbnail/ghost-frame post-processing, so the stream wait
+          // above resolves before the thumbnail is attached. Poll the clip
+          // (bounded) so this test observes the thumbnail the way the legacy
+          // `await stopRecording()` did.
           final clipProvider = container.read(clipManagerProvider.notifier);
+          final postProcessing = Stopwatch()..start();
+          while (clipProvider.clips.isNotEmpty &&
+              clipProvider.clips.first.thumbnailPath == null &&
+              postProcessing.elapsed < const Duration(seconds: 10)) {
+            await Future<void>.delayed(const Duration(milliseconds: 100));
+          }
+
           final clips = clipProvider.clips;
 
           if (clips.isEmpty) {
