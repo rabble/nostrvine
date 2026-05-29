@@ -49,13 +49,15 @@ class VideoEditorProcessingOverlay extends ConsumerWidget {
                     // the entire screen while it's running.
                     RepaintBoundary(
                       child: StreamBuilder<ProgressModel>(
-                        stream: VideoEditorRenderService.progressStreamById(
-                          draftId,
-                        ),
+                        stream:
+                            VideoEditorRenderService.compositeProgressStreamById(
+                              draftId,
+                            ),
                         builder: (context, snapshot) {
-                          final progress = (snapshot.data?.progress ?? 0)
-                              .clamp(0.0, 1.0)
-                              .toDouble();
+                          final progress = (snapshot.data?.progress ?? 0).clamp(
+                            0.0,
+                            1.0,
+                          );
                           return PartialCircleSpinner(progress: progress);
                         },
                       ),

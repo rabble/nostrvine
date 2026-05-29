@@ -359,6 +359,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
             clips: draft.clips,
             parameters: parameters,
             editorStateHistory: draft.editorStateHistory,
+            taskId: draft.id,
           );
 
           if (result == null) {

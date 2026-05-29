@@ -179,10 +179,14 @@ class _RenderProgressTracker {
   final double _proofBudget;
   final int _proofSteps;
   StreamSubscription<ProgressModel>? _renderSubscription;
+  double _lastProgress = 0;
 
   double get _renderBudget => 1 - _proofBudget;
 
   void start() {
+    // Emit an explicit reset so a reused broadcast stream does not keep showing
+    // the completed progress of a previous render.
+    _lastProgress = 0;
     VideoEditorRenderService._emitCompositeProgress(
       taskId: taskId,
       progress: 0,
@@ -190,37 +194,42 @@ class _RenderProgressTracker {
     _renderSubscription = ProVideoEditor.instance
         .progressStreamById(taskId)
         .listen((progressModel) {
-          VideoEditorRenderService._emitCompositeProgress(
-            taskId: taskId,
-            progress: progressModel.progress * _renderBudget,
-          );
+          _emit(progressModel.progress * _renderBudget);
         });
   }
 
-  void markRenderComplete() {
-    VideoEditorRenderService._emitCompositeProgress(
-      taskId: taskId,
-      progress: _renderBudget,
-    );
+  Future<void> markRenderComplete() async {
+    // Stop listening to render progress so late events from the render stream
+    // cannot regress the composite progress during the proof phase.
+    await _renderSubscription?.cancel();
+    _renderSubscription = null;
+    _emit(_renderBudget);
   }
 
   void markProofStepComplete(int completedSteps) {
     final normalizedSteps = completedSteps.clamp(0, _proofSteps);
-    VideoEditorRenderService._emitCompositeProgress(
-      taskId: taskId,
-      progress: _renderBudget + (_proofBudget * normalizedSteps / _proofSteps),
-    );
+    _emit(_renderBudget + (_proofBudget * normalizedSteps / _proofSteps));
   }
 
   void complete() {
-    VideoEditorRenderService._emitCompositeProgress(
-      taskId: taskId,
-      progress: 1,
-    );
+    _emit(1);
   }
 
   Future<void> dispose() async {
     await _renderSubscription?.cancel();
+    _renderSubscription = null;
+  }
+
+  /// Emits a monotonically increasing composite progress value, guarding
+  /// against backwards jumps caused by out-of-order stream events.
+  void _emit(double progress) {
+    final clamped = progress.clamp(0.0, 1.0);
+    if (clamped <= _lastProgress) return;
+    _lastProgress = clamped;
+    VideoEditorRenderService._emitCompositeProgress(
+      taskId: taskId,
+      progress: clamped,
+    );
   }
 }
 
@@ -237,10 +246,10 @@ class VideoEditorRenderService {
   @visibleForTesting
   static double proofModeProgressBudgetForClipCount(int clipCount) {
     final normalizedClipCount = clipCount < 1 ? 1 : clipCount;
-    return (normalizedClipCount * 0.01).clamp(0.05, 0.10).toDouble();
+    return (normalizedClipCount * 0.01).clamp(0.05, 0.10);
   }
 
-  static Stream<ProgressModel> progressStreamById(String taskId) {
+  static Stream<ProgressModel> compositeProgressStreamById(String taskId) {
     return _compositeProgressController.stream.where(
       (progress) => progress.id == taskId,
     );
@@ -251,7 +260,7 @@ class VideoEditorRenderService {
     required double progress,
   }) {
     _compositeProgressController.add(
-      ProgressModel(id: taskId, progress: progress.clamp(0.0, 1.0).toDouble()),
+      ProgressModel(id: taskId, progress: progress.clamp(0.0, 1.0)),
     );
   }
 
@@ -332,7 +341,7 @@ class VideoEditorRenderService {
 
       if (outputPath == null) return null;
 
-      progressTracker.markRenderComplete();
+      await progressTracker.markRenderComplete();
 
       final metaData = await ProVideoEditor.instance.getMetadata(
         EditorVideo.file(outputPath),
