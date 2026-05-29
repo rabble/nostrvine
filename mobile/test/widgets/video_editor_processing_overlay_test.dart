@@ -3,14 +3,19 @@
 
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/widgets/video_editor/video_editor_processing_overlay.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 DivineVideoClip _createClip({Completer<bool>? processingCompleter}) {
   return DivineVideoClip(
@@ -26,12 +31,31 @@ DivineVideoClip _createClip({Completer<bool>? processingCompleter}) {
 
 void main() {
   group('VideoEditorProcessingOverlay', () {
+    late ProviderContainer container;
+    late SharedPreferences sharedPreferences;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      sharedPreferences = await SharedPreferences.getInstance();
+      container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+        ],
+      );
+      container.read(videoEditorProvider.notifier).setDraftId('draft-test');
+    });
+
+    tearDown(() {
+      container.dispose();
+    });
+
     testWidgets('should be visible when clip is processing', (tester) async {
       final completer = Completer<bool>();
       final clip = _createClip(processingCompleter: completer);
 
       await tester.pumpWidget(
-        ProviderScope(
+        UncontrolledProviderScope(
+          container: container,
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -55,7 +79,8 @@ void main() {
       final clip = _createClip(); // No processingCompleter
 
       await tester.pumpWidget(
-        ProviderScope(
+        UncontrolledProviderScope(
+          container: container,
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -80,7 +105,8 @@ void main() {
       final clip = _createClip(processingCompleter: completer);
 
       await tester.pumpWidget(
-        ProviderScope(
+        UncontrolledProviderScope(
+          container: container,
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -96,6 +122,40 @@ void main() {
             widget.color == const Color.fromARGB(140, 0, 0, 0),
       );
       expect(overlayFinder, findsNothing);
+    });
+
+    testWidgets('renders composed export progress', (
+      tester,
+    ) async {
+      final clip = _createClip();
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: VideoEditorProcessingOverlay(
+                clip: clip,
+                isProcessing: true,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      VideoEditorRenderService.emitCompositeProgressForTesting(
+        taskId: 'draft-test',
+        progress: 0.95,
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      final spinner = tester.widget<PartialCircleSpinner>(
+        find.byType(PartialCircleSpinner),
+      );
+      expect(spinner.progress, closeTo(0.95, 1e-9));
     });
   });
 }

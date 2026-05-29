@@ -6,8 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/services/video_editor/video_editor_render_service.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:pro_video_editor/core/models/video/progress_model.dart';
-import 'package:pro_video_editor/core/platform/platform_interface.dart';
 
 class VideoEditorProcessingOverlay extends ConsumerWidget {
   const VideoEditorProcessingOverlay({
@@ -38,16 +39,28 @@ class VideoEditorProcessingOverlay extends ConsumerWidget {
               ),
               color: const Color.fromARGB(180, 0, 0, 0),
               child: Center(
-                // Without RepaintBoundary, the progress indicator repaints
-                // the entire screen while it's running.
-                child: RepaintBoundary(
-                  child: StreamBuilder<ProgressModel>(
-                    stream: ProVideoEditor.instance.progressStreamById(draftId),
-                    builder: (context, snapshot) {
-                      final progress = snapshot.data?.progress ?? 0;
-                      return PartialCircleSpinner(progress: progress);
-                    },
-                  ),
+                child: Column(
+                  mainAxisSize: .min,
+                  spacing: 12,
+                  children: [
+                    const BrandedLoadingIndicator(size: 44),
+
+                    // Without RepaintBoundary, the progress indicator repaints
+                    // the entire screen while it's running.
+                    RepaintBoundary(
+                      child: StreamBuilder<ProgressModel>(
+                        stream: VideoEditorRenderService.progressStreamById(
+                          draftId,
+                        ),
+                        builder: (context, snapshot) {
+                          final progress = (snapshot.data?.progress ?? 0)
+                              .clamp(0.0, 1.0)
+                              .toDouble();
+                          return PartialCircleSpinner(progress: progress);
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ),
             )
