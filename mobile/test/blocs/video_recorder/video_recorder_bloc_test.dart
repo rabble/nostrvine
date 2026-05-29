@@ -526,7 +526,7 @@ void main() {
         verify: (_) {
           verify(
             () => prefs.setString(
-              kLastUsedRecorderModeKey,
+              VideoRecorderMode.persistenceKey,
               VideoRecorderMode.classic.name,
             ),
           ).called(1);

@@ -1,14 +1,10 @@
 // ABOUTME: Tests for VideoMetadataScreen basic rendering and structure
 // ABOUTME: Verifies screen renders with expected UI elements
 
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' as models;
-import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -25,10 +21,6 @@ import 'package:openvine/widgets/video_metadata/modes/classic/video_metadata_cla
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class _MockVideoRecorderBloc
-    extends MockBloc<VideoRecorderEvent, VideoRecorderBlocState>
-    implements VideoRecorderBloc {}
-
 DivineVideoClip _createTestClip({String id = 'test-clip'}) {
   return DivineVideoClip(
     id: id,
@@ -44,15 +36,34 @@ void main() {
   group(VideoMetadataScreen, () {
     late DivineVideoClip testClip;
     late SharedPreferences prefs;
-    late _MockVideoRecorderBloc recorderBloc;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
       testClip = _createTestClip();
-      recorderBloc = _MockVideoRecorderBloc();
-      when(() => recorderBloc.state).thenReturn(const VideoRecorderBlocState());
     });
+
+    // VideoMetadataScreen is pushed as a top-level route, OUTSIDE the recorder's
+    // BlocProvider, so it must NOT depend on VideoRecorderBloc — it reads the
+    // persisted recorder mode from SharedPreferences instead. These tests pump
+    // it without any BlocProvider on purpose: a regression to reading the bloc
+    // would throw a ProviderNotFoundException and fail here (the crash hm21
+    // hit in classic mode).
+    Widget buildScreen() {
+      return ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          clipManagerProvider.overrideWith(
+            () => _MockClipManagerNotifier([testClip]),
+          ),
+        ],
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: VideoMetadataScreen(),
+        ),
+      );
+    }
 
     group('initState', () {
       testWidgets('clears stale publish error state on screen init', (
@@ -79,13 +90,10 @@ void main() {
         await tester.pumpWidget(
           UncontrolledProviderScope(
             container: container,
-            child: BlocProvider<VideoRecorderBloc>.value(
-              value: recorderBloc,
-              child: const MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: VideoMetadataScreen(),
-              ),
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: VideoMetadataScreen(),
             ),
           ),
         );
@@ -101,24 +109,7 @@ void main() {
       testWidgets('renders $VideoMetadataScreen with basic structure', (
         tester,
       ) async {
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              sharedPreferencesProvider.overrideWithValue(prefs),
-              clipManagerProvider.overrideWith(
-                () => _MockClipManagerNotifier([testClip]),
-              ),
-            ],
-            child: BlocProvider<VideoRecorderBloc>.value(
-              value: recorderBloc,
-              child: const MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: VideoMetadataScreen(),
-              ),
-            ),
-          ),
-        );
+        await tester.pumpWidget(buildScreen());
         await tester.pumpAndSettle();
 
         expect(find.text('Post details'), findsOneWidget);
@@ -140,13 +131,10 @@ void main() {
         await tester.pumpWidget(
           UncontrolledProviderScope(
             container: container,
-            child: BlocProvider<VideoRecorderBloc>.value(
-              value: recorderBloc,
-              child: const MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: VideoMetadataScreen(),
-              ),
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: VideoMetadataScreen(),
             ),
           ),
         );
@@ -175,28 +163,12 @@ void main() {
       testWidgets('renders $VideoMetadataCaptureStack when mode is capture', (
         tester,
       ) async {
-        when(() => recorderBloc.state).thenReturn(
-          const VideoRecorderBlocState(),
+        await prefs.setString(
+          VideoRecorderMode.persistenceKey,
+          VideoRecorderMode.capture.name,
         );
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              sharedPreferencesProvider.overrideWithValue(prefs),
-              clipManagerProvider.overrideWith(
-                () => _MockClipManagerNotifier([testClip]),
-              ),
-            ],
-            child: BlocProvider<VideoRecorderBloc>.value(
-              value: recorderBloc,
-              child: const MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: VideoMetadataScreen(),
-              ),
-            ),
-          ),
-        );
+        await tester.pumpWidget(buildScreen());
         await tester.pumpAndSettle();
 
         expect(find.byType(VideoMetadataCaptureStack), findsOneWidget);
@@ -206,30 +178,12 @@ void main() {
       testWidgets('renders $VideoMetadataClassicStack when mode is classic', (
         tester,
       ) async {
-        when(() => recorderBloc.state).thenReturn(
-          const VideoRecorderBlocState(
-            recorderMode: VideoRecorderMode.classic,
-          ),
+        await prefs.setString(
+          VideoRecorderMode.persistenceKey,
+          VideoRecorderMode.classic.name,
         );
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              sharedPreferencesProvider.overrideWithValue(prefs),
-              clipManagerProvider.overrideWith(
-                () => _MockClipManagerNotifier([testClip]),
-              ),
-            ],
-            child: BlocProvider<VideoRecorderBloc>.value(
-              value: recorderBloc,
-              child: const MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: VideoMetadataScreen(),
-              ),
-            ),
-          ),
-        );
+        await tester.pumpWidget(buildScreen());
         await tester.pumpAndSettle();
 
         expect(find.byType(VideoMetadataClassicStack), findsOneWidget);

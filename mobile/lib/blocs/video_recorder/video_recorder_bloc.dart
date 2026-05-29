@@ -37,10 +37,6 @@ part 'video_recorder_state.dart';
 /// SharedPreferences key for the last-used camera lens.
 const _kLastUsedCameraLensKey = 'camera_last_used_lens';
 
-/// SharedPreferences key for the last-used recorder mode.
-@visibleForTesting
-const kLastUsedRecorderModeKey = 'camera_last_used_recorder_mode';
-
 /// Factory for creating a [CountdownSoundService].
 ///
 /// Injectable so tests can verify the wiring that protects the
@@ -245,13 +241,9 @@ class VideoRecorderBloc
   ) async {
     final prefs = _readSharedPreferences();
 
-    final savedModeName = prefs.getString(kLastUsedRecorderModeKey);
-    final savedMode = savedModeName != null
-        ? VideoRecorderMode.values.firstWhere(
-            (m) => m.name == savedModeName,
-            orElse: () => VideoRecorderMode.capture,
-          )
-        : VideoRecorderMode.capture;
+    final savedMode = VideoRecorderMode.fromName(
+      prefs.getString(VideoRecorderMode.persistenceKey),
+    );
     if (savedMode != state.recorderMode) {
       _applyRecorderMode(emit, savedMode, keepAutosavedDraft: true);
     }
@@ -1014,7 +1006,7 @@ class VideoRecorderBloc
       ),
     );
     final prefs = _readSharedPreferences();
-    prefs.setString(kLastUsedRecorderModeKey, mode.name);
+    prefs.setString(VideoRecorderMode.persistenceKey, mode.name);
 
     final touchesRecordingState =
         mode != VideoRecorderMode.upload &&

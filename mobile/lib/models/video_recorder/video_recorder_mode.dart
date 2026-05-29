@@ -6,6 +6,17 @@ enum VideoRecorderMode {
   upload,
   ;
 
+  /// SharedPreferences key for the last-used recorder mode.
+  ///
+  /// Persisted by the recorder and read by surfaces that live on a separate
+  /// route from the recorder's `BlocProvider` (e.g. the metadata screen), which
+  /// therefore cannot read it from `VideoRecorderBloc`.
+  static const persistenceKey = 'camera_last_used_recorder_mode';
+
+  /// Parses a persisted mode [name], defaulting to [capture] for null/unknown.
+  static VideoRecorderMode fromName(String? name) =>
+      values.firstWhere((m) => m.name == name, orElse: () => capture);
+
   String get label => switch (this) {
     .capture => 'Capture',
     .classic => 'Classic',
