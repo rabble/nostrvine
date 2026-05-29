@@ -8,6 +8,7 @@ import 'package:models/models.dart' as models;
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/models/video_publish/video_publish_provider_state.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
@@ -56,6 +57,11 @@ void main() {
           clipManagerProvider.overrideWith(
             () => _MockClipManagerNotifier([testClip]),
           ),
+          videoEditorProvider.overrideWith(
+            () => _MockVideoEditorNotifier(
+              VideoEditorProviderState(finalRenderedClip: testClip),
+            ),
+          ),
         ],
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -81,6 +87,11 @@ void main() {
                   publishState: VideoPublishState.error,
                   errorMessage: 'Previous error',
                 ),
+              ),
+            ),
+            videoEditorProvider.overrideWith(
+              () => _MockVideoEditorNotifier(
+                VideoEditorProviderState(finalRenderedClip: testClip),
               ),
             ),
           ],
@@ -124,6 +135,11 @@ void main() {
             sharedPreferencesProvider.overrideWithValue(prefs),
             clipManagerProvider.overrideWith(
               () => _MockClipManagerNotifier([testClip]),
+            ),
+            videoEditorProvider.overrideWith(
+              () => _MockVideoEditorNotifier(
+                VideoEditorProviderState(finalRenderedClip: testClip),
+              ),
             ),
           ],
         );
@@ -211,4 +227,14 @@ class _MockVideoPublishNotifier extends VideoPublishNotifier {
 
   @override
   VideoPublishProviderState build() => _initialState;
+}
+
+/// Mock video editor notifier that returns a fixed state.
+class _MockVideoEditorNotifier extends VideoEditorNotifier {
+  _MockVideoEditorNotifier(this._initialState);
+
+  final VideoEditorProviderState _initialState;
+
+  @override
+  VideoEditorProviderState build() => _initialState;
 }

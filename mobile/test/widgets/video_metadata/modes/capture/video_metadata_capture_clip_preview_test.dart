@@ -43,6 +43,11 @@ void main() {
             clipManagerProvider.overrideWith(
               () => _MockClipManagerNotifier([testClip]),
             ),
+            videoEditorProvider.overrideWith(
+              () => _MockVideoEditorNotifier(
+                VideoEditorProviderState(finalRenderedClip: testClip),
+              ),
+            ),
           ],
           child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,

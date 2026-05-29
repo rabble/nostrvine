@@ -28,12 +28,25 @@ import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
+import 'package:pro_video_editor/core/models/video/progress_model.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 final videoEditorProvider =
     NotifierProvider<VideoEditorNotifier, VideoEditorProviderState>(
       VideoEditorNotifier.new,
     );
+
+/// Exposes the composite render+proof progress stream for the current draft.
+///
+/// The widget layer should watch this provider instead of importing
+/// [VideoEditorRenderService] directly, keeping the UI/service boundary clean.
+final StreamProvider<ProgressModel> videoEditorCompositeProgressProvider =
+    StreamProvider.autoDispose<ProgressModel>((ref) {
+      // draftId is set once during initialization and does not change within a
+      // session, so a one-time read is sufficient.
+      final draftId = ref.read(videoEditorProvider.notifier).draftId;
+      return VideoEditorRenderService.compositeProgressStreamById(draftId);
+    });
 
 @visibleForTesting
 AudioTrack audioTrackFromSoundForRender(AudioEvent sound) {

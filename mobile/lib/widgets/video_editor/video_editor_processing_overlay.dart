@@ -6,9 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
-import 'package:pro_video_editor/core/models/video/progress_model.dart';
 
 class VideoEditorProcessingOverlay extends ConsumerWidget {
   const VideoEditorProcessingOverlay({
@@ -27,9 +25,6 @@ class VideoEditorProcessingOverlay extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // draftId is set once during initialization and does not change within a
-    // session, so a one-time read is sufficient.
-    final draftId = ref.read(videoEditorProvider.notifier).draftId;
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 220),
       child: isProcessing || clip.isProcessing
@@ -47,17 +42,21 @@ class VideoEditorProcessingOverlay extends ConsumerWidget {
 
                     // Without RepaintBoundary, the progress indicator repaints
                     // the entire screen while it's running.
+                    // Without RepaintBoundary, the progress indicator repaints
+                    // the entire screen while it's running.
                     RepaintBoundary(
-                      child: StreamBuilder<ProgressModel>(
-                        stream:
-                            VideoEditorRenderService.compositeProgressStreamById(
-                              draftId,
-                            ),
-                        builder: (context, snapshot) {
-                          final progress = (snapshot.data?.progress ?? 0).clamp(
-                            0.0,
-                            1.0,
-                          );
+                      child: Consumer(
+                        builder: (context, ref, _) {
+                          final progress =
+                              (ref
+                                          .watch(
+                                            videoEditorCompositeProgressProvider,
+                                          )
+                                          .asData
+                                          ?.value
+                                          .progress ??
+                                      0)
+                                  .clamp(0.0, 1.0);
                           return PartialCircleSpinner(progress: progress);
                         },
                       ),
