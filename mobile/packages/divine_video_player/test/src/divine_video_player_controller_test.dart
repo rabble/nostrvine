@@ -510,6 +510,51 @@ void main() {
           const Duration(seconds: 4),
         );
       });
+
+      test(
+        'setClips swallows PlatformException with code CANCELLED',
+        () async {
+          final id = controller.playerId;
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+              .setMockMethodCallHandler(
+                MethodChannel('divine_video_player/player_$id'),
+                (call) async {
+                  if (call.method == 'setClips') {
+                    throw PlatformException(code: 'CANCELLED');
+                  }
+                  return null;
+                },
+              );
+
+          // Must not throw.
+          await expectLater(
+            controller.setClips(const [VideoClip(uri: '/a.mp4')]),
+            completes,
+          );
+        },
+      );
+
+      test(
+        'setClips rethrows PlatformException with non-CANCELLED code',
+        () async {
+          final id = controller.playerId;
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+              .setMockMethodCallHandler(
+                MethodChannel('divine_video_player/player_$id'),
+                (call) async {
+                  if (call.method == 'setClips') {
+                    throw PlatformException(code: 'ERROR');
+                  }
+                  return null;
+                },
+              );
+
+          await expectLater(
+            controller.setClips(const [VideoClip(uri: '/a.mp4')]),
+            throwsA(isA<PlatformException>()),
+          );
+        },
+      );
     });
 
     group('audio tracks', () {

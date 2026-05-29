@@ -499,9 +499,11 @@ void main() {
         expect: () => [
           isA<ClipEditorState>()
               .having((s) => s.isEditing, 'isEditing', isFalse)
+              .having((s) => s.isSplitting, 'isSplitting', isTrue)
               .having((s) => s.isTrimDragging, 'isTrimDragging', isFalse),
           isA<ClipEditorState>()
               .having((s) => s.clips, 'clips', hasLength(2))
+              .having((s) => s.isSplitting, 'isSplitting', isTrue)
               .having(
                 (s) => s.clips.first.duration,
                 'start duration',
@@ -512,6 +514,9 @@ void main() {
                 'end duration',
                 const Duration(seconds: 1),
               ),
+          isA<ClipEditorState>()
+              .having((s) => s.clips, 'clips', hasLength(2))
+              .having((s) => s.isSplitting, 'isSplitting', isFalse),
         ],
       );
 
@@ -590,12 +595,23 @@ void main() {
         },
         act: (bloc) => bloc.add(const ClipEditorSplitRequested()),
         expect: () => [
-          isA<ClipEditorState>().having(
-            (s) => s.isEditing,
-            'isEditing',
-            isFalse,
-          ),
-          isA<ClipEditorState>().having((s) => s.clips, 'clips', hasLength(2)),
+          isA<ClipEditorState>()
+              .having(
+                (s) => s.isEditing,
+                'isEditing',
+                isFalse,
+              )
+              .having(
+                (s) => s.isSplitting,
+                'isSplitting',
+                isTrue,
+              ),
+          isA<ClipEditorState>()
+              .having((s) => s.clips, 'clips', hasLength(2))
+              .having((s) => s.isSplitting, 'isSplitting', isTrue),
+          isA<ClipEditorState>()
+              .having((s) => s.clips, 'clips', hasLength(2))
+              .having((s) => s.isSplitting, 'isSplitting', isFalse),
         ],
       );
 
