@@ -14,6 +14,7 @@ import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_drop_indicator_line.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_editor_timeline_positioned_item.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/timeline_snap_controller.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
 
 /// Callback reporting a trim / resize change for an overlay item.
 ///
@@ -62,6 +63,7 @@ class TimelineOverlayStrip extends StatefulWidget {
     required this.totalWidth,
     required this.pixelsPerSecond,
     required this.totalDuration,
+    required this.clipEdgesMs,
     required this.color,
     this.rowHeight = TimelineConstants.overlayRowHeight,
     this.isCollapsed = false,
@@ -91,6 +93,10 @@ class TimelineOverlayStrip extends StatefulWidget {
 
   /// Total video duration — used to clamp item positions.
   final Duration totalDuration;
+
+  /// Cumulative clip-boundary edges in ms (`[0, e1, …, eN]`), used to
+  /// position and drag items gap-aware so they align with the clip strip.
+  final List<int> clipEdgesMs;
 
   /// Background colour for item tiles.
   final Color color;
@@ -250,6 +256,7 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
                     rowHeight: _effectiveRowHeight,
                     pixelsPerSecond: widget.pixelsPerSecond,
                     totalDuration: widget.totalDuration,
+                    clipEdgesMs: widget.clipEdgesMs,
                     color: widget.color,
                     isCollapsed: widget.isCollapsed,
                     trimExpansion: _trimExpansion,
@@ -274,6 +281,7 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
                 rowHeight: _effectiveRowHeight,
                 pixelsPerSecond: widget.pixelsPerSecond,
                 totalDuration: widget.totalDuration,
+                clipEdgesMs: widget.clipEdgesMs,
                 color: widget.color,
                 isCollapsed: widget.isCollapsed,
                 trimExpansion: _trimExpansion,
@@ -407,10 +415,20 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
 
     _dragSnap.accumulate(dx);
 
-    final rawStartMs =
-        (_dragSnap.originMs + _dragSnap.effectiveAccPx / pps * 1000)
-            .round()
-            .clamp(0, maxStartMs);
+    // Gap-aware px→ms: convert the drag origin to pixels, add the
+    // accumulated drag pixels, then map back so the dragged item tracks
+    // the clip strip across clip gaps.
+    final originPx = timelineMsToOverlayOffset(
+      widget.clipEdgesMs,
+      _dragSnap.originMs,
+      pps,
+    );
+    final rawStartMs = timelineOverlayOffsetToMs(
+      widget.clipEdgesMs,
+      originPx + _dragSnap.effectiveAccPx,
+      pps,
+      totalMs,
+    ).clamp(0, maxStartMs);
 
     // Auto-scroll when dragging near viewport edges.
     final isAutoScrollingV = _handleAutoScroll(details.globalPosition);

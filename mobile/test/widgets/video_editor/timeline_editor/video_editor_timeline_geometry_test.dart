@@ -392,4 +392,98 @@ void main() {
       expect(recovered, equals(pos));
     });
   });
+
+  // Edge-based gap-aware converters used to position overlay layers
+  // (text/audio) against the gap-aware clip strip. Overlays carry a
+  // pure-ms cumulative clip-edge list `[0, e1, e2, …]`.
+  //
+  //   edges [0, 2000, 5000, 7000] @ pps 52, clipGap 1
+  //   ms 2000 → 2*52 + 1 gap  = 105 px (boundary after clip 0)
+  //   ms 5000 → 5*52 + 2 gaps = 262 px (boundary after clip 1)
+  //   ms 7000 → 7*52 + 2 gaps = 366 px (final edge, no trailing gap)
+  group(timelineMsToOverlayOffset, () {
+    const edges = [0, 2000, 5000, 7000];
+
+    test('0 ms → 0 px', () {
+      expect(timelineMsToOverlayOffset(edges, 0, pps), equals(0.0));
+    });
+
+    test('within first clip — no gap', () {
+      expect(timelineMsToOverlayOffset(edges, 1000, pps), equals(52.0));
+    });
+
+    test('first internal boundary adds one gap', () {
+      expect(timelineMsToOverlayOffset(edges, 2000, pps), equals(105.0));
+    });
+
+    test('second internal boundary adds two gaps', () {
+      expect(timelineMsToOverlayOffset(edges, 5000, pps), equals(262.0));
+    });
+
+    test('final edge does not add a trailing gap', () {
+      expect(timelineMsToOverlayOffset(edges, 7000, pps), equals(366.0));
+    });
+
+    test('single-clip edges fall back to gap-free', () {
+      expect(
+        timelineMsToOverlayOffset(const [0, 10000], 4000, pps),
+        equals(208.0),
+      );
+    });
+
+    test('empty/degenerate edges fall back to gap-free', () {
+      expect(timelineMsToOverlayOffset(const [0], 3000, pps), equals(156.0));
+    });
+  });
+
+  group(timelineOverlayOffsetToMs, () {
+    const edges = [0, 2000, 5000, 7000];
+    const totalMs = 7000;
+
+    test('0 px → 0 ms', () {
+      expect(timelineOverlayOffsetToMs(edges, 0, pps, totalMs), equals(0));
+    });
+
+    test('within first clip — no gap correction', () {
+      expect(timelineOverlayOffsetToMs(edges, 52, pps, totalMs), equals(1000));
+    });
+
+    test('subtracts one gap at first boundary', () {
+      expect(
+        timelineOverlayOffsetToMs(edges, 105, pps, totalMs),
+        equals(2000),
+      );
+    });
+
+    test('subtracts two gaps at second boundary', () {
+      expect(
+        timelineOverlayOffsetToMs(edges, 262, pps, totalMs),
+        equals(5000),
+      );
+    });
+
+    test('offset inside a gap clamps to the shared boundary', () {
+      expect(
+        timelineOverlayOffsetToMs(edges, 104.5, pps, totalMs),
+        equals(2000),
+      );
+    });
+
+    test('clamps offsets beyond the end to totalMs', () {
+      expect(
+        timelineOverlayOffsetToMs(edges, 99999, pps, totalMs),
+        equals(totalMs),
+      );
+    });
+
+    for (final ms in [0, 1000, 2000, 5000, 7000]) {
+      test('round-trip ms $ms survives offset conversion', () {
+        final offset = timelineMsToOverlayOffset(edges, ms, pps);
+        expect(
+          timelineOverlayOffsetToMs(edges, offset, pps, totalMs),
+          equals(ms),
+        );
+      });
+    }
+  });
 }

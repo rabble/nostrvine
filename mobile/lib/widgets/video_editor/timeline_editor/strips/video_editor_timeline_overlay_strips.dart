@@ -195,6 +195,7 @@ class _TimelineOverlayStripsState extends State<TimelineOverlayStrips> {
                 totalWidth: widget.totalWidth,
                 pixelsPerSecond: widget.pixelsPerSecond,
                 totalDuration: widget.totalDuration,
+                clipEdgesMs: widget.clipEdgesMs,
                 color: config.color,
                 rowHeight: config.rowHeight,
                 isCollapsed: config.isCollapsed,
