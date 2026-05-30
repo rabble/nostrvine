@@ -44,6 +44,28 @@ void main() {
               'finished.',
         );
       });
+
+      test(
+        '$platform reports requested paused position during texture refresh',
+        () {
+          final source = _appleSourceFile(platform).readAsStringSync();
+
+          expect(
+            source,
+            contains('reportedPositionOverrideMs'),
+            reason:
+                'Paused AVPlayer texture refresh can settle one decoded frame '
+                'behind the requested seek target; native state updates should '
+                'keep reporting the requested timeline position.',
+          );
+          expect(
+            source,
+            contains('if let overrideMs = reportedPositionOverrideMs'),
+          );
+          expect(source, contains('Int64(actualPositionMs) >= overrideMs'));
+          expect(source, contains('reportedPositionOverrideMs = nil'));
+        },
+      );
     }
   });
 }

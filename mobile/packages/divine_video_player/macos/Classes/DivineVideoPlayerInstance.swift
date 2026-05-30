@@ -42,6 +42,11 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
     private var firstFrameRendered: Bool = false
     private var videoWidth: Int = 0
     private var videoHeight: Int = 0
+    /// While paused after an exact seek or composition swap, AVPlayer can settle
+    /// one decoded frame behind the requested time during preroll/texture
+    /// refresh. Keep reporting the requested timeline position until playback
+    /// catches up or another seek replaces it, so Dart's timeline does not drift.
+    private var reportedPositionOverrideMs: Int64?
 
     /// Audio overlay manager for synchronized audio tracks.
     private let audioOverlayManager = AudioOverlayManager()
@@ -171,7 +176,9 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                 }
                 self.templateItem = playerItem
 
-                let startPositionMs = (args["startPositionMs"] as? NSNumber)?.int64Value ?? 0
+                let requestedStartPositionMs = (args["startPositionMs"] as? NSNumber)?.int64Value
+                let startPositionMs = requestedStartPositionMs ?? 0
+                self.reportedPositionOverrideMs = requestedStartPositionMs
                 let startTime = startPositionMs > 0
                     ? CMTime(value: startPositionMs, timescale: 1000)
                     : CMTime.zero
@@ -366,7 +373,9 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             result(nil)
             return
         }
-        let time = CMTime(value: Int64(positionMs), timescale: 1000)
+        let targetPositionMs = Int64(positionMs)
+        reportedPositionOverrideMs = targetPositionMs
+        let time = CMTime(value: targetPositionMs, timescale: 1000)
         player?.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
             guard let self else {
                 result(nil)
@@ -425,6 +434,8 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             result(nil)
             return
         }
+        let targetPositionMs = Int64((clipOffsets[index] * 1000).rounded())
+        reportedPositionOverrideMs = targetPositionMs
         let targetTime = CMTime(seconds: clipOffsets[index], preferredTimescale: 600)
         player?.seek(to: targetTime, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
             guard let self else {
@@ -455,6 +466,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         clipCount = 0
         totalDuration = 0
         firstFrameRendered = false
+        reportedPositionOverrideMs = nil
         currentStatus = "idle"
         errorMessage = nil  // clear stale error so sendStateUpdate never emits
                             // status="error" after media has been released.
@@ -704,13 +716,25 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         guard let player, let sink = eventSink else { return }
 
         let currentTime = CMTimeGetSeconds(player.currentTime())
-        let positionMs = Int(max(currentTime, 0) * 1000)
+        let actualPositionMs = Int(max(currentTime, 0) * 1000)
+        let positionMs: Int
+        if let overrideMs = reportedPositionOverrideMs {
+            if player.rate > 0 && Int64(actualPositionMs) >= overrideMs {
+                reportedPositionOverrideMs = nil
+                positionMs = actualPositionMs
+            } else {
+                positionMs = Int(max(overrideMs, 0))
+            }
+        } else {
+            positionMs = actualPositionMs
+        }
+        let reportedTime = Double(positionMs) / 1000.0
         let durationMs = Int(totalDuration * 1000)
 
         var clipIndex = 0
         for i in 0..<clipOffsets.count {
             let clipEnd = clipOffsets[i] + clipDurations[i]
-            if currentTime < clipEnd + 0.01 {
+            if reportedTime < clipEnd + 0.01 {
                 clipIndex = i
                 break
             }
