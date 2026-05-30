@@ -114,7 +114,7 @@ void main() {
       });
 
       testWidgets(
-        'dropdown shows For You, Following, and subscribed lists but not New',
+        'dropdown shows For You, Following, New, and subscribed lists',
         (tester) async {
           when(() => mockBloc.state).thenReturn(
             VideoFeedBlocState(
@@ -130,8 +130,8 @@ void main() {
 
           expect(find.text(l10n.feedModeForYou), findsWidgets);
           expect(find.text(l10n.feedModeFollowing), findsOneWidget);
+          expect(find.text(l10n.feedModeNew), findsOneWidget);
           expect(find.text('Best Vines'), findsOneWidget);
-          expect(find.text(l10n.feedModeNew), findsNothing);
         },
       );
 
@@ -179,6 +179,30 @@ void main() {
         verify(
           () => mockBloc.add(
             const VideoFeedSourceChanged(VideoFeedSource.following()),
+          ),
+        ).called(1);
+      });
+
+      testWidgets('dispatches VideoFeedSourceChanged when New selected', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          const VideoFeedBlocState(
+            status: VideoFeedStatus.success,
+            source: VideoFeedSource.forYou(),
+          ),
+        );
+        await tester.pumpWidget(createTestWidget());
+
+        await tester.tap(find.text(l10n.feedModeForYou));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text(l10n.feedModeNew));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockBloc.add(
+            const VideoFeedSourceChanged(VideoFeedSource.newVideos()),
           ),
         ).called(1);
       });

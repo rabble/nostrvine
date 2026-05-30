@@ -25,6 +25,9 @@ enum VideoFeedSourceType {
 
   /// Videos from one subscribed curated list.
   subscribedList,
+
+  /// Most recently published videos (chronological).
+  newVideos,
 }
 
 /// Source selection for [VideoFeedBloc].
@@ -47,10 +50,17 @@ final class VideoFeedSource extends Equatable {
     required String this.listName,
   }) : type = VideoFeedSourceType.subscribedList;
 
+  /// Most recently published videos (chronological).
+  const VideoFeedSource.newVideos()
+    : type = VideoFeedSourceType.newVideos,
+      listId = null,
+      listName = null;
+
   /// Compatibility conversion for legacy mode-based callers.
   factory VideoFeedSource.fromMode(FeedMode mode) => switch (mode) {
     FeedMode.following => const VideoFeedSource.following(),
-    FeedMode.forYou || FeedMode.latest => const VideoFeedSource.forYou(),
+    FeedMode.forYou => const VideoFeedSource.forYou(),
+    FeedMode.latest => const VideoFeedSource.newVideos(),
   };
 
   /// The source type.
@@ -65,6 +75,7 @@ final class VideoFeedSource extends Equatable {
   /// Legacy mode projection for compatibility.
   FeedMode get mode => switch (type) {
     VideoFeedSourceType.forYou => FeedMode.forYou,
+    VideoFeedSourceType.newVideos => FeedMode.latest,
     VideoFeedSourceType.following ||
     VideoFeedSourceType.subscribedList => FeedMode.following,
   };
@@ -72,6 +83,7 @@ final class VideoFeedSource extends Equatable {
   /// Label fallback for UI surfaces that do not have localized copy.
   String get labelFallback => switch (type) {
     VideoFeedSourceType.forYou => FeedMode.forYou.name,
+    VideoFeedSourceType.newVideos => FeedMode.latest.name,
     VideoFeedSourceType.following => FeedMode.following.name,
     VideoFeedSourceType.subscribedList => listName ?? '',
   };
@@ -79,6 +91,7 @@ final class VideoFeedSource extends Equatable {
   /// SharedPreferences value for this source.
   String get persistenceValue => switch (type) {
     VideoFeedSourceType.forYou => FeedMode.forYou.name,
+    VideoFeedSourceType.newVideos => FeedMode.latest.name,
     VideoFeedSourceType.following => FeedMode.following.name,
     VideoFeedSourceType.subscribedList => 'list:$listId',
   };
@@ -134,6 +147,8 @@ final class VideoFeedBlocState extends Equatable {
            source ??
            (mode == FeedMode.following
                ? const VideoFeedSource.following()
+               : mode == FeedMode.latest
+               ? const VideoFeedSource.newVideos()
                : const VideoFeedSource.forYou());
 
   /// The current loading status.

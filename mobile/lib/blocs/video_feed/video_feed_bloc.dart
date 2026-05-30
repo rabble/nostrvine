@@ -242,6 +242,10 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       return const VideoFeedSource.following();
     }
 
+    if (saved == FeedMode.latest.name) {
+      return const VideoFeedSource.newVideos();
+    }
+
     return const VideoFeedSource.forYou();
   }
 
@@ -688,6 +692,10 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
           .getVideosForList(
             _curatedListRepository.getOrderedVideoIds(source.listId!),
           )
+          .then((videos) => HomeFeedResult(videos: videos)),
+    VideoFeedSourceType.newVideos =>
+      _videosRepository
+          .getNewVideos(until: until, skipCache: skipCache)
           .then((videos) => HomeFeedResult(videos: videos)),
   };
 

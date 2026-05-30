@@ -86,6 +86,10 @@ class FeedModeSwitch extends StatelessWidget {
           label: l10n.feedModeFollowing,
           value: 'following',
         ),
+        VineBottomSheetSelectionOptionData(
+          label: l10n.feedModeNew,
+          value: 'latest',
+        ),
         ...state.subscribedLists.map(
           (list) => VineBottomSheetSelectionOptionData(
             label: list.name,
@@ -110,6 +114,9 @@ VideoFeedSource _sourceForSelection(String selected, VideoFeedBlocState state) {
   if (selected == 'following') {
     return const VideoFeedSource.following();
   }
+  if (selected == 'latest') {
+    return const VideoFeedSource.newVideos();
+  }
   if (selected.startsWith('list:')) {
     final listId = selected.substring('list:'.length);
     final list = state.subscribedLists.firstWhere((list) => list.id == listId);
@@ -124,6 +131,7 @@ String _labelForSource(VideoFeedBlocState state, AppLocalizations l10n) {
   return switch (source.type) {
     VideoFeedSourceType.forYou => l10n.feedModeForYou,
     VideoFeedSourceType.following => l10n.feedModeFollowing,
+    VideoFeedSourceType.newVideos => l10n.feedModeNew,
     VideoFeedSourceType.subscribedList =>
       _listNameForSource(state) ?? source.listName ?? source.labelFallback,
   };

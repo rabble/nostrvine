@@ -172,7 +172,7 @@ void main() {
         expect(loadedState.isEmpty, isFalse);
       });
 
-      test('copyWith maps legacy latest mode to For You source', () {
+      test('copyWith maps legacy latest mode to New Videos source', () {
         const state = VideoFeedBlocState();
 
         final updated = state.copyWith(
@@ -181,8 +181,8 @@ void main() {
         );
 
         expect(updated.status, VideoFeedStatus.success);
-        expect(updated.mode, FeedMode.forYou);
-        expect(updated.source, const VideoFeedSource.forYou());
+        expect(updated.mode, FeedMode.latest);
+        expect(updated.source, const VideoFeedSource.newVideos());
       });
 
       test('copyWith preserves values when not specified', () {
@@ -239,26 +239,26 @@ void main() {
       );
 
       blocTest<VideoFeedBloc, VideoFeedBlocState>(
-        'maps legacy latest start mode to For You',
+        'maps legacy latest start mode to New Videos',
         setUp: () {
           final videos = createTestVideos(5);
 
           when(
-            () => mockVideosRepository.getRecommendedVideos(
-              userPubkey: any(named: 'userPubkey'),
+            () => mockVideosRepository.getNewVideos(
               limit: any(named: 'limit'),
               until: any(named: 'until'),
               skipCache: any(named: 'skipCache'),
             ),
-          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
+          ).thenAnswer((_) async => videos);
         },
         build: createBloc,
         act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.latest)),
         expect: () => [
-          const VideoFeedBlocState(),
+          const VideoFeedBlocState(mode: FeedMode.latest),
           isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
-              .having((s) => s.mode, 'mode', FeedMode.forYou),
+              .having((s) => s.mode, 'mode', FeedMode.latest)
+              .having((s) => s.videos.length, 'videos count', 5),
         ],
       );
 
@@ -355,7 +355,7 @@ void main() {
       );
 
       blocTest<VideoFeedBloc, VideoFeedBlocState>(
-        'migrates persisted latest to For You',
+        'restores persisted latest to New Videos',
         setUp: () async {
           final videos = createTestVideos(2);
           SharedPreferences.setMockInitialValues({
@@ -364,13 +364,12 @@ void main() {
           final sharedPreferences = await SharedPreferences.getInstance();
 
           when(
-            () => mockVideosRepository.getRecommendedVideos(
-              userPubkey: any(named: 'userPubkey'),
+            () => mockVideosRepository.getNewVideos(
               limit: any(named: 'limit'),
               until: any(named: 'until'),
               skipCache: any(named: 'skipCache'),
             ),
-          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
+          ).thenAnswer((_) async => videos);
 
           savedModeBloc = VideoFeedBloc(
             videosRepository: mockVideosRepository,
@@ -386,22 +385,21 @@ void main() {
               .having(
                 (s) => s.source.type,
                 'source',
-                VideoFeedSourceType.forYou,
+                VideoFeedSourceType.newVideos,
               )
-              .having((s) => s.mode, 'mode', FeedMode.forYou),
+              .having((s) => s.mode, 'mode', FeedMode.latest),
           isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having(
                 (s) => s.source.type,
                 'source',
-                VideoFeedSourceType.forYou,
+                VideoFeedSourceType.newVideos,
               )
-              .having((s) => s.mode, 'mode', FeedMode.forYou),
+              .having((s) => s.mode, 'mode', FeedMode.latest),
         ],
         verify: (_) async {
           verify(
-            () => mockVideosRepository.getRecommendedVideos(
-              userPubkey: any(named: 'userPubkey'),
+            () => mockVideosRepository.getNewVideos(
               limit: any(named: 'limit'),
               until: any(named: 'until'),
               skipCache: any(named: 'skipCache'),
@@ -411,7 +409,7 @@ void main() {
           final sharedPreferences = await SharedPreferences.getInstance();
           expect(
             sharedPreferences.getString('selected_feed_mode'),
-            const VideoFeedSource.forYou().persistenceValue,
+            const VideoFeedSource.newVideos().persistenceValue,
           );
         },
       );
@@ -923,18 +921,17 @@ void main() {
       );
 
       blocTest<VideoFeedBloc, VideoFeedBlocState>(
-        'legacy latest mode change maps to For You',
+        'legacy latest mode change maps to New Videos',
         setUp: () {
           final videos = createTestVideos(5);
 
           when(
-            () => mockVideosRepository.getRecommendedVideos(
-              userPubkey: any(named: 'userPubkey'),
+            () => mockVideosRepository.getNewVideos(
               limit: any(named: 'limit'),
               until: any(named: 'until'),
               skipCache: any(named: 'skipCache'),
             ),
-          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
+          ).thenAnswer((_) async => videos);
         },
         build: createBloc,
         seed: () => VideoFeedBlocState(
@@ -944,27 +941,27 @@ void main() {
         ),
         act: (bloc) => bloc.add(const VideoFeedModeChanged(FeedMode.latest)),
         expect: () => [
-          const VideoFeedBlocState(),
+          const VideoFeedBlocState(source: VideoFeedSource.newVideos()),
           isA<VideoFeedBlocState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
-              .having((s) => s.mode, 'mode', FeedMode.forYou)
+              .having((s) => s.mode, 'mode', FeedMode.latest)
               .having((s) => s.videos.length, 'videos count', 5),
         ],
       );
 
       blocTest<VideoFeedBloc, VideoFeedBlocState>(
-        'does nothing when legacy latest maps to already selected For You',
+        'does nothing when legacy latest maps to already selected New Videos',
         build: createBloc,
         seed: () => VideoFeedBlocState(
           status: VideoFeedStatus.success,
+          source: const VideoFeedSource.newVideos(),
           videos: createTestVideos(5),
         ),
         act: (bloc) => bloc.add(const VideoFeedModeChanged(FeedMode.latest)),
         expect: () => <VideoFeedBlocState>[],
         verify: (_) {
           verifyNever(
-            () => mockVideosRepository.getRecommendedVideos(
-              userPubkey: any(named: 'userPubkey'),
+            () => mockVideosRepository.getNewVideos(
               limit: any(named: 'limit'),
               until: any(named: 'until'),
               skipCache: any(named: 'skipCache'),
@@ -2286,26 +2283,25 @@ void main() {
       );
 
       blocTest<VideoFeedBloc, VideoFeedBlocState>(
-        'uses For You feed type for legacy latest mode',
+        'uses New Videos feed type for legacy latest mode',
         setUp: () {
           final videos = createTestVideos(3);
           when(
-            () => mockVideosRepository.getRecommendedVideos(
-              userPubkey: any(named: 'userPubkey'),
+            () => mockVideosRepository.getNewVideos(
               limit: any(named: 'limit'),
               until: any(named: 'until'),
               skipCache: any(named: 'skipCache'),
             ),
-          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
+          ).thenAnswer((_) async => videos);
         },
         build: createBlocWithTracker,
         act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.latest)),
         verify: (_) {
-          verify(() => mockTracker.startFeedLoad('forYou')).called(1);
+          verify(() => mockTracker.startFeedLoad('latest')).called(1);
           verify(
-            () => mockTracker.markFirstVideosReceived('forYou', 3),
+            () => mockTracker.markFirstVideosReceived('latest', 3),
           ).called(1);
-          verify(() => mockTracker.markFeedDisplayed('forYou', 3)).called(1);
+          verify(() => mockTracker.markFeedDisplayed('latest', 3)).called(1);
         },
       );
     });
