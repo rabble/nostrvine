@@ -57,6 +57,14 @@ jobs:
           # if the base baseline cannot be loaded. Skip-debt epic: #4337 (WS-1).
           git fetch --quiet --depth=1 origin main
           bash scripts/check_skip_ceiling.sh
+      - name: ⏳ Verify Future.delayed-in-tests count does not increase (ratchet)
+        run: |
+          git fetch --quiet --depth=1 origin main
+          bash scripts/check_future_delayed_ceiling.sh
+      - name: 🧱 Verify untested-services count does not increase (floor ratchet)
+        run: |
+          git fetch --quiet --depth=1 origin main
+          bash scripts/check_untested_services_floor.sh
       - name: 🔨 Verify generated files are up-to-date
         run: |
           dart run build_runner build --delete-conflicting-outputs
