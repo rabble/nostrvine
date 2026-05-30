@@ -3,10 +3,12 @@
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/blossom_settings/blossom_settings_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
@@ -163,6 +165,41 @@ void main() {
         // below would still find zero occurrences — the assertion that
         // matters is the one above).
         expect(german.blossomValidServerUrl, isNotEmpty);
+      },
+    );
+
+    testWidgets(
+      'seeds the server-URL field exactly once; later '
+      'initialServerUrl emissions do not overwrite user input',
+      (tester) async {
+        // First load() seeds the field with the persisted '' (setUp stub).
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        // User edits the field — the controller is now the source of truth.
+        const userInput = 'https://typed-by-user.example';
+        await tester.enterText(find.byType(TextField), userInput);
+        await tester.pumpAndSettle();
+
+        // Re-stub the service so the next load() snapshots a *different*
+        // initialServerUrl, then drive a second load() through the live
+        // cubit to emit a fresh `ready` state with that value.
+        when(
+          () => mockService.getBlossomServer(),
+        ).thenAnswer((_) async => 'https://persisted-elsewhere.example');
+        final cubit = BlocProvider.of<BlossomSettingsCubit>(
+          tester.element(find.byType(BlossomSettingsView)),
+        );
+        await cubit.load();
+        await tester.pumpAndSettle();
+
+        // The one-shot seed contract: the second emission must NOT clobber
+        // the user's typed value.
+        expect(find.text(userInput), findsOneWidget);
+        expect(
+          find.text('https://persisted-elsewhere.example'),
+          findsNothing,
+        );
       },
     );
   });

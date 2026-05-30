@@ -55,6 +55,9 @@ class _BlossomSettingsViewState extends State<BlossomSettingsView> {
     super.dispose();
   }
 
+  /// Seeds the server-URL field exactly once, on the first `ready`/`saving`
+  /// state. After the first seed the [TextEditingController] owns the value;
+  /// later state emissions intentionally do not overwrite the user's input.
   void _seedControllerIfNeeded(BlossomSettingsState state) {
     if (_seededFromState) return;
     if (state.status == BlossomSettingsStatus.ready ||
