@@ -108,9 +108,13 @@ class SafetySettingsCubit extends Cubit<SafetySettingsState> {
 
   /// Toggle "use people I follow as trusted labelers".
   ///
-  /// Pulls the current following set from `FollowRepository` at the moment of
-  /// the toggle so the service can wire (or unwire) those pubkeys' label
-  /// streams — matches the pre-migration call shape.
+  /// Passes the current following set as an enable-time *seed* so the service
+  /// wires those pubkeys' label streams immediately, matching the
+  /// pre-migration call shape. This snapshot is not the source of truth while
+  /// enabled: `moderationLabelServiceProvider` subscribes to
+  /// `FollowRepository.followingStream` and re-runs `syncFollowedLabelers` on
+  /// every follow-graph change (a no-op while disabled), so the feature stays
+  /// live without the cubit owning that subscription.
   Future<void> setPeopleIFollowEnabled(bool value) async {
     await _moderationLabelService.setFollowingModerationEnabled(
       value,
