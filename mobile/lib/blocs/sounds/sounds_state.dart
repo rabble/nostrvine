@@ -49,7 +49,8 @@ class SoundsState extends Equatable {
 
 /// Outcome of `SoundsCubit.previewSound(sound)`.
 enum PreviewSoundOutcome {
-  /// `previewSound` was a no-op because a preview is already loading.
+  /// `previewSound` was a no-op: either a preview was already loading, or the
+  /// Cubit was closed mid-load (the loaded source is stopped, nothing plays).
   ignored,
 
   /// Tapping the same sound stopped the currently-playing preview.

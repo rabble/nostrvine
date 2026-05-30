@@ -802,6 +802,61 @@ void main() {
         verify(() => mockAudioService.loadAudio(any())).called(1);
       });
 
+      testWidgets(
+        'disposing the screen while previewing stops the audio '
+        '(navigate-away cleanup contract)',
+        (tester) async {
+          final testSounds = [
+            createTestAudioEvent(id: 'sound1', title: 'Cool Beat'),
+          ];
+
+          // Keep play() pending so the preview rests in the playing state
+          // (previewingSoundId set) when we tear the screen down.
+          final playCompleter = Completer<void>();
+          when(
+            () => mockAudioService.play(),
+          ).thenAnswer((_) => playCompleter.future);
+
+          await tester.pumpWidget(
+            createTestWidget(
+              child: const SoundsScreen(),
+              overrides: [
+                trendingSoundsProvider.overrideWith(
+                  () => MockTrendingSoundsNotifier(sounds: testSounds),
+                ),
+                // Empty bundled sounds → exactly one preview button.
+                soundLibraryServiceProvider.overrideWith(
+                  (_) async => SoundLibraryService(),
+                ),
+                audioPlaybackServiceProvider.overrideWithValue(
+                  mockAudioService,
+                ),
+              ],
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.byIcon(Icons.play_arrow).first);
+          // Drain stop()/loadAudio microtasks so previewingSoundId is set.
+          await tester.pump();
+          await tester.pump();
+          expect(find.byIcon(Icons.stop), findsWidgets);
+
+          clearInteractions(mockAudioService);
+
+          // Navigate away: tearing the whole tree down unmounts the
+          // ProviderScope and the BlocProvider, which closes the SoundsCubit.
+          // close() must stop the in-flight preview — SoundsView.dispose()
+          // only disposes the text controller.
+          await tester.pumpWidget(const SizedBox.shrink());
+
+          verify(() => mockAudioService.stop()).called(1);
+
+          playCompleter.complete();
+          await tester.pumpAndSettle();
+        },
+      );
+
       testWidgets('shows snackbar when sound has no URL', (tester) async {
         final testSounds = [
           const AudioEvent(

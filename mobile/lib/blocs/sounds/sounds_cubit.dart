@@ -55,7 +55,9 @@ class SoundsCubit extends Cubit<SoundsState> {
   /// Toggles or starts a preview for [sound].
   ///
   /// Returns:
-  /// - [PreviewSoundOutcome.ignored] when a preview is already loading.
+  /// - [PreviewSoundOutcome.ignored] when a preview is already loading, or
+  ///   when the screen was disposed mid-load (the loaded source is stopped
+  ///   and nothing is left playing).
   /// - [PreviewSoundOutcome.stopped] when the user tapped the currently-
   ///   playing sound — the audio service is stopped and state is cleared.
   /// - [PreviewSoundOutcome.unavailable] when the sound has no playable URL.
@@ -81,6 +83,18 @@ class SoundsCubit extends Cubit<SoundsState> {
     try {
       await _audioPlaybackService.stop();
       await _audioPlaybackService.loadAudio(url);
+      if (isClosed) {
+        // The screen was torn down while the source was still loading —
+        // before [SoundsState.previewingSoundId] was set, so [close] could
+        // not have stopped it. Stop the just-loaded source so it doesn't
+        // keep buffering, and skip emitting into a closed Cubit.
+        try {
+          await _audioPlaybackService.stop();
+        } catch (_) {
+          // Best-effort cleanup during shutdown.
+        }
+        return PreviewSoundOutcome.ignored;
+      }
       emit(
         state.copyWith(
           previewingSoundId: sound.id,
@@ -117,10 +131,23 @@ class SoundsCubit extends Cubit<SoundsState> {
     emit(state.copyWith(isLoadingPreview: false, clearPreviewingSoundId: true));
   }
 
+  /// Closes the Cubit, guaranteeing no preview audio outlives the screen.
+  ///
+  /// This is the **navigate-away cleanup contract**: when the enclosing
+  /// `BlocProvider` is disposed (route pop, account switch, app teardown),
+  /// an actively-playing preview ([SoundsState.previewingSoundId] != null)
+  /// is stopped here. `just_audio`'s `play()` stays pending for the whole
+  /// duration of playback, so a sound that is audibly playing always has its
+  /// id set and is covered by this guard.
+  ///
+  /// The earlier loading phase — where [SoundsState.isLoadingPreview] is true
+  /// but the id isn't set yet — is handled by [previewSound]'s `isClosed`
+  /// bail-out, so every preview phase is covered.
+  ///
+  /// Pinned by the "navigate-away cleanup contract" tests in
+  /// `sounds_cubit_test.dart` and `sounds_screen_test.dart`.
   @override
   Future<void> close() async {
-    // Stop any in-flight playback so disposing the screen doesn't leave the
-    // audio service playing into the void.
     if (state.previewingSoundId != null) {
       try {
         await _audioPlaybackService.stop();

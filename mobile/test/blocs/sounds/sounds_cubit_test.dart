@@ -2,6 +2,8 @@
 // ABOUTME: lifecycle (toggle, no-url, success, failure), and the saveSound
 // ABOUTME: passthrough.
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -178,6 +180,64 @@ void main() {
       expect: () => [const SoundsState()],
       verify: (_) {
         verify(audio.stop).called(1);
+      },
+    );
+
+    test(
+      'close() stops the audio service while a preview is playing '
+      '(navigate-away cleanup contract)',
+      () async {
+        // play() stays pending so the Cubit rests in the "currently
+        // previewing" state, mirroring real playback (just_audio's play()
+        // completes only when the sound is stopped or finishes).
+        final playController = Completer<void>();
+        when(audio.play).thenAnswer((_) => playController.future);
+        final cubit = buildCubit();
+
+        final previewing = cubit.previewSound(makeSound());
+        await Future<void>.delayed(Duration.zero);
+        expect(cubit.state.previewingSoundId, 's1');
+
+        // Isolate the close()-triggered stop from the pre-load stop().
+        clearInteractions(audio);
+        await cubit.close();
+        verify(audio.stop).called(1);
+
+        // Let the dangling play() future resolve cleanly (no emit-after-close).
+        playController.complete();
+        await previewing;
+      },
+    );
+
+    test(
+      'previewSound stops the loaded source and skips emitting when the '
+      'Cubit is closed mid-load',
+      () async {
+        // Hold loadAudio open so we can close() the Cubit while it is still
+        // in the loading phase (previewingSoundId not yet set).
+        final loadController = Completer<Duration?>();
+        when(
+          () => audio.loadAudio(any()),
+        ).thenAnswer((_) => loadController.future);
+        final cubit = buildCubit();
+
+        final previewing = cubit.previewSound(makeSound(id: 's7'));
+        await Future<void>.delayed(Duration.zero);
+        expect(cubit.state.isLoadingPreview, isTrue);
+        expect(cubit.state.previewingSoundId, isNull);
+
+        // Navigate away mid-load: close() can't stop yet (no id set).
+        await cubit.close();
+        clearInteractions(audio);
+
+        // Resolving the load must stop the just-loaded source and must NOT
+        // emit into the closed Cubit (which would throw a StateError).
+        loadController.complete(const Duration(seconds: 6));
+        final outcome = await previewing;
+
+        expect(outcome, PreviewSoundOutcome.ignored);
+        verify(audio.stop).called(1);
+        verifyNever(audio.play);
       },
     );
 
