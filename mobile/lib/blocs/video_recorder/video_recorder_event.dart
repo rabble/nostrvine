@@ -17,12 +17,20 @@ sealed class VideoRecorderEvent extends Equatable {
 final class VideoRecorderInitializeRequested extends VideoRecorderEvent {
   const VideoRecorderInitializeRequested({
     this.videoQuality = VideoEditorConstants.quality,
+    this.fromEditor = false,
   });
 
   final DivineVideoQuality videoQuality;
 
+  /// Whether the recorder was opened as an overlay from the video editor.
+  ///
+  /// When `true`, the persisted recorder mode is NOT restored on init, so
+  /// reopening the camera from the editor cannot wipe in-memory editor state
+  /// (title, description, clips) via a stale `classic`/`upload` mode.
+  final bool fromEditor;
+
   @override
-  List<Object?> get props => [videoQuality];
+  List<Object?> get props => [videoQuality, fromEditor];
 }
 
 /// Forwarded from `WidgetsBindingObserver.didChangeAppLifecycleState`.

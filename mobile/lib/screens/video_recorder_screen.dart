@@ -141,7 +141,7 @@ class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
     _disposeVideoControllers();
 
     context.read<VideoRecorderBloc>().add(
-      const VideoRecorderInitializeRequested(),
+      VideoRecorderInitializeRequested(fromEditor: widget.fromEditor),
     );
   }
 

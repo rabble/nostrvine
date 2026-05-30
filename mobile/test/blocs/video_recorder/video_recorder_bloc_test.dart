@@ -566,6 +566,70 @@ void main() {
       );
     });
 
+    group('VideoRecorderInitializeRequested', () {
+      setUp(() {
+        when(
+          () => cameraService.initialize(
+            videoQuality: any(named: 'videoQuality'),
+            initialLens: any(named: 'initialLens'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => cameraService.setRemoteRecordControlEnabled(
+            enabled: any(named: 'enabled'),
+          ),
+        ).thenAnswer((_) async => true);
+      });
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'does NOT restore persisted mode when opened from the editor '
+        '(keeps editor state intact)',
+        setUp: () {
+          when(
+            () => prefs.getString(VideoRecorderMode.persistenceKey),
+          ).thenReturn(VideoRecorderMode.classic.name);
+        },
+        build: buildBloc,
+        act: (bloc) =>
+            bloc.add(const VideoRecorderInitializeRequested(fromEditor: true)),
+        verify: (_) {
+          verifyNever(
+            () => clipManager.clearAll(
+              keepAutosavedDraft: any(named: 'keepAutosavedDraft'),
+            ),
+          );
+          verifyNever(
+            () => videoEditor.reset(
+              keepAutosavedDraft: any(named: 'keepAutosavedDraft'),
+            ),
+          );
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'restores persisted mode when NOT opened from the editor',
+        setUp: () {
+          when(
+            () => prefs.getString(VideoRecorderMode.persistenceKey),
+          ).thenReturn(VideoRecorderMode.classic.name);
+        },
+        build: buildBloc,
+        act: (bloc) => bloc.add(const VideoRecorderInitializeRequested()),
+        verify: (_) {
+          verify(
+            () => clipManager.clearAll(
+              keepAutosavedDraft: any(named: 'keepAutosavedDraft'),
+            ),
+          ).called(1);
+          verify(
+            () => videoEditor.reset(
+              keepAutosavedDraft: any(named: 'keepAutosavedDraft'),
+            ),
+          ).called(1);
+        },
+      );
+    });
+
     group('close()', () {
       test('disposes camera service exactly once', () async {
         final bloc = buildBloc();

@@ -244,7 +244,7 @@ class VideoRecorderBloc
     final savedMode = VideoRecorderMode.fromName(
       prefs.getString(VideoRecorderMode.persistenceKey),
     );
-    if (savedMode != state.recorderMode) {
+    if (!event.fromEditor && savedMode != state.recorderMode) {
       _applyRecorderMode(emit, savedMode, keepAutosavedDraft: true);
     }
 
