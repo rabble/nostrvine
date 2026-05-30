@@ -62,9 +62,7 @@ class _NonAutosaveVideoEditorNotifier extends VideoEditorNotifier {
 
 class _AutosaveVideoEditorNotifier extends VideoEditorNotifier {
   @override
-  VideoEditorProviderState build() => VideoEditorProviderState(
-    isAutosavedDraft: true,
-  );
+  VideoEditorProviderState build() => VideoEditorProviderState();
 }
 
 /// Mock for CameraPermissionBloc
