@@ -33,6 +33,7 @@ import 'package:openvine/widgets/video_editor/main_editor/video_editor_player.da
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_thumbnail.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
 import 'package:pro_image_editor/pro_image_editor.dart'
     hide AudioTrack, VideoClip;
 import 'package:unified_logger/unified_logger.dart';
@@ -275,36 +276,20 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     _lastTrimPositionInClip = null;
     if (clipId == null || positionInClip == null) return null;
 
-    var precedingDuration = Duration.zero;
-    for (final clip in clips) {
-      if (clip.id == clipId) {
-        // positionInClip and trimStart are both source-time offsets, so
-        // relative is also in source time.
-        final relative = positionInClip - clip.trimStart;
-        if (relative < Duration.zero || relative > clip.trimmedDuration) {
-          return null;
-        }
-        // Convert source-time relative offset to playback time before
-        // combining with precedingDuration (which is already playback-time).
-        final speed = clip.playbackSpeed ?? 1.0;
-        final relativePlayback = speed == 1.0
-            ? relative
-            : Duration(
-                microseconds: (relative.inMicroseconds / speed).round(),
-              );
-        return precedingDuration + relativePlayback;
-      }
-      // Accumulate in playback time (trimmedDuration ÷ speed) so that
-      // speed-adjusted clips contribute the correct wall-clock offset.
-      precedingDuration += clip.playbackDuration;
-    }
-    return null;
+    return clipSourcePositionToTimelinePosition(
+      clips,
+      clipId: clipId,
+      sourcePosition: positionInClip,
+    );
   }
 
-  Future<void> _onSeekRequested(Duration position) async {
+  Future<void> _onSeekRequested(
+    Duration position, {
+    Duration? playTimePosition,
+  }) async {
     if (!_isPlayerReadyNotifier.value || !_isPlayerInitialized) return;
 
-    _proVideoController.setPlayTime(position);
+    _proVideoController.setPlayTime(playTimePosition ?? position);
 
     if (_isSeeking) {
       _pendingSeekPosition = position;
@@ -949,9 +934,21 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
               previous.trimPosition != current.trimPosition &&
               current.trimPosition != null,
           listener: (context, state) {
-            _lastTrimClipId = state.trimmingClipId;
-            _lastTrimPositionInClip = state.trimPosition;
-            _onSeekRequested(state.trimPosition!);
+            final clipId = state.trimmingClipId;
+            final sourcePosition = state.trimPosition;
+            if (clipId == null || sourcePosition == null) return;
+
+            _lastTrimClipId = clipId;
+            _lastTrimPositionInClip = sourcePosition;
+            final playTimePosition = clipSourcePositionToTimelinePosition(
+              state.clips,
+              clipId: clipId,
+              sourcePosition: sourcePosition,
+            );
+            _onSeekRequested(
+              sourcePosition,
+              playTimePosition: playTimePosition,
+            );
           },
         ),
         // Re-export state history when an overlay item drag or trim

@@ -7,16 +7,23 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
-DivineVideoClip _clip(String id, int seconds, {double? speed}) =>
-    DivineVideoClip(
-      id: id,
-      video: EditorVideo.file('/tmp/$id.mp4'),
-      duration: Duration(seconds: seconds),
-      recordedAt: DateTime(2025),
-      targetAspectRatio: .vertical,
-      originalAspectRatio: 9 / 16,
-      playbackSpeed: speed,
-    );
+DivineVideoClip _clip(
+  String id,
+  int seconds, {
+  double? speed,
+  Duration trimStart = Duration.zero,
+  Duration trimEnd = Duration.zero,
+}) => DivineVideoClip(
+  id: id,
+  video: EditorVideo.file('/tmp/$id.mp4'),
+  duration: Duration(seconds: seconds),
+  recordedAt: DateTime(2025),
+  targetAspectRatio: .vertical,
+  originalAspectRatio: 9 / 16,
+  playbackSpeed: speed,
+  trimStart: trimStart,
+  trimEnd: trimEnd,
+);
 
 void main() {
   // Three-clip composition used throughout most tests:
@@ -287,6 +294,107 @@ void main() {
         );
       });
     }
+  });
+
+  group(clipSourcePositionToTimelinePosition, () {
+    test(
+      'maps a second-clip start trim handle to the clip start in timeline',
+      () {
+        final trimClips = [
+          _clip('clip-1', 10),
+          _clip('clip-2', 10, trimStart: const Duration(seconds: 2)),
+        ];
+
+        expect(
+          clipSourcePositionToTimelinePosition(
+            trimClips,
+            clipId: 'clip-2',
+            sourcePosition: const Duration(seconds: 2),
+          ),
+          equals(const Duration(seconds: 10)),
+        );
+      },
+    );
+
+    test('keeps second-clip trim preview outside an early overlay range', () {
+      final trimClips = [
+        _clip('clip-1', 10),
+        _clip('clip-2', 10, trimStart: const Duration(seconds: 1)),
+      ];
+
+      final position = clipSourcePositionToTimelinePosition(
+        trimClips,
+        clipId: 'clip-2',
+        sourcePosition: const Duration(seconds: 1),
+      );
+
+      expect(position, equals(const Duration(seconds: 10)));
+      expect(position, greaterThan(const Duration(seconds: 5)));
+    });
+
+    test('maps positions inside a trimmed target clip', () {
+      final trimClips = [
+        _clip('clip-1', 10),
+        _clip('clip-2', 10, trimStart: const Duration(seconds: 2)),
+      ];
+
+      expect(
+        clipSourcePositionToTimelinePosition(
+          trimClips,
+          clipId: 'clip-2',
+          sourcePosition: const Duration(seconds: 4),
+        ),
+        equals(const Duration(seconds: 12)),
+      );
+    });
+
+    test('respects playback speed for preceding and target clips', () {
+      final trimClips = [
+        _clip('clip-1', 10, speed: 2.0),
+        _clip(
+          'clip-2',
+          10,
+          speed: 2.0,
+          trimStart: const Duration(seconds: 2),
+        ),
+      ];
+
+      expect(
+        clipSourcePositionToTimelinePosition(
+          trimClips,
+          clipId: 'clip-2',
+          sourcePosition: const Duration(seconds: 6),
+        ),
+        equals(const Duration(seconds: 7)),
+      );
+    });
+
+    test('returns null when source position is outside trimmed range', () {
+      final trimClips = [
+        _clip('clip-1', 10),
+        _clip('clip-2', 10, trimStart: const Duration(seconds: 2)),
+      ];
+
+      expect(
+        clipSourcePositionToTimelinePosition(
+          trimClips,
+          clipId: 'clip-2',
+          sourcePosition: const Duration(seconds: 1),
+        ),
+        isNull,
+      );
+    });
+
+    test('returns null for an unknown clip id', () {
+      expect(
+        clipSourcePositionToTimelinePosition(
+          clips,
+          clipId: 'missing',
+          sourcePosition: Duration.zero,
+        ),
+        isNull,
+      );
+    });
   });
 
   group('DivineVideoClip.playbackDuration', () {
