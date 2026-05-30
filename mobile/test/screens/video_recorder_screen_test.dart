@@ -60,6 +60,13 @@ class _NonAutosaveVideoEditorNotifier extends VideoEditorNotifier {
   );
 }
 
+class _AutosaveVideoEditorNotifier extends VideoEditorNotifier {
+  @override
+  VideoEditorProviderState build() => VideoEditorProviderState(
+    isAutosavedDraft: true,
+  );
+}
+
 /// Mock for CameraPermissionBloc
 class MockCameraPermissionBloc extends Mock implements CameraPermissionBloc {
   @override
@@ -77,18 +84,26 @@ class MockCameraPermissionBloc extends Mock implements CameraPermissionBloc {
 
 late VideoRecorderBloc recorderBloc;
 
-/// Helper to build VideoRecorderView with required providers and the mock bloc.
-Widget buildTestWidget({List<Override> overrides = const []}) {
+/// Stub overrides for the draft storage and clip library services so the
+/// recorder's autosave/clip checks resolve to empty during tests.
+List<Override> _stubStorageOverrides() {
   final mockDraftStorage = _MockDraftStorageService();
   when(
     () => mockDraftStorage.getDraftById(any()),
   ).thenAnswer((_) async => null);
   final mockClipLibrary = _MockClipLibraryService();
   when(mockClipLibrary.getAllClips).thenAnswer((_) async => []);
+  return [
+    draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
+    clipLibraryServiceProvider.overrideWithValue(mockClipLibrary),
+  ];
+}
+
+/// Helper to build VideoRecorderView with required providers and the mock bloc.
+Widget buildTestWidget({List<Override> overrides = const []}) {
   return ProviderScope(
     overrides: [
-      draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
-      clipLibraryServiceProvider.overrideWithValue(mockClipLibrary),
+      ..._stubStorageOverrides(),
       ...overrides,
     ],
     child: MultiBlocProvider(
@@ -115,17 +130,9 @@ Widget buildNavigatorTestWidget({
   required bool fromEditor,
   required List<Override> overrides,
 }) {
-  final mockDraftStorage = _MockDraftStorageService();
-  when(
-    () => mockDraftStorage.getDraftById(any()),
-  ).thenAnswer((_) async => null);
-  final mockClipLibrary = _MockClipLibraryService();
-  when(mockClipLibrary.getAllClips).thenAnswer((_) async => []);
-
   return ProviderScope(
     overrides: [
-      draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
-      clipLibraryServiceProvider.overrideWithValue(mockClipLibrary),
+      ..._stubStorageOverrides(),
       ...overrides,
     ],
     child: MaterialApp(
@@ -468,6 +475,42 @@ void main() {
               sharedPreferencesProvider.overrideWithValue(prefs),
               videoEditorProvider.overrideWith(
                 _NonAutosaveVideoEditorNotifier.new,
+              ),
+              videoPublishProvider.overrideWith(
+                () => fakeVideoPublishNotifier,
+              ),
+            ],
+          ),
+        );
+
+        await tester.tap(find.text('Open recorder'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(VideoRecorderView), findsOneWidget);
+
+        Navigator.of(tester.element(find.byType(VideoRecorderView))).pop();
+        await tester.pumpAndSettle();
+
+        expect(fakeVideoPublishNotifier.clearAllCalls, isZero);
+        expect(fakeVideoPublishNotifier.keepAutosavedDraftValues, isEmpty);
+      });
+
+      testWidgets('does not clear video publish state for autosaved draft', (
+        tester,
+      ) async {
+        SharedPreferences.setMockInitialValues({
+          'why_six_seconds_shown': true,
+        });
+        final prefs = await SharedPreferences.getInstance();
+        final fakeVideoPublishNotifier = _FakeVideoPublishNotifier();
+
+        await tester.pumpWidget(
+          buildNavigatorTestWidget(
+            fromEditor: false,
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              videoEditorProvider.overrideWith(
+                _AutosaveVideoEditorNotifier.new,
               ),
               videoPublishProvider.overrideWith(
                 () => fakeVideoPublishNotifier,
