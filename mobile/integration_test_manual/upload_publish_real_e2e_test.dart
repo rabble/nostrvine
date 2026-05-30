@@ -3,6 +3,7 @@
 
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
@@ -34,7 +35,7 @@ void main() {
       testPrivateKey = keys.generatePrivateKey();
       testPublicKey = keys.getPublicKey(testPrivateKey);
 
-      print('\n🔑 Test keypair: ${testPublicKey.substring(0, 8)}...');
+      debugPrint('\n🔑 Test keypair: ${testPublicKey.substring(0, 8)}...');
 
       // Create test video file in a writable location (temp directory for sandboxed apps)
       final tempDir = Directory.systemTemp;
@@ -43,7 +44,7 @@ void main() {
       );
 
       // Generate a real MP4 video using ffmpeg (5 seconds, 30fps, solid color)
-      print('📹 Generating test video with ffmpeg...');
+      debugPrint('📹 Generating test video with ffmpeg...');
       final ffmpegResult = await Process.run('ffmpeg', [
         '-f',
         'lavfi',
@@ -60,14 +61,14 @@ void main() {
       ]);
 
       if (ffmpegResult.exitCode != 0) {
-        print('❌ ffmpeg failed: ${ffmpegResult.stderr}');
-        print('📹 Falling back to minimal MP4 (no frames, no thumbnail)');
+        debugPrint('❌ ffmpeg failed: ${ffmpegResult.stderr}');
+        debugPrint('📹 Falling back to minimal MP4 (no frames, no thumbnail)');
         await testVideoFile.writeAsBytes(_createMinimalMP4());
       } else {
-        print('✅ Generated test video: ${testVideoFile.path}');
+        debugPrint('✅ Generated test video: ${testVideoFile.path}');
       }
 
-      print('📹 Test video ready: ${testVideoFile.path}');
+      debugPrint('📹 Test video ready: ${testVideoFile.path}');
 
       // Create container with REAL services (no mocks!)
       container = ProviderContainer();
@@ -83,21 +84,21 @@ void main() {
         );
       }
 
-      print(
+      debugPrint(
         '✅ Test user authenticated: ${authService.currentPublicKeyHex?.substring(0, 8)}...',
       );
 
       // CRITICAL: Initialize NostrService with relay connections for publishing
-      print('🔌 Initializing NostrService with relay connections...');
+      debugPrint('🔌 Initializing NostrService with relay connections...');
       final nostrService = container.read(nostrServiceProvider);
 
       // Initialize
       await nostrService.initialize();
 
-      print('✅ NostrService initialized');
-      print('   Configured relays: ${nostrService.configuredRelays}');
-      print('   Relay count: ${nostrService.configuredRelayCount}');
-      print(
+      debugPrint('✅ NostrService initialized');
+      debugPrint('   Configured relays: ${nostrService.configuredRelays}');
+      debugPrint('   Relay count: ${nostrService.configuredRelayCount}');
+      debugPrint(
         '   Note: Relay connections are asynchronous - publishing will connect as needed',
       );
     });
@@ -132,11 +133,11 @@ void main() {
     test(
       'REAL E2E: Upload to real Blossom server → Publish to real Nostr relays',
       () async {
-        print('\n🎬 === STARTING REAL E2E TEST (NO MOCKS) ===\n');
-        print(
+        debugPrint('\n🎬 === STARTING REAL E2E TEST (NO MOCKS) ===\n');
+        debugPrint(
           '⚠️  This test uploads to real Blossom CDN and real Nostr relays!',
         );
-        print(
+        debugPrint(
           '⚠️  Test may fail if Blossom server is down or not configured\n',
         );
 
@@ -147,16 +148,18 @@ void main() {
         // Check if Blossom is configured
         final isBlossomEnabled = await blossomService.isBlossomEnabled();
         if (!isBlossomEnabled) {
-          print('⚠️  Blossom is not enabled - skipping test');
-          print('   Configure Blossom server in settings to run this test');
+          debugPrint('⚠️  Blossom is not enabled - skipping test');
+          debugPrint(
+            '   Configure Blossom server in settings to run this test',
+          );
           return;
         }
 
         final blossomServer = await blossomService.getBlossomServer();
-        print('🌸 Blossom server: $blossomServer');
+        debugPrint('🌸 Blossom server: $blossomServer');
 
         // PHASE 1: Upload video to REAL Blossom server
-        print('\n📤 PHASE 1: Uploading to REAL Blossom server...\n');
+        debugPrint('\n📤 PHASE 1: Uploading to REAL Blossom server...\n');
 
         PendingUpload? upload;
         try {
@@ -172,23 +175,23 @@ void main() {
                 VideoEditorConstants.defaultThumbnailExtractTime,
           );
         } catch (e) {
-          print(
+          debugPrint(
             '❌ Upload failed (this is expected if Blossom server is not configured):',
           );
-          print('   Error: $e');
-          print('\n⚠️  To run this test, ensure:');
-          print('   1. Blossom server is configured in settings');
-          print('   2. Valid Nostr key is available for authentication');
-          print('   3. Network connectivity to Blossom server');
-          print('\nSkipping rest of test due to upload failure.');
+          debugPrint('   Error: $e');
+          debugPrint('\n⚠️  To run this test, ensure:');
+          debugPrint('   1. Blossom server is configured in settings');
+          debugPrint('   2. Valid Nostr key is available for authentication');
+          debugPrint('   3. Network connectivity to Blossom server');
+          debugPrint('\nSkipping rest of test due to upload failure.');
           return;
         }
 
-        print('✅ Upload created: ${upload.id}');
-        print('   Status: ${upload.status}');
-        print('   Video ID: ${upload.videoId}');
-        print('   CDN URL: ${upload.cdnUrl}');
-        print('   Thumbnail URL: ${upload.thumbnailPath}');
+        debugPrint('✅ Upload created: ${upload.id}');
+        debugPrint('   Status: ${upload.status}');
+        debugPrint('   Video ID: ${upload.videoId}');
+        debugPrint('   CDN URL: ${upload.cdnUrl}');
+        debugPrint('   Thumbnail URL: ${upload.thumbnailPath}');
 
         // VERIFY PHASE 1: Upload completed successfully
         expect(
@@ -215,39 +218,43 @@ void main() {
           reason: 'CDN URL should be HTTPS',
         );
 
-        print('\n✅ PHASE 1 COMPLETE: Video uploaded to real Blossom CDN\n');
-        print('🌐 Video accessible at: ${upload.cdnUrl}');
+        debugPrint(
+          '\n✅ PHASE 1 COMPLETE: Video uploaded to real Blossom CDN\n',
+        );
+        debugPrint('🌐 Video accessible at: ${upload.cdnUrl}');
 
         // Check thumbnail
         if (upload.thumbnailPath != null) {
-          print('📸 Thumbnail URL: ${upload.thumbnailPath}');
+          debugPrint('📸 Thumbnail URL: ${upload.thumbnailPath}');
           expect(
             upload.thumbnailPath,
             startsWith('https://'),
             reason: 'Thumbnail URL should be HTTPS',
           );
-          print('🌐 Thumbnail accessible at: ${upload.thumbnailPath}');
+          debugPrint('🌐 Thumbnail accessible at: ${upload.thumbnailPath}');
         } else {
-          print('ℹ️  No thumbnail (video may not have extractable frames)');
+          debugPrint(
+            'ℹ️  No thumbnail (video may not have extractable frames)',
+          );
         }
 
         // PHASE 2: Publish to REAL Nostr relays
-        print('\n📤 PHASE 2: Publishing to REAL Nostr relays...\n');
+        debugPrint('\n📤 PHASE 2: Publishing to REAL Nostr relays...\n');
 
         // Check NostrService relay connections before publishing
         final nostrService = container.read(nostrServiceProvider);
-        print('📡 Nostr relay status:');
-        print('   Configured relays: ${nostrService.configuredRelays}');
-        print('   Relay count: ${nostrService.configuredRelayCount}');
+        debugPrint('📡 Nostr relay status:');
+        debugPrint('   Configured relays: ${nostrService.configuredRelays}');
+        debugPrint('   Relay count: ${nostrService.configuredRelayCount}');
 
         final videoEventPublisher = container.read(videoEventPublisherProvider);
 
-        print('\n🚀 Publishing video event to Nostr...');
-        print('   Video URL: ${upload.cdnUrl}');
-        print('   Thumbnail: ${upload.thumbnailPath ?? "(none)"}');
-        print('   Title: ${upload.title}');
-        print('   Description: ${upload.description}');
-        print('   Hashtags: ${upload.hashtags}');
+        debugPrint('\n🚀 Publishing video event to Nostr...');
+        debugPrint('   Video URL: ${upload.cdnUrl}');
+        debugPrint('   Thumbnail: ${upload.thumbnailPath ?? "(none)"}');
+        debugPrint('   Title: ${upload.title}');
+        debugPrint('   Description: ${upload.description}');
+        debugPrint('   Hashtags: ${upload.hashtags}');
 
         bool publishSuccess;
         try {
@@ -255,25 +262,25 @@ void main() {
             upload,
           );
         } catch (e, stackTrace) {
-          print('❌ Publishing failed with exception:');
-          print('   Error: $e');
-          print('   Stack trace: $stackTrace');
-          print('\n⚠️  This may be expected if:');
-          print('   - Nostr relays are unreachable');
-          print('   - Authentication failed');
-          print('   - Network issues');
-          print(
+          debugPrint('❌ Publishing failed with exception:');
+          debugPrint('   Error: $e');
+          debugPrint('   Stack trace: $stackTrace');
+          debugPrint('\n⚠️  This may be expected if:');
+          debugPrint('   - Nostr relays are unreachable');
+          debugPrint('   - Authentication failed');
+          debugPrint('   - Network issues');
+          debugPrint(
             '\nPartial success: Video was uploaded to Blossom CDN successfully.',
           );
           return;
         }
 
-        print('\n✅ Publish result: $publishSuccess');
+        debugPrint('\n✅ Publish result: $publishSuccess');
 
         if (!publishSuccess) {
-          print('⚠️  Publishing returned false - checking reason...');
-          print('   This typically means zero relays succeeded');
-          print('   Check logs above for relay-specific errors');
+          debugPrint('⚠️  Publishing returned false - checking reason...');
+          debugPrint('   This typically means zero relays succeeded');
+          debugPrint('   Check logs above for relay-specific errors');
         }
 
         // VERIFY PHASE 2: Publishing succeeded
@@ -292,11 +299,13 @@ void main() {
           reason: 'Upload should have Nostr event ID after publishing',
         );
 
-        print('\n✅ PHASE 2 COMPLETE: Event published to real Nostr relays\n');
-        print('🌐 Nostr event ID: ${publishedUpload.nostrEventId}');
+        debugPrint(
+          '\n✅ PHASE 2 COMPLETE: Event published to real Nostr relays\n',
+        );
+        debugPrint('🌐 Nostr event ID: ${publishedUpload.nostrEventId}');
 
         // PHASE 3: Verify the upload is marked as published
-        print('\n📤 PHASE 3: Verifying final state...\n');
+        debugPrint('\n📤 PHASE 3: Verifying final state...\n');
 
         expect(
           publishedUpload.status,
@@ -309,32 +318,32 @@ void main() {
           reason: 'Upload should have completion timestamp',
         );
 
-        print('✅ Upload marked as published');
-        print('   Status: ${publishedUpload.status}');
-        print('   Completed at: ${publishedUpload.completedAt}');
+        debugPrint('✅ Upload marked as published');
+        debugPrint('   Status: ${publishedUpload.status}');
+        debugPrint('   Completed at: ${publishedUpload.completedAt}');
 
-        print('\n✅ PHASE 3 COMPLETE: Final state verified\n');
+        debugPrint('\n✅ PHASE 3 COMPLETE: Final state verified\n');
 
-        print('🎉 === REAL E2E TEST PASSED ===\n');
-        print('Summary:');
-        print('✅ Video uploaded to REAL Blossom CDN: ${upload.cdnUrl}');
+        debugPrint('🎉 === REAL E2E TEST PASSED ===\n');
+        debugPrint('Summary:');
+        debugPrint('✅ Video uploaded to REAL Blossom CDN: ${upload.cdnUrl}');
         if (upload.thumbnailPath != null) {
-          print(
+          debugPrint(
             '✅ Thumbnail uploaded to REAL Blossom CDN: ${upload.thumbnailPath}',
           );
         }
-        print(
+        debugPrint(
           '✅ Nostr event published to REAL relays: ${publishedUpload.nostrEventId}',
         );
-        print('✅ Event can be viewed on Nostr clients');
-        print('✅ Video is publicly accessible via CDN URL');
-        print('\n🌐 Test artifacts:');
-        print('   Video: ${upload.cdnUrl}');
+        debugPrint('✅ Event can be viewed on Nostr clients');
+        debugPrint('✅ Video is publicly accessible via CDN URL');
+        debugPrint('\n🌐 Test artifacts:');
+        debugPrint('   Video: ${upload.cdnUrl}');
         if (upload.thumbnailPath != null) {
-          print('   Thumbnail: ${upload.thumbnailPath}');
+          debugPrint('   Thumbnail: ${upload.thumbnailPath}');
         }
-        print('   Nostr event: ${publishedUpload.nostrEventId}');
-        print('   Test user pubkey: $testPublicKey');
+        debugPrint('   Nostr event: ${publishedUpload.nostrEventId}');
+        debugPrint('   Test user pubkey: $testPublicKey');
       },
       timeout: const Timeout(Duration(minutes: 5)),
     ); // Longer timeout for real network operations
@@ -342,14 +351,14 @@ void main() {
     test(
       'REAL E2E: Verify uploaded video is retrievable from CDN',
       () async {
-        print('\n🎬 Testing CDN video retrieval\n');
+        debugPrint('\n🎬 Testing CDN video retrieval\n');
 
         final uploadManager = container.read(uploadManagerProvider);
         final blossomService = container.read(blossomUploadServiceProvider);
 
         final isBlossomEnabled = await blossomService.isBlossomEnabled();
         if (!isBlossomEnabled) {
-          print('⚠️  Blossom not enabled - skipping test');
+          debugPrint('⚠️  Blossom not enabled - skipping test');
           return;
         }
 
@@ -365,14 +374,14 @@ void main() {
                 VideoEditorConstants.defaultThumbnailExtractTime,
           );
         } catch (e) {
-          print('⚠️  Upload failed - skipping CDN retrieval test: $e');
+          debugPrint('⚠️  Upload failed - skipping CDN retrieval test: $e');
           return;
         }
 
         expect(upload.cdnUrl, isNotNull);
 
         // Try to fetch the video from CDN
-        print('🌐 Fetching video from CDN: ${upload.cdnUrl}');
+        debugPrint('🌐 Fetching video from CDN: ${upload.cdnUrl}');
 
         final httpClient = HttpClient();
         try {
@@ -380,7 +389,7 @@ void main() {
           final request = await httpClient.getUrl(uri);
           final response = await request.close();
 
-          print('   HTTP Status: ${response.statusCode}');
+          debugPrint('   HTTP Status: ${response.statusCode}');
           expect(
             response.statusCode,
             equals(200),
@@ -389,11 +398,11 @@ void main() {
 
           final contentLength = response.contentLength;
           if (contentLength > 0) {
-            print('   Content length: $contentLength bytes');
+            debugPrint('   Content length: $contentLength bytes');
           }
 
           final contentType = response.headers.value('content-type');
-          print('   Content type: $contentType');
+          debugPrint('   Content type: $contentType');
 
           // Verify it's a video
           expect(
@@ -402,7 +411,7 @@ void main() {
             reason: 'CDN should serve video content type',
           );
 
-          print('✅ Video is accessible from CDN');
+          debugPrint('✅ Video is accessible from CDN');
         } catch (e) {
           fail('Failed to retrieve video from CDN: $e');
         } finally {

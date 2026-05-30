@@ -4,12 +4,14 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+
 void main() async {
-  print('🧪 Testing relay.divine.video divine extensions...\n');
+  debugPrint('🧪 Testing relay.divine.video divine extensions...\n');
 
   // Connect to relay
   final ws = await WebSocket.connect('wss://relay.divine.video');
-  print('✅ Connected to relay.divine.video\n');
+  debugPrint('✅ Connected to relay.divine.video\n');
 
   // Listen for responses
   ws.listen(
@@ -19,9 +21,9 @@ void main() async {
 
       if (type == 'EVENT') {
         final event = decoded[2];
-        print('📥 EVENT: ${event['id'].substring(0, 8)}');
-        print('   Kind: ${event['kind']}');
-        print(
+        debugPrint('📥 EVENT: ${event['id'].substring(0, 8)}');
+        debugPrint('   Kind: ${event['kind']}');
+        debugPrint(
           '   Created: ${DateTime.fromMillisecondsSinceEpoch((event['created_at'] as int) * 1000)}',
         );
 
@@ -30,33 +32,33 @@ void main() async {
         for (final tag in tags) {
           if (tag is List && tag.length >= 2) {
             if (tag[0] == 'loop_count') {
-              print('   ⭐ Loop Count: ${tag[1]}');
+              debugPrint('   ⭐ Loop Count: ${tag[1]}');
             }
             if (tag[0] == 'likes') {
-              print('   ❤️  Likes: ${tag[1]}');
+              debugPrint('   ❤️  Likes: ${tag[1]}');
             }
           }
         }
-        print('');
+        debugPrint('');
       } else if (type == 'EOSE') {
-        print('✅ EOSE received for subscription ${decoded[1]}\n');
+        debugPrint('✅ EOSE received for subscription ${decoded[1]}\n');
       } else if (type == 'CLOSED') {
-        print('❌ CLOSED: ${decoded[1]} - ${decoded[2]}\n');
+        debugPrint('❌ CLOSED: ${decoded[1]} - ${decoded[2]}\n');
       } else if (type == 'NOTICE') {
-        print('📢 NOTICE: ${decoded[1]}\n');
+        debugPrint('📢 NOTICE: ${decoded[1]}\n');
       } else {
-        print('📨 $type: $decoded\n');
+        debugPrint('📨 $type: $decoded\n');
       }
     },
-    onError: (error) => print('❌ WebSocket error: $error'),
-    onDone: () => print('🔌 Connection closed'),
+    onError: (error) => debugPrint('❌ WebSocket error: $error'),
+    onDone: () => debugPrint('🔌 Connection closed'),
   );
 
   // Wait for connection to stabilize
   await Future.delayed(const Duration(milliseconds: 500));
 
   // Test 1: Basic REQ without divine extensions (baseline)
-  print('━━━ TEST 1: Standard REQ (no divine extensions) ━━━');
+  debugPrint('━━━ TEST 1: Standard REQ (no divine extensions) ━━━');
   final standardReq = json.encode([
     'REQ',
     'test_standard',
@@ -65,7 +67,7 @@ void main() async {
       'limit': 5,
     },
   ]);
-  print('📤 Sending: $standardReq\n');
+  debugPrint('📤 Sending: $standardReq\n');
   ws.add(standardReq);
 
   await Future.delayed(const Duration(seconds: 3));
@@ -75,7 +77,7 @@ void main() async {
   await Future.delayed(const Duration(milliseconds: 500));
 
   // Test 2: REQ with divine extensions (sort by loop_count)
-  print('\n━━━ TEST 2: Divine Extensions REQ (sort by loop_count) ━━━');
+  debugPrint('\n━━━ TEST 2: Divine Extensions REQ (sort by loop_count) ━━━');
   final divineReq = json.encode([
     'REQ',
     'test_divine',
@@ -85,7 +87,7 @@ void main() async {
       'sort': {'field': 'loop_count', 'dir': 'desc'},
     },
   ]);
-  print('📤 Sending: $divineReq\n');
+  debugPrint('📤 Sending: $divineReq\n');
   ws.add(divineReq);
 
   await Future.delayed(const Duration(seconds: 3));
@@ -95,7 +97,7 @@ void main() async {
   await Future.delayed(const Duration(milliseconds: 500));
 
   // Test 3: REQ with int# filter
-  print('\n━━━ TEST 3: Divine Extensions with int# filter ━━━');
+  debugPrint('\n━━━ TEST 3: Divine Extensions with int# filter ━━━');
   final intFilterReq = json.encode([
     'REQ',
     'test_int_filter',
@@ -108,7 +110,7 @@ void main() async {
       },
     },
   ]);
-  print('📤 Sending: $intFilterReq\n');
+  debugPrint('📤 Sending: $intFilterReq\n');
   ws.add(intFilterReq);
 
   await Future.delayed(const Duration(seconds: 3));
@@ -118,7 +120,7 @@ void main() async {
   await Future.delayed(const Duration(milliseconds: 500));
 
   // Cleanup
-  print('\n🧹 Closing connection...');
+  debugPrint('\n🧹 Closing connection...');
   await ws.close();
 
   exit(0);

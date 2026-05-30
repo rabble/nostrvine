@@ -1,14 +1,14 @@
 // Standalone script to test Blossom upload with real HTTP
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/event.dart';
 
 Future<void> main() async {
-  print('🧪 Testing Blossom Upload to Real Server\n');
+  debugPrint('🧪 Testing Blossom Upload to Real Server\n');
 
   // Create test video file
   final testFile = File('/tmp/test_video_upload.mp4');
@@ -32,18 +32,20 @@ Future<void> main() async {
     ...List.filled(1000, 0x00),
   ]);
   await testFile.writeAsBytes(testData);
-  print('📁 Created test file: ${testFile.path} (${testData.length} bytes)');
+  debugPrint(
+    '📁 Created test file: ${testFile.path} (${testData.length} bytes)',
+  );
 
   // Generate test keys
   final keychain = Keychain.generate();
-  print('🔑 Generated keypair: ${keychain.public.substring(0, 16)}...\n');
+  debugPrint('🔑 Generated keypair: ${keychain.public.substring(0, 16)}...\n');
 
   // Calculate file hash
   final fileBytes = await testFile.readAsBytes();
   final fileHash = sha256.convert(fileBytes).toString();
   final fileSize = fileBytes.length;
-  print('📊 File hash: $fileHash');
-  print('📊 File size: $fileSize bytes\n');
+  debugPrint('📊 File hash: $fileHash');
+  debugPrint('📊 File size: $fileSize bytes\n');
 
   // Create auth event
   final now = DateTime.now();
@@ -61,15 +63,15 @@ Future<void> main() async {
 
   // Sign event
   event.sign(keychain.private);
-  print('🔐 Created and signed auth event: ${event.id}\n');
+  debugPrint('🔐 Created and signed auth event: ${event.id}\n');
 
   // Prepare upload
   const serverUrl = 'https://cf-stream-service-prod.protestnet.workers.dev';
   final authHeader =
       'Nostr ${base64.encode(utf8.encode(jsonEncode(event.toJson())))}';
 
-  print('📤 Uploading to: $serverUrl/upload');
-  print('🔐 Auth header length: ${authHeader.length} chars\n');
+  debugPrint('📤 Uploading to: $serverUrl/upload');
+  debugPrint('🔐 Auth header length: ${authHeader.length} chars\n');
 
   // Upload with PUT raw bytes
   final dio = Dio();
@@ -86,17 +88,17 @@ Future<void> main() async {
       ),
     );
 
-    print('✅ Response: ${response.statusCode}');
-    print('📦 Data: ${response.data}\n');
+    debugPrint('✅ Response: ${response.statusCode}');
+    debugPrint('📦 Data: ${response.data}\n');
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       final url = response.data['url'];
-      print('🎉 SUCCESS! Video uploaded to: $url');
+      debugPrint('🎉 SUCCESS! Video uploaded to: $url');
     } else {
-      print('❌ Upload failed with status ${response.statusCode}');
+      debugPrint('❌ Upload failed with status ${response.statusCode}');
     }
   } catch (e) {
-    print('❌ Error: $e');
+    debugPrint('❌ Error: $e');
   } finally {
     // Cleanup
     if (testFile.existsSync()) {
