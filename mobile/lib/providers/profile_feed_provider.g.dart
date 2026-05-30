@@ -24,7 +24,8 @@ part of 'profile_feed_provider.dart';
 /// or stale figures while the API reflects current aggregates. When only Nostr
 /// data exists (no REST row, no cache backfill), relay values remain the sole
 /// source. [_mergeVideo], [mergeTwoProfileVideos], [mergeProfileEngagementCount],
-/// [mergeRawTagsForVideoMerge], and shared `video_event_merge_utils` (used from
+/// [mergeRawTagsForVideoMerge], and the shared `videos_repository` helpers
+/// [mergeVideoRawTagsPrimaryWins] / [mergeNullableEngagementMax] (also used from
 /// Nostr enrichment) must stay aligned with this policy whenever merge logic
 /// changes.
 ///
@@ -53,7 +54,8 @@ const profileFeedProvider = ProfileFeedFamily._();
 /// or stale figures while the API reflects current aggregates. When only Nostr
 /// data exists (no REST row, no cache backfill), relay values remain the sole
 /// source. [_mergeVideo], [mergeTwoProfileVideos], [mergeProfileEngagementCount],
-/// [mergeRawTagsForVideoMerge], and shared `video_event_merge_utils` (used from
+/// [mergeRawTagsForVideoMerge], and the shared `videos_repository` helpers
+/// [mergeVideoRawTagsPrimaryWins] / [mergeNullableEngagementMax] (also used from
 /// Nostr enrichment) must stay aligned with this policy whenever merge logic
 /// changes.
 ///
@@ -80,7 +82,8 @@ final class ProfileFeedProvider
   /// or stale figures while the API reflects current aggregates. When only Nostr
   /// data exists (no REST row, no cache backfill), relay values remain the sole
   /// source. [_mergeVideo], [mergeTwoProfileVideos], [mergeProfileEngagementCount],
-  /// [mergeRawTagsForVideoMerge], and shared `video_event_merge_utils` (used from
+  /// [mergeRawTagsForVideoMerge], and the shared `videos_repository` helpers
+  /// [mergeVideoRawTagsPrimaryWins] / [mergeNullableEngagementMax] (also used from
   /// Nostr enrichment) must stay aligned with this policy whenever merge logic
   /// changes.
   ///
@@ -143,7 +146,8 @@ String _$profileFeedHash() => r'f4edbba3f186efbb6c11d643830f26f36640b3fe';
 /// or stale figures while the API reflects current aggregates. When only Nostr
 /// data exists (no REST row, no cache backfill), relay values remain the sole
 /// source. [_mergeVideo], [mergeTwoProfileVideos], [mergeProfileEngagementCount],
-/// [mergeRawTagsForVideoMerge], and shared `video_event_merge_utils` (used from
+/// [mergeRawTagsForVideoMerge], and the shared `videos_repository` helpers
+/// [mergeVideoRawTagsPrimaryWins] / [mergeNullableEngagementMax] (also used from
 /// Nostr enrichment) must stay aligned with this policy whenever merge logic
 /// changes.
 ///
@@ -187,7 +191,8 @@ final class ProfileFeedFamily extends $Family
   /// or stale figures while the API reflects current aggregates. When only Nostr
   /// data exists (no REST row, no cache backfill), relay values remain the sole
   /// source. [_mergeVideo], [mergeTwoProfileVideos], [mergeProfileEngagementCount],
-  /// [mergeRawTagsForVideoMerge], and shared `video_event_merge_utils` (used from
+  /// [mergeRawTagsForVideoMerge], and the shared `videos_repository` helpers
+  /// [mergeVideoRawTagsPrimaryWins] / [mergeNullableEngagementMax] (also used from
   /// Nostr enrichment) must stay aligned with this policy whenever merge logic
   /// changes.
   ///
@@ -220,7 +225,8 @@ final class ProfileFeedFamily extends $Family
 /// or stale figures while the API reflects current aggregates. When only Nostr
 /// data exists (no REST row, no cache backfill), relay values remain the sole
 /// source. [_mergeVideo], [mergeTwoProfileVideos], [mergeProfileEngagementCount],
-/// [mergeRawTagsForVideoMerge], and shared `video_event_merge_utils` (used from
+/// [mergeRawTagsForVideoMerge], and the shared `videos_repository` helpers
+/// [mergeVideoRawTagsPrimaryWins] / [mergeNullableEngagementMax] (also used from
 /// Nostr enrichment) must stay aligned with this policy whenever merge logic
 /// changes.
 ///

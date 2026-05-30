@@ -39,7 +39,8 @@ part 'profile_feed_provider.g.dart';
 /// or stale figures while the API reflects current aggregates. When only Nostr
 /// data exists (no REST row, no cache backfill), relay values remain the sole
 /// source. [_mergeVideo], [mergeTwoProfileVideos], [mergeProfileEngagementCount],
-/// [mergeRawTagsForVideoMerge], and shared `video_event_merge_utils` (used from
+/// [mergeRawTagsForVideoMerge], and the shared `videos_repository` helpers
+/// [mergeVideoRawTagsPrimaryWins] / [mergeNullableEngagementMax] (also used from
 /// Nostr enrichment) must stay aligned with this policy whenever merge logic
 /// changes.
 ///
