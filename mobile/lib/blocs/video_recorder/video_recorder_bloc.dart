@@ -573,7 +573,10 @@ class VideoRecorderBloc
     );
     unawaited(HapticService.recordingFeedback());
 
-    if (state.timerDuration != TimerDuration.off) {
+    final shouldRunCountdown =
+        state.recorderMode.supportsCountdownTimer &&
+        state.timerDuration != TimerDuration.off;
+    if (shouldRunCountdown) {
       final seconds = state.timerDuration.duration.inSeconds;
       Log.info(
         '⏱️  Starting ${seconds}s countdown before recording',
@@ -1003,6 +1006,10 @@ class VideoRecorderBloc
         recorderMode: mode,
         aspectRatio: mode.defaultAspectRatio,
         showGridLines: mode.supportGridLines,
+        timerDuration: mode.supportsCountdownTimer
+            ? state.timerDuration
+            : TimerDuration.off,
+        countdownValue: 0,
       ),
     );
     final prefs = _readSharedPreferences();
@@ -1027,6 +1034,8 @@ class VideoRecorderBloc
     VideoRecorderTimerCycled event,
     Emitter<VideoRecorderBlocState> emit,
   ) {
+    if (!state.recorderMode.supportsCountdownTimer) return;
+
     final newTimer = switch (state.timerDuration) {
       TimerDuration.off => TimerDuration.three,
       TimerDuration.three => TimerDuration.ten,

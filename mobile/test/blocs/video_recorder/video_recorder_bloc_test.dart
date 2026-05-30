@@ -211,6 +211,20 @@ void main() {
           const VideoRecorderBlocState(),
         ],
       );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'does not enable the timer outside capture mode',
+        build: () => buildBloc()
+          ..emit(
+            const VideoRecorderBlocState(
+              recorderMode: VideoRecorderMode.classic,
+              aspectRatio: model.AspectRatio.square,
+              showGridLines: true,
+            ),
+          ),
+        act: (bloc) => bloc.add(const VideoRecorderTimerCycled()),
+        expect: () => const <VideoRecorderBlocState>[],
+      );
     });
 
     group('VideoRecorderGridLinesToggled', () {
@@ -408,6 +422,63 @@ void main() {
           act: (bloc) => bloc.add(const VideoRecorderRecordingStartRequested()),
           expect: () => const <VideoRecorderBlocState>[],
         );
+
+        blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+          'starts classic recording immediately when capture timer was set',
+          setUp: () {
+            when(
+              () => cameraService.startRecording(
+                maxDuration: any(named: 'maxDuration'),
+              ),
+            ).thenAnswer((_) async => true);
+          },
+          build: () => buildBloc()
+            ..emit(
+              const VideoRecorderBlocState(
+                recorderMode: VideoRecorderMode.classic,
+                aspectRatio: model.AspectRatio.square,
+                showGridLines: true,
+                timerDuration: TimerDuration.three,
+              ),
+            ),
+          act: (bloc) => bloc.add(const VideoRecorderRecordingStartRequested()),
+          expect: () => const [
+            VideoRecorderBlocState(
+              recorderMode: VideoRecorderMode.classic,
+              aspectRatio: model.AspectRatio.square,
+              showGridLines: true,
+              timerDuration: TimerDuration.three,
+              isStartingRecording: true,
+            ),
+            VideoRecorderBlocState(
+              recorderMode: VideoRecorderMode.classic,
+              recordingState: VideoRecorderState.recording,
+              aspectRatio: model.AspectRatio.square,
+              showGridLines: true,
+              timerDuration: TimerDuration.three,
+              isStartingRecording: true,
+            ),
+            VideoRecorderBlocState(
+              recorderMode: VideoRecorderMode.classic,
+              recordingState: VideoRecorderState.recording,
+              aspectRatio: model.AspectRatio.square,
+              showGridLines: true,
+              timerDuration: TimerDuration.three,
+            ),
+          ],
+          verify: (_) {
+            verifyNever(
+              () => cameraService.setVolumeKeysEnabled(
+                enabled: any(named: 'enabled'),
+              ),
+            );
+            verify(
+              () => cameraService.startRecording(
+                maxDuration: const Duration(seconds: 6),
+              ),
+            ).called(1);
+          },
+        );
       },
     );
 
@@ -512,7 +583,13 @@ void main() {
     group('VideoRecorderRecorderModeSet', () {
       blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
         'capture → classic flips defaults and clears clips + editor',
-        build: buildBloc,
+        build: () => buildBloc()
+          ..emit(
+            const VideoRecorderBlocState(
+              timerDuration: TimerDuration.three,
+              countdownValue: 2,
+            ),
+          ),
         act: (bloc) => bloc.add(
           const VideoRecorderRecorderModeSet(VideoRecorderMode.classic),
         ),

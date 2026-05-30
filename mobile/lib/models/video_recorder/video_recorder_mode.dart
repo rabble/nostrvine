@@ -41,6 +41,12 @@ enum VideoRecorderMode {
     .upload => false,
   };
 
+  bool get supportsCountdownTimer => switch (this) {
+    .capture => true,
+    .classic => false,
+    .upload => false,
+  };
+
   model.AspectRatio get defaultAspectRatio => switch (this) {
     .capture => .vertical,
     .classic => .square,
