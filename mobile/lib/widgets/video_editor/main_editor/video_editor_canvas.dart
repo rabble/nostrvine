@@ -66,6 +66,21 @@ class VideoEditorCanvas extends StatelessWidget {
     proVideoController.setPlayTime(startPosition);
   }
 
+  @visibleForTesting
+  static bool shouldSyncPlayerForClipStateChange({
+    required ClipEditorState previous,
+    required ClipEditorState current,
+  }) {
+    if (previous.isTrimDragging && !current.isTrimDragging) return true;
+
+    if (previous.isSplitting && current.isSplitting) return false;
+    if (previous.isSplitting && !current.isSplitting) return true;
+
+    return !current.isTrimDragging &&
+        !previous.isTrimDragging &&
+        previous.clips != current.clips;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isSubEditorOpen = context.select(
@@ -1032,17 +1047,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
         // released or for non-trim clip changes (reorder, add, remove).
         BlocListener<ClipEditorBloc, ClipEditorState>(
           listenWhen: (previous, current) {
-            // Trim handle released.
-            if (previous.isTrimDragging && !current.isTrimDragging) {
-              return true;
-            }
-            // Non-trim clip changes (reorder, add, remove).
-            if (!current.isTrimDragging &&
-                !previous.isTrimDragging &&
-                previous.clips != current.clips) {
-              return true;
-            }
-            return false;
+            return VideoEditorCanvas.shouldSyncPlayerForClipStateChange(
+              previous: previous,
+              current: current,
+            );
           },
           listener: (context, state) async {
             // See note on the trim-times listener above: skip empty

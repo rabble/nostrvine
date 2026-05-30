@@ -23,6 +23,7 @@ class MockPathProviderPlatform extends Fake
 class MockProVideoEditor extends ProVideoEditor {
   bool shouldThrowError = false;
   final List<String> renderedPaths = [];
+  final List<VideoRenderData> renderedData = [];
 
   @override
   Stream<dynamic> initializeStream() {
@@ -39,6 +40,7 @@ class MockProVideoEditor extends ProVideoEditor {
       throw Exception('Render failed');
     }
     renderedPaths.add(outputPath);
+    renderedData.add(renderData);
     // Simulate successful render
     await Future<void>.delayed(const Duration(milliseconds: 10));
     return outputPath;
@@ -57,6 +59,7 @@ void main() {
     mockProVideoEditor = MockProVideoEditor();
     ProVideoEditor.instance = mockProVideoEditor;
     mockProVideoEditor.renderedPaths.clear();
+    mockProVideoEditor.renderedData.clear();
   });
 
   tearDown(() {
@@ -228,7 +231,9 @@ void main() {
         expect(capturedStartClip, isNotNull);
         expect(capturedEndClip, isNotNull);
         expect(capturedStartClip!.duration, const Duration(seconds: 2));
-        expect(capturedEndClip!.duration, const Duration(seconds: 3));
+        expect(capturedEndClip!.duration, const Duration(seconds: 5));
+        expect(capturedEndClip!.trimStart, const Duration(seconds: 2));
+        expect(capturedEndClip!.trimmedDuration, const Duration(seconds: 3));
       });
 
       test('calls onClipsCreated before rendering', () async {
@@ -453,10 +458,11 @@ void main() {
         expect(capturedStartClip!.trimEnd, Duration.zero);
         expect(capturedStartClip!.trimmedDuration, const Duration(seconds: 2));
 
-        // End clip: 5s–10s (absolute), trimStart=0, trimEnd=2s
-        // trimmedDuration = 5 - 2 = 3s ✓
-        expect(capturedEndClip!.duration, const Duration(seconds: 5));
-        expect(capturedEndClip!.trimStart, Duration.zero);
+        // Preview end clip still points at the original source while the
+        // rendered end file is being produced, so trimStart is absolute.
+        // trimmedDuration = 10 - 5 - 2 = 3s ✓
+        expect(capturedEndClip!.duration, const Duration(seconds: 10));
+        expect(capturedEndClip!.trimStart, const Duration(seconds: 5));
         expect(capturedEndClip!.trimEnd, const Duration(seconds: 2));
         expect(capturedEndClip!.trimmedDuration, const Duration(seconds: 3));
 
@@ -465,6 +471,38 @@ void main() {
           capturedStartClip!.trimmedDuration + capturedEndClip!.trimmedDuration,
           clip.trimmedDuration,
         );
+      });
+
+      test('reports rendered end clip with trimStart reset to zero', () async {
+        final clip = DivineVideoClip(
+          id: 'trimmed-clip',
+          video: EditorVideo.file('/test/video.mp4'),
+          duration: const Duration(seconds: 10),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: model.AspectRatio.square,
+          originalAspectRatio: 9 / 16,
+          trimStart: const Duration(seconds: 3),
+          trimEnd: const Duration(seconds: 2),
+        );
+
+        final renderedClips = <DivineVideoClip>[];
+
+        await VideoEditorSplitService.splitClip(
+          sourceClip: clip,
+          splitPosition: const Duration(seconds: 2),
+          onClipsCreated: null,
+          onThumbnailExtracted: null,
+          onClipRendered: (clip, video) => renderedClips.add(clip),
+        );
+
+        final endClip = renderedClips.singleWhere(
+          (clip) => clip.id.endsWith('_end'),
+        );
+
+        expect(endClip.duration, const Duration(seconds: 5));
+        expect(endClip.trimStart, Duration.zero);
+        expect(endClip.trimEnd, const Duration(seconds: 2));
+        expect(endClip.trimmedDuration, const Duration(seconds: 3));
       });
     });
   });

@@ -107,12 +107,43 @@ Future<void> _fakeSplitClip({
     duration: absoluteSplitPos,
     trimEnd: Duration.zero,
   );
-  final endClip = sourceClip.copyWith(
+  final previewEndClip = sourceClip.copyWith(
     id: '${timestampMs}_end',
+    duration: sourceClip.duration,
+    trimStart: absoluteSplitPos,
+  );
+  onClipsCreated?.call(startClip, previewEndClip);
+}
+
+Future<void> _fakeSplitClipThenRenderEnd({
+  required DivineVideoClip sourceClip,
+  required Duration splitPosition,
+  required void Function(DivineVideoClip startClip, DivineVideoClip endClip)?
+  onClipsCreated,
+  required void Function(DivineVideoClip clip, String thumbnailPath)?
+  onThumbnailExtracted,
+  required void Function(DivineVideoClip clip, EditorVideo video)?
+  onClipRendered,
+}) async {
+  final absoluteSplitPos = sourceClip.trimStart + splitPosition;
+  final timestampMs = DateTime.now().microsecondsSinceEpoch;
+  final startClip = sourceClip.copyWith(
+    id: '${timestampMs}_start',
+    duration: absoluteSplitPos,
+    trimEnd: Duration.zero,
+  );
+  final previewEndClip = sourceClip.copyWith(
+    id: '${timestampMs}_end',
+    duration: sourceClip.duration,
+    trimStart: absoluteSplitPos,
+  );
+  final renderedEndClip = previewEndClip.copyWith(
     duration: sourceClip.duration - absoluteSplitPos,
     trimStart: Duration.zero,
   );
-  onClipsCreated?.call(startClip, endClip);
+  onClipsCreated?.call(startClip, previewEndClip);
+  onClipRendered?.call(startClip, startClip.video);
+  onClipRendered?.call(renderedEndClip, renderedEndClip.video);
 }
 
 Future<void> _fakeSplitClipThenFail({
@@ -532,6 +563,11 @@ void main() {
               .having(
                 (s) => s.clips.last.duration,
                 'end duration',
+                const Duration(seconds: 2),
+              )
+              .having(
+                (s) => s.clips.last.trimmedDuration,
+                'end trimmedDuration',
                 const Duration(seconds: 1),
               ),
           isA<ClipEditorState>()
@@ -564,7 +600,7 @@ void main() {
           equals(const Duration(milliseconds: 500)),
         );
         expect(
-          replacedState.clips.last.duration,
+          replacedState.clips.last.trimmedDuration,
           equals(const Duration(milliseconds: 1500)),
         );
 
@@ -625,6 +661,36 @@ void main() {
               .having((s) => s.clips, 'clips', hasLength(2))
               .having((s) => s.isSplitting, 'isSplitting', isFalse),
         ],
+      );
+
+      test(
+        'applies rendered clip timing after split render completes',
+        () async {
+          final clip = _createClip(
+            id: 'x',
+            duration: const Duration(seconds: 2),
+          );
+
+          final bloc = buildBloc(splitClip: _fakeSplitClipThenRenderEnd);
+
+          bloc.emit(
+            ClipEditorState(
+              clips: [clip],
+              isEditing: true,
+              splitPosition: const Duration(milliseconds: 500),
+            ),
+          );
+
+          bloc.add(const ClipEditorSplitRequested());
+          await bloc.stream.firstWhere((state) => !state.isSplitting);
+
+          final endClip = bloc.state.clips.last;
+          expect(endClip.duration, const Duration(milliseconds: 1500));
+          expect(endClip.trimStart, Duration.zero);
+          expect(endClip.trimmedDuration, const Duration(milliseconds: 1500));
+
+          await bloc.close();
+        },
       );
 
       blocTest<ClipEditorBloc, ClipEditorState>(

@@ -85,13 +85,17 @@ class VideoEditorSplitService {
       trimEnd: Duration.zero,
       processingCompleter: Completer<bool>(),
     );
-    // End clip: no trimStart needed (the split point is the new start),
-    // keeps the original trimEnd.
-    final endClip = sourceClip.copyWith(
+    // End clip preview: while rendering, this still points at the original
+    // source video, so keep source-time trimStart at the split point.
+    final previewEndClip = sourceClip.copyWith(
       id: endClipId,
+      duration: sourceClip.duration,
+      trimStart: absoluteSplitPos,
+      processingCompleter: Completer<bool>(),
+    );
+    final renderedEndClip = previewEndClip.copyWith(
       duration: sourceClip.duration - absoluteSplitPos,
       trimStart: Duration.zero,
-      processingCompleter: Completer<bool>(),
     );
 
     final documentsPath = await getDocumentsPath();
@@ -100,20 +104,20 @@ class VideoEditorSplitService {
 
     Log.debug(
       '📁 Created split clips - Start: ${splitPosition.inSeconds}s, '
-      'End: ${endClip.duration.inSeconds}s',
+      'End: ${previewEndClip.trimmedDuration.inSeconds}s',
       name: 'VideoEditorSplitService',
       category: .video,
     );
 
     // Notify that clips are created (so they can be added to UI before
     // rendering)
-    onClipsCreated?.call(startClip, endClip);
+    onClipsCreated?.call(startClip, previewEndClip);
 
     // Extract thumbnail for the end clip at the absolute split position
     await _extractThumbnailForClip(
       sourceClip,
       absoluteSplitPos,
-      endClip,
+      previewEndClip,
       onThumbnailExtracted,
     );
 
@@ -140,11 +144,11 @@ class VideoEditorSplitService {
         onClipRendered: onClipRendered,
       ),
       _renderSplitClip(
-        clip: endClip,
+        clip: renderedEndClip,
         outputPath: endClipPath,
         sourceVideo: sourceClip.video,
         renderData: VideoRenderData(
-          id: endClip.id,
+          id: renderedEndClip.id,
           videoSegments: [
             VideoSegment(video: sourceClip.video, startTime: absoluteSplitPos),
           ],
