@@ -21,6 +21,7 @@ class ShutterGestureDetector extends StatefulWidget {
     required this.onLongPressStopRecording,
     super.key,
     this.isLongPressSupported = true,
+    this.startsRecordingOnPressDown = false,
     this.onLongPressMoveUpdate,
     this.behavior,
   });
@@ -29,6 +30,7 @@ class ShutterGestureDetector extends StatefulWidget {
   final bool isEnabled;
   final bool isRecording;
   final bool isLongPressSupported;
+  final bool startsRecordingOnPressDown;
   final VoidCallback onTapToggle;
   final VoidCallback onLongPressStartRecording;
   final VoidCallback onLongPressStopRecording;
@@ -41,10 +43,24 @@ class ShutterGestureDetector extends StatefulWidget {
 
 class _ShutterGestureDetectorState extends State<ShutterGestureDetector> {
   bool _startedByLongPress = false;
+  bool _startedByPressDown = false;
 
   void _handleTap() {
     _startedByLongPress = false;
+    _startedByPressDown = false;
     widget.onTapToggle();
+  }
+
+  void _handleTapDown(TapDownDetails _) {
+    if (widget.isRecording) return;
+    _startedByPressDown = true;
+    widget.onLongPressStartRecording();
+  }
+
+  void _handlePressEnd() {
+    if (!_startedByPressDown) return;
+    _startedByPressDown = false;
+    widget.onLongPressStopRecording();
   }
 
   void _handleLongPressStart(LongPressStartDetails _) {
@@ -61,16 +77,33 @@ class _ShutterGestureDetectorState extends State<ShutterGestureDetector> {
 
   @override
   Widget build(BuildContext context) {
+    final usePressDownRecording =
+        widget.isEnabled && widget.startsRecordingOnPressDown;
+
     return GestureDetector(
       behavior: widget.behavior,
-      onTap: widget.isEnabled ? _handleTap : null,
-      onLongPressStart: widget.isEnabled && widget.isLongPressSupported
+      onTapDown: usePressDownRecording ? _handleTapDown : null,
+      onTapUp: usePressDownRecording ? (_) => _handlePressEnd() : null,
+      onTapCancel: usePressDownRecording ? _handlePressEnd : null,
+      onTap: widget.isEnabled && !widget.startsRecordingOnPressDown
+          ? _handleTap
+          : null,
+      onLongPressStart:
+          widget.isEnabled &&
+              widget.isLongPressSupported &&
+              !widget.startsRecordingOnPressDown
           ? _handleLongPressStart
           : null,
-      onLongPressMoveUpdate: widget.isRecording && widget.isLongPressSupported
+      onLongPressMoveUpdate:
+          widget.isRecording &&
+              widget.isLongPressSupported &&
+              !widget.startsRecordingOnPressDown
           ? widget.onLongPressMoveUpdate
           : null,
-      onLongPressUp: widget.isLongPressSupported ? _handleLongPressUp : null,
+      onLongPressUp:
+          widget.isLongPressSupported && !widget.startsRecordingOnPressDown
+          ? _handleLongPressUp
+          : null,
       child: widget.child,
     );
   }

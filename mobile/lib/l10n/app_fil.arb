@@ -2097,6 +2097,8 @@
     "generalSettingsVideoShapeSquareAndPortrait": "Square at portrait",
     "generalSettingsVideoShapeSquareAndPortraitSubtitle": "Ipakita ang full mix ng Divine videos",
     "generalSettingsVideoShapeSquareOnlySubtitle": "Panatilihin ang feeds sa classic na square format",
+    "generalSettingsHoldToRecord": "Pindutin nang matagal para mag-record",
+    "generalSettingsHoldToRecordSubtitle": "Magsisimulang mag-record kapag pinindot nang matagal at titigil kapag inalis",
     "settingsBadgesTitle": "Mga Badge",
     "settingsBadgesSubtitle": "Tanggapin ang mga award at tingnan ang status ng issued badge.",
     "badgesTitle": "Mga Badge",

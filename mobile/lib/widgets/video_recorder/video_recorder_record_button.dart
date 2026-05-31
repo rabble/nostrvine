@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/preferences_providers.dart';
 import 'package:openvine/widgets/video_recorder/shutter_gesture_detector.dart';
 
 /// Circular record button for starting/stopping video recording.
@@ -28,8 +29,15 @@ class RecordButton extends ConsumerWidget {
         (p) => p.remainingDuration > const Duration(milliseconds: 30),
       ),
     );
+    final startsRecordingOnPressDown = ref.watch(
+      holdToRecordPreferenceServiceProvider.select(
+        (service) => service.isHoldToRecordEnabled,
+      ),
+    );
 
     final isLongPressSupported = state.timerDuration == .off;
+    final canStartRecordingOnPressDown =
+        isLongPressSupported && startsRecordingOnPressDown;
     final isEnabled =
         (state.canRecord &&
             state.isCameraInitialized &&
@@ -47,6 +55,7 @@ class RecordButton extends ConsumerWidget {
         isEnabled: isEnabled,
         isRecording: state.isRecording,
         isLongPressSupported: isLongPressSupported,
+        startsRecordingOnPressDown: canStartRecordingOnPressDown,
         onTapToggle: () => context.read<VideoRecorderBloc>().add(
           const VideoRecorderRecordingToggleRequested(),
         ),

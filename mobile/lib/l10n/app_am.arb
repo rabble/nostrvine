@@ -93,6 +93,8 @@
     "generalSettingsVideoShapeSquareAndPortrait": "ካሬ እና ቁመታዊ",
     "generalSettingsVideoShapeSquareAndPortraitSubtitle": "የDivine ቪዲዮዎችን ሙሉ ድብልቅ አሳይ",
     "generalSettingsVideoShapeSquareOnlySubtitle": "ምግቦችን በክላሲክ ካሬ ቅርጽ ያቆዩ",
+    "generalSettingsHoldToRecord": "ለቀረጻ ይያዙ",
+    "generalSettingsHoldToRecordSubtitle": "ሲይዙ ቀረጻ ይጀምራል፣ ሲለቁ ይቆማል",
     "contentPreferencesTitle": "የይዘት ምርጫዎች",
     "@contentPreferencesTitle": {
         "description": "Content preferences screen app bar title"

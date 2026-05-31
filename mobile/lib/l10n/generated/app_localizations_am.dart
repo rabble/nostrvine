@@ -193,6 +193,12 @@ class AppLocalizationsAm extends AppLocalizations {
       'ምግቦችን በክላሲክ ካሬ ቅርጽ ያቆዩ';
 
   @override
+  String get generalSettingsHoldToRecord => 'ለቀረጻ ይያዙ';
+
+  @override
+  String get generalSettingsHoldToRecordSubtitle => 'ሲይዙ ቀረጻ ይጀምራል፣ ሲለቁ ይቆማል';
+
+  @override
   String get contentPreferencesTitle => 'የይዘት ምርጫዎች';
 
   @override

@@ -3136,6 +3136,8 @@
     "generalSettingsVideoShapeSquareAndPortrait": "Kwadratowe i pionowe",
     "generalSettingsVideoShapeSquareAndPortraitSubtitle": "Pokazuj pełny miks filmów Divine",
     "generalSettingsVideoShapeSquareOnlySubtitle": "Trzymaj feedy w klasycznym kwadratowym formacie",
+    "generalSettingsHoldToRecord": "Przytrzymaj, aby nagrywać",
+    "generalSettingsHoldToRecordSubtitle": "Nagrywanie rozpoczyna się po przytrzymaniu i zatrzymuje się po zwolnieniu",
     "contentFiltersAdultContent": "TREŚCI DLA DOROSŁYCH",
     "contentFiltersViolenceGore": "PRZEMOC I DRASTYCZNE SCENY",
     "contentFiltersSubstances": "SUBSTANCJE",

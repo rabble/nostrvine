@@ -12,6 +12,7 @@ void main() {
       bool isRecording = false,
       bool isEnabled = true,
       bool isLongPressSupported = true,
+      bool startsRecordingOnPressDown = false,
     }) async {
       await tester.pumpWidget(
         Directionality(
@@ -21,6 +22,7 @@ void main() {
               isEnabled: isEnabled,
               isRecording: isRecording,
               isLongPressSupported: isLongPressSupported,
+              startsRecordingOnPressDown: startsRecordingOnPressDown,
               behavior: HitTestBehavior.opaque,
               onTapToggle: onTapToggle,
               onLongPressStartRecording: onLongPressStartRecording,
@@ -100,6 +102,38 @@ void main() {
       expect(started, equals(1));
       expect(stopped, equals(1));
     });
+
+    testWidgets(
+      'press-down mode starts immediately and release stops recording',
+      (tester) async {
+        var toggled = 0;
+        var started = 0;
+        var stopped = 0;
+        await pumpHost(
+          tester,
+          startsRecordingOnPressDown: true,
+          onTapToggle: () => toggled++,
+          onLongPressStartRecording: () => started++,
+          onLongPressStopRecording: () => stopped++,
+        );
+
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.byType(ShutterGestureDetector)),
+        );
+        await tester.pump();
+
+        expect(started, equals(1));
+        expect(stopped, equals(0));
+        expect(toggled, equals(0));
+
+        await gesture.up();
+        await tester.pumpAndSettle();
+
+        expect(started, equals(1));
+        expect(stopped, equals(1));
+        expect(toggled, equals(0));
+      },
+    );
 
     testWidgets('release stops only once after a long-press start', (
       tester,

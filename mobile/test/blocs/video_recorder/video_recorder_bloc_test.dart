@@ -413,21 +413,23 @@ void main() {
 
     group('RecordingStopRequested → start-cancel fast path', () {
       blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
-        'when called during startRecording, fires native stop and returns '
-        'without touching state',
-        setUp: () {
-          when(
-            () => cameraService.stopRecording(),
-          ).thenAnswer((_) async => null);
-        },
+        'when called during startRecording, sets pendingStopAfterStart '
+        'without touching the camera service',
         build: () => buildBloc()
           ..emit(
             const VideoRecorderBlocState(isStartingRecording: true),
           ),
         act: (bloc) => bloc.add(const VideoRecorderRecordingStopRequested()),
-        expect: () => const <VideoRecorderBlocState>[],
+        expect: () => const [
+          VideoRecorderBlocState(
+            isStartingRecording: true,
+            pendingStopAfterStart: true,
+          ),
+        ],
         verify: (_) {
-          verify(() => cameraService.stopRecording()).called(1);
+          // No native stop is fired — the start handler will dispatch a
+          // proper stop after startRecording() completes.
+          verifyNever(() => cameraService.stopRecording());
         },
       );
 

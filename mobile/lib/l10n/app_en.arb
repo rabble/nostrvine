@@ -93,6 +93,8 @@
   "generalSettingsVideoShapeSquareAndPortrait": "Square and portrait",
   "generalSettingsVideoShapeSquareAndPortraitSubtitle": "Show the full mix of Divine videos",
   "generalSettingsVideoShapeSquareOnlySubtitle": "Keep feeds in the classic square format",
+  "generalSettingsHoldToRecord": "Hold to record",
+  "generalSettingsHoldToRecordSubtitle": "Start recording when you press and hold, then stop when you release",
   "contentPreferencesTitle": "Content Preferences",
   "@contentPreferencesTitle": {
     "description": "Content preferences screen app bar title"

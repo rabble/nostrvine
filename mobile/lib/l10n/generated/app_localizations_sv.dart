@@ -187,6 +187,13 @@ class AppLocalizationsSv extends AppLocalizations {
       'Behåll flöden i klassiskt kvadratiskt format';
 
   @override
+  String get generalSettingsHoldToRecord => 'Håll inne för att spela in';
+
+  @override
+  String get generalSettingsHoldToRecordSubtitle =>
+      'Inspelning startar när du håller inne och stannar när du släpper';
+
+  @override
   String get contentPreferencesTitle => 'Innehållsinställningar';
 
   @override

@@ -3136,6 +3136,8 @@
     "generalSettingsVideoShapeSquareAndPortrait": "Quadrati e verticali",
     "generalSettingsVideoShapeSquareAndPortraitSubtitle": "Mostra tutto il mix di video Divine",
     "generalSettingsVideoShapeSquareOnlySubtitle": "Mantieni i feed nel classico formato quadrato",
+    "generalSettingsHoldToRecord": "Tieni premuto per registrare",
+    "generalSettingsHoldToRecordSubtitle": "La registrazione inizia tenendo premuto e si ferma al rilascio",
     "contentFiltersAdultContent": "CONTENUTI PER ADULTI",
     "contentFiltersViolenceGore": "VIOLENZA E SCENE CRUENTE",
     "contentFiltersSubstances": "SOSTANZE",

@@ -3136,6 +3136,8 @@
     "generalSettingsVideoShapeSquareAndPortrait": "Persegi dan potret",
     "generalSettingsVideoShapeSquareAndPortraitSubtitle": "Tampilkan semua jenis video Divine",
     "generalSettingsVideoShapeSquareOnlySubtitle": "Pertahankan feed dalam format persegi klasik",
+    "generalSettingsHoldToRecord": "Tahan untuk merekam",
+    "generalSettingsHoldToRecordSubtitle": "Rekaman dimulai saat menahan dan berhenti saat dilepas",
     "contentFiltersAdultContent": "KONTEN DEWASA",
     "contentFiltersViolenceGore": "KEKERASAN & SADIS",
     "contentFiltersSubstances": "ZAT TERLARANG",

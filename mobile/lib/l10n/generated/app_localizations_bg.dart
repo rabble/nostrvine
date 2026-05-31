@@ -201,6 +201,13 @@ class AppLocalizationsBg extends AppLocalizations {
       'Запази емисиите в класическия квадратен формат';
 
   @override
+  String get generalSettingsHoldToRecord => 'Задръжте за запис';
+
+  @override
+  String get generalSettingsHoldToRecordSubtitle =>
+      'Записът започва при задържане и спира при отпускане';
+
+  @override
   String get contentPreferencesTitle => 'Предпочитания за съдържание';
 
   @override

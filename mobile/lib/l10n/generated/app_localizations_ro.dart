@@ -212,6 +212,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Păstrează feedurile în formatul clasic pătrat';
 
   @override
+  String get generalSettingsHoldToRecord => 'Ține apăsat pentru a înregistra';
+
+  @override
+  String get generalSettingsHoldToRecordSubtitle =>
+      'Înregistrarea începe când ții apăsat și se oprește când eliberezi';
+
+  @override
   String get contentPreferencesTitle => 'Preferințe de conținut';
 
   @override

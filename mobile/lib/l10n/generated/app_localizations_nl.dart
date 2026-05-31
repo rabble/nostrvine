@@ -199,6 +199,13 @@ class AppLocalizationsNl extends AppLocalizations {
       'Hou feeds in het klassieke vierkante formaat';
 
   @override
+  String get generalSettingsHoldToRecord => 'Ingedrukt houden om op te nemen';
+
+  @override
+  String get generalSettingsHoldToRecordSubtitle =>
+      'Opname start wanneer je ingedrukt houdt en stopt wanneer je loslaat';
+
+  @override
   String get contentPreferencesTitle => 'Inhoudsvoorkeuren';
 
   @override

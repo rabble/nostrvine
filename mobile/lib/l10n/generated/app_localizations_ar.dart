@@ -188,6 +188,13 @@ class AppLocalizationsAr extends AppLocalizations {
       'أبقِ التغذيات بالشكل المربّع الكلاسيكي';
 
   @override
+  String get generalSettingsHoldToRecord => 'اضغط مطولاً للتسجيل';
+
+  @override
+  String get generalSettingsHoldToRecordSubtitle =>
+      'يبدأ التسجيل عند الضغط المطوّل ويتوقف عند الإفراج';
+
+  @override
   String get contentPreferencesTitle => 'تفضيلات المحتوى';
 
   @override

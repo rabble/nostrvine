@@ -199,6 +199,14 @@ class AppLocalizationsFil extends AppLocalizations {
       'Panatilihin ang feeds sa classic na square format';
 
   @override
+  String get generalSettingsHoldToRecord =>
+      'Pindutin nang matagal para mag-record';
+
+  @override
+  String get generalSettingsHoldToRecordSubtitle =>
+      'Magsisimulang mag-record kapag pinindot nang matagal at titigil kapag inalis';
+
+  @override
   String get contentPreferencesTitle => 'Mga Content Preference';
 
   @override

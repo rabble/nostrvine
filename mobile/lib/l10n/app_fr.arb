@@ -3136,6 +3136,8 @@
     "generalSettingsVideoShapeSquareAndPortrait": "Carré et portrait",
     "generalSettingsVideoShapeSquareAndPortraitSubtitle": "Affiche tout le mix des vidéos Divine",
     "generalSettingsVideoShapeSquareOnlySubtitle": "Garde les fils dans le format carré classique",
+    "generalSettingsHoldToRecord": "Appuyer pour enregistrer",
+    "generalSettingsHoldToRecordSubtitle": "L'enregistrement démarre en maintenant appuyé et s'arrête en relâchant",
     "contentFiltersAdultContent": "CONTENU POUR ADULTES",
     "contentFiltersViolenceGore": "VIOLENCE ET HORREUR",
     "contentFiltersSubstances": "SUBSTANCES",

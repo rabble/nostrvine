@@ -172,6 +172,12 @@ class AppLocalizationsJa extends AppLocalizations {
       'クラシックな正方形フォーマットでフィードを保つ';
 
   @override
+  String get generalSettingsHoldToRecord => '長押しで録画';
+
+  @override
+  String get generalSettingsHoldToRecordSubtitle => '長押しすると録画が始まり、離すと止まります';
+
+  @override
   String get contentPreferencesTitle => 'コンテンツ設定';
 
   @override

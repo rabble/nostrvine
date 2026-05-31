@@ -3136,6 +3136,8 @@
     "generalSettingsVideoShapeSquareAndPortrait": "Vierkant en portret",
     "generalSettingsVideoShapeSquareAndPortraitSubtitle": "Toon de volledige mix van Divine-video's",
     "generalSettingsVideoShapeSquareOnlySubtitle": "Hou feeds in het klassieke vierkante formaat",
+    "generalSettingsHoldToRecord": "Ingedrukt houden om op te nemen",
+    "generalSettingsHoldToRecordSubtitle": "Opname start wanneer je ingedrukt houdt en stopt wanneer je loslaat",
     "contentFiltersAdultContent": "INHOUD VOOR VOLWASSENEN",
     "contentFiltersViolenceGore": "GEWELD & BLOED",
     "contentFiltersSubstances": "MIDDELEN",

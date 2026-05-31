@@ -200,6 +200,13 @@ class AppLocalizationsIt extends AppLocalizations {
       'Mantieni i feed nel classico formato quadrato';
 
   @override
+  String get generalSettingsHoldToRecord => 'Tieni premuto per registrare';
+
+  @override
+  String get generalSettingsHoldToRecordSubtitle =>
+      'La registrazione inizia tenendo premuto e si ferma al rilascio';
+
+  @override
   String get contentPreferencesTitle => 'Preferenze contenuti';
 
   @override

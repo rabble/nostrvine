@@ -180,6 +180,13 @@ class AppLocalizationsTr extends AppLocalizations {
       'Akışları klasik kare formatta tut';
 
   @override
+  String get generalSettingsHoldToRecord => 'Kayıt için basılı tut';
+
+  @override
+  String get generalSettingsHoldToRecordSubtitle =>
+      'Basılı tuttuğunuzda kayıt başlar, bıraktığınızda durur';
+
+  @override
   String get contentPreferencesTitle => 'İçerik Tercihleri';
 
   @override

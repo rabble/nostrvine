@@ -436,6 +436,18 @@ abstract class AppLocalizations {
   /// **'Keep feeds in the classic square format'**
   String get generalSettingsVideoShapeSquareOnlySubtitle;
 
+  /// No description provided for @generalSettingsHoldToRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold to record'**
+  String get generalSettingsHoldToRecord;
+
+  /// No description provided for @generalSettingsHoldToRecordSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start recording when you press and hold, then stop when you release'**
+  String get generalSettingsHoldToRecordSubtitle;
+
   /// Content preferences screen app bar title
   ///
   /// In en, this message translates to:

@@ -6,6 +6,7 @@ import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/audio_device_preference_service.dart';
 import 'package:openvine/services/audio_sharing_preference_service.dart';
 import 'package:openvine/services/feed_aspect_ratio_preference_service.dart';
+import 'package:openvine/services/hold_to_record_preference_service.dart';
 import 'package:openvine/services/language_preference_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -24,6 +25,12 @@ AudioSharingPreferenceService audioSharingPreferenceService(Ref ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
   return AudioSharingPreferenceService(prefs);
 }
+
+final holdToRecordPreferenceServiceProvider =
+    Provider<HoldToRecordPreferenceService>((ref) {
+      final prefs = ref.watch(sharedPreferencesProvider);
+      return HoldToRecordPreferenceService(prefs);
+    });
 
 /// Audio device preference service for managing the preferred input device
 /// for recording on macOS. keepAlive ensures preference persists.

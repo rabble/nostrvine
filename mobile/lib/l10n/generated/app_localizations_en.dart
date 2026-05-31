@@ -199,6 +199,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Keep feeds in the classic square format';
 
   @override
+  String get generalSettingsHoldToRecord => 'Hold to record';
+
+  @override
+  String get generalSettingsHoldToRecordSubtitle =>
+      'Start recording when you press and hold, then stop when you release';
+
+  @override
   String get contentPreferencesTitle => 'Content Preferences';
 
   @override

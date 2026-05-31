@@ -199,6 +199,13 @@ class AppLocalizationsPt extends AppLocalizations {
       'Mantenha os feeds no formato quadrado clássico';
 
   @override
+  String get generalSettingsHoldToRecord => 'Segurar para gravar';
+
+  @override
+  String get generalSettingsHoldToRecordSubtitle =>
+      'A gravação começa ao manter pressionado e para ao soltar';
+
+  @override
   String get contentPreferencesTitle => 'Preferências de conteúdo';
 
   @override

@@ -3136,6 +3136,8 @@
     "generalSettingsVideoShapeSquareAndPortrait": "Pătrate și portret",
     "generalSettingsVideoShapeSquareAndPortraitSubtitle": "Arată tot amestecul de videoclipuri Divine",
     "generalSettingsVideoShapeSquareOnlySubtitle": "Păstrează feedurile în formatul clasic pătrat",
+    "generalSettingsHoldToRecord": "Ține apăsat pentru a înregistra",
+    "generalSettingsHoldToRecordSubtitle": "Înregistrarea începe când ții apăsat și se oprește când eliberezi",
     "contentFiltersAdultContent": "CONȚINUT PENTRU ADULȚI",
     "contentFiltersViolenceGore": "VIOLENȚĂ ȘI SÂNGE",
     "contentFiltersSubstances": "SUBSTANȚE",

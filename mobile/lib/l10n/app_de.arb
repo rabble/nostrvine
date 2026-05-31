@@ -3136,6 +3136,8 @@
     "generalSettingsVideoShapeSquareAndPortrait": "Quadratisch und Hochformat",
     "generalSettingsVideoShapeSquareAndPortraitSubtitle": "Zeig den ganzen Mix der Divine-Videos",
     "generalSettingsVideoShapeSquareOnlySubtitle": "Halt deinen Feed im klassischen Quadratformat",
+    "generalSettingsHoldToRecord": "Gedrückt halten zum Aufnehmen",
+    "generalSettingsHoldToRecordSubtitle": "Die Aufnahme beginnt, wenn du gedrückt hältst, und stoppt, wenn du loslässt",
     "contentFiltersAdultContent": "INHALTE FÜR ERWACHSENE",
     "contentFiltersViolenceGore": "GEWALT & BLUT",
     "contentFiltersSubstances": "SUBSTANZEN",

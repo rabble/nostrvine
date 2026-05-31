@@ -199,6 +199,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Halt deinen Feed im klassischen Quadratformat';
 
   @override
+  String get generalSettingsHoldToRecord => 'Gedrückt halten zum Aufnehmen';
+
+  @override
+  String get generalSettingsHoldToRecordSubtitle =>
+      'Die Aufnahme beginnt, wenn du gedrückt hältst, und stoppt, wenn du loslässt';
+
+  @override
   String get contentPreferencesTitle => 'Inhaltseinstellungen';
 
   @override

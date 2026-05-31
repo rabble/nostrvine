@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/preferences_providers.dart';
 import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_classic_actions_bottom.dart';
 import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_classic_actions_top.dart';
 import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_classic_top_bar.dart';
@@ -36,6 +37,12 @@ class VideoRecorderClassicStack extends ConsumerWidget {
             (hasRemainingDuration || !state.recorderMode.hasRecordingLimit)) ||
         state.isRecording;
 
+    final startsRecordingOnPressDown = ref.watch(
+      holdToRecordPreferenceServiceProvider.select(
+        (service) => service.isHoldToRecordEnabled,
+      ),
+    );
+
     return SafeArea(
       bottom: false,
       child: Column(
@@ -64,6 +71,7 @@ class VideoRecorderClassicStack extends ConsumerWidget {
                         isEnabled: isEnabled,
                         isRecording: state.isRecording,
                         behavior: .opaque,
+                        startsRecordingOnPressDown: startsRecordingOnPressDown,
                         onTapToggle: () => context
                             .read<VideoRecorderBloc>()
                             .add(const VideoRecorderRecordingToggleRequested()),

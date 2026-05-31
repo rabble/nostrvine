@@ -283,6 +283,13 @@ void main() {
       scrollable: find.byType(Scrollable),
     );
     expect(find.text('Make my audio available for reuse'), findsOneWidget);
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    await tester.scrollUntilVisible(
+      find.text(l10n.generalSettingsHoldToRecord),
+      120,
+      scrollable: find.byType(Scrollable),
+    );
+    expect(find.text(l10n.generalSettingsHoldToRecord), findsOneWidget);
 
     final captionsToggle = find.byWidgetPredicate(
       (widget) =>

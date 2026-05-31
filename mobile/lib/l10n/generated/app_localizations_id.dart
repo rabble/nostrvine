@@ -180,6 +180,13 @@ class AppLocalizationsId extends AppLocalizations {
       'Pertahankan feed dalam format persegi klasik';
 
   @override
+  String get generalSettingsHoldToRecord => 'Tahan untuk merekam';
+
+  @override
+  String get generalSettingsHoldToRecordSubtitle =>
+      'Rekaman dimulai saat menahan dan berhenti saat dilepas';
+
+  @override
   String get contentPreferencesTitle => 'Preferensi Konten';
 
   @override

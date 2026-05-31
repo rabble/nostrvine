@@ -173,6 +173,12 @@ class AppLocalizationsKo extends AppLocalizations {
       '피드를 클래식한 정사각형으로 유지해요';
 
   @override
+  String get generalSettingsHoldToRecord => '길게 눌러서 녹화';
+
+  @override
+  String get generalSettingsHoldToRecordSubtitle => '길게 누르면 녹화가 시작되고, 놓으면 멈춰요';
+
+  @override
   String get contentPreferencesTitle => '콘텐츠 환경설정';
 
   @override

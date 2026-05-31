@@ -3129,6 +3129,8 @@
     "generalSettingsVideoShapeSquareAndPortrait": "مربّع وعمودي",
     "generalSettingsVideoShapeSquareAndPortraitSubtitle": "اعرض المزيج الكامل لفيديوهات Divine",
     "generalSettingsVideoShapeSquareOnlySubtitle": "أبقِ التغذيات بالشكل المربّع الكلاسيكي",
+    "generalSettingsHoldToRecord": "اضغط مطولاً للتسجيل",
+    "generalSettingsHoldToRecordSubtitle": "يبدأ التسجيل عند الضغط المطوّل ويتوقف عند الإفراج",
     "contentFiltersAdultContent": "محتوى للبالغين",
     "contentFiltersViolenceGore": "العنف والدماء",
     "contentFiltersSubstances": "المواد",

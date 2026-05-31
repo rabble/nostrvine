@@ -205,6 +205,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Garde les fils dans le format carré classique';
 
   @override
+  String get generalSettingsHoldToRecord => 'Appuyer pour enregistrer';
+
+  @override
+  String get generalSettingsHoldToRecordSubtitle =>
+      'L\'enregistrement démarre en maintenant appuyé et s\'arrête en relâchant';
+
+  @override
   String get contentPreferencesTitle => 'Préférences de contenu';
 
   @override

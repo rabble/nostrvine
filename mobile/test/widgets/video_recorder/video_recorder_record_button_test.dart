@@ -10,7 +10,9 @@ import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_recorder/video_recorder_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_record_button.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockVideoRecorderBloc
     extends MockBloc<VideoRecorderEvent, VideoRecorderBlocState>
@@ -21,8 +23,11 @@ void main() {
 
   group(RecordButton, () {
     late _MockVideoRecorderBloc recorderBloc;
+    late SharedPreferences sharedPreferences;
 
-    setUp(() {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      sharedPreferences = await SharedPreferences.getInstance();
       recorderBloc = _MockVideoRecorderBloc();
       when(() => recorderBloc.state).thenReturn(const VideoRecorderBlocState());
     });
@@ -43,6 +48,7 @@ void main() {
 
       return ProviderScope(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           clipManagerProvider.overrideWith(
             () => _TestClipManagerNotifier(clips: clips ?? []),
           ),
@@ -194,6 +200,9 @@ void main() {
           await tester.pumpWidget(
             ProviderScope(
               overrides: [
+                sharedPreferencesProvider.overrideWithValue(
+                  sharedPreferences,
+                ),
                 clipManagerProvider.overrideWith(
                   () => _TestClipManagerNotifier(clips: const []),
                 ),
@@ -255,6 +264,9 @@ void main() {
           await tester.pumpWidget(
             ProviderScope(
               overrides: [
+                sharedPreferencesProvider.overrideWithValue(
+                  sharedPreferences,
+                ),
                 clipManagerProvider.overrideWith(
                   () => _TestClipManagerNotifier(clips: const []),
                 ),
@@ -284,6 +296,47 @@ void main() {
               const VideoRecorderRecordingStartRequested(),
             ),
           ).called(1);
+          verify(
+            () => recorderBloc.add(
+              const VideoRecorderRecordingStopRequested(),
+            ),
+          ).called(1);
+        },
+      );
+
+      testWidgets(
+        'hold-to-record preference starts on press-down and stops on release',
+        (tester) async {
+          await sharedPreferences.setBool('hold_to_record_enabled', true);
+          when(() => recorderBloc.state).thenReturn(
+            const VideoRecorderBlocState(
+              canRecord: true,
+              isCameraInitialized: true,
+            ),
+          );
+
+          await tester.pumpWidget(buildWidget());
+          await tester.pumpAndSettle();
+
+          final gesture = await tester.startGesture(
+            tester.getCenter(find.byType(RecordButton)),
+          );
+          await tester.pump();
+
+          verify(
+            () => recorderBloc.add(
+              const VideoRecorderRecordingStartRequested(),
+            ),
+          ).called(1);
+          verifyNever(
+            () => recorderBloc.add(
+              const VideoRecorderRecordingToggleRequested(),
+            ),
+          );
+
+          await gesture.up();
+          await tester.pumpAndSettle();
+
           verify(
             () => recorderBloc.add(
               const VideoRecorderRecordingStopRequested(),

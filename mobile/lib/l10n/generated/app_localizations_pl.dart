@@ -201,6 +201,13 @@ class AppLocalizationsPl extends AppLocalizations {
       'Trzymaj feedy w klasycznym kwadratowym formacie';
 
   @override
+  String get generalSettingsHoldToRecord => 'Przytrzymaj, aby nagrywać';
+
+  @override
+  String get generalSettingsHoldToRecordSubtitle =>
+      'Nagrywanie rozpoczyna się po przytrzymaniu i zatrzymuje się po zwolnieniu';
+
+  @override
   String get contentPreferencesTitle => 'Preferencje treści';
 
   @override

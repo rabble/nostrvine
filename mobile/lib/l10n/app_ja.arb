@@ -3129,6 +3129,8 @@
     "generalSettingsVideoShapeSquareAndPortrait": "正方形と縦型",
     "generalSettingsVideoShapeSquareAndPortraitSubtitle": "Divine の動画をフルミックスで表示",
     "generalSettingsVideoShapeSquareOnlySubtitle": "クラシックな正方形フォーマットでフィードを保つ",
+    "generalSettingsHoldToRecord": "長押しで録画",
+    "generalSettingsHoldToRecordSubtitle": "長押しすると録画が始まり、離すと止まります",
     "contentFiltersAdultContent": "アダルトコンテンツ",
     "contentFiltersViolenceGore": "暴力とグロテスク",
     "contentFiltersSubstances": "薬物",

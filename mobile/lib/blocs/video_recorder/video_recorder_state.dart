@@ -30,6 +30,7 @@ class VideoRecorderBlocState extends Equatable {
     this.showGridLines = false,
     this.isStartingRecording = false,
     this.isStoppingRecording = false,
+    this.pendingStopAfterStart = false,
     this.baseZoomLevel = 1.0,
     this.snappedTo1x = false,
     this.lastRawZoom = 1.0,
@@ -99,6 +100,15 @@ class VideoRecorderBlocState extends Equatable {
   /// Moved out of the notifier's private fields per `state_management.md`.
   final bool isStoppingRecording;
 
+  /// True when a stop was requested while [isStartingRecording] was true.
+  ///
+  /// [_onRecordingStartRequested] checks this flag after the native
+  /// [CameraService.startRecording] call completes and, if set, dispatches a
+  /// proper [VideoRecorderRecordingStopRequested] so that a very brief
+  /// press-and-release in hold-to-record mode always produces a short clip
+  /// rather than an indefinite recording (#hold-to-record-brief-press).
+  final bool pendingStopAfterStart;
+
   /// Zoom level captured at the start of the current pinch gesture.
   ///
   /// Used to compute relative zoom from pinch scale. Moved out of the
@@ -152,6 +162,7 @@ class VideoRecorderBlocState extends Equatable {
     bool? showGridLines,
     bool? isStartingRecording,
     bool? isStoppingRecording,
+    bool? pendingStopAfterStart,
     double? baseZoomLevel,
     bool? snappedTo1x,
     double? lastRawZoom,
@@ -179,6 +190,8 @@ class VideoRecorderBlocState extends Equatable {
       showGridLines: showGridLines ?? this.showGridLines,
       isStartingRecording: isStartingRecording ?? this.isStartingRecording,
       isStoppingRecording: isStoppingRecording ?? this.isStoppingRecording,
+      pendingStopAfterStart:
+          pendingStopAfterStart ?? this.pendingStopAfterStart,
       baseZoomLevel: baseZoomLevel ?? this.baseZoomLevel,
       snappedTo1x: snappedTo1x ?? this.snappedTo1x,
       lastRawZoom: lastRawZoom ?? this.lastRawZoom,
@@ -207,6 +220,7 @@ class VideoRecorderBlocState extends Equatable {
     showGridLines,
     isStartingRecording,
     isStoppingRecording,
+    pendingStopAfterStart,
     baseZoomLevel,
     snappedTo1x,
     lastRawZoom,

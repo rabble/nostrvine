@@ -660,7 +660,25 @@ class VideoRecorderBloc
       );
       await WakelockPlus.enable();
       clipManager.startRecording();
-      emit(state.copyWith(isStartingRecording: false));
+      if (state.pendingStopAfterStart) {
+        // A stop was requested while the native start was still in-flight
+        // (brief press in hold-to-record mode).  Dispatch a proper stop now
+        // that the camera is actually recording so the clip is finalized.
+        Log.info(
+          '⏹️  Dispatching pending stop after recording start (brief press)',
+          name: 'VideoRecorderBloc',
+          category: LogCategory.video,
+        );
+        emit(
+          state.copyWith(
+            isStartingRecording: false,
+            pendingStopAfterStart: false,
+          ),
+        );
+        add(const VideoRecorderRecordingStopRequested());
+      } else {
+        emit(state.copyWith(isStartingRecording: false));
+      }
     } else {
       Log.warning(
         '⚠️ Recording failed to start or was stopped early',
@@ -670,6 +688,7 @@ class VideoRecorderBloc
       emit(
         state.copyWith(
           isStartingRecording: false,
+          pendingStopAfterStart: false,
           recordingState: VideoRecorderState.idle,
         ),
       );
@@ -685,13 +704,19 @@ class VideoRecorderBloc
     }
 
     if (state.isStartingRecording) {
+      // Recording is still starting (isStartingRecording=true).  The native
+      // camera hasn't begun capturing yet, so calling stopRecording() here is
+      // a no-op that races with startRecording() and can leave the BLoC stuck
+      // in the recording state.  Instead, set the pendingStopAfterStart flag
+      // and let _onRecordingStartRequested dispatch a proper stop once the
+      // native start completes.
       Log.info(
-        '⏳ Stop requested during startup - calling native stop '
-        '(startRecording will handle state)',
+        '⏳ Stop requested during startup - flagging pendingStopAfterStart '
+        '(startRecording will dispatch stop after native start)',
         name: 'VideoRecorderBloc',
         category: LogCategory.video,
       );
-      unawaited(_cameraService.stopRecording());
+      emit(state.copyWith(pendingStopAfterStart: true));
       return;
     }
 

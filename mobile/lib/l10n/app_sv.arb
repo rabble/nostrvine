@@ -3136,6 +3136,8 @@
     "generalSettingsVideoShapeSquareAndPortrait": "Kvadrat och stående",
     "generalSettingsVideoShapeSquareAndPortraitSubtitle": "Visa hela mixen av Divine-videor",
     "generalSettingsVideoShapeSquareOnlySubtitle": "Behåll flöden i klassiskt kvadratiskt format",
+    "generalSettingsHoldToRecord": "Håll inne för att spela in",
+    "generalSettingsHoldToRecordSubtitle": "Inspelning startar när du håller inne och stannar när du släpper",
     "contentFiltersAdultContent": "VUXENINNEHÅLL",
     "contentFiltersViolenceGore": "VÅLD OCH BLOD",
     "contentFiltersSubstances": "SUBSTANSER",

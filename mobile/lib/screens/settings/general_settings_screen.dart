@@ -71,6 +71,7 @@ class GeneralSettingsScreen extends ConsumerWidget {
               const _FeedAspectRatioPreferenceTile(),
               _SectionHeader(context.l10n.generalSettingsSectionCreating),
               const _AudioSharingToggle(),
+              const _LongPressRecordingToggle(),
               _SectionHeader(context.l10n.generalSettingsSectionApp),
               const _AppLanguageTile(),
             ],
@@ -270,6 +271,37 @@ class _AudioSharingToggleState extends ConsumerState<_AudioSharingToggle> {
       ),
       activeThumbColor: VineTheme.vineGreen,
       secondary: const Icon(Icons.music_note, color: VineTheme.vineGreen),
+    );
+  }
+}
+
+class _LongPressRecordingToggle extends ConsumerWidget {
+  const _LongPressRecordingToggle();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final service = ref.watch(holdToRecordPreferenceServiceProvider);
+    final isEnabled = service.isHoldToRecordEnabled;
+
+    return SwitchListTile(
+      value: isEnabled,
+      onChanged: (value) async {
+        await service.setHoldToRecordEnabled(value);
+        ref.invalidate(holdToRecordPreferenceServiceProvider);
+      },
+      title: Text(
+        context.l10n.generalSettingsHoldToRecord,
+        style: _titleStyle,
+      ),
+      subtitle: Text(
+        context.l10n.generalSettingsHoldToRecordSubtitle,
+        style: _subtitleStyle,
+      ),
+      activeThumbColor: VineTheme.vineGreen,
+      secondary: const DivineIcon(
+        icon: DivineIconName.cameraRetro,
+        color: VineTheme.vineGreen,
+      ),
     );
   }
 }
