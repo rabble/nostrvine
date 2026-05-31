@@ -1,6 +1,8 @@
 // ABOUTME: Direct test of relay.divine.video divine extensions support
 // ABOUTME: Sends REQ with sort and int# filters to verify relay behavior
 
+// ignore_for_file: avoid_print
+
 import 'dart:convert';
 import 'dart:io';
 

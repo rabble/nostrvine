@@ -141,7 +141,7 @@ class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
     _disposeVideoControllers();
 
     context.read<VideoRecorderBloc>().add(
-      const VideoRecorderInitializeRequested(),
+      VideoRecorderInitializeRequested(fromEditor: widget.fromEditor),
     );
   }
 
@@ -403,7 +403,7 @@ class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
         },
         child: PopScope(
           onPopInvokedWithResult: (didPop, value) {
-            if (didPop && !_isAutosavedDraft) {
+            if (didPop && !widget.fromEditor && !_isAutosavedDraft) {
               ref
                   .read(videoPublishProvider.notifier)
                   .clearAll(keepAutosavedDraft: true);

@@ -1,4 +1,5 @@
 // Standalone script to test Blossom upload with real HTTP
+// ignore_for_file: avoid_print
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -32,7 +33,9 @@ Future<void> main() async {
     ...List.filled(1000, 0x00),
   ]);
   await testFile.writeAsBytes(testData);
-  print('📁 Created test file: ${testFile.path} (${testData.length} bytes)');
+  print(
+    '📁 Created test file: ${testFile.path} (${testData.length} bytes)',
+  );
 
   // Generate test keys
   final keychain = Keychain.generate();

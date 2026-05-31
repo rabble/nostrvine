@@ -3,6 +3,8 @@
 //
 // USAGE: dart run scripts/generate_seed_data.dart
 
+// ignore_for_file: avoid_print
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -98,7 +100,9 @@ Future<void> main() async {
       );
     } else {
       print("[SEED GEN] ⚠️ WARNING: Editor's Picks list not found!");
-      print('[SEED GEN] Will proceed with only top videos by loop count...');
+      print(
+        '[SEED GEN] Will proceed with only top videos by loop count...',
+      );
     }
 
     // Step 2: Fetch Editor's Picks videos (if we have any)
@@ -267,7 +271,9 @@ Future<void> main() async {
     print('[SEED GEN] ✅ Generated seed data: ${outputFile.path}');
     print('[SEED GEN]    Videos: ${finalVideos.length}');
     print('[SEED GEN]    Profiles: ${profileEvents.length}');
-    print('[SEED GEN]    Curation list: ${editorPicksEvent != null ? 1 : 0}');
+    print(
+      '[SEED GEN]    Curation list: ${editorPicksEvent != null ? 1 : 0}',
+    );
     print(
       '[SEED GEN]    Total events: ${finalVideos.length + profileEvents.length + (editorPicksEvent != null ? 1 : 0)}',
     );

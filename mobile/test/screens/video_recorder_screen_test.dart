@@ -16,8 +16,12 @@ import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
+import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
+import 'package:openvine/models/video_publish/video_publish_provider_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
@@ -34,6 +38,32 @@ class _MockClipLibraryService extends Mock implements ClipLibraryService {}
 class _MockVideoRecorderBloc
     extends MockBloc<VideoRecorderEvent, VideoRecorderBlocState>
     implements VideoRecorderBloc {}
+
+class _FakeVideoPublishNotifier extends VideoPublishNotifier {
+  int clearAllCalls = 0;
+  final keepAutosavedDraftValues = <bool>[];
+
+  @override
+  VideoPublishProviderState build() => const VideoPublishProviderState();
+
+  @override
+  Future<void> clearAll({bool keepAutosavedDraft = false}) async {
+    clearAllCalls++;
+    keepAutosavedDraftValues.add(keepAutosavedDraft);
+  }
+}
+
+class _NonAutosaveVideoEditorNotifier extends VideoEditorNotifier {
+  @override
+  VideoEditorProviderState build() => VideoEditorProviderState(
+    isAutosavedDraft: false,
+  );
+}
+
+class _AutosaveVideoEditorNotifier extends VideoEditorNotifier {
+  @override
+  VideoEditorProviderState build() => VideoEditorProviderState();
+}
 
 /// Mock for CameraPermissionBloc
 class MockCameraPermissionBloc extends Mock implements CameraPermissionBloc {
@@ -53,19 +83,27 @@ class MockCameraPermissionBloc extends Mock implements CameraPermissionBloc {
 late VideoRecorderBloc recorderBloc;
 late SharedPreferences testPrefs;
 
-/// Helper to build VideoRecorderView with required providers and the mock bloc.
-Widget buildTestWidget({List<Override> overrides = const []}) {
+/// Stub overrides for the draft storage and clip library services so the
+/// recorder's autosave/clip checks resolve to empty during tests.
+List<Override> _stubStorageOverrides() {
   final mockDraftStorage = _MockDraftStorageService();
   when(
     () => mockDraftStorage.getDraftById(any()),
   ).thenAnswer((_) async => null);
   final mockClipLibrary = _MockClipLibraryService();
   when(mockClipLibrary.getAllClips).thenAnswer((_) async => []);
+  return [
+    draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
+    clipLibraryServiceProvider.overrideWithValue(mockClipLibrary),
+  ];
+}
+
+/// Helper to build VideoRecorderView with required providers and the mock bloc.
+Widget buildTestWidget({List<Override> overrides = const []}) {
   return ProviderScope(
     overrides: [
       sharedPreferencesProvider.overrideWithValue(testPrefs),
-      draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
-      clipLibraryServiceProvider.overrideWithValue(mockClipLibrary),
+      ..._stubStorageOverrides(),
       ...overrides,
     ],
     child: MultiBlocProvider(
@@ -87,6 +125,48 @@ Widget buildTestWidget({List<Override> overrides = const []}) {
 /// Helper to build VideoRecorderView with provider overrides.
 Widget buildTestWidgetWithOverrides(List<Override> overrides) =>
     buildTestWidget(overrides: overrides);
+
+Widget buildNavigatorTestWidget({
+  required bool fromEditor,
+  required List<Override> overrides,
+}) {
+  return ProviderScope(
+    overrides: [
+      ..._stubStorageOverrides(),
+      ...overrides,
+    ],
+    child: MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Builder(
+        builder: (context) => Scaffold(
+          body: Center(
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).push<void>(
+                  MaterialPageRoute<void>(
+                    builder: (_) => MultiBlocProvider(
+                      providers: [
+                        BlocProvider<VideoRecorderBloc>.value(
+                          value: recorderBloc,
+                        ),
+                        BlocProvider<CameraPermissionBloc>(
+                          create: (_) => MockCameraPermissionBloc(),
+                        ),
+                      ],
+                      child: VideoRecorderView(fromEditor: fromEditor),
+                    ),
+                  ),
+                );
+              },
+              child: const Text('Open recorder'),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -341,6 +421,114 @@ void main() {
 
         expect(find.byType(VideoRecorderView), findsNothing);
         expect(find.text('Home'), findsOneWidget);
+      });
+
+      testWidgets('clears video publish state when standalone route pops', (
+        tester,
+      ) async {
+        SharedPreferences.setMockInitialValues({
+          'why_six_seconds_shown': true,
+        });
+        final prefs = await SharedPreferences.getInstance();
+        final fakeVideoPublishNotifier = _FakeVideoPublishNotifier();
+
+        await tester.pumpWidget(
+          buildNavigatorTestWidget(
+            fromEditor: false,
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              videoEditorProvider.overrideWith(
+                _NonAutosaveVideoEditorNotifier.new,
+              ),
+              videoPublishProvider.overrideWith(
+                () => fakeVideoPublishNotifier,
+              ),
+            ],
+          ),
+        );
+
+        await tester.tap(find.text('Open recorder'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(VideoRecorderView), findsOneWidget);
+
+        Navigator.of(tester.element(find.byType(VideoRecorderView))).pop();
+        await tester.pumpAndSettle();
+
+        expect(fakeVideoPublishNotifier.clearAllCalls, equals(1));
+        expect(fakeVideoPublishNotifier.keepAutosavedDraftValues, [isTrue]);
+      });
+
+      testWidgets('does not clear video publish state when editor route pops', (
+        tester,
+      ) async {
+        SharedPreferences.setMockInitialValues({
+          'why_six_seconds_shown': true,
+        });
+        final prefs = await SharedPreferences.getInstance();
+        final fakeVideoPublishNotifier = _FakeVideoPublishNotifier();
+
+        await tester.pumpWidget(
+          buildNavigatorTestWidget(
+            fromEditor: true,
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              videoEditorProvider.overrideWith(
+                _NonAutosaveVideoEditorNotifier.new,
+              ),
+              videoPublishProvider.overrideWith(
+                () => fakeVideoPublishNotifier,
+              ),
+            ],
+          ),
+        );
+
+        await tester.tap(find.text('Open recorder'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(VideoRecorderView), findsOneWidget);
+
+        Navigator.of(tester.element(find.byType(VideoRecorderView))).pop();
+        await tester.pumpAndSettle();
+
+        expect(fakeVideoPublishNotifier.clearAllCalls, isZero);
+        expect(fakeVideoPublishNotifier.keepAutosavedDraftValues, isEmpty);
+      });
+
+      testWidgets('does not clear video publish state for autosaved draft', (
+        tester,
+      ) async {
+        SharedPreferences.setMockInitialValues({
+          'why_six_seconds_shown': true,
+        });
+        final prefs = await SharedPreferences.getInstance();
+        final fakeVideoPublishNotifier = _FakeVideoPublishNotifier();
+
+        await tester.pumpWidget(
+          buildNavigatorTestWidget(
+            fromEditor: false,
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              videoEditorProvider.overrideWith(
+                _AutosaveVideoEditorNotifier.new,
+              ),
+              videoPublishProvider.overrideWith(
+                () => fakeVideoPublishNotifier,
+              ),
+            ],
+          ),
+        );
+
+        await tester.tap(find.text('Open recorder'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(VideoRecorderView), findsOneWidget);
+
+        Navigator.of(tester.element(find.byType(VideoRecorderView))).pop();
+        await tester.pumpAndSettle();
+
+        expect(fakeVideoPublishNotifier.clearAllCalls, isZero);
+        expect(fakeVideoPublishNotifier.keepAutosavedDraftValues, isEmpty);
       });
     });
 
