@@ -51,6 +51,7 @@ class MockCameraPermissionBloc extends Mock implements CameraPermissionBloc {
 }
 
 late VideoRecorderBloc recorderBloc;
+late SharedPreferences testPrefs;
 
 /// Helper to build VideoRecorderView with required providers and the mock bloc.
 Widget buildTestWidget({List<Override> overrides = const []}) {
@@ -62,6 +63,7 @@ Widget buildTestWidget({List<Override> overrides = const []}) {
   when(mockClipLibrary.getAllClips).thenAnswer((_) async => []);
   return ProviderScope(
     overrides: [
+      sharedPreferencesProvider.overrideWithValue(testPrefs),
       draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
       clipLibraryServiceProvider.overrideWithValue(mockClipLibrary),
       ...overrides,
@@ -110,9 +112,9 @@ void main() {
       );
 
       SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
+      testPrefs = await SharedPreferences.getInstance();
       container = ProviderContainer(
-        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+        overrides: [sharedPreferencesProvider.overrideWithValue(testPrefs)],
       );
     });
 

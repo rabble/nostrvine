@@ -10,11 +10,13 @@ import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_recorder/video_recorder_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/widgets/video_recorder/modes/capture/video_recorder_capture_stack.dart';
 import 'package:openvine/widgets/video_recorder/modes/capture/video_recorder_capture_top_bar.dart';
 import 'package:openvine/widgets/video_recorder/preview/video_recorder_camera_preview.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_record_button.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockVideoRecorderBloc
     extends MockBloc<VideoRecorderEvent, VideoRecorderBlocState>
@@ -25,8 +27,11 @@ void main() {
 
   group(VideoRecorderCaptureStack, () {
     late _MockVideoRecorderBloc recorderBloc;
+    late SharedPreferences testPrefs;
 
-    setUp(() {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      testPrefs = await SharedPreferences.getInstance();
       recorderBloc = _MockVideoRecorderBloc();
       when(() => recorderBloc.state).thenReturn(
         const VideoRecorderBlocState(
@@ -50,6 +55,7 @@ void main() {
 
       return ProviderScope(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(testPrefs),
           clipManagerProvider.overrideWith(
             () => _TestClipManagerNotifier(clips: clips ?? []),
           ),
