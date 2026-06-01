@@ -19,47 +19,58 @@ class BulkVideoStatsEntry {
 
   /// Creates a [BulkVideoStatsEntry] from JSON response.
   ///
-  /// Uses deep search to find stats values under various field names
-  /// and nested structures returned by the Funnelcake API.
+  /// Reads engagement values from the top-level map and from the explicit
+  /// `stats` sub-object only. Unbounded recursive search is intentionally
+  /// avoided: it would misattribute engagement counts from unrelated nested
+  /// sections (e.g. vine archive data, author stats) to a fresh video,
+  /// making new uploads appear to already have likes/comments/reposts.
   factory BulkVideoStatsEntry.fromJson(Map<String, dynamic> json) {
+    // The API may nest stats under a "stats" key. Look there first, then
+    // fall back to the top-level map. No deeper recursion is performed.
+    final statsData =
+        json['stats'] is Map<String, dynamic>
+            ? json['stats'] as Map<String, dynamic>
+            : const <String, dynamic>{};
+
     return BulkVideoStatsEntry(
       eventId: (json['event_id'] ?? json['id'] ?? '').toString(),
-      reactions:
-          _findEngagementCountDeep(json, {
-            'reactions',
-            'likes',
-            'like_count',
-            'total_likes',
-          }) ??
-          0,
-      comments:
-          _findEngagementCountDeep(json, {
-            'comments',
-            'comment_count',
-            'total_comments',
-          }) ??
-          0,
-      reposts:
-          _findEngagementCountDeep(json, {
-            'reposts',
-            'repost_count',
-            'total_reposts',
-          }) ??
-          0,
-      loops: _findIntDeep(json, {
-        'loops',
-        'loop_count',
-        'total_loops',
-        'embedded_loops',
-        'computed_loops',
-      }),
-      views: _findIntDeep(json, {
-        'views',
-        'view_count',
-        'total_views',
-        'unique_views',
-        'unique_viewers',
-      }),
+      reactions: _findEngagementCount(
+        statsData,
+        json,
+        const {'reactions', 'likes', 'like_count', 'total_likes'},
+      ),
+      comments: _findEngagementCount(
+        statsData,
+        json,
+        const {'comments', 'comment_count', 'total_comments'},
+      ),
+      reposts: _findEngagementCount(
+        statsData,
+        json,
+        const {'reposts', 'repost_count', 'total_reposts'},
+      ),
+      loops: _findInt(
+        statsData,
+        json,
+        const {
+          'loops',
+          'loop_count',
+          'total_loops',
+          'embedded_loops',
+          'computed_loops',
+        },
+      ),
+      views: _findInt(
+        statsData,
+        json,
+        const {
+          'views',
+          'view_count',
+          'total_views',
+          'unique_views',
+          'unique_viewers',
+        },
+      ),
     );
   }
 
@@ -110,50 +121,48 @@ int? _parseInt(dynamic value) {
   return null;
 }
 
-/// Recursively searches a JSON structure for any key in [targetKeys]
-/// and returns the first successfully parsed int value.
-int? _findIntDeep(dynamic source, Set<String> targetKeys) {
-  if (source is Map) {
-    for (final entry in source.entries) {
-      final key = entry.key.toString().toLowerCase();
-      if (targetKeys.contains(key)) {
+/// Searches [json] first, then [statsData], for any key in [targetKeys] and
+/// returns the first successfully parsed int value, or null if not found.
+///
+/// Only looks in the two provided maps — no recursion into nested objects.
+/// This prevents engagement values from unrelated nested sections (e.g. Vine
+/// archive data, author stats) from leaking into the current video's counters.
+int? _findInt(
+  Map<String, dynamic> statsData,
+  Map<String, dynamic> json,
+  Set<String> targetKeys,
+) {
+  for (final map in [json, statsData]) {
+    for (final entry in map.entries) {
+      if (targetKeys.contains(entry.key.toLowerCase())) {
         final parsed = _parseInt(entry.value);
         if (parsed != null) return parsed;
       }
-    }
-    for (final value in source.values) {
-      final result = _findIntDeep(value, targetKeys);
-      if (result != null) return result;
-    }
-  } else if (source is List) {
-    for (final value in source) {
-      final result = _findIntDeep(value, targetKeys);
-      if (result != null) return result;
     }
   }
   return null;
 }
 
-/// Recursively searches a JSON structure for engagement keys and normalizes
-/// invalid counters to zero.
-int? _findEngagementCountDeep(dynamic source, Set<String> targetKeys) {
-  if (source is Map) {
-    for (final entry in source.entries) {
-      final key = entry.key.toString().toLowerCase();
-      if (targetKeys.contains(key)) {
+/// Searches [json] first, then [statsData], for engagement keys and
+/// normalizes invalid counters (sentinels, negatives) to zero.
+///
+/// Falls through invalid values (sentinel MAX_INT strings, negatives, empty
+/// strings) to the next candidate key before defaulting to 0. An explicit
+/// zero at the top level wins over a non-zero value in the stats sub-object.
+///
+/// Only looks in the two provided maps — no recursion into nested objects.
+int _findEngagementCount(
+  Map<String, dynamic> statsData,
+  Map<String, dynamic> json,
+  Set<String> targetKeys,
+) {
+  for (final map in [json, statsData]) {
+    for (final entry in map.entries) {
+      if (targetKeys.contains(entry.key.toLowerCase())) {
         final parsed = tryParseEngagementCount(entry.value);
         if (parsed != null) return parsed;
       }
     }
-    for (final value in source.values) {
-      final result = _findEngagementCountDeep(value, targetKeys);
-      if (result != null) return result;
-    }
-  } else if (source is List) {
-    for (final value in source) {
-      final result = _findEngagementCountDeep(value, targetKeys);
-      if (result != null) return result;
-    }
   }
-  return null;
+  return 0;
 }

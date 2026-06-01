@@ -74,7 +74,7 @@ class LikeActionButton extends StatelessWidget {
 class _ActionButton extends StatelessWidget {
   const _ActionButton({
     this.isLiked = false,
-    this.totalLikes = 1,
+    this.totalLikes = 0,
     this.isOwnVideo = false,
     this.video,
     this.onInteracted,

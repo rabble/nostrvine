@@ -80,7 +80,7 @@ class RepostActionButton extends StatelessWidget {
 class _ActionButton extends StatelessWidget {
   const _ActionButton({
     this.isReposted = false,
-    this.totalReposts = 1,
+    this.totalReposts = 0,
     this.isOwnVideo = false,
     this.video,
     this.onInteracted,

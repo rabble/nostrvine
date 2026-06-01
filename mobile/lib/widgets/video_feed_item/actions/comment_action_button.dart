@@ -112,7 +112,7 @@ class _ActionButton extends StatelessWidget {
   const _ActionButton({
     this.onPressed,
     this.isCommentsInProgress = false,
-    this.totalComments = 1,
+    this.totalComments = 0,
   });
 
   final Function()? onPressed;

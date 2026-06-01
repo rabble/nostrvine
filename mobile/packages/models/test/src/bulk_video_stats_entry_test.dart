@@ -218,6 +218,88 @@ void main() {
       });
     });
 
+    group('cross-contamination guards', () {
+      test(
+        'does not pick up engagement counts from deeply nested objects',
+        () {
+          // A fresh video entry may arrive with deeply-nested sibling sections
+          // (e.g. a vine_archive block or an event sub-object) that contain
+          // non-zero engagement values from unrelated data. The parser must
+          // not assign those values to the current video's engagement counters.
+          final entry = BulkVideoStatsEntry.fromJson(const {
+            'event_id': 'abc123',
+            // Top-level engagement keys are absent / zero for a fresh upload.
+            'reactions': 0,
+            'comments': 0,
+            'reposts': 0,
+            // Deep nested object that has its own engagement data.
+            'vine_archive': {
+              'event': {
+                'likes': 1547,
+                'comments': 320,
+                'reposts': 88,
+              },
+            },
+          });
+
+          expect(
+            entry.reactions,
+            equals(0),
+            reason:
+                'vine_archive.event.likes must not leak into reactions',
+          );
+          expect(
+            entry.comments,
+            equals(0),
+            reason:
+                'vine_archive.event.comments must not leak into comments',
+          );
+          expect(
+            entry.reposts,
+            equals(0),
+            reason:
+                'vine_archive.event.reposts must not leak into reposts',
+          );
+        },
+      );
+
+      test(
+        'does not pick up engagement counts from sibling stats in same payload',
+        () {
+          // If the API includes a sibling stats block for a different context
+          // (e.g. trending stats or author stats) that contains non-zero
+          // engagement values, those must not be attributed to this video.
+          final entry = BulkVideoStatsEntry.fromJson(const {
+            'event_id': 'abc123',
+            // No direct engagement keys on this entry.
+            'author_stats': {
+              'reactions': 9999,
+              'total_likes': 50000,
+            },
+          });
+
+          expect(
+            entry.reactions,
+            equals(0),
+            reason: 'author_stats.reactions must not leak into video reactions',
+          );
+        },
+      );
+
+      test('still reads reactions from allowed stats sub-object', () {
+        // The fix must preserve reading from the explicit "stats" sub-object,
+        // which is the documented one-level nesting the API can return.
+        final entry = BulkVideoStatsEntry.fromJson(const {
+          'event_id': 'abc123',
+          'stats': {'reactions': 42, 'comments': 7, 'reposts': 3},
+        });
+
+        expect(entry.reactions, equals(42));
+        expect(entry.comments, equals(7));
+        expect(entry.reposts, equals(3));
+      });
+    });
+
     group('toString', () {
       test('returns readable representation', () {
         const entry = BulkVideoStatsEntry(
