@@ -143,15 +143,16 @@ void main() {
         expect(find.byType(VideoActionButton), findsOneWidget);
       });
 
-      testWidgets('displays default like count of 1 in preview mode', (
+      testWidgets('displays zero like count in preview mode', (
         tester,
       ) async {
         await tester.pumpWidget(
           buildSubject(video: testVideo, isPreviewMode: true),
         );
 
-        // The default _ActionButton shows totalLikes = 1
-        expect(find.text('1'), findsOneWidget);
+        // Preview mode shows count=0, which renders as the labelWhenZero text.
+        expect(find.text('Like'), findsOneWidget);
+        expect(find.text('1'), findsNothing);
       });
 
       testWidgets('has correct semantics label in preview mode', (

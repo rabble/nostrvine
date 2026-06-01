@@ -94,14 +94,16 @@ void main() {
         expect(find.byType(VideoActionButton), findsOneWidget);
       });
 
-      testWidgets('displays default comment count of 1 in preview mode', (
+      testWidgets('displays zero comment count in preview mode', (
         tester,
       ) async {
         await tester.pumpWidget(
           buildSubject(video: testVideo, isPreviewMode: true),
         );
 
-        expect(find.text('1'), findsOneWidget);
+        // Preview mode shows count=0, which renders as the labelWhenZero text.
+        expect(find.text('Reply'), findsOneWidget);
+        expect(find.text('1'), findsNothing);
       });
 
       testWidgets('has correct semantics label in preview mode', (

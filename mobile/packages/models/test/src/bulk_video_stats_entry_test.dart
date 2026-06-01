@@ -245,20 +245,17 @@ void main() {
           expect(
             entry.reactions,
             equals(0),
-            reason:
-                'vine_archive.event.likes must not leak into reactions',
+            reason: 'vine_archive.event.likes must not leak into reactions',
           );
           expect(
             entry.comments,
             equals(0),
-            reason:
-                'vine_archive.event.comments must not leak into comments',
+            reason: 'vine_archive.event.comments must not leak into comments',
           );
           expect(
             entry.reposts,
             equals(0),
-            reason:
-                'vine_archive.event.reposts must not leak into reposts',
+            reason: 'vine_archive.event.reposts must not leak into reposts',
           );
         },
       );

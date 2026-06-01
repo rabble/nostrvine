@@ -27,10 +27,9 @@ class BulkVideoStatsEntry {
   factory BulkVideoStatsEntry.fromJson(Map<String, dynamic> json) {
     // The API may nest stats under a "stats" key. Look there first, then
     // fall back to the top-level map. No deeper recursion is performed.
-    final statsData =
-        json['stats'] is Map<String, dynamic>
-            ? json['stats'] as Map<String, dynamic>
-            : const <String, dynamic>{};
+    final statsData = json['stats'] is Map<String, dynamic>
+        ? json['stats'] as Map<String, dynamic>
+        : const <String, dynamic>{};
 
     return BulkVideoStatsEntry(
       eventId: (json['event_id'] ?? json['id'] ?? '').toString(),
