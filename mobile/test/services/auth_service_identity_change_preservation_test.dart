@@ -158,7 +158,8 @@ void main() {
             reason: 'identity_change',
             isIdentityChange: true,
             userPubkey: any(named: 'userPubkey'),
-            deleteUserData: false, // ← the regression guard
+            // ignore: avoid_redundant_argument_values
+            deleteUserData: false, // ← the regression guard: must NOT be true
           ),
         ).called(1);
 
@@ -187,7 +188,8 @@ void main() {
             reason: 'identity_change',
             isIdentityChange: true,
             userPubkey: captureAny(named: 'userPubkey'),
-            deleteUserData: false,
+            // ignore: avoid_redundant_argument_values
+            deleteUserData: false, // regression guard: must NOT be true
           ),
         ).captured;
 
@@ -254,7 +256,8 @@ void main() {
           () => mockCleanupService.clearUserSpecificData(
             reason: 'explicit_logout',
             userPubkey: any(named: 'userPubkey'),
-            deleteUserData: false,
+            // ignore: avoid_redundant_argument_values
+            deleteUserData: false, // regression guard: must NOT be true
           ),
         ).called(1);
       },
@@ -275,7 +278,8 @@ void main() {
             reason: 'identity_change',
             isIdentityChange: true, // must still be true
             userPubkey: any(named: 'userPubkey'),
-            deleteUserData: false,
+            // ignore: avoid_redundant_argument_values
+            deleteUserData: false, // regression guard: must NOT be true
           ),
         ).called(1);
       },
