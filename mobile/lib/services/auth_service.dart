@@ -4379,16 +4379,25 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         final oldPubkey = prefs.getString('current_user_pubkey_hex');
         Log.info(
           '_setupUserSession: identity change detected — '
-          'clearing user-specific data for old pubkey '
-          '${oldPubkey ?? "unknown"}',
+          'clearing shared caches for old pubkey '
+          '${oldPubkey ?? "unknown"} '
+          '(owner-scoped drafts/clips/uploads preserved)',
           name: 'AuthService',
           category: LogCategory.auth,
         );
+        // Do NOT pass deleteUserData: true here. Owner-scoped rows (drafts,
+        // clips, pending uploads) are already invisible to the incoming account
+        // because every query filters by ownerPubkey. Deleting them here would
+        // cause permanent data loss on account switch and mismatched re-login.
+        // Destructive per-user DAO deletion is reserved for explicit account
+        // removal (signOut(deleteKeys: true)).
         await _userDataCleanupService.clearUserSpecificData(
           reason: 'identity_change',
           isIdentityChange: true,
           userPubkey: oldPubkey,
-          deleteUserData: true,
+          // deleteUserData omitted — defaults to false. Owner-scoped rows
+          // (drafts, clips, uploads) are already invisible to the incoming
+          // account via ownerPubkey filtering; no deletion is needed here.
         );
         // restore the TOS acceptance since we wouldn't be here otherwise
         await acceptTerms();
