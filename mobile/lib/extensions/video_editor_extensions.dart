@@ -57,6 +57,19 @@ extension VideoEditorExtensions on ProImageEditorState {
     setState(() {});
   }
 
+  /// Persists timeline marker positions in the editor's history metadata.
+  void setTimelineMarkers(List<Duration> markers) {
+    addHistory(
+      meta: {
+        ...stateManager.activeMeta,
+        VideoEditorConstants.timelineMarkersStateHistoryKey: markers
+            .map((marker) => marker.inMilliseconds)
+            .toList(),
+      },
+    );
+    setState(() {});
+  }
+
   /// Persists clip trim and order state in the editor's history metadata.
   ///
   /// When [skipUpdateHistory] is `false` (default), creates a new history

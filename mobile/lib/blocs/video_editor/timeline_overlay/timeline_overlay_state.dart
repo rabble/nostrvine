@@ -7,12 +7,14 @@ class TimelineOverlayState extends Equatable {
     this.audioTracks = const [],
     this.audioTracksRevision = 0,
     this.audioTracksPlayerRevision = 0,
+    this.timelineMarkersRevision = 0,
     this.selectedItemId,
     this.draggingItemId,
     this.dragPosition,
     this.trimmingItemId,
     this.trimPosition,
     this.collapsedTypes = const {},
+    this.timelineMarkers = const [],
   });
 
   /// All overlay items across all strip types.
@@ -49,6 +51,9 @@ class TimelineOverlayState extends Equatable {
   /// history entry (which would corrupt the undo stack).
   final int audioTracksPlayerRevision;
 
+  /// Incremented when marker changes should be persisted to editor history.
+  final int timelineMarkersRevision;
+
   /// The currently selected item (shows trim handles), or `null`.
   final String? selectedItemId;
 
@@ -73,11 +78,15 @@ class TimelineOverlayState extends Equatable {
   /// Strip types that are in collapsed view.
   final Set<TimelineOverlayType> collapsedTypes;
 
+  /// Timeline marker positions used for visual guides and snapping.
+  final List<Duration> timelineMarkers;
+
   TimelineOverlayState copyWith({
     List<TimelineOverlayItem>? items,
     List<AudioEvent>? audioTracks,
     int? audioTracksRevision,
     int? audioTracksPlayerRevision,
+    int? timelineMarkersRevision,
     String? selectedItemId,
     bool clearSelectedItemId = false,
     String? draggingItemId,
@@ -89,6 +98,7 @@ class TimelineOverlayState extends Equatable {
     Duration? trimPosition,
     bool clearTrimPosition = false,
     Set<TimelineOverlayType>? collapsedTypes,
+    List<Duration>? timelineMarkers,
   }) {
     return TimelineOverlayState(
       items: items ?? this.items,
@@ -96,6 +106,8 @@ class TimelineOverlayState extends Equatable {
       audioTracksRevision: audioTracksRevision ?? this.audioTracksRevision,
       audioTracksPlayerRevision:
           audioTracksPlayerRevision ?? this.audioTracksPlayerRevision,
+      timelineMarkersRevision:
+          timelineMarkersRevision ?? this.timelineMarkersRevision,
       selectedItemId: clearSelectedItemId
           ? null
           : (selectedItemId ?? this.selectedItemId),
@@ -112,6 +124,7 @@ class TimelineOverlayState extends Equatable {
           ? null
           : (trimPosition ?? this.trimPosition),
       collapsedTypes: collapsedTypes ?? this.collapsedTypes,
+      timelineMarkers: timelineMarkers ?? this.timelineMarkers,
     );
   }
 
@@ -121,11 +134,13 @@ class TimelineOverlayState extends Equatable {
     audioTracks,
     audioTracksRevision,
     audioTracksPlayerRevision,
+    timelineMarkersRevision,
     selectedItemId,
     draggingItemId,
     dragPosition,
     trimmingItemId,
     trimPosition,
     collapsedTypes,
+    timelineMarkers,
   ];
 }

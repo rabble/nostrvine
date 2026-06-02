@@ -15,16 +15,24 @@ class TimelineOverlayItemsUpdate extends TimelineOverlayEvent {
     required this.filters,
     required this.audioTracks,
     required this.totalVideoDuration,
+    this.timelineMarkers = const [],
   });
 
   final List<Layer> layers;
   final List<FilterState> filters;
   final List<AudioEvent> audioTracks;
+  final List<Duration> timelineMarkers;
 
   final Duration totalVideoDuration;
 
   @override
-  List<Object?> get props => [layers, filters, audioTracks, totalVideoDuration];
+  List<Object?> get props => [
+    layers,
+    filters,
+    audioTracks,
+    totalVideoDuration,
+    timelineMarkers,
+  ];
 }
 
 /// Move an overlay item to a new start time and/or row.
@@ -145,6 +153,30 @@ class TimelineOverlayTotalDurationChanged extends TimelineOverlayEvent {
 
   @override
   List<Object?> get props => [totalDuration];
+}
+
+/// Add a timeline marker at the given playhead [position].
+class TimelineMarkerAdded extends TimelineOverlayEvent {
+  const TimelineMarkerAdded({
+    required this.position,
+    required this.totalDuration,
+  });
+
+  final Duration position;
+  final Duration totalDuration;
+
+  @override
+  List<Object?> get props => [position, totalDuration];
+}
+
+/// Remove the timeline marker at [position].
+class TimelineMarkerRemoved extends TimelineOverlayEvent {
+  const TimelineMarkerRemoved(this.position);
+
+  final Duration position;
+
+  @override
+  List<Object?> get props => [position];
 }
 
 /// Attach extracted waveform samples to a sound item.

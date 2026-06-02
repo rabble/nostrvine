@@ -22,6 +22,9 @@ class VideoEditorConstants {
   /// Unique history key for audio items.
   static const String audioStateHistoryKey = 'audio';
 
+  /// Unique history key for timeline marker positions.
+  static const String timelineMarkersStateHistoryKey = 'timelineMarkers';
+
   /// Maximum number of tags allowed per video.
   static const int tagLimit = 1 << 30; // ~1 billion
 

@@ -3,6 +3,10 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
+import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
+import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 
@@ -24,18 +28,41 @@ class VideoEditorMainActionsSheet extends StatelessWidget {
   /// Opens the actions bottom sheet.
   static Future<void> show(BuildContext context) {
     final scope = VideoEditorScope.of(context);
+    final videoEditorMainBloc = context.read<VideoEditorMainBloc>();
+    final clipEditorBloc = context.read<ClipEditorBloc>();
+    final timelineOverlayBloc = context.read<TimelineOverlayBloc>();
+
     return VineBottomSheet.show(
       context: context,
       expanded: false,
       scrollable: false,
       isScrollControlled: true,
       title: Text(context.l10n.videoEditorAddTitle),
-      children: [VideoEditorMainActionsSheet(scope: scope)],
+      children: [
+        MultiBlocProvider(
+          providers: [
+            BlocProvider<VideoEditorMainBloc>.value(
+              value: videoEditorMainBloc,
+            ),
+            BlocProvider<ClipEditorBloc>.value(value: clipEditorBloc),
+            BlocProvider<TimelineOverlayBloc>.value(
+              value: timelineOverlayBloc,
+            ),
+          ],
+          child: VideoEditorMainActionsSheet(scope: scope),
+        ),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final currentPosition = context.select(
+      (VideoEditorMainBloc b) => b.state.currentPosition,
+    );
+    final totalDuration = context.select(
+      (ClipEditorBloc b) => b.state.totalDuration,
+    );
     return Padding(
       padding: const .all(16),
       child: Column(
@@ -112,6 +139,23 @@ class VideoEditorMainActionsSheet extends StatelessWidget {
                 onTap: () {
                   Navigator.pop(context);
                   scope.onAddStickers();
+                },
+              ),
+              _ItemButton(
+                icon: .bookmarkPlus,
+                label: context.l10n.videoEditorMarkerLabel,
+                semanticLabel:
+                    context.l10n.videoEditorAddTimelineMarkerSemanticLabel,
+                onTap: () {
+                  Navigator.pop(context);
+                  if (totalDuration <= Duration.zero) return;
+
+                  context.read<TimelineOverlayBloc>().add(
+                    TimelineMarkerAdded(
+                      position: currentPosition,
+                      totalDuration: totalDuration,
+                    ),
+                  );
                 },
               ),
             ],

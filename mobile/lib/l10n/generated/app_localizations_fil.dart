@@ -7057,6 +7057,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoEditorAudioLabel => 'Audio';
 
   @override
+  String get videoEditorMarkerLabel => 'Marker';
+
+  @override
   String get videoEditorAddTitle => 'Idagdag';
 
   @override
@@ -7152,6 +7155,21 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get videoEditorRedoSemanticLabel => 'Redo';
+
+  @override
+  String get videoEditorAddTimelineMarkerSemanticLabel =>
+      'Magdagdag ng marker sa timeline';
+
+  @override
+  String get videoEditorRemoveTimelineMarkerSemanticLabel =>
+      'Alisin ang marker sa timeline';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerTitle => 'Burahin ang marker?';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerSubtitle =>
+      'Aalisin nito ang marker sa timeline. Mananatili ang iyong edit.';
 
   @override
   String get videoEditorTextColorSemanticLabel => 'Kulay ng text';

@@ -6722,6 +6722,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorAudioLabel => '오디오';
 
   @override
+  String get videoEditorMarkerLabel => '마커';
+
+  @override
   String get videoEditorAddTitle => '추가';
 
   @override
@@ -6813,6 +6816,19 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoEditorRedoSemanticLabel => '다시 실행';
+
+  @override
+  String get videoEditorAddTimelineMarkerSemanticLabel => '타임라인 마커 추가';
+
+  @override
+  String get videoEditorRemoveTimelineMarkerSemanticLabel => '타임라인 마커 제거';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerTitle => '마커를 삭제할까요?';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerSubtitle =>
+      '타임라인에서 마커만 제거합니다. 편집 내용은 그대로 유지됩니다.';
 
   @override
   String get videoEditorTextColorSemanticLabel => '텍스트 색상';

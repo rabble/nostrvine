@@ -6978,6 +6978,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoEditorAudioLabel => 'Ljud';
 
   @override
+  String get videoEditorMarkerLabel => 'Markör';
+
+  @override
   String get videoEditorAddTitle => 'Lägg till';
 
   @override
@@ -7071,6 +7074,21 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoEditorRedoSemanticLabel => 'Gör om';
+
+  @override
+  String get videoEditorAddTimelineMarkerSemanticLabel =>
+      'Lägg till tidslinjemarkör';
+
+  @override
+  String get videoEditorRemoveTimelineMarkerSemanticLabel =>
+      'Ta bort tidslinjemarkör';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerTitle => 'Radera markör?';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerSubtitle =>
+      'Detta tar bort markören från tidslinjen. Din redigering behålls.';
 
   @override
   String get videoEditorTextColorSemanticLabel => 'Textfärg';

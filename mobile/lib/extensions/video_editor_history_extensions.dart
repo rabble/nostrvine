@@ -10,6 +10,18 @@ extension VideoEditorHistoryExtensions on StateManager {
     return raw.cast<Map<String, dynamic>>().map(AudioEvent.fromJson).toList();
   }
 
+  /// Restores timeline marker positions from the current history metadata.
+  List<Duration> get timelineMarkers {
+    final raw = activeMeta[VideoEditorConstants.timelineMarkersStateHistoryKey];
+    if (raw is! List) return [];
+
+    return raw
+        .whereType<num>()
+        .map((value) => Duration(milliseconds: value.round()))
+        .toList()
+      ..sort();
+  }
+
   /// Restores [DivineVideoClip] objects from the current history entry's
   /// metadata.
   ///

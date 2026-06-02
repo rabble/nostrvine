@@ -6950,6 +6950,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorAudioLabel => 'Ses';
 
   @override
+  String get videoEditorMarkerLabel => 'İşaretçi';
+
+  @override
   String get videoEditorAddTitle => 'Ekle';
 
   @override
@@ -7042,6 +7045,21 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoEditorRedoSemanticLabel => 'Yinele';
+
+  @override
+  String get videoEditorAddTimelineMarkerSemanticLabel =>
+      'Zaman çizelgesi işaretçisi ekle';
+
+  @override
+  String get videoEditorRemoveTimelineMarkerSemanticLabel =>
+      'Zaman çizelgesi işaretçisini kaldır';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerTitle => 'İşaretçi silinsin mi?';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerSubtitle =>
+      'Bu, işaretçiyi zaman çizelgesinden kaldırır. Düzenlemeniz olduğu gibi kalır.';
 
   @override
   String get videoEditorTextColorSemanticLabel => 'Metin rengi';

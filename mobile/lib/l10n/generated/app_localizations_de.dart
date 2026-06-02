@@ -7054,6 +7054,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoEditorAudioLabel => 'Audio';
 
   @override
+  String get videoEditorMarkerLabel => 'Markierung';
+
+  @override
   String get videoEditorAddTitle => 'Hinzufügen';
 
   @override
@@ -7150,6 +7153,21 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get videoEditorRedoSemanticLabel => 'Wiederholen';
+
+  @override
+  String get videoEditorAddTimelineMarkerSemanticLabel =>
+      'Timeline-Markierung hinzufügen';
+
+  @override
+  String get videoEditorRemoveTimelineMarkerSemanticLabel =>
+      'Timeline-Markierung entfernen';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerTitle => 'Markierung löschen?';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerSubtitle =>
+      'Das entfernt die Markierung aus der Timeline. Deine Bearbeitung bleibt erhalten.';
 
   @override
   String get videoEditorTextColorSemanticLabel => 'Textfarbe';

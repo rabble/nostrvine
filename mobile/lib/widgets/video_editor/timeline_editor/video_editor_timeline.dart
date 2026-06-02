@@ -18,6 +18,7 @@ import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_edito
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_body.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_header.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_markers.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_playhead.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_volume.dart';
 
@@ -1037,6 +1038,11 @@ class _TimelineInteractiveBody extends StatelessWidget {
               ),
             ),
           ),
+        ),
+        VideoEditorTimelineMarkers(
+          scrollController: scrollController,
+          scrollPadding: halfScreen,
+          pixelsPerSecond: pixelsPerSecond,
         ),
         const VideoEditorTimelinePlayhead(),
       ],

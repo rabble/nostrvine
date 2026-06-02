@@ -6699,6 +6699,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorAudioLabel => 'オーディオ';
 
   @override
+  String get videoEditorMarkerLabel => 'マーカー';
+
+  @override
   String get videoEditorAddTitle => '追加';
 
   @override
@@ -6790,6 +6793,19 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get videoEditorRedoSemanticLabel => 'やり直し';
+
+  @override
+  String get videoEditorAddTimelineMarkerSemanticLabel => 'タイムラインマーカーを追加';
+
+  @override
+  String get videoEditorRemoveTimelineMarkerSemanticLabel => 'タイムラインマーカーを削除';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerTitle => 'マーカーを削除しますか？';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerSubtitle =>
+      'タイムラインからマーカーを削除します。編集内容はそのまま残ります。';
 
   @override
   String get videoEditorTextColorSemanticLabel => 'テキストの色';

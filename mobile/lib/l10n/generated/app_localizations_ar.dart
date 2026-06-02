@@ -6913,6 +6913,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorAudioLabel => 'الصوت';
 
   @override
+  String get videoEditorMarkerLabel => 'علامة';
+
+  @override
   String get videoEditorAddTitle => 'إضافة';
 
   @override
@@ -7006,6 +7009,21 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get videoEditorRedoSemanticLabel => 'إعادة';
+
+  @override
+  String get videoEditorAddTimelineMarkerSemanticLabel =>
+      'إضافة علامة إلى المخطط الزمني';
+
+  @override
+  String get videoEditorRemoveTimelineMarkerSemanticLabel =>
+      'إزالة علامة من المخطط الزمني';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerTitle => 'حذف العلامة؟';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerSubtitle =>
+      'سيؤدي هذا إلى إزالة العلامة من المخطط الزمني. سيبقى تعديلك كما هو.';
 
   @override
   String get videoEditorTextColorSemanticLabel => 'لون النص';

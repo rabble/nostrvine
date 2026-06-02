@@ -622,6 +622,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           filters: editor.stateManager.activeFilters,
           totalVideoDuration: videoDuration,
           audioTracks: editor.stateManager.audioTracks,
+          timelineMarkers: editor.stateManager.timelineMarkers,
         ),
       );
 
@@ -1026,6 +1027,14 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
               previous.audioTracksRevision != current.audioTracksRevision,
           listener: (context, state) {
             scope.requireEditor.setSoundVolumes(state.audioTracks);
+          },
+        ),
+        BlocListener<TimelineOverlayBloc, TimelineOverlayState>(
+          listenWhen: (previous, current) =>
+              previous.timelineMarkersRevision !=
+              current.timelineMarkersRevision,
+          listener: (context, state) {
+            scope.requireEditor.setTimelineMarkers(state.timelineMarkers);
           },
         ),
         // Update native player clip boundaries when trim handle is

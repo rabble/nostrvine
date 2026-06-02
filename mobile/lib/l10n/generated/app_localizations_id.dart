@@ -6948,6 +6948,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoEditorAudioLabel => 'Audio';
 
   @override
+  String get videoEditorMarkerLabel => 'Penanda';
+
+  @override
   String get videoEditorAddTitle => 'Tambah';
 
   @override
@@ -7041,6 +7044,21 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get videoEditorRedoSemanticLabel => 'Ulangi';
+
+  @override
+  String get videoEditorAddTimelineMarkerSemanticLabel =>
+      'Tambahkan penanda timeline';
+
+  @override
+  String get videoEditorRemoveTimelineMarkerSemanticLabel =>
+      'Hapus penanda timeline';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerTitle => 'Hapus penanda?';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerSubtitle =>
+      'Ini menghapus penanda dari timeline. Editan Anda tetap utuh.';
 
   @override
   String get videoEditorTextColorSemanticLabel => 'Warna teks';

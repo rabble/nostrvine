@@ -56,6 +56,7 @@ void main() {
       expect(bloc.state.draggingItemId, isNull);
       expect(bloc.state.trimmingItemId, isNull);
       expect(bloc.state.collapsedTypes, isEmpty);
+      expect(bloc.state.timelineMarkers, isEmpty);
     });
 
     group(TimelineOverlayItemsUpdate, () {
@@ -170,6 +171,30 @@ void main() {
               )
               .having((s) => s.audioTracksRevision, 'audioTracksRevision', 0)
               .having((s) => s.audioTracks.first.volume, 'volume', 1.0),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'restores markers without bumping marker history revision',
+        build: TimelineOverlayBloc.new,
+        seed: () => const TimelineOverlayState(
+          timelineMarkers: [Duration(seconds: 1)],
+          timelineMarkersRevision: 2,
+        ),
+        act: (bloc) => bloc.add(
+          const TimelineOverlayItemsUpdate(
+            layers: <Layer>[],
+            filters: <FilterState>[],
+            audioTracks: [],
+            totalVideoDuration: Duration(seconds: 8),
+            timelineMarkers: [Duration(seconds: 2)],
+          ),
+        ),
+        expect: () => const [
+          TimelineOverlayState(
+            timelineMarkers: [Duration(seconds: 2)],
+            timelineMarkersRevision: 2,
+          ),
         ],
       );
     });
@@ -563,6 +588,105 @@ void main() {
             ],
           ),
         ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'clamps markers to the provided total duration',
+        build: TimelineOverlayBloc.new,
+        seed: () => const TimelineOverlayState(
+          timelineMarkers: [
+            Duration(seconds: 2),
+            Duration(seconds: 8),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const TimelineOverlayTotalDurationChanged(Duration(seconds: 5)),
+        ),
+        expect: () => const [
+          TimelineOverlayState(
+            timelineMarkers: [Duration(seconds: 2), Duration(seconds: 5)],
+          ),
+        ],
+      );
+    });
+
+    group(TimelineMarkerAdded, () {
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'adds a marker at the playhead position',
+        build: TimelineOverlayBloc.new,
+        act: (bloc) => bloc.add(
+          const TimelineMarkerAdded(
+            position: Duration(milliseconds: 1200),
+            totalDuration: Duration(seconds: 5),
+          ),
+        ),
+        expect: () => const [
+          TimelineOverlayState(
+            timelineMarkers: [Duration(milliseconds: 1200)],
+            timelineMarkersRevision: 1,
+          ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'does not remove an existing marker near the playhead position',
+        build: TimelineOverlayBloc.new,
+        seed: () => const TimelineOverlayState(
+          timelineMarkers: [Duration(milliseconds: 1200)],
+        ),
+        act: (bloc) => bloc.add(
+          const TimelineMarkerAdded(
+            position: Duration(milliseconds: 1230),
+            totalDuration: Duration(seconds: 5),
+          ),
+        ),
+        expect: () => <TimelineOverlayState>[],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'sorts markers and clamps new marker to total duration',
+        build: TimelineOverlayBloc.new,
+        seed: () => const TimelineOverlayState(
+          timelineMarkers: [Duration(seconds: 2)],
+        ),
+        act: (bloc) => bloc.add(
+          const TimelineMarkerAdded(
+            position: Duration(seconds: 8),
+            totalDuration: Duration(seconds: 5),
+          ),
+        ),
+        expect: () => const [
+          TimelineOverlayState(
+            timelineMarkers: [Duration(seconds: 2), Duration(seconds: 5)],
+            timelineMarkersRevision: 1,
+          ),
+        ],
+      );
+    });
+
+    group(TimelineMarkerRemoved, () {
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'removes an existing marker near the requested position',
+        build: TimelineOverlayBloc.new,
+        seed: () => const TimelineOverlayState(
+          timelineMarkers: [Duration(milliseconds: 1200)],
+        ),
+        act: (bloc) => bloc.add(
+          const TimelineMarkerRemoved(Duration(milliseconds: 1230)),
+        ),
+        expect: () => const [TimelineOverlayState(timelineMarkersRevision: 1)],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'does not emit when no marker is near the requested position',
+        build: TimelineOverlayBloc.new,
+        seed: () => const TimelineOverlayState(
+          timelineMarkers: [Duration(milliseconds: 1200)],
+        ),
+        act: (bloc) => bloc.add(
+          const TimelineMarkerRemoved(Duration(milliseconds: 1500)),
+        ),
+        expect: () => <TimelineOverlayState>[],
       );
     });
   });

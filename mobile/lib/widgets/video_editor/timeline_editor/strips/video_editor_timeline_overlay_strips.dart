@@ -50,6 +50,7 @@ class _TimelineOverlayStripsState extends State<TimelineOverlayStrips> {
   List<TimelineOverlayItem>? _prevItems;
   String? _prevSelectedId;
   List<int>? _prevClipEdgesMs;
+  List<Duration>? _prevTimelineMarkers;
 
   // -- cached bucket-split results -----------------------------------------
   var _soundItems = const <TimelineOverlayItem>[];
@@ -96,6 +97,7 @@ class _TimelineOverlayStripsState extends State<TimelineOverlayStrips> {
     List<TimelineOverlayItem> items,
     String? selectedItemId,
     List<int> clipEdgesMs,
+    List<Duration> timelineMarkers,
   ) {
     final snapSet = <int>{};
     for (final item in items) {
@@ -104,19 +106,22 @@ class _TimelineOverlayStripsState extends State<TimelineOverlayStrips> {
       snapSet.add(item.endTime.inMilliseconds);
     }
     snapSet.addAll(clipEdgesMs);
+    snapSet.addAll(timelineMarkers.map((marker) => marker.inMilliseconds));
     snapSet.add(widget.playheadPosition.value.inMilliseconds);
     _snapPointsMs = snapSet.toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final (:items, :selectedItemId, :collapsedTypes) = context.select(
-      (TimelineOverlayBloc b) => (
-        items: b.state.items,
-        selectedItemId: b.state.selectedItemId,
-        collapsedTypes: b.state.collapsedTypes,
-      ),
-    );
+    final (:items, :selectedItemId, :collapsedTypes, :timelineMarkers) = context
+        .select(
+          (TimelineOverlayBloc b) => (
+            items: b.state.items,
+            selectedItemId: b.state.selectedItemId,
+            collapsedTypes: b.state.collapsedTypes,
+            timelineMarkers: b.state.timelineMarkers,
+          ),
+        );
     final isVolumeEditMode = context.select(
       (VideoEditorMainBloc b) => b.state.isVolumeEditMode,
     );
@@ -131,10 +136,17 @@ class _TimelineOverlayStripsState extends State<TimelineOverlayStrips> {
     // Rebuild snap points when items, selection, or clip edges change.
     if (itemsDirty ||
         _prevSelectedId != selectedItemId ||
-        !identical(widget.clipEdgesMs, _prevClipEdgesMs)) {
-      _rebuildSnapPoints(items, selectedItemId, widget.clipEdgesMs);
+        !identical(widget.clipEdgesMs, _prevClipEdgesMs) ||
+        !identical(timelineMarkers, _prevTimelineMarkers)) {
+      _rebuildSnapPoints(
+        items,
+        selectedItemId,
+        widget.clipEdgesMs,
+        timelineMarkers,
+      );
       _prevSelectedId = selectedItemId;
       _prevClipEdgesMs = widget.clipEdgesMs;
+      _prevTimelineMarkers = timelineMarkers;
     }
 
     // In volume edit mode each sound item gets its own dedicated row so the

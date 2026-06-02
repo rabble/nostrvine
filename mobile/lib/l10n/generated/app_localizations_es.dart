@@ -7042,6 +7042,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoEditorAudioLabel => 'Audio';
 
   @override
+  String get videoEditorMarkerLabel => 'Marcador';
+
+  @override
   String get videoEditorAddTitle => 'Agregar';
 
   @override
@@ -7136,6 +7139,21 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get videoEditorRedoSemanticLabel => 'Rehacer';
+
+  @override
+  String get videoEditorAddTimelineMarkerSemanticLabel =>
+      'Añadir marcador a la línea de tiempo';
+
+  @override
+  String get videoEditorRemoveTimelineMarkerSemanticLabel =>
+      'Quitar marcador de la línea de tiempo';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerTitle => '¿Eliminar marcador?';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerSubtitle =>
+      'Esto quita el marcador de la línea de tiempo. Tu edición permanece intacta.';
 
   @override
   String get videoEditorTextColorSemanticLabel => 'Color de texto';

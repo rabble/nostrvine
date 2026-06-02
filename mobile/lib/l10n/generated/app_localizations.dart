@@ -12170,6 +12170,12 @@ abstract class AppLocalizations {
   /// **'Audio'**
   String get videoEditorAudioLabel;
 
+  /// No description provided for @videoEditorMarkerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Marker'**
+  String get videoEditorMarkerLabel;
+
   /// No description provided for @videoEditorAddTitle.
   ///
   /// In en, this message translates to:
@@ -12349,6 +12355,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Redo'**
   String get videoEditorRedoSemanticLabel;
+
+  /// No description provided for @videoEditorAddTimelineMarkerSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Add timeline marker'**
+  String get videoEditorAddTimelineMarkerSemanticLabel;
+
+  /// No description provided for @videoEditorRemoveTimelineMarkerSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove timeline marker'**
+  String get videoEditorRemoveTimelineMarkerSemanticLabel;
+
+  /// No description provided for @videoEditorDeleteTimelineMarkerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete marker?'**
+  String get videoEditorDeleteTimelineMarkerTitle;
+
+  /// No description provided for @videoEditorDeleteTimelineMarkerSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes the marker from the timeline. Your edit stays intact.'**
+  String get videoEditorDeleteTimelineMarkerSubtitle;
 
   /// No description provided for @videoEditorTextColorSemanticLabel.
   ///

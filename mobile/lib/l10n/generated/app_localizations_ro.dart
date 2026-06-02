@@ -7138,6 +7138,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorAudioLabel => 'Audio';
 
   @override
+  String get videoEditorMarkerLabel => 'Marcator';
+
+  @override
   String get videoEditorAddTitle => 'Adaugă';
 
   @override
@@ -7235,6 +7238,21 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get videoEditorRedoSemanticLabel => 'Refă';
+
+  @override
+  String get videoEditorAddTimelineMarkerSemanticLabel =>
+      'Adaugă marcator pe cronologie';
+
+  @override
+  String get videoEditorRemoveTimelineMarkerSemanticLabel =>
+      'Elimină marcatorul de pe cronologie';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerTitle => 'Ștergi marcatorul?';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerSubtitle =>
+      'Aceasta elimină marcatorul de pe cronologie. Editarea rămâne intactă.';
 
   @override
   String get videoEditorTextColorSemanticLabel => 'Culoare text';

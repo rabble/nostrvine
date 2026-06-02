@@ -6837,6 +6837,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorAudioLabel => 'ኦዲዮ';
 
   @override
+  String get videoEditorMarkerLabel => 'ማርከር';
+
+  @override
   String get videoEditorAddTitle => 'አክል';
 
   @override
@@ -6929,6 +6932,20 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoEditorRedoSemanticLabel => 'ድገም';
+
+  @override
+  String get videoEditorAddTimelineMarkerSemanticLabel => 'የጊዜ መስመር ማርከር አክል';
+
+  @override
+  String get videoEditorRemoveTimelineMarkerSemanticLabel =>
+      'የጊዜ መስመር ማርከር አስወግድ';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerTitle => 'ማርከሩን ይሰርዙ?';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerSubtitle =>
+      'ይህ ማርከሩን ከጊዜ መስመሩ ያስወግዳል። አርትዖትዎ እንዳለ ይቀራል።';
 
   @override
   String get videoEditorTextColorSemanticLabel => 'የጽሑፍ ቀለም';

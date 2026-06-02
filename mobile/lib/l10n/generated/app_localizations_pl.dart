@@ -7126,6 +7126,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoEditorAudioLabel => 'Audio';
 
   @override
+  String get videoEditorMarkerLabel => 'Znacznik';
+
+  @override
   String get videoEditorAddTitle => 'Dodaj';
 
   @override
@@ -7219,6 +7222,21 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get videoEditorRedoSemanticLabel => 'Ponów';
+
+  @override
+  String get videoEditorAddTimelineMarkerSemanticLabel =>
+      'Dodaj znacznik osi czasu';
+
+  @override
+  String get videoEditorRemoveTimelineMarkerSemanticLabel =>
+      'Usuń znacznik osi czasu';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerTitle => 'Usunąć znacznik?';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerSubtitle =>
+      'Spowoduje to usunięcie znacznika z osi czasu. Twoja edycja pozostanie bez zmian.';
 
   @override
   String get videoEditorTextColorSemanticLabel => 'Kolor tekstu';

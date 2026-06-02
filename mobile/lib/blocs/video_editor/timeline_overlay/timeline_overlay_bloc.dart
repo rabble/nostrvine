@@ -41,12 +41,16 @@ class TimelineOverlayBloc
     on<TimelineOverlayTrimEnded>(_onTrimEnded);
     on<TimelineOverlayCollapseToggled>(_onCollapseToggled);
     on<TimelineOverlayTotalDurationChanged>(_onTotalDurationChanged);
+    on<TimelineMarkerAdded>(_onMarkerAdded);
+    on<TimelineMarkerRemoved>(_onMarkerRemoved);
     on<TimelineOverlayWaveformLoaded>(_onWaveformLoaded);
     on<TimelineOverlayAudioVolumeChanged>(
       _onAudioVolumeChanged,
       transformer: sequential(),
     );
   }
+
+  static const _markerMatchTolerance = Duration(milliseconds: 50);
 
   void _onUpdateItems(
     TimelineOverlayItemsUpdate event,
@@ -154,6 +158,7 @@ class TimelineOverlayBloc
         audioTracksPlayerRevision: volumeRestoredByUndo
             ? state.audioTracksPlayerRevision + 1
             : state.audioTracksPlayerRevision,
+        timelineMarkers: _clampMarkers(event.timelineMarkers, total),
       ),
     );
   }
@@ -457,7 +462,76 @@ class TimelineOverlayBloc
       );
     }
 
-    emit(state.copyWith(items: _recalculateRows(updated)));
+    emit(
+      state.copyWith(
+        items: _recalculateRows(updated),
+        timelineMarkers: _clampMarkers(state.timelineMarkers, totalDuration),
+      ),
+    );
+  }
+
+  void _onMarkerAdded(
+    TimelineMarkerAdded event,
+    Emitter<TimelineOverlayState> emit,
+  ) {
+    if (event.totalDuration <= Duration.zero) return;
+
+    final clampedPosition = _clampDuration(
+      event.position,
+      event.totalDuration,
+    );
+    final markers = List<Duration>.from(state.timelineMarkers);
+    final alreadyExists = markers.any(
+      (marker) => (marker - clampedPosition).abs() <= _markerMatchTolerance,
+    );
+
+    if (alreadyExists) return;
+
+    markers.add(clampedPosition);
+    markers.sort();
+    emit(
+      state.copyWith(
+        timelineMarkers: markers,
+        timelineMarkersRevision: state.timelineMarkersRevision + 1,
+      ),
+    );
+  }
+
+  void _onMarkerRemoved(
+    TimelineMarkerRemoved event,
+    Emitter<TimelineOverlayState> emit,
+  ) {
+    final markers = List<Duration>.from(state.timelineMarkers);
+    final existingIndex = markers.indexWhere(
+      (marker) => (marker - event.position).abs() <= _markerMatchTolerance,
+    );
+
+    if (existingIndex == -1) return;
+
+    markers.removeAt(existingIndex);
+    markers.sort();
+    emit(
+      state.copyWith(
+        timelineMarkers: markers,
+        timelineMarkersRevision: state.timelineMarkersRevision + 1,
+      ),
+    );
+  }
+
+  static List<Duration> _clampMarkers(
+    List<Duration> markers,
+    Duration totalDuration,
+  ) {
+    final clamped = {
+      for (final marker in markers) _clampDuration(marker, totalDuration),
+    }.toList()..sort();
+    return clamped;
+  }
+
+  static Duration _clampDuration(Duration value, Duration max) {
+    if (value < Duration.zero) return Duration.zero;
+    if (value > max) return max;
+    return value;
   }
 
   /// Returns [endTime] clamped to [totalDuration].
