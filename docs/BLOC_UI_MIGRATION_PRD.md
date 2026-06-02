@@ -74,6 +74,14 @@ The "ChangeNotifier count trends down" outcome of #4744 is delivered by the
 #4738 ratchet (no new ones land) and by #4338 Track D (god-object removal) —
 **not** by migrating any file in this table.
 
+**Guard scope.** `check_changenotifier_boundary.sh` matches both
+`extends ChangeNotifier` and the `with … ChangeNotifier` mixin form, so the
+boundary can't be sidestepped with mixin syntax. It scans `mobile/lib/` only —
+`mobile/packages/**` is intentionally out of scope: the standalone pub packages
+(e.g. `pooled_video_player`, `hls_auth_web_player`) own their own architecture
+and are not part of #4744's app-UI-state lane. This mirrors
+`check_riverpod_boundary.sh`, which also scans `mobile/lib/` only.
+
 ## Allowed / Disallowed Patterns
 
 | Pattern | Verdict | Notes |
@@ -123,7 +131,7 @@ currently disabled by an rxdart version conflict, so enforcement is shell-based.
 | Guard | Enforces | Model |
 |-------|----------|-------|
 | `check_riverpod_boundary.sh` | No new `@riverpod` / `StateProvider` for UI state outside allowed provider dirs | Zero-tolerance (directory exclusion) |
-| `check_changenotifier_boundary.sh` | No new `extends ChangeNotifier` outside the file allowlist (the "Sanctioned Riverpod (STAYS)" list above) | Zero-tolerance (file allowlist). Adding a new sanctioned ChangeNotifier requires extending both the docs table and the script's allowlist together. |
+| `check_changenotifier_boundary.sh` | No new `extends ChangeNotifier` or `with … ChangeNotifier` mixin form in `lib/` outside the file allowlist (the "Sanctioned Riverpod (STAYS)" list above); `packages/**` out of scope | Zero-tolerance (file allowlist). Adding a new sanctioned ChangeNotifier requires extending both the docs table and the script's allowlist together. |
 | `check_ui_service_boundary.sh` | UI files under `mobile/lib/**/{screens,widgets,view,views}/**` must not import a service (`package:openvine/services/` or relative `../services/`, either quote style) — reach data through a BLoC/Cubit | **True ratchet vs `origin/main`**: NEW (undeclared), STALE (fixed but still baselined), and GROWTH (baseline grew vs `origin/main`) all fail; baseline may only shrink |
 
 **Working with the UI→service ratchet.** Pre-existing violators are frozen in

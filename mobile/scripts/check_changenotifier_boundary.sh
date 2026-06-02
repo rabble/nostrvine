@@ -1,12 +1,22 @@
 #!/usr/bin/env bash
-# Fails CI if a new `extends ChangeNotifier` appears in mobile/lib/ outside
-# the sanctioned allowlist.
+# Fails CI if a new ChangeNotifier subclass — via `extends ChangeNotifier`
+# or a `with ... ChangeNotifier` mixin clause — appears in mobile/lib/
+# outside the sanctioned allowlist.
 #
 # Rule enforced:
-#   * No `extends ChangeNotifier` in mobile/lib/ outside the file allowlist
-#     below. Adding a new sanctioned ChangeNotifier requires editing both
-#     this script's ALLOWLIST and the "Sanctioned Riverpod (STAYS)" table
-#     in docs/BLOC_UI_MIGRATION_PRD.md in the same PR.
+#   * No `extends ChangeNotifier` and no `with ... ChangeNotifier` mixin
+#     clause in mobile/lib/ outside the file allowlist below. Both forms
+#     produce a ChangeNotifier, so a guard that matched only `extends`
+#     would be trivially bypassable with the mixin syntax. Adding a new
+#     sanctioned ChangeNotifier requires editing both this script's
+#     ALLOWLIST and the "Sanctioned Riverpod (STAYS)" table in
+#     docs/BLOC_UI_MIGRATION_PRD.md in the same PR.
+#
+# Scope:
+#   * Only mobile/lib/ is scanned. mobile/packages/** is intentionally out
+#     of scope — the standalone pub packages own their own architecture and
+#     are not part of #4744's app-UI-state migration lane. This mirrors
+#     check_riverpod_boundary.sh, which also scans mobile/lib/ only.
 #
 # Background:
 #   Divine is mid-migration from Riverpod / ChangeNotifier to BLoC/Cubit for
@@ -56,10 +66,21 @@ ALLOWLIST=(
 )
 
 # ---------------------------------------------------------------------------
-# Find every file under mobile/lib/ that contains `extends ChangeNotifier`,
+# Find every file under mobile/lib/ that declares a ChangeNotifier subclass —
+# via `extends ChangeNotifier` or a `with ... ChangeNotifier` mixin clause —
 # excluding generated files and build artifacts. Then filter out allowlisted
 # entries. Anything that survives is a violation.
+#
+# Matcher notes:
+#   * The trailing `\b` keeps `ChangeNotifierProvider` / `ChangeNotifierX`
+#     from matching — only the bare `ChangeNotifier` type counts.
+#   * The `with [..]*ChangeNotifier` branch catches the mixin form in any
+#     slot (`with ChangeNotifier`, `with Foo, ChangeNotifier`). Anchoring on
+#     the `with ` keyword (vs. a bare `, ChangeNotifier`) keeps parameter /
+#     field declarations of type ChangeNotifier from tripping the guard.
 # ---------------------------------------------------------------------------
+
+CHANGENOTIFIER_PATTERN='extends ChangeNotifier\b|with [A-Za-z0-9_<>, ]*ChangeNotifier\b'
 
 GLOBAL_EXCLUDES=(
   -not -path "*/.dart_tool/*"
@@ -73,7 +94,7 @@ FOUND=$(
   find "$MOBILE_DIR/lib" \
     "${GLOBAL_EXCLUDES[@]}" \
     -name "*.dart" -print0 \
-  | xargs -0 grep -l "extends ChangeNotifier" 2>/dev/null \
+  | xargs -0 grep -l -E "$CHANGENOTIFIER_PATTERN" 2>/dev/null \
   || true
 )
 
@@ -95,10 +116,10 @@ if [[ -n "$FOUND" ]]; then
 fi
 
 if [[ -n "$VIOLATIONS" ]]; then
-  echo "FAIL [changenotifier_boundary]: new \`extends ChangeNotifier\` found outside the sanctioned allowlist:"
+  echo "FAIL [changenotifier_boundary]: new ChangeNotifier subclass (\`extends ChangeNotifier\` or \`with ... ChangeNotifier\` mixin) found outside the sanctioned allowlist:"
   printf '%s' "$VIOLATIONS"
   echo ""
-  echo "For UI state, use a BLoC/Cubit instead of \`extends ChangeNotifier\`."
+  echo "For UI state, use a BLoC/Cubit instead of a ChangeNotifier subclass."
   echo "If the new class is genuinely DI / service / cache / router plumbing"
   echo "(0 feature UI state), add it to the ALLOWLIST in this script AND to"
   echo "the 'Sanctioned Riverpod (STAYS)' table in docs/BLOC_UI_MIGRATION_PRD.md"
