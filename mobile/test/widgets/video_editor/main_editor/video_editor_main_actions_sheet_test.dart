@@ -1,19 +1,58 @@
 // ABOUTME: Widget tests for VideoEditorMainActionsSheet.
 // ABOUTME: Verifies action rendering and callback behavior.
 
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
+import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
+import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_actions_sheet.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
+class _MockVideoEditorMainBloc
+    extends MockBloc<VideoEditorMainEvent, VideoEditorMainState>
+    implements VideoEditorMainBloc {}
+
+class _MockClipEditorBloc extends MockBloc<ClipEditorEvent, ClipEditorState>
+    implements ClipEditorBloc {}
+
+class _MockTimelineOverlayBloc
+    extends MockBloc<TimelineOverlayEvent, TimelineOverlayState>
+    implements TimelineOverlayBloc {}
+
 void main() {
   final l10n = lookupAppLocalizations(const Locale('en'));
 
   group(VideoEditorMainActionsSheet, () {
+    late _MockVideoEditorMainBloc mainBloc;
+    late _MockClipEditorBloc clipBloc;
+    late _MockTimelineOverlayBloc timelineOverlayBloc;
+
+    setUp(() {
+      mainBloc = _MockVideoEditorMainBloc();
+      clipBloc = _MockClipEditorBloc();
+      timelineOverlayBloc = _MockTimelineOverlayBloc();
+
+      when(() => mainBloc.state).thenReturn(const VideoEditorMainState());
+      when(() => clipBloc.state).thenReturn(const ClipEditorState());
+      when(
+        () => timelineOverlayBloc.state,
+      ).thenReturn(const TimelineOverlayState());
+    });
+
     testWidgets('renders all action labels', (tester) async {
-      await tester.pumpWidget(_buildWidget());
+      await tester.pumpWidget(
+        _buildWidget(
+          mainBloc: mainBloc,
+          clipBloc: clipBloc,
+          timelineOverlayBloc: timelineOverlayBloc,
+        ),
+      );
 
       expect(find.text(l10n.videoEditorCameraLabel), findsOneWidget);
       expect(find.text(l10n.videoEditorLibraryLabel), findsOneWidget);
@@ -28,7 +67,12 @@ void main() {
       var openedClips = false;
 
       await tester.pumpWidget(
-        _buildWidget(onOpenClipsEditor: () => openedClips = true),
+        _buildWidget(
+          mainBloc: mainBloc,
+          clipBloc: clipBloc,
+          timelineOverlayBloc: timelineOverlayBloc,
+          onOpenClipsEditor: () => openedClips = true,
+        ),
       );
 
       await tester.tap(
@@ -43,7 +87,12 @@ void main() {
       var openedMusic = false;
 
       await tester.pumpWidget(
-        _buildWidget(onOpenMusicLibrary: () => openedMusic = true),
+        _buildWidget(
+          mainBloc: mainBloc,
+          clipBloc: clipBloc,
+          timelineOverlayBloc: timelineOverlayBloc,
+          onOpenMusicLibrary: () => openedMusic = true,
+        ),
       );
 
       await tester.tap(
@@ -58,7 +107,12 @@ void main() {
       var addedStickers = false;
 
       await tester.pumpWidget(
-        _buildWidget(onAddStickers: () => addedStickers = true),
+        _buildWidget(
+          mainBloc: mainBloc,
+          clipBloc: clipBloc,
+          timelineOverlayBloc: timelineOverlayBloc,
+          onAddStickers: () => addedStickers = true,
+        ),
       );
 
       await tester.tap(
@@ -72,6 +126,9 @@ void main() {
 }
 
 Widget _buildWidget({
+  required _MockVideoEditorMainBloc mainBloc,
+  required _MockClipEditorBloc clipBloc,
+  required _MockTimelineOverlayBloc timelineOverlayBloc,
   VoidCallback? onOpenClipsEditor,
   VoidCallback? onOpenMusicLibrary,
   VoidCallback? onAddStickers,
@@ -98,18 +155,27 @@ Widget _buildWidget({
     home: Scaffold(
       body: Builder(
         builder: (context) {
-          return VideoEditorScope(
-            editorKey: scope.editorKey,
-            removeAreaKey: scope.removeAreaKey,
-            onOpenCamera: () {},
-            onAddStickers: scope.onAddStickers,
-            onOpenClipsEditor: scope.onOpenClipsEditor,
-            onAddEditTextLayer: scope.onAddEditTextLayer,
-            onOpenMusicLibrary: scope.onOpenMusicLibrary,
-            originalClipAspectRatio: scope.originalClipAspectRatio,
-            bodySizeNotifier: scope.bodySizeNotifier,
-            fromLibrary: scope.fromLibrary,
-            child: VideoEditorMainActionsSheet(scope: scope),
+          return MultiBlocProvider(
+            providers: [
+              BlocProvider<VideoEditorMainBloc>.value(value: mainBloc),
+              BlocProvider<ClipEditorBloc>.value(value: clipBloc),
+              BlocProvider<TimelineOverlayBloc>.value(
+                value: timelineOverlayBloc,
+              ),
+            ],
+            child: VideoEditorScope(
+              editorKey: scope.editorKey,
+              removeAreaKey: scope.removeAreaKey,
+              onOpenCamera: () {},
+              onAddStickers: scope.onAddStickers,
+              onOpenClipsEditor: scope.onOpenClipsEditor,
+              onAddEditTextLayer: scope.onAddEditTextLayer,
+              onOpenMusicLibrary: scope.onOpenMusicLibrary,
+              originalClipAspectRatio: scope.originalClipAspectRatio,
+              bodySizeNotifier: scope.bodySizeNotifier,
+              fromLibrary: scope.fromLibrary,
+              child: VideoEditorMainActionsSheet(scope: scope),
+            ),
           );
         },
       ),
