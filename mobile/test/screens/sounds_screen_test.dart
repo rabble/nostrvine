@@ -322,60 +322,52 @@ void main() {
     });
 
     group('Error State', () {
-      // TODO(dev): Fix error state tests - AsyncNotifier error propagation
-      // in widget tests needs investigation. The UI code is correct but
-      // mocking async errors in Riverpod widget tests is complex.
-      testWidgets(
-        'shows error message on failure',
-        (tester) async {
-          await tester.pumpWidget(
-            createTestWidget(
-              child: const SoundsScreen(),
-              overrides: [
-                trendingSoundsProvider.overrideWith(
-                  () => MockTrendingSoundsErrorNotifier(
-                    Exception('Network error'),
-                  ),
+      // The error branch only renders _ErrorState when bundled sounds are
+      // also empty; otherwise it falls back to the bundled list. Each test
+      // forces an empty bundled library so the trending error surfaces.
+      testWidgets('shows error message on failure', (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const SoundsScreen(),
+            overrides: [
+              trendingSoundsProvider.overrideWith(
+                () => MockTrendingSoundsErrorNotifier(
+                  Exception('Network error'),
                 ),
-              ],
-            ),
-          );
+              ),
+              soundLibraryServiceProvider.overrideWith(
+                (_) async => SoundLibraryService(),
+              ),
+            ],
+          ),
+        );
 
-          // Pump multiple frames to allow error to propagate
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 100));
+        await tester.pumpAndSettle();
 
-          expect(find.text('Failed to load sounds'), findsOneWidget);
-        },
-        // Skip: AsyncNotifier error mocking needs further investigation
-        skip: true,
-      );
+        expect(find.text('Failed to load sounds'), findsOneWidget);
+      });
 
-      testWidgets(
-        'shows retry button on error',
-        (tester) async {
-          await tester.pumpWidget(
-            createTestWidget(
-              child: const SoundsScreen(),
-              overrides: [
-                trendingSoundsProvider.overrideWith(
-                  () => MockTrendingSoundsErrorNotifier(
-                    Exception('Network error'),
-                  ),
+      testWidgets('shows retry button on error', (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const SoundsScreen(),
+            overrides: [
+              trendingSoundsProvider.overrideWith(
+                () => MockTrendingSoundsErrorNotifier(
+                  Exception('Network error'),
                 ),
-              ],
-            ),
-          );
+              ),
+              soundLibraryServiceProvider.overrideWith(
+                (_) async => SoundLibraryService(),
+              ),
+            ],
+          ),
+        );
 
-          // Pump multiple frames to allow error to propagate
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 100));
+        await tester.pumpAndSettle();
 
-          expect(find.text('Retry'), findsOneWidget);
-        },
-        // Skip: AsyncNotifier error mocking needs further investigation
-        skip: true,
-      );
+        expect(find.text('Retry'), findsOneWidget);
+      });
     });
 
     group('Empty State', () {

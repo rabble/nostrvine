@@ -37,6 +37,10 @@ class SoundsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final audioService = ref.watch(audioPlaybackServiceProvider);
+    // savedSoundsProvider is app-scoped and never invalidated, so its notifier
+    // identity is stable for the Cubit's lifetime — ref.read is safe here
+    // (state_management.md bridging-rule exception #1). audioService can flip,
+    // so it keys the BlocProvider below.
     final savedSoundsNotifier = ref.read(savedSoundsProvider.notifier);
     return BlocProvider(
       key: ValueKey(audioService),
