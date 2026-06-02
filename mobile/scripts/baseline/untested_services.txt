@@ -14,14 +14,12 @@ c2pa_signing_service
 cache_recovery_service
 camera_base_service
 camera_mobile_service
-circuit_breaker_service
 collaborator_invite_local_state_adapter # noise: local-state adapter
 connection_status_service
 content_moderation_service
 crash_reporting_service # defer: #4338 C2 singleton-to-DI
 crosspost_api_client
 curated_list_service
-effective_content_labels
 error_analytics_tracker
 geo_blocking_service
 hashtag_cache_service
