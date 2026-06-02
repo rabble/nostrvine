@@ -22,9 +22,12 @@ typedef SubmitFeatureRequestAction =
 /// lifecycle (`idle / submitting / success / failure`); the four
 /// `TextEditingController`s stay in the View per the hybrid pattern.
 ///
-/// On `failure`, the cubit reports the underlying error via `addError`
-/// for Crashlytics observability and emits a status enum the View maps
-/// to the localized failure banner — no error strings stored in state.
+/// On `failure`, the cubit forwards the underlying error to
+/// `DivineBlocObserver` via `addError` (unified-log observability) and
+/// emits a status enum the View maps to the localized failure banner —
+/// no error strings stored in state. A Zendesk/network failure is a
+/// domain error, so it is intentionally not wrapped in `Reportable`
+/// (not forwarded to Crashlytics) per the error-handling matrix.
 class FeatureRequestCubit extends Cubit<FeatureRequestState> {
   FeatureRequestCubit({
     SubmitFeatureRequestAction submitFeatureRequest =

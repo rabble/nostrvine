@@ -77,13 +77,11 @@ class BugReportDialog extends StatelessWidget {
     super.key,
     this.currentScreen,
     this.userPubkey,
-    this.testMode = false,
   });
 
   final BugReportService bugReportService;
   final String? currentScreen;
   final String? userPubkey;
-  final bool testMode;
 
   @override
   Widget build(BuildContext context) {
