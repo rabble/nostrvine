@@ -39,6 +39,7 @@ workspace:
   - packages/divine_ui
   - packages/db_client
   - packages/divine_camera
+  - packages/divine_quick_actions
   - packages/dm_repository
   - packages/divine_video_player
   - packages/infinite_video_feed
@@ -125,6 +126,8 @@ dependencies:
       ref: 0.0.3
   divine_camera:
     path: packages/divine_camera
+  divine_quick_actions:
+    path: packages/divine_quick_actions
   divine_video_player:
     path: packages/divine_video_player
   infinite_video_feed:
