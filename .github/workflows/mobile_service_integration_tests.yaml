@@ -10,7 +10,7 @@ concurrency:
 jobs:
   service-tests:
     name: Integration Tests (services)
-    runs-on: ubuntu-24.04-4core
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: mobile/
