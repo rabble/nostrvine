@@ -3748,6 +3748,9 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get soundsPreviewFailedGeneric => 'プレビューの再生がうまくいかなかった';
+
+  @override
   String get soundsFeaturedSounds => '注目のサウンド';
 
   @override

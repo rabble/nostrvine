@@ -1659,6 +1659,7 @@
             }
         }
     },
+    "soundsPreviewFailedGeneric": "Nie udało się odtworzyć podglądu",
     "soundsFeaturedSounds": "Polecane dźwięki",
     "soundsTrendingSounds": "Trendy w dźwiękach",
     "soundsAllSounds": "Wszystkie dźwięki",

@@ -3763,6 +3763,9 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get soundsPreviewFailedGeneric => '미리 듣기를 재생하지 못했어요';
+
+  @override
   String get soundsFeaturedSounds => '추천 사운드';
 
   @override

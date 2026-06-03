@@ -3939,6 +3939,9 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get soundsPreviewFailedGeneric => 'Kunde inte spela förhandsvisning';
+
+  @override
   String get soundsFeaturedSounds => 'Utvalda ljud';
 
   @override

@@ -945,6 +945,7 @@
             }
         }
     },
+    "soundsPreviewFailedGeneric": "미리 듣기를 재생하지 못했어요",
     "soundsFeaturedSounds": "추천 사운드",
     "soundsTrendingSounds": "인기 사운드",
     "soundsAllSounds": "모든 사운드",

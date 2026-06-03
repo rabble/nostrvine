@@ -3984,6 +3984,10 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get soundsPreviewFailedGeneric =>
+      'Impossibile riprodurre l\'anteprima';
+
+  @override
   String get soundsFeaturedSounds => 'Suoni in evidenza';
 
   @override

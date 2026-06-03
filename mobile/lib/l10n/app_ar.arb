@@ -1649,6 +1649,7 @@
             }
         }
     },
+    "soundsPreviewFailedGeneric": "تعذر تشغيل المعاينة",
     "soundsFeaturedSounds": "أصوات مميزة",
     "soundsTrendingSounds": "أصوات رائجة",
     "soundsAllSounds": "كل الأصوات",

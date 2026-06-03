@@ -3921,6 +3921,9 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String get soundsPreviewFailedGeneric => 'Önizleme oynatılamadı';
+
+  @override
   String get soundsFeaturedSounds => 'Öne Çıkan Sesler';
 
   @override

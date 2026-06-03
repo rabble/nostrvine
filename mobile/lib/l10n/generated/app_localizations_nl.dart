@@ -3956,6 +3956,9 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get soundsPreviewFailedGeneric => 'Voorbeluistering afspelen mislukt';
+
+  @override
   String get soundsFeaturedSounds => 'Uitgelichte geluiden';
 
   @override

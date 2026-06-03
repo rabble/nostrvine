@@ -1663,6 +1663,7 @@
             }
         }
     },
+    "soundsPreviewFailedGeneric": "No se pudo reproducir la previsualización",
     "soundsFeaturedSounds": "Sonidos destacados",
     "soundsTrendingSounds": "Sonidos en tendencia",
     "soundsAllSounds": "Todos los sonidos",

@@ -3967,6 +3967,10 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get soundsPreviewFailedGeneric =>
+      'Falha ao reproduzir pré-visualização';
+
+  @override
   String get soundsFeaturedSounds => 'Sons em destaque';
 
   @override

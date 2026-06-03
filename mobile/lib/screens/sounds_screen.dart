@@ -36,14 +36,12 @@ class SoundsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final audioService = ref.watch(audioPlaybackServiceProvider);
-    // savedSoundsProvider is app-scoped and never invalidated, so its notifier
-    // identity is stable for the Cubit's lifetime — ref.read is safe here
-    // (state_management.md bridging-rule exception #1). audioService can flip,
-    // so it keys the BlocProvider below.
+    // Both providers are app-scoped and never invalidated, so their identities
+    // are stable for the Cubit's lifetime — ref.read is safe here
+    // (state_management.md bridging-rule exception #1).
+    final audioService = ref.read(audioPlaybackServiceProvider);
     final savedSoundsNotifier = ref.read(savedSoundsProvider.notifier);
     return BlocProvider(
-      key: ValueKey(audioService),
       create: (_) => SoundsCubit(
         audioPlaybackService: audioService,
         saveSound: savedSoundsNotifier.saveSound,
@@ -126,7 +124,7 @@ class _SoundsViewState extends ConsumerState<SoundsView> {
       case PreviewSoundOutcome.failed:
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(context.l10n.soundsPreviewFailed('')),
+            content: Text(context.l10n.soundsPreviewFailedGeneric),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -293,9 +291,7 @@ class _SoundsBody extends StatelessWidget {
     if (allSounds.isEmpty) return const _EmptyState();
 
     final cubit = context.read<SoundsCubit>();
-    final searchQuery = context.select(
-      (SoundsCubit c) => c.state.searchQuery,
-    );
+    final searchQuery = context.select((SoundsCubit c) => c.state.searchQuery);
 
     final filteredBundled = cubit.filterSounds(bundledSounds);
     final filteredNostr = cubit.filterSounds(nostrSounds);

@@ -3855,6 +3855,9 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String get soundsPreviewFailedGeneric => 'ቅድመ እይታን ማጫወት አልተሳካም';
+
+  @override
   String get soundsFeaturedSounds => 'ተለይተው የቀረቡ ድምፆች';
 
   @override

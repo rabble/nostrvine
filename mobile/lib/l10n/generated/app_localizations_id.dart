@@ -3912,6 +3912,9 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String get soundsPreviewFailedGeneric => 'Gagal memutar pratinjau';
+
+  @override
   String get soundsFeaturedSounds => 'Suara Unggulan';
 
   @override

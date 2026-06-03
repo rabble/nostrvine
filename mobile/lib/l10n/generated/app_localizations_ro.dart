@@ -4056,6 +4056,9 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get soundsPreviewFailedGeneric => 'N-am putut reda previzualizarea';
+
+  @override
   String get soundsFeaturedSounds => 'Sunete recomandate';
 
   @override

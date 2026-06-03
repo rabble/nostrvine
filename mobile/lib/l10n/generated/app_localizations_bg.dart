@@ -3986,6 +3986,9 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
+  String get soundsPreviewFailedGeneric => 'Неуспешно пускане на визуализация';
+
+  @override
   String get soundsFeaturedSounds => 'Представени звуци';
 
   @override

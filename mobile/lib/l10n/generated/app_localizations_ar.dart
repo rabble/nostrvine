@@ -3898,6 +3898,9 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get soundsPreviewFailedGeneric => 'تعذر تشغيل المعاينة';
+
+  @override
   String get soundsFeaturedSounds => 'أصوات مميزة';
 
   @override

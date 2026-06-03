@@ -1841,6 +1841,7 @@
             }
         }
     },
+    "soundsPreviewFailedGeneric": "Неуспешно пускане на визуализация",
     "soundsFeaturedSounds": "Представени звуци",
     "soundsTrendingSounds": "Набиращи популярност звуци",
     "soundsAllSounds": "Всички звуци",

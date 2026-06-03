@@ -3997,6 +3997,9 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
+  String get soundsPreviewFailedGeneric => 'Hindi na-play ang preview';
+
+  @override
   String get soundsFeaturedSounds => 'Mga Featured Sound';
 
   @override

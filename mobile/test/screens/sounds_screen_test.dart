@@ -331,9 +331,8 @@ void main() {
             child: const SoundsScreen(),
             overrides: [
               trendingSoundsProvider.overrideWith(
-                () => MockTrendingSoundsErrorNotifier(
-                  Exception('Network error'),
-                ),
+                () =>
+                    MockTrendingSoundsErrorNotifier(Exception('Network error')),
               ),
               soundLibraryServiceProvider.overrideWith(
                 (_) async => SoundLibraryService(),
@@ -353,9 +352,8 @@ void main() {
             child: const SoundsScreen(),
             overrides: [
               trendingSoundsProvider.overrideWith(
-                () => MockTrendingSoundsErrorNotifier(
-                  Exception('Network error'),
-                ),
+                () =>
+                    MockTrendingSoundsErrorNotifier(Exception('Network error')),
               ),
               soundLibraryServiceProvider.overrideWith(
                 (_) async => SoundLibraryService(),
@@ -794,60 +792,55 @@ void main() {
         verify(() => mockAudioService.loadAudio(any())).called(1);
       });
 
-      testWidgets(
-        'disposing the screen while previewing stops the audio '
-        '(navigate-away cleanup contract)',
-        (tester) async {
-          final testSounds = [
-            createTestAudioEvent(id: 'sound1', title: 'Cool Beat'),
-          ];
+      testWidgets('disposing the screen while previewing stops the audio '
+          '(navigate-away cleanup contract)', (tester) async {
+        final testSounds = [
+          createTestAudioEvent(id: 'sound1', title: 'Cool Beat'),
+        ];
 
-          // Keep play() pending so the preview rests in the playing state
-          // (previewingSoundId set) when we tear the screen down.
-          final playCompleter = Completer<void>();
-          when(
-            () => mockAudioService.play(),
-          ).thenAnswer((_) => playCompleter.future);
+        // Keep play() pending so the preview rests in the playing state
+        // (previewingSoundId set) when we tear the screen down.
+        final playCompleter = Completer<void>();
+        when(
+          () => mockAudioService.play(),
+        ).thenAnswer((_) => playCompleter.future);
 
-          await tester.pumpWidget(
-            createTestWidget(
-              child: const SoundsScreen(),
-              overrides: [
-                trendingSoundsProvider.overrideWith(
-                  () => MockTrendingSoundsNotifier(sounds: testSounds),
-                ),
-                // Empty bundled sounds → exactly one preview button.
-                soundLibraryServiceProvider.overrideWith(
-                  (_) async => SoundLibraryService(),
-                ),
-                audioPlaybackServiceProvider.overrideWithValue(
-                  mockAudioService,
-                ),
-              ],
-            ),
-          );
-          await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const SoundsScreen(),
+            overrides: [
+              trendingSoundsProvider.overrideWith(
+                () => MockTrendingSoundsNotifier(sounds: testSounds),
+              ),
+              // Empty bundled sounds → exactly one preview button.
+              soundLibraryServiceProvider.overrideWith(
+                (_) async => SoundLibraryService(),
+              ),
+              audioPlaybackServiceProvider.overrideWithValue(mockAudioService),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
 
-          await tester.tap(find.byIcon(Icons.play_arrow).first);
-          // Drain stop()/loadAudio microtasks so previewingSoundId is set.
-          await tester.pump();
-          await tester.pump();
-          expect(find.byIcon(Icons.stop), findsWidgets);
+        await tester.tap(find.byIcon(Icons.play_arrow).first);
+        // Drain stop()/loadAudio microtasks so previewingSoundId is set.
+        await tester.pump();
+        await tester.pump();
+        expect(find.byIcon(Icons.stop), findsWidgets);
 
-          clearInteractions(mockAudioService);
+        clearInteractions(mockAudioService);
 
-          // Navigate away: tearing the whole tree down unmounts the
-          // ProviderScope and the BlocProvider, which closes the SoundsCubit.
-          // close() must stop the in-flight preview — SoundsView.dispose()
-          // only disposes the text controller.
-          await tester.pumpWidget(const SizedBox.shrink());
+        // Navigate away: tearing the whole tree down unmounts the
+        // ProviderScope and the BlocProvider, which closes the SoundsCubit.
+        // close() must stop the in-flight preview — SoundsView.dispose()
+        // only disposes the text controller.
+        await tester.pumpWidget(const SizedBox.shrink());
 
-          verify(() => mockAudioService.stop()).called(1);
+        verify(() => mockAudioService.stop()).called(1);
 
-          playCompleter.complete();
-          await tester.pumpAndSettle();
-        },
-      );
+        playCompleter.complete();
+        await tester.pumpAndSettle();
+      });
 
       testWidgets('shows snackbar when sound has no URL', (tester) async {
         final testSounds = [
@@ -897,6 +890,40 @@ void main() {
 
         // loadAudio should NOT have been called
         verifyNever(() => mockAudioService.loadAudio(any()));
+      });
+
+      testWidgets('shows generic snackbar when preview playback fails', (
+        tester,
+      ) async {
+        final testSounds = [
+          createTestAudioEvent(id: 'sound1', title: 'Cool Beat'),
+        ];
+        when(
+          () => mockAudioService.play(),
+        ).thenThrow(StateError('audio bus locked'));
+
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const SoundsScreen(),
+            overrides: [
+              trendingSoundsProvider.overrideWith(
+                () => MockTrendingSoundsNotifier(sounds: testSounds),
+              ),
+              soundLibraryServiceProvider.overrideWith(
+                (_) async => SoundLibraryService(),
+              ),
+              audioPlaybackServiceProvider.overrideWithValue(mockAudioService),
+            ],
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.play_arrow).first);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Failed to play preview'), findsOneWidget);
+        expect(find.text('Failed to play preview: '), findsNothing);
       });
     });
 

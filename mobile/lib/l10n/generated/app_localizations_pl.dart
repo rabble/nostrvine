@@ -4039,6 +4039,9 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
+  String get soundsPreviewFailedGeneric => 'Nie udało się odtworzyć podglądu';
+
+  @override
   String get soundsFeaturedSounds => 'Polecane dźwięki';
 
   @override

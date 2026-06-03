@@ -3998,6 +3998,9 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get soundsPreviewFailedGeneric => 'Échec de la lecture de l\'aperçu';
+
+  @override
   String get soundsFeaturedSounds => 'Sons à la une';
 
   @override

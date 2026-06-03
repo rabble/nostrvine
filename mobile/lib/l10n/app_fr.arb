@@ -1659,6 +1659,7 @@
             }
         }
     },
+    "soundsPreviewFailedGeneric": "Échec de la lecture de l'aperçu",
     "soundsFeaturedSounds": "Sons à la une",
     "soundsTrendingSounds": "Sons tendance",
     "soundsAllSounds": "Tous les sons",

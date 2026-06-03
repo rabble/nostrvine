@@ -1019,6 +1019,7 @@
     "soundsSearchHint": "Maghanap ng sounds...",
     "soundsPreviewUnavailable": "Hindi ma-preview ang sound - walang available na audio",
     "soundsPreviewFailed": "Hindi na-play ang preview: {error}",
+    "soundsPreviewFailedGeneric": "Hindi na-play ang preview",
     "soundsFeaturedSounds": "Mga Featured Sound",
     "soundsTrendingSounds": "Mga Trending Sound",
     "soundsAllSounds": "Lahat ng Sound",

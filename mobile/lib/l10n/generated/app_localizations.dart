@@ -6872,6 +6872,12 @@ abstract class AppLocalizations {
   /// **'Failed to play preview: {error}'**
   String soundsPreviewFailed(String error);
 
+  /// No description provided for @soundsPreviewFailedGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to play preview'**
+  String get soundsPreviewFailedGeneric;
+
   /// No description provided for @soundsFeaturedSounds.
   ///
   /// In en, this message translates to:

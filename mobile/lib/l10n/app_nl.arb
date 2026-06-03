@@ -1659,6 +1659,7 @@
             }
         }
     },
+    "soundsPreviewFailedGeneric": "Voorbeluistering afspelen mislukt",
     "soundsFeaturedSounds": "Uitgelichte geluiden",
     "soundsTrendingSounds": "Trending geluiden",
     "soundsAllSounds": "Alle geluiden",

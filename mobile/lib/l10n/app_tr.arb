@@ -1656,6 +1656,7 @@
             }
         }
     },
+    "soundsPreviewFailedGeneric": "Önizleme oynatılamadı",
     "soundsFeaturedSounds": "Öne Çıkan Sesler",
     "soundsTrendingSounds": "Trend Sesler",
     "soundsAllSounds": "Tüm Sesler",

@@ -1649,6 +1649,7 @@
             }
         }
     },
+    "soundsPreviewFailedGeneric": "プレビューの再生がうまくいかなかった",
     "soundsFeaturedSounds": "注目のサウンド",
     "soundsTrendingSounds": "トレンドのサウンド",
     "soundsAllSounds": "すべてのサウンド",
