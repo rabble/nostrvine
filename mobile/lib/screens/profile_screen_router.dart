@@ -244,7 +244,10 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
             child: Row(
               children: [
-                const Icon(Icons.code, size: 24, color: VineTheme.whiteText),
+                const DivineIcon(
+                  icon: DivineIconName.bracketsAngle,
+                  color: VineTheme.whiteText,
+                ),
                 const SizedBox(width: 16),
                 Text(
                   context.l10n.profileGetEmbedCode,

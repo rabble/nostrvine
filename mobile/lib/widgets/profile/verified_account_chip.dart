@@ -56,7 +56,11 @@ class VerifiedAccountChip extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.public, size: 14, color: VineTheme.lightText),
+                const DivineIcon(
+                  icon: DivineIconName.globe,
+                  size: 14,
+                  color: VineTheme.lightText,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   '${claim.platform}/${claim.identity}',

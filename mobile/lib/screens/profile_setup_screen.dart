@@ -270,8 +270,8 @@ class _ProfileSetupScreenViewState
                           color: VineTheme.vineGreen,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
-                          Icons.check,
+                        child: const DivineIcon(
+                          icon: DivineIconName.check,
                           color: VineTheme.whiteText,
                           size: 17,
                         ),
@@ -1838,7 +1838,11 @@ class _BannerColorSwatch extends StatelessWidget {
             ),
           ),
           child: isSelected
-              ? const Icon(Icons.check, color: VineTheme.whiteText, size: 20)
+              ? const DivineIcon(
+                  icon: DivineIconName.check,
+                  color: VineTheme.whiteText,
+                  size: 20,
+                )
               : null,
         ),
       ),
@@ -1918,8 +1922,8 @@ class _GetVerifiedTile extends StatelessWidget {
         l10n.profileEditGetVerifiedSubtitle,
         style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
       ),
-      trailing: const Icon(
-        Icons.chevron_right,
+      trailing: const DivineIcon(
+        icon: DivineIconName.caretRight,
         color: VineTheme.lightText,
       ),
       onTap: () => context.read<ProfileEditorBloc>().add(

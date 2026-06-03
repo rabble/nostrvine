@@ -139,7 +139,10 @@ class UserProfileTile extends ConsumerWidget {
               if (showAddToList) ...[
                 const SizedBox(width: 4),
                 IconButton(
-                  icon: const Icon(Icons.playlist_add),
+                  icon: const DivineIcon(
+                    icon: DivineIconName.listPlus,
+                    color: VineTheme.onSurfaceVariant,
+                  ),
                   color: VineTheme.onSurfaceVariant,
                   tooltip: context.l10n.peopleListsAddToList,
                   onPressed: () => AddToPeopleListsSheet.show(

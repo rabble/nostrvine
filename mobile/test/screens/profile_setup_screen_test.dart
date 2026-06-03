@@ -28,6 +28,9 @@ class _MockProfileEditorBloc
 class _MockMyProfileBloc extends MockBloc<MyProfileEvent, MyProfileState>
     implements MyProfileBloc {}
 
+Finder _divineIcon(DivineIconName name) =>
+    find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
+
 void main() {
   group('UsernameStatusIndicator', () {
     late _MockProfileEditorBloc mockBloc;
@@ -93,7 +96,7 @@ void main() {
       await tester.pumpWidget(buildIndicator(UsernameStatus.available));
 
       expect(find.text('Username available!'), findsOneWidget);
-      expect(find.byIcon(Icons.check_circle), findsOneWidget);
+      expect(_divineIcon(DivineIconName.checkCircle), findsOneWidget);
     });
 
     testWidgets('shows red X when taken', (tester) async {
@@ -109,7 +112,7 @@ void main() {
       await tester.pumpWidget(buildIndicatorWithBloc(UsernameStatus.reserved));
 
       expect(find.text('Username is reserved'), findsOneWidget);
-      expect(find.byIcon(Icons.lock), findsOneWidget);
+      expect(_divineIcon(DivineIconName.lockSimple), findsOneWidget);
     });
 
     testWidgets('shows Contact support link when reserved', (tester) async {
@@ -147,7 +150,7 @@ void main() {
         find.text('Could not check availability. Please try again.'),
         findsOneWidget,
       );
-      expect(find.byIcon(Icons.error_outline), findsOneWidget);
+      expect(_divineIcon(DivineIconName.warningCircle), findsOneWidget);
     });
 
     testWidgets('shows default error message when no error provided', (
@@ -156,7 +159,7 @@ void main() {
       await tester.pumpWidget(buildIndicator(UsernameStatus.error));
 
       expect(find.text('Failed to check availability'), findsOneWidget);
-      expect(find.byIcon(Icons.error_outline), findsOneWidget);
+      expect(_divineIcon(DivineIconName.warningCircle), findsOneWidget);
     });
 
     testWidgets('shows format error message', (tester) async {

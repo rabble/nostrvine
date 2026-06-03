@@ -111,7 +111,11 @@ class _UsernameAvailableIndicator extends StatelessWidget {
       padding: const EdgeInsets.only(top: 8),
       child: Row(
         children: [
-          const Icon(Icons.check_circle, color: VineTheme.vineGreen, size: 16),
+          const DivineIcon(
+            icon: DivineIconName.checkCircle,
+            color: VineTheme.vineGreen,
+            size: 16,
+          ),
           const SizedBox(width: 8),
           Text(
             context.l10n.profileSetupUsernameAvailable,
@@ -156,7 +160,11 @@ class _UsernameReservedIndicator extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.lock, color: VineTheme.warning, size: 16),
+              const DivineIcon(
+                icon: DivineIconName.lockSimple,
+                color: VineTheme.warning,
+                size: 16,
+              ),
               const SizedBox(width: 8),
               Text(
                 context.l10n.profileSetupUsernameReserved,
@@ -245,7 +253,11 @@ class _UsernameErrorIndicator extends StatelessWidget {
       padding: const EdgeInsets.only(top: 8),
       child: Row(
         children: [
-          const Icon(Icons.error_outline, color: VineTheme.error, size: 16),
+          const DivineIcon(
+            icon: DivineIconName.warningCircle,
+            color: VineTheme.error,
+            size: 16,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(

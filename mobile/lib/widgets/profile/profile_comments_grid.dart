@@ -196,8 +196,8 @@ class _VideoReplyTile extends StatelessWidget {
               ),
               // Play icon overlay
               const Center(
-                child: Icon(
-                  Icons.play_circle_outline,
+                child: DivineIcon(
+                  icon: DivineIconName.playCircle,
                   color: VineTheme.whiteText,
                   size: 32,
                 ),
@@ -260,8 +260,8 @@ class _ProfileCommentCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(
-              Icons.chevron_right,
+            const DivineIcon(
+              icon: DivineIconName.caretRight,
               color: VineTheme.onSurfaceMuted,
               size: 20,
             ),

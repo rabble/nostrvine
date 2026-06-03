@@ -1,6 +1,7 @@
 // ABOUTME: Verifies UserProfileTile gates add-to-list on profileListFeatures.
 // ABOUTME: Keeps rollout behavior explicit for follower/following entry points.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
@@ -12,6 +13,9 @@ import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 
 import '../helpers/test_provider_overrides.dart';
+
+Finder _divineIcon(DivineIconName name) =>
+    find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
 
 void main() {
   group('UserProfileTile profileListFeatures gating', () {
@@ -36,7 +40,7 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.playlist_add), findsNothing);
+        expect(_divineIcon(DivineIconName.listPlus), findsNothing);
       },
     );
 
@@ -52,7 +56,7 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.playlist_add), findsOneWidget);
+        expect(_divineIcon(DivineIconName.listPlus), findsOneWidget);
       },
     );
 

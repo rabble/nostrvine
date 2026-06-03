@@ -16,7 +16,11 @@ class ProfileBlockConfirmationDialog extends StatelessWidget {
     backgroundColor: VineTheme.cardBackground,
     title: Row(
       children: [
-        const Icon(Icons.check_circle, color: VineTheme.vineGreen, size: 28),
+        const DivineIcon(
+          icon: DivineIconName.checkCircle,
+          color: VineTheme.vineGreen,
+          size: 28,
+        ),
         const SizedBox(width: 12),
         Text(
           context.l10n.profileUserBlockedTitle,
@@ -54,8 +58,8 @@ class ProfileBlockConfirmationDialog extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Icon(
-                  Icons.info_outline,
+                const DivineIcon(
+                  icon: DivineIconName.info,
                   color: VineTheme.vineGreen,
                   size: 20,
                 ),
