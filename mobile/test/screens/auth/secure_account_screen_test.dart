@@ -23,6 +23,9 @@ class _MockKeycastOAuth extends Mock implements KeycastOAuth {}
 
 class _MockAuthService extends Mock implements AuthService {}
 
+Finder _divineIcon(DivineIconName name) =>
+    find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
+
 void main() {
   group(SecureAccountScreen, () {
     late _MockKeycastOAuth mockOAuth;
@@ -126,7 +129,7 @@ void main() {
         await tester.pumpWidget(buildTestWidget());
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.chevron_left), findsOneWidget);
+        expect(_divineIcon(DivineIconName.caretLeft), findsOneWidget);
       });
     });
 
@@ -242,7 +245,13 @@ void main() {
 
         // DivineAuthTextField uses DivineIcon (SVG) for password visibility
         // toggles. The password and confirmation fields each have one.
-        expect(find.byType(DivineIcon), findsNWidgets(2));
+        expect(
+          find.descendant(
+            of: find.byType(DivineAuthTextField),
+            matching: find.byType(DivineIcon),
+          ),
+          findsNWidgets(2),
+        );
 
         // Password should be obscured initially
         final textField = tester.widget<TextField>(
@@ -254,7 +263,14 @@ void main() {
         expect(textField.obscureText, isTrue);
 
         // Tap the visibility toggle (GestureDetector wrapping DivineIcon)
-        await tester.tap(find.byType(DivineIcon).first);
+        await tester.tap(
+          find
+              .descendant(
+                of: find.byType(DivineAuthTextField),
+                matching: find.byType(DivineIcon),
+              )
+              .first,
+        );
         await tester.pumpAndSettle();
 
         // Password should now be visible

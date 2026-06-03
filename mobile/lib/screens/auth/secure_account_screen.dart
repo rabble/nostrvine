@@ -274,7 +274,10 @@ class _VerificationDialog extends ConsumerWidget {
             backgroundColor: VineTheme.cardBackground,
             title: const Row(
               children: [
-                Icon(Icons.error_outline, color: VineTheme.error),
+                DivineIcon(
+                  icon: DivineIconName.warningCircle,
+                  color: VineTheme.error,
+                ),
                 SizedBox(width: 12),
                 Text(
                   'Verification Failed',
@@ -304,7 +307,10 @@ class _VerificationDialog extends ConsumerWidget {
             backgroundColor: VineTheme.cardBackground,
             title: Row(
               children: [
-                Icon(Icons.check_circle, color: VineTheme.vineGreen),
+                DivineIcon(
+                  icon: DivineIconName.checkCircle,
+                  color: VineTheme.vineGreen,
+                ),
                 SizedBox(width: 12),
                 Text(
                   'Account Secured!',
@@ -324,7 +330,10 @@ class _VerificationDialog extends ConsumerWidget {
           backgroundColor: VineTheme.cardBackground,
           title: const Row(
             children: [
-              Icon(Icons.email_outlined, color: VineTheme.vineGreen),
+              DivineIcon(
+                icon: DivineIconName.envelope,
+                color: VineTheme.vineGreen,
+              ),
               SizedBox(width: 12),
               Text(
                 'Verify Your Email',

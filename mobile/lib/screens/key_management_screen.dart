@@ -93,10 +93,9 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.info_outline,
+              const DivineIcon(
+                icon: DivineIconName.info,
                 color: VineTheme.vineGreen,
-                size: 24,
               ),
               const SizedBox(width: 12),
               Text(
@@ -243,8 +242,8 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.warning_amber,
+                    const DivineIcon(
+                      icon: DivineIconName.warning,
                       color: VineTheme.warning,
                       size: 20,
                     ),
@@ -310,7 +309,11 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: _isProcessing ? null : () => _exportKey(context),
-                    icon: const Icon(Icons.copy, size: 20),
+                    icon: const DivineIcon(
+                      icon: DivineIconName.copy,
+                      size: 20,
+                      color: VineTheme.whiteText,
+                    ),
                     label: Text(
                       context.l10n.keyManagementCopyNsec,
                       style: const TextStyle(

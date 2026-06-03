@@ -11,6 +11,9 @@ import 'package:openvine/widgets/rounded_icon_button.dart';
 
 import '../helpers/go_router.dart';
 
+Finder _divineIcon(DivineIconName name) =>
+    find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
+
 void main() {
   group(AuthBackButton, () {
     group('renders', () {
@@ -37,7 +40,7 @@ void main() {
           ),
         );
 
-        expect(find.byIcon(Icons.chevron_left), findsOneWidget);
+        expect(_divineIcon(DivineIconName.caretLeft), findsOneWidget);
       });
 
       testWidgets('uses vineGreenLight color for icon', (tester) async {
@@ -50,7 +53,9 @@ void main() {
           ),
         );
 
-        final icon = tester.widget<Icon>(find.byIcon(Icons.chevron_left));
+        final icon = tester.widget<DivineIcon>(
+          _divineIcon(DivineIconName.caretLeft),
+        );
         expect(icon.color, equals(VineTheme.vineGreenLight));
       });
     });

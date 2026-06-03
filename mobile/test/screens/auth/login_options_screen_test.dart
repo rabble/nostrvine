@@ -25,6 +25,9 @@ class _MockAuthService extends Mock implements AuthService {}
 class _MockPendingVerificationService extends Mock
     implements PendingVerificationService {}
 
+Finder _divineIcon(DivineIconName name) =>
+    find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
+
 void main() {
   late _MockKeycastOAuth mockOAuth;
   late _MockAuthService mockAuthService;
@@ -255,7 +258,7 @@ void main() {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.info_outline), findsOneWidget);
+        expect(_divineIcon(DivineIconName.info), findsOneWidget);
       });
     });
 
@@ -266,7 +269,7 @@ void main() {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byIcon(Icons.info_outline));
+        await tester.tap(_divineIcon(DivineIconName.info));
         await tester.pumpAndSettle();
 
         expect(find.text('Sign-in options'), findsOneWidget);
@@ -284,7 +287,7 @@ void main() {
           await tester.pumpWidget(createTestWidget());
           await tester.pumpAndSettle();
 
-          await tester.tap(find.byIcon(Icons.info_outline));
+          await tester.tap(_divineIcon(DivineIconName.info));
           await tester.pumpAndSettle();
 
           await tester.scrollUntilVisible(

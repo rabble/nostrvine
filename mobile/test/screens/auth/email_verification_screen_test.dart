@@ -37,6 +37,9 @@ class _MockPendingVerificationService extends Mock
 
 class _MockInviteApiClient extends Mock implements InviteApiClient {}
 
+Finder _divineIcon(DivineIconName name) =>
+    find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
+
 void main() {
   late _MockEmailVerificationCubit mockCubit;
   late _MockAuthService mockAuthService;
@@ -206,7 +209,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byIcon(Icons.close), findsOneWidget);
+        expect(_divineIcon(DivineIconName.x), findsOneWidget);
       });
 
       testWidgets('renders verification link instruction text', (tester) async {
@@ -285,7 +288,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byIcon(Icons.close), findsNothing);
+        expect(_divineIcon(DivineIconName.x), findsNothing);
       });
     });
 
@@ -335,7 +338,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byIcon(Icons.close), findsOneWidget);
+        expect(_divineIcon(DivineIconName.x), findsOneWidget);
       });
 
       testWidgets('renders failure instruction text', (tester) async {

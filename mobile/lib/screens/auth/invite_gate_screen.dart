@@ -295,8 +295,8 @@ class _InviteCodeEntryPage extends StatelessWidget {
                                 alignment: AlignmentDirectional.centerStart,
                                 child: RoundedIconButton(
                                   onPressed: onBack,
-                                  icon: const Icon(
-                                    Icons.chevron_left,
+                                  icon: const DivineIcon(
+                                    icon: DivineIconName.caretLeft,
                                     color: VineTheme.vineGreenLight,
                                     size: 28,
                                   ),

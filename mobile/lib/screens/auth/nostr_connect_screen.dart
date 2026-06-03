@@ -718,7 +718,11 @@ class _SignerRow extends StatelessWidget {
     return SizedBox(
       width: 22,
       child: supported
-          ? const Icon(Icons.check, color: VineTheme.vineGreen, size: 22)
+          ? const DivineIcon(
+              icon: DivineIconName.check,
+              color: VineTheme.vineGreen,
+              size: 22,
+            )
           : const SizedBox.shrink(),
     );
   }
@@ -751,8 +755,8 @@ class _ErrorContent extends StatelessWidget {
           Center(
             child: Column(
               children: [
-                const Icon(
-                  Icons.error_outline,
+                const DivineIcon(
+                  icon: DivineIconName.warningCircle,
                   color: VineTheme.error,
                   size: 64,
                 ),
