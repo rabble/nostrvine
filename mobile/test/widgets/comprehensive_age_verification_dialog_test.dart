@@ -42,6 +42,9 @@ Widget _createDialogTestApp({
   );
 }
 
+Finder _divineIcon(DivineIconName name) =>
+    find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
+
 void main() {
   group('AgeVerificationDialog - Comprehensive Tests', () {
     group('Creation Verification (16+)', () {
@@ -237,7 +240,9 @@ void main() {
         );
 
         // Check icon color
-        final icon = tester.widget<Icon>(find.byIcon(Icons.person_outline));
+        final icon = tester.widget<DivineIcon>(
+          _divineIcon(DivineIconName.user),
+        );
         expect(icon.color, VineTheme.vineGreen);
         expect(icon.size, 64);
 
@@ -332,7 +337,7 @@ void main() {
         );
 
         // Check that all elements are present
-        expect(find.byIcon(Icons.person_outline), findsOneWidget);
+        expect(_divineIcon(DivineIconName.user), findsOneWidget);
         expect(find.text('Age Verification'), findsOneWidget);
         expect(
           find.text(

@@ -88,8 +88,8 @@ class _FindPeopleSheetState extends ConsumerState<FindPeopleSheet> {
                 decoration: InputDecoration(
                   hintText: 'Find people',
                   hintStyle: const TextStyle(color: VineTheme.secondaryText),
-                  prefixIcon: const Icon(
-                    Icons.search,
+                  prefixIcon: const DivineIcon(
+                    icon: DivineIconName.search,
                     color: VineTheme.secondaryText,
                   ),
                   filled: true,

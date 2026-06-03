@@ -36,6 +36,9 @@ Widget _createDialogTestApp({ValueChanged<bool?>? onResult}) {
   );
 }
 
+Finder _divineIcon(DivineIconName name) =>
+    find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
+
 void main() {
   group(AgeVerificationDialog, () {
     testWidgets('should display all required elements', (tester) async {
@@ -47,7 +50,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.person_outline), findsOneWidget);
+      expect(_divineIcon(DivineIconName.user), findsOneWidget);
       expect(find.text('Age Verification'), findsOneWidget);
       expect(
         find.text(
@@ -123,7 +126,7 @@ void main() {
         ),
       );
 
-      final icon = tester.widget<Icon>(find.byIcon(Icons.person_outline));
+      final icon = tester.widget<DivineIcon>(_divineIcon(DivineIconName.user));
       expect(icon.color, VineTheme.vineGreen);
 
       final yesButton = tester.widget<ElevatedButton>(

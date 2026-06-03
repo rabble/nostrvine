@@ -58,8 +58,8 @@ class UserListCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const Icon(
-                    Icons.chevron_right,
+                  const DivineIcon(
+                    icon: DivineIconName.caretRight,
                     color: VineTheme.secondaryText,
                   ),
                 ],
@@ -139,8 +139,8 @@ class CuratedListCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const Icon(
-                    Icons.chevron_right,
+                  const DivineIcon(
+                    icon: DivineIconName.caretRight,
                     color: VineTheme.secondaryText,
                   ),
                 ],

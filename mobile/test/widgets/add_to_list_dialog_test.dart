@@ -1,6 +1,7 @@
 // ABOUTME: Tests for SelectListDialog and CreateListDialog widgets
 // ABOUTME: Verifies list selection, list item interactions, and list creation form
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -16,6 +17,9 @@ class _MockCuratedListService extends Mock implements CuratedListService {}
 
 /// Test data for the fake notifier - set before each test
 List<CuratedList> _fakeLists = [];
+
+Finder _divineIcon(DivineIconName name) =>
+    find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
 
 /// Mock service for the fake notifier - set before tests that need interactions
 _MockCuratedListService? _fakeService;
@@ -101,7 +105,7 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.check_circle), findsOneWidget);
+      expect(_divineIcon(DivineIconName.checkCircle), findsOneWidget);
     });
 
     testWidgets('shows playlist icon for video not in list', (tester) async {
@@ -120,7 +124,7 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.playlist_play), findsOneWidget);
+      expect(_divineIcon(DivineIconName.playlist), findsOneWidget);
     });
 
     testWidgets('displays video count for each list', (tester) async {

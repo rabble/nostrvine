@@ -63,8 +63,10 @@ class SelectListDialog extends StatelessWidget {
                   final isInList = list.videoEventIds.contains(video.id);
 
                   return ListTile(
-                    leading: Icon(
-                      isInList ? Icons.check_circle : Icons.playlist_play,
+                    leading: DivineIcon(
+                      icon: isInList
+                          ? DivineIconName.checkCircle
+                          : DivineIconName.playlist,
                       color: isInList
                           ? VineTheme.vineGreen
                           : VineTheme.whiteText,

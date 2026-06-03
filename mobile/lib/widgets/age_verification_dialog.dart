@@ -31,8 +31,8 @@ class AgeVerificationDialog extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.person_outline,
+          const DivineIcon(
+            icon: DivineIconName.user,
             color: VineTheme.vineGreen,
             size: 64,
           ),

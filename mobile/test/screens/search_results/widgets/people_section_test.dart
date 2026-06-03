@@ -1,4 +1,5 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,6 +20,9 @@ import '../../../helpers/test_provider_overrides.dart';
 
 class _MockUserSearchBloc extends MockBloc<UserSearchEvent, UserSearchState>
     implements UserSearchBloc {}
+
+Finder _divineIcon(DivineIconName name) =>
+    find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
 
 void main() {
   group(PeopleSection, () {
@@ -114,7 +118,7 @@ void main() {
 
           await tester.pumpWidget(buildSubject());
 
-          expect(find.byIcon(Icons.playlist_add), findsNothing);
+          expect(_divineIcon(DivineIconName.listPlus), findsNothing);
         },
       );
 
@@ -152,7 +156,7 @@ void main() {
             ),
           );
 
-          expect(find.byIcon(Icons.playlist_add), findsOneWidget);
+          expect(_divineIcon(DivineIconName.listPlus), findsOneWidget);
         },
       );
 

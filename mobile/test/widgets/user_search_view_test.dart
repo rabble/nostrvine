@@ -2,6 +2,7 @@
 // ABOUTME: Validates UI states for initial, loading, success, failure, and empty results
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,6 +15,9 @@ import '../helpers/test_provider_overrides.dart';
 
 class _MockUserSearchBloc extends MockBloc<UserSearchEvent, UserSearchState>
     implements UserSearchBloc {}
+
+Finder _divineIcon(DivineIconName name) =>
+    find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
 
 void main() {
   group('UserSearchView', () {
@@ -149,7 +153,7 @@ void main() {
         await tester.pumpWidget(createTestWidget());
         await tester.pump();
 
-        expect(find.byIcon(Icons.error_outline), findsOneWidget);
+        expect(_divineIcon(DivineIconName.warningCircle), findsOneWidget);
         expect(find.text('Search failed'), findsOneWidget);
       });
     });

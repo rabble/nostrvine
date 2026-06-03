@@ -128,7 +128,10 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
     ),
     child: Row(
       children: [
-        const Icon(Icons.share, color: VineTheme.whiteText),
+        const DivineIcon(
+          icon: DivineIconName.share,
+          color: VineTheme.whiteText,
+        ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -157,7 +160,10 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
         ),
         IconButton(
           onPressed: () => _safePop(context),
-          icon: const Icon(Icons.close, color: VineTheme.secondaryText),
+          icon: const DivineIcon(
+            icon: DivineIconName.x,
+            color: VineTheme.secondaryText,
+          ),
         ),
       ],
     ),
@@ -350,8 +356,8 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                   children: [
                     Row(
                       children: [
-                        const Icon(
-                          Icons.info_outline,
+                        const DivineIcon(
+                          icon: DivineIconName.info,
                           color: VineTheme.vineGreen,
                           size: 18,
                         ),
@@ -960,8 +966,10 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
             itemBuilder: (context, index) {
               final list = lists[index];
               return ListTile(
-                leading: Icon(
-                  list.isPublic ? Icons.public : Icons.lock,
+                leading: DivineIcon(
+                  icon: list.isPublic
+                      ? DivineIconName.globe
+                      : DivineIconName.lockSimple,
                   color: VineTheme.vineGreen,
                   size: 20,
                 ),
@@ -1176,7 +1184,10 @@ class _SelectBookmarkSetDialog extends StatelessWidget {
                         color: VineTheme.vineGreen.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(Icons.add, color: VineTheme.vineGreen),
+                      child: const DivineIcon(
+                        icon: DivineIconName.plus,
+                        color: VineTheme.vineGreen,
+                      ),
                     ),
                     title: Text(
                       context.l10n.shareMenuCreateNewSet,
@@ -1227,10 +1238,10 @@ class _SelectBookmarkSetDialog extends StatelessWidget {
                           );
 
                           return ListTile(
-                            leading: Icon(
-                              isInSet
-                                  ? Icons.check_circle
-                                  : Icons.bookmark_border,
+                            leading: DivineIcon(
+                              icon: isInSet
+                                  ? DivineIconName.checkCircle
+                                  : DivineIconName.bookmarkSimple,
                               color: isInSet
                                   ? VineTheme.vineGreen
                                   : VineTheme.whiteText,
@@ -1507,8 +1518,8 @@ class _UseThisSoundTile extends ConsumerWidget {
               color: VineTheme.vineGreen.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(
-              Icons.music_note,
+            child: const DivineIcon(
+              icon: DivineIconName.musicNote,
               color: VineTheme.vineGreen,
               size: 20,
             ),

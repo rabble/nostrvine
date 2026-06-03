@@ -86,7 +86,10 @@ class SearchUserTile extends ConsumerWidget {
               ),
               if (showAddToList)
                 IconButton(
-                  icon: const Icon(Icons.playlist_add),
+                  icon: const DivineIcon(
+                    icon: DivineIconName.listPlus,
+                    color: VineTheme.secondaryText,
+                  ),
                   color: VineTheme.secondaryText,
                   tooltip: context.l10n.peopleListsAddToList,
                   onPressed: () => AddToPeopleListsSheet.show(
