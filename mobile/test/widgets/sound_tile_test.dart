@@ -8,6 +8,9 @@ import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/sound_tile.dart';
 
+Finder _divineIcon(DivineIconName name) =>
+    find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
+
 void main() {
   group('SoundTile', () {
     late AudioEvent testSound;
@@ -88,7 +91,7 @@ void main() {
       testWidgets('displays music note icon', (tester) async {
         await tester.pumpWidget(buildTestWidget());
 
-        expect(find.byIcon(Icons.music_note), findsWidgets);
+        expect(_divineIcon(DivineIconName.musicNote), findsWidgets);
       });
 
       testWidgets('displays play arrow icon', (tester) async {
@@ -100,7 +103,7 @@ void main() {
       testWidgets('displays chevron right icon', (tester) async {
         await tester.pumpWidget(buildTestWidget());
 
-        expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+        expect(_divineIcon(DivineIconName.caretRight), findsOneWidget);
       });
 
       testWidgets('calls onTap when tile is tapped', (tester) async {
@@ -175,7 +178,7 @@ void main() {
       testWidgets('displays music note icon in compact mode', (tester) async {
         await tester.pumpWidget(buildTestWidget(compact: true));
 
-        expect(find.byIcon(Icons.music_note), findsOneWidget);
+        expect(_divineIcon(DivineIconName.musicNote), findsOneWidget);
       });
 
       testWidgets('displays title in compact mode', (tester) async {
@@ -353,8 +356,8 @@ void main() {
       testWidgets('music note uses vineGreen color', (tester) async {
         await tester.pumpWidget(buildTestWidget());
 
-        final musicNoteIcons = tester.widgetList<Icon>(
-          find.byIcon(Icons.music_note),
+        final musicNoteIcons = tester.widgetList<DivineIcon>(
+          _divineIcon(DivineIconName.musicNote),
         );
 
         for (final icon in musicNoteIcons) {
@@ -373,8 +376,8 @@ void main() {
       testWidgets('chevron uses grey color', (tester) async {
         await tester.pumpWidget(buildTestWidget());
 
-        final chevronIcon = tester.widget<Icon>(
-          find.byIcon(Icons.chevron_right),
+        final chevronIcon = tester.widget<DivineIcon>(
+          _divineIcon(DivineIconName.caretRight),
         );
 
         expect(chevronIcon.color, equals(VineTheme.lightText));

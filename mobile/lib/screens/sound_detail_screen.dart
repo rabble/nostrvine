@@ -278,8 +278,8 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Row(
                     children: [
-                      const Icon(
-                        Icons.videocam,
+                      const DivineIcon(
+                        icon: DivineIconName.videoCamera,
                         color: VineTheme.vineGreen,
                         size: 20,
                       ),
@@ -412,8 +412,8 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
                   color: VineTheme.vineGreen.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(
-                  Icons.music_note,
+                child: const DivineIcon(
+                  icon: DivineIconName.musicNote,
                   color: VineTheme.vineGreen,
                   size: 28,
                 ),
@@ -498,7 +498,11 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
                   button: true,
                   child: ElevatedButton.icon(
                     onPressed: widget.onUseSoundTap,
-                    icon: const Icon(Icons.add, size: 20),
+                    icon: const DivineIcon(
+                      icon: DivineIconName.plus,
+                      size: 20,
+                      color: VineTheme.backgroundColor,
+                    ),
                     label: Text(context.l10n.soundUseSound),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: VineTheme.vineGreen,
@@ -714,8 +718,8 @@ class _VideosGrid extends ConsumerWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Icons.error_outline,
+                    const DivineIcon(
+                      icon: DivineIconName.warningCircle,
                       size: 64,
                       color: VineTheme.likeRed,
                     ),
@@ -743,7 +747,10 @@ class _VideosGrid extends ConsumerWidget {
                     const SizedBox(height: 24),
                     ElevatedButton.icon(
                       onPressed: onRetry,
-                      icon: const Icon(Icons.refresh),
+                      icon: const DivineIcon(
+                        icon: DivineIconName.arrowClockwise,
+                        color: VineTheme.backgroundColor,
+                      ),
                       label: Text(l10n.soundRetry),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: VineTheme.vineGreen,
@@ -941,8 +948,8 @@ class _VideoGridTile extends StatelessWidget {
               ),
             ),
             const Center(
-              child: Icon(
-                Icons.play_circle_filled,
+              child: DivineIcon(
+                icon: DivineIconName.playCircleFill,
                 color: VineTheme.onSurfaceVariant,
                 size: 32,
               ),
@@ -990,10 +997,9 @@ class _ThumbnailPlaceholder extends StatelessWidget {
         ),
       ),
       child: const Center(
-        child: Icon(
-          Icons.play_circle_outline,
+        child: DivineIcon(
+          icon: DivineIconName.playCircle,
           color: VineTheme.whiteText,
-          size: 24,
         ),
       ),
     );
@@ -1050,7 +1056,10 @@ class _SoundVideoFeedOverlay extends ConsumerWidget {
                 children: [
                   // Close button
                   IconButton(
-                    icon: const Icon(Icons.close, color: VineTheme.whiteText),
+                    icon: const DivineIcon(
+                      icon: DivineIconName.x,
+                      color: VineTheme.whiteText,
+                    ),
                     onPressed: onClose,
                     tooltip: context.l10n.soundCloseTooltip,
                   ),
@@ -1060,8 +1069,8 @@ class _SoundVideoFeedOverlay extends ConsumerWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(
-                          Icons.music_note,
+                        const DivineIcon(
+                          icon: DivineIconName.musicNote,
                           color: VineTheme.vineGreen,
                           size: 18,
                         ),

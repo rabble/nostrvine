@@ -156,14 +156,14 @@ class _OriginalSoundHeader extends StatelessWidget {
             child: videoThumbnailUrl != null
                 ? VineCachedImage(
                     imageUrl: videoThumbnailUrl!,
-                    errorWidget: (_, _, _) => const Icon(
-                      Icons.music_note,
+                    errorWidget: (_, _, _) => const DivineIcon(
+                      icon: DivineIconName.musicNote,
                       color: VineTheme.vineGreen,
                       size: 28,
                     ),
                   )
-                : const Icon(
-                    Icons.music_note,
+                : const DivineIcon(
+                    icon: DivineIconName.musicNote,
                     color: VineTheme.vineGreen,
                     size: 28,
                   ),

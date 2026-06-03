@@ -125,6 +125,9 @@ Widget createTestWidget({required Widget child, List<dynamic>? overrides}) {
   );
 }
 
+Finder _divineIcon(DivineIconName name) =>
+    find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
+
 void main() {
   group('SoundDetailScreen', () {
     late _MockAudioPlaybackService mockAudioService;
@@ -427,7 +430,7 @@ void main() {
 
         await tester.pump();
 
-        expect(find.byIcon(Icons.music_note), findsOneWidget);
+        expect(_divineIcon(DivineIconName.musicNote), findsOneWidget);
       });
     });
 
@@ -477,7 +480,7 @@ void main() {
         await tester.pump();
 
         expect(find.text('Use Sound'), findsOneWidget);
-        expect(find.byIcon(Icons.add), findsOneWidget);
+        expect(_divineIcon(DivineIconName.plus), findsOneWidget);
       });
     });
 
@@ -788,7 +791,7 @@ void main() {
         await tester.pump();
 
         expect(find.text('Videos using this sound'), findsOneWidget);
-        expect(find.byIcon(Icons.videocam), findsOneWidget);
+        expect(_divineIcon(DivineIconName.videoCamera), findsOneWidget);
       });
 
       testWidgets('shows empty state when no videos', (tester) async {
@@ -953,10 +956,10 @@ void main() {
         await tester.pump();
 
         // Find music note icon and verify color
-        final musicIcon = find.byIcon(Icons.music_note);
+        final musicIcon = _divineIcon(DivineIconName.musicNote);
         expect(musicIcon, findsOneWidget);
 
-        final iconWidget = tester.widget<Icon>(musicIcon);
+        final iconWidget = tester.widget<DivineIcon>(musicIcon);
         expect(iconWidget.color, equals(VineTheme.vineGreen));
       });
 
@@ -1161,7 +1164,7 @@ void main() {
           await tester.pumpAndSettle();
 
           // The error body must actually be on screen (no fallback path).
-          expect(find.byIcon(Icons.error_outline), findsOneWidget);
+          expect(_divineIcon(DivineIconName.warningCircle), findsOneWidget);
           // No layout exception should have been thrown while building.
           expect(tester.takeException(), isNull);
         },

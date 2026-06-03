@@ -287,7 +287,10 @@ class _SearchInput extends StatelessWidget {
         decoration: InputDecoration(
           hintText: context.l10n.soundsSearchHint,
           hintStyle: const TextStyle(color: VineTheme.onSurfaceMuted),
-          prefixIcon: const Icon(Icons.search, color: VineTheme.onSurfaceMuted),
+          prefixIcon: const DivineIcon(
+            icon: DivineIconName.search,
+            color: VineTheme.onSurfaceMuted,
+          ),
           filled: true,
           fillColor: VineTheme.surfaceContainer,
           border: OutlineInputBorder(
@@ -344,8 +347,8 @@ class _SavedSoundsSection extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
-              const Icon(
-                Icons.music_note,
+              const DivineIcon(
+                icon: DivineIconName.musicNote,
                 color: VineTheme.vineGreen,
                 size: 20,
               ),

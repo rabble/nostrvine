@@ -135,10 +135,9 @@ class SoundTile extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
-                  Icons.music_note,
+                const DivineIcon(
+                  icon: DivineIconName.musicNote,
                   color: VineTheme.vineGreen,
-                  size: 24,
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -193,8 +192,8 @@ class SoundTile extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            const Icon(
-                              Icons.music_note,
+                            const DivineIcon(
+                              icon: DivineIconName.musicNote,
                               color: VineTheme.vineGreen,
                               size: 16,
                             ),
@@ -239,10 +238,9 @@ class SoundTile extends StatelessWidget {
                           button: true,
                           child: const Padding(
                             padding: EdgeInsets.all(8),
-                            child: Icon(
-                              Icons.chevron_right,
+                            child: DivineIcon(
+                              icon: DivineIconName.caretRight,
                               color: VineTheme.lightText,
-                              size: 24,
                             ),
                           ),
                         ),
