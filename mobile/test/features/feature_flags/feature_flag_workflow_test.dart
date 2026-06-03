@@ -16,6 +16,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockSharedPreferences extends Mock implements SharedPreferences {}
 
+Finder _divineIcon(DivineIconName name) =>
+    find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
+
 void main() {
   group('Feature Flag System Integration', () {
     late _MockSharedPreferences mockPrefs;
@@ -336,7 +339,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Look for override indicators (edit icons)
-      final editIcons = find.byIcon(Icons.edit);
+      final editIcons = _divineIcon(DivineIconName.pencilSimple);
       expect(editIcons, findsAtLeast(1));
 
       // Look for individual reset buttons

@@ -57,8 +57,8 @@ class _BannerContent extends StatelessWidget {
             ),
           ),
           IconButton(
-            icon: Icon(
-              Icons.close,
+            icon: DivineIcon(
+              icon: DivineIconName.x,
               size: 18,
               color: VineTheme.lightText.withValues(alpha: 0.6),
             ),

@@ -897,8 +897,8 @@ Future<void> _startOpenVineApp() async {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
-                  Icons.error_outline_rounded,
+                const DivineIcon(
+                  icon: DivineIconName.warningCircle,
                   color: VineTheme.accentOrange,
                   size: 48,
                 ),

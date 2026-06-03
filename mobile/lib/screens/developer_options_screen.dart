@@ -155,7 +155,10 @@ class _DeveloperOptionsScreenState
                     ),
                   ),
                   trailing: isSelected
-                      ? const Icon(Icons.check, color: VineTheme.vineGreen)
+                      ? const DivineIcon(
+                          icon: DivineIconName.check,
+                          color: VineTheme.vineGreen,
+                        )
                       : null,
                   onTap: () => _switchEnvironment(context, env, isSelected),
                 );
@@ -308,7 +311,10 @@ class _DeveloperOptionsScreenState
                     ),
                   ),
                   trailing: isSelected
-                      ? const Icon(Icons.check, color: VineTheme.vineGreen)
+                      ? const DivineIcon(
+                          icon: DivineIconName.check,
+                          color: VineTheme.vineGreen,
+                        )
                       : null,
                   onTap: () => _switchFormat(option.format),
                 );

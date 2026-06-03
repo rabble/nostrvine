@@ -150,7 +150,10 @@ class _AgeGateBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.lock_outline, color: VineTheme.onSurfaceMuted),
+          const DivineIcon(
+            icon: DivineIconName.lockSimple,
+            color: VineTheme.onSurfaceMuted,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(

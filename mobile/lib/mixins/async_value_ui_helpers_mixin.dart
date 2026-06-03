@@ -66,7 +66,11 @@ mixin AsyncValueUIHelpersMixin {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, color: VineTheme.error, size: 48),
+          const DivineIcon(
+            icon: DivineIconName.warningCircle,
+            color: VineTheme.error,
+            size: 48,
+          ),
           const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),

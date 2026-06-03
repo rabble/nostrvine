@@ -781,8 +781,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
               children: [
                 Row(
                   children: [
-                    const Icon(
-                      Icons.info_outline,
+                    const DivineIcon(
+                      icon: DivineIconName.info,
                       color: VineTheme.vineGreen,
                       size: 20,
                     ),
@@ -1185,8 +1185,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
-                    Icons.arrow_upward,
+                  const DivineIcon(
+                    icon: DivineIconName.arrowUp,
                     color: VineTheme.backgroundColor,
                     size: 18,
                   ),

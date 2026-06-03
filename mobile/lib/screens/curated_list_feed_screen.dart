@@ -180,7 +180,10 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
                 onPressed: () {
                   ref.invalidate(curatedListVideoEventsProvider(widget.listId));
                 },
-                icon: const Icon(Icons.refresh),
+                icon: const DivineIcon(
+                  icon: DivineIconName.arrowClockwise,
+                  color: VineTheme.backgroundColor,
+                ),
                 label: Text(context.l10n.commonRetry),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: VineTheme.vineGreen,
@@ -252,7 +255,10 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
                   color: VineTheme.scrim50,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.arrow_back, color: VineTheme.whiteText),
+                child: const DivineIcon(
+                  icon: DivineIconName.arrowLeft,
+                  color: VineTheme.whiteText,
+                ),
               ),
               onPressed: () {
                 setState(() {

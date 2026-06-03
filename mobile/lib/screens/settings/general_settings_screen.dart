@@ -59,8 +59,8 @@ class GeneralSettingsScreen extends ConsumerWidget {
                     context.l10n.settingsBlueskyPublishingSubtitle,
                     style: _subtitleStyle,
                   ),
-                  trailing: const Icon(
-                    Icons.chevron_right,
+                  trailing: const DivineIcon(
+                    icon: DivineIconName.caretRight,
                     color: VineTheme.lightText,
                   ),
                   onTap: () => context.push(BlueskySettingsScreen.path),
@@ -127,7 +127,10 @@ class _ClosedCaptionsToggle extends ConsumerWidget {
       ),
       subtitle: Text(context.l10n.generalSettingsClosedCaptionsSubtitle),
       activeThumbColor: VineTheme.vineGreen,
-      secondary: const Icon(Icons.closed_caption, color: VineTheme.vineGreen),
+      secondary: const DivineIcon(
+        icon: DivineIconName.closedCaptioning,
+        color: VineTheme.vineGreen,
+      ),
     );
   }
 }
@@ -147,10 +150,16 @@ class _FeedAspectRatioPreferenceTile extends ConsumerWidget {
     };
 
     return ListTile(
-      leading: const Icon(Icons.crop_square, color: VineTheme.vineGreen),
+      leading: const DivineIcon(
+        icon: DivineIconName.cropSquare,
+        color: VineTheme.vineGreen,
+      ),
       title: Text(context.l10n.generalSettingsVideoShape, style: _titleStyle),
       subtitle: Text(subtitle, style: _subtitleStyle),
-      trailing: const Icon(Icons.chevron_right, color: VineTheme.lightText),
+      trailing: const DivineIcon(
+        icon: DivineIconName.caretRight,
+        color: VineTheme.lightText,
+      ),
       onTap: () => _showPicker(context, service),
     );
   }
@@ -270,7 +279,10 @@ class _AudioSharingToggleState extends ConsumerState<_AudioSharingToggle> {
         style: _subtitleStyle,
       ),
       activeThumbColor: VineTheme.vineGreen,
-      secondary: const Icon(Icons.music_note, color: VineTheme.vineGreen),
+      secondary: const DivineIcon(
+        icon: DivineIconName.musicNote,
+        color: VineTheme.vineGreen,
+      ),
     );
   }
 }
@@ -323,10 +335,16 @@ class _AppLanguageTile extends StatelessWidget {
             : LocalePreferenceService.nativeNameFor(locale.languageCode);
 
         return ListTile(
-          leading: const Icon(Icons.language, color: VineTheme.vineGreen),
+          leading: const DivineIcon(
+            icon: DivineIconName.globe,
+            color: VineTheme.vineGreen,
+          ),
           title: Text(context.l10n.settingsAppLanguage, style: _titleStyle),
           subtitle: Text(subtitle, style: _subtitleStyle),
-          trailing: const Icon(Icons.chevron_right, color: VineTheme.lightText),
+          trailing: const DivineIcon(
+            icon: DivineIconName.caretRight,
+            color: VineTheme.lightText,
+          ),
           onTap: () => context.push(AppLanguageScreen.path),
         );
       },

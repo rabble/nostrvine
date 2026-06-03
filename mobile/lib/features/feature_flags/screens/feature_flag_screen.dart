@@ -81,8 +81,8 @@ class FeatureFlagScreen extends ConsumerWidget {
                                   padding: const EdgeInsetsDirectional.only(
                                     end: 8,
                                   ),
-                                  child: Icon(
-                                    Icons.edit,
+                                  child: DivineIcon(
+                                    icon: DivineIconName.pencilSimple,
                                     size: 16,
                                     color: Theme.of(
                                       context,

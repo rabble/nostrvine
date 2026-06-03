@@ -260,7 +260,11 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, color: VineTheme.error, size: 64),
+              const DivineIcon(
+                icon: DivineIconName.warningCircle,
+                color: VineTheme.error,
+                size: 64,
+              ),
               const SizedBox(height: 16),
               Text(
                 _error!,

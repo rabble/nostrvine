@@ -1,11 +1,15 @@
 // ABOUTME: TDD tests for AsyncValueUIHelpersMixin
 // ABOUTME: Verifies AsyncValue UI handling with consistent loading/error states
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/mixins/async_value_ui_helpers_mixin.dart';
+
+Finder _divineIcon(DivineIconName name) =>
+    find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
 
 void main() {
   group('AsyncValueUIHelpersMixin', () {
@@ -102,7 +106,7 @@ void main() {
           ),
         );
 
-        expect(find.byIcon(Icons.error_outline), findsOneWidget);
+        expect(_divineIcon(DivineIconName.warningCircle), findsOneWidget);
         expect(find.textContaining('Test error'), findsOneWidget);
       },
     );
@@ -131,7 +135,7 @@ void main() {
       );
 
       expect(find.text('Custom Error: Test error'), findsOneWidget);
-      expect(find.byIcon(Icons.error_outline), findsNothing);
+      expect(_divineIcon(DivineIconName.warningCircle), findsNothing);
     });
 
     testWidgets('SPEC: default loading widget should be centered', (
@@ -186,7 +190,7 @@ void main() {
         );
 
         // Should have error icon
-        expect(find.byIcon(Icons.error_outline), findsOneWidget);
+        expect(_divineIcon(DivineIconName.warningCircle), findsOneWidget);
 
         // Should have error message
         expect(find.textContaining('Network timeout'), findsOneWidget);

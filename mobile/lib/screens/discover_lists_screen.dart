@@ -442,7 +442,10 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: _streamPublicLists,
-              icon: const Icon(Icons.refresh),
+              icon: const DivineIcon(
+                icon: DivineIconName.arrowClockwise,
+                color: VineTheme.backgroundColor,
+              ),
               label: Text(context.l10n.commonRetry),
               style: ElevatedButton.styleFrom(
                 backgroundColor: VineTheme.vineGreen,
@@ -459,7 +462,11 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.search, size: 64, color: VineTheme.secondaryText),
+            const DivineIcon(
+              icon: DivineIconName.search,
+              size: 64,
+              color: VineTheme.secondaryText,
+            ),
             const SizedBox(height: 16),
             Text(
               context.l10n.discoverListsEmptyTitle,

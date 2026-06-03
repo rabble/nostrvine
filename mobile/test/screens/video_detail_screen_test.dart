@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
@@ -30,6 +31,9 @@ class _MockContentBlocklistRepository extends Mock
     implements ContentBlocklistRepository {}
 
 class _MockVideosRepository extends Mock implements VideosRepository {}
+
+Finder _divineIcon(DivineIconName name) =>
+    find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
 
 void main() {
   setUpAll(() {
@@ -341,7 +345,7 @@ void main() {
           await tester.pump();
 
           expect(find.text('Video not found'), findsOneWidget);
-          expect(find.byIcon(Icons.error_outline), findsOneWidget);
+          expect(_divineIcon(DivineIconName.warningCircle), findsOneWidget);
           expect(find.bySemanticsLabel('Close video player'), findsOneWidget);
         },
       );
@@ -412,7 +416,7 @@ void main() {
           await tester.pump();
 
           expect(find.textContaining('Failed to load video'), findsOneWidget);
-          expect(find.byIcon(Icons.error_outline), findsOneWidget);
+          expect(_divineIcon(DivineIconName.warningCircle), findsOneWidget);
           expect(find.bySemanticsLabel('Close video player'), findsOneWidget);
         },
       );

@@ -968,7 +968,10 @@ class _PostAnalyticsDetailScreen extends StatelessWidget {
                           side: const BorderSide(color: VineTheme.outlineMuted),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
-                        icon: const Icon(Icons.play_circle_outline),
+                        icon: const DivineIcon(
+                          icon: DivineIconName.playCircle,
+                          color: VineTheme.whiteText,
+                        ),
                         label: Text(context.l10n.analyticsOpenPost),
                       ),
                     ),

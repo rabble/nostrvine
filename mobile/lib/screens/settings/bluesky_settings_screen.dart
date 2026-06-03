@@ -183,7 +183,7 @@ class _ProvisioningStatus extends StatelessWidget {
     };
 
     return ListTile(
-      leading: Icon(Icons.info_outline, color: statusColor),
+      leading: DivineIcon(icon: DivineIconName.info, color: statusColor),
       title: Text(
         context.l10n.blueskyStatus,
         style: const TextStyle(

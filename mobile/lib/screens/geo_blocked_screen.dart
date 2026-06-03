@@ -22,7 +22,11 @@ class GeoBlockedScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // Icon
-                const Icon(Icons.block, size: 80, color: VineTheme.vineGreen),
+                const DivineIcon(
+                  icon: DivineIconName.prohibit,
+                  size: 80,
+                  color: VineTheme.vineGreen,
+                ),
                 const SizedBox(height: 32),
 
                 // Title

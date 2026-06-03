@@ -58,7 +58,10 @@ class _AccountContentLabelsTileView extends StatelessWidget {
                 : context.l10n.contentPreferencesAccountLabelsEmpty,
             style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
           ),
-          trailing: const Icon(Icons.chevron_right, color: VineTheme.lightText),
+          trailing: const DivineIcon(
+            icon: DivineIconName.caretRight,
+            color: VineTheme.lightText,
+          ),
           onTap: () => _selectLabels(context, state.labels),
         );
       },
