@@ -68,7 +68,6 @@ lib/widgets/global_upload_indicator.dart
 lib/widgets/hashtag_search_view.dart
 lib/widgets/library/sounds_tab.dart
 lib/widgets/new_videos_tab.dart
-lib/widgets/pooled_video_metrics_tracker.dart
 lib/widgets/popular_videos_tab.dart
 lib/widgets/profile/profile_collabs_grid.dart
 lib/widgets/profile/profile_header_widget.dart
