@@ -180,8 +180,8 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
   }
 }
 
-/// Error-safe network image widget that prevents HTTP 404 and other network exceptions
-/// Uses CachedNetworkImage which handles network errors more gracefully than Image.network
+/// Error-safe network image widget that prevents HTTP 404 and other network exceptions.
+/// Uses [VineCachedImage] for shared cache-backed loading where appropriate.
 class _SafeNetworkImage extends StatelessWidget {
   const _SafeNetworkImage({
     required this.url,
@@ -201,8 +201,8 @@ class _SafeNetworkImage extends StatelessWidget {
   final bool showPlayIcon;
   final BorderRadius? borderRadius;
 
-  // Toggle to test with plain Image.network instead of CachedNetworkImage
-  // Set to true to debug if the issue is with flutter_cache_manager
+  // Toggle to test with plain Image.network instead of VineCachedImage.
+  // Set to true to debug cache-manager behavior.
   static const bool _useSimpleImageNetwork = false;
 
   static bool _shouldBypassCacheManager(String url) {
@@ -211,7 +211,7 @@ class _SafeNetworkImage extends StatelessWidget {
 
     // Explore/grid thumbnails are predominantly served from Divine-owned,
     // immutable blob URLs. These load reliably with Image.network, while the
-    // CachedNetworkImage + custom cache manager path has been less reliable
+    // The shared cache-manager path has been less reliable
     // under concurrent grid loads on desktop.
     return host == 'divine.video' || host.endsWith('.divine.video');
   }

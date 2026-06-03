@@ -115,7 +115,7 @@ void main() {
         await tester.pumpWidget(createTestWidget(videoEvent: videoEventWithThumbnail));
         await tester.pump();
 
-        // Should show thumbnail as background layer (CachedNetworkImage)
+        // Should show thumbnail as background layer.
         expect(find.byType(Image), findsAtLeastNWidgets(1));
         
         // Should show loading indicator over thumbnail
@@ -347,7 +347,7 @@ void main() {
         await tester.pumpWidget(createTestWidget(videoEvent: gifEvent));
         await tester.pump();
 
-        // Should show CachedNetworkImage for GIF, not video player
+        // Should show image thumbnail for GIF, not video player.
         expect(find.byType(Image), findsAtLeastNWidgets(1));
         expect(find.byType(Chewie), findsNothing);
         
