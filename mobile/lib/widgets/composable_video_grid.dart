@@ -246,7 +246,10 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  const Icon(Icons.more_vert, color: VineTheme.whiteText),
+                  const DivineIcon(
+                    icon: DivineIconName.dotsThreeVertical,
+                    color: VineTheme.whiteText,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -260,8 +263,8 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
                   ),
                   IconButton(
                     onPressed: context.pop,
-                    icon: const Icon(
-                      Icons.close,
+                    icon: const DivineIcon(
+                      icon: DivineIconName.x,
                       color: VineTheme.secondaryText,
                     ),
                   ),
@@ -278,8 +281,8 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
                   color: VineTheme.cardBackground,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(
-                  Icons.edit,
+                child: const DivineIcon(
+                  icon: DivineIconName.pencilSimple,
                   color: VineTheme.vineGreen,
                   size: 20,
                 ),
@@ -313,8 +316,8 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
                   color: VineTheme.cardBackground,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(
-                  Icons.delete_outline,
+                child: const DivineIcon(
+                  icon: DivineIconName.trash,
                   color: VineTheme.error,
                   size: 20,
                 ),
@@ -525,8 +528,8 @@ class _VideoItem extends StatelessWidget {
                       color: VineTheme.vineGreen.withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: const Icon(
-                      Icons.collections,
+                    child: const DivineIcon(
+                      icon: DivineIconName.images,
                       size: 14,
                       color: VineTheme.whiteText,
                     ),

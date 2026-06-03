@@ -1,11 +1,15 @@
 // ABOUTME: Tests verifying that video thumbnails match the actual video aspect ratio from dimensions metadata
 // ABOUTME: Ensures thumbnails prevent visual jump when video loads by matching video dimensions
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
+
+Finder _divineIcon(DivineIconName name) =>
+    find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
 
 void main() {
   group('VideoThumbnailWidget Aspect Ratio', () {
@@ -137,7 +141,7 @@ void main() {
 
       // Verify play icon is present
       expect(
-        find.byIcon(Icons.play_arrow),
+        _divineIcon(DivineIconName.play),
         findsOneWidget,
         reason: 'Play icon should be visible on thumbnail',
       );

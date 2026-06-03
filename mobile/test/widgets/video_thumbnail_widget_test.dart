@@ -1,5 +1,6 @@
 import 'package:blurhash_service/blurhash_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
@@ -8,6 +9,9 @@ import 'package:openvine/widgets/blurhash_display.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 
 import '../test_data/video_test_data.dart';
+
+Finder _divineIcon(DivineIconName name) =>
+    find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
 
 void main() {
   group('VideoThumbnailWidget', () {
@@ -187,7 +191,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Should show play icon
-      expect(find.byIcon(Icons.play_arrow), findsOneWidget);
+      expect(_divineIcon(DivineIconName.play), findsOneWidget);
     });
 
     testWidgets('applies border radius when provided', (tester) async {

@@ -21,7 +21,11 @@ class ErrorMessage extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.error_outline, color: VineTheme.whiteText, size: 20),
+          const DivineIcon(
+            icon: DivineIconName.warningCircle,
+            color: VineTheme.whiteText,
+            size: 20,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(

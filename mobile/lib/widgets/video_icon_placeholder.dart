@@ -99,7 +99,11 @@ class _VideoIconPlaceholderState extends State<VideoIconPlaceholder>
         ? Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.play_circle_outline, size: 48, color: iconColor),
+              DivineIcon(
+                icon: DivineIconName.playCircle,
+                size: 48,
+                color: iconColor,
+              ),
               const SizedBox(height: 8),
               Text(
                 'Video',
@@ -146,7 +150,11 @@ class VideoIconPlaceholderCompact extends StatelessWidget {
         color: bgColor,
         borderRadius: BorderRadius.circular(4),
       ),
-      child: Icon(Icons.videocam, size: size * 0.6, color: iconColorValue),
+      child: DivineIcon(
+        icon: DivineIconName.videoCamera,
+        size: size * 0.6,
+        color: iconColorValue,
+      ),
     );
   }
 }

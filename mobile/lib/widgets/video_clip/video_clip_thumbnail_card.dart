@@ -171,7 +171,11 @@ class _ThumbnailState extends State<_Thumbnail> {
       );
     }
 
-    return const Icon(Icons.videocam, color: VineTheme.lightText, size: 32);
+    return const DivineIcon(
+      icon: DivineIconName.videoCamera,
+      color: VineTheme.lightText,
+      size: 32,
+    );
   }
 }
 

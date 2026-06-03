@@ -119,8 +119,8 @@ class _VideoMetricsOverlayState extends State<VideoMetricsOverlay> {
                               const Spacer(),
                               GestureDetector(
                                 onTap: _clearMetrics,
-                                child: const Icon(
-                                  Icons.clear,
+                                child: const DivineIcon(
+                                  icon: DivineIconName.x,
                                   color: VineTheme.lightText,
                                   size: 16,
                                 ),

@@ -52,7 +52,11 @@ class CameraFAB extends ConsumerWidget {
       },
       backgroundColor: VineTheme.vineGreen,
       foregroundColor: VineTheme.whiteText,
-      child: const Icon(Icons.videocam, size: 32),
+      child: const DivineIcon(
+        icon: DivineIconName.videoCamera,
+        size: 32,
+        color: VineTheme.whiteText,
+      ),
     );
   }
 }

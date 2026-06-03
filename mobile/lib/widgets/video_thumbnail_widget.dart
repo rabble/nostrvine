@@ -134,8 +134,8 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
                 color: VineTheme.backgroundColor.withValues(alpha: 0.6),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.play_arrow,
+              child: const DivineIcon(
+                icon: DivineIconName.play,
                 color: VineTheme.whiteText,
                 size: 32,
               ),

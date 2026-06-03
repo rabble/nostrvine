@@ -164,7 +164,11 @@ class _CreatorInfo extends ConsumerWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.person, color: VineTheme.onSurfaceVariant, size: 14),
+          const DivineIcon(
+            icon: DivineIconName.user,
+            color: VineTheme.onSurfaceVariant,
+            size: 14,
+          ),
           const SizedBox(width: 4),
           Flexible(
             child: Text(

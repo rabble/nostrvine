@@ -123,7 +123,11 @@ class _RelatedVideosWidgetState extends ConsumerState<RelatedVideosWidget> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline, color: VineTheme.error, size: 48),
+              DivineIcon(
+                icon: DivineIconName.warningCircle,
+                color: VineTheme.error,
+                size: 48,
+              ),
               SizedBox(height: 8),
               Text(
                 'Failed to load related videos',
