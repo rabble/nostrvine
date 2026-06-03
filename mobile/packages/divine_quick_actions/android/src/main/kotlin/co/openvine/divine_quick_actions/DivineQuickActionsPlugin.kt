@@ -1,14 +1,12 @@
 package co.openvine.divine_quick_actions
 
 import android.app.Activity
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ShortcutInfo
 import android.content.pm.ShortcutManager
 import android.graphics.drawable.Icon
 import android.os.Build
-import android.os.Bundle
 import android.os.PersistableBundle
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -80,8 +78,8 @@ class DivineQuickActionsPlugin :
     }
 
     override fun onNewIntent(intent: Intent): Boolean {
-        val action = actionFromIntent(intent) ?: return false
-        clearShortcutIntent(intent)
+        val action = QuickActionContract.actionFromIntent(intent) ?: return false
+        QuickActionContract.clearShortcutIntent(intent)
         activity?.intent = intent
         channel.invokeMethod("onQuickAction", action)
         return true
@@ -91,10 +89,10 @@ class DivineQuickActionsPlugin :
         activityBinding = binding
         activity = binding.activity
         binding.addOnNewIntentListener(this)
-        val launchAction = actionFromIntent(binding.activity.intent)
+        val launchAction = QuickActionContract.actionFromIntent(binding.activity.intent)
         if (launchAction != null) {
             pendingLaunchAction = launchAction
-            clearShortcutIntent(binding.activity.intent)
+            QuickActionContract.clearShortcutIntent(binding.activity.intent)
         }
     }
 
@@ -195,21 +193,10 @@ class DivineQuickActionsPlugin :
         type: String,
         payload: Map<String, String>
     ): Intent? {
-        val component = activity?.componentName ?: findLaunchComponent(context) ?: return null
-        val payloadBundle = Bundle()
-        payload.forEach { (key, value) -> payloadBundle.putString(key, value) }
-
-        return Intent(ACTION_QUICK_ACTION)
-            .setComponent(component)
-            .putExtra(EXTRA_ACTION_TYPE, type)
-            .putExtra(EXTRA_ACTION_PAYLOAD, payloadBundle)
-            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-    }
-
-    private fun findLaunchComponent(context: Context): ComponentName? {
-        return context.packageManager
-            .getLaunchIntentForPackage(context.packageName)
-            ?.component
+        val component = activity?.componentName
+            ?: QuickActionContract.findLaunchComponent(context)
+            ?: return null
+        return QuickActionContract.buildLaunchIntent(component, type, payload)
     }
 
     private fun findIcon(context: Context, iconName: String): Icon? {
@@ -225,24 +212,6 @@ class DivineQuickActionsPlugin :
             } ?: return null
 
         return Icon.createWithResource(context, resourceId)
-    }
-
-    private fun actionFromIntent(intent: Intent?): Map<String, Any>? {
-        if (intent?.action != ACTION_QUICK_ACTION) return null
-        val type = intent.getStringExtra(EXTRA_ACTION_TYPE) ?: return null
-        val payload = bundleToPayload(intent.getBundleExtra(EXTRA_ACTION_PAYLOAD))
-
-        return mapOf(
-            "type" to type,
-            "payload" to payload
-        )
-    }
-
-    private fun clearShortcutIntent(intent: Intent) {
-        if (intent.action != ACTION_QUICK_ACTION) return
-        intent.action = Intent.ACTION_MAIN
-        intent.removeExtra(EXTRA_ACTION_TYPE)
-        intent.removeExtra(EXTRA_ACTION_PAYLOAD)
     }
 
     private fun readActions(arguments: Any?): List<Map<*, *>>? {
@@ -270,18 +239,5 @@ class DivineQuickActionsPlugin :
         return bundle.keySet().mapNotNull { key ->
             bundle.getString(key)?.let { value -> key to value }
         }.toMap()
-    }
-
-    private fun bundleToPayload(bundle: Bundle?): Map<String, String> {
-        if (bundle == null) return emptyMap()
-        return bundle.keySet().mapNotNull { key ->
-            bundle.getString(key)?.let { value -> key to value }
-        }.toMap()
-    }
-
-    companion object {
-        private const val ACTION_QUICK_ACTION = "co.openvine.divine_quick_actions.ACTION_QUICK_ACTION"
-        private const val EXTRA_ACTION_TYPE = "co.openvine.divine_quick_actions.extra.ACTION_TYPE"
-        private const val EXTRA_ACTION_PAYLOAD = "co.openvine.divine_quick_actions.extra.ACTION_PAYLOAD"
     }
 }

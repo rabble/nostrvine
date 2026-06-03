@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="divine_quick_actions_camera_widget_name">Divine</string>
+    <string name="divine_quick_actions_camera_widget_open_camera">Open Divine camera</string>
+    <string name="divine_quick_actions_camera_widget_description">Open the Divine camera directly from your home screen.</string>
+</resources>
