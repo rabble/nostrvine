@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="divine_quick_actions_camera_widget_name">Divine</string>
+    <string name="divine_quick_actions_camera_widget_open_camera">Divine kamerasını aç</string>
+    <string name="divine_quick_actions_camera_widget_description">Divine kamerasını ana ekrandan doğrudan açar.</string>
+</resources>

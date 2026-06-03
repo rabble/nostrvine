@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="divine_quick_actions_camera_widget_name">Divine</string>
+    <string name="divine_quick_actions_camera_widget_open_camera">Ouvrir l\'appareil photo Divine</string>
+    <string name="divine_quick_actions_camera_widget_description">Ouvre l\'appareil photo Divine directement depuis l\'écran d\'accueil.</string>
+</resources>

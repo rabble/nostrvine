@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="divine_quick_actions_camera_widget_name">Divine</string>
+    <string name="divine_quick_actions_camera_widget_open_camera">Divineカメラを開く</string>
+    <string name="divine_quick_actions_camera_widget_description">ホーム画面からDivineカメラを直接開きます。</string>
+</resources>

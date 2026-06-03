@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="divine_quick_actions_camera_widget_name">Divine</string>
+    <string name="divine_quick_actions_camera_widget_open_camera">Отвори камерата на Divine</string>
+    <string name="divine_quick_actions_camera_widget_description">Отваря камерата на Divine директно от началния екран.</string>
+</resources>

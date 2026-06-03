@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="divine_quick_actions_camera_widget_name">Divine</string>
+    <string name="divine_quick_actions_camera_widget_open_camera">Apri fotocamera Divine</string>
+    <string name="divine_quick_actions_camera_widget_description">Apre la fotocamera Divine direttamente dalla schermata iniziale.</string>
+</resources>
