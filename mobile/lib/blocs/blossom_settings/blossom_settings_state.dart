@@ -4,6 +4,8 @@
 
 import 'package:equatable/equatable.dart';
 
+const _unset = Object();
+
 /// Lifecycle of the blossom settings screen.
 ///
 /// `saveSuccess` and `saveFailure` are terminal-for-this-attempt states the
@@ -54,14 +56,15 @@ class BlossomSettingsState extends Equatable {
     BlossomSettingsStatus? status,
     bool? isBlossomEnabled,
     String? initialServerUrl,
-    BlossomSaveFailureKey? saveFailureMessageKey,
+    Object? saveFailureMessageKey = _unset,
   }) {
     return BlossomSettingsState(
       status: status ?? this.status,
       isBlossomEnabled: isBlossomEnabled ?? this.isBlossomEnabled,
       initialServerUrl: initialServerUrl ?? this.initialServerUrl,
-      saveFailureMessageKey:
-          saveFailureMessageKey ?? this.saveFailureMessageKey,
+      saveFailureMessageKey: identical(saveFailureMessageKey, _unset)
+          ? this.saveFailureMessageKey
+          : saveFailureMessageKey as BlossomSaveFailureKey?,
     );
   }
 

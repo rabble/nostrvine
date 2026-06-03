@@ -189,6 +189,39 @@ void main() {
     );
 
     blocTest<BlossomSettingsCubit, BlossomSettingsState>(
+      'repeated validation failures emit a fresh saveFailure transition',
+      seed: () => const BlossomSettingsState(
+        status: BlossomSettingsStatus.ready,
+        isBlossomEnabled: true,
+      ),
+      build: buildCubit,
+      act: (cubit) async {
+        await cubit.save('http://example.com/blossom');
+        await cubit.save('http://example.com/blossom');
+      },
+      expect: () => [
+        const BlossomSettingsState(
+          status: BlossomSettingsStatus.saveFailure,
+          isBlossomEnabled: true,
+          saveFailureMessageKey: BlossomSaveFailureKey.mustUseHttps,
+        ),
+        const BlossomSettingsState(
+          status: BlossomSettingsStatus.ready,
+          isBlossomEnabled: true,
+        ),
+        const BlossomSettingsState(
+          status: BlossomSettingsStatus.saveFailure,
+          isBlossomEnabled: true,
+          saveFailureMessageKey: BlossomSaveFailureKey.mustUseHttps,
+        ),
+      ],
+      verify: (_) {
+        verifyNever(() => service.setBlossomEnabled(any()));
+        verifyNever(() => service.setBlossomServer(any()));
+      },
+    );
+
+    blocTest<BlossomSettingsCubit, BlossomSettingsState>(
       'save service failure emits genericFailure key + addError',
       seed: () => const BlossomSettingsState(
         status: BlossomSettingsStatus.ready,

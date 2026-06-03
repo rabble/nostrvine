@@ -71,6 +71,7 @@ class BlossomSettingsCubit extends Cubit<BlossomSettingsState> {
   /// [BlossomSaveFailureKey] the View maps to a localized snackbar.
   Future<void> save(String serverUrl) async {
     final trimmed = serverUrl.trim();
+    _resetPreviousSaveFailure();
     if (state.isBlossomEnabled && trimmed.isNotEmpty) {
       final validationError = _validateServerUrl(trimmed);
       if (validationError != null) {
@@ -102,6 +103,19 @@ class BlossomSettingsCubit extends Cubit<BlossomSettingsState> {
         ),
       );
     }
+  }
+
+  void _resetPreviousSaveFailure() {
+    if (state.status != BlossomSettingsStatus.saveFailure &&
+        state.saveFailureMessageKey == null) {
+      return;
+    }
+    emit(
+      state.copyWith(
+        status: BlossomSettingsStatus.ready,
+        saveFailureMessageKey: null,
+      ),
+    );
   }
 
   BlossomSaveFailureKey? _validateServerUrl(String raw) {
