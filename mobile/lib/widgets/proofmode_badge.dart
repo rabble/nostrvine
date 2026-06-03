@@ -179,8 +179,8 @@ class OriginalContentBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.check_circle,
+          DivineIcon(
+            icon: DivineIconName.checkCircle,
             size: dimensions.iconSize,
             color: VineTheme.whiteText,
           ),
@@ -481,8 +481,8 @@ class PossiblyAIBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.warning_amber,
+          DivineIcon(
+            icon: DivineIconName.warning,
             size: dimensions.iconSize,
             color: VineTheme.warning,
           ),

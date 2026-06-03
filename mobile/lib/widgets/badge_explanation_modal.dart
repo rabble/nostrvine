@@ -541,8 +541,10 @@ class _AIDetectionResultCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                isLikelyAI ? Icons.warning_amber : Icons.check_circle,
+              DivineIcon(
+                icon: isLikelyAI
+                    ? DivineIconName.warning
+                    : DivineIconName.checkCircle,
                 size: 16,
                 color: isLikelyAI ? VineTheme.warning : VineTheme.success,
               ),
@@ -585,7 +587,11 @@ class _AIDetectionResultCard extends StatelessWidget {
             const SizedBox(height: 4),
             Row(
               children: [
-                const Icon(Icons.verified, size: 12, color: VineTheme.info),
+                const DivineIcon(
+                  icon: DivineIconName.sealCheck,
+                  size: 12,
+                  color: VineTheme.info,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   context.l10n.badgeExplanationVerifiedByModerator,

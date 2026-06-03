@@ -89,8 +89,8 @@ class GlobalUploadIndicator extends ConsumerWidget {
               children: [
                 // Progress indicator or warning icon
                 if (hasFailedUploads)
-                  const Icon(
-                    Icons.warning_amber_rounded,
+                  const DivineIcon(
+                    icon: DivineIconName.warning,
                     color: VineTheme.whiteText,
                     size: 16,
                   )
@@ -132,8 +132,8 @@ class GlobalUploadIndicator extends ConsumerWidget {
                 // Chevron if multiple uploads
                 if (allUploads.length > 1) ...[
                   const SizedBox(width: 4),
-                  const Icon(
-                    Icons.chevron_right,
+                  const DivineIcon(
+                    icon: DivineIconName.caretRight,
                     color: VineTheme.onSurfaceVariant,
                     size: 16,
                   ),
@@ -219,8 +219,8 @@ class GlobalUploadIndicator extends ConsumerWidget {
                     ],
                   ),
                   IconButton(
-                    icon: const Icon(
-                      Icons.close,
+                    icon: const DivineIcon(
+                      icon: DivineIconName.x,
                       color: VineTheme.secondaryText,
                     ),
                     onPressed: context.pop,

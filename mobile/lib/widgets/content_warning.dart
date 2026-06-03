@@ -188,7 +188,11 @@ class _ContentWarningState extends State<ContentWarning>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.block, color: VineTheme.whiteText, size: 48),
+          const DivineIcon(
+            icon: DivineIconName.prohibit,
+            color: VineTheme.whiteText,
+            size: 48,
+          ),
           const SizedBox(height: 16),
           Text(
             context.l10n.contentWarningBlockedTitle,
@@ -394,8 +398,8 @@ class _VideoContentWarningState extends State<VideoContentWarning> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
-                  Icons.warning_amber,
+                const DivineIcon(
+                  icon: DivineIconName.warning,
                   color: VineTheme.whiteText,
                   size: 32,
                 ),

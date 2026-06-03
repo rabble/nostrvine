@@ -107,15 +107,24 @@ class UploadProgressIndicator extends StatelessWidget {
           ),
         );
       case UploadStatus.processing:
-        return const Icon(Icons.settings, color: VineTheme.info);
+        return const DivineIcon(
+          icon: DivineIconName.gearSix,
+          color: VineTheme.info,
+        );
       case UploadStatus.readyToPublish:
         return const Icon(Icons.publish, color: VineTheme.vineGreen);
       case UploadStatus.published:
-        return const Icon(Icons.check_circle, color: VineTheme.vineGreen);
+        return const DivineIcon(
+          icon: DivineIconName.checkCircle,
+          color: VineTheme.vineGreen,
+        );
       case UploadStatus.failed:
         return const Icon(Icons.error, color: VineTheme.error);
       case UploadStatus.paused:
-        return const Icon(Icons.pause_circle, color: VineTheme.warning);
+        return const DivineIcon(
+          icon: DivineIconName.pauseCircle,
+          color: VineTheme.warning,
+        );
     }
   }
 

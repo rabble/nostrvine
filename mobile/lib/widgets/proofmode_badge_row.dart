@@ -471,8 +471,10 @@ class _AICheckSectionState extends State<_AICheckSection> {
         children: [
           Row(
             children: [
-              Icon(
-                isLikelyHuman ? Icons.check_circle : Icons.warning_amber,
+              DivineIcon(
+                icon: isLikelyHuman
+                    ? DivineIconName.checkCircle
+                    : DivineIconName.warning,
                 size: 20,
                 color: isLikelyHuman ? VineTheme.success : VineTheme.warning,
               ),
@@ -527,7 +529,11 @@ class _AICheckSectionState extends State<_AICheckSection> {
             const SizedBox(height: 4),
             const Row(
               children: [
-                Icon(Icons.verified, size: 12, color: VineTheme.info),
+                DivineIcon(
+                  icon: DivineIconName.sealCheck,
+                  size: 12,
+                  color: VineTheme.info,
+                ),
                 SizedBox(width: 4),
                 Text(
                   'Confirmed by human moderator',

@@ -1,6 +1,7 @@
 // ABOUTME: Tests for Original Content badge display logic
 // ABOUTME: Verifies badge shows for original content (non-reposts) but not for reposts or vintage vines
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -38,8 +39,13 @@ void main() {
       // Assert - verify badge displays "Original" text
       expect(find.text('Original'), findsOneWidget);
 
-      // Assert - verify check_circle icon is present
-      expect(find.byIcon(Icons.check_circle), findsOneWidget);
+      // Assert - verify check-circle icon is present
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is DivineIcon && w.icon == DivineIconName.checkCircle,
+        ),
+        findsOneWidget,
+      );
     });
 
     test('VideoEvent.isOriginalContent returns true for non-repost', () {
