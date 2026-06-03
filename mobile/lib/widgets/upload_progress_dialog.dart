@@ -32,14 +32,28 @@ class UploadProgressDialog extends StatelessWidget {
       create: (_) => UploadProgressCubit(
         uploadId: uploadId,
         lookup: (id) => uploadManager.getUpload(id) as PendingUpload?,
-      )..start(),
+      ),
       child: const _UploadProgressView(),
     );
   }
 }
 
-class _UploadProgressView extends StatelessWidget {
+class _UploadProgressView extends StatefulWidget {
   const _UploadProgressView();
+
+  @override
+  State<_UploadProgressView> createState() => _UploadProgressViewState();
+}
+
+class _UploadProgressViewState extends State<_UploadProgressView> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<UploadProgressCubit>().start();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

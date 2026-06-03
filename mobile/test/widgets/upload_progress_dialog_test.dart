@@ -177,6 +177,36 @@ void main() {
       },
     );
 
+    testWidgets('dialog auto-closes when upload is already readyToPublish', (
+      WidgetTester tester,
+    ) async {
+      final goRouter = MockGoRouter();
+      final mockUpload = PendingUpload.create(
+        localVideoPath: '/test/video.mp4',
+        nostrPubkey: 'test_pubkey',
+      ).copyWith(status: UploadStatus.readyToPublish, uploadProgress: 1);
+      final mockManager = MockUploadManager(mockUpload: mockUpload);
+
+      await tester.pumpWidget(
+        MockGoRouterProvider(
+          goRouter: goRouter,
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: UploadProgressDialog(
+                uploadId: mockUpload.id,
+                uploadManager: mockManager,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      verify(goRouter.pop).called(1);
+    });
+
     testWidgets('dialog polls UploadManager every 500ms for status updates', (
       WidgetTester tester,
     ) async {

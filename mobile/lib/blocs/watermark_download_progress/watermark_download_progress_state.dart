@@ -18,11 +18,10 @@ class WatermarkDownloadProgressState extends Equatable {
     WatermarkDownloadStage? stage,
     WatermarkDownloadResult? result,
     bool? isProcessing,
-    bool clearResult = false,
   }) {
     return WatermarkDownloadProgressState(
       stage: stage ?? this.stage,
-      result: clearResult ? null : (result ?? this.result),
+      result: result ?? this.result,
       isProcessing: isProcessing ?? this.isProcessing,
     );
   }

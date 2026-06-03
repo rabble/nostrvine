@@ -41,6 +41,7 @@ class SaveOriginalProgressCubit extends Cubit<SaveOriginalProgressState> {
   /// Reset state to the initial downloading-spinner view. The View calls
   /// this on resume-after-Settings to retry the save flow.
   void reset() {
+    if (isClosed) return;
     emit(const SaveOriginalProgressState());
   }
 }

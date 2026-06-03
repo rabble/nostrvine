@@ -23,11 +23,10 @@ class SaveOriginalProgressState extends Equatable {
     OriginalSaveStage? stage,
     WatermarkDownloadResult? result,
     bool? isProcessing,
-    bool clearResult = false,
   }) {
     return SaveOriginalProgressState(
       stage: stage ?? this.stage,
-      result: clearResult ? null : (result ?? this.result),
+      result: result ?? this.result,
       isProcessing: isProcessing ?? this.isProcessing,
     );
   }

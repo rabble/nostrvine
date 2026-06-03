@@ -36,6 +36,7 @@ class WatermarkDownloadProgressCubit
 
   /// Retry-after-Settings hook used by the View's lifecycle observer.
   void reset() {
+    if (isClosed) return;
     emit(const WatermarkDownloadProgressState());
   }
 }
