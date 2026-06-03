@@ -118,6 +118,9 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
   Future<void> animateToPage(int index) =>
       _feedKey.currentState?.animateToPage(index) ?? Future.value();
 
+  Future<void> _retryPooledVideoAt(int index) =>
+      _feedKey.currentState?.retryAt(index) ?? Future.value();
+
   @override
   void didUpdateWidget(covariant FeedVideos oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -300,6 +303,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
               ref: ref,
               video: video,
               index: index,
+              retryPlayback: () => _retryPooledVideoAt(index),
             ),
             errorType: errorType,
             shouldPortraitExpand: widget.shouldPortraitExpand,
@@ -452,6 +456,7 @@ class __OverlayState extends ConsumerState<_Overlay> {
       ref: ref,
       video: widget.video,
       index: widget.index,
+      retryPlayback: () => _feedState?.retryAt(widget.index) ?? Future.value(),
     );
   }
 
@@ -851,6 +856,11 @@ class _FeedLoadingOrRestrictedOverlayView extends ConsumerWidget {
           ref: ref,
           video: video,
           index: index,
+          retryPlayback: () =>
+              context
+                  .findAncestorStateOfType<InfiniteVideoFeedState>()
+                  ?.retryAt(index) ??
+              Future.value(),
         ),
         errorType: VideoErrorType.notFound,
         shouldPortraitExpand: shouldPortraitExpand,

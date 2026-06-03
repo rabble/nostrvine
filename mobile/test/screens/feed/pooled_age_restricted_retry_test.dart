@@ -1,0 +1,164 @@
+// ABOUTME: Tests age-verification retry wiring for pooled native feed videos.
+// ABOUTME: Verifies successful auth triggers playback reload and clears gate state.
+
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
+import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
+import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/feed/pooled_age_restricted_retry.dart';
+import 'package:openvine/services/media_auth_interceptor.dart';
+
+class _MockMediaAuthInterceptor extends Mock implements MediaAuthInterceptor {}
+
+class _FakeBuildContext extends Fake implements BuildContext {}
+
+const _videoId =
+    'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234';
+const _pubkey =
+    'd4e5f6789012345678901234567890abcdef123456789012345678901234a1b2c3';
+const _sha256 =
+    'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210';
+const _videoUrl = 'https://media.divine.video/$_sha256/720p.mp4';
+
+void main() {
+  setUpAll(() {
+    registerFallbackValue(_FakeBuildContext());
+  });
+
+  group('retryAgeRestrictedPooledVideo', () {
+    testWidgets('retries playback and clears status after auth succeeds', (
+      tester,
+    ) async {
+      final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+      final playbackStatusCubit = VideoPlaybackStatusCubit();
+      var retryCount = 0;
+      addTearDown(playbackStatusCubit.close);
+
+      when(
+        () => mediaAuthInterceptor.handleUnauthorizedMedia(
+          context: any(named: 'context'),
+          sha256Hash: _sha256,
+          url: _videoUrl,
+          serverUrl: 'https://media.divine.video',
+          category: 'video',
+        ),
+      ).thenAnswer((_) async => {'Authorization': 'Nostr token'});
+
+      await tester.pumpWidget(
+        _RetryHarness(
+          mediaAuthInterceptor: mediaAuthInterceptor,
+          playbackStatusCubit: playbackStatusCubit,
+          retryPlayback: () => retryCount++,
+        ),
+      );
+
+      playbackStatusCubit.report(_videoId, PlaybackStatus.ageRestricted);
+      expect(
+        playbackStatusCubit.state.statusFor(_videoId),
+        PlaybackStatus.ageRestricted,
+      );
+
+      await tester.tap(find.text('Verify'));
+      await tester.pump();
+
+      expect(retryCount, 1);
+      expect(
+        playbackStatusCubit.state.statusFor(_videoId),
+        PlaybackStatus.ready,
+      );
+    });
+
+    testWidgets('keeps gate state when auth is cancelled', (tester) async {
+      final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+      final playbackStatusCubit = VideoPlaybackStatusCubit();
+      var retryCount = 0;
+      addTearDown(playbackStatusCubit.close);
+
+      when(
+        () => mediaAuthInterceptor.handleUnauthorizedMedia(
+          context: any(named: 'context'),
+          sha256Hash: _sha256,
+          url: _videoUrl,
+          serverUrl: 'https://media.divine.video',
+          category: 'video',
+        ),
+      ).thenAnswer((_) async => null);
+
+      await tester.pumpWidget(
+        _RetryHarness(
+          mediaAuthInterceptor: mediaAuthInterceptor,
+          playbackStatusCubit: playbackStatusCubit,
+          retryPlayback: () => retryCount++,
+        ),
+      );
+
+      playbackStatusCubit.report(_videoId, PlaybackStatus.ageRestricted);
+
+      await tester.tap(find.text('Verify'));
+      await tester.pump();
+
+      expect(retryCount, 0);
+      expect(
+        playbackStatusCubit.state.statusFor(_videoId),
+        PlaybackStatus.ageRestricted,
+      );
+    });
+  });
+}
+
+class _RetryHarness extends StatelessWidget {
+  const _RetryHarness({
+    required this.mediaAuthInterceptor,
+    required this.playbackStatusCubit,
+    required this.retryPlayback,
+  });
+
+  final MediaAuthInterceptor mediaAuthInterceptor;
+  final VideoPlaybackStatusCubit playbackStatusCubit;
+  final VoidCallback retryPlayback;
+
+  @override
+  Widget build(BuildContext context) {
+    return ProviderScope(
+      overrides: [
+        mediaAuthInterceptorProvider.overrideWithValue(mediaAuthInterceptor),
+      ],
+      child: BlocProvider<VideoPlaybackStatusCubit>.value(
+        value: playbackStatusCubit,
+        child: MaterialApp(
+          home: Scaffold(
+            body: Consumer(
+              builder: (context, ref, _) {
+                return TextButton(
+                  onPressed: () => retryAgeRestrictedPooledVideo(
+                    context: context,
+                    ref: ref,
+                    video: _video,
+                    index: 0,
+                    retryPlayback: retryPlayback,
+                  ),
+                  child: const Text('Verify'),
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+final _video = VideoEvent(
+  id: _videoId,
+  pubkey: _pubkey,
+  createdAt: 1704067200,
+  content: 'Test video',
+  timestamp: DateTime.fromMillisecondsSinceEpoch(1704067200 * 1000),
+  videoUrl: _videoUrl,
+  sha256: _sha256,
+);

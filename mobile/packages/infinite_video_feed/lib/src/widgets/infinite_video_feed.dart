@@ -871,6 +871,10 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   // coverage:ignore-start
   // Manual retry delegates back into native controller init, which is not
   // executable in package tests without platform players.
+  /// Retries the video at [index] by clearing its current controller state and
+  /// reinitializing it from the network.
+  Future<void> retryAt(int index) => _retryController(index);
+
   Future<void> _retryController(int index) async {
     _errors.remove(index);
     _errorTypes.remove(index);

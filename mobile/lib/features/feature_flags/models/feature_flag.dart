@@ -34,11 +34,6 @@ enum FeatureFlag {
     'Account Switching',
     'Enable switching between remembered accounts in Settings',
   ),
-  hlsAuthWebPlayer(
-    'HLS + NIP-98 Web Player',
-    'Route web video playback through hls.js with NIP-98 auth headers so '
-        'age-gated and other 401-protected media can be viewed on web',
-  ),
   profileListFeatures(
     'Profile List Features',
     'Enable people list creation from profiles and people list results in search (NIP-51 kind 30000)',

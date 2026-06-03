@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +18,7 @@ Future<void> retryAgeRestrictedPooledVideo({
   required WidgetRef ref,
   required VideoEvent video,
   required int index,
+  required FutureOr<void> Function() retryPlayback,
 }) async {
   final videoUrl = video.videoUrl;
   if (videoUrl == null || videoUrl.isEmpty) {
@@ -41,7 +44,9 @@ Future<void> retryAgeRestrictedPooledVideo({
     return;
   }
 
-  context.read<VideoPlaybackStatusCubit>().report(
+  final playbackStatusCubit = context.read<VideoPlaybackStatusCubit>();
+  unawaited(Future<void>.sync(retryPlayback));
+  playbackStatusCubit.report(
     video.id,
     PlaybackStatus.ready,
   );
