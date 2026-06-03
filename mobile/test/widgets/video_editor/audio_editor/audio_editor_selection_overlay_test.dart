@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_editor_selection_overlay.dart';
 import 'package:sound_service/sound_service.dart';
 
@@ -53,6 +54,7 @@ void main() {
       required AudioEvent audio,
       VoidCallback? onTogglePlayState,
       VoidCallback? onTapDone,
+      bool isLoading = false,
     }) {
       return MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -63,6 +65,7 @@ void main() {
             audioService: audioService,
             onTogglePlayState: onTogglePlayState ?? () {},
             onTapDone: onTapDone ?? () {},
+            isLoading: isLoading,
           ),
         ),
       );
@@ -147,6 +150,27 @@ void main() {
 
         expect(done, isTrue);
       });
+
+      testWidgets('disables done while audio is loading', (tester) async {
+        var done = false;
+        await tester.pumpWidget(
+          buildWidget(
+            audio: _createTestAudio(title: 'Track'),
+            onTapDone: () => done = true,
+            isLoading: true,
+          ),
+        );
+        await tester.pump();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(
+          find.bySemanticsLabel(l10n.videoEditorDoneSemanticLabel),
+          warnIfMissed: false,
+        );
+        await tester.pump();
+
+        expect(done, isFalse);
+      });
     });
 
     group('Playing state', () {
@@ -165,6 +189,24 @@ void main() {
         expect(
           find.bySemanticsLabel(l10n.videoEditorAudioPausePreviewSemanticLabel),
           findsOneWidget,
+        );
+      });
+    });
+
+    group('Loading state', () {
+      testWidgets('shows loading indicator instead of play control', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(audio: _createTestAudio(title: 'Track'), isLoading: true),
+        );
+        await tester.pump();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
+        expect(
+          find.bySemanticsLabel(l10n.videoEditorAudioPlayPreviewSemanticLabel),
+          findsNothing,
         );
       });
     });

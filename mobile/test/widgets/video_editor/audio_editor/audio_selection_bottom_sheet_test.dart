@@ -8,6 +8,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/saved_sounds_provider.dart';
@@ -18,6 +19,7 @@ import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_category_bar.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_list_tile.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_selection_bottom_sheet.dart';
+import 'package:sound_service/sound_service.dart';
 
 AudioEvent _createTestAudioEvent({
   String id = 'test-sound-id',
@@ -42,6 +44,8 @@ AudioEvent _createTestAudioEvent({
 Finder _divineIcon(DivineIconName name) =>
     find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
 
+class _MockAudioPlaybackService extends Mock implements AudioPlaybackService {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -60,6 +64,7 @@ void main() {
       AsyncValue<List<AudioEvent>>? trendingSoundsAsync,
       List<AudioEvent> savedSounds = const [],
       List<VineSound> bundledSounds = const [],
+      AudioPlaybackService? audioService,
     }) {
       return ProviderScope(
         overrides: [
@@ -78,7 +83,10 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: AudioSelectionBottomSheet(scrollController: scrollController),
+            body: AudioSelectionBottomSheet(
+              scrollController: scrollController,
+              audioService: audioService,
+            ),
           ),
         ),
       );
@@ -220,6 +228,63 @@ void main() {
         await tester.pump(const Duration(milliseconds: 500));
 
         expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
+      });
+
+      testWidgets('shows selected-audio loading before stop completes', (
+        tester,
+      ) async {
+        final audioService = _MockAudioPlaybackService();
+        final stopCompleter = Completer<void>();
+        final sound = _createTestAudioEvent(title: 'Slow Load');
+        Future<void> completeImmediately(Invocation _) => Future<void>.value();
+        Future<Duration> loadDuration(Invocation _) =>
+            Future.value(const Duration(seconds: 5));
+        Future<void> waitForStop(Invocation _) => stopCompleter.future;
+
+        when(() => audioService.isPlaying).thenReturn(false);
+        when(
+          () => audioService.playingStream,
+        ).thenAnswer((_) => const Stream<bool>.empty());
+        when(
+          () => audioService.durationStream,
+        ).thenAnswer((_) => const Stream<Duration?>.empty());
+        when(
+          () => audioService.positionStream,
+        ).thenAnswer((_) => const Stream<Duration>.empty());
+        when(() => audioService.duration).thenReturn(null);
+        when(
+          () => audioService.seek(Duration.zero),
+        ).thenAnswer(completeImmediately);
+        when(audioService.stop).thenAnswer(waitForStop);
+        when(
+          () => audioService.loadAudio(sound.url!),
+        ).thenAnswer(loadDuration);
+        when(audioService.play).thenAnswer(completeImmediately);
+        when(audioService.pause).thenAnswer(completeImmediately);
+        when(audioService.dispose).thenAnswer(completeImmediately);
+
+        await tester.pumpWidget(
+          buildWidget(
+            trendingSoundsAsync: AsyncValue.data([sound]),
+            audioService: audioService,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.videoEditorAudioCategoryCommunity));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Slow Load'));
+        await tester.pump();
+
+        expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
+        verifyNever(() => audioService.loadAudio(sound.url!));
+
+        stopCompleter.complete();
+        await tester.pumpAndSettle();
+
+        verify(() => audioService.loadAudio(sound.url!)).called(1);
       });
     });
 

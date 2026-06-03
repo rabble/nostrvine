@@ -273,6 +273,52 @@ void main() {
       expect(find.byType(VideoAudioEditorTimingScreen), findsOneWidget);
     });
 
+    testWidgets(
+      'shrinks the selected segment to the remaining audio tail at max offset',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1200);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final sound = _createTestAudioEvent(
+          title: 'Tail Track',
+          duration: 10.0,
+        );
+
+        await tester.pumpWidget(buildWidget(sound: sound));
+        await tester.pump();
+
+        await tester.drag(
+          find.byKey(VideoAudioEditorTimingScreen.videoDurationSegmentKey),
+          const Offset(1000, 0),
+        );
+        await tester.pump();
+
+        const screenWidth = 800.0 - 32.0;
+        const expectedTailWidth = screenWidth * (0.5 / 10.0);
+
+        expect(
+          tester
+              .getSize(
+                find.byKey(
+                  VideoAudioEditorTimingScreen.videoDurationSegmentKey,
+                ),
+              )
+              .width,
+          closeTo(expectedTailWidth, 0.1),
+        );
+        expect(
+          tester
+              .getSize(
+                find.byKey(VideoAudioEditorTimingScreen.waveformSelectionKey),
+              )
+              .width,
+          closeTo(expectedTailWidth, 0.1),
+        );
+      },
+    );
+
     testWidgets('has route name and path constants', (tester) async {
       expect(
         VideoAudioEditorTimingScreen.routeName,

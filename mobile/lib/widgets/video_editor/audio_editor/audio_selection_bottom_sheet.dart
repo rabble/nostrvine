@@ -37,12 +37,14 @@ class AudioSelectionBottomSheet extends ConsumerStatefulWidget {
     required this.scrollController,
     this.localAudioImportService,
     this.pickAudioFile,
+    @visibleForTesting this.audioService,
     super.key,
   });
 
   final ScrollController scrollController;
   final LocalAudioImportService? localAudioImportService;
   final Future<FilePickerResult?> Function()? pickAudioFile;
+  final AudioPlaybackService? audioService;
 
   static Future<AudioEvent?> show(BuildContext context) {
     return VineBottomSheet.show<AudioEvent>(
@@ -95,7 +97,7 @@ class AudioSelectionBottomSheet extends ConsumerStatefulWidget {
 class _AudioSelectionBottomSheetState
     extends ConsumerState<AudioSelectionBottomSheet>
     with SingleTickerProviderStateMixin {
-  final _audioService = AudioPlaybackService();
+  late final AudioPlaybackService _audioService;
   final _searchController = TextEditingController();
   String? _loadedSoundId;
   AudioEvent? _selectedItem;
@@ -111,6 +113,7 @@ class _AudioSelectionBottomSheetState
   @override
   void initState() {
     super.initState();
+    _audioService = widget.audioService ?? AudioPlaybackService();
     _tabController.addListener(_onTabChanged);
   }
 
@@ -188,8 +191,8 @@ class _AudioSelectionBottomSheetState
       await _audioService.seek(.zero);
       var resolvedSound = sound;
       if (shouldReload) {
-        await _audioService.stop();
         if (mounted) setState(() => _isLoadingAudio = true);
+        await _audioService.stop();
         try {
           final loadedDuration =
               sound.isLocalImport && sound.localFilePath != null

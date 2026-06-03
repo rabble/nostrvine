@@ -76,6 +76,16 @@ class VideoAudioEditorTimingScreen extends StatefulWidget {
   /// Route path.
   static const path = '/video-audio-timing';
 
+  @visibleForTesting
+  static const videoDurationSegmentKey = Key(
+    'video-audio-timing-video-duration-segment',
+  );
+
+  @visibleForTesting
+  static const waveformSelectionKey = Key(
+    'video-audio-timing-waveform-selection',
+  );
+
   @override
   State<VideoAudioEditorTimingScreen> createState() =>
       _VideoAudioEditorTimingScreenState();
@@ -475,6 +485,7 @@ class _VideoDurationTimeline extends StatelessWidget {
                   Positioned(
                     left: segmentLeft,
                     child: Container(
+                      key: VideoAudioEditorTimingScreen.videoDurationSegmentKey,
                       width: effectiveSegmentWidth,
                       height: 8,
                       decoration: BoxDecoration(
@@ -637,6 +648,7 @@ class _AudioWaveformSelector extends StatelessWidget {
                     top: 0,
                     bottom: 0,
                     child: Container(
+                      key: VideoAudioEditorTimingScreen.waveformSelectionKey,
                       width: effectiveSelectionWidth,
                       decoration: BoxDecoration(
                         color: VineTheme.primary,
