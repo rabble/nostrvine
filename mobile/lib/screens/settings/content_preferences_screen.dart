@@ -398,11 +398,6 @@ class _AudioDeviceSelectorTile extends StatelessWidget {
     return _formatAudioDeviceName(context, match.first.name);
   }
 
-  String _formatAudioDeviceName(BuildContext context, String name) {
-    if (name.isEmpty) return context.l10n.contentPreferencesUnknownMicrophone;
-    return name;
-  }
-
   Future<void> _showAudioDevicePicker(
     BuildContext context, {
     required List<AudioDevice> devices,
@@ -416,76 +411,99 @@ class _AudioDeviceSelectorTile extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                sheetContext.l10n.contentPreferencesSelectAudioInput,
-                style: const TextStyle(
-                  color: VineTheme.whiteText,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const Divider(color: VineTheme.lightText, height: 1),
-            ListTile(
-              leading: Icon(
-                currentDeviceId == null
-                    ? Icons.radio_button_checked
-                    : Icons.radio_button_off,
-                color: VineTheme.vineGreen,
-              ),
-              title: Text(
-                sheetContext.l10n.contentPreferencesAutoRecommended,
-                style: const TextStyle(color: VineTheme.whiteText),
-              ),
-              subtitle: Text(
-                sheetContext.l10n.contentPreferencesAutoSelectsBest,
-                style: const TextStyle(
-                  color: VineTheme.lightText,
-                  fontSize: 12,
-                ),
-              ),
-              onTap: () async {
-                await cubit.setDeviceId(null);
-                if (sheetContext.mounted) Navigator.pop(sheetContext);
-              },
-            ),
-            const Divider(color: VineTheme.lightText, height: 1),
-            ...devices.map(
-              (device) => ListTile(
-                leading: Icon(
-                  currentDeviceId == device.id
-                      ? Icons.radio_button_checked
-                      : Icons.radio_button_off,
-                  color: VineTheme.vineGreen,
-                ),
-                title: Text(
-                  _formatAudioDeviceName(sheetContext, device.name),
-                  style: const TextStyle(color: VineTheme.whiteText),
-                ),
-                subtitle: Text(
-                  device.id,
-                  style: const TextStyle(
-                    color: VineTheme.lightText,
-                    fontSize: 11,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                onTap: () async {
-                  await cubit.setDeviceId(device.id);
-                  if (sheetContext.mounted) Navigator.pop(sheetContext);
-                },
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
+        child: _AudioDevicePickerContent(
+          devices: devices,
+          currentDeviceId: currentDeviceId,
+          onUseAuto: () async {
+            await cubit.setDeviceId(null);
+            if (sheetContext.mounted) Navigator.pop(sheetContext);
+          },
+          onSelectDevice: (deviceId) async {
+            await cubit.setDeviceId(deviceId);
+            if (sheetContext.mounted) Navigator.pop(sheetContext);
+          },
         ),
       ),
     );
   }
+}
+
+class _AudioDevicePickerContent extends StatelessWidget {
+  const _AudioDevicePickerContent({
+    required this.devices,
+    required this.currentDeviceId,
+    required this.onUseAuto,
+    required this.onSelectDevice,
+  });
+
+  final List<AudioDevice> devices;
+  final String? currentDeviceId;
+  final VoidCallback onUseAuto;
+  final ValueChanged<String> onSelectDevice;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            context.l10n.contentPreferencesSelectAudioInput,
+            style: const TextStyle(
+              color: VineTheme.whiteText,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        const Divider(color: VineTheme.lightText, height: 1),
+        ListTile(
+          leading: Icon(
+            currentDeviceId == null
+                ? Icons.radio_button_checked
+                : Icons.radio_button_off,
+            color: VineTheme.vineGreen,
+          ),
+          title: Text(
+            context.l10n.contentPreferencesAutoRecommended,
+            style: const TextStyle(color: VineTheme.whiteText),
+          ),
+          subtitle: Text(
+            context.l10n.contentPreferencesAutoSelectsBest,
+            style: const TextStyle(color: VineTheme.lightText, fontSize: 12),
+          ),
+          onTap: onUseAuto,
+        ),
+        const Divider(color: VineTheme.lightText, height: 1),
+        ...devices.map(
+          (device) => ListTile(
+            leading: Icon(
+              currentDeviceId == device.id
+                  ? Icons.radio_button_checked
+                  : Icons.radio_button_off,
+              color: VineTheme.vineGreen,
+            ),
+            title: Text(
+              _formatAudioDeviceName(context, device.name),
+              style: const TextStyle(color: VineTheme.whiteText),
+            ),
+            subtitle: Text(
+              device.id,
+              style: const TextStyle(color: VineTheme.lightText, fontSize: 11),
+              overflow: TextOverflow.ellipsis,
+            ),
+            onTap: () => onSelectDevice(device.id),
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+}
+
+String _formatAudioDeviceName(BuildContext context, String name) {
+  if (name.isEmpty) return context.l10n.contentPreferencesUnknownMicrophone;
+  return name;
 }

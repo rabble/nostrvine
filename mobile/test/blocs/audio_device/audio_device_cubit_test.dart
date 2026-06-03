@@ -17,6 +17,7 @@ void main() {
 
     setUp(() {
       service = _MockAudioDevicePreferenceService();
+      when(() => service.initialize()).thenAnswer((_) async {});
       when(() => service.preferredDeviceId).thenReturn(null);
       when(() => service.setPreferredDeviceId(any())).thenAnswer((_) async {});
     });
@@ -30,6 +31,9 @@ void main() {
       expect: () => [
         const AudioDeviceState(status: AudioDeviceStatus.ready),
       ],
+      verify: (_) {
+        verify(() => service.initialize()).called(1);
+      },
     );
 
     blocTest<AudioDeviceCubit, AudioDeviceState>(
@@ -52,10 +56,35 @@ void main() {
       seed: () => const AudioDeviceState(status: AudioDeviceStatus.ready),
       build: buildCubit,
       act: (cubit) => cubit.setDeviceId('mic-2'),
+      setUp: () {
+        when(() => service.preferredDeviceId).thenReturn('mic-2');
+      },
       expect: () => [
         const AudioDeviceState(
           status: AudioDeviceStatus.ready,
           currentDeviceId: 'mic-2',
+        ),
+      ],
+      verify: (_) {
+        verify(() => service.setPreferredDeviceId('mic-2')).called(1);
+      },
+    );
+
+    blocTest<AudioDeviceCubit, AudioDeviceState>(
+      'setDeviceId emits the post-write service snapshot',
+      seed: () => const AudioDeviceState(
+        status: AudioDeviceStatus.ready,
+        currentDeviceId: 'mic-2',
+      ),
+      setUp: () {
+        when(() => service.preferredDeviceId).thenReturn('mic-1');
+      },
+      build: buildCubit,
+      act: (cubit) => cubit.setDeviceId('mic-2'),
+      expect: () => [
+        const AudioDeviceState(
+          status: AudioDeviceStatus.ready,
+          currentDeviceId: 'mic-1',
         ),
       ],
       verify: (_) {

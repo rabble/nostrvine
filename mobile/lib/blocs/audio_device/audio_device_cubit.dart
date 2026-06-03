@@ -21,22 +21,23 @@ class AudioDeviceCubit extends Cubit<AudioDeviceState> {
 
   final AudioDevicePreferenceService _service;
 
-  void load() {
-    emit(
-      state.copyWith(
-        status: AudioDeviceStatus.ready,
-        currentDeviceId: _service.preferredDeviceId,
-        clearDeviceId: _service.preferredDeviceId == null,
-      ),
-    );
+  Future<void> load() async {
+    await _service.initialize();
+    _emitSnapshot();
   }
 
   Future<void> setDeviceId(String? deviceId) async {
     await _service.setPreferredDeviceId(deviceId);
+    _emitSnapshot();
+  }
+
+  void _emitSnapshot() {
+    final preferredDeviceId = _service.preferredDeviceId;
     emit(
       state.copyWith(
-        currentDeviceId: deviceId,
-        clearDeviceId: deviceId == null,
+        status: AudioDeviceStatus.ready,
+        currentDeviceId: preferredDeviceId,
+        clearDeviceId: preferredDeviceId == null,
       ),
     );
   }
