@@ -51,7 +51,6 @@ test/screens/profile_screen_router_test.dart
 test/screens/profile_share_edit_buttons_test.dart
 test/screens/profile_video_deletion_test.dart
 test/screens/relay_settings_nip11_info_test.dart
-test/screens/safety_settings_screen_test.dart
 test/screens/sounds_screen_test.dart
 test/screens/video_editor/video_text_editor_screen_test.dart
 test/screens/video_editor_route_test.dart
