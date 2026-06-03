@@ -597,7 +597,6 @@ class __OverlayState extends ConsumerState<_Overlay> {
                           PausedVideoOverlay(
                             controller: widget.controller!,
                             isVisible: widget.isActive,
-                            onVolumeToggle: (v) => _feedState?.setVolume(v),
                           ),
                         _FeedItemActions(
                           video: video,
@@ -618,9 +617,7 @@ class __OverlayState extends ConsumerState<_Overlay> {
                           pagePositionListenable: pagePositionListenable,
                         ),
                         Positioned.fill(
-                          child: DoubleTapHeartOverlay(
-                            trigger: _heartTrigger,
-                          ),
+                          child: DoubleTapHeartOverlay(trigger: _heartTrigger),
                         ),
                       ],
                     ),

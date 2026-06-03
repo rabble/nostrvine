@@ -1,11 +1,24 @@
 import 'dart:async';
 
+import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/widgets/video_feed_item/center_playback_control.dart';
 import 'package:openvine/widgets/video_feed_item/paused_video_overlay.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../helpers/test_provider_overrides.dart';
+
+class _MockVideoVolumeCubit extends MockCubit<VideoVolumeState>
+    implements VideoVolumeCubit {}
 
 class _FakeDivineVideoPlayerController extends DivineVideoPlayerController {
   _FakeDivineVideoPlayerController() : super();
@@ -32,20 +45,39 @@ class _FakeDivineVideoPlayerController extends DivineVideoPlayerController {
 void main() {
   group(PausedVideoOverlay, () {
     late _FakeDivineVideoPlayerController controller;
+    late FeedAutoAdvanceCubit autoAdvanceCubit;
+    late VideoVolumeCubit volumeCubit;
+    late SharedPreferences mockPrefs;
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
 
     setUp(() {
       controller = _FakeDivineVideoPlayerController();
+      autoAdvanceCubit = FeedAutoAdvanceCubit();
+      volumeCubit = _MockVideoVolumeCubit();
+      when(() => volumeCubit.state).thenReturn(const VideoVolumeState());
+      mockPrefs = createMockSharedPreferences();
     });
 
     tearDown(() async {
       await controller.dispose();
+      await autoAdvanceCubit.close();
     });
 
     Widget buildSubject() {
-      return MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(body: PausedVideoOverlay(controller: controller)),
+      return ProviderScope(
+        overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider<FeedAutoAdvanceCubit>.value(value: autoAdvanceCubit),
+              BlocProvider<VideoVolumeCubit>.value(value: volumeCubit),
+            ],
+            child: Scaffold(body: PausedVideoOverlay(controller: controller)),
+          ),
+        ),
       );
     }
 
@@ -77,6 +109,15 @@ void main() {
         await tester.pump(const Duration(milliseconds: 220));
 
         expect(findPlayControl(), findsOneWidget);
+        expect(
+          find.bySemanticsLabel(l10n.videoActionEnableAutoAdvance),
+          findsOneWidget,
+        );
+        expect(find.bySemanticsLabel(l10n.videoPlayerMute), findsOneWidget);
+        expect(
+          find.bySemanticsLabel(l10n.videoSettingsCaptionsDisable),
+          findsOneWidget,
+        );
       },
     );
 

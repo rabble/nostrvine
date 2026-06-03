@@ -5,22 +5,17 @@ import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_feed_item/center_playback_control.dart';
+import 'package:openvine/widgets/video_feed_item/feed_playback_toggles_pill.dart';
 
 class PausedVideoOverlay extends StatefulWidget {
   const PausedVideoOverlay({
     required this.controller,
     this.isVisible = true,
-    this.onVolumeToggle,
     super.key,
   });
 
   final DivineVideoPlayerController controller;
   final bool isVisible;
-
-  /// Called when the user taps the mute/unmute button.
-  /// Receives the new volume (0.0 or 1.0). Route this to
-  /// [InfiniteVideoFeedState.setVolume] so the feed tracks the value.
-  final void Function(double volume)? onVolumeToggle;
 
   @override
   State<PausedVideoOverlay> createState() => _PausedVideoOverlayState();
@@ -63,30 +58,24 @@ class _PausedVideoOverlayState extends State<PausedVideoOverlay>
   void initState() {
     super.initState();
     _unpauseFeedbackController =
-        AnimationController(
-          vsync: this,
-          duration: _unpauseHideDelay,
-        )..addStatusListener((status) {
-          if (status == AnimationStatus.completed && mounted) {
-            setState(() {
-              _showUnpauseFeedback = false;
-            });
-          }
-        });
-    _unpauseFeedbackOpacity =
-        Tween<double>(
-          begin: 1,
-          end: 0,
-        ).animate(
-          CurvedAnimation(
-            parent: _unpauseFeedbackController,
-            curve: Interval(
-              _unpauseFadeStartDelay.inMilliseconds /
-                  _unpauseHideDelay.inMilliseconds,
-              1,
-            ),
-          ),
-        );
+        AnimationController(vsync: this, duration: _unpauseHideDelay)
+          ..addStatusListener((status) {
+            if (status == AnimationStatus.completed && mounted) {
+              setState(() {
+                _showUnpauseFeedback = false;
+              });
+            }
+          });
+    _unpauseFeedbackOpacity = Tween<double>(begin: 1, end: 0).animate(
+      CurvedAnimation(
+        parent: _unpauseFeedbackController,
+        curve: Interval(
+          _unpauseFadeStartDelay.inMilliseconds /
+              _unpauseHideDelay.inMilliseconds,
+          1,
+        ),
+      ),
+    );
     _subscribe();
   }
 
@@ -262,11 +251,19 @@ class _PausedVideoOverlayState extends State<PausedVideoOverlay>
         final Widget child;
         if (shouldShow) {
           child = Center(
-            child: IgnorePointer(
-              child: CenterPlaybackControl(
-                state: CenterPlaybackControlState.play,
-                semanticsLabel: context.l10n.videoPlayerPlayVideo,
-              ),
+            key: const ValueKey('paused-playback-controls'),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const FeedPlaybackTogglesPill(),
+                const SizedBox(height: 16),
+                IgnorePointer(
+                  child: CenterPlaybackControl(
+                    state: CenterPlaybackControlState.play,
+                    semanticsLabel: context.l10n.videoPlayerPlayVideo,
+                  ),
+                ),
+              ],
             ),
           );
         } else if (shouldShowUnpauseFeedback) {
@@ -290,10 +287,7 @@ class _PausedVideoOverlayState extends State<PausedVideoOverlay>
             return FadeTransition(
               opacity: animation,
               child: ScaleTransition(
-                scale: Tween<double>(
-                  begin: 0.92,
-                  end: 1,
-                ).animate(animation),
+                scale: Tween<double>(begin: 0.92, end: 1).animate(animation),
                 child: child,
               ),
             );
