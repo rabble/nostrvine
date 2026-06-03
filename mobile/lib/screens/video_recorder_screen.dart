@@ -22,6 +22,7 @@ import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
+import 'package:openvine/widgets/camera_permission_gate.dart';
 import 'package:openvine/widgets/video_recorder/modes/capture/video_recorder_capture_stack.dart';
 import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_classic_stack.dart';
 import 'package:openvine/widgets/video_recorder/modes/upload/video_recorder_upload_stack.dart';
@@ -31,6 +32,21 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 const _kWhySixSecondsShownKey = 'why_six_seconds_shown';
+
+/// Route shell for the standalone recorder flow.
+///
+/// The permission gate renders recorder chrome while permissions are pending,
+/// so the [VideoRecorderBloc] must sit above both the gate and recorder view.
+class VideoRecorderRoute extends ConsumerWidget {
+  const VideoRecorderRoute({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return const _VideoRecorderBlocScope(
+      child: CameraPermissionGate(child: VideoRecorderView()),
+    );
+  }
+}
 
 /// Video recorder screen with camera preview and recording controls.
 ///
@@ -57,6 +73,19 @@ class VideoRecorderScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    return _VideoRecorderBlocScope(
+      child: VideoRecorderView(fromEditor: fromEditor),
+    );
+  }
+}
+
+class _VideoRecorderBlocScope extends ConsumerWidget {
+  const _VideoRecorderBlocScope({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final clipManager = ref.watch(clipManagerProvider.notifier);
     final videoEditor = ref.watch(videoEditorProvider.notifier);
     final sharedPreferences = ref.watch(sharedPreferencesProvider);
@@ -69,7 +98,7 @@ class VideoRecorderScreen extends ConsumerWidget {
         readVideoEditorState: () => ref.read(videoEditorProvider),
         readSharedPreferences: () => ref.read(sharedPreferencesProvider),
       ),
-      child: VideoRecorderView(fromEditor: fromEditor),
+      child: child,
     );
   }
 }

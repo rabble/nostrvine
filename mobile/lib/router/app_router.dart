@@ -85,7 +85,6 @@ import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/page_load_observer.dart';
 import 'package:openvine/services/video_stop_navigator_observer.dart';
-import 'package:openvine/widgets/camera_permission_gate.dart';
 import 'package:openvine/widgets/profile/profile_video_feed_view.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -95,11 +94,27 @@ final routeObserver = RouteObserver<ModalRoute<dynamic>>();
 
 // Track if we've done initial navigation to avoid redirect loops
 bool _hasNavigated = false;
+bool _suppressNextAuthenticatedAuthRouteRedirect = false;
+
+/// Prevents the next authenticated auth-route redirect from going home.
+///
+/// Used when a cold-start quick action already opened a protected route before
+/// auth restoration finishes. In that case the route should remain visible
+/// instead of being covered by the normal `/welcome` -> home redirect.
+void suppressNextAuthenticatedAuthRouteRedirect() {
+  _suppressNextAuthenticatedAuthRouteRedirect = true;
+}
+
+/// Clears a pending authenticated auth-route redirect suppression.
+void clearAuthenticatedAuthRouteRedirectSuppression() {
+  _suppressNextAuthenticatedAuthRouteRedirect = false;
+}
 
 /// Reset navigation state for testing purposes
 @visibleForTesting
 void resetNavigationState() {
   _hasNavigated = false;
+  _suppressNextAuthenticatedAuthRouteRedirect = false;
 }
 
 /// Rewrites a `/reset-password` deep link to the nested
@@ -207,6 +222,16 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         // so they can re-authenticate instead of being bounced home
         if (authService.hasExpiredOAuthSession &&
             location == WelcomeScreen.loginOptionsPath) {
+          return null;
+        }
+        if (_suppressNextAuthenticatedAuthRouteRedirect) {
+          _suppressNextAuthenticatedAuthRouteRedirect = false;
+          Log.info(
+            'Router redirect: authenticated on auth route — '
+            'staying on quick-action route instead of redirecting home',
+            name: 'AppRouter',
+            category: LogCategory.auth,
+          );
           return null;
         }
         // On first navigation, redirect to explore if user has no following
@@ -1059,8 +1084,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: VideoRecorderScreen.path,
         name: VideoRecorderScreen.routeName,
-        builder: (_, _) =>
-            const CameraPermissionGate(child: VideoRecorderScreen()),
+        builder: (_, _) => const VideoRecorderRoute(),
       ),
       // Video editor route
       GoRoute(

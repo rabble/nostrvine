@@ -8,6 +8,7 @@ import 'package:app_update_repository/app_update_repository.dart';
 import 'package:app_version_client/app_version_client.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:cache_sync/cache_sync.dart';
+import 'package:divine_quick_actions/divine_quick_actions.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart'
     show DivineVideoPlayerController;
@@ -66,10 +67,13 @@ import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/inbox/inbox_page.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
+import 'package:openvine/screens/video_recorder_screen.dart';
+import 'package:openvine/services/auth_service.dart' show AuthState;
 import 'package:openvine/services/back_button_handler.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
@@ -98,6 +102,7 @@ import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/platform_support.dart';
 import 'package:openvine/utils/recoverable_flutter_error.dart';
 import 'package:openvine/utils/sensitive_uri_for_logs.dart';
+import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/app_lifecycle_handler.dart';
 import 'package:openvine/widgets/geo_blocking_gate.dart';
 import 'package:openvine/widgets/upload_failure_sheet.dart';
@@ -413,6 +418,9 @@ void _navigateToNotificationProfile(
 void _navigateToNotificationInbox(ProviderContainer container) {
   container.read(goRouterProvider).go(NotificationsPage.pathForIndex());
 }
+
+const _kQuickActionCamera = 'camera';
+const _kQuickActionNotifications = 'notifications';
 
 StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
   final coordinator = StartupCoordinator();
@@ -1290,6 +1298,8 @@ class _DivineAppState extends ConsumerState<DivineApp> {
   bool _backgroundInitDone = false;
   StreamSubscription<void>? _shakeSubscription;
   StreamSubscription<NotificationTapEvent>? _notificationTapSubscription;
+  StreamSubscription<AuthState>? _quickActionsAuthSubscription;
+  DivineQuickActionEvent? _pendingQuickAction;
 
   @override
   void initState() {
@@ -1301,6 +1311,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
         _backgroundInitDone = true;
         _initializeDeferredStartup();
         _initializeDeepLinkServices();
+        _initializeQuickActions();
         _initializeBackgroundServices();
       }
     });
@@ -1309,6 +1320,8 @@ class _DivineAppState extends ConsumerState<DivineApp> {
   @override
   void dispose() {
     _notificationTapSubscription?.cancel();
+    _quickActionsAuthSubscription?.cancel();
+    unawaited(DivineQuickActions.instance.dispose());
     _shakeSubscription?.cancel();
     super.dispose();
   }
@@ -1359,6 +1372,216 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       name: 'DeepLinkHandler',
       category: LogCategory.ui,
     );
+  }
+
+  bool get _quickActionsPlatformSupported =>
+      !kIsWeb && (io.Platform.isAndroid || io.Platform.isIOS);
+
+  void _initializeQuickActions() {
+    if (!_quickActionsPlatformSupported) return;
+
+    final container = ProviderScope.containerOf(context);
+    final authService = ref.read(authServiceProvider);
+    final quickActions = DivineQuickActions.instance;
+
+    unawaited(
+      quickActions
+          .initialize(
+            onAction: (action) => _handleQuickAction(action, container),
+          )
+          .catchError((Object error, StackTrace stackTrace) async {
+            Log.warning(
+              'Quick actions initialization failed: $error',
+              name: 'QuickActions',
+              category: LogCategory.system,
+            );
+            await CrashReportingService.instance.recordError(
+              error,
+              stackTrace,
+              reason: 'Quick actions initialization failed',
+            );
+            return null;
+          }),
+    );
+
+    _quickActionsAuthSubscription?.cancel();
+    _quickActionsAuthSubscription = authService.authStateStream
+        .distinct()
+        .listen((authState) {
+          unawaited(_syncQuickActions());
+          _handlePendingQuickActionForAuthState(authState, container);
+        });
+
+    unawaited(_syncQuickActions());
+  }
+
+  Future<void> _syncQuickActions() async {
+    if (!_quickActionsPlatformSupported || !mounted) return;
+
+    final authService = ref.read(authServiceProvider);
+    final authState = authService.authState;
+    final l10n = currentAppL10n(ref.read(sharedPreferencesProvider));
+    final quickActions = DivineQuickActions.instance;
+
+    try {
+      final isSupported = await quickActions.isSupported;
+      if (!isSupported || !mounted) return;
+
+      if (authState != AuthState.authenticated) {
+        if (_isQuickActionAuthPending(authState)) return;
+
+        final cleared = await quickActions.clearActions();
+        Log.debug(
+          'Quick actions cleared for unauthenticated state: $cleared',
+          name: 'QuickActions',
+          category: LogCategory.system,
+        );
+        return;
+      }
+
+      if (!kIsWeb && io.Platform.isAndroid) {
+        await quickActions.clearActions();
+      }
+
+      final updated = await quickActions.setActions(
+        <DivineQuickAction>[
+          DivineQuickAction(
+            type: _kQuickActionCamera,
+            title: l10n.videoRecorderStartRecordingTooltip,
+            androidIconName: 'ic_quick_action_camera_padded',
+            iosIconName: 'camera.fill',
+            iosIconStyle: DivineQuickActionIosIconStyle.system,
+            rank: 0,
+          ),
+          DivineQuickAction(
+            type: _kQuickActionNotifications,
+            title: l10n.navNotifications,
+            androidIconName: 'ic_quick_action_notifications_padded',
+            iosIconName: 'bell.fill',
+            iosIconStyle: DivineQuickActionIosIconStyle.system,
+            rank: 1,
+          ),
+        ],
+      );
+      Log.debug(
+        'Quick actions configured for authenticated user: $updated',
+        name: 'QuickActions',
+        category: LogCategory.system,
+      );
+    } catch (error, stackTrace) {
+      Log.warning(
+        'Quick actions sync failed: $error',
+        name: 'QuickActions',
+        category: LogCategory.system,
+      );
+      await CrashReportingService.instance.recordError(
+        error,
+        stackTrace,
+        reason: 'Quick actions sync failed',
+      );
+    }
+  }
+
+  void _handleQuickAction(
+    DivineQuickActionEvent action,
+    ProviderContainer container,
+  ) {
+    final authService = container.read(authServiceProvider);
+    final authState = authService.authState;
+    if (authState != AuthState.authenticated) {
+      if (_isQuickActionAuthPending(authState)) {
+        _pendingQuickAction = action;
+        Log.info(
+          'Deferring quick action until auth restores: ${action.type}',
+          name: 'QuickActions',
+          category: LogCategory.system,
+        );
+        return;
+      }
+
+      _pendingQuickAction = null;
+      Log.info(
+        'Ignoring quick action while unauthenticated: ${action.type}',
+        name: 'QuickActions',
+        category: LogCategory.system,
+      );
+      unawaited(DivineQuickActions.instance.clearActions());
+      return;
+    }
+
+    final router = container.read(goRouterProvider);
+    switch (action.type) {
+      case _kQuickActionCamera:
+        Log.info(
+          'Opening camera from quick action',
+          name: 'QuickActions',
+          category: LogCategory.ui,
+        );
+        final currentPath = router.routeInformationProvider.value.uri.path;
+        if (currentPath != VideoRecorderScreen.path) {
+          suppressNextAuthenticatedAuthRouteRedirect();
+          disposeAllVideoControllers(container);
+          router.go(VideoRecorderScreen.path);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            clearAuthenticatedAuthRouteRedirectSuppression();
+          });
+        }
+      case _kQuickActionNotifications:
+        Log.info(
+          'Opening notifications from quick action',
+          name: 'QuickActions',
+          category: LogCategory.ui,
+        );
+        router.go(InboxPage.path);
+      default:
+        Log.warning(
+          'Unknown quick action ignored: ${action.type}',
+          name: 'QuickActions',
+          category: LogCategory.system,
+        );
+    }
+  }
+
+  bool _isQuickActionAuthPending(AuthState authState) {
+    return switch (authState) {
+      AuthState.checking || AuthState.authenticating => true,
+      AuthState.authenticated ||
+      AuthState.unauthenticated ||
+      AuthState.awaitingTosAcceptance => false,
+    };
+  }
+
+  void _handlePendingQuickActionForAuthState(
+    AuthState authState,
+    ProviderContainer container,
+  ) {
+    final pendingAction = _pendingQuickAction;
+    if (pendingAction == null || _isQuickActionAuthPending(authState)) return;
+
+    _pendingQuickAction = null;
+    if (authState == AuthState.authenticated) {
+      unawaited(
+        _handlePendingQuickActionAfterAuthRedirect(pendingAction, container),
+      );
+      return;
+    }
+
+    Log.info(
+      'Dropping deferred quick action after auth resolved: ${pendingAction.type}',
+      name: 'QuickActions',
+      category: LogCategory.system,
+    );
+  }
+
+  Future<void> _handlePendingQuickActionAfterAuthRedirect(
+    DivineQuickActionEvent action,
+    ProviderContainer container,
+  ) async {
+    await WidgetsBinding.instance.endOfFrame;
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) return;
+
+    _handleQuickAction(action, container);
   }
 
   void _initializeDeferredStartup() {
