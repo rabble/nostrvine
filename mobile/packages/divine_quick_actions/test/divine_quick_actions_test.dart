@@ -78,12 +78,10 @@ void main() {
     DivineQuickActionsPlatform.instance = MockDivineQuickActionsPlatform();
 
     expect(
-      () => plugin.setActions(
-        const <DivineQuickAction>[
-          DivineQuickAction(type: 'record', title: 'Record'),
-          DivineQuickAction(type: 'record', title: 'Record again'),
-        ],
-      ),
+      () => plugin.setActions(const <DivineQuickAction>[
+        DivineQuickAction(type: 'record', title: 'Record'),
+        DivineQuickAction(type: 'record', title: 'Record again'),
+      ]),
       throwsArgumentError,
     );
   });

@@ -58,8 +58,6 @@ abstract class DivineQuickActionsPlatform extends PlatformInterface {
 
   /// Returns and clears a shortcut used to launch the app, if any.
   Future<DivineQuickActionEvent?> consumeLaunchAction() {
-    throw UnimplementedError(
-      'consumeLaunchAction() has not been implemented.',
-    );
+    throw UnimplementedError('consumeLaunchAction() has not been implemented.');
   }
 }

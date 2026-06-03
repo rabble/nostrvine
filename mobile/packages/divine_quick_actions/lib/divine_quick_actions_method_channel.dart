@@ -31,9 +31,10 @@ class MethodChannelDivineQuickActions extends DivineQuickActionsPlatform {
       case 'onQuickAction':
         final arguments = call.arguments;
         if (arguments is Map<dynamic, dynamic>) {
-          _actionController.add(
-            DivineQuickActionEvent.fromMap(arguments),
-          );
+          final action = DivineQuickActionEvent.tryFromMap(arguments);
+          if (action != null) {
+            _actionController.add(action);
+          }
         }
         return null;
       default:
@@ -61,7 +62,8 @@ class MethodChannelDivineQuickActions extends DivineQuickActionsPlatform {
     final result = await methodChannel.invokeListMethod<dynamic>('getActions');
     return (result ?? const <dynamic>[])
         .whereType<Map<dynamic, dynamic>>()
-        .map(DivineQuickAction.fromMap)
+        .map(DivineQuickAction.tryFromMap)
+        .whereType<DivineQuickAction>()
         .toList();
   }
 
@@ -77,6 +79,6 @@ class MethodChannelDivineQuickActions extends DivineQuickActionsPlatform {
       'consumeLaunchAction',
     );
     if (result == null) return null;
-    return DivineQuickActionEvent.fromMap(result, isLaunchAction: true);
+    return DivineQuickActionEvent.tryFromMap(result, isLaunchAction: true);
   }
 }

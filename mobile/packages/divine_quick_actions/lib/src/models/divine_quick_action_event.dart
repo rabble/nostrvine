@@ -17,6 +17,11 @@ class DivineQuickActionEvent extends Equatable {
     Map<dynamic, dynamic> map, {
     bool isLaunchAction = false,
   }) {
+    final type = map['type'];
+    if (type is! String || type.isEmpty) {
+      throw const FormatException('Quick action event type must be a string.');
+    }
+
     final payload = <String, String>{};
     final rawPayload = map['payload'];
     if (rawPayload is Map<dynamic, dynamic>) {
@@ -30,10 +35,27 @@ class DivineQuickActionEvent extends Equatable {
     }
 
     return DivineQuickActionEvent(
-      type: map['type'] as String,
+      type: type,
       payload: payload,
       isLaunchAction: isLaunchAction,
     );
+  }
+
+  /// Attempts to deserialize an activation event from native platform data.
+  static DivineQuickActionEvent? tryFromMap(
+    Map<dynamic, dynamic> map, {
+    bool isLaunchAction = false,
+  }) {
+    try {
+      return DivineQuickActionEvent.fromMap(
+        map,
+        isLaunchAction: isLaunchAction,
+      );
+    } on FormatException {
+      return null;
+    } on TypeError {
+      return null;
+    }
   }
 
   /// Stable shortcut identifier selected by the user.
@@ -47,10 +69,7 @@ class DivineQuickActionEvent extends Equatable {
 
   /// Serializes this event for tests and platform fakes.
   Map<String, Object?> toMap() {
-    return <String, Object?>{
-      'type': type,
-      'payload': payload,
-    };
+    return <String, Object?>{'type': type, 'payload': payload};
   }
 
   @override

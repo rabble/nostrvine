@@ -163,11 +163,14 @@ public class DivineQuickActionsPlugin: NSObject, FlutterPlugin, FlutterSceneLife
       payload[key] = "\(value)"
     }
 
-    return [
+    var encoded: [String: Any] = [
       "type": shortcutItem.type,
       "title": shortcutItem.localizedTitle,
-      "subtitle": shortcutItem.localizedSubtitle,
       "payload": payload,
     ]
+    if let subtitle = shortcutItem.localizedSubtitle {
+      encoded["subtitle"] = subtitle
+    }
+    return encoded
   }
 }

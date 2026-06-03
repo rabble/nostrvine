@@ -9,7 +9,8 @@ enum DivineQuickActionIosIconStyle {
   template('template'),
 
   /// Uses an SF Symbol name on iOS 13 and newer.
-  system('system');
+  system('system')
+  ;
 
   const DivineQuickActionIosIconStyle(this.value);
 
@@ -43,6 +44,15 @@ class DivineQuickAction extends Equatable {
 
   /// Deserializes a quick action from a native platform map.
   factory DivineQuickAction.fromMap(Map<dynamic, dynamic> map) {
+    final type = map['type'];
+    final title = map['title'];
+    if (type is! String || type.isEmpty) {
+      throw const FormatException('Quick action type must be a string.');
+    }
+    if (title is! String || title.isEmpty) {
+      throw const FormatException('Quick action title must be a string.');
+    }
+
     final payload = <String, String>{};
     final rawPayload = map['payload'];
     if (rawPayload is Map<dynamic, dynamic>) {
@@ -56,8 +66,8 @@ class DivineQuickAction extends Equatable {
     }
 
     return DivineQuickAction(
-      type: map['type'] as String,
-      title: map['title'] as String,
+      type: type,
+      title: title,
       subtitle: map['subtitle'] as String?,
       androidIconName: map['androidIconName'] as String?,
       iosIconName: map['iosIconName'] as String?,
@@ -67,6 +77,17 @@ class DivineQuickAction extends Equatable {
       rank: map['rank'] as int?,
       payload: payload,
     );
+  }
+
+  /// Attempts to deserialize a quick action from native platform data.
+  static DivineQuickAction? tryFromMap(Map<dynamic, dynamic> map) {
+    try {
+      return DivineQuickAction.fromMap(map);
+    } on FormatException {
+      return null;
+    } on TypeError {
+      return null;
+    }
   }
 
   /// Stable shortcut identifier delivered when the action is selected.
