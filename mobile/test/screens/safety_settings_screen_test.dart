@@ -1,5 +1,5 @@
-// ABOUTME: Widget tests for SafetySettingsScreen UI and functionality
-// ABOUTME: Tests section headers, blocked users list, muted content, filters, and report history
+// ABOUTME: Widget tests for SafetySettingsScreen UI and functionality.
+// ABOUTME: Covers the content-safety shell, moderation toggles, and blocked users list.
 
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:content_policy/content_policy.dart';
@@ -198,65 +198,28 @@ void main() {
       );
     }
 
-    testWidgets('should display "Safety Settings" title in app bar', (
+    testWidgets('should display the content safety title in app bar', (
       tester,
     ) async {
       await tester.pumpWidget(createTestWidget());
-
-      expect(find.text('Safety Settings'), findsOneWidget);
-      // TODO(any): Fix and enable this test
-    }, skip: true);
-
-    testWidgets('should display back button and navigate on tap', (
-      tester,
-    ) async {
-      await tester.pumpWidget(createTestWidget());
-
-      final backButton = find.byIcon(Icons.arrow_back);
-      expect(backButton, findsOneWidget);
-
-      // Test back navigation
-      await tester.tap(backButton);
       await tester.pumpAndSettle();
-      // TODO(any): Fix and re-enable these tests
-      // Fails on CI
-    }, skip: true);
 
-    testWidgets('should display "Blocked Users" section header', (
+      expect(find.text(l10n.settingsContentSafetyTitle), findsOneWidget);
+    });
+
+    testWidgets('should display the blocked users section header', (
       tester,
     ) async {
       await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
 
-      expect(find.text('BLOCKED USERS'), findsOneWidget);
-      // TODO(any): Fix and enable this test
-    }, skip: true);
+      await tester.scrollUntilVisible(
+        find.text(l10n.safetySettingsBlockedUsers),
+        200,
+      );
 
-    testWidgets('should display "Muted Content" section header', (
-      tester,
-    ) async {
-      await tester.pumpWidget(createTestWidget());
-
-      expect(find.text('MUTED CONTENT'), findsOneWidget);
-      // TODO(any): Fix and enable this test
-    }, skip: true);
-
-    testWidgets('should display "Content Filters" section header', (
-      tester,
-    ) async {
-      await tester.pumpWidget(createTestWidget());
-
-      expect(find.text('CONTENT FILTERS'), findsOneWidget);
-      // TODO(any): Fix and enable this test
-    }, skip: true);
-
-    testWidgets('should display "Report History" section header', (
-      tester,
-    ) async {
-      await tester.pumpWidget(createTestWidget());
-
-      expect(find.text('REPORT HISTORY'), findsOneWidget);
-      // TODO(any): Fix and enable this test
-    }, skip: true);
+      expect(find.text(l10n.safetySettingsBlockedUsers), findsOneWidget);
+    });
 
     testWidgets('should use dark background color', (tester) async {
       await tester.pumpWidget(createTestWidget());
@@ -289,26 +252,25 @@ void main() {
       expect(listViewWidth, moreOrLessEquals(600));
     });
 
-    testWidgets(
-      'shows Divine moderation as enabled and non-interactive',
-      (tester) async {
-        await tester.pumpWidget(createTestWidget());
-        await tester.pumpAndSettle();
+    testWidgets('shows Divine moderation as enabled and non-interactive', (
+      tester,
+    ) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
 
-        final tile = find.widgetWithText(
-          SwitchListTile,
-          l10n.safetySettingsDivine,
-        );
-        expect(tile, findsOneWidget);
+      final tile = find.widgetWithText(
+        SwitchListTile,
+        l10n.safetySettingsDivine,
+      );
+      expect(tile, findsOneWidget);
 
-        final switchTile = tester.widget<SwitchListTile>(tile);
-        expect(switchTile.value, isTrue);
-        expect(switchTile.onChanged, isNull);
+      final switchTile = tester.widget<SwitchListTile>(tile);
+      expect(switchTile.value, isTrue);
+      expect(switchTile.onChanged, isNull);
 
-        verifyNever(() => mockModerationLabelService.removeLabeler(any()));
-        verifyNever(() => mockModerationLabelService.addLabeler(any()));
-      },
-    );
+      verifyNever(() => mockModerationLabelService.removeLabeler(any()));
+      verifyNever(() => mockModerationLabelService.addLabeler(any()));
+    });
 
     testWidgets(
       'shows Divine-hosted-only toggle enabled by default and persists '
@@ -360,9 +322,7 @@ void main() {
           () => mockAgeVerificationService.setAdultContentVerified(true),
         ).called(1);
         verify(mockContentFilterService.unlockAdultCategories).called(1);
-        verifyNever(
-          () => mockContentFilterService.lockAdultCategories(),
-        );
+        verifyNever(() => mockContentFilterService.lockAdultCategories());
       },
     );
 
