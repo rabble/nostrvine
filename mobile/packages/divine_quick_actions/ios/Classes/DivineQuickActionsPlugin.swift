@@ -5,6 +5,10 @@ import Flutter
 import UIKit
 
 public class DivineQuickActionsPlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDelegate {
+  private static let quickActionURLScheme = "divine"
+  private static let quickActionURLHost = "quick-action"
+  private static let cameraActionType = "camera"
+
   private let channel: FlutterMethodChannel
   private var pendingLaunchAction: [String: Any]?
 
@@ -61,7 +65,22 @@ public class DivineQuickActionsPlugin: NSObject, FlutterPlugin, FlutterSceneLife
       as? UIApplicationShortcutItem
     {
       pendingLaunchAction = encodeShortcutItem(shortcutItem)
+    } else if let url = launchOptions[UIApplication.LaunchOptionsKey.url] as? URL {
+      pendingLaunchAction = actionFromURL(url)
     }
+    return true
+  }
+
+  public func application(
+    _ application: UIApplication,
+    open url: URL,
+    options: [UIApplication.OpenURLOptionsKey: Any] = [:]
+  ) -> Bool {
+    guard let action = actionFromURL(url) else {
+      return false
+    }
+
+    emitAction(action)
     return true
   }
 
@@ -84,7 +103,25 @@ public class DivineQuickActionsPlugin: NSObject, FlutterPlugin, FlutterSceneLife
       pendingLaunchAction = encodeShortcutItem(shortcutItem)
       return true
     }
+    if let url = connectionOptions?.urlContexts.first?.url,
+      let action = actionFromURL(url)
+    {
+      pendingLaunchAction = action
+      return true
+    }
     return false
+  }
+
+  public func scene(
+    _ scene: UIScene,
+    openURLContexts URLContexts: Set<UIOpenURLContext>
+  ) -> Bool {
+    guard let action = URLContexts.compactMap({ actionFromURL($0.url) }).first else {
+      return false
+    }
+
+    emitAction(action)
+    return true
   }
 
   public func windowScene(
@@ -154,7 +191,31 @@ public class DivineQuickActionsPlugin: NSObject, FlutterPlugin, FlutterSceneLife
   }
 
   private func emitShortcutItem(_ shortcutItem: UIApplicationShortcutItem) {
-    channel.invokeMethod("onQuickAction", arguments: encodeShortcutItem(shortcutItem))
+    emitAction(encodeShortcutItem(shortcutItem))
+  }
+
+  private func emitAction(_ action: [String: Any]) {
+    channel.invokeMethod("onQuickAction", arguments: action)
+  }
+
+  private func actionFromURL(_ url: URL) -> [String: Any]? {
+    guard
+      url.scheme == Self.quickActionURLScheme,
+      url.host == Self.quickActionURLHost
+    else {
+      return nil
+    }
+
+    let actionType = url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+    guard actionType == Self.cameraActionType else {
+      return nil
+    }
+
+    return [
+      "type": actionType,
+      "title": "",
+      "payload": [String: String](),
+    ]
   }
 
   private func encodeShortcutItem(_ shortcutItem: UIApplicationShortcutItem) -> [String: Any] {
