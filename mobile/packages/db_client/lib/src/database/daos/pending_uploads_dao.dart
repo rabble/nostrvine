@@ -90,18 +90,47 @@ class PendingUploadsDao extends DatabaseAccessor<AppDatabase>
     return row != null ? _rowToModel(row) : null;
   }
 
-  /// Get all pending uploads (not completed/failed)
-  Future<List<PendingUpload>> getPendingUploads() async {
+  /// Returns an expression that limits results to a specific owner.
+  ///
+  /// Because [nostrPubkey] is non-nullable on [PendingUploads] (every row
+  /// has been written with a valid pubkey since the table was created),
+  /// there are no legacy NULL rows to surface. A simple equality filter is
+  /// sufficient — no "owned OR NULL" arm is needed.
+  ///
+  /// When [nostrPubkey] is null the filter is a no-op, preserving the
+  /// existing behaviour for callers that do not yet supply an owner (e.g.
+  /// admin/debug tooling or migration paths).
+  Expression<bool> _ownedBy(
+    PendingUploads t,
+    String? nostrPubkey,
+  ) {
+    if (nostrPubkey == null) return const Constant(true);
+    return t.nostrPubkey.equals(nostrPubkey);
+  }
+
+  /// Get all pending uploads (not completed/failed) for [nostrPubkey].
+  ///
+  /// Pass [nostrPubkey] to scope results to a specific account. Omitting it
+  /// returns all accounts' uploads (use only when no account context exists).
+  Future<List<PendingUpload>> getPendingUploads({String? nostrPubkey}) async {
     final query = select(pendingUploads)
-      ..where((t) => t.status.isNotIn(['published', 'failed']))
+      ..where(
+        (t) =>
+            t.status.isNotIn(['published', 'failed']) &
+            _ownedBy(t, nostrPubkey),
+      )
       ..orderBy([(t) => OrderingTerm(expression: t.createdAt)]);
     final rows = await query.get();
     return rows.map(_rowToModel).toList();
   }
 
-  /// Get all uploads sorted by creation time
-  Future<List<PendingUpload>> getAllUploads() async {
+  /// Get all uploads sorted by creation time for [nostrPubkey].
+  ///
+  /// Pass [nostrPubkey] to scope results to a specific account. Omitting it
+  /// returns all accounts' uploads (use only when no account context exists).
+  Future<List<PendingUpload>> getAllUploads({String? nostrPubkey}) async {
     final query = select(pendingUploads)
+      ..where((t) => _ownedBy(t, nostrPubkey))
       ..orderBy([
         (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
       ]);
@@ -109,10 +138,18 @@ class PendingUploadsDao extends DatabaseAccessor<AppDatabase>
     return rows.map(_rowToModel).toList();
   }
 
-  /// Get uploads by status
-  Future<List<PendingUpload>> getUploadsByStatus(UploadStatus status) async {
+  /// Get uploads by status for [nostrPubkey].
+  ///
+  /// Pass [nostrPubkey] to scope results to a specific account. Omitting it
+  /// returns all accounts' uploads (use only when no account context exists).
+  Future<List<PendingUpload>> getUploadsByStatus(
+    UploadStatus status, {
+    String? nostrPubkey,
+  }) async {
     final query = select(pendingUploads)
-      ..where((t) => t.status.equals(status.name))
+      ..where(
+        (t) => t.status.equals(status.name) & _ownedBy(t, nostrPubkey),
+      )
       ..orderBy([
         (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
       ]);
@@ -147,28 +184,44 @@ class PendingUploadsDao extends DatabaseAccessor<AppDatabase>
     return (delete(pendingUploads)..where((t) => t.id.equals(id))).go();
   }
 
-  /// Delete completed uploads (published or failed)
-  Future<int> deleteCompleted() {
-    return (delete(
-      pendingUploads,
-    )..where((t) => t.status.isIn(['published', 'failed']))).go();
-  }
-
-  /// Watch all uploads (reactive stream)
-  Stream<List<PendingUpload>> watchAllUploads() {
+  /// Watch all uploads (reactive stream) for [nostrPubkey].
+  ///
+  /// Pass [nostrPubkey] to scope results to a specific account. Omitting it
+  /// returns all accounts' uploads (use only when no account context exists).
+  Stream<List<PendingUpload>> watchAllUploads({String? nostrPubkey}) {
     final query = select(pendingUploads)
+      ..where((t) => _ownedBy(t, nostrPubkey))
       ..orderBy([
         (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
       ]);
     return query.watch().map((rows) => rows.map(_rowToModel).toList());
   }
 
-  /// Watch pending uploads (reactive stream)
-  Stream<List<PendingUpload>> watchPendingUploads() {
+  /// Watch pending uploads (reactive stream) for [nostrPubkey].
+  ///
+  /// Pass [nostrPubkey] to scope results to a specific account. Omitting it
+  /// returns all accounts' uploads (use only when no account context exists).
+  Stream<List<PendingUpload>> watchPendingUploads({String? nostrPubkey}) {
     final query = select(pendingUploads)
-      ..where((t) => t.status.isNotIn(['published', 'failed']))
+      ..where(
+        (t) =>
+            t.status.isNotIn(['published', 'failed']) &
+            _ownedBy(t, nostrPubkey),
+      )
       ..orderBy([(t) => OrderingTerm(expression: t.createdAt)]);
     return query.watch().map((rows) => rows.map(_rowToModel).toList());
+  }
+
+  /// Delete completed (published or failed) uploads for [nostrPubkey].
+  ///
+  /// Pass [nostrPubkey] to scope deletion to a specific account. Omitting it
+  /// deletes completed uploads across all accounts.
+  Future<int> deleteCompleted({String? nostrPubkey}) {
+    return (delete(pendingUploads)..where(
+          (t) =>
+              t.status.isIn(['published', 'failed']) & _ownedBy(t, nostrPubkey),
+        ))
+        .go();
   }
 
   /// Clear all uploads

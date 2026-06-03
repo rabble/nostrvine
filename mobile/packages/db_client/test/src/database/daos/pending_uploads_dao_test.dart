@@ -480,5 +480,167 @@ void main() {
         expect(deleted, equals(0));
       });
     });
+
+    // Regression: issue #4625 — owner-scoped queries must not leak
+    // uploads across accounts.
+    group('owner isolation (nostrPubkey filter)', () {
+      const pubkeyA =
+          '0123456789abcdef0123456789abcdef'
+          '0123456789abcdef0123456789abcdef';
+      const pubkeyB =
+          'fedcba9876543210fedcba9876543210'
+          'fedcba9876543210fedcba9876543210';
+
+      setUp(() async {
+        // Insert rows for two distinct accounts.
+        // pubkeyA == testPubkey (the createTestUpload helper default),
+        // so nostrPubkey is omitted for account-A rows.
+        await dao.upsertUpload(
+          createTestUpload(
+            id: 'a_pending',
+            createdAt: DateTime(2024, 1, 10),
+          ),
+        );
+        await dao.upsertUpload(
+          createTestUpload(
+            id: 'a_published',
+            status: UploadStatus.published,
+            createdAt: DateTime(2024, 1, 11),
+          ),
+        );
+        await dao.upsertUpload(
+          createTestUpload(
+            id: 'b_pending',
+            nostrPubkey: pubkeyB,
+            createdAt: DateTime(2024, 1, 12),
+          ),
+        );
+        await dao.upsertUpload(
+          createTestUpload(
+            id: 'b_uploading',
+            nostrPubkey: pubkeyB,
+            status: UploadStatus.uploading,
+            createdAt: DateTime(2024, 1, 13),
+          ),
+        );
+      });
+
+      // getPendingUploads
+      test('getPendingUploads scoped to A excludes B', () async {
+        final results = await dao.getPendingUploads(nostrPubkey: pubkeyA);
+        expect(results, hasLength(1));
+        expect(results.single.id, equals('a_pending'));
+      });
+
+      test('getPendingUploads scoped to B excludes A', () async {
+        final results = await dao.getPendingUploads(nostrPubkey: pubkeyB);
+        expect(
+          results.map((r) => r.id),
+          containsAll(['b_pending', 'b_uploading']),
+        );
+        expect(results.map((r) => r.id), isNot(contains('a_pending')));
+      });
+
+      test('getPendingUploads without filter returns all accounts', () async {
+        final results = await dao.getPendingUploads();
+        expect(results, hasLength(3)); // a_pending + b_pending + b_uploading
+      });
+
+      // getAllUploads
+      test('getAllUploads scoped to A excludes B', () async {
+        final results = await dao.getAllUploads(nostrPubkey: pubkeyA);
+        expect(results, hasLength(2));
+        expect(
+          results.map((r) => r.id),
+          containsAll(['a_pending', 'a_published']),
+        );
+        expect(results.map((r) => r.id), isNot(contains('b_pending')));
+      });
+
+      test('getAllUploads without filter returns all accounts', () async {
+        final results = await dao.getAllUploads();
+        expect(results, hasLength(4));
+      });
+
+      // getUploadsByStatus
+      test('getUploadsByStatus scoped to A returns only A rows', () async {
+        final results = await dao.getUploadsByStatus(
+          UploadStatus.pending,
+          nostrPubkey: pubkeyA,
+        );
+        expect(results, hasLength(1));
+        expect(results.single.id, equals('a_pending'));
+      });
+
+      test('getUploadsByStatus scoped to B returns only B rows', () async {
+        final results = await dao.getUploadsByStatus(
+          UploadStatus.pending,
+          nostrPubkey: pubkeyB,
+        );
+        expect(results, hasLength(1));
+        expect(results.single.id, equals('b_pending'));
+      });
+
+      // watchAllUploads
+      test('watchAllUploads scoped to A emits only A rows', () async {
+        final results = await dao.watchAllUploads(nostrPubkey: pubkeyA).first;
+        expect(results, hasLength(2));
+        expect(
+          results.map((r) => r.id),
+          containsAll(['a_pending', 'a_published']),
+        );
+        expect(results.map((r) => r.id), isNot(contains('b_pending')));
+      });
+
+      test('watchAllUploads without filter emits all accounts', () async {
+        final results = await dao.watchAllUploads().first;
+        expect(results, hasLength(4));
+      });
+
+      // watchPendingUploads
+      test(
+        'watchPendingUploads scoped to B emits only B non-complete rows',
+        () async {
+          final results = await dao
+              .watchPendingUploads(nostrPubkey: pubkeyB)
+              .first;
+          expect(
+            results.map((r) => r.id),
+            containsAll(['b_pending', 'b_uploading']),
+          );
+          expect(results.map((r) => r.id), isNot(contains('a_pending')));
+        },
+      );
+
+      // deleteCompleted
+      test(
+        'deleteCompleted scoped to A deletes only A completed rows',
+        () async {
+          final deleted = await dao.deleteCompleted(nostrPubkey: pubkeyA);
+          expect(deleted, equals(1)); // only a_published
+
+          final remaining = await dao.getAllUploads();
+          expect(remaining.map((r) => r.id), isNot(contains('a_published')));
+          // B's rows must be untouched.
+          expect(
+            remaining.map((r) => r.id),
+            containsAll(['a_pending', 'b_pending', 'b_uploading']),
+          );
+        },
+      );
+
+      test(
+        'deleteCompleted without filter deletes completed across all accounts',
+        () async {
+          final deleted = await dao.deleteCompleted();
+          expect(
+            deleted,
+            equals(1),
+          ); // only a_published is completed in this set
+          final remaining = await dao.getAllUploads();
+          expect(remaining.map((r) => r.id), isNot(contains('a_published')));
+        },
+      );
+    });
   });
 }
