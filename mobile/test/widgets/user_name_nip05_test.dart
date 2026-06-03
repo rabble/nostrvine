@@ -1,6 +1,7 @@
 // ABOUTME: Tests UserName NIP-05 display behavior
 // ABOUTME: Ensures valid NIP-05 does not render a verification checkmark
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,6 +9,10 @@ import 'package:models/models.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/widgets/user_name.dart';
+
+Finder _specialCheckmark() => find.byWidgetPredicate(
+  (w) => w is DivineIcon && w.icon == DivineIconName.check,
+);
 
 void main() {
   const defaultPubkey =
@@ -47,7 +52,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Alice'), findsOneWidget);
-    expect(find.byIcon(Icons.check), findsNothing);
+    expect(_specialCheckmark(), findsNothing);
   });
 
   testWidgets('shows a checkmark for Kirsten Swasey special profile', (
@@ -59,7 +64,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Alice'), findsOneWidget);
-    expect(find.byIcon(Icons.check), findsOneWidget);
+    expect(_specialCheckmark(), findsOneWidget);
   });
 
   testWidgets('matches the Kirsten Swasey profile URL host', (tester) async {
@@ -69,7 +74,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Alice'), findsOneWidget);
-    expect(find.byIcon(Icons.check), findsOneWidget);
+    expect(_specialCheckmark(), findsOneWidget);
   });
 
   testWidgets('shows a checkmark for Rabble special profile', (tester) async {
@@ -77,7 +82,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Alice'), findsOneWidget);
-    expect(find.byIcon(Icons.check), findsOneWidget);
+    expect(_specialCheckmark(), findsOneWidget);
   });
 
   testWidgets('shows a checkmark for special profile pubkey', (tester) async {
@@ -90,6 +95,6 @@ void main() {
     await tester.pump();
 
     expect(find.text('Alice'), findsOneWidget);
-    expect(find.byIcon(Icons.check), findsOneWidget);
+    expect(_specialCheckmark(), findsOneWidget);
   });
 }

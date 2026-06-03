@@ -1,6 +1,7 @@
 // ABOUTME: Tests that VideoExploreTile does not show NIP-05 checkmarks
 // ABOUTME: Ensures valid NIP-05 does not look like account verification
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -20,6 +21,10 @@ class _MockModerationLabelService extends Mock
 
 class _MockVideoModerationStatusService extends Mock
     implements VideoModerationStatusService {}
+
+Finder _specialCheckmark() => find.byWidgetPredicate(
+  (w) => w is DivineIcon && w.icon == DivineIconName.check,
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -100,7 +105,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byIcon(Icons.check), findsNothing);
+        expect(_specialCheckmark(), findsNothing);
       });
 
       testWidgets('does not show checkmark when NIP-05 verification fails', (
@@ -114,7 +119,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byIcon(Icons.check), findsNothing);
+        expect(_specialCheckmark(), findsNothing);
       });
 
       testWidgets('does not show checkmark when NIP-05 has network error', (
@@ -128,7 +133,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byIcon(Icons.check), findsNothing);
+        expect(_specialCheckmark(), findsNothing);
       });
 
       testWidgets('does not show checkmark when user has no NIP-05', (
@@ -139,7 +144,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byIcon(Icons.check), findsNothing);
+        expect(_specialCheckmark(), findsNothing);
       });
 
       testWidgets('does not show checkmark while verification is pending', (
@@ -153,7 +158,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byIcon(Icons.check), findsNothing);
+        expect(_specialCheckmark(), findsNothing);
       });
 
       testWidgets('shows checkmark for Kirsten Swasey special profile', (
@@ -167,7 +172,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byIcon(Icons.check), findsOneWidget);
+        expect(_specialCheckmark(), findsOneWidget);
       });
     });
   });

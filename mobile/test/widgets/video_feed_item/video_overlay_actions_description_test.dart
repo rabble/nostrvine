@@ -2,6 +2,7 @@
 // ABOUTME: Verifies the inline description opens the metadata sheet.
 
 @Tags(['skip_very_good_optimization'])
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -21,6 +22,10 @@ import '../../helpers/test_provider_overrides.dart';
 
 AppLocalizations _l10n(WidgetTester tester) =>
     AppLocalizations.of(tester.element(find.byType(Scaffold).first));
+
+Finder _specialCheckmark() => find.byWidgetPredicate(
+  (w) => w is DivineIcon && w.icon == DivineIconName.check,
+);
 
 class _MockVideoInteractionsBloc extends Mock
     implements VideoInteractionsBloc {}
@@ -176,7 +181,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Alice'), findsOneWidget);
-    expect(find.byIcon(Icons.check), findsNothing);
+    expect(_specialCheckmark(), findsNothing);
   });
 
   testWidgets(
@@ -222,7 +227,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Alice'), findsOneWidget);
-      expect(find.byIcon(Icons.check), findsOneWidget);
+      expect(_specialCheckmark(), findsOneWidget);
     },
   );
 
