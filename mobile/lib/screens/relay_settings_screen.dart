@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/relay_settings/relay_settings_cubit.dart';
 import 'package:openvine/blocs/relay_settings/relay_settings_state.dart';
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -139,10 +140,8 @@ class _InfoBanner extends StatelessWidget {
             button: true,
             label: context.l10n.relaySettingsLearnMoreNostr,
             child: GestureDetector(
-              onTap: () => _launchExternalUrl(
-                context,
-                Uri.parse('https://nostr.com'),
-              ),
+              onTap: () =>
+                  _launchExternalUrl(context, Uri.parse('https://nostr.com')),
               child: Text(
                 context.l10n.relaySettingsLearnMoreNostr,
                 style: const TextStyle(
@@ -226,10 +225,7 @@ class _EmptyRelayList extends StatelessWidget {
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: VineTheme.vineGreen,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 14,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             ),
           ),
           const SizedBox(height: 12),
@@ -245,10 +241,7 @@ class _EmptyRelayList extends StatelessWidget {
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: VineTheme.cardBackground,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 14,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             ),
           ),
         ],
@@ -875,13 +868,7 @@ Future<void> _restoreDefaultRelay(BuildContext context) async {
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            // The cubit always restores AppConstants.defaultRelayUrl; the
-            // pre-migration screen built the snackbar from the same
-            // constant. We re-read it from state's first relay to avoid
-            // importing AppConstants here just for the snackbar.
-            l10n.relaySettingsRestoredDefault(
-              cubit.state.relays.isNotEmpty ? cubit.state.relays.last : '',
-            ),
+            l10n.relaySettingsRestoredDefault(AppConstants.defaultRelayUrl),
           ),
           backgroundColor: VineTheme.success,
         ),

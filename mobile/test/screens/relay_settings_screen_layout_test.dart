@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -259,5 +260,40 @@ void main() {
         verifyNever(() => nostrService.addRelay(any()));
       },
     );
+
+    testWidgets('restore-default snackbar names the default relay constant', (
+      tester,
+    ) async {
+      final nostrService = _MockNostrService();
+      when(
+        () => nostrService.addRelay(AppConstants.defaultRelayUrl),
+      ).thenAnswer((_) async => true);
+
+      await pumpScreen(tester, nostrService: nostrService);
+
+      when(
+        () => nostrService.configuredRelays,
+      ).thenReturn(['wss://not-the-default.example']);
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await tester.tap(find.text(l10n.relaySettingsRestoreDefaultRelay));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          l10n.relaySettingsRestoredDefault(AppConstants.defaultRelayUrl),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          l10n.relaySettingsRestoredDefault('wss://not-the-default.example'),
+        ),
+        findsNothing,
+      );
+      verify(
+        () => nostrService.addRelay(AppConstants.defaultRelayUrl),
+      ).called(1);
+    });
   });
 }
