@@ -10,8 +10,8 @@
     android:padding="4dp">
 
     <ImageView
-        android:layout_width="56dp"
-        android:layout_height="56dp"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
         android:contentDescription="@string/divine_quick_actions_camera_widget_open_camera"
         android:src="@drawable/ic_quick_action_camera_padded" />
 
