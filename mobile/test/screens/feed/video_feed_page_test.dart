@@ -227,6 +227,10 @@ void main() {
 
       final feedVideos = tester.widget<FeedVideos>(find.byType(FeedVideos));
       expect(feedVideos.trafficSource, ViewTrafficSource.home);
+
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
     });
   });
 }
