@@ -80,8 +80,10 @@ class VideoErrorOverlay extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    _is401Error ? Icons.lock_outline : Icons.error_outline,
+                  DivineIcon(
+                    icon: _is401Error
+                        ? DivineIconName.lockSimple
+                        : DivineIconName.warningCircle,
                     color: VineTheme.whiteText,
                     size: 48,
                   ),

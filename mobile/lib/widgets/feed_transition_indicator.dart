@@ -24,8 +24,8 @@ class FeedTransitionIndicator extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.check_circle_outline,
+            const DivineIcon(
+              icon: DivineIconName.checkCircle,
               color: VineTheme.success,
               size: 48,
             ),

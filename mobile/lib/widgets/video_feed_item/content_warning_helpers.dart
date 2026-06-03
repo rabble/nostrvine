@@ -94,8 +94,8 @@ class ContentWarningBlurOverlay extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
-                    Icons.warning_amber_rounded,
+                  const DivineIcon(
+                    icon: DivineIconName.warning,
                     color: VineTheme.contentWarningAmber,
                     size: 48,
                   ),

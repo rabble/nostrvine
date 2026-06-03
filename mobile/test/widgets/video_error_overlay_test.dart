@@ -1,6 +1,7 @@
 // ABOUTME: Tests for VideoErrorOverlay widget
 // ABOUTME: Verifies error display, 401 age-restricted content handling, and retry functionality
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,6 +17,9 @@ import '../builders/test_video_event_builder.dart';
 
 class _MockAgeVerificationService extends Mock
     implements AgeVerificationService {}
+
+Finder _divineIcon(DivineIconName name) =>
+    find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
 
 void main() {
   group('VideoErrorOverlay', () {
@@ -73,12 +77,12 @@ void main() {
       );
 
       // Should show lock icon for 401
-      expect(find.byIcon(Icons.lock_outline), findsOneWidget);
+      expect(_divineIcon(DivineIconName.lockSimple), findsOneWidget);
       expect(find.text('Age-restricted content'), findsOneWidget);
       expect(find.text('Verify Age'), findsOneWidget);
 
       // Should NOT show error icon
-      expect(find.byIcon(Icons.error_outline), findsNothing);
+      expect(_divineIcon(DivineIconName.warningCircle), findsNothing);
     });
 
     testWidgets('displays generic error UI for non-401 errors', (tester) async {
@@ -87,12 +91,12 @@ void main() {
       );
 
       // Should show error icon for non-401
-      expect(find.byIcon(Icons.error_outline), findsOneWidget);
+      expect(_divineIcon(DivineIconName.warningCircle), findsOneWidget);
       expect(find.text('Video not found'), findsOneWidget);
       expect(find.text('Retry'), findsOneWidget);
 
       // Should NOT show lock icon
-      expect(find.byIcon(Icons.lock_outline), findsNothing);
+      expect(_divineIcon(DivineIconName.lockSimple), findsNothing);
     });
 
     testWidgets('translates 404 error to user-friendly message', (
@@ -193,7 +197,7 @@ void main() {
           buildWidget(errorDescription: 'unauthorized access'),
         );
 
-        expect(find.byIcon(Icons.lock_outline), findsOneWidget);
+        expect(_divineIcon(DivineIconName.lockSimple), findsOneWidget);
         expect(find.text('Age-restricted content'), findsOneWidget);
         expect(find.text('Verify Age'), findsOneWidget);
       },

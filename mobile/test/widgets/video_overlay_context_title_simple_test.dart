@@ -1,6 +1,7 @@
 // ABOUTME: Simple widget test for VideoOverlayActions contextTitle display
 // ABOUTME: Verifies hashtag/context indicator chip shows correctly
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
@@ -8,6 +9,9 @@ import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 
 import '../builders/test_video_event_builder.dart';
 import '../helpers/test_provider_overrides.dart';
+
+Finder _divineIcon(DivineIconName name) =>
+    find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
 
 void main() {
   group('VideoOverlayActions contextTitle', () {
@@ -90,7 +94,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify both chips are shown
-      expect(find.byIcon(Icons.person), findsOneWidget); // Publisher chip
+      expect(
+        _divineIcon(DivineIconName.user),
+        findsOneWidget,
+      ); // Publisher chip
       expect(find.byIcon(Icons.tag), findsOneWidget); // Context title chip
       expect(find.text('#funny'), findsOneWidget);
     });

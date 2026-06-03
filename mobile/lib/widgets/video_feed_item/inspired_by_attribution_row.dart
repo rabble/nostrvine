@@ -111,8 +111,8 @@ class _InspiredByContent extends ConsumerWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
-                Icons.auto_awesome,
+              const DivineIcon(
+                icon: DivineIconName.sparkle,
                 size: 14,
                 color: VineTheme.vineGreen,
               ),
@@ -131,8 +131,8 @@ class _InspiredByContent extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 4),
-              const Icon(
-                Icons.chevron_right,
+              const DivineIcon(
+                icon: DivineIconName.caretRight,
                 size: 14,
                 color: VineTheme.onSurfaceVariant,
               ),

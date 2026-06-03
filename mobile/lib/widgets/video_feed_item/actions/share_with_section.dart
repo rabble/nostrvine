@@ -206,8 +206,8 @@ class _ContactItem extends StatelessWidget {
                           color: VineTheme.vineGreen,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
-                          Icons.check,
+                        child: const DivineIcon(
+                          icon: DivineIconName.check,
                           size: 14,
                           color: VineTheme.onPrimary,
                         ),

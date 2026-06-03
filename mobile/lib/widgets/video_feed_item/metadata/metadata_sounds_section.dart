@@ -125,8 +125,8 @@ class _OriginalSoundSection extends ConsumerWidget {
                   ],
                 ),
               ),
-              const Icon(
-                Icons.chevron_right,
+              const DivineIcon(
+                icon: DivineIconName.caretRight,
                 color: VineTheme.onSurfaceVariant,
                 size: 20,
               ),
@@ -220,8 +220,8 @@ class _SoundListItem extends ConsumerWidget {
                 ],
               ),
             ),
-            const Icon(
-              Icons.chevron_right,
+            const DivineIcon(
+              icon: DivineIconName.caretRight,
               color: VineTheme.onSurfaceVariant,
               size: 20,
             ),

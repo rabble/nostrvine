@@ -8,6 +8,9 @@ import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
 
+Finder _divineIcon(DivineIconName name) =>
+    find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
+
 void main() {
   group('ListAttributionChip', () {
     CuratedList createTestList({required String id, required String name}) {
@@ -43,8 +46,8 @@ void main() {
 
       // Should not find Wrap widget when listIds is empty
       expect(find.byType(Wrap), findsNothing);
-      // Should not find any playlist_play icons
-      expect(find.byIcon(Icons.playlist_play), findsNothing);
+      // Should not find any playlist icons
+      expect(_divineIcon(DivineIconName.playlist), findsNothing);
     });
 
     testWidgets('displays single list chip when one listId provided', (
@@ -58,7 +61,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Cool Videos'), findsOneWidget);
-      expect(find.byIcon(Icons.playlist_play), findsOneWidget);
+      expect(_divineIcon(DivineIconName.playlist), findsOneWidget);
     });
 
     testWidgets('displays up to 2 list chips when multiple listIds provided', (
@@ -77,7 +80,7 @@ void main() {
       await tester.pump();
 
       // Should only show 2 chips (not 3)
-      expect(find.byIcon(Icons.playlist_play), findsNWidgets(2));
+      expect(_divineIcon(DivineIconName.playlist), findsNWidgets(2));
     });
 
     testWidgets('uses fallback name "List" when list not found', (
@@ -124,7 +127,9 @@ void main() {
       );
       await tester.pump();
 
-      final icon = tester.widget<Icon>(find.byIcon(Icons.playlist_play));
+      final icon = tester.widget<DivineIcon>(
+        _divineIcon(DivineIconName.playlist),
+      );
       expect(icon.size, equals(14));
       expect(icon.color, equals(VineTheme.vineGreen));
     });

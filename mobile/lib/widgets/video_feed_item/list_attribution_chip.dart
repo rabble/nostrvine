@@ -61,8 +61,8 @@ class ListAttributionChip extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
-                  Icons.playlist_play,
+                const DivineIcon(
+                  icon: DivineIconName.playlist,
                   size: 14,
                   color: VineTheme.vineGreen,
                 ),

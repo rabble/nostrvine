@@ -473,8 +473,8 @@ class _ClassicVinesUnavailableState extends StatelessWidget {
               ),
               child: const Column(
                 children: [
-                  Icon(
-                    Icons.info_outline,
+                  DivineIcon(
+                    icon: DivineIconName.info,
                     color: VineTheme.vineGreen,
                     size: 20,
                   ),

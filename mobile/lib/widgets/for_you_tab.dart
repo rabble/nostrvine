@@ -275,8 +275,8 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
               color: VineTheme.backgroundColor,
               child: const Row(
                 children: [
-                  Icon(
-                    Icons.auto_awesome,
+                  DivineIcon(
+                    icon: DivineIconName.sparkle,
                     color: VineTheme.vineGreen,
                     size: 20,
                   ),
@@ -290,8 +290,8 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
                     ),
                   ),
                   SizedBox(width: 4),
-                  Icon(
-                    Icons.info_outline,
+                  DivineIcon(
+                    icon: DivineIconName.info,
                     color: VineTheme.secondaryText,
                     size: 16,
                   ),
@@ -337,8 +337,8 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
               // Title
               const Row(
                 children: [
-                  Icon(
-                    Icons.auto_awesome,
+                  DivineIcon(
+                    icon: DivineIconName.sparkle,
                     color: VineTheme.vineGreen,
                     size: 28,
                   ),
@@ -453,7 +453,11 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
                 child: const Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.code, color: VineTheme.vineGreen, size: 20),
+                    DivineIcon(
+                      icon: DivineIconName.bracketsAngle,
+                      color: VineTheme.vineGreen,
+                      size: 20,
+                    ),
                     SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -555,8 +559,8 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.check_circle_outline,
+          const DivineIcon(
+            icon: DivineIconName.checkCircle,
             color: VineTheme.vineGreen,
             size: 18,
           ),
@@ -621,7 +625,11 @@ class _ForYouEmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.auto_awesome, size: 64, color: VineTheme.secondaryText),
+          DivineIcon(
+            icon: DivineIconName.sparkle,
+            size: 64,
+            color: VineTheme.secondaryText,
+          ),
           SizedBox(height: 16),
           Text(
             'No Recommendations Yet',

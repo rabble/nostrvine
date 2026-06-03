@@ -9,6 +9,9 @@ import 'package:models/models.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_sounds_section.dart';
 
+Finder _divineIcon(DivineIconName name) =>
+    find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
+
 void main() {
   group(MetadataSoundsSection, () {
     const testAudioEventId =
@@ -107,7 +110,7 @@ void main() {
         await tester.pumpWidget(buildTestWidget(video: video));
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+        expect(_divineIcon(DivineIconName.caretRight), findsOneWidget);
       });
     });
 
@@ -147,7 +150,7 @@ void main() {
         await tester.pumpWidget(buildTestWidget(video: video));
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+        expect(_divineIcon(DivineIconName.caretRight), findsOneWidget);
       });
 
       testWidgets('falls back to original sound when audio event is null', (

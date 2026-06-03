@@ -119,8 +119,8 @@ class _SendButton extends StatelessWidget {
                   color: VineTheme.onPrimary,
                 ),
               )
-            : const Icon(
-                Icons.arrow_upward,
+            : const DivineIcon(
+                icon: DivineIconName.arrowUp,
                 size: 22,
                 color: VineTheme.onPrimary,
               ),

@@ -852,7 +852,11 @@ class _FeedErrorWidget extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, color: VineTheme.error, size: 64),
+          const DivineIcon(
+            icon: DivineIconName.warningCircle,
+            color: VineTheme.error,
+            size: 64,
+          ),
           const SizedBox(height: 16),
           Text(
             context.l10n.feedFailedToLoadVideos,
@@ -912,7 +916,10 @@ class FeedEmptyWidget extends StatelessWidget {
             const SizedBox(height: 24),
             FilledButton.icon(
               onPressed: () => context.go(ExploreScreen.path),
-              icon: const Icon(Icons.explore),
+              icon: const DivineIcon(
+                icon: DivineIconName.compass,
+                color: VineTheme.backgroundColor,
+              ),
               label: Text(context.l10n.feedExploreVideos),
               style: FilledButton.styleFrom(
                 backgroundColor: VineTheme.vineGreen,

@@ -796,7 +796,11 @@ class VideoAuthorRow extends ConsumerWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.person, size: 14, color: VineTheme.whiteText),
+                const DivineIcon(
+                  icon: DivineIconName.user,
+                  size: 14,
+                  color: VineTheme.whiteText,
+                ),
                 const SizedBox(width: 6),
                 UserName.fromPubKey(
                   video.pubkey,
@@ -844,7 +848,11 @@ class VideoRepostHeader extends ConsumerWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.repeat, color: VineTheme.vineGreen, size: 16),
+          const DivineIcon(
+            icon: DivineIconName.repeat,
+            color: VineTheme.vineGreen,
+            size: 16,
+          ),
           const SizedBox(width: 8),
           Flexible(
             child: Text(
@@ -884,8 +892,8 @@ class _ContentWarningBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.warning_amber_rounded,
+          const DivineIcon(
+            icon: DivineIconName.warning,
             color: VineTheme.contentWarningAmber,
             size: 14,
           ),
@@ -969,8 +977,8 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
             // Header
             Row(
               children: [
-                const Icon(
-                  Icons.warning_amber_rounded,
+                const DivineIcon(
+                  icon: DivineIconName.warning,
                   color: VineTheme.contentWarningAmber,
                   size: 22,
                 ),
@@ -1044,8 +1052,8 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
                   Navigator.of(context).pop();
                   context.push('/content-filters');
                 },
-                icon: const Icon(
-                  Icons.tune,
+                icon: const DivineIcon(
+                  icon: DivineIconName.slidersHorizontal,
                   size: 18,
                   color: VineTheme.vineGreen,
                 ),
