@@ -100,11 +100,15 @@ class UploadManager {
   UploadManager({
     required BlossomUploadService blossomService,
     String? defaultBlossomUrl,
+    String? currentNostrPubkey,
+    bool scopeUploadsToCurrentUser = false,
     VideoCircuitBreaker? circuitBreaker,
     UploadRetryConfig? retryConfig,
   }) : _blossomService = blossomService,
        _defaultBlossomUrl =
            defaultBlossomUrl ?? BlossomUploadService.defaultBlossomServer,
+       _currentNostrPubkey = currentNostrPubkey,
+       _scopeUploadsToCurrentUser = scopeUploadsToCurrentUser,
        _circuitBreaker = circuitBreaker ?? VideoCircuitBreaker(),
        _retryConfig = retryConfig ?? const UploadRetryConfig();
   // Removed unused _uploadsBoxName constant
@@ -114,6 +118,8 @@ class UploadManager {
   Box<PendingUpload>? _uploadsBox;
   final BlossomUploadService _blossomService;
   final String _defaultBlossomUrl;
+  final String? _currentNostrPubkey;
+  final bool _scopeUploadsToCurrentUser;
   final VideoCircuitBreaker _circuitBreaker;
   final UploadRetryConfig _retryConfig;
   final Dio _dio = Dio();
@@ -219,11 +225,34 @@ class UploadManager {
     }
   }
 
-  /// Get all pending uploads
-  List<PendingUpload> get pendingUploads {
+  List<PendingUpload> get _allUploads {
     if (_uploadsBox == null) return [];
     return _uploadsBox!.values.toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt)); // Newest first
+  }
+
+  /// Get pending uploads visible to the current owner.
+  ///
+  /// Production providers opt into owner scoping so account switches do not
+  /// surface another user's persisted Hive uploads. Tests and maintenance
+  /// harnesses that construct [UploadManager] directly keep the historical
+  /// unscoped view unless they pass [scopeUploadsToCurrentUser].
+  List<PendingUpload> get pendingUploads {
+    final uploads = _allUploads;
+    if (!_scopeUploadsToCurrentUser) return uploads;
+
+    return uploads.where(_isVisibleToCurrentOwner).toList();
+  }
+
+  bool _isVisibleToCurrentOwner(PendingUpload upload) {
+    if (!_scopeUploadsToCurrentUser) return true;
+
+    final currentPubkey = _currentNostrPubkey;
+    if (currentPubkey == null || currentPubkey.isEmpty) {
+      return false;
+    }
+
+    return upload.nostrPubkey == currentPubkey;
   }
 
   /// Get uploads by status
@@ -231,7 +260,13 @@ class UploadManager {
       pendingUploads.where((upload) => upload.status == status).toList();
 
   /// Get a specific upload by ID
-  PendingUpload? getUpload(String id) => _uploadsBox?.get(id);
+  PendingUpload? getUpload(String id) {
+    final upload = _uploadsBox?.get(id);
+    if (upload == null || !_isVisibleToCurrentOwner(upload)) {
+      return null;
+    }
+    return upload;
+  }
 
   /// Get an upload by file path
   PendingUpload? getUploadByFilePath(String filePath) {
@@ -1671,7 +1706,7 @@ class UploadManager {
 
     final uploadsToClean = <PendingUpload>[];
 
-    for (final upload in pendingUploads) {
+    for (final upload in _allUploads) {
       // Clean up published uploads immediately - they're done
       if (upload.status == UploadStatus.published) {
         uploadsToClean.add(upload);

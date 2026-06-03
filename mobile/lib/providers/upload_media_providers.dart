@@ -112,11 +112,17 @@ BlossomUploadService blossomUploadService(Ref ref) {
 @Riverpod(keepAlive: true)
 UploadManager uploadManager(Ref ref) {
   final blossomService = ref.watch(blossomUploadServiceProvider);
+  ref.watch(currentAuthStateProvider);
+  final currentPubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
   final env = ref.read(currentEnvironmentProvider);
-  return UploadManager(
+  final manager = UploadManager(
     blossomService: blossomService,
     defaultBlossomUrl: env.blossomUrl,
+    currentNostrPubkey: currentPubkey,
+    scopeUploadsToCurrentUser: true,
   );
+  ref.onDispose(manager.dispose);
+  return manager;
 }
 
 /// API service depends on auth service

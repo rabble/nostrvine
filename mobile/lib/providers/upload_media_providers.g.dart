@@ -211,7 +211,7 @@ final class UploadManagerProvider
   }
 }
 
-String _$uploadManagerHash() => r'9f636cc37381c17373522cee0ba671657960bfec';
+String _$uploadManagerHash() => r'9cfb9aeca47922785af40243c40b4fc2d5f63608';
 
 /// API service depends on auth service
 
