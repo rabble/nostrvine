@@ -28,7 +28,10 @@ class CommentsHeader extends StatelessWidget {
             button: true,
             label: l10n.commentsHeaderCloseLabel,
             child: IconButton(
-              icon: const Icon(Icons.close, color: VineTheme.whiteText),
+              icon: const DivineIcon(
+                icon: DivineIconName.x,
+                color: VineTheme.whiteText,
+              ),
               onPressed: onClose,
             ),
           ),

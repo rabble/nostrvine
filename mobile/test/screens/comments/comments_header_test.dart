@@ -1,7 +1,11 @@
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/comments/comments.dart';
+
+Finder _divineIcon(DivineIconName name) =>
+    find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
 
 void main() {
   group('CommentsHeader', () {
@@ -21,7 +25,7 @@ void main() {
     testWidgets('displays close button', (tester) async {
       await tester.pumpWidget(buildSubject());
 
-      expect(find.byIcon(Icons.close), findsOneWidget);
+      expect(_divineIcon(DivineIconName.x), findsOneWidget);
     });
 
     testWidgets('calls onClose when close button is tapped', (tester) async {
@@ -30,7 +34,7 @@ void main() {
         buildSubject(onClose: () => closeCallCount++),
       );
 
-      await tester.tap(find.byIcon(Icons.close));
+      await tester.tap(_divineIcon(DivineIconName.x));
       await tester.pump();
 
       expect(closeCallCount, equals(1));

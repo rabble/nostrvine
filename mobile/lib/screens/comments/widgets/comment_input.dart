@@ -461,8 +461,8 @@ class _SendButton extends StatelessWidget {
         child: IconButton(
           onPressed: onSubmit,
           padding: EdgeInsets.zero,
-          icon: const Icon(
-            Icons.arrow_upward,
+          icon: const DivineIcon(
+            icon: DivineIconName.arrowUp,
             color: VineTheme.whiteText,
             size: 20,
           ),
@@ -506,8 +506,8 @@ class _EditIndicator extends StatelessWidget {
               width: 20,
               height: 20,
               alignment: Alignment.center,
-              child: const Icon(
-                Icons.close,
+              child: const DivineIcon(
+                icon: DivineIconName.x,
                 size: 16,
                 color: VineTheme.tabIndicatorGreen,
               ),
@@ -554,8 +554,8 @@ class _ReplyIndicator extends StatelessWidget {
               width: 20,
               height: 20,
               alignment: Alignment.center,
-              child: const Icon(
-                Icons.close,
+              child: const DivineIcon(
+                icon: DivineIconName.x,
                 size: 16,
                 color: VineTheme.tabIndicatorGreen,
               ),

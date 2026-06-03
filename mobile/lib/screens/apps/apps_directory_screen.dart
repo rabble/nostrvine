@@ -197,7 +197,10 @@ class _AppsDirectoryRow extends StatelessWidget {
                 const SizedBox(width: 12),
                 const Padding(
                   padding: EdgeInsets.only(top: 6),
-                  child: Icon(Icons.chevron_right, color: VineTheme.lightText),
+                  child: DivineIcon(
+                    icon: DivineIconName.caretRight,
+                    color: VineTheme.lightText,
+                  ),
                 ),
               ],
             ),

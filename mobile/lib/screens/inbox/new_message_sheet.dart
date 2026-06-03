@@ -199,7 +199,10 @@ class _SearchField extends StatelessWidget {
       child: Row(
         spacing: 8,
         children: [
-          const Icon(Icons.search, color: VineTheme.onSurfaceMuted, size: 24),
+          const DivineIcon(
+            icon: DivineIconName.search,
+            color: VineTheme.onSurfaceMuted,
+          ),
           Expanded(
             child: TextField(
               controller: controller,

@@ -105,8 +105,8 @@ class _AppsPermissionsEmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.lock_outline,
+            const DivineIcon(
+              icon: DivineIconName.lockSimple,
               color: VineTheme.vineGreen,
               size: 28,
             ),

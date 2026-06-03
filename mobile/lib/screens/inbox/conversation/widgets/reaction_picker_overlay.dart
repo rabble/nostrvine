@@ -192,8 +192,8 @@ class _MoreButton extends StatelessWidget {
             child: const SizedBox(
               width: 48,
               height: 48,
-              child: Icon(
-                Icons.add,
+              child: DivineIcon(
+                icon: DivineIconName.plus,
                 color: VineTheme.onSurface,
               ),
             ),

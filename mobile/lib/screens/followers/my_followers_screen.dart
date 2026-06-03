@@ -214,7 +214,11 @@ class _FollowersErrorBody extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, size: 64, color: VineTheme.lightText),
+          const DivineIcon(
+            icon: DivineIconName.warningCircle,
+            size: 64,
+            color: VineTheme.lightText,
+          ),
           const SizedBox(height: 16),
           Text(
             context.l10n.followersFailedToLoadList,

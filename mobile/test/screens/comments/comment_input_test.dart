@@ -1,6 +1,7 @@
 // ABOUTME: Widget tests for CommentInput component
 // ABOUTME: Tests input field, send button, and posting state behavior
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +9,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/blocs/comments/comment_composer/comment_composer_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/comments/comments.dart';
+
+Finder _divineIcon(DivineIconName name) =>
+    find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
 
 void main() {
   group('CommentInput', () {
@@ -38,7 +42,7 @@ void main() {
       );
 
       expect(find.text('Add comment...'), findsOneWidget);
-      expect(find.byIcon(Icons.arrow_upward), findsNothing);
+      expect(_divineIcon(DivineIconName.arrowUp), findsNothing);
     });
 
     testWidgets('shows send button when text is entered', (tester) async {
@@ -58,7 +62,7 @@ void main() {
       await tester.enterText(find.byType(TextField), 'Test comment');
       await tester.pump();
 
-      expect(find.byIcon(Icons.arrow_upward), findsOneWidget);
+      expect(_divineIcon(DivineIconName.arrowUp), findsOneWidget);
     });
 
     testWidgets('shows video reply button when callback is provided', (
@@ -112,7 +116,7 @@ void main() {
         );
 
         expect(find.byType(CircularProgressIndicator), findsNothing);
-        expect(find.byIcon(Icons.arrow_upward), findsOneWidget);
+        expect(_divineIcon(DivineIconName.arrowUp), findsOneWidget);
       },
     );
 
@@ -135,7 +139,7 @@ void main() {
       await tester.enterText(find.byType(TextField), 'Test comment');
       await tester.pump();
 
-      await tester.tap(find.byIcon(Icons.arrow_upward));
+      await tester.tap(_divineIcon(DivineIconName.arrowUp));
       await tester.pump();
 
       expect(submitted, isTrue);
@@ -260,7 +264,7 @@ void main() {
       );
 
       final label = find.text('Re: alice');
-      final closeIcon = find.byIcon(Icons.close);
+      final closeIcon = _divineIcon(DivineIconName.x);
       expect(label, findsOneWidget);
       expect(closeIcon, findsOneWidget);
 

@@ -4,6 +4,7 @@
 
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -37,6 +38,9 @@ AudioEvent _createTestAudioEvent({
     duration: duration ?? 5.0,
   );
 }
+
+Finder _divineIcon(DivineIconName name) =>
+    find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -308,7 +312,7 @@ void main() {
           find.text(l10n.videoEditorAudioFailedToLoadTitle),
           findsOneWidget,
         );
-        expect(find.byIcon(Icons.error_outline), findsOneWidget);
+        expect(_divineIcon(DivineIconName.warningCircle), findsOneWidget);
       });
 
       testWidgets('renders retry button on error state', (tester) async {

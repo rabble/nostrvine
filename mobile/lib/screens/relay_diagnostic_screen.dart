@@ -696,8 +696,8 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                   Center(
                     child: ElevatedButton.icon(
                       onPressed: _testDirectEventQuery,
-                      icon: const Icon(
-                        Icons.search,
+                      icon: const DivineIcon(
+                        icon: DivineIconName.search,
                         color: VineTheme.whiteText,
                       ),
                       label: Text(
@@ -723,8 +723,8 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                     Center(
                       child: ElevatedButton.icon(
                         onPressed: _testNetworkConnectivity,
-                        icon: const Icon(
-                          Icons.play_arrow,
+                        icon: const DivineIcon(
+                          icon: DivineIconName.play,
                           color: VineTheme.whiteText,
                         ),
                         label: Text(
@@ -770,8 +770,8 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                     Center(
                       child: ElevatedButton.icon(
                         onPressed: _testRestEndpoints,
-                        icon: const Icon(
-                          Icons.play_arrow,
+                        icon: const DivineIcon(
+                          icon: DivineIconName.play,
                           color: VineTheme.whiteText,
                         ),
                         label: Text(
@@ -829,8 +829,8 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                     Center(
                       child: ElevatedButton.icon(
                         onPressed: _testRestEndpoints,
-                        icon: const Icon(
-                          Icons.play_arrow,
+                        icon: const DivineIcon(
+                          icon: DivineIconName.play,
                           color: VineTheme.whiteText,
                         ),
                         label: Text(
@@ -905,7 +905,10 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                           ),
                         ),
                       )
-                    : const Icon(Icons.refresh, color: VineTheme.whiteText),
+                    : const DivineIcon(
+                        icon: DivineIconName.arrowClockwise,
+                        color: VineTheme.whiteText,
+                      ),
                 label: Text(
                   _isRetrying
                       ? context.l10n.relayDiagnosticRetrying
@@ -939,8 +942,8 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                   children: [
                     Row(
                       children: [
-                        const Icon(
-                          Icons.info_outline,
+                        const DivineIcon(
+                          icon: DivineIconName.info,
                           color: VineTheme.secondaryText,
                           size: 20,
                         ),

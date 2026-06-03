@@ -166,8 +166,8 @@ class _FollowingEmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.person_add_outlined,
+          const DivineIcon(
+            icon: DivineIconName.userPlus,
             size: 64,
             color: VineTheme.lightText,
           ),
@@ -196,7 +196,11 @@ class _FollowingErrorBody extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, size: 64, color: VineTheme.lightText),
+          const DivineIcon(
+            icon: DivineIconName.warningCircle,
+            size: 64,
+            color: VineTheme.lightText,
+          ),
           const SizedBox(height: 16),
           Text(
             context.l10n.followingFailedToLoadList,

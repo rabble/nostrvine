@@ -5,6 +5,7 @@
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:comments_repository/comments_repository.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -48,6 +49,9 @@ const testVideoEventId =
     'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234';
 const testVideoAuthorPubkey =
     'b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234a';
+
+Finder _divineIcon(DivineIconName name) =>
+    find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
 
 void main() {
   group('CommentsScreen', () {
@@ -291,7 +295,7 @@ void main() {
           find.text('${l10n.commentReplyToPrefix} TestUser'),
           findsOneWidget,
         );
-        expect(find.byIcon(Icons.close), findsWidgets);
+        expect(_divineIcon(DivineIconName.x), findsWidgets);
       });
     });
 
