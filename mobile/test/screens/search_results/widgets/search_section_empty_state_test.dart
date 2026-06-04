@@ -1,12 +1,15 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
 
 void main() {
   group(SearchSectionEmptyState, () {
     Widget buildSubject({required String query}) {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: CustomScrollView(
             slivers: [SearchSectionEmptyState(query: query)],
@@ -29,13 +32,27 @@ void main() {
     testWidgets('renders query in message', (tester) async {
       await tester.pumpWidget(buildSubject(query: 'flutter'));
 
-      expect(find.text('No results found for "flutter"'), findsOneWidget);
+      expect(
+        find.text(
+          lookupAppLocalizations(
+            const Locale('en'),
+          ).searchNoResultsFound('flutter'),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('renders suggestion text', (tester) async {
       await tester.pumpWidget(buildSubject(query: 'flutter'));
 
-      expect(find.text('Try a different search term'), findsOneWidget);
+      expect(
+        find.text(
+          lookupAppLocalizations(
+            const Locale('en'),
+          ).soundsNoSoundsFoundDescription,
+        ),
+        findsOneWidget,
+      );
     });
   });
 }

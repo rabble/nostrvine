@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/og_viner_cache_service.dart';
 import 'package:openvine/widgets/user_name.dart';
@@ -25,6 +26,8 @@ void main() {
     return ProviderScope(
       overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
       child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: Center(
             child: UserName.fromUserProfile(
@@ -51,7 +54,9 @@ void main() {
     expect(
       find.byWidgetPredicate(
         (widget) =>
-            widget is Semantics && widget.properties.label == 'OG Viner',
+            widget is Semantics &&
+            widget.properties.label ==
+                lookupAppLocalizations(const Locale('en')).ogVinerBadgeLabel,
       ),
       findsOneWidget,
     );
