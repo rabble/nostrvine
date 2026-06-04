@@ -201,13 +201,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Запази емисиите в класическия квадратен формат';
 
   @override
-  String get generalSettingsHoldToRecord => 'Задръжте за запис';
-
-  @override
-  String get generalSettingsHoldToRecordSubtitle =>
-      'Записът започва при задържане и спира при отпускане';
-
-  @override
   String get contentPreferencesTitle => 'Предпочитания за съдържание';
 
   @override
@@ -2326,6 +2319,38 @@ class AppLocalizationsBg extends AppLocalizations {
       'Когато някой препубликува видеата ти';
 
   @override
+  String get notificationSettingsSystem => 'System';
+
+  @override
+  String get notificationSettingsSystemSubtitle =>
+      'App updates and system messages';
+
+  @override
+  String get notificationSettingsPushNotificationsSection =>
+      'Push Notifications';
+
+  @override
+  String get notificationSettingsPushNotifications => 'Push Notifications';
+
+  @override
+  String get notificationSettingsPushNotificationsSubtitle =>
+      'Receive notifications when app is closed';
+
+  @override
+  String get notificationSettingsSound => 'Sound';
+
+  @override
+  String get notificationSettingsSoundSubtitle =>
+      'Play sound for notifications';
+
+  @override
+  String get notificationSettingsVibration => 'Vibration';
+
+  @override
+  String get notificationSettingsVibrationSubtitle =>
+      'Vibrate for notifications';
+
+  @override
   String get notificationSettingsActions => 'Действия';
 
   @override
@@ -3986,9 +4011,6 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String get soundsPreviewFailedGeneric => 'Неуспешно пускане на визуализация';
-
-  @override
   String get soundsFeaturedSounds => 'Представени звуци';
 
   @override
@@ -4275,17 +4297,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get uploadPublishedMessage => 'Видеото е публикувано в профила ти';
-
-  @override
-  String uploadPublishedCountMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count видеа са публикувани в профила ти',
-      one: 'Видеото е публикувано в профила ти',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get uploadFailedMessage => 'Качването не мина - опитай пак';
@@ -5536,9 +5547,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get dmMessageInputHint => 'Say something…';
 
   @override
-  String get dmMessageSendLabel => 'Send message';
-
-  @override
   String get dmMessageBubbleSentHint => 'Sent message';
 
   @override
@@ -5583,36 +5591,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
-
-  @override
-  String get emojiPickerSearchHint => 'Търсене';
-
-  @override
-  String get emojiCategoryRecent => 'Скорошни';
-
-  @override
-  String get emojiCategorySmileys => 'Емотикони и хора';
-
-  @override
-  String get emojiCategoryAnimals => 'Животни и природа';
-
-  @override
-  String get emojiCategoryFood => 'Храна и напитки';
-
-  @override
-  String get emojiCategoryActivities => 'Дейности';
-
-  @override
-  String get emojiCategoryTravel => 'Пътувания и места';
-
-  @override
-  String get emojiCategoryObjects => 'Обекти';
-
-  @override
-  String get emojiCategorySymbols => 'Символи';
-
-  @override
-  String get emojiCategoryFlags => 'Знамена';
 
   @override
   String get dmFormatBold => 'Получер';
@@ -7053,9 +7031,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorAudioLabel => 'Аудио';
 
   @override
-  String get videoEditorMarkerLabel => 'Маркер';
-
-  @override
   String get videoEditorAddTitle => 'Добави';
 
   @override
@@ -7151,22 +7126,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get videoEditorRedoSemanticLabel => 'Повторете';
-
-  @override
-  String get videoEditorAddTimelineMarkerSemanticLabel =>
-      'Добавяне на маркер в хронологията';
-
-  @override
-  String get videoEditorRemoveTimelineMarkerSemanticLabel =>
-      'Премахване на маркер от хронологията';
-
-  @override
-  String get videoEditorDeleteTimelineMarkerTitle =>
-      'Да се изтрие ли маркерът?';
-
-  @override
-  String get videoEditorDeleteTimelineMarkerSubtitle =>
-      'Това премахва маркера от хронологията. Редакцията ви остава непроменена.';
 
   @override
   String get videoEditorTextColorSemanticLabel => 'Цвят на текста';
@@ -7297,10 +7256,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorAudioUntitledSound => 'Звук без заглавие';
 
   @override
-  String get videoEditorVolumeLongPressHint =>
-      'Заглуши или включи всички писти';
-
-  @override
   String get videoEditorAudioUntitled => 'Без заглавие';
 
   @override
@@ -7385,10 +7340,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get videoEditorFontUnknown => 'Неизвестен';
-
-  @override
-  String get videoEditorSplitFailed =>
-      'Разделянето не бе успешно. Моля, опитайте отново.';
 
   @override
   String get videoEditorSplitPlayheadOutsideClip =>
@@ -8261,4 +8212,85 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get minorAccountReviewUnder13WhyTitle => 'Here\'s why';
+
+  @override
+  String get generalSettingsHoldToRecord => 'Задръжте за запис';
+
+  @override
+  String get generalSettingsHoldToRecordSubtitle =>
+      'Записът започва при задържане и спира при отпускане';
+
+  @override
+  String get soundsPreviewFailedGeneric => 'Неуспешно пускане на визуализация';
+
+  @override
+  String uploadPublishedCountMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count видеа са публикувани в профила ти',
+      one: 'Видеото е публикувано в профила ти',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dmMessageSendLabel => 'Send message';
+
+  @override
+  String get emojiPickerSearchHint => 'Търсене';
+
+  @override
+  String get emojiCategoryRecent => 'Скорошни';
+
+  @override
+  String get emojiCategorySmileys => 'Емотикони и хора';
+
+  @override
+  String get emojiCategoryAnimals => 'Животни и природа';
+
+  @override
+  String get emojiCategoryFood => 'Храна и напитки';
+
+  @override
+  String get emojiCategoryActivities => 'Дейности';
+
+  @override
+  String get emojiCategoryTravel => 'Пътувания и места';
+
+  @override
+  String get emojiCategoryObjects => 'Обекти';
+
+  @override
+  String get emojiCategorySymbols => 'Символи';
+
+  @override
+  String get emojiCategoryFlags => 'Знамена';
+
+  @override
+  String get videoEditorMarkerLabel => 'Маркер';
+
+  @override
+  String get videoEditorAddTimelineMarkerSemanticLabel =>
+      'Добавяне на маркер в хронологията';
+
+  @override
+  String get videoEditorRemoveTimelineMarkerSemanticLabel =>
+      'Премахване на маркер от хронологията';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerTitle =>
+      'Да се изтрие ли маркерът?';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerSubtitle =>
+      'Това премахва маркера от хронологията. Редакцията ви остава непроменена.';
+
+  @override
+  String get videoEditorVolumeLongPressHint =>
+      'Заглуши или включи всички писти';
+
+  @override
+  String get videoEditorSplitFailed =>
+      'Разделянето не бе успешно. Моля, опитайте отново.';
 }

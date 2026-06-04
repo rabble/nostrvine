@@ -180,13 +180,6 @@ class AppLocalizationsId extends AppLocalizations {
       'Pertahankan feed dalam format persegi klasik';
 
   @override
-  String get generalSettingsHoldToRecord => 'Tahan untuk merekam';
-
-  @override
-  String get generalSettingsHoldToRecordSubtitle =>
-      'Rekaman dimulai saat menahan dan berhenti saat dilepas';
-
-  @override
   String get contentPreferencesTitle => 'Preferensi Konten';
 
   @override
@@ -2263,6 +2256,38 @@ class AppLocalizationsId extends AppLocalizations {
       'Saat ada yang me-repost videomu';
 
   @override
+  String get notificationSettingsSystem => 'System';
+
+  @override
+  String get notificationSettingsSystemSubtitle =>
+      'App updates and system messages';
+
+  @override
+  String get notificationSettingsPushNotificationsSection =>
+      'Push Notifications';
+
+  @override
+  String get notificationSettingsPushNotifications => 'Push Notifications';
+
+  @override
+  String get notificationSettingsPushNotificationsSubtitle =>
+      'Receive notifications when app is closed';
+
+  @override
+  String get notificationSettingsSound => 'Sound';
+
+  @override
+  String get notificationSettingsSoundSubtitle =>
+      'Play sound for notifications';
+
+  @override
+  String get notificationSettingsVibration => 'Vibration';
+
+  @override
+  String get notificationSettingsVibrationSubtitle =>
+      'Vibrate for notifications';
+
+  @override
   String get notificationSettingsActions => 'Aksi';
 
   @override
@@ -3912,9 +3937,6 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String get soundsPreviewFailedGeneric => 'Gagal memutar pratinjau';
-
-  @override
   String get soundsFeaturedSounds => 'Suara Unggulan';
 
   @override
@@ -4202,17 +4224,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get uploadPublishedMessage => 'Video dipublikasikan ke profilmu';
-
-  @override
-  String uploadPublishedCountMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count video dipublikasikan ke profilmu',
-      one: 'Video dipublikasikan ke profilmu',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get uploadFailedMessage => 'Unggah gagal - silakan coba lagi';
@@ -5459,9 +5470,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get dmMessageInputHint => 'Say something…';
 
   @override
-  String get dmMessageSendLabel => 'Send message';
-
-  @override
   String get dmMessageBubbleSentHint => 'Sent message';
 
   @override
@@ -5506,36 +5514,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
-
-  @override
-  String get emojiPickerSearchHint => 'Cari';
-
-  @override
-  String get emojiCategoryRecent => 'Terbaru';
-
-  @override
-  String get emojiCategorySmileys => 'Smiley & Orang';
-
-  @override
-  String get emojiCategoryAnimals => 'Hewan & Alam';
-
-  @override
-  String get emojiCategoryFood => 'Makanan & Minuman';
-
-  @override
-  String get emojiCategoryActivities => 'Aktivitas';
-
-  @override
-  String get emojiCategoryTravel => 'Perjalanan & Tempat';
-
-  @override
-  String get emojiCategoryObjects => 'Objek';
-
-  @override
-  String get emojiCategorySymbols => 'Simbol';
-
-  @override
-  String get emojiCategoryFlags => 'Bendera';
 
   @override
   String get dmFormatBold => 'Tebal';
@@ -6958,9 +6936,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoEditorAudioLabel => 'Audio';
 
   @override
-  String get videoEditorMarkerLabel => 'Penanda';
-
-  @override
   String get videoEditorAddTitle => 'Tambah';
 
   @override
@@ -7054,21 +7029,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get videoEditorRedoSemanticLabel => 'Ulangi';
-
-  @override
-  String get videoEditorAddTimelineMarkerSemanticLabel =>
-      'Tambahkan penanda timeline';
-
-  @override
-  String get videoEditorRemoveTimelineMarkerSemanticLabel =>
-      'Hapus penanda timeline';
-
-  @override
-  String get videoEditorDeleteTimelineMarkerTitle => 'Hapus penanda?';
-
-  @override
-  String get videoEditorDeleteTimelineMarkerSubtitle =>
-      'Ini menghapus penanda dari timeline. Editan Anda tetap utuh.';
 
   @override
   String get videoEditorTextColorSemanticLabel => 'Warna teks';
@@ -7198,10 +7158,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoEditorAudioUntitledSound => 'Suara tanpa judul';
 
   @override
-  String get videoEditorVolumeLongPressHint =>
-      'Bisukan atau aktifkan semua trek';
-
-  @override
   String get videoEditorAudioUntitled => 'Tanpa judul';
 
   @override
@@ -7283,9 +7239,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get videoEditorFontUnknown => 'Tidak dikenal';
-
-  @override
-  String get videoEditorSplitFailed => 'Pembagian gagal. Silakan coba lagi.';
 
   @override
   String get videoEditorSplitPlayheadOutsideClip =>
@@ -8149,4 +8102,83 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get minorAccountReviewUnder13WhyTitle => 'Here\'s why';
+
+  @override
+  String get generalSettingsHoldToRecord => 'Tahan untuk merekam';
+
+  @override
+  String get generalSettingsHoldToRecordSubtitle =>
+      'Rekaman dimulai saat menahan dan berhenti saat dilepas';
+
+  @override
+  String get soundsPreviewFailedGeneric => 'Gagal memutar pratinjau';
+
+  @override
+  String uploadPublishedCountMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count video dipublikasikan ke profilmu',
+      one: 'Video dipublikasikan ke profilmu',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dmMessageSendLabel => 'Send message';
+
+  @override
+  String get emojiPickerSearchHint => 'Cari';
+
+  @override
+  String get emojiCategoryRecent => 'Terbaru';
+
+  @override
+  String get emojiCategorySmileys => 'Smiley & Orang';
+
+  @override
+  String get emojiCategoryAnimals => 'Hewan & Alam';
+
+  @override
+  String get emojiCategoryFood => 'Makanan & Minuman';
+
+  @override
+  String get emojiCategoryActivities => 'Aktivitas';
+
+  @override
+  String get emojiCategoryTravel => 'Perjalanan & Tempat';
+
+  @override
+  String get emojiCategoryObjects => 'Objek';
+
+  @override
+  String get emojiCategorySymbols => 'Simbol';
+
+  @override
+  String get emojiCategoryFlags => 'Bendera';
+
+  @override
+  String get videoEditorMarkerLabel => 'Penanda';
+
+  @override
+  String get videoEditorAddTimelineMarkerSemanticLabel =>
+      'Tambahkan penanda timeline';
+
+  @override
+  String get videoEditorRemoveTimelineMarkerSemanticLabel =>
+      'Hapus penanda timeline';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerTitle => 'Hapus penanda?';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerSubtitle =>
+      'Ini menghapus penanda dari timeline. Editan Anda tetap utuh.';
+
+  @override
+  String get videoEditorVolumeLongPressHint =>
+      'Bisukan atau aktifkan semua trek';
+
+  @override
+  String get videoEditorSplitFailed => 'Pembagian gagal. Silakan coba lagi.';
 }

@@ -180,13 +180,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Akışları klasik kare formatta tut';
 
   @override
-  String get generalSettingsHoldToRecord => 'Kayıt için basılı tut';
-
-  @override
-  String get generalSettingsHoldToRecordSubtitle =>
-      'Basılı tuttuğunuzda kayıt başlar, bıraktığınızda durur';
-
-  @override
   String get contentPreferencesTitle => 'İçerik Tercihleri';
 
   @override
@@ -2269,6 +2262,38 @@ class AppLocalizationsTr extends AppLocalizations {
       'Biri videolarını yeniden paylaştığında';
 
   @override
+  String get notificationSettingsSystem => 'System';
+
+  @override
+  String get notificationSettingsSystemSubtitle =>
+      'App updates and system messages';
+
+  @override
+  String get notificationSettingsPushNotificationsSection =>
+      'Push Notifications';
+
+  @override
+  String get notificationSettingsPushNotifications => 'Push Notifications';
+
+  @override
+  String get notificationSettingsPushNotificationsSubtitle =>
+      'Receive notifications when app is closed';
+
+  @override
+  String get notificationSettingsSound => 'Sound';
+
+  @override
+  String get notificationSettingsSoundSubtitle =>
+      'Play sound for notifications';
+
+  @override
+  String get notificationSettingsVibration => 'Vibration';
+
+  @override
+  String get notificationSettingsVibrationSubtitle =>
+      'Vibrate for notifications';
+
+  @override
   String get notificationSettingsActions => 'İşlemler';
 
   @override
@@ -3921,9 +3946,6 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get soundsPreviewFailedGeneric => 'Önizleme oynatılamadı';
-
-  @override
   String get soundsFeaturedSounds => 'Öne Çıkan Sesler';
 
   @override
@@ -4211,17 +4233,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get uploadPublishedMessage => 'Video profiline yayınlandı';
-
-  @override
-  String uploadPublishedCountMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count video profiline yayınlandı',
-      one: 'Video profiline yayınlandı',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get uploadFailedMessage => 'Yükleme başarısız - lütfen tekrar dene';
@@ -5464,9 +5475,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get dmMessageInputHint => 'Say something…';
 
   @override
-  String get dmMessageSendLabel => 'Send message';
-
-  @override
   String get dmMessageBubbleSentHint => 'Sent message';
 
   @override
@@ -5511,36 +5519,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
-
-  @override
-  String get emojiPickerSearchHint => 'Ara';
-
-  @override
-  String get emojiCategoryRecent => 'Son Kullanılanlar';
-
-  @override
-  String get emojiCategorySmileys => 'İfadeler ve İnsanlar';
-
-  @override
-  String get emojiCategoryAnimals => 'Hayvanlar ve Doğa';
-
-  @override
-  String get emojiCategoryFood => 'Yiyecek ve İçecek';
-
-  @override
-  String get emojiCategoryActivities => 'Etkinlikler';
-
-  @override
-  String get emojiCategoryTravel => 'Seyahat ve Yerler';
-
-  @override
-  String get emojiCategoryObjects => 'Nesneler';
-
-  @override
-  String get emojiCategorySymbols => 'Semboller';
-
-  @override
-  String get emojiCategoryFlags => 'Bayraklar';
 
   @override
   String get dmFormatBold => 'Kalın';
@@ -6960,9 +6938,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorAudioLabel => 'Ses';
 
   @override
-  String get videoEditorMarkerLabel => 'İşaretçi';
-
-  @override
   String get videoEditorAddTitle => 'Ekle';
 
   @override
@@ -7055,21 +7030,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoEditorRedoSemanticLabel => 'Yinele';
-
-  @override
-  String get videoEditorAddTimelineMarkerSemanticLabel =>
-      'Zaman çizelgesi işaretçisi ekle';
-
-  @override
-  String get videoEditorRemoveTimelineMarkerSemanticLabel =>
-      'Zaman çizelgesi işaretçisini kaldır';
-
-  @override
-  String get videoEditorDeleteTimelineMarkerTitle => 'İşaretçi silinsin mi?';
-
-  @override
-  String get videoEditorDeleteTimelineMarkerSubtitle =>
-      'Bu, işaretçiyi zaman çizelgesinden kaldırır. Düzenlemeniz olduğu gibi kalır.';
 
   @override
   String get videoEditorTextColorSemanticLabel => 'Metin rengi';
@@ -7196,10 +7156,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorAudioUntitledSound => 'Başlıksız ses';
 
   @override
-  String get videoEditorVolumeLongPressHint =>
-      'Tüm parçaları sessize al veya aç';
-
-  @override
   String get videoEditorAudioUntitled => 'Başlıksız';
 
   @override
@@ -7279,10 +7235,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoEditorFontUnknown => 'Bilinmiyor';
-
-  @override
-  String get videoEditorSplitFailed =>
-      'Bölme başarısız oldu. Lütfen tekrar deneyin.';
 
   @override
   String get videoEditorSplitPlayheadOutsideClip =>
@@ -8149,4 +8101,84 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get minorAccountReviewUnder13WhyTitle => 'Here\'s why';
+
+  @override
+  String get generalSettingsHoldToRecord => 'Kayıt için basılı tut';
+
+  @override
+  String get generalSettingsHoldToRecordSubtitle =>
+      'Basılı tuttuğunuzda kayıt başlar, bıraktığınızda durur';
+
+  @override
+  String get soundsPreviewFailedGeneric => 'Önizleme oynatılamadı';
+
+  @override
+  String uploadPublishedCountMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count video profiline yayınlandı',
+      one: 'Video profiline yayınlandı',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dmMessageSendLabel => 'Send message';
+
+  @override
+  String get emojiPickerSearchHint => 'Ara';
+
+  @override
+  String get emojiCategoryRecent => 'Son Kullanılanlar';
+
+  @override
+  String get emojiCategorySmileys => 'İfadeler ve İnsanlar';
+
+  @override
+  String get emojiCategoryAnimals => 'Hayvanlar ve Doğa';
+
+  @override
+  String get emojiCategoryFood => 'Yiyecek ve İçecek';
+
+  @override
+  String get emojiCategoryActivities => 'Etkinlikler';
+
+  @override
+  String get emojiCategoryTravel => 'Seyahat ve Yerler';
+
+  @override
+  String get emojiCategoryObjects => 'Nesneler';
+
+  @override
+  String get emojiCategorySymbols => 'Semboller';
+
+  @override
+  String get emojiCategoryFlags => 'Bayraklar';
+
+  @override
+  String get videoEditorMarkerLabel => 'İşaretçi';
+
+  @override
+  String get videoEditorAddTimelineMarkerSemanticLabel =>
+      'Zaman çizelgesi işaretçisi ekle';
+
+  @override
+  String get videoEditorRemoveTimelineMarkerSemanticLabel =>
+      'Zaman çizelgesi işaretçisini kaldır';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerTitle => 'İşaretçi silinsin mi?';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerSubtitle =>
+      'Bu, işaretçiyi zaman çizelgesinden kaldırır. Düzenlemeniz olduğu gibi kalır.';
+
+  @override
+  String get videoEditorVolumeLongPressHint =>
+      'Tüm parçaları sessize al veya aç';
+
+  @override
+  String get videoEditorSplitFailed =>
+      'Bölme başarısız oldu. Lütfen tekrar deneyin.';
 }

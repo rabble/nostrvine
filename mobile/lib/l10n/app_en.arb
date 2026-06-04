@@ -4657,5 +4657,72 @@
   "@authUnder16ChoicesCta": {
     "description": "Inline green call-to-action on the welcome screen that opens the family-guidance flow for under-16 users."
   },
-  "minorAccountReviewUnder13WhyTitle": "Here's why"
+  "minorAccountReviewUnder13WhyTitle": "Here's why",
+    "generalSettingsHoldToRecord": "Hold to record",
+    "generalSettingsHoldToRecordSubtitle": "Start recording when you press and hold, then stop when you release",
+    "soundsPreviewFailedGeneric": "Failed to play preview",
+    "uploadPublishedCountMessage": "{count, plural, =1{Video published to your profile} other{{count} videos published to your profile}}",
+    "@uploadPublishedCountMessage": {
+        "description": "Snackbar shown after one or more background uploads succeed, e.g. after a re-auth redirect during which uploads completed.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "dmMessageSendLabel": "Send message",
+    "@dmMessageSendLabel": {
+        "description": "Screen-reader label for the send button at the bottom of a DM conversation."
+    },
+    "emojiPickerSearchHint": "Search",
+    "@emojiPickerSearchHint": {
+        "description": "Hint text in the search field of the full emoji picker opened from the DM reaction '+' button."
+    },
+    "emojiCategoryRecent": "Recent",
+    "@emojiCategoryRecent": {
+        "description": "Title for the 'Recent' category in the full emoji picker."
+    },
+    "emojiCategorySmileys": "Smileys & People",
+    "@emojiCategorySmileys": {
+        "description": "Title for the 'Smileys & People' category in the full emoji picker."
+    },
+    "emojiCategoryAnimals": "Animals & Nature",
+    "@emojiCategoryAnimals": {
+        "description": "Title for the 'Animals & Nature' category in the full emoji picker."
+    },
+    "emojiCategoryFood": "Food & Drink",
+    "@emojiCategoryFood": {
+        "description": "Title for the 'Food & Drink' category in the full emoji picker."
+    },
+    "emojiCategoryActivities": "Activities",
+    "@emojiCategoryActivities": {
+        "description": "Title for the 'Activities' category in the full emoji picker."
+    },
+    "emojiCategoryTravel": "Travel & Places",
+    "@emojiCategoryTravel": {
+        "description": "Title for the 'Travel & Places' category in the full emoji picker."
+    },
+    "emojiCategoryObjects": "Objects",
+    "@emojiCategoryObjects": {
+        "description": "Title for the 'Objects' category in the full emoji picker."
+    },
+    "emojiCategorySymbols": "Symbols",
+    "@emojiCategorySymbols": {
+        "description": "Title for the 'Symbols' category in the full emoji picker."
+    },
+    "emojiCategoryFlags": "Flags",
+    "@emojiCategoryFlags": {
+        "description": "Title for the 'Flags' category in the full emoji picker."
+    },
+    "videoEditorMarkerLabel": "Marker",
+    "videoEditorAddTimelineMarkerSemanticLabel": "Add timeline marker",
+    "videoEditorRemoveTimelineMarkerSemanticLabel": "Remove timeline marker",
+    "videoEditorDeleteTimelineMarkerTitle": "Delete marker?",
+    "videoEditorDeleteTimelineMarkerSubtitle": "This removes the marker from the timeline. Your edit stays intact.",
+    "videoEditorVolumeLongPressHint": "Mute or unmute all tracks",
+    "@videoEditorVolumeLongPressHint": {
+        "description": "Semantic long-press hint for a volume arc control. Screen readers announce this as the long-press affordance, which mutes or unmutes all timeline tracks at once."
+    },
+    "videoEditorSplitFailed": "Split failed. Please try again."
 }

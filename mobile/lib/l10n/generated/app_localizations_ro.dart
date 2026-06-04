@@ -212,13 +212,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Păstrează feedurile în formatul clasic pătrat';
 
   @override
-  String get generalSettingsHoldToRecord => 'Ține apăsat pentru a înregistra';
-
-  @override
-  String get generalSettingsHoldToRecordSubtitle =>
-      'Înregistrarea începe când ții apăsat și se oprește când eliberezi';
-
-  @override
   String get contentPreferencesTitle => 'Preferințe de conținut';
 
   @override
@@ -2372,6 +2365,38 @@ class AppLocalizationsRo extends AppLocalizations {
       'Când cineva âți redistribuie videoclipurile';
 
   @override
+  String get notificationSettingsSystem => 'System';
+
+  @override
+  String get notificationSettingsSystemSubtitle =>
+      'App updates and system messages';
+
+  @override
+  String get notificationSettingsPushNotificationsSection =>
+      'Push Notifications';
+
+  @override
+  String get notificationSettingsPushNotifications => 'Push Notifications';
+
+  @override
+  String get notificationSettingsPushNotificationsSubtitle =>
+      'Receive notifications when app is closed';
+
+  @override
+  String get notificationSettingsSound => 'Sound';
+
+  @override
+  String get notificationSettingsSoundSubtitle =>
+      'Play sound for notifications';
+
+  @override
+  String get notificationSettingsVibration => 'Vibration';
+
+  @override
+  String get notificationSettingsVibrationSubtitle =>
+      'Vibrate for notifications';
+
+  @override
   String get notificationSettingsActions => 'Acțiuni';
 
   @override
@@ -4056,9 +4081,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get soundsPreviewFailedGeneric => 'N-am putut reda previzualizarea';
-
-  @override
   String get soundsFeaturedSounds => 'Sunete recomandate';
 
   @override
@@ -4354,18 +4376,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get uploadPublishedMessage => 'Videoclip publicat pe profilul tău';
-
-  @override
-  String uploadPublishedCountMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count de videoclipuri publicate pe profilul tău',
-      few: '$count videoclipuri publicate pe profilul tău',
-      one: 'Videoclip publicat pe profilul tău',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get uploadFailedMessage => 'Încărcarea a eșuat - încearcă din nou';
@@ -5632,9 +5642,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dmMessageInputHint => 'Say something…';
 
   @override
-  String get dmMessageSendLabel => 'Send message';
-
-  @override
   String get dmMessageBubbleSentHint => 'Sent message';
 
   @override
@@ -5679,36 +5686,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
-
-  @override
-  String get emojiPickerSearchHint => 'Căutare';
-
-  @override
-  String get emojiCategoryRecent => 'Recente';
-
-  @override
-  String get emojiCategorySmileys => 'Emoticoane și persoane';
-
-  @override
-  String get emojiCategoryAnimals => 'Animale și natură';
-
-  @override
-  String get emojiCategoryFood => 'Mâncare și băutură';
-
-  @override
-  String get emojiCategoryActivities => 'Activități';
-
-  @override
-  String get emojiCategoryTravel => 'Călătorii și locuri';
-
-  @override
-  String get emojiCategoryObjects => 'Obiecte';
-
-  @override
-  String get emojiCategorySymbols => 'Simboluri';
-
-  @override
-  String get emojiCategoryFlags => 'Steaguri';
 
   @override
   String get dmFormatBold => 'Aldin';
@@ -7148,9 +7125,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorAudioLabel => 'Audio';
 
   @override
-  String get videoEditorMarkerLabel => 'Marcator';
-
-  @override
   String get videoEditorAddTitle => 'Adaugă';
 
   @override
@@ -7248,21 +7222,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get videoEditorRedoSemanticLabel => 'Refă';
-
-  @override
-  String get videoEditorAddTimelineMarkerSemanticLabel =>
-      'Adaugă marcator pe cronologie';
-
-  @override
-  String get videoEditorRemoveTimelineMarkerSemanticLabel =>
-      'Elimină marcatorul de pe cronologie';
-
-  @override
-  String get videoEditorDeleteTimelineMarkerTitle => 'Ștergi marcatorul?';
-
-  @override
-  String get videoEditorDeleteTimelineMarkerSubtitle =>
-      'Aceasta elimină marcatorul de pe cronologie. Editarea rămâne intactă.';
 
   @override
   String get videoEditorTextColorSemanticLabel => 'Culoare text';
@@ -7394,10 +7353,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorAudioUntitledSound => 'Sunet fără titlu';
 
   @override
-  String get videoEditorVolumeLongPressHint =>
-      'Dezactivați sau activați sunetul tuturor pistelor';
-
-  @override
   String get videoEditorAudioUntitled => 'Fără titlu';
 
   @override
@@ -7480,10 +7435,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get videoEditorFontUnknown => 'Necunoscut';
-
-  @override
-  String get videoEditorSplitFailed =>
-      'Împărțire eșuată. Vă rugăm să încercați din nou.';
 
   @override
   String get videoEditorSplitPlayheadOutsideClip =>
@@ -8357,4 +8308,85 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get minorAccountReviewUnder13WhyTitle => 'Here\'s why';
+
+  @override
+  String get generalSettingsHoldToRecord => 'Ține apăsat pentru a înregistra';
+
+  @override
+  String get generalSettingsHoldToRecordSubtitle =>
+      'Înregistrarea începe când ții apăsat și se oprește când eliberezi';
+
+  @override
+  String get soundsPreviewFailedGeneric => 'N-am putut reda previzualizarea';
+
+  @override
+  String uploadPublishedCountMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de videoclipuri publicate pe profilul tău',
+      few: '$count videoclipuri publicate pe profilul tău',
+      one: 'Videoclip publicat pe profilul tău',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dmMessageSendLabel => 'Send message';
+
+  @override
+  String get emojiPickerSearchHint => 'Căutare';
+
+  @override
+  String get emojiCategoryRecent => 'Recente';
+
+  @override
+  String get emojiCategorySmileys => 'Emoticoane și persoane';
+
+  @override
+  String get emojiCategoryAnimals => 'Animale și natură';
+
+  @override
+  String get emojiCategoryFood => 'Mâncare și băutură';
+
+  @override
+  String get emojiCategoryActivities => 'Activități';
+
+  @override
+  String get emojiCategoryTravel => 'Călătorii și locuri';
+
+  @override
+  String get emojiCategoryObjects => 'Obiecte';
+
+  @override
+  String get emojiCategorySymbols => 'Simboluri';
+
+  @override
+  String get emojiCategoryFlags => 'Steaguri';
+
+  @override
+  String get videoEditorMarkerLabel => 'Marcator';
+
+  @override
+  String get videoEditorAddTimelineMarkerSemanticLabel =>
+      'Adaugă marcator pe cronologie';
+
+  @override
+  String get videoEditorRemoveTimelineMarkerSemanticLabel =>
+      'Elimină marcatorul de pe cronologie';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerTitle => 'Ștergi marcatorul?';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerSubtitle =>
+      'Aceasta elimină marcatorul de pe cronologie. Editarea rămâne intactă.';
+
+  @override
+  String get videoEditorVolumeLongPressHint =>
+      'Dezactivați sau activați sunetul tuturor pistelor';
+
+  @override
+  String get videoEditorSplitFailed =>
+      'Împărțire eșuată. Vă rugăm să încercați din nou.';
 }

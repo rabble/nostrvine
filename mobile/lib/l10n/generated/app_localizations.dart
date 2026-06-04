@@ -436,18 +436,6 @@ abstract class AppLocalizations {
   /// **'Keep feeds in the classic square format'**
   String get generalSettingsVideoShapeSquareOnlySubtitle;
 
-  /// No description provided for @generalSettingsHoldToRecord.
-  ///
-  /// In en, this message translates to:
-  /// **'Hold to record'**
-  String get generalSettingsHoldToRecord;
-
-  /// No description provided for @generalSettingsHoldToRecordSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Start recording when you press and hold, then stop when you release'**
-  String get generalSettingsHoldToRecordSubtitle;
-
   /// Content preferences screen app bar title
   ///
   /// In en, this message translates to:
@@ -4028,6 +4016,60 @@ abstract class AppLocalizations {
   /// **'When someone reposts your videos'**
   String get notificationSettingsRepostsSubtitle;
 
+  /// No description provided for @notificationSettingsSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get notificationSettingsSystem;
+
+  /// No description provided for @notificationSettingsSystemSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'App updates and system messages'**
+  String get notificationSettingsSystemSubtitle;
+
+  /// No description provided for @notificationSettingsPushNotificationsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Push Notifications'**
+  String get notificationSettingsPushNotificationsSection;
+
+  /// No description provided for @notificationSettingsPushNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Push Notifications'**
+  String get notificationSettingsPushNotifications;
+
+  /// No description provided for @notificationSettingsPushNotificationsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive notifications when app is closed'**
+  String get notificationSettingsPushNotificationsSubtitle;
+
+  /// No description provided for @notificationSettingsSound.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound'**
+  String get notificationSettingsSound;
+
+  /// No description provided for @notificationSettingsSoundSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Play sound for notifications'**
+  String get notificationSettingsSoundSubtitle;
+
+  /// No description provided for @notificationSettingsVibration.
+  ///
+  /// In en, this message translates to:
+  /// **'Vibration'**
+  String get notificationSettingsVibration;
+
+  /// No description provided for @notificationSettingsVibrationSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vibrate for notifications'**
+  String get notificationSettingsVibrationSubtitle;
+
   /// No description provided for @notificationSettingsActions.
   ///
   /// In en, this message translates to:
@@ -6872,12 +6914,6 @@ abstract class AppLocalizations {
   /// **'Failed to play preview: {error}'**
   String soundsPreviewFailed(String error);
 
-  /// No description provided for @soundsPreviewFailedGeneric.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to play preview'**
-  String get soundsPreviewFailedGeneric;
-
   /// No description provided for @soundsFeaturedSounds.
   ///
   /// In en, this message translates to:
@@ -7369,12 +7405,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Video published to your profile'**
   String get uploadPublishedMessage;
-
-  /// Snackbar shown after one or more background uploads succeed, e.g. after a re-auth redirect during which uploads completed.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{Video published to your profile} other{{count} videos published to your profile}}'**
-  String uploadPublishedCountMessage(int count);
 
   /// No description provided for @uploadFailedMessage.
   ///
@@ -9626,12 +9656,6 @@ abstract class AppLocalizations {
   /// **'Say something…'**
   String get dmMessageInputHint;
 
-  /// Screen-reader label for the send button at the bottom of a DM conversation.
-  ///
-  /// In en, this message translates to:
-  /// **'Send message'**
-  String get dmMessageSendLabel;
-
   /// Accessibility hint announcing that a direct message bubble was sent by the current user
   ///
   /// In en, this message translates to:
@@ -9709,66 +9733,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Retrying reaction'**
   String get dmReactionChipRetryAnnouncement;
-
-  /// Hint text in the search field of the full emoji picker opened from the DM reaction '+' button.
-  ///
-  /// In en, this message translates to:
-  /// **'Search'**
-  String get emojiPickerSearchHint;
-
-  /// Title for the 'Recent' category in the full emoji picker.
-  ///
-  /// In en, this message translates to:
-  /// **'Recent'**
-  String get emojiCategoryRecent;
-
-  /// Title for the 'Smileys & People' category in the full emoji picker.
-  ///
-  /// In en, this message translates to:
-  /// **'Smileys & People'**
-  String get emojiCategorySmileys;
-
-  /// Title for the 'Animals & Nature' category in the full emoji picker.
-  ///
-  /// In en, this message translates to:
-  /// **'Animals & Nature'**
-  String get emojiCategoryAnimals;
-
-  /// Title for the 'Food & Drink' category in the full emoji picker.
-  ///
-  /// In en, this message translates to:
-  /// **'Food & Drink'**
-  String get emojiCategoryFood;
-
-  /// Title for the 'Activities' category in the full emoji picker.
-  ///
-  /// In en, this message translates to:
-  /// **'Activities'**
-  String get emojiCategoryActivities;
-
-  /// Title for the 'Travel & Places' category in the full emoji picker.
-  ///
-  /// In en, this message translates to:
-  /// **'Travel & Places'**
-  String get emojiCategoryTravel;
-
-  /// Title for the 'Objects' category in the full emoji picker.
-  ///
-  /// In en, this message translates to:
-  /// **'Objects'**
-  String get emojiCategoryObjects;
-
-  /// Title for the 'Symbols' category in the full emoji picker.
-  ///
-  /// In en, this message translates to:
-  /// **'Symbols'**
-  String get emojiCategorySymbols;
-
-  /// Title for the 'Flags' category in the full emoji picker.
-  ///
-  /// In en, this message translates to:
-  /// **'Flags'**
-  String get emojiCategoryFlags;
 
   /// Label for the Bold formatting action in the DM composer's text-selection context menu. Wraps the selected text with markdown bold markers (e.g. **text**).
   ///
@@ -12188,12 +12152,6 @@ abstract class AppLocalizations {
   /// **'Audio'**
   String get videoEditorAudioLabel;
 
-  /// No description provided for @videoEditorMarkerLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Marker'**
-  String get videoEditorMarkerLabel;
-
   /// No description provided for @videoEditorAddTitle.
   ///
   /// In en, this message translates to:
@@ -12373,30 +12331,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Redo'**
   String get videoEditorRedoSemanticLabel;
-
-  /// No description provided for @videoEditorAddTimelineMarkerSemanticLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Add timeline marker'**
-  String get videoEditorAddTimelineMarkerSemanticLabel;
-
-  /// No description provided for @videoEditorRemoveTimelineMarkerSemanticLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove timeline marker'**
-  String get videoEditorRemoveTimelineMarkerSemanticLabel;
-
-  /// No description provided for @videoEditorDeleteTimelineMarkerTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete marker?'**
-  String get videoEditorDeleteTimelineMarkerTitle;
-
-  /// No description provided for @videoEditorDeleteTimelineMarkerSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'This removes the marker from the timeline. Your edit stays intact.'**
-  String get videoEditorDeleteTimelineMarkerSubtitle;
 
   /// No description provided for @videoEditorTextColorSemanticLabel.
   ///
@@ -12626,12 +12560,6 @@ abstract class AppLocalizations {
   /// **'Untitled sound'**
   String get videoEditorAudioUntitledSound;
 
-  /// Semantic long-press hint for a volume arc control. Screen readers announce this as the long-press affordance, which mutes or unmutes all timeline tracks at once.
-  ///
-  /// In en, this message translates to:
-  /// **'Mute or unmute all tracks'**
-  String get videoEditorVolumeLongPressHint;
-
   /// No description provided for @videoEditorAudioUntitled.
   ///
   /// In en, this message translates to:
@@ -12781,12 +12709,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unknown'**
   String get videoEditorFontUnknown;
-
-  /// No description provided for @videoEditorSplitFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Split failed. Please try again.'**
-  String get videoEditorSplitFailed;
 
   /// No description provided for @videoEditorSplitPlayheadOutsideClip.
   ///
@@ -14243,6 +14165,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Here\'s why'**
   String get minorAccountReviewUnder13WhyTitle;
+
+  /// No description provided for @generalSettingsHoldToRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold to record'**
+  String get generalSettingsHoldToRecord;
+
+  /// No description provided for @generalSettingsHoldToRecordSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start recording when you press and hold, then stop when you release'**
+  String get generalSettingsHoldToRecordSubtitle;
+
+  /// No description provided for @soundsPreviewFailedGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to play preview'**
+  String get soundsPreviewFailedGeneric;
+
+  /// Snackbar shown after one or more background uploads succeed, e.g. after a re-auth redirect during which uploads completed.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Video published to your profile} other{{count} videos published to your profile}}'**
+  String uploadPublishedCountMessage(int count);
+
+  /// Screen-reader label for the send button at the bottom of a DM conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Send message'**
+  String get dmMessageSendLabel;
+
+  /// Hint text in the search field of the full emoji picker opened from the DM reaction '+' button.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get emojiPickerSearchHint;
+
+  /// Title for the 'Recent' category in the full emoji picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get emojiCategoryRecent;
+
+  /// Title for the 'Smileys & People' category in the full emoji picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Smileys & People'**
+  String get emojiCategorySmileys;
+
+  /// Title for the 'Animals & Nature' category in the full emoji picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Animals & Nature'**
+  String get emojiCategoryAnimals;
+
+  /// Title for the 'Food & Drink' category in the full emoji picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Food & Drink'**
+  String get emojiCategoryFood;
+
+  /// Title for the 'Activities' category in the full emoji picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Activities'**
+  String get emojiCategoryActivities;
+
+  /// Title for the 'Travel & Places' category in the full emoji picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Travel & Places'**
+  String get emojiCategoryTravel;
+
+  /// Title for the 'Objects' category in the full emoji picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Objects'**
+  String get emojiCategoryObjects;
+
+  /// Title for the 'Symbols' category in the full emoji picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Symbols'**
+  String get emojiCategorySymbols;
+
+  /// Title for the 'Flags' category in the full emoji picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Flags'**
+  String get emojiCategoryFlags;
+
+  /// No description provided for @videoEditorMarkerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Marker'**
+  String get videoEditorMarkerLabel;
+
+  /// No description provided for @videoEditorAddTimelineMarkerSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Add timeline marker'**
+  String get videoEditorAddTimelineMarkerSemanticLabel;
+
+  /// No description provided for @videoEditorRemoveTimelineMarkerSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove timeline marker'**
+  String get videoEditorRemoveTimelineMarkerSemanticLabel;
+
+  /// No description provided for @videoEditorDeleteTimelineMarkerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete marker?'**
+  String get videoEditorDeleteTimelineMarkerTitle;
+
+  /// No description provided for @videoEditorDeleteTimelineMarkerSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes the marker from the timeline. Your edit stays intact.'**
+  String get videoEditorDeleteTimelineMarkerSubtitle;
+
+  /// Semantic long-press hint for a volume arc control. Screen readers announce this as the long-press affordance, which mutes or unmutes all timeline tracks at once.
+  ///
+  /// In en, this message translates to:
+  /// **'Mute or unmute all tracks'**
+  String get videoEditorVolumeLongPressHint;
+
+  /// No description provided for @videoEditorSplitFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Split failed. Please try again.'**
+  String get videoEditorSplitFailed;
 }
 
 class _AppLocalizationsDelegate

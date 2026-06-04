@@ -173,12 +173,6 @@ class AppLocalizationsKo extends AppLocalizations {
       '피드를 클래식한 정사각형으로 유지해요';
 
   @override
-  String get generalSettingsHoldToRecord => '길게 눌러서 녹화';
-
-  @override
-  String get generalSettingsHoldToRecordSubtitle => '길게 누르면 녹화가 시작되고, 놓으면 멈춰요';
-
-  @override
   String get contentPreferencesTitle => '콘텐츠 환경설정';
 
   @override
@@ -2185,6 +2179,38 @@ class AppLocalizationsKo extends AppLocalizations {
   String get notificationSettingsRepostsSubtitle => '누군가 내 영상을 리포스트할 때';
 
   @override
+  String get notificationSettingsSystem => 'System';
+
+  @override
+  String get notificationSettingsSystemSubtitle =>
+      'App updates and system messages';
+
+  @override
+  String get notificationSettingsPushNotificationsSection =>
+      'Push Notifications';
+
+  @override
+  String get notificationSettingsPushNotifications => 'Push Notifications';
+
+  @override
+  String get notificationSettingsPushNotificationsSubtitle =>
+      'Receive notifications when app is closed';
+
+  @override
+  String get notificationSettingsSound => 'Sound';
+
+  @override
+  String get notificationSettingsSoundSubtitle =>
+      'Play sound for notifications';
+
+  @override
+  String get notificationSettingsVibration => 'Vibration';
+
+  @override
+  String get notificationSettingsVibrationSubtitle =>
+      'Vibrate for notifications';
+
+  @override
   String get notificationSettingsActions => '작업';
 
   @override
@@ -3763,9 +3789,6 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get soundsPreviewFailedGeneric => '미리 듣기를 재생하지 못했어요';
-
-  @override
   String get soundsFeaturedSounds => '추천 사운드';
 
   @override
@@ -4044,17 +4067,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get uploadPublishedMessage => '프로필에 영상을 게시했어요';
-
-  @override
-  String uploadPublishedCountMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '프로필에 영상 $count개를 게시했어요',
-      one: '프로필에 영상을 게시했어요',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get uploadFailedMessage => '업로드에 실패했어요 - 다시 시도해 주세요';
@@ -5274,9 +5286,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get dmMessageInputHint => 'Say something…';
 
   @override
-  String get dmMessageSendLabel => 'Send message';
-
-  @override
   String get dmMessageBubbleSentHint => 'Sent message';
 
   @override
@@ -5321,36 +5330,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
-
-  @override
-  String get emojiPickerSearchHint => '검색';
-
-  @override
-  String get emojiCategoryRecent => '최근 사용';
-
-  @override
-  String get emojiCategorySmileys => '스마일리 및 사람';
-
-  @override
-  String get emojiCategoryAnimals => '동물 및 자연';
-
-  @override
-  String get emojiCategoryFood => '음식 및 음료';
-
-  @override
-  String get emojiCategoryActivities => '활동';
-
-  @override
-  String get emojiCategoryTravel => '여행 및 장소';
-
-  @override
-  String get emojiCategoryObjects => '사물';
-
-  @override
-  String get emojiCategorySymbols => '기호';
-
-  @override
-  String get emojiCategoryFlags => '깃발';
 
   @override
   String get dmFormatBold => '굵게';
@@ -6730,9 +6709,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorAudioLabel => '오디오';
 
   @override
-  String get videoEditorMarkerLabel => '마커';
-
-  @override
   String get videoEditorAddTitle => '추가';
 
   @override
@@ -6824,19 +6800,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoEditorRedoSemanticLabel => '다시 실행';
-
-  @override
-  String get videoEditorAddTimelineMarkerSemanticLabel => '타임라인 마커 추가';
-
-  @override
-  String get videoEditorRemoveTimelineMarkerSemanticLabel => '타임라인 마커 제거';
-
-  @override
-  String get videoEditorDeleteTimelineMarkerTitle => '마커를 삭제할까요?';
-
-  @override
-  String get videoEditorDeleteTimelineMarkerSubtitle =>
-      '타임라인에서 마커만 제거합니다. 편집 내용은 그대로 유지됩니다.';
 
   @override
   String get videoEditorTextColorSemanticLabel => '텍스트 색상';
@@ -6959,9 +6922,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorAudioUntitledSound => '제목 없는 사운드';
 
   @override
-  String get videoEditorVolumeLongPressHint => '모든 트랙 음소거 또는 해제';
-
-  @override
   String get videoEditorAudioUntitled => '제목 없음';
 
   @override
@@ -7039,9 +6999,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoEditorFontUnknown => '알 수 없음';
-
-  @override
-  String get videoEditorSplitFailed => '분할에 실패했습니다. 다시 시도해 주세요.';
 
   @override
   String get videoEditorSplitPlayheadOutsideClip =>
@@ -7886,4 +7843,79 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get minorAccountReviewUnder13WhyTitle => 'Here\'s why';
+
+  @override
+  String get generalSettingsHoldToRecord => '길게 눌러서 녹화';
+
+  @override
+  String get generalSettingsHoldToRecordSubtitle => '길게 누르면 녹화가 시작되고, 놓으면 멈춰요';
+
+  @override
+  String get soundsPreviewFailedGeneric => '미리 듣기를 재생하지 못했어요';
+
+  @override
+  String uploadPublishedCountMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '프로필에 영상 $count개를 게시했어요',
+      one: '프로필에 영상을 게시했어요',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dmMessageSendLabel => 'Send message';
+
+  @override
+  String get emojiPickerSearchHint => '검색';
+
+  @override
+  String get emojiCategoryRecent => '최근 사용';
+
+  @override
+  String get emojiCategorySmileys => '스마일리 및 사람';
+
+  @override
+  String get emojiCategoryAnimals => '동물 및 자연';
+
+  @override
+  String get emojiCategoryFood => '음식 및 음료';
+
+  @override
+  String get emojiCategoryActivities => '활동';
+
+  @override
+  String get emojiCategoryTravel => '여행 및 장소';
+
+  @override
+  String get emojiCategoryObjects => '사물';
+
+  @override
+  String get emojiCategorySymbols => '기호';
+
+  @override
+  String get emojiCategoryFlags => '깃발';
+
+  @override
+  String get videoEditorMarkerLabel => '마커';
+
+  @override
+  String get videoEditorAddTimelineMarkerSemanticLabel => '타임라인 마커 추가';
+
+  @override
+  String get videoEditorRemoveTimelineMarkerSemanticLabel => '타임라인 마커 제거';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerTitle => '마커를 삭제할까요?';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerSubtitle =>
+      '타임라인에서 마커만 제거합니다. 편집 내용은 그대로 유지됩니다.';
+
+  @override
+  String get videoEditorVolumeLongPressHint => '모든 트랙 음소거 또는 해제';
+
+  @override
+  String get videoEditorSplitFailed => '분할에 실패했습니다. 다시 시도해 주세요.';
 }

@@ -193,12 +193,6 @@ class AppLocalizationsAm extends AppLocalizations {
       'ምግቦችን በክላሲክ ካሬ ቅርጽ ያቆዩ';
 
   @override
-  String get generalSettingsHoldToRecord => 'ለቀረጻ ይያዙ';
-
-  @override
-  String get generalSettingsHoldToRecordSubtitle => 'ሲይዙ ቀረጻ ይጀምራል፣ ሲለቁ ይቆማል';
-
-  @override
   String get contentPreferencesTitle => 'የይዘት ምርጫዎች';
 
   @override
@@ -2247,6 +2241,38 @@ class AppLocalizationsAm extends AppLocalizations {
   String get notificationSettingsRepostsSubtitle => 'አንድ ሰው ቪዲዮዎችህን በድጋሚ ሲለጥፍ';
 
   @override
+  String get notificationSettingsSystem => 'System';
+
+  @override
+  String get notificationSettingsSystemSubtitle =>
+      'App updates and system messages';
+
+  @override
+  String get notificationSettingsPushNotificationsSection =>
+      'Push Notifications';
+
+  @override
+  String get notificationSettingsPushNotifications => 'Push Notifications';
+
+  @override
+  String get notificationSettingsPushNotificationsSubtitle =>
+      'Receive notifications when app is closed';
+
+  @override
+  String get notificationSettingsSound => 'Sound';
+
+  @override
+  String get notificationSettingsSoundSubtitle =>
+      'Play sound for notifications';
+
+  @override
+  String get notificationSettingsVibration => 'Vibration';
+
+  @override
+  String get notificationSettingsVibrationSubtitle =>
+      'Vibrate for notifications';
+
+  @override
   String get notificationSettingsActions => 'ድርጊቶች';
 
   @override
@@ -3855,9 +3881,6 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get soundsPreviewFailedGeneric => 'ቅድመ እይታን ማጫወት አልተሳካም';
-
-  @override
   String get soundsFeaturedSounds => 'ተለይተው የቀረቡ ድምፆች';
 
   @override
@@ -4140,17 +4163,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get uploadPublishedMessage => 'ቪዲዮ ወደ መገለጫዎ ታትሟል';
-
-  @override
-  String uploadPublishedCountMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count ቪዲዮዎች ወደ መገለጫዎ ታትሟቸዋል',
-      one: 'ቪዲዮ ወደ መገለጫዎ ታትሟል',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get uploadFailedMessage => 'ሰቀላው አልተሳካም - እባክዎ እንደገና ይሞክሩ';
@@ -5371,9 +5383,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get dmMessageInputHint => 'Say something…';
 
   @override
-  String get dmMessageSendLabel => 'Send message';
-
-  @override
   String get dmMessageBubbleSentHint => 'Sent message';
 
   @override
@@ -5418,36 +5427,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
-
-  @override
-  String get emojiPickerSearchHint => 'ፍለጋ';
-
-  @override
-  String get emojiCategoryRecent => 'የቅርብ ጊዜ';
-
-  @override
-  String get emojiCategorySmileys => 'ፈገግታዎች እና ሰዎች';
-
-  @override
-  String get emojiCategoryAnimals => 'እንስሳት እና ተፈጥሮ';
-
-  @override
-  String get emojiCategoryFood => 'ምግብ እና መጠጥ';
-
-  @override
-  String get emojiCategoryActivities => 'እንቅስቃሴዎች';
-
-  @override
-  String get emojiCategoryTravel => 'ጉዞ እና ቦታዎች';
-
-  @override
-  String get emojiCategoryObjects => 'ቁሶች';
-
-  @override
-  String get emojiCategorySymbols => 'ምልክቶች';
-
-  @override
-  String get emojiCategoryFlags => 'ባንዲራዎች';
 
   @override
   String get dmFormatBold => 'ደማቅ';
@@ -6845,9 +6824,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorAudioLabel => 'ኦዲዮ';
 
   @override
-  String get videoEditorMarkerLabel => 'ማርከር';
-
-  @override
   String get videoEditorAddTitle => 'አክል';
 
   @override
@@ -6940,20 +6916,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoEditorRedoSemanticLabel => 'ድገም';
-
-  @override
-  String get videoEditorAddTimelineMarkerSemanticLabel => 'የጊዜ መስመር ማርከር አክል';
-
-  @override
-  String get videoEditorRemoveTimelineMarkerSemanticLabel =>
-      'የጊዜ መስመር ማርከር አስወግድ';
-
-  @override
-  String get videoEditorDeleteTimelineMarkerTitle => 'ማርከሩን ይሰርዙ?';
-
-  @override
-  String get videoEditorDeleteTimelineMarkerSubtitle =>
-      'ይህ ማርከሩን ከጊዜ መስመሩ ያስወግዳል። አርትዖትዎ እንዳለ ይቀራል።';
 
   @override
   String get videoEditorTextColorSemanticLabel => 'የጽሑፍ ቀለም';
@@ -7078,9 +7040,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorAudioUntitledSound => 'ርዕስ አልባ ድምጽ';
 
   @override
-  String get videoEditorVolumeLongPressHint => 'ሁሉንም ትራኮች ያጥፉ ወይም ያብሩ';
-
-  @override
   String get videoEditorAudioUntitled => 'ርዕስ አልባ';
 
   @override
@@ -7159,9 +7118,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoEditorFontUnknown => 'ያልታወቀ';
-
-  @override
-  String get videoEditorSplitFailed => 'መከፋፈሉ አልተሳካም። እባክዎ እንደገና ይሞክሩ።';
 
   @override
   String get videoEditorSplitPlayheadOutsideClip =>
@@ -8009,4 +7965,80 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get minorAccountReviewUnder13WhyTitle => 'Here\'s why';
+
+  @override
+  String get generalSettingsHoldToRecord => 'ለቀረጻ ይያዙ';
+
+  @override
+  String get generalSettingsHoldToRecordSubtitle => 'ሲይዙ ቀረጻ ይጀምራል፣ ሲለቁ ይቆማል';
+
+  @override
+  String get soundsPreviewFailedGeneric => 'ቅድመ እይታን ማጫወት አልተሳካም';
+
+  @override
+  String uploadPublishedCountMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ቪዲዮዎች ወደ መገለጫዎ ታትሟቸዋል',
+      one: 'ቪዲዮ ወደ መገለጫዎ ታትሟል',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dmMessageSendLabel => 'Send message';
+
+  @override
+  String get emojiPickerSearchHint => 'ፍለጋ';
+
+  @override
+  String get emojiCategoryRecent => 'የቅርብ ጊዜ';
+
+  @override
+  String get emojiCategorySmileys => 'ፈገግታዎች እና ሰዎች';
+
+  @override
+  String get emojiCategoryAnimals => 'እንስሳት እና ተፈጥሮ';
+
+  @override
+  String get emojiCategoryFood => 'ምግብ እና መጠጥ';
+
+  @override
+  String get emojiCategoryActivities => 'እንቅስቃሴዎች';
+
+  @override
+  String get emojiCategoryTravel => 'ጉዞ እና ቦታዎች';
+
+  @override
+  String get emojiCategoryObjects => 'ቁሶች';
+
+  @override
+  String get emojiCategorySymbols => 'ምልክቶች';
+
+  @override
+  String get emojiCategoryFlags => 'ባንዲራዎች';
+
+  @override
+  String get videoEditorMarkerLabel => 'ማርከር';
+
+  @override
+  String get videoEditorAddTimelineMarkerSemanticLabel => 'የጊዜ መስመር ማርከር አክል';
+
+  @override
+  String get videoEditorRemoveTimelineMarkerSemanticLabel =>
+      'የጊዜ መስመር ማርከር አስወግድ';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerTitle => 'ማርከሩን ይሰርዙ?';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerSubtitle =>
+      'ይህ ማርከሩን ከጊዜ መስመሩ ያስወግዳል። አርትዖትዎ እንዳለ ይቀራል።';
+
+  @override
+  String get videoEditorVolumeLongPressHint => 'ሁሉንም ትራኮች ያጥፉ ወይም ያብሩ';
+
+  @override
+  String get videoEditorSplitFailed => 'መከፋፈሉ አልተሳካም። እባክዎ እንደገና ይሞክሩ።';
 }

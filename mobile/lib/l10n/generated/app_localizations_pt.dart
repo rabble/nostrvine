@@ -199,13 +199,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Mantenha os feeds no formato quadrado clássico';
 
   @override
-  String get generalSettingsHoldToRecord => 'Segurar para gravar';
-
-  @override
-  String get generalSettingsHoldToRecordSubtitle =>
-      'A gravação começa ao manter pressionado e para ao soltar';
-
-  @override
   String get contentPreferencesTitle => 'Preferências de conteúdo';
 
   @override
@@ -2308,6 +2301,38 @@ class AppLocalizationsPt extends AppLocalizations {
       'Quando alguém reposta seus vídeos';
 
   @override
+  String get notificationSettingsSystem => 'System';
+
+  @override
+  String get notificationSettingsSystemSubtitle =>
+      'App updates and system messages';
+
+  @override
+  String get notificationSettingsPushNotificationsSection =>
+      'Push Notifications';
+
+  @override
+  String get notificationSettingsPushNotifications => 'Push Notifications';
+
+  @override
+  String get notificationSettingsPushNotificationsSubtitle =>
+      'Receive notifications when app is closed';
+
+  @override
+  String get notificationSettingsSound => 'Sound';
+
+  @override
+  String get notificationSettingsSoundSubtitle =>
+      'Play sound for notifications';
+
+  @override
+  String get notificationSettingsVibration => 'Vibration';
+
+  @override
+  String get notificationSettingsVibrationSubtitle =>
+      'Vibrate for notifications';
+
+  @override
   String get notificationSettingsActions => 'Ações';
 
   @override
@@ -3967,10 +3992,6 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get soundsPreviewFailedGeneric =>
-      'Falha ao reproduzir pré-visualização';
-
-  @override
   String get soundsFeaturedSounds => 'Sons em destaque';
 
   @override
@@ -4257,17 +4278,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get uploadPublishedMessage => 'Vídeo publicado no seu perfil';
-
-  @override
-  String uploadPublishedCountMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count vídeos publicados no seu perfil',
-      one: 'Vídeo publicado no seu perfil',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get uploadFailedMessage => 'Falha no envio - tente novamente';
@@ -5518,9 +5528,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dmMessageInputHint => 'Say something…';
 
   @override
-  String get dmMessageSendLabel => 'Send message';
-
-  @override
   String get dmMessageBubbleSentHint => 'Sent message';
 
   @override
@@ -5565,36 +5572,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
-
-  @override
-  String get emojiPickerSearchHint => 'Pesquisar';
-
-  @override
-  String get emojiCategoryRecent => 'Recentes';
-
-  @override
-  String get emojiCategorySmileys => 'Smileys e pessoas';
-
-  @override
-  String get emojiCategoryAnimals => 'Animais e natureza';
-
-  @override
-  String get emojiCategoryFood => 'Comida e bebida';
-
-  @override
-  String get emojiCategoryActivities => 'Atividades';
-
-  @override
-  String get emojiCategoryTravel => 'Viagens e lugares';
-
-  @override
-  String get emojiCategoryObjects => 'Objetos';
-
-  @override
-  String get emojiCategorySymbols => 'Símbolos';
-
-  @override
-  String get emojiCategoryFlags => 'Bandeiras';
 
   @override
   String get dmFormatBold => 'Negrito';
@@ -7029,9 +7006,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditorAudioLabel => 'Áudio';
 
   @override
-  String get videoEditorMarkerLabel => 'Marcador';
-
-  @override
   String get videoEditorAddTitle => 'Adicionar';
 
   @override
@@ -7125,21 +7099,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get videoEditorRedoSemanticLabel => 'Refazer';
-
-  @override
-  String get videoEditorAddTimelineMarkerSemanticLabel =>
-      'Adicionar marcador à linha do tempo';
-
-  @override
-  String get videoEditorRemoveTimelineMarkerSemanticLabel =>
-      'Remover marcador da linha do tempo';
-
-  @override
-  String get videoEditorDeleteTimelineMarkerTitle => 'Excluir marcador?';
-
-  @override
-  String get videoEditorDeleteTimelineMarkerSubtitle =>
-      'Isso remove o marcador da linha do tempo. Sua edição permanece intacta.';
 
   @override
   String get videoEditorTextColorSemanticLabel => 'Cor do texto';
@@ -7269,10 +7228,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditorAudioUntitledSound => 'Som sem título';
 
   @override
-  String get videoEditorVolumeLongPressHint =>
-      'Silenciar ou ativar todas as faixas';
-
-  @override
   String get videoEditorAudioUntitled => 'Sem título';
 
   @override
@@ -7352,9 +7307,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get videoEditorFontUnknown => 'Desconhecida';
-
-  @override
-  String get videoEditorSplitFailed => 'Falha na divisão. Tente novamente.';
 
   @override
   String get videoEditorSplitPlayheadOutsideClip =>
@@ -8225,4 +8177,84 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get minorAccountReviewUnder13WhyTitle => 'Here\'s why';
+
+  @override
+  String get generalSettingsHoldToRecord => 'Segurar para gravar';
+
+  @override
+  String get generalSettingsHoldToRecordSubtitle =>
+      'A gravação começa ao manter pressionado e para ao soltar';
+
+  @override
+  String get soundsPreviewFailedGeneric =>
+      'Falha ao reproduzir pré-visualização';
+
+  @override
+  String uploadPublishedCountMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count vídeos publicados no seu perfil',
+      one: 'Vídeo publicado no seu perfil',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dmMessageSendLabel => 'Send message';
+
+  @override
+  String get emojiPickerSearchHint => 'Pesquisar';
+
+  @override
+  String get emojiCategoryRecent => 'Recentes';
+
+  @override
+  String get emojiCategorySmileys => 'Smileys e pessoas';
+
+  @override
+  String get emojiCategoryAnimals => 'Animais e natureza';
+
+  @override
+  String get emojiCategoryFood => 'Comida e bebida';
+
+  @override
+  String get emojiCategoryActivities => 'Atividades';
+
+  @override
+  String get emojiCategoryTravel => 'Viagens e lugares';
+
+  @override
+  String get emojiCategoryObjects => 'Objetos';
+
+  @override
+  String get emojiCategorySymbols => 'Símbolos';
+
+  @override
+  String get emojiCategoryFlags => 'Bandeiras';
+
+  @override
+  String get videoEditorMarkerLabel => 'Marcador';
+
+  @override
+  String get videoEditorAddTimelineMarkerSemanticLabel =>
+      'Adicionar marcador à linha do tempo';
+
+  @override
+  String get videoEditorRemoveTimelineMarkerSemanticLabel =>
+      'Remover marcador da linha do tempo';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerTitle => 'Excluir marcador?';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerSubtitle =>
+      'Isso remove o marcador da linha do tempo. Sua edição permanece intacta.';
+
+  @override
+  String get videoEditorVolumeLongPressHint =>
+      'Silenciar ou ativar todas as faixas';
+
+  @override
+  String get videoEditorSplitFailed => 'Falha na divisão. Tente novamente.';
 }

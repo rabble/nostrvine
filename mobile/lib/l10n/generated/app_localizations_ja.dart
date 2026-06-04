@@ -172,12 +172,6 @@ class AppLocalizationsJa extends AppLocalizations {
       'クラシックな正方形フォーマットでフィードを保つ';
 
   @override
-  String get generalSettingsHoldToRecord => '長押しで録画';
-
-  @override
-  String get generalSettingsHoldToRecordSubtitle => '長押しすると録画が始まり、離すと止まります';
-
-  @override
   String get contentPreferencesTitle => 'コンテンツ設定';
 
   @override
@@ -2175,6 +2169,38 @@ class AppLocalizationsJa extends AppLocalizations {
   String get notificationSettingsRepostsSubtitle => '誰かがあなたの動画をリポストした時';
 
   @override
+  String get notificationSettingsSystem => 'System';
+
+  @override
+  String get notificationSettingsSystemSubtitle =>
+      'App updates and system messages';
+
+  @override
+  String get notificationSettingsPushNotificationsSection =>
+      'Push Notifications';
+
+  @override
+  String get notificationSettingsPushNotifications => 'Push Notifications';
+
+  @override
+  String get notificationSettingsPushNotificationsSubtitle =>
+      'Receive notifications when app is closed';
+
+  @override
+  String get notificationSettingsSound => 'Sound';
+
+  @override
+  String get notificationSettingsSoundSubtitle =>
+      'Play sound for notifications';
+
+  @override
+  String get notificationSettingsVibration => 'Vibration';
+
+  @override
+  String get notificationSettingsVibrationSubtitle =>
+      'Vibrate for notifications';
+
+  @override
   String get notificationSettingsActions => 'アクション';
 
   @override
@@ -3748,9 +3774,6 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get soundsPreviewFailedGeneric => 'プレビューの再生がうまくいかなかった';
-
-  @override
   String get soundsFeaturedSounds => '注目のサウンド';
 
   @override
@@ -4029,17 +4052,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get uploadPublishedMessage => '動画をプロフィールに公開したよ';
-
-  @override
-  String uploadPublishedCountMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count本の動画をプロフィールに公開したよ',
-      one: '動画をプロフィールに公開したよ',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get uploadFailedMessage => 'アップロードがうまくいかなかった - もう一回試してみて';
@@ -5257,9 +5269,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get dmMessageInputHint => 'Say something…';
 
   @override
-  String get dmMessageSendLabel => 'Send message';
-
-  @override
   String get dmMessageBubbleSentHint => 'Sent message';
 
   @override
@@ -5304,36 +5313,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
-
-  @override
-  String get emojiPickerSearchHint => '検索';
-
-  @override
-  String get emojiCategoryRecent => '最近使った絵文字';
-
-  @override
-  String get emojiCategorySmileys => 'スマイリーと人々';
-
-  @override
-  String get emojiCategoryAnimals => '動物と自然';
-
-  @override
-  String get emojiCategoryFood => '食べ物と飲み物';
-
-  @override
-  String get emojiCategoryActivities => 'アクティビティ';
-
-  @override
-  String get emojiCategoryTravel => '旅行と場所';
-
-  @override
-  String get emojiCategoryObjects => '物';
-
-  @override
-  String get emojiCategorySymbols => '記号';
-
-  @override
-  String get emojiCategoryFlags => '旗';
 
   @override
   String get dmFormatBold => '太字';
@@ -6707,9 +6686,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorAudioLabel => 'オーディオ';
 
   @override
-  String get videoEditorMarkerLabel => 'マーカー';
-
-  @override
   String get videoEditorAddTitle => '追加';
 
   @override
@@ -6801,19 +6777,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get videoEditorRedoSemanticLabel => 'やり直し';
-
-  @override
-  String get videoEditorAddTimelineMarkerSemanticLabel => 'タイムラインマーカーを追加';
-
-  @override
-  String get videoEditorRemoveTimelineMarkerSemanticLabel => 'タイムラインマーカーを削除';
-
-  @override
-  String get videoEditorDeleteTimelineMarkerTitle => 'マーカーを削除しますか？';
-
-  @override
-  String get videoEditorDeleteTimelineMarkerSubtitle =>
-      'タイムラインからマーカーを削除します。編集内容はそのまま残ります。';
 
   @override
   String get videoEditorTextColorSemanticLabel => 'テキストの色';
@@ -6936,9 +6899,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorAudioUntitledSound => 'タイトルなしのサウンド';
 
   @override
-  String get videoEditorVolumeLongPressHint => 'すべてのトラックをミュートまたはミュート解除';
-
-  @override
   String get videoEditorAudioUntitled => 'タイトルなし';
 
   @override
@@ -7016,9 +6976,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get videoEditorFontUnknown => '不明';
-
-  @override
-  String get videoEditorSplitFailed => '分割に失敗しました。もう一度お試しください。';
 
   @override
   String get videoEditorSplitPlayheadOutsideClip =>
@@ -7863,4 +7820,79 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get minorAccountReviewUnder13WhyTitle => 'Here\'s why';
+
+  @override
+  String get generalSettingsHoldToRecord => '長押しで録画';
+
+  @override
+  String get generalSettingsHoldToRecordSubtitle => '長押しすると録画が始まり、離すと止まります';
+
+  @override
+  String get soundsPreviewFailedGeneric => 'プレビューの再生がうまくいかなかった';
+
+  @override
+  String uploadPublishedCountMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count本の動画をプロフィールに公開したよ',
+      one: '動画をプロフィールに公開したよ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dmMessageSendLabel => 'Send message';
+
+  @override
+  String get emojiPickerSearchHint => '検索';
+
+  @override
+  String get emojiCategoryRecent => '最近使った絵文字';
+
+  @override
+  String get emojiCategorySmileys => 'スマイリーと人々';
+
+  @override
+  String get emojiCategoryAnimals => '動物と自然';
+
+  @override
+  String get emojiCategoryFood => '食べ物と飲み物';
+
+  @override
+  String get emojiCategoryActivities => 'アクティビティ';
+
+  @override
+  String get emojiCategoryTravel => '旅行と場所';
+
+  @override
+  String get emojiCategoryObjects => '物';
+
+  @override
+  String get emojiCategorySymbols => '記号';
+
+  @override
+  String get emojiCategoryFlags => '旗';
+
+  @override
+  String get videoEditorMarkerLabel => 'マーカー';
+
+  @override
+  String get videoEditorAddTimelineMarkerSemanticLabel => 'タイムラインマーカーを追加';
+
+  @override
+  String get videoEditorRemoveTimelineMarkerSemanticLabel => 'タイムラインマーカーを削除';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerTitle => 'マーカーを削除しますか？';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerSubtitle =>
+      'タイムラインからマーカーを削除します。編集内容はそのまま残ります。';
+
+  @override
+  String get videoEditorVolumeLongPressHint => 'すべてのトラックをミュートまたはミュート解除';
+
+  @override
+  String get videoEditorSplitFailed => '分割に失敗しました。もう一度お試しください。';
 }

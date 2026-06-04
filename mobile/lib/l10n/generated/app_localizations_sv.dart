@@ -187,13 +187,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Behåll flöden i klassiskt kvadratiskt format';
 
   @override
-  String get generalSettingsHoldToRecord => 'Håll inne för att spela in';
-
-  @override
-  String get generalSettingsHoldToRecordSubtitle =>
-      'Inspelning startar när du håller inne och stannar när du släpper';
-
-  @override
   String get contentPreferencesTitle => 'Innehållsinställningar';
 
   @override
@@ -2284,6 +2277,38 @@ class AppLocalizationsSv extends AppLocalizations {
       'När någon återpublicerar dina videor';
 
   @override
+  String get notificationSettingsSystem => 'System';
+
+  @override
+  String get notificationSettingsSystemSubtitle =>
+      'App updates and system messages';
+
+  @override
+  String get notificationSettingsPushNotificationsSection =>
+      'Push Notifications';
+
+  @override
+  String get notificationSettingsPushNotifications => 'Push Notifications';
+
+  @override
+  String get notificationSettingsPushNotificationsSubtitle =>
+      'Receive notifications when app is closed';
+
+  @override
+  String get notificationSettingsSound => 'Sound';
+
+  @override
+  String get notificationSettingsSoundSubtitle =>
+      'Play sound for notifications';
+
+  @override
+  String get notificationSettingsVibration => 'Vibration';
+
+  @override
+  String get notificationSettingsVibrationSubtitle =>
+      'Vibrate for notifications';
+
+  @override
   String get notificationSettingsActions => 'Åtgärder';
 
   @override
@@ -3939,9 +3964,6 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get soundsPreviewFailedGeneric => 'Kunde inte spela förhandsvisning';
-
-  @override
   String get soundsFeaturedSounds => 'Utvalda ljud';
 
   @override
@@ -4228,17 +4250,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get uploadPublishedMessage => 'Videon publicerad till din profil';
-
-  @override
-  String uploadPublishedCountMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count videor publicerade till din profil',
-      one: 'Videon publicerad till din profil',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get uploadFailedMessage => 'Uppladdning misslyckades – försök igen';
@@ -5484,9 +5495,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dmMessageInputHint => 'Say something…';
 
   @override
-  String get dmMessageSendLabel => 'Send message';
-
-  @override
   String get dmMessageBubbleSentHint => 'Sent message';
 
   @override
@@ -5531,36 +5539,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
-
-  @override
-  String get emojiPickerSearchHint => 'Sök';
-
-  @override
-  String get emojiCategoryRecent => 'Senaste';
-
-  @override
-  String get emojiCategorySmileys => 'Smileys och personer';
-
-  @override
-  String get emojiCategoryAnimals => 'Djur och natur';
-
-  @override
-  String get emojiCategoryFood => 'Mat och dryck';
-
-  @override
-  String get emojiCategoryActivities => 'Aktiviteter';
-
-  @override
-  String get emojiCategoryTravel => 'Resor och platser';
-
-  @override
-  String get emojiCategoryObjects => 'Objekt';
-
-  @override
-  String get emojiCategorySymbols => 'Symboler';
-
-  @override
-  String get emojiCategoryFlags => 'Flaggor';
 
   @override
   String get dmFormatBold => 'Fet';
@@ -6988,9 +6966,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoEditorAudioLabel => 'Ljud';
 
   @override
-  String get videoEditorMarkerLabel => 'Markör';
-
-  @override
   String get videoEditorAddTitle => 'Lägg till';
 
   @override
@@ -7084,21 +7059,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoEditorRedoSemanticLabel => 'Gör om';
-
-  @override
-  String get videoEditorAddTimelineMarkerSemanticLabel =>
-      'Lägg till tidslinjemarkör';
-
-  @override
-  String get videoEditorRemoveTimelineMarkerSemanticLabel =>
-      'Ta bort tidslinjemarkör';
-
-  @override
-  String get videoEditorDeleteTimelineMarkerTitle => 'Radera markör?';
-
-  @override
-  String get videoEditorDeleteTimelineMarkerSubtitle =>
-      'Detta tar bort markören från tidslinjen. Din redigering behålls.';
 
   @override
   String get videoEditorTextColorSemanticLabel => 'Textfärg';
@@ -7229,9 +7189,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoEditorAudioUntitledSound => 'Namnlöst ljud';
 
   @override
-  String get videoEditorVolumeLongPressHint => 'Tysta eller slå på alla spår';
-
-  @override
   String get videoEditorAudioUntitled => 'Namnlös';
 
   @override
@@ -7312,9 +7269,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoEditorFontUnknown => 'Okänt';
-
-  @override
-  String get videoEditorSplitFailed => 'Delning misslyckades. Försök igen.';
 
   @override
   String get videoEditorSplitPlayheadOutsideClip =>
@@ -8179,4 +8133,82 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get minorAccountReviewUnder13WhyTitle => 'Here\'s why';
+
+  @override
+  String get generalSettingsHoldToRecord => 'Håll inne för att spela in';
+
+  @override
+  String get generalSettingsHoldToRecordSubtitle =>
+      'Inspelning startar när du håller inne och stannar när du släpper';
+
+  @override
+  String get soundsPreviewFailedGeneric => 'Kunde inte spela förhandsvisning';
+
+  @override
+  String uploadPublishedCountMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count videor publicerade till din profil',
+      one: 'Videon publicerad till din profil',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dmMessageSendLabel => 'Send message';
+
+  @override
+  String get emojiPickerSearchHint => 'Sök';
+
+  @override
+  String get emojiCategoryRecent => 'Senaste';
+
+  @override
+  String get emojiCategorySmileys => 'Smileys och personer';
+
+  @override
+  String get emojiCategoryAnimals => 'Djur och natur';
+
+  @override
+  String get emojiCategoryFood => 'Mat och dryck';
+
+  @override
+  String get emojiCategoryActivities => 'Aktiviteter';
+
+  @override
+  String get emojiCategoryTravel => 'Resor och platser';
+
+  @override
+  String get emojiCategoryObjects => 'Objekt';
+
+  @override
+  String get emojiCategorySymbols => 'Symboler';
+
+  @override
+  String get emojiCategoryFlags => 'Flaggor';
+
+  @override
+  String get videoEditorMarkerLabel => 'Markör';
+
+  @override
+  String get videoEditorAddTimelineMarkerSemanticLabel =>
+      'Lägg till tidslinjemarkör';
+
+  @override
+  String get videoEditorRemoveTimelineMarkerSemanticLabel =>
+      'Ta bort tidslinjemarkör';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerTitle => 'Radera markör?';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerSubtitle =>
+      'Detta tar bort markören från tidslinjen. Din redigering behålls.';
+
+  @override
+  String get videoEditorVolumeLongPressHint => 'Tysta eller slå på alla spår';
+
+  @override
+  String get videoEditorSplitFailed => 'Delning misslyckades. Försök igen.';
 }

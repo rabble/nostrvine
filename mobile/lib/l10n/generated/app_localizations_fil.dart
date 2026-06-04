@@ -199,14 +199,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'Panatilihin ang feeds sa classic na square format';
 
   @override
-  String get generalSettingsHoldToRecord =>
-      'Pindutin nang matagal para mag-record';
-
-  @override
-  String get generalSettingsHoldToRecordSubtitle =>
-      'Magsisimulang mag-record kapag pinindot nang matagal at titigil kapag inalis';
-
-  @override
   String get contentPreferencesTitle => 'Mga Content Preference';
 
   @override
@@ -2326,6 +2318,38 @@ class AppLocalizationsFil extends AppLocalizations {
       'Kapag may nag-repost ng iyong mga video';
 
   @override
+  String get notificationSettingsSystem => 'System';
+
+  @override
+  String get notificationSettingsSystemSubtitle =>
+      'App updates and system messages';
+
+  @override
+  String get notificationSettingsPushNotificationsSection =>
+      'Push Notifications';
+
+  @override
+  String get notificationSettingsPushNotifications => 'Push Notifications';
+
+  @override
+  String get notificationSettingsPushNotificationsSubtitle =>
+      'Receive notifications when app is closed';
+
+  @override
+  String get notificationSettingsSound => 'Sound';
+
+  @override
+  String get notificationSettingsSoundSubtitle =>
+      'Play sound for notifications';
+
+  @override
+  String get notificationSettingsVibration => 'Vibration';
+
+  @override
+  String get notificationSettingsVibrationSubtitle =>
+      'Vibrate for notifications';
+
+  @override
   String get notificationSettingsActions => 'Mga Aksyon';
 
   @override
@@ -3997,9 +4021,6 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String get soundsPreviewFailedGeneric => 'Hindi na-play ang preview';
-
-  @override
   String get soundsFeaturedSounds => 'Mga Featured Sound';
 
   @override
@@ -4288,17 +4309,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get uploadPublishedMessage => 'Na-publish na ang video sa profile mo';
-
-  @override
-  String uploadPublishedCountMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Na-publish na ang $count na video sa profile mo',
-      one: 'Na-publish na ang video sa profile mo',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get uploadFailedMessage => 'Hindi nag-upload - subukan ulit';
@@ -5552,9 +5562,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get dmMessageInputHint => 'Say something…';
 
   @override
-  String get dmMessageSendLabel => 'Send message';
-
-  @override
   String get dmMessageBubbleSentHint => 'Sent message';
 
   @override
@@ -5599,36 +5606,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
-
-  @override
-  String get emojiPickerSearchHint => 'Maghanap';
-
-  @override
-  String get emojiCategoryRecent => 'Kamakailan';
-
-  @override
-  String get emojiCategorySmileys => 'Mga Smiley at Tao';
-
-  @override
-  String get emojiCategoryAnimals => 'Mga Hayop at Kalikasan';
-
-  @override
-  String get emojiCategoryFood => 'Pagkain at Inumin';
-
-  @override
-  String get emojiCategoryActivities => 'Mga Aktibidad';
-
-  @override
-  String get emojiCategoryTravel => 'Paglalakbay at Mga Lugar';
-
-  @override
-  String get emojiCategoryObjects => 'Mga Bagay';
-
-  @override
-  String get emojiCategorySymbols => 'Mga Simbolo';
-
-  @override
-  String get emojiCategoryFlags => 'Mga Bandila';
 
   @override
   String get dmFormatBold => 'Makapal';
@@ -7068,9 +7045,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoEditorAudioLabel => 'Audio';
 
   @override
-  String get videoEditorMarkerLabel => 'Marker';
-
-  @override
   String get videoEditorAddTitle => 'Idagdag';
 
   @override
@@ -7166,21 +7140,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get videoEditorRedoSemanticLabel => 'Redo';
-
-  @override
-  String get videoEditorAddTimelineMarkerSemanticLabel =>
-      'Magdagdag ng marker sa timeline';
-
-  @override
-  String get videoEditorRemoveTimelineMarkerSemanticLabel =>
-      'Alisin ang marker sa timeline';
-
-  @override
-  String get videoEditorDeleteTimelineMarkerTitle => 'Burahin ang marker?';
-
-  @override
-  String get videoEditorDeleteTimelineMarkerSubtitle =>
-      'Aalisin nito ang marker sa timeline. Mananatili ang iyong edit.';
 
   @override
   String get videoEditorTextColorSemanticLabel => 'Kulay ng text';
@@ -7310,10 +7269,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoEditorAudioUntitledSound => 'Walang pamagat na sound';
 
   @override
-  String get videoEditorVolumeLongPressHint =>
-      'I-mute o i-unmute ang lahat ng track';
-
-  @override
   String get videoEditorAudioUntitled => 'Walang Pamagat';
 
   @override
@@ -7395,9 +7350,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get videoEditorFontUnknown => 'Hindi alam';
-
-  @override
-  String get videoEditorSplitFailed => 'Nabigo ang paghati. Pakisubukan muli.';
 
   @override
   String get videoEditorSplitPlayheadOutsideClip =>
@@ -8266,4 +8218,84 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get minorAccountReviewUnder13WhyTitle => 'Here\'s why';
+
+  @override
+  String get generalSettingsHoldToRecord =>
+      'Pindutin nang matagal para mag-record';
+
+  @override
+  String get generalSettingsHoldToRecordSubtitle =>
+      'Magsisimulang mag-record kapag pinindot nang matagal at titigil kapag inalis';
+
+  @override
+  String get soundsPreviewFailedGeneric => 'Hindi na-play ang preview';
+
+  @override
+  String uploadPublishedCountMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Na-publish na ang $count na video sa profile mo',
+      one: 'Na-publish na ang video sa profile mo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dmMessageSendLabel => 'Send message';
+
+  @override
+  String get emojiPickerSearchHint => 'Maghanap';
+
+  @override
+  String get emojiCategoryRecent => 'Kamakailan';
+
+  @override
+  String get emojiCategorySmileys => 'Mga Smiley at Tao';
+
+  @override
+  String get emojiCategoryAnimals => 'Mga Hayop at Kalikasan';
+
+  @override
+  String get emojiCategoryFood => 'Pagkain at Inumin';
+
+  @override
+  String get emojiCategoryActivities => 'Mga Aktibidad';
+
+  @override
+  String get emojiCategoryTravel => 'Paglalakbay at Mga Lugar';
+
+  @override
+  String get emojiCategoryObjects => 'Mga Bagay';
+
+  @override
+  String get emojiCategorySymbols => 'Mga Simbolo';
+
+  @override
+  String get emojiCategoryFlags => 'Mga Bandila';
+
+  @override
+  String get videoEditorMarkerLabel => 'Marker';
+
+  @override
+  String get videoEditorAddTimelineMarkerSemanticLabel =>
+      'Magdagdag ng marker sa timeline';
+
+  @override
+  String get videoEditorRemoveTimelineMarkerSemanticLabel =>
+      'Alisin ang marker sa timeline';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerTitle => 'Burahin ang marker?';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerSubtitle =>
+      'Aalisin nito ang marker sa timeline. Mananatili ang iyong edit.';
+
+  @override
+  String get videoEditorVolumeLongPressHint =>
+      'I-mute o i-unmute ang lahat ng track';
+
+  @override
+  String get videoEditorSplitFailed => 'Nabigo ang paghati. Pakisubukan muli.';
 }

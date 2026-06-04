@@ -188,13 +188,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'أبقِ التغذيات بالشكل المربّع الكلاسيكي';
 
   @override
-  String get generalSettingsHoldToRecord => 'اضغط مطولاً للتسجيل';
-
-  @override
-  String get generalSettingsHoldToRecordSubtitle =>
-      'يبدأ التسجيل عند الضغط المطوّل ويتوقف عند الإفراج';
-
-  @override
   String get contentPreferencesTitle => 'تفضيلات المحتوى';
 
   @override
@@ -2264,6 +2257,38 @@ class AppLocalizationsAr extends AppLocalizations {
       'عندما يعيد أحدهم نشر فيديوهاتك';
 
   @override
+  String get notificationSettingsSystem => 'System';
+
+  @override
+  String get notificationSettingsSystemSubtitle =>
+      'App updates and system messages';
+
+  @override
+  String get notificationSettingsPushNotificationsSection =>
+      'Push Notifications';
+
+  @override
+  String get notificationSettingsPushNotifications => 'Push Notifications';
+
+  @override
+  String get notificationSettingsPushNotificationsSubtitle =>
+      'Receive notifications when app is closed';
+
+  @override
+  String get notificationSettingsSound => 'Sound';
+
+  @override
+  String get notificationSettingsSoundSubtitle =>
+      'Play sound for notifications';
+
+  @override
+  String get notificationSettingsVibration => 'Vibration';
+
+  @override
+  String get notificationSettingsVibrationSubtitle =>
+      'Vibrate for notifications';
+
+  @override
   String get notificationSettingsActions => 'الإجراءات';
 
   @override
@@ -3898,9 +3923,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get soundsPreviewFailedGeneric => 'تعذر تشغيل المعاينة';
-
-  @override
   String get soundsFeaturedSounds => 'أصوات مميزة';
 
   @override
@@ -4186,17 +4208,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get uploadPublishedMessage => 'تم نشر الفيديو في ملفك الشخصي';
-
-  @override
-  String uploadPublishedCountMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'تم نشر $count مقاطع فيديو في ملفك الشخصي',
-      one: 'تم نشر الفيديو في ملفك الشخصي',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get uploadFailedMessage => 'فشل الرفع - يُرجى المحاولة مرة أخرى';
@@ -5432,9 +5443,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dmMessageInputHint => 'Say something…';
 
   @override
-  String get dmMessageSendLabel => 'Send message';
-
-  @override
   String get dmMessageBubbleSentHint => 'Sent message';
 
   @override
@@ -5479,36 +5487,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get dmReactionChipRetryAnnouncement => 'Retrying reaction';
-
-  @override
-  String get emojiPickerSearchHint => 'بحث';
-
-  @override
-  String get emojiCategoryRecent => 'الأخيرة';
-
-  @override
-  String get emojiCategorySmileys => 'الوجوه والأشخاص';
-
-  @override
-  String get emojiCategoryAnimals => 'الحيوانات والطبيعة';
-
-  @override
-  String get emojiCategoryFood => 'الطعام والشراب';
-
-  @override
-  String get emojiCategoryActivities => 'الأنشطة';
-
-  @override
-  String get emojiCategoryTravel => 'السفر والأماكن';
-
-  @override
-  String get emojiCategoryObjects => 'الأشياء';
-
-  @override
-  String get emojiCategorySymbols => 'الرموز';
-
-  @override
-  String get emojiCategoryFlags => 'الأعلام';
 
   @override
   String get dmFormatBold => 'عريض';
@@ -6922,9 +6900,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorAudioLabel => 'الصوت';
 
   @override
-  String get videoEditorMarkerLabel => 'علامة';
-
-  @override
   String get videoEditorAddTitle => 'إضافة';
 
   @override
@@ -7018,21 +6993,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get videoEditorRedoSemanticLabel => 'إعادة';
-
-  @override
-  String get videoEditorAddTimelineMarkerSemanticLabel =>
-      'إضافة علامة إلى المخطط الزمني';
-
-  @override
-  String get videoEditorRemoveTimelineMarkerSemanticLabel =>
-      'إزالة علامة من المخطط الزمني';
-
-  @override
-  String get videoEditorDeleteTimelineMarkerTitle => 'حذف العلامة؟';
-
-  @override
-  String get videoEditorDeleteTimelineMarkerSubtitle =>
-      'سيؤدي هذا إلى إزالة العلامة من المخطط الزمني. سيبقى تعديلك كما هو.';
 
   @override
   String get videoEditorTextColorSemanticLabel => 'لون النص';
@@ -7160,10 +7120,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorAudioUntitledSound => 'صوت بدون عنوان';
 
   @override
-  String get videoEditorVolumeLongPressHint =>
-      'كتم صوت جميع المسارات أو إلغاء الكتم';
-
-  @override
   String get videoEditorAudioUntitled => 'بدون عنوان';
 
   @override
@@ -7242,9 +7198,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get videoEditorFontUnknown => 'غير معروف';
-
-  @override
-  String get videoEditorSplitFailed => 'فشل التقسيم. يرجى المحاولة مرة أخرى.';
 
   @override
   String get videoEditorSplitPlayheadOutsideClip =>
@@ -8098,4 +8051,83 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get minorAccountReviewUnder13WhyTitle => 'Here\'s why';
+
+  @override
+  String get generalSettingsHoldToRecord => 'اضغط مطولاً للتسجيل';
+
+  @override
+  String get generalSettingsHoldToRecordSubtitle =>
+      'يبدأ التسجيل عند الضغط المطوّل ويتوقف عند الإفراج';
+
+  @override
+  String get soundsPreviewFailedGeneric => 'تعذر تشغيل المعاينة';
+
+  @override
+  String uploadPublishedCountMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'تم نشر $count مقاطع فيديو في ملفك الشخصي',
+      one: 'تم نشر الفيديو في ملفك الشخصي',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dmMessageSendLabel => 'Send message';
+
+  @override
+  String get emojiPickerSearchHint => 'بحث';
+
+  @override
+  String get emojiCategoryRecent => 'الأخيرة';
+
+  @override
+  String get emojiCategorySmileys => 'الوجوه والأشخاص';
+
+  @override
+  String get emojiCategoryAnimals => 'الحيوانات والطبيعة';
+
+  @override
+  String get emojiCategoryFood => 'الطعام والشراب';
+
+  @override
+  String get emojiCategoryActivities => 'الأنشطة';
+
+  @override
+  String get emojiCategoryTravel => 'السفر والأماكن';
+
+  @override
+  String get emojiCategoryObjects => 'الأشياء';
+
+  @override
+  String get emojiCategorySymbols => 'الرموز';
+
+  @override
+  String get emojiCategoryFlags => 'الأعلام';
+
+  @override
+  String get videoEditorMarkerLabel => 'علامة';
+
+  @override
+  String get videoEditorAddTimelineMarkerSemanticLabel =>
+      'إضافة علامة إلى المخطط الزمني';
+
+  @override
+  String get videoEditorRemoveTimelineMarkerSemanticLabel =>
+      'إزالة علامة من المخطط الزمني';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerTitle => 'حذف العلامة؟';
+
+  @override
+  String get videoEditorDeleteTimelineMarkerSubtitle =>
+      'سيؤدي هذا إلى إزالة العلامة من المخطط الزمني. سيبقى تعديلك كما هو.';
+
+  @override
+  String get videoEditorVolumeLongPressHint =>
+      'كتم صوت جميع المسارات أو إلغاء الكتم';
+
+  @override
+  String get videoEditorSplitFailed => 'فشل التقسيم. يرجى المحاولة مرة أخرى.';
 }
