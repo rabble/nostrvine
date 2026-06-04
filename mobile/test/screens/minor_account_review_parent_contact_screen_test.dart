@@ -73,5 +73,49 @@ void main() {
         'Email submitted',
       );
     });
+
+    testWidgets('does not render submit form for under-13 support cases', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentMinorAccountReviewStatusProvider.overrideWith((ref) async {
+              return const MinorAccountReviewStatus(
+                restrictionStatus:
+                    AccountRestrictionStatus.restrictedMinorReview,
+                currentCase: MinorReviewCase(
+                  id: 'sim-under-13-review',
+                  state: MinorReviewCaseState.restrictedPendingSupportEmail,
+                  suspectedAgeBand: SuspectedAgeBand.under13,
+                  allowedResolution: MinorReviewResolutionType.supportEmailOnly,
+                  instructions: MinorReviewInstructions(
+                    title: 'Account review required',
+                    body: 'Contact support by email.',
+                  ),
+                  supportEmail: 'support@divine.video',
+                ),
+              );
+            }),
+          ],
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: MinorAccountReviewParentContactScreen(),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          'For likely under-13 accounts, the next step is parent or guardian contact by email.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.byType(TextFormField), findsNothing);
+      expect(find.text('Submit Email'), findsNothing);
+    });
   });
 }

@@ -316,6 +316,16 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
       if (authState == AuthState.authenticated &&
           reviewStatus?.isRestricted == true) {
+        final reviewCase = reviewStatus?.currentCase;
+        if (isParentContactRoute) {
+          if (reviewCase == null) {
+            return MinorAccountReviewScreen.path;
+          }
+          if (!reviewCase.allowsParentVideoOrEmail) {
+            return MinorAccountReviewUnder13SupportScreen.path;
+          }
+        }
+
         if (!isReviewRoute &&
             !isParentContactRoute &&
             !isUnder13SupportRoute &&

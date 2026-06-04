@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:divine_quick_actions/divine_quick_actions.dart';
 import 'package:divine_quick_actions/divine_quick_actions_method_channel.dart';
 import 'package:flutter/services.dart';

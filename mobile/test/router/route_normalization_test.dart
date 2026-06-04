@@ -3,6 +3,11 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/providers/route_normalization_provider.dart';
+import 'package:openvine/screens/minor_account_review_parent_consent_screen.dart';
+import 'package:openvine/screens/minor_account_review_parent_contact_screen.dart';
+import 'package:openvine/screens/minor_account_review_screen.dart';
+import 'package:openvine/screens/minor_account_review_under13_screen.dart';
+import 'package:openvine/screens/minor_account_review_under13_support_screen.dart';
 
 void main() {
   group('shouldSkipRouteNormalization', () {
@@ -43,19 +48,18 @@ void main() {
       expect(shouldSkipRouteNormalization('/home/0'), isFalse);
     });
 
-    test('skips public minor account review routes', () {
-      expect(
-        shouldSkipRouteNormalization('/account-review/welcome'),
-        isTrue,
-      );
-      expect(
-        shouldSkipRouteNormalization('/account-review/parent-consent'),
-        isTrue,
-      );
-      expect(
-        shouldSkipRouteNormalization('/account-review/under-13'),
-        isTrue,
-      );
+    test('skips minor account review route family', () {
+      for (final route in [
+        MinorAccountReviewScreen.path,
+        MinorAccountReviewScreen.welcomePath,
+        MinorAccountReviewLoadingScreen.path,
+        MinorAccountReviewParentConsentScreen.path,
+        MinorAccountReviewParentContactScreen.path,
+        MinorAccountReviewUnder13Screen.path,
+        MinorAccountReviewUnder13SupportScreen.path,
+      ]) {
+        expect(shouldSkipRouteNormalization(route), isTrue, reason: route);
+      }
     });
 
     test('skips video engagement list routes', () {

@@ -83,9 +83,7 @@ class DivineQuickAction extends Equatable {
   static DivineQuickAction? tryFromMap(Map<dynamic, dynamic> map) {
     try {
       return DivineQuickAction.fromMap(map);
-    } on FormatException {
-      return null;
-    } on TypeError {
+    } on Object {
       return null;
     }
   }

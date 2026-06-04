@@ -11,6 +11,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/minor_account_review_screen.dart';
+import 'package:openvine/screens/minor_account_review_under13_support_screen.dart';
 import 'package:openvine/utils/validators.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -174,6 +175,9 @@ class _ParentContactBody extends StatelessWidget {
     if (reviewCase == null) {
       return const _MissingCaseView();
     }
+    if (!reviewCase.allowsParentVideoOrEmail) {
+      return const _UnsupportedCaseView();
+    }
 
     if (submittedEmail != null) {
       return _SuccessView(email: submittedEmail!, onCheckAgain: onCheckAgain);
@@ -308,6 +312,36 @@ class _MissingCaseView extends StatelessWidget {
               label: context.l10n.minorAccountReviewBackToReview,
               expanded: true,
               onPressed: () => context.go(MinorAccountReviewScreen.path),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _UnsupportedCaseView extends StatelessWidget {
+  const _UnsupportedCaseView();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              context.l10n.minorAccountReviewUnder13SupportBody,
+              style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            DivineButton(
+              label: context.l10n.minorAccountReviewBackToReview,
+              expanded: true,
+              onPressed: () =>
+                  context.go(MinorAccountReviewUnder13SupportScreen.path),
             ),
           ],
         ),

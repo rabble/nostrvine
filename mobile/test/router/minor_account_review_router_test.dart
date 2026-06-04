@@ -10,6 +10,7 @@ import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/app_router.dart';
+import 'package:openvine/router/providers/route_normalization_provider.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/minor_account_review_parent_contact_screen.dart';
@@ -48,8 +49,12 @@ void main() {
 
     Future<void> pumpRouter(
       WidgetTester tester,
-      ProviderContainer container,
-    ) async {
+      ProviderContainer container, {
+      bool activateRouteNormalizer = false,
+    }) async {
+      if (activateRouteNormalizer) {
+        container.read(routeNormalizationProvider);
+      }
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
@@ -137,7 +142,7 @@ void main() {
       );
       registerContainerTearDown(tester, container);
       await container.read(currentMinorAccountReviewStatusProvider.future);
-      await pumpRouter(tester, container);
+      await pumpRouter(tester, container, activateRouteNormalizer: true);
 
       final router = container.read(goRouterProvider);
       router.go(MinorAccountReviewParentContactScreen.path);
@@ -146,6 +151,36 @@ void main() {
       expect(
         router.routeInformationProvider.value.uri.toString(),
         MinorAccountReviewParentContactScreen.path,
+      );
+    });
+
+    testWidgets('redirects under-13 cases away from parent contact', (
+      tester,
+    ) async {
+      final container = ProviderContainer(
+        overrides: [
+          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
+          currentMinorAccountReviewStatusProvider.overrideWith(
+            (ref) async => restrictedStatus(
+              state: MinorReviewCaseState.restrictedPendingSupportEmail,
+              ageBand: SuspectedAgeBand.under13,
+              resolution: MinorReviewResolutionType.supportEmailOnly,
+            ),
+          ),
+        ],
+      );
+      registerContainerTearDown(tester, container);
+      await container.read(currentMinorAccountReviewStatusProvider.future);
+      await pumpRouter(tester, container, activateRouteNormalizer: true);
+
+      final router = container.read(goRouterProvider);
+      router.go(MinorAccountReviewParentContactScreen.path);
+      await tester.pumpAndSettle();
+
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        MinorAccountReviewUnder13SupportScreen.path,
       );
     });
 

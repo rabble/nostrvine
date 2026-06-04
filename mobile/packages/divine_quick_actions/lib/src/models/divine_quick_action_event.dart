@@ -51,9 +51,7 @@ class DivineQuickActionEvent extends Equatable {
         map,
         isLaunchAction: isLaunchAction,
       );
-    } on FormatException {
-      return null;
-    } on TypeError {
+    } on Object {
       return null;
     }
   }

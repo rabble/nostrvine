@@ -146,6 +146,10 @@ class MinorReviewCase {
       suspectedAgeBand == SuspectedAgeBand.under13 ||
       allowedResolution == MinorReviewResolutionType.supportEmailOnly;
 
+  bool get allowsParentVideoOrEmail =>
+      allowedResolution == MinorReviewResolutionType.parentVideoOrEmail &&
+      !isUnder13Path;
+
   bool get isAwaitingModeratorDecision =>
       state == MinorReviewCaseState.underModeratorReview ||
       state == MinorReviewCaseState.submittedForReview;
