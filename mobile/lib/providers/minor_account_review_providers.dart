@@ -10,6 +10,21 @@ import 'package:openvine/providers/upload_media_providers.dart';
 import 'package:openvine/repositories/minor_account_review_repository.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/minor_account_review_override_service.dart';
+import 'package:openvine/services/support_email_composer.dart';
+
+typedef MinorAccountReviewComposeEmail =
+    Future<void> Function({
+      required String toEmail,
+      required String subject,
+      required String body,
+    });
+
+/// Support-email composer used by minor-account review screens.
+final minorAccountReviewSupportEmailComposerProvider =
+    Provider<MinorAccountReviewComposeEmail>((ref) {
+      final composer = SupportEmailComposer();
+      return composer.compose;
+    });
 
 /// Repository for the current account's parental consent / minor-account
 /// review restriction state.

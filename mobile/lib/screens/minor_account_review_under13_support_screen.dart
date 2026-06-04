@@ -11,29 +11,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/minor_account_review_screen.dart';
-import 'package:openvine/services/support_email_composer.dart';
 import 'package:unified_logger/unified_logger.dart';
-
-typedef MinorAccountReviewComposeEmail =
-    Future<void> Function({
-      required String toEmail,
-      required String subject,
-      required String body,
-    });
-
-final _defaultMinorAccountReviewSupportEmailComposer = SupportEmailComposer();
-
-Future<void> _composeMinorAccountReviewSupportEmail({
-  required String toEmail,
-  required String subject,
-  required String body,
-}) {
-  return _defaultMinorAccountReviewSupportEmailComposer.compose(
-    toEmail: toEmail,
-    subject: subject,
-    body: body,
-  );
-}
 
 class MinorAccountReviewUnder13SupportScreen extends ConsumerWidget {
   static const routeName = 'minor-account-review-under13-support';
@@ -41,10 +19,10 @@ class MinorAccountReviewUnder13SupportScreen extends ConsumerWidget {
 
   const MinorAccountReviewUnder13SupportScreen({
     super.key,
-    this.composeEmail = _composeMinorAccountReviewSupportEmail,
+    this.composeEmail,
   });
 
-  final MinorAccountReviewComposeEmail composeEmail;
+  final MinorAccountReviewComposeEmail? composeEmail;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -81,7 +59,9 @@ class MinorAccountReviewUnder13SupportScreen extends ConsumerWidget {
               },
               data: (status) => _Under13SupportBody(
                 status: status,
-                composeEmail: composeEmail,
+                composeEmail:
+                    composeEmail ??
+                    ref.watch(minorAccountReviewSupportEmailComposerProvider),
               ),
             ),
           ),

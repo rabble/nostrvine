@@ -3,28 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/services/support_email_composer.dart';
-
-typedef MinorAccountReviewComposeEmail =
-    Future<void> Function({
-      required String toEmail,
-      required String subject,
-      required String body,
-    });
-
-final _defaultMinorAccountReviewSupportEmailComposer = SupportEmailComposer();
-
-Future<void> _composeMinorAccountReviewSupportEmail({
-  required String toEmail,
-  required String subject,
-  required String body,
-}) {
-  return _defaultMinorAccountReviewSupportEmailComposer.compose(
-    toEmail: toEmail,
-    subject: subject,
-    body: body,
-  );
-}
+import 'package:openvine/providers/app_providers.dart';
 
 class MinorAccountReviewParentConsentScreen extends ConsumerWidget {
   static const routeName = 'minor-account-review-parent-consent';
@@ -32,10 +11,10 @@ class MinorAccountReviewParentConsentScreen extends ConsumerWidget {
 
   const MinorAccountReviewParentConsentScreen({
     super.key,
-    this.composeEmail = _composeMinorAccountReviewSupportEmail,
+    this.composeEmail,
   });
 
-  final MinorAccountReviewComposeEmail composeEmail;
+  final MinorAccountReviewComposeEmail? composeEmail;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -98,7 +77,7 @@ class MinorAccountReviewParentConsentScreen extends ConsumerWidget {
                 DivineButton(
                   label: context.l10n.minorAccountReviewParentConsentEmailCta,
                   expanded: true,
-                  onPressed: () => _emailSupport(context),
+                  onPressed: () => _emailSupport(context, ref),
                 ),
               ],
             ),
@@ -108,9 +87,12 @@ class MinorAccountReviewParentConsentScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _emailSupport(BuildContext context) async {
+  Future<void> _emailSupport(BuildContext context, WidgetRef ref) async {
+    final MinorAccountReviewComposeEmail composer =
+        composeEmail ??
+        ref.read(minorAccountReviewSupportEmailComposerProvider);
     try {
-      await composeEmail(
+      await composer(
         toEmail: AppConstants.supportEmail,
         subject: context.l10n.minorAccountReviewParentConsentEmailSubject,
         body: context.l10n.minorAccountReviewParentConsentEmailBody,
