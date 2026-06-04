@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
@@ -21,6 +22,9 @@ class _MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
 class _MockVideoEventService extends Mock implements VideoEventService {}
 
 class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockContentBlocklistRepository extends Mock
+    implements ContentBlocklistRepository {}
 
 class _AlwaysAvailableFunnelcake extends FunnelcakeAvailable {
   @override
@@ -135,6 +139,7 @@ void main() {
     late _MockFunnelcakeApiClient mockFunnelcakeApiClient;
     late _MockVideoEventService mockVideoEventService;
     late _MockNostrClient mockNostrClient;
+    late _MockContentBlocklistRepository mockBlocklistRepository;
     late void Function() onNostrVideosChanged;
     late List<VideoEvent> relayVideos;
 
@@ -143,8 +148,15 @@ void main() {
       mockFunnelcakeApiClient = _MockFunnelcakeApiClient();
       mockVideoEventService = _MockVideoEventService();
       mockNostrClient = _MockNostrClient();
+      mockBlocklistRepository = _MockContentBlocklistRepository();
       relayVideos = [];
       onNostrVideosChanged = () {};
+
+      // #4782: ProfileFeed now filters REST author videos through the blocklist.
+      // Default to filtering nothing so the pagination contract is unaffected.
+      when(
+        () => mockBlocklistRepository.shouldFilterFromFeeds(any()),
+      ).thenReturn(false);
 
       when(
         () => mockFunnelcakeApiClient.getBulkVideoStats(any()),
@@ -202,6 +214,9 @@ void main() {
           ),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           nostrServiceProvider.overrideWithValue(mockNostrClient),
+          contentBlocklistRepositoryProvider.overrideWithValue(
+            mockBlocklistRepository,
+          ),
           profileFeedSessionCacheProvider.overrideWith(
             (ref) => ProfileFeedSessionCache(),
           ),

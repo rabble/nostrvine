@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/curation_providers.dart';
+import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/widgets/video_explore_tile.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -70,7 +71,10 @@ class _RelatedVideosWidgetState extends ConsumerState<RelatedVideosWidget> {
         );
         videos = stats.toVideoEvents();
 
-        // Filter out the current video
+        // Filter out the current video only. Blocked/muted authors are removed
+        // in build() so block/unblock reflects immediately without a refetch
+        // (the Funnelcake hashtag endpoint is anonymous and applies no
+        // per-viewer block/mute filter). See #4782.
         videos = videos
             .where((v) => v.id != widget.currentVideo.id)
             .take(20)
@@ -107,6 +111,10 @@ class _RelatedVideosWidgetState extends ConsumerState<RelatedVideosWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // Re-filter when block/unblock/mute changes so a blocked author disappears
+    // (and an unblocked author reappears) without re-fetching. See #4782.
+    ref.watch(blocklistVersionProvider);
+
     if (_isLoading) {
       return const Center(
         child: Padding(
@@ -148,7 +156,15 @@ class _RelatedVideosWidgetState extends ConsumerState<RelatedVideosWidget> {
       );
     }
 
-    if (_relatedVideos.isEmpty) {
+    // The Funnelcake hashtag lookup is anonymous and applies no per-viewer
+    // block/mute filter, so filter client-side here (kept out of the cached
+    // fetch so unblock re-shows without a refetch). See #4782.
+    final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
+    final visibleVideos = _relatedVideos
+        .where((v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey))
+        .toList();
+
+    if (visibleVideos.isEmpty) {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(16.0),
@@ -196,7 +212,7 @@ class _RelatedVideosWidgetState extends ConsumerState<RelatedVideosWidget> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              if (_relatedVideos.isNotEmpty)
+              if (visibleVideos.isNotEmpty)
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
@@ -225,9 +241,9 @@ class _RelatedVideosWidgetState extends ConsumerState<RelatedVideosWidget> {
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            itemCount: _relatedVideos.length,
+            itemCount: visibleVideos.length,
             itemBuilder: (context, index) {
-              final video = _relatedVideos[index];
+              final video = visibleVideos[index];
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: SizedBox(
@@ -236,8 +252,9 @@ class _RelatedVideosWidgetState extends ConsumerState<RelatedVideosWidget> {
                     video: video,
                     isActive: false,
                     onTap: () {
-                      // Play the related video with all related videos as context
-                      widget.onVideoTap(_relatedVideos, index);
+                      // Play the tapped video with the visible related list as
+                      // context so indices stay aligned after filtering.
+                      widget.onVideoTap(visibleVideos, index);
                     },
                     onClose: () {},
                   ),

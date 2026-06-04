@@ -209,6 +209,21 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
     }
   }
 
+  /// Removes videos whose author is blocked/muted (kind 30000 d=block /
+  /// kind 10000), or who has blocked/muted the current user. The Funnelcake
+  /// hashtag endpoint is called anonymously and applies no per-viewer block
+  /// or mute filtering, so the client is the only place these are enforced.
+  /// Applied at the assembly seam so it covers both the REST and WebSocket
+  /// sources, and re-runs on rebuild (see [blocklistVersionProvider] watch in
+  /// [build]) so unblocked authors reappear without a re-fetch. See #4782.
+  List<VideoEvent> _filterBlockedAuthors(List<VideoEvent> videos) {
+    if (videos.isEmpty) return videos;
+    final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
+    return videos
+        .where((v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey))
+        .toList();
+  }
+
   /// Combine and sort videos from Funnelcake and WebSocket sources.
   /// Funnelcake videos are shown first (already sorted by popularity).
   /// WebSocket-only videos are appended and sorted by local metrics.
@@ -216,7 +231,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
     // If no Funnelcake data, just sort WebSocket videos locally
     if (_popularVideos == null || _popularVideos!.isEmpty) {
       webSocketVideos.sort(VideoEvent.compareByLoopsThenTime);
-      return webSocketVideos;
+      return _filterBlockedAuthors(webSocketVideos);
     }
 
     final funnelcakeIds = <String>{};
@@ -243,8 +258,9 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
     // Sort additional videos by local popularity
     additionalVideos.sort(VideoEvent.compareByLoopsThenTime);
 
-    // Return Funnelcake videos (already sorted by API) + additional WebSocket videos
-    return [..._popularVideos!, ...additionalVideos];
+    // Return Funnelcake videos (already sorted by API) + additional WebSocket
+    // videos, with blocked/muted authors removed from both sources.
+    return _filterBlockedAuthors([..._popularVideos!, ...additionalVideos]);
   }
 
   /// Navigate to fullscreen video feed, passing the grid's video list directly.
@@ -281,6 +297,10 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
           category: LogCategory.video,
         );
         final hashtagService = ref.watch(hashtagServiceProvider);
+
+        // Rebuild when block/unblock/mute actions occur so blocked authors
+        // disappear (and unblocked authors reappear) immediately. See #4782.
+        ref.watch(blocklistVersionProvider);
 
         // Combine Funnelcake videos (fast, pre-sorted) with WebSocket videos
         final webSocketVideos = List<VideoEvent>.from(
