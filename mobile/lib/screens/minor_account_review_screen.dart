@@ -491,7 +491,7 @@ class _HeroCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             body,
-            style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
+            style: VineTheme.bodyMediumFont(),
           ),
         ],
       ),

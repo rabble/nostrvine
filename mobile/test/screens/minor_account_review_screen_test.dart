@@ -1,3 +1,4 @@
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -27,6 +28,13 @@ void main() {
 
       expect(find.text('Family guide'), findsOneWidget);
       expect(find.text("Not 16 yet? That's OK."), findsOneWidget);
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(MinorAccountReviewScreen)),
+      );
+      final welcomeBody = tester.widget<Text>(
+        find.text(l10n.minorAccountReviewWelcomeBody),
+      );
+      expect(welcomeBody.style?.color, VineTheme.whiteText);
       await tester.scrollUntilVisible(
         find.text('More for families'),
         200,
@@ -133,6 +141,12 @@ void main() {
       expect(
         find.text(l10n.minorAccountReviewUnder13ComeBackBody),
         findsOneWidget,
+      );
+      expect(
+        l10n.minorAccountReviewUnder13ComeBackBody,
+        'Depending on the rules where you live, you may be able to come back '
+        'and apply for your own account. In that case, if you’re between '
+        '13 and 15, you’ll need consent from a parent or guardian.',
       );
       // The honesty / legal cards from the original four-card layout
       // stay removed.

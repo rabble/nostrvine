@@ -13629,7 +13629,7 @@ abstract class AppLocalizations {
   /// No description provided for @minorAccountReviewUnder13ComeBackBody.
   ///
   /// In en, this message translates to:
-  /// **'You can come back and apply for your own account. Between 13 and 15 you\'ll just need a parent or guardian\'s consent.'**
+  /// **'Depending on the rules where you live, you may be able to come back and apply for your own account. In that case, if you’re between 13 and 15, you’ll need consent from a parent or guardian.'**
   String get minorAccountReviewUnder13ComeBackBody;
 
   /// No description provided for @minorAccountReviewUnder13HonestyTitle.
@@ -13767,7 +13767,7 @@ abstract class AppLocalizations {
   /// No description provided for @minorAccountReviewParentConsentEmailBody.
   ///
   /// In en, this message translates to:
-  /// **'Hi Divine support,\n\nI am contacting Divine about an account for a teen who is 13 to 15.\n\nI have attached a short private video that shows:\n- the teen\n- a parent or guardian speaking on camera\n- that the teen has permission to use Divine\n- that the parent or guardian knows about the account and will supervise its use\n\nAdult country of residence:\n\nHelpful context:\n\nThanks.'**
+  /// **'Hi Divine support,\n\nI am contacting Divine about an account for a teen who is 13 to 15.\n\nI have attached a short private video that shows:\n- the teen\n- a parent or guardian speaking on camera\n- that the teen has permission to use Divine\n- that the parent or guardian knows about the account and will supervise its use\n\nCountry/ies of residence:\n\nHelpful context:\n\nThanks.'**
   String get minorAccountReviewParentConsentEmailBody;
 
   /// No description provided for @minorAccountReviewParentSupportInstructions.
