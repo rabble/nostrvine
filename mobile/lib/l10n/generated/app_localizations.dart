@@ -10748,6 +10748,24 @@ abstract class AppLocalizations {
   /// **'This integration tried to leave its approved origin.\n\n{uri}'**
   String appsSandboxBlockedSubtitle(String uri);
 
+  /// No description provided for @shareCopiedPostLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Link to post copied to clipboard'**
+  String get shareCopiedPostLink;
+
+  /// No description provided for @shareCopiedEventJson.
+  ///
+  /// In en, this message translates to:
+  /// **'Nostr event JSON copied to clipboard'**
+  String get shareCopiedEventJson;
+
+  /// No description provided for @shareCopiedEventId.
+  ///
+  /// In en, this message translates to:
+  /// **'Nostr event ID copied to clipboard'**
+  String get shareCopiedEventId;
+
   /// No description provided for @bugReportSendReport.
   ///
   /// In en, this message translates to:

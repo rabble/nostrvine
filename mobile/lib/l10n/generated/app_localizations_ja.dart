@@ -5891,6 +5891,15 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get shareCopiedPostLink => 'Link to post copied to clipboard';
+
+  @override
+  String get shareCopiedEventJson => 'Nostr event JSON copied to clipboard';
+
+  @override
+  String get shareCopiedEventId => 'Nostr event ID copied to clipboard';
+
+  @override
   String get bugReportSendReport => 'レポートを送信';
 
   @override

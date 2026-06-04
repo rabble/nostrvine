@@ -221,7 +221,6 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
         :final removed,
         :final wasBookmarkedBeforeToggle,
       ):
-        _safePop(context);
         final snackText = succeeded
             ? (removed
                   ? context.l10n.shareRemovedFromBookmarks
@@ -229,6 +228,7 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
             : (wasBookmarkedBeforeToggle
                   ? context.l10n.shareFailedToRemoveBookmark
                   : context.l10n.shareFailedToAddBookmark);
+        _safePop(context);
         messenger.showSnackBar(
           DivineSnackbarContainer.snackBar(
             snackText,
@@ -241,19 +241,27 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
           );
         }
       case ShareSheetVideoClipImportResult(:final succeeded):
+        final snackText = succeeded
+            ? context.l10n.shareSheetAddedToClips
+            : context.l10n.shareSheetAddToClipsFailed;
         _safePop(context);
         messenger.showSnackBar(
           DivineSnackbarContainer.snackBar(
-            succeeded
-                ? context.l10n.shareSheetAddedToClips
-                : context.l10n.shareSheetAddToClipsFailed,
+            snackText,
             error: !succeeded,
           ),
         );
-      case ShareSheetCopiedToClipboard(:final label, :final text):
+      case ShareSheetCopiedToClipboard(:final kind, :final text):
+        final snackText = switch (kind) {
+          ShareSheetCopiedKind.postLink => context.l10n.shareCopiedPostLink,
+          ShareSheetCopiedKind.eventJson => context.l10n.shareCopiedEventJson,
+          ShareSheetCopiedKind.eventId => context.l10n.shareCopiedEventId,
+        };
         Clipboard.setData(ClipboardData(text: text));
         _safePop(context);
-        messenger.showSnackBar(DivineSnackbarContainer.snackBar(label));
+        messenger.showSnackBar(
+          DivineSnackbarContainer.snackBar(snackText),
+        );
       case ShareSheetShareViaTriggered(
         :final shareUrl,
         :final thumbnailPath,

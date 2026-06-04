@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Utility class for clipboard operations with visual feedback.
 ///
@@ -32,6 +33,6 @@ class ClipboardUtils {
   ///
   /// This is a convenience method specifically for copying Nostr public keys.
   static Future<void> copyPubkey(BuildContext context, String npub) async {
-    await copy(context, npub, message: 'Public key copied to clipboard');
+    await copy(context, npub, message: context.l10n.profilePublicKeyCopied);
   }
 }

@@ -557,6 +557,10 @@ const _knownUntranslatedDebt = {
   'appsSandboxLoadingSubtitle',
   'appsSandboxBlockedTitle',
   'appsSandboxBlockedSubtitle',
+  // #3628 Area K (below-UI-layer safe subset)
+  'shareCopiedPostLink',
+  'shareCopiedEventJson',
+  'shareCopiedEventId',
 };
 
 Map<String, Object?> _readArb(File file) {

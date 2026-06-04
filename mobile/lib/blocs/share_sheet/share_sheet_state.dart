@@ -77,11 +77,14 @@ class ShareSheetActionFailure extends ShareSheetActionResult {
   ShareSheetActionFailure();
 }
 
-class ShareSheetCopiedToClipboard extends ShareSheetActionResult {
-  ShareSheetCopiedToClipboard({required this.label, required this.text});
+/// What content was copied, so the UI can pick the localized message.
+enum ShareSheetCopiedKind { postLink, eventJson, eventId }
 
-  /// Human-readable label for the snackbar message.
-  final String label;
+class ShareSheetCopiedToClipboard extends ShareSheetActionResult {
+  ShareSheetCopiedToClipboard({required this.kind, required this.text});
+
+  /// Which content was copied; the UI maps this to a localized message.
+  final ShareSheetCopiedKind kind;
 
   /// Text to copy to clipboard.
   final String text;

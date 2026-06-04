@@ -437,7 +437,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       emit(
         state.copyWith(
           actionResult: ShareSheetCopiedToClipboard(
-            label: 'Link to post copied to clipboard',
+            kind: ShareSheetCopiedKind.postLink,
             text: url,
           ),
         ),
@@ -525,7 +525,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       emit(
         state.copyWith(
           actionResult: ShareSheetCopiedToClipboard(
-            label: 'Nostr event JSON copied to clipboard',
+            kind: ShareSheetCopiedKind.eventJson,
             text: json,
           ),
         ),
@@ -556,7 +556,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       emit(
         state.copyWith(
           actionResult: ShareSheetCopiedToClipboard(
-            label: 'Nostr event ID copied to clipboard',
+            kind: ShareSheetCopiedKind.eventId,
             text: nevent,
           ),
         ),

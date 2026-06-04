@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/widgets/video_feed_item/actions/share_action_button.dart';
@@ -269,7 +270,12 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Link to post copied to clipboard'), findsOneWidget);
+        expect(
+          find.text(
+            lookupAppLocalizations(const Locale('en')).shareCopiedPostLink,
+          ),
+          findsOneWidget,
+        );
       });
 
       testWidgets('shows own-video download actions for owned content', (

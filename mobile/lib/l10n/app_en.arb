@@ -3440,6 +3440,9 @@
       }
     }
   },
+  "shareCopiedPostLink": "Link to post copied to clipboard",
+  "shareCopiedEventJson": "Nostr event JSON copied to clipboard",
+  "shareCopiedEventId": "Nostr event ID copied to clipboard",
   "bugReportSendReport": "Send Report",
   "supportSubjectRequiredLabel": "Subject *",
   "supportRequiredHelper": "Required",

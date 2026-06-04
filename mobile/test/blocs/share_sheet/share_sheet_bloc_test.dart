@@ -975,9 +975,9 @@ void main() {
                   'https://divine.video/video/test-id',
                 )
                 .having(
-                  (r) => r.label,
-                  'label',
-                  'Link to post copied to clipboard',
+                  (r) => r.kind,
+                  'kind',
+                  ShareSheetCopiedKind.postLink,
                 ),
           ),
         ],
@@ -1168,9 +1168,9 @@ void main() {
             'actionResult',
             isA<ShareSheetCopiedToClipboard>()
                 .having(
-                  (r) => r.label,
-                  'label',
-                  'Nostr event JSON copied to clipboard',
+                  (r) => r.kind,
+                  'kind',
+                  ShareSheetCopiedKind.eventJson,
                 )
                 .having(
                   (r) => r.text.contains('"id"'),
@@ -1223,9 +1223,9 @@ void main() {
             'actionResult',
             isA<ShareSheetCopiedToClipboard>()
                 .having(
-                  (r) => r.label,
-                  'label',
-                  'Nostr event ID copied to clipboard',
+                  (r) => r.kind,
+                  'kind',
+                  ShareSheetCopiedKind.eventId,
                 )
                 .having(
                   (r) => r.text.startsWith('nevent'),
