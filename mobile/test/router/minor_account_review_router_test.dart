@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -148,6 +149,35 @@ void main() {
       );
     });
 
+    testWidgets('parent contact back button falls back to review route', (
+      tester,
+    ) async {
+      final container = ProviderContainer(
+        overrides: [
+          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
+          currentMinorAccountReviewStatusProvider.overrideWith(
+            (ref) async => restrictedStatus(),
+          ),
+        ],
+      );
+      registerContainerTearDown(tester, container);
+      await container.read(currentMinorAccountReviewStatusProvider.future);
+      await pumpRouter(tester, container);
+
+      final router = container.read(goRouterProvider);
+      router.go(MinorAccountReviewParentContactScreen.path);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(DiVineAppBarIconButton));
+      await tester.pumpAndSettle();
+
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        MinorAccountReviewScreen.path,
+      );
+    });
+
     testWidgets('allows support center route while restricted', (tester) async {
       final container = ProviderContainer(
         overrides: [
@@ -200,6 +230,39 @@ void main() {
       expect(
         router.routeInformationProvider.value.uri.toString(),
         MinorAccountReviewUnder13SupportScreen.path,
+      );
+    });
+
+    testWidgets('under-13 support back button falls back to review route', (
+      tester,
+    ) async {
+      final container = ProviderContainer(
+        overrides: [
+          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
+          currentMinorAccountReviewStatusProvider.overrideWith(
+            (ref) async => restrictedStatus(
+              state: MinorReviewCaseState.restrictedPendingSupportEmail,
+              ageBand: SuspectedAgeBand.under13,
+              resolution: MinorReviewResolutionType.supportEmailOnly,
+            ),
+          ),
+        ],
+      );
+      registerContainerTearDown(tester, container);
+      await container.read(currentMinorAccountReviewStatusProvider.future);
+      await pumpRouter(tester, container);
+
+      final router = container.read(goRouterProvider);
+      router.go(MinorAccountReviewUnder13SupportScreen.path);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(DiVineAppBarIconButton));
+      await tester.pumpAndSettle();
+
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        MinorAccountReviewScreen.path,
       );
     });
 

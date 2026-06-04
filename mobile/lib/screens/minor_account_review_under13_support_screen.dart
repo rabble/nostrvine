@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/constants/app_constants.dart';
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -32,7 +33,8 @@ class MinorAccountReviewUnder13SupportScreen extends ConsumerWidget {
       appBar: DiVineAppBar(
         title: context.l10n.minorAccountReviewUnder13SupportTitle,
         showBackButton: true,
-        onBackPressed: context.pop,
+        onBackPressed: () =>
+            context.safePop(fallback: MinorAccountReviewScreen.path),
       ),
       backgroundColor: VineTheme.backgroundColor,
       body: SafeArea(

@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -46,7 +47,8 @@ class _MinorAccountReviewParentContactScreenState
       appBar: DiVineAppBar(
         title: context.l10n.minorAccountReviewParentContactTitle,
         showBackButton: true,
-        onBackPressed: context.pop,
+        onBackPressed: () =>
+            context.safePop(fallback: MinorAccountReviewScreen.path),
       ),
       backgroundColor: VineTheme.backgroundColor,
       body: SafeArea(
@@ -226,7 +228,11 @@ class _ParentContactBody extends StatelessWidget {
                 label: l10n.minorAccountReviewBackToReview,
                 type: DivineButtonType.secondary,
                 expanded: true,
-                onPressed: isSubmitting ? null : context.pop,
+                onPressed: isSubmitting
+                    ? null
+                    : () => context.safePop(
+                        fallback: MinorAccountReviewScreen.path,
+                      ),
               ),
             ],
           ),
