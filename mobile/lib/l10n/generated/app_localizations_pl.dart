@@ -2718,7 +2718,13 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get authTermsPrefix =>
-      'Wybierając opcję powyżej, potwierdzasz, że masz przynajmniej 16 lat i zgadzasz się z ';
+      'By selecting an option below, you confirm you are at least 16 years old (or have completed ';
+
+  @override
+  String get authTermsAgeAuthorizationCta => 'Divine age authorization';
+
+  @override
+  String get authTermsAfterAgeAuthorization => ') and agree to the ';
 
   @override
   String get authTermsOfService => 'Regulaminem';

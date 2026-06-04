@@ -2688,7 +2688,13 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get authTermsPrefix =>
-      'Sa pagpili ng opsyon sa itaas, kinukumpirma mo na ikaw ay 16 na taong gulang o mas matanda at sumasang-ayon sa ';
+      'By selecting an option below, you confirm you are at least 16 years old (or have completed ';
+
+  @override
+  String get authTermsAgeAuthorizationCta => 'Divine age authorization';
+
+  @override
+  String get authTermsAfterAgeAuthorization => ') and agree to the ';
 
   @override
   String get authTermsOfService => 'Terms of Service';

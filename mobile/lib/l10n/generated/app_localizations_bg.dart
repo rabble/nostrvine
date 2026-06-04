@@ -2689,7 +2689,13 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get authTermsPrefix =>
-      'Като избереш опция по-горе, потвърждаваш, че си на 16 или повече и се съгласяваш с';
+      'By selecting an option below, you confirm you are at least 16 years old (or have completed ';
+
+  @override
+  String get authTermsAgeAuthorizationCta => 'Divine age authorization';
+
+  @override
+  String get authTermsAfterAgeAuthorization => ') and agree to the ';
 
   @override
   String get authTermsOfService => 'Условия за ползване';

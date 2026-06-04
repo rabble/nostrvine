@@ -2616,7 +2616,13 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get authTermsPrefix =>
-      'باختيار خيار أعلاه، أنت تؤكّد أنّ عمرك 16 عامًا على الأقل وتوافق على ';
+      'By selecting an option below, you confirm you are at least 16 years old (or have completed ';
+
+  @override
+  String get authTermsAgeAuthorizationCta => 'Divine age authorization';
+
+  @override
+  String get authTermsAfterAgeAuthorization => ') and agree to the ';
 
   @override
   String get authTermsOfService => 'شروط الخدمة';

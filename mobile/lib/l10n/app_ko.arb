@@ -617,7 +617,15 @@
     "authSignBackIn": "다시 로그인",
     "authRecoveryDraftsOwner": "임시저장 및 클립이 이 계정에 저장되어 있어요",
     "authRecoveryOtherAccountWarning": "여기서 로그인하면 해당 임시저장과 클립이 숨겨져요",
-    "authTermsPrefix": "위에서 옵션을 선택하면 만 16세 이상임을 확인하고 다음 내용에 동의하는 것이에요: ",
+    "authTermsPrefix": "By selecting an option below, you confirm you are at least 16 years old (or have completed ",
+    "authTermsAgeAuthorizationCta": "Divine age authorization",
+    "@authTermsAgeAuthorizationCta": {
+      "description": "Inline link in the welcome-screen terms notice that opens the public family-guidance / age-authorization flow."
+    },
+    "authTermsAfterAgeAuthorization": ") and agree to the ",
+    "@authTermsAfterAgeAuthorization": {
+      "description": "Text after the Divine age authorization link in the welcome-screen terms notice."
+    },
     "authTermsOfService": "이용약관",
     "authPrivacyPolicy": "개인정보 처리방침",
     "authTermsAnd": ", 그리고 ",

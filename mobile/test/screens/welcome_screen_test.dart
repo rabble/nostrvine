@@ -5,6 +5,7 @@
 import 'package:db_client/db_client.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -210,6 +211,10 @@ void main() {
             if (widget is RichText) {
               final text = widget.text.toPlainText();
               return text.contains('By selecting an option below') &&
+                  text.contains(
+                    'at least 16 years old (or have completed '
+                    'Divine age authorization) and agree',
+                  ) &&
                   text.contains('Terms of Service');
             }
             return false;
@@ -267,6 +272,50 @@ void main() {
         verify(() => mockAuthService.acceptTerms()).called(1);
         expect(find.text('Sign in'), findsOneWidget);
       });
+
+      testWidgets(
+        'tapping "Divine age authorization" navigates to the public family guide',
+        (
+          tester,
+        ) async {
+          await tester.pumpWidget(createTestWidget());
+          await tester.pumpAndSettle();
+
+          final termsRichText = find.byWidgetPredicate((widget) {
+            if (widget is RichText) {
+              final text = widget.text.toPlainText();
+              return text.contains('Divine age authorization') &&
+                  text.contains('Terms of Service');
+            }
+            return false;
+          });
+          expect(termsRichText, findsOneWidget);
+
+          final richText = tester.widget<RichText>(termsRichText);
+          final fullText = richText.text.toPlainText();
+          final linkStart = fullText.indexOf('Divine age authorization');
+          expect(linkStart, isNonNegative);
+          final renderParagraph = tester.renderObject<RenderParagraph>(
+            termsRichText,
+          );
+          final linkBoxes = renderParagraph.getBoxesForSelection(
+            TextSelection(
+              baseOffset: linkStart,
+              extentOffset: linkStart + 'Divine age authorization'.length,
+            ),
+          );
+          expect(linkBoxes, isNotEmpty);
+          final linkCenter = renderParagraph.localToGlobal(
+            linkBoxes.first.toRect().center,
+          );
+          await tester.tapAt(
+            linkCenter,
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('Family Guide Page'), findsOneWidget);
+        },
+      );
 
       testWidgets(
         'tapping "Here are your choices." navigates to the public family guide',

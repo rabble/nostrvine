@@ -1138,7 +1138,15 @@
     "authSignBackIn": "Entrar de novo",
     "authRecoveryDraftsOwner": "Seus rascunhos e clipes estão salvos nesta conta",
     "authRecoveryOtherAccountWarning": "Entrar aqui vai esconder esses rascunhos e clipes",
-    "authTermsPrefix": "Ao selecionar uma opção acima, você confirma que tem pelo menos 16 anos e concorda com os ",
+    "authTermsPrefix": "By selecting an option below, you confirm you are at least 16 years old (or have completed ",
+    "authTermsAgeAuthorizationCta": "Divine age authorization",
+    "@authTermsAgeAuthorizationCta": {
+      "description": "Inline link in the welcome-screen terms notice that opens the public family-guidance / age-authorization flow."
+    },
+    "authTermsAfterAgeAuthorization": ") and agree to the ",
+    "@authTermsAfterAgeAuthorization": {
+      "description": "Text after the Divine age authorization link in the welcome-screen terms notice."
+    },
     "authTermsOfService": "Termos de Serviço",
     "authPrivacyPolicy": "Política de Privacidade",
     "authTermsAnd": ", e ",

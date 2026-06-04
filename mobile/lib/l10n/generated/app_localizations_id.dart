@@ -2621,7 +2621,13 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get authTermsPrefix =>
-      'Dengan memilih opsi di atas, kamu mengonfirmasi bahwa kamu berusia minimal 16 tahun dan setuju dengan ';
+      'By selecting an option below, you confirm you are at least 16 years old (or have completed ';
+
+  @override
+  String get authTermsAgeAuthorizationCta => 'Divine age authorization';
+
+  @override
+  String get authTermsAfterAgeAuthorization => ') and agree to the ';
 
   @override
   String get authTermsOfService => 'Ketentuan Layanan';

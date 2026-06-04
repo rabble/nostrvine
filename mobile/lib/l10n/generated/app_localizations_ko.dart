@@ -2528,7 +2528,13 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get authTermsPrefix =>
-      '위에서 옵션을 선택하면 만 16세 이상임을 확인하고 다음 내용에 동의하는 것이에요: ';
+      'By selecting an option below, you confirm you are at least 16 years old (or have completed ';
+
+  @override
+  String get authTermsAgeAuthorizationCta => 'Divine age authorization';
+
+  @override
+  String get authTermsAfterAgeAuthorization => ') and agree to the ';
 
   @override
   String get authTermsOfService => '이용약관';

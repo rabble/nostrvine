@@ -1138,7 +1138,15 @@
     "authSignBackIn": "Logga in igen",
     "authRecoveryDraftsOwner": "Dina utkast och klipp är sparade för det här kontot",
     "authRecoveryOtherAccountWarning": "Loggar du in här döljs de utkasten och klippen",
-    "authTermsPrefix": "Genom att välja ett alternativ ovan bekräftar du att du är minst 16 år gammal och godkänner ",
+    "authTermsPrefix": "By selecting an option below, you confirm you are at least 16 years old (or have completed ",
+    "authTermsAgeAuthorizationCta": "Divine age authorization",
+    "@authTermsAgeAuthorizationCta": {
+      "description": "Inline link in the welcome-screen terms notice that opens the public family-guidance / age-authorization flow."
+    },
+    "authTermsAfterAgeAuthorization": ") and agree to the ",
+    "@authTermsAfterAgeAuthorization": {
+      "description": "Text after the Divine age authorization link in the welcome-screen terms notice."
+    },
     "authTermsOfService": "Användarvillkor",
     "authPrivacyPolicy": "Integritetspolicy",
     "authTermsAnd": ", och ",

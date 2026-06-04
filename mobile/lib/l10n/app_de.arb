@@ -1138,7 +1138,15 @@
     "authSignBackIn": "Wieder anmelden",
     "authRecoveryDraftsOwner": "Deine Entwürfe und Clips sind für dieses Konto gespeichert",
     "authRecoveryOtherAccountWarning": "Hier anmelden verbirgt diese Entwürfe und Clips",
-    "authTermsPrefix": "Indem du oben eine Option wählst, bestätigst du, dass du mindestens 16 Jahre alt bist und den ",
+    "authTermsPrefix": "By selecting an option below, you confirm you are at least 16 years old (or have completed ",
+    "authTermsAgeAuthorizationCta": "Divine age authorization",
+    "@authTermsAgeAuthorizationCta": {
+      "description": "Inline link in the welcome-screen terms notice that opens the public family-guidance / age-authorization flow."
+    },
+    "authTermsAfterAgeAuthorization": ") and agree to the ",
+    "@authTermsAfterAgeAuthorization": {
+      "description": "Text after the Divine age authorization link in the welcome-screen terms notice."
+    },
     "authTermsOfService": "Nutzungsbedingungen",
     "authPrivacyPolicy": "Datenschutzrichtlinie",
     "authTermsAnd": ", und ",

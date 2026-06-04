@@ -4637,8 +4637,20 @@ abstract class AppLocalizations {
   /// No description provided for @authTermsPrefix.
   ///
   /// In en, this message translates to:
-  /// **'By selecting an option below, you confirm you are at least 16 years old and agree to the '**
+  /// **'By selecting an option below, you confirm you are at least 16 years old (or have completed '**
   String get authTermsPrefix;
+
+  /// Inline link in the welcome-screen terms notice that opens the public family-guidance / age-authorization flow.
+  ///
+  /// In en, this message translates to:
+  /// **'Divine age authorization'**
+  String get authTermsAgeAuthorizationCta;
+
+  /// Text after the Divine age authorization link in the welcome-screen terms notice.
+  ///
+  /// In en, this message translates to:
+  /// **') and agree to the '**
+  String get authTermsAfterAgeAuthorization;
 
   /// No description provided for @authTermsOfService.
   ///

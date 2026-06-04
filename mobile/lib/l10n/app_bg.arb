@@ -1212,7 +1212,15 @@
     "authSignBackIn": "Влез отново",
     "authRecoveryDraftsOwner": "Черновите и клиповете ти са запазени за този акаунт",
     "authRecoveryOtherAccountWarning": "Влизането тук ще скрие тези чернови и клипове",
-    "authTermsPrefix": "Като избереш опция по-горе, потвърждаваш, че си на 16 или повече и се съгласяваш с",
+    "authTermsPrefix": "By selecting an option below, you confirm you are at least 16 years old (or have completed ",
+    "authTermsAgeAuthorizationCta": "Divine age authorization",
+    "@authTermsAgeAuthorizationCta": {
+      "description": "Inline link in the welcome-screen terms notice that opens the public family-guidance / age-authorization flow."
+    },
+    "authTermsAfterAgeAuthorization": ") and agree to the ",
+    "@authTermsAfterAgeAuthorization": {
+      "description": "Text after the Divine age authorization link in the welcome-screen terms notice."
+    },
     "authTermsOfService": "Условия за ползване",
     "authPrivacyPolicy": "Политика за поверителност",
     "authTermsAnd": ", и",

@@ -1135,7 +1135,15 @@
     "authSignBackIn": "もう一回サインイン",
     "authRecoveryDraftsOwner": "下書きとクリップはこのアカウントに保存されています",
     "authRecoveryOtherAccountWarning": "ここでサインインするとそれらが非表示になります",
-    "authTermsPrefix": "上のオプションを選ぶと、16歳以上であることを確認し、次に同意したことになるよ: ",
+    "authTermsPrefix": "By selecting an option below, you confirm you are at least 16 years old (or have completed ",
+    "authTermsAgeAuthorizationCta": "Divine age authorization",
+    "@authTermsAgeAuthorizationCta": {
+      "description": "Inline link in the welcome-screen terms notice that opens the public family-guidance / age-authorization flow."
+    },
+    "authTermsAfterAgeAuthorization": ") and agree to the ",
+    "@authTermsAfterAgeAuthorization": {
+      "description": "Text after the Divine age authorization link in the welcome-screen terms notice."
+    },
     "authTermsOfService": "利用規約",
     "authPrivacyPolicy": "プライバシーポリシー",
     "authTermsAnd": "、そして ",

@@ -1138,7 +1138,15 @@
     "authSignBackIn": "Reautentifică-te",
     "authRecoveryDraftsOwner": "Ciornele și clipurile tale sunt salvate pentru acest cont",
     "authRecoveryOtherAccountWarning": "Autentificarea aici le va ascunde",
-    "authTermsPrefix": "Selecționând o opțiune de mai sus, confirmi că ai cel puțin 16 ani și ești de acord cu ",
+    "authTermsPrefix": "By selecting an option below, you confirm you are at least 16 years old (or have completed ",
+    "authTermsAgeAuthorizationCta": "Divine age authorization",
+    "@authTermsAgeAuthorizationCta": {
+      "description": "Inline link in the welcome-screen terms notice that opens the public family-guidance / age-authorization flow."
+    },
+    "authTermsAfterAgeAuthorization": ") and agree to the ",
+    "@authTermsAfterAgeAuthorization": {
+      "description": "Text after the Divine age authorization link in the welcome-screen terms notice."
+    },
     "authTermsOfService": "Termenii serviciului",
     "authPrivacyPolicy": "Politica de confidențialitate",
     "authTermsAnd": ", și ",

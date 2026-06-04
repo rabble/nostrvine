@@ -1138,7 +1138,15 @@
     "authSignBackIn": "Zaloguj się z powrotem",
     "authRecoveryDraftsOwner": "Twoje szkice i klipy są zapisane dla tego konta",
     "authRecoveryOtherAccountWarning": "Zalogowanie się tutaj ukryje te szkice i klipy",
-    "authTermsPrefix": "Wybierając opcję powyżej, potwierdzasz, że masz przynajmniej 16 lat i zgadzasz się z ",
+    "authTermsPrefix": "By selecting an option below, you confirm you are at least 16 years old (or have completed ",
+    "authTermsAgeAuthorizationCta": "Divine age authorization",
+    "@authTermsAgeAuthorizationCta": {
+      "description": "Inline link in the welcome-screen terms notice that opens the public family-guidance / age-authorization flow."
+    },
+    "authTermsAfterAgeAuthorization": ") and agree to the ",
+    "@authTermsAfterAgeAuthorization": {
+      "description": "Text after the Divine age authorization link in the welcome-screen terms notice."
+    },
     "authTermsOfService": "Regulaminem",
     "authPrivacyPolicy": "Polityką prywatności",
     "authTermsAnd": ", oraz ",

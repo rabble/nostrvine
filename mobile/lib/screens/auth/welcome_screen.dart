@@ -514,6 +514,7 @@ class _TermsNoticeState extends State<_TermsNotice> {
   late final TapGestureRecognizer _termsRecognizer;
   late final TapGestureRecognizer _privacyRecognizer;
   late final TapGestureRecognizer _safetyRecognizer;
+  late final TapGestureRecognizer _ageAuthorizationRecognizer;
 
   Future<void> _openUrl(String urlString) async {
     final uri = Uri.parse(urlString);
@@ -531,6 +532,8 @@ class _TermsNoticeState extends State<_TermsNotice> {
       ..onTap = () => _openUrl('https://divine.video/privacy');
     _safetyRecognizer = TapGestureRecognizer()
       ..onTap = () => _openUrl('https://divine.video/safety');
+    _ageAuthorizationRecognizer = TapGestureRecognizer()
+      ..onTap = () => context.push(MinorAccountReviewScreen.pathFor());
   }
 
   @override
@@ -538,6 +541,7 @@ class _TermsNoticeState extends State<_TermsNotice> {
     _termsRecognizer.dispose();
     _privacyRecognizer.dispose();
     _safetyRecognizer.dispose();
+    _ageAuthorizationRecognizer.dispose();
     super.dispose();
   }
 
@@ -556,6 +560,12 @@ class _TermsNoticeState extends State<_TermsNotice> {
         style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
         children: [
           TextSpan(text: context.l10n.authTermsPrefix),
+          TextSpan(
+            text: context.l10n.authTermsAgeAuthorizationCta,
+            style: linkStyle,
+            recognizer: _ageAuthorizationRecognizer,
+          ),
+          TextSpan(text: context.l10n.authTermsAfterAgeAuthorization),
           TextSpan(
             text: context.l10n.authTermsOfService,
             style: linkStyle,

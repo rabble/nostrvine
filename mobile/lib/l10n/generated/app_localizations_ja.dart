@@ -2517,7 +2517,14 @@ class AppLocalizationsJa extends AppLocalizations {
   String get authRecoveryOtherAccountWarning => 'ここでサインインするとそれらが非表示になります';
 
   @override
-  String get authTermsPrefix => '上のオプションを選ぶと、16歳以上であることを確認し、次に同意したことになるよ: ';
+  String get authTermsPrefix =>
+      'By selecting an option below, you confirm you are at least 16 years old (or have completed ';
+
+  @override
+  String get authTermsAgeAuthorizationCta => 'Divine age authorization';
+
+  @override
+  String get authTermsAfterAgeAuthorization => ') and agree to the ';
 
   @override
   String get authTermsOfService => '利用規約';

@@ -1135,7 +1135,15 @@
     "authSignBackIn": "Masuk kembali",
     "authRecoveryDraftsOwner": "Draf dan klip kamu tersimpan untuk akun ini",
     "authRecoveryOtherAccountWarning": "Masuk di sini akan menyembunyikan draf dan klip tersebut",
-    "authTermsPrefix": "Dengan memilih opsi di atas, kamu mengonfirmasi bahwa kamu berusia minimal 16 tahun dan setuju dengan ",
+    "authTermsPrefix": "By selecting an option below, you confirm you are at least 16 years old (or have completed ",
+    "authTermsAgeAuthorizationCta": "Divine age authorization",
+    "@authTermsAgeAuthorizationCta": {
+      "description": "Inline link in the welcome-screen terms notice that opens the public family-guidance / age-authorization flow."
+    },
+    "authTermsAfterAgeAuthorization": ") and agree to the ",
+    "@authTermsAfterAgeAuthorization": {
+      "description": "Text after the Divine age authorization link in the welcome-screen terms notice."
+    },
     "authTermsOfService": "Ketentuan Layanan",
     "authPrivacyPolicy": "Kebijakan Privasi",
     "authTermsAnd": ", dan ",

@@ -2643,7 +2643,13 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get authTermsPrefix =>
-      'Genom att välja ett alternativ ovan bekräftar du att du är minst 16 år gammal och godkänner ';
+      'By selecting an option below, you confirm you are at least 16 years old (or have completed ';
+
+  @override
+  String get authTermsAgeAuthorizationCta => 'Divine age authorization';
+
+  @override
+  String get authTermsAfterAgeAuthorization => ') and agree to the ';
 
   @override
   String get authTermsOfService => 'Användarvillkor';
