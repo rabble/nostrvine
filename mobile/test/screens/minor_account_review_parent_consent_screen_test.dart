@@ -44,6 +44,7 @@ void main() {
       expect(sentToEmail, 'support@divine.video');
       expect(sentSubject, '13-15 account review help');
       expect(sentBody, contains('I have attached a short private video'));
+      expect(sentBody, contains('Adult country of residence:'));
     });
   });
 }
