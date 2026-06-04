@@ -4,6 +4,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// The two tabs available in the inbox segmented toggle.
 enum InboxTab { messages, notifications }
@@ -40,7 +41,7 @@ class InboxSegmentedToggle extends StatelessWidget {
         children: [
           Expanded(
             child: _ToggleButton(
-              label: 'Notifications',
+              label: context.l10n.settingsNotifications,
               isSelected: selected == InboxTab.notifications,
               onTap: () => onChanged(InboxTab.notifications),
               badgeCount: notificationCount,
@@ -48,7 +49,7 @@ class InboxSegmentedToggle extends StatelessWidget {
           ),
           Expanded(
             child: _ToggleButton(
-              label: 'Messages',
+              label: context.l10n.inboxMessagesTab,
               isSelected: selected == InboxTab.messages,
               onTap: () => onChanged(InboxTab.messages),
               badgeCount: messageCount,

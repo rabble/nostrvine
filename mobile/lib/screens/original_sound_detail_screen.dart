@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -59,7 +60,7 @@ class OriginalSoundDetailScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
       appBar: DiVineAppBar(
-        title: 'Sound',
+        title: context.l10n.soundTitle,
         showBackButton: true,
         onBackPressed: context.pop,
         backgroundColor: VineTheme.cardBackground,
@@ -93,19 +94,18 @@ class OriginalSoundDetailScreen extends ConsumerWidget {
                         color: VineTheme.lightText.withValues(alpha: 0.5),
                       ),
                       const SizedBox(height: 16),
-                      const Text(
-                        'Original sound',
-                        style: TextStyle(
+                      Text(
+                        context.l10n.audioAttributionOriginalSound,
+                        style: const TextStyle(
                           color: VineTheme.whiteText,
                           fontSize: 18,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
-                        'Audio from this video is not available '
-                        'separately.',
-                        style: TextStyle(
+                      Text(
+                        context.l10n.originalSoundUnavailableBody,
+                        style: const TextStyle(
                           color: VineTheme.onSurfaceMuted,
                           fontSize: 14,
                         ),
@@ -175,7 +175,7 @@ class _OriginalSoundHeader extends StatelessWidget {
               spacing: 4,
               children: [
                 Text(
-                  'Original sound - $creatorName',
+                  context.l10n.originalSoundByCreator(creatorName),
                   style: const TextStyle(
                     color: VineTheme.whiteText,
                     fontSize: 18,

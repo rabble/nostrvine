@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Top app bar for the conversation detail screen.
 ///
@@ -53,7 +54,7 @@ class ConversationAppBar extends StatelessWidget
         DiVineAppBarAction(
           icon: SvgIconSource(DivineIconName.dotsThree.assetPath),
           onPressed: onOptions,
-          semanticLabel: 'Options',
+          semanticLabel: context.l10n.inboxConversationOptionsLabel,
         ),
       ],
     );

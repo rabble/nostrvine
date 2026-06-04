@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/popular_videos_feed_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
@@ -284,7 +285,7 @@ class _PopularVideosTrendingContentState
                     removedIdsStream: ref
                         .read(videoEventServiceProvider)
                         .removedVideoIds,
-                    contextTitle: 'Popular Videos',
+                    contextTitle: context.l10n.popularVideosContextTitle,
                     trafficSource: ViewTrafficSource.discoveryPopular,
                   ),
                 );
@@ -338,7 +339,7 @@ class _PopularFeedVariantToggle extends ConsumerWidget {
     final selected = ref.watch(popularVideosVariantProvider);
 
     return Semantics(
-      label: 'Popular feed source',
+      label: context.l10n.popularVideosFeedSourceLabel,
       child: Container(
         key: const Key('popular-feed-variant-toggle'),
         height: 32,
@@ -352,12 +353,12 @@ class _PopularFeedVariantToggle extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             _PopularFeedVariantButton(
-              label: 'New',
+              label: context.l10n.categoryGallerySortNew,
               variant: PopularVideosVariant.native,
               selected: selected == PopularVideosVariant.native,
             ),
             _PopularFeedVariantButton(
-              label: 'Classic',
+              label: context.l10n.categoryGallerySortClassic,
               variant: PopularVideosVariant.classic,
               selected: selected == PopularVideosVariant.classic,
             ),
@@ -422,24 +423,31 @@ class _PopularVideosEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.video_library, size: 64, color: VineTheme.secondaryText),
-          SizedBox(height: 16),
+          const Icon(
+            Icons.video_library,
+            size: 64,
+            color: VineTheme.secondaryText,
+          ),
+          const SizedBox(height: 16),
           Text(
-            'No videos in Popular Videos',
-            style: TextStyle(
+            context.l10n.popularVideosEmptyTitle,
+            style: const TextStyle(
               color: VineTheme.primaryText,
               fontSize: 18,
               fontWeight: FontWeight.w500,
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
-            'Check back later for new content',
-            style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
+            context.l10n.popularVideosEmptySubtitle,
+            style: const TextStyle(
+              color: VineTheme.secondaryText,
+              fontSize: 14,
+            ),
           ),
         ],
       ),
@@ -453,15 +461,15 @@ class _PopularVideosErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error, size: 64, color: VineTheme.likeRed),
-          SizedBox(height: 16),
+          const Icon(Icons.error, size: 64, color: VineTheme.likeRed),
+          const SizedBox(height: 16),
           Text(
-            'Failed to load trending videos',
-            style: TextStyle(color: VineTheme.likeRed, fontSize: 18),
+            context.l10n.popularVideosErrorTitle,
+            style: const TextStyle(color: VineTheme.likeRed, fontSize: 18),
           ),
         ],
       ),

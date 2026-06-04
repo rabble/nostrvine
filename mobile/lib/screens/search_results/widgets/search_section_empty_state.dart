@@ -1,5 +1,6 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Shared empty-results state for search result sections.
 ///
@@ -26,12 +27,12 @@ class SearchSectionEmptyState extends StatelessWidget {
               size: 48,
             ),
             Text(
-              'No results found for "$query"',
+              context.l10n.searchNoResultsFound(query),
               style: VineTheme.titleSmallFont(),
               textAlign: TextAlign.center,
             ),
             Text(
-              'Try a different search term',
+              context.l10n.soundsNoSoundsFoundDescription,
               style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
             ),
           ],

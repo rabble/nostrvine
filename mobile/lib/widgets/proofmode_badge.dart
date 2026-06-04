@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Verification tier for "Human Made" badge display.
 ///
@@ -53,7 +54,7 @@ class ProofModeBadge extends StatelessWidget {
           Icon(config.icon, size: dimensions.iconSize, color: config.iconColor),
           SizedBox(width: dimensions.iconTextSpacing),
           Text(
-            config.label,
+            _label(context, level),
             style: TextStyle(
               fontSize: dimensions.fontSize,
               fontWeight: FontWeight.w600,
@@ -65,12 +66,21 @@ class ProofModeBadge extends StatelessWidget {
     );
   }
 
+  String _label(BuildContext context, VerificationLevel level) {
+    return switch (level) {
+      VerificationLevel.platinum ||
+      VerificationLevel.verifiedMobile ||
+      VerificationLevel.verifiedWeb ||
+      VerificationLevel.basicProof => context.l10n.proofmodeBadgeHumanMade,
+      VerificationLevel.unverified => context.l10n.proofmodeBadgeUnverified,
+    };
+  }
+
   _BadgeConfig _getBadgeConfig(VerificationLevel level) {
     switch (level) {
       case VerificationLevel.platinum:
         // Platinum — device proof + AI scan confirms human
         return const _BadgeConfig(
-          label: 'Human Made',
           icon: Icons.verified,
           backgroundColor: Color(0xFF161A1D), // Neutral shell for readability
           borderColor: Color(0xFF434A52), // Neutral shell border
@@ -80,7 +90,6 @@ class ProofModeBadge extends StatelessWidget {
       case VerificationLevel.verifiedMobile:
         // Gold — device attestation + ProofMode + C2PA
         return const _BadgeConfig(
-          label: 'Human Made',
           icon: Icons.verified,
           backgroundColor: Color(0xFF161A1D), // Neutral shell for readability
           borderColor: Color(0xFF434A52), // Neutral shell border
@@ -90,7 +99,6 @@ class ProofModeBadge extends StatelessWidget {
       case VerificationLevel.verifiedWeb:
         // Silver — cryptographic proof without hardware attestation
         return const _BadgeConfig(
-          label: 'Human Made',
           icon: Icons.verified_outlined,
           backgroundColor: Color(0xFF161A1D), // Neutral shell for readability
           borderColor: Color(0xFF434A52), // Neutral shell border
@@ -100,7 +108,6 @@ class ProofModeBadge extends StatelessWidget {
       case VerificationLevel.basicProof:
         // Bronze — basic proof data
         return const _BadgeConfig(
-          label: 'Human Made',
           icon: Icons.verified_outlined,
           backgroundColor: Color(0xFF161A1D), // Neutral shell for readability
           borderColor: Color(0xFF434A52), // Neutral shell border
@@ -109,7 +116,6 @@ class ProofModeBadge extends StatelessWidget {
         );
       case VerificationLevel.unverified:
         return const _BadgeConfig(
-          label: 'Unverified',
           icon: Icons.shield_outlined,
           backgroundColor: Color(0xFF1A1A1A), // Dark bg
           borderColor: Color(0xFF555555), // Muted grey
@@ -186,7 +192,7 @@ class OriginalContentBadge extends StatelessWidget {
           ),
           SizedBox(width: dimensions.iconTextSpacing),
           Text(
-            'Original',
+            context.l10n.proofmodeBadgeOriginal,
             style: GoogleFonts.pacifico(
               fontSize: dimensions.fontSize,
               fontWeight: FontWeight.w400,
@@ -263,7 +269,7 @@ class OriginalVineBadge extends StatelessWidget {
           ),
           SizedBox(width: dimensions.iconTextSpacing),
           Text(
-            'Original',
+            context.l10n.proofmodeBadgeOriginal,
             style: GoogleFonts.pacifico(
               fontSize: dimensions.fontSize,
               fontWeight: FontWeight.w400,
@@ -338,7 +344,7 @@ class NotDivineBadge extends StatelessWidget {
           ),
           SizedBox(width: dimensions.iconTextSpacing),
           Text(
-            'Not Divine Hosted',
+            context.l10n.proofmodeBadgeNotDivineHosted,
             style: TextStyle(
               fontSize: dimensions.fontSize,
               fontWeight: FontWeight.w500,
@@ -413,7 +419,7 @@ class CheckingForAIBadge extends StatelessWidget {
           ),
           SizedBox(width: dimensions.iconTextSpacing),
           Text(
-            'AI scan pending',
+            context.l10n.proofmodeBadgeAiScanPending,
             style: TextStyle(
               fontSize: dimensions.fontSize,
               fontWeight: FontWeight.w500,
@@ -488,7 +494,7 @@ class PossiblyAIBadge extends StatelessWidget {
           ),
           SizedBox(width: dimensions.iconTextSpacing),
           Text(
-            'Possibly AI-Generated',
+            context.l10n.proofmodeBadgePossiblyAiGenerated,
             style: TextStyle(
               fontSize: dimensions.fontSize,
               fontWeight: FontWeight.w500,
@@ -539,7 +545,6 @@ enum BadgeSize { small, medium, large }
 /// Badge configuration
 class _BadgeConfig {
   const _BadgeConfig({
-    required this.label,
     required this.icon,
     required this.backgroundColor,
     required this.borderColor,
@@ -547,7 +552,6 @@ class _BadgeConfig {
     required this.textColor,
   });
 
-  final String label;
   final IconData icon;
   final Color backgroundColor;
   final Color borderColor;

@@ -4,6 +4,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
 /// Profile card shown when a conversation has no messages yet.
@@ -84,7 +85,7 @@ class _ViewProfileButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
         ),
         child: Text(
-          'View profile',
+          context.l10n.inboxConversationViewProfileButton,
           style: VineTheme.titleMediumFont(color: VineTheme.primary),
         ),
       ),

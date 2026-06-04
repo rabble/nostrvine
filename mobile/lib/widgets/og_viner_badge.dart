@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 class OgVinerBadge extends StatelessWidget {
   const OgVinerBadge({super.key, this.size = 14});
@@ -12,7 +13,7 @@ class OgVinerBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: 'OG Viner',
+      label: context.l10n.ogVinerBadgeLabel,
       container: true,
       child: Padding(
         padding: const EdgeInsetsDirectional.only(start: 4),

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/comments/widgets/comment_options_modal.dart';
 
 void main() {
@@ -40,7 +41,11 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp.router(routerConfig: router),
+        MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
       );
 
       await tester.tap(find.text('Open options'));

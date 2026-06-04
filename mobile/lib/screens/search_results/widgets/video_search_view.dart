@@ -8,6 +8,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
@@ -112,7 +113,7 @@ class _VideoSearchGridState extends ConsumerState<_VideoSearchGrid>
           widget.hasMore,
         ),
         removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
-        contextTitle: 'Search Results',
+        contextTitle: context.l10n.soundsSearchResults,
         trafficSource: ViewTrafficSource.search,
         sourceDetail: context.read<VideoSearchBloc>().state.query,
       ),
@@ -122,10 +123,10 @@ class _VideoSearchGridState extends ConsumerState<_VideoSearchGrid>
   @override
   Widget build(BuildContext context) {
     if (widget.videos.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
-          'No videos found',
-          style: TextStyle(color: VineTheme.lightText),
+          context.l10n.searchVideosEmpty,
+          style: const TextStyle(color: VineTheme.lightText),
         ),
       );
     }

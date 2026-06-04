@@ -149,7 +149,7 @@ class _VinerAvatar extends ConsumerWidget {
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaler: textScaler),
       child: Semantics(
-        label: 'View profile for $displayName',
+        label: context.l10n.classicVinersViewProfileSemanticLabel(displayName),
         button: true,
         child: GestureDetector(
           onTap: () => _onTap(context, avatarUrl),

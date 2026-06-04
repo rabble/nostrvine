@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/export_progress.dart';
 
 class ExportProgressWidget extends StatelessWidget {
@@ -17,20 +18,20 @@ class ExportProgressWidget extends StatelessWidget {
   final double progress; // 0.0 to 1.0
   final VoidCallback? onCancel;
 
-  String _getStageText(ExportStage stage) {
+  String _getStageText(BuildContext context, ExportStage stage) {
     switch (stage) {
       case ExportStage.concatenating:
-        return 'Combining clips...';
+        return context.l10n.exportProgressStageConcatenating;
       case ExportStage.applyingTextOverlay:
-        return 'Adding text overlay...';
+        return context.l10n.exportProgressStageApplyingTextOverlay;
       case ExportStage.mixingAudio:
-        return 'Adding sound...';
+        return context.l10n.exportProgressStageMixingAudio;
       case ExportStage.generatingThumbnail:
-        return 'Generating thumbnail...';
+        return context.l10n.exportProgressStageGeneratingThumbnail;
       case ExportStage.complete:
-        return 'Export complete!';
+        return context.l10n.exportProgressStageComplete;
       case ExportStage.error:
-        return 'Export failed';
+        return context.l10n.exportProgressStageError;
     }
   }
 
@@ -74,7 +75,7 @@ class ExportProgressWidget extends StatelessWidget {
 
                 // Stage text
                 Text(
-                  _getStageText(stage),
+                  _getStageText(context, stage),
                   style: const TextStyle(
                     color: VineTheme.whiteText,
                     fontSize: 18,
@@ -108,9 +109,11 @@ class ExportProgressWidget extends StatelessWidget {
                   const SizedBox(height: 24),
                   TextButton(
                     onPressed: onCancel,
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(color: VineTheme.onSurfaceVariant),
+                    child: Text(
+                      context.l10n.commonCancel,
+                      style: const TextStyle(
+                        color: VineTheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 ],

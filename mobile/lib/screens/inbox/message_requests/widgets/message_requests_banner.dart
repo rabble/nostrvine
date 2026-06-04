@@ -4,6 +4,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Banner row displayed at the top of the conversation list when there are
 /// pending message requests from non-followed users.
@@ -27,7 +28,7 @@ class MessageRequestsBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: 'Message requests, $requestCount pending',
+      label: context.l10n.inboxMessageRequestsSemanticLabel(requestCount),
       child: GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
@@ -43,7 +44,7 @@ class MessageRequestsBanner extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'Message requests',
+                    context.l10n.inboxMessageRequestsTitle,
                     style: VineTheme.titleMediumFont(),
                   ),
                 ),

@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart' show NostrClient;
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
@@ -284,10 +285,10 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
       return Scaffold(
         backgroundColor: VineTheme.backgroundColor,
         appBar: _buildExitAppBar(context),
-        body: const Center(
+        body: Center(
           child: Text(
-            'Video not found',
-            style: TextStyle(color: VineTheme.primaryText),
+            context.l10n.videoErrorNotFound,
+            style: const TextStyle(color: VineTheme.primaryText),
           ),
         ),
       );

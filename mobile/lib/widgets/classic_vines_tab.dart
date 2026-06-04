@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
@@ -262,7 +263,7 @@ class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent>
                   removedIdsStream: ref
                       .read(videoEventServiceProvider)
                       .removedVideoIds,
-                  contextTitle: 'Classics',
+                  contextTitle: context.l10n.exploreTabClassics,
                   trafficSource: ViewTrafficSource.discoveryClassic,
                 ),
               );
@@ -442,9 +443,9 @@ class _ClassicVinesUnavailableState extends StatelessWidget {
               color: VineTheme.secondaryText,
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Classics Unavailable',
-              style: TextStyle(
+            Text(
+              context.l10n.classicsUnavailableTitle,
+              style: const TextStyle(
                 color: VineTheme.primaryText,
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
@@ -452,9 +453,9 @@ class _ClassicVinesUnavailableState extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Classics are only available when connected to Funnelcake relays.',
-              style: TextStyle(
+            Text(
+              context.l10n.classicsUnavailableDescription,
+              style: const TextStyle(
                 color: VineTheme.secondaryText,
                 fontSize: 14,
                 height: 1.4,
@@ -471,17 +472,17 @@ class _ClassicVinesUnavailableState extends StatelessWidget {
                   color: VineTheme.vineGreen.withValues(alpha: 0.3),
                 ),
               ),
-              child: const Column(
+              child: Column(
                 children: [
-                  DivineIcon(
+                  const DivineIcon(
                     icon: DivineIconName.info,
                     color: VineTheme.vineGreen,
                     size: 20,
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
-                    'Switch to a Funnelcake-enabled relay in Settings to access the Classics archive.',
-                    style: TextStyle(
+                    context.l10n.classicsUnavailableSettingsHint,
+                    style: const TextStyle(
                       color: VineTheme.secondaryText,
                       fontSize: 13,
                       height: 1.4,
@@ -504,24 +505,27 @@ class _ClassicVinesEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.history, size: 64, color: VineTheme.secondaryText),
-          SizedBox(height: 16),
+          const Icon(Icons.history, size: 64, color: VineTheme.secondaryText),
+          const SizedBox(height: 16),
           Text(
-            'No Classics Found',
-            style: TextStyle(
+            context.l10n.classicsEmptyTitle,
+            style: const TextStyle(
               color: VineTheme.primaryText,
               fontSize: 18,
               fontWeight: FontWeight.w500,
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
-            'The Classics archive is being loaded',
-            style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
+            context.l10n.classicsEmptyDescription,
+            style: const TextStyle(
+              color: VineTheme.secondaryText,
+              fontSize: 14,
+            ),
           ),
         ],
       ),
@@ -543,9 +547,9 @@ class _ClassicVinesErrorState extends StatelessWidget {
         children: [
           const Icon(Icons.error, size: 64, color: VineTheme.likeRed),
           const SizedBox(height: 16),
-          const Text(
-            'Failed to load Classics',
-            style: TextStyle(color: VineTheme.likeRed, fontSize: 18),
+          Text(
+            context.l10n.classicsErrorTitle,
+            style: const TextStyle(color: VineTheme.likeRed, fontSize: 18),
           ),
           const SizedBox(height: 8),
           Text(

@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Professional video icon placeholder that displays instead of missing thumbnails
 /// Uses a proper video icon with subtle animations and proper theming
@@ -106,7 +107,7 @@ class _VideoIconPlaceholderState extends State<VideoIconPlaceholder>
               ),
               const SizedBox(height: 8),
               Text(
-                'Video',
+                context.l10n.videoIconPlaceholderLabel,
                 style: TextStyle(
                   fontSize: 12,
                   color: iconColor,
@@ -116,7 +117,7 @@ class _VideoIconPlaceholderState extends State<VideoIconPlaceholder>
             ],
           )
         : Text(
-            'Video',
+            context.l10n.videoIconPlaceholderLabel,
             style: TextStyle(
               fontSize: 14,
               color: iconColor,

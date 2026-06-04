@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Shows a confirmation bottom sheet for unfollowing a user.
 ///
@@ -40,7 +41,7 @@ Future<bool?> showUnfollowConfirmation(
                   ),
                 ),
                 child: Text(
-                  'Cancel',
+                  context.l10n.commonCancel,
                   style: VineTheme.titleMediumFont(color: VineTheme.vineGreen),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -63,7 +64,7 @@ Future<bool?> showUnfollowConfirmation(
                   ),
                 ),
                 child: Text(
-                  'Unfollow',
+                  context.l10n.unfollowConfirmButton,
                   style: VineTheme.titleMediumFont(color: VineTheme.onPrimary),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

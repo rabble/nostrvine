@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_preview_screen.dart';
@@ -50,20 +51,20 @@ Future<void> showUploadFailureSheet(
       context.read<BackgroundPublishBloc>().add(
         BackgroundPublishRetryRequested(draftId: upload.draft.id),
       );
-      // TODO(l10n): Replace with context.l10n when localization is added.
       messenger?.showSnackBar(
-        DivineSnackbarContainer.snackBar('Retrying upload…'),
+        DivineSnackbarContainer.snackBar(
+          context.l10n.uploadFailureSheetRetryingSnackbar,
+        ),
       );
     case 'save_drafts':
       // Explicit save: remove from queue, draft stays in library
       context.read<BackgroundPublishBloc>().add(
         BackgroundPublishVanished(draftId: upload.draft.id),
       );
-      // TODO(l10n): Replace with context.l10n when localization is added.
       messenger?.showSnackBar(
         DivineSnackbarContainer.snackBar(
-          'Saved to drafts',
-          actionLabel: 'View',
+          context.l10n.uploadFailureSheetSavedToDraftsSnackbar,
+          actionLabel: context.l10n.contentWarningView,
           onActionPressed: () {
             ScaffoldMessenger.of(context).hideCurrentSnackBar();
             context.push(LibraryScreen.draftsPath);
@@ -110,8 +111,7 @@ class _UploadFailureSheetContent extends StatelessWidget {
 
             const SizedBox(height: 16),
             Text(
-              // TODO(l10n): Replace with context.l10n when localization is added.
-              'Upload Failed',
+              context.l10n.uploadFailureSheetTitle,
               style: VineTheme.headlineSmallFont(),
               textAlign: TextAlign.center,
             ),
@@ -129,7 +129,7 @@ class _UploadFailureSheetContent extends StatelessWidget {
             const SizedBox(height: 32),
             DivineButton(
               expanded: true,
-              label: 'Try Again',
+              label: context.l10n.uploadFailureSheetTryAgainButton,
               onPressed: onRetry,
             ),
 
@@ -137,7 +137,7 @@ class _UploadFailureSheetContent extends StatelessWidget {
             DivineButton(
               expanded: true,
               type: .secondary,
-              label: 'Save to Drafts',
+              label: context.l10n.uploadFailureSheetSaveToDraftsButton,
               onPressed: onSaveToDrafts,
             ),
           ],

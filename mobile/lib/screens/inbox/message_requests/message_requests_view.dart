@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
 import 'package:openvine/blocs/dm/message_requests/message_request_actions_cubit.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/inbox/message_requests/request_preview_page.dart';
 import 'package:openvine/screens/inbox/message_requests/widgets/request_bulk_actions_sheet.dart';
@@ -29,14 +30,14 @@ class MessageRequestsView extends ConsumerWidget {
     return Scaffold(
       backgroundColor: VineTheme.surfaceBackground,
       appBar: DiVineAppBar(
-        title: 'Message requests',
+        title: context.l10n.inboxMessageRequestsTitle,
         showBackButton: true,
         onBackPressed: context.pop,
         actions: [
           DiVineAppBarAction(
             icon: SvgIconSource(DivineIconName.dotsThree.assetPath),
             onPressed: () => _showBulkActions(context),
-            semanticLabel: 'More options',
+            semanticLabel: context.l10n.profileMoreSemanticLabel,
           ),
         ],
       ),
@@ -100,7 +101,7 @@ class _RequestList extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 48),
               child: Text(
-                'No message requests',
+                context.l10n.inboxMessageRequestsEmpty,
                 style: VineTheme.titleMediumFont(
                   color: VineTheme.onSurfaceMuted,
                 ),

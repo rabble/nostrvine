@@ -43,7 +43,7 @@ class _SearchFilterButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: 'Filter: ${filter.label}',
+      label: context.l10n.searchFilterPillSemanticLabel(filter.label),
       button: true,
       child: GestureDetector(
         onTap: () => SearchFilterSheet.show(context),

@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/router.dart';
@@ -55,12 +56,12 @@ class _LikedVideosScreenRouterState
         name: 'LikedVideosRouter',
         category: LogCategory.ui,
       );
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: VineTheme.backgroundColor,
         body: Center(
           child: Text(
-            'Invalid route',
-            style: TextStyle(color: VineTheme.whiteText),
+            context.l10n.likedVideosInvalidRoute,
+            style: const TextStyle(color: VineTheme.whiteText),
           ),
         ),
       );
@@ -83,7 +84,7 @@ class _LikedVideosScreenRouterState
       return Scaffold(
         backgroundColor: VineTheme.backgroundColor,
         appBar: DiVineAppBar(
-          title: 'Liked Videos',
+          title: context.l10n.likedVideosTitle,
           showBackButton: true,
           backgroundColor: VineTheme.backgroundColor,
           onBackPressed: () {
@@ -179,12 +180,12 @@ class _LikedVideosFeedViewState extends ConsumerState<_LikedVideosFeedView> {
         }
 
         if (state.status == ProfileLikedVideosStatus.failure) {
-          return const Scaffold(
+          return Scaffold(
             backgroundColor: VineTheme.backgroundColor,
             body: Center(
               child: Text(
-                'Error loading liked videos',
-                style: TextStyle(color: VineTheme.whiteText),
+                context.l10n.profileErrorLoadingLiked,
+                style: const TextStyle(color: VineTheme.whiteText),
               ),
             ),
           );
@@ -193,12 +194,12 @@ class _LikedVideosFeedViewState extends ConsumerState<_LikedVideosFeedView> {
         final videos = state.videos;
 
         if (videos.isEmpty) {
-          return const Scaffold(
+          return Scaffold(
             backgroundColor: VineTheme.backgroundColor,
             body: Center(
               child: Text(
-                'No liked videos',
-                style: TextStyle(color: VineTheme.whiteText),
+                context.l10n.likedVideosEmpty,
+                style: const TextStyle(color: VineTheme.whiteText),
               ),
             ),
           );
@@ -216,7 +217,7 @@ class _LikedVideosFeedViewState extends ConsumerState<_LikedVideosFeedView> {
           videosStream: _streamController.stream,
           initialIndex: safeIndex,
           removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
-          contextTitle: 'Liked Videos',
+          contextTitle: context.l10n.likedVideosTitle,
           trafficSource: ViewTrafficSource.profile,
         );
       },

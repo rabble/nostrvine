@@ -91,7 +91,10 @@ class _AudioAttributionContent extends ConsumerWidget {
     return Semantics(
       identifier: 'audio_attribution_row',
       button: true,
-      label: 'Sound: $soundName by $creatorName. Tap to view sound details.',
+      label: context.l10n.audioAttributionRowSemanticLabel(
+        soundName,
+        creatorName,
+      ),
       child: GestureDetector(
         onTap: () => _navigateToSoundDetail(context, audio),
         child: Container(

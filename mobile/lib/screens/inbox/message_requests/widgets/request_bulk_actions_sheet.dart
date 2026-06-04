@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Result of the bulk actions sheet.
 enum RequestBulkAction { markAllRead, removeAll }
@@ -22,12 +23,12 @@ class RequestBulkActionsSheet {
         children: [
           _ActionTile(
             icon: DivineIconName.checks,
-            label: 'Mark all requests as read',
+            label: context.l10n.inboxRequestsMarkAllRead,
             onTap: () => context.pop(RequestBulkAction.markAllRead),
           ),
           _ActionTile(
             icon: DivineIconName.trash,
-            label: 'Remove all requests',
+            label: context.l10n.inboxRequestsRemoveAll,
             isDestructive: true,
             showDivider: false,
             onTap: () => context.pop(RequestBulkAction.removeAll),

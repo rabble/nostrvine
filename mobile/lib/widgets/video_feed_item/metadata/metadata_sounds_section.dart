@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
@@ -53,12 +54,14 @@ class _SharedAudioSection extends ConsumerWidget {
           return _OriginalSoundSection(video: video);
         }
         return MetadataSection(
-          label: 'Sounds',
+          label: context.l10n.metadataSoundsLabel,
           child: _SoundListItem(audio: audio),
         );
       },
-      loading: () =>
-          const MetadataSection(label: 'Sounds', child: _SoundSkeleton()),
+      loading: () => MetadataSection(
+        label: context.l10n.metadataSoundsLabel,
+        child: const _SoundSkeleton(),
+      ),
       error: (error, stack) {
         Log.error(
           'Failed to load audio for metadata sheet: $error',
@@ -90,10 +93,10 @@ class _OriginalSoundSection extends ConsumerWidget {
         UserProfile.generatedNameFor(video.pubkey);
 
     return MetadataSection(
-      label: 'Sounds',
+      label: context.l10n.metadataSoundsLabel,
       child: Semantics(
         button: true,
-        label: 'Original sound by $creatorName. Tap to use this sound.',
+        label: context.l10n.metadataSoundsOriginalSoundSemantics(creatorName),
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () => _navigateToSoundDetail(context, creatorName),
@@ -109,7 +112,7 @@ class _OriginalSoundSection extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Original sound',
+                      context.l10n.metadataOriginalSound,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: VineTheme.titleMediumFont(),
@@ -172,7 +175,7 @@ class _SoundListItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final soundName = audio.title ?? 'Original sound';
+    final soundName = audio.title ?? context.l10n.metadataOriginalSound;
     final String creatorName;
 
     if (audio.isBundled) {
@@ -188,7 +191,10 @@ class _SoundListItem extends ConsumerWidget {
 
     return Semantics(
       button: true,
-      label: 'Sound: $soundName by $creatorName. Tap to view details.',
+      label: context.l10n.metadataSoundsSharedSoundSemantics(
+        soundName,
+        creatorName,
+      ),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () => _navigateToSoundDetail(context),

@@ -2,6 +2,7 @@
 // ABOUTME: Handles hashtag extraction, validation, and visual feedback for video metadata
 
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 class HashtagInputWidget extends StatefulWidget {
   const HashtagInputWidget({
@@ -50,7 +51,7 @@ class _HashtagInputWidgetState extends State<HashtagInputWidget> {
         controller: _controller,
         enableInteractiveSelection: true,
         decoration: InputDecoration(
-          hintText: 'Add hashtags... #vine #nostr',
+          hintText: context.l10n.hashtagInputHint,
           border: const OutlineInputBorder(),
           suffixText: '${_hashtags.length}/${widget.maxHashtags}',
         ),

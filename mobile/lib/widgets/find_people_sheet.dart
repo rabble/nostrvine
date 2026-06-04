@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
@@ -86,7 +87,7 @@ class _FindPeopleSheetState extends ConsumerState<FindPeopleSheet> {
                 autofocus: true,
                 style: const TextStyle(color: VineTheme.whiteText),
                 decoration: InputDecoration(
-                  hintText: 'Find people',
+                  hintText: context.l10n.shareFindPeople,
                   hintStyle: const TextStyle(color: VineTheme.secondaryText),
                   prefixIcon: const DivineIcon(
                     icon: DivineIconName.search,
@@ -218,21 +219,21 @@ class _ResultsList extends StatelessWidget {
                   );
                 },
               ),
-            UserSearchStatus.success => const Center(
+            UserSearchStatus.success => Center(
               child: Padding(
-                padding: EdgeInsets.all(32),
+                padding: const EdgeInsets.all(32),
                 child: Text(
-                  'No users found',
-                  style: TextStyle(color: VineTheme.secondaryText),
+                  context.l10n.userSearchNoResults,
+                  style: const TextStyle(color: VineTheme.secondaryText),
                 ),
               ),
             ),
-            UserSearchStatus.failure => const Center(
+            UserSearchStatus.failure => Center(
               child: Padding(
-                padding: EdgeInsets.all(32),
+                padding: const EdgeInsets.all(32),
                 child: Text(
-                  'Search failed. Please try again.',
-                  style: TextStyle(color: VineTheme.secondaryText),
+                  context.l10n.userPickerSearchFailedTryAgain,
+                  style: const TextStyle(color: VineTheme.secondaryText),
                 ),
               ),
             ),
@@ -258,12 +259,12 @@ class _ContactsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (contacts.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(32),
+          padding: const EdgeInsets.all(32),
           child: Text(
-            'No contacts found.\nStart following people to see them here.',
-            style: TextStyle(color: VineTheme.secondaryText),
+            context.l10n.findPeopleNoContacts,
+            style: const TextStyle(color: VineTheme.secondaryText),
             textAlign: TextAlign.center,
           ),
         ),
@@ -301,7 +302,7 @@ class _UserResultTile extends ConsumerWidget {
         size: 48,
       ),
       title: Text(
-        user.displayName ?? 'Anonymous',
+        user.displayName ?? context.l10n.findPeopleAnonymousUser,
         style: const TextStyle(
           color: VineTheme.whiteText,
           fontWeight: FontWeight.w600,

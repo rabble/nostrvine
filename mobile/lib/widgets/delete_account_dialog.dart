@@ -10,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyStorageException;
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -24,29 +25,28 @@ Future<void> showRemoveKeysWarningDialog({
     barrierDismissible: false,
     builder: (context) => AlertDialog(
       backgroundColor: VineTheme.cardBackground,
-      title: const Text(
-        '⚠️ Remove Keys from Device?',
-        style: TextStyle(
+      title: Text(
+        context.l10n.deleteAccountRemoveKeysTitle,
+        style: const TextStyle(
           color: VineTheme.whiteText,
           fontSize: 20,
           fontWeight: FontWeight.bold,
         ),
       ),
-      content: const Text(
-        'This will:\n'
-        '• Remove your Nostr private key (nsec) from this device\n'
-        '• Sign you out immediately\n'
-        '• Your content will REMAIN on Nostr relays\n\n'
-        'Make sure you have your nsec backed up elsewhere or you will lose access to your account!\n\n'
-        'Continue?',
-        style: TextStyle(color: VineTheme.whiteText, fontSize: 16, height: 1.5),
+      content: Text(
+        context.l10n.deleteAccountRemoveKeysBody,
+        style: const TextStyle(
+          color: VineTheme.whiteText,
+          fontSize: 16,
+          height: 1.5,
+        ),
       ),
       actions: [
         TextButton(
           onPressed: context.pop,
-          child: const Text(
-            'Cancel',
-            style: TextStyle(color: VineTheme.lightText, fontSize: 16),
+          child: Text(
+            context.l10n.commonCancel,
+            style: const TextStyle(color: VineTheme.lightText, fontSize: 16),
           ),
         ),
         ElevatedButton(
@@ -58,9 +58,9 @@ Future<void> showRemoveKeysWarningDialog({
             backgroundColor: VineTheme.warning,
             foregroundColor: VineTheme.whiteText,
           ),
-          child: const Text(
-            'Remove Keys',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          child: Text(
+            context.l10n.deleteAccountRemoveKeysConfirm,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
           ),
         ),
       ],
@@ -87,9 +87,9 @@ Future<void> showDeleteAllContentWarningDialog({
       builder: (context, setState) => AlertDialog(
         backgroundColor: VineTheme.cardBackground,
         scrollable: true,
-        title: const Text(
-          '⚠️ Final Confirmation',
-          style: TextStyle(
+        title: Text(
+          context.l10n.deleteAccountFinalConfirmationTitle,
+          style: const TextStyle(
             color: VineTheme.error,
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -99,9 +99,9 @@ Future<void> showDeleteAllContentWarningDialog({
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'To confirm permanent deletion of ALL your content from Nostr relays, type:',
-              style: TextStyle(
+            Text(
+              context.l10n.deleteAccountFinalConfirmationBody,
+              style: const TextStyle(
                 color: VineTheme.whiteText,
                 fontSize: 16,
                 height: 1.5,
@@ -123,13 +123,13 @@ Future<void> showDeleteAllContentWarningDialog({
               style: const TextStyle(color: VineTheme.whiteText),
               autocorrect: false,
               textCapitalization: TextCapitalization.characters,
-              decoration: const InputDecoration(
-                hintText: 'Type DELETE',
-                hintStyle: TextStyle(color: VineTheme.lightText),
-                enabledBorder: OutlineInputBorder(
+              decoration: InputDecoration(
+                hintText: context.l10n.deleteAccountConfirmationHint,
+                hintStyle: const TextStyle(color: VineTheme.lightText),
+                enabledBorder: const OutlineInputBorder(
                   borderSide: BorderSide(color: VineTheme.cardBackground),
                 ),
-                focusedBorder: OutlineInputBorder(
+                focusedBorder: const OutlineInputBorder(
                   borderSide: BorderSide(color: VineTheme.error),
                 ),
               ),
@@ -141,9 +141,9 @@ Future<void> showDeleteAllContentWarningDialog({
         actions: [
           TextButton(
             onPressed: context.pop,
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: VineTheme.lightText, fontSize: 16),
+            child: Text(
+              context.l10n.commonCancel,
+              style: const TextStyle(color: VineTheme.lightText, fontSize: 16),
             ),
           ),
           ElevatedButton(
@@ -160,9 +160,9 @@ Future<void> showDeleteAllContentWarningDialog({
               disabledBackgroundColor: VineTheme.cardBackground,
               disabledForegroundColor: VineTheme.lightText,
             ),
-            child: const Text(
-              'Delete All Content',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            child: Text(
+              context.l10n.deleteAccountDeleteAllContentButton,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ),
         ],
@@ -202,9 +202,9 @@ class _DeletionProgressDialog extends StatelessWidget {
                             backgroundColor: VineTheme.cardBackground,
                           ),
                           const SizedBox(height: 16),
-                          const Text(
-                            'Deleting content...',
-                            style: TextStyle(
+                          Text(
+                            context.l10n.videoGridDeletingContent,
+                            style: const TextStyle(
                               color: VineTheme.whiteText,
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
@@ -212,7 +212,10 @@ class _DeletionProgressDialog extends StatelessWidget {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            '$current / $total events',
+                            context.l10n.deleteAccountProgressEvents(
+                              current,
+                              total,
+                            ),
                             style: const TextStyle(
                               color: VineTheme.secondaryText,
                               fontSize: 14,
@@ -224,9 +227,9 @@ class _DeletionProgressDialog extends StatelessWidget {
                           color: VineTheme.vineGreen,
                         ),
                         const SizedBox(height: 16),
-                        const Text(
-                          'Preparing deletion...',
-                          style: TextStyle(
+                        Text(
+                          context.l10n.deleteAccountPreparingDeletion,
+                          style: const TextStyle(
                             color: VineTheme.whiteText,
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
@@ -286,6 +289,10 @@ Future<void> executeAccountDeletion({
     }
   }
 
+  // Captured before the first await so the post-sign-out catch can localize
+  // without reading BuildContext across an async gap.
+  final keyDeletionWarningText = context.l10n.deleteAccountKeyDeletionWarning;
+
   // Step 1: Execute NIP-62 deletion request (requires working signer)
   try {
     final result = await deletionService.deleteAccount(
@@ -309,8 +316,7 @@ Future<void> executeAccountDeletion({
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             DivineSnackbarContainer.snackBar(
-              'Could not delete your account from the server. '
-              'Please check your connection and try again.',
+              context.l10n.deleteAccountServerDeletionFailed,
               error: true,
             ),
           );
@@ -341,10 +347,7 @@ Future<void> executeAccountDeletion({
           name: screenName,
           category: LogCategory.auth,
         );
-        keyDeletionWarning =
-            'Account deleted, but your keys may '
-            'not have been fully removed from this device. '
-            'Go to Settings → Nostr Keys → Remove Keys to retry.';
+        keyDeletionWarning = keyDeletionWarningText;
       }
 
       // Close loading indicator and show result snackbar
@@ -353,7 +356,7 @@ Future<void> executeAccountDeletion({
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           DivineSnackbarContainer.snackBar(
-            keyDeletionWarning ?? 'Your account has been deleted',
+            keyDeletionWarning ?? context.l10n.deleteAccountSuccess,
             error: keyDeletionWarning != null,
           ),
         );
@@ -364,7 +367,7 @@ Future<void> executeAccountDeletion({
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           DivineSnackbarContainer.snackBar(
-            result.error ?? 'Failed to delete content from relays',
+            result.error ?? context.l10n.deleteAccountContentDeletionFailed,
             error: true,
           ),
         );

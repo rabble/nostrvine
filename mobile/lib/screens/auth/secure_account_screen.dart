@@ -272,16 +272,16 @@ class _VerificationDialog extends ConsumerWidget {
         if (errorCode != null) {
           return AlertDialog(
             backgroundColor: VineTheme.cardBackground,
-            title: const Row(
+            title: Row(
               children: [
-                DivineIcon(
+                const DivineIcon(
                   icon: DivineIconName.warningCircle,
                   color: VineTheme.error,
                 ),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Text(
-                  'Verification Failed',
-                  style: TextStyle(color: VineTheme.whiteText),
+                  context.l10n.authVerificationFailedTitle,
+                  style: const TextStyle(color: VineTheme.whiteText),
                 ),
               ],
             ),
@@ -292,9 +292,9 @@ class _VerificationDialog extends ConsumerWidget {
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text(
-                  'Close',
-                  style: TextStyle(color: VineTheme.vineGreen),
+                child: Text(
+                  context.l10n.authClose,
+                  style: const TextStyle(color: VineTheme.vineGreen),
                 ),
               ),
             ],
@@ -303,24 +303,24 @@ class _VerificationDialog extends ConsumerWidget {
 
         // Show success state briefly before auto-closing
         if (!authService.isAnonymous) {
-          return const AlertDialog(
+          return AlertDialog(
             backgroundColor: VineTheme.cardBackground,
             title: Row(
               children: [
-                DivineIcon(
+                const DivineIcon(
                   icon: DivineIconName.checkCircle,
                   color: VineTheme.vineGreen,
                 ),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Text(
-                  'Account Secured!',
-                  style: TextStyle(color: VineTheme.whiteText),
+                  context.l10n.authAccountSecured,
+                  style: const TextStyle(color: VineTheme.whiteText),
                 ),
               ],
             ),
             content: Text(
-              'Your account is now linked to your email.',
-              style: TextStyle(color: VineTheme.onSurfaceVariant),
+              context.l10n.authAccountLinkedToEmail,
+              style: const TextStyle(color: VineTheme.onSurfaceVariant),
             ),
           );
         }
@@ -328,16 +328,16 @@ class _VerificationDialog extends ConsumerWidget {
         // Show waiting state
         return AlertDialog(
           backgroundColor: VineTheme.cardBackground,
-          title: const Row(
+          title: Row(
             children: [
-              DivineIcon(
+              const DivineIcon(
                 icon: DivineIconName.envelope,
                 color: VineTheme.vineGreen,
               ),
-              SizedBox(width: 12),
+              const SizedBox(width: 12),
               Text(
-                'Verify Your Email',
-                style: TextStyle(color: VineTheme.whiteText),
+                context.l10n.authVerifyYourEmail,
+                style: const TextStyle(color: VineTheme.whiteText),
               ),
             ],
           ),
@@ -345,9 +345,9 @@ class _VerificationDialog extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'We sent a verification link to:',
-                style: TextStyle(color: VineTheme.secondaryText),
+              Text(
+                context.l10n.authVerificationLinkSent,
+                style: const TextStyle(color: VineTheme.secondaryText),
               ),
               const SizedBox(height: 8),
               Text(
@@ -358,15 +358,17 @@ class _VerificationDialog extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Click the link in your email to complete registration. '
-                'You can continue using the app in the meantime.',
-                style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
+              Text(
+                context.l10n.authClickLinkContinue,
+                style: const TextStyle(
+                  color: VineTheme.secondaryText,
+                  fontSize: 14,
+                ),
               ),
               const SizedBox(height: 16),
-              const Row(
+              Row(
                 children: [
-                  SizedBox(
+                  const SizedBox(
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
@@ -374,10 +376,13 @@ class _VerificationDialog extends ConsumerWidget {
                       color: VineTheme.vineGreen,
                     ),
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                   Text(
-                    'Waiting for verification...',
-                    style: TextStyle(color: VineTheme.vineGreen, fontSize: 12),
+                    context.l10n.authWaitingForVerificationEllipsis,
+                    style: const TextStyle(
+                      color: VineTheme.vineGreen,
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),
@@ -386,9 +391,9 @@ class _VerificationDialog extends ConsumerWidget {
           actions: [
             TextButton(
               onPressed: onContinue,
-              child: const Text(
-                'Continue to App',
-                style: TextStyle(color: VineTheme.vineGreen),
+              child: Text(
+                context.l10n.authContinueToApp,
+                style: const TextStyle(color: VineTheme.vineGreen),
               ),
             ),
           ],

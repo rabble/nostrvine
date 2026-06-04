@@ -320,7 +320,7 @@ class _CommentHeader extends ConsumerWidget {
                         ),
                       ),
                       Text(
-                        'You',
+                        context.l10n.commentAuthorYouIndicator,
                         style: VineTheme.labelSmallFont(
                           color: VineTheme.onSurfaceMuted,
                         ),

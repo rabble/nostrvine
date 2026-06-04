@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/video_event_extensions.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/new_videos_feed_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
@@ -256,24 +257,31 @@ class _NewVideosEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.video_library, size: 64, color: VineTheme.secondaryText),
-          SizedBox(height: 16),
+          const Icon(
+            Icons.video_library,
+            size: 64,
+            color: VineTheme.secondaryText,
+          ),
+          const SizedBox(height: 16),
           Text(
-            'No videos in New Videos',
-            style: TextStyle(
+            context.l10n.newVideosTabEmptyTitle,
+            style: const TextStyle(
               color: VineTheme.primaryText,
               fontSize: 18,
               fontWeight: FontWeight.w500,
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
-            'Check back later for new content',
-            style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
+            context.l10n.newVideosTabEmptySubtitle,
+            style: const TextStyle(
+              color: VineTheme.secondaryText,
+              fontSize: 14,
+            ),
           ),
         ],
       ),
@@ -295,9 +303,9 @@ class _NewVideosErrorState extends StatelessWidget {
         children: [
           const Icon(Icons.error, size: 64, color: VineTheme.likeRed),
           const SizedBox(height: 16),
-          const Text(
-            'Failed to load videos',
-            style: TextStyle(color: VineTheme.likeRed, fontSize: 18),
+          Text(
+            context.l10n.feedFailedToLoadVideos,
+            style: const TextStyle(color: VineTheme.likeRed, fontSize: 18),
           ),
           const SizedBox(height: 8),
           Text(

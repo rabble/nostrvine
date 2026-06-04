@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/message_requests/message_request_actions_cubit.dart';
 import 'package:openvine/blocs/dm/message_requests/request_preview_cubit.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/collaborator_invite.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
@@ -148,7 +149,7 @@ class _ProfileContent extends StatelessWidget {
               ],
               const SizedBox(height: 16),
               _OutlinedActionButton(
-                label: 'View profile',
+                label: context.l10n.messageRequestViewProfileButton,
                 onTap: () => context.push(
                   OtherProfileScreen.pathForNpub(
                     NostrKeyUtils.encodePubKey(otherPubkey),
@@ -210,10 +211,18 @@ class _StatsLine extends StatelessWidget {
   Widget build(BuildContext context) {
     final parts = <String>[];
     if (followerCount != null) {
-      parts.add('${CountFormatter.formatCompact(followerCount!)} Followers');
+      parts.add(
+        context.l10n.messageRequestFollowersCount(
+          CountFormatter.formatCompact(followerCount!),
+        ),
+      );
     }
     if (videoCount != null) {
-      parts.add('${CountFormatter.formatCompact(videoCount!)} videos');
+      parts.add(
+        context.l10n.messageRequestVideosCount(
+          CountFormatter.formatCompact(videoCount!),
+        ),
+      );
     }
 
     return Text(
@@ -235,12 +244,12 @@ class _MessageCountDescription extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final msgText = messageCount == 1 ? '1 message' : '$messageCount messages';
+    final msgText = context.l10n.messageRequestMessageCount(messageCount);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Text(
-        "$displayName wants to message you, they've sent $msgText.",
+        context.l10n.messageRequestWantsToMessageYou(displayName, msgText),
         style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
         textAlign: TextAlign.center,
       ),
@@ -266,7 +275,7 @@ class _ActionButtons extends StatelessWidget {
           spacing: 16,
           children: [
             _PrimaryActionButton(
-              label: 'View messages',
+              label: context.l10n.messageRequestViewMessagesButton,
               onTap: () {
                 context.pushReplacementNamed(
                   ConversationPage.routeName,
@@ -276,7 +285,7 @@ class _ActionButtons extends StatelessWidget {
               },
             ),
             _SecondaryActionButton(
-              label: 'Decline and remove',
+              label: context.l10n.messageRequestDeclineAndRemoveButton,
               onTap: () async {
                 await context.read<MessageRequestActionsCubit>().declineRequest(
                   conversationId,

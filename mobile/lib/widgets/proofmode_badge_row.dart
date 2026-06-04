@@ -193,13 +193,17 @@ class ProofModeBadgeRow extends ConsumerWidget {
       builder: (context) => AlertDialog(
         backgroundColor: VineTheme.cardBackground,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.public_off, color: VineTheme.secondaryText, size: 24),
-            SizedBox(width: 8),
+            const Icon(
+              Icons.public_off,
+              color: VineTheme.secondaryText,
+              size: 24,
+            ),
+            const SizedBox(width: 8),
             Text(
-              'External Content',
-              style: TextStyle(
+              context.l10n.proofmodeExternalContentTitle,
+              style: const TextStyle(
                 color: VineTheme.whiteText,
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -211,9 +215,12 @@ class ProofModeBadgeRow extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'This video is hosted on:',
-              style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
+            Text(
+              context.l10n.proofmodeHostedOnLabel,
+              style: const TextStyle(
+                color: VineTheme.secondaryText,
+                fontSize: 14,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
@@ -225,9 +232,12 @@ class ProofModeBadgeRow extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Published by:',
-              style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
+            Text(
+              context.l10n.proofmodePublishedByLabel,
+              style: const TextStyle(
+                color: VineTheme.secondaryText,
+                fontSize: 14,
+              ),
             ),
             const SizedBox(height: 4),
             UserName.fromPubKey(
@@ -255,10 +265,9 @@ class ProofModeBadgeRow extends ConsumerWidget {
                 color: VineTheme.cardBackground,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Text(
-                'This content is not hosted on Divine servers. '
-                'We cannot fully guarantee its authenticity.',
-                style: TextStyle(
+              child: Text(
+                context.l10n.proofmodeNotDivineHostedDisclaimer,
+                style: const TextStyle(
                   color: VineTheme.secondaryText,
                   fontSize: 13,
                   height: 1.4,
@@ -270,9 +279,9 @@ class ProofModeBadgeRow extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: context.pop,
-            child: const Text(
-              'Got it',
-              style: TextStyle(color: VineTheme.vineGreen),
+            child: Text(
+              context.l10n.profileSetupGotItButton,
+              style: const TextStyle(color: VineTheme.vineGreen),
             ),
           ),
         ],
@@ -385,18 +394,18 @@ class _AICheckSectionState extends State<_AICheckSection> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'AI scan: Not yet scanned',
-                      style: TextStyle(
+                    Text(
+                      context.l10n.badgeExplanationAiNotScanned,
+                      style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: VineTheme.onSurfaceMuted,
                       ),
                     ),
                     if (!widget.hasProof)
-                      const Text(
-                        'No ProofMode data attached',
-                        style: TextStyle(
+                      Text(
+                        context.l10n.proofmodeNoProofDataAttached,
+                        style: const TextStyle(
                           fontSize: 11,
                           color: VineTheme.onSurfaceMuted,
                         ),
@@ -422,9 +431,9 @@ class _AICheckSectionState extends State<_AICheckSection> {
               ),
             )
           else if (_checkedAndEmpty)
-            const Text(
-              'No scan results available yet.',
-              style: TextStyle(
+            Text(
+              context.l10n.badgeExplanationNoScanResults,
+              style: const TextStyle(
                 fontSize: 11,
                 fontStyle: FontStyle.italic,
                 color: VineTheme.onSurfaceMuted,
@@ -482,8 +491,8 @@ class _AICheckSectionState extends State<_AICheckSection> {
               Expanded(
                 child: Text(
                   isLikelyHuman
-                      ? 'Likely human-created'
-                      : 'Possibly AI-generated',
+                      ? context.l10n.proofmodeLikelyHumanCreated
+                      : context.l10n.proofmodePossiblyAiGenerated,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -509,7 +518,7 @@ class _AICheckSectionState extends State<_AICheckSection> {
           ),
           const SizedBox(height: 6),
           Text(
-            '$percentage% likelihood of being AI-generated',
+            context.l10n.badgeExplanationAiLikelihood(percentage),
             style: const TextStyle(
               fontSize: 12,
               color: VineTheme.onSurfaceVariant,
@@ -518,7 +527,7 @@ class _AICheckSectionState extends State<_AICheckSection> {
           if (aiResult.source != null) ...[
             const SizedBox(height: 2),
             Text(
-              'Scanned by: ${aiResult.source}',
+              context.l10n.badgeExplanationScannedBy(aiResult.source!),
               style: const TextStyle(
                 fontSize: 11,
                 color: VineTheme.onSurfaceMuted,
@@ -527,17 +536,17 @@ class _AICheckSectionState extends State<_AICheckSection> {
           ],
           if (aiResult.isVerified) ...[
             const SizedBox(height: 4),
-            const Row(
+            Row(
               children: [
-                DivineIcon(
+                const DivineIcon(
                   icon: DivineIconName.sealCheck,
                   size: 12,
                   color: VineTheme.info,
                 ),
-                SizedBox(width: 4),
+                const SizedBox(width: 4),
                 Text(
-                  'Confirmed by human moderator',
-                  style: TextStyle(fontSize: 11, color: VineTheme.info),
+                  context.l10n.proofmodeConfirmedByModerator,
+                  style: const TextStyle(fontSize: 11, color: VineTheme.info),
                 ),
               ],
             ),

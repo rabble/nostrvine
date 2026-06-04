@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
@@ -22,13 +23,13 @@ class SoundDetailLoader extends ConsumerWidget {
     return soundAsync.when(
       data: (sound) {
         if (sound == null) {
-          return const Scaffold(
+          return Scaffold(
             backgroundColor: VineTheme.backgroundColor,
-            appBar: DiVineAppBar(title: 'Sound Not Found'),
+            appBar: DiVineAppBar(title: context.l10n.soundDetailNotFoundTitle),
             body: Center(
               child: Text(
-                'This sound could not be found',
-                style: TextStyle(color: VineTheme.whiteText),
+                context.l10n.soundDetailNotFoundMessage,
+                style: const TextStyle(color: VineTheme.whiteText),
               ),
             ),
           );
@@ -38,10 +39,10 @@ class SoundDetailLoader extends ConsumerWidget {
       loading: () => const BrandedLoadingScaffold(),
       error: (error, stack) => Scaffold(
         backgroundColor: VineTheme.backgroundColor,
-        appBar: const DiVineAppBar(title: 'Error'),
+        appBar: DiVineAppBar(title: context.l10n.featureFlagError),
         body: Center(
           child: Text(
-            'Failed to load sound: $error',
+            context.l10n.soundDetailLoadError(error.toString()),
             style: const TextStyle(color: VineTheme.whiteText),
           ),
         ),

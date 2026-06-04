@@ -4,7 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
-import 'package:openvine/utils/string_utils.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
 
@@ -37,7 +37,7 @@ class VideoDescriptionOverlay extends StatelessWidget {
               identifier: 'video_description',
               container: true,
               explicitChildNodes: true,
-              label: 'Video description',
+              label: context.l10n.videoFeedDescriptionSemanticLabel,
               child: LinkifiedText(
                 text: video.content.isNotEmpty
                     ? video.content
@@ -79,9 +79,9 @@ class VideoDescriptionOverlay extends StatelessWidget {
               identifier: 'loop_count',
               container: true,
               explicitChildNodes: true,
-              label: 'Video loop count',
+              label: context.l10n.videoFeedLoopCountSemanticLabel,
               child: Text(
-                '🔁 ${StringUtils.formatCompactNumber(video.totalLoops)} loops',
+                context.l10n.videoFeedLoopCountLabel(video.totalLoops),
                 style: const TextStyle(
                   color: VineTheme.whiteText,
                   fontSize: 12,

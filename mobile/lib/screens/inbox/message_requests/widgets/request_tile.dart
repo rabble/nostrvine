@@ -58,7 +58,7 @@ class RequestTile extends ConsumerWidget {
 
     return Semantics(
       button: true,
-      label: '$displayName message request',
+      label: context.l10n.inboxRequestTileLabel(displayName),
       child: GestureDetector(
         onTap: () {
           Log.debug(
@@ -120,7 +120,7 @@ class RequestTile extends ConsumerWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Sent a message request',
+                        context.l10n.inboxRequestTileSubtitle,
                         style: VineTheme.bodyMediumFont(
                           color: VineTheme.onSurfaceVariant,
                         ),

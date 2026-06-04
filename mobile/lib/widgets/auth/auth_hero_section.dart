@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Hero section with large tagline text and decorative 3D emoji stickers.
 ///
@@ -20,19 +21,19 @@ class AuthHeroSection extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           // Hero text with positioned emoji stickers
-          const Stack(
+          Stack(
             clipBehavior: Clip.none,
             children: [
               // Main text
               Padding(
-                padding: EdgeInsets.symmetric(vertical: 20),
+                padding: const EdgeInsets.symmetric(vertical: 20),
                 child: Column(
                   children: [
                     // "Authentic moments." - green, BricolageGrotesque font
                     Text(
-                      'Authentic moments.',
+                      context.l10n.authHeroTaglineAuthentic,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontFamily: VineTheme.fontFamilyBricolage,
                         fontSize: 48,
                         fontWeight: FontWeight.w800, // ExtraBold
@@ -42,9 +43,9 @@ class AuthHeroSection extends StatelessWidget {
                     ),
                     // "Human creativity." - white, BricolageGrotesque font
                     Text(
-                      'Human creativity.',
+                      context.l10n.authHeroTaglineHuman,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontFamily: VineTheme.fontFamilyBricolage,
                         fontSize: 48,
                         fontWeight: FontWeight.w800, // ExtraBold
@@ -57,7 +58,7 @@ class AuthHeroSection extends StatelessWidget {
               ),
 
               // Camera emoji - top left
-              Positioned(
+              const Positioned(
                 top: -30,
                 left: 10,
                 child: _StickerImage(
@@ -67,7 +68,7 @@ class AuthHeroSection extends StatelessWidget {
               ),
 
               // Teeth emoji - top right
-              Positioned(
+              const Positioned(
                 top: -5,
                 right: -20,
                 child: _StickerImage(
@@ -77,7 +78,7 @@ class AuthHeroSection extends StatelessWidget {
               ),
 
               // Balloon dog emoji - bottom left
-              Positioned(
+              const Positioned(
                 bottom: -34,
                 left: 15,
                 child: _StickerImage(
@@ -87,7 +88,7 @@ class AuthHeroSection extends StatelessWidget {
               ),
 
               // Disco ball emoji - bottom right
-              Positioned(
+              const Positioned(
                 bottom: -10,
                 right: -10,
                 child: _StickerImage(

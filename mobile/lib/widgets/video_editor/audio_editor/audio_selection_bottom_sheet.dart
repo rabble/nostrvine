@@ -300,7 +300,7 @@ class _AudioSelectionBottomSheetState
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Audio import failed.')),
+        SnackBar(content: Text(context.l10n.videoEditorAudioImportFailed)),
       );
     }
   }
@@ -512,16 +512,16 @@ class _ImportAudioAction extends StatelessWidget {
       color: VineTheme.onPrimary,
       child: InkWell(
         onTap: onTap,
-        child: const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
-              Icon(Icons.upload_file, color: VineTheme.whiteText),
-              SizedBox(width: 12),
+              const Icon(Icons.upload_file, color: VineTheme.whiteText),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Import audio',
-                  style: TextStyle(
+                  context.l10n.videoEditorAudioImportAudio,
+                  style: const TextStyle(
                     color: VineTheme.whiteText,
                     fontWeight: FontWeight.w600,
                   ),

@@ -29,28 +29,27 @@ class CommentsEmptyState extends StatelessWidget {
                 color: VineTheme.accentOrange.withValues(alpha: 0.5),
               ),
             ),
-            child: const Column(
+            child: Column(
               children: [
-                Icon(
+                const Icon(
                   Icons.history,
                   color: VineTheme.contentWarningAmber,
                   size: 32,
                 ),
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
                 Text(
-                  'Classic Vine',
-                  style: TextStyle(
+                  context.l10n.commentsEmptyClassicVineTitle,
+                  style: const TextStyle(
                     color: VineTheme.contentWarningAmber,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text(
-                  "We're still working on importing old comments "
-                  "from the archive. They're not ready yet.",
+                  context.l10n.commentsEmptyClassicVineMessage,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: VineTheme.onSurfaceVariant,
                     fontSize: 14,
                   ),

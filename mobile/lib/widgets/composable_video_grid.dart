@@ -502,7 +502,7 @@ class _VideoItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       identifier: 'video_thumbnail_$index',
-      label: 'Video thumbnail ${index + 1}',
+      label: context.l10n.profileVideoThumbnailLabel(index + 1),
       button: true,
       child: GestureDetector(
         onTap: () => onVideoTap(displayedVideos, index),
@@ -576,7 +576,9 @@ class _VideoInfoSection extends StatelessWidget {
             identifier: 'video_thumbnail_author_$index',
             container: true,
             explicitChildNodes: true,
-            label: 'Video author: ${video.authorName ?? ''}',
+            label: context.l10n.videoGridAuthorSemanticLabel(
+              video.authorName ?? '',
+            ),
             child: UserName.fromPubKey(
               video.pubkey,
               embeddedName: video.authorName,
@@ -598,8 +600,9 @@ class _VideoInfoSection extends StatelessWidget {
               identifier: 'video_thumbnail_description_$index',
               container: true,
               explicitChildNodes: true,
-              label:
-                  'Video description: ${video.displayTitle ?? video.displayContent}',
+              label: context.l10n.videoGridDescriptionSemanticLabel(
+                video.displayTitle ?? video.displayContent,
+              ),
               child: Text(
                 video.displayTitle ?? video.displayContent,
                 style: VineTheme.bodyMediumFont().copyWith(

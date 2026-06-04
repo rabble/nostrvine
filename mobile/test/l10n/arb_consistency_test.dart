@@ -667,6 +667,7 @@ const _knownUntranslatedDebt = {
   'inboxRequestsRemoveAll',
   'messageRequestDeclineAndRemoveButton',
   'messageRequestFollowersCount',
+  'messageRequestVideosCount',
   'messageRequestMessageCount',
   'messageRequestViewMessagesButton',
   'messageRequestViewProfileButton',
@@ -742,6 +743,17 @@ const _knownUntranslatedDebt = {
   'videoFeedDescriptionSemanticLabel',
   'videoFeedLoopCountLabel',
   'videoFeedLoopCountSemanticLabel',
+  // #3628 sweep — inventory-parse-failure + swap-miss tail
+  'originalSoundUnavailableBody',
+  'originalSoundByCreator',
+  'globalUploadPendingCount',
+  'ogVinerBadgeLabel',
+  'shareVideoInListsCount',
+  'unfollowConfirmButton',
+  'videoClipSaveFailed',
+  'videoClipSaveTo',
+  'videoClipDelete',
+  'inspiredByAttributionSemanticLabel',
 };
 
 Map<String, Object?> _readArb(File file) {

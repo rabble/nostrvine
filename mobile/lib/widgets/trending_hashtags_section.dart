@@ -68,11 +68,11 @@ class _HashtagLoadingPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Text(
-        'Loading hashtags...',
-        style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
+        context.l10n.trendingHashtagsLoading,
+        style: const TextStyle(color: VineTheme.secondaryText, fontSize: 14),
       ),
     );
   }
@@ -166,7 +166,7 @@ class _HashtagChip extends StatelessWidget {
     return Padding(
       padding: const EdgeInsetsDirectional.only(end: 8),
       child: Semantics(
-        label: 'View videos tagged $hashtag',
+        label: context.l10n.trendingHashtagsViewVideosTagged(hashtag),
         button: true,
         child: GestureDetector(
           onTap: onTap,

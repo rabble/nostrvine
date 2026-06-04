@@ -101,7 +101,7 @@ class _InspiredByContent extends ConsumerWidget {
       child: Semantics(
         identifier: 'inspired_by_attribution_row',
         button: true,
-        label: 'Inspired by $creatorName. Tap to view their profile.',
+        label: context.l10n.inspiredByAttributionSemanticLabel(creatorName),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(

@@ -335,15 +335,15 @@ class _CommentTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final semanticLabel = isEditing
-        ? 'Edit input'
+        ? context.l10n.commentsInputSemanticLabelEdit
         : isReplying
-        ? 'Reply input'
-        : 'Comment input';
+        ? context.l10n.commentsInputSemanticLabelReply
+        : context.l10n.commentsInputSemanticLabel;
     final semanticHint = isEditing
-        ? 'Edit comment'
+        ? context.l10n.commentsInputSemanticHintEdit
         : isReplying
-        ? 'Add a reply'
-        : 'Add a comment';
+        ? context.l10n.commentsInputSemanticHintReply
+        : context.l10n.videoOverlayCommentBarSemanticLabel;
     final hintText = isEditing
         ? context.l10n.commentsInputHintEdit
         : context.l10n.commentsInputHint;
@@ -442,7 +442,7 @@ class _SendButton extends StatelessWidget {
     return Semantics(
       identifier: 'send_comment_button',
       button: true,
-      label: 'Send comment',
+      label: context.l10n.videoOverlayCommentBarSendLabel,
       child: Container(
         width: 40,
         height: 40,
@@ -493,7 +493,7 @@ class _EditIndicator extends StatelessWidget {
           children: [
             Flexible(
               child: Text(
-                'Editing',
+                context.l10n.commentsInputEditingLabel,
                 style: VineTheme.bodySmallFont(
                   color: VineTheme.tabIndicatorGreen,
                 ),

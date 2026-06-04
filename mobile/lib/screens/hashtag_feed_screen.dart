@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
@@ -333,7 +334,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
                 const CircularProgressIndicator(color: VineTheme.vineGreen),
                 const SizedBox(height: 24),
                 Text(
-                  'Loading videos about #${widget.hashtag}...',
+                  context.l10n.hashtagFeedLoadingTitle(widget.hashtag),
                   style: const TextStyle(
                     color: VineTheme.primaryText,
                     fontSize: 18,
@@ -341,9 +342,9 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'This may take a few moments',
-                  style: TextStyle(
+                Text(
+                  context.l10n.hashtagFeedLoadingSubtitle,
+                  style: const TextStyle(
                     color: VineTheme.secondaryText,
                     fontSize: 14,
                   ),
@@ -361,7 +362,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
                 const Icon(Icons.tag, size: 64, color: VineTheme.secondaryText),
                 const SizedBox(height: 16),
                 Text(
-                  'No videos found for #${widget.hashtag}',
+                  context.l10n.hashtagFeedEmptyTitle(widget.hashtag),
                   style: const TextStyle(
                     color: VineTheme.primaryText,
                     fontSize: 18,
@@ -369,9 +370,9 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Be the first to post a video with this hashtag!',
-                  style: TextStyle(
+                Text(
+                  context.l10n.hashtagFeedEmptySubtitle,
+                  style: const TextStyle(
                     color: VineTheme.secondaryText,
                     fontSize: 14,
                   ),

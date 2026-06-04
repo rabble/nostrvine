@@ -65,7 +65,7 @@ class CommentOptionsModal {
       scrollable: false,
       expanded: false,
       title: Text(
-        'Options',
+        modalContext.l10n.commentOptionsTitle,
         style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
       ),
       body: Column(
@@ -73,8 +73,8 @@ class CommentOptionsModal {
         children: [
           _OptionTile(
             identifier: 'edit_comment_option',
-            label: 'Edit',
-            semanticLabel: 'Edit comment',
+            label: modalContext.l10n.profileEditLabel,
+            semanticLabel: modalContext.l10n.commentOptionsEditSemanticLabel,
             iconPath: DivineIconName.pencilSimple.assetPath,
             onTap: () => modalContext.pop(
               CommentEditResult(commentId: commentId, content: commentContent),
@@ -82,8 +82,8 @@ class CommentOptionsModal {
           ),
           _OptionTile(
             identifier: 'delete_comment_option',
-            label: 'Delete',
-            semanticLabel: 'Delete comment',
+            label: modalContext.l10n.commonDelete,
+            semanticLabel: modalContext.l10n.commentOptionsDeleteSemanticLabel,
             iconPath: DivineIconName.trash.assetPath,
             isDestructive: true,
             onTap: () => modalContext.pop(const CommentDeleteResult()),
@@ -104,7 +104,7 @@ class CommentOptionsModal {
       scrollable: false,
       expanded: false,
       title: Text(
-        'Options',
+        context.l10n.commentOptionsTitle,
         style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
       ),
       body: Column(
@@ -112,15 +112,15 @@ class CommentOptionsModal {
         children: [
           _OptionTile(
             identifier: 'flag_content_option',
-            label: 'Flag Content',
-            semanticLabel: 'Flag this content',
+            label: context.l10n.commentOptionsFlagContentLabel,
+            semanticLabel: context.l10n.commentOptionsFlagContentSemanticLabel,
             iconPath: DivineIconName.flag.assetPath,
             onTap: () => context.pop('flag'),
           ),
           _OptionTile(
             identifier: 'block_user_option',
-            label: 'Block User',
-            semanticLabel: 'Block this user',
+            label: context.l10n.contentWarningBlockUserTooltip,
+            semanticLabel: context.l10n.reportBlockUser,
             iconPath: DivineIconName.prohibit.assetPath,
             isDestructive: true,
             onTap: () => context.pop('block'),
@@ -207,7 +207,7 @@ class _FlagContentSheet extends StatefulWidget {
       expanded: false,
       isScrollControlled: true,
       title: Text(
-        'Flag Content',
+        context.l10n.commentOptionsFlagContentLabel,
         style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
       ),
       body: _FlagContentSheet(
@@ -232,7 +232,7 @@ class _FlagContentSheetState extends State<_FlagContentSheet> {
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
           child: Text(
-            'Select a reason for flagging this comment',
+            context.l10n.commentOptionsFlagReasonPrompt,
             style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
           ),
         ),
@@ -277,7 +277,7 @@ class _FlagContentSheetState extends State<_FlagContentSheet> {
                 elevation: 0,
               ),
               child: Text(
-                'Submit',
+                context.l10n.commentOptionsFlagSubmit,
                 style: VineTheme.labelLargeFont(
                   color: _selectedReason != null
                       ? VineTheme.backgroundColor

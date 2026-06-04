@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/delete_account_dialog.dart';
 
 /// Minimal router wrapper so [context.pop()] works inside the dialog.
@@ -11,7 +12,11 @@ Widget _wrapWithRouter(Widget child) {
   final router = GoRouter(
     routes: [GoRoute(path: '/', builder: (_, state) => child)],
   );
-  return MaterialApp.router(routerConfig: router);
+  return MaterialApp.router(
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    routerConfig: router,
+  );
 }
 
 Future<void> _showDialog(WidgetTester tester, {VoidCallback? onConfirm}) async {

@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/geo_blocking_service.dart';
 
 class GeoBlockedScreen extends StatelessWidget {
@@ -30,9 +31,9 @@ class GeoBlockedScreen extends StatelessWidget {
                 const SizedBox(height: 32),
 
                 // Title
-                const Text(
-                  'Service Unavailable',
-                  style: TextStyle(
+                Text(
+                  context.l10n.geoBlockedTitle,
+                  style: const TextStyle(
                     color: VineTheme.whiteText,
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -55,8 +56,7 @@ class GeoBlockedScreen extends StatelessWidget {
 
                 // Explanation
                 Text(
-                  geoInfo.reason ??
-                      'This service is not available in your region due to local regulations.',
+                  geoInfo.reason ?? context.l10n.geoBlockedDefaultReason,
                   style: const TextStyle(
                     color: VineTheme.lightText,
                     fontSize: 16,
@@ -75,21 +75,29 @@ class GeoBlockedScreen extends StatelessWidget {
                   ),
                   child: Column(
                     children: [
-                      _buildInfoRow('Country', geoInfo.country),
+                      _buildInfoRow(
+                        context.l10n.geoBlockedCountryLabel,
+                        geoInfo.country,
+                      ),
                       const SizedBox(height: 8),
-                      _buildInfoRow('Region', geoInfo.region),
+                      _buildInfoRow(
+                        context.l10n.geoBlockedRegionLabel,
+                        geoInfo.region,
+                      ),
                       const SizedBox(height: 8),
-                      _buildInfoRow('City', geoInfo.city),
+                      _buildInfoRow(
+                        context.l10n.geoBlockedCityLabel,
+                        geoInfo.city,
+                      ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 32),
 
                 // Legal notice
-                const Text(
-                  'We respect your local laws and regulations. '
-                  'This restriction is based on your IP address location.',
-                  style: TextStyle(
+                Text(
+                  context.l10n.geoBlockedLegalNotice,
+                  style: const TextStyle(
                     color: VineTheme.lightText,
                     fontSize: 12,
                     fontStyle: FontStyle.italic,

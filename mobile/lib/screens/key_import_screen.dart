@@ -86,17 +86,16 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
 
                         // Title
                         Text(
-                          'Import your\nNostr identity',
+                          context.l10n.keyImportTitle,
                           style: VineTheme.headlineLargeFont(),
                         ),
 
                         const SizedBox(height: 12),
 
                         // Subtitle
-                        const Text(
-                          'Import your existing Nostr identity using your '
-                          'private key or a bunker URL.',
-                          style: TextStyle(
+                        Text(
+                          context.l10n.keyImportSubtitle,
+                          style: const TextStyle(
                             fontSize: 16,
                             color: VineTheme.secondaryText,
                             height: 1.4,
@@ -108,7 +107,7 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
                         // Key input field
                         DivineAuthTextField(
                           controller: _keyController,
-                          label: 'Private key or bunker URL',
+                          label: context.l10n.keyImportKeyFieldLabel,
                           enabled: !_isImporting,
                           autocorrect: false,
                           errorText: _keyError,
@@ -128,7 +127,7 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
                           const SizedBox(height: 16),
                           DivineAuthTextField(
                             controller: _passwordController,
-                            label: 'Password',
+                            label: context.l10n.authPasswordLabel,
                             enabled: !_isImporting,
                             autocorrect: false,
                             obscureText: true,
@@ -146,7 +145,7 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
                         // Import button
                         DivineButton(
                           expanded: true,
-                          label: 'Import Nostr key',
+                          label: context.l10n.authImportNostrKey,
                           isLoading: _isImporting,
                           onPressed: _importKey,
                         ),
@@ -183,7 +182,7 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
 
   String? _validateKey(String value) {
     if (value.trim().isEmpty) {
-      return 'Please enter your private key or bunker URL';
+      return context.l10n.keyImportKeyRequired;
     }
 
     final trimmed = value.trim();
@@ -197,7 +196,7 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
         // user understands why a ws:// non-loopback relay was refused.
         return context.l10n.keyImportInsecureBunkerRelay;
       } catch (_) {
-        return 'Invalid bunker URL';
+        return context.l10n.keyImportInvalidBunkerUrl;
       }
       return null;
     }
@@ -209,11 +208,11 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
 
     // Check if it looks like a valid key format
     if (!trimmed.startsWith('nsec') && trimmed.length != 64) {
-      return 'Invalid format. Use nsec..., hex, ncryptsec1..., or bunker://...';
+      return context.l10n.keyImportInvalidFormat;
     }
 
     if (trimmed.startsWith('nsec') && trimmed.length != 63) {
-      return 'Invalid nsec format. Should be 63 characters';
+      return context.l10n.keyImportInvalidNsecFormat;
     }
 
     return null;
@@ -221,7 +220,7 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
 
   String? _validatePassword(String value) {
     if (value.isEmpty) {
-      return 'Please enter the password for this encrypted key';
+      return context.l10n.keyImportPasswordRequired;
     }
     return null;
   }
@@ -292,7 +291,7 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              result.errorMessage ?? 'Failed to import key or connect bunker',
+              result.errorMessage ?? context.l10n.keyImportFailedToImport,
             ),
             backgroundColor: VineTheme.error,
           ),
@@ -302,7 +301,7 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content: Text(context.l10n.keyImportError('$e')),
             backgroundColor: VineTheme.error,
           ),
         );
@@ -329,21 +328,21 @@ class _SecurityWarning extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: VineTheme.accentOrangeBackground),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             spacing: 8,
             children: [
-              DivineIcon(
+              const DivineIcon(
                 icon: .warning,
                 size: 20,
                 color: VineTheme.accentOrange,
               ),
               Expanded(
                 child: Text(
-                  'Keep your private key secure!',
-                  style: TextStyle(
+                  context.l10n.keyImportSecurityWarningTitle,
+                  style: const TextStyle(
                     color: VineTheme.accentOrange,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -352,11 +351,13 @@ class _SecurityWarning extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
-            'Never share your private key with anyone. This key '
-            'gives full access to your Nostr identity.',
-            style: TextStyle(color: VineTheme.accentOrange, fontSize: 13),
+            context.l10n.keyImportSecurityWarningBody,
+            style: const TextStyle(
+              color: VineTheme.accentOrange,
+              fontSize: 13,
+            ),
           ),
         ],
       ),

@@ -106,12 +106,15 @@ class _ForgotPasswordSheetContentState extends State<ForgotPasswordSheetContent>
         _transitionTo(ForgotPasswordMode.confirmation);
       } else {
         setState(() {
-          _errorMessage = result.error ?? 'Failed to send reset email.';
+          _errorMessage =
+              result.error ?? context.l10n.authFailedToSendResetEmail;
         });
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _errorMessage = 'An unexpected error occurred.');
+        setState(
+          () => _errorMessage = context.l10n.authUnexpectedErrorShort,
+        );
       }
     } finally {
       if (mounted) {
@@ -190,14 +193,13 @@ class _ForgotPasswordForm extends StatelessWidget {
               const DivineSticker(sticker: DivineStickerName.forgotPasswordAlt),
               const SizedBox(height: 16),
               Text(
-                'Reset password',
+                context.l10n.authResetPassword,
                 style: VineTheme.headlineSmallFont(),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               Text(
-                "Enter your email address and we'll send "
-                'you a link to reset your password.',
+                context.l10n.authResetPasswordDescription,
                 style: VineTheme.bodyLargeFont(
                   color: VineTheme.onSurfaceVariant,
                 ),
@@ -205,7 +207,7 @@ class _ForgotPasswordForm extends StatelessWidget {
               ),
               const SizedBox(height: 32),
               DivineAuthTextField(
-                label: 'Email',
+                label: context.l10n.authEmailLabel,
                 controller: emailController,
                 keyboardType: TextInputType.emailAddress,
                 autocorrect: false,
@@ -225,7 +227,9 @@ class _ForgotPasswordForm extends StatelessWidget {
               ],
               const SizedBox(height: 32),
               DivineButton(
-                label: isSubmitting ? 'Sending...' : 'Send reset link',
+                label: isSubmitting
+                    ? context.l10n.authSending
+                    : context.l10n.authSendResetLink,
                 expanded: true,
                 onPressed: isSubmitting ? null : onSubmit,
               ),
@@ -263,34 +267,46 @@ class _ForgotPasswordConfirmation extends StatelessWidget {
           const DivineSticker(sticker: DivineStickerName.email),
           const SizedBox(height: 16),
           Text(
-            'Email sent!',
+            context.l10n.authEmailSent,
             style: VineTheme.headlineSmallFont(),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-          Text.rich(
-            TextSpan(
-              style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
-              children: [
-                const TextSpan(text: 'We sent a password reset link to '),
+          Builder(
+            builder: (context) {
+              final baseStyle = VineTheme.bodyLargeFont(
+                color: VineTheme.onSurfaceVariant,
+              );
+              final message = context.l10n.authResetLinkSentTo(email);
+              final emailStart = message.indexOf(email);
+              if (emailStart < 0) {
+                return Text(
+                  message,
+                  style: baseStyle,
+                  textAlign: TextAlign.center,
+                );
+              }
+              return Text.rich(
                 TextSpan(
-                  text: email,
-                  style: VineTheme.bodyLargeFont(
-                    color: VineTheme.onSurfaceVariant,
-                  ).copyWith(fontWeight: FontWeight.bold),
+                  style: baseStyle,
+                  children: [
+                    TextSpan(text: message.substring(0, emailStart)),
+                    TextSpan(
+                      text: email,
+                      style: baseStyle.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    TextSpan(
+                      text: message.substring(emailStart + email.length),
+                    ),
+                  ],
                 ),
-                const TextSpan(
-                  text:
-                      '. Please click the link in your '
-                      'email to update your password.',
-                ),
-              ],
-            ),
-            textAlign: TextAlign.center,
+                textAlign: TextAlign.center,
+              );
+            },
           ),
           const SizedBox(height: 32),
           DivineButton(
-            label: 'Open email app',
+            label: context.l10n.authOpenEmailApp,
             expanded: true,
             onPressed: () {
               _openEmailApp();

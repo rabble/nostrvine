@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/for_you_provider.dart';
@@ -231,7 +232,7 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
                     removedIdsStream: ref
                         .read(videoEventServiceProvider)
                         .removedVideoIds,
-                    contextTitle: 'For You',
+                    contextTitle: context.l10n.feedModeForYou,
                     trafficSource: ViewTrafficSource.discoveryForYou,
                   ),
                 );
@@ -273,24 +274,24 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               color: VineTheme.backgroundColor,
-              child: const Row(
+              child: Row(
                 children: [
-                  DivineIcon(
+                  const DivineIcon(
                     icon: DivineIconName.sparkle,
                     color: VineTheme.vineGreen,
                     size: 20,
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Text(
-                    'The Divine Algorithm',
-                    style: TextStyle(
+                    context.l10n.forYouAlgorithmTitle,
+                    style: const TextStyle(
                       color: VineTheme.vineGreen,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  SizedBox(width: 4),
-                  DivineIcon(
+                  const SizedBox(width: 4),
+                  const DivineIcon(
                     icon: DivineIconName.info,
                     color: VineTheme.secondaryText,
                     size: 16,
@@ -335,18 +336,18 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
                 ),
               ),
               // Title
-              const Row(
+              Row(
                 children: [
-                  DivineIcon(
+                  const DivineIcon(
                     icon: DivineIconName.sparkle,
                     color: VineTheme.vineGreen,
                     size: 28,
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'The Divine Algorithm',
-                      style: TextStyle(
+                      context.l10n.forYouAlgorithmTitle,
+                      style: const TextStyle(
                         color: VineTheme.whiteText,
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -356,9 +357,9 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Powered by Gorse, an open-source recommendation engine',
-                style: TextStyle(
+              Text(
+                context.l10n.forYouAlgorithmSubtitle,
+                style: const TextStyle(
                   color: VineTheme.vineGreen,
                   fontSize: 13,
                   fontStyle: FontStyle.italic,
@@ -367,15 +368,15 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
               const SizedBox(height: 24),
 
               // Section: How it works
-              _buildSectionTitle('How It Works'),
+              _buildSectionTitle(context.l10n.forYouAlgorithmHowItWorksTitle),
               const SizedBox(height: 12),
               Text(
-                'Divine pays attention to how you interact with content to understand what you enjoy. Every time you watch a video, give it a reaction, leave a comment, or repost it, the system takes note.',
+                context.l10n.forYouAlgorithmHowItWorksBody,
                 style: _bodyTextStyle,
               ),
               const SizedBox(height: 16),
               Text(
-                'Different actions signal different levels of interest:',
+                context.l10n.forYouAlgorithmInteractionsIntro,
                 style: _bodyTextStyle,
               ),
               const SizedBox(height: 12),
@@ -383,59 +384,63 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
               // Interaction weights
               _buildInteractionItem(
                 Icons.repeat,
-                'Reposts',
-                'Strongest signal — sharing with your followers is a powerful endorsement',
+                context.l10n.metadataRepostsLabel,
+                context.l10n.forYouAlgorithmRepostsDescription,
               ),
               _buildInteractionItem(
                 Icons.chat_bubble_outline,
-                'Comments',
-                'Strong signal — you were engaged enough to respond',
+                context.l10n.profileCommentsSection,
+                context.l10n.forYouAlgorithmCommentsDescription,
               ),
               _buildInteractionItem(
                 Icons.favorite_outline,
-                'Reactions',
-                'Medium signal — a quick way to show appreciation',
+                context.l10n.forYouAlgorithmReactionsTitle,
+                context.l10n.forYouAlgorithmReactionsDescription,
               ),
               _buildInteractionItem(
                 Icons.play_circle_outline,
-                'Views',
-                'Light signal — indicates basic interest',
+                context.l10n.analyticsViews,
+                context.l10n.forYouAlgorithmViewsDescription,
               ),
               const SizedBox(height: 24),
 
               // Section: Cold start
-              _buildSectionTitle('New to Divine?'),
+              _buildSectionTitle(context.l10n.forYouAlgorithmNewToDivineTitle),
               const SizedBox(height: 12),
               Text(
-                "If you haven't built up a viewing history yet, we show a mix of what's currently popular and trending alongside recent uploads. This gives you a great starting point to explore.",
+                context.l10n.forYouAlgorithmNewToDivineBody1,
                 style: _bodyTextStyle,
               ),
               const SizedBox(height: 12),
               Text(
-                'As you watch, like, and engage with content, recommendations gradually become more personalized. Over time, your For You feed surfaces videos from creators you might never have discovered on your own.',
+                context.l10n.forYouAlgorithmNewToDivineBody2,
                 style: _bodyTextStyle,
               ),
               const SizedBox(height: 24),
 
               // Section: Future vision
-              _buildSectionTitle('Your Algorithm, Your Choice'),
+              _buildSectionTitle(context.l10n.forYouAlgorithmChoiceTitle),
               const SizedBox(height: 12),
               Text(
-                "Divine's vision is to give you true algorithmic choice. Instead of being locked into a single black-box algorithm, you'll be able to choose from multiple recommendation approaches:",
+                context.l10n.forYouAlgorithmChoiceBody,
                 style: _bodyTextStyle,
               ),
               const SizedBox(height: 12),
-              _buildFutureFeatureItem('Personalized "For You" feed'),
               _buildFutureFeatureItem(
-                'Chronological timeline from creators you follow',
+                context.l10n.forYouAlgorithmChoicePersonalizedFeed,
               ),
-              _buildFutureFeatureItem('Trending and popular content'),
               _buildFutureFeatureItem(
-                'Community-created custom feeds for topics like music, comedy, or art',
+                context.l10n.forYouAlgorithmChoiceChronological,
+              ),
+              _buildFutureFeatureItem(
+                context.l10n.forYouAlgorithmChoiceTrending,
+              ),
+              _buildFutureFeatureItem(
+                context.l10n.forYouAlgorithmChoiceCustomFeeds,
               ),
               const SizedBox(height: 16),
               Text(
-                'This puts you in control of your attention rather than leaving it up to the platform. You should know how your feed is curated and have the power to change it whenever you want.',
+                context.l10n.forYouAlgorithmChoiceClosing,
                 style: _bodyTextStyle,
               ),
               const SizedBox(height: 24),
@@ -450,31 +455,31 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
                     color: VineTheme.vineGreen.withValues(alpha: 0.3),
                   ),
                 ),
-                child: const Row(
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    DivineIcon(
+                    const DivineIcon(
                       icon: DivineIconName.bracketsAngle,
                       color: VineTheme.vineGreen,
                       size: 20,
                     ),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Open Source & Transparent',
-                            style: TextStyle(
+                            context.l10n.forYouAlgorithmOpenSourceTitle,
+                            style: const TextStyle(
                               color: VineTheme.vineGreen,
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          SizedBox(height: 4),
+                          const SizedBox(height: 4),
                           Text(
-                            "We're building an open system where developers can implement their own algorithms, and you can choose which ones to use — or opt out entirely.",
-                            style: TextStyle(
+                            context.l10n.forYouAlgorithmOpenSourceBody,
+                            style: const TextStyle(
                               color: VineTheme.secondaryText,
                               fontSize: 13,
                               height: 1.4,
@@ -581,27 +586,31 @@ class _ForYouUnavailableState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(32),
+        padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.cloud_off, size: 64, color: VineTheme.secondaryText),
-            SizedBox(height: 16),
+            const Icon(
+              Icons.cloud_off,
+              size: 64,
+              color: VineTheme.secondaryText,
+            ),
+            const SizedBox(height: 16),
             Text(
-              'For You Unavailable',
-              style: TextStyle(
+              context.l10n.forYouUnavailableTitle,
+              style: const TextStyle(
                 color: VineTheme.primaryText,
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
               ),
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             Text(
-              'Personalized recommendations require connection to Funnelcake.',
-              style: TextStyle(
+              context.l10n.forYouUnavailableDescription,
+              style: const TextStyle(
                 color: VineTheme.secondaryText,
                 fontSize: 14,
                 height: 1.4,
@@ -621,30 +630,33 @@ class _ForYouEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          DivineIcon(
+          const DivineIcon(
             icon: DivineIconName.sparkle,
             size: 64,
             color: VineTheme.secondaryText,
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
-            'No Recommendations Yet',
-            style: TextStyle(
+            context.l10n.forYouEmptyTitle,
+            style: const TextStyle(
               color: VineTheme.primaryText,
               fontSize: 18,
               fontWeight: FontWeight.w500,
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 32),
+            padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Text(
-              'Watch and like some videos to get personalized recommendations.',
-              style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
+              context.l10n.forYouEmptyDescription,
+              style: const TextStyle(
+                color: VineTheme.secondaryText,
+                fontSize: 14,
+              ),
               textAlign: TextAlign.center,
             ),
           ),
@@ -668,9 +680,9 @@ class _ForYouErrorState extends StatelessWidget {
         children: [
           const Icon(Icons.error, size: 64, color: VineTheme.likeRed),
           const SizedBox(height: 16),
-          const Text(
-            'Failed to load recommendations',
-            style: TextStyle(color: VineTheme.likeRed, fontSize: 18),
+          Text(
+            context.l10n.forYouErrorTitle,
+            style: const TextStyle(color: VineTheme.likeRed, fontSize: 18),
           ),
           const SizedBox(height: 8),
           Padding(

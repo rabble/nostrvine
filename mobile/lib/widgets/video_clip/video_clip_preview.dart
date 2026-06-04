@@ -10,6 +10,7 @@ import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/gallery_save_service.dart';
@@ -123,12 +124,12 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreview> {
       Log.error('Failed to save clip to gallery', error: e, stackTrace: s);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             backgroundColor: VineTheme.transparent,
             elevation: 0,
             behavior: SnackBarBehavior.floating,
             content: DivineSnackbarContainer(
-              label: 'Failed to save clip',
+              label: context.l10n.videoClipSaveFailed,
               error: true,
             ),
           ),
@@ -258,8 +259,9 @@ class _ActionButtonsRow extends StatelessWidget {
           // Save to gallery button
           Semantics(
             button: true,
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            label: 'Save to ${GallerySaveService.destinationName}',
+            label: context.l10n.videoClipSaveTo(
+              GallerySaveService.destinationName,
+            ),
             child: GestureDetector(
               onTap: onSave,
               child: Container(
@@ -281,9 +283,7 @@ class _ActionButtonsRow extends StatelessWidget {
             // Delete button
             Semantics(
               button: true,
-              // TODO(l10n): Replace with context.l10n when localization is
-              // added.
-              label: 'Delete clip',
+              label: context.l10n.videoClipDelete,
               child: GestureDetector(
                 onTap: onDelete,
                 child: Container(
