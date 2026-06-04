@@ -533,7 +533,9 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            context.l10n.shareVideoInListsCount(listsContainingVideo.length),
+                            context.l10n.shareVideoInListsCount(
+                              listsContainingVideo.length,
+                            ),
                             style: const TextStyle(
                               color: VineTheme.vineGreen,
                               fontSize: 14,
