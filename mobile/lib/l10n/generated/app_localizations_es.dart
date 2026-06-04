@@ -6094,6 +6094,101 @@ class AppLocalizationsEs extends AppLocalizations {
   String get nostrAppPermissionAllow => 'Permitir';
 
   @override
+  String get appsDetailDefaultTitle => 'Integrated App';
+
+  @override
+  String get appsDetailNotFoundTitle => 'Integration not found';
+
+  @override
+  String get appsDetailNotFoundSubtitle =>
+      'This approved integration is no longer available in Divine.';
+
+  @override
+  String get appsDetailHowItWorksTitle => 'How it works';
+
+  @override
+  String get appsDetailHowItWorksBody =>
+      'This is an approved third-party app that runs inside Divine. Divine only grants reviewed capabilities for this integration, and blocks navigation outside its approved origins.';
+
+  @override
+  String get appsDetailAboutTitle => 'About';
+
+  @override
+  String get appsDetailPrimaryOriginTitle => 'Primary origin';
+
+  @override
+  String get appsDetailApprovedOriginsTitle => 'Approved origins';
+
+  @override
+  String get appsDetailCapabilitiesTitle => 'Available capabilities';
+
+  @override
+  String get appsDetailAskBeforeTitle => 'Ask before';
+
+  @override
+  String get appsDetailOpenButton => 'Open Integration';
+
+  @override
+  String get appsDetailNoneDeclared => 'None declared yet';
+
+  @override
+  String get appsDirectoryTitle => 'Integrated Apps';
+
+  @override
+  String get appsDirectoryIntroTitle => 'Approved third-party apps';
+
+  @override
+  String get appsDirectoryIntroBody =>
+      'Approved third-party apps that run inside Divine';
+
+  @override
+  String get appsDirectoryErrorTitle => 'Could not load integrated apps';
+
+  @override
+  String get appsDirectoryErrorSubtitle =>
+      'Pull to try the approved integrations again.';
+
+  @override
+  String get appsDirectoryEmptyTitle => 'No approved integrations yet';
+
+  @override
+  String get appsDirectoryEmptySubtitle =>
+      'Approved third-party apps will appear here as Divine adds them.';
+
+  @override
+  String get appsDirectoryRefresh => 'Refresh';
+
+  @override
+  String get appsDirectoryUnsupportedTitle =>
+      'Integrated Apps run in Divine mobile';
+
+  @override
+  String get appsDirectoryUnsupportedSubtitle =>
+      'Approved integrations are only available on mobile for now.';
+
+  @override
+  String get appsSandboxUnavailableTitle => 'Integration unavailable';
+
+  @override
+  String get appsSandboxUnavailableBody =>
+      'Open approved integrations from the Integrated Apps tab so Divine can apply the right access policy.';
+
+  @override
+  String get appsSandboxLoadingTitle => 'Loading integration';
+
+  @override
+  String get appsSandboxLoadingSubtitle =>
+      'Checking the approved integration before launch.';
+
+  @override
+  String get appsSandboxBlockedTitle => 'Blocked for safety';
+
+  @override
+  String appsSandboxBlockedSubtitle(String uri) {
+    return 'This integration tried to leave its approved origin.\n\n$uri';
+  }
+
+  @override
   String get bugReportSendReport => 'Enviar reporte';
 
   @override

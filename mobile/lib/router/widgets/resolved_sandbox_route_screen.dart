@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:openvine/blocs/sandbox_route/sandbox_route_cubit.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/widgets/missing_sandbox_app_screen.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
@@ -52,7 +53,7 @@ class _SandboxRouteContent extends StatelessWidget {
         return switch (state) {
           SandboxRouteLoading() => Scaffold(
             appBar: DiVineAppBar(
-              title: 'Loading integration',
+              title: context.l10n.appsSandboxLoadingTitle,
               showBackButton: true,
               onBackPressed: context.pop,
             ),

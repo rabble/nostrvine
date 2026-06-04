@@ -188,13 +188,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('Integration unavailable'), findsOneWidget);
-      expect(
-        find.text(
-          'Open approved integrations from the Integrated Apps tab so Divine can apply the right access policy.',
-        ),
-        findsOneWidget,
-      );
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.appsSandboxUnavailableTitle), findsOneWidget);
+      expect(find.text(l10n.appsSandboxUnavailableBody), findsOneWidget);
     },
   );
 }

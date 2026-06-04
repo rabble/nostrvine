@@ -10580,6 +10580,174 @@ abstract class AppLocalizations {
   /// **'Allow'**
   String get nostrAppPermissionAllow;
 
+  /// No description provided for @appsDetailDefaultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Integrated App'**
+  String get appsDetailDefaultTitle;
+
+  /// No description provided for @appsDetailNotFoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Integration not found'**
+  String get appsDetailNotFoundTitle;
+
+  /// No description provided for @appsDetailNotFoundSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This approved integration is no longer available in Divine.'**
+  String get appsDetailNotFoundSubtitle;
+
+  /// No description provided for @appsDetailHowItWorksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How it works'**
+  String get appsDetailHowItWorksTitle;
+
+  /// No description provided for @appsDetailHowItWorksBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This is an approved third-party app that runs inside Divine. Divine only grants reviewed capabilities for this integration, and blocks navigation outside its approved origins.'**
+  String get appsDetailHowItWorksBody;
+
+  /// No description provided for @appsDetailAboutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get appsDetailAboutTitle;
+
+  /// No description provided for @appsDetailPrimaryOriginTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary origin'**
+  String get appsDetailPrimaryOriginTitle;
+
+  /// No description provided for @appsDetailApprovedOriginsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved origins'**
+  String get appsDetailApprovedOriginsTitle;
+
+  /// No description provided for @appsDetailCapabilitiesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Available capabilities'**
+  String get appsDetailCapabilitiesTitle;
+
+  /// No description provided for @appsDetailAskBeforeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask before'**
+  String get appsDetailAskBeforeTitle;
+
+  /// No description provided for @appsDetailOpenButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Integration'**
+  String get appsDetailOpenButton;
+
+  /// No description provided for @appsDetailNoneDeclared.
+  ///
+  /// In en, this message translates to:
+  /// **'None declared yet'**
+  String get appsDetailNoneDeclared;
+
+  /// No description provided for @appsDirectoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Integrated Apps'**
+  String get appsDirectoryTitle;
+
+  /// No description provided for @appsDirectoryIntroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved third-party apps'**
+  String get appsDirectoryIntroTitle;
+
+  /// No description provided for @appsDirectoryIntroBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved third-party apps that run inside Divine'**
+  String get appsDirectoryIntroBody;
+
+  /// No description provided for @appsDirectoryErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load integrated apps'**
+  String get appsDirectoryErrorTitle;
+
+  /// No description provided for @appsDirectoryErrorSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull to try the approved integrations again.'**
+  String get appsDirectoryErrorSubtitle;
+
+  /// No description provided for @appsDirectoryEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No approved integrations yet'**
+  String get appsDirectoryEmptyTitle;
+
+  /// No description provided for @appsDirectoryEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved third-party apps will appear here as Divine adds them.'**
+  String get appsDirectoryEmptySubtitle;
+
+  /// No description provided for @appsDirectoryRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get appsDirectoryRefresh;
+
+  /// No description provided for @appsDirectoryUnsupportedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Integrated Apps run in Divine mobile'**
+  String get appsDirectoryUnsupportedTitle;
+
+  /// No description provided for @appsDirectoryUnsupportedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved integrations are only available on mobile for now.'**
+  String get appsDirectoryUnsupportedSubtitle;
+
+  /// No description provided for @appsSandboxUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Integration unavailable'**
+  String get appsSandboxUnavailableTitle;
+
+  /// No description provided for @appsSandboxUnavailableBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open approved integrations from the Integrated Apps tab so Divine can apply the right access policy.'**
+  String get appsSandboxUnavailableBody;
+
+  /// No description provided for @appsSandboxLoadingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading integration'**
+  String get appsSandboxLoadingTitle;
+
+  /// No description provided for @appsSandboxLoadingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking the approved integration before launch.'**
+  String get appsSandboxLoadingSubtitle;
+
+  /// No description provided for @appsSandboxBlockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked for safety'**
+  String get appsSandboxBlockedTitle;
+
+  /// Shown when a sandboxed integration tries to navigate outside its approved origin. {uri} is the blocked URL.
+  ///
+  /// In en, this message translates to:
+  /// **'This integration tried to leave its approved origin.\n\n{uri}'**
+  String appsSandboxBlockedSubtitle(String uri);
+
   /// No description provided for @bugReportSendReport.
   ///
   /// In en, this message translates to:

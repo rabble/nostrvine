@@ -52,26 +52,28 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('How it works'), findsOneWidget);
-        expect(
-          find.text(
-            'This is an approved third-party app that runs inside Divine. Divine only grants reviewed capabilities for this integration, and blocks navigation outside its approved origins.',
-          ),
-          findsOneWidget,
-        );
-        expect(find.text('Primary origin'), findsOneWidget);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.appsDetailHowItWorksTitle), findsOneWidget);
+        expect(find.text(l10n.appsDetailHowItWorksBody), findsOneWidget);
+        expect(find.text(l10n.appsDetailPrimaryOriginTitle), findsOneWidget);
         expect(find.text('https://primal.net'), findsWidgets);
         expect(find.text('https://primal.net/app'), findsNothing);
-        await tester.scrollUntilVisible(find.text('Approved origins'), 300);
-        expect(find.text('Approved origins'), findsOneWidget);
         await tester.scrollUntilVisible(
-          find.text('Available capabilities'),
+          find.text(l10n.appsDetailApprovedOriginsTitle),
           300,
         );
-        expect(find.text('Available capabilities'), findsOneWidget);
-        expect(find.text('Ask before'), findsOneWidget);
-        await tester.scrollUntilVisible(find.text('Open Integration'), 300);
-        expect(find.text('Open Integration'), findsOneWidget);
+        expect(find.text(l10n.appsDetailApprovedOriginsTitle), findsOneWidget);
+        await tester.scrollUntilVisible(
+          find.text(l10n.appsDetailCapabilitiesTitle),
+          300,
+        );
+        expect(find.text(l10n.appsDetailCapabilitiesTitle), findsOneWidget);
+        expect(find.text(l10n.appsDetailAskBeforeTitle), findsOneWidget);
+        await tester.scrollUntilVisible(
+          find.text(l10n.appsDetailOpenButton),
+          300,
+        );
+        expect(find.text(l10n.appsDetailOpenButton), findsOneWidget);
         await tester.tap(find.byType(DivineButton));
         await tester.pumpAndSettle();
 

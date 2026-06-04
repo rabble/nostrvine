@@ -188,12 +188,10 @@ void main() {
           ),
         );
 
+        final l10n = lookupAppLocalizations(const Locale('en'));
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
-        expect(find.text('Loading integration'), findsOneWidget);
-        expect(
-          find.text('Checking the approved integration before launch.'),
-          findsOneWidget,
-        );
+        expect(find.text(l10n.appsSandboxLoadingTitle), findsOneWidget);
+        expect(find.text(l10n.appsSandboxLoadingSubtitle), findsOneWidget);
       },
     );
 
@@ -215,11 +213,10 @@ void main() {
       navigationHandler!(Uri.parse('https://evil.example/phish'));
       await tester.pump();
 
-      expect(find.text('Blocked for safety'), findsOneWidget);
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.appsSandboxBlockedTitle), findsOneWidget);
       expect(
-        find.textContaining(
-          'This integration tried to leave its approved origin',
-        ),
+        find.textContaining(l10n.appsSandboxBlockedSubtitle('').trim()),
         findsOneWidget,
       );
     });

@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 class MissingSandboxAppScreen extends StatelessWidget {
   const MissingSandboxAppScreen({super.key});
@@ -12,7 +13,7 @@ class MissingSandboxAppScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: DiVineAppBar(
-        title: 'Integration unavailable',
+        title: context.l10n.appsSandboxUnavailableTitle,
         showBackButton: true,
         onBackPressed: context.pop,
       ),
@@ -21,9 +22,7 @@ class MissingSandboxAppScreen extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Text(
-            'Open approved integrations from the '
-            'Integrated Apps tab so Divine can '
-            'apply the right access policy.',
+            context.l10n.appsSandboxUnavailableBody,
             textAlign: TextAlign.center,
             style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
           ),

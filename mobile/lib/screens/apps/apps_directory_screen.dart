@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:openvine/blocs/apps_directory/apps_directory_cubit.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
 import 'package:openvine/utils/nostr_apps_platform_support.dart';
@@ -63,18 +64,17 @@ class _AppsDirectoryContent extends StatelessWidget {
                 AppsDirectoryStatus.initial || AppsDirectoryStatus.loading =>
                   const Center(child: CircularProgressIndicator()),
                 AppsDirectoryStatus.error => _AppsDirectoryMessage(
-                  title: 'Could not load integrated apps',
-                  subtitle: 'Pull to try the approved integrations again.',
-                  actionLabel: 'Retry',
+                  title: context.l10n.appsDirectoryErrorTitle,
+                  subtitle: context.l10n.appsDirectoryErrorSubtitle,
+                  actionLabel: context.l10n.commonRetry,
                   onAction: () =>
                       context.read<AppsDirectoryCubit>().refreshApps(),
                 ),
                 AppsDirectoryStatus.loaded when state.apps.isEmpty =>
                   _AppsDirectoryMessage(
-                    title: 'No approved integrations yet',
-                    subtitle:
-                        'Approved third-party apps will appear here as Divine adds them.',
-                    actionLabel: 'Refresh',
+                    title: context.l10n.appsDirectoryEmptyTitle,
+                    subtitle: context.l10n.appsDirectoryEmptySubtitle,
+                    actionLabel: context.l10n.appsDirectoryRefresh,
                     onAction: () =>
                         context.read<AppsDirectoryCubit>().refreshApps(),
                   ),
@@ -122,7 +122,7 @@ class _AppsDirectoryFrame extends StatelessWidget {
 
     return Scaffold(
       appBar: DiVineAppBar(
-        title: 'Integrated Apps',
+        title: context.l10n.appsDirectoryTitle,
         showBackButton: true,
         onBackPressed: context.pop,
       ),
@@ -308,12 +308,12 @@ class _AppsDirectoryIntro extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Approved third-party apps',
+              context.l10n.appsDirectoryIntroTitle,
               style: VineTheme.headlineSmallFont(color: VineTheme.onSurface),
             ),
             const SizedBox(height: 8),
             Text(
-              'Approved third-party apps that run inside Divine',
+              context.l10n.appsDirectoryIntroBody,
               style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
             ),
           ],
@@ -328,26 +328,26 @@ class _AppsDirectoryUnsupportedMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 24),
+        padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Integrated Apps run in Divine mobile',
+              context.l10n.appsDirectoryUnsupportedTitle,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 color: VineTheme.whiteText,
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
               ),
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             Text(
-              'Approved integrations are only available on mobile for now.',
+              context.l10n.appsDirectoryUnsupportedSubtitle,
               textAlign: TextAlign.center,
-              style: TextStyle(color: VineTheme.lightText, fontSize: 15),
+              style: const TextStyle(color: VineTheme.lightText, fontSize: 15),
             ),
           ],
         ),

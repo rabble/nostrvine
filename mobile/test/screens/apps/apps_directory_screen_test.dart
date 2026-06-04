@@ -66,11 +66,9 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      expect(find.text('Integrated Apps'), findsOneWidget);
-      expect(
-        find.text('Approved third-party apps that run inside Divine'),
-        findsOneWidget,
-      );
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.appsDirectoryTitle), findsOneWidget);
+      expect(find.text(l10n.appsDirectoryIntroBody), findsOneWidget);
       expect(find.text('Primal'), findsOneWidget);
       expect(find.text('Fast Nostr feeds and messages'), findsOneWidget);
       expect(
@@ -91,7 +89,9 @@ void main() {
 
       expect(find.byType(DiVineAppBar), findsNothing);
       expect(
-        find.text('Approved third-party apps that run inside Divine'),
+        find.text(
+          lookupAppLocalizations(const Locale('en')).appsDirectoryIntroBody,
+        ),
         findsOneWidget,
       );
       expect(find.text('Primal'), findsOneWidget);
@@ -130,13 +130,9 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      expect(find.text('No approved integrations yet'), findsOneWidget);
-      expect(
-        find.text(
-          'Approved third-party apps will appear here as Divine adds them.',
-        ),
-        findsOneWidget,
-      );
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.appsDirectoryEmptyTitle), findsOneWidget);
+      expect(find.text(l10n.appsDirectoryEmptySubtitle), findsOneWidget);
     });
   });
 }

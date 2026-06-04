@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:openvine/blocs/app_detail/app_detail_cubit.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
 
@@ -60,7 +61,7 @@ class _AppDetailContent extends StatelessWidget {
 
         return Scaffold(
           appBar: DiVineAppBar(
-            title: app?.name ?? 'Integrated App',
+            title: app?.name ?? context.l10n.appsDetailDefaultTitle,
             showBackButton: true,
             onBackPressed: context.pop,
           ),
@@ -73,10 +74,9 @@ class _AppDetailContent extends StatelessWidget {
                 AppDetailLoading() => const Center(
                   child: CircularProgressIndicator(),
                 ),
-                AppDetailNotFound() => const _AppDetailMessage(
-                  title: 'Integration not found',
-                  subtitle:
-                      'This approved integration is no longer available in Divine.',
+                AppDetailNotFound() => _AppDetailMessage(
+                  title: context.l10n.appsDetailNotFoundTitle,
+                  subtitle: context.l10n.appsDetailNotFoundSubtitle,
                 ),
                 AppDetailLoaded(:final app) => ListView(
                   padding: const EdgeInsets.all(16),
@@ -104,11 +104,11 @@ class _AppDetailContent extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const _AppDetailSection(
-                      title: 'How it works',
+                    _AppDetailSection(
+                      title: context.l10n.appsDetailHowItWorksTitle,
                       child: Text(
-                        'This is an approved third-party app that runs inside Divine. Divine only grants reviewed capabilities for this integration, and blocks navigation outside its approved origins.',
-                        style: TextStyle(
+                        context.l10n.appsDetailHowItWorksBody,
+                        style: const TextStyle(
                           color: VineTheme.whiteText,
                           fontSize: 15,
                           height: 1.5,
@@ -116,7 +116,7 @@ class _AppDetailContent extends StatelessWidget {
                       ),
                     ),
                     _AppDetailSection(
-                      title: 'About',
+                      title: context.l10n.appsDetailAboutTitle,
                       child: Text(
                         app.description,
                         style: const TextStyle(
@@ -127,7 +127,7 @@ class _AppDetailContent extends StatelessWidget {
                       ),
                     ),
                     _AppDetailSection(
-                      title: 'Primary origin',
+                      title: context.l10n.appsDetailPrimaryOriginTitle,
                       child: Text(
                         app.primaryOrigin,
                         style: const TextStyle(
@@ -137,20 +137,20 @@ class _AppDetailContent extends StatelessWidget {
                       ),
                     ),
                     _AppDetailSection(
-                      title: 'Approved origins',
+                      title: context.l10n.appsDetailApprovedOriginsTitle,
                       child: _PillList(items: app.allowedOrigins),
                     ),
                     _AppDetailSection(
-                      title: 'Available capabilities',
+                      title: context.l10n.appsDetailCapabilitiesTitle,
                       child: _PillList(items: app.allowedMethods),
                     ),
                     _AppDetailSection(
-                      title: 'Ask before',
+                      title: context.l10n.appsDetailAskBeforeTitle,
                       child: _PillList(items: app.promptRequiredFor),
                     ),
                     const SizedBox(height: 8),
                     DivineButton(
-                      label: 'Open Integration',
+                      label: context.l10n.appsDetailOpenButton,
                       onPressed: () {
                         context.push(
                           NostrAppSandboxScreen.pathForAppId(app.id),
@@ -211,9 +211,9 @@ class _PillList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
-      return const Text(
-        'None declared yet',
-        style: TextStyle(color: VineTheme.lightText, fontSize: 14),
+      return Text(
+        context.l10n.appsDetailNoneDeclared,
+        style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
       );
     }
 

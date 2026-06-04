@@ -526,6 +526,37 @@ const _knownUntranslatedDebt = {
   'authMinAgeNotice',
   'authUnder16Prefix',
   'authUnder16ChoicesCta',
+  // Added by the #3628 Apps / Integrations directory l10n pass. English ships;
+  // translators will pick these up in a follow-up pass, until then non-English
+  // locales fall back to the English source.
+  'appsDetailDefaultTitle',
+  'appsDetailNotFoundTitle',
+  'appsDetailNotFoundSubtitle',
+  'appsDetailHowItWorksTitle',
+  'appsDetailHowItWorksBody',
+  'appsDetailAboutTitle',
+  'appsDetailPrimaryOriginTitle',
+  'appsDetailApprovedOriginsTitle',
+  'appsDetailCapabilitiesTitle',
+  'appsDetailAskBeforeTitle',
+  'appsDetailOpenButton',
+  'appsDetailNoneDeclared',
+  'appsDirectoryTitle',
+  'appsDirectoryIntroTitle',
+  'appsDirectoryIntroBody',
+  'appsDirectoryErrorTitle',
+  'appsDirectoryErrorSubtitle',
+  'appsDirectoryEmptyTitle',
+  'appsDirectoryEmptySubtitle',
+  'appsDirectoryRefresh',
+  'appsDirectoryUnsupportedTitle',
+  'appsDirectoryUnsupportedSubtitle',
+  'appsSandboxUnavailableTitle',
+  'appsSandboxUnavailableBody',
+  'appsSandboxLoadingTitle',
+  'appsSandboxLoadingSubtitle',
+  'appsSandboxBlockedTitle',
+  'appsSandboxBlockedSubtitle',
 };
 
 Map<String, Object?> _readArb(File file) {

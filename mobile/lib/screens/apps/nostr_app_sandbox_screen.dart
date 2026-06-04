@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/widgets/apps/nostr_app_permission_prompt_sheet.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -576,16 +577,17 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
           if (_blockedUri != null)
             Positioned.fill(
               child: _SandboxStatusCard(
-                title: 'Blocked for safety',
-                subtitle:
-                    'This integration tried to leave its approved origin.\n\n$_blockedUri',
+                title: context.l10n.appsSandboxBlockedTitle,
+                subtitle: context.l10n.appsSandboxBlockedSubtitle(
+                  _blockedUri!.toString(),
+                ),
               ),
             )
           else if (_isLoading)
-            const Positioned.fill(
+            Positioned.fill(
               child: _SandboxStatusCard(
-                title: 'Loading integration',
-                subtitle: 'Checking the approved integration before launch.',
+                title: context.l10n.appsSandboxLoadingTitle,
+                subtitle: context.l10n.appsSandboxLoadingSubtitle,
                 showSpinner: true,
               ),
             ),
