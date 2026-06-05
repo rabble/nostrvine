@@ -450,5 +450,59 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'keeps restricted routing during a background refetch',
+      (tester) async {
+        var loadCount = 0;
+        final pendingRefetch = Completer<MinorAccountReviewStatus>();
+        final container = ProviderContainer(
+          overrides: [
+            ...getStandardTestOverrides(mockAuthService: mockAuthService),
+            nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
+            currentMinorAccountReviewStatusProvider.overrideWith((ref) {
+              loadCount++;
+              return loadCount == 1
+                  ? Future<MinorAccountReviewStatus>.value(restrictedStatus())
+                  : pendingRefetch.future;
+            }),
+          ],
+        );
+        registerContainerTearDown(tester, container);
+        await container.read(currentMinorAccountReviewStatusProvider.future);
+        await pumpRouter(tester, container);
+
+        final router = container.read(goRouterProvider);
+        expect(
+          router.routeInformationProvider.value.uri.toString(),
+          MinorAccountReviewScreen.path,
+        );
+
+        container.invalidate(currentMinorAccountReviewStatusProvider);
+        await tester.pumpAndSettle();
+        expect(
+          container.read(currentMinorAccountReviewStatusProvider).isLoading,
+          isTrue,
+        );
+        expect(
+          container.read(currentMinorAccountReviewStatusProvider).hasValue,
+          isTrue,
+        );
+
+        router.go(MinorAccountReviewScreen.path);
+        await tester.pumpAndSettle();
+        expect(
+          router.routeInformationProvider.value.uri.toString(),
+          MinorAccountReviewScreen.path,
+        );
+
+        router.go(VideoFeedPage.pathForIndex(0));
+        await tester.pumpAndSettle();
+        expect(
+          router.routeInformationProvider.value.uri.toString(),
+          MinorAccountReviewScreen.path,
+        );
+      },
+    );
   });
 }
