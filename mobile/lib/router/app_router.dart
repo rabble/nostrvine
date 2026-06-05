@@ -294,7 +294,17 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           isPublicParentConsentRoute ||
           isPublicUnder13Route;
 
-      if (authState == AuthState.authenticated && reviewStatusAsync.isLoading) {
+      // Only bounce to the loading screen on a true cold load (no value yet).
+      // Riverpod keeps the previous value during a background refetch
+      // (isLoading == true while hasValue == true), e.g. when
+      // currentAuthStateProvider re-invalidates on an authStateStream event.
+      // Treating those transient refetches as "loading" would redirect away
+      // from the current route to the review loading screen and back, which
+      // tears down the video feed (VideoStopNavigatorObserver disposes all
+      // controllers on push).
+      if (authState == AuthState.authenticated &&
+          reviewStatusAsync.isLoading &&
+          !reviewStatusAsync.hasValue) {
         if (!isReviewLoadingRoute) {
           return _minorAccountReviewLoadingPath(state.uri.toString());
         }
