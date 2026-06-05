@@ -632,6 +632,15 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       // SEARCH RESULTS - unified search screen (no bottom nav)
       GoRoute(
+        path: SearchResultsPage.emptyPath,
+        parentNavigatorKey: NavigatorKeys.root,
+        builder: (ctx, st) => SearchResultsPage(
+          requestFocusOnMount: SearchResultsPage.requestFocusOnMountForRoute(
+            st.uri,
+          ),
+        ),
+      ),
+      GoRoute(
         path: SearchResultsPage.path,
         parentNavigatorKey: NavigatorKeys.root,
         builder: (ctx, st) {

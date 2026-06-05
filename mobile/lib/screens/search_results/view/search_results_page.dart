@@ -31,6 +31,9 @@ class SearchResultsPage extends ConsumerWidget {
   /// Base path prefix (used for route matching and normalization skips).
   static const pathPrefix = '/search-results';
 
+  /// Route path pattern for opening search without a prefilled query.
+  static const String emptyPath = pathPrefix;
+
   /// Route path pattern for GoRouter.
   static const path = '$pathPrefix/:query';
 
@@ -45,6 +48,12 @@ class SearchResultsPage extends ConsumerWidget {
     final encodedQuery = Uri.encodeComponent(query);
     if (!requestFocusOnMount) return '$pathPrefix/$encodedQuery';
     return '$pathPrefix/$encodedQuery?$requestFocusQueryParameter=1';
+  }
+
+  /// Build a path that opens search without a prefilled query.
+  static String pathForEmptyQuery({required bool requestFocusOnMount}) {
+    if (!requestFocusOnMount) return emptyPath;
+    return '$emptyPath?$requestFocusQueryParameter=1';
   }
 
   /// Returns whether a routed prefilled search should claim keyboard focus.

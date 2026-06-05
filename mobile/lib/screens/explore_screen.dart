@@ -115,10 +115,6 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
   String? _hashtagMode; // When non-null, showing hashtag feed
   String? _customTitle; // Custom title to override default "Explore"
 
-  // Search bar state
-  final _searchController = TextEditingController();
-  Timer? _searchDebounce;
-
   // Track classics availability to rebuild tabs when it changes
   bool _classicsAvailable = false;
   // Track For You availability (staging only)
@@ -207,7 +203,6 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     super.initState();
 
     _initTabController();
-    _searchController.addListener(_onSearchChanged);
 
     // Track screen load
     _screenAnalytics.startScreenLoad('explore_screen');
@@ -258,10 +253,6 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
 
   @override
   void dispose() {
-    _searchDebounce?.cancel();
-    _searchController
-      ..removeListener(_onSearchChanged)
-      ..dispose();
     _tabController?.removeListener(_onTabChanged);
     _tabController?.dispose();
     super.dispose();
@@ -272,17 +263,10 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     );
   }
 
-  void _onSearchChanged() {
-    _searchDebounce?.cancel();
-    final query = _searchController.text.trim();
-    if (query.length < 2) return;
-    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
-      if (!mounted) return;
-      _searchController.clear();
-      context.push(
-        SearchResultsPage.pathForQuery(query, requestFocusOnMount: true),
-      );
-    });
+  void _openSearchPage() {
+    context.push(
+      SearchResultsPage.pathForEmptyQuery(requestFocusOnMount: true),
+    );
   }
 
   void _onTabChanged() {
@@ -498,8 +482,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: DivineSearchBar(
-                controller: _searchController,
                 hintText: context.l10n.exploreSearchHint,
+                readOnly: true,
+                onTap: _openSearchPage,
               ),
             ),
           ),

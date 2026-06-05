@@ -122,6 +122,17 @@ void main() {
             },
           ),
           GoRoute(
+            path: SearchResultsPage.emptyPath,
+            builder: (ctx, st) {
+              capturedQuery = '';
+              requestFocusOnMount =
+                  SearchResultsPage.requestFocusOnMountForRoute(
+                    st.uri,
+                  );
+              return const SizedBox.shrink();
+            },
+          ),
+          GoRoute(
             path: SearchResultsPage.path,
             builder: (ctx, st) {
               capturedQuery = st.pathParameters['query'];
@@ -172,6 +183,20 @@ void main() {
 
         expect(tester.takeException(), isNull);
         expect(result.capturedTag, equals(original));
+      },
+    );
+
+    testWidgets(
+      'pathForEmptyQuery opens search without a prefilled query',
+      (tester) async {
+        final result = await navigateAndCapture(
+          tester,
+          SearchResultsPage.pathForEmptyQuery(requestFocusOnMount: true),
+        );
+
+        expect(tester.takeException(), isNull);
+        expect(result.capturedQuery, isEmpty);
+        expect(result.requestFocusOnMount, isTrue);
       },
     );
 
