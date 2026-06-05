@@ -54,6 +54,13 @@ internal class DivineVideoPlayerInstance(
     private var eventSink: EventChannel.EventSink? = null
     private var httpHeadersByUri = emptyMap<String, Map<String, String>>()
 
+    // Viewer auth headers keyed by blob hash. HLS sub-playlist / segment
+    // requests use URIs that differ from the clip URI but share the same
+    // /<hash>/… prefix; BUD-01 (kind 24242) tokens are hash-bound, so one header
+    // set authenticates every variant of a hash. Used when the exact-URI lookup
+    // misses (e.g. HLS segments derived from an authenticated manifest).
+    private var httpHeadersByHash = emptyMap<String, Map<String, String>>()
+
     // Texture rendering (non-null when useTexture is enabled).
     //
     // Two backends are supported and selected per player at
@@ -226,7 +233,7 @@ internal class DivineVideoPlayerInstance(
             .setMediaSourceFactory(
                 DefaultMediaSourceFactory(
                     VideoCache.dataSourceFactory(context) { uri: Uri ->
-                        httpHeadersByUri[uri.toString()] ?: emptyMap()
+                        httpHeadersForRequest(uri.toString())
                     },
                 ),
             )
@@ -240,6 +247,30 @@ internal class DivineVideoPlayerInstance(
                 needsSurface = false
             }
         }
+    }
+
+    private fun httpHeadersForRequest(url: String): Map<String, String> {
+        httpHeadersByUri[url]?.let { return it }
+        val hash = blobHashFromUrl(url) ?: return emptyMap()
+        return httpHeadersByHash[hash] ?: emptyMap()
+    }
+
+    /**
+     * Extracts the 64-char hex blob hash from the first path segment of [url],
+     * mirroring the origin's hash-from-path rule. Pure string parsing so it
+     * needs no `android.net.Uri` and stays unit-testable.
+     */
+    internal fun blobHashFromUrl(url: String): String? {
+        val authorityAndPath = url.substringAfter("://", url)
+        val path = authorityAndPath.substringAfter('/', "")
+        val firstSegment = path
+            .substringBefore('/')
+            .substringBefore('?')
+            .substringBefore('#')
+        val candidate = firstSegment.substringBefore('.')
+        val isHex = candidate.length == 64 &&
+            candidate.all { it in '0'..'9' || it in 'a'..'f' || it in 'A'..'F' }
+        return if (isHex) candidate.lowercase() else null
     }
 
     // -- SurfaceProducer.Callback --
@@ -317,6 +348,7 @@ internal class DivineVideoPlayerInstance(
         val volumes = mutableListOf<Float>()
         val speeds = mutableListOf<Float>()
         val headersByUri = mutableMapOf<String, Map<String, String>>()
+        val headersByHash = mutableMapOf<String, Map<String, String>>()
         var accumulated = 0L
 
         for (map in clipsRaw) {
@@ -336,6 +368,7 @@ internal class DivineVideoPlayerInstance(
                 ?: emptyMap()
             if (httpHeaders.isNotEmpty()) {
                 headersByUri[uri] = httpHeaders
+                blobHashFromUrl(uri)?.let { headersByHash[it] = httpHeaders }
             }
 
             val builder = MediaItem.Builder().setUri(uri)
@@ -367,6 +400,7 @@ internal class DivineVideoPlayerInstance(
         clipSpeeds = speeds
         clipCount = mediaItems.size
         httpHeadersByUri = headersByUri
+        httpHeadersByHash = headersByHash
         firstFrameRendered = false
 
         // Resolve the optional global start position to (clipIndex, localMs)

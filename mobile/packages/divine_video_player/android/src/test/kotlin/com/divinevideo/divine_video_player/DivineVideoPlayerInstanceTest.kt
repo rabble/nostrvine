@@ -87,6 +87,37 @@ class DivineVideoPlayerInstanceTest {
     }
 
     @Test
+    fun `blobHashFromUrl extracts the hash from every blob variant URL`() {
+        val hash = "a".repeat(64)
+        assertEquals(hash, instance.blobHashFromUrl("https://media.divine.video/$hash"))
+        assertEquals(
+            hash,
+            instance.blobHashFromUrl("https://media.divine.video/$hash/720p.mp4"),
+        )
+        assertEquals(
+            hash,
+            instance.blobHashFromUrl("https://media.divine.video/$hash/hls/master.m3u8"),
+        )
+        assertEquals(
+            hash,
+            instance.blobHashFromUrl("https://media.divine.video/$hash/hls/segment_1.ts"),
+        )
+        assertEquals(
+            hash,
+            instance.blobHashFromUrl("https://media.divine.video/$hash.mp4"),
+        )
+    }
+
+    @Test
+    fun `blobHashFromUrl returns null for non-blob URLs`() {
+        assertEquals(null, instance.blobHashFromUrl("https://example.com/video.mp4"))
+        assertEquals(
+            null,
+            instance.blobHashFromUrl("https://media.divine.video/notahash/720p.mp4"),
+        )
+    }
+
+    @Test
     fun `dispose removes listener, stops decoder, clears surface, then releases (in order)`() {
         materializePlayer()
 
