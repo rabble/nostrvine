@@ -6,7 +6,10 @@ import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:divine_video_player/divine_video_player.dart'
+    show DivineVideoPlayerController;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -42,6 +45,88 @@ class _MockVideoVolumeCubit extends MockCubit<VideoVolumeState>
 class MockMediaAuthInterceptor extends Mock implements MediaAuthInterceptor {}
 
 class _FakeBuildContext extends Fake implements BuildContext {}
+
+class _NativePlayerHarness {
+  _NativePlayerHarness(this.tester);
+
+  final WidgetTester tester;
+  final setClipsArguments = <Map<Object?, Object?>>[];
+  final _installedPlayerIds = <int>{};
+
+  static const _globalChannel = MethodChannel('divine_video_player');
+  static const _codec = StandardMethodCodec();
+
+  void install({Iterable<int> playerIds = const <int>[0, 1, 2, 3]}) {
+    DivineVideoPlayerController.resetIdCounterForTesting();
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      _globalChannel,
+      (call) async {
+        if (call.method == 'create') return <Object?, Object?>{};
+        return null;
+      },
+    );
+
+    for (final playerId in playerIds) {
+      _installedPlayerIds.add(playerId);
+      final playerChannel = MethodChannel(
+        'divine_video_player/player_$playerId',
+      );
+      final eventChannelName = 'divine_video_player/player_$playerId/events';
+
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        playerChannel,
+        (call) async {
+          if (call.method == 'setClips') {
+            setClipsArguments.add(
+              (call.arguments as Map).cast<Object?, Object?>(),
+            );
+          }
+          return null;
+        },
+      );
+
+      tester.binding.defaultBinaryMessenger.setMockMessageHandler(
+        eventChannelName,
+        (message) async {
+          final call = _codec.decodeMethodCall(message);
+          if (call.method == 'listen') {
+            scheduleMicrotask(() async {
+              await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+                eventChannelName,
+                _codec.encodeSuccessEnvelope(const <Object?, Object?>{
+                  'status': 'ready',
+                  'videoWidth': 1280,
+                  'videoHeight': 720,
+                  'isFirstFrameRendered': true,
+                }),
+                (_) {},
+              );
+            });
+          }
+          return _codec.encodeSuccessEnvelope(null);
+        },
+      );
+    }
+  }
+
+  Future<void> dispose() async {
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      _globalChannel,
+      null,
+    );
+    for (final playerId in _installedPlayerIds) {
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        MethodChannel('divine_video_player/player_$playerId'),
+        null,
+      );
+      tester.binding.defaultBinaryMessenger.setMockMessageHandler(
+        'divine_video_player/player_$playerId/events',
+        null,
+      );
+    }
+    _installedPlayerIds.clear();
+  }
+}
 
 // Full 64-character test IDs.
 const testVideoId1 =
@@ -800,6 +885,8 @@ void main() {
               'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210';
           const videoUrl = 'https://media.divine.video/$sha256/720p.mp4';
           const headers = {'Authorization': 'Nostr fullscreen-token'};
+          final nativePlayer = _NativePlayerHarness(tester)..install();
+          addTearDown(nativePlayer.dispose);
           final mockMediaAuthInterceptor = MockMediaAuthInterceptor();
           final video = createTestVideoEvent(
             id: testVideoId1,
@@ -849,6 +936,7 @@ void main() {
             find.text(ModeratedContentOverlayStrings.verifyAgeLabel),
           );
           await tester.pump();
+          await tester.pump();
 
           verify(
             () => mockMediaAuthInterceptor.handleUnauthorizedMedia(
@@ -860,6 +948,22 @@ void main() {
             ),
           ).called(1);
           expect(cubit.state.statusFor(video.id), PlaybackStatus.ready);
+          expect(
+            nativePlayer.setClipsArguments,
+            contains(
+              predicate<Map<Object?, Object?>>((arguments) {
+                final clips = arguments['clips'];
+                if (clips is! List || clips.isEmpty) return false;
+                final clip = clips.first;
+                if (clip is! Map || clip['uri'] != videoUrl) {
+                  return false;
+                }
+                final httpHeaders = clip['httpHeaders'];
+                return httpHeaders is Map &&
+                    httpHeaders['Authorization'] == headers['Authorization'];
+              }),
+            ),
+          );
         },
       );
     });
