@@ -158,6 +158,61 @@ void main() {
         PlaybackStatus.ageRestricted,
       );
     });
+
+    testWidgets(
+      'refuses retry when sha256 cannot be resolved (no NIP-98 fallback)',
+      (tester) async {
+        final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+        final playbackStatusCubit = VideoPlaybackStatusCubit();
+        var retryCount = 0;
+        addTearDown(playbackStatusCubit.close);
+
+        // No sha256 field and a URL without a 64-hex blob segment, so
+        // _resolveSha256 returns null and the hash-bound BUD-01 path is
+        // unavailable. The retry must refuse rather than fall back to a
+        // URL-bound NIP-98 token that would not authenticate the variants.
+        final video = VideoEvent(
+          id: _videoId,
+          pubkey: _pubkey,
+          createdAt: 1704067200,
+          content: 'Test video',
+          timestamp: DateTime.fromMillisecondsSinceEpoch(1704067200 * 1000),
+          videoUrl: 'https://media.divine.video/video.mp4',
+        );
+
+        await tester.pumpWidget(
+          _RetryHarness(
+            mediaAuthInterceptor: mediaAuthInterceptor,
+            playbackStatusCubit: playbackStatusCubit,
+            video: video,
+            retryPlayback: (_) {
+              retryCount++;
+              return true;
+            },
+          ),
+        );
+
+        playbackStatusCubit.report(_videoId, PlaybackStatus.ageRestricted);
+
+        await tester.tap(find.text('Verify'));
+        await tester.pump();
+
+        expect(retryCount, 0);
+        verifyNever(
+          () => mediaAuthInterceptor.handleUnauthorizedMedia(
+            context: any(named: 'context'),
+            sha256Hash: any(named: 'sha256Hash'),
+            url: any(named: 'url'),
+            serverUrl: any(named: 'serverUrl'),
+            category: any(named: 'category'),
+          ),
+        );
+        expect(
+          playbackStatusCubit.state.statusFor(_videoId),
+          PlaybackStatus.ageRestricted,
+        );
+      },
+    );
   });
 }
 
@@ -166,11 +221,13 @@ class _RetryHarness extends StatelessWidget {
     required this.mediaAuthInterceptor,
     required this.playbackStatusCubit,
     required this.retryPlayback,
+    this.video,
   });
 
   final MediaAuthInterceptor mediaAuthInterceptor;
   final VideoPlaybackStatusCubit playbackStatusCubit;
   final bool Function(Map<String, String>) retryPlayback;
+  final VideoEvent? video;
 
   @override
   Widget build(BuildContext context) {
@@ -188,7 +245,7 @@ class _RetryHarness extends StatelessWidget {
                   onPressed: () => retryAgeRestrictedPooledVideo(
                     context: context,
                     ref: ref,
-                    video: _video,
+                    video: video ?? _video,
                     index: 0,
                     retryPlayback: retryPlayback,
                   ),

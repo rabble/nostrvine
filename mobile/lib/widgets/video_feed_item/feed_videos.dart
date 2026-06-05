@@ -216,11 +216,26 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
   @override
   Widget build(BuildContext context) {
     final isFeedActive = widget.isActive && _routeAllowsPlayback;
-    return BlocListener<VideoVolumeCubit, VideoVolumeState>(
-      // Sync volume when hardware buttons change system volume.
-      listener: (_, state) {
-        _feedKey.currentState?.setVolume(state.volume);
-      },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<VideoVolumeCubit, VideoVolumeState>(
+          // Sync volume when hardware buttons change system volume.
+          listener: (_, state) {
+            _feedKey.currentState?.setVolume(state.volume);
+          },
+        ),
+        BlocListener<VideoPlaybackStatusCubit, VideoPlaybackStatusState>(
+          listenWhen: (previous, current) => previous != current,
+          // Once a video recovers to `ready` (e.g. after age verification),
+          // forget its last reported error so a later re-error re-surfaces
+          // through the errorBuilder dedupe instead of being suppressed.
+          listener: (_, state) {
+            _lastReportedError.removeWhere(
+              (videoId, _) => state.statusFor(videoId) == PlaybackStatus.ready,
+            );
+          },
+        ),
+      ],
       child: InfiniteVideoFeed(
         key: _feedKey,
         videos: widget.videos,
