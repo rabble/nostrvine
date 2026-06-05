@@ -475,6 +475,54 @@ void main() {
         expect(find.text('Create new account'), findsOneWidget);
       });
 
+      testWidgets('shows terms notice above returning-user action buttons', (
+        tester,
+      ) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1748));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        final termsNotice = find.byWidgetPredicate((widget) {
+          if (widget is RichText) {
+            final text = widget.text.toPlainText();
+            return text.contains('By selecting an option below') &&
+                text.contains(
+                  'at least 16 years old (or have completed '
+                  'Divine age authorization) and agree',
+                ) &&
+                text.contains('Terms of Service');
+          }
+          return false;
+        });
+        final continueButton = find.widgetWithText(
+          DivineButton,
+          'Continue as Test User',
+        );
+        final useAnotherButton = find.widgetWithText(
+          DivineButton,
+          'Use another account',
+        );
+        final createButton = find.widgetWithText(
+          DivineButton,
+          'Create new account',
+        );
+
+        expect(termsNotice, findsOneWidget);
+        expect(continueButton, findsOneWidget);
+        expect(useAnotherButton, findsOneWidget);
+        expect(createButton, findsOneWidget);
+
+        final termsTop = tester.getTopLeft(termsNotice).dy;
+        final continueTop = tester.getTopLeft(continueButton).dy;
+        final useAnotherTop = tester.getTopLeft(useAnotherButton).dy;
+        final createTop = tester.getTopLeft(createButton).dy;
+
+        expect(continueTop, greaterThan(termsTop));
+        expect(useAnotherTop, greaterThan(continueTop));
+        expect(createTop, greaterThan(useAnotherTop));
+      });
+
       testWidgets(
         'shows the recovery owner banner when the selected account matches the anchor',
         (tester) async {

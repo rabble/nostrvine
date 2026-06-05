@@ -311,6 +311,10 @@ class _ReturningUserLayout extends StatelessWidget {
                 const SizedBox(height: 16),
               ],
 
+              const _TermsNotice(),
+
+              const SizedBox(height: 20),
+
               // Sign back in button (primary)
               DivineButton(
                 label: context.l10n.authContinueAs(displayName),
@@ -348,10 +352,6 @@ class _ReturningUserLayout extends StatelessWidget {
                         const WelcomeCreateAccountRequested(),
                       ),
               ),
-
-              const SizedBox(height: 20),
-
-              const _TermsNotice(),
 
               const SizedBox(height: 32),
             ],
