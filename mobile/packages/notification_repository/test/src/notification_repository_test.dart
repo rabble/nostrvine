@@ -1157,10 +1157,54 @@ void main() {
         expect(item.type, equals(NotificationKind.like));
       });
 
-      test('reaction on a non-owned video is dropped instead of rendering '
-          'as liked your video', () async {
+      test('reaction on a non-owned video is reclassified as likeComment '
+          'instead of liked your video (#4813)', () async {
         stubNotifications([
           makeNotification(referencedEventId: 'foreign_video'),
+        ]);
+        stubProfiles({});
+        stubVideoStats(
+          'foreign_video',
+          makeVideoStats(id: 'foreign_video', pubkey: 'other_owner_pubkey'),
+        );
+
+        final page = await repository.getNotifications();
+
+        expect(page.items, hasLength(1));
+        final item = page.items.single as ActorNotification;
+        expect(item.type, equals(NotificationKind.likeComment));
+      });
+
+      test('comment on a non-owned video is reclassified as reply '
+          'instead of commented on your video (#4813)', () async {
+        stubNotifications([
+          makeNotification(
+            notificationType: 'reply',
+            sourceKind: 1111,
+            referencedEventId: 'foreign_video',
+            rootEventId: 'foreign_video',
+          ),
+        ]);
+        stubProfiles({});
+        stubVideoStats(
+          'foreign_video',
+          makeVideoStats(id: 'foreign_video', pubkey: 'other_owner_pubkey'),
+        );
+
+        final page = await repository.getNotifications();
+
+        expect(page.items, hasLength(1));
+        final item = page.items.single as ActorNotification;
+        expect(item.type, equals(NotificationKind.reply));
+      });
+
+      test('repost on a non-owned video is dropped entirely', () async {
+        stubNotifications([
+          makeNotification(
+            notificationType: 'repost',
+            sourceKind: 6,
+            referencedEventId: 'foreign_video',
+          ),
         ]);
         stubProfiles({});
         stubVideoStats(
@@ -2527,8 +2571,8 @@ void main() {
         expect(video.videoAddressableId, isNull);
       });
 
-      test('drops a realtime like when the referenced video is owned by '
-          'someone else', () async {
+      test('reclassifies a realtime like on a non-owned video as likeComment '
+          '(#4813)', () async {
         stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
         stubVideoStats(
           'video_x',
@@ -2537,7 +2581,9 @@ void main() {
 
         final result = await repository.enrichOne(raw());
 
-        expect(result, isNull);
+        expect(result, isA<ActorNotification>());
+        final actor = result! as ActorNotification;
+        expect(actor.type, equals(NotificationKind.likeComment));
       });
 
       test('returns null for like with null referencedEventId', () async {
@@ -2790,24 +2836,29 @@ void main() {
         },
       );
 
-      test('acceptRealtime drops a video-anchored notification whose '
-          'referenced video is known to be owned by someone else', () async {
-        stubProfiles({
-          allowedPubkey: makeProfile(allowedPubkey, displayName: 'Allowed'),
-        });
-        stubVideoStats(
-          'video_default',
-          makeVideoStats(id: 'video_default', pubkey: 'other_owner_pubkey'),
-        );
+      test(
+        'acceptRealtime reclassifies a video-anchored notification whose '
+        'referenced video is owned by someone else as likeComment (#4813)',
+        () async {
+          stubProfiles({
+            allowedPubkey: makeProfile(allowedPubkey, displayName: 'Allowed'),
+          });
+          stubVideoStats(
+            'video_default',
+            makeVideoStats(id: 'video_default', pubkey: 'other_owner_pubkey'),
+          );
 
-        await repository.acceptRealtime(
-          makeNotification(sourcePubkey: allowedPubkey),
-        );
+          await repository.acceptRealtime(
+            makeNotification(sourcePubkey: allowedPubkey),
+          );
 
-        final snapshot = await repository.watchSnapshot().first;
-        expect(snapshot.items, isEmpty);
-        expect(await repository.watchUnreadCount().first, equals(0));
-      });
+          final snapshot = await repository.watchSnapshot().first;
+          expect(snapshot.items, hasLength(1));
+          final item = snapshot.items.single as ActorNotification;
+          expect(item.type, equals(NotificationKind.likeComment));
+          expect(await repository.watchUnreadCount().first, equals(1));
+        },
+      );
 
       test('acceptRealtime drops a video-anchored notification from a '
           'blocked actor', () async {
