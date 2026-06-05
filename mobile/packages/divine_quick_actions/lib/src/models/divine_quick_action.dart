@@ -9,8 +9,7 @@ enum DivineQuickActionIosIconStyle {
   template('template'),
 
   /// Uses an SF Symbol name on iOS 13 and newer.
-  system('system')
-  ;
+  system('system');
 
   const DivineQuickActionIosIconStyle(this.value);
 

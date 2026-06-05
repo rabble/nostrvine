@@ -5,8 +5,7 @@ enum NostrAppAuditDecision {
   denied('denied'),
   promptAllowed('prompt_allowed'),
   promptDenied('prompt_denied'),
-  blocked('blocked')
-  ;
+  blocked('blocked');
 
   const NostrAppAuditDecision(this.wireValue);
 

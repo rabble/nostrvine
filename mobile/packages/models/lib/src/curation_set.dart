@@ -146,8 +146,7 @@ enum CurationSetType {
     'trending',
     'Trending',
     'Videos getting the most likes and shares right now',
-  )
-  ;
+  );
 
   const CurationSetType(this.id, this.displayName, this.description);
 

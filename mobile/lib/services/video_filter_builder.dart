@@ -25,8 +25,7 @@ enum VideoSortField {
   avgCompletion('avg_completion'),
 
   /// Newest videos first
-  createdAt('created_at')
-  ;
+  createdAt('created_at');
 
   const VideoSortField(this.fieldName);
   final String fieldName;
@@ -44,8 +43,7 @@ enum NIP50SortMode {
   rising('rising'),
 
   /// Events with mixed positive/negative reaction ratios
-  controversial('controversial')
-  ;
+  controversial('controversial');
 
   const NIP50SortMode(this.mode);
   final String mode;

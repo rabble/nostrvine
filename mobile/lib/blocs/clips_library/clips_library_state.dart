@@ -15,8 +15,7 @@ enum ClipSort {
   longestClip,
   shortestClip,
   squareFirst,
-  verticalFirst
-  ;
+  verticalFirst;
 
   static const _persistenceKeys = <ClipSort, String>{
     ClipSort.newestCreation: 'newest_creation',

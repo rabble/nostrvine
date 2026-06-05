@@ -1134,8 +1134,7 @@ enum _AnalyticsWindow {
   last7Days('7D', Duration(days: 7)),
   last28Days('28D', Duration(days: 28)),
   last90Days('90D', Duration(days: 90)),
-  allTime('All', null)
-  ;
+  allTime('All', null);
 
   const _AnalyticsWindow(this.label, this.duration);
 
