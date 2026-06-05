@@ -2066,123 +2066,117 @@ class _DivineAppState extends ConsumerState<DivineApp> {
           create: (_) =>
               DmUnreadCountCubit(dmRepository: ref.read(dmRepositoryProvider)),
         ),
-        // Notification badge cubit. Subscribes to the new
-        // `NotificationRepository.watchUnreadCount()` stream so the
-        // bottom-nav badge stays in lock-step with per-row reads,
-        // mark-all-read flows, and WS realtime arrivals (the latter via
-        // [NotificationRealtimeBridge] below). The repository is `null`
-        // during early auth — the cubit handles that by emitting 0 with
-        // no subscription. The `ValueKey` on the BlocProvider keyed to
-        // the repository's identity recreates the cubit when the
-        // underlying repository instance flips (account switch).
+        // Notification badge cubit. Keep the provider identity stable so
+        // repository readiness/account switches do not remount MaterialApp
+        // and AppShell; the sync widget below swaps only the cubit's stream
+        // subscription when the repository identity changes.
         BlocProvider(
-          key: ValueKey(
-            identityHashCode(ref.watch(notificationRepositoryProvider)),
-          ),
           create: (_) => NotificationBadgeCubit(
             repository: ref.read(notificationRepositoryProvider),
           ),
         ),
       ],
-      child: MultiBlocProvider(
-        providers: [
-          BlocProvider(
-            lazy: false,
-            create: (_) => VideoVolumeCubit(
-              sharedPreferences: ref.read(sharedPreferencesProvider),
-            ),
-          ),
-          BlocProvider(
-            create: (_) => LocaleCubit(
-              localePreferenceService: LocalePreferenceService(
-                sharedPreferences: ref.read(sharedPreferencesProvider),
-              ),
-            ),
-          ),
-          BlocProvider(
-            create: (_) => BackgroundPublishBloc(
-              videoPublishServiceFactory: createPublishService,
-              draftStorageService: ref.read(draftStorageServiceProvider),
-            ),
-          ),
-          BlocProvider(
-            create: (_) => CameraPermissionBloc(
-              permissionsService: const PermissionHandlerPermissionsService(),
-            )..add(const CameraPermissionRefresh()),
-          ),
-          BlocProvider(
-            create: (context) => InviteGateBloc(
-              inviteApiClient: context.read<InviteApiClient>(),
-            ),
-          ),
-          BlocProvider(
-            create: (context) => EmailVerificationCubit(
-              oauthClient: ref.read(oauthClientProvider),
-              authService: ref.read(authServiceProvider),
-              inviteApiClient: context.read<InviteApiClient>(),
-            ),
-          ),
-          BlocProvider(
-            create: (context) => InviteStatusCubit(
-              inviteApiClient: context.read<InviteApiClient>(),
-              isInviteAuthReady: () =>
-                  ref.read(nip98AuthServiceProvider).canCreateTokens,
-            ),
-          ),
-          BlocProvider(
-            create: (_) => AppUpdateBloc(
-              repository: AppUpdateRepository(
-                appVersionClient: AppVersionClient(),
-                sharedPreferences: ref.read(sharedPreferencesProvider),
-                currentVersion: widget.packageInfo.version,
-                installSource: InstallSource.sideload,
-              ),
-            )..add(const AppUpdateCheckRequested()),
-          ),
-          if (peopleListsEnabled)
+      child: _NotificationBadgeRepositorySync(
+        child: MultiBlocProvider(
+          providers: [
             BlocProvider(
-              create: (_) {
-                final authService = ref.read(authServiceProvider);
-                final ownerPubkeyStream = authService.authStateStream
-                    .map((_) => authService.currentPublicKeyHex)
-                    .distinct();
-                return PeopleListsBloc(
-                  repository: ref.read(peopleListsRepositoryProvider),
-                  ownerPubkeyStream: ownerPubkeyStream,
-                  initialOwnerPubkey: authService.currentPublicKeyHex,
-                )..add(const PeopleListsStarted());
-              },
+              lazy: false,
+              create: (_) => VideoVolumeCubit(
+                sharedPreferences: ref.read(sharedPreferencesProvider),
+              ),
             ),
-        ],
-        // Global listener for email verification failures - shows snackbar
-        // when verification times out or fails while user is elsewhere in app
-        child: BlocListener<EmailVerificationCubit, EmailVerificationState>(
-          listenWhen: (previous, current) =>
-              current.status == EmailVerificationStatus.failure &&
-              previous.status != EmailVerificationStatus.failure,
-          listener: (context, state) {
-            final messenger = ScaffoldMessenger.maybeOf(context);
-            final errorCode = state.errorCode;
-            if (messenger != null && errorCode != null) {
-              messenger.showSnackBar(
-                SnackBar(
-                  content: Text(
-                    context.l10n.emailVerificationErrorMessage(errorCode),
-                  ),
-                  backgroundColor: VineTheme.error,
-                  behavior: SnackBarBehavior.floating,
-                  duration: const Duration(seconds: 5),
+            BlocProvider(
+              create: (_) => LocaleCubit(
+                localePreferenceService: LocalePreferenceService(
+                  sharedPreferences: ref.read(sharedPreferencesProvider),
                 ),
-              );
-            }
-          },
-          child: UpdateDialogListener(
-            child: UploadFailureListener(
-              child: GeoBlockingGate(
-                child: AppLifecycleHandler(
-                  child: BlocBuilder<LocaleCubit, LocaleState>(
-                    builder: (context, localeState) =>
-                        buildApp(localeState.locale),
+              ),
+            ),
+            BlocProvider(
+              create: (_) => BackgroundPublishBloc(
+                videoPublishServiceFactory: createPublishService,
+                draftStorageService: ref.read(draftStorageServiceProvider),
+              ),
+            ),
+            BlocProvider(
+              create: (_) => CameraPermissionBloc(
+                permissionsService: const PermissionHandlerPermissionsService(),
+              )..add(const CameraPermissionRefresh()),
+            ),
+            BlocProvider(
+              create: (context) => InviteGateBloc(
+                inviteApiClient: context.read<InviteApiClient>(),
+              ),
+            ),
+            BlocProvider(
+              create: (context) => EmailVerificationCubit(
+                oauthClient: ref.read(oauthClientProvider),
+                authService: ref.read(authServiceProvider),
+                inviteApiClient: context.read<InviteApiClient>(),
+              ),
+            ),
+            BlocProvider(
+              create: (context) => InviteStatusCubit(
+                inviteApiClient: context.read<InviteApiClient>(),
+                isInviteAuthReady: () =>
+                    ref.read(nip98AuthServiceProvider).canCreateTokens,
+              ),
+            ),
+            BlocProvider(
+              create: (_) => AppUpdateBloc(
+                repository: AppUpdateRepository(
+                  appVersionClient: AppVersionClient(),
+                  sharedPreferences: ref.read(sharedPreferencesProvider),
+                  currentVersion: widget.packageInfo.version,
+                  installSource: InstallSource.sideload,
+                ),
+              )..add(const AppUpdateCheckRequested()),
+            ),
+            if (peopleListsEnabled)
+              BlocProvider(
+                create: (_) {
+                  final authService = ref.read(authServiceProvider);
+                  final ownerPubkeyStream = authService.authStateStream
+                      .map((_) => authService.currentPublicKeyHex)
+                      .distinct();
+                  return PeopleListsBloc(
+                    repository: ref.read(peopleListsRepositoryProvider),
+                    ownerPubkeyStream: ownerPubkeyStream,
+                    initialOwnerPubkey: authService.currentPublicKeyHex,
+                  )..add(const PeopleListsStarted());
+                },
+              ),
+          ],
+          // Global listener for email verification failures - shows snackbar
+          // when verification times out or fails while user is elsewhere in app
+          child: BlocListener<EmailVerificationCubit, EmailVerificationState>(
+            listenWhen: (previous, current) =>
+                current.status == EmailVerificationStatus.failure &&
+                previous.status != EmailVerificationStatus.failure,
+            listener: (context, state) {
+              final messenger = ScaffoldMessenger.maybeOf(context);
+              final errorCode = state.errorCode;
+              if (messenger != null && errorCode != null) {
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      context.l10n.emailVerificationErrorMessage(errorCode),
+                    ),
+                    backgroundColor: VineTheme.error,
+                    behavior: SnackBarBehavior.floating,
+                    duration: const Duration(seconds: 5),
+                  ),
+                );
+              }
+            },
+            child: UpdateDialogListener(
+              child: UploadFailureListener(
+                child: GeoBlockingGate(
+                  child: AppLifecycleHandler(
+                    child: BlocBuilder<LocaleCubit, LocaleState>(
+                      builder: (context, localeState) =>
+                          buildApp(localeState.locale),
+                    ),
                   ),
                 ),
               ),
@@ -2209,6 +2203,19 @@ class _DivineAppState extends ConsumerState<DivineApp> {
     }
 
     return wrapped; // ProviderScope now wraps DivineApp from outside
+  }
+}
+
+class _NotificationBadgeRepositorySync extends ConsumerWidget {
+  const _NotificationBadgeRepositorySync({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final repository = ref.watch(notificationRepositoryProvider);
+    context.read<NotificationBadgeCubit>().setRepository(repository);
+    return child;
   }
 }
 

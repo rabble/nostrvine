@@ -1,8 +1,8 @@
 // ABOUTME: Widget-level test for the badge cubit's auth-transition contract.
-// ABOUTME: Verifies that the BlocProvider/ValueKey wiring around the cubit
-// ABOUTME: discards the old subscription and re-subscribes when the Riverpod
+// ABOUTME: Verifies that the stable BlocProvider wiring around the cubit
+// ABOUTME: swaps only the unread-count subscription when the Riverpod
 // ABOUTME: notificationRepositoryProvider flips identity (signed-out ->
-// ABOUTME: signed-in, account switch A->B).
+// ABOUTME: signed-in, account switch A->B), without remounting descendants.
 
 import 'dart:async';
 
@@ -25,24 +25,59 @@ final _testRepoSelector = StateProvider<NotificationRepository?>(
   (_) => null,
 );
 
-/// Probe widget mirroring `main.dart`'s wiring around the badge cubit:
-/// the [BlocProvider] is keyed on the identity of the repository, so
-/// the cubit is closed and recreated whenever the Riverpod provider
-/// hands over a new instance.
+int _mountCount = 0;
+
+class _MountProbe extends StatefulWidget {
+  const _MountProbe({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_MountProbe> createState() => _MountProbeState();
+}
+
+class _MountProbeState extends State<_MountProbe> {
+  @override
+  void initState() {
+    super.initState();
+    _mountCount += 1;
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
+class _BadgeRepositorySync extends ConsumerWidget {
+  const _BadgeRepositorySync({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final repository = ref.watch(notificationRepositoryProvider);
+    context.read<NotificationBadgeCubit>().setRepository(repository);
+    return child;
+  }
+}
+
+/// Probe widget mirroring `main.dart`'s wiring around the badge cubit: the
+/// [BlocProvider] identity stays stable, and repository flips are forwarded to
+/// the existing cubit so descendants do not remount.
 class _BadgeProbe extends ConsumerWidget {
   const _BadgeProbe();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return BlocProvider(
-      key: ValueKey(
-        identityHashCode(ref.watch(notificationRepositoryProvider)),
-      ),
       create: (_) => NotificationBadgeCubit(
         repository: ref.read(notificationRepositoryProvider),
       ),
-      child: BlocBuilder<NotificationBadgeCubit, int>(
-        builder: (context, count) => Text('count=$count'),
+      child: _BadgeRepositorySync(
+        child: _MountProbe(
+          child: BlocBuilder<NotificationBadgeCubit, int>(
+            builder: (context, count) => Text('count=$count'),
+          ),
+        ),
       ),
     );
   }
@@ -50,6 +85,10 @@ class _BadgeProbe extends ConsumerWidget {
 
 void main() {
   group('NotificationBadgeCubit auth transition', () {
+    setUp(() {
+      _mountCount = 0;
+    });
+
     testWidgets(
       'signed-out -> signed-in: badge resets at 0, then emits from the new '
       "repository's stream",
@@ -71,6 +110,7 @@ void main() {
         );
 
         expect(find.text('count=0'), findsOneWidget);
+        expect(_mountCount, 1);
         verifyNever(repoB.watchUnreadCount);
 
         final container = ProviderScope.containerOf(
@@ -83,6 +123,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('count=5'), findsOneWidget);
+        expect(_mountCount, 1);
         verify(repoB.watchUnreadCount).called(1);
       },
     );
@@ -106,7 +147,6 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              _testRepoSelector.overrideWith((_) => repoA),
               notificationRepositoryProvider.overrideWith(
                 (ref) => ref.watch(_testRepoSelector),
               ),
@@ -115,23 +155,24 @@ void main() {
           ),
         );
 
-        controllerA.add(3);
-        await tester.pumpAndSettle();
-        expect(find.text('count=3'), findsOneWidget);
-
-        // Swap repositories — Pattern A: in production this transitions
-        // through a null phase, but the BlocProvider's ValueKey keyed on
-        // identity is the contract this test pins. Any identity flip must
-        // close the prior cubit and create a fresh one against B.
         final container = ProviderScope.containerOf(
           tester.element(find.byType(_BadgeProbe)),
         );
+        container.read(_testRepoSelector.notifier).state = repoA;
+        await tester.pumpAndSettle();
+
+        controllerA.add(3);
+        await tester.pumpAndSettle();
+        expect(find.text('count=3'), findsOneWidget);
+        expect(_mountCount, 1);
+
+        // Swap repositories — production may transition through a null phase,
+        // but the root wiring must keep descendants mounted and swap only the
+        // cubit's unread-count subscription.
         container.read(_testRepoSelector.notifier).state = repoB;
         await tester.pumpAndSettle();
 
-        // Pre-emission default for the new cubit is 0 before B's stream
-        // pushes its first value.
-        expect(find.text('count=0'), findsOneWidget);
+        expect(_mountCount, 1);
 
         controllerB.add(7);
         await tester.pumpAndSettle();

@@ -195,6 +195,11 @@ class _AppShellState extends ConsumerState<AppShell> {
   }
 
   @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final title = _titleFor(context, ref);
 
