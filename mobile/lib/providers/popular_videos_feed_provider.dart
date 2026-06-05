@@ -7,6 +7,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/feed_refresh_helpers.dart';
+import 'package:openvine/providers/feed_viewer_preference_hints.dart';
 import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
@@ -131,10 +132,13 @@ class PopularVideosFeed extends _$PopularVideosFeed {
     required bool skipCache,
   }) async {
     final videosRepository = ref.read(videosRepositoryProvider);
+    final hints = await readFeedViewerPreferenceHints(ref.read);
     return videosRepository.getPopularVideosPage(
       limit: AppConstants.paginationBatchSize,
       variant: variant,
       skipCache: skipCache,
+      preferredLanguages: hints.preferredLanguages,
+      viewerCountry: hints.viewerCountry,
     );
   }
 
@@ -215,10 +219,13 @@ class PopularVideosFeed extends _$PopularVideosFeed {
 
   Future<PopularVideosPage> _fetchNextPage() async {
     final videosRepository = ref.read(videosRepositoryProvider);
+    final hints = await readFeedViewerPreferenceHints(ref.read);
     return videosRepository.getPopularVideosPage(
       limit: AppConstants.paginationBatchSize,
       cursor: _nextCursor,
       variant: ref.read(popularVideosVariantProvider),
+      preferredLanguages: hints.preferredLanguages,
+      viewerCountry: hints.viewerCountry,
     );
   }
 

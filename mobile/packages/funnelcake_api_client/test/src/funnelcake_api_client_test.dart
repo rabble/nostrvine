@@ -2782,6 +2782,29 @@ void main() {
           expect(uri.queryParameters.containsKey('before'), isFalse);
         },
       );
+
+      test('sends viewer language and country hints', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('[]', 200));
+
+        await client.getV2PopularVideosPage(
+          variant: PopularVideosVariant.native,
+          preferredLanguages: const ['pt', 'en'],
+          viewerCountry: 'BR',
+        );
+
+        final uri =
+            verify(
+                  () => mockHttpClient.get(
+                    captureAny(),
+                    headers: any(named: 'headers'),
+                  ),
+                ).captured.single
+                as Uri;
+        expect(uri.queryParameters['preferred_languages'], equals('pt,en'));
+        expect(uri.queryParameters['viewer_country'], equals('BR'));
+      });
     });
 
     group('getClassicVines', () {
@@ -4125,6 +4148,33 @@ void main() {
         expect(uri.queryParameters['limit'], equals('10'));
         expect(uri.queryParameters['fallback'], equals('recent'));
         expect(uri.queryParameters['category'], equals('comedy'));
+      });
+
+      test('sends viewer language and country hints', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async =>
+              http.Response('{"videos": [], "source": "popular"}', 200),
+        );
+
+        await client.getRecommendations(
+          pubkey: testPubkey,
+          preferredLanguages: const ['pt'],
+          viewerCountry: 'BR',
+        );
+
+        final uri =
+            verify(
+                  () => mockHttpClient.get(
+                    captureAny(),
+                    headers: any(named: 'headers'),
+                  ),
+                ).captured.single
+                as Uri;
+        expect(uri.path, equals('/api/users/$testPubkey/recommendations'));
+        expect(uri.queryParameters['preferred_languages'], equals('pt'));
+        expect(uri.queryParameters['viewer_country'], equals('BR'));
       });
 
       test('defaults source to unknown when missing', () async {

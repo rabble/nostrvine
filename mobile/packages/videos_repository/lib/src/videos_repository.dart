@@ -64,6 +64,31 @@ int? _decodePopularLegacyBeforeCursor(String? cursor) {
   );
 }
 
+String _popularPreferenceCacheSuffix({
+  List<String> preferredLanguages = const [],
+  String? viewerCountry,
+}) {
+  final languages = preferredLanguages
+      .map((language) => language.trim())
+      .where((language) => language.isNotEmpty)
+      .join(',');
+  final country = viewerCountry?.trim() ?? '';
+
+  if (languages.isEmpty && country.isEmpty) {
+    return '';
+  }
+
+  return ':lang=$languages:country=$country';
+}
+
+bool _hasViewerPreferenceHints({
+  List<String> preferredLanguages = const [],
+  String? viewerCountry,
+}) {
+  return preferredLanguages.any((language) => language.trim().isNotEmpty) ||
+      (viewerCountry?.trim().isNotEmpty ?? false);
+}
+
 /// {@template videos_repository}
 /// Repository for video operations with Nostr.
 ///
@@ -712,8 +737,14 @@ class VideosRepository {
     int? until,
     String? cursor,
     bool skipCache = false,
+    List<String> preferredLanguages = const [],
+    String? viewerCountry,
   }) async {
-    final cacheKey = 'popular:v2:${variant.name}';
+    final cacheKey =
+        'popular:v2:${variant.name}${_popularPreferenceCacheSuffix(
+          preferredLanguages: preferredLanguages,
+          viewerCountry: viewerCountry,
+        )}';
     if (!skipCache && until == null && cursor == null) {
       final cached = _inMemoryFeedCache?.get(cacheKey);
       if (cached != null) {
@@ -742,12 +773,25 @@ class VideosRepository {
       String? nextPageCursor;
 
       while (visible.length < limit) {
-        final response = await _funnelcakeApiClient.getV2PopularVideosPage(
-          variant: variant,
-          limit: limit,
-          cursor: pageCursor,
-          before: before,
-        );
+        final response =
+            _hasViewerPreferenceHints(
+              preferredLanguages: preferredLanguages,
+              viewerCountry: viewerCountry,
+            )
+            ? await _funnelcakeApiClient.getV2PopularVideosPage(
+                variant: variant,
+                limit: limit,
+                cursor: pageCursor,
+                before: before,
+                preferredLanguages: preferredLanguages,
+                viewerCountry: viewerCountry,
+              )
+            : await _funnelcakeApiClient.getV2PopularVideosPage(
+                variant: variant,
+                limit: limit,
+                cursor: pageCursor,
+                before: before,
+              );
         final stats = response.videos;
         if (stats.isEmpty) {
           final page = PopularVideosPage(videos: visible, hasMore: false);
@@ -866,9 +910,14 @@ class VideosRepository {
     PopularVideosVariant? variant,
     int fetchMultiplier = 4,
     bool skipCache = false,
+    List<String> preferredLanguages = const [],
+    String? viewerCountry,
   }) async {
     final cacheKey = variant != null
-        ? 'popular:v2:${variant.name}'
+        ? 'popular:v2:${variant.name}${_popularPreferenceCacheSuffix(
+            preferredLanguages: preferredLanguages,
+            viewerCountry: viewerCountry,
+          )}'
         : period == null
         ? _popularCacheKey
         : 'popular:${period.wireValue}';
@@ -887,6 +936,8 @@ class VideosRepository {
         limit: limit,
         until: until,
         skipCache: skipCache,
+        preferredLanguages: preferredLanguages,
+        viewerCountry: viewerCountry,
       );
       return page.videos;
     }
@@ -2015,6 +2066,8 @@ class VideosRepository {
     int limit = _defaultLimit,
     int? until,
     bool skipCache = false,
+    List<String> preferredLanguages = const [],
+    String? viewerCountry,
   }) async {
     if (until != null) {
       return HomeFeedResult(
@@ -2022,6 +2075,8 @@ class VideosRepository {
           limit: limit,
           until: until,
           skipCache: skipCache,
+          preferredLanguages: preferredLanguages,
+          viewerCountry: viewerCountry,
         ),
       );
     }
@@ -2037,14 +2092,27 @@ class VideosRepository {
           limit: limit,
           until: until,
           skipCache: skipCache,
+          preferredLanguages: preferredLanguages,
+          viewerCountry: viewerCountry,
         ),
       );
     }
 
-    final response = await _funnelcakeApiClient.getRecommendations(
-      pubkey: effectiveUserPubkey,
-      limit: limit,
-    );
+    final response =
+        _hasViewerPreferenceHints(
+          preferredLanguages: preferredLanguages,
+          viewerCountry: viewerCountry,
+        )
+        ? await _funnelcakeApiClient.getRecommendations(
+            pubkey: effectiveUserPubkey,
+            limit: limit,
+            preferredLanguages: preferredLanguages,
+            viewerCountry: viewerCountry,
+          )
+        : await _funnelcakeApiClient.getRecommendations(
+            pubkey: effectiveUserPubkey,
+            limit: limit,
+          );
     final videos = _transformVideoStats(response.videos);
     if (videos.isEmpty) {
       return HomeFeedResult(
@@ -2052,6 +2120,8 @@ class VideosRepository {
           limit: limit,
           until: until,
           skipCache: skipCache,
+          preferredLanguages: preferredLanguages,
+          viewerCountry: viewerCountry,
         ),
       );
     }
@@ -2069,9 +2139,24 @@ class VideosRepository {
     int limit = 20,
     String fallback = 'popular',
     String? category,
+    List<String> preferredLanguages = const [],
+    String? viewerCountry,
   }) async {
     if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
       return null;
+    }
+    if (_hasViewerPreferenceHints(
+      preferredLanguages: preferredLanguages,
+      viewerCountry: viewerCountry,
+    )) {
+      return _funnelcakeApiClient.getRecommendations(
+        pubkey: pubkey,
+        limit: limit,
+        fallback: fallback,
+        category: category,
+        preferredLanguages: preferredLanguages,
+        viewerCountry: viewerCountry,
+      );
     }
     return _funnelcakeApiClient.getRecommendations(
       pubkey: pubkey,

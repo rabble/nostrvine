@@ -130,6 +130,25 @@ class FunnelcakeApiClient {
     };
   }
 
+  void _addViewerPreferenceQueryParameters(
+    Map<String, String> queryParams, {
+    List<String> preferredLanguages = const [],
+    String? viewerCountry,
+  }) {
+    final languages = preferredLanguages
+        .map((language) => language.trim())
+        .where((language) => language.isNotEmpty)
+        .toList();
+    if (languages.isNotEmpty) {
+      queryParams['preferred_languages'] = languages.join(',');
+    }
+
+    final country = viewerCountry?.trim();
+    if (country != null && country.isNotEmpty) {
+      queryParams['viewer_country'] = country;
+    }
+  }
+
   /// Unwraps a funnelcake list response that may be either a raw JSON array
   /// (legacy / `legacy-array-response` flag on) or the post-#238 envelope
   /// shape `{"data": [...], "pagination": {"has_more": bool, "next_cursor":
@@ -524,11 +543,15 @@ class FunnelcakeApiClient {
     required PopularVideosVariant variant,
     int limit = 50,
     int? before,
+    List<String> preferredLanguages = const [],
+    String? viewerCountry,
   }) async {
     final response = await getV2PopularVideosPage(
       variant: variant,
       limit: limit,
       before: before,
+      preferredLanguages: preferredLanguages,
+      viewerCountry: viewerCountry,
     );
     return response.videos;
   }
@@ -540,6 +563,8 @@ class FunnelcakeApiClient {
     int limit = 50,
     String? cursor,
     int? before,
+    List<String> preferredLanguages = const [],
+    String? viewerCountry,
   }) async {
     if (!isAvailable) {
       throw const FunnelcakeNotConfiguredException();
@@ -560,6 +585,11 @@ class FunnelcakeApiClient {
     } else if (before != null) {
       queryParams['before'] = before.toString();
     }
+    _addViewerPreferenceQueryParameters(
+      queryParams,
+      preferredLanguages: preferredLanguages,
+      viewerCountry: viewerCountry,
+    );
 
     final uri = Uri.parse(
       '$_baseUrl/api/v2/videos',
@@ -1894,6 +1924,8 @@ class FunnelcakeApiClient {
     int limit = 20,
     String fallback = 'popular',
     String? category,
+    List<String> preferredLanguages = const [],
+    String? viewerCountry,
   }) async {
     if (!isAvailable) {
       throw const FunnelcakeNotConfiguredException();
@@ -1910,6 +1942,11 @@ class FunnelcakeApiClient {
     if (category != null && category.isNotEmpty) {
       queryParams['category'] = category;
     }
+    _addViewerPreferenceQueryParameters(
+      queryParams,
+      preferredLanguages: preferredLanguages,
+      viewerCountry: viewerCountry,
+    );
 
     final uri = Uri.parse(
       '$_baseUrl/api/users/$pubkey/recommendations',

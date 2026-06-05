@@ -287,6 +287,8 @@ void main() {
             until: any(named: 'until'),
             variant: any(named: 'variant'),
             skipCache: any(named: 'skipCache'),
+            preferredLanguages: any(named: 'preferredLanguages'),
+            viewerCountry: any(named: 'viewerCountry'),
           ),
         ).thenAnswer((invocation) {
           requestCount += 1;
@@ -352,6 +354,8 @@ void main() {
             limit: AppConstants.paginationBatchSize,
             variant: PopularVideosVariant.native,
             skipCache: true,
+            preferredLanguages: any(named: 'preferredLanguages'),
+            viewerCountry: any(named: 'viewerCountry'),
           ),
         ).called(1);
       },
@@ -364,6 +368,8 @@ void main() {
           until: any(named: 'until'),
           variant: any(named: 'variant'),
           skipCache: any(named: 'skipCache'),
+          preferredLanguages: any(named: 'preferredLanguages'),
+          viewerCountry: any(named: 'viewerCountry'),
         ),
       ).thenAnswer((_) async => _popularPage([_video('popular-age-decayed')]));
 
@@ -388,6 +394,8 @@ void main() {
         () => mockVideosRepository.getPopularVideosPage(
           limit: AppConstants.paginationBatchSize,
           variant: PopularVideosVariant.native,
+          preferredLanguages: any(named: 'preferredLanguages'),
+          viewerCountry: any(named: 'viewerCountry'),
         ),
       ).called(1);
     });
@@ -404,6 +412,8 @@ void main() {
             until: any(named: 'until'),
             variant: any(named: 'variant'),
             skipCache: any(named: 'skipCache'),
+            preferredLanguages: any(named: 'preferredLanguages'),
+            viewerCountry: any(named: 'viewerCountry'),
           ),
         ).thenAnswer((invocation) {
           requestCount += 1;
@@ -477,6 +487,8 @@ void main() {
             cursor: any(named: 'cursor'),
             variant: any(named: 'variant'),
             skipCache: any(named: 'skipCache'),
+            preferredLanguages: any(named: 'preferredLanguages'),
+            viewerCountry: any(named: 'viewerCountry'),
           ),
         ).thenAnswer((invocation) async {
           final cursor = invocation.namedArguments[#cursor] as String?;
@@ -542,6 +554,8 @@ void main() {
           until: any(named: 'until'),
           variant: any(named: 'variant'),
           skipCache: any(named: 'skipCache'),
+          preferredLanguages: any(named: 'preferredLanguages'),
+          viewerCountry: any(named: 'viewerCountry'),
         ),
       ).thenThrow(StateError('age-decayed popular unavailable'));
 
@@ -576,6 +590,8 @@ void main() {
           () => mockFunnelcakeApiClient.getRecommendations(
             pubkey: any(named: 'pubkey'),
             limit: any(named: 'limit'),
+            preferredLanguages: any(named: 'preferredLanguages'),
+            viewerCountry: any(named: 'viewerCountry'),
           ),
         ).thenAnswer((_) {
           requestCount += 1;

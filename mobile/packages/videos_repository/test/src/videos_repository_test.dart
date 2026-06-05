@@ -3000,6 +3000,8 @@ void main() {
             limit: any(named: 'limit'),
             cursor: any(named: 'cursor'),
             before: any(named: 'before'),
+            preferredLanguages: any(named: 'preferredLanguages'),
+            viewerCountry: any(named: 'viewerCountry'),
           ),
         ).thenAnswer((invocation) async {
           final stats = await mockFunnelcakeClient.getV2PopularVideos(
@@ -3011,6 +3013,42 @@ void main() {
           return V2PopularVideosResponse(videos: stats);
         });
       });
+
+      test(
+        'passes viewer language and country hints to v2 popular API',
+        () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getV2PopularVideos(
+              variant: any(named: 'variant'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+              preferredLanguages: any(named: 'preferredLanguages'),
+              viewerCountry: any(named: 'viewerCountry'),
+            ),
+          ).thenAnswer((_) async => const []);
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          await repositoryWithApi.getPopularVideosPage(
+            variant: PopularVideosVariant.native,
+            preferredLanguages: const ['pt'],
+            viewerCountry: 'BR',
+          );
+
+          verify(
+            () => mockFunnelcakeClient.getV2PopularVideosPage(
+              variant: PopularVideosVariant.native,
+              limit: 25,
+              preferredLanguages: const ['pt'],
+              viewerCountry: 'BR',
+            ),
+          ).called(1);
+        },
+      );
 
       test(
         'native variant continues paging until it fills a native-only page',
@@ -9337,6 +9375,8 @@ void main() {
             limit: any(named: 'limit'),
             fallback: any(named: 'fallback'),
             category: any(named: 'category'),
+            preferredLanguages: any(named: 'preferredLanguages'),
+            viewerCountry: any(named: 'viewerCountry'),
           ),
         ).thenAnswer(
           (_) async => RecommendationsResponse(
@@ -9371,6 +9411,54 @@ void main() {
           ),
         ).called(1);
       });
+
+      test(
+        'passes viewer country hint to recommendations endpoint',
+        () async {
+          final recommended = _createVideoStats(
+            id: 'country-recommended-video',
+            pubkey: 'recommended-pubkey',
+            dTag: 'recommended-dtag',
+            videoUrl: 'https://example.com/country-recommended.mp4',
+          );
+          when(
+            () => mockFunnelcakeClient.getRecommendations(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              fallback: any(named: 'fallback'),
+              category: any(named: 'category'),
+              preferredLanguages: any(named: 'preferredLanguages'),
+              viewerCountry: any(named: 'viewerCountry'),
+            ),
+          ).thenAnswer(
+            (_) async => RecommendationsResponse(
+              videos: [recommended],
+              source: 'personalized',
+            ),
+          );
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repo.getRecommendedVideos(
+            userPubkey: 'user-pubkey',
+            limit: 10,
+            viewerCountry: 'BR',
+          );
+
+          expect(result.videos, hasLength(1));
+          expect(result.videos.single.id, equals('country-recommended-video'));
+          verify(
+            () => mockFunnelcakeClient.getRecommendations(
+              pubkey: 'user-pubkey',
+              limit: 10,
+              viewerCountry: 'BR',
+            ),
+          ).called(1);
+        },
+      );
 
       test(
         'falls back to popular videos when no pubkey is available',
@@ -9732,6 +9820,8 @@ void main() {
             limit: any(named: 'limit'),
             fallback: any(named: 'fallback'),
             category: any(named: 'category'),
+            preferredLanguages: any(named: 'preferredLanguages'),
+            viewerCountry: any(named: 'viewerCountry'),
           ),
         ).thenAnswer(
           (_) async =>
@@ -9748,6 +9838,8 @@ void main() {
           limit: 50,
           fallback: 'recent',
           category: 'sports',
+          preferredLanguages: const ['pt'],
+          viewerCountry: 'BR',
         );
 
         verify(
@@ -9756,6 +9848,8 @@ void main() {
             limit: 50,
             fallback: 'recent',
             category: 'sports',
+            preferredLanguages: const ['pt'],
+            viewerCountry: 'BR',
           ),
         ).called(1);
       });

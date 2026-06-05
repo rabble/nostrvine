@@ -6,6 +6,7 @@ import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/feed_refresh_helpers.dart';
+import 'package:openvine/providers/feed_viewer_preference_hints.dart';
 import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/providers/video_providers.dart';
@@ -106,9 +107,12 @@ class ForYouFeed extends _$ForYouFeed {
       }
 
       final client = ref.read(funnelcakeApiClientProvider);
+      final hints = await readFeedViewerPreferenceHints(ref.read);
       final response = await client.getRecommendations(
         pubkey: currentUserPubkey,
         limit: limit,
+        preferredLanguages: hints.preferredLanguages,
+        viewerCountry: hints.viewerCountry,
       );
       final resultVideos = response.videos.toVideoEvents();
 
@@ -175,9 +179,12 @@ class ForYouFeed extends _$ForYouFeed {
 
       final client = ref.read(funnelcakeApiClientProvider);
       final newLimit = _currentLimit + 30;
+      final hints = await readFeedViewerPreferenceHints(ref.read);
       final response = await client.getRecommendations(
         pubkey: currentUserPubkey,
         limit: newLimit,
+        preferredLanguages: hints.preferredLanguages,
+        viewerCountry: hints.viewerCountry,
       );
       final resultVideos = response.videos.toVideoEvents();
 
