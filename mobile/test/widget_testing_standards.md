@@ -464,7 +464,6 @@ void main() {
 
 ### Phase 4: Complex/Integration Widgets (Week 4)
 - `filtered_video_grid.dart`
-- `related_videos_widget.dart`
 - `vine_recording_controls.dart`
 - `app_lifecycle_handler.dart`
 

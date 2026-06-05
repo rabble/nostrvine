@@ -126,6 +126,9 @@ class ProfileFeed extends _$ProfileFeed {
     _registerRetainedRealtimeListeners();
 
     if (retainedState != null && retainedState.videos.isNotEmpty) {
+      final visibleRetainedState = retainedState.copyWith(
+        videos: _applyFeedFilters(retainedState.videos),
+      );
       // Only seed REST pagination state when funnelcake is currently
       // reachable; otherwise leave _nextOffset null so loadMore falls back
       // to Nostr until a successful REST call repopulates the offset.
@@ -133,8 +136,8 @@ class ProfileFeed extends _$ProfileFeed {
         _nextOffset = estimateNextRestOffset(retainedState);
       }
       _totalVideoCount = retainedState.totalVideoCount;
-      unawaited(Future(() => refresh(retainedState: retainedState)));
-      return retainedState.copyWith(
+      unawaited(Future(() => refresh(retainedState: visibleRetainedState)));
+      return visibleRetainedState.copyWith(
         isRefreshing: true,
         isInitialLoad: false,
         isFetchingTotalCount: funnelcakeAvailable,
@@ -705,6 +708,8 @@ class ProfileFeed extends _$ProfileFeed {
   }
 
   Future<void> _refreshInner({VideoFeedState? retainedState}) async {
+    if (!ref.mounted) return;
+
     Log.info(
       'ProfileFeed: Refreshing feed for user=$userId',
       name: 'ProfileFeedProvider',

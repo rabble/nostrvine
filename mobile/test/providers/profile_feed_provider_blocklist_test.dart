@@ -32,6 +32,11 @@ class _AlwaysAvailableFunnelcake extends FunnelcakeAvailable {
   Future<bool> build() async => true;
 }
 
+class _NeverAvailableFunnelcake extends FunnelcakeAvailable {
+  @override
+  Future<bool> build() async => false;
+}
+
 VideosByAuthorResponse _authorVideos({
   required int count,
   required String pubkey,
@@ -108,14 +113,19 @@ void main() {
       ).thenReturn(false);
     });
 
-    ProviderContainer createContainer() {
+    ProviderContainer createContainer({
+      ProfileFeedSessionCache? sessionCache,
+      bool funnelcakeAvailable = true,
+    }) {
       final container = ProviderContainer(
         overrides: [
           funnelcakeApiClientProvider.overrideWithValue(
             mockFunnelcakeApiClient,
           ),
           funnelcakeAvailableProvider.overrideWith(
-            _AlwaysAvailableFunnelcake.new,
+            funnelcakeAvailable
+                ? _AlwaysAvailableFunnelcake.new
+                : _NeverAvailableFunnelcake.new,
           ),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           nostrServiceProvider.overrideWithValue(mockNostrClient),
@@ -123,7 +133,7 @@ void main() {
             mockBlocklistRepository,
           ),
           profileFeedSessionCacheProvider.overrideWith(
-            (ref) => ProfileFeedSessionCache(),
+            (ref) => sessionCache ?? ProfileFeedSessionCache(),
           ),
           contentFilterVersionProvider.overrideWith((ref) => 0),
           divineHostFilterVersionProvider.overrideWith((ref) => 0),
@@ -197,5 +207,49 @@ void main() {
         () => mockBlocklistRepository.shouldFilterFromFeeds(userId),
       ).called(greaterThanOrEqualTo(1));
     });
+
+    test(
+      'filters retained session-cache videos after a blocklist change',
+      () async {
+        final cachedVideos = _authorVideos(
+          count: 2,
+          pubkey: userId,
+        ).videos.toVideoEvents();
+        final sessionCache = ProfileFeedSessionCache()
+          ..write(
+            userId,
+            VideoFeedState(
+              videos: cachedVideos,
+              hasMoreContent: false,
+              lastUpdated: DateTime(2026, 3, 30, 12),
+            ),
+          );
+
+        when(
+          () => mockBlocklistRepository.shouldFilterFromFeeds(userId),
+        ).thenReturn(true);
+
+        final container = createContainer(
+          sessionCache: sessionCache,
+          funnelcakeAvailable: false,
+        );
+        await container.read(funnelcakeAvailableProvider.future);
+
+        final state = await container.read(profileFeedProvider(userId).future);
+
+        expect(
+          state.videos.where((v) => v.pubkey == userId),
+          isEmpty,
+          reason:
+              'Warm profile-feed cache must not re-show an author after they are blocked',
+        );
+        verify(
+          () => mockBlocklistRepository.shouldFilterFromFeeds(userId),
+        ).called(greaterThanOrEqualTo(1));
+        verifyNever(
+          () => mockFunnelcakeApiClient.getVideosByAuthor(pubkey: userId),
+        );
+      },
+    );
   });
 }
