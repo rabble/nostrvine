@@ -23,6 +23,7 @@ import 'package:openvine/services/auth_service.dart';
 /// The actual redirect logic is:
 /// 1. If authenticated AND on top-level auth entry routes -> redirect to /home/0
 ///    (EXCEPT expired-session users navigating to loginOptionsPath)
+///    (EXCEPT import-key, which doubles as an authenticated account-switch route)
 /// 2. If NOT on auth route AND unauthenticated -> redirect to /welcome
 /// 3. Otherwise -> null (no redirect)
 String? testRedirectLogic({
@@ -45,7 +46,6 @@ String? testRedirectLogic({
   // Deep-link auth routes remain accessible while authenticated.
   final shouldRedirectAuthenticated =
       location == WelcomeScreen.path ||
-      location == KeyImportScreen.path ||
       location == NostrConnectScreen.path ||
       location == WelcomeScreen.inviteGatePath ||
       location == WelcomeScreen.createAccountPath ||
@@ -254,6 +254,22 @@ void main() {
             redirect,
             equals(VideoFeedPage.pathForIndex(0)),
             reason: 'Authenticated user on auth route should go to home',
+          );
+        },
+      );
+
+      test(
+        'authenticated user can access ${KeyImportScreen.path} to import another key',
+        () {
+          final redirect = testRedirectLogic(
+            location: KeyImportScreen.path,
+            authState: AuthState.authenticated,
+          );
+          expect(
+            redirect,
+            isNull,
+            reason:
+                '${KeyImportScreen.path} is also an authenticated account-switch route',
           );
         },
       );

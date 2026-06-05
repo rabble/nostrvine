@@ -375,7 +375,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       // excluded — authenticated users may navigate there via deep links.
       if (authState == AuthState.authenticated &&
           (location == WelcomeScreen.path ||
-              location == KeyImportScreen.path ||
               location == NostrConnectScreen.path ||
               location == WelcomeScreen.inviteGatePath ||
               location == WelcomeScreen.createAccountPath ||
