@@ -789,6 +789,11 @@ String _$videoLocalStorageHash() => r'0be44203ec8edf59105a013aae374c07637a3ba0';
 /// Creates a VideosRepository for loading video feeds with pagination.
 /// Works without authentication for public feeds.
 ///
+/// Rebuilds (yielding a fresh in-memory cache) when content filter, aspect
+/// ratio, or Divine-host filter preferences change. The version providers
+/// act as rebuild triggers since the underlying services are long-lived
+/// ChangeNotifiers that don't themselves cause provider invalidation.
+///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
 /// - VideoLocalStorage for cache-first lookups and caching results
@@ -803,6 +808,11 @@ const videosRepositoryProvider = VideosRepositoryProvider._();
 ///
 /// Creates a VideosRepository for loading video feeds with pagination.
 /// Works without authentication for public feeds.
+///
+/// Rebuilds (yielding a fresh in-memory cache) when content filter, aspect
+/// ratio, or Divine-host filter preferences change. The version providers
+/// act as rebuild triggers since the underlying services are long-lived
+/// ChangeNotifiers that don't themselves cause provider invalidation.
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
@@ -823,6 +833,11 @@ final class VideosRepositoryProvider
   ///
   /// Creates a VideosRepository for loading video feeds with pagination.
   /// Works without authentication for public feeds.
+  ///
+  /// Rebuilds (yielding a fresh in-memory cache) when content filter, aspect
+  /// ratio, or Divine-host filter preferences change. The version providers
+  /// act as rebuild triggers since the underlying services are long-lived
+  /// ChangeNotifiers that don't themselves cause provider invalidation.
   ///
   /// Uses:
   /// - NostrClient from nostrServiceProvider (for relay communication)
@@ -863,7 +878,7 @@ final class VideosRepositoryProvider
   }
 }
 
-String _$videosRepositoryHash() => r'08b00ef1de1df3720bb854dca3549b4ea1e2f200';
+String _$videosRepositoryHash() => r'452954ca43d70d7323a40a6a182c697638001baa';
 
 /// Provider for LikesRepository instance
 ///
