@@ -17,7 +17,7 @@ class MinorAccountReviewRepository {
       final response = await _apiService.getMinorAccountReviewStatus();
       return MinorAccountReviewStatus.fromJson(response);
     } on ApiException catch (e) {
-      if (e.statusCode == 404 || e.statusCode == 501) {
+      if (e.statusCode == null || e.statusCode == 404 || e.statusCode == 501) {
         Log.warning(
           'Minor account review endpoint unavailable, falling back to active',
           name: 'MinorAccountReviewRepository',
