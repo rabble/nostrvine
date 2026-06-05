@@ -18,7 +18,7 @@ import 'package:unified_logger/unified_logger.dart';
 /// Show warning dialog for removing keys from device only
 Future<void> showRemoveKeysWarningDialog({
   required BuildContext context,
-  required VoidCallback onConfirm,
+  required FutureOr<void> Function() onConfirm,
 }) {
   return showDialog(
     context: context,
@@ -43,7 +43,7 @@ Future<void> showRemoveKeysWarningDialog({
       ),
       actions: [
         TextButton(
-          onPressed: context.pop,
+          onPressed: () => Navigator.of(context).pop(),
           child: Text(
             context.l10n.commonCancel,
             style: const TextStyle(color: VineTheme.lightText, fontSize: 16),
@@ -51,8 +51,8 @@ Future<void> showRemoveKeysWarningDialog({
         ),
         ElevatedButton(
           onPressed: () {
-            context.pop();
-            onConfirm();
+            Navigator.of(context).pop();
+            unawaited(Future<void>.sync(onConfirm));
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: VineTheme.warning,

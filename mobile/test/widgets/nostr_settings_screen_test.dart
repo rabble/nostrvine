@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nostr_key_manager/nostr_key_manager.dart'
+    show SecureKeyStorageException;
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
@@ -100,6 +104,65 @@ void main() {
 
       expect(find.text(l10n.nostrSettingsNip05Address), findsOneWidget);
       expect(find.text(l10n.nostrSettingsNip05AddressSubtitle), findsOneWidget);
+    });
+
+    testWidgets('dismisses progress overlay after removing keys succeeds', (
+      tester,
+    ) async {
+      final signOut = Completer<void>();
+      when(
+        () => mockAuthService.signOut(
+          deleteKeys: true,
+          abortOnKeyDeletionFailure: true,
+        ),
+      ).thenAnswer((_) => signOut.future);
+
+      await pumpSubject(tester);
+
+      await tester.tap(find.text(l10n.nostrSettingsRemoveKeys));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.deleteAccountRemoveKeysConfirm));
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      signOut.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      verify(
+        () => mockAuthService.signOut(
+          deleteKeys: true,
+          abortOnKeyDeletionFailure: true,
+        ),
+      ).called(1);
+    });
+
+    testWidgets('dismisses progress overlay when key deletion fails', (
+      tester,
+    ) async {
+      when(
+        () => mockAuthService.signOut(
+          deleteKeys: true,
+          abortOnKeyDeletionFailure: true,
+        ),
+      ).thenThrow(
+        const SecureKeyStorageException(
+          'Platform key deletion failed',
+          code: 'platform_deletion_failed',
+        ),
+      );
+
+      await pumpSubject(tester);
+
+      await tester.tap(find.text(l10n.nostrSettingsRemoveKeys));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.deleteAccountRemoveKeysConfirm));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.text(l10n.nostrSettingsCouldNotRemoveKeys), findsOneWidget);
     });
   });
 }
