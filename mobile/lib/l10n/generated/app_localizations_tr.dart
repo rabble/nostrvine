@@ -2613,10 +2613,18 @@ class AppLocalizationsTr extends AppLocalizations {
   String get authCreateNewAccount => 'Yeni bir Divine hesabı oluştur';
 
   @override
+  String get authCreateNewAccountShort => 'Create new account';
+
+  @override
   String get authSignInDifferentAccount => 'Farklı bir hesapla giriş yap';
 
   @override
-  String get authSignBackIn => 'Tekrar giriş yap';
+  String get authUseAnotherAccount => 'Use another account';
+
+  @override
+  String authContinueAs(String displayName) {
+    return 'Continue as $displayName';
+  }
 
   @override
   String get authRecoveryDraftsOwner =>

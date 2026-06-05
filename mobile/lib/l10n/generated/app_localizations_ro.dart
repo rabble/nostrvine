@@ -2719,10 +2719,18 @@ class AppLocalizationsRo extends AppLocalizations {
   String get authCreateNewAccount => 'Creează un cont Divine nou';
 
   @override
+  String get authCreateNewAccountShort => 'Create new account';
+
+  @override
   String get authSignInDifferentAccount => 'Autentifică-te cu un alt cont';
 
   @override
-  String get authSignBackIn => 'Reautentifică-te';
+  String get authUseAnotherAccount => 'Use another account';
+
+  @override
+  String authContinueAs(String displayName) {
+    return 'Continue as $displayName';
+  }
 
   @override
   String get authRecoveryDraftsOwner =>

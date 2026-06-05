@@ -2602,10 +2602,18 @@ class AppLocalizationsAr extends AppLocalizations {
   String get authCreateNewAccount => 'إنشاء حساب Divine جديد';
 
   @override
+  String get authCreateNewAccountShort => 'Create new account';
+
+  @override
   String get authSignInDifferentAccount => 'تسجيل الدخول بحساب آخر';
 
   @override
-  String get authSignBackIn => 'عد إلى تسجيل الدخول';
+  String get authUseAnotherAccount => 'Use another account';
+
+  @override
+  String authContinueAs(String displayName) {
+    return 'Continue as $displayName';
+  }
 
   @override
   String get authRecoveryDraftsOwner => 'مسوداتك ومقاطعك محفوظة لهذا الحساب';

@@ -2585,10 +2585,18 @@ class AppLocalizationsAm extends AppLocalizations {
   String get authCreateNewAccount => 'አዲስ Divine መለያ ይፍጠሩ';
 
   @override
+  String get authCreateNewAccountShort => 'Create new account';
+
+  @override
   String get authSignInDifferentAccount => 'በተለየ መለያ ይግቡ';
 
   @override
-  String get authSignBackIn => 'ተመልሰው ይግቡ';
+  String get authUseAnotherAccount => 'Use another account';
+
+  @override
+  String authContinueAs(String displayName) {
+    return 'Continue as $displayName';
+  }
 
   @override
   String get authRecoveryDraftsOwner => 'ረቂቆችዎ እና ክሊፖችዎ ለዚህ መለያ ተቀምጠዋል';

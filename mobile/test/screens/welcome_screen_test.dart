@@ -447,22 +447,32 @@ void main() {
         expect(find.byType(AuthHeroSection), findsNothing);
       });
 
-      testWidgets('shows "Sign back in" button', (tester) async {
+      testWidgets('shows explicit returning-user action labels', (
+        tester,
+      ) async {
         await tester.binding.setSurfaceSize(const Size(800, 1200));
         addTearDown(() => tester.binding.setSurfaceSize(null));
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
-        expect(find.text('Sign back in'), findsOneWidget);
+        expect(find.text('Continue as Test User'), findsOneWidget);
+        expect(find.text('Use another account'), findsOneWidget);
+        expect(find.text('Create new account'), findsOneWidget);
+        expect(find.text('Sign back in'), findsNothing);
       });
 
-      testWidgets('shows "Create a new Divine account" button', (tester) async {
-        await tester.binding.setSurfaceSize(const Size(800, 1200));
+      testWidgets('returning-user action labels fit on a phone viewport', (
+        tester,
+      ) async {
+        await tester.binding.setSurfaceSize(const Size(393, 852));
         addTearDown(() => tester.binding.setSurfaceSize(null));
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
-        expect(find.text('Create a new Divine account'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        expect(find.text('Continue as Test User'), findsOneWidget);
+        expect(find.text('Use another account'), findsOneWidget);
+        expect(find.text('Create new account'), findsOneWidget);
       });
 
       testWidgets(
@@ -546,7 +556,7 @@ void main() {
         },
       );
 
-      testWidgets('tapping "Sign back in" calls signInForAccount', (
+      testWidgets('tapping primary continue button calls signInForAccount', (
         tester,
       ) async {
         await tester.binding.setSurfaceSize(const Size(800, 1200));
@@ -554,7 +564,7 @@ void main() {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Sign back in'));
+        await tester.tap(find.text('Continue as Test User'));
         await tester.pump();
 
         verify(
@@ -577,7 +587,7 @@ void main() {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Sign back in'));
+        await tester.tap(find.text('Continue as Test User'));
         await tester.pumpAndSettle();
 
         verify(() => mockAuthService.acceptTerms()).called(1);
@@ -585,14 +595,14 @@ void main() {
       });
 
       testWidgets(
-        'tapping "Create a new Divine account" calls acceptTerms and navigates',
+        'tapping "Create new account" calls acceptTerms and navigates',
         (tester) async {
           await tester.binding.setSurfaceSize(const Size(800, 1200));
           addTearDown(() => tester.binding.setSurfaceSize(null));
           await tester.pumpWidget(createTestWidget());
           await tester.pumpAndSettle();
 
-          await tester.tap(find.text('Create a new Divine account'));
+          await tester.tap(find.text('Create new account'));
           await tester.pumpAndSettle();
 
           verify(() => mockAuthService.acceptTerms()).called(1);
@@ -608,7 +618,7 @@ void main() {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Sign in with an existing account'));
+        await tester.tap(find.text('Use another account'));
         await tester.pumpAndSettle();
 
         verify(() => mockAuthService.acceptTerms()).called(1);

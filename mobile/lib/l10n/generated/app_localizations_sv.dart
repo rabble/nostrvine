@@ -2628,10 +2628,18 @@ class AppLocalizationsSv extends AppLocalizations {
   String get authCreateNewAccount => 'Skapa ett nytt Divine-konto';
 
   @override
+  String get authCreateNewAccountShort => 'Create new account';
+
+  @override
   String get authSignInDifferentAccount => 'Logga in med ett annat konto';
 
   @override
-  String get authSignBackIn => 'Logga in igen';
+  String get authUseAnotherAccount => 'Use another account';
+
+  @override
+  String authContinueAs(String displayName) {
+    return 'Continue as $displayName';
+  }
 
   @override
   String get authRecoveryDraftsOwner =>

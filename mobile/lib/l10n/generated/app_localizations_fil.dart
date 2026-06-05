@@ -2672,11 +2672,19 @@ class AppLocalizationsFil extends AppLocalizations {
   String get authCreateNewAccount => 'Gumawa ng bagong Divine account';
 
   @override
+  String get authCreateNewAccountShort => 'Create new account';
+
+  @override
   String get authSignInDifferentAccount =>
       'Mag-sign in gamit ang ibang account';
 
   @override
-  String get authSignBackIn => 'Mag-sign in muli';
+  String get authUseAnotherAccount => 'Use another account';
+
+  @override
+  String authContinueAs(String displayName) {
+    return 'Continue as $displayName';
+  }
 
   @override
   String get authRecoveryDraftsOwner =>

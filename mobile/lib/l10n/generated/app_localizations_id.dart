@@ -2606,10 +2606,18 @@ class AppLocalizationsId extends AppLocalizations {
   String get authCreateNewAccount => 'Buat akun Divine baru';
 
   @override
+  String get authCreateNewAccountShort => 'Create new account';
+
+  @override
   String get authSignInDifferentAccount => 'Masuk dengan akun yang berbeda';
 
   @override
-  String get authSignBackIn => 'Masuk kembali';
+  String get authUseAnotherAccount => 'Use another account';
+
+  @override
+  String authContinueAs(String displayName) {
+    return 'Continue as $displayName';
+  }
 
   @override
   String get authRecoveryDraftsOwner =>

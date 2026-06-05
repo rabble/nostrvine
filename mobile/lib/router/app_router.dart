@@ -172,12 +172,24 @@ String _minorAccountReviewLoadingPath(String fromLocation) {
   ).toString();
 }
 
-String _minorAccountReviewReturnLocation(GoRouterState state) {
-  final from = state.uri.queryParameters['from'];
+@visibleForTesting
+String minorAccountReviewReturnLocationForTest(Uri uri) {
+  final from = uri.queryParameters['from'];
   if (from == null || from.isEmpty) {
     return VideoFeedPage.pathForIndex(0);
   }
+
+  final fromLocation = Uri.parse(from).path;
+  if (_isAuthEntryLocation(fromLocation) ||
+      fromLocation == MinorAccountReviewLoadingScreen.path) {
+    return VideoFeedPage.pathForIndex(0);
+  }
+
   return from;
+}
+
+String _minorAccountReviewReturnLocation(GoRouterState state) {
+  return minorAccountReviewReturnLocationForTest(state.uri);
 }
 
 String? _moderationConversationId(
@@ -200,6 +212,20 @@ String? _moderationConversationId(
   }
 
   return DmRepository.computeConversationId([currentPubkey, moderationPubkey]);
+}
+
+bool _isAuthEntryLocation(String location) {
+  return location == WelcomeScreen.path ||
+      location.startsWith('${WelcomeScreen.path}/') ||
+      location.startsWith(KeyImportScreen.path) ||
+      location.startsWith(NostrConnectScreen.path) ||
+      location == WelcomeScreen.inviteGatePath ||
+      location.startsWith(WelcomeScreen.resetPasswordPath) ||
+      location.startsWith(ResetPasswordScreen.path) ||
+      location.startsWith(EmailVerificationScreen.path) ||
+      location == MinorAccountReviewScreen.welcomePath ||
+      location == MinorAccountReviewParentConsentScreen.path ||
+      location == MinorAccountReviewUnder13Screen.path;
 }
 
 final goRouterProvider = Provider<GoRouter>((ref) {
@@ -282,17 +308,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
       // Auth routes don't require authentication — user is in the
       // process of logging in.
-      final isAuthRoute =
-          location.startsWith(WelcomeScreen.path) ||
-          location.startsWith(KeyImportScreen.path) ||
-          location.startsWith(NostrConnectScreen.path) ||
-          location.startsWith(WelcomeScreen.inviteGatePath) ||
-          location.startsWith(WelcomeScreen.resetPasswordPath) ||
-          location.startsWith(ResetPasswordScreen.path) ||
-          location.startsWith(EmailVerificationScreen.path) ||
-          isPublicReviewRoute ||
-          isPublicParentConsentRoute ||
-          isPublicUnder13Route;
+      final isAuthRoute = _isAuthEntryLocation(location);
 
       // Only bounce to the loading screen on a true cold load (no value yet).
       // Riverpod keeps the previous value during a background refetch

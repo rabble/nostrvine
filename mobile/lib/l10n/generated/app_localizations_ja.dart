@@ -2505,10 +2505,18 @@ class AppLocalizationsJa extends AppLocalizations {
   String get authCreateNewAccount => '新しい Divine アカウントを作ろう';
 
   @override
+  String get authCreateNewAccountShort => 'Create new account';
+
+  @override
   String get authSignInDifferentAccount => '別のアカウントでサインイン';
 
   @override
-  String get authSignBackIn => 'もう一回サインイン';
+  String get authUseAnotherAccount => 'Use another account';
+
+  @override
+  String authContinueAs(String displayName) {
+    return 'Continue as $displayName';
+  }
 
   @override
   String get authRecoveryDraftsOwner => '下書きとクリップはこのアカウントに保存されています';

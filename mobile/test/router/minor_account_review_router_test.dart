@@ -508,5 +508,20 @@ void main() {
         );
       },
     );
+
+    test(
+      'returns authenticated users from welcome review loading to home when active',
+      () {
+        expect(
+          minorAccountReviewReturnLocationForTest(
+            Uri(
+              path: MinorAccountReviewLoadingScreen.path,
+              queryParameters: {'from': '/welcome'},
+            ),
+          ),
+          VideoFeedPage.pathForIndex(0),
+        );
+      },
+    );
   });
 }

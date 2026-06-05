@@ -2515,10 +2515,18 @@ class AppLocalizationsKo extends AppLocalizations {
   String get authCreateNewAccount => '새 Divine 계정 만들기';
 
   @override
+  String get authCreateNewAccountShort => 'Create new account';
+
+  @override
   String get authSignInDifferentAccount => '다른 계정으로 로그인';
 
   @override
-  String get authSignBackIn => '다시 로그인';
+  String get authUseAnotherAccount => 'Use another account';
+
+  @override
+  String authContinueAs(String displayName) {
+    return 'Continue as $displayName';
+  }
 
   @override
   String get authRecoveryDraftsOwner => '임시저장 및 클립이 이 계정에 저장되어 있어요';

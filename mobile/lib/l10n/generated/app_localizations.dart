@@ -4610,17 +4610,29 @@ abstract class AppLocalizations {
   /// **'Create a new Divine account'**
   String get authCreateNewAccount;
 
+  /// Short returning-user welcome-screen action label for creating a new account.
+  ///
+  /// In en, this message translates to:
+  /// **'Create new account'**
+  String get authCreateNewAccountShort;
+
   /// No description provided for @authSignInDifferentAccount.
   ///
   /// In en, this message translates to:
   /// **'Sign in with an existing account'**
   String get authSignInDifferentAccount;
 
-  /// No description provided for @authSignBackIn.
+  /// Returning-user welcome-screen action label for signing in with a different existing account.
   ///
   /// In en, this message translates to:
-  /// **'Sign back in'**
-  String get authSignBackIn;
+  /// **'Use another account'**
+  String get authUseAnotherAccount;
+
+  /// Primary returning-user welcome-screen action that resumes the selected cached account.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue as {displayName}'**
+  String authContinueAs(String displayName);
 
   /// No description provided for @authRecoveryDraftsOwner.
   ///

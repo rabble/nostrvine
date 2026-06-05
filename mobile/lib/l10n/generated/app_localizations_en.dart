@@ -2631,10 +2631,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authCreateNewAccount => 'Create a new Divine account';
 
   @override
+  String get authCreateNewAccountShort => 'Create new account';
+
+  @override
   String get authSignInDifferentAccount => 'Sign in with an existing account';
 
   @override
-  String get authSignBackIn => 'Sign back in';
+  String get authUseAnotherAccount => 'Use another account';
+
+  @override
+  String authContinueAs(String displayName) {
+    return 'Continue as $displayName';
+  }
 
   @override
   String get authRecoveryDraftsOwner =>

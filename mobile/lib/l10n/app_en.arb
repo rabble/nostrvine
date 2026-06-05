@@ -1482,8 +1482,25 @@
   "analyticsDiagnosticsUseFixture": "Use fixture data",
   "analyticsNa": "N/A",
   "authCreateNewAccount": "Create a new Divine account",
+  "authCreateNewAccountShort": "Create new account",
+  "@authCreateNewAccountShort": {
+    "description": "Short returning-user welcome-screen action label for creating a new account."
+  },
   "authSignInDifferentAccount": "Sign in with an existing account",
-  "authSignBackIn": "Sign back in",
+  "authUseAnotherAccount": "Use another account",
+  "@authUseAnotherAccount": {
+    "description": "Returning-user welcome-screen action label for signing in with a different existing account."
+  },
+  "authContinueAs": "Continue as {displayName}",
+  "@authContinueAs": {
+    "description": "Primary returning-user welcome-screen action that resumes the selected cached account.",
+    "placeholders": {
+      "displayName": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
   "authRecoveryDraftsOwner": "Your drafts and clips are saved for this account",
   "authRecoveryOtherAccountWarning": "Signing in here will hide those drafts and clips",
   "authTermsPrefix": "By selecting an option below, you confirm you are at least 16 years old (or have completed ",
