@@ -2,6 +2,7 @@
 // ABOUTME: Tracks video loading bottlenecks from initialization to first frame playback
 
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/services/feed_performance_tracker.dart';
@@ -14,7 +15,7 @@ class VideoLoadingMetrics {
   factory VideoLoadingMetrics() => _instance;
   VideoLoadingMetrics._internal();
 
-  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
+  FirebaseAnalytics? _analytics;
   final Map<String, _VideoLoadingSession> _activeSessions = {};
 
   // Add a static variable to count metrics for visibility
@@ -27,6 +28,15 @@ class VideoLoadingMetrics {
   static VideoLoadingMetrics get instance => _instance;
   int get activeSessions => _activeSessions.length;
   static int get metricsCount => _metricsCount;
+
+  FirebaseAnalytics? get analytics {
+    if (Firebase.apps.isEmpty) return null;
+    try {
+      return _analytics ??= FirebaseAnalytics.instance;
+    } catch (_) {
+      return null;
+    }
+  }
 
   void _notifyEvent(String event) {
     onMetricsEvent?.call(event);
@@ -388,7 +398,7 @@ class VideoLoadingMetrics {
         : 0;
 
     // Send to Firebase Analytics
-    _analytics.logEvent(
+    analytics?.logEvent(
       name: 'video_loading_complete',
       parameters: {
         'video_id': session.videoId, // Truncate for privacy
@@ -439,7 +449,7 @@ class VideoLoadingMetrics {
         .difference(session.startTime)
         .inMilliseconds;
 
-    _analytics.logEvent(
+    analytics?.logEvent(
       name: 'video_loading_error',
       parameters: {
         'video_id': session.videoId, // Truncate for privacy
@@ -467,7 +477,7 @@ class VideoLoadingMetrics {
     final metrics = openVineMediaCache.metrics;
     final metricsMap = metrics.toMap();
 
-    _analytics.logEvent(
+    analytics?.logEvent(
       name: 'video_cache_performance',
       parameters: {
         'cache_hits': metricsMap['cache_hits'] as int,

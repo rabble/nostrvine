@@ -51,11 +51,11 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'placeholder-api-key',
-    appId: '1:placeholder:android:placeholder',
-    messagingSenderId: 'placeholder-sender-id',
-    projectId: 'openvine-placeholder',
-    storageBucket: 'openvine-placeholder.appspot.com',
+    apiKey: 'AIzaSyBUMlaHAMKqeS62WG7w4PeqBPRLMDIZCdo',
+    appId: '1:972941478875:android:c716006682f92d9444b5fe',
+    messagingSenderId: '972941478875',
+    projectId: 'openvine-co',
+    storageBucket: 'openvine-co.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
