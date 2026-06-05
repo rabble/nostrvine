@@ -41,7 +41,17 @@ void main() {
         ),
       );
 
+      final l10n = lookupAppLocalizations(const Locale('en'));
       expect(find.text('Add comment...'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.properties.label == l10n.commentsInputSemanticLabel &&
+              widget.properties.hint == l10n.commentsInputSemanticHint,
+        ),
+        findsOneWidget,
+      );
       expect(_divineIcon(DivineIconName.arrowUp), findsNothing);
     });
 

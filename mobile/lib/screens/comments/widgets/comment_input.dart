@@ -343,7 +343,7 @@ class _CommentTextField extends StatelessWidget {
         ? context.l10n.commentsInputSemanticHintEdit
         : isReplying
         ? context.l10n.commentsInputSemanticHintReply
-        : context.l10n.videoOverlayCommentBarSemanticLabel;
+        : context.l10n.commentsInputSemanticHint;
     final hintText = isEditing
         ? context.l10n.commentsInputHintEdit
         : context.l10n.commentsInputHint;

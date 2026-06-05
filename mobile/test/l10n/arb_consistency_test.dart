@@ -590,6 +590,7 @@ const _knownUntranslatedDebt = {
   'commentsEmptyClassicVineMessage',
   'commentsEmptyClassicVineTitle',
   'commentsInputEditingLabel',
+  'commentsInputSemanticHint',
   'commentsInputSemanticHintEdit',
   'commentsInputSemanticHintReply',
   'commentsInputSemanticLabel',
