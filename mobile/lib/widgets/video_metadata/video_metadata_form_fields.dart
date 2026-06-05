@@ -252,10 +252,11 @@ class _InputWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: VineTheme.surfaceBackground,
-      borderRadius: .circular(_borderRadius),
-      clipBehavior: Clip.antiAlias,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: VineTheme.surfaceBackground,
+        borderRadius: .circular(_borderRadius),
+      ),
       child: child,
     );
   }

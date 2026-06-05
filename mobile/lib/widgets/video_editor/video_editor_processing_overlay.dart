@@ -8,7 +8,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 
-class VideoEditorProcessingOverlay extends ConsumerWidget {
+class VideoEditorProcessingOverlay extends StatelessWidget {
   const VideoEditorProcessingOverlay({
     required this.clip,
     super.key,
@@ -24,7 +24,7 @@ class VideoEditorProcessingOverlay extends ConsumerWidget {
   final Widget? inactivePlaceholder;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 220),
       child: isProcessing || clip.isProcessing
@@ -40,8 +40,6 @@ class VideoEditorProcessingOverlay extends ConsumerWidget {
                   children: [
                     const BrandedLoadingIndicator(size: 44),
 
-                    // Without RepaintBoundary, the progress indicator repaints
-                    // the entire screen while it's running.
                     // Without RepaintBoundary, the progress indicator repaints
                     // the entire screen while it's running.
                     RepaintBoundary(

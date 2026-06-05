@@ -211,10 +211,6 @@ class _RenderProgressTracker {
     _emit(_renderBudget + (_proofBudget * normalizedSteps / _proofSteps));
   }
 
-  void complete() {
-    _emit(1);
-  }
-
   Future<void> dispose() async {
     await _renderSubscription?.cancel();
     _renderSubscription = null;
@@ -284,6 +280,20 @@ class VideoEditorRenderService {
     String? taskId,
   })?
   renderVideoToClipOverride;
+
+  /// Test-only override for [renderVideo].
+  ///
+  /// When set, [renderVideo] delegates to this callback instead of running the
+  /// real render pipeline. Reset to `null` in `tearDown`.
+  @visibleForTesting
+  static Future<String?> Function({
+    required List<DivineVideoClip> clips,
+    required bool usePersistentStorage,
+    model.AspectRatio? aspectRatio,
+    CompleteParameters? parameters,
+    String? taskId,
+  })?
+  renderVideoOverride;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Public API
@@ -400,7 +410,6 @@ class VideoEditorRenderService {
         thumbnailPath: clips.first.thumbnailPath,
       );
 
-      progressTracker.complete();
       return (clip, proofManifestJson);
     } finally {
       await progressTracker.dispose();
@@ -481,6 +490,17 @@ class VideoEditorRenderService {
     CompleteParameters? parameters,
     String? taskId,
   }) async {
+    final override = renderVideoOverride;
+    if (override != null) {
+      return override(
+        clips: clips,
+        usePersistentStorage: usePersistentStorage,
+        aspectRatio: aspectRatio,
+        parameters: parameters,
+        taskId: taskId,
+      );
+    }
+
     final cacheDir = await getTemporaryDirectory();
     final outputDir = usePersistentStorage
         ? await getApplicationDocumentsDirectory()

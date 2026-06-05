@@ -22,6 +22,18 @@ import 'package:unified_logger/unified_logger.dart';
 class NativeProofModeService {
   static const MethodChannel _channel = MethodChannel('org.openvine/proofmode');
 
+  @visibleForTesting
+  static Future<NativeProofData?> Function(
+    File videoFile, {
+    required bool enableAdvancedCawgEmbedding,
+    NostrCreatorBindingAssertion? creatorBindingAssertion,
+    Map<String, dynamic>? cawgIdentityAssertion,
+    Map<String, dynamic>? verifiedIdentityBundle,
+    List<DivineVideoClip>? clips,
+    Map<String, dynamic>? editorStateHistory,
+  })?
+  proofFileOverride;
+
   /// Generate native ProofMode proof for a video file.
   ///
   /// Returns [NativeProofData] if proof generation succeeds, null otherwise.
@@ -40,6 +52,19 @@ class NativeProofModeService {
     List<DivineVideoClip>? clips,
     Map<String, dynamic>? editorStateHistory,
   }) async {
+    final override = proofFileOverride;
+    if (override != null) {
+      return override(
+        videoFile,
+        creatorBindingAssertion: creatorBindingAssertion,
+        cawgIdentityAssertion: cawgIdentityAssertion,
+        verifiedIdentityBundle: verifiedIdentityBundle,
+        enableAdvancedCawgEmbedding: enableAdvancedCawgEmbedding,
+        clips: clips,
+        editorStateHistory: editorStateHistory,
+      );
+    }
+
     try {
       // TODO(n8fr8): Incorporate clip-level proof data into the final
       // combined proof. Each clip now carries its own attestation:
