@@ -502,7 +502,7 @@ workflows:
     publishing:
       google_play:
         credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
-        track: internal
+        track: production
 
   macos-build:
     name: macOS Build
