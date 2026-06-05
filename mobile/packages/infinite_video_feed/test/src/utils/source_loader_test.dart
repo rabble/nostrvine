@@ -22,7 +22,28 @@ void main() {
       );
 
       expect(result, equals(('urlA', 0)));
+      expect(controller.lastSource?.httpHeaders, isEmpty);
       expect(logs, isEmpty);
+    });
+
+    test('passes headers for the selected source', () async {
+      final controller = FakeController();
+      addTearDown(controller.dispose);
+
+      final result = await setSourceWithFallbacks(
+        index: 0,
+        controller: controller,
+        sources: ['urlA'],
+        log: logs.add,
+        httpHeadersForSource: (source) =>
+            source == 'urlA' ? {'Authorization': 'Nostr token'} : null,
+      );
+
+      expect(result, equals(('urlA', 0)));
+      expect(
+        controller.lastSource?.httpHeaders,
+        equals({'Authorization': 'Nostr token'}),
+      );
     });
 
     test('returns (nextSource, 1) and logs when first source fails', () async {

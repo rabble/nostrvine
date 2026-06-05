@@ -253,6 +253,8 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   final _errors = <int>{};
   final _errorTypes = <int, VideoErrorType>{};
   final _loopSeekInProgress = <int>{};
+  final _httpHeadersByIndexAndSource =
+      <int, Map<String, Map<String, String>>>{};
 
   // Indices currently performing a source failover. Stale `hasError`
   // events from the old source can arrive between `stop()` and `setSource()`
@@ -753,6 +755,8 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
         video,
         urlResolver: widget.urlResolver,
       );
+      Map<String, String>? httpHeadersForSource(String source) =>
+          _httpHeadersByIndexAndSource[index]?[source];
 
       if (fromCache) {
         try {
@@ -792,6 +796,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
             controller: controller,
             sources: playbackSources,
             log: _log,
+            httpHeadersForSource: httpHeadersForSource,
           );
           if (!guardInitOwnership('setSourceWithFallbacks(cache)')) return;
           _sources.register(index, playbackSources, openedSourceIdx);
@@ -810,6 +815,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
           controller: controller,
           sources: playbackSources,
           log: _log,
+          httpHeadersForSource: httpHeadersForSource,
         );
         if (!guardInitOwnership('setSourceWithFallbacks(network)')) return;
         _sources.register(index, playbackSources, openedSourceIdx);
@@ -873,11 +879,25 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   // executable in package tests without platform players.
   /// Retries the video at [index] by clearing its current controller state and
   /// reinitializing it from the network.
-  Future<void> retryAt(int index) => _retryController(index);
+  Future<bool> retryAt(
+    int index, {
+    Map<String, Map<String, String>> httpHeadersBySource = const {},
+  }) => _retryController(
+    index,
+    httpHeadersBySource: httpHeadersBySource,
+  );
 
-  Future<void> _retryController(int index) async {
+  Future<bool> _retryController(
+    int index, {
+    Map<String, Map<String, String>> httpHeadersBySource = const {},
+  }) async {
     _errors.remove(index);
     _errorTypes.remove(index);
+    if (httpHeadersBySource.isEmpty) {
+      _httpHeadersByIndexAndSource.remove(index);
+    } else {
+      _httpHeadersByIndexAndSource[index] = httpHeadersBySource;
+    }
     _watchdog.stop(index);
     if (index == _currentIndex) _staleDetector.stop();
     _sources.remove(index);
@@ -888,6 +908,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     // Skip cache on manual retry so a corrupt cached file does not loop
     // the same failure indefinitely.
     await _initController(index, skipCache: true);
+    return !_errors.contains(index);
   }
   // coverage:ignore-end
 
@@ -927,7 +948,13 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _failoverInFlight.add(index);
     try {
       await controller.stop();
-      await controller.setSource(VideoClip.network(nextSource));
+      await controller.setSource(
+        VideoClip.network(
+          nextSource,
+          httpHeaders:
+              _httpHeadersByIndexAndSource[index]?[nextSource] ?? const {},
+        ),
+      );
       if (index == _currentIndex && _isActive) {
         await controller.setVolume(_volume);
         await controller.play();
@@ -1202,7 +1229,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
               ?widget.errorBuilder?.call(
                 context,
                 index,
-                () => unawaited(_retryController(index)),
+                () => unawaited(_retryController(index).then((_) {})),
                 _errorTypes[index] ?? VideoErrorType.generic,
               ),
             // coverage:ignore-end

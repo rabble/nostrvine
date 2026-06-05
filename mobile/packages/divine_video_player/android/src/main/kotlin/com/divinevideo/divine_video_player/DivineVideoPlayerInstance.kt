@@ -1,6 +1,7 @@
 package com.divinevideo.divine_video_player
 
 import android.content.Context
+import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.view.Surface
@@ -8,6 +9,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.SeekParameters
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -25,17 +27,12 @@ import io.flutter.view.TextureRegistry
  * configuration. ExoPlayer handles seamless playback between items
  * and native buffering automatically.
  */
+@UnstableApi
 internal class DivineVideoPlayerInstance(
     messenger: BinaryMessenger,
     private val context: Context,
     private val playerId: Int,
-    private val playerFactory: (Context) -> ExoPlayer = { ctx ->
-        ExoPlayer.Builder(ctx)
-            .setMediaSourceFactory(
-                DefaultMediaSourceFactory(VideoCache.dataSourceFactory(ctx)),
-            )
-            .build()
-    },
+    private val playerFactory: ((Context) -> ExoPlayer)? = null,
     private val mainHandler: Handler = Handler(Looper.getMainLooper()),
     private val audioOverlayManagerFactory: (Context) -> AudioOverlayManager = { ctx ->
         AudioOverlayManager(ctx)
@@ -55,6 +52,7 @@ internal class DivineVideoPlayerInstance(
 
     private var player: ExoPlayer? = null
     private var eventSink: EventChannel.EventSink? = null
+    private var httpHeadersByUri = emptyMap<String, Map<String, String>>()
 
     // Texture rendering (non-null when useTexture is enabled).
     //
@@ -224,7 +222,15 @@ internal class DivineVideoPlayerInstance(
     }
 
     private fun ensurePlayer(): ExoPlayer {
-        return player ?: playerFactory(context).also { newPlayer ->
+        return player ?: (playerFactory?.invoke(context) ?: ExoPlayer.Builder(context)
+            .setMediaSourceFactory(
+                DefaultMediaSourceFactory(
+                    VideoCache.dataSourceFactory(context) { uri: Uri ->
+                        httpHeadersByUri[uri.toString()] ?: emptyMap()
+                    },
+                ),
+            )
+            .build()).also { newPlayer ->
             player = newPlayer
             newPlayer.setSeekParameters(SeekParameters.EXACT)
             newPlayer.addListener(playerListener)
@@ -310,6 +316,7 @@ internal class DivineVideoPlayerInstance(
         val offsets = mutableListOf<Long>()
         val volumes = mutableListOf<Float>()
         val speeds = mutableListOf<Float>()
+        val headersByUri = mutableMapOf<String, Map<String, String>>()
         var accumulated = 0L
 
         for (map in clipsRaw) {
@@ -319,6 +326,17 @@ internal class DivineVideoPlayerInstance(
             val clipVol = (map["volume"] as? Number)?.toFloat() ?: 1.0f
             val clipSpeed = ((map["playbackSpeed"] as? Number)?.toFloat() ?: 1.0f)
                 .coerceAtLeast(MIN_PLAYBACK_SPEED)
+            val httpHeaders = (map["httpHeaders"] as? Map<*, *>)
+                ?.mapNotNull { entry ->
+                    val key = entry.key as? String
+                    val value = entry.value as? String
+                    if (key == null || value == null) null else key to value
+                }
+                ?.toMap()
+                ?: emptyMap()
+            if (httpHeaders.isNotEmpty()) {
+                headersByUri[uri] = httpHeaders
+            }
 
             val builder = MediaItem.Builder().setUri(uri)
                 .setClippingConfiguration(
@@ -348,6 +366,7 @@ internal class DivineVideoPlayerInstance(
         clipVolumes = volumes
         clipSpeeds = speeds
         clipCount = mediaItems.size
+        httpHeadersByUri = headersByUri
         firstFrameRendered = false
 
         // Resolve the optional global start position to (clipIndex, localMs)

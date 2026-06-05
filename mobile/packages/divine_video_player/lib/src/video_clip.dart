@@ -21,6 +21,7 @@ class VideoClip {
     this.end,
     this.volume = 1.0,
     this.playbackSpeed = 1.0,
+    this.httpHeaders = const {},
   });
 
   /// Creates a [VideoClip] from a local file path.
@@ -30,6 +31,7 @@ class VideoClip {
     this.end,
     this.volume = 1.0,
     this.playbackSpeed = 1.0,
+    this.httpHeaders = const {},
   }) : uri = path;
 
   /// Creates a [VideoClip] from a network URL.
@@ -39,6 +41,7 @@ class VideoClip {
     this.end,
     this.volume = 1.0,
     this.playbackSpeed = 1.0,
+    this.httpHeaders = const {},
   }) : uri = url;
 
   /// Creates a [VideoClip] from a Flutter asset.
@@ -112,6 +115,9 @@ class VideoClip {
   /// Playback speed multiplier for this clip (1.0 = normal, 2.0 = 2× fast).
   final double playbackSpeed;
 
+  /// HTTP headers to attach when [uri] resolves to a network source.
+  final Map<String, String> httpHeaders;
+
   /// Serializes this clip for platform channel transport.
   Map<String, dynamic> toMap() {
     return {
@@ -120,6 +126,7 @@ class VideoClip {
       'endMs': end?.inMilliseconds,
       'volume': volume,
       'playbackSpeed': playbackSpeed,
+      if (httpHeaders.isNotEmpty) 'httpHeaders': httpHeaders,
     };
   }
 }

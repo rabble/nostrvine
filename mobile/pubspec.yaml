@@ -46,7 +46,6 @@ workspace:
   - packages/follow_repository
   - packages/funnelcake_api_client
   - packages/hashtag_repository
-  - packages/hls_auth_web_player
   - packages/image_metadata_stripper
   - packages/invite_api_client
   - packages/keycast_flutter
@@ -220,11 +219,6 @@ dependencies:
 
   # Hashtag Repository - Hashtag search data layer
   hashtag_repository:
-
-  # HLS + NIP-98 Auth Web Player - Web-only video player with per-segment
-  # NIP-98 signing for age-restricted media. Gated behind
-  # FeatureFlag.hlsAuthWebPlayer.
-  hls_auth_web_player:
 
   # People Lists Repository - NIP-51 kind 30000 follow sets
   people_lists_repository:

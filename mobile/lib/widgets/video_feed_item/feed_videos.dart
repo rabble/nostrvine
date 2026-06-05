@@ -118,8 +118,15 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
   Future<void> animateToPage(int index) =>
       _feedKey.currentState?.animateToPage(index) ?? Future.value();
 
-  Future<void> _retryPooledVideoAt(int index) =>
-      _feedKey.currentState?.retryAt(index) ?? Future.value();
+  Future<bool> _retryPooledVideoAt(
+    int index,
+    Map<String, Map<String, String>> httpHeadersBySource,
+  ) =>
+      _feedKey.currentState?.retryAt(
+        index,
+        httpHeadersBySource: httpHeadersBySource,
+      ) ??
+      Future.value(false);
 
   @override
   void didUpdateWidget(covariant FeedVideos oldWidget) {
@@ -303,7 +310,8 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
               ref: ref,
               video: video,
               index: index,
-              retryPlayback: () => _retryPooledVideoAt(index),
+              retryPlayback: (httpHeadersBySource) =>
+                  _retryPooledVideoAt(index, httpHeadersBySource),
             ),
             errorType: errorType,
             shouldPortraitExpand: widget.shouldPortraitExpand,
@@ -456,7 +464,12 @@ class __OverlayState extends ConsumerState<_Overlay> {
       ref: ref,
       video: widget.video,
       index: widget.index,
-      retryPlayback: () => _feedState?.retryAt(widget.index) ?? Future.value(),
+      retryPlayback: (httpHeadersBySource) =>
+          _feedState?.retryAt(
+            widget.index,
+            httpHeadersBySource: httpHeadersBySource,
+          ) ??
+          Future.value(false),
     );
   }
 
@@ -856,11 +869,14 @@ class _FeedLoadingOrRestrictedOverlayView extends ConsumerWidget {
           ref: ref,
           video: video,
           index: index,
-          retryPlayback: () =>
+          retryPlayback: (httpHeadersBySource) =>
               context
                   .findAncestorStateOfType<InfiniteVideoFeedState>()
-                  ?.retryAt(index) ??
-              Future.value(),
+                  ?.retryAt(
+                    index,
+                    httpHeadersBySource: httpHeadersBySource,
+                  ) ??
+              Future.value(false),
         ),
         errorType: VideoErrorType.notFound,
         shouldPortraitExpand: shouldPortraitExpand,

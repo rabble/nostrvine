@@ -10,6 +10,7 @@ Future<(String, int)> setSourceWithFallbacks({
   required DivineVideoPlayerController controller,
   required List<String> sources,
   required void Function(String) log,
+  Map<String, String>? Function(String source)? httpHeadersForSource,
 }) async {
   Object? lastError;
   StackTrace? lastStackTrace;
@@ -17,7 +18,12 @@ Future<(String, int)> setSourceWithFallbacks({
   for (var attemptIndex = 0; attemptIndex < sources.length; attemptIndex++) {
     final source = sources[attemptIndex];
     try {
-      await controller.setSource(VideoClip.network(source));
+      await controller.setSource(
+        VideoClip.network(
+          source,
+          httpHeaders: httpHeadersForSource?.call(source) ?? const {},
+        ),
+      );
       return (source, attemptIndex);
     } on Object catch (error, stackTrace) {
       lastError = error;

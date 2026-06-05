@@ -97,4 +97,3 @@ lib/widgets/video_metadata/modes/edit/video_metadata_edit_bottom_bar.dart
 lib/widgets/video_metrics_overlay.dart
 lib/widgets/video_metrics_tracker.dart
 lib/widgets/watermark_download_progress_sheet.dart
-lib/widgets/web_video_auth_header_provider.dart

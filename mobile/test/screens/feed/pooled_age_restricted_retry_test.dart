@@ -37,6 +37,7 @@ void main() {
       final mediaAuthInterceptor = _MockMediaAuthInterceptor();
       final playbackStatusCubit = VideoPlaybackStatusCubit();
       var retryCount = 0;
+      Map<String, Map<String, String>>? retryHeadersBySource;
       addTearDown(playbackStatusCubit.close);
 
       when(
@@ -53,7 +54,11 @@ void main() {
         _RetryHarness(
           mediaAuthInterceptor: mediaAuthInterceptor,
           playbackStatusCubit: playbackStatusCubit,
-          retryPlayback: () => retryCount++,
+          retryPlayback: (headersBySource) {
+            retryCount++;
+            retryHeadersBySource = headersBySource;
+            return true;
+          },
         ),
       );
 
@@ -67,6 +72,12 @@ void main() {
       await tester.pump();
 
       expect(retryCount, 1);
+      expect(
+        retryHeadersBySource,
+        equals({
+          _videoUrl: {'Authorization': 'Nostr token'},
+        }),
+      );
       expect(
         playbackStatusCubit.state.statusFor(_videoId),
         PlaybackStatus.ready,
@@ -93,7 +104,10 @@ void main() {
         _RetryHarness(
           mediaAuthInterceptor: mediaAuthInterceptor,
           playbackStatusCubit: playbackStatusCubit,
-          retryPlayback: () => retryCount++,
+          retryPlayback: (_) {
+            retryCount++;
+            return true;
+          },
         ),
       );
 
@@ -103,6 +117,47 @@ void main() {
       await tester.pump();
 
       expect(retryCount, 0);
+      expect(
+        playbackStatusCubit.state.statusFor(_videoId),
+        PlaybackStatus.ageRestricted,
+      );
+    });
+
+    testWidgets('keeps gate state when authenticated retry fails', (
+      tester,
+    ) async {
+      final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+      final playbackStatusCubit = VideoPlaybackStatusCubit();
+      var retryCount = 0;
+      addTearDown(playbackStatusCubit.close);
+
+      when(
+        () => mediaAuthInterceptor.handleUnauthorizedMedia(
+          context: any(named: 'context'),
+          sha256Hash: _sha256,
+          url: _videoUrl,
+          serverUrl: 'https://media.divine.video',
+          category: 'video',
+        ),
+      ).thenAnswer((_) async => {'Authorization': 'Nostr token'});
+
+      await tester.pumpWidget(
+        _RetryHarness(
+          mediaAuthInterceptor: mediaAuthInterceptor,
+          playbackStatusCubit: playbackStatusCubit,
+          retryPlayback: (_) {
+            retryCount++;
+            return false;
+          },
+        ),
+      );
+
+      playbackStatusCubit.report(_videoId, PlaybackStatus.ageRestricted);
+
+      await tester.tap(find.text('Verify'));
+      await tester.pump();
+
+      expect(retryCount, 1);
       expect(
         playbackStatusCubit.state.statusFor(_videoId),
         PlaybackStatus.ageRestricted,
@@ -120,7 +175,7 @@ class _RetryHarness extends StatelessWidget {
 
   final MediaAuthInterceptor mediaAuthInterceptor;
   final VideoPlaybackStatusCubit playbackStatusCubit;
-  final VoidCallback retryPlayback;
+  final bool Function(Map<String, Map<String, String>>) retryPlayback;
 
   @override
   Widget build(BuildContext context) {

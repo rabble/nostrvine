@@ -18,7 +18,8 @@ Future<void> retryAgeRestrictedPooledVideo({
   required WidgetRef ref,
   required VideoEvent video,
   required int index,
-  required FutureOr<void> Function() retryPlayback,
+  required FutureOr<bool> Function(Map<String, Map<String, String>>)
+  retryPlayback,
 }) async {
   final videoUrl = video.videoUrl;
   if (videoUrl == null || videoUrl.isEmpty) {
@@ -45,11 +46,12 @@ Future<void> retryAgeRestrictedPooledVideo({
   }
 
   final playbackStatusCubit = context.read<VideoPlaybackStatusCubit>();
-  unawaited(Future<void>.sync(retryPlayback));
-  playbackStatusCubit.report(
-    video.id,
-    PlaybackStatus.ready,
+  final playbackSucceeded = await Future<bool>.sync(
+    () => retryPlayback({videoUrl: headers}),
   );
+  if (!context.mounted || !playbackSucceeded) return;
+
+  playbackStatusCubit.report(video.id, PlaybackStatus.ready);
 }
 
 String? _resolveSha256(VideoEvent video) {

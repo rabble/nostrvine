@@ -1,14 +1,18 @@
 package com.divinevideo.divine_video_player
 
 import android.content.Context
+import android.net.Uri
 import androidx.media3.database.StandaloneDatabaseProvider
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.datasource.ResolvingDataSource
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
+import androidx.media3.common.util.UnstableApi
 import java.io.File
+import java.security.MessageDigest
 
 /**
  * Singleton managing ExoPlayer's disk-backed [SimpleCache].
@@ -20,6 +24,7 @@ import java.io.File
  * that reads from cache first and fills it progressively on cache misses.
  * When **not** configured, it falls back to a plain [DefaultDataSource.Factory].
  */
+@UnstableApi
 internal object VideoCache {
 
     private var cache: SimpleCache? = null
@@ -67,8 +72,37 @@ internal object VideoCache {
      * or a plain [DefaultDataSource.Factory] if the cache has not been
      * configured.
      */
-    fun dataSourceFactory(context: Context): DataSource.Factory {
-        return cacheDataSourceFactory ?: DefaultDataSource.Factory(context)
+    fun dataSourceFactory(
+        context: Context,
+        httpHeadersForUri: (Uri) -> Map<String, String> = { emptyMap() },
+    ): DataSource.Factory {
+        val upstreamFactory = cacheDataSourceFactory ?: DefaultDataSource.Factory(context)
+        return ResolvingDataSource.Factory(upstreamFactory) { dataSpec ->
+            val httpHeaders = httpHeadersForUri(dataSpec.uri)
+            if (httpHeaders.isEmpty()) {
+                dataSpec
+            } else {
+                dataSpec
+                    .withRequestHeaders(dataSpec.httpRequestHeaders + httpHeaders)
+                    .buildUpon()
+                    .setKey(authenticatedCacheKey(dataSpec.uri, httpHeaders))
+                    .build()
+            }
+        }
+    }
+
+    private fun authenticatedCacheKey(
+        uri: Uri,
+        httpHeaders: Map<String, String>,
+    ): String {
+        val normalizedHeaders = httpHeaders.entries
+            .sortedBy { it.key.lowercase() }
+            .joinToString(separator = "\n") { "${it.key}=${it.value}" }
+        val digest = MessageDigest
+            .getInstance("SHA-256")
+            .digest(normalizedHeaders.toByteArray(Charsets.UTF_8))
+            .joinToString(separator = "") { "%02x".format(it.toInt() and 0xff) }
+        return "$uri#auth=$digest"
     }
 
     /** Releases the cache. Called on engine detach. */

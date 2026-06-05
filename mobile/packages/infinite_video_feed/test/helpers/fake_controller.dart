@@ -15,6 +15,9 @@ class FakeController extends DivineVideoPlayerController {
   /// Errors thrown by the next [setSource] call.
   Exception? setSourceError;
 
+  /// Last clip passed to [setSource].
+  VideoClip? lastSource;
+
   @override
   DivineVideoPlayerState get state => _fakeState;
 
@@ -29,6 +32,7 @@ class FakeController extends DivineVideoPlayerController {
 
   @override
   Future<void> setSource(VideoClip clip) async {
+    lastSource = clip;
     if (setSourceError != null) throw setSourceError!;
   }
 

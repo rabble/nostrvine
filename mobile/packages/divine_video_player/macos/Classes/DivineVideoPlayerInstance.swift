@@ -251,6 +251,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             let endMs = clipMap["endMs"] as? NSNumber
             let clipVol = (clipMap["volume"] as? NSNumber)?.floatValue ?? 1.0
             let clipSpeed = (clipMap["playbackSpeed"] as? NSNumber)?.doubleValue ?? 1.0
+            let httpHeaders = clipMap["httpHeaders"] as? [String: String]
 
             let url: URL
             if uri.hasPrefix("/") {
@@ -261,7 +262,10 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                 continue
             }
 
-            let asset = AVURLAsset(url: url)
+            let assetOptions: [String: Any]? = httpHeaders.map {
+                ["AVURLAssetHTTPHeaderFieldsKey": $0]
+            }
+            let asset = AVURLAsset(url: url, options: assetOptions)
             let assetDuration = try await asset.load(.duration)
             let assetVideoTracks = try await asset.loadTracks(withMediaType: .video)
             let assetAudioTracks = try await asset.loadTracks(withMediaType: .audio)

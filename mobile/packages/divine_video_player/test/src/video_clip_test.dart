@@ -60,6 +60,7 @@ void main() {
         expect(clip.start, equals(Duration.zero));
         expect(clip.end, isNull);
         expect(clip.volume, equals(1.0));
+        expect(clip.httpHeaders, isEmpty);
       });
 
       test('accepts start and end', () {
@@ -71,6 +72,15 @@ void main() {
 
         expect(clip.start, equals(const Duration(seconds: 1)));
         expect(clip.end, equals(const Duration(seconds: 20)));
+      });
+
+      test('accepts http headers', () {
+        const clip = VideoClip.network(
+          'https://example.com/video.mp4',
+          httpHeaders: {'Authorization': 'Nostr token'},
+        );
+
+        expect(clip.httpHeaders, equals({'Authorization': 'Nostr token'}));
       });
     });
 
@@ -122,6 +132,20 @@ void main() {
         final map = clip.toMap();
 
         expect(map['volume'], equals(0.0));
+      });
+
+      test('serializes http headers only when present', () {
+        const unauthenticated = VideoClip.network('https://example.com/a.mp4');
+        const authenticated = VideoClip.network(
+          'https://example.com/b.mp4',
+          httpHeaders: {'Authorization': 'Nostr token'},
+        );
+
+        expect(unauthenticated.toMap(), isNot(contains('httpHeaders')));
+        expect(
+          authenticated.toMap()['httpHeaders'],
+          equals({'Authorization': 'Nostr token'}),
+        );
       });
     });
 
