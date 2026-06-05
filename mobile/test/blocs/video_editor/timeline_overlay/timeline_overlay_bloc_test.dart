@@ -104,6 +104,63 @@ void main() {
       );
 
       blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'maxDuration equals track duration when longer than VideoEditorConstants.maxDuration',
+        build: TimelineOverlayBloc.new,
+        act: (bloc) => bloc.add(
+          TimelineOverlayItemsUpdate(
+            layers: const <Layer>[],
+            filters: const <FilterState>[],
+            audioTracks: [
+              _audioEvent(
+                id: 'sound-1',
+                start: const Duration(seconds: 1),
+                end: const Duration(seconds: 4),
+              ).copyWith(
+                duration: 10.0,
+              ), // 10s > VideoEditorConstants.maxDuration (6.3s)
+            ],
+            totalVideoDuration: const Duration(seconds: 12),
+          ),
+        ),
+        expect: () => [
+          isA<TimelineOverlayState>().having(
+            (s) => s.items.first.maxDuration,
+            'maxDuration',
+            const Duration(seconds: 10),
+          ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'maxDuration subtracts startOffset from track duration',
+        build: TimelineOverlayBloc.new,
+        act: (bloc) => bloc.add(
+          TimelineOverlayItemsUpdate(
+            layers: const <Layer>[],
+            filters: const <FilterState>[],
+            audioTracks: [
+              _audioEvent(
+                id: 'sound-1',
+                start: const Duration(seconds: 1),
+                end: const Duration(seconds: 4),
+              ).copyWith(
+                duration: 8.0,
+                startOffset: const Duration(seconds: 2),
+              ),
+            ],
+            totalVideoDuration: const Duration(seconds: 12),
+          ),
+        ),
+        expect: () => [
+          isA<TimelineOverlayState>().having(
+            (s) => s.items.first.maxDuration,
+            'maxDuration',
+            const Duration(seconds: 6), // 8000ms - 2000ms
+          ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
         'clears selection when not trimming',
         build: TimelineOverlayBloc.new,
         seed: () => const TimelineOverlayState(selectedItemId: 'sound-1'),
