@@ -6287,6 +6287,664 @@ class AppLocalizationsPl extends AppLocalizations {
   String get shareCopiedEventId => 'Nostr event ID copied to clipboard';
 
   @override
+  String get authHeroTaglineAuthentic => 'Authentic moments.';
+
+  @override
+  String get authHeroTaglineHuman => 'Human creativity.';
+
+  @override
+  String get keyImportFailedToImport =>
+      'Failed to import key or connect bunker';
+
+  @override
+  String get keyImportInvalidBunkerUrl => 'Invalid bunker URL';
+
+  @override
+  String get keyImportInvalidFormat =>
+      'Invalid format. Use nsec..., hex, ncryptsec1..., or bunker://...';
+
+  @override
+  String get keyImportInvalidNsecFormat =>
+      'Invalid nsec format. Should be 63 characters';
+
+  @override
+  String get keyImportKeyFieldLabel => 'Private key or bunker URL';
+
+  @override
+  String get keyImportKeyRequired =>
+      'Please enter your private key or bunker URL';
+
+  @override
+  String get keyImportPasswordRequired =>
+      'Please enter the password for this encrypted key';
+
+  @override
+  String get keyImportSecurityWarningBody =>
+      'Never share your private key with anyone. This key gives full access to your Nostr identity.';
+
+  @override
+  String get keyImportSecurityWarningTitle => 'Keep your private key secure!';
+
+  @override
+  String get keyImportSubtitle =>
+      'Import your existing Nostr identity using your private key or a bunker URL.';
+
+  @override
+  String get keyImportTitle => 'Import your\nNostr identity';
+
+  @override
+  String get commentAuthorYouIndicator => 'You';
+
+  @override
+  String get commentOptionsDeleteSemanticLabel => 'Delete comment';
+
+  @override
+  String get commentOptionsEditSemanticLabel => 'Edit comment';
+
+  @override
+  String get commentOptionsFlagContentLabel => 'Flag Content';
+
+  @override
+  String get commentOptionsFlagContentSemanticLabel => 'Flag this content';
+
+  @override
+  String get commentOptionsFlagReasonPrompt =>
+      'Select a reason for flagging this comment';
+
+  @override
+  String get commentOptionsFlagSubmit => 'Submit';
+
+  @override
+  String get commentOptionsTitle => 'Options';
+
+  @override
+  String get commentsEmptyClassicVineMessage =>
+      'We\'re still working on importing old comments from the archive. They\'re not ready yet.';
+
+  @override
+  String get commentsEmptyClassicVineTitle => 'Classic Vine';
+
+  @override
+  String get commentsInputEditingLabel => 'Editing';
+
+  @override
+  String get commentsInputSemanticHint => 'Add a comment';
+
+  @override
+  String get commentsInputSemanticHintEdit => 'Edit comment';
+
+  @override
+  String get commentsInputSemanticHintReply => 'Add a reply';
+
+  @override
+  String get commentsInputSemanticLabel => 'Comment input';
+
+  @override
+  String get commentsInputSemanticLabelEdit => 'Edit input';
+
+  @override
+  String get commentsInputSemanticLabelReply => 'Reply input';
+
+  @override
+  String classicVinersViewProfileSemanticLabel(String displayName) {
+    return 'View profile for $displayName';
+  }
+
+  @override
+  String get classicsEmptyDescription => 'The Classics archive is being loaded';
+
+  @override
+  String get classicsEmptyTitle => 'No Classics Found';
+
+  @override
+  String get classicsErrorTitle => 'Failed to load Classics';
+
+  @override
+  String get classicsUnavailableDescription =>
+      'Classics are only available when connected to Funnelcake relays.';
+
+  @override
+  String get classicsUnavailableSettingsHint =>
+      'Switch to a Funnelcake-enabled relay in Settings to access the Classics archive.';
+
+  @override
+  String get classicsUnavailableTitle => 'Classics Unavailable';
+
+  @override
+  String get hashtagFeedEmptySubtitle =>
+      'Be the first to post a video with this hashtag!';
+
+  @override
+  String hashtagFeedEmptyTitle(String hashtag) {
+    return 'No videos found for #$hashtag';
+  }
+
+  @override
+  String get hashtagFeedLoadingSubtitle => 'This may take a few moments';
+
+  @override
+  String hashtagFeedLoadingTitle(String hashtag) {
+    return 'Loading videos about #$hashtag...';
+  }
+
+  @override
+  String get hashtagInputHint => 'Add hashtags... #vine #nostr';
+
+  @override
+  String get newVideosTabEmptySubtitle => 'Check back later for new content';
+
+  @override
+  String get newVideosTabEmptyTitle => 'No videos in New Videos';
+
+  @override
+  String get popularVideosContextTitle => 'Popular Videos';
+
+  @override
+  String get popularVideosEmptySubtitle => 'Check back later for new content';
+
+  @override
+  String get popularVideosEmptyTitle => 'No videos in Popular Videos';
+
+  @override
+  String get popularVideosErrorTitle => 'Failed to load trending videos';
+
+  @override
+  String get popularVideosFeedSourceLabel => 'Popular feed source';
+
+  @override
+  String get relatedVideosByHashtags => 'By Hashtags';
+
+  @override
+  String get relatedVideosCoWatched => 'Co-watched';
+
+  @override
+  String get relatedVideosEmptySubtitle => 'Explore more content in the app';
+
+  @override
+  String get relatedVideosEmptyTitle => 'No related videos found';
+
+  @override
+  String get relatedVideosFailedToLoad => 'Failed to load related videos';
+
+  @override
+  String get relatedVideosTitle => 'Related Videos';
+
+  @override
+  String get relatedVideosTryAgainLater => 'Try again later';
+
+  @override
+  String get trendingHashtagsLoading => 'Loading hashtags...';
+
+  @override
+  String trendingHashtagsViewVideosTagged(String hashtag) {
+    return 'View videos tagged $hashtag';
+  }
+
+  @override
+  String videoGridAuthorSemanticLabel(String name) {
+    return 'Video author: $name';
+  }
+
+  @override
+  String videoGridDescriptionSemanticLabel(String description) {
+    return 'Video description: $description';
+  }
+
+  @override
+  String get forYouAlgorithmChoiceBody =>
+      'Divine\'s vision is to give you true algorithmic choice. Instead of being locked into a single black-box algorithm, you\'ll be able to choose from multiple recommendation approaches:';
+
+  @override
+  String get forYouAlgorithmChoiceChronological =>
+      'Chronological timeline from creators you follow';
+
+  @override
+  String get forYouAlgorithmChoiceClosing =>
+      'This puts you in control of your attention rather than leaving it up to the platform. You should know how your feed is curated and have the power to change it whenever you want.';
+
+  @override
+  String get forYouAlgorithmChoiceCustomFeeds =>
+      'Community-created custom feeds for topics like music, comedy, or art';
+
+  @override
+  String get forYouAlgorithmChoicePersonalizedFeed =>
+      'Personalized \"For You\" feed';
+
+  @override
+  String get forYouAlgorithmChoiceTitle => 'Your Algorithm, Your Choice';
+
+  @override
+  String get forYouAlgorithmChoiceTrending => 'Trending and popular content';
+
+  @override
+  String get forYouAlgorithmCommentsDescription =>
+      'Strong signal — you were engaged enough to respond';
+
+  @override
+  String get forYouAlgorithmHowItWorksBody =>
+      'Divine pays attention to how you interact with content to understand what you enjoy. Every time you watch a video, give it a reaction, leave a comment, or repost it, the system takes note.';
+
+  @override
+  String get forYouAlgorithmHowItWorksTitle => 'How It Works';
+
+  @override
+  String get forYouAlgorithmInteractionsIntro =>
+      'Different actions signal different levels of interest:';
+
+  @override
+  String get forYouAlgorithmNewToDivineBody1 =>
+      'If you haven\'t built up a viewing history yet, we show a mix of what\'s currently popular and trending alongside recent uploads. This gives you a great starting point to explore.';
+
+  @override
+  String get forYouAlgorithmNewToDivineBody2 =>
+      'As you watch, like, and engage with content, recommendations gradually become more personalized. Over time, your For You feed surfaces videos from creators you might never have discovered on your own.';
+
+  @override
+  String get forYouAlgorithmNewToDivineTitle => 'New to Divine?';
+
+  @override
+  String get forYouAlgorithmOpenSourceBody =>
+      'We\'re building an open system where developers can implement their own algorithms, and you can choose which ones to use — or opt out entirely.';
+
+  @override
+  String get forYouAlgorithmOpenSourceTitle => 'Open Source & Transparent';
+
+  @override
+  String get forYouAlgorithmReactionsDescription =>
+      'Medium signal — a quick way to show appreciation';
+
+  @override
+  String get forYouAlgorithmReactionsTitle => 'Reactions';
+
+  @override
+  String get forYouAlgorithmRepostsDescription =>
+      'Strongest signal — sharing with your followers is a powerful endorsement';
+
+  @override
+  String get forYouAlgorithmSubtitle =>
+      'Powered by Gorse, an open-source recommendation engine';
+
+  @override
+  String get forYouAlgorithmTitle => 'The Divine Algorithm';
+
+  @override
+  String get forYouAlgorithmViewsDescription =>
+      'Light signal — indicates basic interest';
+
+  @override
+  String get forYouEmptyDescription =>
+      'Watch and like some videos to get personalized recommendations.';
+
+  @override
+  String get forYouEmptyTitle => 'No Recommendations Yet';
+
+  @override
+  String get forYouErrorTitle => 'Failed to load recommendations';
+
+  @override
+  String get forYouUnavailableDescription =>
+      'Personalized recommendations require connection to Funnelcake.';
+
+  @override
+  String get forYouUnavailableTitle => 'For You Unavailable';
+
+  @override
+  String get inboxConversationOptionsLabel => 'Options';
+
+  @override
+  String get inboxConversationViewProfileButton => 'View profile';
+
+  @override
+  String get inboxMessageRequestsEmpty => 'No message requests';
+
+  @override
+  String inboxMessageRequestsSemanticLabel(int requestCount) {
+    return 'Message requests, $requestCount pending';
+  }
+
+  @override
+  String get inboxMessageRequestsTitle => 'Message requests';
+
+  @override
+  String get inboxMessagesTab => 'Messages';
+
+  @override
+  String inboxRequestTileLabel(String displayName) {
+    return '$displayName message request';
+  }
+
+  @override
+  String get inboxRequestTileSubtitle => 'Sent a message request';
+
+  @override
+  String get inboxRequestsMarkAllRead => 'Mark all requests as read';
+
+  @override
+  String get inboxRequestsRemoveAll => 'Remove all requests';
+
+  @override
+  String get messageRequestDeclineAndRemoveButton => 'Decline and remove';
+
+  @override
+  String messageRequestFollowersCount(String count) {
+    return '$count Followers';
+  }
+
+  @override
+  String messageRequestVideosCount(String count) {
+    return '$count videos';
+  }
+
+  @override
+  String messageRequestMessageCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count messages',
+      one: '1 message',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get messageRequestViewMessagesButton => 'View messages';
+
+  @override
+  String get messageRequestViewProfileButton => 'View profile';
+
+  @override
+  String messageRequestWantsToMessageYou(
+    String displayName,
+    String messageText,
+  ) {
+    return '$displayName wants to message you, they\'ve sent $messageText.';
+  }
+
+  @override
+  String get deleteAccountConfirmationHint => 'Type DELETE';
+
+  @override
+  String get deleteAccountContentDeletionFailed =>
+      'Failed to delete content from relays';
+
+  @override
+  String get deleteAccountDeleteAllContentButton => 'Delete All Content';
+
+  @override
+  String get deleteAccountFinalConfirmationBody =>
+      'To confirm permanent deletion of ALL your content from Nostr relays, type:';
+
+  @override
+  String get deleteAccountFinalConfirmationTitle => '⚠️ Final Confirmation';
+
+  @override
+  String get deleteAccountKeyDeletionWarning =>
+      'Account deleted, but your keys may not have been fully removed from this device. Go to Settings → Nostr Keys → Remove Keys to retry.';
+
+  @override
+  String get deleteAccountPreparingDeletion => 'Preparing deletion...';
+
+  @override
+  String deleteAccountProgressEvents(int current, int total) {
+    return '$current / $total events';
+  }
+
+  @override
+  String get deleteAccountRemoveKeysBody =>
+      'This will:\n• Remove your Nostr private key (nsec) from this device\n• Sign you out immediately\n• Your content will REMAIN on Nostr relays\n\nMake sure you have your nsec backed up elsewhere or you will lose access to your account!\n\nContinue?';
+
+  @override
+  String get deleteAccountRemoveKeysConfirm => 'Remove Keys';
+
+  @override
+  String get deleteAccountRemoveKeysTitle => '⚠️ Remove Keys from Device?';
+
+  @override
+  String get deleteAccountServerDeletionFailed =>
+      'Could not delete your account from the server. Please check your connection and try again.';
+
+  @override
+  String get deleteAccountSuccess => 'Your account has been deleted';
+
+  @override
+  String get exportProgressStageApplyingTextOverlay => 'Adding text overlay...';
+
+  @override
+  String get exportProgressStageComplete => 'Export complete!';
+
+  @override
+  String get exportProgressStageConcatenating => 'Combining clips...';
+
+  @override
+  String get exportProgressStageError => 'Export failed';
+
+  @override
+  String get exportProgressStageGeneratingThumbnail =>
+      'Generating thumbnail...';
+
+  @override
+  String get exportProgressStageMixingAudio => 'Adding sound...';
+
+  @override
+  String get findPeopleAnonymousUser => 'Anonymous';
+
+  @override
+  String get findPeopleNoContacts =>
+      'No contacts found.\nStart following people to see them here.';
+
+  @override
+  String get geoBlockedCityLabel => 'City';
+
+  @override
+  String get geoBlockedCountryLabel => 'Country';
+
+  @override
+  String get geoBlockedDefaultReason =>
+      'This service is not available in your region due to local regulations.';
+
+  @override
+  String get geoBlockedLegalNotice =>
+      'We respect your local laws and regulations. This restriction is based on your IP address location.';
+
+  @override
+  String get geoBlockedRegionLabel => 'Region';
+
+  @override
+  String get geoBlockedTitle => 'Service Unavailable';
+
+  @override
+  String get likedVideosEmpty => 'No liked videos';
+
+  @override
+  String get likedVideosInvalidRoute => 'Invalid route';
+
+  @override
+  String get likedVideosTitle => 'Liked Videos';
+
+  @override
+  String get ogVinerBadgeSemanticLabel => 'OG Viner';
+
+  @override
+  String get uploadFailureSheetRetryingSnackbar => 'Retrying upload…';
+
+  @override
+  String get uploadFailureSheetSaveToDraftsButton => 'Save to Drafts';
+
+  @override
+  String get uploadFailureSheetSavedToDraftsSnackbar => 'Saved to drafts';
+
+  @override
+  String get uploadFailureSheetTitle => 'Upload Failed';
+
+  @override
+  String get uploadFailureSheetTryAgainButton => 'Try Again';
+
+  @override
+  String get videoEditorAudioImportAudio => 'Import audio';
+
+  @override
+  String get videoEditorAudioImportFailed => 'Audio import failed.';
+
+  @override
+  String get videoIconPlaceholderLabel => 'Video';
+
+  @override
+  String videoInspiredByAttributionSemanticLabel(String creatorName) {
+    return 'Inspired by $creatorName. Tap to view their profile.';
+  }
+
+  @override
+  String get proofmodeBadgeAiScanPending => 'AI scan pending';
+
+  @override
+  String get proofmodeBadgeHumanMade => 'Human Made';
+
+  @override
+  String get proofmodeBadgeNotDivineHosted => 'Not Divine Hosted';
+
+  @override
+  String get proofmodeBadgeOriginal => 'Original';
+
+  @override
+  String get proofmodeBadgePossiblyAiGenerated => 'Possibly AI-Generated';
+
+  @override
+  String get proofmodeBadgeUnverified => 'Unverified';
+
+  @override
+  String get proofmodeConfirmedByModerator => 'Confirmed by human moderator';
+
+  @override
+  String get proofmodeExternalContentTitle => 'External Content';
+
+  @override
+  String get proofmodeHostedOnLabel => 'This video is hosted on:';
+
+  @override
+  String get proofmodeLikelyHumanCreated => 'Likely human-created';
+
+  @override
+  String get proofmodeNoProofDataAttached => 'No ProofMode data attached';
+
+  @override
+  String get proofmodeNotDivineHostedDisclaimer =>
+      'This content is not hosted on Divine servers. We cannot fully guarantee its authenticity.';
+
+  @override
+  String get proofmodePossiblyAiGenerated => 'Possibly AI-generated';
+
+  @override
+  String get proofmodePublishedByLabel => 'Published by:';
+
+  @override
+  String searchFilterPillSemanticLabel(String filter) {
+    return 'Filter: $filter';
+  }
+
+  @override
+  String searchNoResultsFound(String query) {
+    return 'No results found for \"$query\"';
+  }
+
+  @override
+  String searchTagChipViewVideosTaggedLabel(String tag) {
+    return 'View videos tagged $tag';
+  }
+
+  @override
+  String get searchVideosEmpty => 'No videos found';
+
+  @override
+  String audioAttributionRowSemanticLabel(
+    String soundName,
+    String creatorName,
+  ) {
+    return 'Sound: $soundName by $creatorName. Tap to view sound details.';
+  }
+
+  @override
+  String metadataSoundsOriginalSoundSemantics(String creatorName) {
+    return 'Original sound by $creatorName. Tap to use this sound.';
+  }
+
+  @override
+  String metadataSoundsSharedSoundSemantics(
+    String soundName,
+    String creatorName,
+  ) {
+    return 'Sound: $soundName by $creatorName. Tap to view details.';
+  }
+
+  @override
+  String soundDetailLoadError(String error) {
+    return 'Failed to load sound: $error';
+  }
+
+  @override
+  String get soundDetailNotFoundMessage => 'This sound could not be found';
+
+  @override
+  String get soundDetailNotFoundTitle => 'Sound Not Found';
+
+  @override
+  String get videoFeedDescriptionSemanticLabel => 'Video description';
+
+  @override
+  String videoFeedLoopCountLabel(int count) {
+    return '🔁 $count loops';
+  }
+
+  @override
+  String get videoFeedLoopCountSemanticLabel => 'Video loop count';
+
+  @override
+  String get originalSoundUnavailableBody =>
+      'Audio from this video is not available separately.';
+
+  @override
+  String originalSoundByCreator(String creatorName) {
+    return 'Original sound - $creatorName';
+  }
+
+  @override
+  String globalUploadPendingCount(int count) {
+    return 'Pending Uploads ($count)';
+  }
+
+  @override
+  String get ogVinerBadgeLabel => 'OG Viner';
+
+  @override
+  String shareVideoInListsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'In $count lists',
+      one: 'In 1 list',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get unfollowConfirmButton => 'Unfollow';
+
+  @override
+  String get videoClipSaveFailed => 'Failed to save clip';
+
+  @override
+  String videoClipSaveTo(String destination) {
+    return 'Save to $destination';
+  }
+
+  @override
+  String get videoClipDelete => 'Delete clip';
+
+  @override
+  String inspiredByAttributionSemanticLabel(String creatorName) {
+    return 'Inspired by $creatorName. Tap to view their profile.';
+  }
+
+  @override
   String get bugReportSendReport => 'Wyślij zgłoszenie';
 
   @override

@@ -10766,6 +10766,1098 @@ abstract class AppLocalizations {
   /// **'Nostr event ID copied to clipboard'**
   String get shareCopiedEventId;
 
+  /// No description provided for @authHeroTaglineAuthentic.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentic moments.'**
+  String get authHeroTaglineAuthentic;
+
+  /// No description provided for @authHeroTaglineHuman.
+  ///
+  /// In en, this message translates to:
+  /// **'Human creativity.'**
+  String get authHeroTaglineHuman;
+
+  /// No description provided for @keyImportFailedToImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to import key or connect bunker'**
+  String get keyImportFailedToImport;
+
+  /// No description provided for @keyImportInvalidBunkerUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid bunker URL'**
+  String get keyImportInvalidBunkerUrl;
+
+  /// No description provided for @keyImportInvalidFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid format. Use nsec..., hex, ncryptsec1..., or bunker://...'**
+  String get keyImportInvalidFormat;
+
+  /// No description provided for @keyImportInvalidNsecFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid nsec format. Should be 63 characters'**
+  String get keyImportInvalidNsecFormat;
+
+  /// No description provided for @keyImportKeyFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Private key or bunker URL'**
+  String get keyImportKeyFieldLabel;
+
+  /// No description provided for @keyImportKeyRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your private key or bunker URL'**
+  String get keyImportKeyRequired;
+
+  /// No description provided for @keyImportPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter the password for this encrypted key'**
+  String get keyImportPasswordRequired;
+
+  /// No description provided for @keyImportSecurityWarningBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Never share your private key with anyone. This key gives full access to your Nostr identity.'**
+  String get keyImportSecurityWarningBody;
+
+  /// No description provided for @keyImportSecurityWarningTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep your private key secure!'**
+  String get keyImportSecurityWarningTitle;
+
+  /// No description provided for @keyImportSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import your existing Nostr identity using your private key or a bunker URL.'**
+  String get keyImportSubtitle;
+
+  /// No description provided for @keyImportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import your\nNostr identity'**
+  String get keyImportTitle;
+
+  /// No description provided for @commentAuthorYouIndicator.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get commentAuthorYouIndicator;
+
+  /// No description provided for @commentOptionsDeleteSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete comment'**
+  String get commentOptionsDeleteSemanticLabel;
+
+  /// No description provided for @commentOptionsEditSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit comment'**
+  String get commentOptionsEditSemanticLabel;
+
+  /// No description provided for @commentOptionsFlagContentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Flag Content'**
+  String get commentOptionsFlagContentLabel;
+
+  /// No description provided for @commentOptionsFlagContentSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Flag this content'**
+  String get commentOptionsFlagContentSemanticLabel;
+
+  /// No description provided for @commentOptionsFlagReasonPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a reason for flagging this comment'**
+  String get commentOptionsFlagReasonPrompt;
+
+  /// No description provided for @commentOptionsFlagSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit'**
+  String get commentOptionsFlagSubmit;
+
+  /// No description provided for @commentOptionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Options'**
+  String get commentOptionsTitle;
+
+  /// No description provided for @commentsEmptyClassicVineMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'re still working on importing old comments from the archive. They\'re not ready yet.'**
+  String get commentsEmptyClassicVineMessage;
+
+  /// No description provided for @commentsEmptyClassicVineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Classic Vine'**
+  String get commentsEmptyClassicVineTitle;
+
+  /// No description provided for @commentsInputEditingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Editing'**
+  String get commentsInputEditingLabel;
+
+  /// No description provided for @commentsInputSemanticHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a comment'**
+  String get commentsInputSemanticHint;
+
+  /// No description provided for @commentsInputSemanticHintEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit comment'**
+  String get commentsInputSemanticHintEdit;
+
+  /// No description provided for @commentsInputSemanticHintReply.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a reply'**
+  String get commentsInputSemanticHintReply;
+
+  /// No description provided for @commentsInputSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Comment input'**
+  String get commentsInputSemanticLabel;
+
+  /// No description provided for @commentsInputSemanticLabelEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit input'**
+  String get commentsInputSemanticLabelEdit;
+
+  /// No description provided for @commentsInputSemanticLabelReply.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply input'**
+  String get commentsInputSemanticLabelReply;
+
+  /// No description provided for @classicVinersViewProfileSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'View profile for {displayName}'**
+  String classicVinersViewProfileSemanticLabel(String displayName);
+
+  /// No description provided for @classicsEmptyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'The Classics archive is being loaded'**
+  String get classicsEmptyDescription;
+
+  /// No description provided for @classicsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No Classics Found'**
+  String get classicsEmptyTitle;
+
+  /// No description provided for @classicsErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load Classics'**
+  String get classicsErrorTitle;
+
+  /// No description provided for @classicsUnavailableDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Classics are only available when connected to Funnelcake relays.'**
+  String get classicsUnavailableDescription;
+
+  /// No description provided for @classicsUnavailableSettingsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to a Funnelcake-enabled relay in Settings to access the Classics archive.'**
+  String get classicsUnavailableSettingsHint;
+
+  /// No description provided for @classicsUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Classics Unavailable'**
+  String get classicsUnavailableTitle;
+
+  /// No description provided for @hashtagFeedEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Be the first to post a video with this hashtag!'**
+  String get hashtagFeedEmptySubtitle;
+
+  /// No description provided for @hashtagFeedEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No videos found for #{hashtag}'**
+  String hashtagFeedEmptyTitle(String hashtag);
+
+  /// No description provided for @hashtagFeedLoadingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This may take a few moments'**
+  String get hashtagFeedLoadingSubtitle;
+
+  /// No description provided for @hashtagFeedLoadingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading videos about #{hashtag}...'**
+  String hashtagFeedLoadingTitle(String hashtag);
+
+  /// No description provided for @hashtagInputHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add hashtags... #vine #nostr'**
+  String get hashtagInputHint;
+
+  /// No description provided for @newVideosTabEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check back later for new content'**
+  String get newVideosTabEmptySubtitle;
+
+  /// No description provided for @newVideosTabEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No videos in New Videos'**
+  String get newVideosTabEmptyTitle;
+
+  /// No description provided for @popularVideosContextTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Popular Videos'**
+  String get popularVideosContextTitle;
+
+  /// No description provided for @popularVideosEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check back later for new content'**
+  String get popularVideosEmptySubtitle;
+
+  /// No description provided for @popularVideosEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No videos in Popular Videos'**
+  String get popularVideosEmptyTitle;
+
+  /// No description provided for @popularVideosErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load trending videos'**
+  String get popularVideosErrorTitle;
+
+  /// No description provided for @popularVideosFeedSourceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Popular feed source'**
+  String get popularVideosFeedSourceLabel;
+
+  /// No description provided for @relatedVideosByHashtags.
+  ///
+  /// In en, this message translates to:
+  /// **'By Hashtags'**
+  String get relatedVideosByHashtags;
+
+  /// No description provided for @relatedVideosCoWatched.
+  ///
+  /// In en, this message translates to:
+  /// **'Co-watched'**
+  String get relatedVideosCoWatched;
+
+  /// No description provided for @relatedVideosEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore more content in the app'**
+  String get relatedVideosEmptySubtitle;
+
+  /// No description provided for @relatedVideosEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No related videos found'**
+  String get relatedVideosEmptyTitle;
+
+  /// No description provided for @relatedVideosFailedToLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load related videos'**
+  String get relatedVideosFailedToLoad;
+
+  /// No description provided for @relatedVideosTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Related Videos'**
+  String get relatedVideosTitle;
+
+  /// No description provided for @relatedVideosTryAgainLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again later'**
+  String get relatedVideosTryAgainLater;
+
+  /// No description provided for @trendingHashtagsLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading hashtags...'**
+  String get trendingHashtagsLoading;
+
+  /// No description provided for @trendingHashtagsViewVideosTagged.
+  ///
+  /// In en, this message translates to:
+  /// **'View videos tagged {hashtag}'**
+  String trendingHashtagsViewVideosTagged(String hashtag);
+
+  /// No description provided for @videoGridAuthorSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Video author: {name}'**
+  String videoGridAuthorSemanticLabel(String name);
+
+  /// No description provided for @videoGridDescriptionSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Video description: {description}'**
+  String videoGridDescriptionSemanticLabel(String description);
+
+  /// No description provided for @forYouAlgorithmChoiceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Divine\'s vision is to give you true algorithmic choice. Instead of being locked into a single black-box algorithm, you\'ll be able to choose from multiple recommendation approaches:'**
+  String get forYouAlgorithmChoiceBody;
+
+  /// No description provided for @forYouAlgorithmChoiceChronological.
+  ///
+  /// In en, this message translates to:
+  /// **'Chronological timeline from creators you follow'**
+  String get forYouAlgorithmChoiceChronological;
+
+  /// No description provided for @forYouAlgorithmChoiceClosing.
+  ///
+  /// In en, this message translates to:
+  /// **'This puts you in control of your attention rather than leaving it up to the platform. You should know how your feed is curated and have the power to change it whenever you want.'**
+  String get forYouAlgorithmChoiceClosing;
+
+  /// No description provided for @forYouAlgorithmChoiceCustomFeeds.
+  ///
+  /// In en, this message translates to:
+  /// **'Community-created custom feeds for topics like music, comedy, or art'**
+  String get forYouAlgorithmChoiceCustomFeeds;
+
+  /// No description provided for @forYouAlgorithmChoicePersonalizedFeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Personalized \"For You\" feed'**
+  String get forYouAlgorithmChoicePersonalizedFeed;
+
+  /// No description provided for @forYouAlgorithmChoiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Algorithm, Your Choice'**
+  String get forYouAlgorithmChoiceTitle;
+
+  /// No description provided for @forYouAlgorithmChoiceTrending.
+  ///
+  /// In en, this message translates to:
+  /// **'Trending and popular content'**
+  String get forYouAlgorithmChoiceTrending;
+
+  /// No description provided for @forYouAlgorithmCommentsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Strong signal — you were engaged enough to respond'**
+  String get forYouAlgorithmCommentsDescription;
+
+  /// No description provided for @forYouAlgorithmHowItWorksBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Divine pays attention to how you interact with content to understand what you enjoy. Every time you watch a video, give it a reaction, leave a comment, or repost it, the system takes note.'**
+  String get forYouAlgorithmHowItWorksBody;
+
+  /// No description provided for @forYouAlgorithmHowItWorksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How It Works'**
+  String get forYouAlgorithmHowItWorksTitle;
+
+  /// No description provided for @forYouAlgorithmInteractionsIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Different actions signal different levels of interest:'**
+  String get forYouAlgorithmInteractionsIntro;
+
+  /// No description provided for @forYouAlgorithmNewToDivineBody1.
+  ///
+  /// In en, this message translates to:
+  /// **'If you haven\'t built up a viewing history yet, we show a mix of what\'s currently popular and trending alongside recent uploads. This gives you a great starting point to explore.'**
+  String get forYouAlgorithmNewToDivineBody1;
+
+  /// No description provided for @forYouAlgorithmNewToDivineBody2.
+  ///
+  /// In en, this message translates to:
+  /// **'As you watch, like, and engage with content, recommendations gradually become more personalized. Over time, your For You feed surfaces videos from creators you might never have discovered on your own.'**
+  String get forYouAlgorithmNewToDivineBody2;
+
+  /// No description provided for @forYouAlgorithmNewToDivineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New to Divine?'**
+  String get forYouAlgorithmNewToDivineTitle;
+
+  /// No description provided for @forYouAlgorithmOpenSourceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'re building an open system where developers can implement their own algorithms, and you can choose which ones to use — or opt out entirely.'**
+  String get forYouAlgorithmOpenSourceBody;
+
+  /// No description provided for @forYouAlgorithmOpenSourceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Source & Transparent'**
+  String get forYouAlgorithmOpenSourceTitle;
+
+  /// No description provided for @forYouAlgorithmReactionsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium signal — a quick way to show appreciation'**
+  String get forYouAlgorithmReactionsDescription;
+
+  /// No description provided for @forYouAlgorithmReactionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reactions'**
+  String get forYouAlgorithmReactionsTitle;
+
+  /// No description provided for @forYouAlgorithmRepostsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Strongest signal — sharing with your followers is a powerful endorsement'**
+  String get forYouAlgorithmRepostsDescription;
+
+  /// No description provided for @forYouAlgorithmSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Powered by Gorse, an open-source recommendation engine'**
+  String get forYouAlgorithmSubtitle;
+
+  /// No description provided for @forYouAlgorithmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The Divine Algorithm'**
+  String get forYouAlgorithmTitle;
+
+  /// No description provided for @forYouAlgorithmViewsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Light signal — indicates basic interest'**
+  String get forYouAlgorithmViewsDescription;
+
+  /// No description provided for @forYouEmptyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Watch and like some videos to get personalized recommendations.'**
+  String get forYouEmptyDescription;
+
+  /// No description provided for @forYouEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No Recommendations Yet'**
+  String get forYouEmptyTitle;
+
+  /// No description provided for @forYouErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load recommendations'**
+  String get forYouErrorTitle;
+
+  /// No description provided for @forYouUnavailableDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Personalized recommendations require connection to Funnelcake.'**
+  String get forYouUnavailableDescription;
+
+  /// No description provided for @forYouUnavailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'For You Unavailable'**
+  String get forYouUnavailableTitle;
+
+  /// No description provided for @inboxConversationOptionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Options'**
+  String get inboxConversationOptionsLabel;
+
+  /// No description provided for @inboxConversationViewProfileButton.
+  ///
+  /// In en, this message translates to:
+  /// **'View profile'**
+  String get inboxConversationViewProfileButton;
+
+  /// No description provided for @inboxMessageRequestsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No message requests'**
+  String get inboxMessageRequestsEmpty;
+
+  /// No description provided for @inboxMessageRequestsSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Message requests, {requestCount} pending'**
+  String inboxMessageRequestsSemanticLabel(int requestCount);
+
+  /// No description provided for @inboxMessageRequestsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Message requests'**
+  String get inboxMessageRequestsTitle;
+
+  /// No description provided for @inboxMessagesTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages'**
+  String get inboxMessagesTab;
+
+  /// No description provided for @inboxRequestTileLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{displayName} message request'**
+  String inboxRequestTileLabel(String displayName);
+
+  /// No description provided for @inboxRequestTileSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent a message request'**
+  String get inboxRequestTileSubtitle;
+
+  /// No description provided for @inboxRequestsMarkAllRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark all requests as read'**
+  String get inboxRequestsMarkAllRead;
+
+  /// No description provided for @inboxRequestsRemoveAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove all requests'**
+  String get inboxRequestsRemoveAll;
+
+  /// No description provided for @messageRequestDeclineAndRemoveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline and remove'**
+  String get messageRequestDeclineAndRemoveButton;
+
+  /// No description provided for @messageRequestFollowersCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Followers'**
+  String messageRequestFollowersCount(String count);
+
+  /// No description provided for @messageRequestVideosCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} videos'**
+  String messageRequestVideosCount(String count);
+
+  /// No description provided for @messageRequestMessageCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 message} other{{count} messages}}'**
+  String messageRequestMessageCount(int count);
+
+  /// No description provided for @messageRequestViewMessagesButton.
+  ///
+  /// In en, this message translates to:
+  /// **'View messages'**
+  String get messageRequestViewMessagesButton;
+
+  /// No description provided for @messageRequestViewProfileButton.
+  ///
+  /// In en, this message translates to:
+  /// **'View profile'**
+  String get messageRequestViewProfileButton;
+
+  /// No description provided for @messageRequestWantsToMessageYou.
+  ///
+  /// In en, this message translates to:
+  /// **'{displayName} wants to message you, they\'ve sent {messageText}.'**
+  String messageRequestWantsToMessageYou(
+    String displayName,
+    String messageText,
+  );
+
+  /// No description provided for @deleteAccountConfirmationHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type DELETE'**
+  String get deleteAccountConfirmationHint;
+
+  /// No description provided for @deleteAccountContentDeletionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete content from relays'**
+  String get deleteAccountContentDeletionFailed;
+
+  /// No description provided for @deleteAccountDeleteAllContentButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete All Content'**
+  String get deleteAccountDeleteAllContentButton;
+
+  /// No description provided for @deleteAccountFinalConfirmationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'To confirm permanent deletion of ALL your content from Nostr relays, type:'**
+  String get deleteAccountFinalConfirmationBody;
+
+  /// No description provided for @deleteAccountFinalConfirmationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'⚠️ Final Confirmation'**
+  String get deleteAccountFinalConfirmationTitle;
+
+  /// No description provided for @deleteAccountKeyDeletionWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Account deleted, but your keys may not have been fully removed from this device. Go to Settings → Nostr Keys → Remove Keys to retry.'**
+  String get deleteAccountKeyDeletionWarning;
+
+  /// No description provided for @deleteAccountPreparingDeletion.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing deletion...'**
+  String get deleteAccountPreparingDeletion;
+
+  /// No description provided for @deleteAccountProgressEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'{current} / {total} events'**
+  String deleteAccountProgressEvents(int current, int total);
+
+  /// No description provided for @deleteAccountRemoveKeysBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This will:\n• Remove your Nostr private key (nsec) from this device\n• Sign you out immediately\n• Your content will REMAIN on Nostr relays\n\nMake sure you have your nsec backed up elsewhere or you will lose access to your account!\n\nContinue?'**
+  String get deleteAccountRemoveKeysBody;
+
+  /// No description provided for @deleteAccountRemoveKeysConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Keys'**
+  String get deleteAccountRemoveKeysConfirm;
+
+  /// No description provided for @deleteAccountRemoveKeysTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'⚠️ Remove Keys from Device?'**
+  String get deleteAccountRemoveKeysTitle;
+
+  /// No description provided for @deleteAccountServerDeletionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete your account from the server. Please check your connection and try again.'**
+  String get deleteAccountServerDeletionFailed;
+
+  /// No description provided for @deleteAccountSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account has been deleted'**
+  String get deleteAccountSuccess;
+
+  /// No description provided for @exportProgressStageApplyingTextOverlay.
+  ///
+  /// In en, this message translates to:
+  /// **'Adding text overlay...'**
+  String get exportProgressStageApplyingTextOverlay;
+
+  /// No description provided for @exportProgressStageComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Export complete!'**
+  String get exportProgressStageComplete;
+
+  /// No description provided for @exportProgressStageConcatenating.
+  ///
+  /// In en, this message translates to:
+  /// **'Combining clips...'**
+  String get exportProgressStageConcatenating;
+
+  /// No description provided for @exportProgressStageError.
+  ///
+  /// In en, this message translates to:
+  /// **'Export failed'**
+  String get exportProgressStageError;
+
+  /// No description provided for @exportProgressStageGeneratingThumbnail.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating thumbnail...'**
+  String get exportProgressStageGeneratingThumbnail;
+
+  /// No description provided for @exportProgressStageMixingAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Adding sound...'**
+  String get exportProgressStageMixingAudio;
+
+  /// No description provided for @findPeopleAnonymousUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Anonymous'**
+  String get findPeopleAnonymousUser;
+
+  /// No description provided for @findPeopleNoContacts.
+  ///
+  /// In en, this message translates to:
+  /// **'No contacts found.\nStart following people to see them here.'**
+  String get findPeopleNoContacts;
+
+  /// No description provided for @geoBlockedCityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'City'**
+  String get geoBlockedCityLabel;
+
+  /// No description provided for @geoBlockedCountryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Country'**
+  String get geoBlockedCountryLabel;
+
+  /// No description provided for @geoBlockedDefaultReason.
+  ///
+  /// In en, this message translates to:
+  /// **'This service is not available in your region due to local regulations.'**
+  String get geoBlockedDefaultReason;
+
+  /// No description provided for @geoBlockedLegalNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'We respect your local laws and regulations. This restriction is based on your IP address location.'**
+  String get geoBlockedLegalNotice;
+
+  /// No description provided for @geoBlockedRegionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Region'**
+  String get geoBlockedRegionLabel;
+
+  /// No description provided for @geoBlockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Service Unavailable'**
+  String get geoBlockedTitle;
+
+  /// No description provided for @likedVideosEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No liked videos'**
+  String get likedVideosEmpty;
+
+  /// No description provided for @likedVideosInvalidRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid route'**
+  String get likedVideosInvalidRoute;
+
+  /// No description provided for @likedVideosTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Liked Videos'**
+  String get likedVideosTitle;
+
+  /// No description provided for @ogVinerBadgeSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'OG Viner'**
+  String get ogVinerBadgeSemanticLabel;
+
+  /// No description provided for @uploadFailureSheetRetryingSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Retrying upload…'**
+  String get uploadFailureSheetRetryingSnackbar;
+
+  /// No description provided for @uploadFailureSheetSaveToDraftsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to Drafts'**
+  String get uploadFailureSheetSaveToDraftsButton;
+
+  /// No description provided for @uploadFailureSheetSavedToDraftsSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to drafts'**
+  String get uploadFailureSheetSavedToDraftsSnackbar;
+
+  /// No description provided for @uploadFailureSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload Failed'**
+  String get uploadFailureSheetTitle;
+
+  /// No description provided for @uploadFailureSheetTryAgainButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Try Again'**
+  String get uploadFailureSheetTryAgainButton;
+
+  /// No description provided for @videoEditorAudioImportAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Import audio'**
+  String get videoEditorAudioImportAudio;
+
+  /// No description provided for @videoEditorAudioImportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio import failed.'**
+  String get videoEditorAudioImportFailed;
+
+  /// No description provided for @videoIconPlaceholderLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Video'**
+  String get videoIconPlaceholderLabel;
+
+  /// No description provided for @videoInspiredByAttributionSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspired by {creatorName}. Tap to view their profile.'**
+  String videoInspiredByAttributionSemanticLabel(String creatorName);
+
+  /// No description provided for @proofmodeBadgeAiScanPending.
+  ///
+  /// In en, this message translates to:
+  /// **'AI scan pending'**
+  String get proofmodeBadgeAiScanPending;
+
+  /// No description provided for @proofmodeBadgeHumanMade.
+  ///
+  /// In en, this message translates to:
+  /// **'Human Made'**
+  String get proofmodeBadgeHumanMade;
+
+  /// No description provided for @proofmodeBadgeNotDivineHosted.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Divine Hosted'**
+  String get proofmodeBadgeNotDivineHosted;
+
+  /// No description provided for @proofmodeBadgeOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'Original'**
+  String get proofmodeBadgeOriginal;
+
+  /// No description provided for @proofmodeBadgePossiblyAiGenerated.
+  ///
+  /// In en, this message translates to:
+  /// **'Possibly AI-Generated'**
+  String get proofmodeBadgePossiblyAiGenerated;
+
+  /// No description provided for @proofmodeBadgeUnverified.
+  ///
+  /// In en, this message translates to:
+  /// **'Unverified'**
+  String get proofmodeBadgeUnverified;
+
+  /// No description provided for @proofmodeConfirmedByModerator.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed by human moderator'**
+  String get proofmodeConfirmedByModerator;
+
+  /// No description provided for @proofmodeExternalContentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'External Content'**
+  String get proofmodeExternalContentTitle;
+
+  /// No description provided for @proofmodeHostedOnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'This video is hosted on:'**
+  String get proofmodeHostedOnLabel;
+
+  /// No description provided for @proofmodeLikelyHumanCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Likely human-created'**
+  String get proofmodeLikelyHumanCreated;
+
+  /// No description provided for @proofmodeNoProofDataAttached.
+  ///
+  /// In en, this message translates to:
+  /// **'No ProofMode data attached'**
+  String get proofmodeNoProofDataAttached;
+
+  /// No description provided for @proofmodeNotDivineHostedDisclaimer.
+  ///
+  /// In en, this message translates to:
+  /// **'This content is not hosted on Divine servers. We cannot fully guarantee its authenticity.'**
+  String get proofmodeNotDivineHostedDisclaimer;
+
+  /// No description provided for @proofmodePossiblyAiGenerated.
+  ///
+  /// In en, this message translates to:
+  /// **'Possibly AI-generated'**
+  String get proofmodePossiblyAiGenerated;
+
+  /// No description provided for @proofmodePublishedByLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Published by:'**
+  String get proofmodePublishedByLabel;
+
+  /// No description provided for @searchFilterPillSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter: {filter}'**
+  String searchFilterPillSemanticLabel(String filter);
+
+  /// No description provided for @searchNoResultsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No results found for \"{query}\"'**
+  String searchNoResultsFound(String query);
+
+  /// No description provided for @searchTagChipViewVideosTaggedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'View videos tagged {tag}'**
+  String searchTagChipViewVideosTaggedLabel(String tag);
+
+  /// No description provided for @searchVideosEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No videos found'**
+  String get searchVideosEmpty;
+
+  /// No description provided for @audioAttributionRowSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound: {soundName} by {creatorName}. Tap to view sound details.'**
+  String audioAttributionRowSemanticLabel(String soundName, String creatorName);
+
+  /// No description provided for @metadataSoundsOriginalSoundSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Original sound by {creatorName}. Tap to use this sound.'**
+  String metadataSoundsOriginalSoundSemantics(String creatorName);
+
+  /// No description provided for @metadataSoundsSharedSoundSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound: {soundName} by {creatorName}. Tap to view details.'**
+  String metadataSoundsSharedSoundSemantics(
+    String soundName,
+    String creatorName,
+  );
+
+  /// No description provided for @soundDetailLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load sound: {error}'**
+  String soundDetailLoadError(String error);
+
+  /// No description provided for @soundDetailNotFoundMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This sound could not be found'**
+  String get soundDetailNotFoundMessage;
+
+  /// No description provided for @soundDetailNotFoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound Not Found'**
+  String get soundDetailNotFoundTitle;
+
+  /// No description provided for @videoFeedDescriptionSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Video description'**
+  String get videoFeedDescriptionSemanticLabel;
+
+  /// No description provided for @videoFeedLoopCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'🔁 {count} loops'**
+  String videoFeedLoopCountLabel(int count);
+
+  /// No description provided for @videoFeedLoopCountSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Video loop count'**
+  String get videoFeedLoopCountSemanticLabel;
+
+  /// No description provided for @originalSoundUnavailableBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio from this video is not available separately.'**
+  String get originalSoundUnavailableBody;
+
+  /// No description provided for @originalSoundByCreator.
+  ///
+  /// In en, this message translates to:
+  /// **'Original sound - {creatorName}'**
+  String originalSoundByCreator(String creatorName);
+
+  /// No description provided for @globalUploadPendingCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Uploads ({count})'**
+  String globalUploadPendingCount(int count);
+
+  /// No description provided for @ogVinerBadgeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'OG Viner'**
+  String get ogVinerBadgeLabel;
+
+  /// No description provided for @shareVideoInListsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{In 1 list} other{In {count} lists}}'**
+  String shareVideoInListsCount(int count);
+
+  /// No description provided for @unfollowConfirmButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Unfollow'**
+  String get unfollowConfirmButton;
+
+  /// No description provided for @videoClipSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save clip'**
+  String get videoClipSaveFailed;
+
+  /// No description provided for @videoClipSaveTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to {destination}'**
+  String videoClipSaveTo(String destination);
+
+  /// No description provided for @videoClipDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete clip'**
+  String get videoClipDelete;
+
+  /// No description provided for @inspiredByAttributionSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspired by {creatorName}. Tap to view their profile.'**
+  String inspiredByAttributionSemanticLabel(String creatorName);
+
   /// No description provided for @bugReportSendReport.
   ///
   /// In en, this message translates to:
