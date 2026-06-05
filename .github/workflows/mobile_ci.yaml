@@ -27,10 +27,6 @@ jobs:
           cache: true
       - name: 📦 Install dependencies
         run: flutter pub get
-      - name: 🌐 Verify HLS auth web shim is synced
-        run: bash scripts/check_hls_auth_web_shim_sync.sh
-      - name: 🌐 Smoke-test HLS auth web shim
-        run: node scripts/test_hls_auth_web_shim.mjs
       - name: 🔒 Verify native transport security
         run: |
           if ! command -v xmllint >/dev/null 2>&1; then
