@@ -315,7 +315,7 @@ class _ReturningUserLayout extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              // Sign back in button (primary)
+              // Continue with the selected local account.
               DivineButton(
                 label: context.l10n.authContinueAs(displayName),
                 isLoading: isLoading,
@@ -327,7 +327,7 @@ class _ReturningUserLayout extends StatelessWidget {
 
               const SizedBox(height: 12),
 
-              // Login with different account (secondary)
+              // Login with another account.
               DivineButton(
                 label: context.l10n.authUseAnotherAccount,
                 expanded: true,
@@ -341,7 +341,7 @@ class _ReturningUserLayout extends StatelessWidget {
 
               const SizedBox(height: 12),
 
-              // Create new account (tertiary)
+              // Create a separate account.
               DivineButton(
                 label: context.l10n.authCreateNewAccountShort,
                 expanded: true,

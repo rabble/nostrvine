@@ -604,7 +604,7 @@ void main() {
         },
       );
 
-      testWidgets('tapping primary continue button calls signInForAccount', (
+      testWidgets('tapping "Continue as Test User" calls signInForAccount', (
         tester,
       ) async {
         await tester.binding.setSurfaceSize(const Size(800, 1200));
