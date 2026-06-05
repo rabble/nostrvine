@@ -1132,10 +1132,10 @@
   "nostrSettingsKeyManagementSubtitle": "Export, backup, and restore your Nostr keys",
   "nostrSettingsClientAttribution": "Client Attribution",
   "nostrSettingsClientAttributionSubtitle": "Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly.",
-  "nostrSettingsRemoveKeys": "Remove Keys from Device",
-  "nostrSettingsRemoveKeysSubtitle": "Delete your private key from this device only. Your content stays on relays, but you'll need your nsec backup to access your account again.",
-  "nostrSettingsCouldNotRemoveKeys": "Could not remove keys from this device. Please try again.",
-  "nostrSettingsFailedToRemoveKeys": "Failed to remove keys: {error}",
+  "nostrSettingsRemoveKeys": "Remove this account from this device",
+  "nostrSettingsRemoveKeysSubtitle": "Remove this account's local login from this device. This won't delete your Divine account or Nostr identity.",
+  "nostrSettingsCouldNotRemoveKeys": "Could not remove this account from this device. Please try again.",
+  "nostrSettingsFailedToRemoveKeys": "Failed to remove this account: {error}",
   "@nostrSettingsFailedToRemoveKeys": {
     "placeholders": {
       "error": {
@@ -3578,9 +3578,9 @@
   "deleteAccountPreparingDeletion": "Preparing deletion...",
   "deleteAccountProgressEvents": "{current} / {total} events",
   "@deleteAccountProgressEvents": {"placeholders": {"current": {"type": "int"}, "total": {"type": "int"}}},
-  "deleteAccountRemoveKeysBody": "This will:\n\u2022 Remove your Nostr private key (nsec) from this device\n\u2022 Sign you out immediately\n\u2022 Your content will REMAIN on Nostr relays\n\nMake sure you have your nsec backed up elsewhere or you will lose access to your account!\n\nContinue?",
-  "deleteAccountRemoveKeysConfirm": "Remove Keys",
-  "deleteAccountRemoveKeysTitle": "\u26a0\ufe0f Remove Keys from Device?",
+  "deleteAccountRemoveKeysBody": "This removes the local login for this account from this device. It won't delete your Divine account or Nostr identity.\n\nIf this is your last local account, you'll return to the login screen.",
+  "deleteAccountRemoveKeysConfirm": "Remove from device",
+  "deleteAccountRemoveKeysTitle": "Remove this account from this device?",
   "deleteAccountServerDeletionFailed": "Could not delete your account from the server. Please check your connection and try again.",
   "deleteAccountSuccess": "Your account has been deleted",
   "exportProgressStageApplyingTextOverlay": "Adding text overlay...",

@@ -62,9 +62,7 @@ class SecurityConfig {
   );
 
   /// Maximum security configuration with biometrics
-  static const SecurityConfig maximum = SecurityConfig(
-    requireBiometrics: true,
-  );
+  static const SecurityConfig maximum = SecurityConfig(requireBiometrics: true);
 
   /// Fallback configuration for older devices
   static const SecurityConfig compatible = SecurityConfig(
@@ -204,9 +202,7 @@ class SecureKeyStorage {
       // Generate new secure key container (runs in isolate to avoid ANR)
       final keyContainer = await SecureKeyContainer.generate();
 
-      _log.fine(
-        '📱 Generated key for: ${_maskKey(keyContainer.npub)}',
-      );
+      _log.fine('📱 Generated key for: ${_maskKey(keyContainer.npub)}');
 
       // Store in platform-specific secure storage
       final result = await _platformStorage.storeKey(
@@ -259,9 +255,7 @@ class SecureKeyStorage {
       // Create secure container from nsec
       final keyContainer = SecureKeyContainer.fromNsec(nsec);
 
-      _log.fine(
-        '📱 Imported key for: ${_maskKey(keyContainer.npub)}',
-      );
+      _log.fine('📱 Imported key for: ${_maskKey(keyContainer.npub)}');
 
       // Save current identity before overwriting PRIMARY (prevents data
       // loss). Same pattern as switchToIdentity — archives the current
@@ -374,9 +368,7 @@ class SecureKeyStorage {
       // Create secure container from hex
       final keyContainer = SecureKeyContainer.fromPrivateKeyHex(privateKeyHex);
 
-      _log.fine(
-        '📱 Imported key for: ${_maskKey(keyContainer.npub)}',
-      );
+      _log.fine('📱 Imported key for: ${_maskKey(keyContainer.npub)}');
 
       // Save current identity before overwriting PRIMARY (prevents data loss)
       try {
@@ -627,9 +619,7 @@ class SecureKeyStorage {
     }
 
     try {
-      _log.fine(
-        '📱 Storing identity key container for ${_maskKey(npub)}',
-      );
+      _log.fine('📱 Storing identity key container for ${_maskKey(npub)}');
 
       final identityKeyId = '$_savedKeysPrefix$npub';
 
@@ -675,9 +665,10 @@ class SecureKeyStorage {
 
   /// Delete a key container archived for a specific identity.
   ///
-  /// This does not delete the PRIMARY key slot. Callers that are removing the
-  /// active account should delete both the identity archive and PRIMARY slot so
-  /// the account cannot be restored through multi-account recovery.
+  /// This does not delete the PRIMARY key slot. Account-removal callers must
+  /// independently verify that PRIMARY belongs to the identity being removed
+  /// before deleting it, because external-signer sessions can be active while
+  /// PRIMARY still belongs to a different local account.
   Future<void> deleteIdentityKeyContainer(
     String npub, {
     String? biometricPrompt,

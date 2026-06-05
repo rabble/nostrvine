@@ -38,6 +38,21 @@ void main() {
     });
 
     Widget buildSubject({bool advancedRelaySettingsEnabled = false}) {
+      final router = GoRouter(
+        initialLocation: NostrSettingsScreen.path,
+        routes: [
+          GoRoute(
+            path: NostrSettingsScreen.path,
+            builder: (context, state) => const NostrSettingsScreen(),
+          ),
+          GoRoute(
+            path: WelcomeScreen.path,
+            builder: (context, state) =>
+                const SizedBox(key: Key('welcome-screen')),
+          ),
+        ],
+      );
+
       return ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
@@ -50,43 +65,10 @@ void main() {
             FeatureFlag.advancedRelaySettings,
           ).overrideWith((ref) => advancedRelaySettingsEnabled),
         ],
-        child: const MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: NostrSettingsScreen(),
-        ),
-      );
-    }
-
-    Widget buildRouterSubject() {
-      return ProviderScope(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-          authServiceProvider.overrideWithValue(mockAuthService),
-          currentAuthStateProvider.overrideWith(
-            (ref) => AuthState.authenticated,
-          ),
-          isDeveloperModeEnabledProvider.overrideWithValue(false),
-          isFeatureEnabledProvider(
-            FeatureFlag.advancedRelaySettings,
-          ).overrideWith((ref) => false),
-        ],
         child: MaterialApp.router(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          routerConfig: GoRouter(
-            initialLocation: NostrSettingsScreen.path,
-            routes: [
-              GoRoute(
-                path: NostrSettingsScreen.path,
-                builder: (_, _) => const NostrSettingsScreen(),
-              ),
-              GoRoute(
-                path: WelcomeScreen.path,
-                builder: (_, _) => const Scaffold(body: Text('Welcome route')),
-              ),
-            ],
-          ),
+          routerConfig: router,
         ),
       );
     }
@@ -151,9 +133,6 @@ void main() {
           abortOnKeyDeletionFailure: true,
         ),
       ).thenAnswer((_) => signOut.future);
-      when(
-        () => mockAuthService.getKnownAccounts(),
-      ).thenAnswer((_) async => []);
 
       await pumpSubject(tester);
 
@@ -176,36 +155,35 @@ void main() {
       ).called(1);
     });
 
-    testWidgets('navigates to welcome after removing the last local key', (
-      tester,
-    ) async {
+    testWidgets('removes local account and returns to welcome', (tester) async {
       when(
         () => mockAuthService.signOut(
           deleteKeys: true,
           abortOnKeyDeletionFailure: true,
         ),
       ).thenAnswer((_) async {});
-      when(
-        () => mockAuthService.getKnownAccounts(),
-      ).thenAnswer((_) async => []);
 
-      await tester.binding.setSurfaceSize(const Size(900, 1200));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-      await tester.pumpWidget(buildRouterSubject());
-      await tester.pumpAndSettle();
+      await pumpSubject(tester);
+
+      expect(find.text(l10n.nostrSettingsRemoveKeys), findsOneWidget);
+      expect(find.text(l10n.nostrSettingsRemoveKeysSubtitle), findsOneWidget);
 
       await tester.tap(find.text(l10n.nostrSettingsRemoveKeys));
       await tester.pumpAndSettle();
+
+      expect(find.text(l10n.deleteAccountRemoveKeysTitle), findsOneWidget);
+      expect(find.text(l10n.deleteAccountRemoveKeysBody), findsOneWidget);
+
       await tester.tap(find.text(l10n.deleteAccountRemoveKeysConfirm));
       await tester.pumpAndSettle();
 
-      expect(find.text('Welcome route'), findsOneWidget);
       verify(
         () => mockAuthService.signOut(
           deleteKeys: true,
           abortOnKeyDeletionFailure: true,
         ),
       ).called(1);
+      expect(find.byKey(const Key('welcome-screen')), findsOneWidget);
     });
 
     testWidgets(
@@ -220,9 +198,6 @@ void main() {
             abortOnKeyDeletionFailure: true,
           ),
         ).thenAnswer((_) => signOut.future);
-        when(
-          () => mockAuthService.getKnownAccounts(),
-        ).thenAnswer((_) async => []);
 
         await pumpSubject(tester);
 

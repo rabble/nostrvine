@@ -288,29 +288,33 @@ void main() {
     test('deleteIdentityKeyContainer removes archived identity only', () async {
       await storageService.initialize();
 
-      final privateKeyA = generatePrivateKey();
-      final nsecA = Nip19.encodePrivateKey(privateKeyA);
-      final containerA = await storageService.importFromNsec(nsecA);
-      final npubA = containerA.npub;
-      containerA.dispose();
+      final privateKey = generatePrivateKey();
+      final nsec = Nip19.encodePrivateKey(privateKey);
+      final container = await storageService.importFromNsec(nsec);
+      final npub = container.npub;
+      final publicKeyHex = container.publicKeyHex;
+      container.dispose();
 
       final primary = await storageService.getKeyContainer();
       expect(primary, isNotNull);
-      await storageService.storeIdentityKeyContainer(npubA, primary!);
+      await storageService.storeIdentityKeyContainer(npub, primary!);
+
+      final archivedBefore = await storageService.getIdentityKeyContainer(npub);
+      expect(archivedBefore, isNotNull);
+      expect(archivedBefore!.publicKeyHex, equals(publicKeyHex));
+
+      await storageService.deleteIdentityKeyContainer(npub);
+
+      final archivedAfter = await storageService.getIdentityKeyContainer(npub);
+      final primaryAfter = await storageService.getKeyContainer();
+
+      expect(archivedAfter, isNull);
+      expect(primaryAfter, isNotNull);
+      expect(primaryAfter!.publicKeyHex, equals(publicKeyHex));
+
       primary.dispose();
-
-      final archived = await storageService.getIdentityKeyContainer(npubA);
-      expect(archived, isNotNull);
-      archived?.dispose();
-
-      await storageService.deleteIdentityKeyContainer(npubA);
-
-      expect(await storageService.getIdentityKeyContainer(npubA), isNull);
-      expect(
-        await storageService.hasKeys(),
-        isTrue,
-        reason: 'Deleting an identity archive must not delete PRIMARY',
-      );
+      archivedBefore.dispose();
+      primaryAfter.dispose();
     });
 
     group('storeIdentityKeyContainer npub↔pubkey invariant', () {
@@ -339,49 +343,46 @@ void main() {
         retrieved.dispose();
       });
 
-      test(
-        'rejects container whose npub does not match filing npub',
-        () async {
-          await storageService.initialize();
+      test('rejects container whose npub does not match filing npub', () async {
+        await storageService.initialize();
 
-          // Import a real container so PRIMARY has something.
-          final privateKeyB = generatePrivateKey();
-          final nsecB = Nip19.encodePrivateKey(privateKeyB);
-          final containerB = await storageService.importFromNsec(nsecB);
-          final npubB = containerB.npub;
-          containerB.dispose();
+        // Import a real container so PRIMARY has something.
+        final privateKeyB = generatePrivateKey();
+        final nsecB = Nip19.encodePrivateKey(privateKeyB);
+        final containerB = await storageService.importFromNsec(nsecB);
+        final npubB = containerB.npub;
+        containerB.dispose();
 
-          // Generate a third keypair C but do NOT store it. C's per-identity
-          // slot is guaranteed empty throughout the test.
-          final privateKeyC = generatePrivateKey();
-          final publicKeyC = getPublicKey(privateKeyC);
-          final npubC = Nip19.encodePubKey(publicKeyC);
-          expect(npubB, isNot(equals(npubC)));
+        // Generate a third keypair C but do NOT store it. C's per-identity
+        // slot is guaranteed empty throughout the test.
+        final privateKeyC = generatePrivateKey();
+        final publicKeyC = getPublicKey(privateKeyC);
+        final npubC = Nip19.encodePubKey(publicKeyC);
+        expect(npubB, isNot(equals(npubC)));
 
-          // Try to file PRIMARY (container for B) under C's npub.
-          final primaryB = await storageService.getKeyContainer();
-          expect(primaryB, isNotNull);
-          expect(primaryB!.npub, equals(npubB));
+        // Try to file PRIMARY (container for B) under C's npub.
+        final primaryB = await storageService.getKeyContainer();
+        expect(primaryB, isNotNull);
+        expect(primaryB!.npub, equals(npubB));
 
-          await expectLater(
-            () => storageService.storeIdentityKeyContainer(npubC, primaryB),
-            throwsA(
-              isA<SecureKeyStorageException>().having(
-                (e) => e.code,
-                'code',
-                equals('npub_pubkey_mismatch'),
-              ),
+        await expectLater(
+          () => storageService.storeIdentityKeyContainer(npubC, primaryB),
+          throwsA(
+            isA<SecureKeyStorageException>().having(
+              (e) => e.code,
+              'code',
+              equals('npub_pubkey_mismatch'),
             ),
-          );
-          primaryB.dispose();
+          ),
+        );
+        primaryB.dispose();
 
-          // Nothing should have been written under npubC.
-          final shouldBeMissing = await storageService.getIdentityKeyContainer(
-            npubC,
-          );
-          expect(shouldBeMissing, isNull);
-        },
-      );
+        // Nothing should have been written under npubC.
+        final shouldBeMissing = await storageService.getIdentityKeyContainer(
+          npubC,
+        );
+        expect(shouldBeMissing, isNull);
+      });
 
       test('rejection error message is descriptive', () async {
         await storageService.initialize();

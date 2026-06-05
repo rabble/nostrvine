@@ -148,13 +148,16 @@ class _RemoveKeysTile extends StatelessWidget {
       icon: Icons.key_off,
       title: context.l10n.nostrSettingsRemoveKeys,
       subtitle: context.l10n.nostrSettingsRemoveKeysSubtitle,
-      onTap: () => _handleRemoveKeys(context, ref),
+      onTap: () => _handleRemoveLocalAccount(context, ref),
       iconColor: VineTheme.warning,
       titleColor: VineTheme.warning,
     );
   }
 
-  Future<void> _handleRemoveKeys(BuildContext context, WidgetRef ref) async {
+  Future<void> _handleRemoveLocalAccount(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     final authService = ref.read(authServiceProvider);
     final couldNotRemoveKeysMessage =
         context.l10n.nostrSettingsCouldNotRemoveKeys;
@@ -176,13 +179,9 @@ class _RemoveKeysTile extends StatelessWidget {
             deleteKeys: true,
             abortOnKeyDeletionFailure: true,
           );
-          final hasRemainingAccounts =
-              (await authService.getKnownAccounts()).isNotEmpty;
           progressOverlay.dismiss();
           if (!context.mounted) return;
-          if (!hasRemainingAccounts) {
-            GoRouter.maybeOf(context)?.go(WelcomeScreen.path);
-          }
+          context.go(WelcomeScreen.path);
         } on SecureKeyStorageException {
           progressOverlay.dismiss();
           // Platform key deletion failed — user stays signed in and can

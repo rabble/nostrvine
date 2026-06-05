@@ -2022,7 +2022,7 @@ void main() {
     });
 
     test(
-      'destructive sign-out redirects recovery to remaining account',
+      'destructive sign-out keeps remaining restorable account for welcome',
       () async {
         // Create a second key to represent account A (the one that should survive)
         final accountA = SecureKeyContainer.fromNsec(
@@ -2060,118 +2060,28 @@ void main() {
         // Sign in as B
         await _ignoringDiscoveryErrors(authService.createNewIdentity);
         expect(authService.isAuthenticated, isTrue);
+        final removedNpub = testKeyContainer.npub;
 
         // Delete B
         await authService.signOut(deleteKeys: true);
 
-        // Recovery should point to A (the remaining account)
+        // Recovery should not auto-restore A; welcome should present A as the
+        // remaining local account the user can explicitly continue with.
         final prefs = await SharedPreferences.getInstance();
-        expect(prefs.getString('last_used_npub'), equals(accountA.npub));
-        expect(prefs.getString('authentication_source'), equals('automatic'));
-      },
-    );
-
-    test(
-      'destructive sign-out preserves known accounts when no local nsec remains',
-      () async {
-        final staleAccount = SecureKeyContainer.fromNsec(
-          'nsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsmhltgl',
-        );
-        final knownAccounts = jsonEncode([
-          KnownAccount(
-            pubkeyHex: staleAccount.publicKeyHex,
-            authSource: AuthenticationSource.automatic,
-            addedAt: DateTime.now().subtract(const Duration(hours: 2)),
-            lastUsedAt: DateTime.now().subtract(const Duration(hours: 1)),
-          ).toJson(),
-          KnownAccount(
-            pubkeyHex: testKeyContainer.publicKeyHex,
-            authSource: AuthenticationSource.automatic,
-            addedAt: DateTime.now().subtract(const Duration(hours: 1)),
-            lastUsedAt: DateTime.now(),
-          ).toJson(),
-        ]);
-
-        SharedPreferences.setMockInitialValues({
-          'authentication_source': 'automatic',
-          'last_used_npub': testKeyContainer.npub,
-          kKnownAccountsKey: knownAccounts,
-        });
-        when(
-          () => mockKeyStorage.getIdentityKeyContainer(
-            staleAccount.npub,
-            biometricPrompt: any(named: 'biometricPrompt'),
-          ),
-        ).thenAnswer((_) async => null);
-        when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
-
-        await _ignoringDiscoveryErrors(authService.createNewIdentity);
-        final expectedNpub = testKeyContainer.npub;
-        await authService.signOut(deleteKeys: true);
-
-        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getString('last_used_npub'), isNull);
+        expect(prefs.getString('authentication_source'), equals('none'));
+        final remaining =
+            jsonDecode(prefs.getString(kKnownAccountsKey)!) as List<dynamic>;
+        expect(remaining, hasLength(1));
+        expect(remaining.single['pubkeyHex'], equals(accountA.publicKeyHex));
         verify(
-          () => mockKeyStorage.deleteIdentityKeyContainer(
-            expectedNpub,
-            biometricPrompt: any(named: 'biometricPrompt'),
-          ),
+          () => mockKeyStorage.deleteIdentityKeyContainer(removedNpub),
         ).called(1);
-        expect(prefs.getString('authentication_source'), equals('none'));
-        expect(prefs.getString('last_used_npub'), isNull);
-        expect(await authService.getKnownAccounts(), [
-          isA<KnownAccount>().having(
-            (account) => account.pubkeyHex,
-            'pubkeyHex',
-            staleAccount.publicKeyHex,
-          ),
-        ]);
-        expect(authService.authState, equals(AuthState.unauthenticated));
       },
     );
 
-    test(
-      'destructive sign-out preserves NIP-07 known accounts in picker registry',
-      () async {
-        const nip07Pubkey =
-            '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd';
-        final knownAccounts = jsonEncode([
-          KnownAccount(
-            pubkeyHex: nip07Pubkey,
-            authSource: AuthenticationSource.nip07,
-            addedAt: DateTime.now().subtract(const Duration(hours: 2)),
-            lastUsedAt: DateTime.now().subtract(const Duration(hours: 1)),
-          ).toJson(),
-        ]);
-
-        SharedPreferences.setMockInitialValues({
-          'authentication_source': 'automatic',
-          'last_used_npub': testKeyContainer.npub,
-          kKnownAccountsKey: knownAccounts,
-        });
-        when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
-
-        await _ignoringDiscoveryErrors(authService.createNewIdentity);
-        await authService.signOut(deleteKeys: true);
-
-        final prefs = await SharedPreferences.getInstance();
-        expect(prefs.getString('authentication_source'), equals('none'));
-        expect(prefs.getString('last_used_npub'), isNull);
-        expect(await authService.getKnownAccounts(), [
-          isA<KnownAccount>()
-              .having((account) => account.pubkeyHex, 'pubkeyHex', nip07Pubkey)
-              .having(
-                (account) => account.authSource,
-                'authSource',
-                AuthenticationSource.nip07,
-              ),
-        ]);
-      },
-    );
-
-    test('initialize restores remaining account after destructive sign-out '
-        'via known accounts scan', () async {
-      // Scenario: last_used_npub is absent, PRIMARY is wiped,
-      // but account A still has per-identity keys
+    test('destructive sign-out prunes stale known accounts when no local login '
+        'material remains', () async {
       final accountA = SecureKeyContainer.fromNsec(
         'nsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsmhltgl',
       );
@@ -2185,26 +2095,29 @@ void main() {
         ).toJson(),
       ]);
 
-      // No last_used_npub, simulating edge case where pref was lost
       SharedPreferences.setMockInitialValues({
         'authentication_source': 'automatic',
+        'last_used_npub': testKeyContainer.npub,
         kKnownAccountsKey: knownAccounts,
       });
 
-      // PRIMARY is empty (wiped by deleteKeys)
+      await _ignoringDiscoveryErrors(authService.createNewIdentity);
+
+      // No remaining account has actual restorable key material.
       when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
-      // But account A has per-identity keys
       when(
         () => mockKeyStorage.getIdentityKeyContainer(
           accountA.npub,
           biometricPrompt: any(named: 'biometricPrompt'),
         ),
-      ).thenAnswer((_) async => accountA);
+      ).thenAnswer((_) async => null);
 
-      await _ignoringDiscoveryErrors(authService.initialize);
+      await authService.signOut(deleteKeys: true);
 
-      expect(authService.authState, equals(AuthState.authenticated));
-      expect(authService.currentPublicKeyHex, equals(accountA.publicKeyHex));
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('last_used_npub'), isNull);
+      expect(prefs.getString('authentication_source'), equals('none'));
+      expect(prefs.getString(kKnownAccountsKey), equals('[]'));
     });
   });
 
@@ -2242,54 +2155,48 @@ void main() {
       },
     );
 
-    test(
-      'signOut clears the anchor on destructive sign-out',
-      () async {
-        SharedPreferences.setMockInitialValues({
-          'authentication_source': 'automatic',
-          kKnownAccountsKey: '[]',
-        });
-        await _ignoringDiscoveryErrors(authService.createNewIdentity);
+    test('signOut clears the anchor on destructive sign-out', () async {
+      SharedPreferences.setMockInitialValues({
+        'authentication_source': 'automatic',
+        kKnownAccountsKey: '[]',
+      });
+      await _ignoringDiscoveryErrors(authService.createNewIdentity);
 
-        await authService.signOut(deleteKeys: true);
+      await authService.signOut(deleteKeys: true);
 
-        final prefs = await SharedPreferences.getInstance();
-        expect(
-          prefs.getString('session_recovery_anchor_npub'),
-          isNull,
-          reason:
-              'destructive signOut should CLEAR the recovery anchor so that '
-              '_redirectRecoveryToRemainingAccount can restore the next '
-              'account automatically without being blocked by the guard',
-        );
-      },
-    );
+      final prefs = await SharedPreferences.getInstance();
+      expect(
+        prefs.getString('session_recovery_anchor_npub'),
+        isNull,
+        reason:
+            'destructive signOut should CLEAR the recovery anchor so that '
+            'local account removal returns to welcome instead of being '
+            'treated as an interrupted account switch',
+      );
+    });
 
-    test(
-      '_setupUserSession clears the session recovery anchor after '
-      'successful sign-in',
-      () async {
-        // Arrange: pre-seed the anchor so we can verify it is cleared.
-        SharedPreferences.setMockInitialValues({
-          'authentication_source': 'automatic',
-          'session_recovery_anchor_npub': testKeyContainer.npub,
-          kKnownAccountsKey: '[]',
-        });
+    test('_setupUserSession clears the session recovery anchor after '
+        'successful sign-in', () async {
+      // Arrange: pre-seed the anchor so we can verify it is cleared.
+      SharedPreferences.setMockInitialValues({
+        'authentication_source': 'automatic',
+        'session_recovery_anchor_npub': testKeyContainer.npub,
+        kKnownAccountsKey: '[]',
+      });
 
-        // Act: sign in — _setupUserSession should clear the anchor.
-        await _ignoringDiscoveryErrors(authService.createNewIdentity);
+      // Act: sign in — _setupUserSession should clear the anchor.
+      await _ignoringDiscoveryErrors(authService.createNewIdentity);
 
-        // Assert: anchor is gone.
-        final prefs = await SharedPreferences.getInstance();
-        expect(
-          prefs.getString('session_recovery_anchor_npub'),
-          isNull,
-          reason:
-              '_setupUserSession should clear the recovery anchor once '
-              'the user has explicitly signed in',
-        );
-      },
-    );
+      // Assert: anchor is gone.
+      final prefs = await SharedPreferences.getInstance();
+      expect(
+        prefs.getString('session_recovery_anchor_npub'),
+        isNull,
+        reason:
+            '_setupUserSession should clear the recovery anchor once '
+            'the user has explicitly signed in',
+      );
+    });
 
     test(
       'getSessionRecoveryAnchorNpub returns null when no anchor is stored',
@@ -2302,378 +2209,360 @@ void main() {
       },
     );
 
-    test(
-      'getSessionRecoveryAnchorNpub returns the stored npub',
-      () async {
-        SharedPreferences.setMockInitialValues({
-          'session_recovery_anchor_npub': testKeyContainer.npub,
-        });
+    test('getSessionRecoveryAnchorNpub returns the stored npub', () async {
+      SharedPreferences.setMockInitialValues({
+        'session_recovery_anchor_npub': testKeyContainer.npub,
+      });
 
-        final anchor = await authService.getSessionRecoveryAnchorNpub();
+      final anchor = await authService.getSessionRecoveryAnchorNpub();
 
-        expect(anchor, equals(testKeyContainer.npub));
-      },
-    );
+      expect(anchor, equals(testKeyContainer.npub));
+    });
   });
 
   // ---------------------------------------------------------------------------
   // Cross-account cold-start restore guard (#4624)
   // ---------------------------------------------------------------------------
 
-  group(
-    'initialize (divineOAuth): cross-account cold-start restore guard',
-    () {
-      late SecureKeyContainer accountA;
-      late SecureKeyContainer accountB;
+  group('initialize (divineOAuth): cross-account cold-start restore guard', () {
+    late SecureKeyContainer accountA;
+    late SecureKeyContainer accountB;
 
-      setUp(() {
-        // Account A is the recovery anchor (user was signed in here at sign-out).
-        accountA = SecureKeyContainer.fromNsec(
-          'nsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsmhltgl',
+    setUp(() {
+      // Account A is the recovery anchor (user was signed in here at sign-out).
+      accountA = SecureKeyContainer.fromNsec(
+        'nsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsmhltgl',
+      );
+      // Account B is a different account whose OAuth session ended up in the
+      // global slot via legacy pre-fix recovery state.
+      accountB = testKeyContainer;
+    });
+
+    test(
+      'routes to unauthenticated when cold-start session belongs to a '
+      'different account than the recovery anchor (incident scenario)',
+      () async {
+        // Scenario: user was signed into account A, then legacy pre-fix
+        // recovery state stamped B's npub as last_used_npub and placed B's
+        // OAuth session in the global slot. The session recovery anchor was
+        // written as A's npub.
+        //
+        // On next cold start, _initializeDivineOAuth loads B's session
+        // (via the divergence tiebreaker) and reaches
+        // _restoreDivineRpcOrFallbackUnauthenticated. The guard must
+        // detect the anchor/session mismatch and route to unauthenticated
+        // instead of silently completing the cross-account sign-in.
+
+        final storage = <String, String>{};
+        final sessionData = {
+          'bunker_url': 'wss://keycast.example.com',
+          'access_token': 'account_b_token',
+          'scope': 'policy:full',
+          'expires_at': DateTime.now()
+              .add(const Duration(hours: 1))
+              .toIso8601String(),
+          'user_pubkey': accountB.publicKeyHex,
+        };
+        storage['keycast_session'] = jsonEncode(sessionData);
+
+        when(() => mockSecureStorage.read(key: any(named: 'key'))).thenAnswer((
+          invocation,
+        ) async {
+          final key = invocation.namedArguments[#key] as String;
+          return storage[key];
+        });
+        when(
+          () => mockSecureStorage.write(
+            key: any(named: 'key'),
+            value: any(named: 'value'),
+          ),
+        ).thenAnswer((invocation) async {
+          final key = invocation.namedArguments[#key] as String;
+          final value = invocation.namedArguments[#value] as String;
+          storage[key] = value;
+        });
+        when(() => mockSecureStorage.delete(key: any(named: 'key'))).thenAnswer(
+          (invocation) async {
+            final key = invocation.namedArguments[#key] as String;
+            storage.remove(key);
+          },
         );
-        // Account B is a different account whose OAuth session ended up in
-        // the global slot (placed there by _redirectRecoveryToRemainingAccount).
-        accountB = testKeyContainer;
+
+        // No local key — forces the slow path into
+        // _restoreDivineRpcOrFallbackUnauthenticated with B's session.
+        when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
+
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'divineOAuth',
+          // B is the stored "most recently used" account, but A was the
+          // account-switch anchor.
+          'last_used_npub': accountB.npub,
+          // Recovery anchor records the account the user was actually on.
+          'session_recovery_anchor_npub': accountA.npub,
+          kKnownAccountsKey: '[]',
+        });
+
+        await authService.initialize();
+
+        // Must stay unauthenticated — no silent cross-account sign-in.
+        expect(
+          authService.authState,
+          equals(AuthState.unauthenticated),
+          reason:
+              'A cold-start restore that would land on a different '
+              'account than the recovery anchor must not complete '
+              'silently; the user must confirm the switch explicitly '
+              'via the welcome screen',
+        );
+        // Must not be signed in as account B.
+        expect(
+          authService.currentPublicKeyHex,
+          isNull,
+          reason:
+              'No account should be signed in after a blocked '
+              'cross-account restore',
+        );
+      },
+    );
+
+    test(
+      'completes sign-in when cold-start session matches the recovery anchor '
+      '(same-account restore — normal flow)',
+      () async {
+        // Scenario: user was on account B, signed out, and the session is
+        // still B's. The anchor is also B. This is the normal single-
+        // account flow and should complete silently as before.
+
+        final storage = <String, String>{};
+        final sessionData = {
+          'bunker_url': 'wss://keycast.example.com',
+          'access_token': 'account_b_token',
+          'scope': 'policy:full',
+          'expires_at': DateTime.now()
+              .add(const Duration(hours: 1))
+              .toIso8601String(),
+          'user_pubkey': accountB.publicKeyHex,
+        };
+        storage['keycast_session'] = jsonEncode(sessionData);
+
+        when(() => mockSecureStorage.read(key: any(named: 'key'))).thenAnswer((
+          invocation,
+        ) async {
+          final key = invocation.namedArguments[#key] as String;
+          return storage[key];
+        });
+        when(
+          () => mockSecureStorage.write(
+            key: any(named: 'key'),
+            value: any(named: 'value'),
+          ),
+        ).thenAnswer((invocation) async {
+          final key = invocation.namedArguments[#key] as String;
+          final value = invocation.namedArguments[#value] as String;
+          storage[key] = value;
+        });
+        when(() => mockSecureStorage.delete(key: any(named: 'key'))).thenAnswer(
+          (invocation) async {
+            final key = invocation.namedArguments[#key] as String;
+            storage.remove(key);
+          },
+        );
+
+        when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
+
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'divineOAuth',
+          'last_used_npub': accountB.npub,
+          // Anchor matches the session — same-account restore.
+          'session_recovery_anchor_npub': accountB.npub,
+          kKnownAccountsKey: '[]',
+        });
+
+        await _ignoringDiscoveryErrors(authService.initialize);
+
+        // Normal same-account restore must complete as authenticated.
+        expect(
+          authService.authState,
+          equals(AuthState.authenticated),
+          reason:
+              'When the recovery anchor matches the session account, '
+              'the normal restore path should complete without '
+              'interruption',
+        );
+        expect(authService.currentPublicKeyHex, equals(accountB.publicKeyHex));
+      },
+    );
+
+    test('completes sign-in when no recovery anchor is set '
+        '(fresh install / pre-fix first use)', () async {
+      // When no anchor exists, the guard must not activate — the original
+      // "restore directly from session" behaviour must be preserved for
+      // backward compatibility.
+
+      final storage = <String, String>{};
+      final sessionData = {
+        'bunker_url': 'wss://keycast.example.com',
+        'access_token': 'token',
+        'scope': 'policy:full',
+        'expires_at': DateTime.now()
+            .add(const Duration(hours: 1))
+            .toIso8601String(),
+        'user_pubkey': accountB.publicKeyHex,
+      };
+      storage['keycast_session'] = jsonEncode(sessionData);
+
+      when(() => mockSecureStorage.read(key: any(named: 'key'))).thenAnswer((
+        invocation,
+      ) async {
+        final key = invocation.namedArguments[#key] as String;
+        return storage[key];
+      });
+      when(
+        () => mockSecureStorage.write(
+          key: any(named: 'key'),
+          value: any(named: 'value'),
+        ),
+      ).thenAnswer((invocation) async {
+        final key = invocation.namedArguments[#key] as String;
+        final value = invocation.namedArguments[#value] as String;
+        storage[key] = value;
+      });
+      when(() => mockSecureStorage.delete(key: any(named: 'key'))).thenAnswer((
+        invocation,
+      ) async {
+        final key = invocation.namedArguments[#key] as String;
+        storage.remove(key);
       });
 
-      test(
-        'routes to unauthenticated when cold-start session belongs to a '
-        'different account than the recovery anchor (incident scenario)',
-        () async {
-          // Scenario: user was signed into account A, then destructive
-          // sign-out ran _redirectRecoveryToRemainingAccount which stamped
-          // B's npub as last_used_npub and placed B's OAuth session in the
-          // global slot. The session recovery anchor was written as A's npub.
-          //
-          // On next cold start, _initializeDivineOAuth loads B's session
-          // (via the divergence tiebreaker) and reaches
-          // _restoreDivineRpcOrFallbackUnauthenticated. The guard must
-          // detect the anchor/session mismatch and route to unauthenticated
-          // instead of silently completing the cross-account sign-in.
+      when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
 
-          final storage = <String, String>{};
-          final sessionData = {
-            'bunker_url': 'wss://keycast.example.com',
-            'access_token': 'account_b_token',
-            'scope': 'policy:full',
-            'expires_at': DateTime.now()
-                .add(const Duration(hours: 1))
-                .toIso8601String(),
-            'user_pubkey': accountB.publicKeyHex,
-          };
-          storage['keycast_session'] = jsonEncode(sessionData);
+      SharedPreferences.setMockInitialValues({
+        'authentication_source': 'divineOAuth',
+        'last_used_npub': accountB.npub,
+        // No anchor — simulates pre-fix first run or clean install.
+        kKnownAccountsKey: '[]',
+      });
 
-          when(
-            () => mockSecureStorage.read(key: any(named: 'key')),
-          ).thenAnswer((invocation) async {
-            final key = invocation.namedArguments[#key] as String;
-            return storage[key];
-          });
-          when(
-            () => mockSecureStorage.write(
-              key: any(named: 'key'),
-              value: any(named: 'value'),
-            ),
-          ).thenAnswer((invocation) async {
-            final key = invocation.namedArguments[#key] as String;
-            final value = invocation.namedArguments[#value] as String;
-            storage[key] = value;
-          });
-          when(
-            () => mockSecureStorage.delete(key: any(named: 'key')),
-          ).thenAnswer((invocation) async {
+      await _ignoringDiscoveryErrors(authService.initialize);
+
+      // Without an anchor the guard is inactive; normal restore completes.
+      expect(
+        authService.authState,
+        equals(AuthState.authenticated),
+        reason:
+            'With no recovery anchor present, the cross-account guard '
+            'must not activate and the normal session restore must '
+            'complete successfully',
+      );
+      expect(authService.currentPublicKeyHex, equals(accountB.publicKeyHex));
+    });
+
+    test(
+      'blocks cross-account restore when expired session belongs to a '
+      'different account than the recovery anchor (expired-session path)',
+      () async {
+        // Scenario — the exact incident pattern, expired-session variant:
+        //   anchor = A's npub (user was signed into A at sign-out)
+        //   stored session = B's, but EXPIRED (hasRpcAccess == false)
+        //   OAuth refresh succeeds and returns a new token — still for B
+        //
+        // Without the guard, _tryRefreshOAuthSession would call
+        // signInWithDivineOAuth(B's refreshed session) silently.
+        // With the guard, the refresh is discarded and the user is
+        // routed to unauthenticated for explicit confirmation.
+
+        final mockOAuthClient = _MockKeycastOAuth();
+
+        // Expired session for B
+        final expiredSessionData = {
+          'bunker_url': 'wss://keycast.example.com',
+          'access_token': 'expired_b_token',
+          'scope': 'policy:full',
+          'expires_at': DateTime.now()
+              .subtract(const Duration(seconds: 1))
+              .toIso8601String(),
+          'user_pubkey': accountB.publicKeyHex,
+        };
+        final storage = <String, String>{
+          'keycast_session': jsonEncode(expiredSessionData),
+          'keycast_refresh_token': 'b_refresh_token',
+        };
+
+        when(() => mockSecureStorage.read(key: any(named: 'key'))).thenAnswer((
+          invocation,
+        ) async {
+          final key = invocation.namedArguments[#key] as String;
+          return storage[key];
+        });
+        when(
+          () => mockSecureStorage.write(
+            key: any(named: 'key'),
+            value: any(named: 'value'),
+          ),
+        ).thenAnswer((invocation) async {
+          final key = invocation.namedArguments[#key] as String;
+          final value = invocation.namedArguments[#value] as String;
+          storage[key] = value;
+        });
+        when(() => mockSecureStorage.delete(key: any(named: 'key'))).thenAnswer(
+          (invocation) async {
             final key = invocation.namedArguments[#key] as String;
             storage.remove(key);
-          });
+          },
+        );
 
-          // No local key — forces the slow path into
-          // _restoreDivineRpcOrFallbackUnauthenticated with B's session.
-          when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
+        // Refresh succeeds — returns a fresh token still bound to B.
+        final refreshedSession = KeycastSession(
+          bunkerUrl: 'wss://keycast.example.com',
+          accessToken: 'refreshed_b_token',
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
+          userPubkey: accountB.publicKeyHex,
+        );
+        when(
+          () => mockOAuthClient.refreshSession(
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        ).thenAnswer((_) async => refreshedSession);
+        when(mockOAuthClient.close).thenReturn(null);
+        when(mockOAuthClient.logout).thenAnswer((_) async {});
 
-          SharedPreferences.setMockInitialValues({
-            'authentication_source': 'divineOAuth',
-            // B is the "most recently used" (set by
-            // _redirectRecoveryToRemainingAccount), but A was the anchor.
-            'last_used_npub': accountB.npub,
-            // Recovery anchor records the account the user was actually on.
-            'session_recovery_anchor_npub': accountA.npub,
-            kKnownAccountsKey: '[]',
-          });
+        when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
 
-          await authService.initialize();
+        // anchor = A, last_used_npub = B (legacy stale recovery state after a
+        // prior sign-out)
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'divineOAuth',
+          'last_used_npub': accountB.npub,
+          'session_recovery_anchor_npub': accountA.npub,
+          kKnownAccountsKey: '[]',
+        });
 
-          // Must stay unauthenticated — no silent cross-account sign-in.
+        final localAuthService = AuthService(
+          userDataCleanupService: mockCleanupService,
+          keyStorage: mockKeyStorage,
+          nostrKeyManager: mockNostrKeyManager,
+          flutterSecureStorage: mockSecureStorage,
+          oauthClient: mockOAuthClient,
+        );
+
+        try {
+          await localAuthService.initialize();
+
+          // Must stay unauthenticated — the refreshed session is B's, not A's.
           expect(
-            authService.authState,
+            localAuthService.authState,
             equals(AuthState.unauthenticated),
             reason:
-                'A cold-start restore that would land on a different '
-                'account than the recovery anchor must not complete '
-                'silently; the user must confirm the switch explicitly '
-                'via the welcome screen',
+                'Cross-account guard must block even when the expired '
+                'session is refreshed successfully — if the refreshed '
+                'session still belongs to B but the anchor is A, the '
+                'user must confirm explicitly via the welcome screen',
           );
-          // Must not be signed in as account B.
-          expect(
-            authService.currentPublicKeyHex,
-            isNull,
-            reason:
-                'No account should be signed in after a blocked '
-                'cross-account restore',
-          );
-        },
-      );
-
-      test(
-        'completes sign-in when cold-start session matches the recovery anchor '
-        '(same-account restore — normal flow)',
-        () async {
-          // Scenario: user was on account B, signed out, and the session is
-          // still B's. The anchor is also B. This is the normal single-
-          // account flow and should complete silently as before.
-
-          final storage = <String, String>{};
-          final sessionData = {
-            'bunker_url': 'wss://keycast.example.com',
-            'access_token': 'account_b_token',
-            'scope': 'policy:full',
-            'expires_at': DateTime.now()
-                .add(const Duration(hours: 1))
-                .toIso8601String(),
-            'user_pubkey': accountB.publicKeyHex,
-          };
-          storage['keycast_session'] = jsonEncode(sessionData);
-
-          when(
-            () => mockSecureStorage.read(key: any(named: 'key')),
-          ).thenAnswer((invocation) async {
-            final key = invocation.namedArguments[#key] as String;
-            return storage[key];
-          });
-          when(
-            () => mockSecureStorage.write(
-              key: any(named: 'key'),
-              value: any(named: 'value'),
-            ),
-          ).thenAnswer((invocation) async {
-            final key = invocation.namedArguments[#key] as String;
-            final value = invocation.namedArguments[#value] as String;
-            storage[key] = value;
-          });
-          when(
-            () => mockSecureStorage.delete(key: any(named: 'key')),
-          ).thenAnswer((invocation) async {
-            final key = invocation.namedArguments[#key] as String;
-            storage.remove(key);
-          });
-
-          when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
-
-          SharedPreferences.setMockInitialValues({
-            'authentication_source': 'divineOAuth',
-            'last_used_npub': accountB.npub,
-            // Anchor matches the session — same-account restore.
-            'session_recovery_anchor_npub': accountB.npub,
-            kKnownAccountsKey: '[]',
-          });
-
-          await _ignoringDiscoveryErrors(authService.initialize);
-
-          // Normal same-account restore must complete as authenticated.
-          expect(
-            authService.authState,
-            equals(AuthState.authenticated),
-            reason:
-                'When the recovery anchor matches the session account, '
-                'the normal restore path should complete without '
-                'interruption',
-          );
-          expect(
-            authService.currentPublicKeyHex,
-            equals(accountB.publicKeyHex),
-          );
-        },
-      );
-
-      test(
-        'completes sign-in when no recovery anchor is set '
-        '(fresh install / pre-fix first use)',
-        () async {
-          // When no anchor exists, the guard must not activate — the original
-          // "restore directly from session" behaviour must be preserved for
-          // backward compatibility.
-
-          final storage = <String, String>{};
-          final sessionData = {
-            'bunker_url': 'wss://keycast.example.com',
-            'access_token': 'token',
-            'scope': 'policy:full',
-            'expires_at': DateTime.now()
-                .add(const Duration(hours: 1))
-                .toIso8601String(),
-            'user_pubkey': accountB.publicKeyHex,
-          };
-          storage['keycast_session'] = jsonEncode(sessionData);
-
-          when(
-            () => mockSecureStorage.read(key: any(named: 'key')),
-          ).thenAnswer((invocation) async {
-            final key = invocation.namedArguments[#key] as String;
-            return storage[key];
-          });
-          when(
-            () => mockSecureStorage.write(
-              key: any(named: 'key'),
-              value: any(named: 'value'),
-            ),
-          ).thenAnswer((invocation) async {
-            final key = invocation.namedArguments[#key] as String;
-            final value = invocation.namedArguments[#value] as String;
-            storage[key] = value;
-          });
-          when(
-            () => mockSecureStorage.delete(key: any(named: 'key')),
-          ).thenAnswer((invocation) async {
-            final key = invocation.namedArguments[#key] as String;
-            storage.remove(key);
-          });
-
-          when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
-
-          SharedPreferences.setMockInitialValues({
-            'authentication_source': 'divineOAuth',
-            'last_used_npub': accountB.npub,
-            // No anchor — simulates pre-fix first run or clean install.
-            kKnownAccountsKey: '[]',
-          });
-
-          await _ignoringDiscoveryErrors(authService.initialize);
-
-          // Without an anchor the guard is inactive; normal restore completes.
-          expect(
-            authService.authState,
-            equals(AuthState.authenticated),
-            reason:
-                'With no recovery anchor present, the cross-account guard '
-                'must not activate and the normal session restore must '
-                'complete successfully',
-          );
-          expect(
-            authService.currentPublicKeyHex,
-            equals(accountB.publicKeyHex),
-          );
-        },
-      );
-
-      test(
-        'blocks cross-account restore when expired session belongs to a '
-        'different account than the recovery anchor (expired-session path)',
-        () async {
-          // Scenario — the exact incident pattern, expired-session variant:
-          //   anchor = A's npub (user was signed into A at sign-out)
-          //   stored session = B's, but EXPIRED (hasRpcAccess == false)
-          //   OAuth refresh succeeds and returns a new token — still for B
-          //
-          // Without the guard, _tryRefreshOAuthSession would call
-          // signInWithDivineOAuth(B's refreshed session) silently.
-          // With the guard, the refresh is discarded and the user is
-          // routed to unauthenticated for explicit confirmation.
-
-          final mockOAuthClient = _MockKeycastOAuth();
-
-          // Expired session for B
-          final expiredSessionData = {
-            'bunker_url': 'wss://keycast.example.com',
-            'access_token': 'expired_b_token',
-            'scope': 'policy:full',
-            'expires_at': DateTime.now()
-                .subtract(const Duration(seconds: 1))
-                .toIso8601String(),
-            'user_pubkey': accountB.publicKeyHex,
-          };
-          final storage = <String, String>{
-            'keycast_session': jsonEncode(expiredSessionData),
-            'keycast_refresh_token': 'b_refresh_token',
-          };
-
-          when(
-            () => mockSecureStorage.read(key: any(named: 'key')),
-          ).thenAnswer((invocation) async {
-            final key = invocation.namedArguments[#key] as String;
-            return storage[key];
-          });
-          when(
-            () => mockSecureStorage.write(
-              key: any(named: 'key'),
-              value: any(named: 'value'),
-            ),
-          ).thenAnswer((invocation) async {
-            final key = invocation.namedArguments[#key] as String;
-            final value = invocation.namedArguments[#value] as String;
-            storage[key] = value;
-          });
-          when(
-            () => mockSecureStorage.delete(key: any(named: 'key')),
-          ).thenAnswer((invocation) async {
-            final key = invocation.namedArguments[#key] as String;
-            storage.remove(key);
-          });
-
-          // Refresh succeeds — returns a fresh token still bound to B.
-          final refreshedSession = KeycastSession(
-            bunkerUrl: 'wss://keycast.example.com',
-            accessToken: 'refreshed_b_token',
-            expiresAt: DateTime.now().add(const Duration(hours: 1)),
-            userPubkey: accountB.publicKeyHex,
-          );
-          when(
-            () => mockOAuthClient.refreshSession(
-              userPubkey: any(named: 'userPubkey'),
-            ),
-          ).thenAnswer((_) async => refreshedSession);
-          when(mockOAuthClient.close).thenReturn(null);
-          when(mockOAuthClient.logout).thenAnswer((_) async {});
-
-          when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
-
-          // anchor = A, last_used_npub = B (stamped by
-          // _redirectRecoveryToRemainingAccount after a prior sign-out)
-          SharedPreferences.setMockInitialValues({
-            'authentication_source': 'divineOAuth',
-            'last_used_npub': accountB.npub,
-            'session_recovery_anchor_npub': accountA.npub,
-            kKnownAccountsKey: '[]',
-          });
-
-          final localAuthService = AuthService(
-            userDataCleanupService: mockCleanupService,
-            keyStorage: mockKeyStorage,
-            nostrKeyManager: mockNostrKeyManager,
-            flutterSecureStorage: mockSecureStorage,
-            oauthClient: mockOAuthClient,
-          );
-
-          try {
-            await localAuthService.initialize();
-
-            // Must stay unauthenticated — the refreshed session is B's, not A's.
-            expect(
-              localAuthService.authState,
-              equals(AuthState.unauthenticated),
-              reason:
-                  'Cross-account guard must block even when the expired '
-                  'session is refreshed successfully — if the refreshed '
-                  'session still belongs to B but the anchor is A, the '
-                  'user must confirm explicitly via the welcome screen',
-            );
-            expect(
-              localAuthService.currentPublicKeyHex,
-              isNull,
-            );
-          } finally {
-            await localAuthService.dispose();
-          }
-        },
-      );
-    },
-  );
+          expect(localAuthService.currentPublicKeyHex, isNull);
+        } finally {
+          await localAuthService.dispose();
+        }
+      },
+    );
+  });
 }

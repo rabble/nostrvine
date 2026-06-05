@@ -1,5 +1,5 @@
-// ABOUTME: Tests OAuth account recovery after destructive sign-out
-// ABOUTME: Verifies keycast session, refresh token, and auth handle restoration
+// ABOUTME: Tests OAuth account preservation after local account removal
+// ABOUTME: Verifies remaining accounts are available without silent auto-restore
 
 import 'dart:async';
 import 'dart:convert';
@@ -211,7 +211,7 @@ void main() {
     await authService.dispose();
   });
 
-  group('OAuth account recovery after destructive sign-out', () {
+  group('OAuth account preservation after local account removal', () {
     setUp(() {
       // Archive A's OAuth session in fake secure storage
       fakeSecureStorage.data['keycast_session_${accountA.publicKeyHex}'] =
@@ -242,44 +242,49 @@ void main() {
       authService = createAuthService();
     });
 
-    test('restores session, refresh token, and auth handle for remaining '
-        'OAuth account', () async {
-      // Sign in as B (local keys)
-      await _ignoringDiscoveryErrors(authService.createNewIdentity);
-      expect(authService.isAuthenticated, isTrue);
+    test(
+      'keeps remaining OAuth account for welcome without auto-restore',
+      () async {
+        // Sign in as B (local keys)
+        await _ignoringDiscoveryErrors(authService.createNewIdentity);
+        expect(authService.isAuthenticated, isTrue);
 
-      // Delete B (destructive sign-out)
-      await authService.signOut(deleteKeys: true);
+        // Delete B (destructive sign-out)
+        await authService.signOut(deleteKeys: true);
 
-      // Verify recovery prefs point to A
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('last_used_npub'), equals(accountA.npub));
-      expect(prefs.getString('authentication_source'), equals('divineOAuth'));
+        // Removing the active account must not silently switch recovery to A.
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getString('last_used_npub'), isNull);
+        expect(prefs.getString('authentication_source'), equals('none'));
 
-      // Verify A's OAuth session was restored to the active slot
-      final restoredSessionJson = fakeSecureStorage.data['keycast_session'];
-      expect(restoredSessionJson, isNotNull);
-      final restoredSession = KeycastSession.fromJson(
-        jsonDecode(restoredSessionJson!) as Map<String, dynamic>,
-      );
-      expect(restoredSession.userPubkey, equals(accountA.publicKeyHex));
-      expect(restoredSession.accessToken, equals('access_token_A'));
+        // A remains known because it still has a restorable archived session.
+        final accounts = await authService.getKnownAccounts();
+        expect(accounts, hasLength(1));
+        expect(accounts.single.pubkeyHex, equals(accountA.publicKeyHex));
+        expect(
+          accounts.single.authSource,
+          equals(AuthenticationSource.divineOAuth),
+        );
 
-      // Verify standalone refresh token was restored (the key fix)
-      expect(
-        fakeSecureStorage.data['keycast_refresh_token'],
-        equals('refresh_token_A'),
-      );
+        final archivedSessionJson =
+            fakeSecureStorage.data['keycast_session_${accountA.publicKeyHex}'];
+        expect(archivedSessionJson, isNotNull);
+        final archivedSession = KeycastSession.fromJson(
+          jsonDecode(archivedSessionJson!) as Map<String, dynamic>,
+        );
+        expect(archivedSession.userPubkey, equals(accountA.publicKeyHex));
+        expect(archivedSession.accessToken, equals('access_token_A'));
 
-      // Verify standalone auth handle was restored
-      expect(
-        fakeSecureStorage.data['keycast_auth_handle'],
-        equals('auth_handle_A'),
-      );
-    });
+        // The active Keycast slot is cleared by sign-out; restore only happens
+        // after the user explicitly chooses A on the welcome screen.
+        expect(fakeSecureStorage.data['keycast_session'], isNull);
+        expect(fakeSecureStorage.data['keycast_refresh_token'], isNull);
+        expect(fakeSecureStorage.data['keycast_auth_handle'], isNull);
+      },
+    );
 
     test(
-      'initialize with expired restored session attempts OAuth refresh',
+      'initialize after removal does not refresh an archived OAuth account',
       () async {
         // Sign in as B
         await _ignoringDiscoveryErrors(authService.createNewIdentity);
@@ -289,48 +294,46 @@ void main() {
         await authService.signOut(deleteKeys: true);
         await authService.dispose();
 
-        // Tamper the restored session to be expired — simulates the 15s
-        // TTL in the local Docker stack where sessions always expire
-        // between archive and restore.
-        final sessionJson = fakeSecureStorage.data['keycast_session'];
+        // Tamper A's archived session to be expired. App startup should still
+        // stay on welcome instead of attempting a background account switch.
+        final archivedKey = 'keycast_session_${accountA.publicKeyHex}';
+        final sessionJson = fakeSecureStorage.data[archivedKey];
         expect(sessionJson, isNotNull);
         final sessionMap = jsonDecode(sessionJson!) as Map<String, dynamic>;
         sessionMap['expires_at'] = DateTime.now()
             .subtract(const Duration(seconds: 1))
             .toIso8601String();
-        fakeSecureStorage.data['keycast_session'] = jsonEncode(sessionMap);
-
-        // Mock refresh: return a valid session with A's pubkey
-        final refreshedSession = KeycastSession(
-          bunkerUrl: 'https://keycast.example.com',
-          accessToken: 'refreshed_access_token_A',
-          expiresAt: DateTime.now().add(const Duration(hours: 1)),
-          refreshToken: 'new_refresh_token_A',
-          userPubkey: accountA.publicKeyHex,
-        );
+        fakeSecureStorage.data[archivedKey] = jsonEncode(sessionMap);
         when(
           () => mockOAuthClient.refreshSession(
             userPubkey: any(named: 'userPubkey'),
           ),
-        ).thenAnswer((_) async => refreshedSession);
+        ).thenThrow(AssertionError('Archived account should not auto-refresh'));
 
         // Create fresh AuthService (simulates app restart)
         authService = createAuthService();
         await _ignoringDiscoveryErrors(authService.initialize);
 
-        // The refresh was attempted — signInWithDivineOAuth is called
-        // with the refreshed session. It fails due to HTTP (no server
-        // in unit tests), but we can verify refresh was called.
-        verify(
+        expect(authService.isAuthenticated, isFalse);
+        expect(
+          authService.authenticationSource,
+          equals(AuthenticationSource.none),
+        );
+        verifyNever(
           () => mockOAuthClient.refreshSession(
             userPubkey: any(named: 'userPubkey'),
           ),
-        ).called(1);
+        );
+
+        final accounts = await authService.getKnownAccounts();
+        expect(accounts.map((account) => account.pubkeyHex), [
+          accountA.publicKeyHex,
+        ]);
       },
     );
 
     test(
-      'initialize with valid restored session reaches signInWithDivineOAuth',
+      'initialize after removal leaves valid archived OAuth account selectable',
       () async {
         // Sign in as B
         await _ignoringDiscoveryErrors(authService.createNewIdentity);
@@ -340,25 +343,31 @@ void main() {
         await authService.signOut(deleteKeys: true);
         await authService.dispose();
 
-        // Verify the restored session has RPC access (not expired)
-        final sessionJson = fakeSecureStorage.data['keycast_session'];
+        // Verify the archived session has RPC access (not expired).
+        final sessionJson =
+            fakeSecureStorage.data['keycast_session_${accountA.publicKeyHex}'];
         expect(sessionJson, isNotNull);
-        final restored = KeycastSession.fromJson(
+        final archived = KeycastSession.fromJson(
           jsonDecode(sessionJson!) as Map<String, dynamic>,
         );
-        expect(restored.hasRpcAccess, isTrue);
+        expect(archived.hasRpcAccess, isTrue);
 
-        // Collect auth state transitions during initialize
         authService = createAuthService();
-        final states = <AuthState>[];
-        final sub = authService.authStateStream.listen(states.add);
-
         await _ignoringDiscoveryErrors(authService.initialize);
-        await sub.cancel();
 
-        // Should have reached 'authenticating' (signInWithDivineOAuth sets
-        // it) even though it ultimately fails due to HTTP in unit tests.
-        expect(states, contains(AuthState.authenticating));
+        expect(authService.isAuthenticated, isFalse);
+        expect(
+          authService.authenticationSource,
+          equals(AuthenticationSource.none),
+        );
+
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getString('last_used_npub'), isNull);
+        expect(prefs.getString('authentication_source'), equals('none'));
+
+        final accounts = await authService.getKnownAccounts();
+        expect(accounts, hasLength(1));
+        expect(accounts.single.pubkeyHex, equals(accountA.publicKeyHex));
       },
     );
   });

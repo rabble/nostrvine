@@ -3355,14 +3355,16 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
   /// Sign out the current user.
   ///
-  /// When [deleteKeys] is true, stored keys are removed from the device.
+  /// When [deleteKeys] is true, the current account's local login material is
+  /// removed from the device.
   ///
   /// When [abortOnKeyDeletionFailure] is true (only meaningful with
   /// [deleteKeys]), platform key deletion is attempted **before** any
   /// session cleanup. If deletion fails the method throws immediately and
   /// no cleanup happens — the user stays signed in and can retry.
-  /// Use this for the "Remove Keys" flow where signing out without
-  /// actually removing keys is counter-productive.
+  /// Use this for the "Remove this account from this device" flow where
+  /// signing out without actually removing local login material is
+  /// counter-productive.
   ///
   /// When [abortOnKeyDeletionFailure] is false (default), key deletion
   /// failure is captured and rethrown **after** all cleanup completes.
@@ -3387,7 +3389,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     // sign-out proceeds, attempt it now. If this throws, no cleanup has
     // happened and the user stays signed in.
     if (deleteKeys && abortOnKeyDeletionFailure) {
-      await _deleteStoredKeysForAccount(npubAtSignOutStart);
+      await _deleteStoredLoginForAccount(npubAtSignOutStart);
     }
 
     Object? keyDeletionError;
@@ -3407,10 +3409,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       // confirmation banner so the user can redirect the switch explicitly.
       //
       // On DESTRUCTIVE sign-out (deleteKeys=true), the user is intentionally
-      // removing the account. The _redirectRecoveryToRemainingAccount path
-      // points initialize() at the next-best account, which should restore
-      // automatically without requiring confirmation. Clear any stale anchor
-      // so it does not block that automatic restore.
+      // removing the account. Clear any stale anchor so the next app start
+      // returns to the welcome/account-picker surface instead of treating the
+      // removal as an interrupted account switch.
       //
       // The anchor is cleared by _setupUserSession() after a successful sign-in.
       final leavingNpub = _currentKeyContainer?.npub;
@@ -3434,11 +3435,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         );
       }
 
-      // On destructive sign-out, redirect recovery prefs to the next
-      // remaining account so initialize() can restore it. Only clear when
-      // no accounts remain — otherwise the user loses access to account A
-      // after deleting account B.
-      // Deferred: the actual redirect runs after _removeFromKnownAccounts
+      // On destructive sign-out, remove this device's local login for the
+      // current account and then return to the welcome/account-picker surface.
+      // Deferred: remaining-account cleanup runs after _removeFromKnownAccounts
       // so the deleted account is excluded from the remaining list.
       // Non-destructive sign-out (switch account) preserves these so that
       // initialize() can reconnect to the same external signer.
@@ -3495,7 +3494,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         }
 
         Log.debug(
-          '📱️ Deleting stored keys',
+          '📱️ Deleting local login material',
           name: 'AuthService',
           category: LogCategory.auth,
         );
@@ -3505,11 +3504,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         // Skip if already handled by the pre-flight check above.
         if (!abortOnKeyDeletionFailure) {
           try {
-            await _deleteStoredKeysForAccount(leavingNpub);
+            await _deleteStoredLoginForAccount(leavingNpub);
           } catch (e) {
             keyDeletionError = e;
             Log.error(
-              'Key deletion failed during signOut: $e',
+              'Local login deletion failed during signOut: $e',
               name: 'AuthService',
               category: LogCategory.auth,
             );
@@ -3611,11 +3610,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         }
       } catch (_) {}
 
-      // Redirect recovery prefs AFTER all signer cleanup so that
-      // _restoreSignerInfo can re-stage the remaining account's archived
-      // session without it being wiped by _oauthClient.logout() above.
+      // Reset recovery prefs AFTER all signer cleanup so removed accounts
+      // cannot silently recover. Any remaining restorable accounts stay in the
+      // known-account picker instead of being auto-restored.
       if (deleteKeys) {
-        await _redirectRecoveryToRemainingAccount(prefs);
+        await _resetRecoveryAfterLocalAccountRemoval(prefs);
       }
 
       _setAuthState(AuthState.unauthenticated);
@@ -3665,11 +3664,26 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     }
   }
 
-  Future<void> _deleteStoredKeysForAccount(String? npub) async {
-    if (npub != null) {
-      await _keyStorage.deleteIdentityKeyContainer(npub);
+  Future<void> _deleteStoredLoginForAccount(String? npub) async {
+    if (npub == null) {
+      await _keyStorage.deleteKeys();
+      return;
     }
-    await _keyStorage.deleteKeys();
+
+    await _keyStorage.deleteIdentityKeyContainer(npub);
+
+    final primaryContainer = await _keyStorage.getKeyContainer();
+    if (primaryContainer == null || primaryContainer.npub == npub) {
+      await _keyStorage.deleteKeys();
+      return;
+    }
+
+    Log.info(
+      'Preserving PRIMARY key while removing account-local login material: '
+      'removedNpub=$npub primaryNpub=${primaryContainer.npub}',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
   }
 
   Future<void> _runBeforeSessionTeardownCallbacks() async {
@@ -3769,54 +3783,46 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     await prefs.remove('terms_accepted_at');
     await prefs.remove('configured_relays');
     await prefs.remove('current_user_pubkey_hex');
-    await _redirectRecoveryToRemainingAccount(prefs);
+    await _resetRecoveryAfterLocalAccountRemoval(prefs);
 
     _setAuthState(AuthState.unauthenticated);
   }
 
-  /// After destructive sign-out, point [_kLastUsedNpubKey] and
-  /// [_kAuthSourceKey] at the most recently used remaining account that still
-  /// has restorable local material. Local nsec accounts must have an archived
-  /// identity key or PRIMARY key; external signer accounts must have archived
-  /// signer info. If nothing restorable remains, recovery is reset to
-  /// [AuthenticationSource.none] so the app returns to fresh-install behaviour.
-  Future<void> _redirectRecoveryToRemainingAccount(
+  /// After removing the active account from this device, keep only known
+  /// accounts that still have restorable local login material and reset
+  /// automatic recovery. This returns the app to the welcome screen:
+  /// fresh-login when no accounts remain, or the returning-user picker when
+  /// other local accounts are still available.
+  Future<void> _resetRecoveryAfterLocalAccountRemoval(
     SharedPreferences prefs,
   ) async {
     try {
       final remaining = await getKnownAccounts();
       final restorableAccounts = await _restorableAccounts(remaining);
+
+      _authSource = AuthenticationSource.none;
+      await prefs.setString(_kAuthSourceKey, AuthenticationSource.none.code);
+      await prefs.remove(_kLastUsedNpubKey);
+
       if (restorableAccounts.isEmpty) {
-        _authSource = AuthenticationSource.none;
-        await prefs.setString(_kAuthSourceKey, AuthenticationSource.none.code);
-        await prefs.remove(_kLastUsedNpubKey);
+        await prefs.setString(kKnownAccountsKey, jsonEncode(<Object>[]));
         Log.info(
-          'signOut: no remaining local nsec accounts — reset recovery prefs',
+          'signOut: no restorable local accounts — reset to fresh welcome',
           name: 'AuthService',
           category: LogCategory.auth,
         );
         return;
       }
 
-      // Pick the most recently used account.
-      restorableAccounts.sort(
-        (a, b) => b.lastUsedAt.compareTo(a.lastUsedAt),
+      restorableAccounts.sort((a, b) => b.lastUsedAt.compareTo(a.lastUsedAt));
+      await prefs.setString(
+        kKnownAccountsKey,
+        jsonEncode(restorableAccounts.map((a) => a.toJson()).toList()),
       );
-      final next = restorableAccounts.first;
-      final nextNpub = NostrKeyUtils.encodePubKey(next.pubkeyHex);
-
-      await prefs.setString(_kLastUsedNpubKey, nextNpub);
-      await prefs.setString(_kAuthSourceKey, next.authSource.code);
-      _authSource = next.authSource;
-
-      // Pre-stage the remaining account's archived signer info into the
-      // active slots so initialize() can find it.  For divineOAuth this
-      // restores the KeycastSession, for bunker/amber the connection info.
-      await _restoreSignerInfo(next.pubkeyHex, next.authSource);
 
       Log.info(
-        'signOut: redirected recovery to remaining account '
-        'pubkey=${next.pubkeyHex}, source=${next.authSource.name}',
+        'signOut: kept ${restorableAccounts.length} restorable local '
+        'account(s) for the welcome picker',
         name: 'AuthService',
         category: LogCategory.auth,
       );
@@ -3824,12 +3830,102 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       // Best-effort: if this fails, the fallback scan in
       // _restoreLastUsedAccountOrFallback will still find the account.
       Log.warning(
-        'signOut: failed to redirect recovery prefs: $e',
+        'signOut: failed to reset local-account recovery prefs: $e',
         name: 'AuthService',
         category: LogCategory.auth,
       );
-      await prefs.remove(_kAuthSourceKey);
+      _authSource = AuthenticationSource.none;
+      await prefs.setString(_kAuthSourceKey, AuthenticationSource.none.code);
       await prefs.remove(_kLastUsedNpubKey);
+      await prefs.setString(kKnownAccountsKey, jsonEncode(<Object>[]));
+    }
+  }
+
+  Future<List<KnownAccount>> _restorableAccounts(
+    List<KnownAccount> accounts,
+  ) async {
+    final restorable = <KnownAccount>[];
+    for (final account in accounts) {
+      switch (account.authSource) {
+        case AuthenticationSource.automatic:
+        case AuthenticationSource.importedKeys:
+          if (await _hasRestorableLocalKey(account)) {
+            restorable.add(account);
+          }
+        case AuthenticationSource.amber:
+        case AuthenticationSource.bunker:
+        case AuthenticationSource.divineOAuth:
+          if (await _hasRestorableSignerArchive(account)) {
+            restorable.add(account);
+          }
+        case AuthenticationSource.none:
+        case AuthenticationSource.nip07:
+          break;
+      }
+    }
+    return restorable;
+  }
+
+  Future<bool> _hasRestorableLocalKey(KnownAccount account) async {
+    final npub = NostrKeyUtils.encodePubKey(account.pubkeyHex);
+    try {
+      final identityContainer = await _keyStorage.getIdentityKeyContainer(npub);
+      if (identityContainer?.publicKeyHex == account.pubkeyHex) {
+        return true;
+      }
+
+      if (await _keyStorage.hasKeys()) {
+        final primaryContainer = await _keyStorage.getKeyContainer();
+        if (primaryContainer?.publicKeyHex == account.pubkeyHex) {
+          return true;
+        }
+      }
+    } catch (e) {
+      Log.warning(
+        'signOut: failed to verify local nsec for ${account.pubkeyHex}: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+    }
+    return false;
+  }
+
+  Future<bool> _hasRestorableSignerArchive(KnownAccount account) async {
+    if (_flutterSecureStorage == null) return false;
+    try {
+      switch (account.authSource) {
+        case AuthenticationSource.amber:
+          final pubkey = await _flutterSecureStorage.read(
+            key: '${_kAmberPubkeyKey}_${account.pubkeyHex}',
+          );
+          return pubkey != null && pubkey.isNotEmpty;
+        case AuthenticationSource.bunker:
+          final bunkerUrl = await _flutterSecureStorage.read(
+            key: '${_kBunkerInfoKey}_${account.pubkeyHex}',
+          );
+          return bunkerUrl != null && bunkerUrl.isNotEmpty;
+        case AuthenticationSource.divineOAuth:
+          final sessionJson = await _flutterSecureStorage.read(
+            key: _keycastSessionKey(account.pubkeyHex),
+          );
+          if (sessionJson == null || sessionJson.isEmpty) return false;
+          final sessionMap = jsonDecode(sessionJson) as Map<String, dynamic>;
+          final session = KeycastSession.fromJson(sessionMap);
+          return session.userPubkey == account.pubkeyHex;
+        case AuthenticationSource.automatic:
+        case AuthenticationSource.importedKeys:
+        case AuthenticationSource.none:
+        case AuthenticationSource.nip07:
+          return false;
+      }
+    } catch (e) {
+      Log.warning(
+        'signOut: failed to verify signer archive for '
+        '${account.pubkeyHex}: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      return false;
     }
   }
 

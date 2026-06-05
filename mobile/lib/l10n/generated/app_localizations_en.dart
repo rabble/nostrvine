@@ -2043,19 +2043,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'Include a Divine client tag on events you publish so other Nostr apps can attribute them correctly.';
 
   @override
-  String get nostrSettingsRemoveKeys => 'Remove Keys from Device';
+  String get nostrSettingsRemoveKeys => 'Remove this account from this device';
 
   @override
   String get nostrSettingsRemoveKeysSubtitle =>
-      'Delete your private key from this device only. Your content stays on relays, but you\'ll need your nsec backup to access your account again.';
+      'Remove this account\'s local login from this device. This won\'t delete your Divine account or Nostr identity.';
 
   @override
   String get nostrSettingsCouldNotRemoveKeys =>
-      'Could not remove keys from this device. Please try again.';
+      'Could not remove this account from this device. Please try again.';
 
   @override
   String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'Failed to remove keys: $error';
+    return 'Failed to remove this account: $error';
   }
 
   @override
@@ -6533,13 +6533,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteAccountRemoveKeysBody =>
-      'This will:\n• Remove your Nostr private key (nsec) from this device\n• Sign you out immediately\n• Your content will REMAIN on Nostr relays\n\nMake sure you have your nsec backed up elsewhere or you will lose access to your account!\n\nContinue?';
+      'This removes the local login for this account from this device. It won\'t delete your Divine account or Nostr identity.\n\nIf this is your last local account, you\'ll return to the login screen.';
 
   @override
-  String get deleteAccountRemoveKeysConfirm => 'Remove Keys';
+  String get deleteAccountRemoveKeysConfirm => 'Remove from device';
 
   @override
-  String get deleteAccountRemoveKeysTitle => '⚠️ Remove Keys from Device?';
+  String get deleteAccountRemoveKeysTitle =>
+      'Remove this account from this device?';
 
   @override
   String get deleteAccountServerDeletionFailed =>

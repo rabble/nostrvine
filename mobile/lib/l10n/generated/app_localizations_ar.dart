@@ -6482,13 +6482,14 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get deleteAccountRemoveKeysBody =>
-      'This will:\n• Remove your Nostr private key (nsec) from this device\n• Sign you out immediately\n• Your content will REMAIN on Nostr relays\n\nMake sure you have your nsec backed up elsewhere or you will lose access to your account!\n\nContinue?';
+      'This removes the local login for this account from this device. It won\'t delete your Divine account or Nostr identity.\n\nIf this is your last local account, you\'ll return to the login screen.';
 
   @override
-  String get deleteAccountRemoveKeysConfirm => 'Remove Keys';
+  String get deleteAccountRemoveKeysConfirm => 'Remove from device';
 
   @override
-  String get deleteAccountRemoveKeysTitle => '⚠️ Remove Keys from Device?';
+  String get deleteAccountRemoveKeysTitle =>
+      'Remove this account from this device?';
 
   @override
   String get deleteAccountServerDeletionFailed =>
