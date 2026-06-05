@@ -249,7 +249,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       final reviewStatusAsync = ref.read(
         currentMinorAccountReviewStatusProvider,
       );
-      final reviewStatus = reviewStatusAsync.asData?.value;
+      final reviewStatus = reviewStatusAsync.value;
       final moderationConversationId = _moderationConversationId(
         authService,
         reviewStatus?.currentCase,

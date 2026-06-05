@@ -481,6 +481,10 @@ void main() {
         container.invalidate(currentMinorAccountReviewStatusProvider);
         await tester.pumpAndSettle();
         expect(
+          router.routeInformationProvider.value.uri.toString(),
+          MinorAccountReviewScreen.path,
+        );
+        expect(
           container.read(currentMinorAccountReviewStatusProvider).isLoading,
           isTrue,
         );
