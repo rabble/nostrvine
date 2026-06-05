@@ -378,5 +378,77 @@ void main() {
           .uri;
       expect(routeUri.path, MinorAccountReviewLoadingScreen.path);
     });
+
+    testWidgets(
+      'does not bounce to the loading gate during a background refetch',
+      (tester) async {
+        // Regression: the review status is a FutureProvider that (in prod)
+        // depends on currentAuthStateProvider, which invalidates itself on
+        // every authStateStream event. A re-run puts the provider into
+        // AsyncLoading while retaining its previous value. The router must
+        // NOT treat that transient refetch as a cold load and bounce to the
+        // loading screen — that redirect is a navigation that tears down the
+        // video feed (VideoStopNavigatorObserver disposes all controllers on
+        // push), which manifested as videos stopping while swiping the feed.
+        //
+        // SupportCenterScreen stands in for any non-review authenticated
+        // route: the loading-bounce decision is independent of the
+        // destination, and it avoids rendering the heavy feed AppShell.
+        var loadCount = 0;
+        final pendingRefetch = Completer<MinorAccountReviewStatus>();
+        final container = ProviderContainer(
+          overrides: [
+            ...getStandardTestOverrides(mockAuthService: mockAuthService),
+            bugReportServiceProvider.overrideWith((ref) => BugReportService()),
+            nostrSessionProvider.overrideWith(_NotReadyNostrSession.new),
+            currentMinorAccountReviewStatusProvider.overrideWith((ref) {
+              loadCount++;
+              // First load resolves with an unrestricted status; any later
+              // re-run hangs to emulate an in-flight background refetch.
+              return loadCount == 1
+                  ? Future<MinorAccountReviewStatus>.value(
+                      MinorAccountReviewStatus.active(),
+                    )
+                  : pendingRefetch.future;
+            }),
+          ],
+        );
+        registerContainerTearDown(tester, container);
+        await container.read(currentMinorAccountReviewStatusProvider.future);
+        await pumpRouter(tester, container);
+
+        final router = container.read(goRouterProvider);
+        router.go(SupportCenterScreen.path);
+        await tester.pumpAndSettle();
+        expect(
+          router.routeInformationProvider.value.uri.toString(),
+          SupportCenterScreen.path,
+        );
+
+        // Trigger a background refetch: the provider re-runs and enters the
+        // loading-with-previous-value state (isLoading == true while
+        // hasValue == true).
+        container.invalidate(currentMinorAccountReviewStatusProvider);
+        await tester.pumpAndSettle();
+        expect(
+          container.read(currentMinorAccountReviewStatusProvider).isLoading,
+          isTrue,
+        );
+        expect(
+          container.read(currentMinorAccountReviewStatusProvider).hasValue,
+          isTrue,
+        );
+
+        // Re-evaluate the redirect while the refetch is in flight (a real
+        // navigation, e.g. a swipe-driven page change): it must keep the
+        // current route instead of bouncing to the loading screen.
+        router.go(SupportCenterScreen.path);
+        await tester.pumpAndSettle();
+        expect(
+          router.routeInformationProvider.value.uri.toString(),
+          SupportCenterScreen.path,
+        );
+      },
+    );
   });
 }
