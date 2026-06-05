@@ -2,7 +2,6 @@
 // ABOUTME: video editor timeline. Handles add/remove/move/trim/select/drag
 // ABOUTME: and collapse state for all three strip types.
 
-import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
