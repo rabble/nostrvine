@@ -6460,27 +6460,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get popularVideosFeedSourceLabel => 'Popular feed source';
 
   @override
-  String get relatedVideosByHashtags => 'By Hashtags';
-
-  @override
-  String get relatedVideosCoWatched => 'Co-watched';
-
-  @override
-  String get relatedVideosEmptySubtitle => 'Explore more content in the app';
-
-  @override
-  String get relatedVideosEmptyTitle => 'No related videos found';
-
-  @override
-  String get relatedVideosFailedToLoad => 'Failed to load related videos';
-
-  @override
-  String get relatedVideosTitle => 'Related Videos';
-
-  @override
-  String get relatedVideosTryAgainLater => 'Try again later';
-
-  @override
   String get trendingHashtagsLoading => 'Loading hashtags...';
 
   @override

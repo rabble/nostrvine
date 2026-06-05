@@ -11060,48 +11060,6 @@ abstract class AppLocalizations {
   /// **'Popular feed source'**
   String get popularVideosFeedSourceLabel;
 
-  /// No description provided for @relatedVideosByHashtags.
-  ///
-  /// In en, this message translates to:
-  /// **'By Hashtags'**
-  String get relatedVideosByHashtags;
-
-  /// No description provided for @relatedVideosCoWatched.
-  ///
-  /// In en, this message translates to:
-  /// **'Co-watched'**
-  String get relatedVideosCoWatched;
-
-  /// No description provided for @relatedVideosEmptySubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Explore more content in the app'**
-  String get relatedVideosEmptySubtitle;
-
-  /// No description provided for @relatedVideosEmptyTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'No related videos found'**
-  String get relatedVideosEmptyTitle;
-
-  /// No description provided for @relatedVideosFailedToLoad.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to load related videos'**
-  String get relatedVideosFailedToLoad;
-
-  /// No description provided for @relatedVideosTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Related Videos'**
-  String get relatedVideosTitle;
-
-  /// No description provided for @relatedVideosTryAgainLater.
-  ///
-  /// In en, this message translates to:
-  /// **'Try again later'**
-  String get relatedVideosTryAgainLater;
-
   /// No description provided for @trendingHashtagsLoading.
   ///
   /// In en, this message translates to:
