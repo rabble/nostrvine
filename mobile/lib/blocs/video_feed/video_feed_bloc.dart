@@ -24,8 +24,12 @@ part 'video_feed_state.dart';
 /// Default interval between auto-refreshes of the home feed.
 const _defaultAutoRefreshMinInterval = Duration(minutes: 10);
 
-/// SharedPreferences key for persisting the selected feed mode.
-const _feedModeKey = 'selected_feed_mode';
+/// Legacy SharedPreferences key for persisting the selected feed mode.
+///
+/// New authenticated sessions use a pubkey-scoped key so switching accounts
+/// cannot carry a previous account's Following/list selection into a newly
+/// imported key with a different social graph.
+const _legacyFeedModeKey = 'selected_feed_mode';
 
 /// BLoC for managing the unified video feed.
 ///
@@ -123,12 +127,9 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
     Emitter<VideoFeedBlocState> emit,
   ) async {
     final source = _restoreSource(event.mode);
-    if (_sharedPreferences?.getString(_feedModeKey) !=
+    if (_sharedPreferences?.getString(_feedModePreferenceKey) !=
         source.persistenceValue) {
-      await _sharedPreferences?.setString(
-        _feedModeKey,
-        source.persistenceValue,
-      );
+      await _persistSourcePreference(source);
     }
 
     final subscribedLists = _curatedListRepository.getSubscribedLists();
@@ -221,11 +222,50 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
   }
 
   VideoFeedSource _restoreSource(FeedMode fallbackMode) {
-    final saved = _sharedPreferences?.getString(_feedModeKey);
+    final saved = _savedSourcePreference();
     if (saved == null) {
       return VideoFeedSource.fromMode(fallbackMode);
     }
 
+    return _sourceFromPersistedValue(saved) ?? const VideoFeedSource.forYou();
+  }
+
+  String get _feedModePreferenceKey => _userPubkey == null
+      ? _legacyFeedModeKey
+      : '${_legacyFeedModeKey}_$_userPubkey';
+
+  String? _savedSourcePreference() {
+    final prefs = _sharedPreferences;
+    if (prefs == null) return null;
+
+    final scoped = prefs.getString(_feedModePreferenceKey);
+    if (scoped != null) return scoped;
+
+    // Only unauthenticated/test callers should keep reading the legacy global
+    // key directly. Authenticated sessions migrate it conservatively below.
+    if (_userPubkey == null) {
+      return prefs.getString(_legacyFeedModeKey);
+    }
+
+    final legacy = prefs.getString(_legacyFeedModeKey);
+    if (legacy == null) return null;
+
+    final migratedSource = _sourceFromPersistedValue(legacy);
+    if (migratedSource == null) return null;
+
+    // The bug fixed here: a newly imported key could inherit another account's
+    // Following mode and land on an empty feed. Only migrate Following when
+    // the current account already has a non-empty following list.
+    if (migratedSource.type == VideoFeedSourceType.following &&
+        _followRepository.followingPubkeys.isEmpty) {
+      return null;
+    }
+
+    unawaited(_persistSourcePreference(migratedSource));
+    return migratedSource.persistenceValue;
+  }
+
+  VideoFeedSource? _sourceFromPersistedValue(String saved) {
     if (saved.startsWith('list:')) {
       final listId = saved.substring('list:'.length);
       final list = _curatedListRepository.getListById(listId);
@@ -235,7 +275,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
           listName: list.name,
         );
       }
-      return const VideoFeedSource.forYou();
+      return null;
     }
 
     if (saved == FeedMode.following.name) {
@@ -246,7 +286,21 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       return const VideoFeedSource.newVideos();
     }
 
-    return const VideoFeedSource.forYou();
+    if (saved == FeedMode.forYou.name) {
+      return const VideoFeedSource.forYou();
+    }
+
+    return null;
+  }
+
+  Future<void> _persistSourcePreference(VideoFeedSource source) async {
+    final prefs = _sharedPreferences;
+    if (prefs == null) return;
+
+    await prefs.setString(_feedModePreferenceKey, source.persistenceValue);
+    if (_userPubkey != null) {
+      await prefs.remove(_legacyFeedModeKey);
+    }
   }
 
   /// Handle mode changed event.
@@ -274,7 +328,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       return;
     }
 
-    await _sharedPreferences?.setString(_feedModeKey, source.persistenceValue);
+    await _persistSourcePreference(source);
 
     emit(
       state.copyWith(
@@ -494,10 +548,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
         : const VideoFeedSource.forYou();
 
     if (!stillSubscribed) {
-      await _sharedPreferences?.setString(
-        _feedModeKey,
-        nextSource.persistenceValue,
-      );
+      await _persistSourcePreference(nextSource);
     }
 
     emit(
