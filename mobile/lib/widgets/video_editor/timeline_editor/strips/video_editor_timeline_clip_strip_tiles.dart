@@ -130,6 +130,7 @@ class _TrimmableClipTileState extends State<_TrimmableClipTile> {
       padding: EdgeInsets.symmetric(horizontal: widget.trimExpand),
       child: TimelineTrimHandles(
         height: TimelineConstants.thumbnailStripHeight,
+        width: widget.clipWidth,
         onLeftDragUpdate: _onLeftDragUpdate,
         onRightDragUpdate: _onRightDragUpdate,
         onDragStart: _onDragStart,

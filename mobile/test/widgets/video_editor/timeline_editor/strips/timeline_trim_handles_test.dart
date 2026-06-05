@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
@@ -16,6 +17,8 @@ void main() {
       VoidCallback? onDragStart,
       VoidCallback? onDragEnd,
       Color? handleColor,
+      double width = 300,
+      double? trimWidth,
       double height = TimelineConstants.thumbnailStripHeight,
       double handleWidth = TimelineConstants.trimHandleWidth,
     }) {
@@ -23,19 +26,22 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
-          body: SizedBox(
-            width: 300,
-            child: TimelineTrimHandles(
-              height: height,
-              onLeftDragUpdate: onLeftDragUpdate,
-              onRightDragUpdate: onRightDragUpdate,
-              onDragStart: onDragStart,
-              onDragEnd: onDragEnd,
-              handleColor: handleColor ?? VineTheme.accentYellow,
-              handleWidth: handleWidth,
-              child: const ColoredBox(
-                color: Colors.blue,
-                child: SizedBox.expand(),
+          body: Center(
+            child: SizedBox(
+              width: width,
+              child: TimelineTrimHandles(
+                height: height,
+                width: trimWidth,
+                onLeftDragUpdate: onLeftDragUpdate,
+                onRightDragUpdate: onRightDragUpdate,
+                onDragStart: onDragStart,
+                onDragEnd: onDragEnd,
+                handleColor: handleColor ?? VineTheme.accentYellow,
+                handleWidth: handleWidth,
+                child: const ColoredBox(
+                  color: Colors.blue,
+                  child: SizedBox.expand(),
+                ),
               ),
             ),
           ),
@@ -94,6 +100,33 @@ void main() {
         find.byType(TimelineTrimHandles),
       );
       return box.localToGlobal(Offset.zero);
+    }
+
+    bool hitTestsAt(WidgetTester tester, Offset localPosition) {
+      final box = tester.renderObject<RenderBox>(
+        find.byType(TimelineTrimHandles),
+      );
+      return box.hitTest(BoxHitTestResult(), position: localPosition);
+    }
+
+    double baseOutwardHit({
+      double handleWidth = TimelineConstants.trimHandleWidth,
+    }) {
+      return handleWidth -
+          TimelineConstants.trimBorderWidth +
+          TimelineConstants.trimHitAreaExtra / 2;
+    }
+
+    double narrowOutwardHit(
+      double trimWidth, {
+      double handleWidth = TimelineConstants.trimHandleWidth,
+    }) {
+      const defaultInward =
+          TimelineConstants.trimHitAreaExtra / 2 +
+          TimelineConstants.trimBorderWidth;
+      final clampedInward = defaultInward.clamp(0.0, trimWidth / 2);
+      return baseOutwardHit(handleWidth: handleWidth) +
+          (defaultInward - clampedInward);
     }
 
     group('left handle drag', () {
@@ -177,6 +210,129 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(started, isTrue);
+      });
+
+      testWidgets('accepts a drag from inside the right clip edge', (
+        tester,
+      ) async {
+        final deltas = <double>[];
+        await tester.pumpWidget(buildWidget(onRightDragUpdate: deltas.add));
+
+        final origin = handleOrigin(tester);
+        final box = tester.renderObject<RenderBox>(
+          find.byType(TimelineTrimHandles),
+        );
+        final from =
+            origin +
+            Offset(
+              box.size.width - (TimelineConstants.trimHitAreaExtra / 2),
+              box.size.height / 2,
+            );
+
+        await tester.dragFrom(from, const Offset(-20, 0));
+        await tester.pumpAndSettle();
+
+        expect(deltas, isNotEmpty);
+      });
+    });
+
+    group('narrow widths', () {
+      testWidgets(
+        'extends left hit testing beyond the original outward range',
+        (
+          tester,
+        ) async {
+          const trimWidth = 20.0;
+          await tester.pumpWidget(
+            buildWidget(
+              width: trimWidth,
+              trimWidth: trimWidth,
+            ),
+          );
+
+          final box = tester.renderObject<RenderBox>(
+            find.byType(TimelineTrimHandles),
+          );
+          final outwardHit = narrowOutwardHit(trimWidth);
+          final originalOutwardHit = baseOutwardHit();
+          final probeX =
+              -(originalOutwardHit + (outwardHit - originalOutwardHit) / 2);
+
+          expect(
+            hitTestsAt(tester, Offset(probeX, box.size.height / 2)),
+            isTrue,
+          );
+        },
+      );
+
+      testWidgets(
+        'extends right hit testing beyond the original outward range',
+        (
+          tester,
+        ) async {
+          const trimWidth = 20.0;
+          await tester.pumpWidget(
+            buildWidget(
+              width: trimWidth,
+              trimWidth: trimWidth,
+            ),
+          );
+
+          final box = tester.renderObject<RenderBox>(
+            find.byType(TimelineTrimHandles),
+          );
+          final outwardHit = narrowOutwardHit(trimWidth);
+          final originalOutwardHit = baseOutwardHit();
+          final probeX =
+              box.size.width +
+              originalOutwardHit +
+              (outwardHit - originalOutwardHit) / 2;
+
+          expect(
+            hitTestsAt(tester, Offset(probeX, box.size.height / 2)),
+            isTrue,
+          );
+        },
+      );
+
+      testWidgets('keeps left and right hit areas separated at the midpoint', (
+        tester,
+      ) async {
+        final leftDeltas = <double>[];
+        final rightDeltas = <double>[];
+        const trimWidth = 20.0;
+        await tester.pumpWidget(
+          buildWidget(
+            width: trimWidth,
+            trimWidth: trimWidth,
+            onLeftDragUpdate: leftDeltas.add,
+            onRightDragUpdate: rightDeltas.add,
+          ),
+        );
+
+        final origin = handleOrigin(tester);
+        final box = tester.renderObject<RenderBox>(
+          find.byType(TimelineTrimHandles),
+        );
+        final leftFrom =
+            origin + Offset(trimWidth / 2 - 1, box.size.height / 2);
+        final rightFrom =
+            origin + Offset(trimWidth / 2 + 1, box.size.height / 2);
+
+        await tester.dragFrom(leftFrom, const Offset(8, 0));
+        await tester.pumpAndSettle();
+
+        expect(leftDeltas, isNotEmpty);
+        expect(rightDeltas, isEmpty);
+
+        leftDeltas.clear();
+        rightDeltas.clear();
+
+        await tester.dragFrom(rightFrom, const Offset(-8, 0));
+        await tester.pumpAndSettle();
+
+        expect(leftDeltas, isEmpty);
+        expect(rightDeltas, isNotEmpty);
       });
     });
 

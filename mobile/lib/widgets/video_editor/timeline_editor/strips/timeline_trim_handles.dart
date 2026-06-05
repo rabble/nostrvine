@@ -23,6 +23,7 @@ class TimelineTrimHandles extends StatefulWidget {
   const TimelineTrimHandles({
     required this.child,
     required this.height,
+    this.width,
     this.onLeftDragUpdate,
     this.onRightDragUpdate,
     this.onDragStart,
@@ -44,6 +45,11 @@ class TimelineTrimHandles extends StatefulWidget {
 
   /// Total height of the trim container (including border).
   final double height;
+
+  /// Content width of the strip (excluding the handles). When provided,
+  /// the inward part of each grab zone is clamped so the left and right
+  /// hit areas never overlap on narrow strips.
+  final double? width;
 
   /// Called with the horizontal pixel delta when the left handle moves.
   final TrimDragCallback? onLeftDragUpdate;
@@ -117,9 +123,25 @@ class _TimelineTrimHandlesState extends State<TimelineTrimHandles> {
       double.infinity,
     );
 
+    // The grab zone reaches symmetrically around each handle edge:
+    // [outwardHit] points away from the content, [inwardHit] into it.
+    final defaultInward = widget.hitAreaExtra / 2 + widget.borderWidth;
+    var outwardHit = handleW + widget.hitAreaExtra / 2;
+    var inwardHit = defaultInward;
+    // On narrow strips, clamp the inward reach so the left and right hit
+    // areas never overlap — but keep the total grab width constant by
+    // shifting the lost inward part outwards instead of shrinking it.
+    final width = widget.width;
+    if (width != null) {
+      final clampedInward = inwardHit.clamp(0.0, width / 2);
+      outwardHit += inwardHit - clampedInward;
+      inwardHit = clampedInward;
+    }
+    final hitWidth = outwardHit + inwardHit;
+
     return _ExpandedHitSizedBox(
-      expandLeft: handleW + widget.hitAreaExtra,
-      expandRight: handleW + widget.hitAreaExtra,
+      expandLeft: outwardHit,
+      expandRight: outwardHit,
       height: widget.height,
       child: Stack(
         clipBehavior: Clip.none,
@@ -186,11 +208,12 @@ class _TimelineTrimHandlesState extends State<TimelineTrimHandles> {
               ),
             ),
           ),
-          // Left hit area — covers the outer handle + extra grab zone.
+          // Left hit area — symmetric grab zone around the handle edge:
+          // reaches [outwardHit] outwards and [inwardHit] inwards.
           Positioned(
-            left: -(handleW + widget.hitAreaExtra),
+            left: -outwardHit,
             top: 0,
-            width: handleW + widget.hitAreaExtra + widget.borderWidth,
+            width: hitWidth,
             height: widget.height,
             child: Semantics(
               label: context.l10n.videoEditorTimelineTrimStartSemanticLabel,
@@ -202,11 +225,12 @@ class _TimelineTrimHandlesState extends State<TimelineTrimHandles> {
               ),
             ),
           ),
-          // Right hit area — covers the outer handle + extra grab zone.
+          // Right hit area — symmetric grab zone around the handle edge:
+          // reaches [outwardHit] outwards and [inwardHit] inwards.
           Positioned(
-            right: -(handleW + widget.hitAreaExtra),
+            right: -outwardHit,
             top: 0,
-            width: handleW + widget.hitAreaExtra + widget.borderWidth,
+            width: hitWidth,
             height: widget.height,
             child: Semantics(
               label: context.l10n.videoEditorTimelineTrimEndSemanticLabel,
