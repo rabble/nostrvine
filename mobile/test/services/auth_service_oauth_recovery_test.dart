@@ -143,6 +143,12 @@ void main() {
     when(() => mockKeyStorage.dispose()).thenReturn(null);
     when(() => mockKeyStorage.deleteKeys()).thenAnswer((_) async {});
     when(
+      () => mockKeyStorage.deleteIdentityKeyContainer(
+        any(),
+        biometricPrompt: any(named: 'biometricPrompt'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
       () => mockKeyStorage.generateAndStoreKeys(
         biometricPrompt: any(named: 'biometricPrompt'),
       ),

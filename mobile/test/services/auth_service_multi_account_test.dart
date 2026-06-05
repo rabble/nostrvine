@@ -86,6 +86,12 @@ void main() {
     when(() => mockKeyStorage.dispose()).thenReturn(null);
     when(() => mockKeyStorage.deleteKeys()).thenAnswer((_) async {});
     when(
+      () => mockKeyStorage.deleteIdentityKeyContainer(
+        any(),
+        biometricPrompt: any(named: 'biometricPrompt'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
       () => mockKeyStorage.generateAndStoreKeys(
         biometricPrompt: any(named: 'biometricPrompt'),
       ),
@@ -1826,6 +1832,66 @@ void main() {
       expect(prefs.getString('last_used_npub'), isNull);
     });
 
+    test(
+      'destructive sign-out of last local account resets auth source to none',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'automatic',
+          'last_used_npub': testKeyContainer.npub,
+          kKnownAccountsKey: '[]',
+        });
+
+        await _ignoringDiscoveryErrors(authService.createNewIdentity);
+        await authService.signOut(deleteKeys: true);
+
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getString('authentication_source'), equals('none'));
+        expect(prefs.getString('last_used_npub'), isNull);
+        expect(await authService.getKnownAccounts(), isEmpty);
+        expect(authService.authState, equals(AuthState.unauthenticated));
+      },
+    );
+
+    test(
+      'remove keys completes sign-out when cleanup fails after key deletion',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'automatic',
+          'last_used_npub': testKeyContainer.npub,
+          kKnownAccountsKey: '[]',
+        });
+
+        await _ignoringDiscoveryErrors(authService.createNewIdentity);
+        final expectedNpub = testKeyContainer.npub;
+        when(
+          () => mockCleanupService.clearUserSpecificData(
+            reason: any(named: 'reason'),
+            isIdentityChange: any(named: 'isIdentityChange'),
+            userPubkey: any(named: 'userPubkey'),
+            deleteUserData: any(named: 'deleteUserData'),
+          ),
+        ).thenThrow(StateError('cleanup failed'));
+
+        await authService.signOut(
+          deleteKeys: true,
+          abortOnKeyDeletionFailure: true,
+        );
+
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getString('authentication_source'), equals('none'));
+        expect(prefs.getString('last_used_npub'), isNull);
+        expect(await authService.getKnownAccounts(), isEmpty);
+        expect(authService.authState, equals(AuthState.unauthenticated));
+        verify(
+          () => mockKeyStorage.deleteIdentityKeyContainer(
+            expectedNpub,
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).called(1);
+        verify(() => mockKeyStorage.deleteKeys()).called(1);
+      },
+    );
+
     test('non-destructive sign-out preserves last_used_npub', () async {
       SharedPreferences.setMockInitialValues({
         'authentication_source': 'automatic',
@@ -1984,6 +2050,12 @@ void main() {
           'last_used_npub': testKeyContainer.npub,
           kKnownAccountsKey: knownAccounts,
         });
+        when(
+          () => mockKeyStorage.getIdentityKeyContainer(
+            accountA.npub,
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async => accountA);
 
         // Sign in as B
         await _ignoringDiscoveryErrors(authService.createNewIdentity);
@@ -1996,6 +2068,58 @@ void main() {
         final prefs = await SharedPreferences.getInstance();
         expect(prefs.getString('last_used_npub'), equals(accountA.npub));
         expect(prefs.getString('authentication_source'), equals('automatic'));
+      },
+    );
+
+    test(
+      'destructive sign-out clears stale known accounts when no local nsec remains',
+      () async {
+        final staleAccount = SecureKeyContainer.fromNsec(
+          'nsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsmhltgl',
+        );
+        final knownAccounts = jsonEncode([
+          KnownAccount(
+            pubkeyHex: staleAccount.publicKeyHex,
+            authSource: AuthenticationSource.automatic,
+            addedAt: DateTime.now().subtract(const Duration(hours: 2)),
+            lastUsedAt: DateTime.now().subtract(const Duration(hours: 1)),
+          ).toJson(),
+          KnownAccount(
+            pubkeyHex: testKeyContainer.publicKeyHex,
+            authSource: AuthenticationSource.automatic,
+            addedAt: DateTime.now().subtract(const Duration(hours: 1)),
+            lastUsedAt: DateTime.now(),
+          ).toJson(),
+        ]);
+
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'automatic',
+          'last_used_npub': testKeyContainer.npub,
+          kKnownAccountsKey: knownAccounts,
+        });
+        when(
+          () => mockKeyStorage.getIdentityKeyContainer(
+            staleAccount.npub,
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async => null);
+        when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
+
+        await _ignoringDiscoveryErrors(authService.createNewIdentity);
+        final expectedNpub = testKeyContainer.npub;
+        await authService.signOut(deleteKeys: true);
+
+        final prefs = await SharedPreferences.getInstance();
+        verify(
+          () => mockKeyStorage.deleteIdentityKeyContainer(
+            expectedNpub,
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).called(1);
+        expect(prefs.getString('authentication_source'), equals('none'));
+        expect(prefs.getString('last_used_npub'), isNull);
+        expect(prefs.getString(kKnownAccountsKey), equals('[]'));
+        expect(authService.authState, equals(AuthState.unauthenticated));
       },
     );
 

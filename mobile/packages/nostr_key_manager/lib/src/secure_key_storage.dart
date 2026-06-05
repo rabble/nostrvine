@@ -673,6 +673,35 @@ class SecureKeyStorage {
     }
   }
 
+  /// Delete a key container archived for a specific identity.
+  ///
+  /// This does not delete the PRIMARY key slot. Callers that are removing the
+  /// active account should delete both the identity archive and PRIMARY slot so
+  /// the account cannot be restored through multi-account recovery.
+  Future<void> deleteIdentityKeyContainer(
+    String npub, {
+    String? biometricPrompt,
+  }) async {
+    await _ensureInitialized();
+
+    final identityKeyId = '$_savedKeysPrefix$npub';
+    _log.fine('📱️ Deleting identity key container for ${_maskKey(npub)}');
+
+    final success = await _platformStorage.deleteKey(
+      keyId: identityKeyId,
+      biometricPrompt: biometricPrompt,
+    );
+
+    if (!success) {
+      throw const SecureKeyStorageException(
+        'Platform identity key deletion failed — key may still be on device',
+        code: 'platform_deletion_failed',
+      );
+    }
+
+    _log.info('Deleted identity for ${_maskKey(npub)}');
+  }
+
   /// Switch to a different identity
   Future<bool> switchToIdentity(String npub, {String? biometricPrompt}) async {
     try {

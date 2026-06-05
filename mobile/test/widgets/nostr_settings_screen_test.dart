@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyStorageException;
@@ -13,6 +14,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -52,6 +54,39 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: NostrSettingsScreen(),
+        ),
+      );
+    }
+
+    Widget buildRouterSubject() {
+      return ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+          authServiceProvider.overrideWithValue(mockAuthService),
+          currentAuthStateProvider.overrideWith(
+            (ref) => AuthState.authenticated,
+          ),
+          isDeveloperModeEnabledProvider.overrideWithValue(false),
+          isFeatureEnabledProvider(
+            FeatureFlag.advancedRelaySettings,
+          ).overrideWith((ref) => false),
+        ],
+        child: MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: GoRouter(
+            initialLocation: NostrSettingsScreen.path,
+            routes: [
+              GoRoute(
+                path: NostrSettingsScreen.path,
+                builder: (_, _) => const NostrSettingsScreen(),
+              ),
+              GoRoute(
+                path: WelcomeScreen.path,
+                builder: (_, _) => const Scaffold(body: Text('Welcome route')),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -116,6 +151,9 @@ void main() {
           abortOnKeyDeletionFailure: true,
         ),
       ).thenAnswer((_) => signOut.future);
+      when(
+        () => mockAuthService.getKnownAccounts(),
+      ).thenAnswer((_) async => []);
 
       await pumpSubject(tester);
 
@@ -138,6 +176,38 @@ void main() {
       ).called(1);
     });
 
+    testWidgets('navigates to welcome after removing the last local key', (
+      tester,
+    ) async {
+      when(
+        () => mockAuthService.signOut(
+          deleteKeys: true,
+          abortOnKeyDeletionFailure: true,
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockAuthService.getKnownAccounts(),
+      ).thenAnswer((_) async => []);
+
+      await tester.binding.setSurfaceSize(const Size(900, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(buildRouterSubject());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.nostrSettingsRemoveKeys));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.deleteAccountRemoveKeysConfirm));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Welcome route'), findsOneWidget);
+      verify(
+        () => mockAuthService.signOut(
+          deleteKeys: true,
+          abortOnKeyDeletionFailure: true,
+        ),
+      ).called(1);
+    });
+
     testWidgets(
       'does not crash when navigation closes progress overlay first',
       (
@@ -150,6 +220,9 @@ void main() {
             abortOnKeyDeletionFailure: true,
           ),
         ).thenAnswer((_) => signOut.future);
+        when(
+          () => mockAuthService.getKnownAccounts(),
+        ).thenAnswer((_) async => []);
 
         await pumpSubject(tester);
 

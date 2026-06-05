@@ -285,6 +285,34 @@ void main() {
       archivedA?.dispose();
     });
 
+    test('deleteIdentityKeyContainer removes archived identity only', () async {
+      await storageService.initialize();
+
+      final privateKeyA = generatePrivateKey();
+      final nsecA = Nip19.encodePrivateKey(privateKeyA);
+      final containerA = await storageService.importFromNsec(nsecA);
+      final npubA = containerA.npub;
+      containerA.dispose();
+
+      final primary = await storageService.getKeyContainer();
+      expect(primary, isNotNull);
+      await storageService.storeIdentityKeyContainer(npubA, primary!);
+      primary.dispose();
+
+      final archived = await storageService.getIdentityKeyContainer(npubA);
+      expect(archived, isNotNull);
+      archived?.dispose();
+
+      await storageService.deleteIdentityKeyContainer(npubA);
+
+      expect(await storageService.getIdentityKeyContainer(npubA), isNull);
+      expect(
+        await storageService.hasKeys(),
+        isTrue,
+        reason: 'Deleting an identity archive must not delete PRIMARY',
+      );
+    });
+
     group('storeIdentityKeyContainer npub↔pubkey invariant', () {
       test('accepts container whose npub matches filing npub', () async {
         await storageService.initialize();

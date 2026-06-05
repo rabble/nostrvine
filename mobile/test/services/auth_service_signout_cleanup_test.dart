@@ -168,6 +168,12 @@ void main() {
     test('destructive signOut passes deleteUserData: true', () async {
       // Arrange
       when(() => mockKeyStorage.deleteKeys()).thenAnswer((_) async => {});
+      when(
+        () => mockKeyStorage.deleteIdentityKeyContainer(
+          any(),
+          biometricPrompt: any(named: 'biometricPrompt'),
+        ),
+      ).thenAnswer((_) async {});
       when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
       when(() => mockKeyStorage.initialize()).thenAnswer((_) async => {});
 
@@ -213,6 +219,12 @@ void main() {
         );
 
         when(() => mockKeyStorage.deleteKeys()).thenAnswer((_) async => {});
+        when(
+          () => mockKeyStorage.deleteIdentityKeyContainer(
+            any(),
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async {});
         when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
         when(() => mockKeyStorage.initialize()).thenAnswer((_) async => {});
         final newKeyContainer = SecureKeyContainer.fromNsec(testNsec);
@@ -284,6 +296,12 @@ void main() {
         'destructive signOut also invalidates only the leaving account prefix',
         () async {
           when(() => mockKeyStorage.deleteKeys()).thenAnswer((_) async => {});
+          when(
+            () => mockKeyStorage.deleteIdentityKeyContainer(
+              any(),
+              biometricPrompt: any(named: 'biometricPrompt'),
+            ),
+          ).thenAnswer((_) async {});
           when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
           when(() => mockKeyStorage.initialize()).thenAnswer((_) async => {});
           final newKeyContainer = SecureKeyContainer.fromNsec(testNsec);
