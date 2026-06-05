@@ -966,6 +966,86 @@ void main() {
           );
         },
       );
+
+      testWidgets(
+        'verify age authenticates the optimized source for a bare-hash URL',
+        (tester) async {
+          const sha256 =
+              'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210';
+          // Production events carry the bare blob URL; the pooled feed resolves
+          // playback to the optimized .../720p.mp4 variant. The retry must
+          // authenticate that resolved source, not just the bare event URL.
+          const videoUrl = 'https://media.divine.video/$sha256';
+          const optimizedUrl = 'https://media.divine.video/$sha256/720p.mp4';
+          const headers = {'Authorization': 'Nostr fullscreen-token'};
+          final nativePlayer = _NativePlayerHarness(tester)..install();
+          addTearDown(nativePlayer.dispose);
+          final mockMediaAuthInterceptor = MockMediaAuthInterceptor();
+          final video = createTestVideoEvent(
+            id: testVideoId1,
+            pubkey: testPubkey,
+            videoUrl: videoUrl,
+            sha256: sha256,
+          );
+
+          when(
+            () => mockMediaAuthInterceptor.handleUnauthorizedMedia(
+              context: any(named: 'context'),
+              sha256Hash: sha256,
+              url: videoUrl,
+              serverUrl: 'https://media.divine.video',
+              category: 'video',
+            ),
+          ).thenAnswer((_) async => headers);
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: [video],
+              ),
+              additionalOverrides: [
+                mediaAuthInterceptorProvider.overrideWithValue(
+                  mockMediaAuthInterceptor,
+                ),
+              ],
+            ),
+          );
+          await tester.pump();
+
+          final cubit = BlocProvider.of<VideoPlaybackStatusCubit>(
+            tester.element(find.byType(FullscreenFeedContent)),
+          );
+          cubit.report(video.id, PlaybackStatus.ageRestricted);
+          await tester.pump();
+
+          await tester.tap(
+            find.text(ModeratedContentOverlayStrings.verifyAgeLabel),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          expect(cubit.state.statusFor(video.id), PlaybackStatus.ready);
+          // The resolved optimized source — not the bare event URL — must carry
+          // the viewer auth header on retry.
+          expect(
+            nativePlayer.setClipsArguments,
+            contains(
+              predicate<Map<Object?, Object?>>((arguments) {
+                final clips = arguments['clips'];
+                if (clips is! List || clips.isEmpty) return false;
+                final clip = clips.first;
+                if (clip is! Map || clip['uri'] != optimizedUrl) {
+                  return false;
+                }
+                final httpHeaders = clip['httpHeaders'];
+                return httpHeaders is Map &&
+                    httpHeaders['Authorization'] == headers['Authorization'];
+              }),
+            ),
+          );
+        },
+      );
     });
 
     group('auto advance', () {

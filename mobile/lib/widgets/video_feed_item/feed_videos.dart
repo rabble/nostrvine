@@ -120,11 +120,11 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
 
   Future<bool> _retryPooledVideoAt(
     int index,
-    Map<String, Map<String, String>> httpHeadersBySource,
+    Map<String, String> httpHeaders,
   ) =>
       _feedKey.currentState?.retryAt(
         index,
-        httpHeadersBySource: httpHeadersBySource,
+        httpHeaders: httpHeaders,
       ) ??
       Future.value(false);
 
@@ -310,8 +310,8 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
               ref: ref,
               video: video,
               index: index,
-              retryPlayback: (httpHeadersBySource) =>
-                  _retryPooledVideoAt(index, httpHeadersBySource),
+              retryPlayback: (httpHeaders) =>
+                  _retryPooledVideoAt(index, httpHeaders),
             ),
             errorType: errorType,
             shouldPortraitExpand: widget.shouldPortraitExpand,
@@ -464,10 +464,10 @@ class __OverlayState extends ConsumerState<_Overlay> {
       ref: ref,
       video: widget.video,
       index: widget.index,
-      retryPlayback: (httpHeadersBySource) =>
+      retryPlayback: (httpHeaders) =>
           _feedState?.retryAt(
             widget.index,
-            httpHeadersBySource: httpHeadersBySource,
+            httpHeaders: httpHeaders,
           ) ??
           Future.value(false),
     );
@@ -869,12 +869,12 @@ class _FeedLoadingOrRestrictedOverlayView extends ConsumerWidget {
           ref: ref,
           video: video,
           index: index,
-          retryPlayback: (httpHeadersBySource) =>
+          retryPlayback: (httpHeaders) =>
               context
                   .findAncestorStateOfType<InfiniteVideoFeedState>()
                   ?.retryAt(
                     index,
-                    httpHeadersBySource: httpHeadersBySource,
+                    httpHeaders: httpHeaders,
                   ) ??
               Future.value(false),
         ),

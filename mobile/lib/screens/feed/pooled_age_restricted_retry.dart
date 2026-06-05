@@ -18,8 +18,7 @@ Future<void> retryAgeRestrictedPooledVideo({
   required WidgetRef ref,
   required VideoEvent video,
   required int index,
-  required FutureOr<bool> Function(Map<String, Map<String, String>>)
-  retryPlayback,
+  required FutureOr<bool> Function(Map<String, String>) retryPlayback,
 }) async {
   final videoUrl = video.videoUrl;
   if (videoUrl == null || videoUrl.isEmpty) {
@@ -46,8 +45,10 @@ Future<void> retryAgeRestrictedPooledVideo({
   }
 
   final playbackStatusCubit = context.read<VideoPlaybackStatusCubit>();
+  // The auth token is hash-bound, so the feed applies these headers to every
+  // resolved playback source (optimized/HLS/raw) for the retried item.
   final playbackSucceeded = await Future<bool>.sync(
-    () => retryPlayback({videoUrl: headers}),
+    () => retryPlayback(headers),
   );
   if (!context.mounted || !playbackSucceeded) return;
 

@@ -37,7 +37,7 @@ void main() {
       final mediaAuthInterceptor = _MockMediaAuthInterceptor();
       final playbackStatusCubit = VideoPlaybackStatusCubit();
       var retryCount = 0;
-      Map<String, Map<String, String>>? retryHeadersBySource;
+      Map<String, String>? retryHeaders;
       addTearDown(playbackStatusCubit.close);
 
       when(
@@ -54,9 +54,9 @@ void main() {
         _RetryHarness(
           mediaAuthInterceptor: mediaAuthInterceptor,
           playbackStatusCubit: playbackStatusCubit,
-          retryPlayback: (headersBySource) {
+          retryPlayback: (headers) {
             retryCount++;
-            retryHeadersBySource = headersBySource;
+            retryHeaders = headers;
             return true;
           },
         ),
@@ -72,12 +72,7 @@ void main() {
       await tester.pump();
 
       expect(retryCount, 1);
-      expect(
-        retryHeadersBySource,
-        equals({
-          _videoUrl: {'Authorization': 'Nostr token'},
-        }),
-      );
+      expect(retryHeaders, equals({'Authorization': 'Nostr token'}));
       expect(
         playbackStatusCubit.state.statusFor(_videoId),
         PlaybackStatus.ready,
@@ -175,7 +170,7 @@ class _RetryHarness extends StatelessWidget {
 
   final MediaAuthInterceptor mediaAuthInterceptor;
   final VideoPlaybackStatusCubit playbackStatusCubit;
-  final bool Function(Map<String, Map<String, String>>) retryPlayback;
+  final bool Function(Map<String, String>) retryPlayback;
 
   @override
   Widget build(BuildContext context) {

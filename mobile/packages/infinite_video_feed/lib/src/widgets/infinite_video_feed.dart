@@ -253,8 +253,11 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   final _errors = <int>{};
   final _errorTypes = <int, VideoErrorType>{};
   final _loopSeekInProgress = <int>{};
-  final _httpHeadersByIndexAndSource =
-      <int, Map<String, Map<String, String>>>{};
+  // Viewer auth headers per index, applied to every resolved playback source
+  // for that index. The age-gate token is a hash-bound BUD-01 (kind 24242)
+  // auth, valid for any variant URL of the same blob, so one header set covers
+  // the optimized, HLS, and raw sources alike.
+  final _httpHeadersByIndex = <int, Map<String, String>>{};
 
   // Indices currently performing a source failover. Stale `hasError`
   // events from the old source can arrive between `stop()` and `setSource()`
@@ -654,6 +657,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _loadedFromCache.clear();
     _errors.clear();
     _errorTypes.clear();
+    _httpHeadersByIndex.clear();
 
     for (final controller in _controllers.values) {
       unawaited(controller.dispose());
@@ -677,6 +681,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _failoverInFlight.remove(index);
     _loadedFromCache.remove(index);
     _errorTypes.remove(index);
+    _httpHeadersByIndex.remove(index);
     _sources.remove(index);
     _controllerInitGenerations.remove(index);
     unawaited(_controllers.remove(index)?.dispose());
@@ -755,8 +760,10 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
         video,
         urlResolver: widget.urlResolver,
       );
-      Map<String, String>? httpHeadersForSource(String source) =>
-          _httpHeadersByIndexAndSource[index]?[source];
+      // Hash-bound auth applies to every resolved source for this index, so
+      // the optimized/HLS/raw variants all authenticate, not just the bare URL.
+      Map<String, String>? httpHeadersForSource(String _) =>
+          _httpHeadersByIndex[index];
 
       if (fromCache) {
         try {
@@ -879,24 +886,29 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   // executable in package tests without platform players.
   /// Retries the video at [index] by clearing its current controller state and
   /// reinitializing it from the network.
+  ///
+  /// [httpHeaders] are attached to every resolved playback source for [index]
+  /// (optimized, HLS, and raw variants), since the age-gate auth token is
+  /// hash-bound and valid for any variant URL of the blob. Pass an empty map
+  /// to retry anonymously.
   Future<bool> retryAt(
     int index, {
-    Map<String, Map<String, String>> httpHeadersBySource = const {},
+    Map<String, String> httpHeaders = const {},
   }) => _retryController(
     index,
-    httpHeadersBySource: httpHeadersBySource,
+    httpHeaders: httpHeaders,
   );
 
   Future<bool> _retryController(
     int index, {
-    Map<String, Map<String, String>> httpHeadersBySource = const {},
+    Map<String, String> httpHeaders = const {},
   }) async {
     _errors.remove(index);
     _errorTypes.remove(index);
-    if (httpHeadersBySource.isEmpty) {
-      _httpHeadersByIndexAndSource.remove(index);
+    if (httpHeaders.isEmpty) {
+      _httpHeadersByIndex.remove(index);
     } else {
-      _httpHeadersByIndexAndSource[index] = httpHeadersBySource;
+      _httpHeadersByIndex[index] = httpHeaders;
     }
     _watchdog.stop(index);
     if (index == _currentIndex) _staleDetector.stop();
@@ -951,8 +963,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       await controller.setSource(
         VideoClip.network(
           nextSource,
-          httpHeaders:
-              _httpHeadersByIndexAndSource[index]?[nextSource] ?? const {},
+          httpHeaders: _httpHeadersByIndex[index] ?? const {},
         ),
       );
       if (index == _currentIndex && _isActive) {
