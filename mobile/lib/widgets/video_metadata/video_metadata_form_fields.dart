@@ -190,22 +190,25 @@ class _VideoReplyVisibilityToggle extends ConsumerWidget {
 
     return Padding(
       padding: const .symmetric(horizontal: 4),
-      child: SwitchListTile(
-        value: shareReplyToFeed,
-        title: Text(
-          context.l10n.videoMetadataShareReplyToFeedTitle,
-          style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+      child: Material(
+        type: MaterialType.transparency,
+        child: SwitchListTile(
+          value: shareReplyToFeed,
+          title: Text(
+            context.l10n.videoMetadataShareReplyToFeedTitle,
+            style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+          ),
+          subtitle: Text(
+            context.l10n.videoMetadataShareReplyToFeedSubtitle,
+            style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+          ),
+          contentPadding: const .symmetric(horizontal: 12, vertical: 4),
+          activeThumbColor: VineTheme.vineGreen,
+          inactiveThumbColor: VineTheme.lightText,
+          onChanged: (value) {
+            ref.read(videoEditorProvider.notifier).setShareReplyToFeed(value);
+          },
         ),
-        subtitle: Text(
-          context.l10n.videoMetadataShareReplyToFeedSubtitle,
-          style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
-        ),
-        contentPadding: const .symmetric(horizontal: 12, vertical: 4),
-        activeThumbColor: VineTheme.vineGreen,
-        inactiveThumbColor: VineTheme.lightText,
-        onChanged: (value) {
-          ref.read(videoEditorProvider.notifier).setShareReplyToFeed(value);
-        },
       ),
     );
   }
@@ -222,22 +225,25 @@ class _VideoMetadataAudioReuseToggle extends ConsumerWidget {
 
     return Padding(
       padding: const .symmetric(horizontal: 4),
-      child: SwitchListTile(
-        value: allowAudioReuse,
-        title: Text(
-          context.l10n.videoMetadataAudioReuseTitle,
-          style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+      child: Material(
+        type: MaterialType.transparency,
+        child: SwitchListTile(
+          value: allowAudioReuse,
+          title: Text(
+            context.l10n.videoMetadataAudioReuseTitle,
+            style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+          ),
+          subtitle: Text(
+            context.l10n.videoMetadataAudioReuseSubtitle,
+            style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+          ),
+          contentPadding: const .symmetric(horizontal: 12, vertical: 4),
+          activeThumbColor: VineTheme.vineGreen,
+          inactiveThumbColor: VineTheme.lightText,
+          onChanged: (value) {
+            ref.read(videoEditorProvider.notifier).setAllowAudioReuse(value);
+          },
         ),
-        subtitle: Text(
-          context.l10n.videoMetadataAudioReuseSubtitle,
-          style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
-        ),
-        contentPadding: const .symmetric(horizontal: 12, vertical: 4),
-        activeThumbColor: VineTheme.vineGreen,
-        inactiveThumbColor: VineTheme.lightText,
-        onChanged: (value) {
-          ref.read(videoEditorProvider.notifier).setAllowAudioReuse(value);
-        },
       ),
     );
   }

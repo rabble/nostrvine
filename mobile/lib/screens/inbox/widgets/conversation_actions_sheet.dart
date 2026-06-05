@@ -86,21 +86,24 @@ class _MuteActionTile extends StatelessWidget {
         decoration: const BoxDecoration(
           border: Border(bottom: BorderSide(color: VineTheme.outlineDisabled)),
         ),
-        child: SwitchListTile(
-          value: isMuted,
-          activeThumbColor: VineTheme.whiteText,
-          activeTrackColor: VineTheme.primary,
-          inactiveThumbColor: VineTheme.onSurfaceDisabled,
-          inactiveTrackColor: VineTheme.surfaceContainer,
-          onChanged: (_) =>
-              Navigator.of(context).pop(ConversationAction.toggleMute),
-          title: Text(
-            context.l10n.inboxActionMute,
-            style: VineTheme.titleMediumFont(),
-          ),
-          secondary: const DivineIcon(
-            icon: DivineIconName.bellSimple,
-            color: VineTheme.onSurface,
+        child: Material(
+          type: MaterialType.transparency,
+          child: SwitchListTile(
+            value: isMuted,
+            activeThumbColor: VineTheme.whiteText,
+            activeTrackColor: VineTheme.primary,
+            inactiveThumbColor: VineTheme.onSurfaceDisabled,
+            inactiveTrackColor: VineTheme.surfaceContainer,
+            onChanged: (_) =>
+                Navigator.of(context).pop(ConversationAction.toggleMute),
+            title: Text(
+              context.l10n.inboxActionMute,
+              style: VineTheme.titleMediumFont(),
+            ),
+            secondary: const DivineIcon(
+              icon: DivineIconName.bellSimple,
+              color: VineTheme.onSurface,
+            ),
           ),
         ),
       ),
