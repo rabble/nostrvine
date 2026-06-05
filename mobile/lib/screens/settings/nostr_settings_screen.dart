@@ -239,7 +239,7 @@ class _ProgressOverlay {
   }
 
   void dismiss() {
-    if (_dismissed || !_navigator.mounted) return;
+    if (_dismissed || !_navigator.mounted || !route.isActive) return;
     _dismissed = true;
     _navigator.removeRoute(route);
   }

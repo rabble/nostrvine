@@ -138,6 +138,48 @@ void main() {
       ).called(1);
     });
 
+    testWidgets(
+      'does not crash when navigation closes progress overlay first',
+      (
+        tester,
+      ) async {
+        final signOut = Completer<void>();
+        when(
+          () => mockAuthService.signOut(
+            deleteKeys: true,
+            abortOnKeyDeletionFailure: true,
+          ),
+        ).thenAnswer((_) => signOut.future);
+
+        await pumpSubject(tester);
+
+        await tester.tap(find.text(l10n.nostrSettingsRemoveKeys));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.deleteAccountRemoveKeysConfirm));
+        await tester.pump();
+
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+        Navigator.of(
+          tester.element(find.byType(CircularProgressIndicator)),
+          rootNavigator: true,
+        ).pop();
+        await tester.pumpAndSettle();
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+
+        signOut.complete();
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        verify(
+          () => mockAuthService.signOut(
+            deleteKeys: true,
+            abortOnKeyDeletionFailure: true,
+          ),
+        ).called(1);
+      },
+    );
+
     testWidgets('dismisses progress overlay when key deletion fails', (
       tester,
     ) async {
