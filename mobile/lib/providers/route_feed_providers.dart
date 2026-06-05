@@ -71,6 +71,7 @@ final videosForExploreRouteProvider = Provider<AsyncValue<VideoFeedState>>((
       final tabVideos = ref.watch(exploreTabVideosProvider);
       if (tabVideos != null && tabVideos.isNotEmpty) {
         ref.watch(divineHostFilterVersionProvider);
+        ref.watch(contentFilterVersionProvider);
         final videoEventService = ref.read(videoEventServiceProvider);
         final visibleTabVideos = videoEventService.filterVideoList(tabVideos);
 

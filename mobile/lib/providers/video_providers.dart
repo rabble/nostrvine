@@ -313,6 +313,11 @@ VideoLocalStorage videoLocalStorage(Ref ref) {
 /// Creates a VideosRepository for loading video feeds with pagination.
 /// Works without authentication for public feeds.
 ///
+/// Rebuilds (yielding a fresh in-memory cache) when content filter, aspect
+/// ratio, or Divine-host filter preferences change. The version providers
+/// act as rebuild triggers since the underlying services are long-lived
+/// ChangeNotifiers that don't themselves cause provider invalidation.
+///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
 /// - VideoLocalStorage for cache-first lookups and caching results
@@ -321,6 +326,13 @@ VideoLocalStorage videoLocalStorage(Ref ref) {
 /// - FunnelcakeApiClient for trending/popular video sorting
 @Riverpod(keepAlive: true)
 VideosRepository videosRepository(Ref ref) {
+  // Watch version providers to trigger rebuild on preference changes.
+  // These increment when ContentFilterService or FeedAspectRatioPreference
+  // notifies, ensuring a fresh repository (with empty InMemoryFeedCache)
+  // is created after any filter toggle.
+  ref.watch(contentFilterVersionProvider);
+  ref.watch(divineHostFilterVersionProvider);
+
   final nostrClient = ref.watch(nostrServiceProvider);
   final localStorage = ref.watch(videoLocalStorageProvider);
   final contentFilterService = ref.watch(contentFilterServiceProvider);

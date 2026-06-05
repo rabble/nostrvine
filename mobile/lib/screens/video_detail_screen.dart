@@ -244,6 +244,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
   Widget build(BuildContext context) {
     ref.watch(blocklistVersionProvider);
     ref.watch(divineHostFilterVersionProvider);
+    ref.watch(contentFilterVersionProvider);
     final videoEventService = ref.read(videoEventServiceProvider);
 
     if (_isLoading) {

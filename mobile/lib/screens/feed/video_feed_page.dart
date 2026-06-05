@@ -44,6 +44,7 @@ class VideoFeedPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(divineHostFilterVersionProvider);
+    final contentFilterVersion = ref.watch(contentFilterVersionProvider);
     final videosRepository = ref.watch(videosRepositoryProvider);
     final followRepository = ref.watch(followRepositoryProvider);
     final curatedListRepository = ref.watch(curatedListRepositoryProvider);
@@ -57,7 +58,9 @@ class VideoFeedPage extends ConsumerWidget {
     final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
 
     return MultiBlocProvider(
-      key: ValueKey('video-feed-$showDivineHostedOnly'),
+      key: ValueKey(
+        'video-feed-$showDivineHostedOnly-$contentFilterVersion',
+      ),
       providers: [
         BlocProvider(
           create: (_) => VideoFeedBloc(

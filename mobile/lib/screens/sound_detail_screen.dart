@@ -853,6 +853,7 @@ class _VideosGridContentState extends ConsumerState<_VideosGridContent> {
   @override
   Widget build(BuildContext context) {
     ref.watch(divineHostFilterVersionProvider);
+    ref.watch(contentFilterVersionProvider);
     final videoEventService = ref.read(videoEventServiceProvider);
     if (_isLoading) {
       return const Center(child: BrandedLoadingIndicator(size: 60));

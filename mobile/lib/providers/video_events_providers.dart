@@ -113,6 +113,7 @@ class VideoEvents extends _$VideoEvents {
     final videoEventService = ref.watch(videoEventServiceProvider);
     ref.watch(blocklistVersionProvider);
     ref.watch(divineHostFilterVersionProvider);
+    ref.watch(contentFilterVersionProvider);
     final isAppReady = ref.watch(appReadyProvider);
     final isTabActive = ref.watch(isDiscoveryTabActiveProvider);
     final seenVideosState = ref.watch(seenVideosProvider);
