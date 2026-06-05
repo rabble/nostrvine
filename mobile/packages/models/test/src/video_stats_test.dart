@@ -1317,9 +1317,12 @@ void main() {
         );
         expect(videoEvent.blurhash, equals('LEHV6nWB2yk8'));
         expect(videoEvent.dimensions, equals('720x1280'));
-        expect(videoEvent.originalLikes, equals(100));
-        expect(videoEvent.originalComments, equals(20));
-        expect(videoEvent.originalReposts, equals(5));
+        expect(videoEvent.originalLikes, isNull);
+        expect(videoEvent.nostrLikeCount, equals(100));
+        expect(videoEvent.originalComments, isNull);
+        expect(videoEvent.nostrCommentCount, equals(20));
+        expect(videoEvent.originalReposts, isNull);
+        expect(videoEvent.nostrRepostCount, equals(5));
         expect(videoEvent.originalLoops, equals(1000));
       });
 
@@ -1471,7 +1474,7 @@ void main() {
         },
       );
 
-      test('maps API reactions count to originalLikes as fallback', () {
+      test('maps API engagement stats to live count fields', () {
         final stats = VideoStats(
           id: 'test-id',
           pubkey: 'test-pubkey',
@@ -1489,7 +1492,46 @@ void main() {
 
         final videoEvent = stats.toVideoEvent();
 
-        expect(videoEvent.originalLikes, equals(500));
+        expect(videoEvent.originalLikes, isNull);
+        expect(videoEvent.nostrLikeCount, equals(500));
+        expect(videoEvent.originalComments, isNull);
+        expect(videoEvent.nostrCommentCount, equals(20));
+        expect(videoEvent.originalReposts, isNull);
+        expect(videoEvent.nostrRepostCount, equals(5));
+      });
+
+      test('maps archived engagement tags to original count fields', () {
+        final stats = VideoStats.fromJson(const {
+          'event': {
+            'id': 'test-id',
+            'pubkey': 'test-pubkey',
+            'created_at': 1700000000,
+            'kind': 34236,
+            'content': 'Test',
+            'tags': [
+              ['d', 'video-1'],
+              ['url', 'https://example.com/video.mp4'],
+              ['likes', '273622'],
+              ['comments', '6023'],
+              ['reposts', '122059'],
+            ],
+          },
+          'stats': {
+            'reactions': 5,
+            'comments': 2,
+            'reposts': 3,
+            'engagement_score': 10,
+          },
+        });
+
+        final videoEvent = stats.toVideoEvent();
+
+        expect(videoEvent.originalLikes, equals(273622));
+        expect(videoEvent.nostrLikeCount, equals(5));
+        expect(videoEvent.originalComments, equals(6023));
+        expect(videoEvent.nostrCommentCount, equals(2));
+        expect(videoEvent.originalReposts, equals(122059));
+        expect(videoEvent.nostrRepostCount, equals(3));
       });
     });
 

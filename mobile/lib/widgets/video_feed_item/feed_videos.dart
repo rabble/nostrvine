@@ -31,6 +31,7 @@ import 'package:openvine/widgets/divine_video_metrics_tracker.dart';
 import 'package:openvine/widgets/video_feed_item/blurred_video_backdrop.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
+import 'package:openvine/widgets/video_feed_item/live_engagement_counts.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/paused_video_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart';
@@ -571,11 +572,9 @@ class __OverlayState extends ConsumerState<_Overlay> {
                     commentsRepository: commentsRepository,
                     repostsRepository: repostsRepository,
                     addressableId: addressableId,
-                    initialLikeCount: video.totalLikes,
-                    initialCommentCount: video.originalComments ?? 0,
-                    initialRepostCount:
-                        (video.reposterPubkeys?.length ?? 0) +
-                        (video.originalReposts ?? 0),
+                    initialLikeCount: liveLikeCountSeed(video),
+                    initialCommentCount: liveCommentCountSeed(video),
+                    initialRepostCount: liveRepostCountSeed(video),
                   )
                   ..add(const VideoInteractionsSubscriptionRequested())
                   ..add(const VideoInteractionsFetchRequested()),

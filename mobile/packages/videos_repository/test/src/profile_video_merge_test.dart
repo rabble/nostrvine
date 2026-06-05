@@ -23,6 +23,8 @@ VideoEvent _video({
   int? originalReposts,
   int? originalLoops,
   int? nostrLikeCount,
+  int? nostrCommentCount,
+  int? nostrRepostCount,
 }) {
   return VideoEvent(
     id: id,
@@ -45,6 +47,8 @@ VideoEvent _video({
     originalReposts: originalReposts,
     originalLoops: originalLoops,
     nostrLikeCount: nostrLikeCount,
+    nostrCommentCount: nostrCommentCount,
+    nostrRepostCount: nostrRepostCount,
   );
 }
 
@@ -78,6 +82,8 @@ void main() {
           originalReposts: 1,
           originalLoops: 100,
           nostrLikeCount: 2,
+          nostrCommentCount: 3,
+          nostrRepostCount: 6,
         ),
         _video(
           id: 'v',
@@ -87,6 +93,8 @@ void main() {
           originalReposts: 4,
           originalLoops: 50,
           nostrLikeCount: 0,
+          nostrCommentCount: 5,
+          nostrRepostCount: 1,
         ),
       );
 
@@ -95,6 +103,8 @@ void main() {
       expect(merged.originalReposts, equals(4));
       expect(merged.originalLoops, equals(100));
       expect(merged.nostrLikeCount, equals(2));
+      expect(merged.nostrCommentCount, equals(5));
+      expect(merged.nostrRepostCount, equals(6));
     });
 
     test('raw tags are primary-wins except views, which takes the max', () {

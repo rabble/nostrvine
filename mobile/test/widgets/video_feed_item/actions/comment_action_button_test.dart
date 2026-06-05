@@ -10,6 +10,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/video_feed_item/actions/comment_action_button.dart';
 import 'package:openvine/widgets/video_feed_item/actions/video_action_button.dart';
 
@@ -158,7 +159,7 @@ void main() {
       });
 
       testWidgets(
-        'falls back to video.originalComments when commentCount is null',
+        'falls back to archival originalComments when count is null',
         (tester) async {
           when(() => mockBloc.state).thenReturn(const VideoInteractionsState());
 
@@ -169,6 +170,33 @@ void main() {
           expect(find.text('7'), findsOneWidget);
         },
       );
+
+      testWidgets('adds live nostrCommentCount to archived comments', (
+        tester,
+      ) async {
+        final videoWithLiveComments = VideoEvent(
+          id: 'test-video-0123456789abcdef0123456789abcdef0123456789abcdef0123',
+          pubkey: testPubkey,
+          createdAt: 1757385263,
+          content: 'Test video',
+          timestamp: DateTime.fromMillisecondsSinceEpoch(1757385263 * 1000),
+          originalComments: 6023,
+          nostrCommentCount: 7,
+        );
+
+        when(() => mockBloc.state).thenReturn(const VideoInteractionsState());
+
+        await tester.pumpWidget(
+          buildSubject(video: videoWithLiveComments, bloc: mockBloc),
+        );
+
+        expect(
+          find.text(StringUtils.formatCompactNumber(6030)),
+          findsOneWidget,
+        );
+        expect(find.text('7'), findsNothing);
+        expect(find.text('6,023'), findsNothing);
+      });
 
       testWidgets('shows 0 count as empty when both sources are 0', (
         tester,

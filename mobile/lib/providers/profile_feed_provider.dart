@@ -308,6 +308,12 @@ class ProfileFeed extends _$ProfileFeed {
       if (leftVideo.nostrLikeCount != rightVideo.nostrLikeCount) {
         return false;
       }
+      if (leftVideo.nostrCommentCount != rightVideo.nostrCommentCount) {
+        return false;
+      }
+      if (leftVideo.nostrRepostCount != rightVideo.nostrRepostCount) {
+        return false;
+      }
     }
     return true;
   }
@@ -799,10 +805,12 @@ class ProfileFeed extends _$ProfileFeed {
       return video.copyWith(
         rawTags: mergedTags,
         originalLoops: stats.loops ?? video.originalLoops,
-        originalLikes: video.originalLikes ?? stats.reactions,
-        originalComments: video.originalComments ?? stats.comments,
-        originalReposts: video.originalReposts ?? stats.reposts,
-        nostrLikeCount: video.nostrLikeCount ?? 0,
+        originalLikes: video.originalLikes,
+        originalComments: video.originalComments,
+        originalReposts: video.originalReposts,
+        nostrLikeCount: video.nostrLikeCount ?? stats.reactions,
+        nostrCommentCount: video.nostrCommentCount ?? stats.comments,
+        nostrRepostCount: video.nostrRepostCount ?? stats.reposts,
       );
     }).toList();
     return hydrated;
@@ -867,7 +875,9 @@ class ProfileFeed extends _$ProfileFeed {
           video.originalLikes != null ||
           video.originalComments != null ||
           video.originalReposts != null ||
-          video.nostrLikeCount != null) {
+          video.nostrLikeCount != null ||
+          video.nostrCommentCount != null ||
+          video.nostrRepostCount != null) {
         _metadataCache[video.id.toLowerCase()] = _VideoMetadataCache(
           originalLoops: video.originalLoops,
           views: video.rawTags['views'],
@@ -875,6 +885,8 @@ class ProfileFeed extends _$ProfileFeed {
           originalComments: video.originalComments,
           originalReposts: video.originalReposts,
           nostrLikeCount: video.nostrLikeCount,
+          nostrCommentCount: video.nostrCommentCount,
+          nostrRepostCount: video.nostrRepostCount,
         );
       }
     }
@@ -893,6 +905,8 @@ class ProfileFeed extends _$ProfileFeed {
         originalComments: cached.originalComments,
         originalReposts: cached.originalReposts,
         nostrLikeCount: cached.nostrLikeCount,
+        nostrCommentCount: cached.nostrCommentCount,
+        nostrRepostCount: cached.nostrRepostCount,
       );
     }).toList();
   }
@@ -906,6 +920,8 @@ class ProfileFeed extends _$ProfileFeed {
     int? originalComments,
     int? originalReposts,
     int? nostrLikeCount,
+    int? nostrCommentCount,
+    int? nostrRepostCount,
   }) {
     final currentViews = video.rawTags['views'];
     final shouldApply =
@@ -914,7 +930,9 @@ class ProfileFeed extends _$ProfileFeed {
         (video.originalLikes == null && originalLikes != null) ||
         (video.originalComments == null && originalComments != null) ||
         (video.originalReposts == null && originalReposts != null) ||
-        (video.nostrLikeCount == null && nostrLikeCount != null);
+        (video.nostrLikeCount == null && nostrLikeCount != null) ||
+        (video.nostrCommentCount == null && nostrCommentCount != null) ||
+        (video.nostrRepostCount == null && nostrRepostCount != null);
 
     if (!shouldApply) return video;
 
@@ -927,6 +945,8 @@ class ProfileFeed extends _$ProfileFeed {
       originalComments: video.originalComments ?? originalComments,
       originalReposts: video.originalReposts ?? originalReposts,
       nostrLikeCount: video.nostrLikeCount ?? nostrLikeCount,
+      nostrCommentCount: video.nostrCommentCount ?? nostrCommentCount,
+      nostrRepostCount: video.nostrRepostCount ?? nostrRepostCount,
     );
   }
 
@@ -1275,6 +1295,14 @@ class ProfileFeed extends _$ProfileFeed {
         current.nostrLikeCount,
         enriched.nostrLikeCount,
       ),
+      nostrCommentCount: mergeProfileEngagementCount(
+        current.nostrCommentCount,
+        enriched.nostrCommentCount,
+      ),
+      nostrRepostCount: mergeProfileEngagementCount(
+        current.nostrRepostCount,
+        enriched.nostrRepostCount,
+      ),
     );
   }
 
@@ -1330,6 +1358,8 @@ class _VideoMetadataCache {
     this.originalComments,
     this.originalReposts,
     this.nostrLikeCount,
+    this.nostrCommentCount,
+    this.nostrRepostCount,
   });
 
   final int? originalLoops;
@@ -1338,4 +1368,6 @@ class _VideoMetadataCache {
   final int? originalComments;
   final int? originalReposts;
   final int? nostrLikeCount;
+  final int? nostrCommentCount;
+  final int? nostrRepostCount;
 }

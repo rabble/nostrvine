@@ -105,6 +105,14 @@ VideoEvent mergeProfileFeedVideos(VideoEvent existing, VideoEvent incoming) {
       primary.nostrLikeCount,
       secondary.nostrLikeCount,
     ),
+    nostrCommentCount: mergeNullableEngagementMax(
+      primary.nostrCommentCount,
+      secondary.nostrCommentCount,
+    ),
+    nostrRepostCount: mergeNullableEngagementMax(
+      primary.nostrRepostCount,
+      secondary.nostrRepostCount,
+    ),
   );
 }
 

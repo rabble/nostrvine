@@ -132,6 +132,14 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
             parsed.nostrLikeCount,
             video.nostrLikeCount,
           ),
+          nostrCommentCount: mergeNullableEngagementMax(
+            parsed.nostrCommentCount,
+            video.nostrCommentCount,
+          ),
+          nostrRepostCount: mergeNullableEngagementMax(
+            parsed.nostrRepostCount,
+            video.nostrRepostCount,
+          ),
         );
       }
       return video;

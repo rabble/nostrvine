@@ -519,6 +519,9 @@ class VideoStats {
         publishedAt ?? createdAt.millisecondsSinceEpoch ~/ 1000;
     final normalizedDTag = dTag.isNotEmpty ? dTag : id;
     final expirationTimestamp = int.tryParse(rawTags['expiration'] ?? '');
+    final originalLikes = int.tryParse(rawTags['likes'] ?? '');
+    final originalComments = int.tryParse(rawTags['comments'] ?? '');
+    final originalReposts = int.tryParse(rawTags['reposts'] ?? '');
     return VideoEvent(
       id: id,
       pubkey: pubkey,
@@ -538,12 +541,12 @@ class VideoStats {
       authorAvatar: authorAvatar,
       blurhash: blurhash,
       dimensions: dimensions,
-      originalLikes: reactions,
-      // When from Funnelcake, Nostr likes are added to originalLikes by default
-      // Setting to 0 here ensures VideoInteractionsBloc seeds the correct count
-      nostrLikeCount: 0,
-      originalComments: comments,
-      originalReposts: reposts,
+      originalLikes: originalLikes,
+      nostrLikeCount: reactions,
+      originalComments: originalComments,
+      originalReposts: originalReposts,
+      nostrCommentCount: comments,
+      nostrRepostCount: reposts,
       originalLoops: loops,
       textTrackRef: textTrackRef,
       textTrackContent: textTrackContent,

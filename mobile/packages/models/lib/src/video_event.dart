@@ -185,6 +185,8 @@ class VideoEvent {
     this.audioEventId,
     this.audioEventRelay,
     this.nostrLikeCount,
+    this.nostrCommentCount,
+    this.nostrRepostCount,
     this.authorName,
     this.authorAvatar,
     this.collaboratorPubkeys = const [],
@@ -658,6 +660,12 @@ class VideoEvent {
   // Live engagement metrics from Nostr
   /// Live like/reaction count from Nostr (updated in real-time)
   final int? nostrLikeCount;
+
+  /// Live comment/reply count from Nostr/Funnelcake.
+  final int? nostrCommentCount;
+
+  /// Live repost count from Nostr/Funnelcake.
+  final int? nostrRepostCount;
 
   // Author metadata from API (classic Vines)
   /// Author display name (from Funnelcake API for classic Viners)
@@ -1298,6 +1306,8 @@ class VideoEvent {
     String? audioEventId,
     String? audioEventRelay,
     int? nostrLikeCount,
+    int? nostrCommentCount,
+    int? nostrRepostCount,
     String? authorName,
     String? authorAvatar,
     List<String>? collaboratorPubkeys,
@@ -1355,6 +1365,8 @@ class VideoEvent {
     audioEventId: audioEventId ?? this.audioEventId,
     audioEventRelay: audioEventRelay ?? this.audioEventRelay,
     nostrLikeCount: nostrLikeCount ?? this.nostrLikeCount,
+    nostrCommentCount: nostrCommentCount ?? this.nostrCommentCount,
+    nostrRepostCount: nostrRepostCount ?? this.nostrRepostCount,
     authorName: authorName ?? this.authorName,
     authorAvatar: authorAvatar ?? this.authorAvatar,
     collaboratorPubkeys: collaboratorPubkeys ?? this.collaboratorPubkeys,
@@ -1432,6 +1444,8 @@ class VideoEvent {
     'audioEventId': audioEventId,
     'audioEventRelay': audioEventRelay,
     'nostrLikeCount': nostrLikeCount,
+    'nostrCommentCount': nostrCommentCount,
+    'nostrRepostCount': nostrRepostCount,
     'authorName': authorName,
     'authorAvatar': authorAvatar,
     'collaboratorPubkeys': collaboratorPubkeys,

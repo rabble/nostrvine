@@ -12,6 +12,7 @@ import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/video_engagement/video_engagement_list_screen.dart';
 import 'package:openvine/widgets/video_feed_item/actions/video_action_button.dart';
+import 'package:openvine/widgets/video_feed_item/live_engagement_counts.dart';
 
 /// Repost action button with count display for video overlay.
 ///
@@ -50,9 +51,8 @@ class RepostActionButton extends StatelessWidget {
     final video = this.video;
     if (video == null) return const SizedBox.shrink();
 
-    // Use relay count when available; fall back to video metadata.
-    // Don't sum both — Funnelcake's originalReposts already includes
-    // Nostr reposts, so adding them would double-count.
+    // Bloc state is seeded from the feed payload, preserving any archived
+    // baseline and adding live Divine reposts when the server provides them.
     return BlocSelector<
       VideoInteractionsBloc,
       VideoInteractionsState,
@@ -60,9 +60,7 @@ class RepostActionButton extends StatelessWidget {
     >(
       selector: (state) => (
         isReposted: state.isReposted,
-        count:
-            state.repostCount ??
-            (video.reposterPubkeys?.length ?? 0) + (video.originalReposts ?? 0),
+        count: state.repostCount ?? liveRepostCountSeed(video) ?? 0,
       ),
       builder: (context, data) {
         return _ActionButton(

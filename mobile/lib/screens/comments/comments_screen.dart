@@ -23,6 +23,7 @@ import 'package:openvine/providers/video_reply_context_provider.dart';
 import 'package:openvine/screens/comments/widgets/widgets.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
+import 'package:openvine/widgets/video_feed_item/live_engagement_counts.dart';
 
 /// Maps any of the three per-bloc errors to a localized user-facing string.
 ///
@@ -140,6 +141,7 @@ abstract final class CommentsScreen {
     final showVideoReplies = container.read(
       isFeatureEnabledProvider(FeatureFlag.videoReplies),
     );
+    final seedCommentCount = initialCommentCount ?? liveCommentCountSeed(video);
 
     // The draggable scroll controller is created inside buildScrollBody but
     // is also needed by the title's "new comments" pill (which lives above
@@ -166,7 +168,7 @@ abstract final class CommentsScreen {
               rootEventKind: NIP71VideoKinds.addressableShortVideo,
               rootAuthorPubkey: video.pubkey,
               rootAddressableId: video.addressableId,
-              initialTotalCount: video.originalComments,
+              initialTotalCount: seedCommentCount,
               includeVideoReplies: showVideoReplies,
             )..add(const CommentsLoadRequested()),
           ),
@@ -216,7 +218,7 @@ abstract final class CommentsScreen {
         ),
       ),
       title: _CommentsTitle(
-        initialCount: initialCommentCount ?? video.originalComments ?? 0,
+        initialCount: seedCommentCount ?? 0,
         onNewCommentsPillTap: () {
           final controller = activeScrollController;
           if (controller != null && controller.hasClients) {

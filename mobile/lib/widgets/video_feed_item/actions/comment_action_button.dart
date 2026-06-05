@@ -10,6 +10,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
 import 'package:openvine/screens/comments/comments.dart';
 import 'package:openvine/widgets/video_feed_item/actions/video_action_button.dart';
+import 'package:openvine/widgets/video_feed_item/live_engagement_counts.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -50,7 +51,7 @@ class CommentActionButton extends ConsumerWidget {
     >(
       selector: (state) => (
         isInProgress: state.isCommentsInProgress,
-        count: state.commentCount ?? video.originalComments ?? 0,
+        count: state.commentCount ?? liveCommentCountSeed(video) ?? 0,
       ),
       builder: (context, data) {
         return _ActionButton(
