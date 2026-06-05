@@ -6,28 +6,39 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:keycast_flutter/keycast_flutter.dart';
 
-/// Response model for crosspost status from keycast.
+/// Response model for crosspost status from keycast's `AtprotoStatusResponse`.
 class CrosspostStatus {
   const CrosspostStatus({
     required this.crosspostEnabled,
     this.handle,
     this.provisioningState,
     this.did,
+    this.error,
   });
 
+  /// Builds a status from keycast's `AtprotoStatusResponse` JSON shape:
+  /// `{enabled, state, did, error, username}`.
+  ///
+  /// `username` is the bare local part; the displayable Bluesky handle is
+  /// `<username>.divine.video`.
   factory CrosspostStatus.fromJson(Map<String, dynamic> json) {
+    final username = json['username'] as String?;
     return CrosspostStatus(
-      crosspostEnabled: json['crosspost_enabled'] as bool? ?? false,
-      handle: json['handle'] as String?,
-      provisioningState: json['provisioning_state'] as String?,
+      crosspostEnabled: json['enabled'] as bool? ?? false,
+      handle: username == null ? null : '$username.$_handleDomain',
+      provisioningState: json['state'] as String?,
       did: json['did'] as String?,
+      error: json['error'] as String?,
     );
   }
+
+  static const _handleDomain = 'divine.video';
 
   final bool crosspostEnabled;
   final String? handle;
   final String? provisioningState;
   final String? did;
+  final String? error;
 }
 
 /// Client for keycast crosspost API endpoints.
@@ -56,10 +67,18 @@ class CrosspostApiClient {
     };
   }
 
-  /// Fetch the current crosspost status for [pubkey].
-  Future<CrosspostStatus> getStatus(String pubkey) async {
+  /// Fetch the current crosspost status for the authenticated user.
+  ///
+  /// The bearer token identifies the user, so no pubkey is part of the path.
+  /// keycast returns 200 for any authenticated user (no account link yields
+  /// `enabled:false, state:null`); the 404 branch is a tolerant fallback
+  /// rather than the expected "no account" signal.
+  ///
+  /// Throws [CrosspostApiException] when unauthenticated or on a non-200,
+  /// non-404 response.
+  Future<CrosspostStatus> getStatus() async {
     final headers = await _authHeaders();
-    final uri = Uri.parse('$_serverUrl/api/account/$pubkey/crosspost');
+    final uri = Uri.parse('$_serverUrl/api/user/atproto/status');
     final response = await _httpClient.get(uri, headers: headers);
 
     if (response.statusCode == 404) {

@@ -27,7 +27,7 @@ void main() {
     group('initial state', () {
       test('is CrosspostSettingsState with initial status', () {
         when(
-          () => apiClient.getStatus(testPubkey),
+          () => apiClient.getStatus(),
         ).thenAnswer((_) async => loadedStatus);
         final cubit = CrosspostSettingsCubit(
           apiClient: apiClient,
@@ -41,7 +41,7 @@ void main() {
     group('loadStatus', () {
       test('emits loaded state on successful status fetch', () async {
         when(
-          () => apiClient.getStatus(testPubkey),
+          () => apiClient.getStatus(),
         ).thenAnswer((_) async => loadedStatus);
 
         final cubit = CrosspostSettingsCubit(
@@ -59,7 +59,7 @@ void main() {
       });
 
       test('emits failure state when status fetch fails', () async {
-        when(() => apiClient.getStatus(testPubkey)).thenAnswer(
+        when(() => apiClient.getStatus()).thenAnswer(
           (_) async => throw const CrosspostApiException('Network error'),
         );
 
@@ -75,7 +75,7 @@ void main() {
       });
 
       test('emits disabled state when 404 (no account link)', () async {
-        when(() => apiClient.getStatus(testPubkey)).thenAnswer(
+        when(() => apiClient.getStatus()).thenAnswer(
           (_) async => const CrosspostStatus(crosspostEnabled: false),
         );
 
@@ -97,7 +97,7 @@ void main() {
         'emits loaded with enabled=false on successful toggle',
         setUp: () {
           when(
-            () => apiClient.getStatus(testPubkey),
+            () => apiClient.getStatus(),
           ).thenAnswer((_) async => loadedStatus);
           when(
             () => apiClient.setCrosspost(pubkey: testPubkey, enabled: false),
@@ -130,7 +130,7 @@ void main() {
         'reverts to previous enabled value on toggle failure',
         setUp: () {
           when(
-            () => apiClient.getStatus(testPubkey),
+            () => apiClient.getStatus(),
           ).thenAnswer((_) async => loadedStatus);
           when(
             () => apiClient.setCrosspost(pubkey: testPubkey, enabled: false),
@@ -159,7 +159,7 @@ void main() {
       test('emits toggling state optimistically before API call', () async {
         final completer = Completer<CrosspostStatus>();
         when(
-          () => apiClient.getStatus(testPubkey),
+          () => apiClient.getStatus(),
         ).thenAnswer((_) async => loadedStatus);
         when(
           () => apiClient.setCrosspost(pubkey: testPubkey, enabled: false),

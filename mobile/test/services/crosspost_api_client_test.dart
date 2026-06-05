@@ -1,0 +1,249 @@
+import 'dart:convert';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:keycast_flutter/keycast_flutter.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openvine/services/crosspost_api_client.dart';
+
+class _MockKeycastOAuth extends Mock implements KeycastOAuth {}
+
+class _MockHttpClient extends Mock implements http.Client {}
+
+void main() {
+  group(CrosspostApiClient, () {
+    late _MockKeycastOAuth oauthClient;
+    late _MockHttpClient httpClient;
+    late CrosspostApiClient client;
+
+    const serverUrl = 'https://login.divine.video';
+    const pubkey = 'abc123def456';
+    const accessToken = 'session-access-token';
+
+    // Real keycast AtprotoStatusResponse shape.
+    const statusJson = {
+      'enabled': true,
+      'state': 'ready',
+      'did': 'did:plc:test123',
+      'error': null,
+      'username': 'testuser',
+    };
+
+    setUpAll(() {
+      registerFallbackValue(Uri());
+    });
+
+    setUp(() {
+      oauthClient = _MockKeycastOAuth();
+      httpClient = _MockHttpClient();
+      client = CrosspostApiClient(
+        oauthClient: oauthClient,
+        serverUrl: serverUrl,
+        httpClient: httpClient,
+      );
+      when(() => oauthClient.getSession()).thenAnswer(
+        (_) async => const KeycastSession(
+          bunkerUrl: 'bunker://test',
+          accessToken: accessToken,
+        ),
+      );
+    });
+
+    group('getStatus', () {
+      test('calls GET /api/user/atproto/status with bearer token', () async {
+        when(
+          () => httpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response(jsonEncode(statusJson), 200));
+
+        await client.getStatus();
+
+        final captured = verify(
+          () => httpClient.get(
+            captureAny(),
+            headers: captureAny(named: 'headers'),
+          ),
+        ).captured;
+        final uri = captured[0] as Uri;
+        final headers = captured[1] as Map<String, String>;
+
+        expect(uri.toString(), '$serverUrl/api/user/atproto/status');
+        expect(headers['Authorization'], 'Bearer $accessToken');
+      });
+
+      test('maps keycast response keys to status fields', () async {
+        when(
+          () => httpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response(jsonEncode(statusJson), 200));
+
+        final status = await client.getStatus();
+
+        expect(status.crosspostEnabled, isTrue);
+        expect(status.provisioningState, 'ready');
+        expect(status.did, 'did:plc:test123');
+        expect(status.handle, 'testuser.divine.video');
+      });
+
+      test(
+        'returns disabled defaults when not enabled with null state',
+        () async {
+          when(
+            () => httpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer(
+            (_) async => http.Response(
+              jsonEncode(const {
+                'enabled': false,
+                'state': null,
+                'did': null,
+                'error': null,
+                'username': null,
+              }),
+              200,
+            ),
+          );
+
+          final status = await client.getStatus();
+
+          expect(status.crosspostEnabled, isFalse);
+          expect(status.provisioningState, isNull);
+          expect(status.handle, isNull);
+          expect(status.did, isNull);
+        },
+      );
+
+      test('exposes error message for failed state', () async {
+        when(
+          () => httpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(
+            jsonEncode(const {
+              'enabled': false,
+              'state': 'failed',
+              'did': null,
+              'error': 'provisioning failed',
+              'username': 'testuser',
+            }),
+            200,
+          ),
+        );
+
+        final status = await client.getStatus();
+
+        expect(status.provisioningState, 'failed');
+        expect(status.error, 'provisioning failed');
+      });
+
+      test('returns disabled default on 404', () async {
+        when(
+          () => httpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('', 404));
+
+        final status = await client.getStatus();
+
+        expect(status.crosspostEnabled, isFalse);
+        expect(status.provisioningState, isNull);
+      });
+
+      test('throws CrosspostApiException on non-200 (non-404)', () async {
+        when(
+          () => httpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('error', 500));
+
+        expect(
+          () => client.getStatus(),
+          throwsA(isA<CrosspostApiException>()),
+        );
+      });
+
+      test('throws CrosspostApiException when no session token', () async {
+        when(() => oauthClient.getSession()).thenAnswer((_) async => null);
+
+        expect(
+          () => client.getStatus(),
+          throwsA(
+            isA<CrosspostApiException>().having(
+              (e) => e.statusCode,
+              'statusCode',
+              401,
+            ),
+          ),
+        );
+      });
+    });
+
+    group('setCrosspost', () {
+      test(
+        'calls PUT /api/account/{pubkey}/crosspost with enabled body',
+        () async {
+          when(
+            () => httpClient.put(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer((_) async => http.Response(jsonEncode(statusJson), 200));
+
+          await client.setCrosspost(pubkey: pubkey, enabled: true);
+
+          final captured = verify(
+            () => httpClient.put(
+              captureAny(),
+              headers: any(named: 'headers'),
+              body: captureAny(named: 'body'),
+            ),
+          ).captured;
+          final uri = captured[0] as Uri;
+          final body =
+              jsonDecode(captured[1] as String) as Map<String, dynamic>;
+
+          expect(uri.toString(), '$serverUrl/api/account/$pubkey/crosspost');
+          expect(body, {'enabled': true});
+        },
+      );
+
+      test('maps keycast response keys on toggle', () async {
+        when(
+          () => httpClient.put(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            jsonEncode(const {
+              'enabled': false,
+              'state': 'disabled',
+              'did': 'did:plc:test123',
+              'error': null,
+              'username': 'testuser',
+            }),
+            200,
+          ),
+        );
+
+        final status = await client.setCrosspost(
+          pubkey: pubkey,
+          enabled: false,
+        );
+
+        expect(status.crosspostEnabled, isFalse);
+        expect(status.provisioningState, 'disabled');
+        expect(status.handle, 'testuser.divine.video');
+      });
+
+      test('throws CrosspostApiException on non-200', () async {
+        when(
+          () => httpClient.put(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => http.Response('error', 500));
+
+        expect(
+          () => client.setCrosspost(pubkey: pubkey, enabled: true),
+          throwsA(isA<CrosspostApiException>()),
+        );
+      });
+    });
+  });
+}

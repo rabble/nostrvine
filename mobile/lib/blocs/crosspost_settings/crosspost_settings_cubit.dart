@@ -28,7 +28,7 @@ class CrosspostSettingsCubit extends Cubit<CrosspostSettingsState> {
   Future<void> loadStatus() async {
     emit(state.copyWith(status: CrosspostSettingsStatus.loading));
     try {
-      final result = await _apiClient.getStatus(_pubkey);
+      final result = await _apiClient.getStatus();
       emit(
         state.copyWith(
           status: CrosspostSettingsStatus.loaded,
