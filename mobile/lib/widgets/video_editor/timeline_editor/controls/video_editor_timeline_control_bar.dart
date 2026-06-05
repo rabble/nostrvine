@@ -48,7 +48,7 @@ class TimelineControlsBar extends StatelessWidget {
       duration: _animationDuration,
       transitionBuilder: (child, animation) => SizeTransition(
         sizeFactor: animation,
-        axisAlignment: -1,
+        alignment: AlignmentDirectional.topStart,
         child: child,
       ),
       child: controlsChild,

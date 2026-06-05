@@ -49,7 +49,7 @@ class ErrorAnalyticsTracker {
         'location': location,
         'occurrence_count': _errorCounts[errorKey]!,
         'is_fatal': isFatal,
-        if (context != null) ...context,
+        ...?context,
       },
     );
 
@@ -99,7 +99,7 @@ class ErrorAnalyticsTracker {
         'expected_count': ?expectedCount,
         'actual_count': ?actualCount,
         'load_time_ms': ?loadTimeMs,
-        if (additionalContext != null) ...additionalContext,
+        ...?additionalContext,
       },
     );
   }
@@ -122,7 +122,7 @@ class ErrorAnalyticsTracker {
         'operation': operation,
         'timeout_ms': timeoutMs,
         'location': location,
-        if (context != null) ...context,
+        ...?context,
       },
     );
   }
@@ -231,7 +231,7 @@ class ErrorAnalyticsTracker {
         'threshold_ms': thresholdMs,
         'slowness_ratio': (durationMs / thresholdMs).toStringAsFixed(2),
         'location': ?location,
-        if (context != null) ...context,
+        ...?context,
       },
     );
   }

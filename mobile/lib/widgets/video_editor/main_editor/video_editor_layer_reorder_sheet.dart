@@ -34,14 +34,15 @@ class _VideoEditorLayerReorderSheetState
   late final List<Layer> _layers = List.from(widget.layers);
 
   /// Reorders the local layer list and forwards the callback to the parent.
-  void _onReorder(int oldIndex, int newIndex) {
+  void _onReorderItem(int oldIndex, int newIndex) {
     Log.debug(
       '🔀 Layer reordered: $oldIndex → $newIndex',
       name: 'LayerReorderSheet',
       category: LogCategory.video,
     );
+    // onReorderItem already adjusts newIndex for the removed item, so the
+    // old `if (oldIndex < newIndex) newIndex--` shift is no longer needed.
     setState(() {
-      if (oldIndex < newIndex) newIndex--;
       final layer = _layers.removeAt(oldIndex);
       _layers.insert(newIndex, layer);
     });
@@ -75,7 +76,7 @@ class _VideoEditorLayerReorderSheetState
         );
       },
       itemCount: _layers.length,
-      onReorder: _onReorder,
+      onReorderItem: _onReorderItem,
     );
   }
 }

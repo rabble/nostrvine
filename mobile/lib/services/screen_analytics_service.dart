@@ -167,7 +167,7 @@ class ScreenAnalyticsService {
       parameters: {
         'screen_name': screenName,
         'data_load_time_ms': dataLoadTime,
-        if (dataMetrics != null) ...dataMetrics,
+        ...?dataMetrics,
         ...session.params,
       },
     );
@@ -246,7 +246,7 @@ class ScreenAnalyticsService {
       parameters: {
         'screen_name': screenName,
         'interaction_type': interactionType,
-        if (params != null) ...params,
+        ...?params,
       },
     );
 
@@ -338,7 +338,7 @@ class ScreenAnalyticsService {
           0,
           errorMessage.length > 100 ? 100 : errorMessage.length,
         ),
-        if (context != null) ...context,
+        ...?context,
       },
     );
 

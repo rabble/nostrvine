@@ -740,7 +740,7 @@ class _CreateVideoBar extends StatelessWidget {
         opacity: animation,
         child: SizeTransition(
           sizeFactor: animation,
-          axisAlignment: -1,
+          alignment: AlignmentDirectional.topStart,
           child: child,
         ),
       ),

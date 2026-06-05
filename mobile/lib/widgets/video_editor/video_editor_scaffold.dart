@@ -232,7 +232,7 @@ class _TimelineSectionState extends State<_TimelineSection>
             // cache. SizeTransition clips without unmounting.
             SizeTransition(
               sizeFactor: ReverseAnimation(_animation),
-              axisAlignment: -1,
+              alignment: AlignmentDirectional.topStart,
               child: const Padding(
                 padding: .only(top: 12),
                 child: VideoEditorTimelineScaffold(),
@@ -240,7 +240,7 @@ class _TimelineSectionState extends State<_TimelineSection>
             ),
             SizeTransition(
               sizeFactor: _animation,
-              axisAlignment: -1,
+              alignment: AlignmentDirectional.topStart,
               child: const _BottomActions(),
             ),
           ],
