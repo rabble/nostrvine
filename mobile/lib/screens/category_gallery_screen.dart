@@ -8,7 +8,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/categories/categories_bloc.dart';
@@ -16,6 +15,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_category_name.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
+import 'package:openvine/widgets/categories/category_glyph.dart';
 import 'package:openvine/widgets/categories/category_visuals.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:rxdart/rxdart.dart';
@@ -318,7 +318,10 @@ class _CategoryGalleryHeader extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                _CategoryHeaderMascotSlot(visuals: visuals),
+                _CategoryHeaderMascotSlot(
+                  visuals: visuals,
+                  emoji: category.emoji,
+                ),
                 const SizedBox(width: 8),
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
@@ -437,9 +440,10 @@ class _CategoryHeaderActionButton extends StatelessWidget {
 }
 
 class _CategoryHeaderMascotSlot extends StatelessWidget {
-  const _CategoryHeaderMascotSlot({required this.visuals});
+  const _CategoryHeaderMascotSlot({required this.visuals, required this.emoji});
 
   final CategoryVisuals visuals;
+  final String emoji;
 
   @override
   Widget build(BuildContext context) {
@@ -457,8 +461,9 @@ class _CategoryHeaderMascotSlot extends StatelessWidget {
                 offset: const Offset(0, -12),
                 child: Transform.rotate(
                   angle: 8 * math.pi / 180,
-                  child: SvgPicture.asset(
-                    visuals.assetPath!,
+                  child: CategoryGlyph(
+                    assetPath: visuals.assetPath!,
+                    emoji: emoji,
                     height: 104,
                     width: 132,
                   ),

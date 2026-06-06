@@ -4,7 +4,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show VideoCategory;
 import 'package:openvine/blocs/categories/categories_bloc.dart';
@@ -12,6 +11,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_category_name.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/category_gallery_screen.dart';
+import 'package:openvine/widgets/categories/category_glyph.dart';
 import 'package:openvine/widgets/categories/category_visuals.dart';
 
 class CategoriesTab extends ConsumerWidget {
@@ -181,7 +181,11 @@ class _CategoryTile extends StatelessWidget {
                     top: 0,
                     bottom: 0,
                     child: IgnorePointer(
-                      child: SvgPicture.asset(visuals.assetPath!, height: 88),
+                      child: CategoryGlyph(
+                        assetPath: visuals.assetPath!,
+                        emoji: category.emoji,
+                        height: 88,
+                      ),
                     ),
                   ),
               ],

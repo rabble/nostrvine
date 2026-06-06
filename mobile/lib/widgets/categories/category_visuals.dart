@@ -26,8 +26,7 @@ class CategoryVisuals {
     }
     final fallback =
         _fallbackCategoryVisuals[index % _fallbackCategoryVisuals.length];
-    // Fashion is stored as style.svg for display-name consistency.
-    final assetName = name == 'fashion' ? 'style' : name;
+    final assetName = _assetNameAliases[name] ?? name;
     return CategoryVisuals(
       backgroundColor: fallback.backgroundColor,
       foregroundColor: fallback.foregroundColor,
@@ -35,6 +34,17 @@ class CategoryVisuals {
     );
   }
 }
+
+/// Maps backend category slugs onto the bundled SVG asset basename when the two
+/// diverge. Keeps the asset path pointing at a file that exists (#4398); any
+/// slug not covered here still degrades safely via [CategoryGlyph]'s emoji
+/// fallback.
+const _assetNameAliases = <String, String>{
+  // Fashion is stored as style.svg for display-name consistency.
+  'fashion': 'style',
+  // Backend emits the plural; only beverage.svg is bundled.
+  'beverages': 'beverage',
+};
 
 const _featuredCategoryVisuals = <String, CategoryVisuals>{
   'animals': CategoryVisuals(
