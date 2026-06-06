@@ -10,6 +10,7 @@ import 'package:openvine/providers/feed_refresh_helpers.dart';
 import 'package:openvine/providers/feed_viewer_preference_hints.dart';
 import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/preferences_providers.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/state/video_feed_state.dart';
@@ -43,6 +44,7 @@ class PopularVideosFeed extends _$PopularVideosFeed {
     // Watch content filter version — rebuilds when preferences change.
     ref.watch(contentFilterVersionProvider);
     ref.watch(divineHostFilterVersionProvider);
+    ref.watch(languagePreferenceVersionProvider);
 
     // Watch blocklist version — rebuilds when block/unblock actions occur.
     ref.watch(blocklistVersionProvider);

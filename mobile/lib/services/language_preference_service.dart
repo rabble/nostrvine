@@ -1,8 +1,7 @@
 // ABOUTME: Service for managing the user's preferred content language
 // ABOUTME: Stores ISO-639-1 language code used for NIP-32 labeling on video events
 
-import 'dart:ui';
-
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -12,11 +11,12 @@ import 'package:unified_logger/unified_logger.dart';
 /// self-labeling (`L`/`l` tags with ISO-639-1 namespace).
 ///
 /// When no custom language is set, the device's OS language is used.
-class LanguagePreferenceService {
+class LanguagePreferenceService extends ChangeNotifier {
   /// SharedPreferences key for the content language preference
   static const String prefsKey = 'content_language';
 
   String? _customLanguage;
+  Future<void>? _initializeFuture;
 
   /// Whether the user has overridden the default device language.
   bool get isCustomLanguageSet => _customLanguage != null;
@@ -30,7 +30,8 @@ class LanguagePreferenceService {
 
   /// Initialize the service by loading the saved preference.
   Future<void> initialize() async {
-    await _loadPreference();
+    _initializeFuture ??= _loadPreference();
+    await _initializeFuture;
   }
 
   Future<void> _loadPreference() async {
@@ -54,6 +55,7 @@ class LanguagePreferenceService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(prefsKey, languageCode);
       _customLanguage = languageCode;
+      notifyListeners();
 
       Log.debug(
         'Content language set to: $languageCode',
@@ -75,6 +77,7 @@ class LanguagePreferenceService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(prefsKey);
       _customLanguage = null;
+      notifyListeners();
 
       Log.debug(
         'Content language cleared, using device default',

@@ -72,6 +72,18 @@ void main() {
         await service.setContentLanguage('ja');
         expect(service.contentLanguage, equals('ja'));
       });
+
+      test('notifies listeners after setting a custom language', () async {
+        await service.initialize();
+        var notifications = 0;
+        service.addListener(() {
+          notifications++;
+        });
+
+        await service.setContentLanguage('pt');
+
+        expect(notifications, equals(1));
+      });
     });
 
     group('clearContentLanguage', () {
@@ -96,6 +108,19 @@ void main() {
 
         final prefs = await SharedPreferences.getInstance();
         expect(prefs.getString(LanguagePreferenceService.prefsKey), isNull);
+      });
+
+      test('notifies listeners after clearing a custom language', () async {
+        await service.initialize();
+        await service.setContentLanguage('de');
+        var notifications = 0;
+        service.addListener(() {
+          notifications++;
+        });
+
+        await service.clearContentLanguage();
+
+        expect(notifications, equals(1));
       });
     });
 

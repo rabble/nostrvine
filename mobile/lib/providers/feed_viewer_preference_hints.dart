@@ -52,9 +52,9 @@ List<String> buildPreferredFeedLanguages({
 Future<FeedViewerPreferenceHints> readFeedViewerPreferenceHints(
   ProviderReader read,
 ) async {
-  final contentLanguage = read(
-    languagePreferenceServiceProvider,
-  ).contentLanguage.trim();
+  final languagePreferenceService = read(languagePreferenceServiceProvider);
+  await languagePreferenceService.initialize();
+  final contentLanguage = languagePreferenceService.contentLanguage.trim();
   final preferredLanguages = buildPreferredFeedLanguages(
     contentLanguage: contentLanguage,
     appLocale: _readAppLocale(read),

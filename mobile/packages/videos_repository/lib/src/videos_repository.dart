@@ -81,14 +81,6 @@ String _popularPreferenceCacheSuffix({
   return ':lang=$languages:country=$country';
 }
 
-bool _hasViewerPreferenceHints({
-  List<String> preferredLanguages = const [],
-  String? viewerCountry,
-}) {
-  return preferredLanguages.any((language) => language.trim().isNotEmpty) ||
-      (viewerCountry?.trim().isNotEmpty ?? false);
-}
-
 /// {@template videos_repository}
 /// Repository for video operations with Nostr.
 ///
@@ -773,25 +765,14 @@ class VideosRepository {
       String? nextPageCursor;
 
       while (visible.length < limit) {
-        final response =
-            _hasViewerPreferenceHints(
-              preferredLanguages: preferredLanguages,
-              viewerCountry: viewerCountry,
-            )
-            ? await _funnelcakeApiClient.getV2PopularVideosPage(
-                variant: variant,
-                limit: limit,
-                cursor: pageCursor,
-                before: before,
-                preferredLanguages: preferredLanguages,
-                viewerCountry: viewerCountry,
-              )
-            : await _funnelcakeApiClient.getV2PopularVideosPage(
-                variant: variant,
-                limit: limit,
-                cursor: pageCursor,
-                before: before,
-              );
+        final response = await _funnelcakeApiClient.getV2PopularVideosPage(
+          variant: variant,
+          limit: limit,
+          cursor: pageCursor,
+          before: before,
+          preferredLanguages: preferredLanguages,
+          viewerCountry: viewerCountry,
+        );
         final stats = response.videos;
         if (stats.isEmpty) {
           final page = PopularVideosPage(videos: visible, hasMore: false);
@@ -2098,21 +2079,12 @@ class VideosRepository {
       );
     }
 
-    final response =
-        _hasViewerPreferenceHints(
-          preferredLanguages: preferredLanguages,
-          viewerCountry: viewerCountry,
-        )
-        ? await _funnelcakeApiClient.getRecommendations(
-            pubkey: effectiveUserPubkey,
-            limit: limit,
-            preferredLanguages: preferredLanguages,
-            viewerCountry: viewerCountry,
-          )
-        : await _funnelcakeApiClient.getRecommendations(
-            pubkey: effectiveUserPubkey,
-            limit: limit,
-          );
+    final response = await _funnelcakeApiClient.getRecommendations(
+      pubkey: effectiveUserPubkey,
+      limit: limit,
+      preferredLanguages: preferredLanguages,
+      viewerCountry: viewerCountry,
+    );
     final videos = _transformVideoStats(response.videos);
     if (videos.isEmpty) {
       return HomeFeedResult(
@@ -2145,24 +2117,13 @@ class VideosRepository {
     if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
       return null;
     }
-    if (_hasViewerPreferenceHints(
-      preferredLanguages: preferredLanguages,
-      viewerCountry: viewerCountry,
-    )) {
-      return _funnelcakeApiClient.getRecommendations(
-        pubkey: pubkey,
-        limit: limit,
-        fallback: fallback,
-        category: category,
-        preferredLanguages: preferredLanguages,
-        viewerCountry: viewerCountry,
-      );
-    }
     return _funnelcakeApiClient.getRecommendations(
       pubkey: pubkey,
       limit: limit,
       fallback: fallback,
       category: category,
+      preferredLanguages: preferredLanguages,
+      viewerCountry: viewerCountry,
     );
   }
 

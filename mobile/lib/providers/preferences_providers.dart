@@ -48,5 +48,22 @@ AudioDevicePreferenceService audioDevicePreferenceService(Ref ref) {
 LanguagePreferenceService languagePreferenceService(Ref ref) {
   final service = LanguagePreferenceService();
   service.initialize(); // Initialize asynchronously
+  ref.onDispose(service.dispose);
   return service;
 }
+
+/// Rebuild trigger for consumers that need the latest content-language
+/// preference in request parameters.
+final languagePreferenceVersionProvider = Provider<int>((ref) {
+  final service = ref.watch(languagePreferenceServiceProvider);
+  var version = 0;
+
+  void listener() {
+    version++;
+    ref.invalidateSelf();
+  }
+
+  service.addListener(listener);
+  ref.onDispose(() => service.removeListener(listener));
+  return version;
+});
