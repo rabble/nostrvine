@@ -13,11 +13,10 @@ class CrosspostStatus {
     this.handle,
     this.provisioningState,
     this.did,
-    this.error,
   });
 
   /// Builds a status from keycast's `AtprotoStatusResponse` JSON shape:
-  /// `{enabled, state, did, error, username}`.
+  /// `{enabled, state, did, username}`.
   ///
   /// `username` is the bare local part; the displayable Bluesky handle is
   /// `<username>.divine.video`.
@@ -28,7 +27,6 @@ class CrosspostStatus {
       handle: username == null ? null : '$username.$_handleDomain',
       provisioningState: json['state'] as String?,
       did: json['did'] as String?,
-      error: json['error'] as String?,
     );
   }
 
@@ -38,7 +36,6 @@ class CrosspostStatus {
   final String? handle;
   final String? provisioningState;
   final String? did;
-  final String? error;
 }
 
 /// Client for keycast crosspost API endpoints.

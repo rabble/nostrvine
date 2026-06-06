@@ -18,7 +18,6 @@ collaborator_invite_local_state_adapter # noise: local-state adapter
 connection_status_service
 content_moderation_service
 crash_reporting_service # defer: #4338 C2 singleton-to-DI
-crosspost_api_client
 curated_list_service
 error_analytics_tracker
 geo_blocking_service

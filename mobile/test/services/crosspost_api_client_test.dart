@@ -25,7 +25,6 @@ void main() {
       'enabled': true,
       'state': 'ready',
       'did': 'did:plc:test123',
-      'error': null,
       'username': 'testuser',
     };
 
@@ -94,7 +93,6 @@ void main() {
                 'enabled': false,
                 'state': null,
                 'did': null,
-                'error': null,
                 'username': null,
               }),
               200,
@@ -110,7 +108,7 @@ void main() {
         },
       );
 
-      test('exposes error message for failed state', () async {
+      test('maps failed state without requiring a DID', () async {
         when(
           () => httpClient.get(any(), headers: any(named: 'headers')),
         ).thenAnswer(
@@ -119,7 +117,6 @@ void main() {
               'enabled': false,
               'state': 'failed',
               'did': null,
-              'error': 'provisioning failed',
               'username': 'testuser',
             }),
             200,
@@ -129,7 +126,7 @@ void main() {
         final status = await client.getStatus();
 
         expect(status.provisioningState, 'failed');
-        expect(status.error, 'provisioning failed');
+        expect(status.did, isNull);
       });
 
       test('returns disabled default on 404', () async {
@@ -148,10 +145,7 @@ void main() {
           () => httpClient.get(any(), headers: any(named: 'headers')),
         ).thenAnswer((_) async => http.Response('error', 500));
 
-        expect(
-          () => client.getStatus(),
-          throwsA(isA<CrosspostApiException>()),
-        );
+        expect(() => client.getStatus(), throwsA(isA<CrosspostApiException>()));
       });
 
       test('throws CrosspostApiException when no session token', () async {
@@ -213,7 +207,6 @@ void main() {
               'enabled': false,
               'state': 'disabled',
               'did': 'did:plc:test123',
-              'error': null,
               'username': 'testuser',
             }),
             200,
