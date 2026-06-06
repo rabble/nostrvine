@@ -2213,8 +2213,9 @@ class _NotificationBadgeRepositorySync extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final repository = ref.watch(notificationRepositoryProvider);
-    context.read<NotificationBadgeCubit>().setRepository(repository);
+    ref.listen(notificationRepositoryProvider, (_, repository) {
+      context.read<NotificationBadgeCubit>().setRepository(repository);
+    });
     return child;
   }
 }

@@ -26,11 +26,13 @@ class NotificationBadgeCubit extends Cubit<int> {
 
   NotificationRepository? _repository;
   StreamSubscription<int>? _subscription;
+  int _subscriptionGeneration = 0;
 
   void setRepository(NotificationRepository? repository) {
     if (identical(_repository, repository)) return;
 
     _repository = repository;
+    final generation = ++_subscriptionGeneration;
     final oldSubscription = _subscription;
     _subscription = null;
     if (oldSubscription != null) {
@@ -43,13 +45,20 @@ class NotificationBadgeCubit extends Cubit<int> {
     }
 
     _subscription = repository.watchUnreadCount().listen(
-      emit,
-      onError: addError,
+      (count) {
+        if (_subscriptionGeneration == generation) emit(count);
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        if (_subscriptionGeneration == generation) {
+          addError(error, stackTrace);
+        }
+      },
     );
   }
 
   @override
   Future<void> close() async {
+    _subscriptionGeneration += 1;
     await _subscription?.cancel();
     await super.close();
   }

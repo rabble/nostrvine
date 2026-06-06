@@ -61,12 +61,8 @@ class InboxPage extends ConsumerWidget {
           // Inbox-scope NotificationBadgeCubit feeds the segmented
           // toggle's notifications count. Mirrors the app-shell-scope
           // cubit provided in `main.dart` so `inbox_view.dart` can read
-          // via `context.watch<NotificationBadgeCubit>()`. Keyed on the
-          // repository identity for auth-flip safety.
+          // via `context.watch<NotificationBadgeCubit>()`.
           BlocProvider(
-            key: ValueKey(
-              identityHashCode(ref.watch(notificationRepositoryProvider)),
-            ),
             create: (_) => NotificationBadgeCubit(
               repository: ref.read(notificationRepositoryProvider),
             ),
@@ -87,8 +83,22 @@ class InboxPage extends ConsumerWidget {
             ),
           ),
         ],
-        child: const InboxView(),
+        child: const _InboxNotificationBadgeRepositorySync(child: InboxView()),
       ),
     );
+  }
+}
+
+class _InboxNotificationBadgeRepositorySync extends ConsumerWidget {
+  const _InboxNotificationBadgeRepositorySync({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(notificationRepositoryProvider, (_, repository) {
+      context.read<NotificationBadgeCubit>().setRepository(repository);
+    });
+    return child;
   }
 }

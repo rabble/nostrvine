@@ -69,8 +69,8 @@ final notificationRepositoryProvider = Provider<NotificationRepository?>((ref) {
   // Close the internal BehaviorSubject when this provider rebuilds or the
   // container disposes (e.g. auth flip, account switch). By the time this
   // fires, dependent consumers (feed bloc, badge cubit, realtime bridge)
-  // have already cancelled their watchSnapshot subscriptions because
-  // their own providers / BlocProviders re-key on repository identity.
+  // have already swapped away from this repository or cancelled their
+  // watchSnapshot subscriptions.
   ref.onDispose(repository.close);
   return repository;
 });

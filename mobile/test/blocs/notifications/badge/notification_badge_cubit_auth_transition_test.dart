@@ -21,9 +21,7 @@ class _MockNotificationRepository extends Mock
 
 /// Override target — tests mutate this StateProvider to flip the
 /// repository that [notificationRepositoryProvider] returns.
-final _testRepoSelector = StateProvider<NotificationRepository?>(
-  (_) => null,
-);
+final _testRepoSelector = StateProvider<NotificationRepository?>((_) => null);
 
 int _mountCount = 0;
 
@@ -54,8 +52,9 @@ class _BadgeRepositorySync extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final repository = ref.watch(notificationRepositoryProvider);
-    context.read<NotificationBadgeCubit>().setRepository(repository);
+    ref.listen(notificationRepositoryProvider, (_, repository) {
+      context.read<NotificationBadgeCubit>().setRepository(repository);
+    });
     return child;
   }
 }
@@ -129,7 +128,7 @@ void main() {
     );
 
     testWidgets(
-      'account switch A -> B: old subscription is cancelled and the new '
+      'account switch A -> B: old subscription is cancelled and the existing '
       "cubit subscribes to B's stream",
       (tester) async {
         final controllerA = StreamController<int>.broadcast();
@@ -178,9 +177,9 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('count=7'), findsOneWidget);
 
-        // Late emission on A's stream must not reach the new cubit —
-        // proving the prior subscription was cancelled when the
-        // BlocProvider replaced the cubit instance.
+        // Late emission on A's stream must not reach the existing cubit,
+        // proving the prior subscription was cancelled when the repository
+        // identity changed.
         controllerA.add(99);
         await tester.pumpAndSettle();
         expect(find.text('count=99'), findsNothing);
