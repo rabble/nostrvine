@@ -5,7 +5,7 @@ import Flutter
 import UIKit
 
 public class SwiftCryptographyFlutterPlugin: NSObject, FlutterPlugin {
-  public static func register(with registrar: FlutterPluginRegistrar) {
+  public static func register(with registrar: FlutterPluginRegistrar) -> Void {
     // No-op implementation - cryptography is handled in Dart
   }
 }
