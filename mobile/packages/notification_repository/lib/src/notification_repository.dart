@@ -1167,19 +1167,11 @@ class NotificationRepository {
           ? kind
           : NotificationKind.system;
       result.add(
-        ActorNotification(
-          id: n.dedupeKey,
+        _buildActorNotification(
+          n,
           type: mapped,
-          actor: _buildActor(n.sourcePubkey, profiles),
-          timestamp: n.createdAt,
-          isRead: n.read,
-          commentText: _truncateComment(n.content, kind),
-          targetEventId: _actorTargetEventId(mapped, n),
-          sourceEventIds: n.sourceEventId.isNotEmpty
-              ? [n.sourceEventId]
-              : const [],
-          notificationIds: n.dedupeKey.isNotEmpty ? [n.dedupeKey] : const [],
-          videoAddressableId: _actorVideoAddressableId(mapped, n),
+          profiles: profiles,
+          commentKind: kind,
         ),
       );
     }
@@ -1208,27 +1200,17 @@ class NotificationRepository {
     final result = <ActorNotification>[];
     for (final n in misattributed) {
       final originalKind = _mapNotificationKind(n);
-      final reclassifiedKind = switch (originalKind) {
-        NotificationKind.like => NotificationKind.likeComment,
-        NotificationKind.comment => NotificationKind.reply,
-        // Reposts on foreign videos are not meaningful for the commenter.
-        _ => null,
-      };
+      final reclassifiedKind = _reclassifiedMisattributedKind(originalKind);
       if (reclassifiedKind == null) continue;
       result.add(
-        ActorNotification(
-          id: n.dedupeKey,
+        _buildActorNotification(
+          n,
           type: reclassifiedKind,
-          actor: _buildActor(n.sourcePubkey, profiles),
-          timestamp: n.createdAt,
-          isRead: n.read,
-          commentText: _truncateComment(n.content, reclassifiedKind),
-          targetEventId: _actorTargetEventId(reclassifiedKind, n),
-          sourceEventIds: n.sourceEventId.isNotEmpty
-              ? [n.sourceEventId]
-              : const [],
-          notificationIds: n.dedupeKey.isNotEmpty ? [n.dedupeKey] : const [],
-          videoAddressableId: _actorVideoAddressableId(reclassifiedKind, n),
+          profiles: profiles,
+          targetEventId: _reclassifiedMisattributedTargetEventId(
+            reclassifiedKind,
+            n,
+          ),
         ),
       );
     }
@@ -1274,28 +1256,16 @@ class NotificationRepository {
           referencedVideoOwnerPubkey: video?.pubkey,
         );
         // Reclassify as actor-anchored instead of dropping (#4813).
-        final reclassifiedKind = switch (kind) {
-          NotificationKind.like => NotificationKind.likeComment,
-          NotificationKind.comment => NotificationKind.reply,
-          // Reposts on foreign videos are not meaningful for the commenter.
-          _ => null,
-        };
+        final reclassifiedKind = _reclassifiedMisattributedKind(kind);
         if (reclassifiedKind == null) return null;
-        return ActorNotification(
-          id: raw.dedupeKey,
+        return _buildActorNotification(
+          raw,
           type: reclassifiedKind,
-          actor: actor,
-          timestamp: raw.createdAt,
-          isRead: raw.read,
-          commentText: _truncateComment(raw.content, reclassifiedKind),
-          targetEventId: _actorTargetEventId(reclassifiedKind, raw),
-          sourceEventIds: raw.sourceEventId.isNotEmpty
-              ? [raw.sourceEventId]
-              : const [],
-          notificationIds: raw.dedupeKey.isNotEmpty
-              ? [raw.dedupeKey]
-              : const [],
-          videoAddressableId: _actorVideoAddressableId(reclassifiedKind, raw),
+          profiles: profiles,
+          targetEventId: _reclassifiedMisattributedTargetEventId(
+            reclassifiedKind,
+            raw,
+          ),
         );
       }
       final addressableId = _recipientOwnedVideoAddressableId(
@@ -1334,20 +1304,60 @@ class NotificationRepository {
             kind == NotificationKind.reply)
         ? kind
         : NotificationKind.system;
-    return ActorNotification(
-      id: raw.dedupeKey,
+    return _buildActorNotification(
+      raw,
       type: mapped,
-      actor: actor,
-      timestamp: raw.createdAt,
-      isRead: raw.read,
-      commentText: _truncateComment(raw.content, kind),
-      targetEventId: _actorTargetEventId(mapped, raw),
-      sourceEventIds: raw.sourceEventId.isNotEmpty
-          ? [raw.sourceEventId]
-          : const [],
-      notificationIds: raw.dedupeKey.isNotEmpty ? [raw.dedupeKey] : const [],
-      videoAddressableId: _actorVideoAddressableId(mapped, raw),
+      profiles: profiles,
+      commentKind: kind,
     );
+  }
+
+  ActorNotification _buildActorNotification(
+    RelayNotification notification, {
+    required NotificationKind type,
+    required Map<String, UserProfile> profiles,
+    NotificationKind? commentKind,
+    String? targetEventId,
+  }) {
+    return ActorNotification(
+      id: notification.dedupeKey,
+      type: type,
+      actor: _buildActor(notification.sourcePubkey, profiles),
+      timestamp: notification.createdAt,
+      isRead: notification.read,
+      commentText: _truncateComment(notification.content, commentKind ?? type),
+      targetEventId: targetEventId ?? _actorTargetEventId(type, notification),
+      sourceEventIds: notification.sourceEventId.isNotEmpty
+          ? [notification.sourceEventId]
+          : const [],
+      notificationIds: notification.dedupeKey.isNotEmpty
+          ? [notification.dedupeKey]
+          : const [],
+      videoAddressableId: _actorVideoAddressableId(type, notification),
+    );
+  }
+
+  static NotificationKind? _reclassifiedMisattributedKind(
+    NotificationKind originalKind,
+  ) => switch (originalKind) {
+    NotificationKind.like => NotificationKind.likeComment,
+    NotificationKind.comment => NotificationKind.reply,
+    // Reposts on foreign videos are not meaningful for the commenter.
+    _ => null,
+  };
+
+  static String? _reclassifiedMisattributedTargetEventId(
+    NotificationKind reclassifiedKind,
+    RelayNotification notification,
+  ) {
+    final targetCommentId = _nonEmpty(notification.targetCommentId);
+    if (targetCommentId != null) return targetCommentId;
+
+    // Misattributed rows often carry the foreign video as referencedEventId
+    // because FunnelCake included it for navigation context. Without the
+    // comment id, keep the standard actor target fallback so taps can still
+    // resolve or degrade through the existing navigation path.
+    return _actorTargetEventId(reclassifiedKind, notification);
   }
 
   /// Returns null if [s] is null or empty, otherwise [s].

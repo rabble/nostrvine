@@ -1160,7 +1160,10 @@ void main() {
       test('reaction on a non-owned video is reclassified as likeComment '
           'instead of liked your video (#4813)', () async {
         stubNotifications([
-          makeNotification(referencedEventId: 'foreign_video'),
+          makeNotification(
+            referencedEventId: 'foreign_video',
+            targetCommentId: 'comment_event_xyz',
+          ),
         ]);
         stubProfiles({});
         stubVideoStats(
@@ -1173,6 +1176,7 @@ void main() {
         expect(page.items, hasLength(1));
         final item = page.items.single as ActorNotification;
         expect(item.type, equals(NotificationKind.likeComment));
+        expect(item.targetEventId, equals('comment_event_xyz'));
       });
 
       test('comment on a non-owned video is reclassified as reply '
@@ -1180,9 +1184,10 @@ void main() {
         stubNotifications([
           makeNotification(
             notificationType: 'reply',
-            sourceKind: 1111,
+            sourceKind: 1,
             referencedEventId: 'foreign_video',
             rootEventId: 'foreign_video',
+            targetCommentId: 'comment_event_xyz',
           ),
         ]);
         stubProfiles({});
@@ -1196,6 +1201,7 @@ void main() {
         expect(page.items, hasLength(1));
         final item = page.items.single as ActorNotification;
         expect(item.type, equals(NotificationKind.reply));
+        expect(item.targetEventId, equals('comment_event_xyz'));
       });
 
       test('repost on a non-owned video is dropped entirely', () async {
@@ -1293,53 +1299,47 @@ void main() {
         expect(item.type, equals(NotificationKind.comment));
       });
 
-      test(
-        'reply to user comment with root video metadata maps to reply '
-        '($ActorNotification)',
-        () async {
-          stubNotifications([
-            makeNotification(
-              notificationType: 'reply',
-              sourceKind: 1111,
-              sourceEventId: 'reply_event_id',
-              referencedEventId: 'parent_comment_id',
-              rootEventId: 'someone_else_video_id',
-              targetCommentId: 'parent_comment_id',
-            ),
-          ]);
-          stubProfiles({});
+      test('reply to user comment with root video metadata maps to reply '
+          '($ActorNotification)', () async {
+        stubNotifications([
+          makeNotification(
+            notificationType: 'reply',
+            sourceKind: 1111,
+            sourceEventId: 'reply_event_id',
+            referencedEventId: 'parent_comment_id',
+            rootEventId: 'someone_else_video_id',
+            targetCommentId: 'parent_comment_id',
+          ),
+        ]);
+        stubProfiles({});
 
-          final page = await repository.getNotifications();
-          final item = page.items.single as ActorNotification;
-          expect(item.type, equals(NotificationKind.reply));
-          expect(item.targetEventId, equals('parent_comment_id'));
-        },
-      );
+        final page = await repository.getNotifications();
+        final item = page.items.single as ActorNotification;
+        expect(item.type, equals(NotificationKind.reply));
+        expect(item.targetEventId, equals('parent_comment_id'));
+      });
 
-      test(
-        'comment-typed nested NIP-22 reply maps to reply '
-        '($ActorNotification)',
-        () async {
-          stubNotifications([
-            makeNotification(
-              notificationType: 'comment',
-              sourceKind: 1111,
-              sourceEventId: 'reply_event_id',
-              referencedEventId: 'parent_comment_id',
-              rootEventId: 'someone_else_video_id',
-              targetCommentId: 'parent_comment_id',
-              content: 'Nested reply to my comment',
-            ),
-          ]);
-          stubProfiles({});
+      test('comment-typed nested NIP-22 reply maps to reply '
+          '($ActorNotification)', () async {
+        stubNotifications([
+          makeNotification(
+            notificationType: 'comment',
+            sourceKind: 1111,
+            sourceEventId: 'reply_event_id',
+            referencedEventId: 'parent_comment_id',
+            rootEventId: 'someone_else_video_id',
+            targetCommentId: 'parent_comment_id',
+            content: 'Nested reply to my comment',
+          ),
+        ]);
+        stubProfiles({});
 
-          final page = await repository.getNotifications();
-          final item = page.items.single as ActorNotification;
-          expect(item.type, equals(NotificationKind.reply));
-          expect(item.targetEventId, equals('parent_comment_id'));
-          expect(item.commentText, equals('Nested reply to my comment'));
-        },
-      );
+        final page = await repository.getNotifications();
+        final item = page.items.single as ActorNotification;
+        expect(item.type, equals(NotificationKind.reply));
+        expect(item.targetEventId, equals('parent_comment_id'));
+        expect(item.commentText, equals('Nested reply to my comment'));
+      });
 
       test('reply on a non-video target maps to reply ($ActorNotification) '
           'with targetEventId', () async {
@@ -2425,6 +2425,7 @@ void main() {
         String? referencedEventId = 'video_x',
         String? referencedDTag,
         String? rootEventId,
+        String? targetCommentId,
         bool isReferencedVideo = true,
       }) {
         return RelayNotification(
@@ -2438,6 +2439,7 @@ void main() {
           referencedEventId: referencedEventId,
           referencedDTag: referencedDTag,
           rootEventId: rootEventId,
+          targetCommentId: targetCommentId,
           isReferencedVideo: isReferencedVideo,
         );
       }
@@ -2584,6 +2586,43 @@ void main() {
         expect(result, isA<ActorNotification>());
         final actor = result! as ActorNotification;
         expect(actor.type, equals(NotificationKind.likeComment));
+      });
+
+      test('reclassifies a realtime comment on a non-owned video as reply '
+          'with the target comment id (#4813)', () async {
+        stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
+        stubVideoStats(
+          'video_x',
+          makeVideoStats(id: 'video_x', pubkey: 'other_owner_pubkey'),
+        );
+
+        final result = await repository.enrichOne(
+          raw(
+            sourceKind: 1,
+            notificationType: 'comment',
+            rootEventId: 'video_x',
+            targetCommentId: 'comment_evt_id',
+          ),
+        );
+
+        expect(result, isA<ActorNotification>());
+        final actor = result! as ActorNotification;
+        expect(actor.type, equals(NotificationKind.reply));
+        expect(actor.targetEventId, equals('comment_evt_id'));
+      });
+
+      test('drops a realtime repost on a non-owned video (#4813)', () async {
+        stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
+        stubVideoStats(
+          'video_x',
+          makeVideoStats(id: 'video_x', pubkey: 'other_owner_pubkey'),
+        );
+
+        final result = await repository.enrichOne(
+          raw(notificationType: 'repost', sourceKind: 6),
+        );
+
+        expect(result, isNull);
       });
 
       test('returns null for like with null referencedEventId', () async {
