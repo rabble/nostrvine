@@ -40,8 +40,6 @@ class _VideoEditorLayerReorderSheetState
       name: 'LayerReorderSheet',
       category: LogCategory.video,
     );
-    // onReorderItem already adjusts newIndex for the removed item, so the
-    // old `if (oldIndex < newIndex) newIndex--` shift is no longer needed.
     setState(() {
       final layer = _layers.removeAt(oldIndex);
       _layers.insert(newIndex, layer);
