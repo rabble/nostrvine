@@ -65,10 +65,8 @@ linter:
     parameter_assignments: false
     prefer_constructors_over_static_methods: false
     prefer_foreach: false
-    # Newly surfaced by the Dart 3.12 (Flutter 3.44) analyzer on the repo's
-    # named-parameter constructor-injection pattern (~385 app sites); it
-    # conflicts with that prescribed DI convention. Adopting it is a separate
-    # cleanup, not a toolchain-bump side effect.
+    # The repo convention is named-parameter constructor injection into private
+    # fields (~385 app sites), so this conflicts with prescribed DI style.
     prefer_initializing_formals: false
     public_member_api_docs: false
     sort_pub_dependencies: false
@@ -77,4 +75,3 @@ linter:
     use_named_constants: false
     omit_local_variable_types: false
     use_setters_to_change_properties: false
-
