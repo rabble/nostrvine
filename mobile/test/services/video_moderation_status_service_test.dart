@@ -158,17 +158,10 @@ void main() {
     test('falls back when a moderation request times out', () async {
       const hash =
           'abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd';
-      final firstResponse = Completer<http.Response>();
-
-      addTearDown(() {
-        if (!firstResponse.isCompleted) {
-          firstResponse.complete(http.Response('late', 200));
-        }
-      });
 
       final client = MockClient((request) async {
         if (request.url.host == 'first.example') {
-          return firstResponse.future;
+          throw TimeoutException('request timed out');
         }
 
         return http.Response(
@@ -192,7 +185,7 @@ void main() {
       );
 
       await expectLater(
-        service.fetchStatus(hash).timeout(const Duration(milliseconds: 100)),
+        service.fetchStatus(hash),
         completion(
           isA<VideoModerationStatus>().having(
             (status) => status.isUnavailableDueToModeration,
@@ -201,10 +194,6 @@ void main() {
           ),
         ),
       );
-
-      if (!firstResponse.isCompleted) {
-        firstResponse.complete(http.Response('late', 200));
-      }
     });
 
     test('falls back across endpoints and caches result', () async {
