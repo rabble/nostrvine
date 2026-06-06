@@ -16,8 +16,11 @@ class CategoryVisuals {
   final String? assetPath;
 
   /// Resolves visuals for any category. Featured categories get custom colors;
-  /// all others cycle through fallback colors. Every category gets an SVG
-  /// asset path derived from its name.
+  /// all others cycle through fallback colors. A category only receives an SVG
+  /// [assetPath] when a matching illustration is actually bundled. Names with
+  /// no bundled asset (e.g. `beverages`, `fighting` served by the backend)
+  /// resolve to a null [assetPath] so consumers degrade to the plain colored
+  /// card instead of throwing "Unable to load asset" (#4398).
   static CategoryVisuals forCategory(VideoCategory category, int index) {
     final name = category.name.toLowerCase();
     final featured = _featuredCategoryVisuals[name];
@@ -31,9 +34,123 @@ class CategoryVisuals {
     return CategoryVisuals(
       backgroundColor: fallback.backgroundColor,
       foregroundColor: fallback.foregroundColor,
-      assetPath: 'assets/categories/$assetName.svg',
+      assetPath: bundledCategoryAssetNames.contains(assetName)
+          ? 'assets/categories/$assetName.svg'
+          : null,
     );
   }
+
+  /// Stems (filename without `.svg`) of every category illustration bundled
+  /// under `assets/categories/`. Single source of truth for whether a derived
+  /// asset path exists in the app bundle, since the backend category list is
+  /// open-ended and not guaranteed to match the bundled illustrations.
+  ///
+  /// Kept in lockstep with the on-disk asset directory by
+  /// `test/widgets/categories/category_visuals_test.dart`; update both together
+  /// when adding or removing a category illustration.
+  static const Set<String> bundledCategoryAssetNames = {
+    'action',
+    'adventure',
+    'animals',
+    'animation',
+    'architecture',
+    'art',
+    'automotive',
+    'award-show',
+    'awards',
+    'baseball',
+    'basketball',
+    'beauty',
+    'beverage',
+    'cars',
+    'celebration',
+    'celebrities',
+    'celebrity',
+    'cityscape',
+    'comedy',
+    'concert',
+    'cooking',
+    'costume',
+    'crafts',
+    'crime',
+    'culture',
+    'dance',
+    'diy',
+    'drama',
+    'education',
+    'emotional',
+    'emotions',
+    'entertainment',
+    'event',
+    'family',
+    'fans',
+    'fantasy',
+    'fashion',
+    'festival',
+    'film',
+    'fitness',
+    'food',
+    'football',
+    'furniture',
+    'gaming',
+    'golf',
+    'grooming',
+    'guitar',
+    'halloween',
+    'health',
+    'hockey',
+    'holiday',
+    'home',
+    'home-improvement',
+    'horror',
+    'hospital',
+    'humor',
+    'interior-design',
+    'interview',
+    'kids',
+    'lifestyle',
+    'magic',
+    'makeup',
+    'medical',
+    'music',
+    'mystery',
+    'nature',
+    'news',
+    'outdoor',
+    'party',
+    'people',
+    'performance',
+    'pets',
+    'politics',
+    'prank',
+    'pranks',
+    'reality-show',
+    'relationship',
+    'relationships',
+    'romance',
+    'school',
+    'science-fiction',
+    'selfie',
+    'shopping',
+    'skateboarding',
+    'skincare',
+    'soccer',
+    'social-gathering',
+    'social-media',
+    'sports',
+    'style',
+    'talk-show',
+    'technology',
+    'television',
+    'toys',
+    'transportation',
+    'travel',
+    'urban',
+    'violence',
+    'vlog',
+    'vlogging',
+    'wrestling',
+  };
 }
 
 const _featuredCategoryVisuals = <String, CategoryVisuals>{

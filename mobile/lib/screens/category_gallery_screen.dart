@@ -461,6 +461,7 @@ class _CategoryHeaderMascotSlot extends StatelessWidget {
                     visuals.assetPath!,
                     height: 104,
                     width: 132,
+                    errorBuilder: (_, _, _) => const SizedBox.shrink(),
                   ),
                 ),
               ),
