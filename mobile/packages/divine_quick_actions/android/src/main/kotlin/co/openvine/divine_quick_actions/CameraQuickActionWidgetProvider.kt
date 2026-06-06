@@ -3,6 +3,7 @@ package co.openvine.divine_quick_actions
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
+import android.appwidget.AppWidgetProviderInfo
 import android.content.Context
 import android.os.Build
 import android.widget.RemoteViews
@@ -28,7 +29,7 @@ class CameraQuickActionWidgetProvider : AppWidgetProvider() {
         ) {
             val views = RemoteViews(
                 context.packageName,
-                R.layout.divine_quick_actions_camera_widget
+                widgetLayout(appWidgetManager, appWidgetId)
             )
             buildOpenCameraPendingIntent(context)?.let { pendingIntent ->
                 views.setOnClickPendingIntent(
@@ -37,6 +38,23 @@ class CameraQuickActionWidgetProvider : AppWidgetProvider() {
                 )
             }
             appWidgetManager.updateAppWidget(appWidgetId, views)
+        }
+
+        private fun widgetLayout(
+            appWidgetManager: AppWidgetManager,
+            appWidgetId: Int
+        ): Int {
+            val hostCategory = appWidgetManager
+                .getAppWidgetOptions(appWidgetId)
+                .getInt(
+                    AppWidgetManager.OPTION_APPWIDGET_HOST_CATEGORY,
+                    AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN
+                )
+            return if (hostCategory == AppWidgetProviderInfo.WIDGET_CATEGORY_KEYGUARD) {
+                R.layout.divine_quick_actions_camera_widget_keyguard
+            } else {
+                R.layout.divine_quick_actions_camera_widget
+            }
         }
 
         private fun buildOpenCameraPendingIntent(context: Context): PendingIntent? {
