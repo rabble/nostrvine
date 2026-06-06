@@ -466,6 +466,68 @@ void main() {
       );
 
       blocTest<VideoFeedBloc, VideoFeedBlocState>(
+        'does not inherit legacy list mode for an authenticated account',
+        setUp: () async {
+          final videos = createTestVideos(3);
+          SharedPreferences.setMockInitialValues({
+            'selected_feed_mode': 'list:list-a',
+          });
+          final sharedPreferences = await SharedPreferences.getInstance();
+
+          when(
+            () => mockCuratedListRepository.getListById('list-a'),
+          ).thenReturn(createTestList());
+          when(
+            () => mockCuratedListRepository.getOrderedVideoIds('list-a'),
+          ).thenReturn(['video-a', 'video-b']);
+          when(
+            () => mockVideosRepository.getRecommendedVideos(
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+              skipCache: any(named: 'skipCache'),
+            ),
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
+
+          savedModeBloc = VideoFeedBloc(
+            videosRepository: mockVideosRepository,
+            followRepository: mockFollowRepository,
+            curatedListRepository: mockCuratedListRepository,
+            sharedPreferences: sharedPreferences,
+            userPubkey: 'c' * 64,
+          );
+        },
+        build: () => savedModeBloc,
+        act: (bloc) => bloc.add(const VideoFeedStarted()),
+        expect: () => [
+          isA<VideoFeedBlocState>().having(
+            (s) => s.source.type,
+            'source',
+            VideoFeedSourceType.forYou,
+          ),
+          isA<VideoFeedBlocState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having(
+                (s) => s.source.type,
+                'source',
+                VideoFeedSourceType.forYou,
+              ),
+        ],
+        verify: (_) async {
+          verifyNever(
+            () => mockVideosRepository.getVideosForList(any()),
+          );
+
+          final sharedPreferences = await SharedPreferences.getInstance();
+          expect(sharedPreferences.getString('selected_feed_mode'), isNull);
+          expect(
+            sharedPreferences.getString('selected_feed_mode_${'c' * 64}'),
+            FeedMode.forYou.name,
+          );
+        },
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedBlocState>(
         'restores persisted latest to New Videos',
         setUp: () async {
           final videos = createTestVideos(2);

@@ -58,19 +58,16 @@ void main() {
       expect(result.currentCase, isNull);
     });
 
-    test(
-      'falls back to active when endpoint request has no HTTP status',
-      () async {
-        when(() => apiService.getMinorAccountReviewStatus()).thenThrow(
-          const ApiException('Network error during moderation status request'),
-        );
+    test('rethrows when endpoint request has no HTTP status', () async {
+      when(() => apiService.getMinorAccountReviewStatus()).thenThrow(
+        const ApiException('Network error during moderation status request'),
+      );
 
-        final result = await repository.fetchCurrentStatus();
-
-        expect(result.restrictionStatus, AccountRestrictionStatus.active);
-        expect(result.currentCase, isNull);
-      },
-    );
+      await expectLater(
+        repository.fetchCurrentStatus(),
+        throwsA(isA<ApiException>()),
+      );
+    });
 
     test('keeps HTTP server failures visible', () async {
       when(() => apiService.getMinorAccountReviewStatus()).thenThrow(

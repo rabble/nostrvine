@@ -261,6 +261,13 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       return null;
     }
 
+    // A legacy list preference cannot be proven to belong to the authenticated
+    // account because the curated-list bridge can briefly hold stale data
+    // across account switches. Only restore list selections from scoped keys.
+    if (migratedSource.type == VideoFeedSourceType.subscribedList) {
+      return null;
+    }
+
     unawaited(_persistSourcePreference(migratedSource));
     return migratedSource.persistenceValue;
   }

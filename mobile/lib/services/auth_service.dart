@@ -3790,7 +3790,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         _authSource = AuthenticationSource.none;
         await prefs.setString(_kAuthSourceKey, AuthenticationSource.none.code);
         await prefs.remove(_kLastUsedNpubKey);
-        await prefs.setString(kKnownAccountsKey, jsonEncode(<Object>[]));
         Log.info(
           'signOut: no remaining local nsec accounts — reset recovery prefs',
           name: 'AuthService',
@@ -3806,10 +3805,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       final next = restorableAccounts.first;
       final nextNpub = NostrKeyUtils.encodePubKey(next.pubkeyHex);
 
-      await prefs.setString(
-        kKnownAccountsKey,
-        jsonEncode(restorableAccounts.map((a) => a.toJson()).toList()),
-      );
       await prefs.setString(_kLastUsedNpubKey, nextNpub);
       await prefs.setString(_kAuthSourceKey, next.authSource.code);
       _authSource = next.authSource;

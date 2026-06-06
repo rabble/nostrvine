@@ -5,8 +5,9 @@ import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
+import 'package:openvine/firebase_options.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
-import 'package:openvine/utils/firebase_configuration.dart';
+import 'package:openvine/utils/platform_support.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Crash reporting service for production error tracking
@@ -23,18 +24,18 @@ class CrashReportingService {
   Future<void> initialize() async {
     if (_initialized) return;
 
-    final firebaseOptions = usableDefaultFirebaseOptions;
-    if (firebaseOptions == null) {
-      Log.info(
-        'Crash reporting skipped because Firebase is not configured for this build',
-        name: 'CrashReporting',
-      );
+    // Firebase only supports Android, iOS, macOS, and web.
+    // DefaultFirebaseOptions.currentPlatform throws UnsupportedError for
+    // Linux and Windows — skip initialization on those platforms.
+    if (!isFirebaseSupported) {
       return;
     }
 
     try {
       // Initialize Firebase with platform-specific options
-      await Firebase.initializeApp(options: firebaseOptions);
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
 
       // Pass all uncaught errors from the framework to Crashlytics
       FlutterError.onError = (errorDetails) {

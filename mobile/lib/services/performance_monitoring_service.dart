@@ -1,7 +1,6 @@
 // ABOUTME: Performance monitoring service for tracking app performance metrics
 // ABOUTME: Uses Firebase Performance Monitoring to track screen transitions, network requests, and custom operations
 
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_performance/firebase_performance.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -35,13 +34,6 @@ class PerformanceMonitoringService implements PerformanceTraceMonitor {
   /// Initialize performance monitoring
   Future<void> initialize() async {
     if (_initialized) return;
-    if (Firebase.apps.isEmpty) {
-      Log.info(
-        'Performance monitoring skipped because Firebase is not initialized',
-        name: 'PerformanceMonitoring',
-      );
-      return;
-    }
 
     try {
       _performance = FirebasePerformance.instance;

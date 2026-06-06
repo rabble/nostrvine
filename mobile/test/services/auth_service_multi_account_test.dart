@@ -2072,7 +2072,7 @@ void main() {
     );
 
     test(
-      'destructive sign-out clears stale known accounts when no local nsec remains',
+      'destructive sign-out preserves known accounts when no local nsec remains',
       () async {
         final staleAccount = SecureKeyContainer.fromNsec(
           'nsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsmhltgl',
@@ -2118,8 +2118,53 @@ void main() {
         ).called(1);
         expect(prefs.getString('authentication_source'), equals('none'));
         expect(prefs.getString('last_used_npub'), isNull);
-        expect(prefs.getString(kKnownAccountsKey), equals('[]'));
+        expect(await authService.getKnownAccounts(), [
+          isA<KnownAccount>().having(
+            (account) => account.pubkeyHex,
+            'pubkeyHex',
+            staleAccount.publicKeyHex,
+          ),
+        ]);
         expect(authService.authState, equals(AuthState.unauthenticated));
+      },
+    );
+
+    test(
+      'destructive sign-out preserves NIP-07 known accounts in picker registry',
+      () async {
+        const nip07Pubkey =
+            '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd';
+        final knownAccounts = jsonEncode([
+          KnownAccount(
+            pubkeyHex: nip07Pubkey,
+            authSource: AuthenticationSource.nip07,
+            addedAt: DateTime.now().subtract(const Duration(hours: 2)),
+            lastUsedAt: DateTime.now().subtract(const Duration(hours: 1)),
+          ).toJson(),
+        ]);
+
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'automatic',
+          'last_used_npub': testKeyContainer.npub,
+          kKnownAccountsKey: knownAccounts,
+        });
+        when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
+
+        await _ignoringDiscoveryErrors(authService.createNewIdentity);
+        await authService.signOut(deleteKeys: true);
+
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getString('authentication_source'), equals('none'));
+        expect(prefs.getString('last_used_npub'), isNull);
+        expect(await authService.getKnownAccounts(), [
+          isA<KnownAccount>()
+              .having((account) => account.pubkeyHex, 'pubkeyHex', nip07Pubkey)
+              .having(
+                (account) => account.authSource,
+                'authSource',
+                AuthenticationSource.nip07,
+              ),
+        ]);
       },
     );
 
