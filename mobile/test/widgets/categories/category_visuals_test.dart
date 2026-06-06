@@ -17,15 +17,6 @@ void main() {
         expect(visuals.assetPath, equals('assets/categories/beverage.svg'));
       });
 
-      test('aliases "fashion" onto style.svg', () {
-        final visuals = CategoryVisuals.forCategory(
-          const VideoCategory(name: 'fashion', videoCount: 10),
-          0,
-        );
-
-        expect(visuals.assetPath, equals('assets/categories/style.svg'));
-      });
-
       test('derives the path from the slug for non-aliased categories', () {
         final visuals = CategoryVisuals.forCategory(
           const VideoCategory(name: 'comedy', videoCount: 99),
@@ -55,6 +46,15 @@ void main() {
         expect(visuals.assetPath, equals('assets/categories/music.svg'));
         // Featured categories use a hand-picked palette, not a fallback color.
         expect(visuals.backgroundColor, isNot(equals(visuals.foregroundColor)));
+      });
+
+      test('maps fashion to the curated style asset', () {
+        final visuals = CategoryVisuals.forCategory(
+          const VideoCategory(name: 'fashion', videoCount: 10),
+          0,
+        );
+
+        expect(visuals.assetPath, equals('assets/categories/style.svg'));
       });
     });
   });

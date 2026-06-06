@@ -40,8 +40,6 @@ class CategoryVisuals {
 /// slug not covered here still degrades safely via [CategoryGlyph]'s emoji
 /// fallback.
 const _assetNameAliases = <String, String>{
-  // Fashion is stored as style.svg for display-name consistency.
-  'fashion': 'style',
   // Backend emits the plural; only beverage.svg is bundled.
   'beverages': 'beverage',
 };
