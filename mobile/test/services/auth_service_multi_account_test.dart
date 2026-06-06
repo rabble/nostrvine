@@ -2080,6 +2080,83 @@ void main() {
       },
     );
 
+    test(
+      'destructive sign-out of OAuth account preserves unrelated PRIMARY key',
+      () async {
+        final localAccount = SecureKeyContainer.fromNsec(
+          'nsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsmhltgl',
+        );
+        final oauthAccount = SecureKeyContainer.fromPublicKey('b' * 64);
+        final oauthNpub = oauthAccount.npub;
+
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': AuthenticationSource.divineOAuth.code,
+          kKnownAccountsKey: jsonEncode([
+            KnownAccount(
+              pubkeyHex: localAccount.publicKeyHex,
+              authSource: AuthenticationSource.automatic,
+              addedAt: DateTime.now().subtract(const Duration(hours: 2)),
+              lastUsedAt: DateTime.now().subtract(const Duration(hours: 1)),
+            ).toJson(),
+            KnownAccount(
+              pubkeyHex: oauthAccount.publicKeyHex,
+              authSource: AuthenticationSource.divineOAuth,
+              addedAt: DateTime.now().subtract(const Duration(hours: 1)),
+              lastUsedAt: DateTime.now(),
+            ).toJson(),
+          ]),
+        });
+        authService.debugSetCurrentKeyContainer(oauthAccount);
+        when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => true);
+        when(
+          () => mockKeyStorage.getKeyContainer(),
+        ).thenAnswer((_) async => localAccount);
+
+        await authService.signOut(deleteKeys: true);
+
+        verify(
+          () => mockKeyStorage.deleteIdentityKeyContainer(oauthNpub),
+        ).called(1);
+        verifyNever(() => mockKeyStorage.deleteKeys());
+
+        final prefs = await SharedPreferences.getInstance();
+        final remaining =
+            jsonDecode(prefs.getString(kKnownAccountsKey)!) as List<dynamic>;
+        expect(remaining, hasLength(1));
+        expect(
+          remaining.single['pubkeyHex'],
+          equals(localAccount.publicKeyHex),
+        );
+      },
+    );
+
+    test('destructive sign-out deletes PRIMARY when it belongs to removed '
+        'local account', () async {
+      SharedPreferences.setMockInitialValues({
+        'authentication_source': AuthenticationSource.automatic.code,
+        kKnownAccountsKey: jsonEncode([
+          KnownAccount(
+            pubkeyHex: testKeyContainer.publicKeyHex,
+            authSource: AuthenticationSource.automatic,
+            addedAt: DateTime.now(),
+            lastUsedAt: DateTime.now(),
+          ).toJson(),
+        ]),
+      });
+      authService.debugSetCurrentKeyContainer(testKeyContainer);
+      final removedNpub = testKeyContainer.npub;
+      when(
+        () => mockKeyStorage.getKeyContainer(),
+      ).thenAnswer((_) async => testKeyContainer);
+
+      await authService.signOut(deleteKeys: true);
+
+      verify(
+        () => mockKeyStorage.deleteIdentityKeyContainer(removedNpub),
+      ).called(1);
+      verify(() => mockKeyStorage.deleteKeys()).called(1);
+    });
+
     test('destructive sign-out prunes stale known accounts when no local login '
         'material remains', () async {
       final accountA = SecureKeyContainer.fromNsec(
