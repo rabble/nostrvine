@@ -45,7 +45,6 @@ test/screens/hashtag_feed_loading_test.dart
 test/screens/hashtag_feed_screen_tdd_test.dart
 test/screens/hashtag_grid_view_simple_test.dart
 test/screens/profile_edit_video_navigation_test.dart
-test/screens/profile_grid_tap_navigation_test.dart
 test/screens/profile_menu_drafts_navigation_test.dart
 test/screens/profile_screen_router_test.dart
 test/screens/profile_share_edit_buttons_test.dart

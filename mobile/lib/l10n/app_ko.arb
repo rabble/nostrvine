@@ -1,5 +1,7 @@
 {
     "@@locale": "ko",
+    "profileFeedError": "Couldn't load videos.",
+    "profileFeedLoadMoreError": "Couldn't load more videos. Pull to refresh.",
     "appTitle": "Divine",
     "settingsTitle": "설정",
     "settingsSecureAccount": "계정 보호하기",
