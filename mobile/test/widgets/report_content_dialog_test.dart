@@ -661,6 +661,7 @@ void main() {
           recipientPubkey: any(named: 'recipientPubkey'),
           content: any(named: 'content'),
           replyToId: any(named: 'replyToId'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
         ),
       ).thenAnswer(
         (_) async => NIP17SendResult.success(
@@ -737,6 +738,7 @@ void main() {
           recipientPubkey: ModerationLabelService.fallbackModerationPubkeyHex,
           content: any(named: 'content'),
           replyToId: any(named: 'replyToId'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
         ),
       ).called(1);
     });
@@ -752,6 +754,7 @@ void main() {
           recipientPubkey: any(named: 'recipientPubkey'),
           content: captureAny(named: 'content'),
           replyToId: any(named: 'replyToId'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
         ),
       ).captured;
 
@@ -779,6 +782,7 @@ void main() {
           recipientPubkey: any(named: 'recipientPubkey'),
           content: any(named: 'content'),
           replyToId: any(named: 'replyToId'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
         ),
       ).thenThrow(Exception('DM relay unreachable'));
 
@@ -790,6 +794,37 @@ void main() {
         findsOneWidget,
         reason: 'Report should succeed even if DM fails',
       );
+      // C9: the swallowed DM failure is now surfaced as a calm notice
+      // instead of only a log line.
+      expect(find.text(l10n.reportModerationDmDelayed), findsOneWidget);
+    });
+
+    testWidgets('moderation DM opts out of the NIP-04 fallback (privacy)', (
+      tester,
+    ) async {
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+
+      // C8: moderation reports carry user identity + reported content and
+      // must never degrade to a metadata-leaking NIP-04 plaintext duplicate.
+      verify(
+        () => mockDmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+          skipNip04Fallback: true,
+        ),
+      ).called(1);
+    });
+
+    testWidgets('does not show the DM-delayed notice when the DM succeeds', (
+      tester,
+    ) async {
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+
+      expect(find.text(l10n.reportReceivedTitle), findsOneWidget);
+      expect(find.text(l10n.reportModerationDmDelayed), findsNothing);
     });
 
     testWidgets(
@@ -801,6 +836,7 @@ void main() {
             recipientPubkey: any(named: 'recipientPubkey'),
             content: any(named: 'content'),
             replyToId: any(named: 'replyToId'),
+            skipNip04Fallback: any(named: 'skipNip04Fallback'),
           ),
         ).thenThrow(Exception('No keys available'));
 
@@ -858,6 +894,7 @@ void main() {
             recipientPubkey: any(named: 'recipientPubkey'),
             content: any(named: 'content'),
             replyToId: any(named: 'replyToId'),
+            skipNip04Fallback: any(named: 'skipNip04Fallback'),
           ),
         );
       },
@@ -888,6 +925,7 @@ void main() {
           recipientPubkey: any(named: 'recipientPubkey'),
           content: any(named: 'content'),
           replyToId: any(named: 'replyToId'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
         ),
       ).thenAnswer(
         (_) async => NIP17SendResult.success(
@@ -970,6 +1008,7 @@ void main() {
             recipientPubkey: any(named: 'recipientPubkey'),
             content: captureAny(named: 'content'),
             replyToId: any(named: 'replyToId'),
+            skipNip04Fallback: any(named: 'skipNip04Fallback'),
           ),
         ).captured;
 
@@ -1021,6 +1060,7 @@ void main() {
           recipientPubkey: any(named: 'recipientPubkey'),
           content: any(named: 'content'),
           replyToId: any(named: 'replyToId'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
         ),
       ).thenAnswer(
         (_) async => NIP17SendResult.success(
@@ -1130,6 +1170,7 @@ void main() {
             recipientPubkey: any(named: 'recipientPubkey'),
             content: captureAny(named: 'content'),
             replyToId: any(named: 'replyToId'),
+            skipNip04Fallback: any(named: 'skipNip04Fallback'),
           ),
         ).captured;
 

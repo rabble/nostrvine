@@ -4826,6 +4826,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Echipa noastră âți va revizui raportul și va lua măsuri corespunzătoare. S-ar putea să primești actualizări prin mesaj direct.';
 
   @override
+  String get reportModerationDmDelayed =>
+      'We couldn\'t reach the moderation team directly just now, but your report was received and will be reviewed.';
+
+  @override
   String get reportLearnMore => 'Află mai multe';
 
   @override

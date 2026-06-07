@@ -8210,6 +8210,12 @@ abstract class AppLocalizations {
   /// **'Our team will review your report and take appropriate action. You may receive updates via direct message.'**
   String get reportReceivedReviewNotice;
 
+  /// Calm, non-blocking notice shown on the report confirmation screen when the secondary NIP-17 direct message to the moderation team failed to send. The report itself still succeeded via other channels.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t reach the moderation team directly just now, but your report was received and will be reviewed.'**
+  String get reportModerationDmDelayed;
+
   /// No description provided for @reportLearnMore.
   ///
   /// In en, this message translates to:

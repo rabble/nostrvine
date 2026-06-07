@@ -4809,6 +4809,10 @@ class AppLocalizationsPl extends AppLocalizations {
       'Nasz zespół przejrzy twoje zgłoszenie i podejmie odpowiednie działania. Możesz otrzymać aktualizacje przez wiadomość bezpośrednią.';
 
   @override
+  String get reportModerationDmDelayed =>
+      'We couldn\'t reach the moderation team directly just now, but your report was received and will be reviewed.';
+
+  @override
   String get reportLearnMore => 'Dowiedz się więcej';
 
   @override

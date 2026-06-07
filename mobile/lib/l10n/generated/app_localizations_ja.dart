@@ -4483,6 +4483,10 @@ class AppLocalizationsJa extends AppLocalizations {
       'チームが報告を確認して、適切に対応するね。ダイレクトメッセージでアップデートが届くかも。';
 
   @override
+  String get reportModerationDmDelayed =>
+      'We couldn\'t reach the moderation team directly just now, but your report was received and will be reviewed.';
+
+  @override
   String get reportLearnMore => 'もっと詳しく';
 
   @override

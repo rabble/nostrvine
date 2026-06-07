@@ -170,6 +170,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   final ScrollController _scrollController = ScrollController();
   bool _isSubmitting = false;
   bool _submitted = false;
+  bool _moderationDmFailed = false;
   String? _errorMessage;
   bool _scrollWhenKeyboardOpens = false;
   double _previousViewInsetsBottom = 0;
@@ -234,7 +235,10 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   @override
   Widget build(BuildContext context) {
     if (_submitted) {
-      return _ReportConfirmationView(isFromShareMenu: widget.isFromShareMenu);
+      return _ReportConfirmationView(
+        isFromShareMenu: widget.isFromShareMenu,
+        moderationDmFailed: _moderationDmFailed,
+      );
     }
 
     final l10n = context.l10n;
@@ -414,6 +418,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
           // Send DM to moderation team with report details (TC-025/026)
           final dmRepo = ref.read(dmRepositoryProvider);
           final labelService = ref.read(moderationLabelServiceProvider);
+          var moderationDmFailed = false;
           try {
             await dmRepo.sendMessage(
               recipientPubkey: labelService.divineModerationPubkeyHex,
@@ -422,8 +427,17 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
                 eventId: _eventId,
                 details: _detailsController.text.trim(),
               ),
+              // Moderation reports carry user identity + reported content;
+              // never let them degrade to a metadata-leaking NIP-04
+              // plaintext duplicate. NIP-17 gift wrap only.
+              skipNip04Fallback: true,
             );
           } catch (e) {
+            // The report itself already succeeded (relay + Zendesk); the
+            // moderation DM is a secondary notification. Don't fail the
+            // flow, but surface the outcome instead of swallowing it so
+            // the user isn't told the team was reached when it wasn't.
+            moderationDmFailed = true;
             Log.warning(
               'Failed to send moderation DM: $e',
               name: 'ReportContentDialog',
@@ -432,7 +446,10 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
           }
 
           if (mounted) {
-            setState(() => _submitted = true);
+            setState(() {
+              _submitted = true;
+              _moderationDmFailed = moderationDmFailed;
+            });
             final controller = widget.draggableController;
             if (controller != null && controller.isAttached) {
               controller.animateTo(
@@ -494,9 +511,17 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
 // =============================================================================
 
 class _ReportConfirmationView extends StatelessWidget {
-  const _ReportConfirmationView({required this.isFromShareMenu});
+  const _ReportConfirmationView({
+    required this.isFromShareMenu,
+    required this.moderationDmFailed,
+  });
 
   final bool isFromShareMenu;
+
+  /// Whether the secondary NIP-17 DM to the moderation team failed to
+  /// send. The report itself still succeeded; this only drives a calm
+  /// informational notice so the user isn't misled.
+  final bool moderationDmFailed;
 
   @override
   Widget build(BuildContext context) {
@@ -530,6 +555,13 @@ class _ReportConfirmationView extends StatelessWidget {
             l10n.reportReceivedReviewNotice,
             style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
           ),
+          if (moderationDmFailed) ...[
+            const SizedBox(height: 12),
+            Text(
+              l10n.reportModerationDmDelayed,
+              style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
+            ),
+          ],
           const SizedBox(height: 8),
           GestureDetector(
             onTap: () async {

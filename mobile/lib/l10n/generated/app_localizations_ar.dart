@@ -4646,6 +4646,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'سيُراجع فريقنا بلاغك ويتخذ الإجراء المناسب. قد تتلقى تحديثات عبر رسالة مباشرة.';
 
   @override
+  String get reportModerationDmDelayed =>
+      'We couldn\'t reach the moderation team directly just now, but your report was received and will be reviewed.';
+
+  @override
   String get reportLearnMore => 'اعرف المزيد';
 
   @override

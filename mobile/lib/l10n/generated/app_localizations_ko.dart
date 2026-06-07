@@ -4497,6 +4497,10 @@ class AppLocalizationsKo extends AppLocalizations {
       '저희 팀이 신고를 검토하고 적절한 조치를 취할 거예요. 다이렉트 메시지로 업데이트를 받을 수 있어요.';
 
   @override
+  String get reportModerationDmDelayed =>
+      'We couldn\'t reach the moderation team directly just now, but your report was received and will be reviewed.';
+
+  @override
   String get reportLearnMore => '더 알아보기';
 
   @override

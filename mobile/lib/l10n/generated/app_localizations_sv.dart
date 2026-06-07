@@ -4697,6 +4697,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Vårt team granskar din rapport och vidtar lämpliga åtgärder. Du kan få uppdateringar via direktmeddelande.';
 
   @override
+  String get reportModerationDmDelayed =>
+      'We couldn\'t reach the moderation team directly just now, but your report was received and will be reviewed.';
+
+  @override
   String get reportLearnMore => 'Läs mer';
 
   @override
