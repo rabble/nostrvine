@@ -89,6 +89,29 @@ void main() {
       },
     );
 
+    test('uses headers returned for the successful failover source', () async {
+      final clips = <VideoClip>[];
+      final controller = _RecordingControllerWithOneFailure(clips.add);
+      addTearDown(controller.dispose);
+
+      const headers = {'Authorization': 'Nostr token'};
+      final result = await setSourceWithFallbacks(
+        index: 0,
+        controller: controller,
+        sources: ['anonymousUrl', 'authedUrl'],
+        log: logs.add,
+        httpHeadersForSource: (source) =>
+            source == 'authedUrl' ? headers : null,
+      );
+
+      expect(result, equals(('authedUrl', 1)));
+      expect(clips, hasLength(2));
+      expect(clips[0].uri, 'anonymousUrl');
+      expect(clips[0].httpHeaders, isEmpty);
+      expect(clips[1].uri, 'authedUrl');
+      expect(clips[1].httpHeaders, equals(headers));
+    });
+
     test('rethrows when all sources fail', () async {
       final controller = FakeController()
         ..setSourceError = Exception('always fails');
