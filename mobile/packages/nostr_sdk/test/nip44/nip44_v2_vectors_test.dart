@@ -11,13 +11,34 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hex/hex.dart';
 import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/nip44/nip44_v2.dart';
 
+const _vectorsFixtureSha256 =
+    '269ed0f69e4c192512cc779e78c555090cebc7c785b609e338a62afc3ce25040';
+
 Uint8List _hexBytes(String hex) => Uint8List.fromList(HEX.decode(hex));
 String _hex(List<int> bytes) => HEX.encode(bytes);
+
+File _vectorsFixtureFile() {
+  final candidates = [
+    File('test/nip44/fixtures/nip44.vectors.json'),
+    File('packages/nostr_sdk/test/nip44/fixtures/nip44.vectors.json'),
+  ];
+
+  for (final file in candidates) {
+    if (file.existsSync()) {
+      return file;
+    }
+  }
+
+  throw StateError(
+    'Could not find nip44.vectors.json from ${Directory.current.path}',
+  );
+}
 
 void main() {
   group('NIP44V2 official vectors', () {
@@ -25,9 +46,11 @@ void main() {
     late Map<String, dynamic> invalid;
 
     setUpAll(() {
-      final file = File('test/nip44/fixtures/nip44.vectors.json');
+      final file = _vectorsFixtureFile();
+      final bytes = file.readAsBytesSync();
+      expect(sha256.convert(bytes).toString(), equals(_vectorsFixtureSha256));
       final v2 =
-          (jsonDecode(file.readAsStringSync()) as Map<String, dynamic>)['v2']
+          (jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>)['v2']
               as Map<String, dynamic>;
       valid = v2['valid'] as Map<String, dynamic>;
       invalid = v2['invalid'] as Map<String, dynamic>;
