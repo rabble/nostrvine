@@ -9836,6 +9836,65 @@ void main() {
       );
 
       test(
+        'uses timestamp fallback as recommendation cursor when provided',
+        () async {
+          final recommended = _createVideoStats(
+            id: 'recommended-until-video',
+            pubkey: 'recommended-pubkey',
+            dTag: 'recommended-dtag',
+            videoUrl: 'https://example.com/recommended-until.mp4',
+          );
+          when(
+            () => mockFunnelcakeClient.getRecommendations(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              fallback: any(named: 'fallback'),
+              category: any(named: 'category'),
+              cursor: any(named: 'cursor'),
+              preferredLanguages: any(named: 'preferredLanguages'),
+              viewerCountry: any(named: 'viewerCountry'),
+            ),
+          ).thenAnswer(
+            (_) async => RecommendationsResponse(
+              videos: [recommended],
+              source: 'personalized',
+              nextCursor: 'rec-page-3',
+              hasMore: true,
+            ),
+          );
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repo.getRecommendedVideos(
+            userPubkey: 'user-pubkey',
+            limit: 10,
+            until: 1700000000,
+          );
+
+          expect(result.videos, hasLength(1));
+          expect(result.videos.single.id, equals('recommended-until-video'));
+          expect(result.paginationCursor, equals('rec-page-3'));
+          expect(result.hasMore, isTrue);
+          verify(
+            () => mockFunnelcakeClient.getRecommendations(
+              pubkey: 'user-pubkey',
+              limit: 10,
+              cursor: '1700000000',
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockFunnelcakeClient.getWatchingVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          );
+        },
+      );
+
+      test(
         'propagates recommendation errors without popular fallback',
         () async {
           when(

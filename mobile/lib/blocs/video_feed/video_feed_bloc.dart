@@ -373,6 +373,12 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       return;
     }
 
+    if (state.source.type == VideoFeedSourceType.forYou &&
+        state.paginationCursor == null) {
+      emit(state.copyWith(hasMore: false));
+      return;
+    }
+
     emit(state.copyWith(isLoadingMore: true));
 
     try {
@@ -428,7 +434,11 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
           videos: updatedVideos,
           // Only stop pagination when the server returns nothing.
           // Fewer than _pageSize can happen due to server-side filtering.
-          hasMore: result.hasMore ?? result.videos.isNotEmpty,
+          hasMore: _hasMoreForSource(
+            state.source,
+            result,
+            fallbackHasMore: result.videos.isNotEmpty,
+          ),
           isLoadingMore: false,
           videoListSources: mergedSources,
           listOnlyVideoIds: mergedListOnly,
@@ -681,10 +691,13 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
           videos: validVideos,
           // Only stop pagination when no results at all.
           // Fewer than _pageSize can happen due to server-side filtering.
-          hasMore:
-              result.hasMore ??
-              (source.type != VideoFeedSourceType.subscribedList &&
-                  validVideos.isNotEmpty),
+          hasMore: _hasMoreForSource(
+            source,
+            result,
+            fallbackHasMore:
+                source.type != VideoFeedSourceType.subscribedList &&
+                validVideos.isNotEmpty,
+          ),
           clearError: true,
           videoListSources: result.videoListSources,
           listOnlyVideoIds: result.listOnlyVideoIds,
@@ -729,6 +742,19 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
         );
       }
     }
+  }
+
+  bool _hasMoreForSource(
+    VideoFeedSource source,
+    HomeFeedResult result, {
+    required bool fallbackHasMore,
+  }) {
+    final upstreamHasMore = result.hasMore ?? fallbackHasMore;
+    if (source.type != VideoFeedSourceType.forYou) {
+      return upstreamHasMore;
+    }
+
+    return upstreamHasMore && result.paginationCursor != null;
   }
 
   /// Fetch videos for a specific mode from the repository.
