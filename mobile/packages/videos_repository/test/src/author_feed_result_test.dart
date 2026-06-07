@@ -82,5 +82,24 @@ void main() {
       expect(updated.hasMore, isTrue); // kept
       expect(updated.totalCount, equals(99));
     });
+
+    test('copyWith can clear nullable envelope fields', () {
+      const original = AuthorFeedResult(
+        authorPubkey: 'pub',
+        nextOffset: 50,
+        totalCount: 120,
+        hasMore: true,
+      );
+
+      final updated = original.copyWith(
+        nextOffset: null,
+        totalCount: null,
+        hasMore: null,
+      );
+
+      expect(updated.nextOffset, isNull);
+      expect(updated.totalCount, isNull);
+      expect(updated.hasMore, isNull);
+    });
   });
 }

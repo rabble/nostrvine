@@ -5,6 +5,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:models/models.dart';
 
+const Object _unset = Object();
+
 /// {@template author_feed_result}
 /// Result of an author/profile video-feed fetch.
 ///
@@ -52,16 +54,20 @@ class AuthorFeedResult extends Equatable {
   AuthorFeedResult copyWith({
     String? authorPubkey,
     List<VideoEvent>? videos,
-    int? nextOffset,
-    int? totalCount,
-    bool? hasMore,
+    Object? nextOffset = _unset,
+    Object? totalCount = _unset,
+    Object? hasMore = _unset,
   }) {
     return AuthorFeedResult(
       authorPubkey: authorPubkey ?? this.authorPubkey,
       videos: videos ?? this.videos,
-      nextOffset: nextOffset ?? this.nextOffset,
-      totalCount: totalCount ?? this.totalCount,
-      hasMore: hasMore ?? this.hasMore,
+      nextOffset: identical(nextOffset, _unset)
+          ? this.nextOffset
+          : nextOffset as int?,
+      totalCount: identical(totalCount, _unset)
+          ? this.totalCount
+          : totalCount as int?,
+      hasMore: identical(hasMore, _unset) ? this.hasMore : hasMore as bool?,
     );
   }
 
