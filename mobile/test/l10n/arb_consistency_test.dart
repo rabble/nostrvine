@@ -442,6 +442,10 @@ const _knownUntranslatedDebt = {
   // divine.video/safety" link). Falls back to English in non-English
   // locales until translated.
   'reportLearnMoreAt',
+  // Added by the moderation-report confirmation state. English ships;
+  // other locales fall back until the next translation pass.
+  'reportModerationDmDelayed',
+  'reportContactModeration',
   // Added by the desktop save-to-Downloads log export flow. Other locales
   // fall back to English until the next translation pass.
   'supportLogsSavedTo',

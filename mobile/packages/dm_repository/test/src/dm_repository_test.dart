@@ -2063,6 +2063,45 @@ void main() {
         );
       });
 
+      test('drops disallowed relay urls from kind-10050 events', () async {
+        stubQuery([
+          kind10050Event([
+            'wss://valid.example',
+            'ws://localhost:7777',
+            'ws://10.0.2.2:7777',
+            'ws://attacker.example',
+            'http://attacker.example',
+            'https://attacker.example',
+            'wss://http://attacker.example',
+            '',
+          ]),
+        ]);
+        final repository = createRepository();
+        expect(
+          await repository.resolveDmInboxRelays(_validPubkeyB),
+          [
+            'wss://valid.example',
+            'ws://localhost:7777',
+            'ws://10.0.2.2:7777',
+          ],
+        );
+      });
+
+      test(
+        'returns null when all kind-10050 relay urls are disallowed',
+        () async {
+          stubQuery([
+            kind10050Event([
+              'ws://attacker.example',
+              'http://attacker.example',
+              'wss://https://attacker.example',
+            ]),
+          ]);
+          final repository = createRepository();
+          expect(await repository.resolveDmInboxRelays(_validPubkeyB), isNull);
+        },
+      );
+
       test('picks the newest event when relays return several', () async {
         stubQuery([
           kind10050Event(['wss://old.example']),

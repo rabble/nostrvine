@@ -67,6 +67,25 @@ const Set<int> _supportedDmKinds = {
   EventKind.fileMessage, // 15
 };
 
+const _relayLoopbackHosts = <String>{
+  'localhost',
+  '127.0.0.1',
+  '10.0.2.2',
+  '::1',
+};
+
+bool _isAllowedDmRelayUrl(String url) {
+  final uri = Uri.tryParse(url.trim());
+  if (uri == null || !uri.hasAuthority || uri.host.isEmpty) return false;
+  if (uri.path.startsWith('//')) return false;
+  final scheme = uri.scheme.toLowerCase();
+  if (scheme == 'wss') return true;
+  if (scheme == 'ws') {
+    return _relayLoopbackHosts.contains(uri.host.toLowerCase());
+  }
+  return false;
+}
+
 /// Repository for NIP-17 direct message operations.
 ///
 /// Manages the full DM lifecycle:
@@ -855,7 +874,11 @@ class DmRepository {
       events.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       final relays = <String>{
         for (final tag in events.first.tags)
-          if (tag.length >= 2 && tag[0] == 'relay' && tag[1].isNotEmpty) tag[1],
+          if (tag.length >= 2 &&
+              tag[0] == 'relay' &&
+              tag[1].isNotEmpty &&
+              _isAllowedDmRelayUrl(tag[1]))
+            tag[1],
       };
       return relays.isEmpty ? null : relays.toList();
     } on Object catch (e) {
