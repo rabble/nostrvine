@@ -404,6 +404,37 @@ void main() {
       expect(File('$newPath-shm').existsSync(), isFalse);
     });
   });
+
+  group('formatCipherKeyPragma', () {
+    const validKey =
+        '2dd29ca851e7b56e4697b0e1f08507293d761a05ce4d1b628663f411a8086d99';
+
+    test('wraps a 64-hex key in the SQLCipher raw-key PRAGMA form', () {
+      expect(
+        formatCipherKeyPragma(validKey),
+        equals('PRAGMA key = "x\'$validKey\'";'),
+      );
+    });
+
+    test('accepts upper-case hex', () {
+      expect(
+        formatCipherKeyPragma(validKey.toUpperCase()),
+        equals('PRAGMA key = "x\'${validKey.toUpperCase()}\'";'),
+      );
+    });
+
+    test('rejects a key that is too short', () {
+      expect(() => formatCipherKeyPragma('abcd'), throwsArgumentError);
+    });
+
+    test('rejects a key with non-hex characters', () {
+      expect(() => formatCipherKeyPragma('z' * 64), throwsArgumentError);
+    });
+
+    test('rejects an empty key (no accidental plaintext open)', () {
+      expect(() => formatCipherKeyPragma(''), throwsArgumentError);
+    });
+  });
 }
 
 void _createSqliteDatabase(

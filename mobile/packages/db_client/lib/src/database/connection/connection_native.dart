@@ -27,6 +27,36 @@ QueryExecutor openConnection() {
 bool get _isFlutterTestProcess =>
     Platform.executable.contains('flutter_tester');
 
+/// Builds the SQLCipher `PRAGMA key` statement for a **raw** 32-byte key.
+///
+/// The key is supplied as 64 hex characters and wrapped in SQLCipher's
+/// raw-key form (`x'...'`) so SQLCipher uses the bytes verbatim and skips
+/// PBKDF2 derivation — appropriate when the key is a CSPRNG-generated
+/// 32-byte value held in the platform keystore (flutter_secure_storage),
+/// not a human passphrase.
+///
+/// This is the foundational building block for at-rest DM encryption
+/// (see `mobile/docs/sqlcipher_at_rest_plan.md`). It is deliberately the
+/// only part committed as code here and is `@visibleForTesting`: it is
+/// the sole piece of the SQLCipher work that can be unit-tested without
+/// the native cipher libraries — the host test VM uses an in-memory
+/// database (`NativeDatabase.memory()` above) and never loads them, so
+/// the encrypted-open path and the in-place migration must be validated
+/// on-device (see the plan's QA checklist).
+///
+/// Throws [ArgumentError] if [rawKeyHex] is not exactly 64 hex characters.
+@visibleForTesting
+String formatCipherKeyPragma(String rawKeyHex) {
+  if (!RegExp(r'^[0-9a-fA-F]{64}$').hasMatch(rawKeyHex)) {
+    throw ArgumentError.value(
+      rawKeyHex,
+      'rawKeyHex',
+      'must be exactly 64 hex characters (a raw 32-byte SQLCipher key)',
+    );
+  }
+  return 'PRAGMA key = "x\'$rawKeyHex\'";';
+}
+
 /// Get path to shared database file
 ///
 /// Path: {appSupport}/openvine/database/divine_db.db
