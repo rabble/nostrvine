@@ -1159,14 +1159,22 @@ void main() {
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
+              cursor: any(named: 'cursor'),
               skipCache: any(named: 'skipCache'),
             ),
-          ).thenAnswer((_) async => HomeFeedResult(videos: moreVideos));
+          ).thenAnswer(
+            (_) async => HomeFeedResult(
+              videos: moreVideos,
+              paginationCursor: 'rec-page-3',
+              hasMore: true,
+            ),
+          );
         },
         build: createBloc,
         seed: () => VideoFeedBlocState(
           status: VideoFeedStatus.success,
           videos: createTestVideos(pageSize, startTimestamp: 2000),
+          paginationCursor: 'rec-page-2',
         ),
         act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
         expect: () => [
@@ -1185,7 +1193,7 @@ void main() {
             () => mockVideosRepository.getRecommendedVideos(
               userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
-              until: 1995,
+              cursor: 'rec-page-2',
             ),
           ).called(1);
           verifyNever(

@@ -4150,6 +4150,31 @@ void main() {
         expect(uri.queryParameters['category'], equals('comedy'));
       });
 
+      test('sends recommendations cursor for paginated requests', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async =>
+              http.Response('{"videos": [], "source": "popular"}', 200),
+        );
+
+        await client.getRecommendations(
+          pubkey: testPubkey,
+          cursor: 'rec-page-2',
+        );
+
+        final uri =
+            verify(
+                  () => mockHttpClient.get(
+                    captureAny(),
+                    headers: any(named: 'headers'),
+                  ),
+                ).captured.single
+                as Uri;
+        expect(uri.path, equals('/api/users/$testPubkey/recommendations'));
+        expect(uri.queryParameters['cursor'], equals('rec-page-2'));
+      });
+
       test('sends viewer language and country hints', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
@@ -4334,6 +4359,8 @@ void main() {
           expect(result.videos, hasLength(1));
           expect(result.videos.first.id, equals('rec-env-1'));
           expect(result.source, equals('personalized'));
+          expect(result.hasMore, isTrue);
+          expect(result.nextCursor, equals('opaque-1'));
         },
       );
     }); // end group('getRecommendations')

@@ -9776,48 +9776,64 @@ void main() {
         },
       );
 
-      test('uses popular pagination for subsequent forYou pages', () async {
-        final popular = _createVideoStats(
-          id: 'popular-page-2-video',
-          pubkey: 'popular-pubkey',
-          dTag: 'popular-dtag',
-          videoUrl: 'https://example.com/popular-page-2.mp4',
-        );
-        when(
-          () => mockFunnelcakeClient.getWatchingVideos(
-            limit: any(named: 'limit'),
-            before: any(named: 'before'),
-          ),
-        ).thenAnswer((_) async => [popular]);
+      test(
+        'uses recommendations pagination for subsequent forYou pages',
+        () async {
+          final recommended = _createVideoStats(
+            id: 'recommended-page-2-video',
+            pubkey: 'recommended-pubkey',
+            dTag: 'recommended-dtag',
+            videoUrl: 'https://example.com/recommended-page-2.mp4',
+          );
+          when(
+            () => mockFunnelcakeClient.getRecommendations(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              fallback: any(named: 'fallback'),
+              category: any(named: 'category'),
+              cursor: any(named: 'cursor'),
+              preferredLanguages: any(named: 'preferredLanguages'),
+              viewerCountry: any(named: 'viewerCountry'),
+            ),
+          ).thenAnswer(
+            (_) async => RecommendationsResponse(
+              videos: [recommended],
+              source: 'personalized',
+              nextCursor: 'rec-page-3',
+              hasMore: true,
+            ),
+          );
 
-        final repo = VideosRepository(
-          nostrClient: mockNostrClient,
-          funnelcakeApiClient: mockFunnelcakeClient,
-        );
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
 
-        final result = await repo.getRecommendedVideos(
-          userPubkey: 'user-pubkey',
-          limit: 10,
-          until: 1700000000,
-        );
-
-        expect(result.videos, hasLength(1));
-        expect(result.videos.single.id, equals('popular-page-2-video'));
-        verifyNever(
-          () => mockFunnelcakeClient.getRecommendations(
-            pubkey: any(named: 'pubkey'),
-            limit: any(named: 'limit'),
-            fallback: any(named: 'fallback'),
-            category: any(named: 'category'),
-          ),
-        );
-        verify(
-          () => mockFunnelcakeClient.getWatchingVideos(
+          final result = await repo.getRecommendedVideos(
+            userPubkey: 'user-pubkey',
             limit: 10,
-            before: 1700000000,
-          ),
-        ).called(1);
-      });
+            cursor: 'rec-page-2',
+          );
+
+          expect(result.videos, hasLength(1));
+          expect(result.videos.single.id, equals('recommended-page-2-video'));
+          expect(result.paginationCursor, equals('rec-page-3'));
+          expect(result.hasMore, isTrue);
+          verify(
+            () => mockFunnelcakeClient.getRecommendations(
+              pubkey: 'user-pubkey',
+              limit: 10,
+              cursor: 'rec-page-2',
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockFunnelcakeClient.getWatchingVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          );
+        },
+      );
 
       test(
         'propagates recommendation errors without popular fallback',

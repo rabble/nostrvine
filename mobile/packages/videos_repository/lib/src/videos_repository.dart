@@ -2251,28 +2251,16 @@ class VideosRepository {
     return _funnelcakeApiClient.getBulkVideoStats(eventIds);
   }
 
-  /// Fetches the initial For You page from recommendations, then paginates
-  /// with popular videos once the personalized page is exhausted.
+  /// Fetches For You videos from the recommendations endpoint.
   Future<HomeFeedResult> getRecommendedVideos({
     required String? userPubkey,
     int limit = _defaultLimit,
     int? until,
+    String? cursor,
     bool skipCache = false,
     List<String> preferredLanguages = const [],
     String? viewerCountry,
   }) async {
-    if (until != null) {
-      return HomeFeedResult(
-        videos: await getPopularVideos(
-          limit: limit,
-          until: until,
-          skipCache: skipCache,
-          preferredLanguages: preferredLanguages,
-          viewerCountry: viewerCountry,
-        ),
-      );
-    }
-
     final effectiveUserPubkey =
         userPubkey ??
         (_nostrClient.publicKey.isNotEmpty ? _nostrClient.publicKey : null);
@@ -2290,12 +2278,21 @@ class VideosRepository {
       );
     }
 
-    final response = await _funnelcakeApiClient.getRecommendations(
-      pubkey: effectiveUserPubkey,
-      limit: limit,
-      preferredLanguages: preferredLanguages,
-      viewerCountry: viewerCountry,
-    );
+    final recommendationCursor = cursor ?? until?.toString();
+    final response = recommendationCursor == null
+        ? await _funnelcakeApiClient.getRecommendations(
+            pubkey: effectiveUserPubkey,
+            limit: limit,
+            preferredLanguages: preferredLanguages,
+            viewerCountry: viewerCountry,
+          )
+        : await _funnelcakeApiClient.getRecommendations(
+            pubkey: effectiveUserPubkey,
+            limit: limit,
+            cursor: recommendationCursor,
+            preferredLanguages: preferredLanguages,
+            viewerCountry: viewerCountry,
+          );
     final videos = _transformVideoStats(response.videos);
     if (videos.isEmpty) {
       return HomeFeedResult(
@@ -2309,7 +2306,12 @@ class VideosRepository {
       );
     }
 
-    return HomeFeedResult(videos: videos, rawResponseBody: response.rawBody);
+    return HomeFeedResult(
+      videos: videos,
+      paginationCursor: response.nextCursor,
+      hasMore: response.hasMore,
+      rawResponseBody: response.rawBody,
+    );
   }
 
   /// Fetches personalized video recommendations.

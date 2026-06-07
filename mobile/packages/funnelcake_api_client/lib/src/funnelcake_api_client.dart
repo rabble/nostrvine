@@ -1907,6 +1907,7 @@ class FunnelcakeApiClient {
   /// [fallback] is the strategy when personalization is unavailable
   /// (`'popular'` or `'recent'`, defaults to `'popular'`).
   /// [category] is an optional hashtag/category filter.
+  /// [cursor] is the opaque cursor returned by a previous response.
   ///
   /// Returns a [RecommendationsResponse] with videos and source.
   ///
@@ -1924,6 +1925,7 @@ class FunnelcakeApiClient {
     int limit = 20,
     String fallback = 'popular',
     String? category,
+    String? cursor,
     List<String> preferredLanguages = const [],
     String? viewerCountry,
   }) async {
@@ -1941,6 +1943,9 @@ class FunnelcakeApiClient {
     };
     if (category != null && category.isNotEmpty) {
       queryParams['category'] = category;
+    }
+    if (cursor != null && cursor.isNotEmpty) {
+      queryParams['cursor'] = cursor;
     }
     _addViewerPreferenceQueryParameters(
       queryParams,
@@ -1973,10 +1978,16 @@ class FunnelcakeApiClient {
             .toList();
 
         final source = raw['source'] as String? ?? 'unknown';
+        final pagination = raw['pagination'] as Map<String, dynamic>?;
+        final rawHasMore = raw['has_more'] ?? pagination?['has_more'];
+        final rawNextCursor = raw['next_cursor'] ?? pagination?['next_cursor'];
+        final hasMore = rawHasMore is bool ? rawHasMore : videos.isNotEmpty;
 
         return RecommendationsResponse(
           videos: videos,
           source: source,
+          hasMore: hasMore,
+          nextCursor: rawNextCursor?.toString(),
           rawBody: response.body,
         );
       } else if (response.statusCode == 404) {

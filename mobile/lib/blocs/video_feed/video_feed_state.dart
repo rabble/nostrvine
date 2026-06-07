@@ -143,6 +143,7 @@ final class VideoFeedBlocState extends Equatable {
     this.videoListSources = const {},
     this.listOnlyVideoIds = const {},
     this.creatorProfiles = const {},
+    this.paginationCursor,
   }) : source =
            source ??
            (mode == FeedMode.following
@@ -165,6 +166,9 @@ final class VideoFeedBlocState extends Equatable {
 
   /// Whether more videos can be loaded via pagination.
   final bool hasMore;
+
+  /// Opaque cursor for cursor-backed feeds.
+  final String? paginationCursor;
 
   /// Whether a load-more operation is in progress.
   final bool isLoadingMore;
@@ -224,6 +228,8 @@ final class VideoFeedBlocState extends Equatable {
     Map<String, Set<String>>? videoListSources,
     Set<String>? listOnlyVideoIds,
     Map<String, UserProfile>? creatorProfiles,
+    String? paginationCursor,
+    bool clearPaginationCursor = false,
   }) {
     return VideoFeedBlocState(
       status: status ?? this.status,
@@ -238,6 +244,9 @@ final class VideoFeedBlocState extends Equatable {
       videoListSources: videoListSources ?? this.videoListSources,
       listOnlyVideoIds: listOnlyVideoIds ?? this.listOnlyVideoIds,
       creatorProfiles: creatorProfiles ?? this.creatorProfiles,
+      paginationCursor: clearPaginationCursor
+          ? null
+          : (paginationCursor ?? this.paginationCursor),
     );
   }
 
@@ -253,5 +262,6 @@ final class VideoFeedBlocState extends Equatable {
     videoListSources,
     listOnlyVideoIds,
     creatorProfiles,
+    paginationCursor,
   ];
 }

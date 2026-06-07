@@ -11,6 +11,8 @@ class RecommendationsResponse {
   const RecommendationsResponse({
     required this.videos,
     required this.source,
+    this.nextCursor,
+    this.hasMore = false,
     this.rawBody,
   });
 
@@ -22,6 +24,12 @@ class RecommendationsResponse {
   /// Possible values: `"personalized"`, `"popular"`, `"recent"`,
   /// or `"error"`.
   final String source;
+
+  /// Cursor for fetching the next recommendations page.
+  final String? nextCursor;
+
+  /// Whether the recommendations endpoint has another page.
+  final bool hasMore;
 
   /// The raw JSON response body from the API, if available.
   final String? rawBody;
