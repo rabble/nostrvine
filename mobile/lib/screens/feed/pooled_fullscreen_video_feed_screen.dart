@@ -104,7 +104,7 @@ class PooledFullscreenVideoFeedArgs {
 /// Profile-backed arguments for fullscreen playback.
 ///
 /// Unlike [PooledFullscreenVideoFeedArgs], this keeps the fullscreen route
-/// subscribed directly to [profileFeedProvider] so profile-specific metadata
+/// subscribed directly to the profile feed cubit so profile-specific metadata
 /// updates (like loop counts) are not lost when the launching grid unmounts.
 class ProfilePooledFullscreenVideoFeedArgs {
   const ProfilePooledFullscreenVideoFeedArgs({

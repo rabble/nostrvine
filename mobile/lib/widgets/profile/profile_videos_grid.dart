@@ -1,7 +1,6 @@
 // ABOUTME: Grid widget displaying user's videos on profile page
 // ABOUTME: Shows 3-column grid with thumbnails, handles empty state and navigation
 
-import 'dart:async' show FutureOr;
 import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
@@ -132,7 +131,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
   }
 
   @override
-  FutureOr<void> onLoadMore() => _triggerLoadMore();
+  void onLoadMore() => _triggerLoadMore();
 
   @override
   void initState() {

@@ -1,13 +1,13 @@
 // ABOUTME: E2E test verifying fix for bug #2163: deleted video visibility
-// ABOUTME: After kind 5 delete, refreshIfStale() on profile navigation
-// ABOUTME: triggers a REST API re-fetch that filters the deleted video
+// ABOUTME: After a kind 5 delete, re-navigating to the profile re-loads the
+// ABOUTME: feed via ProfileFeedCubit and the deleted video is excluded.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nostr_sdk/nip19/nip19.dart';
+import 'package:openvine/blocs/profile_feed/profile_feed_cubit.dart';
 import 'package:openvine/main.dart' as app;
-import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:patrol/patrol.dart';
 
@@ -31,7 +31,7 @@ void main() {
         final originalErrorBuilder = saveErrorWidgetBuilder();
 
         // Use a short staleness TTL so we don't wait 30s in the test.
-        ProfileFeed.staleTtl = const Duration(seconds: 3);
+        ProfileFeedCubit.staleTtl = const Duration(seconds: 3);
 
         // ── Phase 1: Seed relay with User A's profile and video ──
         logPhase('── Phase 1: Seed User A profile + video on relay ──');
@@ -188,9 +188,9 @@ void main() {
         await pumpUntilSettled(tester);
         logPhase('On explore tab, waiting for cache staleness...');
 
-        // Navigate back to User A's profile.
-        // OtherProfileView.initState calls refreshIfStale() which triggers
-        // a background refresh. The REST API now filters the deleted video.
+        // Navigate back to User A's profile. Re-navigation recreates
+        // ProfileFeedCubit, which cold-loads the feed; the deleted video is
+        // excluded (VES tombstone filtering / fresh REST that now filters it).
         router.push(profilePath);
         await pumpUntilSettled(tester, maxSeconds: 15);
         logPhase('Back on User A profile');
@@ -223,7 +223,7 @@ void main() {
         logPhase('Deleted video disappeared after re-navigation');
 
         // ── Cleanup ──
-        ProfileFeed.staleTtl = const Duration(seconds: 30);
+        ProfileFeedCubit.staleTtl = const Duration(seconds: 30);
         drainAsyncErrors(tester);
         restoreErrorHandler(originalOnError);
         restoreErrorWidgetBuilder(originalErrorBuilder);

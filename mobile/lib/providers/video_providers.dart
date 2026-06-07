@@ -19,6 +19,7 @@ import 'package:openvine/providers/saved_sounds_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/upload_media_providers.dart';
+import 'package:openvine/services/auth_service.dart' show AuthState;
 import 'package:openvine/services/broken_video_tracker.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/event_router.dart';
@@ -348,7 +349,7 @@ VideosRepository videosRepository(Ref ref) {
     moderationLabelService: moderationLabelService,
   );
 
-  return VideosRepository(
+  final repository = VideosRepository(
     nostrClient: nostrClient,
     localStorage: localStorage,
     blockFilter: createBlockedAuthorFilter(ref),
@@ -364,6 +365,18 @@ VideosRepository videosRepository(Ref ref) {
     funnelcakeApiClient: funnelcakeClient,
     inMemoryFeedCache: InMemoryFeedCache(),
   );
+
+  // Clear the in-memory feed cache (home + per-author) on logout/account
+  // switch — the repository owns its cache. Replaces the deleted
+  // profile_feed_session_cache auth-flip clear. Filter toggles already rebuild
+  // this provider with a fresh cache, so this listener covers only the auth path.
+  ref.listen<AuthState>(currentAuthStateProvider, (previous, next) {
+    if (next == AuthState.unauthenticated) {
+      repository.clearInMemoryFeedCache();
+    }
+  });
+
+  return repository;
 }
 
 // =============================================================================

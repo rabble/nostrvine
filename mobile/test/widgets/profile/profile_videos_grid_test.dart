@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' as model;
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
+import 'package:openvine/blocs/profile_feed/profile_feed_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
@@ -28,6 +29,19 @@ class _MockBackgroundPublishBloc
     implements BackgroundPublishBloc {}
 
 class _MockDmRepository extends Mock implements DmRepository {}
+
+class _MockProfileFeedCubit extends MockBloc<ProfileFeedEvent, ProfileFeedState>
+    implements ProfileFeedCubit {}
+
+ProfileFeedCubit _stubbedProfileFeedCubit() {
+  final cubit = _MockProfileFeedCubit();
+  whenListen(
+    cubit,
+    const Stream<ProfileFeedState>.empty(),
+    initialState: const ProfileFeedState(status: ProfileFeedStatus.ready),
+  );
+  return cubit;
+}
 
 const _ownPubkey =
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -96,6 +110,7 @@ void main() {
       List<PendingCollaboratorInviteGroup> pendingInviteGroups = const [],
       Locale? locale,
     }) {
+      final profileFeedCubit = _stubbedProfileFeedCubit();
       return testProviderScope(
         additionalOverrides: [
           collaboratorInviteRecoveryRepositoryProvider.overrideWithValue(
@@ -113,11 +128,14 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
-              body: ProfileVideosGrid(
-                videos: videos,
-                userIdHex: userIdHex,
-                isLoading: isLoading,
-                errorMessage: errorMessage,
+              body: BlocProvider<ProfileFeedCubit>.value(
+                value: profileFeedCubit,
+                child: ProfileVideosGrid(
+                  videos: videos,
+                  userIdHex: userIdHex,
+                  isLoading: isLoading,
+                  errorMessage: errorMessage,
+                ),
               ),
             ),
           ),
@@ -853,9 +871,12 @@ void main() {
                       headerSliverBuilder: (context, innerBoxIsScrolled) => [
                         const SliverToBoxAdapter(child: SizedBox(height: 200)),
                       ],
-                      body: ProfileVideosGrid(
-                        videos: videos,
-                        userIdHex: _ownPubkey,
+                      body: BlocProvider<ProfileFeedCubit>.value(
+                        value: _stubbedProfileFeedCubit(),
+                        child: ProfileVideosGrid(
+                          videos: videos,
+                          userIdHex: _ownPubkey,
+                        ),
                       ),
                     ),
                   ),
@@ -901,9 +922,12 @@ void main() {
                         ),
                       ),
                     ],
-                    body: ProfileVideosGrid(
-                      videos: videos,
-                      userIdHex: _ownPubkey,
+                    body: BlocProvider<ProfileFeedCubit>.value(
+                      value: _stubbedProfileFeedCubit(),
+                      child: ProfileVideosGrid(
+                        videos: videos,
+                        userIdHex: _ownPubkey,
+                      ),
                     ),
                   ),
                 ),

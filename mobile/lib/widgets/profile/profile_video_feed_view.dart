@@ -18,7 +18,7 @@ import 'package:rxdart/rxdart.dart';
 
 /// Fullscreen video feed view for profile screens.
 ///
-/// Streams [profileFeedProvider] updates into [PooledFullscreenVideoFeedScreen]
+/// Streams [ProfileFeedCubit] updates into [PooledFullscreenVideoFeedScreen]
 /// so the profile fullscreen feed benefits from the pooled player, auto-advance
 /// and prefetching machinery shared with the main feed. Keeps the URL in sync
 /// via [onPageChanged].
