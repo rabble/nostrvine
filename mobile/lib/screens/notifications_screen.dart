@@ -6,7 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/features/creator_analytics/creator_analytics_repository.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/screens/comments/comments_screen.dart';
@@ -461,6 +463,7 @@ class _NotificationTabContentState
         final event = await nostrService.fetchEventById(videoEventId);
         if (event != null) {
           video = VideoEvent.fromNostrEvent(event);
+          video = await _hydrateVideoStats(video);
         }
       } catch (e) {
         Log.error(
@@ -508,6 +511,36 @@ class _NotificationTabContentState
       ),
     );
   }
+
+  Future<VideoEvent> _hydrateVideoStats(VideoEvent video) async {
+    final analyticsApi = ref.read(analyticsApiServiceProvider);
+    final bulkStats = await analyticsApi.getBulkVideoStats([video.id]);
+    final stats = bulkStats[video.id];
+
+    if (stats != null) {
+      final mergedTags = <String, String>{...video.rawTags};
+      if (stats.loops != null) {
+        mergedTags['loops'] = stats.loops!.toString();
+      }
+      if (stats.views != null) {
+        mergedTags['views'] = stats.views!.toString();
+      }
+      return video.copyWith(
+        rawTags: mergedTags,
+        originalLoops: stats.loops ?? video.originalLoops,
+      );
+    }
+
+    final views = await analyticsApi.getVideoViews(video.id);
+    if (views == null) return video;
+
+    return video.copyWith(
+      rawTags: <String, String>{...video.rawTags, 'views': '$views'},
+    );
+  }
+
+  @visibleForTesting
+  int? debugViewCount(VideoEvent video) => extractViewLikeCount(video);
 
   void _navigateToProfile(BuildContext context, String userPubkey) {
     Log.info(
