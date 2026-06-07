@@ -296,8 +296,8 @@ dependencies:
   firebase_messaging: ^16.1.1
   convert: ^3.1.2
   audio_session: ^0.2.2
-  pro_video_editor: ^1.17.2
-  pro_image_editor: ^12.4.5
+  pro_video_editor: ^1.17.4
+  pro_image_editor: ^12.4.8
   flutter_colorpicker: ^1.1.0
   file_picker: ^10.3.7
   sensors_plus: ^7.0.0
