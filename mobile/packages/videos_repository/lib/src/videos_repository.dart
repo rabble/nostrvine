@@ -1928,7 +1928,8 @@ class VideosRepository {
   ///
   /// Strategy (mirrors [getNewVideos], adapted to offset pagination):
   /// 1. On the initial page (`offset == null`) returns the in-memory cached
-  ///    [AuthorFeedResult] when present (instant reseed; #4164).
+  ///    [AuthorFeedResult] when present, marked [AuthorFeedResult.isFromCache]
+  ///    so callers can instant-reseed and then refresh (#4164, #4933).
   /// 2. REST-first: fetches the Funnelcake author page at [offset], reading the
   ///    v2 envelope (`totalCount`/`nextOffset`/`hasMore`); maps via
   ///    `toVideoEvents()` (drops NIP-40 expired only — **no** block/content
@@ -1960,7 +1961,7 @@ class VideosRepository {
 
     if (!skipCache && isInitialPage) {
       final cached = _inMemoryFeedCache?.getAuthorFeed(cacheKey);
-      if (cached != null) return cached;
+      if (cached != null) return cached.copyWith(isFromCache: true);
     }
 
     if (_funnelcakeApiClient != null && _funnelcakeApiClient.isAvailable) {

@@ -68,13 +68,8 @@ class ProfileFeedState extends Equatable {
   /// null ⇒ Nostr-fallback mode (#3849).
   final int? nextOffset;
 
-  /// Timestamp of the last update; drives [isStale].
+  /// Timestamp of the last successful update.
   final DateTime? lastUpdated;
-
-  /// Whether the data is stale enough to warrant a background refresh.
-  bool get isStale =>
-      lastUpdated == null ||
-      DateTime.now().difference(lastUpdated!) >= ProfileFeedCubit.staleTtl;
 
   static const Object _unset = Object();
 

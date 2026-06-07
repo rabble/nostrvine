@@ -147,9 +147,9 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
   void initState() {
     super.initState();
     FeedPerformanceTracker().startFeedLoad('profile');
-    // The feed cubit cold-loads on mount (via ProfileFeedScope below), so the
-    // legacy initState refreshIfStale is gone — reading the cubit here would
-    // be a cross-route ProviderNotFoundException (the cubit lives in build).
+    // The feed cubit cold-loads on mount (via ProfileFeedScope below); reading
+    // it here would be a cross-route ProviderNotFoundException because the
+    // cubit lives under build.
   }
 
   @override

@@ -84,9 +84,7 @@ void main() {
       when(
         () => funnelcake.getBulkVideoStats(any()),
       ).thenAnswer((_) async => const BulkVideoStatsResponse(stats: {}));
-      when(
-        () => funnelcake.getVideoViews(any()),
-      ).thenAnswer((_) async => 0);
+      when(() => funnelcake.getVideoViews(any())).thenAnswer((_) async => 0);
     });
 
     test('surfaces the v2 envelope (totalCount/nextOffset/hasMore)', () async {
@@ -213,6 +211,7 @@ void main() {
         final second = await repository.getAuthorFeed(authorPubkey: _author);
 
         expect(second.videos, hasLength(1));
+        expect(second.isFromCache, isTrue);
         verify(
           () => funnelcake.getVideosByAuthor(
             pubkey: any(named: 'pubkey'),

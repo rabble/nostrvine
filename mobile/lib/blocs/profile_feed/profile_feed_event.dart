@@ -24,11 +24,6 @@ final class ProfileFeedRefreshRequested extends ProfileFeedEvent {
   const ProfileFeedRefreshRequested();
 }
 
-/// Refreshes only when the data is stale. `droppable`.
-final class ProfileFeedRefreshIfStaleRequested extends ProfileFeedEvent {
-  const ProfileFeedRefreshIfStaleRequested();
-}
-
 /// Re-applies feed filters in place over the cached source (no re-fetch).
 /// Dispatched when a blocklist/content-preference version changes (#4782).
 final class ProfileFeedFiltersChanged extends ProfileFeedEvent {

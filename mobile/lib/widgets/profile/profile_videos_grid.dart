@@ -20,7 +20,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/widgets/profile/pending_collaborator_invite_banner_cubit.dart';
 import 'package:openvine/widgets/profile/profile_tab_empty_state.dart';
-import 'package:openvine/widgets/profile/profile_tab_error_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_loading_more_sliver.dart';
 import 'package:openvine/widgets/profile/profile_tab_loading_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_thumbnail.dart';
@@ -96,7 +95,6 @@ class ProfileVideosGrid extends ConsumerStatefulWidget {
     required this.videos,
     required this.userIdHex,
     this.isLoading = false,
-    this.errorMessage,
     super.key,
   });
 
@@ -105,9 +103,6 @@ class ProfileVideosGrid extends ConsumerStatefulWidget {
 
   /// Whether videos are currently being loaded.
   final bool isLoading;
-
-  /// Error message if video loading failed.
-  final String? errorMessage;
 
   @override
   ConsumerState<ProfileVideosGrid> createState() => _ProfileVideosGridState();
@@ -303,10 +298,6 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
       ),
       ...filteredVideos.map(_GridVideoEventEntry.new),
     ];
-
-    if (widget.errorMessage != null && allVideos.isEmpty) {
-      return ProfileTabErrorState(message: widget.errorMessage!);
-    }
 
     if (allVideos.isEmpty) {
       if (widget.isLoading) {

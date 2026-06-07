@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nostr_sdk/nip19/nip19.dart';
-import 'package:openvine/blocs/profile_feed/profile_feed_cubit.dart';
 import 'package:openvine/main.dart' as app;
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:patrol/patrol.dart';
@@ -29,9 +28,6 @@ void main() {
         final tester = $.tester;
         final originalOnError = suppressSetStateErrors();
         final originalErrorBuilder = saveErrorWidgetBuilder();
-
-        // Use a short staleness TTL so we don't wait 30s in the test.
-        ProfileFeedCubit.staleTtl = const Duration(seconds: 3);
 
         // ── Phase 1: Seed relay with User A's profile and video ──
         logPhase('── Phase 1: Seed User A profile + video on relay ──');
@@ -122,9 +118,7 @@ void main() {
         final userANpub = Nip19.encodePubKey(userA.pubkey);
         final profilePath = OtherProfileScreen.pathForNpub(userANpub);
 
-        final router = GoRouter.of(
-          tester.element(find.byType(Scaffold).first),
-        );
+        final router = GoRouter.of(tester.element(find.byType(Scaffold).first));
         router.push(profilePath);
         await pumpUntilSettled(tester);
         logPhase('Pushed to User A profile: $profilePath');
@@ -175,22 +169,21 @@ void main() {
         );
         logPhase('Funnelcake REST API confirmed: video filtered');
 
-        // ── Phase 5: Navigate away, wait for staleness, navigate back ──
-        logPhase('── Phase 5: Navigate away and back (refreshIfStale) ──');
+        // ── Phase 5: Navigate away and back ──
+        logPhase('── Phase 5: Navigate away and back ──');
 
         // Go back from User A's profile
         router.pop();
         await pumpUntilSettled(tester);
 
-        // Wait on explore tab for the cached data to become stale.
-        // Test overrides staleTtl to 3s so we only need a short wait.
         await tapBottomNavTab(tester, 'explore_tab');
         await pumpUntilSettled(tester);
-        logPhase('On explore tab, waiting for cache staleness...');
+        logPhase('On explore tab before remount...');
 
         // Navigate back to User A's profile. Re-navigation recreates
-        // ProfileFeedCubit, which cold-loads the feed; the deleted video is
-        // excluded (VES tombstone filtering / fresh REST that now filters it).
+        // ProfileFeedCubit. If the repository serves an instant cached reseed,
+        // the cubit follows it with a skip-cache refresh, so the deleted video is
+        // removed once Funnelcake filters it.
         router.push(profilePath);
         await pumpUntilSettled(tester, maxSeconds: 15);
         logPhase('Back on User A profile');
@@ -217,13 +210,12 @@ void main() {
           isTrue,
           reason:
               'Deleted video should disappear after re-navigation because '
-              'refreshIfStale() triggers a REST API re-fetch, and Funnelcake '
+              'ProfileFeedCubit refreshes after a cached reseed, and Funnelcake '
               'filters deleted videos via deleted_events_set.',
         );
         logPhase('Deleted video disappeared after re-navigation');
 
         // ── Cleanup ──
-        ProfileFeedCubit.staleTtl = const Duration(seconds: 30);
         drainAsyncErrors(tester);
         restoreErrorHandler(originalOnError);
         restoreErrorWidgetBuilder(originalErrorBuilder);

@@ -1,10 +1,11 @@
 // ABOUTME: Riverpod->BLoC bridge that provides a keyed ProfileFeedCubit.
 // ABOUTME: Reused at every profile-feed entry point (in-shell and off-shell).
 
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/profile_feed/profile_feed_cubit.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_providers.dart';
@@ -63,9 +64,18 @@ class ProfileFeedScope extends ConsumerWidget {
           callerName: 'ProfileFeedCubit',
         ),
       ),
-      child: _BlocklistVersionForwarder(
-        version: blocklistVersion,
-        child: child,
+      child: BlocListener<ProfileFeedCubit, ProfileFeedState>(
+        listenWhen: (previous, current) =>
+            !previous.hasLoadMoreError && current.hasLoadMoreError,
+        listener: (context, state) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(context.l10n.profileFeedLoadMoreError)),
+          );
+        },
+        child: _BlocklistVersionForwarder(
+          version: blocklistVersion,
+          child: child,
+        ),
       ),
     );
   }

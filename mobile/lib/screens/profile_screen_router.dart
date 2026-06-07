@@ -554,7 +554,6 @@ class ProfileViewSwitcher extends StatelessWidget {
     this.refreshNotifier,
     this.displayName,
     this.isLoadingVideos = false,
-    this.videoLoadError,
     super.key,
   });
 
@@ -576,10 +575,6 @@ class ProfileViewSwitcher extends StatelessWidget {
   /// [ProfileGridView] / [ProfileVideosGrid] so we don't render "No
   /// videos" while the cold-start fetch is still running.
   final bool isLoadingVideos;
-
-  /// Error surfaced by the videos provider, if any. Drives the videos-tab
-  /// error state in [ProfileGridView] / [ProfileVideosGrid].
-  final String? videoLoadError;
 
   /// Optional notifier to trigger BLoC refresh when its value changes.
   final ValueNotifier<int>? refreshNotifier;
@@ -608,7 +603,6 @@ class ProfileViewSwitcher extends StatelessWidget {
             profileStats: profileStats,
             videos: videos,
             isLoadingVideos: isLoadingVideos,
-            videoLoadError: videoLoadError,
             scrollController: scrollController,
             onEditProfile: onEditProfile,
             onOpenClips: onOpenClips,

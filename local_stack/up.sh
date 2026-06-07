@@ -24,5 +24,9 @@ SERVICES=(
   minio blossom blossom-proxy invite
 )
 
-docker compose -f "$COMPOSE_FILE" up -d --wait "${PULL_ARGS[@]}" "${SERVICES[@]}"
+if ((${#PULL_ARGS[@]} > 0)); then
+  docker compose -f "$COMPOSE_FILE" up -d --wait "${PULL_ARGS[@]}" "${SERVICES[@]}"
+else
+  docker compose -f "$COMPOSE_FILE" up -d --wait "${SERVICES[@]}"
+fi
 docker compose -f "$COMPOSE_FILE" run --rm e2e-seed

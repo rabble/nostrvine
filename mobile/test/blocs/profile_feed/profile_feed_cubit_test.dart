@@ -45,6 +45,7 @@ AuthorFeedResult _result(
   int? totalCount,
   int? nextOffset,
   bool? hasMore,
+  bool isFromCache = false,
 }) {
   return AuthorFeedResult(
     authorPubkey: _author,
@@ -52,6 +53,7 @@ AuthorFeedResult _result(
     totalCount: totalCount,
     nextOffset: nextOffset,
     hasMore: hasMore,
+    isFromCache: isFromCache,
   );
 }
 
@@ -80,9 +82,7 @@ class _Harness {
       onNew = i.positionalArguments[0] as void Function(VideoEvent, String);
       return () {};
     });
-    when(
-      () => blocklist.shouldFilterFromFeeds(any()),
-    ).thenReturn(false);
+    when(() => blocklist.shouldFilterFromFeeds(any())).thenReturn(false);
   }
 
   final repo = _MockVideosRepository();
@@ -110,6 +110,18 @@ class _Harness {
         skipCache: any(named: 'skipCache'),
       ),
     ).thenAnswer((_) async => result);
+  }
+
+  void stubAuthorFeedSequence(List<AuthorFeedResult> results) {
+    var index = 0;
+    when(
+      () => repo.getAuthorFeed(
+        authorPubkey: any(named: 'authorPubkey'),
+        offset: any(named: 'offset'),
+        relaySeed: any(named: 'relaySeed'),
+        skipCache: any(named: 'skipCache'),
+      ),
+    ).thenAnswer((_) async => results[index++]);
   }
 
   void stubAuthorFeedThrows(Object error) {
@@ -167,6 +179,36 @@ void main() {
       expect(cubit.state.isInitialLoad, isFalse);
       verify(() => h.ves.subscribeToUserVideos(_author)).called(1);
     });
+
+    test(
+      'cold load: cached reseed is followed by skip-cache refresh',
+      () async {
+        h.stubAuthorFeedSequence([
+          _result([_video('cached')], hasMore: true, isFromCache: true),
+          _result(const [], hasMore: false),
+        ]);
+
+        final cubit = h.build();
+        addTearDown(cubit.close);
+        await pumpEventQueue();
+        await pumpEventQueue();
+
+        expect(cubit.state.status, ProfileFeedStatus.ready);
+        expect(cubit.state.videos, isEmpty);
+        expect(cubit.state.hasMoreContent, isFalse);
+        verifyInOrder([
+          () => h.repo.getAuthorFeed(
+            authorPubkey: _author,
+            relaySeed: any(named: 'relaySeed'),
+          ),
+          () => h.repo.getAuthorFeed(
+            authorPubkey: _author,
+            relaySeed: any(named: 'relaySeed'),
+            skipCache: true,
+          ),
+        ]);
+      },
+    );
 
     test('cold load: REST failure, no relay -> failure + addError', () async {
       h.stubAuthorFeedThrows(Exception('boom'));
@@ -243,11 +285,7 @@ void main() {
         '/ isFetchingTotalCount', () async {
       // REST unavailable -> getAuthorFeed returns seed-only (nextOffset null).
       final cubit = await buildReady(
-        _result(
-          [_video('a', createdAt: 3000)],
-          totalCount: 200,
-          hasMore: true,
-        ),
+        _result([_video('a', createdAt: 3000)], totalCount: 200, hasMore: true),
       );
       addTearDown(cubit.close);
       expect(cubit.state.nextOffset, isNull); // Nostr-fallback mode

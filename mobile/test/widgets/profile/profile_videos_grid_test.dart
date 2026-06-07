@@ -106,7 +106,6 @@ void main() {
       required String userIdHex,
       List<model.VideoEvent> videos = const [],
       bool isLoading = false,
-      String? errorMessage,
       List<PendingCollaboratorInviteGroup> pendingInviteGroups = const [],
       Locale? locale,
     }) {
@@ -134,7 +133,6 @@ void main() {
                   videos: videos,
                   userIdHex: userIdHex,
                   isLoading: isLoading,
-                  errorMessage: errorMessage,
                 ),
               ),
             ),
@@ -179,21 +177,6 @@ void main() {
         );
 
         expect(find.text(l10n.profileLoadingVideos), findsOneWidget);
-      });
-
-      testWidgets('error state when errorMessage is provided and no videos', (
-        tester,
-      ) async {
-        when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
-
-        await tester.pumpWidget(
-          buildSubject(
-            userIdHex: _ownPubkey,
-            errorMessage: 'Connection failed',
-          ),
-        );
-
-        expect(find.text('Connection failed'), findsOneWidget);
       });
 
       testWidgets('video grid when videos are provided', (tester) async {

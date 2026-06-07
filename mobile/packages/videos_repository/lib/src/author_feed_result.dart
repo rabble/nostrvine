@@ -29,6 +29,7 @@ class AuthorFeedResult extends Equatable {
     this.nextOffset,
     this.totalCount,
     this.hasMore,
+    this.isFromCache = false,
   });
 
   /// The author whose feed this page belongs to (full hex pubkey).
@@ -50,6 +51,11 @@ class AuthorFeedResult extends Equatable {
   /// to a page-size heuristic).
   final bool? hasMore;
 
+  /// Whether this result was served from the repository's in-memory author
+  /// cache. Consumers can use this to render immediately, then refresh in the
+  /// background without guessing from timestamps.
+  final bool isFromCache;
+
   /// Returns a copy with the given fields replaced.
   AuthorFeedResult copyWith({
     String? authorPubkey,
@@ -57,6 +63,7 @@ class AuthorFeedResult extends Equatable {
     Object? nextOffset = _unset,
     Object? totalCount = _unset,
     Object? hasMore = _unset,
+    bool? isFromCache,
   }) {
     return AuthorFeedResult(
       authorPubkey: authorPubkey ?? this.authorPubkey,
@@ -68,6 +75,7 @@ class AuthorFeedResult extends Equatable {
           ? this.totalCount
           : totalCount as int?,
       hasMore: identical(hasMore, _unset) ? this.hasMore : hasMore as bool?,
+      isFromCache: isFromCache ?? this.isFromCache,
     );
   }
 
@@ -78,5 +86,6 @@ class AuthorFeedResult extends Equatable {
     nextOffset,
     totalCount,
     hasMore,
+    isFromCache,
   ];
 }

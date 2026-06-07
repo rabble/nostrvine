@@ -22,6 +22,7 @@ void main() {
       expect(result.nextOffset, isNull);
       expect(result.totalCount, isNull);
       expect(result.hasMore, isNull);
+      expect(result.isFromCache, isFalse);
     });
 
     test('value equality is based on all fields', () {
@@ -31,6 +32,7 @@ void main() {
         nextOffset: 50,
         totalCount: 120,
         hasMore: true,
+        isFromCache: true,
       );
       final b = AuthorFeedResult(
         authorPubkey: 'pub',
@@ -38,6 +40,7 @@ void main() {
         nextOffset: 50,
         totalCount: 120,
         hasMore: true,
+        isFromCache: true,
       );
 
       expect(a, equals(b));
@@ -50,6 +53,14 @@ void main() {
         base,
         isNot(equals(const AuthorFeedResult(authorPubkey: 'other'))),
       );
+      expect(
+        base,
+        isNot(
+          equals(
+            const AuthorFeedResult(authorPubkey: 'pub', isFromCache: true),
+          ),
+        ),
+      );
     });
 
     test('copyWith replaces only the provided fields', () {
@@ -58,14 +69,20 @@ void main() {
         nextOffset: 50,
         totalCount: 120,
         hasMore: true,
+        isFromCache: true,
       );
 
-      final updated = original.copyWith(nextOffset: 100, hasMore: false);
+      final updated = original.copyWith(
+        nextOffset: 100,
+        hasMore: false,
+        isFromCache: false,
+      );
 
       expect(updated.authorPubkey, equals('pub'));
       expect(updated.nextOffset, equals(100));
       expect(updated.totalCount, equals(120));
       expect(updated.hasMore, isFalse);
+      expect(updated.isFromCache, isFalse);
     });
 
     test('copyWith keeps fields that are not passed', () {
@@ -81,6 +98,7 @@ void main() {
       expect(updated.nextOffset, equals(50)); // kept
       expect(updated.hasMore, isTrue); // kept
       expect(updated.totalCount, equals(99));
+      expect(updated.isFromCache, isFalse);
     });
 
     test('copyWith can clear nullable envelope fields', () {

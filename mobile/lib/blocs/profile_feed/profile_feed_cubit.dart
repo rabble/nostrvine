@@ -48,10 +48,6 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
     on<ProfileFeedStarted>(_onStarted, transformer: sequential());
     on<ProfileFeedLoadMoreRequested>(_onLoadMore, transformer: droppable());
     on<ProfileFeedRefreshRequested>(_onRefresh, transformer: restartable());
-    on<ProfileFeedRefreshIfStaleRequested>(
-      _onRefreshIfStale,
-      transformer: droppable(),
-    );
     on<ProfileFeedFiltersChanged>(_onFiltersChanged, transformer: sequential());
     on<ProfileFeedRelaySnapshotChanged>(
       _onRelaySnapshot,
@@ -71,10 +67,6 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
     _registerRealtimeListeners();
     add(const ProfileFeedStarted());
   }
-
-  /// Staleness threshold — data older than this triggers a background refresh.
-  @visibleForTesting
-  static Duration staleTtl = const Duration(seconds: 30);
 
   /// Hard ceiling on how long [ProfileFeedState.isInitialLoad] stays true if no
   /// source settles, so the loading spinner can't strand (#4164).
@@ -170,12 +162,16 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
       ),
     );
 
-    await _loadFromRest(
+    final result = await _loadFromRest(
       emit,
       relaySeed: relaySeed,
       mergeWithCurrent: false,
       skipCache: false,
     );
+
+    if (!isClosed && result?.isFromCache == true) {
+      await _doRefresh(emit);
+    }
   }
 
   Future<void> _onRefresh(
@@ -206,16 +202,7 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
     );
   }
 
-  void _onRefreshIfStale(
-    ProfileFeedRefreshIfStaleRequested event,
-    Emitter<ProfileFeedState> emit,
-  ) {
-    if (state.status == ProfileFeedStatus.initial) return;
-    if (!state.isStale) return;
-    add(const ProfileFeedRefreshRequested());
-  }
-
-  Future<void> _loadFromRest(
+  Future<AuthorFeedResult?> _loadFromRest(
     Emitter<ProfileFeedState> emit, {
     required List<VideoEvent> relaySeed,
     required bool mergeWithCurrent,
@@ -227,7 +214,7 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
         relaySeed: relaySeed,
         skipCache: skipCache,
       );
-      if (isClosed) return;
+      if (isClosed) return null;
       _applyRestPage(
         emit,
         pageVideos: result.videos,
@@ -237,8 +224,9 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
         mergeWithCurrent: mergeWithCurrent,
       );
       _enrichInBackground();
+      return result;
     } on Object catch (error, stackTrace) {
-      if (isClosed) return;
+      if (isClosed) return null;
       addError(error, stackTrace);
       _completeInitialLoad();
       emit(
@@ -250,6 +238,7 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
           isFetchingTotalCount: false,
         ),
       );
+      return null;
     }
   }
 
@@ -584,9 +573,7 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
     required List<VideoEvent> incoming,
   }) {
     if (sourceKeys.isEmpty) {
-      return _withoutTombstones(
-        mergeProfileFeedVideoLists(current, incoming),
-      );
+      return _withoutTombstones(mergeProfileFeedVideoLists(current, incoming));
     }
     final currentByKey = {
       for (final video in current)
