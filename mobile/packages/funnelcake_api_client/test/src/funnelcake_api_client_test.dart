@@ -792,6 +792,31 @@ void main() {
         expect(result.hasMore, isFalse);
       });
 
+      test(
+        'opaque next_cursor degrades to null while preserving has_more '
+        '(#3545 / funnelcake#320 contract)',
+        () async {
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer(
+            (_) async => http.Response(
+              '{"videos": [], "next_cursor": "t:1780818341", "has_more": true}',
+              200,
+            ),
+          );
+
+          final result = await client.getHomeFeed(pubkey: testPubkey);
+
+          // Client-level contract: the feed cursor is a bare numeric timestamp
+          // today. If funnelcake#320 ever ships an opaque cursor, int.tryParse
+          // yields null here (not a throw) and has_more still passes through
+          // from the body. (The repository then keeps paging via a
+          // client-computed `before` timestamp — see VideosRepository.)
+          expect(result.nextCursor, isNull);
+          expect(result.hasMore, isTrue);
+        },
+      );
+
       test('filters out videos with empty id or videoUrl', () async {
         const responseWithInvalid =
             '''

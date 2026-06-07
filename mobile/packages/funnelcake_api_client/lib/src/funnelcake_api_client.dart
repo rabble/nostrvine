@@ -150,9 +150,11 @@ class FunnelcakeApiClient {
   }
 
   /// Unwraps a funnelcake list response that may be either a raw JSON array
-  /// (legacy / `legacy-array-response` flag on) or the post-#238 envelope
-  /// shape `{"data": [...], "pagination": {"has_more": bool, "next_cursor":
-  /// string|null, "next_offset": int|null}}`.
+  /// (the permanent legacy `/api/...` paths, which serve pre-#238 shapes) or
+  /// the v2 envelope `{"data": [...], "pagination": {"has_more": bool,
+  /// "next_cursor": string|null, "next_offset": int|null}}` served by the
+  /// `/api/v2/...` paths. The v1/v2 split is unconditional — the temporary
+  /// `legacy-array-response` build flag was removed in divine-funnelcake#301.
   ///
   /// Returns a record with:
   /// - `items`: the list of raw JSON objects.
@@ -161,7 +163,7 @@ class FunnelcakeApiClient {
   /// - `nextCursor`: opaque cursor string from the envelope, or `null` when
   ///   the raw-array shape is used (caller computes its own cursor).
   ///
-  /// Mirrors the `unwrapListResponse<T>` helper in divine-web#277.
+  /// Mirrors divine-web's envelope-unwrap logic (introduced in divine-web#277).
   static ({List<dynamic> items, bool? hasMore, String? nextCursor})
   _unwrapListResponse(Object? decoded) {
     if (decoded is List) {
@@ -752,8 +754,10 @@ class FunnelcakeApiClient {
       if (response.statusCode == 200) {
         final raw = jsonDecode(response.body) as Map<String, dynamic>;
 
-        // Tolerate both the legacy shape `{"videos": [...]}` and the
-        // post-funnelcake#238 envelope `{"data": [...], "pagination": {...}}`.
+        // The feed endpoint serves its own `{"videos": [...], "next_cursor",
+        // "has_more"}` shape; also tolerate the `{"data": [...],
+        // "pagination": {...}}` envelope defensively. There is no v2 feed
+        // route.
         final videosData =
             (raw['videos'] as List<dynamic>?) ??
             (raw['data'] as List<dynamic>?) ??
@@ -764,6 +768,11 @@ class FunnelcakeApiClient {
             .toList();
 
         // Pagination metadata may be at top level or under `pagination`.
+        // `next_cursor` is the last video's `created_at` Unix timestamp
+        // (numeric), echoed back via the numeric `before` param. A
+        // non-numeric/opaque cursor (see divine-funnelcake#320) parses to
+        // null here; VideosRepository then continues paging via a
+        // client-computed `before` timestamp. See divine-mobile#3545.
         final pagination = raw['pagination'] as Map<String, dynamic>?;
         final rawCursor = raw['next_cursor'] ?? pagination?['next_cursor'];
         final nextCursor = switch (rawCursor) {

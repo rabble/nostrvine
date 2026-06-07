@@ -12,13 +12,20 @@ class PaginatedPubkeys {
     this.hasMore = false,
   });
 
-  /// Creates a [PaginatedPubkeys] from JSON response.
+  /// Creates a [PaginatedPubkeys] from a JSON response.
   ///
-  /// Tolerates both the legacy shape and the post-funnelcake#238 envelope:
-  /// - Legacy: `{"following": [...], "total": int, "has_more": bool}`
-  ///   (key varies: `following`, `followers`, or `pubkeys`)
-  /// - Envelope: `{"data": [...], "pagination": {"has_more": bool,
-  ///   "next_cursor": string}}`
+  /// Tolerates both response shapes funnelcake can emit. The v1/v2 split is
+  /// permanent and unconditional — there is no longer a `legacy-array-response`
+  /// build flag (it was removed in divine-funnelcake#301):
+  /// - v1 (the path mobile calls, e.g. `/api/users/{pubkey}/followers`):
+  ///   `{"followers": [...], "total": int, "offset": int, "limit": int}`
+  ///   (the list key varies: `followers`, `following`, or `pubkeys`). Here
+  ///   `total` is the ABSOLUTE count and may exceed [pubkeys] length.
+  /// - v2 envelope (`/api/v2/users/{pubkey}/...`, not currently called by
+  ///   mobile): `{"data": [...], "pagination": {"has_more": bool,
+  ///   "next_cursor": string}}`. The v2 `pagination` object has NO `total`
+  ///   field, so [total] falls back to the current page length under this
+  ///   shape. See divine-mobile#3545.
   factory PaginatedPubkeys.fromJson(Map<String, dynamic> json) {
     final pagination = json['pagination'] as Map<String, dynamic>?;
 
@@ -46,7 +53,12 @@ class PaginatedPubkeys {
   /// The list of public keys.
   final List<String> pubkeys;
 
-  /// Total number of results available (may exceed [pubkeys] length).
+  /// Total number of results available.
+  ///
+  /// Absolute count on the v1 endpoints mobile calls (may exceed [pubkeys]
+  /// length). Falls back to the current page length only under the v2
+  /// `{data, pagination}` envelope, which omits an absolute total. See
+  /// divine-mobile#3545.
   final int total;
 
   /// Whether more results are available for pagination.
