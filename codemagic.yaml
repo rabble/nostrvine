@@ -68,15 +68,21 @@ definitions:
           updated = contents
             .gsub('.iOS("13.0")', '.iOS("16.0")')
             .gsub('.iOS(.v13)', '.iOS("16.0")')
+          has_ios_16_target = updated.match?(/\.iOS\(("16\.0"|\.v16)\)/)
 
-          unless updated.include?('.iOS("16.0")')
+          unless has_ios_16_target
+            if updated.match?(/^\s*platforms:\s*\[/)
+              abort("expected #{path} platforms block to declare iOS 16.0")
+            end
+
             updated = updated.sub(
               /(let package = Package\(\n\s*name: "[^"]+",\n)/,
               "\\1    platforms: [\n        .iOS(\"16.0\")\n    ],\n",
             )
+            has_ios_16_target = updated.match?(/\.iOS\(("16\.0"|\.v16)\)/)
           end
 
-          unless updated.include?('.iOS("16.0")')
+          unless has_ios_16_target
             abort("expected #{path} to declare iOS 16.0")
           end
 
