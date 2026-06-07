@@ -488,6 +488,10 @@ void main() {
         // spoofed key that was embedded in the rumor.
         expect(results[0].rumor!['pubkey'], equals(senderPub));
         expect(results[0].rumor!['pubkey'], isNot(equals(fakePub)));
+        // C4: the rumor id must be RECOMPUTED to match the authoritative
+        // pubkey — Event.fromJson would otherwise carry over the spoofed id,
+        // leaving an event whose id no longer hashes its content.
+        expect(Event.fromJson(results[0].rumor!).isValid, isTrue);
       },
     );
 

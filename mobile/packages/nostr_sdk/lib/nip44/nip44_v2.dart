@@ -86,18 +86,25 @@ class NIP44V2 {
   }
 
   static String unpad(Uint8List padded) {
+    // Validate the declared length against the buffer BEFORE slicing.
+    // A forged payload can declare an unpaddedLen larger than the buffer;
+    // slicing first would throw an uncontrolled RangeError instead of a
+    // clean rejection. NIP-44 requires invalid payloads to be rejected.
+    if (padded.length < 2) {
+      throw Exception('Invalid padding');
+    }
     var unpaddedLen = ByteData.sublistView(
       padded,
       0,
       2,
     ).getUint16(0, Endian.big);
-    var unpadded = padded.sublist(2, 2 + unpaddedLen);
     if (unpaddedLen < 1 ||
         unpaddedLen > 65535 ||
-        unpadded.length != unpaddedLen ||
+        2 + unpaddedLen > padded.length ||
         padded.length != 2 + calcPaddedLen(unpaddedLen)) {
       throw Exception('Invalid padding');
     }
+    var unpadded = padded.sublist(2, 2 + unpaddedLen);
     return utf8.decode(unpadded);
   }
 
@@ -186,13 +193,19 @@ class NIP44V2 {
     return Uint8List.fromList(result);
   }
 
-  static bool listEquals<T>(List<T>? list1, List<T>? list2) {
-    if (list1 == null || list2 == null) return list1 == list2;
-    if (list1.length != list2.length) return false;
-    for (int i = 0; i < list1.length; i++) {
-      if (list1[i] != list2[i]) return false;
+  /// Constant-time byte comparison, required by NIP-44 decrypt step 5
+  /// ("Use constant-time comparison algorithm"). Unlike [listEquals], this
+  /// does not early-return on the first mismatching byte, so it does not
+  /// leak — via timing — how many leading bytes of a forged MAC matched.
+  /// Both inputs are fixed-length (the MAC is always 32 bytes), so the
+  /// length check is not secret-dependent.
+  static bool constantTimeBytesEqual(List<int> a, List<int> b) {
+    if (a.length != b.length) return false;
+    var diff = 0;
+    for (var i = 0; i < a.length; i++) {
+      diff |= a[i] ^ b[i];
     }
-    return true;
+    return diff == 0;
   }
 
   static Future<String> encrypt(
@@ -223,7 +236,7 @@ class NIP44V2 {
       payloadData['ciphertext']!,
       payloadData['nonce']!,
     );
-    if (!listEquals(calculatedMac, payloadData['mac']!)) {
+    if (!constantTimeBytesEqual(calculatedMac, payloadData['mac']!)) {
       throw Exception('Invalid MAC');
     }
     var padded = await chacha20Decrypt(
