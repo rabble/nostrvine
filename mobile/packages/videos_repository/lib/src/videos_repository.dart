@@ -10,9 +10,11 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:unified_logger/unified_logger.dart';
+import 'package:videos_repository/src/author_feed_result.dart';
 import 'package:videos_repository/src/home_feed_result.dart';
 import 'package:videos_repository/src/in_memory_feed_cache.dart';
 import 'package:videos_repository/src/popular_videos_page.dart';
+import 'package:videos_repository/src/profile_video_merge.dart';
 import 'package:videos_repository/src/video_content_filter.dart';
 import 'package:videos_repository/src/video_event_filter.dart';
 import 'package:videos_repository/src/video_local_storage.dart';
@@ -25,6 +27,19 @@ const int _videoKind = EventKind.videoVertical;
 
 /// Default number of videos to fetch per page.
 const int _defaultLimit = 25;
+
+/// Author-feed REST page size used for the `hasMore` fallback heuristic when
+/// the v2 envelope omits the flag. Mirrors `AppConstants.paginationBatchSize`
+/// (50) in the app layer — kept here as a package-local const so the
+/// Flutter-free package owns the author-feed composition (#3384 parity).
+const int _authorFeedPaginationBatchSize = 50;
+
+/// Author-feed "has more" threshold for the relay-only page (REST
+/// unavailable). Mirrors `AppConstants.hasMoreContentThreshold` (10).
+const int _authorFeedHasMoreThreshold = 10;
+
+/// In-memory cache key prefix for a single author's feed.
+const String _authorFeedCacheKeyPrefix = 'author:';
 
 /// Timeout for relay search queries.
 ///
@@ -1907,6 +1922,201 @@ class VideosRepository {
       before: before,
     );
     return _transformVideoStats(result.videos);
+  }
+
+  /// Composes a single author's video feed page (profile feed).
+  ///
+  /// Strategy (mirrors [getNewVideos], adapted to offset pagination):
+  /// 1. On the initial page (`offset == null`) returns the in-memory cached
+  ///    [AuthorFeedResult] when present (instant reseed; #4164).
+  /// 2. REST-first: fetches the Funnelcake author page at [offset], reading the
+  ///    v2 envelope (`totalCount`/`nextOffset`/`hasMore`); maps via
+  ///    `toVideoEvents()` (drops NIP-40 expired only — **no** block/content
+  ///    filtering, so the cubit can re-filter on every emit, #4782); hydrates
+  ///    engagement counts (bulk-stats then per-video views, existing-wins);
+  ///    drops backend-leaked p-tagged collaborator events
+  ///    (`v.pubkey != authorPubkey`); merges with [relaySeed] under the #3384
+  ///    cross-source max policy; caches the initial page.
+  /// 3. When Funnelcake is unavailable (or throws [FunnelcakeException]),
+  ///    returns the [relaySeed] alone — the relay/realtime source is owned by
+  ///    the caller (the profile cubit, over `VideoEventService`); this package
+  ///    stays Flutter-free and does not query relays here.
+  ///
+  /// [relaySeed] is the caller's current relay snapshot for the author, merged
+  /// as the cross-source "primary" set. Pass `const []` for load-more pages
+  /// (the caller accumulates new pages into its existing list via
+  /// [mergeProfileFeedVideoLists]).
+  ///
+  /// Returned videos are **unfiltered** (see [AuthorFeedResult]). Throws
+  /// non-[FunnelcakeException] errors to the caller.
+  Future<AuthorFeedResult> getAuthorFeed({
+    required String authorPubkey,
+    int? offset,
+    List<VideoEvent> relaySeed = const [],
+    bool skipCache = false,
+  }) async {
+    final cacheKey = '$_authorFeedCacheKeyPrefix$authorPubkey';
+    final isInitialPage = offset == null;
+
+    if (!skipCache && isInitialPage) {
+      final cached = _inMemoryFeedCache?.getAuthorFeed(cacheKey);
+      if (cached != null) return cached;
+    }
+
+    if (_funnelcakeApiClient != null && _funnelcakeApiClient.isAvailable) {
+      try {
+        final response = await _funnelcakeApiClient.getVideosByAuthor(
+          pubkey: authorPubkey,
+          offset: offset,
+        );
+        final restVideos = response.videos.toVideoEvents();
+        final hydrated = await _hydrateAuthorRestVideos(restVideos);
+        // Guard: the backend author endpoint can leak videos where the pubkey
+        // is a p-tagged collaborator rather than the event author.
+        final authored = hydrated
+            .where((video) => !video.isRepost && video.pubkey == authorPubkey)
+            .toList();
+        final merged = mergeProfileFeedVideoLists(relaySeed, authored);
+
+        final result = AuthorFeedResult(
+          authorPubkey: authorPubkey,
+          videos: merged,
+          totalCount: response.totalCount,
+          nextOffset: response.nextOffset ?? ((offset ?? 0) + hydrated.length),
+          hasMore:
+              response.hasMore ??
+              (hydrated.length >= _authorFeedPaginationBatchSize),
+        );
+
+        if (isInitialPage) {
+          _inMemoryFeedCache?.setAuthorFeed(cacheKey, result);
+        }
+        return result;
+      } on FunnelcakeException {
+        // Fall through to the relay seed.
+      }
+    }
+
+    final seedOnly = mergeProfileFeedVideoLists(relaySeed, const []);
+    return AuthorFeedResult(
+      authorPubkey: authorPubkey,
+      videos: seedOnly,
+      hasMore: seedOnly.length >= _authorFeedHasMoreThreshold,
+    );
+  }
+
+  /// Hydrates author REST videos with engagement counts: bulk-stats first
+  /// (loops/views/reactions/comments/reposts), then a per-video views-endpoint
+  /// pass for rows still missing a view count. Uses **existing-wins** (`??`)
+  /// semantics — distinct from [_hydrateVideosWithBulkStats]'s stale-zero
+  /// heuristic — to preserve profile-feed count parity (#3384).
+  Future<List<VideoEvent>> _hydrateAuthorRestVideos(
+    List<VideoEvent> videos,
+  ) async {
+    if (videos.isEmpty) return videos;
+    final client = _funnelcakeApiClient;
+    if (client == null) return videos;
+    final withBulkStats = await _hydrateAuthorVideosWithBulkStats(
+      videos,
+      client,
+    );
+    return _hydrateAuthorVideosWithViewsEndpoint(withBulkStats, client);
+  }
+
+  Future<List<VideoEvent>> _hydrateAuthorVideosWithBulkStats(
+    List<VideoEvent> videos,
+    FunnelcakeApiClient client,
+  ) async {
+    final idList = videos
+        .map((video) => video.id)
+        .where((id) => id.isNotEmpty)
+        .toList();
+    if (idList.isEmpty) return videos;
+
+    final statsById = <String, BulkVideoStatsEntry>{};
+    for (var i = 0; i < idList.length; i += 100) {
+      final end = i + 100 > idList.length ? idList.length : i + 100;
+      final chunk = idList.sublist(i, end);
+      final response = await client.getBulkVideoStats(chunk);
+      statsById.addAll(response.stats);
+    }
+
+    if (statsById.isEmpty) return videos;
+
+    return videos.map((video) {
+      final stats = statsById[video.id];
+      if (stats == null) return video;
+
+      final mergedTags = <String, String>{...video.rawTags};
+      if (stats.loops != null) {
+        mergedTags['loops'] = stats.loops!.toString();
+      }
+      if (stats.views != null) {
+        mergedTags['views'] = stats.views!.toString();
+      }
+
+      return video.copyWith(
+        rawTags: mergedTags,
+        originalLoops: stats.loops ?? video.originalLoops,
+        originalLikes: video.originalLikes ?? stats.reactions,
+        originalComments: video.originalComments ?? stats.comments,
+        originalReposts: video.originalReposts ?? stats.reposts,
+        nostrLikeCount: video.nostrLikeCount ?? 0,
+      );
+    }).toList();
+  }
+
+  Future<List<VideoEvent>> _hydrateAuthorVideosWithViewsEndpoint(
+    List<VideoEvent> videos,
+    FunnelcakeApiClient client,
+  ) async {
+    final missingViews = videos
+        .where(
+          (video) =>
+              !_authorVideoHasViewLikeCount(video) && video.id.isNotEmpty,
+        )
+        .toList();
+    if (missingViews.isEmpty) return videos;
+
+    final fetchedViews = <String, int>{};
+    for (var i = 0; i < missingViews.length; i += 12) {
+      final end = i + 12 > missingViews.length ? missingViews.length : i + 12;
+      final chunk = missingViews.sublist(i, end);
+      final counts = await Future.wait(
+        chunk.map((video) => client.getVideoViews(video.id)),
+      );
+      for (var j = 0; j < chunk.length; j++) {
+        fetchedViews[chunk[j].id] = counts[j];
+      }
+    }
+
+    if (fetchedViews.isEmpty) return videos;
+
+    return videos.map((video) {
+      final count = fetchedViews[video.id];
+      if (count == null) return video;
+      return video.copyWith(
+        rawTags: <String, String>{...video.rawTags, 'views': '$count'},
+      );
+    }).toList();
+  }
+
+  bool _authorVideoHasViewLikeCount(VideoEvent video) {
+    final viewTags = [
+      video.rawTags['views'],
+      video.rawTags['view_count'],
+      video.rawTags['total_views'],
+      video.rawTags['unique_views'],
+      video.rawTags['unique_viewers'],
+    ];
+    for (final value in viewTags) {
+      if (value == null) continue;
+      final normalized = value.replaceAll(',', '').trim();
+      if (normalized.isEmpty) continue;
+      if (int.tryParse(normalized) != null) return true;
+      if (double.tryParse(normalized) != null) return true;
+    }
+    return false;
   }
 
   /// Fetches a single video by event ID and enriches it with REST-side stats

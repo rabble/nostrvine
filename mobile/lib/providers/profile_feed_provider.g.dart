@@ -23,7 +23,7 @@ part of 'profile_feed_provider.dart';
 /// conflicting static Nostr tag values: relay copies may carry `loops` / zero
 /// or stale figures while the API reflects current aggregates. When only Nostr
 /// data exists (no REST row, no cache backfill), relay values remain the sole
-/// source. [_mergeVideo], [mergeTwoProfileVideos], [mergeProfileEngagementCount],
+/// source. [mergeTwoProfileVideos], [mergeProfileEngagementCount],
 /// [mergeRawTagsForVideoMerge], and the shared `videos_repository` helpers
 /// [mergeVideoRawTagsPrimaryWins] / [mergeNullableEngagementMax] (also used from
 /// Nostr enrichment) must stay aligned with this policy whenever merge logic
@@ -53,7 +53,7 @@ const profileFeedProvider = ProfileFeedFamily._();
 /// conflicting static Nostr tag values: relay copies may carry `loops` / zero
 /// or stale figures while the API reflects current aggregates. When only Nostr
 /// data exists (no REST row, no cache backfill), relay values remain the sole
-/// source. [_mergeVideo], [mergeTwoProfileVideos], [mergeProfileEngagementCount],
+/// source. [mergeTwoProfileVideos], [mergeProfileEngagementCount],
 /// [mergeRawTagsForVideoMerge], and the shared `videos_repository` helpers
 /// [mergeVideoRawTagsPrimaryWins] / [mergeNullableEngagementMax] (also used from
 /// Nostr enrichment) must stay aligned with this policy whenever merge logic
@@ -81,7 +81,7 @@ final class ProfileFeedProvider
   /// conflicting static Nostr tag values: relay copies may carry `loops` / zero
   /// or stale figures while the API reflects current aggregates. When only Nostr
   /// data exists (no REST row, no cache backfill), relay values remain the sole
-  /// source. [_mergeVideo], [mergeTwoProfileVideos], [mergeProfileEngagementCount],
+  /// source. [mergeTwoProfileVideos], [mergeProfileEngagementCount],
   /// [mergeRawTagsForVideoMerge], and the shared `videos_repository` helpers
   /// [mergeVideoRawTagsPrimaryWins] / [mergeNullableEngagementMax] (also used from
   /// Nostr enrichment) must stay aligned with this policy whenever merge logic
@@ -128,7 +128,7 @@ final class ProfileFeedProvider
   }
 }
 
-String _$profileFeedHash() => r'db75b3519a1256f48efa9961b050fda8c609c12c';
+String _$profileFeedHash() => r'02556c0ebe7328d513371306dc38bb9c7a3b87bb';
 
 /// Profile feed provider - shows videos for a specific user with pagination
 ///
@@ -145,7 +145,7 @@ String _$profileFeedHash() => r'db75b3519a1256f48efa9961b050fda8c609c12c';
 /// conflicting static Nostr tag values: relay copies may carry `loops` / zero
 /// or stale figures while the API reflects current aggregates. When only Nostr
 /// data exists (no REST row, no cache backfill), relay values remain the sole
-/// source. [_mergeVideo], [mergeTwoProfileVideos], [mergeProfileEngagementCount],
+/// source. [mergeTwoProfileVideos], [mergeProfileEngagementCount],
 /// [mergeRawTagsForVideoMerge], and the shared `videos_repository` helpers
 /// [mergeVideoRawTagsPrimaryWins] / [mergeNullableEngagementMax] (also used from
 /// Nostr enrichment) must stay aligned with this policy whenever merge logic
@@ -190,7 +190,7 @@ final class ProfileFeedFamily extends $Family
   /// conflicting static Nostr tag values: relay copies may carry `loops` / zero
   /// or stale figures while the API reflects current aggregates. When only Nostr
   /// data exists (no REST row, no cache backfill), relay values remain the sole
-  /// source. [_mergeVideo], [mergeTwoProfileVideos], [mergeProfileEngagementCount],
+  /// source. [mergeTwoProfileVideos], [mergeProfileEngagementCount],
   /// [mergeRawTagsForVideoMerge], and the shared `videos_repository` helpers
   /// [mergeVideoRawTagsPrimaryWins] / [mergeNullableEngagementMax] (also used from
   /// Nostr enrichment) must stay aligned with this policy whenever merge logic
@@ -224,7 +224,7 @@ final class ProfileFeedFamily extends $Family
 /// conflicting static Nostr tag values: relay copies may carry `loops` / zero
 /// or stale figures while the API reflects current aggregates. When only Nostr
 /// data exists (no REST row, no cache backfill), relay values remain the sole
-/// source. [_mergeVideo], [mergeTwoProfileVideos], [mergeProfileEngagementCount],
+/// source. [mergeTwoProfileVideos], [mergeProfileEngagementCount],
 /// [mergeRawTagsForVideoMerge], and the shared `videos_repository` helpers
 /// [mergeVideoRawTagsPrimaryWins] / [mergeNullableEngagementMax] (also used from
 /// Nostr enrichment) must stay aligned with this policy whenever merge logic

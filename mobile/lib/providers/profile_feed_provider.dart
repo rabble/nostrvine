@@ -38,7 +38,7 @@ part 'profile_feed_provider.g.dart';
 /// conflicting static Nostr tag values: relay copies may carry `loops` / zero
 /// or stale figures while the API reflects current aggregates. When only Nostr
 /// data exists (no REST row, no cache backfill), relay values remain the sole
-/// source. [_mergeVideo], [mergeTwoProfileVideos], [mergeProfileEngagementCount],
+/// source. [mergeTwoProfileVideos], [mergeProfileEngagementCount],
 /// [mergeRawTagsForVideoMerge], and the shared `videos_repository` helpers
 /// [mergeVideoRawTagsPrimaryWins] / [mergeNullableEngagementMax] (also used from
 /// Nostr enrichment) must stay aligned with this policy whenever merge logic
@@ -1207,32 +1207,11 @@ class ProfileFeed extends _$ProfileFeed {
     List<VideoEvent> current,
     List<VideoEvent> incoming,
   ) {
-    final byKey = <String, VideoEvent>{};
-
-    for (final video in current) {
-      byKey[_canonicalVideoKey(video)] = video;
-    }
-
-    for (final video in incoming) {
-      final key = _canonicalVideoKey(video);
-      final existing = byKey[key];
-      byKey[key] = existing == null ? video : _mergeVideo(existing, video);
-    }
-
-    final merged = byKey.values.toList()..sort(_compareVideos);
-    // Drop any session-tombstoned ids (NIP-09 client-side deletes) the
-    // merge carried forward. Does not cover server-side deletes that
-    // happened after the initial REST page load -- those clear on next
-    // full refresh.
-    return _withoutTombstones(merged);
-  }
-
-  /// Merges two [VideoEvent]s for the same addressable video.
-  ///
-  /// Delegates to [mergeTwoProfileVideos] (see class-level engagement policy,
-  /// #3384).
-  VideoEvent _mergeVideo(VideoEvent existing, VideoEvent incoming) {
-    return mergeTwoProfileVideos(existing, incoming);
+    // Dedup + #3384 cross-source merge + newest-first sort live in
+    // videos_repository (the canonical merge-policy owner). Tombstone
+    // filtering stays here because session NIP-09 deletes are an app-layer
+    // concern (relay snapshot) the Flutter-free package does not own.
+    return _withoutTombstones(mergeProfileFeedVideoLists(current, incoming));
   }
 
   VideoEvent _mergeEnrichmentIntoCurrent(
@@ -1299,113 +1278,21 @@ class ProfileFeed extends _$ProfileFeed {
     );
   }
 
-  /// Same logic as [_mergeVideo], exposed for tests (#3384).
+  /// Cross-source merge policy (#3384), exposed for tests.
+  ///
+  /// Delegates to [mergeProfileFeedVideos] — the canonical implementation in
+  /// `videos_repository`. Kept as a thin static so the existing profile-feed
+  /// merge tests have a stable entry point during the migration.
   @visibleForTesting
   static VideoEvent mergeTwoProfileVideos(
     VideoEvent existing,
     VideoEvent incoming,
   ) {
-    final incomingIsNewer =
-        incoming.createdAt > existing.createdAt ||
-        (incoming.createdAt == existing.createdAt &&
-            incoming.id.compareTo(existing.id) < 0);
-    final primary = incomingIsNewer ? incoming : existing;
-    final secondary = incomingIsNewer ? existing : incoming;
-
-    final primaryHasPublishedAt =
-        primary.publishedAt != null && primary.publishedAt!.isNotEmpty;
-    final secondaryHasPublishedAt =
-        secondary.publishedAt != null && secondary.publishedAt!.isNotEmpty;
-    final preserveOriginalTimestamp =
-        !primaryHasPublishedAt && !secondaryHasPublishedAt;
-
-    return primary.copyWith(
-      createdAt: preserveOriginalTimestamp
-          ? math.min(primary.createdAt, secondary.createdAt)
-          : primary.createdAt,
-      timestamp: preserveOriginalTimestamp
-          ? (primary.timestamp.isBefore(secondary.timestamp)
-                ? primary.timestamp
-                : secondary.timestamp)
-          : primary.timestamp,
-      publishedAt: primaryHasPublishedAt
-          ? primary.publishedAt
-          : secondary.publishedAt,
-      rawTags: mergeRawTagsForVideoMerge(primary.rawTags, secondary.rawTags),
-      contentWarningLabels: primary.contentWarningLabels.isNotEmpty
-          ? primary.contentWarningLabels
-          : secondary.contentWarningLabels,
-      title: primary.title ?? secondary.title,
-      videoUrl: primary.videoUrl ?? secondary.videoUrl,
-      thumbnailUrl: primary.thumbnailUrl ?? secondary.thumbnailUrl,
-      duration: primary.duration ?? secondary.duration,
-      dimensions: primary.dimensions ?? secondary.dimensions,
-      mimeType: primary.mimeType ?? secondary.mimeType,
-      sha256: primary.sha256 ?? secondary.sha256,
-      fileSize: primary.fileSize ?? secondary.fileSize,
-      hashtags: primary.hashtags.isNotEmpty
-          ? primary.hashtags
-          : secondary.hashtags,
-      vineId: primary.vineId ?? secondary.vineId,
-      group: primary.group ?? secondary.group,
-      altText: primary.altText ?? secondary.altText,
-      blurhash: primary.blurhash ?? secondary.blurhash,
-      originalLoops: mergeProfileEngagementCount(
-        primary.originalLoops,
-        secondary.originalLoops,
-      ),
-      originalLikes: mergeProfileEngagementCount(
-        primary.originalLikes,
-        secondary.originalLikes,
-      ),
-      originalComments: mergeProfileEngagementCount(
-        primary.originalComments,
-        secondary.originalComments,
-      ),
-      originalReposts: mergeProfileEngagementCount(
-        primary.originalReposts,
-        secondary.originalReposts,
-      ),
-      audioEventId: primary.audioEventId ?? secondary.audioEventId,
-      audioEventRelay: primary.audioEventRelay ?? secondary.audioEventRelay,
-      collaboratorPubkeys: primary.collaboratorPubkeys.isNotEmpty
-          ? primary.collaboratorPubkeys
-          : secondary.collaboratorPubkeys,
-      inspiredByVideo: primary.inspiredByVideo ?? secondary.inspiredByVideo,
-      textTrackRef: primary.textTrackRef ?? secondary.textTrackRef,
-      textTrackContent: primary.textTrackContent ?? secondary.textTrackContent,
-      nostrEventTags: primary.nostrEventTags.isNotEmpty
-          ? primary.nostrEventTags
-          : secondary.nostrEventTags,
-      authorName: primary.authorName ?? secondary.authorName,
-      authorAvatar: primary.authorAvatar ?? secondary.authorAvatar,
-      nostrLikeCount: mergeProfileEngagementCount(
-        primary.nostrLikeCount,
-        secondary.nostrLikeCount,
-      ),
-    );
+    return mergeProfileFeedVideos(existing, incoming);
   }
 
-  String _canonicalVideoKey(VideoEvent video) {
-    return '${video.pubkey}:${video.stableId}'.toLowerCase();
-  }
-
-  int _compareVideos(VideoEvent a, VideoEvent b) {
-    final timestampComparison = _publishedSortKey(
-      b,
-    ).compareTo(_publishedSortKey(a));
-    if (timestampComparison != 0) return timestampComparison;
-    return a.id.compareTo(b.id);
-  }
-
-  int _publishedSortKey(VideoEvent video) {
-    final publishedAt = video.publishedAt;
-    if (publishedAt != null && publishedAt.isNotEmpty) {
-      final parsed = int.tryParse(publishedAt);
-      if (parsed != null) return parsed;
-    }
-    return video.createdAt;
-  }
+  String _canonicalVideoKey(VideoEvent video) =>
+      canonicalProfileFeedVideoKey(video);
 
   bool _sameVideoSequence(List<VideoEvent> left, List<VideoEvent> right) {
     return sameVideoSequenceForMerge(left, right);
