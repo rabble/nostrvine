@@ -62,6 +62,31 @@ void main() {
     });
 
     test(
+      'uses visible reposter count when it exceeds explicit live reposts',
+      () {
+        final video = videoWith(
+          originalReposts: 10,
+          nostrRepostCount: 2,
+          reposterPubkeys: const ['pubkey-a', 'pubkey-b', 'pubkey-c'],
+        );
+
+        expect(liveRepostCountSeed(video), equals(13));
+      },
+    );
+
+    test(
+      'uses visible reposter count when explicit live reposts are absent',
+      () {
+        final video = videoWith(
+          originalReposts: 10,
+          reposterPubkeys: const ['pubkey-a', 'pubkey-b'],
+        );
+
+        expect(liveRepostCountSeed(video), equals(12));
+      },
+    );
+
+    test(
       'uses pasted New Videos payload counts instead of bogus relay totals',
       () {
         final video = videoWith(

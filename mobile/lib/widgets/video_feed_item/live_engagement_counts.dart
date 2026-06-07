@@ -8,6 +8,12 @@ int? _sumNullableCounts(int? archivedCount, int? liveCount) {
   return (archivedCount ?? 0) + (liveCount ?? 0);
 }
 
+int? _maxNullableCounts(int? firstCount, int? secondCount) {
+  if (firstCount == null) return secondCount;
+  if (secondCount == null) return firstCount;
+  return firstCount > secondCount ? firstCount : secondCount;
+}
+
 /// Display reaction count suitable for seeding [VideoInteractionsBloc].
 int? liveLikeCountSeed(VideoEvent video) =>
     _sumNullableCounts(video.originalLikes, video.nostrLikeCount);
@@ -19,13 +25,9 @@ int? liveCommentCountSeed(VideoEvent video) =>
 /// Display repost count suitable for seeding [VideoInteractionsBloc].
 int? liveRepostCountSeed(VideoEvent video) {
   final liveRepostCount = video.nostrRepostCount;
-  final visibleReposterCount = video.reposterPubkeys?.length ?? 0;
-  final liveCount = liveRepostCount == null && visibleReposterCount == 0
+  final visibleReposterCount = video.reposterPubkeys?.isEmpty ?? true
       ? null
-      : liveRepostCount == null
-      ? visibleReposterCount
-      : liveRepostCount > visibleReposterCount
-      ? liveRepostCount
-      : visibleReposterCount;
+      : video.reposterPubkeys!.length;
+  final liveCount = _maxNullableCounts(liveRepostCount, visibleReposterCount);
   return _sumNullableCounts(video.originalReposts, liveCount);
 }

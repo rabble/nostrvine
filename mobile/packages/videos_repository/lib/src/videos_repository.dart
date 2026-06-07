@@ -355,13 +355,9 @@ class VideosRepository {
                   // treat them as missing so Funnelcake can reconcile counts.
                   video.originalLoops == 0 ||
                   video.rawTags['views'] == null ||
-                  (video.originalLikes == null &&
-                      video.nostrLikeCount == null) ||
-                  (video.originalComments == null &&
-                      video.nostrCommentCount == null) ||
-                  (video.originalReposts == null &&
-                      video.nostrRepostCount == null) ||
-                  video.nostrLikeCount == null),
+                  video.nostrLikeCount == null ||
+                  video.nostrCommentCount == null ||
+                  video.nostrRepostCount == null),
         )
         .toList();
     if (videosNeedingStats.isEmpty) return videos;
@@ -387,25 +383,21 @@ class VideosRepository {
 
         return video.copyWith(
           originalLoops: stats.loops ?? video.originalLoops,
-          originalLikes: replaceInteractionCounts
-              ? stats.reactions
-              : video.originalLikes ??
-                    (video.nostrLikeCount == null ? stats.reactions : null),
-          originalComments: replaceInteractionCounts
-              ? stats.comments
-              : video.originalComments ??
-                    (video.nostrCommentCount == null ? stats.comments : null),
-          originalReposts: replaceInteractionCounts
-              ? stats.reposts
-              : video.originalReposts ??
-                    (video.nostrRepostCount == null ? stats.reposts : null),
-          // REST reaction totals already include the Nostr portion for the
-          // fullscreen entry paths that rely on this hydration. Seeding
-          // nostrLikeCount to 0 preserves totalLikes while still telling the
-          // interactions bloc it has an initial count to display.
+          originalLikes: video.originalLikes,
+          originalComments: video.originalComments,
+          originalReposts: video.originalReposts,
+          // Bulk stats are live Nostr engagement counts. Keep archival import
+          // tags in original* and fill only the live fields so display seeds
+          // can add the two sources without double-counting.
           nostrLikeCount: replaceInteractionCounts
-              ? 0
-              : video.nostrLikeCount ?? 0,
+              ? stats.reactions
+              : video.nostrLikeCount ?? stats.reactions,
+          nostrCommentCount: replaceInteractionCounts
+              ? stats.comments
+              : video.nostrCommentCount ?? stats.comments,
+          nostrRepostCount: replaceInteractionCounts
+              ? stats.reposts
+              : video.nostrRepostCount ?? stats.reposts,
           rawTags: video.rawTags['views'] == null && stats.views != null
               ? {...video.rawTags, 'views': stats.views.toString()}
               : video.rawTags,
@@ -754,7 +746,8 @@ class VideosRepository {
     String? viewerCountry,
   }) async {
     final cacheKey =
-        'popular:v2:${variant.name}${_popularPreferenceCacheSuffix(
+        'popular:v2:${variant.name}'
+        '${_popularPreferenceCacheSuffix(
           preferredLanguages: preferredLanguages,
           viewerCountry: viewerCountry,
         )}';
@@ -916,10 +909,11 @@ class VideosRepository {
     String? viewerCountry,
   }) async {
     final cacheKey = variant != null
-        ? 'popular:v2:${variant.name}${_popularPreferenceCacheSuffix(
-            preferredLanguages: preferredLanguages,
-            viewerCountry: viewerCountry,
-          )}'
+        ? 'popular:v2:${variant.name}'
+              '${_popularPreferenceCacheSuffix(
+                preferredLanguages: preferredLanguages,
+                viewerCountry: viewerCountry,
+              )}'
         : period == null
         ? _popularCacheKey
         : 'popular:${period.wireValue}';
