@@ -355,9 +355,12 @@ class VideosRepository {
                   // treat them as missing so Funnelcake can reconcile counts.
                   video.originalLoops == 0 ||
                   video.rawTags['views'] == null ||
-                  video.originalLikes == null ||
-                  video.originalComments == null ||
-                  video.originalReposts == null ||
+                  (video.originalLikes == null &&
+                      video.nostrLikeCount == null) ||
+                  (video.originalComments == null &&
+                      video.nostrCommentCount == null) ||
+                  (video.originalReposts == null &&
+                      video.nostrRepostCount == null) ||
                   video.nostrLikeCount == null),
         )
         .toList();
@@ -386,13 +389,16 @@ class VideosRepository {
           originalLoops: stats.loops ?? video.originalLoops,
           originalLikes: replaceInteractionCounts
               ? stats.reactions
-              : video.originalLikes ?? stats.reactions,
+              : video.originalLikes ??
+                    (video.nostrLikeCount == null ? stats.reactions : null),
           originalComments: replaceInteractionCounts
               ? stats.comments
-              : video.originalComments ?? stats.comments,
+              : video.originalComments ??
+                    (video.nostrCommentCount == null ? stats.comments : null),
           originalReposts: replaceInteractionCounts
               ? stats.reposts
-              : video.originalReposts ?? stats.reposts,
+              : video.originalReposts ??
+                    (video.nostrRepostCount == null ? stats.reposts : null),
           // REST reaction totals already include the Nostr portion for the
           // fullscreen entry paths that rely on this hydration. Seeding
           // nostrLikeCount to 0 preserves totalLikes while still telling the
