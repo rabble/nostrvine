@@ -12,6 +12,11 @@ void main() {
 
   group('MinorAccountReviewUnder13SupportScreen', () {
     testWidgets('shows copy affordances and copies values', (tester) async {
+      // Pin a tall surface so the scrollable guidance content fits and no
+      // button sits at the obscured bottom edge of the default 800x600
+      // viewport (flaky off-screen/ignore-pointer tap in CI).
+      await tester.binding.setSurfaceSize(const Size(800, 1600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
       String? copiedText;
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(SystemChannels.platform, (call) async {
@@ -60,6 +65,8 @@ void main() {
       expect(find.byTooltip('Copy support email'), findsOneWidget);
       expect(find.byTooltip('Copy case ID'), findsOneWidget);
 
+      await tester.ensureVisible(find.byTooltip('Copy support email'));
+      await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('Copy support email'));
       await tester.pumpAndSettle();
 
@@ -69,6 +76,10 @@ void main() {
     testWidgets('opens email with the prepared under-13 guidance', (
       tester,
     ) async {
+      // See the surface-size note above: keeps "Open email app" (a bottom
+      // button in a scrollable ListView) fully hittable in CI.
+      await tester.binding.setSurfaceSize(const Size(800, 1600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
       String? sentToEmail;
       String? sentSubject;
       String? sentBody;
@@ -113,6 +124,8 @@ void main() {
         ),
       );
 
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Open email app'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Open email app'));
       await tester.pumpAndSettle();
