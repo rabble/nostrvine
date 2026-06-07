@@ -734,6 +734,7 @@ class ProfileFeed extends _$ProfileFeed {
           originalLikes: video.originalLikes,
           originalComments: video.originalComments,
           originalReposts: video.originalReposts,
+          viewsTag: video.rawTags['views'],
         );
       }
     }
@@ -745,19 +746,28 @@ class ProfileFeed extends _$ProfileFeed {
       final cached = _metadataCache[video.id.toLowerCase()];
       if (cached == null) return video;
 
-      // Only apply if video is missing metadata but cache has it
-      if (video.originalLoops == null && cached.originalLoops != null ||
+      final needsOriginalMetadata =
+          video.originalLoops == null && cached.originalLoops != null ||
           video.originalLikes == null && cached.originalLikes != null ||
           video.originalComments == null && cached.originalComments != null ||
-          video.originalReposts == null && cached.originalReposts != null) {
-        return video.copyWith(
-          originalLoops: video.originalLoops ?? cached.originalLoops,
-          originalLikes: video.originalLikes ?? cached.originalLikes,
-          originalComments: video.originalComments ?? cached.originalComments,
-          originalReposts: video.originalReposts ?? cached.originalReposts,
-        );
+          video.originalReposts == null && cached.originalReposts != null;
+      final needsViewsTag =
+          !video.rawTags.containsKey('views') && cached.viewsTag != null;
+
+      if (!needsOriginalMetadata && !needsViewsTag) {
+        return video;
       }
-      return video;
+
+      return video.copyWith(
+        originalLoops: video.originalLoops ?? cached.originalLoops,
+        originalLikes: video.originalLikes ?? cached.originalLikes,
+        originalComments: video.originalComments ?? cached.originalComments,
+        originalReposts: video.originalReposts ?? cached.originalReposts,
+        rawTags: {
+          ...video.rawTags,
+          if (needsViewsTag) 'views': cached.viewsTag!,
+        },
+      );
     }).toList();
   }
 }
@@ -770,10 +780,12 @@ class _VideoMetadataCache {
     this.originalLikes,
     this.originalComments,
     this.originalReposts,
+    this.viewsTag,
   });
 
   final int? originalLoops;
   final int? originalLikes;
   final int? originalComments;
   final int? originalReposts;
+  final String? viewsTag;
 }

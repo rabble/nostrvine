@@ -172,6 +172,34 @@ void main() {
       });
     });
 
+    group('metadata preservation behavior', () {
+      test('preserves live views in rawTags when refreshing profile videos', () {
+        final existingVideo = createTestVideo(
+          'id1',
+          'pubkey1',
+          'stable1',
+          baseTime,
+        ).copyWith(rawTags: const {'d': 'stable1', 'views': '42'});
+
+        final refreshedVideo = createTestVideo(
+          'id2',
+          'pubkey1',
+          'stable1',
+          baseTime.add(const Duration(minutes: 5)),
+        );
+
+        final preservedVideo = refreshedVideo.copyWith(
+          rawTags: {
+            ...refreshedVideo.rawTags,
+            if (existingVideo.rawTags['views'] != null)
+              'views': existingVideo.rawTags['views']!,
+          },
+        );
+
+        expect(preservedVideo.rawTags['views'], '42');
+      });
+    });
+
     group('stableId matching behavior', () {
       test('creates consistent lookup keys for same video', () {
         final video1 = createTestVideo('id1', 'pubkey1', 'stable1', baseTime);
