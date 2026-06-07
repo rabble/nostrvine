@@ -2,12 +2,15 @@
 // ABOUTME: Replaces the legacy AlertDialog with a VineBottomSheet-based flow.
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/l10n/content_filter_reason_localizations.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -235,9 +238,25 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   @override
   Widget build(BuildContext context) {
     if (_submitted) {
+      final currentPubkey = ref.read(authServiceProvider).currentPublicKeyHex;
+      final moderationPubkey = ref
+          .read(moderationLabelServiceProvider)
+          .divineModerationPubkeyHex;
+      // The moderation conversation is an ordinary NIP-17 thread; deep-link
+      // straight to it so the user can follow up about their report. Null
+      // when we have no current pubkey (signed out) — the button hides.
+      final moderationConversationId =
+          (currentPubkey != null && currentPubkey.isNotEmpty)
+          ? DmRepository.computeConversationId([
+              currentPubkey,
+              moderationPubkey,
+            ])
+          : null;
       return _ReportConfirmationView(
         isFromShareMenu: widget.isFromShareMenu,
         moderationDmFailed: _moderationDmFailed,
+        moderationPubkey: moderationPubkey,
+        moderationConversationId: moderationConversationId,
       );
     }
 
@@ -514,6 +533,8 @@ class _ReportConfirmationView extends StatelessWidget {
   const _ReportConfirmationView({
     required this.isFromShareMenu,
     required this.moderationDmFailed,
+    required this.moderationPubkey,
+    required this.moderationConversationId,
   });
 
   final bool isFromShareMenu;
@@ -522,6 +543,15 @@ class _ReportConfirmationView extends StatelessWidget {
   /// send. The report itself still succeeded; this only drives a calm
   /// informational notice so the user isn't misled.
   final bool moderationDmFailed;
+
+  /// The Divine moderation account pubkey, passed to the conversation
+  /// route so it can render the thread.
+  final String moderationPubkey;
+
+  /// The 1:1 conversation id between the current user and the moderation
+  /// account. Null when signed out — the "Message the moderation team"
+  /// affordance is hidden in that case.
+  final String? moderationConversationId;
 
   @override
   Widget build(BuildContext context) {
@@ -588,6 +618,28 @@ class _ReportConfirmationView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
+          if (moderationConversationId case final conversationId?) ...[
+            DivineButton(
+              label: l10n.reportContactModeration,
+              type: DivineButtonType.secondary,
+              expanded: true,
+              onPressed: () {
+                // Capture the router before popping the sheet so the push
+                // doesn't run against a defunct context.
+                final router = GoRouter.of(context);
+                final navigator = Navigator.of(context);
+                navigator.pop();
+                if (isFromShareMenu) {
+                  navigator.pop();
+                }
+                router.push(
+                  ConversationPage.pathForId(conversationId),
+                  extra: [moderationPubkey],
+                );
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
           DivineButton(
             label: l10n.reportClose,
             expanded: true,

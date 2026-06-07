@@ -4758,6 +4758,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'We couldn\'t reach the moderation team directly just now, but your report was received and will be reviewed.';
 
   @override
+  String get reportContactModeration => 'Message the moderation team';
+
+  @override
   String get reportLearnMore => 'Mehr erfahren';
 
   @override

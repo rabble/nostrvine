@@ -8216,6 +8216,12 @@ abstract class AppLocalizations {
   /// **'We couldn\'t reach the moderation team directly just now, but your report was received and will be reviewed.'**
   String get reportModerationDmDelayed;
 
+  /// Button on the report confirmation screen that opens a direct-message conversation with the Divine moderation team so the user can follow up about their report.
+  ///
+  /// In en, this message translates to:
+  /// **'Message the moderation team'**
+  String get reportContactModeration;
+
   /// No description provided for @reportLearnMore.
   ///
   /// In en, this message translates to:

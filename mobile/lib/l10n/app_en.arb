@@ -2558,6 +2558,10 @@
   "@reportModerationDmDelayed": {
     "description": "Calm, non-blocking notice shown on the report confirmation screen when the secondary NIP-17 direct message to the moderation team failed to send. The report itself still succeeded via other channels."
   },
+  "reportContactModeration": "Message the moderation team",
+  "@reportContactModeration": {
+    "description": "Button on the report confirmation screen that opens a direct-message conversation with the Divine moderation team so the user can follow up about their report."
+  },
   "reportLearnMore": "Learn More",
   "reportLearnMoreAt": "Learn more at",
   "reportSafetyUrl": "divine.video/safety",
