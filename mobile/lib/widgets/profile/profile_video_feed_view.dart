@@ -4,11 +4,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/profile_feed/profile_feed_cubit.dart';
+import 'package:openvine/blocs/profile_feed/profile_feed_scope.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
@@ -106,41 +108,50 @@ class _ProfileVideoFeedViewState extends ConsumerState<ProfileVideoFeedView> {
 
   @override
   Widget build(BuildContext context) {
-    final feedState = ref
-        .watch(profileFeedProvider(widget.userIdHex))
-        .asData
-        ?.value;
-    final liveVideos = feedState?.videos ?? const <VideoEvent>[];
-    final effectiveVideos = liveVideos.isNotEmpty ? liveVideos : widget.videos;
-    _pushVideos(effectiveVideos);
-    final hasMoreContent = feedState?.hasMoreContent ?? false;
-    _pushHasMore(hasMoreContent);
-
-    final resolvedIndex = _resolveInitialIndex(effectiveVideos);
-
     final contextTitle =
         widget.contextTitleOverride ??
         ref
             .watch(fetchUserProfileProvider(widget.userIdHex))
             .value
             ?.betterDisplayName(context.l10n.profileTitle);
+    final removedIdsStream = ref
+        .read(videoEventServiceProvider)
+        .removedVideoIds;
 
-    return PooledFullscreenVideoFeedScreen(
-      // Seed the fullscreen route with the latest effective videos at
-      // subscription time so the first list can't be lost on a broadcast
-      // stream before FullscreenFeedBloc attaches.
-      videosStream: _videosController.stream.startWith(effectiveVideos),
-      initialIndex: resolvedIndex,
-      trafficSource: ViewTrafficSource.profile,
-      contextTitle: contextTitle,
-      onLoadMore: hasMoreContent
-          ? () => ref
-                .read(profileFeedProvider(widget.userIdHex).notifier)
-                .loadMore()
-          : null,
-      hasMoreStream: _hasMoreController.stream.startWith(hasMoreContent),
-      removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
-      onPageChanged: widget.onPageChanged,
+    return ProfileFeedScope(
+      userIdHex: widget.userIdHex,
+      child: Builder(
+        builder: (context) {
+          final state = context.watch<ProfileFeedCubit>().state;
+          final liveVideos = state.videos;
+          final effectiveVideos = liveVideos.isNotEmpty
+              ? liveVideos
+              : widget.videos;
+          _pushVideos(effectiveVideos);
+          final hasMoreContent = state.hasMoreContent;
+          _pushHasMore(hasMoreContent);
+
+          final resolvedIndex = _resolveInitialIndex(effectiveVideos);
+
+          return PooledFullscreenVideoFeedScreen(
+            // Seed the fullscreen route with the latest effective videos at
+            // subscription time so the first list can't be lost on a broadcast
+            // stream before FullscreenFeedBloc attaches.
+            videosStream: _videosController.stream.startWith(effectiveVideos),
+            initialIndex: resolvedIndex,
+            trafficSource: ViewTrafficSource.profile,
+            contextTitle: contextTitle,
+            onLoadMore: hasMoreContent
+                ? () => context.read<ProfileFeedCubit>().add(
+                    const ProfileFeedLoadMoreRequested(),
+                  )
+                : null,
+            hasMoreStream: _hasMoreController.stream.startWith(hasMoreContent),
+            removedIdsStream: removedIdsStream,
+            onPageChanged: widget.onPageChanged,
+          );
+        },
+      ),
     );
   }
 

@@ -11,9 +11,10 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
+import 'package:openvine/blocs/profile_feed/profile_feed_cubit.dart';
+import 'package:openvine/blocs/profile_feed/profile_feed_scope.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
@@ -387,18 +388,21 @@ class _ProfileContentView extends ConsumerWidget {
               .value
               ?.bestDisplayName;
 
-    return _ProfileDataView(
-      npub: npub,
+    return ProfileFeedScope(
       userIdHex: userIdHex,
-      isOwnProfile: isOwnProfile,
-      displayName: displayName,
-      videoIndex: routeContext.videoIndex,
-      scrollController: scrollController,
-      onEditProfile: onEditProfile,
-      onOpenClips: onOpenClips,
-      onMore: onMore,
-      onShareProfile: onShareProfile,
-      refreshNotifier: refreshNotifier,
+      child: _ProfileDataView(
+        npub: npub,
+        userIdHex: userIdHex,
+        isOwnProfile: isOwnProfile,
+        displayName: displayName,
+        videoIndex: routeContext.videoIndex,
+        scrollController: scrollController,
+        onEditProfile: onEditProfile,
+        onOpenClips: onOpenClips,
+        onMore: onMore,
+        onShareProfile: onShareProfile,
+        refreshNotifier: refreshNotifier,
+      ),
     );
   }
 }
@@ -475,17 +479,15 @@ class _ProfileDataView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Get video data and stats from providers
-    final videosAsync = ref.watch(profileFeedProvider(userIdHex));
+    final feedState = context.watch<ProfileFeedCubit>().state;
     final profileStats = ref
         .watch(userProfileStatsReactiveProvider(userIdHex))
         .value;
 
-    if (videosAsync is AsyncData) {
+    if (feedState.status == ProfileFeedStatus.ready) {
       ScreenAnalyticsService().markDataLoaded(
         'own_profile',
-        dataMetrics: {
-          'video_count': videosAsync.asData?.value.videos.length ?? 0,
-        },
+        dataMetrics: {'video_count': feedState.videos.length},
       );
     }
 
@@ -501,24 +503,25 @@ class _ProfileDataView extends ConsumerWidget {
         return currCompleted > prevCompleted;
       },
       listener: (context, state) {
-        // We don't need the value here, we just want to refresh the feed
-        // when background uploads complete
-        final _ = ref.refresh(profileFeedProvider(userIdHex));
+        // Refresh the feed when background uploads complete.
+        context.read<ProfileFeedCubit>().add(
+          const ProfileFeedRefreshRequested(),
+        );
       },
-      child: switch (videosAsync) {
-        AsyncLoading() => const ProfileLoadingView(),
-        AsyncError(:final error) => Center(
-          child: Text(context.l10n.profileErrorPrefix(error)),
+      child: switch (feedState.status) {
+        ProfileFeedStatus.initial ||
+        ProfileFeedStatus.loading => const ProfileLoadingView(),
+        ProfileFeedStatus.failure => Center(
+          child: Text(context.l10n.profileFeedError),
         ),
-        AsyncData(:final value) => ProfileViewSwitcher(
+        ProfileFeedStatus.ready => ProfileViewSwitcher(
           npub: npub,
           userIdHex: userIdHex,
           isOwnProfile: isOwnProfile,
           displayName: displayName,
           profileStats: profileStats,
-          videos: value.videos,
-          isLoadingVideos: value.isInitialLoad,
-          videoLoadError: value.error,
+          videos: feedState.videos,
+          isLoadingVideos: feedState.isInitialLoad,
           videoIndex: videoIndex,
           scrollController: scrollController,
           onEditProfile: onEditProfile,

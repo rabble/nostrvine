@@ -7106,6 +7106,18 @@ abstract class AppLocalizations {
   /// **'Error: {error}'**
   String profileError(String error);
 
+  /// Full-screen message shown when an author's profile feed fails to load.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load videos.'**
+  String get profileFeedError;
+
+  /// Transient message shown when paginating an author's profile feed fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load more videos. Pull to refresh.'**
+  String get profileFeedLoadMoreError;
+
   /// No description provided for @notificationsTabAll.
   ///
   /// In en, this message translates to:

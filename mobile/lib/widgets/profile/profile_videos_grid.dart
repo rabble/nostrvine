@@ -13,11 +13,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
+import 'package:openvine/blocs/profile_feed/profile_feed_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/widgets/profile/pending_collaborator_invite_banner_cubit.dart';
 import 'package:openvine/widgets/profile/profile_tab_empty_state.dart';
@@ -127,13 +127,8 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
 
   @override
   bool canLoadMore() {
-    final feedState = ref
-        .read(profileFeedProvider(widget.userIdHex))
-        .asData
-        ?.value;
-    return feedState != null &&
-        feedState.hasMoreContent &&
-        !feedState.isLoadingMore;
+    final state = context.read<ProfileFeedCubit>().state;
+    return state.hasMoreContent && !state.isLoadingMore;
   }
 
   @override
@@ -183,8 +178,8 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     prefetchGridVideos(videos);
   }
 
-  Future<void> _triggerLoadMore() async {
-    await ref.read(profileFeedProvider(widget.userIdHex).notifier).loadMore();
+  void _triggerLoadMore() {
+    context.read<ProfileFeedCubit>().add(const ProfileFeedLoadMoreRequested());
   }
 
   void _onVideoTapped(
@@ -192,12 +187,8 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     required int fallbackIndex,
     required List<VideoEvent> displayedVideos,
   }) {
-    final currentFeedVideos = ref
-        .read(profileFeedProvider(widget.userIdHex))
-        .asData
-        ?.value
-        .videos;
-    final videos = currentFeedVideos != null && currentFeedVideos.isNotEmpty
+    final currentFeedVideos = context.read<ProfileFeedCubit>().state.videos;
+    final videos = currentFeedVideos.isNotEmpty
         ? currentFeedVideos
         : displayedVideos;
     final index = videos.indexWhere(
@@ -335,13 +326,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     // Count uploading videos to offset indices for published videos
     final uploadingCount = activeUploads.length;
 
-    final isLoadingMore =
-        ref
-            .watch(profileFeedProvider(widget.userIdHex))
-            .asData
-            ?.value
-            .isLoadingMore ??
-        false;
+    final isLoadingMore = context.watch<ProfileFeedCubit>().state.isLoadingMore;
     final pendingInviteGroups = isOwnProfile
         ? ref
               .watch(pendingCollaboratorInviteGroupsProvider)

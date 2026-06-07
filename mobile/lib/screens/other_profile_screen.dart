@@ -7,6 +7,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/other_profile/other_profile_bloc.dart';
+import 'package:openvine/blocs/profile_feed/profile_feed_cubit.dart';
+import 'package:openvine/blocs/profile_feed/profile_feed_scope.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
@@ -15,7 +17,6 @@ import 'package:openvine/features/people_lists/view/add_to_people_lists_sheet.da
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
@@ -146,11 +147,9 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
   void initState() {
     super.initState();
     FeedPerformanceTracker().startFeedLoad('profile');
-    // Refresh stale profile data on navigation (fixes #2163)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      ref.read(profileFeedProvider(widget.pubkey).notifier).refreshIfStale();
-    });
+    // The feed cubit cold-loads on mount (via ProfileFeedScope below), so the
+    // legacy initState refreshIfStale is gone — reading the cubit here would
+    // be a cross-route ProviderNotFoundException (the cubit lives in build).
   }
 
   @override
@@ -371,76 +370,80 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
     // Watch blocklist version to trigger rebuilds when block/unblock occurs
     ref.watch(blocklistVersionProvider);
 
-    // Get video data from profile feed
-    final videosAsync = ref.watch(profileFeedProvider(widget.pubkey));
-    // Track analytics when data is loaded
-    if (videosAsync is AsyncData) {
-      ScreenAnalyticsService().markDataLoaded(
-        'other_profile',
-        dataMetrics: {
-          'video_count': videosAsync.asData?.value.videos.length ?? 0,
+    return ProfileFeedScope(
+      userIdHex: widget.pubkey,
+      child: Builder(
+        builder: (context) {
+          final feedState = context.watch<ProfileFeedCubit>().state;
+          // Track analytics when data is loaded
+          if (feedState.status == ProfileFeedStatus.ready) {
+            ScreenAnalyticsService().markDataLoaded(
+              'other_profile',
+              dataMetrics: {'video_count': feedState.videos.length},
+            );
+
+            if (!_hasTrackedFeedLoad) {
+              _hasTrackedFeedLoad = true;
+              final count = feedState.videos.length;
+              final tracker = FeedPerformanceTracker();
+              tracker.markFirstVideosReceived('profile', count);
+              tracker.markFeedDisplayed('profile', count);
+            }
+          }
+
+          return BlocBuilder<OtherProfileBloc, OtherProfileState>(
+            builder: (context, state) {
+              final headerProfile = switch (state) {
+                OtherProfileInitial() => null,
+                OtherProfileLoading(:final profile) => profile,
+                OtherProfileLoaded(:final profile) => profile,
+                OtherProfileError(:final profile) => profile,
+              };
+              final statsAsync = ref.watch(
+                userProfileStatsReactiveProvider(widget.pubkey),
+              );
+              final headerStats = statsAsync.value;
+
+              final displayName =
+                  headerProfile?.bestDisplayName ??
+                  widget.displayNameHint ??
+                  context.l10n.profileTitle;
+
+              return Scaffold(
+                backgroundColor: VineTheme.surfaceBackground,
+                body: switch (feedState.status) {
+                  ProfileFeedStatus.initial ||
+                  ProfileFeedStatus.loading => const ProfileLoadingView(),
+                  ProfileFeedStatus.failure => Center(
+                    child: Text(
+                      context.l10n.profileFeedError,
+                      style: const TextStyle(color: VineTheme.whiteText),
+                    ),
+                  ),
+                  ProfileFeedStatus.ready => ProfileGridView(
+                    userIdHex: widget.pubkey,
+                    isOwnProfile: false,
+                    profile: headerProfile,
+                    profileStats: headerStats,
+                    displayName: displayName,
+                    videos: feedState.videos,
+                    isLoadingVideos: feedState.isInitialLoad,
+                    scrollController: _scrollController,
+                    onBack: context.pop,
+                    onMore: _more,
+                    onMessageUser: _messageUser,
+                    onShareProfile: _shareProfile,
+                    onBlockedTap: _showUnblockConfirmation,
+                    displayNameHint: widget.displayNameHint,
+                    avatarUrlHint: widget.avatarUrlHint,
+                    refreshNotifier: _refreshNotifier,
+                  ),
+                },
+              );
+            },
+          );
         },
-      );
-
-      if (!_hasTrackedFeedLoad) {
-        _hasTrackedFeedLoad = true;
-        final count = videosAsync.asData?.value.videos.length ?? 0;
-        final tracker = FeedPerformanceTracker();
-        tracker.markFirstVideosReceived('profile', count);
-        tracker.markFeedDisplayed('profile', count);
-      }
-    }
-
-    return BlocBuilder<OtherProfileBloc, OtherProfileState>(
-      builder: (context, state) {
-        final headerProfile = switch (state) {
-          OtherProfileInitial() => null,
-          OtherProfileLoading(:final profile) => profile,
-          OtherProfileLoaded(:final profile) => profile,
-          OtherProfileError(:final profile) => profile,
-        };
-        final statsAsync = ref.watch(
-          userProfileStatsReactiveProvider(widget.pubkey),
-        );
-        final headerStats = statsAsync.value;
-
-        final displayName =
-            headerProfile?.bestDisplayName ??
-            widget.displayNameHint ??
-            context.l10n.profileTitle;
-
-        return Scaffold(
-          backgroundColor: VineTheme.surfaceBackground,
-          body: switch (videosAsync) {
-            AsyncLoading() => const ProfileLoadingView(),
-            AsyncError(:final error) => Center(
-              child: Text(
-                context.l10n.profileError('$error'),
-                style: const TextStyle(color: VineTheme.whiteText),
-              ),
-            ),
-            AsyncData(:final value) => ProfileGridView(
-              userIdHex: widget.pubkey,
-              isOwnProfile: false,
-              profile: headerProfile,
-              profileStats: headerStats,
-              displayName: displayName,
-              videos: value.videos,
-              isLoadingVideos: value.isInitialLoad,
-              videoLoadError: value.error,
-              scrollController: _scrollController,
-              onBack: context.pop,
-              onMore: _more,
-              onMessageUser: _messageUser,
-              onShareProfile: _shareProfile,
-              onBlockedTap: _showUnblockConfirmation,
-              displayNameHint: widget.displayNameHint,
-              avatarUrlHint: widget.avatarUrlHint,
-              refreshNotifier: _refreshNotifier,
-            ),
-          },
-        );
-      },
+      ),
     );
   }
 }

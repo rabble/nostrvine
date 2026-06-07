@@ -4089,6 +4089,13 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get profileFeedError => 'Couldn\'t load videos.';
+
+  @override
+  String get profileFeedLoadMoreError =>
+      'Couldn\'t load more videos. Pull to refresh.';
+
+  @override
   String get notificationsTabAll => 'Alles';
 
   @override
