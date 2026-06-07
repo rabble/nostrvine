@@ -145,6 +145,17 @@ void main() {
         ),
       ).thenAnswer((_) async => []);
 
+      // Default for resolveDmInboxRelays(), which sendMessage now calls on
+      // every send: recipient has no kind-10050 list, so the gift wrap
+      // falls back to the default relay pool (existing behavior).
+      when(
+        () => mockNostrClient.queryEvents(
+          any(),
+          subscriptionId: any(named: 'subscriptionId'),
+          useCache: any(named: 'useCache'),
+        ),
+      ).thenAnswer((_) async => <Event>[]);
+
       // Stub backfillCurrentUserHasSent for _backfillCurrentUserHasSent().
       when(
         () => mockConversationsDao.backfillCurrentUserHasSent(any()),
@@ -1994,6 +2005,105 @@ void main() {
     // -----------------------------------------------------------------
     // loadOlderMessages pagination
     // -----------------------------------------------------------------
+
+    group('resolveDmInboxRelays', () {
+      Event kind10050Event(List<String> relays, {int createdAt = 1700000000}) {
+        return Event(
+          _validPubkeyB,
+          EventKind.dmRelaysList,
+          [
+            for (final r in relays) ['relay', r],
+          ],
+          '',
+          createdAt: createdAt,
+        );
+      }
+
+      void stubQuery(List<Event> events) {
+        when(
+          () => mockNostrClient.queryEvents(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer((_) async => events);
+      }
+
+      test('returns relay urls from the kind-10050 relay tags', () async {
+        stubQuery([
+          kind10050Event(['wss://inbox.example', 'wss://inbox2.example']),
+        ]);
+        final repository = createRepository();
+        expect(
+          await repository.resolveDmInboxRelays(_validPubkeyB),
+          ['wss://inbox.example', 'wss://inbox2.example'],
+        );
+      });
+
+      test('returns null when no kind-10050 event exists', () async {
+        // setUp already stubs queryEvents -> [].
+        final repository = createRepository();
+        expect(await repository.resolveDmInboxRelays(_validPubkeyB), isNull);
+      });
+
+      test('returns null when the event has no relay tags', () async {
+        stubQuery([kind10050Event(const [])]);
+        final repository = createRepository();
+        expect(await repository.resolveDmInboxRelays(_validPubkeyB), isNull);
+      });
+
+      test('de-duplicates relay urls', () async {
+        stubQuery([
+          kind10050Event(['wss://a.example', 'wss://a.example']),
+        ]);
+        final repository = createRepository();
+        expect(
+          await repository.resolveDmInboxRelays(_validPubkeyB),
+          ['wss://a.example'],
+        );
+      });
+
+      test('picks the newest event when relays return several', () async {
+        stubQuery([
+          kind10050Event(['wss://old.example']),
+          kind10050Event(['wss://new.example'], createdAt: 1700000500),
+        ]);
+        final repository = createRepository();
+        expect(
+          await repository.resolveDmInboxRelays(_validPubkeyB),
+          ['wss://new.example'],
+        );
+      });
+
+      test('queries kind-10050 for the requested author', () async {
+        stubQuery(const []);
+        final repository = createRepository();
+        await repository.resolveDmInboxRelays(_validPubkeyB);
+        final captured =
+            verify(
+                  () => mockNostrClient.queryEvents(
+                    captureAny(),
+                    subscriptionId: any(named: 'subscriptionId'),
+                    useCache: any(named: 'useCache'),
+                  ),
+                ).captured.single
+                as List<nostr_filter.Filter>;
+        expect(captured.single.kinds, [EventKind.dmRelaysList]);
+        expect(captured.single.authors, [_validPubkeyB]);
+      });
+
+      test('returns null and does not throw when the query errors', () async {
+        when(
+          () => mockNostrClient.queryEvents(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenThrow(Exception('relay down'));
+        final repository = createRepository();
+        expect(await repository.resolveDmInboxRelays(_validPubkeyB), isNull);
+      });
+    });
 
     group('loadOlderMessages', () {
       test('queries until:oldest with limit 50', () async {

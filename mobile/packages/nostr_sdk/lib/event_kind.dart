@@ -85,6 +85,11 @@ class EventKind {
 
   static const int relayListMetadata = 10002;
 
+  /// NIP-17 DM relay list ("DM inbox"). A replaceable event whose `relay`
+  /// tags advertise where the author prefers to receive gift-wrapped
+  /// (kind 1059) direct messages.
+  static const int dmRelaysList = 10050;
+
   static const int profileBadges = 10008;
 
   static const int bookmarksList = 10003;

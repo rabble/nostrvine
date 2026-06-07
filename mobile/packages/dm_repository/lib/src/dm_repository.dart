@@ -831,6 +831,42 @@ class DmRepository {
   // Send - Text (Kind 14)
   // -------------------------------------------------------------------------
 
+  /// Resolves [pubkey]'s NIP-17 DM inbox relays from their kind-10050
+  /// "DM relays list" event.
+  ///
+  /// Returns the relay URLs the recipient prefers to receive gift-wrapped
+  /// DMs on, or `null` when no kind-10050 event is found (NIP-17: such a
+  /// user "is not ready to receive messages"). Callers route the gift
+  /// wrap to these relays; a `null` result lets the caller fall back to
+  /// the default relay pool so reachability is preserved for recipients
+  /// who have not advertised a DM inbox. Resolution failures degrade to
+  /// `null` rather than throwing, so a relay hiccup never blocks a send.
+  Future<List<String>?> resolveDmInboxRelays(String pubkey) async {
+    try {
+      final events = await _nostrClient.queryEvents([
+        nostr_filter.Filter(
+          authors: [pubkey],
+          kinds: [EventKind.dmRelaysList],
+          limit: 1,
+        ),
+      ]);
+      if (events.isEmpty) return null;
+      // Newest wins for a replaceable event served from multiple relays.
+      events.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      final relays = <String>{
+        for (final tag in events.first.tags)
+          if (tag.length >= 2 && tag[0] == 'relay' && tag[1].isNotEmpty) tag[1],
+      };
+      return relays.isEmpty ? null : relays.toList();
+    } on Object catch (e) {
+      Log.warning(
+        'Failed to resolve DM inbox relays for $pubkey: $e',
+        category: LogCategory.system,
+      );
+      return null;
+    }
+  }
+
   /// Send a text message to a 1:1 conversation.
   ///
   /// Throws [StateError] if the repository has not been initialized.
@@ -901,9 +937,17 @@ class DmRepository {
       );
     }
 
+    // Route the gift wrap to the recipient's NIP-17 DM inbox relays
+    // (kind 10050) when they advertise one; null falls back to the
+    // default relay pool so reachability is preserved for recipients who
+    // have not published a DM inbox. Resolved after the queue enqueue
+    // above so the optimistic UI echo is never delayed by this lookup.
+    final inboxRelays = await resolveDmInboxRelays(recipientPubkey);
+
     final result = await _messageService!.sendRumor(
       rumorEvent: rumor,
       recipientPubkey: recipientPubkey,
+      targetRelays: inboxRelays,
     );
 
     if (result.success) {

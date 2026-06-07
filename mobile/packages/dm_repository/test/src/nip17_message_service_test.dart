@@ -51,6 +51,44 @@ void main() {
       expect(service.nostrService, same(mockNostrClient));
     });
 
+    group('sendRumor relay targeting', () {
+      test(
+        'routes the recipient gift wrap to the provided targetRelays',
+        () async {
+          final captured = <List<String>?>[];
+          when(
+            () => mockNostrClient.publishEvent(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer((invocation) async {
+            captured.add(
+              invocation.namedArguments[#targetRelays] as List<String>?,
+            );
+            return PublishSuccess(
+              event: invocation.positionalArguments[0] as Event,
+            );
+          });
+
+          final rumor = service.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'routed message',
+          );
+          await service.sendRumor(
+            rumorEvent: rumor,
+            recipientPubkey: _recipientPubkey,
+            targetRelays: const ['wss://inbox.example.com'],
+          );
+
+          // The first publish is the recipient gift wrap; it must be routed
+          // to the recipient's NIP-17 DM inbox relays (the self-wrap, if any,
+          // follows with no targetRelays).
+          expect(captured, isNotEmpty);
+          expect(captured.first, const ['wss://inbox.example.com']);
+        },
+      );
+    });
+
     group('sendPrivateMessage', () {
       test('returns success with gift wrap event details', () async {
         when(() => mockNostrClient.publishEvent(any())).thenAnswer(

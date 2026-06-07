@@ -96,6 +96,7 @@ class NIP17MessageService {
   Future<NIP17SendResult> sendRumor({
     required Event rumorEvent,
     required String recipientPubkey,
+    List<String>? targetRelays,
   }) async {
     try {
       Log.info(
@@ -136,8 +137,17 @@ class NIP17MessageService {
         category: LogCategory.system,
       );
 
-      // Publish the recipient's gift wrap
-      final sentEvent = await _nostrService.publishEvent(giftWrapEvent);
+      // Publish the recipient's gift wrap. Route it to the recipient's
+      // NIP-17 kind-10050 DM inbox relays when known (so non-diVine users
+      // who only read their own inbox relays actually receive it); fall
+      // back to the default pool otherwise. The no-targetRelays call shape
+      // is kept identical to preserve existing behavior.
+      final sentEvent = (targetRelays != null && targetRelays.isNotEmpty)
+          ? await _nostrService.publishEvent(
+              giftWrapEvent,
+              targetRelays: targetRelays,
+            )
+          : await _nostrService.publishEvent(giftWrapEvent);
 
       if (sentEvent is! PublishSuccess) {
         const errorMsg = 'Message publish failed to relays';
