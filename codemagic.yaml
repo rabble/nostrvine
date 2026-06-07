@@ -65,7 +65,16 @@ definitions:
 
         files.each do |path|
           contents = File.read(path)
-          updated = contents.gsub('.iOS("13.0")', '.iOS("16.0")')
+          updated = contents
+            .gsub('.iOS("13.0")', '.iOS("16.0")')
+            .gsub('.iOS(.v13)', '.iOS("16.0")')
+
+          unless updated.include?('.iOS("16.0")')
+            updated = updated.sub(
+              /(let package = Package\(\n\s*name: "[^"]+",\n)/,
+              "\\1    platforms: [\n        .iOS(\"16.0\")\n    ],\n",
+            )
+          end
 
           unless updated.include?('.iOS("16.0")')
             abort("expected #{path} to declare iOS 16.0")
