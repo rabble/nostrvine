@@ -27,8 +27,8 @@ Flutter/flutter_export_environment.sh
 ServiceDefinitions.json
 Runner/GeneratedPluginRegistrant.*
 
-# Prevent duplicate SPM Package.resolved from inner project workspace
-Runner.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+# Xcode uses the inner project workspace Package.resolved during Flutter SPM
+# builds, so keep that lockfile tracked alongside the outer workspace lock.
 
 # Exceptions to above rules.
 !default.mode1v3
