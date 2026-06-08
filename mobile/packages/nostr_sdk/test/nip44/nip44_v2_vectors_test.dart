@@ -1,8 +1,8 @@
 // ABOUTME: Conformance test for the NIP-44 v2 implementation against the
 // ABOUTME: official cross-implementation test vectors (paulmillr/nip44).
 //
-// The vendored fixture `fixtures/nip44.vectors.json` is pinned by NIP-44 to
-// sha256 269ed0f69e4c192512cc779e78c555090cebc7c785b609e338a62afc3ce25040.
+// The vendored fixture `fixtures/nip44.vectors.json` is pinned by NIP-44; the
+// expected sha256 is enforced at runtime against `_vectorsFixtureSha256`.
 // This is the first NIP-44 vector coverage in the repo; it asserts both the
 // `valid.*` round-trips AND that `invalid.decrypt` payloads throw — a forged
 // MAC, bad padding, or wrong version must never decrypt to plaintext.
@@ -48,7 +48,13 @@ void main() {
     setUpAll(() {
       final file = _vectorsFixtureFile();
       final bytes = file.readAsBytesSync();
-      expect(sha256.convert(bytes).toString(), equals(_vectorsFixtureSha256));
+      expect(
+        sha256.convert(bytes).toString(),
+        equals(_vectorsFixtureSha256),
+        reason:
+            'nip44.vectors.json drifted from the NIP-44 pinned sha256; '
+            're-vendor from paulmillr/nip44 or update the pin deliberately',
+      );
       final v2 =
           (jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>)['v2']
               as Map<String, dynamic>;
