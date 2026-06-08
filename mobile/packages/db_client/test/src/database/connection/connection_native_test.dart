@@ -622,6 +622,95 @@ void main() {
       expect(_draftCount(dbPath), equals(2));
     });
   });
+
+  group('promoteEncryptedMigrationArtifact', () {
+    late Directory tempRoot;
+    late String dbPath;
+    late String encryptedPath;
+
+    setUp(() {
+      tempRoot = Directory.systemTemp.createTempSync(
+        'db_client_promote_cipher_artifact_test_',
+      );
+      dbPath = p.join(tempRoot.path, 'divine_db.db');
+      encryptedPath = '$dbPath.sqlcipher_migrating';
+    });
+
+    tearDown(() {
+      if (tempRoot.existsSync()) {
+        tempRoot.deleteSync(recursive: true);
+      }
+    });
+
+    test('moves the encrypted artifact and WAL/SHM sidecars into place', () {
+      File(encryptedPath).writeAsBytesSync(const [1]);
+      File('$encryptedPath-wal').writeAsBytesSync(const [2]);
+      File('$encryptedPath-shm').writeAsBytesSync(const [3]);
+
+      promoteEncryptedMigrationArtifact(
+        encryptedPath: encryptedPath,
+        dbPath: dbPath,
+      );
+
+      expect(File(dbPath).readAsBytesSync(), equals(const [1]));
+      expect(File('$dbPath-wal').readAsBytesSync(), equals(const [2]));
+      expect(File('$dbPath-shm').readAsBytesSync(), equals(const [3]));
+      expect(File(encryptedPath).existsSync(), isFalse);
+      expect(File('$encryptedPath-wal').existsSync(), isFalse);
+      expect(File('$encryptedPath-shm').existsSync(), isFalse);
+    });
+  });
+
+  group('cleanUpPreCipherMigrationBackups', () {
+    late Directory tempRoot;
+    late String dbPath;
+
+    setUp(() {
+      tempRoot = Directory.systemTemp.createTempSync(
+        'db_client_cipher_backup_cleanup_test_',
+      );
+      dbPath = p.join(tempRoot.path, 'divine_db.db');
+      File(dbPath).writeAsBytesSync(const [0]);
+    });
+
+    tearDown(() {
+      if (tempRoot.existsSync()) {
+        tempRoot.deleteSync(recursive: true);
+      }
+    });
+
+    test(
+      'deletes only pre-cipher plaintext migration backups and sidecars',
+      () {
+        final backupPath = '$dbPath.pre_cipher_migration_backup';
+        final indexedBackupPath = '$dbPath.pre_cipher_migration_backup.1';
+        final keyLossBackupPath = '$dbPath.pre_key_loss_wipe_backup';
+        File(backupPath).writeAsBytesSync(const [1]);
+        File('$backupPath-wal').writeAsBytesSync(const [2]);
+        File('$backupPath-shm').writeAsBytesSync(const [3]);
+        File(indexedBackupPath).writeAsBytesSync(const [4]);
+        File('$indexedBackupPath-wal').writeAsBytesSync(const [5]);
+        File(keyLossBackupPath).writeAsBytesSync(const [6]);
+        File(
+          '$dbPath.pre_cipher_migration_backup_notes',
+        ).writeAsBytesSync(const [7]);
+
+        cleanUpPreCipherMigrationBackups(dbPath);
+
+        expect(File(dbPath).existsSync(), isTrue);
+        expect(File(backupPath).existsSync(), isFalse);
+        expect(File('$backupPath-wal').existsSync(), isFalse);
+        expect(File('$backupPath-shm').existsSync(), isFalse);
+        expect(File(indexedBackupPath).existsSync(), isFalse);
+        expect(File('$indexedBackupPath-wal').existsSync(), isFalse);
+        expect(File(keyLossBackupPath).existsSync(), isTrue);
+        expect(
+          File('$dbPath.pre_cipher_migration_backup_notes').existsSync(),
+          isTrue,
+        );
+      },
+    );
+  });
 }
 
 void _createSqliteDatabase(

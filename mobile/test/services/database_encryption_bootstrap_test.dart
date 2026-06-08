@@ -105,11 +105,11 @@ void main() {
       expect(deleted, isFalse, reason: 'key intact => not key-loss');
     });
 
-    test('wipes the unrecoverable DB on key loss (generated key + '
+    test('backs up the unrecoverable DB on key loss (generated key + '
         'alreadyEncrypted)', () async {
       // Empty store => key is freshly generated, but an encrypted DB already
       // exists: the keystore was reset. The DB is unrecoverable and must be
-      // wiped + recreated under the new key (#570 §6).
+      // backed up + recreated under the new key (#570 §6).
       var deleted = false;
       final bootstrap = buildBootstrap(
         outcome: CipherMigrationOutcome.alreadyEncrypted,

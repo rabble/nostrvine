@@ -20,8 +20,8 @@ const dbCipherKeyStorageKey = 'db.cipher.key.v1';
 /// db_client stays keystore-free: this app-layer service reads/generates the
 /// key from [FlutterSecureStorage] and injects it via `db_cipher_key_provider`.
 /// Native runtime hooks (the Android library override, the cipher-availability
-/// probe, the migration, the key-loss wipe) are injected so the orchestration
-/// is unit-testable on the host VM, which links plain sqlite3.
+/// probe, the migration, the key-loss backup/recreate path) are injected so
+/// the orchestration is unit-testable on the host VM, which links plain sqlite3.
 class DatabaseEncryptionBootstrap {
   DatabaseEncryptionBootstrap({
     required FlutterSecureStorage secureStorage,

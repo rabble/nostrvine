@@ -1,10 +1,10 @@
 # SQLCipher at-rest encryption for the local DB (#570, finding C2)
 
-Status: **device-QA-gated draft.** The full Dart implementation, the native
-dependency swap, and unit tests for every host-testable property are committed.
-What remains before this can leave draft is **on-device validation** (the
-encrypted open, the in-place migration, and the iOS/macOS build configuration)
-— none of it can be exercised in CI, which links plain sqlite3 and on which
+Status: **device-QA gated before merge.** The full Dart implementation, the
+native dependency swap, and unit tests for every host-testable property are
+committed. What remains before merge is **on-device validation** (the encrypted
+open, the in-place migration, and the iOS/macOS build configuration) — none of
+it can be exercised in CI, which links plain sqlite3 and on which
 `PRAGMA cipher_version` is empty. See the device-QA checklist at the bottom.
 
 ## Why
@@ -54,7 +54,7 @@ sensitive. Decision (#570): encrypt at rest before the T&S moderation launch.
   (drift's schema version) explicitly, which `sqlcipher_export` does not.
   Wipe-and-resync is rejected: `divine_db.db` holds local-only data that cannot
   be re-fetched.
-- `deleteSharedDatabaseFiles()` — used by the §6 key-loss recovery.
+- `backUpAndRemoveSharedDatabase()` — used by the §6 key-loss recovery.
 
 ### App layer
 - `lib/database/sqlcipher_runtime.dart` (+ `_io` / `_stub`) — conditional-import
@@ -77,10 +77,11 @@ sensitive. Decision (#570): encrypt at rest before the T&S moderation launch.
 If the keystore is cleared (OS reset / restore without keychain migration), the
 cipher key is gone and the encrypted DB is cryptographically unrecoverable. The
 bootstrap detects this (freshly generated key + an existing encrypted DB),
-**wipes the DB and recreates it under a new key** — DMs resync from relays;
-other local-only data is lost. This is the only possible recovery for an
+**backs up the unrecoverable DB and recreates it under a new key** — DMs resync
+from relays; other local-only data is preserved in the backup but unavailable
+to the app without the lost key. This is the only possible recovery for an
 unrecoverable DB, but the user-facing notice / exact UX **needs product
-signoff** before un-drafting.
+signoff** before merge.
 
 ## Device-QA-gated (NOT committed — must be done on real devices)
 
@@ -102,17 +103,17 @@ signoff** before un-drafting.
 These are intentionally not committed half-validated; the committed runtime
 `cipher_version` fail-closed check is the safety net regardless of build config.
 
-## Device-QA checklist (must pass before un-drafting)
+## Device-QA checklist (must pass before merge)
 - [ ] iOS / Android / macOS build + launch with `sqlcipher_flutter_libs`.
 - [ ] Fresh install: DB is created encrypted; `PRAGMA cipher_version` is
       non-empty; the file is not readable by plain `sqlite3`.
 - [ ] Upgrade from a populated **plaintext** DB: migration runs once, all
       tables + row counts preserved, app fully functional, plaintext backup
-      present then cleaned on a later launch.
+      present until the first successful keyed open, then cleaned.
 - [ ] Force-kill mid-migration → next launch recovers (plaintext intact,
       retried), no data loss.
-- [ ] Key-loss path (clear keystore): DB is wiped + recreated, DMs resync, app
-      does not brick. (Confirm the §6 UX with product first.)
+- [ ] Key-loss path (clear keystore): DB is backed up + recreated, DMs resync,
+      app does not brick. (Confirm the §6 UX with product first.)
 - [ ] No measurable regression on cold-start DB open on a low-end device
       (SQLCipher adds ~5–15%).
 - [ ] Key never appears in logs / Crashlytics / analytics.

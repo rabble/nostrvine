@@ -59,7 +59,10 @@ QueryExecutor openEncryptedConnection({required String rawKeyHex}) {
     final dbFile = prepareDatabaseFile(dbPath);
     return NativeDatabase(
       dbFile,
-      setup: (rawDb) => applyCipherKey(rawDb, rawKeyHex),
+      setup: (rawDb) {
+        applyCipherKey(rawDb, rawKeyHex);
+        cleanUpPreCipherMigrationBackups(dbPath);
+      },
     );
   });
 }
@@ -172,8 +175,10 @@ Future<CipherMigrationOutcome> migratePlaintextToEncrypted({
   // leaves the (already-verified) encrypted file at [encryptedPath] with no
   // file at [dbPath]. Completing the rename is the lossless recovery.
   if (!File(dbPath).existsSync() && File(encryptedPath).existsSync()) {
-    File(encryptedPath).renameSync(dbPath);
-    _moveSidecars(fromPath: encryptedPath, toPath: dbPath);
+    promoteEncryptedMigrationArtifact(
+      encryptedPath: encryptedPath,
+      dbPath: dbPath,
+    );
     return CipherMigrationOutcome.migrated;
   }
 
@@ -184,7 +189,7 @@ Future<CipherMigrationOutcome> migratePlaintextToEncrypted({
       return CipherMigrationOutcome.alreadyEncrypted;
     case _DbClassification.indeterminate:
       // A transient or unreadable error (busy, locked, I/O, corrupt) — do NOT
-      // assume "encrypted", which would trigger the destructive key-loss wipe
+      // assume "encrypted", which would trigger the key-loss recovery path
       // on a readable plaintext DB. Leave everything intact and retry next
       // launch.
       return CipherMigrationOutcome.failed;
@@ -302,8 +307,22 @@ CipherMigrationOutcome _rekeyPlaintextInPlace({
   );
   File(dbPath).renameSync(backupPath);
   _moveSidecars(fromPath: dbPath, toPath: backupPath);
-  File(encryptedPath).renameSync(dbPath);
+  promoteEncryptedMigrationArtifact(
+    encryptedPath: encryptedPath,
+    dbPath: dbPath,
+  );
   return CipherMigrationOutcome.migrated;
+}
+
+/// Promotes the verified encrypted migration artifact into the canonical DB
+/// path, carrying WAL/SHM sidecars with it.
+@visibleForTesting
+void promoteEncryptedMigrationArtifact({
+  required String encryptedPath,
+  required String dbPath,
+}) {
+  File(encryptedPath).renameSync(dbPath);
+  _moveSidecars(fromPath: encryptedPath, toPath: dbPath);
 }
 
 /// Verifies the encrypted copy opens with [rawKeyHex] and that its
@@ -359,6 +378,49 @@ Future<void> backUpAndRemoveSharedDatabase() async {
   );
   File(dbPath).renameSync(backupPath);
   _moveSidecars(fromPath: dbPath, toPath: backupPath);
+}
+
+/// Removes plaintext backups left by a successful plaintext→SQLCipher
+/// migration once the encrypted database has opened with its key.
+///
+/// The migration keeps the plaintext source as
+/// `.pre_cipher_migration_backup*` until a later keyed open proves the
+/// encrypted database is usable. At that point the backup would otherwise
+/// leave the old plaintext database readable at rest, defeating #570 C2.
+/// Key-loss and legacy-migration backups use different suffixes and are
+/// intentionally preserved.
+@visibleForTesting
+void cleanUpPreCipherMigrationBackups(String dbPath) {
+  final dbFile = File(dbPath);
+  final directory = dbFile.parent;
+  if (!directory.existsSync()) return;
+
+  final backupPrefix = '${p.basename(dbPath)}.pre_cipher_migration_backup';
+  for (final entity in directory.listSync()) {
+    if (entity is! File) continue;
+    final name = p.basename(entity.path);
+    if (_isPreCipherMigrationBackupName(name, backupPrefix)) {
+      entity.deleteSync();
+    }
+  }
+}
+
+bool _isPreCipherMigrationBackupName(String name, String backupPrefix) {
+  final indexedBackupPattern = RegExp(
+    '^${RegExp.escape(backupPrefix)}\\.\\d+\$',
+  );
+  if (name == backupPrefix || indexedBackupPattern.hasMatch(name)) {
+    return true;
+  }
+
+  for (final suffix in const ['-wal', '-shm']) {
+    if (!name.endsWith(suffix) || name.length <= suffix.length) continue;
+    final baseName = name.substring(0, name.length - suffix.length);
+    if (baseName == backupPrefix || indexedBackupPattern.hasMatch(baseName)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 Map<String, int> _userTableRowCounts(Database db) {
