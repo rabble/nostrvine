@@ -47,4 +47,9 @@ abstract class DmRepositoryReportableSites {
   /// after the recipient publish landed.
   static const String sendMessageOuterTransaction =
       'sendMessage.outerTransaction';
+
+  /// `backfillHistoryIfNeeded`: the history drain hit a programming
+  /// invariant failure while paging or processing recovered events.
+  static const String historyDrainUnexpectedFailure =
+      'historyDrain.unexpectedFailure';
 }

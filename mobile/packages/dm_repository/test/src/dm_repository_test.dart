@@ -2351,6 +2351,7 @@ void main() {
           // Failed mid-drain: not complete, but the cursor is preserved.
           expect(syncState.drainCompleteOverride, isFalse);
           expect(syncState.markedCompletePubkeys, isEmpty);
+          expect(reporterCalls, isEmpty);
           final resumeCursor = syncState.drainCursorOverride;
           expect(resumeCursor, isNotNull);
           expect(resumeCursor, lessThan(1000));
@@ -2364,6 +2365,34 @@ void main() {
 
           expect(capturedUntil.first, resumeCursor);
           expect(syncState.drainCompleteOverride, isTrue);
+        },
+      );
+
+      test(
+        'reports unexpected programming failures without marking complete',
+        () async {
+          final error = StateError('bad drain state');
+          when(
+            () => mockNostrClient.queryEvents(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenThrow(error);
+
+          final syncState = _FakeDmSyncState()..oldestOverride = 1000;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          expect(syncState.drainCompleteOverride, isFalse);
+          expect(syncState.markedCompletePubkeys, isEmpty);
+          expect(reporterCalls, hasLength(1));
+          expect(reporterCalls.single.error, same(error));
+          expect(
+            reporterCalls.single.site,
+            DmRepositoryReportableSites.historyDrainUnexpectedFailure,
+          );
         },
       );
 

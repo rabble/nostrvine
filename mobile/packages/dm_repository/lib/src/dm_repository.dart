@@ -572,6 +572,13 @@ class DmRepository {
         error: e,
         stackTrace: stackTrace,
       );
+      if (e is StateError || e is TypeError || e is RangeError) {
+        _errorReporter?.call(
+          e,
+          stackTrace,
+          site: DmRepositoryReportableSites.historyDrainUnexpectedFailure,
+        );
+      }
     }
   }
 
