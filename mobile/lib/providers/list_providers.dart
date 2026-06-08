@@ -312,12 +312,14 @@ Stream<List<VideoEvent>> curatedListVideoEvents(Ref ref, String listId) async* {
       }).firstOrNull;
 
       if (cached != null) {
-        foundVideos.add(cached);
-        Log.debug(
-          '📋 Found addressable video in cache: ${cached.title ?? cached.id}',
-          name: 'CuratedListVideoEvents',
-          category: LogCategory.video,
-        );
+        if (!videoEventService.shouldHideVideo(cached)) {
+          foundVideos.add(cached);
+          Log.debug(
+            '📋 Found addressable video in cache: ${cached.title ?? cached.id}',
+            name: 'CuratedListVideoEvents',
+            category: LogCategory.video,
+          );
+        }
       } else {
         Log.debug(
           '📋 Cache miss for coord: $coord (pubkey=$pubkey, dTag=$dTag)',
@@ -506,12 +508,14 @@ Stream<List<VideoEvent>> videoEventsByIds(
       }).firstOrNull;
 
       if (cached != null) {
-        foundVideos.add(cached);
-        Log.debug(
-          '📋 Found addressable video in cache: ${cached.title ?? cached.id}',
-          name: 'VideoEventsByIds',
-          category: LogCategory.video,
-        );
+        if (!videoEventService.shouldHideVideo(cached)) {
+          foundVideos.add(cached);
+          Log.debug(
+            '📋 Found addressable video in cache: ${cached.title ?? cached.id}',
+            name: 'VideoEventsByIds',
+            category: LogCategory.video,
+          );
+        }
       } else {
         // Log what we're looking for vs what's in cache for debugging
         final matchingPubkey = allCachedVideos

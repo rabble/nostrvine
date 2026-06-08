@@ -12,6 +12,7 @@ import 'package:openvine/features/feature_flags/providers/feature_flag_providers
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/video_event_service.dart';
 import 'package:people_lists_repository/people_lists_repository.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
@@ -19,13 +20,34 @@ class _MockAuthService extends Mock implements AuthService {}
 class _MockPeopleListsRepository extends Mock
     implements PeopleListsRepository {}
 
+class _MockVideoEventService extends Mock implements VideoEventService {}
+
 // Full-length 64-char Nostr pubkeys — never truncate.
 const String _ownerA =
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const String _ownerB =
     'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+const String _blockedAuthor =
+    'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
 
 final DateTime _frozenNow = DateTime.utc(2026, 4, 20, 12);
+
+VideoEvent _video({
+  required String id,
+  required String pubkey,
+  String? dTag,
+}) {
+  return VideoEvent(
+    id: id,
+    pubkey: pubkey,
+    createdAt: _frozenNow.millisecondsSinceEpoch ~/ 1000,
+    content: '',
+    timestamp: _frozenNow,
+    title: id,
+    videoUrl: 'https://example.com/$id.mp4',
+    rawTags: dTag == null ? const {} : {'d': dTag},
+  );
+}
 
 UserList _buildList({
   required String id,
@@ -264,6 +286,44 @@ void main() {
         verify(
           () => mockRepository.watchLists(ownerPubkey: _ownerB),
         ).called(1);
+      },
+    );
+  });
+
+  group(videoEventsByIdsProvider, () {
+    test(
+      'filters hidden addressable videos found in the local cache',
+      () async {
+        const dTag = 'blocked-video';
+        const coord = '34236:$_blockedAuthor:$dTag';
+        final blockedVideo = _video(
+          id: 'blocked-video-event',
+          pubkey: _blockedAuthor,
+          dTag: dTag,
+        );
+        final videoEventService = _MockVideoEventService();
+        when(() => videoEventService.discoveryVideos).thenReturn(const []);
+        when(() => videoEventService.homeFeedVideos).thenReturn(const []);
+        when(() => videoEventService.profileVideos).thenReturn([blockedVideo]);
+        when(
+          () => videoEventService.shouldHideVideo(blockedVideo),
+        ).thenReturn(true);
+
+        final container = ProviderContainer(
+          overrides: [
+            videoEventServiceProvider.overrideWithValue(videoEventService),
+          ],
+        );
+        addTearDown(container.dispose);
+        final provider = videoEventsByIdsProvider([coord]);
+        final subscription = container.listen(provider, (_, _) {});
+        addTearDown(subscription.close);
+
+        await expectLater(
+          container.read(provider.future),
+          completion(isEmpty),
+        );
+        verify(() => videoEventService.shouldHideVideo(blockedVideo)).called(1);
       },
     );
   });

@@ -563,7 +563,7 @@ final class CuratedListVideoEventsProvider
 }
 
 String _$curatedListVideoEventsHash() =>
-    r'379ee7233fbab78c7b7dda7386218f7022718af5';
+    r'c74a136634eea5ad4ec744156164e2a24b9305ef';
 
 /// Provider that fetches actual VideoEvent objects for a curated list
 /// Streams videos as they are fetched from cache or relays
@@ -652,7 +652,7 @@ final class VideoEventsByIdsProvider
   }
 }
 
-String _$videoEventsByIdsHash() => r'8a7dd8c695166347375e19083c117ca7a7f46b21';
+String _$videoEventsByIdsHash() => r'5e8ecb9a7517462193b7648f9a0fcd9483407741';
 
 /// Provider that fetches VideoEvent objects directly from a list of video IDs
 /// Use this for discovered lists that aren't in local storage
