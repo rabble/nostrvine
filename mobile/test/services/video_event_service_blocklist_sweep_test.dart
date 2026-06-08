@@ -201,4 +201,77 @@ void main() {
       },
     );
   });
+
+  // Regression for #4782: detail/by-id surfaces (sound detail, video detail,
+  // curated lists, notifications) gate only on shouldHideVideo and bypass the
+  // reception-time blocklist filter, so shouldHideVideo itself must consult the
+  // blocklist or a blocked/muted author's videos leak onto those surfaces.
+  group('VideoEventService.shouldHideVideo blocklist filtering', () {
+    late VideoEventService service;
+    late ContentBlocklistRepository blocklistRepo;
+    late _MockNostrClient nostrClient;
+    late _MockSubscriptionManager subscriptionManager;
+
+    setUp(() {
+      nostrClient = _MockNostrClient();
+      subscriptionManager = _MockSubscriptionManager();
+      when(() => nostrClient.isInitialized).thenReturn(true);
+      when(() => nostrClient.connectedRelayCount).thenReturn(1);
+      when(
+        () => nostrClient.subscribe(any()),
+      ).thenAnswer((_) => const Stream<Event>.empty());
+      service = VideoEventService(
+        nostrClient,
+        subscriptionManager: subscriptionManager,
+      );
+      blocklistRepo = ContentBlocklistRepository();
+      service.setBlocklistRepository(blocklistRepo);
+    });
+
+    tearDown(() {
+      service.dispose();
+      blocklistRepo.dispose();
+    });
+
+    test('hides a video whose author is filtered from feeds', () async {
+      const author =
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      await blocklistRepo.blockUser(author);
+
+      expect(
+        service.shouldHideVideo(_video(id: 'v1', pubkey: author)),
+        isTrue,
+      );
+    });
+
+    test('does not hide a non-blocked author (Divine-host filter off)', () {
+      const author =
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+      expect(
+        service.shouldHideVideo(_video(id: 'v1', pubkey: author)),
+        isFalse,
+      );
+    });
+
+    test('does not throw and returns false with no blocklist repository', () {
+      final localNostr = _MockNostrClient();
+      when(() => localNostr.isInitialized).thenReturn(true);
+      when(() => localNostr.connectedRelayCount).thenReturn(1);
+      when(
+        () => localNostr.subscribe(any()),
+      ).thenAnswer((_) => const Stream<Event>.empty());
+      final localService = VideoEventService(
+        localNostr,
+        subscriptionManager: subscriptionManager,
+      );
+      addTearDown(localService.dispose);
+
+      const author =
+          'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+      expect(
+        localService.shouldHideVideo(_video(id: 'v1', pubkey: author)),
+        isFalse,
+      );
+    });
+  });
 }

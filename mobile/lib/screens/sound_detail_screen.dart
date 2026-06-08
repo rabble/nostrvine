@@ -854,6 +854,9 @@ class _VideosGridContentState extends ConsumerState<_VideosGridContent> {
   Widget build(BuildContext context) {
     ref.watch(divineHostFilterVersionProvider);
     ref.watch(contentFilterVersionProvider);
+    // Re-filter the grid when a block/mute arrives so a newly blocked author's
+    // videos disappear without leaving the screen (#4782 residual leak).
+    ref.watch(blocklistVersionProvider);
     final videoEventService = ref.read(videoEventServiceProvider);
     if (_isLoading) {
       return const Center(child: BrandedLoadingIndicator(size: 60));
