@@ -487,7 +487,20 @@ class DmRepository {
     // Pin the user for the whole drain so an account switch mid-drain can
     // never mark the wrong pubkey complete or query for the new user.
     final pubkey = _userPubkey;
-    if (syncState.historyDrainComplete(pubkey)) return;
+    if (syncState.historyDrainComplete(pubkey)) {
+      Log.info(
+        'DM history drain skipped for $pubkey: already complete',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    Log.info(
+      'DM history drain starting for $pubkey '
+      '(connected relays ${_nostrClient.connectedRelayCount}/'
+      '${_nostrClient.configuredRelayCount})',
+      category: LogCategory.system,
+    );
 
     try {
       // The relay filters `until:` on the OUTER gift-wrap created_at, which
@@ -500,6 +513,8 @@ class DmRepository {
           DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
       var reachedEnd = false;
+      var pagesRun = 0;
+      var totalEvents = 0;
       for (var page = 0; page < DmHistoryDrainConfig.maxPages; page++) {
         // Bail if the user switched or the repository was torn down.
         if (_disposed || _userPubkey != pubkey) return;
@@ -508,6 +523,8 @@ class DmRepository {
           limit: DmHistoryDrainConfig.pageSize,
           subscriptionId: 'dm_drain_${pubkey}_$page',
         );
+        pagesRun++;
+        totalEvents += events.length;
         if (events.isEmpty) {
           reachedEnd = true;
           break;
@@ -538,6 +555,11 @@ class DmRepository {
       }
 
       await syncState.markHistoryDrainComplete(pubkey);
+      Log.info(
+        'DM history drain complete for $pubkey: '
+        'pages=$pagesRun, eventsFetched=$totalEvents, reachedEnd=$reachedEnd',
+        category: LogCategory.system,
+      );
     } on Object catch (e, stackTrace) {
       // Relay/IO failures are expected on flaky networks and are NOT
       // reportable (see error_handling.md). Leaving historyDrainComplete
