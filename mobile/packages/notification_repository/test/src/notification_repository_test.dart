@@ -1050,7 +1050,7 @@ void main() {
 
     group('follow consolidation', () {
       test('2 follows from same pubkey become 1 $ActorNotification '
-          'with earliest timestamp', () async {
+          'with most-recent timestamp', () async {
         final earlier = DateTime(2025);
         final later = DateTime(2025, 1, 5);
         stubNotifications([
@@ -1080,7 +1080,11 @@ void main() {
         expect(page.items, hasLength(1));
         final item = page.items.single as ActorNotification;
         expect(item.type, equals(NotificationKind.follow));
-        expect(item.timestamp, equals(earlier));
+        // The consolidated row carries the most recent follow timestamp so a
+        // fresh follow surfaces at the top of the Follows tab rather than
+        // being buried (and paginated off the first page) with a stale
+        // timestamp.
+        expect(item.timestamp, equals(later));
       });
 
       test('follows from different pubkeys are not consolidated', () async {
@@ -1109,6 +1113,61 @@ void main() {
 
         expect(page.items, hasLength(2));
       });
+
+      test(
+        'a re-published follow sorts above older notifications by its '
+        'latest timestamp',
+        () async {
+          // A replaceable kind-3 contact list arrives twice for the same
+          // follower: once with a stale timestamp and once fresh. The
+          // consolidated row must inherit the fresh timestamp so it sorts
+          // above an older like — otherwise the follow sinks below the fold
+          // and the Follows tab reads "no activity" (regression for the
+          // reported follows-tab bug).
+          final stale = DateTime(2025);
+          final older = DateTime(2025, 1, 3);
+          final fresh = DateTime(2025, 1, 10);
+          stubNotifications([
+            makeNotification(
+              id: 'follow_stale',
+              sourcePubkey: 'follower_pub',
+              notificationType: 'follow',
+              sourceKind: 3,
+              referencedEventId: null,
+              createdAt: stale,
+            ),
+            makeNotification(
+              id: 'old_like',
+              sourcePubkey: 'liker_pub',
+              referencedEventId: 'video_a',
+              createdAt: older,
+            ),
+            makeNotification(
+              id: 'follow_fresh',
+              sourcePubkey: 'follower_pub',
+              notificationType: 'follow',
+              sourceKind: 3,
+              referencedEventId: null,
+              createdAt: fresh,
+            ),
+          ]);
+          stubProfiles({
+            'follower_pub': makeProfile(
+              'follower_pub',
+              displayName: 'Follower',
+            ),
+            'liker_pub': makeProfile('liker_pub', displayName: 'Liker'),
+          });
+
+          final page = await repository.getNotifications();
+
+          expect(page.items, hasLength(2));
+          final follow = page.items.first as ActorNotification;
+          expect(follow.type, equals(NotificationKind.follow));
+          expect(follow.actor.pubkey, equals('follower_pub'));
+          expect(follow.timestamp, equals(fresh));
+        },
+      );
     });
 
     group('comments stay individual when on different videos', () {
