@@ -1,6 +1,7 @@
 // ABOUTME: Strict-coverage tests for ReactionChip variants.
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -141,6 +142,44 @@ void main() {
       );
       final opacity = tester.widget<Opacity>(find.byType(Opacity));
       expect(opacity.opacity, closeTo(1.0, 0.001));
+    });
+
+    // The emoji is nudged right only on Apple platforms to cancel Apple
+    // Color Emoji's left-side bearing; Noto (Android et al.) is symmetric
+    // and must not be nudged, or the glyph drifts off-centre right (#4954).
+    group('emoji horizontal nudge', () {
+      final cases = <(TargetPlatform, double)>[
+        (TargetPlatform.iOS, 2),
+        (TargetPlatform.macOS, 2),
+        (TargetPlatform.android, 0),
+        (TargetPlatform.linux, 0),
+      ];
+      for (final (platform, expectedDx) in cases) {
+        testWidgets('translates emoji by $expectedDx dp on $platform', (
+          tester,
+        ) async {
+          debugDefaultTargetPlatformOverride = platform;
+          try {
+            await pump(
+              tester,
+              const ReactionChip(
+                emoji: '🔥',
+                count: 1,
+                variant: ReactionChipVariant.theirs,
+              ),
+            );
+            final transform = tester.widget<Transform>(
+              find.descendant(
+                of: find.byType(ReactionChip),
+                matching: find.byType(Transform),
+              ),
+            );
+            expect(transform.transform.storage[12], expectedDx);
+          } finally {
+            debugDefaultTargetPlatformOverride = null;
+          }
+        });
+      }
     });
   });
 }

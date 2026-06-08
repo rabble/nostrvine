@@ -4,6 +4,7 @@
 // ABOUTME: or retry icon joins.
 
 import 'package:divine_ui/src/theme/vine_theme.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 /// Visual variant of a [ReactionChip]. Drives the background tint, the
@@ -109,12 +110,19 @@ class ReactionChip extends StatelessWidget {
     // `leadingDistribution: even` splits any residual leading equally
     // above and below — the glyph now sits on the chip's centerline.
     //
-    // The horizontal `Transform.translate(2, 0)` compensates for
-    // Apple's emoji font having a small left-side bearing built into
-    // its em-box: without it, the glyph reads as slightly left of the
-    // chip's geometric centre.
+    // The horizontal nudge re-centres Apple Color Emoji, whose advance
+    // box carries a small left-side bearing that otherwise reads as the
+    // glyph sitting left of the chip centre. Noto Color Emoji (Android
+    // and the other platforms) has symmetric bearings, so advance-box
+    // centering already lands it centred there — applying the nudge
+    // unconditionally pushed the glyph off-centre to the right on
+    // Android (#4954). Gate it to Apple platforms only.
+    const appleEmojiLeftBearingNudge = 2.0;
+    final isAppleEmojiFont =
+        defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS;
     final emojiText = Transform.translate(
-      offset: const Offset(2, 0),
+      offset: Offset(isAppleEmojiFont ? appleEmojiLeftBearingNudge : 0, 0),
       child: Text(
         emoji,
         style: const TextStyle(
