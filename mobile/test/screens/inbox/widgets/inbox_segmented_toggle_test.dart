@@ -103,6 +103,46 @@ void main() {
         expect(find.text('99+'), findsOneWidget);
         expect(find.text('150'), findsNothing);
       });
+
+      testWidgets('limits localized labels to one line with ellipsis', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('de'));
+
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: const Locale('de'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: Align(
+                alignment: Alignment.topLeft,
+                child: SizedBox(
+                  width: 180,
+                  child: InboxSegmentedToggle(
+                    selected: InboxTab.messages,
+                    onChanged: (_) {},
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(tester.takeException(), isNull);
+
+        final notificationsLabel = tester.widget<Text>(
+          find.text(l10n.settingsNotifications),
+        );
+        expect(notificationsLabel.maxLines, equals(1));
+        expect(notificationsLabel.overflow, equals(TextOverflow.ellipsis));
+
+        final messagesLabel = tester.widget<Text>(
+          find.text(l10n.inboxMessagesTab),
+        );
+        expect(messagesLabel.maxLines, equals(1));
+        expect(messagesLabel.overflow, equals(TextOverflow.ellipsis));
+      });
     });
 
     group('interactions', () {
