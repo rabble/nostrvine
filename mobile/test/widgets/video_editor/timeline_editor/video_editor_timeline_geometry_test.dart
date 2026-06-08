@@ -397,6 +397,214 @@ void main() {
     });
   });
 
+  group(rebaseTimelineMarkersForClipState, () {
+    test('keeps a marker attached to the same clip source position', () {
+      final oldClips = [
+        _clip('a', 3),
+        _clip('b', 5),
+        _clip('c', 2),
+        _clip('d', 4),
+      ];
+      final newClips = [
+        _clip('d', 4),
+        _clip('b', 5),
+        _clip('a', 3),
+        _clip('c', 2),
+      ];
+
+      expect(
+        rebaseTimelineMarkersForClipState(
+          oldClips: oldClips,
+          newClips: newClips,
+          markers: [const Duration(seconds: 5)],
+        ),
+        equals([const Duration(seconds: 6)]),
+      );
+    });
+
+    test('sorts rebased markers from multiple clips', () {
+      final oldClips = [
+        _clip('a', 3),
+        _clip('b', 5),
+        _clip('c', 2),
+      ];
+      final newClips = [
+        _clip('c', 2),
+        _clip('a', 3),
+        _clip('b', 5),
+      ];
+
+      expect(
+        rebaseTimelineMarkersForClipState(
+          oldClips: oldClips,
+          newClips: newClips,
+          markers: [
+            const Duration(seconds: 4),
+            const Duration(seconds: 9),
+          ],
+        ),
+        equals([
+          const Duration(seconds: 1),
+          const Duration(seconds: 6),
+        ]),
+      );
+    });
+
+    test('respects trimmed and speed-adjusted playback duration', () {
+      final oldClips = [
+        _clip('intro', 10, speed: 2.0),
+        _clip(
+          'target',
+          10,
+          speed: 2.0,
+          trimStart: const Duration(seconds: 2),
+        ),
+      ];
+      final newClips = [
+        _clip(
+          'target',
+          10,
+          speed: 2.0,
+          trimStart: const Duration(seconds: 2),
+        ),
+        _clip('intro', 10, speed: 2.0),
+      ];
+
+      expect(
+        rebaseTimelineMarkersForClipState(
+          oldClips: oldClips,
+          newClips: newClips,
+          markers: [const Duration(seconds: 6)],
+        ),
+        equals([const Duration(seconds: 1)]),
+      );
+    });
+
+    test('anchors an exact internal boundary to the following clip', () {
+      final oldClips = [
+        _clip('a', 3),
+        _clip('b', 5),
+        _clip('c', 2),
+      ];
+      final newClips = [
+        _clip('c', 2),
+        _clip('b', 5),
+        _clip('a', 3),
+      ];
+
+      expect(
+        rebaseTimelineMarkersForClipState(
+          oldClips: oldClips,
+          newClips: newClips,
+          markers: [const Duration(seconds: 3)],
+        ),
+        equals([const Duration(seconds: 2)]),
+      );
+    });
+
+    test('drops a marker when its source position is trimmed from the end', () {
+      final oldClips = [_clip('clip', 6)];
+      final newClips = [
+        _clip('clip', 6, trimEnd: const Duration(seconds: 3)),
+      ];
+
+      expect(
+        rebaseTimelineMarkersForClipState(
+          oldClips: oldClips,
+          newClips: newClips,
+          markers: [const Duration(seconds: 5)],
+        ),
+        isEmpty,
+      );
+    });
+
+    test(
+      'drops a marker when its source position is trimmed from the start',
+      () {
+        final oldClips = [_clip('clip', 6)];
+        final newClips = [
+          _clip('clip', 6, trimStart: const Duration(seconds: 3)),
+        ];
+
+        expect(
+          rebaseTimelineMarkersForClipState(
+            oldClips: oldClips,
+            newClips: newClips,
+            markers: [const Duration(seconds: 2)],
+          ),
+          isEmpty,
+        );
+      },
+    );
+
+    test('moves a visible source marker when trimStart advances', () {
+      final oldClips = [_clip('clip', 6)];
+      final newClips = [
+        _clip('clip', 6, trimStart: const Duration(seconds: 3)),
+      ];
+
+      expect(
+        rebaseTimelineMarkersForClipState(
+          oldClips: oldClips,
+          newClips: newClips,
+          markers: [const Duration(seconds: 5)],
+        ),
+        equals([const Duration(seconds: 2)]),
+      );
+    });
+
+    test('keeps marker anchored to source time across speed changes', () {
+      final oldClips = [_clip('clip', 10)];
+      final newClips = [_clip('clip', 10, speed: 2.0)];
+
+      expect(
+        rebaseTimelineMarkersForClipState(
+          oldClips: oldClips,
+          newClips: newClips,
+          markers: [const Duration(seconds: 6)],
+        ),
+        equals([const Duration(seconds: 3)]),
+      );
+    });
+
+    test('drops markers whose source clip no longer exists', () {
+      final oldClips = [
+        _clip('a', 3),
+        _clip('b', 5),
+      ];
+      final newClips = [_clip('a', 3)];
+
+      expect(
+        rebaseTimelineMarkersForClipState(
+          oldClips: oldClips,
+          newClips: newClips,
+          markers: [const Duration(seconds: 4)],
+        ),
+        isEmpty,
+      );
+    });
+
+    test('clamps a marker past the timeline end to the last clip end', () {
+      final oldClips = [
+        _clip('a', 3),
+        _clip('b', 5),
+      ];
+      final newClips = [
+        _clip('a', 3),
+        _clip('b', 5),
+      ];
+
+      expect(
+        rebaseTimelineMarkersForClipState(
+          oldClips: oldClips,
+          newClips: newClips,
+          markers: [const Duration(seconds: 20)],
+        ),
+        equals([const Duration(seconds: 8)]),
+      );
+    });
+  });
+
   group('DivineVideoClip.playbackDuration', () {
     test('null speed → same as trimmedDuration', () {
       final clip = _clip('a', 10);

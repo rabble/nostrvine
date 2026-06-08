@@ -102,19 +102,29 @@ extension VideoEditorExtensions on ProImageEditorState {
   void setClipState(
     List<DivineVideoClip> clips, {
     bool skipUpdateHistory = false,
+    List<Duration>? timelineMarkers,
   }) {
     final serialized = clips.map((c) => c.toJson()).toList();
+    final meta = {
+      ...stateManager.activeMeta,
+      VideoEditorConstants.clipsStateHistoryKey: serialized,
+      if (timelineMarkers != null)
+        VideoEditorConstants.timelineMarkersStateHistoryKey: timelineMarkers
+            .map((marker) => marker.inMilliseconds)
+            .toList(),
+    };
 
     if (!skipUpdateHistory) {
-      addHistory(
-        meta: {
-          ...stateManager.activeMeta,
-          VideoEditorConstants.clipsStateHistoryKey: serialized,
-        },
-      );
+      addHistory(meta: meta);
     } else {
       stateManager.activeMeta[VideoEditorConstants.clipsStateHistoryKey] =
           serialized;
+      if (timelineMarkers != null) {
+        stateManager.activeMeta[VideoEditorConstants
+            .timelineMarkersStateHistoryKey] = timelineMarkers
+            .map((marker) => marker.inMilliseconds)
+            .toList();
+      }
     }
     setState(() {});
   }

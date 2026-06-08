@@ -42,6 +42,7 @@ class TimelineOverlayBloc
     on<TimelineOverlayTotalDurationChanged>(_onTotalDurationChanged);
     on<TimelineMarkerAdded>(_onMarkerAdded);
     on<TimelineMarkerRemoved>(_onMarkerRemoved);
+    on<TimelineMarkersRebased>(_onMarkersRebased);
     on<TimelineOverlayWaveformLoaded>(_onWaveformLoaded);
     on<TimelineOverlayAudioVolumeChanged>(
       _onAudioVolumeChanged,
@@ -517,6 +518,14 @@ class TimelineOverlayBloc
         timelineMarkersRevision: state.timelineMarkersRevision + 1,
       ),
     );
+  }
+
+  void _onMarkersRebased(
+    TimelineMarkersRebased event,
+    Emitter<TimelineOverlayState> emit,
+  ) {
+    final markers = event.markers.toSet().toList()..sort();
+    emit(state.copyWith(timelineMarkers: markers));
   }
 
   static List<Duration> _clampMarkers(

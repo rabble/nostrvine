@@ -880,6 +880,30 @@ void main() {
         expect: () => <TimelineOverlayState>[],
       );
     });
+
+    group(TimelineMarkersRebased, () {
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'replaces markers without bumping the history revision',
+        build: TimelineOverlayBloc.new,
+        seed: () => const TimelineOverlayState(
+          timelineMarkers: [Duration(seconds: 1)],
+          timelineMarkersRevision: 4,
+        ),
+        act: (bloc) => bloc.add(
+          const TimelineMarkersRebased([
+            Duration(seconds: 5),
+            Duration(seconds: 2),
+            Duration(seconds: 2),
+          ]),
+        ),
+        expect: () => const [
+          TimelineOverlayState(
+            timelineMarkers: [Duration(seconds: 2), Duration(seconds: 5)],
+            timelineMarkersRevision: 4,
+          ),
+        ],
+      );
+    });
   });
 
   group(TimelineOverlayState, () {

@@ -40,6 +40,127 @@ Duration? clipSourcePositionToTimelinePosition(
   return null;
 }
 
+/// Reprojects marker positions after clip order, trim, or speed changes.
+///
+/// Timeline markers are stored as absolute composition times because the
+/// ruler, snapping, and painter all operate in timeline coordinates. The user
+/// experience is clip-source based, though: a marker placed on source second 5
+/// of clip B should follow clip B when reordered, and disappear if source
+/// second 5 is trimmed out. This converts:
+///
+///   old absolute time -> old clip id + source position -> new absolute time
+List<Duration> rebaseTimelineMarkersForClipState({
+  required List<DivineVideoClip> oldClips,
+  required List<DivineVideoClip> newClips,
+  required List<Duration> markers,
+}) {
+  if (markers.isEmpty || oldClips.isEmpty || newClips.isEmpty) {
+    return const [];
+  }
+
+  final newClipStarts = <String, Duration>{};
+  final newClipsById = <String, DivineVideoClip>{};
+  var newCursor = Duration.zero;
+  for (final clip in newClips) {
+    newClipStarts[clip.id] = newCursor;
+    newClipsById[clip.id] = clip;
+    newCursor += clip.playbackDuration;
+  }
+
+  final rebased = <Duration>{};
+  for (final marker in markers) {
+    final anchor = _timelineMarkerAnchorForPosition(oldClips, marker);
+    if (anchor == null) continue;
+
+    final newStart = newClipStarts[anchor.clipId];
+    final newClip = newClipsById[anchor.clipId];
+    if (newStart == null || newClip == null) continue;
+
+    final playbackOffset = _sourcePositionToPlaybackOffset(
+      newClip,
+      anchor.sourcePosition,
+    );
+    if (playbackOffset == null) continue;
+
+    rebased.add(newStart + playbackOffset);
+  }
+
+  return rebased.toList()..sort();
+}
+
+_TimelineMarkerAnchor? _timelineMarkerAnchorForPosition(
+  List<DivineVideoClip> clips,
+  Duration marker,
+) {
+  var cursor = Duration.zero;
+  for (var i = 0; i < clips.length; i++) {
+    final clip = clips[i];
+    final duration = clip.playbackDuration;
+    final end = cursor + duration;
+    final isLast = i == clips.length - 1;
+
+    if (marker < end || isLast) {
+      return _TimelineMarkerAnchor(
+        clip.id,
+        _playbackOffsetToSourcePosition(
+          clip,
+          _clampDuration(marker - cursor, duration),
+        ),
+      );
+    }
+
+    cursor = end;
+  }
+
+  return null;
+}
+
+Duration _playbackOffsetToSourcePosition(
+  DivineVideoClip clip,
+  Duration playbackOffset,
+) {
+  final speed = clip.playbackSpeed ?? 1.0;
+  final sourceOffset = speed <= 0 || speed == 1.0
+      ? playbackOffset
+      : Duration(
+          microseconds: (playbackOffset.inMicroseconds * speed).round(),
+        );
+
+  return clip.trimStart + _clampDuration(sourceOffset, clip.trimmedDuration);
+}
+
+Duration? _sourcePositionToPlaybackOffset(
+  DivineVideoClip clip,
+  Duration sourcePosition,
+) {
+  final visibleStart = clip.trimStart;
+  final visibleEnd = clip.duration - clip.trimEnd;
+  if (sourcePosition < visibleStart || sourcePosition > visibleEnd) {
+    return null;
+  }
+
+  final sourceOffset = sourcePosition - visibleStart;
+  final speed = clip.playbackSpeed ?? 1.0;
+  if (speed <= 0 || speed == 1.0) return sourceOffset;
+
+  return Duration(
+    microseconds: (sourceOffset.inMicroseconds / speed).round(),
+  );
+}
+
+Duration _clampDuration(Duration value, Duration max) {
+  if (value < Duration.zero) return Duration.zero;
+  if (value > max) return max;
+  return value;
+}
+
+class _TimelineMarkerAnchor {
+  const _TimelineMarkerAnchor(this.clipId, this.sourcePosition);
+
+  final String clipId;
+  final Duration sourcePosition;
+}
+
 /// Converts a composite playback [position] to the corresponding scroll
 /// offset in the timeline content, accounting for the
 /// [TimelineConstants.clipGap]-wide gap between adjacent clip strips.

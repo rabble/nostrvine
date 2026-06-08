@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
-import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
@@ -73,6 +72,8 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
 
   /// Whether a trim handle drag is in progress — disables scroll physics.
   bool _isTrimming = false;
+  List<DivineVideoClip>? _clipTrimStartClips;
+  List<Duration>? _clipTrimStartMarkers;
 
   @override
   void initState() {
@@ -133,9 +134,14 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
           listenWhen: (prev, curr) => prev.totalDuration != curr.totalDuration,
           listener: (context, state) {
             _totalDuration = state.totalDuration;
-            context.read<TimelineOverlayBloc>().add(
+            final overlayBloc = context.read<TimelineOverlayBloc>();
+            overlayBloc.add(
               TimelineOverlayTotalDurationChanged(state.totalDuration),
             );
+            final rebasedMarkers = _rebasedClipTrimMarkers(state.clips);
+            if (rebasedMarkers != null) {
+              overlayBloc.add(TimelineMarkersRebased(rebasedMarkers));
+            }
           },
         ),
         BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
@@ -291,13 +297,23 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
   // -- Reorder callbacks ----------------------------------------------------
 
   void _onClipsReordered(List<DivineVideoClip> reorderedClips) {
-    context.read<ClipEditorBloc>().add(ClipEditorInitialized(reorderedClips));
+    final clipBloc = context.read<ClipEditorBloc>();
+    final overlayBloc = context.read<TimelineOverlayBloc>();
+    final rebasedMarkers = rebaseTimelineMarkersForClipState(
+      oldClips: clipBloc.state.clips,
+      newClips: reorderedClips,
+      markers: overlayBloc.state.timelineMarkers,
+    );
+
+    clipBloc.add(ClipEditorInitialized(reorderedClips));
+    overlayBloc.add(TimelineMarkersRebased(rebasedMarkers));
     context.read<VideoEditorMainBloc>().add(
       const VideoEditorExternalPauseRequested(isPaused: true),
     );
-    // Persist reorder as a new history entry so it can be undone.
+    // Persist reorder and marker rebasing as one history entry so undo
+    // restores a consistent timeline.
     final editor = VideoEditorScope.of(context).editor;
-    editor?.setClipState(reorderedClips);
+    editor?.setClipState(reorderedClips, timelineMarkers: rebasedMarkers);
   }
 
   void _onReorderChanged(bool isReordering) {
@@ -339,25 +355,46 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
     setState(() => _isTrimming = isTrimming);
     final editor = VideoEditorScope.of(context).requireEditor;
     final clipEditorBloc = context.read<ClipEditorBloc>();
+    final overlayBloc = context.read<TimelineOverlayBloc>();
 
     if (isTrimming) {
+      _clipTrimStartClips = List<DivineVideoClip>.of(
+        clipEditorBloc.state.clips,
+      );
+      _clipTrimStartMarkers = List<Duration>.of(
+        overlayBloc.state.timelineMarkers,
+      );
       clipEditorBloc.add(const ClipEditorTrimDragStarted());
 
       context.read<VideoEditorMainBloc>().add(
         const VideoEditorExternalPauseRequested(isPaused: true),
       );
     } else {
+      final rebasedMarkers =
+          _rebasedClipTrimMarkers(clipEditorBloc.state.clips) ??
+          overlayBloc.state.timelineMarkers;
+      overlayBloc.add(TimelineMarkersRebased(rebasedMarkers));
       clipEditorBloc.add(const ClipEditorTrimDragEnded());
 
-      final clips = clipEditorBloc.state.clips.map((e) => e.toJson()).toList();
-
-      editor.addHistory(
-        meta: {
-          ...editor.stateManager.activeMeta,
-          VideoEditorConstants.clipsStateHistoryKey: clips,
-        },
+      editor.setClipState(
+        clipEditorBloc.state.clips,
+        timelineMarkers: rebasedMarkers,
       );
+      _clipTrimStartClips = null;
+      _clipTrimStartMarkers = null;
     }
+  }
+
+  List<Duration>? _rebasedClipTrimMarkers(List<DivineVideoClip> clips) {
+    final oldClips = _clipTrimStartClips;
+    final markers = _clipTrimStartMarkers;
+    if (oldClips == null || markers == null) return null;
+
+    return rebaseTimelineMarkersForClipState(
+      oldClips: oldClips,
+      newClips: clips,
+      markers: markers,
+    );
   }
 
   // -- Clip tap callback ----------------------------------------------------

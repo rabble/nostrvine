@@ -179,6 +179,20 @@ class TimelineMarkerRemoved extends TimelineOverlayEvent {
   List<Object?> get props => [position];
 }
 
+/// Replace marker positions after a clip-order change.
+///
+/// This intentionally does not bump [TimelineOverlayState.timelineMarkersRevision]:
+/// clip reorder writes the rebased markers together with the clip order in one
+/// editor-history entry.
+class TimelineMarkersRebased extends TimelineOverlayEvent {
+  const TimelineMarkersRebased(this.markers);
+
+  final List<Duration> markers;
+
+  @override
+  List<Object?> get props => [markers];
+}
+
 /// Attach extracted waveform samples to a sound item.
 class TimelineOverlayWaveformLoaded extends TimelineOverlayEvent {
   const TimelineOverlayWaveformLoaded({
