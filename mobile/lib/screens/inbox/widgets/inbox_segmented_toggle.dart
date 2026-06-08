@@ -113,6 +113,8 @@ class _ToggleButton extends StatelessWidget {
               children: [
                 Text(
                   label,
+                  maxLines: 1,
+                  overflow: .ellipsis,
                   textScaler: TextScaler.noScaling,
                   style:
                       VineTheme.titleMediumFont(
