@@ -289,8 +289,16 @@ dependencies:
   uuid: ^4.5.1
   app_links: ^6.4.1
   drift: ^2.29.0
-  drift_flutter: ^0.2.7
-  sqlite3_flutter_libs: ^0.5.40
+  # SQLCipher at-rest encryption for the local DB (#570, finding C2). Replaces
+  # sqlite3_flutter_libs (the two cannot coexist — both ship a native sqlite3
+  # and collide on iOS/macOS). 0.6.x is the SQLCipher build for the sqlite3 2.x
+  # family; 0.7.0+ is an EOL no-op. sqlite3 is a direct dep so the Android
+  # native-library override (package:sqlite3/open.dart) is referenceable.
+  # drift_flutter was removed: it is unused (db_client opens NativeDatabase
+  # directly) and it transitively pulled sqlite3_flutter_libs back in,
+  # reintroducing the collision.
+  sqlcipher_flutter_libs: ^0.6.8
+  sqlite3: ^2.7.6
   video_player_web_hls: ^1.3.0
   firebase_performance: ^0.11.1+4
   firebase_messaging: ^16.1.1

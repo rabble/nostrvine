@@ -21,6 +21,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -56,6 +57,7 @@ import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/observability/divine_bloc_observer.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
+import 'package:openvine/providers/db_cipher_key_provider.dart';
 import 'package:openvine/providers/deep_link_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -77,6 +79,7 @@ import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/corrupted_video_repair_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:openvine/services/database_encryption_bootstrap.dart';
 import 'package:openvine/services/deep_link_service.dart';
 import 'package:openvine/services/locale_preference_service.dart';
 import 'package:openvine/services/logging_config_service.dart';
@@ -1067,9 +1070,40 @@ Future<void> _startOpenVineApp() async {
   // Load package info for version checking (non-blocking, fast).
   final packageInfo = await PackageInfo.fromPlatform();
 
+  // Resolve the at-rest database cipher key before the container so the
+  // database provider opens an encrypted SQLCipher connection on first use.
+  // This also forces package:sqlite3 onto the SQLCipher build (Android) and
+  // runs the one-time plaintext→encrypted migration, both of which must happen
+  // before any sqlite3 open. (#570, finding C2)
+  String? dbCipherKey;
+  try {
+    dbCipherKey = await DatabaseEncryptionBootstrap(
+      // resetOnError MUST stay false here: the cipher key is the one secret
+      // whose loss makes the encrypted DB unrecoverable. A transient keystore
+      // read error must throw (caught below → plaintext this launch, retry
+      // next) rather than silently deleting the key and triggering the §6
+      // key-loss recovery. (#570 C2)
+      secureStorage: const FlutterSecureStorage(
+        aOptions: AndroidOptions(encryptedSharedPreferences: true),
+      ),
+    ).resolveCipherKey();
+  } catch (error, stack) {
+    // SQLCipher build misconfiguration or an unexpected keystore failure.
+    // Report and degrade to a plaintext database so the app still launches;
+    // the device-QA gate prevents an unencrypted build from shipping. (#570 C2)
+    await CrashReportingService.instance.recordError(
+      error,
+      stack,
+      reason: 'DatabaseEncryptionBootstrap.resolveCipherKey failed',
+    );
+  }
+
   // Create ProviderContainer to initialize services BEFORE runApp
   final container = ProviderContainer(
-    overrides: [sharedPreferencesProvider.overrideWithValue(sharedPreferences)],
+    overrides: [
+      sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+      dbCipherKeyProvider.overrideWithValue(dbCipherKey),
+    ],
   );
 
   final startupCoordinator = _createStartupCoordinator(container);
