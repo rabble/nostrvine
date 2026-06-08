@@ -1114,60 +1114,54 @@ void main() {
         expect(page.items, hasLength(2));
       });
 
-      test(
-        'a re-published follow sorts above older notifications by its '
-        'latest timestamp',
-        () async {
-          // A replaceable kind-3 contact list arrives twice for the same
-          // follower: once with a stale timestamp and once fresh. The
-          // consolidated row must inherit the fresh timestamp so it sorts
-          // above an older like — otherwise the follow sinks below the fold
-          // and the Follows tab reads "no activity" (regression for the
-          // reported follows-tab bug).
-          final stale = DateTime(2025);
-          final older = DateTime(2025, 1, 3);
-          final fresh = DateTime(2025, 1, 10);
-          stubNotifications([
-            makeNotification(
-              id: 'follow_stale',
-              sourcePubkey: 'follower_pub',
-              notificationType: 'follow',
-              sourceKind: 3,
-              referencedEventId: null,
-              createdAt: stale,
-            ),
-            makeNotification(
-              id: 'old_like',
-              sourcePubkey: 'liker_pub',
-              referencedEventId: 'video_a',
-              createdAt: older,
-            ),
-            makeNotification(
-              id: 'follow_fresh',
-              sourcePubkey: 'follower_pub',
-              notificationType: 'follow',
-              sourceKind: 3,
-              referencedEventId: null,
-              createdAt: fresh,
-            ),
-          ]);
-          stubProfiles({
-            'follower_pub': makeProfile(
-              'follower_pub',
-              displayName: 'Follower',
-            ),
-            'liker_pub': makeProfile('liker_pub', displayName: 'Liker'),
-          });
+      test('a re-published follow sorts above older notifications by its '
+          'latest timestamp', () async {
+        // A replaceable kind-3 contact list arrives twice for the same
+        // follower: once with a stale timestamp and once fresh. The
+        // consolidated row must inherit the fresh timestamp so it sorts
+        // above an older like — otherwise the follow sinks below the fold
+        // and the Follows tab reads "no activity" (regression for the
+        // reported follows-tab bug).
+        final stale = DateTime(2025);
+        final older = DateTime(2025, 1, 3);
+        final fresh = DateTime(2025, 1, 10);
+        stubNotifications([
+          makeNotification(
+            id: 'follow_stale',
+            sourcePubkey: 'follower_pub',
+            notificationType: 'follow',
+            sourceKind: 3,
+            referencedEventId: null,
+            createdAt: stale,
+          ),
+          makeNotification(
+            id: 'old_like',
+            sourcePubkey: 'liker_pub',
+            referencedEventId: 'video_a',
+            createdAt: older,
+          ),
+          makeNotification(
+            id: 'follow_fresh',
+            sourcePubkey: 'follower_pub',
+            notificationType: 'follow',
+            sourceKind: 3,
+            referencedEventId: null,
+            createdAt: fresh,
+          ),
+        ]);
+        stubProfiles({
+          'follower_pub': makeProfile('follower_pub', displayName: 'Follower'),
+          'liker_pub': makeProfile('liker_pub', displayName: 'Liker'),
+        });
 
-          final page = await repository.getNotifications();
+        final page = await repository.getNotifications();
 
-          expect(page.items, hasLength(2));
-          final follow = page.items.first as ActorNotification;
-          expect(follow.type, equals(NotificationKind.follow));
-          expect(follow.actor.pubkey, equals('follower_pub'));
-          expect(follow.timestamp, equals(fresh));
-        },
-      );
+        expect(page.items, hasLength(2));
+        final follow = page.items.first as ActorNotification;
+        expect(follow.type, equals(NotificationKind.follow));
+        expect(follow.actor.pubkey, equals('follower_pub'));
+        expect(follow.timestamp, equals(fresh));
+      });
     });
 
     group('comments stay individual when on different videos', () {

@@ -76,7 +76,7 @@ const _hydrationLimit = 50;
 /// 4. Group like/comment/repost by `(referencedEventId, kind)` into
 ///    [VideoNotification]s — threshold 1
 /// 5. Map follow/mention/system into [ActorNotification]s
-/// 6. Consolidate follow duplicates (keep earliest per source pubkey)
+/// 6. Consolidate follow duplicates (keep most recent per source pubkey)
 /// 7. Truncate long comment text
 class NotificationRepository {
   /// Creates a [NotificationRepository].
