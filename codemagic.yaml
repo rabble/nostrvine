@@ -237,11 +237,36 @@ definitions:
         if [ -z "$UPLOAD_SYMBOLS" ]; then
           UPLOAD_SYMBOLS=$(find . -path "*/FirebaseCrashlytics*" -name "upload-symbols" -type f 2>/dev/null | head -1)
         fi
+        if [ -z "$UPLOAD_SYMBOLS" ]; then
+          UPLOAD_SYMBOLS=$(find build/ios/SourcePackages -path "*/firebase-ios-sdk*/Crashlytics/upload-symbols" -type f 2>/dev/null | head -1)
+        fi
+        if [ -z "$UPLOAD_SYMBOLS" ] && [ -f "build/ios/SourcePackages/checkouts/firebase-ios-sdk/upload-symbols" ]; then
+          UPLOAD_SYMBOLS="build/ios/SourcePackages/checkouts/firebase-ios-sdk/upload-symbols"
+        fi
 
         if [ -z "$UPLOAD_SYMBOLS" ]; then
-          echo "ERROR: upload-symbols tool not found. Searching all locations..."
+          FIREBASE_IOS_SDK_VERSION=$(ruby -rjson -e '
+            data = JSON.parse(File.read("ios/Runner.xcworkspace/xcshareddata/swiftpm/Package.resolved"))
+            pin = data.fetch("pins").find { |item| item.fetch("identity") == "firebase-ios-sdk" }
+            abort("firebase-ios-sdk not found in Package.resolved") unless pin
+            state = pin.fetch("state")
+            puts(state["version"] || state.fetch("revision"))
+          ')
+          FIREBASE_IOS_SDK_DIR="$CM_BUILD_DIR/.firebase-ios-sdk-$FIREBASE_IOS_SDK_VERSION"
+
+          echo "upload-symbols not found in build outputs; fetching firebase-ios-sdk $FIREBASE_IOS_SDK_VERSION"
+          rm -rf "$FIREBASE_IOS_SDK_DIR"
+          git clone --depth 1 --branch "$FIREBASE_IOS_SDK_VERSION" \
+            https://github.com/firebase/firebase-ios-sdk.git \
+            "$FIREBASE_IOS_SDK_DIR"
+
+          UPLOAD_SYMBOLS="$FIREBASE_IOS_SDK_DIR/Crashlytics/upload-symbols"
+        fi
+
+        if [ ! -f "$UPLOAD_SYMBOLS" ]; then
+          echo "ERROR: upload-symbols tool not found at $UPLOAD_SYMBOLS"
           find "$HOME" -name "upload-symbols" -type f 2>/dev/null || true
-          find . -name "upload-symbols" -type f 2>/dev/null || true
+          find "$CM_BUILD_DIR" -name "upload-symbols" -type f 2>/dev/null || true
           exit 1
         fi
 
