@@ -115,5 +115,44 @@ void main() {
         expect(prefs.getString('unrelated_key'), equals('keep_me'));
       },
     );
+
+    group('historyDrainComplete', () {
+      test('defaults to false when nothing persisted', () {
+        expect(state.historyDrainComplete(pkA), isFalse);
+      });
+
+      test('markHistoryDrainComplete flips the flag to true', () async {
+        await state.markHistoryDrainComplete(pkA);
+
+        expect(state.historyDrainComplete(pkA), isTrue);
+      });
+
+      test('is scoped per pubkey', () async {
+        await state.markHistoryDrainComplete(pkA);
+
+        expect(state.historyDrainComplete(pkA), isTrue);
+        expect(state.historyDrainComplete(pkB), isFalse);
+      });
+
+      test('clear re-arms the drain for the given pubkey only', () async {
+        await state.markHistoryDrainComplete(pkA);
+        await state.markHistoryDrainComplete(pkB);
+
+        await state.clear(pkA);
+
+        expect(state.historyDrainComplete(pkA), isFalse);
+        expect(state.historyDrainComplete(pkB), isTrue);
+      });
+
+      test('clearAll re-arms the drain for every pubkey', () async {
+        await state.markHistoryDrainComplete(pkA);
+        await state.markHistoryDrainComplete(pkB);
+
+        await state.clearAll();
+
+        expect(state.historyDrainComplete(pkA), isFalse);
+        expect(state.historyDrainComplete(pkB), isFalse);
+      });
+    });
   });
 }

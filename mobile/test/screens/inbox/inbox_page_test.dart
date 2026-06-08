@@ -83,6 +83,9 @@ void main() {
 
       when(() => mockDmRepository.startListening()).thenAnswer((_) async {});
       when(() => mockDmRepository.stopListening()).thenAnswer((_) async {});
+      when(
+        () => mockDmRepository.backfillHistoryIfNeeded(),
+      ).thenAnswer((_) async {});
     });
 
     test('has correct route constants', () {

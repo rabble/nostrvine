@@ -86,6 +86,10 @@ void main() {
       // Stub subscription lifecycle methods (#2766).
       when(() => mockDmRepository.startListening()).thenAnswer((_) async {});
       when(() => mockDmRepository.stopListening()).thenAnswer((_) async {});
+      // One-time history drain fired on every inbox open (#4953).
+      when(
+        () => mockDmRepository.backfillHistoryIfNeeded(),
+      ).thenAnswer((_) async {});
     });
 
     ConversationListBloc createBloc() => ConversationListBloc(
@@ -104,6 +108,18 @@ void main() {
     });
 
     group('ConversationListStarted', () {
+      blocTest<ConversationListBloc, ConversationListState>(
+        'triggers the one-time DM history drain on open (#4953)',
+        setUp: () {
+          _stubStreams(mockDmRepository);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ConversationListStarted()),
+        verify: (_) {
+          verify(() => mockDmRepository.backfillHistoryIfNeeded()).called(1);
+        },
+      );
+
       blocTest<ConversationListBloc, ConversationListState>(
         'emits [loading, loaded] when stream emits conversations',
         setUp: () {
@@ -1053,6 +1069,9 @@ void main() {
       when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
       when(() => mockDmRepository.startListening()).thenAnswer((_) async {});
       when(() => mockDmRepository.stopListening()).thenAnswer((_) async {});
+      when(
+        () => mockDmRepository.backfillHistoryIfNeeded(),
+      ).thenAnswer((_) async {});
     });
 
     blocTest<ConversationListBloc, ConversationListState>(

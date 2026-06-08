@@ -3,6 +3,8 @@
 // ABOUTME: updates, marking conversations as read, and splitting conversations
 // ABOUTME: into normal inbox vs message requests based on follow state.
 
+import 'dart:async';
+
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
@@ -47,6 +49,15 @@ class ConversationListBloc
     // The gift-wrap subscription is started by `dmRepositoryProvider` for
     // the whole authenticated session — this BLoC just consumes the
     // already-running stream via the DAO. See #2931.
+
+    // Recover the full DM history once per install. After a reinstall the
+    // live subscription's first-open window (limit:50) only persists the
+    // most-recent conversations; this idempotent, one-time, background
+    // drain backfills the rest so the list is complete. Triggered here (on
+    // inbox open) because relay discovery has reliably finished by the time
+    // the user navigates to Messages — fetching against the full relay
+    // pool, not the divine-only pool present at cold start. See #4953.
+    unawaited(_dmRepository.backfillHistoryIfNeeded());
 
     // Only show the loading spinner and reset limit on first load.
     if (state.status == ConversationListStatus.initial) {

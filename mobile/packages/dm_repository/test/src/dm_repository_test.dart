@@ -42,6 +42,7 @@ class _FakeEvent extends Fake implements Event {}
 class _FakeDmSyncState implements DmSyncState {
   int? newestOverride;
   int? oldestOverride;
+  bool drainCompleteOverride = false;
   final List<({String pubkey, int createdAt})> recorded =
       <({String pubkey, int createdAt})>[];
 
@@ -50,6 +51,14 @@ class _FakeDmSyncState implements DmSyncState {
 
   @override
   int? oldestSyncedAt(String pubkey) => oldestOverride;
+
+  @override
+  bool historyDrainComplete(String pubkey) => drainCompleteOverride;
+
+  @override
+  Future<void> markHistoryDrainComplete(String pubkey) async {
+    drainCompleteOverride = true;
+  }
 
   @override
   Future<void> recordSeen(String pubkey, {required int createdAt}) async {
@@ -66,12 +75,14 @@ class _FakeDmSyncState implements DmSyncState {
   Future<void> clear(String pubkey) async {
     newestOverride = null;
     oldestOverride = null;
+    drainCompleteOverride = false;
   }
 
   @override
   Future<void> clearAll() async {
     newestOverride = null;
     oldestOverride = null;
+    drainCompleteOverride = false;
     recorded.clear();
   }
 }
@@ -2187,6 +2198,138 @@ void main() {
             useCache: any(named: 'useCache'),
           ),
         );
+      });
+    });
+
+    group('backfillHistoryIfNeeded', () {
+      // Kind-5 deletions with no tags flow through _handleIncomingEvent
+      // with zero decryption / DAO side effects, so they exercise the
+      // drain's pagination control flow in isolation.
+      Event deletion(int createdAt) => Event(
+        _validPubkeyA,
+        EventKind.eventDeletion,
+        const <List<String>>[],
+        '',
+        createdAt: createdAt,
+      );
+
+      void stubFiniteHistory(List<Event> history, List<int?> capturedUntil) {
+        when(
+          () => mockNostrClient.queryEvents(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer((inv) async {
+          final filters =
+              inv.positionalArguments.first as List<nostr_filter.Filter>;
+          final until = filters.single.until;
+          capturedUntil.add(until);
+          // Mirror NIP-01 `until` (inclusive) semantics.
+          return history
+              .where((e) => e.createdAt <= (until ?? 1 << 31))
+              .toList();
+        });
+      }
+
+      test(
+        'pages newest→oldest from oldestSyncedAt until the relay is empty, '
+        'then marks the drain complete',
+        () async {
+          final capturedUntil = <int?>[];
+          stubFiniteHistory([
+            deletion(50),
+            deletion(40),
+            deletion(30),
+          ], capturedUntil);
+
+          final syncState = _FakeDmSyncState()..oldestOverride = 100;
+          final repository = createRepository(syncState: syncState);
+
+          await repository.backfillHistoryIfNeeded();
+
+          // Seeded from oldestSyncedAt, then strictly decreasing.
+          expect(capturedUntil.first, 100);
+          for (var i = 1; i < capturedUntil.length; i++) {
+            expect(capturedUntil[i]! < capturedUntil[i - 1]!, isTrue);
+          }
+          // Terminated on an empty page and recorded completion.
+          expect(syncState.drainCompleteOverride, isTrue);
+        },
+      );
+
+      test('is a no-op when the drain already completed', () async {
+        final syncState = _FakeDmSyncState()..drainCompleteOverride = true;
+        final repository = createRepository(syncState: syncState);
+
+        await repository.backfillHistoryIfNeeded();
+
+        verifyNever(
+          () => mockNostrClient.queryEvents(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            useCache: any(named: 'useCache'),
+          ),
+        );
+      });
+
+      test('is a no-op when no sync state is wired', () async {
+        final repository = createRepository();
+
+        await repository.backfillHistoryIfNeeded();
+
+        verifyNever(
+          () => mockNostrClient.queryEvents(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            useCache: any(named: 'useCache'),
+          ),
+        );
+      });
+
+      test('stops at the page cap and still marks complete', () async {
+        var calls = 0;
+        when(
+          () => mockNostrClient.queryEvents(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer((inv) async {
+          calls++;
+          final filters =
+              inv.positionalArguments.first as List<nostr_filter.Filter>;
+          final until = filters.single.until!;
+          // Infinite descending supply: only the maxPages cap can stop it.
+          return [deletion(until - 1)];
+        });
+
+        final syncState = _FakeDmSyncState()..oldestOverride = 1000000;
+        final repository = createRepository(syncState: syncState);
+
+        await repository.backfillHistoryIfNeeded();
+
+        expect(calls, DmHistoryDrainConfig.maxPages);
+        expect(syncState.drainCompleteOverride, isTrue);
+      });
+
+      test('shares one in-flight run across concurrent calls', () async {
+        final capturedUntil = <int?>[];
+        stubFiniteHistory([deletion(50)], capturedUntil);
+
+        final syncState = _FakeDmSyncState()..oldestOverride = 100;
+        final repository = createRepository(syncState: syncState);
+
+        // Two simultaneous triggers (e.g. rapid inbox re-opens).
+        await Future.wait([
+          repository.backfillHistoryIfNeeded(),
+          repository.backfillHistoryIfNeeded(),
+        ]);
+
+        // A single drain pages until=100 → 50 → 49(empty) = 3 queries. Two
+        // overlapping drains would have doubled that and re-seeded at 100.
+        expect(capturedUntil, [100, 50, 49]);
+        expect(syncState.drainCompleteOverride, isTrue);
       });
     });
 

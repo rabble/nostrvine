@@ -20,6 +20,7 @@ class DmSyncState {
 
   static const _newestPrefix = 'dm.newestSyncedAt.';
   static const _oldestPrefix = 'dm.oldestSyncedAt.';
+  static const _drainCompletePrefix = 'dm.historyDrainComplete.';
 
   /// Returns the newest (highest) `created_at` unix timestamp we have
   /// successfully processed for [pubkey], or `null` if nothing has been
@@ -46,10 +47,28 @@ class DmSyncState {
     }
   }
 
+  /// Whether the one-time full-history drain has completed for [pubkey].
+  ///
+  /// `false` after a reinstall (SharedPreferences is wiped) or account
+  /// switch, which is what arms `DmRepository.backfillHistoryIfNeeded` to
+  /// re-fetch the full conversation backlog. Distinct from
+  /// [newestSyncedAt]/[oldestSyncedAt], which the live subscription
+  /// advances on its very first event and therefore cannot gate a
+  /// "did we drain everything" decision. See #4953.
+  bool historyDrainComplete(String pubkey) =>
+      _prefs.getBool('$_drainCompletePrefix$pubkey') ?? false;
+
+  /// Records that the one-time full-history drain finished cleanly for
+  /// [pubkey] so it never runs again until the state is cleared.
+  Future<void> markHistoryDrainComplete(String pubkey) async {
+    await _prefs.setBool('$_drainCompletePrefix$pubkey', true);
+  }
+
   /// Removes all sync state for [pubkey]. Called on account switch.
   Future<void> clear(String pubkey) async {
     await _prefs.remove('$_newestPrefix$pubkey');
     await _prefs.remove('$_oldestPrefix$pubkey');
+    await _prefs.remove('$_drainCompletePrefix$pubkey');
   }
 
   /// Removes all DM sync state entries for every pubkey.
@@ -61,7 +80,9 @@ class DmSyncState {
         .getKeys()
         .where(
           (key) =>
-              key.startsWith(_newestPrefix) || key.startsWith(_oldestPrefix),
+              key.startsWith(_newestPrefix) ||
+              key.startsWith(_oldestPrefix) ||
+              key.startsWith(_drainCompletePrefix),
         )
         .toList();
     for (final key in keysToRemove) {
