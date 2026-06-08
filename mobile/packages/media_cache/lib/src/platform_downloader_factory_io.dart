@@ -6,6 +6,9 @@ import 'package:http/io_client.dart';
 import 'package:media_cache/src/cancellable_downloader.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+bool _cupertinoUnavailable = false;
+bool _cronetUnavailable = false;
+
 /// `dart:io` implementation that selects the best native HTTP stack.
 ///
 /// Prefers `cupertino_http` on Apple platforms and `cronet_http` on Android,
@@ -38,7 +41,7 @@ CancellableDownloader createPlatformDownloaderImpl({
   // Windows and Linux keep the dart:io / IOClient path.
   // coverage:ignore-start
   final useCupertino = Platform.isIOS || (Platform.isMacOS && !isDebugMode);
-  if (useCupertino) {
+  if (useCupertino && !_cupertinoUnavailable) {
     try {
       final cfg = URLSessionConfiguration.defaultSessionConfiguration()
         ..timeoutIntervalForRequest = connectionTimeout
@@ -47,23 +50,35 @@ CancellableDownloader createPlatformDownloaderImpl({
         CupertinoClient.fromSessionConfiguration(cfg),
       );
     } on Object catch (e, st) {
+      _cupertinoUnavailable = true;
       Log.warning(
         'MediaCache: cupertino_http init failed, '
-        'falling back to dart:io HttpClient: $e\n$st',
+        'using dart:io HttpClient for the rest of this process: $e',
+        name: 'MediaCache',
+        category: LogCategory.video,
+      );
+      Log.debug(
+        'MediaCache: cupertino_http init stack trace: $st',
         name: 'MediaCache',
         category: LogCategory.video,
       );
     }
-  } else if (Platform.isAndroid) {
+  } else if (Platform.isAndroid && !_cronetUnavailable) {
     try {
       // `cronet_http` does not expose per-client connect/idle timeout knobs.
       // On Android, `connectionTimeout` and `idleTimeout` therefore do not
       // apply while Cronet is active.
       return HttpCancellableDownloader(CronetClient.defaultCronetEngine());
     } on Object catch (e, st) {
+      _cronetUnavailable = true;
       Log.warning(
         'MediaCache: cronet_http init failed, '
-        'falling back to dart:io HttpClient: $e\n$st',
+        'using dart:io HttpClient for the rest of this process: $e',
+        name: 'MediaCache',
+        category: LogCategory.video,
+      );
+      Log.debug(
+        'MediaCache: cronet_http init stack trace: $st',
         name: 'MediaCache',
         category: LogCategory.video,
       );

@@ -1256,7 +1256,7 @@ String? _resolveSha256ForParams(VideoControllerParams params) {
     sha256 = _extractSha256FromUrl(params.videoUrl);
     if (sha256 != null) {
       Log.debug(
-        '🔐 Extracted sha256 from URL: ${sha256.substring(0, 8)}...',
+        '🔐 Extracted sha256 from URL: $sha256',
         name: 'IndividualVideoController',
         category: LogCategory.video,
       );

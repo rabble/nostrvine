@@ -58,6 +58,8 @@ class FullscreenFeedBloc
   FullscreenFeedBloc({
     required Stream<List<VideoEvent>> videosStream,
     required int initialIndex,
+    String? initialVideoId,
+    String? initialStableId,
     Stream<bool>? hasMoreStream,
     Stream<String>? removedIdsStream,
     MediaCacheManager? mediaCache,
@@ -66,6 +68,8 @@ class FullscreenFeedBloc
     OnRemoveVideo? onRemoveVideo,
     MediaAvailabilityChecker? availabilityChecker,
   }) : _videosStream = videosStream,
+       _initialVideoId = initialVideoId,
+       _initialStableId = initialStableId,
        _hasMoreStream = hasMoreStream,
        _removedIdsStream = removedIdsStream,
        _onLoadMore = onLoadMore,
@@ -94,6 +98,8 @@ class FullscreenFeedBloc
   }
 
   final Stream<List<VideoEvent>> _videosStream;
+  final String? _initialVideoId;
+  final String? _initialStableId;
   final Stream<bool>? _hasMoreStream;
   final Stream<String>? _removedIdsStream;
   final VoidCallback? _onLoadMore;
@@ -103,6 +109,8 @@ class FullscreenFeedBloc
   final MediaAvailabilityChecker _availabilityChecker;
   StreamSubscription<bool>? _hasMoreSubscription;
   StreamSubscription<String>? _removedIdsSubscription;
+  bool _initialTargetResolved = false;
+  bool _userChangedIndex = false;
 
   /// Queue of video IDs waiting to be cached in the background.
   final Queue<_CacheRequest> _cacheQueue = Queue<_CacheRequest>();
@@ -167,15 +175,7 @@ class FullscreenFeedBloc
           category: LogCategory.video,
         );
 
-        final currentVideoId = state.currentVideo?.id;
-        final preservedIndex = currentVideoId == null
-            ? -1
-            : videos.indexWhere((video) => video.id == currentVideoId);
-        final nextIndex = preservedIndex >= 0
-            ? preservedIndex
-            : videos.isEmpty
-            ? 0
-            : state.currentIndex.clamp(0, videos.length - 1);
+        final nextIndex = _nextIndexForVideos(videos);
 
         return state.copyWith(
           status: FullscreenFeedStatus.ready,
@@ -193,6 +193,62 @@ class FullscreenFeedBloc
         // Return current state to keep showing existing videos
         return state;
       },
+    );
+  }
+
+  int _nextIndexForVideos(List<VideoEvent> videos) {
+    if (videos.isEmpty) {
+      return state.currentIndex;
+    }
+
+    final currentVideo = state.currentVideo;
+    final preservedIndex = currentVideo == null
+        ? -1
+        : _indexOfVideoIdentity(videos, currentVideo);
+    if (preservedIndex >= 0) {
+      _initialTargetResolved = true;
+      return preservedIndex;
+    }
+
+    if (!_userChangedIndex && !_initialTargetResolved) {
+      final initialTargetIndex = _indexOfInitialTarget(videos);
+      if (initialTargetIndex >= 0) {
+        _initialTargetResolved = true;
+        Log.debug(
+          'FullscreenFeedBloc: resolved initial target '
+          'videoId=$_initialVideoId stableId=$_initialStableId '
+          'index=$initialTargetIndex',
+          name: 'FullscreenFeedBloc',
+          category: LogCategory.video,
+        );
+        return initialTargetIndex;
+      }
+
+      if (_initialVideoId == null && _initialStableId == null) {
+        _initialTargetResolved = true;
+      }
+    }
+
+    return state.currentIndex.clamp(0, videos.length - 1);
+  }
+
+  int _indexOfInitialTarget(List<VideoEvent> videos) {
+    final initialVideoId = _initialVideoId;
+    final initialStableId = _initialStableId;
+    if (initialVideoId == null && initialStableId == null) return -1;
+
+    return videos.indexWhere(
+      (video) =>
+          (initialVideoId != null && video.id == initialVideoId) ||
+          (initialStableId != null && video.stableId == initialStableId),
+    );
+  }
+
+  int _indexOfVideoIdentity(List<VideoEvent> videos, VideoEvent target) {
+    return videos.indexWhere(
+      (video) =>
+          video.id == target.id ||
+          (target.stableId.isNotEmpty && video.stableId == target.stableId),
     );
   }
 
@@ -244,6 +300,8 @@ class FullscreenFeedBloc
     Emitter<FullscreenFeedState> emit,
   ) {
     if (event.index == state.currentIndex) return;
+    _userChangedIndex = true;
+    _initialTargetResolved = true;
 
     final clampedIndex = state.videos.isEmpty
         ? 0

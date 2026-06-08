@@ -7,6 +7,7 @@ import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' as model;
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
@@ -15,6 +16,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/providers/social_providers.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/widgets/profile/profile_videos_grid.dart';
@@ -189,6 +191,63 @@ void main() {
 
         expect(find.byType(SliverGrid), findsOneWidget);
       });
+
+      testWidgets(
+        'tapping a published tile passes seed videos and tapped identity',
+        (tester) async {
+          when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+          final videos = _createTestVideos(pubkey: _ownPubkey, count: 4);
+          Object? capturedExtra;
+          final profileFeedCubit = _stubbedProfileFeedCubit();
+          final router = GoRouter(
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (context, state) => testProviderScope(
+                  mockAuthService: mockAuth,
+                  child: BlocProvider<BackgroundPublishBloc>.value(
+                    value: mockBloc,
+                    child: Scaffold(
+                      body: BlocProvider<ProfileFeedCubit>.value(
+                        value: profileFeedCubit,
+                        child: ProfileVideosGrid(
+                          videos: videos,
+                          userIdHex: _ownPubkey,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              GoRoute(
+                path: PooledFullscreenVideoFeedScreen.path,
+                builder: (context, state) {
+                  capturedExtra = state.extra;
+                  return const SizedBox.shrink();
+                },
+              ),
+            ],
+          );
+
+          await tester.pumpWidget(
+            MaterialApp.router(
+              routerConfig: router,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+            ),
+          );
+
+          await tester.tap(find.bySemanticsLabel('Video thumbnail 3'));
+          await tester.pumpAndSettle();
+
+          final args = capturedExtra as ProfilePooledFullscreenVideoFeedArgs?;
+          expect(args, isNotNull);
+          expect(args!.initialIndex, 2);
+          expect(args.initialVideoId, videos[2].id);
+          expect(args.initialStableId, videos[2].stableId);
+          expect(args.seedVideos, videos);
+        },
+      );
 
       testWidgets('shows persistent pending invite banner on own profile', (
         tester,

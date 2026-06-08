@@ -132,11 +132,8 @@ class SubscribedListVideoCache extends ChangeNotifier {
 
     // Log each list for debugging
     for (final list in subscribedLists) {
-      final shortId = list.id.length > 8
-          ? '${list.id.substring(0, 8)}...'
-          : list.id;
       Log.debug(
-        '  📋 List "${list.name}" ($shortId): '
+        '  📋 List "${list.name}" (${list.id}): '
         '${list.videoEventIds.length} video IDs',
         name: 'SubscribedListVideoCache',
         category: LogCategory.video,
@@ -144,13 +141,10 @@ class SubscribedListVideoCache extends ChangeNotifier {
     }
 
     if (subscribedLists.isEmpty && subscribedIds.isNotEmpty) {
-      final sampleIds = subscribedIds
-          .take(3)
-          .map((id) => id.length > 8 ? id.substring(0, 8) : id)
-          .join(', ');
+      final sampleIds = subscribedIds.take(3).join(', ');
       Log.warning(
         '⚠️ Have ${subscribedIds.length} subscribed IDs but 0 lists loaded! '
-        'IDs: $sampleIds...',
+        'IDs: $sampleIds',
         name: 'SubscribedListVideoCache',
         category: LogCategory.video,
       );

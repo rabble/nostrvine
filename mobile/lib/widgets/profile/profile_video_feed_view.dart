@@ -139,6 +139,8 @@ class _ProfileVideoFeedViewState extends ConsumerState<ProfileVideoFeedView> {
             // stream before FullscreenFeedBloc attaches.
             videosStream: _videosController.stream.startWith(effectiveVideos),
             initialIndex: resolvedIndex,
+            initialVideoId: widget.initialVideoId,
+            initialStableId: widget.initialStableId,
             trafficSource: ViewTrafficSource.profile,
             contextTitle: contextTitle,
             onLoadMore: hasMoreContent

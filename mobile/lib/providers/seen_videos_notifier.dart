@@ -57,9 +57,7 @@ class SeenVideosNotifier extends _$SeenVideosNotifier {
     // Persist to storage
     await _service?.markVideoAsSeen(videoId);
 
-    Log.debug(
-      'Marked video as seen: ${videoId.substring(0, videoId.length > 8 ? 8 : videoId.length)}... (total: ${newSeenIds.length})',
-    );
+    Log.debug('Marked video as seen: $videoId (total: ${newSeenIds.length})');
   }
 
   /// Record video view with metrics

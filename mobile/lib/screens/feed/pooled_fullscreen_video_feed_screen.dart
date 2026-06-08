@@ -54,6 +54,8 @@ class PooledFullscreenVideoFeedArgs {
   const PooledFullscreenVideoFeedArgs({
     required this.videosStream,
     required this.initialIndex,
+    this.initialVideoId,
+    this.initialStableId,
     this.onLoadMore,
     this.hasMoreStream,
     this.removedIdsStream,
@@ -69,6 +71,14 @@ class PooledFullscreenVideoFeedArgs {
 
   /// Initial video index to start playback.
   final int initialIndex;
+
+  /// Optional specific video identity to resolve against the first non-empty
+  /// source list. This survives empty-first streams and source reordering.
+  final String? initialVideoId;
+
+  /// Optional stable id fallback for addressable videos whose event id may
+  /// change after metadata updates.
+  final String? initialStableId;
 
   /// Callback to trigger pagination on the source.
   final VoidCallback? onLoadMore;
@@ -110,6 +120,7 @@ class ProfilePooledFullscreenVideoFeedArgs {
   const ProfilePooledFullscreenVideoFeedArgs({
     required this.userIdHex,
     required this.initialIndex,
+    this.seedVideos = const [],
     this.initialVideoId,
     this.initialStableId,
     this.contextTitle,
@@ -118,6 +129,7 @@ class ProfilePooledFullscreenVideoFeedArgs {
 
   final String userIdHex;
   final int initialIndex;
+  final List<VideoEvent> seedVideos;
   final String? initialVideoId;
   final String? initialStableId;
   final String? contextTitle;
@@ -142,6 +154,8 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
   const PooledFullscreenVideoFeedScreen({
     required this.videosStream,
     required this.initialIndex,
+    this.initialVideoId,
+    this.initialStableId,
     this.onLoadMore,
     this.hasMoreStream,
     this.removedIdsStream,
@@ -155,6 +169,8 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
 
   final Stream<List<VideoEvent>> videosStream;
   final int initialIndex;
+  final String? initialVideoId;
+  final String? initialStableId;
   final VoidCallback? onLoadMore;
   final Stream<bool>? hasMoreStream;
 
@@ -189,6 +205,8 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
           create: (_) => FullscreenFeedBloc(
             videosStream: videosStream,
             initialIndex: initialIndex,
+            initialVideoId: initialVideoId,
+            initialStableId: initialStableId,
             hasMoreStream: hasMoreStream,
             removedIdsStream: removedIdsStream,
             onLoadMore: onLoadMore,

@@ -45,7 +45,7 @@ final class SeenVideosNotifierProvider
 }
 
 String _$seenVideosNotifierHash() =>
-    r'4abc2beebe5767ef986a0c84e12ffae9685c63a1';
+    r'11e527c825dd2b21de09445aeaf4a14299cb7700';
 
 /// Notifier for managing seen videos state reactively
 

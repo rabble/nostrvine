@@ -201,6 +201,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
       extra: ProfilePooledFullscreenVideoFeedArgs(
         userIdHex: widget.userIdHex,
         initialIndex: resolvedIndex,
+        seedVideos: videos,
         initialVideoId: tappedVideo.id,
         initialStableId: tappedVideo.stableId,
       ),

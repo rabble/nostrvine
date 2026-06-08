@@ -234,7 +234,7 @@ class SeenVideosService {
         watchDuration: watchDuration,
       );
       Log.debug(
-        '📱 Updated video metrics: ${videoId.substring(0, videoId.length > 8 ? 8 : videoId.length)}... (loops: ${existing.loopCount}, watch: ${existing.totalWatchDuration.inSeconds}s)',
+        '📱 Updated video metrics: $videoId (loops: ${existing.loopCount}, watch: ${existing.totalWatchDuration.inSeconds}s)',
         name: 'SeenVideosService',
         category: LogCategory.system,
       );
@@ -249,7 +249,7 @@ class SeenVideosService {
         lastWatchDuration: watchDuration ?? Duration.zero,
       );
       Log.debug(
-        '📱️ Marking video as seen: ${videoId.substring(0, videoId.length > 8 ? 8 : videoId.length)}...',
+        '📱️ Marking video as seen: $videoId',
         name: 'SeenVideosService',
         category: LogCategory.system,
       );
@@ -332,7 +332,7 @@ class SeenVideosService {
     }
 
     Log.debug(
-      '📱️ Marking video as unseen: ${videoId.substring(0, videoId.length > 8 ? 8 : videoId.length)}...',
+      '📱️ Marking video as unseen: $videoId',
       name: 'SeenVideosService',
       category: LogCategory.system,
     );

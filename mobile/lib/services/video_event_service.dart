@@ -1305,7 +1305,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         category: LogCategory.video,
       );
       Log.info(
-        '  - Authors: ${authors?.length ?? 'all'} ${authors?.isNotEmpty == true ? "(first: ${authors!.first}...)" : ""}',
+        '  - Authors: ${authors?.length ?? 'all'} ${authors?.isNotEmpty == true ? "(first: ${authors!.first})" : ""}',
         name: 'VideoEventService',
         category: LogCategory.video,
       );
@@ -2192,7 +2192,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       // Skip repost events if reposts are disabled
       if (event.kind == 16 && !(_includeReposts[subscriptionType] ?? false)) {
         Log.warning(
-          '⏩ Skipping repost event ${event.id}... (reposts disabled)',
+          '⏩ Skipping repost event ${event.id} (reposts disabled)',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
@@ -2212,7 +2212,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       // Check if content is blocked
       if (_blocklistRepository?.shouldFilterFromFeeds(event.pubkey) == true) {
         Log.verbose(
-          'Filtering blocked content from ${event.pubkey}...',
+          'Filtering blocked content from ${event.pubkey}',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
@@ -2465,7 +2465,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       }
 
       Log.debug(
-        '📥 Received historical $subscriptionType event: kind=${event.kind}, author=${event.pubkey}..., id=${event.id}...',
+        '📥 Received historical $subscriptionType event: kind=${event.kind}, author=${event.pubkey}, id=${event.id}',
         name: 'VideoEventService',
         category: LogCategory.video,
       );
@@ -2482,7 +2482,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       // Skip repost events if reposts are disabled
       if (event.kind == 16 && !(_includeReposts[subscriptionType] ?? false)) {
         Log.warning(
-          '⏩ Skipping historical repost event ${event.id}... (reposts disabled)',
+          '⏩ Skipping historical repost event ${event.id} (reposts disabled)',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
@@ -2502,7 +2502,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       // Check if content is blocked
       if (_blocklistRepository?.shouldFilterFromFeeds(event.pubkey) == true) {
         Log.verbose(
-          'Filtering blocked historical content from ${event.pubkey}...',
+          'Filtering blocked historical content from ${event.pubkey}',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
@@ -2524,7 +2524,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       if (NIP71VideoKinds.isVideoKind(event.kind)) {
         // Direct video event
         Log.verbose(
-          'Processing historical video event ${event.id}...',
+          'Processing historical video event ${event.id}',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
@@ -2767,7 +2767,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     }
 
     Log.info(
-      'Querying historical videos for user=$pubkey... until=${until != null ? DateTime.fromMillisecondsSinceEpoch(until * 1000) : 'none'} limit=$limit',
+      'Querying historical videos for user=$pubkey until=${until != null ? DateTime.fromMillisecondsSinceEpoch(until * 1000) : 'none'} limit=$limit',
       name: 'VideoEventService',
       category: LogCategory.video,
     );
@@ -2799,7 +2799,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       // Set timeout for receiving events
       final timeoutTimer = Timer(const Duration(seconds: 5), () {
         Log.info(
-          'Historical query timeout for user=$pubkey... - received $receivedCount events',
+          'Historical query timeout for user=$pubkey - received $receivedCount events',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
@@ -2819,7 +2819,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           timeoutTimer.cancel();
           if (!completer.isCompleted) {
             Log.info(
-              'Historical query stream completed for user=$pubkey... - received $receivedCount events',
+              'Historical query stream completed for user=$pubkey - received $receivedCount events',
               name: 'VideoEventService',
               category: LogCategory.video,
             );
@@ -2830,7 +2830,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           timeoutTimer.cancel();
           if (!completer.isCompleted) {
             Log.error(
-              'Historical query stream error for user=$pubkey...: $error',
+              'Historical query stream error for user=$pubkey: $error',
               name: 'VideoEventService',
               category: LogCategory.video,
             );
@@ -2844,7 +2844,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       await streamSubscription.cancel();
 
       Log.info(
-        'Historical user videos query completed - received $receivedCount events for user=$pubkey...',
+        'Historical user videos query completed - received $receivedCount events for user=$pubkey',
         name: 'VideoEventService',
         category: LogCategory.video,
       );
@@ -2853,7 +2853,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       notifyListeners();
     } catch (e) {
       Log.error(
-        'Failed to query historical user videos for user=$pubkey...: $e',
+        'Failed to query historical user videos for user=$pubkey: $e',
         name: 'VideoEventService',
         category: LogCategory.video,
       );

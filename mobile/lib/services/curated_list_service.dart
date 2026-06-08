@@ -1196,7 +1196,7 @@ class CuratedListService extends ChangeNotifier {
         (event) {
           receivedEvents.add(event);
           Log.debug(
-            'Received list event from relay: ${event.id}...',
+            'Received list event from relay: ${event.id}',
             name: 'CuratedListService',
             category: LogCategory.system,
           );

@@ -372,7 +372,7 @@ Future<void> _precacheAuthHeaders(
       sha256 = _extractSha256FromUrl(controllerParams.videoUrl);
       if (sha256 != null) {
         Log.debug(
-          '🔐 [PRECACHE] Extracted sha256 from URL: ${sha256.substring(0, 8)}...',
+          '🔐 [PRECACHE] Extracted sha256 from URL: $sha256',
           name: 'VideoErrorOverlay',
           category: LogCategory.video,
         );
@@ -409,7 +409,7 @@ Future<void> _precacheAuthHeaders(
 
     // Generate auth header
     Log.debug(
-      '🔐 [PRECACHE] Generating auth header with sha256=${sha256.substring(0, 16)}...',
+      '🔐 [PRECACHE] Generating auth header with sha256=$sha256',
       name: 'VideoErrorOverlay',
       category: LogCategory.video,
     );

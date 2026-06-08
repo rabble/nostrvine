@@ -249,9 +249,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     observers: _buildRouterObservers(),
     // Refresh router when auth or account-review state changes
     refreshListenable: refreshListenable,
-    errorBuilder: (context, state) => RouteErrorScreen(
-      message: context.l10n.routeUnknownPath,
-    ),
+    errorBuilder: (context, state) =>
+        RouteErrorScreen(message: context.l10n.routeUnknownPath),
     redirect: (context, state) {
       // Rewrite divine.video universal-link URLs to internal paths before the
       // auth/match logic runs. Android delivers the full intent URL (scheme +
@@ -1362,6 +1361,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             return PooledFullscreenVideoFeedScreen(
               videosStream: extra.videosStream,
               initialIndex: extra.initialIndex,
+              initialVideoId: extra.initialVideoId,
+              initialStableId: extra.initialStableId,
               onLoadMore: extra.onLoadMore,
               hasMoreStream: extra.hasMoreStream,
               removedIdsStream: extra.removedIdsStream,
@@ -1377,6 +1378,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               npub: '',
               userIdHex: extra.userIdHex,
               videoIndex: extra.initialIndex,
+              videos: extra.seedVideos,
               initialVideoId: extra.initialVideoId,
               initialStableId: extra.initialStableId,
               contextTitleOverride: extra.contextTitle,

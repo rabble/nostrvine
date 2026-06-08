@@ -115,7 +115,7 @@ class BrokenVideoTracker {
       await _saveBrokenVideos();
 
       Log.warning(
-        '🚫 Marked video as broken: $videoId... (reason: $reason)',
+        '🚫 Marked video as broken: $videoId (reason: $reason)',
         name: 'BrokenVideoTracker',
         category: LogCategory.system,
       );
@@ -134,7 +134,7 @@ class BrokenVideoTracker {
       await _saveBrokenVideos();
 
       Log.info(
-        '✅ Unmarked video as broken: $videoId...',
+        '✅ Unmarked video as broken: $videoId',
         name: 'BrokenVideoTracker',
         category: LogCategory.system,
       );

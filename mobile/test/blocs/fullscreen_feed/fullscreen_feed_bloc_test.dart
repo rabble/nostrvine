@@ -70,6 +70,8 @@ void main() {
 
     FullscreenFeedBloc createBloc({
       int initialIndex = 0,
+      String? initialVideoId,
+      String? initialStableId,
       void Function()? onLoadMore,
       Stream<bool>? hasMoreStream,
       MediaCacheManager? mediaCache,
@@ -79,6 +81,8 @@ void main() {
     }) => FullscreenFeedBloc(
       videosStream: videosController.stream,
       initialIndex: initialIndex,
+      initialVideoId: initialVideoId,
+      initialStableId: initialStableId,
       onLoadMore: onLoadMore,
       hasMoreStream: hasMoreStream,
       mediaCache: mediaCache ?? mockMediaCache,
@@ -221,9 +225,7 @@ void main() {
           videoUrl: 'https://example.com/video1.mp4',
           rawTags: const {'views': '0'},
         );
-        final updatedVideo = baseVideo.copyWith(
-          rawTags: const {'views': '42'},
-        );
+        final updatedVideo = baseVideo.copyWith(rawTags: const {'views': '42'});
 
         final baseState = FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
@@ -338,6 +340,72 @@ void main() {
           isA<FullscreenFeedState>()
               .having((s) => s.currentIndex, 'currentIndex', 2)
               .having((s) => s.currentVideo?.id, 'currentVideo', 'video2'),
+        ],
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'preserves initial index through empty-first source emissions',
+        build: () => createBloc(initialIndex: 4),
+        act: (bloc) async {
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add(const []);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add([
+            createTestVideo('video0'),
+            createTestVideo('video1'),
+            createTestVideo('video2'),
+            createTestVideo('video3'),
+            createTestVideo('video4'),
+          ]);
+        },
+        wait: const Duration(milliseconds: 200),
+        expect: () => [
+          isA<FullscreenFeedState>()
+              .having((s) => s.videos, 'videos', isEmpty)
+              .having((s) => s.currentIndex, 'currentIndex', 4),
+          isA<FullscreenFeedState>()
+              .having((s) => s.videos.length, 'videos count', 5)
+              .having((s) => s.currentIndex, 'currentIndex', 4)
+              .having((s) => s.currentVideo?.id, 'currentVideo', 'video4'),
+        ],
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'resolves initial video identity when source order changes',
+        build: () => createBloc(
+          initialIndex: 1,
+          initialVideoId: 'target-video',
+          initialStableId: 'stable-target-video',
+        ),
+        act: (bloc) async {
+          final target = createTestVideo(
+            'target-video',
+            rawTags: const {'d': 'stable-target-video'},
+          );
+
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add(const []);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add([
+            createTestVideo('newer-video'),
+            createTestVideo('another-video'),
+            target,
+          ]);
+        },
+        wait: const Duration(milliseconds: 200),
+        expect: () => [
+          isA<FullscreenFeedState>()
+              .having((s) => s.videos, 'videos', isEmpty)
+              .having((s) => s.currentIndex, 'currentIndex', 1),
+          isA<FullscreenFeedState>()
+              .having((s) => s.currentIndex, 'currentIndex', 2)
+              .having(
+                (s) => s.currentVideo?.id,
+                'currentVideo',
+                'target-video',
+              ),
         ],
       );
 
@@ -1208,10 +1276,7 @@ void main() {
         act: (bloc) async {
           bloc.add(const FullscreenFeedStarted());
           await Future<void>.delayed(Duration.zero);
-          videosController.add([
-            createTestVideo('a'),
-            createTestVideo('b'),
-          ]);
+          videosController.add([createTestVideo('a'), createTestVideo('b')]);
           await Future<void>.delayed(Duration.zero);
           bloc.add(const FullscreenFeedVideoRemoved('a'));
           await Future<void>.delayed(Duration.zero);
@@ -1311,10 +1376,7 @@ void main() {
           // Schedule the removal AFTER the bloc subscribes inside _onStarted.
           Future<void>(() async {
             await Future<void>.delayed(const Duration(milliseconds: 1));
-            videosController.add([
-              createTestVideo('a'),
-              createTestVideo('b'),
-            ]);
+            videosController.add([createTestVideo('a'), createTestVideo('b')]);
             await Future<void>.delayed(const Duration(milliseconds: 1));
             removedController.add('a');
           });
